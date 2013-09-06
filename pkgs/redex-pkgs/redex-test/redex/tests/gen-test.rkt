@@ -15,6 +15,11 @@
 (define-syntax-rule (is-false e)
   (test e #f))
 
+(define-syntax-rule (no-counterexample e)
+  (test
+   (counterexample? e)
+   #f))
+
 (define-language L0)
 
 (let ()
@@ -87,7 +92,7 @@
   (test (generate-term nats #:satisfying (sum z z (s z)) 5)
               #f)
   
-  (for ([_ 100])
+  (for ([_ 50])
     (match (generate-term nats #:satisfying (sum n_1 n_2 n_3) 5)
       [`(sum ,l ,r ,res)
        (test (judgment-holds (sum ,l ,r n) n)
@@ -95,7 +100,26 @@
     (match (generate-term nats #:satisfying (r-sum n_1 n_2 n_3) 5)
       [`(r-sum ,l ,r ,res)
        (test (term (r-sum ,l ,r ,res))
-                   #t)])))
+                   #t)]))
+  (no-counterexample
+   (redex-check nats
+                #:satisfying
+                (sum n_1 n_2 n_3)
+                (equal? (car (judgment-holds
+                              (sum n_1 n_2 n_4) n_4))
+                        (term n_3))
+                #:attempts 50
+                #:print? #f))
+  
+  (no-counterexample
+   (redex-check nats
+                #:satisfying
+                (r-sum n_1 n_2 n_3)
+                (judgment-holds
+                 (sum n_1 n_2 n_3))
+                #:attempts 50
+                #:print? #f))
+  )
 
 (let ()
   
@@ -131,14 +155,24 @@
    (not (generate-term lists #:satisfying (not-in a (b (c (d (e (f ())))))) +inf.0))
    #f)
   
-  (for/and ([_ 100])
+  (for/and ([_ 50])
     (match (generate-term lists #:satisfying (not-in a l) 5)
       [`(not-in a ,l)
        (unless (judgment-holds (not-in a ,l)) (printf "l: ~s\n" l))
        (test (judgment-holds (not-in a ,l))
                    #t)]
       [#f
-       (void)])))
+       (void)]))
+  
+  (no-counterexample
+   (redex-check lists
+                #:satisfying
+                (not-in x l)
+                (judgment-holds (not-in x l))
+                #:attempts 50
+                #:print? #f))
+                
+  )
 
 (let ()
   
@@ -174,7 +208,7 @@
     [(double (+ e_1 e_2) e_3)
      (where e_3 (+ (+ e_1 e_1) (+ e_2 e_2)))])
   
-  (for ([_ 100])
+  (for ([_ 50])
     (define t (generate-term simple #:satisfying (double e_1 e_2) +inf.0))
     (match t
       [`(double ,e1 ,e2)
@@ -182,6 +216,15 @@
                    #t)]
       [#f
        (void)]))
+  
+  (no-counterexample
+   (redex-check simple
+                #:satisfying
+                (double e_1 e_2)
+                (judgment-holds
+                 (double e_1 e_2))
+                #:attempts 50
+                #:print? #f))
   
   (define-metafunction simple
     [(duplicate e_1 e_1)
@@ -220,14 +263,25 @@
   (test (judgment-holds (double2 (+ 2 2) (+ 2 2 2)))
               #t)
   
-  (for ([_ 100])
+  (for ([_ 50])
     (define t (generate-term simple #:satisfying (double2 e_1 e_2) +inf.0))
     (match t
       [`(double2 ,e1 ,e2)
        (test (judgment-holds (double2 ,e1 ,e2))
                    #t)]
       [#f
-       (void)])))
+       (void)]))
+  
+  (no-counterexample
+   (redex-check simple
+                #:satisfying
+                (double2 e_1 e_2)
+                (judgment-holds 
+                 (double2 e_1 e_2))
+                #:attempts 50
+                #:print? #f))
+  
+  )
 
 (let ()
   (define-language STLC
@@ -283,7 +337,7 @@
   (test (judgment-holds (typeof ([x_2 int] ([x_1 (int → int)] •)) (x_1 5) int))
               #t)
   
-  (for ([_ 100])
+  (for ([_ 50])
     (define term (generate-term STLC #:satisfying (typeof Γ e τ) 6))
     (match term
       [`(typeof ,g ,e ,t)
@@ -292,7 +346,17 @@
       [#f
        (void)]))
   
-  (for ([_ 100])
+  (no-counterexample
+   (redex-check STLC
+                #:satisfying
+                (typeof Γ e τ)
+                (equal? (car (judgment-holds
+                              (typeof Γ e τ_2) τ_2))
+                        (term τ))
+                #:attempts 50
+                #:print? #f))
+  
+  (for ([_ 50])
     (define term (generate-term if-l #:satisfying (typ-if Γ e τ) 5))
     (match term
       [`(typ-if ,g ,e ,t)
@@ -301,8 +365,18 @@
       [#f
        (void)]))
   
+  (no-counterexample
+   (redex-check STLC
+                #:satisfying
+                (typ-if Γ e τ)
+                (equal? (car (judgment-holds
+                              (typ-if Γ e τ_2) τ_2))
+                        (term τ))
+                #:attempts 50
+                #:print? #f))
+  
   (define g (redex-generator STLC (typeof • e τ) 5))
-  (define terms (filter values (for/list ([_ 400]) (g))))
+  (define terms (filter values (for/list ([_ 100]) (g))))
   (test (length terms)
               (length (remove-duplicates terms)))
   (map (match-lambda
@@ -337,7 +411,7 @@
   (test (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 5 (1 (2 (4 •)))) +inf.0)
               #f)
   
-  (for ([_ 50])
+  (for ([_ 25])
     (define term (generate-term l #:satisfying (filtered e_1 n e_2) 5))
     (match term
       [`(filtered ,e1 ,n ,e2)
@@ -346,13 +420,31 @@
       [#f
        (void)]))
   
-  (for ([_ 50])
+  (no-counterexample
+   (redex-check l
+                #:satisfying
+                (filtered e_1 n e_2)
+                (equal? (car (judgment-holds
+                              (filtered e_1 n e_3) e_3))
+                        (term e_2))
+                #:attempts 25
+                #:print? #f))
+  
+  (for ([_ 25])
     (define t (generate-term l #:satisfying (fltr n e) = e_1 5))
     (match t
       [`((fltr ,n ,e) = ,e1)
        (test (term (fltr ,n ,e)) e1)]
       [#f
        (void)]))
+  
+  (no-counterexample
+   (redex-check l 
+                #:satisfying 
+                (fltr n e) = e_1
+                (equal? (term (fltr n e)) (term e_1))
+                #:attempts 25
+                #:print? #f))
   
   (define g (redex-generator l (fltr n e_1) = e_2 5))
   (define terms (filter values (for/list ([_ 50]) (g))))
@@ -550,7 +642,17 @@
   (test (generate-term l #:satisfying (t 6 7) = 2 +inf.0)
               #f)
   (test (generate-term l #:satisfying (t 6 7) = 1 +inf.0)
-              #f))
+              #f)
+  
+  (no-counterexample
+   (redex-check l 
+                #:satisfying 
+                (t n_1 n_2) = n_3
+                (equal? (term (t n_1 n_2)) (term n_3))
+                #:attempts 50
+                #:print? #f))
+  
+  )
 
 (let ()
   (define-judgment-form L0

@@ -15,6 +15,7 @@
          racket/match
          racket/pretty
          (for-syntax racket/base
+                     racket/set
                      syntax/stx
                      setup/path-to-relative
                      "rewrite-side-conditions.rkt"
@@ -82,75 +83,187 @@
         (list (if lists? #'(-> list? list?) #'(-> any/c any/c)) 
               "#:prepare argument")))
 
+(define-for-syntax satisfying-disallowed-kws
+  (set '#:source '#:retries))
+
 (define-syntax (redex-check stx)
-  (syntax-case stx ()
+  (define valid-kws 
+    (cons '#:satisfying (map car (list attempts-keyword
+                                       source-keyword
+                                       retries-keyword
+                                       print?-keyword
+                                       attempt-size-keyword
+                                       (prepare-keyword #f)))))
+  (define used-kws
+    (for/fold ([kws (set)])
+              ([maybe-kw-stx (in-list (syntax->list stx))])
+      (define maybe-kw (syntax-e maybe-kw-stx))
+      (cond 
+        [(keyword? maybe-kw)
+         (unless (member maybe-kw valid-kws)
+           (raise-syntax-error 'redex-check "unknown keyword" stx maybe-kw-stx))
+         (set-add kws maybe-kw)]
+        [else kws])))
+  (define bad-kws (set-intersect used-kws satisfying-disallowed-kws))
+  (syntax-case stx (=)
+    [(form lang #:satisfying (mf-id . args) = res property . kw-args)
+     (unless (set-empty? bad-kws)
+       (raise-syntax-error 'redex-check (format "~s cannot be used with #:satisfying" (car (set->list bad-kws))) stx))
+     (redex-check/mf stx #'form #'lang #'mf-id #'args #'res #'property #'kw-args)]
+    [(form lang #:satisfying (jform-id . pats) property . kw-args)
+     (unless (set-empty? bad-kws)
+       (raise-syntax-error 'redex-check (format "~s cannot be used with #:satisfying" (car (set->list bad-kws))) stx))
+     (redex-check/jf stx #'form #'lang #'jform-id #'pats #'property #'kw-args)]
+    [(form lang #:satisfying . rest)
+     (raise-syntax-error 'redex-check "#:satisfying expected judgment form or metafunction syntax followed by a property" stx #'rest)]
     [(form lang pat property . kw-args)
-     (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
-                    (rewrite-side-conditions/check-errs 
-                     #'lang
-                     'redex-check #t #'pat)]
-                   [show (show-message stx)])
-     (let-values ([(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
-                   (apply values
-                          (parse-kw-args (list attempts-keyword
-                                               source-keyword
-                                               retries-keyword
-                                               print?-keyword
-                                               attempt-size-keyword
-                                               (prepare-keyword #f))
-                                         (syntax kw-args)
-                                         stx
-                                         (syntax-e #'form)))])
-         (with-syntax ([property (syntax
-                                  (bind-prop
-                                   (λ (bindings)
-                                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                                               property))))])
-           (quasisyntax/loc stx
-             (let ([att #,attempts-stx]
-                   [ret #,retries-stx]
-                   [print? #,print?-stx]
-                   [fix #,fix-stx]
-                   [term-match (λ (generated)
-                                 (cond [(test-match lang pat generated) => values]
-                                       [else (redex-error 'redex-check "~s does not match ~s" generated 'pat)]))])
-               syncheck-exp
-               (parameterize ([attempt->size #,size-stx])
-               #,(if source-stx
-                     #`(let-values ([(metafunc/red-rel num-cases) 
-                                     #,(cond [(metafunc source-stx)
-                                              => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
-                                             [else
-                                              #`(let ([r #,(apply-contract #'reduction-relation? source-stx 
-                                                                           "#:source argument" (syntax-e #'form))])
-                                                  (values r (length (reduction-relation-make-procs r))))])])
-                         (check-lhs-pats
-                          lang
-                          metafunc/red-rel
-                          property
-                          (max 1 (floor (/ att num-cases)))
-                          ret
-                          'redex-check
-                          (and print? show)
-                          fix
-                          #:term-match term-match))
-                     #`(check-one
-                        #,(term-generator #'lang #'pattern 'redex-check)
-                        property att ret (and print? show) fix (and fix term-match)))))))))]))
+     (redex-check/pat stx #'form #'lang #'pat #'property #'kw-args)]))
+
+(define-struct gen-fail ())
+
+(define-for-syntax (redex-check/jf orig-stx form lang jf-id pats property kw-args)
+  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+    (parse-redex-check-kw-args kw-args orig-stx form))
+  (define nts (definition-nts lang orig-stx 'redex-check))
+  (unless (judgment-form-id? jf-id)
+    (raise-syntax-error 'redex-check "expected a judgment-form" jf-id))
+  (define j-f (lookup-judgment-form-id jf-id))
+  (define clauses (judgment-form-gen-clauses j-f))
+  (define relation? (judgment-form-relation? j-f))
+  (define args-stx (if relation?
+                       (syntax/loc #'args #`(#,pats))
+                       pats))
+  (with-syntax* ([(syncheck-exp pattern (names ...) (names/ellipses ...))
+                  (rewrite-side-conditions/check-errs lang 'redex-check #t args-stx)]
+                 [show (show-message orig-stx)]
+                 [res-term-stx #`(#,jf-id #,@args-stx)]
+                 [property #`(bind-prop
+                               (λ (bindings)
+                                 (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
+                                           #,property)))])
+                (quasisyntax/loc orig-stx
+                  (let ([term-match (λ (generated)
+                                      (cond [(test-match #,lang res-term-stx generated) => values]
+                                            [else (redex-error 'redex-check "~s does not match ~s" generated 'res-term-stx)]))])
+                    syncheck-exp
+                    (let ([default-attempt-size (λ (s) (add1 (default-attempt-size s)))])
+                      (parameterize ([attempt->size #,size-stx])
+                        (check-one
+                         (λ (size _1 _2)
+                           (values
+                            (match ((make-jf-gen/proc '#,jf-id #,clauses #,lang 'pattern size))
+                              [(and res (? values)) res]
+                              [else (gen-fail)])
+                            #f))
+                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match)))))))
+
+(define-for-syntax (redex-check/mf orig-stx form lang mf-id args-stx res-stx property kw-args)
+  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+    (parse-redex-check-kw-args kw-args orig-stx form))
+  (define nts (definition-nts lang orig-stx 'redex-check))
+  (define m (metafunc mf-id))
+  (unless m (raise-syntax-error 'generate-term "expected a metafuction" mf-id))
+  (define mf (syntax-local-value mf-id (λ () #f)))
+  (with-syntax* ([(lhs-syncheck-exp lhs-pat (lhs-names ...) (lhs-names/ellipses ...))
+                  (rewrite-side-conditions/check-errs lang 'redex-check #t args-stx)]
+                 [(rhs-syncheck-exp rhs-pat (rhs-names ...) (rhs-names/ellipses ...))
+                  (rewrite-side-conditions/check-errs lang 'redex-check #t res-stx)]
+                 [res-term-stx #`((#,mf-id #,@args-stx) = #,res-stx)]
+                 [mf-id (term-fn-get-id mf)]
+                 [show (show-message orig-stx)]
+                 [property #`(bind-prop
+                               (λ (bindings)
+                                 (term-let ([lhs-names/ellipses (lookup-binding bindings 'lhs-names)] ...
+                                            [rhs-names/ellipses (lookup-binding bindings 'rhs-names)] ...)
+                                           #,property)))])
+                (quasisyntax/loc orig-stx
+                  (let ([term-match (λ (generated)
+                                      (cond [(test-match #,lang res-term-stx generated) => values]
+                                            [else (redex-error 'redex-check "~s does not match ~s" generated 'res-term-stx)]))])
+                    lhs-syncheck-exp
+                    rhs-syncheck-exp
+                    (let ([default-attempt-size (λ (s) (add1 (default-attempt-size s)))])
+                      (parameterize ([attempt->size #,size-stx])
+                        (check-one
+                         (λ (size _1 _2)
+                           (values
+                            (match ((make-mf-gen/proc 'mf-id mf-id #,lang 'lhs-pat 'rhs-pat size))
+                              [(and res (? values)) res]
+                              [else (gen-fail)])
+                            #f))
+                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match)))))))
+
+(define-for-syntax (redex-check/pat orig-stx form lang pat property kw-args)
+  (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
+                 (rewrite-side-conditions/check-errs 
+                  lang
+                  'redex-check #t pat)]
+                [show (show-message orig-stx)])
+    (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+      (parse-redex-check-kw-args kw-args orig-stx form)) 
+    (with-syntax ([property #`(bind-prop
+                               (λ (bindings)
+                                 (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
+                                           #,property)))])
+      (quasisyntax/loc orig-stx
+        (let ([att #,attempts-stx]
+              [ret #,retries-stx]
+              [print? #,print?-stx]
+              [fix #,fix-stx]
+              [term-match (λ (generated)
+                            (cond [(test-match #,lang #,pat generated) => values]
+                                  [else (redex-error 'redex-check "~s does not match ~s" generated '#,pat)]))])
+          syncheck-exp
+          (parameterize ([attempt->size #,size-stx])
+            #,(if source-stx
+                  #`(let-values ([(metafunc/red-rel num-cases) 
+                                  #,(cond [(metafunc source-stx)
+                                           => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
+                                          [else
+                                           #`(let ([r #,(apply-contract #'reduction-relation? source-stx 
+                                                                        "#:source argument" (syntax-e form))])
+                                               (values r (length (reduction-relation-make-procs r))))])])
+                      (check-lhs-pats
+                       #,lang
+                       metafunc/red-rel
+                       property
+                       (max 1 (floor (/ att num-cases)))
+                       ret
+                       'redex-check
+                       (and print? show)
+                       fix
+                       #:term-match term-match))
+                  #`(check-one
+                     #,(term-generator lang #'pattern 'redex-check)
+                     property att ret (and print? show) fix (and fix term-match)))))))))
+
+(define-for-syntax (parse-redex-check-kw-args kw-args orig-stx form-name)
+  (apply values
+         (parse-kw-args (list attempts-keyword
+                              source-keyword
+                              retries-keyword
+                              print?-keyword
+                              attempt-size-keyword
+                              (prepare-keyword #f))
+                        kw-args
+                        orig-stx
+                        (syntax-e form-name))))
 
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
 
 (define (check-one generator property attempts retries show term-fix term-match) 
-  (let ([c (check generator property attempts retries show 
-                  #:term-fix term-fix
-                  #:term-match term-match)])
-    (if (counterexample? c)
-        (unless show c) ; check printed it
-        (if show
-            (show (format "no counterexamples in ~a\n"
-                          (format-attempts attempts)))
-            #t))))
+  (define c (check generator property attempts retries show 
+                   #:term-fix term-fix
+                   #:term-match term-match))
+  (cond 
+    [(counterexample? c)
+     (unless show c)] ; check printed it
+    [show
+     (show (format "no counterexamples in ~a\n"
+                   (format-attempts attempts)))]
+    [else
+     #t]))
 
 (define-struct (exn:fail:redex:test exn:fail:redex) (source term))
 (define-struct counterexample (term) #:transparent)
@@ -164,49 +277,54 @@
                #:term-match [term-match #f]
                #:skip-term? [skip-term? (λ (x) #f)])
   (let loop ([remaining attempts])
-    (if (zero? remaining)
-        #t
-        (let ([attempt (add1 (- attempts remaining))])
-          (let-values ([(term bindings) (generator ((attempt->size) attempt) attempt retries)]
-                       [(handler) 
-                        (λ (action term)
-                          (λ (exn)
-                            (let ([msg (format "~a ~s raises an exception" action term)])
-                              (when show (show (format "~a\n" msg)))
-                              (raise 
-                               (if show
-                                   exn
-                                   (make-exn:fail:redex:test
-                                    (format "~a:\n~a" msg (exn-message exn))
-                                    (current-continuation-marks)
-                                    exn
-                                    term))))))])
-            (let ([term (with-handlers ([exn:fail? (handler "fixing" term)])
-                          (if term-fix (term-fix term) term))])
-              (cond
-                [(skip-term? term) (loop (- remaining 1))]
-                [else
-                 (if (if term-match
-                         (let ([bindings (make-bindings 
-                                          (match-bindings
-                                           (pick-from-list (term-match term))))])
-                           (with-handlers ([exn:fail? (handler "checking" term)])
-                             (match property
-                               [(term-prop pred) (pred term)]
-                               [(bind-prop pred) (pred bindings)])))
-                         (with-handlers ([exn:fail? (handler "checking" term)])
-                           (match (cons property term-fix)
-                             [(cons (term-prop pred) _) (pred term)]
-                             [(cons (bind-prop pred) #f) (pred bindings)])))
-                     (loop (sub1 remaining))
-                     (begin
-                       (when show
-                         (show
-                          (format "counterexample found after ~a~a:\n"
-                                  (format-attempts attempt)
-                                  (if source (format " with ~a" source) "")))
-                         (pretty-write term (current-output-port)))
-                       (make-counterexample term)))])))))))
+    (cond 
+      [(zero? remaining)
+       #t]
+      [else
+       (define attempt (add1 (- attempts remaining)))
+       (define-values (raw-term bindings) (generator ((attempt->size) attempt) attempt retries))
+       (cond
+         [(gen-fail? raw-term)
+          (loop (sub1 remaining))]
+         [else
+          (define handler 
+            (λ (action term)
+              (λ (exn)
+                (define msg (format "~a ~s raises an exception" action term))
+                (when show (show (format "~a\n" msg)))
+                (raise 
+                 (if show
+                     exn
+                     (make-exn:fail:redex:test
+                      (format "~a:\n~a" msg (exn-message exn))
+                      (current-continuation-marks)
+                      exn
+                      term))))))
+          (define term (with-handlers ([exn:fail? (handler "fixing" raw-term)])
+                         (if term-fix (term-fix raw-term) raw-term)))
+          (cond
+            [(skip-term? term) (loop (- remaining 1))]
+            [(if term-match
+                 (let ([bindings (make-bindings 
+                                  (match-bindings
+                                   (pick-from-list (term-match term))))])
+                   (with-handlers ([exn:fail? (handler "checking" term)])
+                     (match property
+                       [(term-prop pred) (pred term)]
+                       [(bind-prop pred) (pred bindings)])))
+                 (with-handlers ([exn:fail? (handler "checking" term)])
+                   (match (cons property term-fix)
+                     [(cons (term-prop pred) _) (pred term)]
+                     [(cons (bind-prop pred) #f) (pred bindings)])))
+             (loop (sub1 remaining))]
+            [else
+             (when show
+               (show
+                (format "counterexample found after ~a~a:\n"
+                        (format-attempts attempt)
+                        (if source (format " with ~a" source) "")))
+               (pretty-write term (current-output-port)))
+             (make-counterexample term)])])])))
 
 (define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix
                         #:term-match [term-match #f])
@@ -328,7 +446,7 @@
   (define (parse-keyword-args args)
     (define attempt-num #f)
     (define retries #f)
-
+    
     (let loop ([args args])
       (syntax-case args ()
         [() 
@@ -443,9 +561,9 @@
        (language-id-nts #'language 'generate-term) ;; for the error side-effect
        (unless (judgment-form-id? #'jf-id)
          (raise-syntax-error 'generate-term "expected a judgment-form" #'jf-id))
-        (syntax-case #'size-maybe ()
-          [() #`(λ (size) (generate-jf-pat language (jf-id . args) size))]
-          [(size) #'(generate-jf-pat language (jf-id . args) size)]))]))
+       (syntax-case #'size-maybe ()
+         [() #`(λ (size) (generate-jf-pat language (jf-id . args) size))]
+         [(size) #'(generate-jf-pat language (jf-id . args) size)]))]))
 
 (define-syntax (generate-term/source stx)
   (syntax-case stx ()
@@ -512,7 +630,7 @@
   (syntax-case stx ()
     [(g-m-p lang-id (mf-name . lhs-pats) rhs-pat size)
      #`(parameterize ([unsupported-pat-err-name 'generate-term])
-        ((make-redex-generator lang-id (mf-name . lhs-pats) = rhs-pat size)))]))
+         ((make-redex-generator lang-id (mf-name . lhs-pats) = rhs-pat size)))]))
 
 (define-syntax (generate-jf-pat stx)
   (syntax-case stx ()
@@ -583,9 +701,9 @@
     [(_ not-lang-id . rest)
      (not (identifier? #'not-lang-id))
      (raise-syntax-error 'redex-generator
-                            "expected an identifier in the language position"
-                            stx
-                            #'not-lang-id)]))
+                         "expected an identifier in the language position"
+                         stx
+                         #'not-lang-id)]))
 
 (define (make-jf-gen/proc jf-id mk-clauses lang pat size)
   (define gen (search/next (mk-clauses) pat size lang))
@@ -617,7 +735,7 @@
   (λ ()
     (parameterize ([current-logger generation-logger])
       (termify (gen)))))
-  
+
 (provide redex-check
          generate-term
          check-reduction-relation

@@ -1837,8 +1837,13 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
 @racket[exn:fail:redex:generation-failure?].
 }
 
-@defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
-              ([kw-arg (code:line #:attempts attempts-expr)
+@defform/subs[(redex-check template property-expr kw-arg ...)
+              ([template (code:line language @#,ttpattern)
+                         (code:line language #:satisfying
+                            (judgment-form-id @#,ttpattern ...))
+                         (code:line language #:satisfying 
+                            (metafunction-id @#,ttpattern ...) = @#,ttpattern)]
+              [kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)
                        (code:line #:retries retries-expr)
@@ -1854,11 +1859,24 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
                            [prepare-expr (-> any/c any/c)])]{
 Searches for a counterexample to @racket[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
-bound by @racket[pattern]. @racket[redex-check] constructs and tests 
-a candidate counterexample by choosing a random term @math{t} that 
-matches @racket[pattern] then evaluating @racket[property-expr]
+bound by the @racket[pattern](s) in @racket[template].
+@racket[redex-check] constructs and tests 
+a candidate counterexample by choosing a random term @math{t} based 
+on @racket[template] and then evaluating @racket[property-expr]
 using the @racket[match-bindings] produced by @racket[match]ing
-@math{t} against @racket[pattern].
+@math{t} against @racket[pattern]. The form of @racket[template] controls
+how @math{t} is generated:
+@itemlist[
+          @item{@racket[language @#,ttpattern]:
+                 In this case, redex-check generates terms that match
+                 @racket[pattern].}
+          @item{@racket[language #:satisfying (judgment-form-id @#,ttpattern ...)]:
+                  Generates terms that match @racket[pattern] and satisfy 
+                  the judgment form.}
+          @item{@racket[language #:satisfying (metafunction-id @#,ttpattern ...) = @#,ttpattern]:
+                  Generates terms matching the two @racket[pattern]s, such that
+                  if the first is the argument to the metafunction, the
+                  second will be the result.}]
 
 @racket[redex-check] generates at most @racket[attempts-expr] (default @racket[(default-check-attempts)])
 random terms in its search. The size and complexity of these terms tend to increase 
@@ -1882,14 +1900,19 @@ generated example before @racket[redex-check] checks @racket[property-expr].
 This keyword may be useful when @racket[property-expr] takes the form
 of a conditional, and a term chosen freely from the grammar is unlikely to
 satisfy the conditional's hypothesis. In some such cases, the @racket[prepare] 
-keyword  can be used to increase the probability that an example satifies the
+keyword  can be used to increase the probability that an example satisfies the
 hypothesis.
+
+The @racket[#:retries] keyword behaves identically as in @racket[generate-term],
+controlling the number of times the generation of any pattern will be
+reattempted. It can't be used together with @racket[#:satisfying].
 
 When passed a metafunction or reduction relation via the optional @racket[#:source]
 argument, @racket[redex-check] distributes its attempts across the left-hand sides
 of that metafunction/relation by using those patterns, rather than @racket[pattern],
 as the basis of its generation. It is an error if any left-hand side generates a
-term that does not match @racket[pattern].}
+term that does not match @racket[pattern]. @racket[#:source] cannot be used
+with @racket[#:satisfying].}
 
 @examples[
 #:eval redex-eval
@@ -1939,7 +1962,28 @@ term that does not match @racket[pattern].}
         #:prepare (λ (n)
                     (printf "preparing ~s; " n)
                     (add1 (abs n)))
-        #:attempts 3)]
+        #:attempts 3)
+                     
+       (define-language L
+         (nat ::= Z (S nat)))
+       (define-judgment-form L
+         #:mode (sum I I O)
+         [---------------
+          (sum Z nat nat)]
+         [(sum nat_1 nat_2 nat_3)
+          -------------------------------
+          (sum (S nat_1) nat_2 (S nat_3))])
+       (redex-check L
+                    #:satisfying
+                    (sum nat_1 nat_2 nat_3)
+                    (equal? (judgment-holds
+                             (sum nat_1 nat_2 nat_4) nat_4)
+                            (term (nat_3)))
+                    #:attempts 100)
+       (redex-check L
+                    #:satisfying
+                    (sum nat_1 nat_2 nat_3)
+                    (equal? (term nat_1) (term nat_2)))]
 
 @defform/subs[(redex-generator language-id satisfying size-expr)
               ([satisfying (judgment-form-id @#,ttpattern ...)
