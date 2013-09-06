@@ -90,7 +90,7 @@ void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *obj)
     (void)jit_patchable_movi_p(rs, obj);
 #endif
   } else {
-    (void)jit_patchable_movi_p(rs, obj);
+    (void)jit_movi_p(rs, obj);
   }
 }
 
