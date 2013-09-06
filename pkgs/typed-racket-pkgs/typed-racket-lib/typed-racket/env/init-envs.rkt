@@ -48,6 +48,7 @@
   (define (gen-constructor sym)
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
+    [(? Rep? (app (lambda (v) (hash-ref predefined-type-table (Rep-seq v) #f)) (? values id))) id]
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt pred marshaled _) marshaled]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]

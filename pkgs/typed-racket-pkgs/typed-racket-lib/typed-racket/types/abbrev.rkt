@@ -83,7 +83,7 @@
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
-(define -Boolean (Un (-val #t) (-val #f)))
+(define/decl -Boolean (Un (-val #t) (-val #f)))
 (define -Undefined
   (make-Base 'Undefined
              #'(lambda (x) (equal? (letrec ([y y]) y) x)) ; initial value of letrec bindings
@@ -101,14 +101,14 @@
                             #'-PRegexp))
 (define -Regexp (Un -PRegexp -Base-Regexp))
 
-(define -Byte-Base-Regexp (make-Base 'Byte-Regexp
+(define -Byte-Base-Regexp (make-Base 'Byte-Base-Regexp
                                 #'(and/c byte-regexp? (not/c byte-pregexp?))
                                 (conjoin byte-regexp? (negate byte-pregexp?))
-                                #'-Byte-Regexp))
+                                #'-Byte-Base-Regexp))
 (define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp))
 (define -Byte-Regexp (Un -Byte-Base-Regexp -Byte-PRegexp))
 
-(define -Pattern (Un -Bytes -Regexp -Byte-Regexp -String))
+(define/decl -Pattern (Un -Bytes -Regexp -Byte-Regexp -String))
 
 
 
@@ -119,7 +119,7 @@
 
 (define -Keyword (make-Base 'Keyword #'keyword? keyword? #'-Keyword))
 (define -Thread (make-Base 'Thread #'thread? thread? #'-Thread))
-(define -Module-Path (Un -Symbol -String
+(define/decl -Module-Path (Un -Symbol -String
                          (-lst* (-val 'quote) -Symbol)
                          (-lst* (-val 'lib) -String)
                          (-lst* (-val 'file) -String)
@@ -135,7 +135,7 @@
              #'(and/c    compiled-expression? (not/c  compiled-module-expression?))
                (conjoin  compiled-expression? (negate compiled-module-expression?))
              #'-Compiled-Non-Module-Expression))
-(define -Compiled-Expression (Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
+(define/decl -Compiled-Expression (Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
 (define -OtherSystemPath (make-Base 'OtherSystemPath
@@ -170,7 +170,7 @@
            (make-Box sexp)
            t)))
 
-(define -Sexp (-Sexpof (Un)))
+(define/decl -Sexp (-Sexpof (Un)))
 
 (define Syntax-Sexp (-Sexpof Any-Syntax))
 
@@ -185,14 +185,14 @@
 (define -VectorTop (make-VectorTop))
 
 
-(define -Port (Un -Output-Port -Input-Port))
+(define/decl -Port (Un -Output-Port -Input-Port))
 
-(define -SomeSystemPath (Un -Path -OtherSystemPath))
-(define -Pathlike (Un -String -Path))
-(define -SomeSystemPathlike (Un -String -SomeSystemPath))
-(define -Pathlike* (Un -String -Path (-val 'up) (-val 'same)))
-(define -SomeSystemPathlike* (Un -String -SomeSystemPath(-val 'up) (-val 'same)))
-(define -PathConventionType (Un (-val 'unix) (-val 'windows)))
+(define/decl -SomeSystemPath (Un -Path -OtherSystemPath))
+(define/decl -Pathlike (Un -String -Path))
+(define/decl -SomeSystemPathlike (Un -String -SomeSystemPath))
+(define/decl -Pathlike* (Un -String -Path (-val 'up) (-val 'same)))
+(define/decl -SomeSystemPathlike* (Un -String -SomeSystemPath(-val 'up) (-val 'same)))
+(define/decl -PathConventionType (Un (-val 'unix) (-val 'windows)))
 
 
 
@@ -244,7 +244,7 @@
 
 (define -Logger (make-Base 'Logger #'logger? logger? #'-Logger))
 (define -Log-Receiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-Log-Receiver))
-(define -Log-Level (one-of/c 'fatal 'error 'warning 'info 'debug))
+(define/decl -Log-Level (one-of/c 'fatal 'error 'warning 'info 'debug))
 
 
 (define -Place
@@ -252,7 +252,7 @@
 (define -Base-Place-Channel
   (make-Base 'Base-Place-Channel #'(and/c place-channel? (not/c place?))  (conjoin place-channel? (negate place?))  #'-Base-Place-Channel))
 
-(define -Place-Channel (Un -Place -Base-Place-Channel))
+(define/decl -Place-Channel (Un -Place -Base-Place-Channel))
 
 (define -Will-Executor
   (make-Base 'Will-Executor #'will-executor? will-executor? #'-Will-Executor))
@@ -297,8 +297,8 @@
     [(t)
      (make-pred-ty (list Univ) -Boolean t 0 null)]))
 
-(define -true-filter (-FS -top -bot))
-(define -false-filter (-FS -bot -top))
+(define/decl -true-filter (-FS -top -bot))
+(define/decl -false-filter (-FS -bot -top))
 
 (define (opt-fn args opt-args result)
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])

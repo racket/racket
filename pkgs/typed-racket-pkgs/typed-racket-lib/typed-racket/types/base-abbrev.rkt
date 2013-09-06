@@ -13,9 +13,17 @@
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
+(define predefined-type-table (make-hasheq))
+(define-syntax-rule (declare-predefined-type! id)
+  (hash-set! predefined-type-table (Rep-seq id) #'id))
+(provide predefined-type-table)
+(define-syntax-rule (define/decl id e)
+  (begin (define id e)
+	 (declare-predefined-type! id)))
+
 ;Top and error types
-(define Univ (make-Univ))
-(define -Bottom (make-Union null))
+(define/decl Univ (make-Univ))
+(define/decl -Bottom (make-Union null))
 (define Err (make-Error))
 
 ;A Type that corresponds to the any contract for the

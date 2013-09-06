@@ -9,6 +9,7 @@
   (syntax-parse stx
     [(def-export export-id:identifier id:identifier cnt-id:identifier)
      #'(define-syntax export-id
-         (if (unbox typed-context?)
-             (renamer #'id #'cnt-id)
-             (renamer #'cnt-id)))]))
+	 (let ([c #'cnt-id])
+	   (if (unbox typed-context?)
+	       (renamer #'id c)
+	       (renamer c))))]))

@@ -380,21 +380,22 @@
       #`(begin
           (begin-for-syntax
             (module* #%type-decl #f
-              (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
-                       typed-racket/env/global-env typed-racket/env/type-alias-env
-                       typed-racket/types/type-table)
-              #,(env-init-code syntax-provide? provide-tbl def-tbl)
-              #,(talias-env-init-code)
-              #,(tname-env-init-code)
-              #,(tvariance-env-init-code)
-              #,(mvar-env-init-code mvar-env)
-              #,(make-struct-table-code)
-              #,@(for/list ([a (in-list aliases)])
-                   (match a
-                     [(list from to)
-                      #`(add-alias (quote-syntax #,from) (quote-syntax #,to))]))))
-          (begin-for-syntax (add-mod! (variable-reference->module-path-index
-                                       (#%variable-reference)))))
+	      (#%plain-module-begin ;; avoid top-level printing and config
+	       (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
+			typed-racket/env/global-env typed-racket/env/type-alias-env
+			typed-racket/types/type-table typed-racket/types/abbrev)
+	       #,(env-init-code syntax-provide? provide-tbl def-tbl)
+	       #,(talias-env-init-code)
+	       #,(tname-env-init-code)
+	       #,(tvariance-env-init-code)
+	       #,(mvar-env-init-code mvar-env)
+	       #,(make-struct-table-code)
+               #,@(for/list ([a (in-list aliases)])
+                    (match a
+                      [(list from to)
+                       #`(add-alias (quote-syntax #,from) (quote-syntax #,to))])))))
+	  (begin-for-syntax (add-mod! (variable-reference->module-path-index
+				       (#%variable-reference)))))
       #`(begin
           #,(if (null? (syntax-e #'(new-provs ...)))
                 #'(begin)
