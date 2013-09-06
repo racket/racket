@@ -240,7 +240,8 @@ please adhere to these guidelines:
   
   ;; modes
   (mode-submenu-label "Tilstande")
-  (scheme-mode "Racket-tilstand")
+  (scheme-mode "Scheme-tilstand")
+  (racket-mode "Racket-tilstand")
   (text-mode "Tekst-tilstand")
   
   (scheme-mode-color-symbol "Symbol")

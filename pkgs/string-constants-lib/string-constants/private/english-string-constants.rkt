@@ -327,7 +327,8 @@ please adhere to these guidelines:
   
  ;; modes
  (mode-submenu-label "Modes")
- (scheme-mode "Racket mode")
+ (scheme-mode "Scheme mode")
+ (racket-mode "Racket mode")
  (text-mode "Text mode")
 
  (scheme-mode-color-symbol "Symbol")

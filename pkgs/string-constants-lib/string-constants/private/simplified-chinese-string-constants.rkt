@@ -247,7 +247,8 @@
   
   ;; modes
   (mode-submenu-label "模式")
-  (scheme-mode "Racket模式")
+  (scheme-mode "Scheme模式")
+  (racket-mode "Racket模式")
   (text-mode "文本模式")
   
   (scheme-mode-color-symbol "符号")

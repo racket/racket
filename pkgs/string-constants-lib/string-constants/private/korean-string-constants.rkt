@@ -178,7 +178,8 @@
   
  ;; modes
  (mode-submenu-label "모드")
- (scheme-mode "Racket 모드")
+ (racket-mode "Racket 모드")
+ (scheme-mode "Scheme 모드")
  (text-mode "텍스트 모드")
 
  (scheme-mode-color-symbol "기호")

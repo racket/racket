@@ -253,7 +253,8 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "Режимы")
- (scheme-mode "Режим Racket")
+ (scheme-mode "Режим Scheme")
+ (racket-mode "Режим Racket")
  (text-mode "Режим текста")
 
  (scheme-mode-color-symbol "Символ")

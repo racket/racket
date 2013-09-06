@@ -248,7 +248,8 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "モード")
- (scheme-mode "Racket モード")
+ (scheme-mode "Scheme モード")
+ (racket-mode "Racket モード")
  (text-mode "Text モード")
 
  (scheme-mode-color-symbol "シンボル")

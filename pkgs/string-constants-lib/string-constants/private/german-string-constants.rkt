@@ -225,7 +225,8 @@
 
  ;; modes
  (mode-submenu-label "Modi")
- (scheme-mode "Racket-Modus")
+ (scheme-mode "Scheme-Modus")
+ (racket-mode "Racket-Modus")
  (text-mode "Text-Modus")
 
  (scheme-mode-color-symbol "Symbol")

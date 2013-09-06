@@ -240,7 +240,8 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "Modos")
- (scheme-mode "Modo Racket")
+ (scheme-mode "Modo Scheme")
+ (racket-mode "Modo Racket")
  (text-mode "Modo Texto")
 
  (scheme-mode-color-symbol "Símbolo")
