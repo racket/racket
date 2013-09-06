@@ -19,6 +19,8 @@
 
 @include-section["for-body.scrbl"]
 
+@include-section["for-transform.scrbl"]
+
 @include-section["srcloc.scrbl"]
 
 @include-section["quote.scrbl"]

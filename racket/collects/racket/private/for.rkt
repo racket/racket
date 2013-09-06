@@ -32,6 +32,7 @@
 
              for/fold/derived for*/fold/derived
              (for-syntax split-for-body)
+             (for-syntax (rename expand-clause expand-for-clause))
 
              (rename *in-range in-range)
              (rename *in-naturals in-naturals)
