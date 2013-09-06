@@ -1024,8 +1024,9 @@
                        (not out-exists?)))
               #f 
               ;; Need to write if database is out of sync. A timestamp is good enough,
-              ;; insteda of sha1s, because a database is never moved across installations.
-              (provides-time . < . info-out-time)
+              ;; instead of sha1s, because a database is never moved across installations.
+              (or (not provides-time)
+                  (provides-time . < . info-out-time))
               vers
               #f
               #f))))
