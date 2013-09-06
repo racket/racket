@@ -1,28 +1,19 @@
 #;#;
 #<<END
-TR info: invalid-unboxed-let.rkt 36:3 display -- hidden parameter
-TR info: invalid-unboxed-let.rkt 37:3 display -- hidden parameter
-TR info: invalid-unboxed-let.rkt 38:3 display -- hidden parameter
-TR info: invalid-unboxed-let.rkt 39:3 display -- hidden parameter
-TR opt: invalid-unboxed-let.rkt 32:0 (let ((t1 (+ 1.0+2.0i 2.0+4.0i)) (t2 (+ 3.0+6.0i 4.0+8.0i)) (t3 1.0+2.0i) (t4 1)) (display (+ t1 t1)) (display t2) (display t3) (display t4)) -- unboxed let bindings
-TR opt: invalid-unboxed-let.rkt 32:10 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 32:13 1.0+2.0i -- unboxed literal
-TR opt: invalid-unboxed-let.rkt 32:22 2.0+4.0i -- unboxed literal
-TR opt: invalid-unboxed-let.rkt 33:10 (+ 3.0+6.0i 4.0+8.0i) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 33:13 3.0+6.0i -- unboxed literal
-TR opt: invalid-unboxed-let.rkt 33:22 4.0+8.0i -- unboxed literal
-TR opt: invalid-unboxed-let.rkt 36:11 (+ t1 t1) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 36:11 (+ t1 t1) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 36:11 (+ t1 t1) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 36:11 (+ t1 t1) -- unboxed binary float complex
-TR opt: invalid-unboxed-let.rkt 36:14 t1 -- leave var unboxed
-TR opt: invalid-unboxed-let.rkt 36:14 t1 -- unbox float-complex
-TR opt: invalid-unboxed-let.rkt 36:14 t1 -- unbox float-complex
-TR opt: invalid-unboxed-let.rkt 36:14 t1 -- unbox float-complex
-TR opt: invalid-unboxed-let.rkt 36:17 t1 -- leave var unboxed
-TR opt: invalid-unboxed-let.rkt 36:17 t1 -- unbox float-complex
-TR opt: invalid-unboxed-let.rkt 36:17 t1 -- unbox float-complex
-TR opt: invalid-unboxed-let.rkt 36:17 t1 -- unbox float-complex
+TR info: invalid-unboxed-let.rkt 27:3 display -- hidden parameter
+TR info: invalid-unboxed-let.rkt 28:3 display -- hidden parameter
+TR info: invalid-unboxed-let.rkt 29:3 display -- hidden parameter
+TR info: invalid-unboxed-let.rkt 30:3 display -- hidden parameter
+TR opt: invalid-unboxed-let.rkt 23:0 (let ((t1 (+ 1.0+2.0i 2.0+4.0i)) (t2 (+ 3.0+6.0i 4.0+8.0i)) (t3 1.0+2.0i) (t4 1)) (display (+ t1 t1)) (display t2) (display t3) (display t4)) -- unboxed let bindings
+TR opt: invalid-unboxed-let.rkt 23:10 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 23:13 1.0+2.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 23:22 2.0+4.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 24:10 (+ 3.0+6.0i 4.0+8.0i) -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 24:13 3.0+6.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 24:22 4.0+8.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 27:11 (+ t1 t1) -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 27:14 t1 -- leave var unboxed
+TR opt: invalid-unboxed-let.rkt 27:17 t1 -- leave var unboxed
 END
 "6.0+12.0i7.0+14.0i1.0+2.0i1"
 
