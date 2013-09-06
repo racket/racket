@@ -10,7 +10,9 @@
  (contract-out
   [sep-lang (-> (listof nt?)
                 (values (listof nt?)
-                        (listof nt?)))]))
+                        (listof nt?)))]
+  [used-vars (-> (listof nt?)
+                 (listof symbol?))]))
 
 ;; sep-lang : lang -> lang lang
 ;; topologically sorts non-terminals by dependency
@@ -197,6 +199,52 @@
                             (and (not (cdr (assoc r1 rec-nts)))
                                  (cdr (assoc r2 rec-nts))))))))
      lang)))
+
+;; used-vars : lang -> (listof symbol)
+(define (used-vars lang)
+  (set->list
+   (fold-map/set
+    (λ (the-nt)
+       (fold-map/set
+        (λ (the-rhs)
+           (let loop ([pat (rhs-pattern the-rhs)])
+             (match-a-pattern
+              pat
+              [`any (set)]
+              [`number (set)]
+              [`string (set)]
+              [`natural (set)]
+              [`integer (set)]
+              [`real (set)]
+              [`boolean (set)]
+              [`variable (set)]
+              [`(variable-except ,s ...) (set)]
+              [`(variable-prefix ,s) (set)]
+              [`variable-not-otherwise-mentioned (set)]
+              [`hole (set)]
+              ;; Not sure
+              [`(nt ,id) (set)]
+              [`(name ,name ,pat) (set)]
+              [`(mismatch-name ,name ,pat) (set)]
+              [`(in-hole ,p1 ,p2)
+               (set-union (loop p1)
+                          (loop p2))]
+              [`(hide-hole ,p) (loop p)]
+              ;; not sure about these 2, but they are unsupported by enum anyway
+              [`(side-condition ,p ,g ,e) (set)] 
+              [`(cross ,s) (set)]
+              [`(list ,sub-pats ...)
+               (fold-map/set
+                (λ (sub-pat)
+                   (match sub-pat
+                     [`(repeat ,pat ,name ,mismatch)
+                      (loop pat)]
+                     [else (loop sub-pat)]))
+                sub-pats)]
+              [(? (compose not pair?))
+               (set pat)])))
+        (nt-rhs the-nt)))
+    lang)))
 
 ;; fold-map/set : (a -> setof b) (listof a) -> (setof b)
 (define (fold-map/set f l)

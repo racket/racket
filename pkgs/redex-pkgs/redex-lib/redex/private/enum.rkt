@@ -1,12 +1,13 @@
 #lang racket/base
 (require racket/contract
+         racket/function
          racket/list
          racket/match
-         racket/function
          racket/set
+
+         "enumerator.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
-         "enumerator.rkt"
          "recursive-lang.rkt")
 
 (provide 
@@ -19,7 +20,7 @@
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-(struct lang-enum (enums))
+(struct lang-enum (enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct decomposition (ctx term) #:transparent)
 (struct named (name val) #:transparent)
@@ -37,242 +38,131 @@
 
 (define (lang-enumerators lang)
   (define l-enums (make-hash))
+  (define unused-var/e
+    (except/e var/e
+              (used-vars lang)))
   (define (enumerate-lang cur-lang enum-f)
     (for-each
      (λ (nt)
         (hash-set! l-enums
                    (nt-name nt)
-                   (with-handlers ([exn:fail? fail/enum])
+                   (with-handlers ([exn:fail? fail/e])
                      (enum-f (nt-rhs nt)
                              l-enums))))
      cur-lang))
-  (let-values ([(fin-lang rec-lang) (sep-lang lang)])
+  (let-values ([(fin-lang rec-lang)
+                (sep-lang
+                 (map ((curry map-nt-rhs-pat) name-all-repeats)
+                      lang))])
     (enumerate-lang fin-lang
-                    enumerate-rhss)
+                    (λ (rhs enums)
+                       (enumerate-rhss rhs enums unused-var/e)))
     (enumerate-lang rec-lang
                     (λ (rhs enums)
-                       (thunk/enum +inf.f
-                                   (λ ()
-                                      (enumerate-rhss rhs enums)))))
+                       (thunk/e +inf.f
+                                (λ ()
+                                   (enumerate-rhss rhs enums unused-var/e)))))
 
-    (lang-enum l-enums)))
+    (lang-enum l-enums unused-var/e)))
 
 (define (pat-enumerator l-enum pat)
-  (map/enum
+  (map/e
    to-term
    (λ (_)
       (error 'pat-enum "Enumerator is not a  bijection"))
-   (pat/enum pat
-             (lang-enum-enums l-enum))))
+   (pat/e pat
+          (lang-enum-enums l-enum)
+          (lang-enum-unused-var/e l-enum))))
 
-(define (enumerate-rhss rhss l-enums)
-  (apply sum/enum
+(define (enumerate-rhss rhss l-enums unused/e)
+  (apply sum/e
          (map
           (λ (rhs)
-             (pat/enum (rhs-pattern rhs)
-                       l-enums))
+             (pat/e (rhs-pattern rhs)
+                    l-enums
+                    unused/e))
           rhss)))
 
-;; find-edges : lang -> (hash symbol -o> (setof symbol))
-(define (find-edges lang)
-  (foldl
-   (λ (nt m)
-      (hash-set
-       m (nt-name nt)
-       (fold-map/set
-        (λ (rhs)
-           (let loop ([pat (rhs-pattern rhs)]
-                      [s (set)])
-             (match-a-pattern
-              pat
-              [`any s]
-              [`number s]
-              [`string s]
-              [`natural s]
-              [`integer s]
-              [`real s]
-              [`boolean s]
-              [`variable s]
-              [`(variable-except ,v ...) s]
-              [`(variable-prefix ,v) s]
-              [`variable-not-otherwise-mentioned s]
-              [`hole s]
-              [`(nt ,id)
-               (set-add s id)]
-              [`(name ,name ,pat)
-               (loop pat s)]
-              [`(mismatch-name ,name ,pat)
-               (loop pat s)]
-              [`(in-hole ,p1 ,p2)
-               (set-union (loop p1 s)
-                          (loop p2 s))]
-              [`(hide-hole ,p) (loop p s)]
-              [`(side-condition ,p ,g ,e) s]
-              [`(cross ,s) s]
-              [`(list ,sub-pats ...)
-               (fold-map/set
-                (λ (sub-pat)
-                   (match sub-pat
-                     [`(repeat ,pat ,name ,mismatch)
-                      (loop pat s)]
-                     [else (loop sub-pat s)]))
-                sub-pats)]
-              [(? (compose not pair?)) s])))
-        (nt-rhs nt))))
-   (hash)
-   lang))
-
-;; find-cycles : (hashsymbol -o> (setof symbol)) -> (setof symbol)
-(define (find-cycles edges)
-  (foldl
-   (λ (v s)
-      (if (let rec ([cur v]
-                    [seen (set)])
-            (cond [(set-member? seen cur) #t]
-                  [else
-                   (ormap
-                    (λ (next)
-                       (rec next
-                            (set-add seen cur)))
-                    (set->list (hash-ref edges
-                                         cur)))]))
-          (set-add s v)
-          s))
-   (set)
-   (hash-keys edges)))
-
-;; calls-rec? : pat (setof symbol) -> bool
-(define (calls-rec? pat recs)
-  (let rec ([pat pat])
-    (match-a-pattern
-     pat
-     [`any #f]
-     [`number #f]
-     [`string #f]
-     [`natural #f]
-     [`integer #f]
-     [`real #f]
-     [`boolean #f]
-     [`variable #f]
-     [`(variable-except ,s ...) #f]
-     [`(variable-prefix ,s) #f]
-     [`variable-not-otherwise-mentioned #f]
-     [`hole #f]
-     [`(nt ,id)
-      (set-member? recs id)]
-     [`(name ,name ,pat)
-      (rec pat)]
-     [`(mismatch-name ,name ,pat)
-      (rec pat)]
-     [`(in-hole ,p1 ,p2)
-      (or (rec p1)
-          (rec p2))]
-     [`(hide-hole ,p) (rec p)]
-     [`(side-condition ,p ,g ,e) ;; error
-      (unsupported pat)]
-     [`(cross ,s)
-      (unsupported pat)] ;; error
-     [`(list ,sub-pats ...)
-      (ormap (λ (sub-pat)
-                (match sub-pat
-                  [`(repeat ,pat ,name ,mismatch)
-                   (rec pat)]
-                  [else (rec sub-pat)]))
-             sub-pats)]
-     [(? (compose not pair?)) #f])))
-
-;; fold-map : (a -> setof b) (listof a) -> (setof b)
-(define (fold-map/set f l)
-  (foldl
-   (λ (x s)
-      (set-union (f x) s))
-   (set)
-   l))
-
-;; sep-lang : lang -> lang lang
-;; topologically sorts non-terminals by dependency
-;; sorts rhs's so that recursive ones go last
-#;
-(define (sep-lang lang)
-  (define (filter-edges edges lang)
-    (foldl
-     (λ (nt m)
-        (let ([name (nt-name nt)])
-          (hash-set m name
-                    (hash-ref edges name))))
-     (hash)
-     lang))
-  (let* ([edges (find-edges lang)]
-         [cyclic-nts (find-cycles edges)])
-    (let-values ([(cyclic non-cyclic)
-                  (partition (λ (nt)
-                                (set-member? cyclic-nts (nt-name nt)))
-                             lang)])
-      (let ([sorted-left (topo-sort non-cyclic
-                                    (filter-edges edges non-cyclic))] ;; topological sort
-            [sorted-right (sort-nt-terms cyclic
-                                         cyclic-nts)] ;; rhs sort
-            )
-        (values sorted-left
-                sorted-right)))))
-
-;; recursive-rhss : lang (hash symbol -o> (setof symbol)) -> (hash symbol -o> (assoclist rhs bool))
-(define (recursive-rhss lang recs)
-  (foldl
-   (λ (nt m)
-      (let ([rhs (nt-rhs nt)])
-        (hash-set m (nt-name nt)
-                  (map (λ (rhs)
-                          (cons rhs
-                                (calls-rec? (rhs-pattern rhs)
-                                            recs)))
-                       rhs))))
-   (hash)
-   lang))
-
-;; topo-sort : lang (hash symbol -o> (setof symbol)) -> lang
-(define (topo-sort lang edges)
-  (define (find-top rem edges)
-    (let find ([rem rem])
-      (let ([v (car rem)])
-        (let check ([vs (hash-keys edges)])
-          (cond [(empty? vs) v]
-                [(set-member? (hash-ref edges (car vs))
-                              v)
-                 (find (cdr rem))]
-                [else (check (cdr vs))])))))
-  (let loop ([rem (hash-keys edges)]
-             [edges edges]
-             [out-lang '()])
-    (cond [(empty? rem) out-lang]
-          [else
-           (let ([v (find-top rem edges)])
-             (loop (remove v rem)
-                   (hash-remove edges v)
-                   (cons
-                    (findf
-                     (λ (nt)
-                        (eq? v (nt-name nt)))
-                     lang)
-                    out-lang)))])))
-
-;; sort-nt-terms : lang (setof symbol) -> lang
-(define (sort-nt-terms lang nts)
-  (let ([recs (recursive-rhss lang nts)])
-    (map
-     (λ (nt)
-        (let ([rec-nts (hash-ref recs (nt-name nt))])
-          (make-nt (nt-name nt)
-                   (sort (nt-rhs nt)
-                         (λ (r1 r2)
-                            (and (not (cdr (assoc r1 rec-nts)))
-                                 (cdr (assoc r2 rec-nts))))))))
-     lang)))
-
-(define (pat/enum pat l-enums)
+(define (pat/e pat l-enums unused/e)
   (enum-names pat
               (sep-names pat)
-              l-enums))
+              l-enums
+              unused/e))
+
+(define (map-nt-rhs-pat f nonterminal)
+  (nt (nt-name nonterminal)
+      (map (compose rhs f rhs-pattern)
+           (nt-rhs nonterminal))))
+
+;; map-names : (symbol -> symbol), (symbol, symbol -> symbol, symbol), pattern -> pattern
+(define (map-names namef repf pat)
+  (let loop ([pat pat])
+    (match-a-pattern
+     pat
+     [`any pat]
+     [`number pat]
+     [`string pat]
+     [`natural pat]
+     [`integer pat]
+     [`real pat]
+     [`boolean pat]
+     [`variable pat]
+     [`(variable-except ,s ...) pat]
+     [`(variable-prefix ,s) pat]
+     [`variable-not-otherwise-mentioned pat]
+     [`hole pat]
+     [`(nt ,id) pat]
+     [`(name ,n ,pat)
+      `(name ,n ,(namef pat))]
+     [`(mismatch-name ,n ,pat)
+      `(mismatch-name ,n ,(namef pat))]
+     [`(in-hole ,p1 ,p2)
+      `(in-hole ,(loop p1)
+                ,(loop p2))]
+     [`(hide-hole ,p)
+      `(hide-hole ,(loop p))]
+     [`(side-condition ,p ,g ,e) pat] ;; not supported
+     [`(cross ,s) pat] ;; not supported
+     [`(list ,sub-pats ...)
+      `(list
+        ,@(map (λ (sub-pat)
+                  (match sub-pat
+                    [`(repeat ,pat ,name ,mismatch)
+                     (let-values ([(new-name new-mis)
+                                   (repf name mismatch)])
+                       `(repeat ,(loop pat)
+                                ,new-name
+                                ,new-mis))]
+                    [else (loop sub-pat)]))
+               sub-pats))]
+     [(? (compose not pair?))
+      pat])))
+
+;; prepends '_' to all named repeats/mismatch repeats and names all
+;; unnamed repeats
+(define (name-all-repeats pat)
+  (let ([i 0])
+    (map-names identity
+               (λ (rep mis)
+                  (if (or rep mis)
+                      (begin0
+                          (values i #f)
+                        (set! i (+ i 1)))
+                      (values rep mis)))
+               (prefix-names pat))))
+
+(define (prefix-names pat)
+  (let ([prefix
+         (λ (s)
+            (and s
+                 (string->symbol
+                  (string-append "_"
+                                 (symbol->string s)))))])
+    (map-names identity
+               (λ (s1 s2)
+                  (values (prefix s1)
+                          (prefix s2)))
+               pat)))
 
 ;; sep-names : single-pattern lang -> named-pats
 (define (sep-names pat)
@@ -397,17 +287,17 @@
                             n)))
              (assoc-named n (cdr l)))]))
 
-(define (enum-names pat nps nt-enums)
+(define (enum-names pat nps nt-enums unused-var/e)
   (let rec ([nps nps]
             [env (hash)])
     (cond [(empty-named-pats? nps)
-           (pat/enum-with-names pat nt-enums env)]
+           (pat/e-with-names pat nt-enums env unused-var/e)]
           [else
            (let ([cur (next-named-pats nps)])
              (cond [(named? cur)
                     (let ([name (named-name cur)]
                           [pat (named-val cur)])
-                      (map/enum
+                      (map/e
                        (λ (ts)
                           (named name
                                  (named-t (car ts)
@@ -422,8 +312,8 @@
                                      "expected ~a, got ~a"
                                      name
                                      (named-name n))))
-                       (dep/enum
-                        (pat/enum-with-names pat nt-enums env)
+                       (dep/e
+                        (pat/e-with-names pat nt-enums env unused-var/e)
                         (λ (term)
                            (rec (rest-named-pats nps)
                                 (hash-set env
@@ -431,7 +321,7 @@
                                           term))))))]
                    [(mismatch? cur)
                     (let ([name (mismatch-name cur)])
-                      (map/enum
+                      (map/e
                        (λ (ts)
                           (mismatch name
                                     (mismatch-t (car ts)
@@ -446,15 +336,16 @@
                                      "expected ~a, got ~a"
                                      name
                                      (named-name n))))
-                       (dep/enum
+                       (dep/e
                         (fold-enum
                          (λ (excepts pat)
-                            (except/enum
-                             (pat/enum-with-names pat
-                                                  nt-enums
-                                                  (hash-set env
-                                                            (mismatch-name cur)
-                                                            excepts))
+                            (except/e
+                             (pat/e-with-names pat
+                                               nt-enums
+                                               (hash-set env
+                                                         (mismatch-name cur)
+                                                         excepts)
+                                               unused-var/e)
                              excepts))
                          (mismatch-val cur))
                         (λ (terms)
@@ -464,45 +355,45 @@
                                           terms))))))]
                    [else (error 'unexpected "expected name, mismatch or unimplemented, got: ~a in ~a" cur nps)]))])))
 
-(define (pat/enum-with-names pat nt-enums named-terms)
+(define (pat/e-with-names pat nt-enums named-terms unused-var/e)
   (let loop ([pat pat])
     (match-a-pattern
      pat
      [`any 
-      (sum/enum
-       any/enum
-       (listof/enum any/enum))]
-     [`number num/enum]
-     [`string string/enum]
-     [`natural natural/enum]
-     [`integer integer/enum]
-     [`real real/enum]
-     [`boolean bool/enum]
-     [`variable var/enum]
+      (sum/e
+       any/e
+       (listof/e any/e))]
+     [`number num/e]
+     [`string string/e]
+     [`natural natural/e]
+     [`integer integer/e]
+     [`real real/e]
+     [`boolean bool/e]
+     [`variable var/e]
      [`(variable-except ,s ...)
-      (except/enum var/enum s)]
+      (except/e var/e s)]
      [`(variable-prefix ,s)
       ;; todo
       (error 'unimplemented "var-prefix")]
      [`variable-not-otherwise-mentioned
-      (error 'unimplemented "var-not-mentioned")] ;; error
+      unused-var/e]
      [`hole
-      (const/enum the-hole)]
+      (const/e the-hole)]
      [`(nt ,id)
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
-      (const/enum (name-ref n))]
+      (const/e (name-ref n))]
      [`(mismatch-name ,n ,pat)
-      (const/enum (mismatch-ref n))]
+      (const/e (mismatch-ref n))]
      [`(in-hole ,p1 ,p2) ;; untested
-      (map/enum
+      (map/e
        (λ (ts)
           (decomposition (car ts)
                          (cdr ts)))
        (λ (decomp)
           (cons (decomposition-ctx decomp)
                 (decomposition-term decomp)))
-       (prod/enum
+       (prod/e
         (loop p1)
         (loop p2)))]
      [`(hide-hole ,p)
@@ -513,22 +404,22 @@
       (unsupported pat)]
      [`(list ,sub-pats ...)
       ;; enum-list
-      (list/enum
+      (list/e
        (map
         (λ (sub-pat)
            (match sub-pat
              [`(repeat ,pat #f #f)
-              (map/enum
+              (map/e
                (λ (n-ts)
                   (repeat (car n-ts)
                           (cdr n-ts)))
                (λ (rep)
                   (cons (repeat-n rep)
                         (repeat-terms rep)))
-               (dep/enum
+               (dep/e
                 nats
                 (λ (n)
-                   (list/enum
+                   (list/e
                     (build-list n (const (loop pat)))))))]
              [`(repeat ,pat ,name #f)
               (error 'unimplemented "named-repeat")]
@@ -537,7 +428,7 @@
              [else (loop sub-pat)]))
         sub-pats))]
      [(? (compose not pair?)) 
-      (const/enum pat)])))
+      (const/e pat)])))
 
 (define (flatten-1 xs)
   (append-map
@@ -556,45 +447,50 @@
            (nt-rhs (car nts))]
           [else (rec (cdr nts))])))
 
-(define natural/enum nats)
+(define natural/e nats)
 
-(define char/enum
-  (map/enum
+(define char/e
+  (map/e
    integer->char
    char->integer
-   (range/enum #x61 #x7a)))
+   (range/e #x61 #x7a)))
 
-(define string/enum
-  (map/enum
+(define string/e
+  (map/e
    list->string
    string->list
-   (listof/enum char/enum)))
+   (listof/e char/e)))
 
-(define integer/enum
-  (sum/enum nats
-            (map/enum (λ (n) (- (+ n 1)))
-                      (λ (n) (- (- n) 1))
-                      nats)))
+(define integer/e
+  #; ;; Simple "turn down the volume" list
+  (from-list/e '(0 1 -1))
+  (sum/e nats
+         (map/e (λ (n) (- (+ n 1)))
+                (λ (n) (- (- n) 1))
+                nats)))
 
-(define real/enum (from-list/enum '(0.5 1.5 123.112354)))
-(define num/enum
-  (sum/enum integer/enum
-            real/enum))
+;; This is really annoying so I turned it off
+(define real/e empty/e)
+(define num/e
+  (sum/e integer/e
+         real/e))
 
-(define bool/enum
-  (from-list/enum '(#t #f)))
+(define bool/e
+  (from-list/e '(#t #f)))
 
-(define var/enum
-  (map/enum
+(define var/e
+  #; ;; "turn down the volume" variables
+  (from-list/e '(x y z))
+  (map/e
    (compose string->symbol list->string list)
    (compose car string->list symbol->string)
-   char/enum))
+   char/e))
 
-(define any/enum
-  (sum/enum num/enum
-            string/enum
-            bool/enum
-            var/enum))
+(define any/e
+  (sum/e num/e
+         string/e
+         bool/e
+         var/e))
 
 (define (to-term aug)
   (cond [(named? aug)
