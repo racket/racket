@@ -7,24 +7,24 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (contract-req))
 
-(provide abstract-results)
-
+(provide abstract-results
+         combine-props
+         tc-results->values)
 
 (define/cond-contract (abstract-results results arg-names)
-     (tc-results/c (listof identifier?) . -> . SomeValues/c)
-     (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
-     (match results
-       [(tc-any-results:) (make-AnyValues)]
-       [(tc-results: ts fs os dty dbound)
-        (make-ValuesDots
-         (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-           (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
-         dty dbound)]
-       [(tc-results: ts fs os)
-        (make-Values
-         (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-           (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
-
+  (tc-results/c (listof identifier?) . -> . SomeValues/c)
+  (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
+  (match results
+    [(tc-any-results:) (make-AnyValues)]
+    [(tc-results: ts fs os dty dbound)
+     (make-ValuesDots
+      (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
+        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
+      dty dbound)]
+    [(tc-results: ts fs os)
+     (make-Values
+      (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
+        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
 
 (define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
@@ -36,7 +36,6 @@
   (match o
     [(Path: p (lookup: idx)) (make-Path p idx)]
     [_ -no-obj]))
-
 
 (define/cond-contract (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
@@ -73,9 +72,6 @@
   (match tc
     [(tc-any-results:) ManyUniv]
     [(tc-results: ts) (-values ts)]))
-
-(provide combine-props tc-results->values)
-
 
 (define/cond-contract (resolve atoms prop)
   ((listof Filter/c)
@@ -145,5 +141,4 @@
             [(Top:) (loop derived-props derived-atoms (cdr worklist))]
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
-
 
