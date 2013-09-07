@@ -483,7 +483,11 @@
   (from-list/e '(x y z))
   (map/e
    (compose string->symbol list->string list)
-   (compose car string->list symbol->string)
+   (λ (sym)
+      (let ([chars (string->list (symbol->string sym))])
+        (match chars
+          [`(,c) c]
+          [_     (error "not an enumerated variable name")])))
    char/e))
 
 (define any/e
