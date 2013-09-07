@@ -118,11 +118,11 @@
 
    [(-values (list -Number)) (-values (list Univ))]
 
-   [(-poly (b) ((Un (make-Base 'foo #'dummy values #'values #f)
+   [(-poly (b) ((Un (make-Base 'foo #'dummy values #f)
                     (-struct #'bar #f
                              (list (make-fld -Number #'values #f) (make-fld b #'values #f))))
                 . -> . (-lst b)))
-    ((Un (make-Base 'foo #'dummy values #'values #f) (-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f))))
+    ((Un (make-Base 'foo #'dummy values #f) (-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f))))
      . -> . (-lst (-pair -Number (-v a))))]
    [(-poly (b) ((-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld b #'values #f))) . -> . (-lst b)))
     ((-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f))) . -> . (-lst (-pair -Number (-v a))))]
