@@ -5,6 +5,7 @@
 (define deps
   '(("racket-win32-i386" #:platform "win32\\i386")
     ("racket-win32-x86_64" #:platform "win32\\x86_64")
+    ("db-ppc-macosx" #:platform "ppc-macosx")
     ("db-win32-i386" #:platform "win32\\i386")
     ("db-win32-x86_64" #:platform "win32\\x86_64")
     ("com-win32-i386" #:platform "win32\\i386")
