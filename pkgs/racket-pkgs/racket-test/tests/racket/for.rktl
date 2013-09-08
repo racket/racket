@@ -383,10 +383,16 @@
         (define-sequence-syntax in-X* (lambda () #'in-X) (lambda (stx) #f))
         (for/list ([x (in-X* #:x '(1 2 3))]) x)))
 
+
+;; extra tests for #:break and #:final
 (test '((0 0) (0 1) (1 0) (1 1)) 'multi-level-break
       (for*/list ([i 4] [j 2] #:break (= i 2)) (list i j)))
 (test '((1 0 0) (1 0 1) (1 1 0) (1 1 1)) 'multi-level-break
       (for/list ([i 5] #:when (odd? i) [j 2] #:when #t [k 2] #:break (= i 3))
         (list i j k)))
+(test '((0 0) (0 1) (1 0) (1 1) (2 0)) 'outer-loop-final
+      (for*/list ([i 4][j 2] #:final (= i 2)) (list i j)))
+(test '((0 0) (0 1) (1 0) (1 1) (2 0)) 'outer-loop-final
+      (for/list ([i 4]  #:final (= i 2) [j 2]) (list i j)))
 
 (report-errs)
