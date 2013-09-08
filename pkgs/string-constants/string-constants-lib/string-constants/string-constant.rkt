@@ -20,9 +20,11 @@
 
 (provide string-constant string-constants 
          this-language all-languages set-language-pref)
-(provide/contract
- [dynamic-string-constant (-> symbol? string?)]
- [dynamic-string-constants (-> symbol? (listof string?))])
+(provide
+ (contract-out
+  [string-constant? (-> any/c boolean?)]
+  [dynamic-string-constant (-> string-constant? string?)]
+  [dynamic-string-constants (-> string-constant? (listof string?))]))
 
 ;; set-language-pref : symbol -> void
 (define (set-language-pref language)
@@ -108,6 +110,11 @@
                         (λ ()
                           (error who
                                  "unknown string-constant\n  key: ~e" key))))))
+
+(define (string-constant? sym)
+  (and (hash-ref (sc-constants first-string-constant-set) sym #f)
+       #t))
+              
 
 (define already-warned? #f)
 (define (show-warning-message)

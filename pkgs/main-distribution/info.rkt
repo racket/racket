@@ -62,7 +62,7 @@
                "slideshow"
                "snip"
                "srfi"
-               "string-constants-lib"
+               "string-constants"
                "swindle"
                "syntax-color"
                "trace"

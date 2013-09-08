@@ -13,7 +13,8 @@
                      "syntax-color-lib"
                      "wxme-lib"
                      "gui-lib"
-                     "racket-doc"))
+                     "racket-doc"
+                     "string-constants-doc"))
 (define deps '("base"))
 
 (define pkg-desc "documentation part of \"gui\"")

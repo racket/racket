@@ -38,6 +38,7 @@
                "drracket-plugin-lib"
                "gui-pkg-manager-lib"))
 (define build-deps '("compatibility-doc"
+                     "string-constants-doc"
                      "draw-doc"
                      "errortrace-doc"
                      "gui-doc"

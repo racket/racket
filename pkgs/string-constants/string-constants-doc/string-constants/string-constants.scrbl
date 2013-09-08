@@ -23,16 +23,20 @@ This form returns the string constant named @racket[name].}
 This form returns a list of string constants, one for each language
 that DrRacket's GUI supports.}
 
-@defproc[(dynamic-string-constant [name symbol?]) string?]{
+@defproc[(dynamic-string-constant [name string-constant?]) string?]{
   This, like @racket[string-constant], returns the string constant
   named @racket[name], but without any compile-time checking on the
   argument.
 }
 
-@defproc[(dynamic-string-constants [name symbol?]) (listof string?)]{
+@defproc[(dynamic-string-constants [name string-constant?]) (listof string?)]{
   This, like @racket[string-constants], returns the string constants
   matching @racket[name], but without any compile-time checking on the
   argument.
+}
+
+@defproc[(string-constant? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a symbol naming a known string constant.
 }
 
 @defform[(this-language)]{
