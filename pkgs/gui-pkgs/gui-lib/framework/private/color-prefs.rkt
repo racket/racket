@@ -815,6 +815,9 @@
     [found-color-scheme found-color-scheme]
     [else (car known-color-schemes)]))
 
+(define (get-current-color-scheme-name)
+  (color-scheme-name (get-current-color-scheme)))
+
 ;; string -> (or/c #f color-scheme?)
 (define (lookup-color-scheme name)
   (for/or ([known-color-scheme (in-list known-color-schemes)])

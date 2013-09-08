@@ -433,7 +433,7 @@
      
      add-color-scheme-preferences-panel
      set-current-color-scheme
-     get-current-color-scheme
+     get-current-color-scheme-name
      known-color-scheme-name?
      color-scheme-style-name?
      lookup-in-color-scheme

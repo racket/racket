@@ -1950,11 +1950,12 @@
   (-> symbol? void?)
   (name)
   @{Sets
-    the current color scheme to @racket[name], if @racket[name] is
-    @racket[color-prefs:known-color-scheme-name?]. Otherwise, does nothing.})
+    the current color scheme to the scheme named @racket[name], 
+    if @racket[name] is @racket[color-prefs:known-color-scheme-name?].
+    Otherwise, does nothing.})
  
  (proc-doc
-  color-prefs:get-current-color-scheme
+  color-prefs:get-current-color-scheme-name
   (-> color-prefs:color-scheme-style-name?)
   @{Returns the current color scheme's name.})
  
