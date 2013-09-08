@@ -395,4 +395,29 @@
 (test '((0 0) (0 1) (1 0) (1 1) (2 0)) 'outer-loop-final
       (for/list ([i 4]  #:final (= i 2) [j 2]) (list i j)))
 
+(test '((0 0) (0 1) (1 0) (1 1)) 'break-and-final
+ (for*/list ([i 4][j 2] #:final (= i 2) #:break (= i 2)) (list i j)))
+
+(test '((0 0) (0 1) (1 0) (1 1)) 'break-and-final
+ (for*/list ([i 4][j 2] #:break (= i 2) #:final (= i 2)) (list i j)))
+
+(test '((0 1) (1 1)) 'skipped-final
+      (for*/list ([i 4][j 2] #:final (= i 2) #:unless (= j 0)) (list i j)))
+
+;; check #:break and #:final in body with exprs in between
+(test (list 0 1) 'nested-body-break
+      (for/list ([i 4]) (define j (add1 i)) #:break (= j 3) i))
+(test (list 0 1 2) 'nested-body-final
+      (for/list ([i 4]) (define j (add1 i)) #:final (= j 3) i))
+(test '((0 0) (0 1) (1 0) (1 1)) 'nested-body-break-and-final
+      (for*/list ([i 4][j 2]) 
+        (define k i) #:final (= k 2)
+        (define m i) #:break (= m 2) 
+        (list i j)))
+(test '((0 0) (0 1) (1 0) (1 1)) 'nested-body-break-and-final
+      (for*/list ([i 4][j 2]) 
+        (define m i) #:break (= m 2) 
+        (define k i) #:final (= k 2)
+        (list i j)))
+
 (report-errs)
