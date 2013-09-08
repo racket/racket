@@ -902,6 +902,11 @@
              (~a "could not find checksum for github package source, which implies it doesn't exist\n"
                  "  source: ~a")
              pkg))
+          (when (equal? checksum "")
+            (pkg-error 
+             (~a "cannot use empty checksum for github package source\n"
+                 "  source: ~a")
+             pkg))
           (match-define (list* user repo branch path)
                         (split-github-url pkg-url))
           (define new-url
@@ -1154,6 +1159,7 @@
                       (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f download-printf))
+    (log-pkg-debug "catalog response: ~s" catalog-info)
     (define source (hash-ref catalog-info 'source))
     (define checksum (hash-ref catalog-info 'checksum))
     (define info (stage-package/info source
