@@ -29,7 +29,7 @@
                        framework/private/decorated-editor-snip))
 
 (require (for-doc racket/base scribble/manual framework/private/mapdesc
-                  setup/getinfo racket/pretty))
+                  setup/getinfo racket/pretty string-constants))
 
 (provide-signature-elements
  (prefix application: framework:application-class^)
@@ -1887,7 +1887,8 @@
     color scheme. Each hash table should have keys that specify
     details of the color scheme, as follows:
     @itemlist[@item{@racket['name]: must be either a string or a symbol;
-                     if it is a symbol, it is passed to @racket[dynamic-string-constant]
+                     if it is a symbol and @racket[string-constant?], 
+                     it is passed to @racket[dynamic-string-constant]
                      to get the name; otherwise it is used as the name directly.
                      If absent, the name of the directory containing the @filepath{info.rkt}
                      file is used as the name.}
@@ -1920,8 +1921,29 @@
        (define-values (base name dir?) (split-path pth))
        (define info (get-info/full base))
        (unless info (error 'framework/main.rkt "could not find example for modern color scheme"))
-       (parameterize ([pretty-print-columns 60])
-         (codeblock (pretty-format (info 'framework:color-schemes)))))})
+       (define key 'framework:color-schemes)
+       (define datum (info key))
+       (define name-as-string-datum
+         (let loop ([datum datum])
+           (cond
+             [(list? datum)
+              (for/list ([datum (in-list datum)])
+                (loop datum))]
+             [(hash? datum)
+              (for/hash ([(k v) (in-hash datum)])
+                (if (and (equal? k 'name) (string-constant? v))
+                    (values k (dynamic-string-constant v))
+                    (values k (loop v))))]
+             [else datum])))
+       (define sp (open-output-string))
+       (parameterize ([pretty-print-columns 60]
+                      [current-output-port sp])
+         (pretty-write
+          `(define ,key 
+             ',name-as-string-datum)))
+       (codeblock 
+        (string-append "#lang info\n"
+                       (get-output-string sp))))})
  
  (proc-doc/names
   color-prefs:set-current-color-scheme

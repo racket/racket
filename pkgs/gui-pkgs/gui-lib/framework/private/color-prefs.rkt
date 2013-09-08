@@ -646,7 +646,9 @@
            (define mapping (hash-ref one-scheme 'colors '()))
            (define example (hash-ref one-scheme 'example default-example))
            (register-color-scheme (if (symbol? name)
-                                      (dynamic-string-constant name)
+                                      (if (string-constant? name)
+                                          (dynamic-string-constant name)
+                                          (symbol->string name))
                                       name)
                                   white-on-black-base?
                                   mapping
