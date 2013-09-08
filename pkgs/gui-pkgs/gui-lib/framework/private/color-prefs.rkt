@@ -992,10 +992,9 @@
                          [style '(auto-hscroll no-vscroll)]
                          [editor t]))
          (send ec set-canvas-background
-               (send the-color-database find-color
-                     (if (color-scheme-white-on-black-base? color-scheme)
-                         "black"
-                         "white")))
+               (lookup-in-color-scheme/given-mapping 
+                'framework:basic-canvas-background
+                (hash) color-scheme))
          (send t set-style-list (color-scheme->style-list color-scheme))
          (send ec set-line-count (+ 1 (for/sum ([c (in-string str)])
                                         (if (equal? c #\newline)
