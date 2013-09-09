@@ -313,7 +313,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (hex-string->bytes s)
   (unless (and (string? s) (regexp-match? #px"^([[:xdigit:]]{2})*$" s))
     (raise-argument-error 'hex-string->bytes
-                          "string containing an even number of hexadecimal digits" s))
+                          "(and/c string? #px\"^([[:xdigit:]]{2})*$\")" s))
   
   (define (hex-char->int c)
     (cond ((char<=? #\0 c #\9) (- (char->integer c) (char->integer #\0)))
