@@ -27,7 +27,7 @@ are provided as well; for example, the
 
 @margin-note{Many forms in Typed Racket have the same name as the
 untyped forms, with a @racket[:] suffix.}
-This defines a new structure, name @racket[pt], with two fields,
+This defines a new structure, named @racket[pt], with two fields,
 @racket[x] and @racket[y].  Both fields are specified to have the type
 @racket[Real], which corresponds to the @rtech{real numbers}.
  The
