@@ -7,7 +7,7 @@
 @(define the-eval (make-base-eval))
 @(the-eval '(require typed/racket))
 
-@title[#:tag "occurrence"]{Occurrence Typing}
+@title[#:tag "occurrence-typing"]{Occurrence Typing}
 
 @section{Basic Occurrence Typing}
 

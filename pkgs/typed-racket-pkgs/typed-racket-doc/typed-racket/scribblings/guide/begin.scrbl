@@ -114,6 +114,10 @@ process of elimination we can determine that @racket[t] must be a
 @racket[node].  Therefore, we can use accessors such as
 @racket[node-left] and @racket[node-right] with @racket[t] as input.
 
+The process by which Typed Racket type-checks the bodies of the
+@racket[cond] clauses, using information from the predicate checks,
+is called @tech{occurrence typing} and is described in detail in
+@Secref["occurrence-typing"].
 
 @section{Type Errors}
 
