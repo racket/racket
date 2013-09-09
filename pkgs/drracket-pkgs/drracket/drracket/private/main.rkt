@@ -3,6 +3,7 @@
 (require string-constants
          racket/contract
          racket/class
+         racket/pretty
          drracket/private/drsig
          "frame-icon.rkt"
          mred
@@ -13,7 +14,12 @@
          racket/dict
          racket/set
          browser/external
-         setup/plt-installer)
+         setup/plt-installer
+         
+         scribble/tag
+         setup/xref
+         scribble/xref
+         net/url)
 
 (import [prefix drracket:app: drracket:app^]
         [prefix drracket:unit: drracket:unit^]
@@ -33,7 +39,9 @@
 (define (drr:set-default name val predicate)
   (preferences:set-default 
    name val predicate 
-   #:aliases (list (string->symbol (regexp-replace #rx"^drracket:" (symbol->string name) "drscheme:")))))
+   #:aliases (list (string->symbol (regexp-replace #rx"^drracket:" 
+                                                   (symbol->string name)
+                                                   "drscheme:")))))
 
 (frame:current-icon todays-icon)
   
@@ -76,10 +84,13 @@
                                          (listof (listof symbol?)))))
 (preferences:set-default 'drracket:defs/ints-labels #t boolean?)
 
-(drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
-(preferences:set-default 'drracket:language-dialog:teaching-hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
+(drr:set-default 'drracket:language-dialog:hierlist-default #f 
+                 (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
+(preferences:set-default 'drracket:language-dialog:teaching-hierlist-default #f
+                         (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
 
-(drr:set-default 'drracket:create-executable-gui-type 'stand-alone (λ (x) (memq x '(launcher stand-alone distribution))))
+(drr:set-default 'drracket:create-executable-gui-type 'stand-alone 
+                 (λ (x) (memq x '(launcher stand-alone distribution))))
 (drr:set-default 'drracket:create-executable-gui-base 'racket (λ (x) (memq x '(racket gracket))))
 
 (drr:set-default 'drracket:logger-gui-tab-panel-level 0 (λ (x) (and (exact-integer? x) (<= 0 x 5)))) 
@@ -263,7 +274,50 @@
   
 
 (drracket:font:setup-preferences)
-(color-prefs:add-color-scheme-preferences-panel)
+(color-prefs:add-color-scheme-preferences-panel
+ #:extras
+ (λ (parent)
+   (define hp (new horizontal-panel% 
+                   [alignment '(center center)]
+                   [parent parent]
+                   [stretchable-height #f]))
+   (new button% 
+        [label (string-constant design-your-own-color-schemes)]
+        [callback 
+         (λ args
+           
+           (define xref (load-collections-xref))
+           (define-values (path tag)
+             (xref-tag->path+anchor
+              xref
+              (make-section-tag "color-scheme"
+                                #:doc '(lib "scribblings/drracket/drracket.scrbl"))))
+           (define url (path->url path))
+           (define url2 (if tag
+                            (make-url (url-scheme url)
+                                      (url-user url)
+                                      (url-host url)
+                                      (url-port url)
+                                      (url-path-absolute? url)
+                                      (url-path url)
+                                      (url-query url)
+                                      tag)
+                            url))
+           (send-url (url->string url2)))]
+        [parent hp])
+   (new button% 
+        [label (string-constant style-and-color-names)]
+        [callback 
+         (λ args
+           (define sp (open-output-string))
+           (define-values (color-names style-names) (color-prefs:get-color-scheme-names))
+           (fprintf sp "color names:\n")
+           (pretty-write (sort (set->list color-names) symbol<?) sp)
+           (fprintf sp "style names:\n")
+           (pretty-write (sort (set->list style-names) symbol<?) sp)
+           (message-box (string-constant drracket)
+                        (get-output-string sp)))]
+        [parent hp])))
 (color-prefs:add-background-preferences-panel)
 (racket:add-preferences-panel)
 (racket:add-coloring-preferences-panel)
@@ -385,17 +439,17 @@
                                        (or/c false/c string?)
                                        #f)
 
-(drracket:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
-(drracket:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
-(drracket:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)
-(drracket:language:register-capability 'drscheme:special:insert-image (flat-contract boolean?) #t)
-(drracket:language:register-capability 'drscheme:special:insert-comment-box (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:special:insert-fraction boolean? #t)
+(drracket:language:register-capability 'drscheme:special:insert-large-letters boolean? #t)
+(drracket:language:register-capability 'drscheme:special:insert-lambda boolean? #t)
+(drracket:language:register-capability 'drscheme:special:insert-image boolean? #t)
+(drracket:language:register-capability 'drscheme:special:insert-comment-box boolean? #t)
 (drracket:language:register-capability 'drscheme:language-menu-title 
                                        (flat-contract string?)
                                        (string-constant scheme-menu-name))
 
 (drracket:language:register-capability 'drscheme:teachpack-menu-items
-                                       (or/c false/c (flat-contract drracket:unit:teachpack-callbacks?))
+                                       (or/c #f (flat-contract drracket:unit:teachpack-callbacks?))
                                        #f)
 
 (handler:current-create-new-window
@@ -439,10 +493,13 @@
         (when exprs-pref
           (trim (second exprs-pref)
                 (λ (trimmed)
-                  (put-preferences (list 'plt:framework-prefs)
-                                   (list (dict-set framework-prefs 'drscheme:console-previous-exprs (list trimmed)))
-                                   void)))))))
-  (trim (get-preference 'plt:framework-pref:drscheme:console-previous-exprs #:timeout-lock-there (λ (x) #f))
+                  (put-preferences
+                   (list 'plt:framework-prefs)
+                   (list (dict-set framework-prefs 'drscheme:console-previous-exprs (list trimmed)))
+                   void)))))))
+  (trim (get-preference 'plt:framework-pref:drscheme:console-previous-exprs
+                        #:timeout-lock-there
+                        (λ (x) #f))
         (λ (trimmed)
           (put-preferences (list 'plt:framework-pref:drscheme:console-previous-exprs)
                            (list trimmed)

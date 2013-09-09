@@ -558,6 +558,9 @@ please adhere to these guidelines:
   (classic-color-scheme "Classic") ;; formerly called 'black on white'
   (modern-color-scheme "Modern")   ;; an attempt to be more color-blind friendly
   (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
+  ; drracket additions to the color scheme dialog; two buttons
+  (design-your-own-color-schemes "Design Your Own Color Schemes") ; pointer to (english-only) docs
+  (style-and-color-names "Style && Color Names")
   
   (add-spacing-between-lines "Add one pixel of extra space between lines")
   

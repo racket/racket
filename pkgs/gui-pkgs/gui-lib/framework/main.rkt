@@ -4,6 +4,7 @@
          racket/unit
          racket/class
          racket/gui/base
+         racket/set
          mred/mred-unit
          framework/framework-unit
          framework/private/sig
@@ -1871,10 +1872,15 @@
     If @racket[style] is provided, a new style is registered; if not a color is
     registered.})
  
- (proc-doc
+ (proc-doc/names
   color-prefs:add-color-scheme-preferences-panel
-  (-> void?)
-  @{Adds a panel for choosing a color-scheme to the preferences dialog.})
+  (->* () (#:extras (-> (is-a?/c panel%) any)) void?)
+  (() ((extras void)))
+  @{Adds a panel for choosing a color-scheme to the preferences dialog.
+    
+    The @racket[extras] argument is called after the color schemes have been added
+    to the preferences panel. It is passed the panel containing the color schemes
+    and can add items to it.})
  
  (proc-doc
   color-prefs:register-info-based-color-schemes
@@ -1913,37 +1919,7 @@
     is called, it logs the active set of color names and style names to the @tt{color-scheme}
     logger at the info level. So, for example, starting up DrRacket like this:
     @tt{racket -W info@"@"color-scheme -l drracket} will print out the styles used in your
-    version of DrRacket.
-    
-    As an example, this is the specification of the @racket["Modern"] style:
-    @(let ()
-       (define pth (collection-file-path "info.rkt" "drracket"))
-       (define-values (base name dir?) (split-path pth))
-       (define info (get-info/full base))
-       (unless info (error 'framework/main.rkt "could not find example for modern color scheme"))
-       (define key 'framework:color-schemes)
-       (define datum (info key))
-       (define name-as-string-datum
-         (let loop ([datum datum])
-           (cond
-             [(list? datum)
-              (for/list ([datum (in-list datum)])
-                (loop datum))]
-             [(hash? datum)
-              (for/hash ([(k v) (in-hash datum)])
-                (if (and (equal? k 'name) (string-constant? v))
-                    (values k (dynamic-string-constant v))
-                    (values k (loop v))))]
-             [else datum])))
-       (define sp (open-output-string))
-       (parameterize ([pretty-print-columns 60]
-                      [current-output-port sp])
-         (pretty-write
-          `(define ,key 
-             ',name-as-string-datum)))
-       (codeblock 
-        (string-append "#lang info\n"
-                       (get-output-string sp))))})
+    version of DrRacket.})
  
  (proc-doc/names
   color-prefs:set-current-color-scheme
@@ -2020,6 +1996,14 @@
     
     If @racket[weak?] is @racket[#t], the @racket[fn] argument is held
     onto weakly; otherwise it is held onto strongly.})
+ 
+ (proc-doc
+  color-prefs:get-color-scheme-names
+  (-> (values set? set?))
+  @{Returns two sets; the first is the known color scheme names that are just colors
+    and the second is the known color scheme names that are styles.
+    
+    These are all of the names that have been passed to @racket[color-prefs:add-color-scheme-entry].})
  )
 
 

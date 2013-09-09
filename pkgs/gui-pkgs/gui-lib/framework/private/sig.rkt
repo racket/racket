@@ -440,7 +440,8 @@
      set-in-color-scheme
      register-color-scheme-entry-change-callback
      add-color-scheme-entry
-     register-info-based-color-schemes))
+     register-info-based-color-schemes
+     get-color-scheme-names))
   
   (define-signature racket-class^
     (text<%>

@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt"
           scribble/decode scribble/eval scribble/struct scribble/racket
-          (for-label racket/gui/base))
+          (for-label racket/gui/base framework)
+          setup/getinfo racket/pretty string-constants)
 
 @(define (ioinputfont . s)
    (apply tt s))
@@ -764,6 +765,74 @@ A module browser window contains a square for each
   if you type something there, then all of the modules whose filenames match
   what you type will turn green in the module window. This bar is only visible
   in the stand alone module browser window (via the @onscreen{Racket} menu)
+
+@section[#:tag "color-scheme"]{Color Schemes}
+
+DrRacket comes with three different color schemes, available in the preferences dialog's
+@onscreen{color} panel.
+
+You can add your own color schemes to DrRacket, too. The first step is to
+create a pkg (see @secref["how-to-create" #:doc '(lib "pkg/scribblings/pkg.scrbl")])
+and add an @filepath{info.rkt} file to it. The file should define
+@racket[framework:color-schemes] as a list of hashes that describe the color schemes.
+
+@(define example-key #f)
+
+As an example, this is the specification of the @racket["Modern"] style:
+@(let ()
+   (define pth (collection-file-path "info.rkt" "drracket"))
+   (define-values (base name dir?) (split-path pth))
+   (define info (get-info/full base))
+   (unless info (error 'framework/main.rkt "could not find example for modern color scheme"))
+   (define key 'framework:color-schemes)
+   (define datum (info key))
+   (define name-as-string-datum
+     (let loop ([datum datum])
+       (cond
+         [(list? datum)
+          (for/list ([datum (in-list datum)])
+            (loop datum))]
+         [(hash? datum)
+          (for/hash ([(k v) (in-hash datum)])
+            (if (and (equal? k 'name) (string-constant? v))
+                (values k (dynamic-string-constant v))
+                (values k (loop v))))]
+         [(and (symbol? datum)
+               (regexp-match #rx"framework:" (symbol->string datum)))
+          (unless example-key (set! example-key datum))
+          datum]
+         [else datum])))
+   (define sp (open-output-string))
+   (parameterize ([pretty-print-columns 60]
+                  [current-output-port sp])
+     (pretty-write
+      `(define ,key 
+         ',name-as-string-datum)))
+   (codeblock 
+    (string-append "#lang info\n"
+                   (get-output-string sp))))
+
+Each of the keys, e.g., @code[(format "~s" `',example-key)], maps to a color and possibly to
+some style information. All keys accept colors (the vectors shown
+above represent colors in r/g/b format), but only some accept style information. To
+find out which are which and to get a complete list of the possible keys, click the button
+labeled @onscreen[(regexp-replace #rx"&&" (string-constant style-and-color-names) "&")]
+at the bottom of the 
+@onscreen[(string-constant color-schemes)] tab of the
+@onscreen[(string-constant preferences-colors)] tab in the preferences dialog.
+If one can accept style information, then you may include any of the symbols @racket['bold],
+@racket['underline], or @racket['italic] in the list with the color.
+
+Full details on the specification of the info files can be found in the documentation
+for the function @racket[color-prefs:register-info-based-color-schemes].
+
+You may have to restart DrRacket (and, at least the first time after you add the @filepath{info.rkt}
+file, re-run @tt{raco setup}) to see changes to your color scheme.
+
+Color schemes are not limited only to the colors that DrRacket already knows about.
+If you are adding your own plugin to DrRacket, you can add new names that can be 
+mapped in the color scheme. See @racket[color-prefs:register-color-preference] for
+more information.
 
 @section[#:tag "create-exe"]{Creating Executables}
 

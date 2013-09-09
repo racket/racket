@@ -622,6 +622,8 @@
 (define known-color-names (set))
 (define known-style-names (set))
 
+(define (get-color-scheme-names) (values known-color-names known-style-names))
+
 (define-logger color-scheme)
 
 (define (register-info-based-color-schemes)
@@ -972,7 +974,7 @@
        (editor:set-standard-style-list-delta style-name sd)))
     (editor:set-standard-style-list-delta style-name (lookup-in-color-scheme name))))
 
-(define (add-color-scheme-preferences-panel)
+(define (add-color-scheme-preferences-panel #:extras [extras void])
   (preferences:add-panel
    (list (string-constant preferences-colors)
          (string-constant color-schemes))
@@ -1011,7 +1013,9 @@
                            (color-scheme-name color-scheme)))])))
      (define wid (apply max (map (λ (x) (send x get-width)) buttons)))
      (for ([b (in-list buttons)])
-       (send b min-width wid)))))
+       (send b min-width wid))
+     (extras vp)
+     (void))))
 
 (define (color-scheme->style-list color-scheme)
   (define style-list (new style-list%))
