@@ -140,3 +140,13 @@ essentially equivalent to the following:
                 diff
                 (error "Assertion failed"))))
 ]
+
+@section{A caveat about @racket[set!]}
+
+If a variable is ever mutated with @racket[set!]  in the scope in
+which it is defined, Typed Racket cannot use occurrence typing with
+that variable. This precaution is needed to ensure that concurrent
+modification of a variable does not invalidate Typed Racket's
+knowledge of the type of that variable.  Also see
+@Secref["using-set!"  #:doc '(lib "scribblings/guide/guide.scrbl")].
+
