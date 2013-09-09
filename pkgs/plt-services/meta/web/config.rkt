@@ -26,4 +26,4 @@
    ;; source, including removing material that is not distributed.  A directory
    ;; can also have "*" parts which will be expanded recursively -- useful to
    ;; avoid deletions in case a target directory has additional materials.
-   '(["champlain:/www" "www" "download" "bugs" "lists" "drracket" "stubs"])))
+   '(["winooski:/www" "www" "download" "bugs" "lists" "drracket" "stubs"])))
