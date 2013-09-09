@@ -9,17 +9,11 @@
          mzlib/class
          mzlib/list
          mzlib/struct
-         mzlib/compile
          mzlib/struct
          drscheme/tool
          mred
-         framework/private/bday
-         syntax/moddep
          mrlib/cache-image-snip
          (prefix-in ic: mrlib/image-core)
-         setup/dirs
-         setup/getinfo
-         setup/collects
          test-engine/racket-tests
 
          ;; this module is shared between the drracket namespace (so loaded here) 
@@ -29,6 +23,7 @@
 
          "private/continuation-mark-key.rkt"
          "private/create-htdp-executable.rkt"
+         "private/tp-dialog.rkt"
          
          "stepper-language-interface.rkt"
          lang/debugger-language-interface
@@ -47,11 +42,6 @@
   
   (define o (current-output-port))
   (define (oprintf . args) (apply fprintf o args))
-  
-  (define user-installed-teachpacks-collection "installed-teachpacks")
-  (define teachpack-installation-dir 
-    (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
-  
   
   (define tool@
     (unit 
@@ -505,42 +495,6 @@
                  (λ (exe-name)
                    (create-htdp-lang-executable program-filename exe-name reader-module))))))
 
-          (define/private (get-export-names sexp)
-            (let* ([sym-name ((current-module-name-resolver) sexp #f #f)]
-                   [no-ext-name (substring (symbol->string sym-name)
-                                           1
-                                           (string-length (symbol->string sym-name)))]
-                   [full-name
-                    (cond
-                      [(file-exists? (string-append no-ext-name ".ss"))
-                       (string-append no-ext-name ".ss")]
-                      [(file-exists? (string-append no-ext-name ".scm"))
-                       (string-append no-ext-name ".scm")]
-                      [(file-exists? no-ext-name)
-                       no-ext-name]
-                      [else (error 'htdp-lang.rkt 
-                                   "could not find language filename ~s"
-                                   no-ext-name)])]
-                   [base-dir (let-values ([(base _1 _2) (split-path full-name)]) base)]
-                   [stx
-                    (call-with-input-file full-name
-                      (lambda (port)
-                        (read-syntax full-name port)))]
-                   [code
-                    (parameterize ([current-load-relative-directory base-dir]
-                                   [current-directory base-dir])
-                      (expand stx))]
-                   [find-name
-                    (lambda (p)
-                      (cond
-                        [(symbol? p) p]
-                        [(and (pair? p) (pair? (cdr p)))
-                         (cadr p)]
-                        [else (car p)]))])
-              (append
-               (map find-name (syntax-property code 'module-variable-provides))
-               (map find-name (syntax-property code 'module-syntax-provides)))))
-
           (define/private (symbol-append x y)
             (string->symbol
              (string-append
@@ -610,29 +564,29 @@
                (map (λ (x) (tp-require->str x))
                     (htdp-lang-settings-teachpacks settings)))
              (λ (settings parent) 
-               (let ([teachpack (get-teachpack-from-user parent)])
-                 (if teachpack
-                     (let ([old-tps (htdp-lang-settings-teachpacks settings)])
-                       (if (member teachpack old-tps)
-                           (begin
-                             (message-box (string-constant drscheme)
-                                          (format (string-constant already-added-teachpack)
-                                                  (tp-require->str teachpack))
-                                          #:dialog-mixin frame:focus-table-mixin)
-                             settings)
-                           
-                           (let ([new-tps (append old-tps (list teachpack))])
-                             (preferences:set 'drracket:htdp:last-set-teachpacks new-tps)
-                             (make-htdp-lang-settings
-                              (drscheme:language:simple-settings-case-sensitive settings)
-                              (drscheme:language:simple-settings-printing-style settings)
-                              (drscheme:language:simple-settings-fraction-style settings)
-                              (drscheme:language:simple-settings-show-sharing settings)
-                              (drscheme:language:simple-settings-insert-newlines settings)
-                              (drscheme:language:simple-settings-annotations settings)
-                              (htdp-lang-settings-tracing? settings)
-                              new-tps))))
-                     settings)))
+               (define old-tps (htdp-lang-settings-teachpacks settings))
+               (define-values (tp-to-remove tp-to-add) (get-teachpack-from-user parent old-tps))
+               (define new-tps (let ([removed (if tp-to-remove
+                                                  (remove tp-to-remove old-tps)
+                                                  old-tps)])
+                                 (if (or (not tp-to-add) (member tp-to-add old-tps))
+                                     removed
+                                     (append removed (list tp-to-add)))))
+               (when (member tp-to-add old-tps)
+                 (message-box (string-constant drscheme)
+                              (format (string-constant already-added-teachpack)
+                                      (tp-require->str tp-to-add))
+                              #:dialog-mixin frame:focus-table-mixin))
+               (preferences:set 'drracket:htdp:last-set-teachpacks new-tps)
+               (make-htdp-lang-settings
+                (drscheme:language:simple-settings-case-sensitive settings)
+                (drscheme:language:simple-settings-printing-style settings)
+                (drscheme:language:simple-settings-fraction-style settings)
+                (drscheme:language:simple-settings-show-sharing settings)
+                (drscheme:language:simple-settings-insert-newlines settings)
+                (drscheme:language:simple-settings-annotations settings)
+                (htdp-lang-settings-tracing? settings)
+                new-tps))
              (λ (settings name) 
                (let ([new-tps (filter (λ (x) (not (equal? (tp-require->str x) name)))
                                       (htdp-lang-settings-teachpacks settings))])
@@ -702,266 +656,7 @@
           
           (super-new)))
       
-      (define (get-teachpack-from-user parent)
-        (define tp-dirs (list "htdp" "2htdp"))
-        (define labels (list (string-constant teachpack-pre-installed/htdp)
-                             (string-constant teachpack-pre-installed/2htdp)))
-        (define tp-syms '(htdp-teachpacks 2htdp-teachpacks))
-        (define tpss (map tp-dir->tps tp-syms))
-        
-        (define label+mpss
-          (for/list ([tps (in-list tpss)])
-            (let ([all-filenames (map (λ (tp) (list-ref tp 0)) tps)])
-              (for/list ([tp (in-list tps)])
-                (define filename (list-ref tp 0))
-                (define mp (list-ref tp 1))
-                (list (path->string 
-                       (or (shrink-path-wrt filename all-filenames)
-                           (let-values ([(base name dir?) (split-path filename)])
-                             name)))
-                      mp)))))
-        
-        (define pre-installed-tpss 
-          (for/list ([label+mps (in-list label+mpss)])
-            (sort label+mps string<? #:key car)))
-        (define dlg (new (frame:focus-table-mixin dialog%) 
-                         [parent parent]
-                         [label (string-constant drscheme)]))
-        (define hp (new horizontal-panel% [parent dlg]))
-        (define answer #f)
-        (define compiling? #f)
-        
-        (define pre-installed-gbs (map (λ (tps label)
-                                         (new group-box-panel%
-                                              [label label]
-                                              [parent hp]))
-                                       tpss labels))
-        (define user-installed-gb (new group-box-panel%
-                                       [label (string-constant teachpack-user-installed)]
-                                       [parent hp]))
-        
-        (define pre-installed-lbs
-          (map (λ (pre-installed-gb pre-installed-tps)
-                 (define lb 
-                   (new list-box%
-                        [label #f]
-                        [choices (map (λ (x) (gui-utils:trim-string (list-ref x 0) 200))
-                                      pre-installed-tps)]
-                        [stretchable-height #t]
-                        [min-height 300]
-                        [min-width 200]
-                        [callback
-                         (λ (this evt)
-                           (case (send evt get-event-type)
-                             [(list-box-dclick) (selected this)]
-                             [else
-                              (for ([x (in-list (cons user-installed-lb
-                                                      pre-installed-lbs))]
-                                    #:unless (eq? x this))
-                                (clear-selection x))
-                              (update-button)]))]
-                        [parent pre-installed-gb]))
-                 (for ([i (in-naturals)]
-                       [tp (in-list pre-installed-tps)])
-                   (send lb set-data i (list-ref tp 1)))
-                 lb)
-               pre-installed-gbs
-               pre-installed-tpss))
-        
-        (define user-installed-lb
-          (new list-box%
-               [label #f]
-               [choices '()]
-               [stretchable-height #t]
-               [min-width 200]
-               [callback
-                (λ (x evt)
-                  (case (send evt get-event-type)
-                    [(list-box-dclick) (selected user-installed-lb)]
-                    [else
-                     (for ([pre-installed-lb (in-list pre-installed-lbs)])
-                       (clear-selection pre-installed-lb))
-                     (update-button)]))]
-               [parent user-installed-gb]))
-        
-        (define (selected lb)
-          (when (send lb get-selection)
-            (unless compiling?
-              (set! answer (figure-out-answer))
-              (send dlg show #f))))
-        
-        (define (clear-selection lb)
-          (for-each
-           (λ (x) (send lb select x #f))
-           (send lb get-selections)))
-        
-        (define add-button (new button%
-                                [parent user-installed-gb]
-                                [label (string-constant add-teachpack-to-list...)]
-                                [callback (λ (x y) (install-teachpack))]))
-        
-        (define (install-teachpack)
-          (let ([file (get-file (string-constant select-a-teachpack) dlg)])
-            (when file
-              (let-values ([(base name dir) (split-path file)])
-                (let ([dest-file (build-path teachpack-installation-dir name)])
-                  (when (or (not (file-exists? dest-file))
-                            (equal? 1
-                                    (message-box/custom
-                                     (string-constant drscheme)
-                                     (format
-                                      (string-constant teachpack-already-installed)
-                                      (path->string name))
-                                     (string-constant overwrite)
-                                     (string-constant cancel)
-                                     #f
-                                     dlg
-                                     '(default=2 caution))))
-                    (make-directory* teachpack-installation-dir)
-                    (when (file-exists? dest-file)
-                      (delete-file dest-file))
-                    (copy-file file dest-file)
-                    
-                    ;; compiling the teachpack should be the last thing in this GUI callback
-                    (compile-new-teachpack dest-file)))))))
-        
-        (define (compile-new-teachpack filename)
-          (let-values ([(_1 short-name _2) (split-path filename)])
-            (cond
-              [(cannot-compile? filename)
-               (post-compilation-gui-cleanup short-name)]
-              [else
-               (send compiling-message set-label
-                     (format (string-constant compiling-teachpack) 
-                             (path->string short-name)))
-               (starting-compilation)
-               (let ([nc (make-custodian)]
-                     [exn #f])
-                 (let ([t 
-                        (parameterize ([current-custodian nc])
-                          (thread (λ () 
-                                    (with-handlers ((exn? (λ (x) (set! exn x))))
-                                      (parameterize ([current-namespace (make-base-namespace)])
-                                        (with-module-reading-parameterization
-                                         (lambda ()
-                                           (compile-file filename))))))))])
-                   (thread
-                    (λ ()
-                      (thread-wait t)
-                      (queue-callback
-                       (λ () 
-                         (cond
-                           [exn
-                            (message-box (string-constant drscheme)
-                                         (exn-message exn))
-                            (delete-file filename)
-                            (update-user-installed-lb)]
-                           [else
-                            (post-compilation-gui-cleanup short-name)])
-                         (done-compilation)
-                         (send compiling-message set-label "")))))))])))
-        
-        (define (post-compilation-gui-cleanup short-name)
-          (update-user-installed-lb)
-          (for ([pre-installed-lb (in-list pre-installed-lbs)])
-            (clear-selection pre-installed-lb))
-          (send user-installed-lb set-string-selection (path->string short-name)))
-        
-        (define (starting-compilation)
-          (set! compiling? #t)
-          (update-button)
-          (send cancel-button enable #f))
-        
-        (define (done-compilation)
-          (set! compiling? #f)
-          (update-button)
-          (send cancel-button enable #t))
-        
-        (define (update-user-installed-lb)
-          (let ([files
-                 (if (directory-exists? teachpack-installation-dir)
-                     (map path->string 
-                          (filter 
-                           (λ (x) (file-exists? (build-path teachpack-installation-dir x)))
-                           (directory-list teachpack-installation-dir)))
-                     '())])
-            (send user-installed-lb set (sort files string<=?))))
-        
-        
-        (define (update-button)
-          (send ok-button enable 
-                (and (not compiling?)
-                     (or (pair? (send user-installed-lb get-selections))
-                         (ormap (λ (pre-installed-lb)
-                                  (pair? (send pre-installed-lb get-selections)))
-                                pre-installed-lbs)))))
-        
-        (define button-panel (new horizontal-panel% 
-                                  [parent dlg]
-                                  [alignment '(right center)]
-                                  [stretchable-height #f]))
-        (define compiling-message (new message% 
-                                       [parent button-panel]
-                                       [label ""]
-                                       [stretchable-width #t]))
-        (define-values (ok-button cancel-button)
-          (gui-utils:ok/cancel-buttons button-panel
-                                       (λ (b e)
-                                         (set! answer (figure-out-answer))
-                                         (send dlg show #f))
-                                       (λ (b e) 
-                                         (send dlg show #f))
-                                       (string-constant ok) (string-constant cancel)))
-        
-        (define (figure-out-answer)
-          (cond
-            [(ormap (λ (pre-installed-lb tp-dir) 
-                      (and (send pre-installed-lb get-selection)
-                           (send pre-installed-lb get-data
-                                 (send pre-installed-lb get-selection))))
-                    pre-installed-lbs
-                    tp-dirs)
-             =>
-             values]
-            [(send user-installed-lb get-selection)
-             =>
-             (λ (i) `(lib ,(send user-installed-lb get-string i)
-                          ,user-installed-teachpacks-collection))]
-            [else (error 'figure-out-answer "no selection!")]))
-        
-        
-        (send ok-button enable #f)
-        (update-user-installed-lb)
-        
-        (send dlg show #t)
-        answer)
       
-      (define (tp-dir->tps tp-sym)
-        (filter
-         values
-         (for*/list ([dir (in-list (find-relevant-directories (list tp-sym)))]
-                     #:when (let ([inf (get-info/full dir)])
-                              (and inf (inf tp-sym (λ () #f))))
-                     [file-or-dir (in-list
-                                   (let ([files ((get-info/full dir) tp-sym)])
-                                     (cond
-                                       [(eq? files 'all)
-                                        (for/list ([x (in-list (directory-list dir))]
-                                                   #:when
-                                                   (regexp-match #rx"[.](ss|scm|rkt)$"
-                                                                 (path->string x))
-                                                   #:unless
-                                                   (member (path->string x) '("info.rkt" "info.ss")))
-                                          x)]
-                                       [(list? files) files]
-                                       [else '()])))])
-           (let/ec k
-             (unless (path? file-or-dir) (k #f))
-             (define candidate (build-path dir file-or-dir))
-             (unless (file-exists? candidate) (k #f))
-             (define mp (path->module-path candidate))
-             (when (path-string? mp) (k #f))
-             (list candidate mp)))))
 
       (define (stepper-settings-language %)
         (if (implementation? % stepper-language<%>)

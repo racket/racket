@@ -1130,6 +1130,11 @@ please adhere to these guidelines:
   (teachpack-pre-installed/2htdp "Preinstalled HtDP/2e Teachpacks")
   (teachpack-user-installed "User-installed Teachpacks")
   (add-teachpack-to-list... "Add Teachpack to List...")
+  ; first and second ~a are teachpack names, third is a symbol identifing an export
+  (teachpack-conflict
+   "WARNING: the already installed teachpack ~a conflicts with ~a (the export ~a is in both)")
+   ;; a button label; the two ~a are filled with teachpack names
+  (remove-and-add-teachpack "Remove ~a and add ~a")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
   (teachpacks-only-in-languages "The Teachpack menu is only available in these languages: ~a\n\nIn other languages, use 'require' instead.")
