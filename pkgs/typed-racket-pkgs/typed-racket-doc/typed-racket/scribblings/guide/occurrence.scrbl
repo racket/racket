@@ -51,7 +51,7 @@ have based on a predicate check in a conditional expression, it can
 narrow the type of the variable within the appropriate branch of the
 conditional.
 
-@section{Filter and Predicates}
+@section{Filters and Predicates}
 
 In the previous section, we demonstrated that a Typed Racket programmer
 can take advantage of occurrence typing to type-check functions
