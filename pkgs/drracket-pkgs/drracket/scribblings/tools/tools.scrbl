@@ -118,54 +118,19 @@ This bitmap and the name show up in the about box, the
 bug report form, and the splash screen as the tool is
 loaded at DrRacket's startup.
 
-@index{phase1}
-@index{phase2}
 Each of the @racket[drracket-tools] files must contain a module that
 @racket[provide]s @racket[tool@], which must be bound to a
 @racket[unit]. The unit
 must import the @racket[drracket:tool^] signature, which is
-provided by the @FileFirst{tool.rkt} library in the
-@racket[drscheme] collection. The @as-index{@racket[drracket:tool^]}
+provided by the @racketmodname[drracket/tool] library. 
+The @as-index{@racket[drracket:tool^]}
 signature contains all of the names listed in this manual.
 The unit must export the @racket[drracket:tool-exports^]
 signature. 
 
-The @as-index{@racket[drracket:tool-exports^]} signature contains two
-names: @racket[phase1] and @racket[phase2]. These names must
-be bound to thunks. After all of the tools are loaded, all of
-the @tt{phase1} functions are called and then all of the
-@tt{phase2} functions are called. Certain primitives can
-only be called during the dynamic extent of those calls.
-
-This mechanism is designed to support DrRacket's
-@racket[drracket:language:language<%>] extension
-capabilities. That is, this mechanism enables two tools to
-cooperate via new capabilities of languages. The first phase
-is used for adding functionality that each language must
-support and the second is used for creating instances of
-languages. As an example, a tool may require certain
-specialized language-specific information. It uses phase1 to
-extend the @racket[drracket:language:language<%>] interface
-and supply a default implementation of the interface
-extension. Then, other languages that are aware of the
-extension can supply non-default implementations of the
-additional functionality.
-
-Phase 1 functions:
-@itemize[
-@item{@racket[drracket:language:extend-language-interface]}
-@item{@racket[drracket:unit:add-to-program-editor-mixin]}
-]
-
-Phase 2 functions:
-@itemize[
-@item{@racket[drracket:language-configuration:add-language]}
-@item{@racket[drracket:language:get-default-mixin]}
-@item{@racket[drracket:language:get-language-extensions]}
-]
-
 If the tool raises an error as it is loaded, invoked, or as
-the @racket[phase1] or @racket[phase2] thunks are called,
+the @sigelem[drracket:tool-exports^ phase1] or
+@sigelem[drracket:tool-exports^ phase2] thunks are called,
 DrRacket catches the error and displays a message box. Then,
 DrRacket continues to start up, without the tool.
 
@@ -193,7 +158,8 @@ racket/gui
     (message-box "tool example" "unit invoked")))
 ]
 This tool just opens a few windows to indicate that it has
-been loaded and that the @racket[phase1] and @racket[phase2]
+been loaded and that the @sigelem[drracket:tool-exports^ phase1]
+and @sigelem[drracket:tool-exports^ phase2]
 functions have been called.
 
 Finally, here is a more involved example. This 
@@ -727,7 +693,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                             [end exact-nonnegative-integer?]
                                             [file path-string?])
             void?]{
-   Called to indicate that there is a @racket[require] at the location from @racket[start] to @racket[end],
+   Called to indicate that there is a @racket[require] at the location from 
+                                      @racket[start] to @racket[end],
    and that it corresponds to @racket[file]. Check Syntax adds a popup menu.
  }
 
@@ -739,9 +706,10 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                     [path any/c]
                                     [tag any/c])
             void?]{
-   Called to indicate that there is something that has documentation between the range @racket[start] and @racket[end]. The
-   documented identifier's name is given by @racket[id] and the docs are found in the html file @racket[path] at the
-   html tag @racket[tag]. The @racket[label] argument describes the binding for use in the menu item (although it may
+   Called to indicate that there is something that has documentation between the range
+   @racket[start] and @racket[end]. The documented identifier's name is given by @racket[id]
+   and the docs are found in the html file @racket[path] at the html tag @racket[tag].
+   The @racket[label] argument describes the binding for use in the menu item (although it may
    be longer than 200 characters).
  }
                   
@@ -781,11 +749,12 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                          [require-arrow? boolean?]
                                          [name-dup? (-> string? boolean?)])
             void?]{
-   Called to indicate that there should be an arrow between the locations described by the first six arguments.
+   Called to indicate that there should be an arrow between the locations described by the first 
+   six arguments.
    
-   The @racket[phase-level] argument indicates the phase of the binding and the @racket[actual?] argument
-   indicates if the binding is a real one, or a predicted one from a syntax template (predicted bindings
-   are drawn with question marks in Check Syntax). 
+   The @racket[phase-level] argument indicates the phase of the binding and the 
+   @racket[actual?] argument indicates if the binding is a real one, or a predicted one from
+   a syntax template (predicted bindings are drawn with question marks in Check Syntax). 
    
    The @racket[require-arrow?] argument indicates if this arrow points from
    an imported identifier to its corresponding @racket[require].
@@ -800,7 +769,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                      [to-source-obj (not/c #f)]
                                      [to-pos exact-nonnegative-integer?])
             void?]{
-   Called to indicate that there are two expressions, beginning at @racket[from-pos] and @racket[to-pos]
+   Called to indicate that there are two expressions, beginning at 
+   @racket[from-pos] and @racket[to-pos]
    that are in tail position with respect to each other.
  }
  @defmethod[(syncheck:add-mouse-over-status [source-obj (not/c #f)]
@@ -808,7 +778,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                             [pos-right exact-nonnegative-integer?]
                                             [str string?])
             void?]{
-   Called to indicate that the message in @racket[str] should be shown when the mouse passes over the given position.
+   Called to indicate that the message in @racket[str] should be shown when the mouse 
+                                          passes over the given position.
  }
  @defmethod[(syncheck:add-jump-to-definition [source-obj (not/c #f)] 
                                              [start exact-nonnegative-integer?]
@@ -818,8 +789,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                              [submods (listof symbol?)])
             void?]{
    Called to indicate that there is some identifier at the given location (named @racket[id]) that
-   is defined in the @racket[submods] of the file @racket[filename] (where an empty list in @racket[submods]
-   means that the identifier is defined at the top-level module).
+   is defined in the @racket[submods] of the file @racket[filename] (where an empty list in
+   @racket[submods] means that the identifier is defined at the top-level module).
  }
                   
  @defmethod[(syncheck:add-definition-target [source-obj (not/c #f)]
@@ -835,9 +806,10 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                   [style-name any/c]
                                   [mode any/c])
             void?]{
-   Called to indicate that the given location should be colored according to the style @racket[style-name] when
-   in @racket[mode]. The mode either indicates regular check syntax or is used indicate blame for potential contract
-   violations (and still experimental).
+   Called to indicate that the given location should be colored according to the
+   style @racket[style-name] when in @racket[mode]. The mode either indicates regular
+   check syntax or is used indicate blame for potential contract violations 
+   (and still experimental).
  }
  @defmethod[(syncheck:add-rename-menu [id symbol?]
                                       [all-ids (listof (list/c (not/c #f) 
@@ -915,8 +887,9 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 
 @(define-syntax-rule 
    (syncheck-method-id x ...)
-   (begin @defidform[x]{Bound to an identifier created with @racket[define-local-member-name]
-                                                           that is used in @racket[syncheck-annotations<%>].}
+   (begin @defidform[x]{Bound to an identifier created with
+                        @racket[define-local-member-name]
+                        that is used in @racket[syncheck-annotations<%>].}
           ...))
 @syncheck-method-id[syncheck:find-source-object
                     syncheck:add-background-color
@@ -1058,6 +1031,59 @@ not part of DrRacket proper, but one helper library is documented here.
   @racket[#f], it does not consume anything from @racket[ip].
 }
 
+@section{Signatures}
+
+@defmodule*[(drracket/tool drscheme/tool)]
+
+@defsignature[drracket:tool^ ()]{
+  This signature includes all of the names in this manual that begin
+  with @tt{drracket:} (except these two signatures).
+}
+@defsignature[drracket:tool-exports^ ()]{
+The @racket[drracket:tool-exports^] signature contains two
+names: @sigelem[drracket:tool-exports^ phase1] and 
+@sigelem[drracket:tool-exports^ phase1]. 
+After all of the tools are loaded, all of
+the @tt{phase1} functions are called and then all of the
+@tt{phase2} functions are called. Certain primitives can
+only be called during the dynamic extent of those calls.
+
+This mechanism is designed to support DrRacket's
+@racket[drracket:language:language<%>] extension
+capabilities. That is, this mechanism enables two tools to
+cooperate via new capabilities of languages. The first phase
+is used for adding functionality that each language must
+support and the second is used for creating instances of
+languages. As an example, a tool may require certain
+specialized language-specific information. It uses phase1 to
+extend the @racket[drracket:language:language<%>] interface
+and supply a default implementation of the interface
+extension. Then, other languages that are aware of the
+extension can supply non-default implementations of the
+additional functionality.
+
+@defproc[(phase1) void?]{
+These functions can be called only in the dynamic extent
+of a call to @sigelem[drracket:tool-exports^ phase1] (see
+above for details).
+@itemize[
+@item{@racket[drracket:language:extend-language-interface]}
+@item{@racket[drracket:unit:add-to-program-editor-mixin]}
+]
+}
+
+@defproc[(phase2) void?]{
+These functions can be called only in the dynamic extent
+of a call to @sigelem[drracket:tool-exports^ phase2] (see
+above for details).
+@itemize[
+@item{@racket[drracket:language-configuration:add-language]}
+@item{@racket[drracket:language:get-default-mixin]}
+@item{@racket[drracket:language:get-language-extensions]}
+]
+}
+}
+
 @include-section["get-slash-extend.scrbl"]
 @include-section["unit.scrbl"]
 @include-section["language.scrbl"]
@@ -1081,13 +1107,16 @@ library; they are here for backwards compatibility and to provide links to the
           (for-syntax racket/base
                       racket/unit-exptime))
 @(define-syntax (drs-compat stx)
-   (let-values ([(drs-parent drs-vars drs-var-defs-in-sig drs-stx-defs-in-sig) (signature-members #'drscheme:tool-cm^ #'here)]
-                [(drr-parent drr-vars drr-var-defs-in-sig drr-stx-defs-in-sig) (signature-members #'drracket:tool-cm^ #'here)])
-     (with-syntax ([(drs-id ...) drs-vars]
-                   [(drr-id ...) drr-vars])
+   (let-values ([(drs-parent drs-vars drs-var-defs-in-sig drs-stx-defs-in-sig)
+                 (signature-members #'drscheme:tool-cm^ #'here)]
+                [(drr-parent drr-vars drr-var-defs-in-sig drr-stx-defs-in-sig)
+                 (signature-members #'drracket:tool-cm^ #'here)])
+     (with-syntax ([(drs-id ...) (append '(drscheme:tool^ drscheme:tool-exports^) drs-vars)]
+                   [(drr-id ...) (append '(drracket:tool^ drracket:tool-exports^) drr-vars)])
        #'(begin
            (defthing drs-id any/c
-             "This is provided for backwards compatibility; new code should use " (racket drr-id) " instead.") 
+             "This is provided for backwards compatibility; new code should use "
+             (racket drr-id) " instead.") 
            ...))))
 @drs-compat[]
 

@@ -20,7 +20,7 @@
                     racket/contract
                     racket/base
                     drracket/tool-lib
-		    mrlib/switchable-button
+                    mrlib/switchable-button
                     framework))
 (provide (for-label (all-from-out racket/gui/base)
                     (all-from-out racket/snip)
