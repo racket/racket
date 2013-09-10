@@ -109,9 +109,7 @@
   (pattern (#%plain-app op:binary-float-op
                         ;; for now, accept anything that can be coerced to float
                         ;; finer-grained checking is done below
-                        f1:float-arg-expr
-                        f2:float-arg-expr
-                        fs:float-arg-expr ...)
+                        (~between fs:float-arg-expr 2 +inf.0) ...)
            #:when (let* ([safe-to-opt?
                           ;; For it to be safe, we need:
                           ;; - the result to be a float, in which case coercing args to floats
@@ -125,12 +123,12 @@
                           ;;   (Note: could allow for more args, if not next to each other, but
                           ;;    probably not worth the trouble (most ops have 2 args anyway))
                           (and (subtypeof? this-syntax -Flonum)
-                               (for/and ([a (in-syntax #'(f1 f2 fs ...))])
+                               (for/and ([a (in-syntax #'(fs ...))])
                                  ;; flonum or provably non-zero
                                  (or (subtypeof? a -Flonum)
                                      (subtypeof? a (Un -PosReal -NegReal))))
                                (>= 1
-                                   (for/sum ([a (in-syntax #'(f1 f2 fs ...))]
+                                   (for/sum ([a (in-syntax #'(fs ...))]
                                              #:when (not (subtypeof? a -Flonum)))
                                      1)))]
                          ;; if we don't have a return type of float, or if the return type is
@@ -144,7 +142,7 @@
                     (when missed-optimization?
                       (log-float-real-missed-opt
                        this-syntax
-                       (for/list ([x (in-syntax #'(f1 f2 fs ...))]
+                       (for/list ([x (in-syntax #'(fs ...))]
                                   #:unless (subtypeof? x -Flonum))
                          x)))
                     ;; If an optimization was expected (whether it was safe or not doesn't matter),
@@ -159,7 +157,7 @@
                       (define extra-precision-subexprs
                         (filter
                          values
-                         (for/list ([subexpr (in-syntax #'(f1 f2 fs ...))]
+                         (for/list ([subexpr (in-syntax #'(fs ...))]
                                     #:when (or (and (in-real-layer? subexpr)
                                                     ;; exclude single-flonums
                                                     (not (subtypeof? subexpr -InexactReal)))
@@ -186,7 +184,7 @@
                          this-syntax extra-precision-subexprs)))
                     safe-to-opt?)
            #:do [(log-fl-opt "binary float")]
-           #:with opt (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...)))
+           #:with opt (n-ary->binary #'op.unsafe #'(fs.opt ...)))
   (pattern (#%plain-app op:binary-float-comp f1:float-expr f2:float-expr)
     #:do [(log-fl-opt "binary float comp")]
     #:with opt #'(op.unsafe f1.opt f2.opt))

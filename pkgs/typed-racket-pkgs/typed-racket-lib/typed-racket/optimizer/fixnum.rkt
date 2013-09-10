@@ -135,9 +135,9 @@
   (pattern (op:fixnum-unary-op n:fixnum-expr)
     #:do [(log-fx-opt "unary fixnum")]
     #:with opt #'(op.unsafe n.opt))
-  (pattern (op:fixnum-binary-op n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
+  (pattern (op:fixnum-binary-op (~between ns:fixnum-expr 2 +inf.0) ...)
     #:do [(log-fx-opt "binary fixnum")]
-    #:with opt (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...)))
+    #:with opt (n-ary->binary #'op.unsafe #'(ns.opt ...)))
   (pattern (op:fixnum-binary-comp n1:fixnum-expr n2:fixnum-expr)
     #:do [(log-fx-opt "binary fixnum comp")]
     #:with opt #'(op.unsafe n1.opt n2.opt))
@@ -191,10 +191,10 @@
 ;; (if they typecheck with return type Fixnum)
 (define-syntax-class (inner-checked-fixnum-opt-expr stx)
   #:attributes (opt)
-  (pattern (op:potentially-bounded-fixnum-op n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
+  (pattern (op:potentially-bounded-fixnum-op (~between ns:fixnum-expr 2 +inf.0) ...)
     #:when (check-if-safe stx)
     #:do [(log-fx-opt "fixnum bounded expr")]
-    #:with opt (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt (syntax->list #'(ns.opt ...))))
+    #:with opt (n-ary->binary #'op.unsafe #'(ns.opt ...)))
   (pattern (op:potentially-bounded-nonzero-fixnum-op n1:fixnum-expr n2:nonzero-fixnum-expr)
     #:when (check-if-safe stx)
     #:do [(log-fx-opt "nonzero fixnum bounded expr")]

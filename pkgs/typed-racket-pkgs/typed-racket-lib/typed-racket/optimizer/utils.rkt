@@ -50,9 +50,8 @@
 
 ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
 ;; this works on operations that are (A A -> A)
-(define (n-ary->binary op arg1 arg2 rest)
-  (for/fold ([o arg1])
-      ([e (in-syntax #`(#,arg2 #,@rest))])
+(define (n-ary->binary op stx)
+  (for/fold ([o (stx-car stx)]) ([e (in-syntax (stx-cdr stx))])
     #`(#,op #,o #,e)))
 ;; this works on operations that are (A A -> B)
 (define (n-ary-comp->binary op arg1 arg2 rest)
