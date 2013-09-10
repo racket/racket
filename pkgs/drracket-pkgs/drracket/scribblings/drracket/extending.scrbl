@@ -23,10 +23,10 @@ DrRacket supports two forms of extension to the programming
 
   See @secref["teachpacks"] for information in creating teachpacks.}
 
-@item{A @deftech{tool} extends the set of utilities within the
+@item{A @deftech{plugin} extends the set of utilities within the
   DrRacket environment. For example, DrRacket's @onscreen{Check
-  Syntax} button starts a syntax-checking tool. For information on
-  creating @tech{tools}, see @other-manual['(lib
+  Syntax} button starts a syntax-checking plugin. For information on
+  creating @tech{plugin}s, see @other-manual['(lib
   "scribblings/tools/tools.scrbl")].}
 
 ]
