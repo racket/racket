@@ -788,7 +788,6 @@ path/s is either such a string or a list of them.
 "pkgs/gui-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs/gui-doc/mrlib" responsible (robby)
 "pkgs/gui-pkgs/gui-doc/scribblings/framework" responsible (robby)
-"pkgs/gui-pkgs/gui-doc/string-constants" responsible (robby)
 "pkgs/gui-pkgs/gui-lib/embedded-gui/private/tests" drdr:command-line #f
 "pkgs/gui-pkgs/gui-lib/framework" responsible (robby)
 "pkgs/gui-pkgs/gui-lib/framework/private/encode.rkt" drdr:command-line (racket *)
@@ -814,7 +813,6 @@ path/s is either such a string or a list of them.
 "pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (gracket *)
 "pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (gracket *)
 "pkgs/gui-pkgs/gui-lib/rackunit" responsible (ryanc)
-"pkgs/gui-pkgs/gui-lib/unstable/2d" responsible (robby)
 "pkgs/gui-pkgs/gui-test/framework" responsible (robby)
 "pkgs/gui-pkgs/gui-test/framework/tests/canvas.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/debug.rkt" drdr:command-line (mzc "-k" *)
@@ -1467,6 +1465,7 @@ path/s is either such a string or a list of them.
 "pkgs/scribble-pkgs/scribble-test/tests/scribble/main.rkt" drdr:command-line #f
 "pkgs/scribble-pkgs/scribble-test/tests/scriblib" responsible (mflatt)
 "pkgs/scribble-pkgs/scribble-text-lib/scribble/text.rkt" responsible (eli)
+"pkgs/serialize-cstruct-lib" responsible (mflatt)
 "pkgs/sgl" responsible (jay)
 "pkgs/sgl/examples/alpha.rkt" drdr:command-line (mzc *)
 "pkgs/sgl/examples/gears.rkt" drdr:command-line (mzc "-k" *)
@@ -1490,7 +1489,7 @@ path/s is either such a string or a list of them.
 "pkgs/srfi-pkgs/srfi-lib/srfi/74/blob.scm" drdr:command-line #f
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/check-reference.scm" drdr:command-line #f
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/examples-78.scm" drdr:command-line #f
-"pkgs/string-constants-lib" responsible (robby)
+"pkgs/string-constants" responsible (robby)
 "pkgs/swindle" responsible (eli)
 "pkgs/syntax-color-pkgs" responsible (mflatt)
 "pkgs/trace" responsible (mflatt robby)
@@ -1511,6 +1510,7 @@ path/s is either such a string or a list of them.
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/succeed/submodules.rkt" drdr:command-line (racket * "1")
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/tr-random-testing.rkt" drdr:timeout 300 drdr:random #t
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/xfail" drdr:command-line #f
+"pkgs/unstable-2d" responsible (robby)
 "pkgs/unstable-contract-lib" responsible (robby ryanc)
 "pkgs/unstable-debug-lib" responsible (samth)
 "pkgs/unstable-flonum-pkgs" responsible (ntoronto)
@@ -1530,7 +1530,6 @@ path/s is either such a string or a list of them.
 "pkgs/unstable-pkgs/unstable-doc/temp-c" responsible (jay)
 "pkgs/unstable-pkgs/unstable-lib/automata" responsible (jay)
 "pkgs/unstable-pkgs/unstable-lib/temp-c" responsible (jay)
-"pkgs/unstable-pkgs/unstable-test/tests/unstable/2d" responsible (robby)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/automata" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/list.rkt" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/logging.rkt" responsible (stamourv)
