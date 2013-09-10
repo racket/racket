@@ -405,7 +405,10 @@
 (define private
   @page%%[#:title @list{%(realname)s private archives authentication}
           #:part-of 'community
-          #:extra-headers style-header]{
+          #:extra-headers
+          @list{@style-header
+                @script/inline{function sf(){document.f.adminpw.focus()@";"}}}
+          #:extra-body-attrs `(onLoad: "sf();")]{
     @; --------------------
     @comment{@||
       Based on the Mailman file "private.html" (no revision specified)
@@ -413,7 +416,7 @@
       @||}
     @; --------------------
     %(message)s
-    @form[method: 'post action: "%(action)s"]{
+    @form[method: 'post action: "%(action)s" name: "f"]{
       @h1{%(realname)s private archives authentication}
       @table[cellspacing: 4 cellpadding: 5 width: "80%" align: 'center]{
         @tr{@td[align: 'right]{Email address:}
@@ -429,12 +432,18 @@
        you don't need to re-authenticate with every operation.  This cookie will
        expire automatically when you exit your browser, or you can explicitly
        expire the cookie by visiting your member options page and clicking the
-       @em{Log out} button.}})
+       @em{Log out} button.}
+    @h2{Password reminder}
+    @p{If you don't remember your password, enter your email address above and
+       click the @em{Remind} button and your password will be emailed to you.}})
 
 (define admlogin
   @page%%[#:title @list{%(listname)s %(who)s Authentication}
           #:part-of 'community
-          #:extra-headers style-header]{
+          #:extra-headers
+          @list{@style-header
+                @script/inline{function sf(){document.f.adminpw.focus()@";"}}}
+          #:extra-body-attrs `(onLoad: "sf();")]{
     @; --------------------
     @comment{@||
       Based on the Mailman file "admlogin.html" (no revision specified)
@@ -442,7 +451,7 @@
       @||}
     @; --------------------
     %(message)s
-    @form[method: 'post action: "%(path)s"]{
+    @form[method: 'post action: "%(path)s" name: "f"]{
       @h1{%(listname)s %(who)s authentication}
       @table[cellspacing: 4 cellpadding: 5 width: "80%" align: 'center]{
         @tr{@td[align: 'right]{List %(who)s Password:}
@@ -566,6 +575,7 @@
                       href: '@{mailto:%(email_url)s?Subject=%(subject_url)s&@;
                                In-Reply-To=%(in_reply_to_url)s}]
                 @;meta[name: 'robots content: "index,nofollow"]
+                @style/inline{pre { white-space: pre-wrap@";" }}
                 %(encoding)s
                 %(prev)s
                 %(next)s}]{
@@ -607,3 +617,17 @@
     @table{@tr{@td{Posted on the @;
                    @a[href: "%(listurl)s"]{%(listname)s mailing list}.}
                @navcell}}})
+
+;; Previously mailman had a "site" directory which would override the default
+;; "en" files.  I don't see this setup now, so a cheap hack is to create
+;; symlinks to a directory with the original versions for all files that are
+;; not generated above.
+(define symlinks
+  (map (λ(f) (symlink (format "/etc/mailman/templates/en-orig/~a" f)))
+       '("admindbdetails.html" "admindbpreamble.html" "admindbsummary.html"
+         "adminsubscribeack.txt" "adminunsubscribeack.txt" "approve.txt"
+         "bounce.txt" "checkdbs.txt" "convert.txt" "cronpass.txt" "disabled.txt"
+         "headfoot.html" "help.txt" "invite.txt" "masthead.txt" "newlist.txt"
+         "nomoretoday.txt" "postack.txt" "postauth.txt" "postheld.txt"
+         "probe.txt" "refuse.txt" "subauth.txt" "subscribeack.txt" "unsub.txt"
+         "unsubauth.txt" "userpass.txt" "verify.txt")))
