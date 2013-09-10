@@ -17,7 +17,7 @@
   (list (hash 
          'name 'modern-color-scheme
          'colors
-         '((framework:syntax-color:scheme:symbol #(211 72 255))
+         '((framework:syntax-color:scheme:string #(211 72 255))
            (framework:syntax-color:scheme:constant #(211 72 255))
            (framework:syntax-color:scheme:comment #(194 158 31))
            (framework:syntax-color:scheme:parenthesis #(0 150 255))))))
