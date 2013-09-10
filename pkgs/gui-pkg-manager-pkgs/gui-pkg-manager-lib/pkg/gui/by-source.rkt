@@ -420,7 +420,7 @@
                     (if infer? name-message name-field))))
       (when infer?
         (define name (get-name))
-        (send name-message set-label name)
+        (send name-message set-label (gui-utils:trim-string name 200))
         (send name-field set-value name)))
     
     (define/private (adjust-checkbox)
@@ -538,28 +538,30 @@
             s))
       (define cmd-line (compute-cmd-line))
       (send cmdline-msg set-label
-            (if cmd-line
-                (string-append
-                 (if (eq? (system-type) 'windows)
-                     "raco.exe"
-                     "raco")
-                 " pkg "
-                 (format "~a " (cmdline-which cmd-line))
-                 (apply 
-                  string-append
-                  (add-between
-                   (map (λ (kwd kwd-arg)
-                          (define flag (~a "--" (keyword->string kwd)))
-                          (if (boolean? kwd-arg)
-                              flag
-                              (~a flag " " (~s kwd-arg))))
-                        (cmdline-kwds cmd-line)
-                        (cmdline-kwd-args cmd-line))
-                   " "))
-                 (apply string-append
-                        (map (λ (x) (format " ~a" (possibly-quote-string x)))
-                             (cmdline-args cmd-line))))
-                "")))
+            (gui-utils:trim-string
+             (if cmd-line
+                 (string-append
+                  (if (eq? (system-type) 'windows)
+                      "raco.exe"
+                      "raco")
+                  " pkg "
+                  (format "~a " (cmdline-which cmd-line))
+                  (apply 
+                   string-append
+                   (add-between
+                    (map (λ (kwd kwd-arg)
+                           (define flag (~a "--" (keyword->string kwd)))
+                           (if (boolean? kwd-arg)
+                               flag
+                               (~a flag " " (~s kwd-arg))))
+                         (cmdline-kwds cmd-line)
+                         (cmdline-kwd-args cmd-line))
+                    " "))
+                  (apply string-append
+                         (map (λ (x) (format " ~a" (possibly-quote-string x)))
+                              (cmdline-args cmd-line))))
+                 "")
+             200)))
     
     (struct cmdline (which kwds kwd-args args) #:transparent)
     (define/private (compute-cmd-line)
