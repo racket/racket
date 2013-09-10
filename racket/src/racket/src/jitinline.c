@@ -413,6 +413,8 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     if (inline_rator && (kind != INLINE_STRUCT_PROC_PRED)) {
       __START_SHORT_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
+      if (kind == INLINE_STRUCT_PROC_SET)
+        scheme_save_struct_temp(jitter, JIT_V1); /* undone immediately, but needed for fall-through */
       refslow = jit_get_ip();
       if (kind == INLINE_STRUCT_PROC_SET)
         scheme_restore_struct_temp(jitter, JIT_V1);
