@@ -513,7 +513,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     if (ref) {
       __START_SHORT_JUMPS__(1);
       ref2 = jit_jmpi(jit_forward());
-      mz_patch_ucbranch(ref);
+      mz_patch_branch(ref);
       __END_SHORT_JUMPS__(1);
     } else
       ref2 = NULL;
