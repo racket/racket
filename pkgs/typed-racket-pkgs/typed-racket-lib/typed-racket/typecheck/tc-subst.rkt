@@ -54,19 +54,11 @@
               #:Object (lambda (f) (subst-object f k o polarity)))
               t
               [#:arr dom rng rest drest kws
-                     ;; Note that if k is an integer, then it means that
-                     ;; the object won't be in scope inside the `arr`, so
-                     ;; there is no reason to do any substitution. This
-                     ;; isn't a problem since `tc-app-helper` unwraps one
-                     ;; level of the function type.
-                     ;;
-                     ;; If integer-valued objects were changed to also
-                     ;; index into the argument list of the *surrounding*
-                     ;; function, then this would need to increment the
-                     ;; object and continue substituting.
-                     ;;
-                     ;; The same applies to `index-free-in?` below.
-                     (let* ([st* (if (integer? k) values st)])
+                     ;; here we have to increment the count for the domain, where the new bindings are in scope
+                     (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
+                            [st* (if (integer? k)
+                                     (λ (t) (subst-type t (if (number? k) (+ arg-count k) k) o polarity))
+                                     st)])
                        (make-arr (map st dom)
                                  (st* rng)
                                  (and rest (st rest))
@@ -150,7 +142,9 @@
                  #:Object for-object)
                 t
                 [#:arr dom rng rest drest kws
-                       (let* ([st* (if (integer? k) void for-type)])
+                       ;; here we have to increment the count for the domain, where the new bindings are in scope
+                       (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
+                              [st* (lambda (t) (index-free-in? (if (number? k) (+ arg-count k) k) t))])
                          (for-each for-type dom)
                          (st* rng)
                          (and rest (for-type rest))
