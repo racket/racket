@@ -184,7 +184,7 @@ See more in PR8831.
                 ;; and not properly encoded -- similar justification to
                 ;; browsers accepting unencoded chars in manually entered URLs.
                 [else (append (bytes->list (string->bytes/utf-8 (string c)))
-                              (internal-decode l))]))))
+                              rest)]))))
   (bytes->string/utf-8 (apply bytes (internal-decode (string->list str)))))
 
 ;; Utility for defining codecs
