@@ -294,6 +294,17 @@ These @tech{formlet}s are the main combinators for form input.
   name.
 }
 
+@defproc[(input [#:type type string?]
+                [#:value value (or/c false/c bytes?) #f]
+                [#:size size (or/c false/c exact-nonnegative-integer?) #f]
+                [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
+                [#:read-only? read-only? boolean? #f]
+                [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+  This @tech{formlet} renders using an INPUT element with specified type
+  and arguments.
+}
+
 @defproc[(text-input [#:value value (or/c false/c bytes?) #f]
                      [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                      [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
