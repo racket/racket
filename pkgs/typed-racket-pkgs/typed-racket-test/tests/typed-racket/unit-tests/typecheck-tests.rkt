@@ -1692,6 +1692,49 @@
 
         [tc-e/t (inst (ann (lambda (a) a) (All (a) (a -> a))) Symbol)
                 (t:-> -Symbol -Symbol)]
+
+        ;; This test makes sure that a user written filter
+        ;; can reference an identifier object in addition to
+        ;; an integer object.
+        [tc-e/t
+         (λ (x)
+           (define f
+             (ann (λ (y) (exact-integer? x))
+                  ;; note the filters
+                  (Any -> Boolean : #:+ (Integer @ x) #:- (! Integer @ x))))
+           (if (f 'dummy) (add1 x) 2))
+         (t:-> Univ -Integer : (-FS -top (-filter -Integer 0)))]
+
+        ;; This test ensures that curried predicates have
+        ;; the correct filters so that they can be used for
+        ;; occurrence typing.
+        [tc-e
+         (let ()
+           (define f (λ (x) (λ (y) (number? x))))
+           (: b (U Number String))
+           (define b 5)
+           (define g (f b))
+           ;; this doesn't type-check unless OT is working
+           (if (g "foo") (add1 b) 3)
+           (void))
+         ;; type doesn't really matter, just make sure it typechecks
+         -Void]
+
+       ;; The following ensures that the correct filter can be
+       ;; written by the user
+       [tc-e
+        (let ()
+          (: f (Any -> (Any -> Boolean : #:+ (Number @ 1 0)
+                            #:- (! Number @ 1 0))
+                    : #:+ Top #:- Bot))
+          (define f (λ (x) (λ (y) (number? x))))
+          (: b (U Number String))
+          (define b 5)
+          (define g (f b))
+          (if (g "foo") (add1 b) 3)
+          (void))
+        ;; type doesn't really matter, just make sure it typechecks
+        -Void]
         )
   (test-suite
    "tc-literal tests"
