@@ -34,8 +34,8 @@
 (define ip> string>)
 
 ;; Symbol X Nat -> X
-(define (proc> tag f ar)
-  (check-proc tag f ar "first" (if (> ar 1) (format "~a arguments" ar) "one argument"))
+(define (proc> tag f ar #:place (place "first"))
+  (check-proc tag f ar place (if (> ar 1) (format "~a arguments" ar) "one argument"))
   f)
 
 ;; Symbol X (Number -> Boolean) String String -> X

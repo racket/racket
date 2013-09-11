@@ -112,7 +112,7 @@
               #:except
               [(_ stop? last-picture)
                #'(list (proc> 'stop-when (f2h stop?) 1)
-                       (proc> 'stop-when (f2h last-picture) 1))])]
+                       (proc> 'stop-when (f2h last-picture) 1 #:place "second"))])]
   ;; (U #f Any)
   ;; -- should the session be recorded and turned into PNGs and an animated GIF
   ;; -- if the value is a string and is the name of a local directory, use it! 
