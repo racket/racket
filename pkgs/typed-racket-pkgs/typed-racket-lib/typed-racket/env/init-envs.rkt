@@ -68,6 +68,16 @@
      `(-lst ,(sub elem-ty))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
      `(simple-> (list ,@(map sub dom)) ,(sub t))]
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft pth n)
+								      (NotTypeFilter: ft pth n))
+							(Empty:))))
+			    #f #f '())))
+     `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub n) ,(sub pth))]
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False) pth 0)
+								      (TypeFilter: (== -False) pth 0))
+							(Path: pth 0))))
+			    #f #f '())))
+     `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
     [(Union: elems) (split-union elems)]
     [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
