@@ -265,15 +265,15 @@
 
 
 ;; Paths
-(define -car (make-CarPE))
-(define -cdr (make-CdrPE))
-(define -syntax-e (make-SyntaxPE))
-(define -force (make-ForcePE))
+(define/decl -car (make-CarPE))
+(define/decl -cdr (make-CdrPE))
+(define/decl -syntax-e (make-SyntaxPE))
+(define/decl -force (make-ForcePE))
 
 
 ;; function type constructors
 
-(define top-func (make-Function (list (make-top-arr))))
+(define/decl top-func (make-Function (list (make-top-arr))))
 
 
 (define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy])
