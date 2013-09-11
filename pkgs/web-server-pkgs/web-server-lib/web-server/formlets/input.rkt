@@ -313,6 +313,14 @@
                "")))))
 
 (provide/contract
+ [input (()
+         (#:type string?
+          #:value (or/c false/c bytes?)
+          #:max-length (or/c false/c exact-nonnegative-integer?)
+          #:read-only? boolean?
+          #:attributes (listof (list/c symbol? string?))
+          . ->* .
+          (formlet/c (or/c false/c binding?))))]
  [text-input (() 
               (#:value (or/c false/c bytes?)
                        #:size (or/c false/c exact-nonnegative-integer?)
