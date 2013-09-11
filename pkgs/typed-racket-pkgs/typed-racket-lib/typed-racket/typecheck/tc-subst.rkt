@@ -21,11 +21,12 @@
   (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
   (match-define (Result: t fs old-obj) r)
   (for/fold ([t t] [fs fs] [old-obj old-obj])
-            ([(o k) (in-indexed (in-list objs))]
+            ([(o arg) (in-indexed (in-list objs))]
              [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
-    (values (subst-type t k o #t)
-            (subst-filter-set fs k o #t arg-ty)
-            (subst-object old-obj k o #t))))
+    (define key (list 0 arg))
+    (values (subst-type t key o #t)
+            (subst-filter-set fs key o #t arg-ty)
+            (subst-object old-obj key o #t))))
 
 ;; Substitution of objects into a filter set
 ;; This is essentially ψ+|ψ- [o/x] from the paper
@@ -54,16 +55,21 @@
               #:Object (lambda (f) (subst-object f k o polarity)))
               t
               [#:arr dom rng rest drest kws
-                     ;; here we have to increment the count for the domain, where the new bindings are in scope
-                     (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
-                            [st* (if (integer? k)
-                                     (λ (t) (subst-type t (if (number? k) (+ arg-count k) k) o polarity))
+                     (let* ([st* (if (pair? k)
+                                     ;; Add a scope if we are substituting an index and
+                                     ;; not a free variable by name
+                                     (λ (t) (subst-type t (add-scope k) o polarity))
                                      st)])
                        (make-arr (map st dom)
                                  (st* rng)
                                  (and rest (st rest))
                                  (and drest (cons (st (car drest)) (cdr drest)))
                                  (map st kws)))]))
+
+;; add-scope : name-ref/c -> name-ref/c
+;; Add a scope from an index object
+(define (add-scope key)
+  (list (+ (car key) 1) (cadr key)))
 
 ;; Substitution of objects into objects
 ;; This is o [o'/x] from the paper
@@ -142,9 +148,9 @@
                  #:Object for-object)
                 t
                 [#:arr dom rng rest drest kws
-                       ;; here we have to increment the count for the domain, where the new bindings are in scope
-                       (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
-                              [st* (lambda (t) (index-free-in? (if (number? k) (+ arg-count k) k) t))])
+                       (let* ([st* (if (pair? k)
+                                       (lambda (t) (index-free-in? (add-scope k) t))
+                                       for-type)])
                          (for-each for-type dom)
                          (st* rng)
                          (and rest (for-type rest))
@@ -167,8 +173,9 @@
                          (open-Result r (map (lambda (i) (make-Path null i))
                                              formals)))])
            (ret ts fs os
-                (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
-                  (subst-type dty k (make-Path null o) #t))
+                (for/fold ([dty dty]) ([(o idx) (in-indexed (in-list formals))])
+                  (define key (list 0 idx))
+                  (subst-type dty key (make-Path null o) #t))
                 dbound))
          (ret ts fs os dty dbound))]
     [(Values: (list (and rs (Result: ts fs os)) ...))

@@ -29,7 +29,7 @@
 
 
 (define (name-ref=? a b)
-  (or (eq? a b)
+  (or (equal? a b)
       (and (identifier? a)
            (identifier? b)
            (free-identifier=? a b))))

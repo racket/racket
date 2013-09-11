@@ -11,21 +11,58 @@
          combine-props
          tc-results->values)
 
+;; Given results from the range of a lambda, abstract any
+;; identifier objects into index (numeric) objects. This is effectively
+;; doing a kind of DeBruijn indexing for objects.
 (define/cond-contract (abstract-results results arg-names)
   (tc-results/c (listof identifier?) . -> . SomeValues/c)
-  (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
+  (define keys (for/list ([(nm k) (in-indexed arg-names)]) (list 0 k)))
   (match results
     [(tc-any-results:) (make-AnyValues)]
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
+        (make-Result (abstract-type arg-names keys t)
+                     (abstract-filter arg-names keys f)
+                     (abstract-object arg-names keys o)))
       dty dbound)]
     [(tc-results: ts fs os)
      (make-Values
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
+        (make-Result (abstract-type arg-names keys t)
+                     (abstract-filter arg-names keys f)
+                     (abstract-object arg-names keys o))))]))
 
+;; Abstract all given id objects into index objects (keys) in
+;; the given type
+(define/cond-contract (abstract-type ids keys type)
+  (-> (listof identifier?) (listof name-ref/c) Type/c Type/c)
+  (define (at type) (abstract-type ids keys type))
+  (define (af filter) (abstract-filter ids keys filter))
+  (define (ao obj) (abstract-object ids keys obj))
+  (type-case
+   (#:Type at #:Filter af #:Object ao)
+   type
+   [#:arr
+    dom rng rest drest kws
+    (let ([at*
+           (λ (type)
+             (abstract-type ids (add-scope keys) type))])
+      (make-arr (map at dom)
+                (at* rng)
+                (and rest (at rest))
+                (and drest (cons (at (car drest)) (cdr drest)))
+                (map at kws)))]))
+
+;; add-scope : Listof<name-ref/c> -> Listof<name-ref/c>
+;; Add a scope to the index object
+(define (add-scope keys)
+  (for/list ([depth+arg keys])
+    (match-define (list depth arg) depth+arg)
+    (list (+ 1 depth) arg)))
+
+;; Abstract all given id objects into index objects (keys) in
+;; the given object
 (define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
   (define (lookup y)
@@ -37,6 +74,8 @@
     [(Path: p (lookup: idx)) (make-Path p idx)]
     [_ -no-obj]))
 
+;; Abstract all given id objects into index objects (keys) in
+;; the given filter set
 (define/cond-contract (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
   (match fs
@@ -47,8 +86,8 @@
 (define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
   (define/cond-contract (lookup y)
-       (identifier? . -> . (or/c #f integer?))
-       (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
+    (identifier? . -> . (or/c #f (list/c integer? integer?)))
+    (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (or (? identifier? (app lookup (? values i)))

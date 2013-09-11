@@ -114,17 +114,23 @@
   (c:-> Filter/c Filter/c FilterSet?)
   (make-FilterSet + -))
 
+;; Abbreviation for filters
+;; `i` can be an integer for backwards compatibility
 (define/cond-contract (-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
-     (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
-         -top
-         (make-TypeFilter t p i)))
+  (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
+  (define i* (if (integer? i) (list 0 i) i))
+  (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
+      -top
+      (make-TypeFilter t p i*)))
 
+;; Abbreviation for not filters
+;; `i` can be an integer for backwards compatibility
 (define/cond-contract (-not-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
-     (if (or (type-equal? -Bottom t) (and (identifier? i) (is-var-mutated? i)))
-         -top
-         (make-NotTypeFilter t p i)))
+  (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
+  (define i* (if (integer? i) (list 0 i) i))
+  (if (or (type-equal? -Bottom t) (and (identifier? i) (is-var-mutated? i)))
+      -top
+      (make-NotTypeFilter t p i*)))
 
 (define (-filter-at t o)
   (match o
@@ -193,9 +199,9 @@
 
 (define (->acc dom rng path)
   (make-Function (list (make-arr* dom rng
-                                  #:filters (-FS (-not-filter (-val #f) 0 path)
-                                                 (-filter (-val #f) 0 path))
-                                  #:object (make-Path path 0)))))
+                                  #:filters (-FS (-not-filter (-val #f) (list 0 0) path)
+                                                 (-filter (-val #f) (list 0 0) path))
+                                  #:object (make-Path path (list 0 0))))))
 
 (define (cl->* . args)
   (define (funty-arities f)

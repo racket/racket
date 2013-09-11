@@ -14,8 +14,10 @@
    'FilterSet
    (λ (e) (or (FilterSet? e) (NoFilter? e)))))
 
-
-(define name-ref/c (or/c identifier? integer?))
+;; A Name-Ref is any value that represents an object.
+;; As an identifier, it represents a free variable in the environment
+;; As a list, it represents a De Bruijn indexed bound variable
+(define name-ref/c (or/c identifier? (list/c integer? integer?)))
 (define (hash-name v) (if (identifier? v) (hash-id v) (list v)))
 
 (def-filter Bot () [#:fold-rhs #:base])
