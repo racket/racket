@@ -7,7 +7,7 @@
          (prefix-in c: (contract-req))
          (rep type-rep object-rep free-variance)
          (private parse-type syntax-properties)
-         (types abbrev utils resolve substitute type-table)
+         (types abbrev utils resolve substitute type-table struct-table)
          (env global-env type-name-env tvar-env)
          (utils tc-utils)
          (typecheck def-binding)

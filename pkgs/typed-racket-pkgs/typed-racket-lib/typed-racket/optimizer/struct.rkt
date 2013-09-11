@@ -4,7 +4,7 @@
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types type-table)
+         (types type-table struct-table)
          (optimizer utils logging))
 
 (provide struct-opt-expr)

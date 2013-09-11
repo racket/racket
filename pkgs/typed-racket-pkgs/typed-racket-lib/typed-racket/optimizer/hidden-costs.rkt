@@ -4,9 +4,7 @@
          (for-template racket/base)
          "../utils/utils.rkt"
          (optimizer utils logging)
-         (types abbrev))
-
-(require (types type-table))
+         (types abbrev type-table struct-table))
 
 (provide hidden-cost-log-expr)
 
