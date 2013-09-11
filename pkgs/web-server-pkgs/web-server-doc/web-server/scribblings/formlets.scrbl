@@ -295,7 +295,7 @@ These @tech{formlet}s are the main combinators for form input.
 }
 
 @defproc[(input [#:type type string?]
-                [#:value value (or/c false/c bytes?) #f]
+                [#:value value (or/c false/c bytes? string?) #f]
                 [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                 [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                 [#:read-only? read-only? boolean? #f]
@@ -305,7 +305,7 @@ These @tech{formlet}s are the main combinators for form input.
   and arguments.
 }
 
-@defproc[(text-input [#:value value (or/c false/c bytes?) #f]
+@defproc[(text-input [#:value value (or/c false/c bytes? string?) #f]
                      [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                      [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                      [#:read-only? read-only? boolean? #f]
@@ -315,7 +315,7 @@ These @tech{formlet}s are the main combinators for form input.
   and the attributes given in the arguments.
 }
 
-@defproc[(password-input [#:value value (or/c false/c bytes?) #f]
+@defproc[(password-input [#:value value (or/c false/c bytes? string?) #f]
                          [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                          [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                          [#:read-only? read-only? boolean? #f]
@@ -325,7 +325,7 @@ These @tech{formlet}s are the main combinators for form input.
   type and the attributes given in the arguments.
 }
 
-@defproc[(textarea-input [#:value value (or/c false/c bytes?) #f]
+@defproc[(textarea-input [#:value value (or/c false/c bytes? string?) #f]
                          [#:rows rows (or/c false/c number?) #f]
                          [#:cols cols (or/c false/c number?) #f]
                          [#:attributes attrs (listof (list/c symbol? string?)) empty])
@@ -334,7 +334,7 @@ These @tech{formlet}s are the main combinators for form input.
   given in the arguments.
 }
 
-@defproc[(checkbox [value bytes?]
+@defproc[(checkbox [value (or/c bytes? string?)]
                    [checked? boolean?]
                    [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
@@ -342,7 +342,7 @@ These @tech{formlet}s are the main combinators for form input.
   type and the attributes given in the arguments.
 }
 
-@defproc[(radio [value bytes?] 
+@defproc[(radio [value (or/c bytes? string?)] 
                 [checked? boolean?]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
@@ -377,14 +377,14 @@ results of @racket[display]. The result of processing this formlet is
 a list of elements of the sequence.
 }
 
-@defproc[(submit [value bytes?]
+@defproc[(submit [value (or/c bytes? string?)]
                  [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
   This @tech{formlet} renders using an INPUT element with the SUBMIT
   type and the attributes given in the arguments.
 }
 
-@defproc[(reset [value bytes?]
+@defproc[(reset [value (or/c bytes? string?)]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
   This @tech{formlet} renders using an INPUT element with the RESET type
@@ -397,17 +397,17 @@ a list of elements of the sequence.
   and the attributes given in the arguments.
 }
 
-@defproc[(hidden [value bytes?] [#:attributes attrs (listof (list/c symbol? string?)) empty])
+@defproc[(hidden [value (or/c bytes? string?)] [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
   This @tech{formlet} renders using an INPUT element with HIDDEN type
   and the attributes given in the arguments.
 }
 
-@defproc[(img [alt bytes?] 
-              [src bytes?]
+@defproc[(img [alt (or/c bytes? string?)]
+              [src (or/c bytes? string?)]
               [#:height height (or/c false/c exact-nonnegative-integer?) #f]
-              [#:longdesc ldesc (or/c false/c bytes?) #f]
-              [#:usemap map (or/c false/c bytes?) #f]
+              [#:longdesc ldesc (or/c false/c bytes? string?) #f]
+              [#:usemap map (or/c false/c bytes? string?) #f]
               [#:width width (or/c false/c exact-nonnegative-integer?) #f]
               [#:attributes attrs (listof (list/c symbol? string?)) empty])
       (formlet/c (or/c false/c binding?))]{
@@ -415,10 +415,10 @@ a list of elements of the sequence.
   given in the arguments.
 }
 
-@defproc[(button [type bytes?]
-                 [button-text bytes?]
+@defproc[(button [type (or/c bytes? string?)]
+                 [button-text (or/c bytes? string?)]
                  [#:disabled disabled boolean? #f]
-                 [#:value value (or/c false/c bytes?) #f]
+                 [#:value value (or/c false/c bytes? string?) #f]
                  [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
   This @tech{formlet} renders using a BUTTON element with the attributes
@@ -457,7 +457,7 @@ a list of elements of the sequence.
   or errors.
 }
 
-@defproc[(default 
+@defproc[(default
            [def bytes?]
            [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
