@@ -38,7 +38,7 @@
 (define (make-download-page table-file
                             #:dest [dest "index.html"]
                             #:installers-url [installers-url "./"]
-                            #:docs-url [docs-url "go"]
+                            #:docs-url [docs-url #f]
                             #:pdf-docs-url [pdf-docs-url #f]
                             #:title [title "Racket Downloads"]
                             #:git-clone [git-clone #f]
