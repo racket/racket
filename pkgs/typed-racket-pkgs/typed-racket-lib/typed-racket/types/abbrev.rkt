@@ -289,12 +289,11 @@
             (c:-> (c:listof Type/c) Type/c Type/c integer? (c:listof PathElem?) Type/c))
   (case-lambda
     [(in out t n p)
-     (define xs (for/list ([(_ i) (in-indexed (in-list in))]) i))
      (make-Function
       (list
        (make-arr*
 	in out
-	#:filters (-FS (-filter t (list-ref xs n) p) (-not-filter t (list-ref xs n) p)))))]
+	#:filters (-FS (-filter t n p) (-not-filter t n p)))))]
     [(in out t n)
      (make-pred-ty in out t n null)]
     [(in out t)
