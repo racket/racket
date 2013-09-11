@@ -18,12 +18,13 @@
 
 ;; Fallback when FSNewAliasFromPath is not available:
 (define _FSRef _pointer) ; 80 bytes
-(define FSPathMakeRef 
+(define FSPathMakeRef
   (get-ffi-obj 'FSPathMakeRef 
                CoreServices
                (_fun _path _FSRef (_pointer = #f) -> (r : _int) 
                      -> (unless (zero? r)
-                          (error 'FSPathMakeRef "failed")))))
+                          (error 'FSPathMakeRef "failed")))
+               make-unavailable))
 (define FSNewAliasUnicode
   (get-ffi-obj 'FSNewAliasUnicode
                CoreServices
