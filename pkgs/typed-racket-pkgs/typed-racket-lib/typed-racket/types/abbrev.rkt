@@ -83,7 +83,7 @@
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
-(define/decl -Boolean (Un (-val #t) (-val #f)))
+(define/decl -Boolean (Un -False -True))
 (define/decl -Undefined
   (make-Base 'Undefined
              #'(lambda (x) (equal? (letrec ([y y]) y) x)) ; initial value of letrec bindings

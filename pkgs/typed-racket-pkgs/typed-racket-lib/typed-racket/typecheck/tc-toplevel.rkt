@@ -383,7 +383,8 @@
 	      (#%plain-module-begin ;; avoid top-level printing and config
 	       (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
 			typed-racket/env/global-env typed-racket/env/type-alias-env
-			typed-racket/types/type-table typed-racket/types/abbrev)
+			typed-racket/types/struct-table typed-racket/types/abbrev
+			(rename-in racket/private/sort [sort raw-sort]))
 	       #,(env-init-code syntax-provide? provide-tbl def-tbl)
 	       #,(talias-env-init-code)
 	       #,(tname-env-init-code)

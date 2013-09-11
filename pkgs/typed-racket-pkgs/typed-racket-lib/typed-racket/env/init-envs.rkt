@@ -8,13 +8,15 @@
          "type-name-env.rkt"
          "type-alias-env.rkt"
          "mvar-env.rkt"
+	 (rename-in racket/private/sort [sort raw-sort])
          (rep type-rep object-rep filter-rep rep-utils free-variance)
          (for-template (rep type-rep object-rep filter-rep)
                        (types union abbrev)
-                       racket/shared racket/base)
+                       racket/shared (except-in racket/base sort)
+		       (rename-in racket/private/sort [sort raw-sort]))
          (for-syntax syntax/parse racket/base)
-         (types abbrev)
-         racket/syntax racket/dict
+         (types abbrev union)
+         racket/syntax racket/dict racket/list
          mzlib/pconvert racket/match)
 
 (provide ;; convenience form for defining an initial environment
@@ -28,7 +30,7 @@
          tvariance-env-init-code
          talias-env-init-code
          env-init-code
-         mvar-env-init-code )
+         mvar-env-init-code)
 
 (define-syntax (define-initial-env stx)
   (syntax-parse stx
@@ -45,11 +47,28 @@
   (for-each (lambda (nm/ty) (register-type-if-undefined (car nm/ty) (cadr nm/ty))) initial-env))
 
 (define (converter v basic sub)
+  (define (numeric? t) (match t [(Base: _ _ _ b) b] [(Value: (? number?)) #t] [_ #f]))
+  (define (split-union ts)
+    (define-values (nums others) (partition numeric? ts))
+    (cond [(or (null? nums) (null? others))
+	   ;; nothing interesting to do in this case
+	   `(make-Union (,#'raw-sort (list ,@(map sub ts)) < Type-seq #f))]
+	  [else
+	   ;; we do a little more work to hopefully save a bunch in serialization space
+	   ;; if we get a hit in the predefined-type-table
+	   `(simple-Un ,(sub (apply Un nums)) ,(sub (apply Un others)))]))
+
   (define (gen-constructor sym)
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
     [(? Rep? (app (lambda (v) (hash-ref predefined-type-table (Rep-seq v) #f)) (? values id))) id]
-    [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
+    [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
+     `(-lst ,(sub elem-ty))]
+    [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
+     `(-lst ,(sub elem-ty))]
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
+     `(simple-> (list ,@(map sub dom)) ,(sub t))]
+    [(Union: elems) (split-union elems)]
     [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]

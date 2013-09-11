@@ -33,6 +33,9 @@
 (define/decl -Bottom (make-Union null))
 (define/decl Err (make-Error))
 
+(define/decl -False (make-Value #f))
+(define/decl -True (make-Value #t))
+
 ;A Type that corresponds to the any contract for the
 ;return type of functions
 (define/decl ManyUniv (make-AnyValues))
@@ -190,6 +193,9 @@
      (->* dom rng : filters)]
     [(_ dom (dty dbound) rng : filters)
      (make-Function (list (make-arr* dom rng #:drest (cons dty 'dbound) #:filters filters)))]))
+
+(define (simple-> doms rng)
+  (->* doms rng))
 
 (define (->acc dom rng path)
   (make-Function (list (make-arr* dom rng
