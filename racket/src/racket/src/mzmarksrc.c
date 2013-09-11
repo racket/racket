@@ -1123,9 +1123,6 @@ module_phase_exports_val {
   gcMARK2(m->provide_nominal_srcs, gc);
   gcMARK2(m->provide_src_phases, gc);
 
-  gcMARK2(m->kernel_exclusion, gc);
-  gcMARK2(m->kernel_exclusion2, gc);
-
   gcMARK2(m->ht, gc);
 
  size:

@@ -3368,9 +3368,6 @@ typedef struct Scheme_Module_Phase_Exports
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */
 
-  Scheme_Object *kernel_exclusion;   /* we allow up to two exns, but they must be shadowed */
-  Scheme_Object *kernel_exclusion2;
-
   Scheme_Hash_Table *ht;             /* maps external names to array indices; created lazily */
 } Scheme_Module_Phase_Exports;
 

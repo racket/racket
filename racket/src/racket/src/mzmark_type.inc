@@ -2778,9 +2778,6 @@ static int module_phase_exports_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->provide_nominal_srcs, gc);
   gcMARK2(m->provide_src_phases, gc);
 
-  gcMARK2(m->kernel_exclusion, gc);
-  gcMARK2(m->kernel_exclusion2, gc);
-
   gcMARK2(m->ht, gc);
 
   return
@@ -2799,9 +2796,6 @@ static int module_phase_exports_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->provide_src_names, gc);
   gcFIXUP2(m->provide_nominal_srcs, gc);
   gcFIXUP2(m->provide_src_phases, gc);
-
-  gcFIXUP2(m->kernel_exclusion, gc);
-  gcFIXUP2(m->kernel_exclusion2, gc);
 
   gcFIXUP2(m->ht, gc);
 
