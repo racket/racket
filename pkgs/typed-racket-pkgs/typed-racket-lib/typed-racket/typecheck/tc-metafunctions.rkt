@@ -19,14 +19,14 @@
 ;;
 ;; When the body of a lambda is type-checked, its filters and object
 ;; may refer to variables that are in scope in that body. Since these
-;; names are not in scope later, the type of the function will instead
-;; store their De Bruijn indices.
+;; names are not in scope outside of the lambda, the type of the function
+;; will instead store their De Bruijn indices.
 ;;
-;; For example, the function
+;; For example, given the function
 ;;
 ;;   (λ (x) (number? x))
 ;;
-;; will check its body and return
+;; the typechecker will check the body and return
 ;;
 ;;   Boolean ; N_x | !N_x ; ∅
 ;;
