@@ -257,8 +257,8 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 Machine-only keywords:
 
   #:name <string> --- defaults to host; this string is recorded as a
-    description of the installer (for use in a generated table of
-    installer links, for example)
+    description of the installer and can be used in a generated table of
+    installer links; see also "Names and Download Pages" below
 
 More precisely, the `distro-build/config' language is like
 `racket/base' except that the module body must have exactly one
@@ -327,6 +327,38 @@ configuration keywords to values.
   Produces "README" content to tell Mac OS X users how to install a
   distirbution folder. This function is used by `make-readme' when
   `#:platform' in `config' is 'macosx.
+
+Names and Download Pages
+------------------------
+
+The `#:name' for an installer is used in an HTML table of download
+links by the `site' or `snapshot-site' targets. The names are first
+sorted. Then, for the purposes of building the table, a "|" separated
+by any number of spaces within a name is treated as a hierarchical
+delimiter, while anything within "{" and "}" in a hierarchical level
+is stripped from the displayed name along with surrounding spaces (so
+that it can affect sorting without being displayed).
+
+For example, the names
+
+  "Racket | {2} Linux | 32-bit"
+  "Racket | {2} Linux | 64-bit"
+  "Racket | {1} Windows | 32-bit"
+  "Racket | {1} Windows | 64-bit"
+  "Racket | {3} Source"
+
+are shown (actually or conceptually) as
+
+  Racket
+   Windows
+     [32-bit]
+     [64-bit]
+   Linux
+     [32-bit]
+     [64-bit]
+   [Source]
+
+where the square-bracketed entries are hyperlinks.
 
 Examples
 --------
