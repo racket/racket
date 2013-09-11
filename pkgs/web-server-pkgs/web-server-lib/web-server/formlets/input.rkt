@@ -8,6 +8,12 @@
                   pure
                   cross))
 
+;; Convert UTF-8 bytes to string when needed.
+(define (coerce-string/utf-8 bstr-or-str)
+  (if (bytes? bstr-or-str)
+    (bytes->string/utf-8 bstr-or-str)
+    bstr-or-str))
+
 ; Low-level
 (define (next-name i)
   (values (format "input_~a" i) (add1 i)))
@@ -70,7 +76,7 @@
                   (list 'type type)
                   (append
                    (filter list?
-                           (list (and value (list 'value (bytes->string/utf-8 value)))
+                           (list (and value (list 'value (coerce-string/utf-8 value)))
                                  (and size (list 'size (number->string size)))
                                  (and max-length (list 'maxlength (number->string max-length)))
                                  (and read-only? (list 'readonly "true"))))
@@ -217,13 +223,13 @@
    (λ (n)
      (list 'button
            (list* (list 'name n)
-                  (list 'type (bytes->string/utf-8 type))
+                  (list 'type (coerce-string/utf-8 type))
                   (append 
                    (filter list?
                            (list (and disabled (list 'disabled (if disabled "true" "false")))
-                                 (and value (list 'value (bytes->string/utf-8 value)))))
+                                 (and value (list 'value (coerce-string/utf-8 value)))))
                    attrs))
-           (bytes->string/utf-8 text)))))
+           (coerce-string/utf-8 text)))))
 
 (define (img alt src
              #:height [height #f]
@@ -235,13 +241,13 @@
    (λ (n)
      (list 'img
            (list* (list 'name n)
-                  (list 'src (bytes->string/utf-8 src))
-                  (list 'alt (bytes->string/utf-8 alt))
+                  (list 'src (coerce-string/utf-8 src))
+                  (list 'alt (coerce-string/utf-8 alt))
                   (append
                    (filter list?
                            (list (and height (list 'height (number->string height)))
-                                 (and ldesc (list 'longdesc (bytes->string/utf-8 ldesc)))
-                                 (and map (list 'usemap (bytes->string/utf-8 map)))
+                                 (and ldesc (list 'longdesc (coerce-string/utf-8 ldesc)))
+                                 (and map (list 'usemap (coerce-string/utf-8 map)))
                                  (and width (list 'width (number->string width)))))
                    attrs))))))
 
@@ -308,21 +314,19 @@
                            (list (and rows (list 'rows (number->string rows)))
                                  (and cols (list 'cols (number->string cols)))))
                    attrs))
-           (if value
-               (bytes->string/utf-8 value)
-               "")))))
+           (if value (coerce-string/utf-8 value) "")))))
 
 (provide/contract
  [input (()
          (#:type string?
-          #:value (or/c false/c bytes?)
+          #:value (or/c false/c bytes? string?)
           #:max-length (or/c false/c exact-nonnegative-integer?)
           #:read-only? boolean?
-          #:attributes (listof (list/c symbol? string?))
+          #:attributes (listof (list/c symbol? string?)))
           . ->* .
-          (formlet/c (or/c false/c binding?))))]
+          (formlet/c (or/c false/c binding?)))]
  [text-input (() 
-              (#:value (or/c false/c bytes?)
+              (#:value (or/c false/c bytes? string?)
                        #:size (or/c false/c exact-nonnegative-integer?)
                        #:max-length (or/c false/c exact-nonnegative-integer?)
                        #:read-only? boolean?
@@ -330,18 +334,18 @@
               . ->* . 
               (formlet/c (or/c false/c binding?)))]
  [password-input (() 
-                  (#:value (or/c false/c bytes?)
+                  (#:value (or/c false/c bytes? string?)
                            #:size (or/c false/c exact-nonnegative-integer?)
                            #:max-length (or/c false/c exact-nonnegative-integer?)
                            #:read-only? boolean?
                            #:attributes (listof (list/c symbol? string?)))
                   . ->* . 
                   (formlet/c (or/c false/c binding?)))]
- [checkbox ((bytes? boolean?)
+ [checkbox (((or/c bytes? string?) boolean?)
             (#:attributes (listof (list/c symbol? string?)))
             . ->* .
             (formlet/c (or/c false/c binding?)))]
- [radio ((bytes? boolean?)
+ [radio (((or/c bytes? string?) boolean?)
          (#:attributes (listof (list/c symbol? string?)))
          . ->* .
          (formlet/c (or/c false/c binding?)))]
@@ -359,11 +363,11 @@
                    #:display (any/c . -> . pretty-xexpr/c))
                   . ->* .
                   (formlet/c (listof any/c)))]
- [submit ((bytes?)         
+ [submit (((or/c bytes? string?))
           (#:attributes (listof (list/c symbol? string?)))
           . ->* .
           (formlet/c (or/c false/c binding?)))]
- [reset ((bytes?)
+ [reset (((or/c bytes? string?))
          (#:attributes (listof (list/c symbol? string?)))
          . ->* .
          (formlet/c (or/c false/c binding?)))]
@@ -371,22 +375,22 @@
                (#:attributes (listof (list/c symbol? string?)))
                . ->* .
                (formlet/c (or/c false/c binding?)))]
- [hidden ((bytes?)
+ [hidden (((or/c bytes? string?))
           (#:attributes (listof (list/c symbol? string?)))
           . ->* .
           (formlet/c (or/c false/c binding?)))]
- [img ((bytes? bytes?)
+ [img (((or/c bytes? string?) (or/c bytes? string?))
        (#:height (or/c false/c exact-nonnegative-integer?)
-                 #:longdesc (or/c false/c bytes?)
-                 #:usemap (or/c false/c bytes?)
+                 #:longdesc (or/c false/c (or/c bytes? string?))
+                 #:usemap (or/c false/c (or/c bytes? string?))
                  #:width (or/c false/c exact-nonnegative-integer?)
                  #:attributes (listof (list/c symbol? string?)))
        . ->* .
        (formlet/c (or/c false/c binding?)))]
- [button ((bytes? bytes?)
+ [button (((or/c bytes? string?) (or/c bytes? string?))
           (#:disabled
            boolean?
-           #:value (or/c false/c bytes?)
+           #:value (or/c false/c (or/c bytes? string?))
            #:attributes (listof (list/c symbol? string?)))
           . ->* .
           (formlet/c (or/c false/c binding?)))]
@@ -408,7 +412,7 @@
  [textarea-input (()
                   (#:attributes 
                    (listof (list/c symbol? string?))
-                   #:value (or/c false/c bytes?)
+                   #:value (or/c false/c (or/c bytes? string?))
                    #:rows number?
                    #:cols number?)
                   . ->* .
