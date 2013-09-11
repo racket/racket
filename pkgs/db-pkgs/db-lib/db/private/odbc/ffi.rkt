@@ -110,34 +110,27 @@
 Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 |#
 
-(define (os-openbsd)
-    (member (path->string (system-library-subpath #f))
-            '("i386-openbsd" "x86_64-openbsd")))
-
-(define odbc-lib
-  (case (system-type)
-    ((windows) (ffi-lib "odbc32.dll"))
-    ((macosx)  (ffi-lib "libiodbc" '("2" #f)))
-    ;; All unixes use unixodbc except OpenBSD
-    ((unix)
-     (if (not (os-openbsd))
-       (ffi-lib "libodbc" '("1" #f))
-       (ffi-lib "libiodbc" '("3.16" #f))))))
-
-(define WCHAR-SIZE
+(define-values (odbc-lib WCHAR-SIZE)
   (case (system-type)
     ((windows)
-     ;; Windows ODBC defines wchar_t, thus WCHAR, thus SQLWCHAR, as 16-bit
-     2)
+     ;; Windows ODBC defines wchar_t (thus WCHAR, thus SQLWCHAR) as 16-bit
+     (values (ffi-lib "odbc32.dll")
+             2))
     ((macosx)
-     ;; MacOSX uses iodbc, which defines SQLWCHAR as wchar_t, as 32-bit
-     4)
+     ;; Mac OS X uses iodbc, which defines SQLWCHAR as wchar_t, as 32-bit
+     (values (ffi-lib "libiodbc" '("2" #f))
+             4))
     ((unix)
-     ;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
-     ;; (even though Linux wchar_t is 32-bit). OpenBSD uses iodbc.
-     (if (not (os-openbsd))
-       2
-       4))))
+     (cond [(member (path->string (system-library-subpath #f))
+                    '("i386-openbsd" "x86_64-openbsd"))
+            ;; OpenBSD uses iodbc
+            (values (ffi-lib "libiodbc" '("3.16" #f))
+                    4)]
+           [else
+            ;; Other unixes use unixodbc, which defines WCHAR as 16-bit
+            ;; for compat w/ Windows (even though Linux wchar_t is 32-bit)
+            (values (ffi-lib "libodbc" '("1" #f))
+                    2)]))))
 
 (define-ffi-definer define-odbc odbc-lib)
 
