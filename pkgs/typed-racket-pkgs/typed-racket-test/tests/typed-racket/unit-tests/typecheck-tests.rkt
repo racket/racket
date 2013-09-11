@@ -1780,6 +1780,22 @@
            (void))
          ;; type doesn't really matter, just make sure it typechecks
          -Void]
+
+       ;; The following ensures that the correct filter can be
+       ;; written by the user
+       [tc-e
+        (let ()
+          (: f (Any -> (Any -> Boolean : #:+ (Number @ 1 0)
+                            #:- (! Number @ 1 0))
+                    : #:+ Top #:- Bot))
+          (define f (λ (x) (λ (y) (number? x))))
+          (: b (U Number String))
+          (define b 5)
+          (define g (f b))
+          (if (g "foo") (add1 b) 3)
+          (void))
+        ;; type doesn't really matter, just make sure it typechecks
+        -Void]
         )
   (test-suite
    "tc-literal tests"
