@@ -11,21 +11,111 @@
          combine-props
          tc-results->values)
 
+;; abstract-results
+;;
+;; Given results from the range of a lambda, abstract any
+;; identifier objects into index (numeric) objects. This is effectively
+;; doing a kind of De Bruijn indexing for objects.
+;;
+;; When the body of a lambda is type-checked, its filters and object
+;; may refer to variables that are in scope in that body. Since these
+;; names are not in scope outside of the lambda, the type of the function
+;; will instead store their De Bruijn indices.
+;;
+;; For example, given the function
+;;
+;;   (λ (x) (number? x))
+;;
+;; the typechecker will check the body and return
+;;
+;;   Boolean ; N_x | !N_x ; ∅
+;;
+;; but the `x`s have to be converted to indices to get the type
+;;
+;;      N_(0,0) | !N_(0,0)
+;; Any -------------------> Boolean
+;;              ∅
+;;
+;; where the index (0,0) indicates the first argument of
+;; the current function
+;;
+;; Comparatively, a curried predicate like
+;;
+;;   (λ (x) (λ (y)(number? x)))
+;;
+;; gets the type
+;;
+;;             N_(1,0) | !N_(1,0)
+;; Any -> Any -------------------> Boolean
+;;                     ∅
+;;
+;; (ignoring filters on the first arrow)
+;; where the index (1,0) indicates the first argument of
+;; the enclosing lambda.
+;;
+;; The paper "Logical Types for Untyped Languages" takes a different
+;; approach where all function types carry their names, so that the first
+;; example would have the type:
+;;
+;;        N_x | !N_x
+;; x:Any ------------> Boolean
+;;            ∅
+;;
+;; See tc-subst.rkt for the functions that take an abstracted function
+;; type and substitute in a concrete object.
+;;
 (define/cond-contract (abstract-results results arg-names)
   (tc-results/c (listof identifier?) . -> . SomeValues/c)
-  (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
+  (define keys (for/list ([(nm k) (in-indexed arg-names)]) (list 0 k)))
   (match results
     [(tc-any-results:) (make-AnyValues)]
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
+        (make-Result (abstract-type arg-names keys t)
+                     (abstract-filter arg-names keys f)
+                     (abstract-object arg-names keys o)))
       dty dbound)]
     [(tc-results: ts fs os)
      (make-Values
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
+        (make-Result (abstract-type arg-names keys t)
+                     (abstract-filter arg-names keys f)
+                     (abstract-object arg-names keys o))))]))
 
+;; Abstract all given id objects into index objects (keys) in
+;; the given type
+(define/cond-contract (abstract-type ids keys type)
+  (-> (listof identifier?) (listof name-ref/c) Type/c Type/c)
+  (define (at type) (abstract-type ids keys type))
+  (define (af filter) (abstract-filter ids keys filter))
+  (define (ao obj) (abstract-object ids keys obj))
+  (type-case
+   (#:Type at #:Filter af #:Object ao)
+   type
+   [#:arr
+    dom rng rest drest kws
+    (let ([at*
+           ;; when a new function type is encountered, increase
+           ;; the scope count in the keys so that names are
+           ;; substituted with the correct level of nesting
+           (λ (type)
+             (abstract-type ids (add-scope keys) type))])
+      (make-arr (map at dom)
+                (at* rng) ; only increase scope in range
+                (and rest (at rest))
+                (and drest (cons (at (car drest)) (cdr drest)))
+                (map at kws)))]))
+
+;; add-scope : Listof<name-ref/c> -> Listof<name-ref/c>
+;; Add a scope to the index object
+(define (add-scope keys)
+  (for/list ([depth+arg keys])
+    (match-define (list depth arg) depth+arg)
+    (list (+ 1 depth) arg)))
+
+;; Abstract all given id objects into index objects (keys) in
+;; the given object
 (define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
   (define (lookup y)
@@ -37,6 +127,8 @@
     [(Path: p (lookup: idx)) (make-Path p idx)]
     [_ -no-obj]))
 
+;; Abstract all given id objects into index objects (keys) in
+;; the given filter set
 (define/cond-contract (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
   (match fs
@@ -47,8 +139,8 @@
 (define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
   (define/cond-contract (lookup y)
-       (identifier? . -> . (or/c #f integer?))
-       (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
+    (identifier? . -> . (or/c #f (list/c integer? integer?)))
+    (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (or (? identifier? (app lookup (? values i)))

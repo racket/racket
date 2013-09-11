@@ -838,9 +838,9 @@
         ;; instantiating non-dotted terms
         [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
                 (make-Function (list (make-arr* (list -Integer) -Integer
-                                                #:filters (-FS (-not-filter (-val #f) 0)
-                                                               (-filter (-val #f) 0))
-                                                #:object (make-Path null 0))))]
+                                                #:filters (-FS (-not-filter (-val #f) (list 0 0))
+                                                               (-filter (-val #f) (list 0 0)))
+                                                #:object (make-Path null (list 0 0)))))]
         [tc-e/t (inst (plambda: (a) [x : a *] (apply list x)) Integer)
                 ((list) -Integer . ->* . (-lst -Integer))]
 
@@ -1765,6 +1765,21 @@
                   (Any -> Boolean : #:+ (Integer @ x) #:- (! Integer @ x))))
            (if (f 'dummy) (add1 x) 2))
          (t:-> Univ -Integer : (-FS -top (-filter -Integer 0)))]
+
+        ;; This test ensures that curried predicates have
+        ;; the correct filters so that they can be used for
+        ;; occurrence typing.
+        [tc-e
+         (let ()
+           (define f (λ (x) (λ (y) (number? x))))
+           (: b (U Number String))
+           (define b 5)
+           (define g (f b))
+           ;; this doesn't type-check unless OT is working
+           (if (g "foo") (add1 b) 3)
+           (void))
+         ;; type doesn't really matter, just make sure it typechecks
+         -Void]
         )
   (test-suite
    "tc-literal tests"

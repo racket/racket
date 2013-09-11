@@ -98,16 +98,16 @@
     [(TypeFilter: t p i)
      `(make-TypeFilter ,(sub t) ,(sub p) ,(if (identifier? i)
                                               `(quote-syntax ,i)
-                                              i))]
+                                              `(list ,(car i) ,(cadr i))))]
     [(NotTypeFilter: t p i)
      `(make-NotTypeFilter ,(sub t) ,(sub p)
                           ,(if (identifier? i)
                                `(quote-syntax ,i)
-                               i))]
+                               `(list ,(car i) ,(cadr i))))]
     [(Path: p i)
      `(make-Path ,(sub p) ,(if (identifier? i)
                                `(quote-syntax ,i)
-                               i))]
+                               `(list ,(car i) ,(cadr i))))]
     [(? Rep? rep)
      `(,(gen-constructor (car (vector->list (struct->vector rep))))
        ,@(map sub (Rep-values rep)))]
