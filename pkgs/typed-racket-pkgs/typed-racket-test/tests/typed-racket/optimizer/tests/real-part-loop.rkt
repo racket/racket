@@ -7,7 +7,6 @@ TR opt: real-part-loop.rkt 31:6 loop -- fun -> unboxed fun
 TR opt: real-part-loop.rkt 31:6 loop -- unboxed let loop
 TR opt: real-part-loop.rkt 32:20 v -- leave var unboxed
 TR opt: real-part-loop.rkt 32:20 v -- unbox float-complex
-TR opt: real-part-loop.rkt 32:20 v -- unboxed complex variable
 TR opt: real-part-loop.rkt 32:6 (> (real-part v) 70000.2) -- binary float comp
 TR opt: real-part-loop.rkt 32:9 (real-part v) -- complex accessor elimination
 TR opt: real-part-loop.rkt 32:9 (real-part v) -- unboxed unary float complex
@@ -21,6 +20,7 @@ END
 0
 
 END
+
 
 #lang typed/racket/base
 #:optimize

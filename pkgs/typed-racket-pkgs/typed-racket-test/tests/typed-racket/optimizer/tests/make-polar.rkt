@@ -10,15 +10,15 @@ TR opt: make-polar.rkt 34:39 (real-part p) -- complex accessor elimination
 TR opt: make-polar.rkt 34:39 (real-part p) -- unboxed unary float complex
 TR opt: make-polar.rkt 34:50 p -- leave var unboxed
 TR opt: make-polar.rkt 34:50 p -- unbox float-complex
-TR opt: make-polar.rkt 34:50 p -- unboxed complex variable
 TR opt: make-polar.rkt 35:39 (imag-part p) -- complex accessor elimination
 TR opt: make-polar.rkt 35:50 p -- leave var unboxed
-TR opt: make-polar.rkt 35:50 p -- unboxed complex variable
 END
 #<<END
 "-0.3070.486"
 
 END
+
+
 
 #lang typed/scheme
 #:optimize
