@@ -148,3 +148,25 @@
 ;; should be: 0.0+nan.0i
 (/ (make-rectangular 1 +inf.0))
 (/ (make-rectangular 1.0 +inf.0))
+
+;; is:        1.0+0.0
+;; should be: +inf.0+0.0
+(+
+  (exp 1.7976931348623151e+308)
+  0.0+0.0i)
+
+;; is:        1.0+0.0i
+;; should be: 1.0-0.0i
+(conjugate 1.0+0.0i)
+
+;; is:        +nan.0+nan.0i
+;; should be: 1.0+1.0i
+(* (expt 10 500) (expt 10 -500) 1.0+1.0i)
+
+;; is:        +nan.0+1.0i
+;; should be: 1.0+1.0i
+(+ (expt 10 501) (expt -10 501) 1.0+1.0i)
+
+;; is:        0.0+0.0i
+;; should be: -0.0-0.0i
+(- (+ 0 0) 0.0+0.0i)
