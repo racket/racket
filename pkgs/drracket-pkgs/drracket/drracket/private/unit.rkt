@@ -334,66 +334,72 @@
   ;                                                                                       ;;;;   
   
   (define (get-fraction-from-user parent)
-    (let* ([dlg (make-object dialog% (string-constant enter-fraction))]
-           [hp (make-object horizontal-panel% dlg)]
-           [_1 (make-object message% (string-constant whole-part) hp)]
-           [whole (make-object text-field% #f hp void)]
-           [vp (make-object vertical-panel% hp)]
-           [hp2 (make-object horizontal-panel% vp)]
-           [num (make-object text-field% #f hp2 void)]
-           [num-m (make-object message% (string-constant numerator) hp2)]
-           [hp3 (make-object horizontal-panel% vp)]
-           [den (make-object text-field% #f hp3 void)]
-           [den-m (make-object message% (string-constant denominator) hp3)]
-           [bp (make-object horizontal-panel% dlg)]
-           [ok? #f]
-           [validate-number
-            (λ ()
-              (let ([num-s (string->number (send num get-value))]
-                    [den-s (string->number (send den get-value))]
-                    [whole-s (if (string=? (send whole get-value) "")
-                                 0
-                                 (string->number (send whole get-value)))])
-                (cond
-                  [(or (not whole-s) (not (integer? whole-s)))
-                   (string-constant insert-number/bad-whole-part)]
-                  [(or (not num-s) (not (integer? num-s)) (< num-s 0))
-                   (string-constant insert-number/bad-numerator)]
-                  [(or (not den-s) (not (integer? den-s)) (<= den-s 0))
-                   (string-constant insert-number/bad-denominator)]
-                  [else
-                   (if (< whole-s 0)
-                       (- whole-s (/ num-s den-s))
-                       (+ whole-s (/ num-s den-s)))])))]
-           [ok-callback
-            (λ () 
-              (let ([v (validate-number)])
-                (cond
-                  [(number? v)
-                   (set! ok? #t)
-                   (send dlg show #f)]
-                  [else 
-                   (message-box
-                    (string-constant drscheme)
-                    v
-                    dlg
-                    #:dialog-mixin frame:focus-table-mixin)])))]
-           [cancel-callback 
-            (λ () (send dlg show #f))])
-      (let-values ([(ok cancel) 
-                    (gui-utils:ok/cancel-buttons
-                     bp
-                     (λ (x y) (ok-callback))
-                     (λ (x y) (cancel-callback)))])
-        (let ([mw (max (send den-m get-width) (send num-m get-width))])
-          (send den-m min-width mw)
-          (send num-m min-width mw))
-        (send bp set-alignment 'right 'center)
-        (send dlg show #t)
-        (and ok?
-             (let ([v (validate-number)])
-               (and (number? v)
-                    v))))))
+    (define dlg (make-object dialog% (string-constant enter-fraction)))
+    (define hp (make-object horizontal-panel% dlg))
+    (make-object message% (string-constant whole-part) hp)
+    (define whole
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (make-object text-field% #f hp void))))
+    (define vp (make-object vertical-panel% hp))
+    (define hp2 (make-object horizontal-panel% vp))
+    (define num 
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (make-object text-field% #f hp2 void))))
+    (define num-m (make-object message% (string-constant numerator) hp2))
+    (define hp3 (make-object horizontal-panel% vp))
+    (define den       
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (make-object text-field% #f hp3 void))))
+    (define den-m (make-object message% (string-constant denominator) hp3))
+    (define bp (make-object horizontal-panel% dlg))
+    (define ok? #f)
+    (define (validate-number)
+      (define num-s (string->number (send num get-value)))
+      (define den-s (string->number (send den get-value)))
+      (define whole-s (if (string=? (send whole get-value) "")
+                          0
+                          (string->number (send whole get-value))))
+      (cond
+        [(or (not whole-s) (not (integer? whole-s)))
+         (string-constant insert-number/bad-whole-part)]
+        [(or (not num-s) (not (integer? num-s)) (< num-s 0))
+         (string-constant insert-number/bad-numerator)]
+        [(or (not den-s) (not (integer? den-s)) (<= den-s 0))
+         (string-constant insert-number/bad-denominator)]
+        [else
+         (if (< whole-s 0)
+             (- whole-s (/ num-s den-s))
+             (+ whole-s (/ num-s den-s)))]))
+    (define (ok-callback)
+      (define v (validate-number))
+      (cond
+        [(number? v)
+         (set! ok? #t)
+         (send dlg show #f)]
+        [else 
+         (message-box
+          (string-constant drscheme)
+          v
+          dlg
+          #:dialog-mixin frame:focus-table-mixin)]))
+    (define (cancel-callback) (send dlg show #f))
+    (define-values (ok cancel) 
+      (gui-utils:ok/cancel-buttons
+       bp
+       (λ (x y) (ok-callback))
+       (λ (x y) (cancel-callback))))
+    (let ([mw (max (send den-m get-width) (send num-m get-width))])
+      (send den-m min-width mw)
+      (send num-m min-width mw))
+    (send bp set-alignment 'right 'center)
+    (send dlg show #t)
+    (and ok?
+         (let ([v (validate-number)])
+           (and (number? v)
+                v))))
   
   ;; create-executable : (instanceof drracket:unit:frame<%>) -> void
   (define (create-executable frame)
@@ -1571,19 +1577,21 @@
                                 (send-url (url->string url2)))]
                     [parent logger-gui-content-panel])
                (set! logger-text-field
-                     (new text-field% 
-                          [parent logger-gui-content-panel] 
-                          [label "‹level›@‹name› ..."]
-                          [init-value (send (get-interactions-text) get-user-log-receiver-args-str)]
-                          [callback
-                           (λ (tf evt)
-                             (define str (send (send tf get-editor) get-text))
-                             (define args (parse-logger-args str))
-                             (preferences:set 'drracket:logger-receiver-string str)
-                             (send (get-interactions-text) set-user-log-receiver-args
-                                   str
-                                   (if (null? args) #f args))
-                             (set-logger-text-field-bg-color args))]))
+                     (keymap:call/text-keymap-initializer
+                      (λ ()
+                        (new text-field% 
+                             [parent logger-gui-content-panel] 
+                             [label "‹level›@‹name› ..."]
+                             [init-value (send (get-interactions-text) get-user-log-receiver-args-str)]
+                             [callback
+                              (λ (tf evt)
+                                (define str (send (send tf get-editor) get-text))
+                                (define args (parse-logger-args str))
+                                (preferences:set 'drracket:logger-receiver-string str)
+                                (send (get-interactions-text) set-user-log-receiver-args
+                                      str
+                                      (if (null? args) #f args))
+                                (set-logger-text-field-bg-color args))]))))
                (set-logger-text-field-bg-color (parse-logger-args (send logger-text-field get-value)))
                (set! logger-checkbox 
                      (new check-box%
@@ -4791,23 +4799,25 @@
       (update-ok-button-state))
     
     (define tb
-      (new text-field%
-           [label #f]
-           [parent top-hp]
-           [init-value (if current-limit
-                           (format "~a" current-limit)
-                           "128")]
-           [stretchable-width #f]
-           [min-width 100]
-           [callback
-            (λ (tf e)
-              (let ([ed (send tf get-editor)])
-                (cond 
-                  [(is-valid-number? ed)
-                   (background clear-sd)]
-                  [else
-                   (background yellow-sd)]))
-              (update-ok-button-state))]))
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (new text-field%
+              [label #f]
+              [parent top-hp]
+              [init-value (if current-limit
+                              (format "~a" current-limit)
+                              "128")]
+              [stretchable-width #f]
+              [min-width 100]
+              [callback
+               (λ (tf e)
+                 (let ([ed (send tf get-editor)])
+                   (cond 
+                     [(is-valid-number? ed)
+                      (background clear-sd)]
+                     [else
+                      (background yellow-sd)]))
+                 (update-ok-button-state))]))))
     
     (define (update-ok-button-state)
       (cond

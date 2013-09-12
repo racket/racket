@@ -385,19 +385,23 @@
       (new horizontal-panel% [parent dialog]
            [stretchable-height #f] [alignment '(right center)]))
     (define file-text-field
-      (new text-field% [parent file-panel]
-           [callback void] [min-width 300] [stretchable-width #t]
-           [init-value (caddr pref)]
-           [label (string-constant install-plt-filename)]))
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (new text-field% [parent file-panel]
+              [callback void] [min-width 300] [stretchable-width #t]
+              [init-value (caddr pref)]
+              [label (string-constant install-plt-filename)]))))
     (define file-button
       (new button% [parent file-panel]
            [callback (λ (x y) (browse))]
            [label (string-constant browse...)]))
     (define url-text-field
-      (new text-field% [parent url-panel]
-           [min-width 300] [stretchable-width #t] [callback void]
-           [init-value (cadr pref)]
-           [label (string-constant install-plt-url)]))
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (new text-field% [parent url-panel]
+              [min-width 300] [stretchable-width #t] [callback void]
+              [init-value (cadr pref)]
+              [label (string-constant install-plt-url)]))))
     (define-values (ok-button cancel-button)
       (gui-utils:ok/cancel-buttons
        button-panel
@@ -551,10 +555,13 @@
         (update-bindings))
       
       (define bp (make-object horizontal-panel% this))
-      (define search-field (new text-field% 
-                                [parent this]
-                                [label (string-constant mfs-search-string)]
-                                [callback (λ (a b) (update-bindings))]))
+      (define search-field 
+        (keymap:call/text-keymap-initializer
+         (λ ()
+           (new text-field% 
+                [parent this]
+                [label (string-constant mfs-search-string)]
+                [callback (λ (a b) (update-bindings))]))))
       (define b-name (new button%
                           [label (string-constant keybindings-sort-by-name)]
                           [parent bp]
