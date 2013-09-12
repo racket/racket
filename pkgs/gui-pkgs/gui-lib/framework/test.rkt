@@ -935,12 +935,16 @@
  
  (proc-doc/names
   test:set-list-box!
-  (-> (or/c string? (is-a?/c list-box%)) (or/c string? (and/c number? exact? integer? positive?)) 
+  (-> (or/c string? (is-a?/c list-box%)) 
+      (or/c string? exact-nonnegative-integer?) 
       void?)
-  (choice str)
+  (choice str/index)
   @{Selects @racket[list-box]'s item @racket[str]. If @racket[list-box] is a string,
   this function searches for a @racket[list-box%] with a label matching
-  that string, otherwise it uses @racket[list-box] itself.})
+  that string, otherwise it uses @racket[list-box] itself.
+  
+  The @racket[str/index] field is used to control which entry in the list
+  box is chosen.})
  
  (proc-doc/names
   test:keystroke
