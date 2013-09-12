@@ -247,6 +247,8 @@
      (member author (author->list (package-ref info 'author)))]
     [":no-tag:"
      (empty? (package-ref info 'tags))]
+    [":error:"
+     (hash-ref info 'checksum-error #f)]
     [(regexp #rx"^!(.*?)$" (list _ sub))
      (not (search-term-eval pkg-name info sub))]
     [_
@@ -348,7 +350,9 @@
                     ,t)
                  " "))
       (a ([href ,(main-url page/search (snoc terms ":no-tag:"))])
-         ":no-tag:")))
+         ":no-tag:")
+      (a ([href ,(main-url page/search (snoc terms ":error:"))])
+         ":error:")))
 
 (define (page/search req terms)
   (define pkgs (package-list/search terms))
@@ -810,6 +814,11 @@
          (tr
           (td "Checksum")
           (td ,(package-ref* i 'checksum "")))
+         ,@(if (package-ref* i 'checksum-error #f)
+             `(tr (td "Error")
+                  (td "The last time we attempted to update this checksum. The following error was thrown:"
+                      (pre ,(package-ref* i 'checksum-error ""))))
+             empty)
          (tr
           (td "Last Update")
           (td ,(format-time (package-ref* i 'last-updated #f))))
@@ -895,44 +904,53 @@
   (for-each (curry update-checksum force?) pkgs))
 
 (define (update-checksum force? pkg-name)
-  (define i (package-info pkg-name))
-  (define old-checksum
-    (package-ref i 'checksum))
-  (define now (current-seconds))
-  (define last (hash-ref i 'last-checked -inf.0))
-  (when (or force?
-            (>= (- now last) (* 24 60 60)))
-    (printf "\tupdating ~a\n" pkg-name)
-    (define new-checksum
-      (package-url->checksum
-       (package-ref i 'source)))
-    (package-begin
-     (define* i
-       (hash-set i 'checksum
-                 (or new-checksum
-                     old-checksum)))
-     (define* i
-       (hash-set i 'last-checked now))
-     (define* i
-       (hash-update i 'versions
-                    (λ (v-ht)
-                      (for/hash ([(v vi) (in-hash v-ht)])
-                        (define old-checksum (hash-ref vi 'checksum ""))
-                        (define new-checksum
-                          (package-url->checksum
-                           (hash-ref vi 'source)))
-                        (values v
-                                (hash-set vi 'checksum
-                                          (or new-checksum
-                                              old-checksum)))))
-                    hash))
-     (define* i
-       (if (and new-checksum (equal? new-checksum old-checksum)
-                ;; update if 'modules was not present:
-                (hash-ref i 'modules #f))
-         i
-         (hash-set (update-from-content i) 'last-updated now)))
-     (package-info-set! pkg-name i))))
+  (with-handlers
+      ([exn:fail?
+        (λ (x)
+          (define i (package-info pkg-name))
+          (package-info-set! 
+           pkg-name 
+           (hash-set i 'checksum-error (exn-message x))))])
+    (define i (package-info pkg-name))
+    (define old-checksum
+      (package-ref i 'checksum))
+    (define now (current-seconds))
+    (define last (hash-ref i 'last-checked -inf.0))
+    (when (or force?
+              (>= (- now last) (* 24 60 60)))
+      (printf "\tupdating ~a\n" pkg-name)
+      (define new-checksum
+        (package-url->checksum
+         (package-ref i 'source)))
+      (package-begin
+       (define* i
+         (hash-set i 'checksum
+                   (or new-checksum
+                       old-checksum)))
+       (define* i
+         (hash-set i 'last-checked now))
+       (define* i
+         (hash-update i 'versions
+                      (λ (v-ht)
+                        (for/hash ([(v vi) (in-hash v-ht)])
+                          (define old-checksum (hash-ref vi 'checksum ""))
+                          (define new-checksum
+                            (package-url->checksum
+                             (hash-ref vi 'source)))
+                          (values v
+                                  (hash-set vi 'checksum
+                                            (or new-checksum
+                                                old-checksum)))))
+                      hash))
+       (define* i
+         (if (and new-checksum (equal? new-checksum old-checksum)
+                  ;; update if 'modules was not present:
+                  (hash-ref i 'modules #f))
+           i
+           (hash-set (update-from-content i) 'last-updated now)))
+       (define* i
+         (hash-set i 'checksum-error #f))
+       (package-info-set! pkg-name i)))))
 
 (define (update-from-content i)
   (define-values (checksum module-paths dependencies)
@@ -993,7 +1011,7 @@
       (module-lists-conflict? left-m right-m)
       ;; We have to say #t here because otherwise things with no
       ;; information won't be conflicting.
-      #t))  
+      #t))
   (define conflict-cache
     (make-hash))
   (define (packages-conflict?/cache left right)
@@ -1008,7 +1026,7 @@
   (define ring-01
     (append (ring 0) (ring 1)))
   (define (package-conflicts? pkg)
-    (filter (λ (other-pkg) 
+    (filter (λ (other-pkg)
               (if (equal? pkg other-pkg)
                 #f
                 (packages-conflict?/cache pkg other-pkg)))
