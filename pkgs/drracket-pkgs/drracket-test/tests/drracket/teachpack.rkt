@@ -194,13 +194,17 @@
               (equal? #"scm" (filename-extension teachpack))
               (equal? #"rkt" (filename-extension teachpack)))
       (unless (or (equal? "graphing.ss" (path->string teachpack))
-                  (regexp-match #rx"^info[.].*$" (path->string teachpack)))
+                  (regexp-match #rx"^info[.][^.]*$" (path->string teachpack)))
         (printf "  testing ~a\n" teachpack)
         (fw:test:menu-select "Language" "Clear All Teachpacks")
         (fw:test:menu-select "Language" "Add Teachpack...")
         (wait-for-new-frame drs-frame)
         (define tp-dialog (test:get-active-top-level-window))
-        (define choice (find/select-relevant-choice tp-dialog (path->string teachpack)))
+        (define choice 
+          (let-values ([(_1 parent-dir _2) (split-path dir)])
+            (find/select-relevant-choice tp-dialog 
+                                         (path->string parent-dir)
+                                         (path->string teachpack))))
         (fw:test:button-push "OK")
         (wait-for-new-frame tp-dialog)
         (do-execute drs-frame)
@@ -219,25 +223,40 @@
   (test-teachpacks (collection-file-path "image.rkt" "teachpack" "2htdp"))
   (test-teachpacks (collection-file-path "image.rkt" "teachpack" "htdp")))
 
-(define (find/select-relevant-choice tp-dialog tp-string)
-  (define lb
+(define (find/select-relevant-choice tp-dialog parent-dir tp-string)
+  (define-values (lb index)
     (let loop ([p tp-dialog])
       (cond
         [(and (is-a? p list-box%)
-              (list-control-has-string? p tp-string))
-         p]
+              (list-control-get-index p parent-dir tp-string))
+         =>
+         (λ (i)
+           (values p i))]
         [(is-a? p area-container<%>)
-         (ormap loop (send p get-children))]
-        [else #f])))
+         (let c-loop ([children (send p get-children)])
+           (cond
+             [(null? children) (values #f #f)]
+             [else (define-values (tb index) (loop (car children)))
+                   (if tb
+                       (values tb index)
+                       (c-loop (cdr children)))]))]
+        [else (values #f #f)])))
   (cond
-    [lb (fw:test:set-list-box! lb tp-string)]
+    [lb (fw:test:set-list-box! lb index)]
     [else
      (error 'find/select-relevant-choice "did not find ~s in any list-box%" tp-string)]))
 
-(define (list-control-has-string? control str)
-  (for/or ([i (in-range 0 (send control get-number))])
-    (equal? (send control get-string i) 
-            str)))
+(define (list-control-get-index control parent-dir tp-string)
+  (let loop ([i 0])
+    (cond
+      [(< i (send control get-number))
+       (if (or (equal? (send control get-string i)
+                       tp-string)
+               (equal? (send control get-string i)
+                       (format "~a/~a" parent-dir tp-string)))
+           i
+           (loop (+ i 1)))]
+      [else #f])))
 
 (define (find-leftmost-choice frame)
   (let loop ([p frame])
