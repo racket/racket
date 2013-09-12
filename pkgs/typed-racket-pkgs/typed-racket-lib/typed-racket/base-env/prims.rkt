@@ -319,15 +319,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     (lambda ()
                       (tc-error/stx #'ty "Type ~a could not be converted to a contract" typ))))))])]))
 
-
-(define-syntax (:type stx)
-  (error ":type is only valid at the top-level of an interaction"))
-(define-syntax (:print-type stx)
-  (error ":print-type is only valid at the top-level of an interaction"))
-(define-syntax (:query-type/args stx)
-  (error ":query-type/args is only valid at the top-level of an interaction"))
-(define-syntax (:query-type/result stx)
-  (error ":query-type/result is only valid at the top-level of an interaction"))
+(define-for-syntax (fail stx)
+  (syntax-parse stx
+    [_:id 
+     (raise-syntax-error #f "must be applied to arguments" stx)]
+    [_ (raise-syntax-error #f "only valid at the top-level of an interaction" stx)]))
+(define-syntax :type fail)
+(define-syntax :print-type fail)
+(define-syntax :query-type/args fail)
+(define-syntax :query-type/result fail)
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
