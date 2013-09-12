@@ -1,7 +1,8 @@
 /* Support for styles in scribble/sigplan */
 
 .SAuthorPlace, .SAuthorEmail,
-.SConferenceInfo, .SCopyrightYear, .SCopyrightData, .Sdoi,
+.SConferenceInfo, .SCopyrightYear, .SCopyrightData,
+.Sdoi, .SPexclusivelicense,
 .SCategory, .SCategoryPlus, .STerms, .SKeywords {
   display: none;
 }

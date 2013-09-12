@@ -104,6 +104,7 @@ e-mail address with the author name.}
 @defproc[(copyrightyear [content pre-content?] ...) block?]
 @defproc[(copyrightdata [content pre-content?] ...) block?]
 @defproc[(doi [content pre-content?] ...) block?]
+@defproc[(exclusive-license) block?]
 )]{
 
 Declares information that is collected into the copyright region of the paper.}

@@ -27,6 +27,9 @@
  [copyrightdata
   (->* () () #:rest (listof pre-content?)
        block?)]
+ [exclusive-license
+  (->* () ()
+       block?)]
  [doi
   (->* () () #:rest (listof pre-content?)
        block?)]
@@ -134,6 +137,13 @@
    (make-style 'pretitle null)
    (make-element
     (make-style "Sdoi" sigplan-extras)
+    (decode-content what))))
+
+(define (exclusive-license . what)
+  (make-paragraph
+   (make-style 'pretitle null)
+   (make-element
+    (make-style "SPexclusivelicense" sigplan-extras)
     (decode-content what))))
 
 ;; ----------------------------------------
