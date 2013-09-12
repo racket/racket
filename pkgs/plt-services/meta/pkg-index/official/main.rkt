@@ -204,7 +204,7 @@
                                         p lu)))))))))))
 
 (define (page/main req)
-  (redirect-to (main-url page/search empty)))
+  (redirect-to (main-url page/search (list "!main-distribution" "!main-tests"))))
 
 (define (format-time s)
   (if s
