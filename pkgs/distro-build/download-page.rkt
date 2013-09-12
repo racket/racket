@@ -64,7 +64,7 @@
   (define sorted-and-split
     (map (lambda (s)
            (map (lambda (e)
-                  (regexp-replace* #rx"^ *{[^}]*} *"
+                  (regexp-replace* #rx" *{[^}]*} *"
                                    e
                                    ""))
                 (regexp-split #rx" *[|] *" s)))
