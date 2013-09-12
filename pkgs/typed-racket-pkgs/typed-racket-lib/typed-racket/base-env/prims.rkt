@@ -604,12 +604,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax-parse stx
        [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...)
            opts:struct-options)
-        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())])
+        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
+              [cname (datum->syntax #'nm.name (format-symbol "make-~a" (syntax-e #'nm.name)))])
           (with-syntax ([d-s (ignore-some-property
                                (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                #t)]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...) nm (fs ...)
+                                       #:maker #,cname
                                        #,@mutable?))])
             (if (eq? (syntax-local-context) 'top-level)
                 ;; Use `eval` at top-level to avoid an unbound id error
@@ -632,17 +634,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax-parse stx
        [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...)
            opts:struct-options)
-        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
-              [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
+        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())])
           (with-syntax ([d-s (ignore-property (quasisyntax/loc stx
                                                 (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                                        #:extra-constructor-name #,cname
                                                         . opts))
                                               #t)]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...)
                                        nm.old-spec (fs ...)
-                                       #:maker #,cname
                                        #,@mutable?))])
             ;; see comment above
             (if (eq? (syntax-local-context) 'top-level)
