@@ -9,17 +9,25 @@
   @page[#:title "IRC" #:part-of 'community]{
     @iframe[src: webchat-link width: "100%" height: "400"]})
 
+(define log-header+footer
+  (lazy (regexp-split #rx"{{{BODY}}}"
+                      (xml->string @page[#:id 'browse-downloads
+                                         #:html-only #t
+                                         #:part-of 'community
+                                         "{{{BODY}}}"]))))
+(define header @plain[#:file "irc-logs/dummy/HEADER.html" #:newline #f
+                      (car  (force log-header+footer))])
+(define footer @plain[#:file "irc-logs/dummy/README.html" #:newline #f
+                      (cadr (force log-header+footer))])
+
+(provide irc-logs)
 (define irc-logs
-  (let ()
-    @plain[#:file "irc-logs/.htaccess"]{
-      RewriteEngine on
-      RewriteRule ^(racket(-dev)?/.*)$ http://lambda.racket-lang.org@;
-         /irc-logs/@|"$1"| [P,L]
-      @; For legacy links (should eventually be removed)
-      RewriteRule ^(.*)$ http://lambda.racket-lang.org@;
-         /irc-logs/racket/@|"$1"| [P,L]
-    }
-    (λ (type . text) @a[href: `("irc-logs/" ,type "/")]{@text})))
+  (let ([base "/home/scheme/irc-logs"])
+    (define t (make-hash))
+    (λ (type . text)
+      (hash-ref! t type (λ() (a href: (symlink (format "~a/~a" base type)
+                                               (format "irc-logs/~a" type))
+                                text))))))
 
 (provide irc-quick)
 (define (irc-quick)
