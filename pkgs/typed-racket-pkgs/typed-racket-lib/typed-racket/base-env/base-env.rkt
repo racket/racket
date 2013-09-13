@@ -19,7 +19,6 @@
   racket/set
   racket/place
   syntax/stx racket/private/stx
-  (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
  "base-structs.rkt"
@@ -1446,8 +1445,6 @@
 [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
 
 [read-accept-reader (-Param B B)]
-
-[maybe-print-message (-String . -> . -Void)]
 
 #|
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
