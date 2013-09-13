@@ -11,7 +11,7 @@
                      (only-in typed/racket/base
                               ->
                               Flonum Integer Index Real Boolean Any Listof Vectorof FlVector
-                              Nonnegative-Flonum))
+                              Nonnegative-Flonum Values))
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
@@ -50,6 +50,15 @@ Like @racket[sgn], @racket[even?] and @racket[odd?], but restricted to flonum in
                  (map flsgn '(-2.0 -0.0 0.0 2.0))
                  (map fleven? '(2.0 1.0 0.5))
                  (map flodd? '(2.0 1.0 0.5))]
+}
+
+@deftogether[(@defproc[(flrational? [x Flonum]) Boolean]
+              @defproc[(flinfinite? [x Flonum]) Boolean]
+              @defproc[(flnan? [x Flonum]) Boolean]
+              @defproc[(flinteger? [x Flonum]) Boolean])]{
+Like @racket[rational?], @racket[infinite?], @racket[nan?] and @racket[integer?], but restricted
+to flonum input.
+In Typed Racket, these are 2-3 times faster as well.
 }
 
 @defproc[(flhypot [x Flonum] [y Flonum]) Flonum]{
@@ -169,6 +178,10 @@ But see @racket[flexpt1p], which is more accurate still.
 Like @racket[(flexpt (+ 1.0 x) y)], but accurate for any @racket[x] and @racket[y].
 }
 
+@defproc[(flexpt+ [x1 Flonum] [x2 Flonum] [y Flonum]) Flonum]{
+Like @racket[(flexpt (+ x1 x2) y)], but more accurate.
+}
+
 @defproc[(flexp2 [x Flonum]) Nonnegative-Flonum]{
 Equivalent to @racket[(flexpt 2.0 x)], but faster when @racket[x] is an integer.
 }
@@ -211,7 +224,7 @@ Fortunately, deriving the following rules (applied in order) is not prohibitivel
   ║ @racket[(fllogb 1.0 x)]         ║                  ║ @racket[+nan.0] ║
   ╠═════════════════════════════════╬══════════════════╬═════════════════╣
   ║ @racket[(fllogb b x)]           ║ @racket[b < 0.0] ║ @racket[+nan.0] ║
-  ║                                 ║       "or"       ║                 ║
+  ║                                 ║      " or "      ║                 ║
   ║                                 ║ @racket[x < 0.0] ║                 ║
   ╠═════════════════════════════════╩══════════════════╩═════════════════╣
   ║                                                                      ║
@@ -610,6 +623,195 @@ in outputs as close to zero @tech{ulps} as possible.
 The maximum positive and negative subnormal flonums. A flonum @racket[x] is subnormal when
 it is not zero and @racket[((abs x) . <= . +max-subnormal.0)].
 @examples[#:eval untyped-eval +max-subnormal.0]
+}
+
+@section{Double-Double Operations}
+
+For extra precision, floating-point computations may use two nonoverlapping flonums to represent a single number.
+Such pairs are often called @deftech{double-double} numbers.
+The exact sum of the pair is the number it represents.
+(Because they are nonoverlapping, the floating-point sum is equal to the largest.)
+
+For speed, especially with arithmetic operations, there is no data type for double-double numbers.
+They are always unboxed: given as two arguments, and received as two values.
+In both cases, the number with higher magnitude is first.
+
+Inputs are never checked to ensure they are sorted and nonoverlapping, but outputs are guaranteed to be
+sorted and nonoverlapping if inputs are.
+
+@defproc*[([(fl2 [x Real]) (Values Flonum Flonum)]
+           [(fl2 [x Flonum] [y Flonum]) (Values Flonum Flonum)])]{
+Converts a real number or the sum of two flonums into a @tech{double-double}.
+@examples[#:eval untyped-eval
+                 (fl 1/7)
+                 (relative-error (fl 1/7) 1/7)
+                 (define-values (x2 x1) (fl2 1/7))
+                 (list x2 x1)
+                 (fl (relative-error (+ (inexact->exact x2)
+                                        (inexact->exact x1))
+                                     1/7))]
+Notice that the exact sum of @racket[x2] and @racket[x1] in the preceeding example has very low
+relative error.
+
+If @racket[x] is not rational, @racket[fl2] returns @racket[(values x 0.0)].
+}
+
+@defproc[(fl2->real [x2 Flonum] [x1 Flonum]) Real]{
+Returns the exact sum of @racket[x2] and @racket[x1] if @racket[x2] is rational, @racket[x2] otherwise.
+@examples[#:eval untyped-eval
+                 (define-values (x2 x1) (fl2 1/7))
+                 (fl2->real x2 x1)]
+}
+
+@defproc[(fl2? [x2 Flonum] [x1 Flonum]) Boolean]{
+When @racket[x2] is rational, returns @racket[#t] when @racket[(flabs x2) > (flabs x1)] and @racket[x2]
+and @racket[x1] are nonoverlapping.
+When @racket[x2] is not rational, returns @racket[(fl= x1 0.0)].
+
+@examples[#:eval untyped-eval
+                 (define-values (x2 x1) (fl2 1/7))
+                 (fl2? x2 x1)
+                 (fl2? #i1/7 #i1/13)
+                 (fl2? +inf.0 0.0001)]
+
+This function is quite slow, so it is used only for testing.
+}
+
+@deftogether[(@defproc[(fl+/error [x Flonum] [y Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl-/error [x Flonum] [y Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl*/error [x Flonum] [y Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl//error [x Flonum] [y Flonum]) (Values Flonum Flonum)]
+              @defproc[(flsqr/error [x Flonum]) (Values Flonum Flonum)]
+              @defproc[(flsqrt/error [x Flonum]) (Values Flonum Flonum)]
+              @defproc[(flexp/error [x Flonum]) (Values Flonum Flonum)]
+              @defproc[(flexpm1/error [x Flonum]) (Values Flonum Flonum)])]{
+Compute the same values as @racket[(fl+ x y)], @racket[(fl- x y)], @racket[(fl* x y)], @racket[(fl/ x y)],
+@racket[(fl* x x)], @racket[(flsqrt x)], @racket[(flexp x)] and @racket[(flexpm1 x)], but return the normally
+rounded-off low-order bits as the second value.
+The result is an unboxed @tech{double-double}.
+
+Use these functions to generate double-double numbers directly from the results of floating-point operations.
+
+@examples[#:eval untyped-eval
+                 (define x1 (fl 1/7))
+                 (define x2 (fl 1/13))
+                 (define z* (bigfloat->real (bfexp (bf* (bf x1) (bf x2)))))
+                 (relative-error (flexp (fl* x1 x2)) z*)
+                 (let*-values ([(y2 y1)  (fl*/error x1 x2)]
+                               [(z2 z1)  (fl2exp y2 y1)])
+                   (fl (relative-error (fl2->real z2 z1) z*)))]
+
+For @racket[flexp/error] and @racket[flexpm1/error], the largest observed error is 3 ulps.
+(See @racket[fl2ulp].)
+For the rest, the largest observed error is 0.5 ulps.
+}
+
+@deftogether[(@defproc[(fl2zero? [x2 Flonum] [x1 Flonum]) Boolean]
+              @defproc[(fl2rational? [x2 Flonum] [x1 Flonum]) Boolean]
+              @defproc[(fl2positive? [x2 Flonum] [x1 Flonum]) Boolean]
+              @defproc[(fl2negative? [x2 Flonum] [x1 Flonum]) Boolean]
+              @defproc[(fl2infinite? [x2 Flonum] [x1 Flonum]) Boolean]
+              @defproc[(fl2nan? [x2 Flonum] [x1 Flonum]) Boolean])]{
+Like @racket[zero?], @racket[rational?], @racket[positive?], @racket[negative?], @racket[infinite?] and @racket[nan?],
+but for @tech{double-double} flonums.
+}
+
+@deftogether[(@defproc[(fl2+ [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2- [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2* [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2/ [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2abs [x2 Flonum] [x1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2sqr [x2 Flonum] [x1 Flonum 0.0]) (Values Flonum Flonum)]
+              @defproc[(fl2sqrt [x2 Flonum] [x1 Flonum 0.0]) (Values Flonum Flonum)])]{
+Arithmetic and square root for @tech{double-double} flonums.
+
+For arithmetic, error is less than 8 ulps. (See @racket[fl2ulp].)
+For @racket[fl2sqr] and @racket[fl2sqrt], error is less than 1 ulp, and @racket[fl2abs] is exact.
+}
+
+@deftogether[(@defproc[(fl2= [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2> [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2< [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2>= [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2<= [x2 Flonum] [x1 Flonum] [y2 Flonum] [y1 Flonum]) (Values Flonum Flonum)])]{
+Comparison functions for @tech{double-double} flonums.
+}
+
+@deftogether[(@defproc[(fl2exp [x2 Flonum] [x1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2log [x2 Flonum] [x1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2expm1 [x2 Flonum] [x1 Flonum]) (Values Flonum Flonum)]
+              @defproc[(fl2log1p [x2 Flonum] [x1 Flonum]) (Values Flonum Flonum)])]{
+Like @racket[flexp], @racket[fllog], @racket[flexpm1] and @racket[fllog1p], but for @tech{double-double} flonums.
+
+For @racket[fl2exp] and @racket[fl2expm1], error is less than 3 ulps. (See @racket[fl2ulp].)
+For @racket[fl2log] and @racket[fl2log1p], error is less than 2 ulps.
+}
+
+@subsection{Debugging Double-Double Functions}
+
+@deftogether[(@defproc[(fl2ulp [x2 Flonum] [x1 Flonum]) Flonum]
+              @defproc[(fl2ulp-error [x2 Flonum] [x1 Flonum] [r Real]) Flonum])]{
+Like @racket[flulp] and @racket[flulp-error], but for @tech{double-double} flonums.
+
+The unit in last place of a double-double is that of the higher-order of the pair, shifted 52 bits right.
+
+@examples[#:eval untyped-eval
+                 (fl2ulp 1.0 0.0)
+                 (let-values ([(x2 x1)  (fl2 1/7)])
+                   (fl2ulp-error x2 x1 1/7))]
+}
+
+@deftogether[(@defthing[+max.hi Flonum]
+              @defthing[+max.lo Flonum]
+              @defthing[-max.hi Flonum]
+              @defthing[-max.lo Flonum])]{
+The maximum-magnitude, unboxed @tech{double-double} flonums.
+}
+
+@deftogether[(@defthing[+max-subnormal.hi Flonum]
+              @defthing[-max-subnormal.hi Flonum])]{
+The high-order flonum of the maximum-magnitude, subnormal @tech{double-double} flonums.
+@interaction[#:eval untyped-eval
+                    +max-subnormal.0
+                    +max-subnormal.hi]
+Try to avoid computing with double-doubles in the subnormal range in intermediate computations.
+}
+
+@;{Document these when they are finished:
+   fl2step
+   fl2next
+   fl2prev}
+
+@subsection{Low-Level Double-Double Operations}
+
+The following syntactic forms are fast versions of functions like @racket[fl+/error].
+They are fast because they make assumptions about the magnitudes of and relationships between their arguments,
+and do not handle non-rational double-double flonums properly.
+
+@deftogether[(@defform[(fast-mono-fl+/error x y)]
+              @defform[(fast-mono-fl-/error x y)])]{
+Return two values: @racket[(fl+ x y)] or @racket[(fl- x y)], and its rounding error.
+Both assume @racket[(flabs x) > (flabs y)].
+The values are unspecified when @racket[x] or @racket[y] is not rational.
+}
+
+@deftogether[(@defform[(fast-fl+/error x y)]
+              @defform[(fast-fl-/error x y)])]{
+Like @racket[fast-mono-fl+/error] and @racket[fast-mono-fl-/error], but do not assume @racket[(flabs x) > (flabs y)].
+}
+
+@deftogether[(@defform[(fast-fl*/error x y)]
+              @defform[(fast-fl//error x y)]
+              @defform[(fast-flsqr/error x)])]{
+Like @racket[fl*/error], @racket[fl//error] and @racket[flsqr/error], but faster, and may return garbage when an argument is subnormal or nearly infinite.
+}
+
+@defform[(flsplit x)]{
+Returns nonoverlapping @racket[(values y2 y1)], each with 26 bits precision, with @racket[(flabs y2) > (flabs y1)],
+such that @racket[(fl+ y2 y1) = x].
+For @racket[(flabs x) > 1.3393857490036326e+300], returns @racket[(values +nan.0 +nan.0)].
+
+Used to implement double-double multiplication.
 }
 
 @section{Additional Flonum Vector Functions}
