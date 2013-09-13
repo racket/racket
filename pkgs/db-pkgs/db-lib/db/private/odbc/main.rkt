@@ -75,38 +75,32 @@
         (handle-status* 'odbc-data-sources (SQLFreeHandle SQL_HANDLE_ENV env))))))
 
 (define (odbc-drivers)
-  (define driver-buf (make-bytes 1024))
+  (define driver-buf (make-bytes 1000))
+  (define attr-buf (make-bytes 2000))
   (call-with-env 'odbc-drivers
    (lambda (env)
-     (let* ([attrlens
-             (let loop ()
-               (let-values ([(status name attrlen)
-                             (SQLDrivers env SQL_FETCH_NEXT driver-buf #f)])
-                 (cond [(or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
-                        (cons attrlen (loop))]
-                       [else null])))]  ;; SQL_NO_DATA
-            [attr-buf (make-bytes (+ 1 (apply max 0 attrlens)))] ;; +1 for null terminator
-            [result
-             (let loop ()
-               (let-values ([(status name attrlen) ;; & writes to attr-buf
-                             (SQLDrivers env SQL_FETCH_NEXT driver-buf attr-buf)])
-                 (cond [(or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
-                        (cons (list name (parse-driver-attrs attr-buf attrlen))
-                              (loop))]
-                       [else null])))])  ;; SQL_NO_DATA
+     (let ([result
+            (let loop ()
+              (let-values ([(status name attrlen) ;; & writes to attr-buf
+                            (SQLDrivers env SQL_FETCH_NEXT driver-buf attr-buf)])
+                (cond [(or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                       (cons (list name (parse-driver-attrs attr-buf attrlen))
+                             (loop))]
+                      [else null])))])  ;; SQL_NO_DATA
        (handle-status* 'odbc-drivers (SQLFreeHandle SQL_HANDLE_ENV env))
        result))))
 
 (define (parse-driver-attrs buf len)
   (let* ([attrs (regexp-split #rx#"\0" buf 0 len)])
-    (for/list ([p (in-list attrs)]
-               #:when (positive? (bytes-length p)))
-      (let* ([s (bytes->string/utf-8 p)]
-             [m (regexp-match-positions #rx"=" s)])
-        (unless m (error/internal 'odbc-drivers "bad attribute syntax: ~e" s))
-        (let ([=-pos (caar m)])
-          (cons (substring s 0 =-pos) (substring s (+ 1 =-pos))))))))
-
+    (filter values
+            (for/list ([p (in-list attrs)]
+                       #:when (positive? (bytes-length p)))
+              (let* ([s (bytes->string/utf-8 p)]
+                     [m (regexp-match-positions #rx"=" s)])
+                ;; Sometimes (eg iodbc on openbsd), returns ill-formatted attr-buf; just discard
+                (and m
+                     (let ([=-pos (caar m)])
+                       (cons (substring s 0 =-pos) (substring s (+ 1 =-pos))))))))))
 
 (define odbc-proxy%
   (class place-proxy-connection%
