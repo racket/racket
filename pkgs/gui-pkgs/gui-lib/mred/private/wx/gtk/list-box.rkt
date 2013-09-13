@@ -137,9 +137,12 @@
     (maybe-init-select))
 
   (define/private (maybe-init-select)
-    (when (and (= (get-selection) -1)
-               (pair? data))
-      (set-selection 0)))
+    ;; For consistency with other platforms,
+    ;; don't try to select an item initially.
+    (when #f
+      (when (and (= (get-selection) -1)
+                 (pair? data))
+        (set-selection 0))))
     
   (define gtk (as-gtk-allocation (gtk_scrolled_window_new #f #f)))
   (gtk_scrolled_window_set_policy gtk GTK_POLICY_AUTOMATIC GTK_POLICY_ALWAYS)
