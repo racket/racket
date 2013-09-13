@@ -362,7 +362,7 @@
      [`any 
       (sum/e
        any/e
-       (listof/e any/e))]
+       (many/e any/e))]
      [`number num/e]
      [`string string/e]
      [`natural natural/e]
@@ -416,11 +416,13 @@
                (λ (rep)
                   (cons (repeat-n rep)
                         (repeat-terms rep)))
-               (dep/e
-                nats
-                (λ (n)
-                   (list/e
-                    (build-list n (const (loop pat)))))))]
+               (sum/e
+                (const/e (cons 0 '()))
+                (dep/e
+                 (nats+/e 1)
+                 (λ (n)
+                    (list/e
+                     (build-list n (const (loop pat))))))))]
              [`(repeat ,pat ,name #f)
               (error 'unimplemented "named-repeat")]
              [`(repeat ,pat #f ,mismatch)
@@ -459,7 +461,7 @@
   (map/e
    list->string
    string->list
-   (listof/e char/e)))
+   (many/e char/e)))
 
 (define integer/e
   #; ;; Simple "turn down the volume" list
@@ -479,16 +481,10 @@
   (from-list/e '(#t #f)))
 
 (define var/e
-  #; ;; "turn down the volume" variables
-  (from-list/e '(x y z))
   (map/e
-   (compose string->symbol list->string list)
-   (λ (sym)
-      (let ([chars (string->list (symbol->string sym))])
-        (match chars
-          [`(,c) c]
-          [_     (error "not an enumerated variable name")])))
-   char/e))
+   (compose string->symbol list->string)
+   (compose string->list symbol->string)
+   (many1/e char/e)))
 
 (define any/e
   (sum/e num/e

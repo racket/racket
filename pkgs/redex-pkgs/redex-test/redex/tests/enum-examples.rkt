@@ -1,6 +1,7 @@
 #lang racket/base
 (require rackunit
          redex)
+
 (define-language Base
   (x a b c)
   (y d e f))
@@ -172,9 +173,9 @@
           
           ;; you also must enumerate all variables that are at that
           ;; depth, in this way named vals and named repeats are similar
-          (dep/e (vals/e ((iterate 1 (curry listof/e
+          (dep/e (vals/e ((iterate 1 (curry many/e
                                             len2)) nats)
-                         ((iterate 1 (curry listof/e
+                         ((iterate 1 (curry many/e
                                             len2)) (enum y)))
                  (λ (len1s ys)
                     (dep/e
