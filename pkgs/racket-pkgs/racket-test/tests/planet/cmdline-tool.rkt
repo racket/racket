@@ -38,7 +38,11 @@ using 'system' to call out to the tool and then reading its results, etc.
 
 (let ([result (call-planet "show")])
   (unless (regexp-match #rx"No packages" result)
-    (error 'cmdline-tool.rkt "please clear out all planet packages before running this test.\n============================================================\n~a" result)))
+    (error 'cmdline-tool.rkt 
+           (string-append 
+            "please clear out all planet packages before running this test.\n"
+            "============================================================\n~a" 
+            result))))
   
 (when (file-exists? test-connection.plt-cache)
   (delete-file test-connection.plt-cache))
@@ -112,7 +116,10 @@ using 'system' to call out to the tool and then reading its results, etc.
   (printf "done\n")
   
   (unless (same-file? direct-file (list-ref test-connection-spec 1))
-    (error 'cmdline-tool.rkt "expected planet fetch and planet url to point at the same file, but found different ones"))
+    (error 'cmdline-tool.rkt
+           (string-append
+            "expected planet fetch and planet url to point at the same file,"
+            " but found different ones")))
   
   (delete-file direct-file)
   (printf "Download succesful\n"))
@@ -186,12 +193,14 @@ using 'system' to call out to the tool and then reading its results, etc.
   (delete-directory/files tmp-dir)
   (printf "done\n")
   (unless (equal? open-files structure-files)
-    (error 'cmdline-tool.rkt "expected planet structure to produce the same files as planet open, got ~s and ~s"
+    (error 'cmdline-tool.rkt 
+           "expected planet structure to produce the same files as planet open, got ~s and ~s"
            structure-files 
            open-files))
  
   (unless (equal? doc.txt-fetch doc.txt-print)
-    (error 'cmdline-tool.rkt "expected planet print to produce the same content as the actual file, got\n~s\nand\n~s"
+    (error 'cmdline-tool.rkt
+           "expected planet print to produce the same content as the actual file, got\n~s\nand\n~s"
            doc.txt-print
            doc.txt-fetch)))
     
@@ -277,7 +286,9 @@ using 'system' to call out to the tool and then reading its results, etc.
 (define (ensure-not-there fn)
   (when (file-exists? fn)
     (error 'cmdline-tool.rkt
-           "test script expects no file named ~a to exist in the current directory (may have been left behind by test script, tho ... (which would be a bug))"
+           (string-append
+            "test script expects no file named ~a to exist in the current directory"
+            " (may have been left behind by test script, tho ... (which would be a bug))")
            fn)))
 
 ;; same-file? : string-or-port string-or-port -> boolean
