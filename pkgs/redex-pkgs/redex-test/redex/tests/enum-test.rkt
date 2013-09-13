@@ -33,6 +33,16 @@
 (try-it 250 Λc e)
 (try-it 24 Λc x)
 
+;; De Bruijn for performance comparison
+(define-language DBλc
+  (e (e e)
+     (λ e)
+     x)
+  (x natural))
+
+(try-it 500 DBλc e)
+
+
 ;; Name test
 (define-language Named
   (n (number_1 number_1)))

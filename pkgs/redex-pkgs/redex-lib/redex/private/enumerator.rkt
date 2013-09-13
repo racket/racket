@@ -15,13 +15,16 @@
          sum/e
          prod/e
          dep/e
-         dep2/e ;; doesn't require size
+         dep2/e ;; requires size (eventually should replace dep/e with this)
          map/e
          filter/e ;; very bad, only use for small enums
          except/e 
          thunk/e
-         listof/e
+         many/e
+         many1/e
          list/e
+         traverse/e
+         
          fail/e
          
          to-list
@@ -160,6 +163,7 @@
 
 ;; from-list/e :: Listof a -> Gen a
 ;; input list should not contain duplicates
+;; equality on eq?
 (define (from-list/e l)
   (if (empty? l)
       empty/e
@@ -178,8 +182,6 @@
          (cons (car l)
                (take-while (cdr l) pred))]))
 
-(define bools
-  (from-list/e (list #t #f)))
 (define nats
   (enum +inf.f
         identity
@@ -187,7 +189,7 @@
            (unless (>= n 0)
              (error 'out-of-range))
            n)))
-(define ints
+(define ints/e
   (enum +inf.f
         (λ (n)
            (if (even? n)
@@ -234,26 +236,6 @@
                   (* ((enum-to e1) x) 2))))])]
     [(a b c . rest)
      (sum/e a (apply sum/e b c rest))]))
-
-(define odds
-  (enum +inf.f
-        (λ (n)
-           (+ (* 2 n) 1))
-        (λ (n)
-           (if (and (not (zero? (modulo n 2)))
-                    (>= n 0))
-               (/ (- n 1) 2)
-               (error 'odd)))))
-
-(define evens
-  (enum +inf.f
-        (λ (n)
-           (* 2 n))
-        (λ (n)
-           (if (and (zero? (modulo n 2))
-                    (>= n 0))
-               (/ n 2)
-               (error 'even)))))
 
 (define n*n
   (enum +inf.f
@@ -358,6 +340,8 @@
 ;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
 (define (traverse/e f xs)
   (list/e (map f xs)))
+
+;; sequence/e : listof (enum a) -> enum (listof a)
 
 ;; the nth triangle number
 (define (tri n)
@@ -500,73 +484,106 @@
            #f]
           [else (bin-search 0 (- size 1))])))
 
-;; dep2 : enum a (a -> enum b) -> enum (a,b)
-(define (dep2/e e f)
-  (cond [(= 0 (size e)) empty/e]
-        [(not (infinite? (size (f (decode e 0)))))
-         ;; memoize tab : boxof (hash nat -o> (nat . nat))
-         ;; maps an index into the dep/e to the 2 indices that we need
-         (let ([tab (box (hash))])
-           (enum (if (infinite? (size e))
-                     +inf.f
-                     (foldl + 0 (map (compose size f) (to-list e))))
-                 (λ (n) ;; n -> axb
-                    (call-with-values
-                        (λ ()
-                           (letrec
-                               ;; go : nat -> nat nat
-                               ([go
-                                 (λ (n)
-                                    (cond [(hash-has-key? (unbox tab) n)
-                                           (let ([ij (hash-ref (unbox tab) n)])
-                                             (values (car ij) (cdr ij)))]
-                                          [(= n 0) ;; find the first element
-                                           (find 0 0 0)]
-                                          [else ;; recur
-                                           (call-with-values
-                                               (λ () (go (- n 1)))
-                                             (λ (ai bi)
-                                                (find ai (- n bi 1) n)))]))]
-                                ;; find : nat nat nat -> nat
-                                [find
-                                 ;; start is our starting eindex
-                                 ;; seen is how many we've already seen
-                                 (λ (start seen n)
-                                    (let loop ([ai start]
-                                               [seen seen])
-                                      (let* ([a (decode e ai)]
-                                             [bs (f a)])
-                                        (cond [(< (- n seen)
-                                                  (size bs))
-                                               (let ([bi (- n seen)])
-                                                 (begin
-                                                   (set-box! tab
-                                                             (hash-set (unbox tab)
-                                                                       n
-                                                                       (cons ai bi)))
-                                                   (values ai bi)))]
-                                              [else
-                                               (loop (+ ai 1)
-                                                     (+ seen (size bs)))]))))])
-                             (go n)))
-                      (λ (ai bi)
-                         (let ([a (decode e ai)])
-                           (cons a
-                                 (decode (f a) bi))))))
-                 ;; todo: memoize encode
-                 (λ (ab) ;; axb -> n
-                    (let ([ai (encode e (car ab))])
-                      (+ (let loop ([i 0]
-                                    [sum 0])
-                           (if (>= i ai)
-                               sum
-                               (loop (+ i 1)
-                                     (+ sum
-                                        (size (f (decode e i)))))))
-                         (encode (f (car ab))
-                                 (cdr ab)))))))]
-        [else ;; both infinite, same as prod/e
-         (dep/e e f)]))
+;; dep2 : natural (enum a) (a -> enum b) -> enum (a,b)
+(define (dep2/e n e f)
+  (define (search-size sizes n)
+    (define (loop cur)
+      (let* ([lastSize (gvector-ref sizes (- cur 1))]
+             [e2 (f (decode e cur))]
+             [s  (+ lastSize (size e2))])
+        (gvector-add! sizes s)
+        (if (> s n)
+            cur
+            (loop (+ cur 1)))))
+    (loop (gvector-count sizes)))
+  ;; fill-table - find sizes[n], filling the table as it goes
+  ;; assumption: n >= (gvector-count sizes)
+  (define (fill-table sizes n)
+    (let loop ([cur (gvector-count sizes)])
+      (let* ([prevSize (gvector-ref sizes (- cur 1))]
+             [curE (f (decode e cur))]
+             [s (+ prevSize (size curE))])
+        (gvector-add! sizes s)
+        (if (= cur n)
+            s
+            (loop (+ cur 1))))))
+  (if (= 0 (size e))
+      empty/e
+      (cond
+       [(not (infinite? n))
+        ;; memo table caches the size of the dependent enumerators
+        ;; sizes[n] = # of terms with left side index <= n
+        ;; sizes : gvector int
+        (let* ([first (size (f (decode e 0)))]
+               [sizes (gvector first)])
+          (enum (if (infinite? (size e))
+                    +inf.f
+                    (foldl
+                     (λ (curSize acc)
+                        (let ([sum (+ curSize acc)])
+                          (gvector-add! sizes sum)
+                          sum))
+                     first (map (compose size f) (cdr (to-list e)))))
+                (λ (n)
+                   (let* ([ind (or (find-size sizes n)
+                                   (search-size sizes n))]
+                          [l (if (= ind 0)
+                                 0
+                                 (gvector-ref sizes (- ind 1)))]
+                          [m (- n l)]
+                          [x (decode e ind)]
+                          [e2 (f x)]
+                          [y (decode e2 m)])
+                     (cons x y)))
+                (λ (ab)
+                   (let* ([a (car ab)]
+                          [b (cdr ab)]
+                          [ai (encode e a)]
+                          [ei (f a)]
+                          [nextSize (size ei)]
+                          [sizeUpTo (if (= ai 0)
+                                        0
+                                        (or (gvector-ref sizes (- ai 1) #f)
+                                            (let ([sizeUp
+                                                   (fill-table sizes (- ai 1))])
+                                              (begin0
+                                                  sizeUp
+                                                (gvector-add! sizes
+                                                              (+ nextSize
+                                                                 sizeUp))))))])
+                     (+ sizeUpTo
+                        (encode ei b))))))]
+       [(not (infinite? (size e)))
+        (enum +inf.f
+              (λ (n)
+                 (call-with-values
+                     (λ ()
+                        (quotient/remainder n (size e)))
+                   (λ (q r)
+                      (cons (decode e r)
+                            (decode (f (decode e r)) q)))))
+              (λ (ab)
+                 (+ (* (size e) (encode (f (car ab)) (cdr ab)))
+                    (encode e (car ab)))))]
+       [else ;; both infinite, same as prod/e
+        (enum +inf.f               
+              (λ (n)
+                 (let* ([k (floor-untri n)]
+                        [t (tri k)]
+                        [l (- n t)]
+                        [m (- k l)]
+                        [a (decode e l)])
+                   (cons a
+                         (decode (f a) m))))
+              (λ (xs) ;; bijection from nxn -> n, inverse of previous
+                 ;; (n,m) -> (n+m)(n+m+1)/2 + n
+                 (unless (pair? xs)
+                   (error "not a pair"))
+                 (let ([l (encode e (car xs))]
+                       [m (encode (f (car xs)) (cdr xs))])
+                   (+ (/ (* (+ l m) (+ l m 1))
+                         2)
+                      l))))])))
 
 ;; fold-enum : ((listof a), b -> enum a), (listof b) -> enum (listof a)
 (define (fold-enum f l)
@@ -601,7 +618,7 @@
   (cond [(> low high) (error 'bad-range)]
         [(infinite? high)
          (if (infinite? low)
-             ints
+             ints/e
              (map/e
               (λ (n)
                  (+ n low))
@@ -628,16 +645,25 @@
         (λ (x)
            (encode (thunk) x))))
 
-;; listof/e : enum a -> enum (listof a)
-(define (listof/e e)
-  (thunk/e
-   (if (= 0 (size e))
-       0
-       +inf.f)
-   (λ ()
-      (sum/e
-       (const/e '())
-       (prod/e e (listof/e e))))))
+;; many/e : enum a -> enum (listof a)
+;;       or : enum a, #:length natural -> enum (listof a)
+(define many/e
+  (case-lambda
+    [(e)
+     (thunk/e
+      (if (= 0 (size e))
+          0
+          +inf.f)
+      (λ ()
+         (sum/e
+          (const/e '())
+          (prod/e e (many/e e)))))]
+    [(e n)
+     (list/e (build-list n (const e)))]))
+
+;; many1/e : enum a -> enum (nonempty listof a)
+(define (many1/e e)
+  (prod/e e (many/e e)))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
@@ -663,9 +689,11 @@
 (module+
  test
  (require rackunit)
- (provide check-bijection?)
+ (provide check-bijection?
+          ints/e
+          find-size)
  (define confidence 1000)
- (define nums (build-list confidence identity))
+
  (define-simple-check (check-bijection? e)
    (let ([nums (build-list (if (<= (enum-size e) confidence)
                                (enum-size e)
@@ -675,318 +703,4 @@
              nums
              (map (λ (n)
                      (encode e (decode e n)))
-                  nums))))
-
- ;; const/e tests
- (let ([e (const/e 17)])
-   (test-begin
-    (check-eq? (decode e 0) 17)
-    (check-exn exn:fail? 
-               (λ ()
-                  (decode e 1)))
-    (check-eq? (encode e 17) 0)
-    (check-exn exn:fail?
-               (λ ()
-                  (encode e 0)))
-    (check-bijection? e)))
-
- ;; from-list/e tests
- (let ([e (from-list/e '(5 4 1 8))])
-   (test-begin
-    (check-eq? (decode e 0) 5)
-    (check-eq? (decode e 3) 8)
-    (check-exn exn:fail?
-               (λ () (decode e 4)))
-    (check-eq? (encode e 5) 0)
-    (check-eq? (encode e 8) 3)
-    (check-exn exn:fail?
-               (λ ()
-                  (encode e 17)))
-    (check-bijection? e)))
-
- ;; map test
- (define nats+1 (nats+/e 1))
-
- (test-begin
-  (check-equal? (size nats+1) +inf.f)
-  (check-equal? (decode nats+1 0) 1)
-  (check-equal? (decode nats+1 1) 2)
-  (check-bijection? nats+1))
- ;; encode check
- (test-begin
-  (check-exn exn:fail?
-             (λ ()
-                (decode nats -1))))
-
- ;; ints checks
- (test-begin
-  (check-eq? (decode ints 0) 0)         ; 0 -> 0
-  (check-eq? (decode ints 1) 1)         ; 1 -> 1
-  (check-eq? (decode ints 2) -1)        ; 2 -> 1
-  (check-eq? (encode ints 0) 0)
-  (check-eq? (encode ints 1) 1)
-  (check-eq? (encode ints -1) 2)
-  (check-bijection? ints))              ; -1 -> 2, -3 -> 4
-
- ;; sum tests
- (test-begin
-  (let ([bool-or-num (sum/e bools
-                               (from-list/e '(0 1 2)))]
-        [bool-or-nat (sum/e bools
-                               nats)]
-        [nat-or-bool (sum/e nats
-                               bools)]
-        [odd-or-even (sum/e evens
-                               odds)])
-    (check-equal? (enum-size bool-or-num)
-                  5)
-    (check-equal? (decode bool-or-num 0) #t)
-    (check-equal? (decode bool-or-num 1) #f)
-    (check-equal? (decode bool-or-num 2) 0)
-    (check-exn exn:fail?
-               (λ ()
-                  (decode bool-or-num 5)))
-    (check-equal? (encode bool-or-num #f) 1)
-    (check-equal? (encode bool-or-num 2) 4)
-    (check-bijection? bool-or-num)
-     
-    (check-equal? (enum-size bool-or-nat)
-                  +inf.f)
-    (check-equal? (decode bool-or-nat 0) #t)
-    (check-equal? (decode bool-or-nat 2) 0)
-    (check-bijection? bool-or-nat)
-     
-    (check-equal? (encode bool-or-num #f) 1)
-    (check-equal? (encode bool-or-num 2) 4)
-
-    (check-equal? (enum-size odd-or-even)
-                  +inf.f)
-    (check-equal? (decode odd-or-even 0) 0)
-    (check-equal? (decode odd-or-even 1) 1)
-    (check-equal? (decode odd-or-even 2) 2)
-    (check-exn exn:fail?
-               (λ ()
-                  (decode odd-or-even -1)))
-    (check-equal? (encode odd-or-even 0) 0)   
-    (check-equal? (encode odd-or-even 1) 1)
-    (check-equal? (encode odd-or-even 2) 2)
-    (check-equal? (encode odd-or-even 3) 3)
-    (check-bijection? odd-or-even)))
-
- ;; prod/e tests
- (define bool*bool (prod/e bools bools))
- (define 1*b (prod/e (const/e 1) bools))
- (define bool*nats (prod/e bools nats))
- (define nats*bool (prod/e nats bools))
- (define nats*nats (prod/e nats nats))
- (define ns-equal? (λ (ns ms)
-                      (and (= (car ns)
-                              (car ms))
-                           (= (cdr ns)
-                              (cdr ms)))))
-
- ;; prod tests
- (test-begin
-
-  (check-equal? (size 1*b) 2)
-  (check-equal? (decode 1*b 0) (cons 1 #t))
-  (check-equal? (decode 1*b 1) (cons 1 #f))
-  (check-bijection? 1*b)
-  (check-equal? (enum-size bool*bool) 4)
-  (check-equal? (decode bool*bool 0)
-                (cons #t #t))
-  (check-equal? (decode bool*bool 1)
-                (cons #t #f))
-  (check-equal? (decode bool*bool 2)
-                (cons #f #t))
-  (check-equal? (decode bool*bool 3)
-                (cons #f #f))
-  (check-bijection? bool*bool)
-
-  (check-equal? (enum-size bool*nats) +inf.f)
-  (check-equal? (decode bool*nats 0)
-                (cons #t 0))
-  (check-equal? (decode bool*nats 1)
-                (cons #f 0))
-  (check-equal? (decode bool*nats 2)
-                (cons #t 1))
-  (check-equal? (decode bool*nats 3)
-                (cons #f 1))
-  (check-bijection? bool*nats)
-
-  (check-equal? (enum-size nats*bool) +inf.f)
-  (check-equal? (decode nats*bool 0)
-                (cons 0 #t))
-  (check-equal? (decode nats*bool 1)
-                (cons 0 #f))
-  (check-equal? (decode nats*bool 2)
-                (cons 1 #t))
-  (check-equal? (decode nats*bool 3)
-                (cons 1 #f))
-  (check-bijection? nats*bool)
-
-  (check-equal? (enum-size nats*nats) +inf.f)
-  (check ns-equal?
-         (decode nats*nats 0)
-         (cons 0 0))
-  (check ns-equal?
-         (decode nats*nats 1)
-         (cons 0 1))
-  (check ns-equal?
-         (decode nats*nats 2)
-         (cons 1 0))
-  (check ns-equal?
-         (decode nats*nats 3)
-         (cons 0 2))
-  (check ns-equal?
-         (decode nats*nats 4)
-         (cons 1 1))
-  (check-bijection? nats*nats))
-
-
- ;; dep/e tests
- (define (up-to n)
-   (take/e nats (+ n 1)))
-
- (define 3-up
-   (dep/e
-    (from-list/e '(0 1 2))
-    up-to))
-
- (define from-3
-   (dep/e
-    (from-list/e '(0 1 2))
-    nats+/e))
-
- (define nats-to
-   (dep/e nats up-to))
-
- (define nats-up
-   (dep/e nats nats+/e))
-
- (test-begin
-  (check-equal? (size 3-up) 6)
-  (check-equal? (decode 3-up 0) (cons 0 0))
-  (check-equal? (decode 3-up 1) (cons 1 0))
-  (check-equal? (decode 3-up 2) (cons 1 1))
-  (check-equal? (decode 3-up 3) (cons 2 0))
-  (check-equal? (decode 3-up 4) (cons 2 1))
-  (check-equal? (decode 3-up 5) (cons 2 2))
-  (check-bijection? 3-up)
-
-  (check-equal? (size from-3) +inf.f)
-  (check-equal? (decode from-3 0) (cons 0 0))
-  (check-equal? (decode from-3 1) (cons 1 1))
-  (check-equal? (decode from-3 2) (cons 2 2))
-  (check-equal? (decode from-3 3) (cons 0 1))
-  (check-equal? (decode from-3 4) (cons 1 2))
-  (check-equal? (decode from-3 5) (cons 2 3))
-  (check-equal? (decode from-3 6) (cons 0 2))
-  (check-bijection? from-3)
-
-  (check-equal? (size nats-to) +inf.f)
-  (check-equal? (decode nats-to 0) (cons 0 0))
-  (check-equal? (decode nats-to 1) (cons 1 0))
-  (check-equal? (decode nats-to 2) (cons 1 1))
-  (check-equal? (decode nats-to 3) (cons 2 0))
-  (check-equal? (decode nats-to 4) (cons 2 1))
-  (check-equal? (decode nats-to 5) (cons 2 2))
-  (check-equal? (decode nats-to 6) (cons 3 0))
-  (check-bijection? nats-to)
-
-  (check-equal? (size nats-up) +inf.f)
-  (check-equal? (decode nats-up 0) (cons 0 0))
-  (check-equal? (decode nats-up 1) (cons 0 1))
-  (check-equal? (decode nats-up 2) (cons 1 1))
-  (check-equal? (decode nats-up 3) (cons 0 2))
-  (check-equal? (decode nats-up 4) (cons 1 2))
-  (check-equal? (decode nats-up 5) (cons 2 2))
-  (check-equal? (decode nats-up 6) (cons 0 3))
-  (check-equal? (decode nats-up 7) (cons 1 3))
-
-  (check-bijection? nats-up))
-
- ;; find-size tests
- (check-equal? (find-size (gvector) 5) #f)
- (check-equal? (find-size (gvector 5) 4) 0)
- (check-equal? (find-size (gvector 1 5 7) 0) 0)
- (check-equal? (find-size (gvector 1 5 7) 1) 1)
- (check-equal? (find-size (gvector 1 5 7) 4) 1)
- (check-equal? (find-size (gvector 1 5 7) 5) 2)
- (check-equal? (find-size (gvector 1 5 7) 6) 2)
- (check-equal? (find-size (gvector 1 5 7) 7) #f) 
- 
- ;; depend/e tests
- ;; same as dep unless the right side is finite
- (define 3-up-2
-   (dep/e
-    (from-list/e '(0 1 2))
-    up-to))
-
- (define nats-to-2
-   (dep/e nats up-to))
-
-
- (test-begin
-  (check-equal? (size 3-up-2) 6)
-  (check-equal? (decode 3-up-2 0) (cons 0 0))
-  (check-equal? (decode 3-up-2 1) (cons 1 0))
-  (check-equal? (decode 3-up-2 2) (cons 1 1))
-  (check-equal? (decode 3-up-2 3) (cons 2 0))
-  (check-equal? (decode 3-up-2 4) (cons 2 1))
-  (check-equal? (decode 3-up-2 5) (cons 2 2))
-  
-  (check-equal? (encode 3-up-2 (cons 0 0)) 0)
-  (check-equal? (encode 3-up-2 (cons 1 0)) 1)
-  (check-equal? (encode 3-up-2 (cons 1 1)) 2)
-  (check-equal? (encode 3-up-2 (cons 2 0)) 3)
-
-  (check-equal? (size nats-to-2) +inf.f)
-  (check-equal? (encode nats-to-2 (cons 0 0)) 0)
-  (check-equal? (encode nats-to-2 (cons 1 0)) 1)
-  (check-equal? (encode nats-to-2 (cons 1 1)) 2)
-  (check-equal? (encode nats-to-2 (cons 2 0)) 3)
-  (check-equal? (encode nats-to-2 (cons 2 1)) 4)
-  (check-equal? (encode nats-to-2 (cons 2 2)) 5)
-  (check-equal? (encode nats-to-2 (cons 3 0)) 6)
-
-  (check-equal? (decode nats-to-2 0) (cons 0 0))
-  (check-equal? (decode nats-to-2 1) (cons 1 0))
-  (check-equal? (decode nats-to-2 2) (cons 1 1))
-  (check-equal? (decode nats-to-2 3) (cons 2 0))
-  (check-equal? (decode nats-to-2 4) (cons 2 1))
-  (check-equal? (decode nats-to-2 5) (cons 2 2))
-  (check-equal? (decode nats-to-2 6) (cons 3 0)))
-
- ;; take/e test
- (define to-2 (up-to 2))
- (test-begin
-  (check-equal? (size to-2) 3)
-  (check-equal? (decode to-2 0) 0)
-  (check-equal? (decode to-2 1) 1)
-  (check-equal? (decode to-2 2) 2)
-  (check-bijection? to-2))
-
- ;; to-list test
- (test-begin
-  (check-equal? (to-list (up-to 3))
-                '(0 1 2 3)))
-
- ;; except/e test
- (define not-3 (except/e nats '(3)))
- (test-begin
-  (check-equal? (decode not-3 0) 0)
-  (check-equal? (decode not-3 3) 4)
-  (check-bijection? not-3))
- (define not-a (except/e nats '(a)))
- (test-begin
-  (check-equal? (decode not-a 0) 0)
-  (check-bijection? not-a))
-
- ;; fold-enum tests
- (define complicated
-   (fold-enum
-    (λ (excepts n)
-       (except/e (up-to n) excepts))
-    '(2 4 6)))
- (check-bijection? complicated))
+                  nums)))))
