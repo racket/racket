@@ -55,7 +55,7 @@
 							    [(right) BS_RIGHT]
 							    [(top) BS_TOP]
 							    [(bottom) BS_BOTTOM])
-                                                          0))
+                                                          BS_MULTILINE))
                                          0 0 0 0
                                          (send parent get-content-hwnd)
                                          #f

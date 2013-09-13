@@ -383,7 +383,10 @@
                                    (values (combine-w w1 w2) (combine-h h1 h2)
                                            (combine-h d1 d1) (combine-h a1 a2)))]
                                 [else
-                                 (send measure-dc get-text-extent label #f #t)]))]
+                                 (define strs (regexp-split #rx"\n" label))
+                                 (for/fold ([w 0][h 0][d 0] [a 0]) ([str (in-list strs)])
+                                   (define-values (tw th d a) (send measure-dc get-text-extent label #f #t))
+                                   (values (max w tw) (+ h th) 0 0))]))]
                   [(->int) (lambda (v) (inexact->exact (ceiling v)))])
        (resize (->int (* scale-h (max (+ w dw) min-w)))
                (->int (* scale-w (max (+ h dh) min-h)))))))
