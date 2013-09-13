@@ -41,10 +41,10 @@
     ch))
 
 (define (th-dynamic-place mod funcname)
-  (unless (or (path-string? mod) (resolved-module-path? mod))
-    (raise-type-error 'place "resolved-module-path? or path-string?" 0 mod funcname))
+  (unless (or (module-path? mod) (path? mod) (resolved-module-path? mod))
+    (raise-argument-error 'dynamic-place "(or/c module-path? path? resolved-module-path?)" 0 mod funcname))
   (unless (symbol? funcname)
-    (raise-type-error 'place "symbol?" 1 mod funcname))
+    (raise-argument-error 'dynamic-place "symbol?" 1 mod funcname))
   (define-values (pch cch) (th-place-channel))
   (define cust (make-custodian-from-main))
   (define th (thread
@@ -134,7 +134,7 @@
     (cond
       [(TH-place? pl) (TH-place-channel-out (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-out pl)]
-      [else (raise-type-error 'place-channel-put "expect a place? or place-channel?" pl)]))
+      [else (raise-argument-error 'place-channel-put "(or/c place? place-channel?)" pl)]))
   (void (thread-send th (deep-copy msg) #f)))
 
 (define (th-place-channel-get pl)
@@ -142,7 +142,7 @@
     (cond
       [(TH-place? pl) (TH-place-channel-in (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-in pl)]
-      [else (raise-type-error 'place-channel-get "expect a place? or place-channel?" pl)])))
+      [else (raise-argument-error 'place-channel-get "(or/c place? place-channel?)" pl)])))
 
 (define (th-place-channel? pl)
   (or (TH-place? pl)
