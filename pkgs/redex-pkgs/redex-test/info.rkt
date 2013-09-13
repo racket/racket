@@ -11,7 +11,8 @@
                "pict-lib"
                "redex-lib"
                "scribble-lib"
-	       "redex-examples"))
+               "redex-examples"
+               "data-lib"))
 (define build-deps '("scheme-lib"
                      ))
 
