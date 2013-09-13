@@ -12,12 +12,11 @@
     [(windows) (ffi-lib "sqlite3.dll" #:fail (lambda () #f))]
     [else (ffi-lib "libsqlite3" '("0" #f) #:fail (lambda () #f))]))
 
-;; On Windows, raco distribute should include the local sqlite3.dll;
-;; other platforms have libsqlite3 as system library.
-(define-runtime-path-list _sqlite-libs-for-distribute
+;; raco distribute should include Racket's sqlite3 if present
+(define-runtime-path _sqlite-lib-for-distribute
   (case (system-type)
-    [(windows) '((so "sqlite3.dll"))]
-    [else '()]))
+    [(windows) '(so "sqlite3")]
+    [else '(so "libsqlite3")]))
 
 (define-ffi-definer define-sqlite
   sqlite-lib
