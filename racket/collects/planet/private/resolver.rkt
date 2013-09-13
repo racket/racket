@@ -762,7 +762,9 @@ See the scribble documentation on the planet/resolver module.
 
       (with-handlers ([exn:fail:network? (λ (e) (return (exn-message e)))])
         (let* ([target            (pkg->download-url pkg)]
-               [ip                (get-impure-port target)]
+               [ip                (get-impure-port 
+                                   target
+                                   (list "Accept-Encoding: identity"))]
                [head              (purify-port ip)]
                [response-code/str (get-http-response-code head)]
                [response-code     (and response-code/str 
