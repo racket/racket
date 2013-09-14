@@ -595,16 +595,13 @@
 
 (define default-example
   (string-append
-   "#lang racket   ; draw a graph of cos\n"
-   "(require plot) ; and deriv^3(cos)\n"
-   "(define ((deriv f) x)\n"
-   "  (/ (- (f x) (f (- x 0.001))) 0.001))\n"
-   "(define (thrice f) (lambda (x) (f (f (f x)))))\n"
-   "(plot (list (function ((thrice deriv) sin) -5 5)\n"
-   "            (function cos -5 5 #:color 'blue)))\n"
+   "#lang racket   ; draw a graph of\n"
+   "(require plot) ; cos and log\n"
+   "(plot (list (function cos -5 5)\n"
+   "            (function log -5 5)))\n"
    "\"an unclosed string is an error"))
 
-(struct color-scheme (name button-label white-on-black-base? mapping example))
+(struct color-scheme (name button-label white-on-black-base? mapping example) #:transparent)
 (define black-on-white-color-scheme-name 'classic)
 (define white-on-black-color-scheme-name 'white-on-black)
 (define known-color-schemes
@@ -696,7 +693,12 @@
                               (props->color (cdr line))]
                              [(set-member? known-style-names name)
                               (props->style-delta (cdr line))]))))
-                  example)))))
+                  example))))
+  
+  ;; the color-scheme saved in the user's preferences may not be known
+  ;; until after the code above executes, which would mean that the 
+  ;; color scheme in effect up to that point may be wrong. So fix that here:
+  (set-current-color-scheme (preferences:get 'framework:color-scheme) #t))
 
 (define valid-props? 
   (listof (or/c 'bold 'italic 'underline
@@ -826,14 +828,15 @@
     (and (equal? name (color-scheme-name known-color-scheme))
          known-color-scheme)))
 
-(define (set-current-color-scheme name)
+(define (set-current-color-scheme name [avoid-shortcircuit? #f])
   (define color-scheme
     (or (for/or ([known-color-scheme (in-list known-color-schemes)])
           (and (equal? name (color-scheme-name known-color-scheme))
                known-color-scheme))
         (car known-color-schemes)))
-  (unless (equal? (color-scheme-name color-scheme)
-                  (color-scheme-name (get-current-color-scheme)))
+  (when (or avoid-shortcircuit?
+            (not (equal? (color-scheme-name color-scheme)
+                         (color-scheme-name (get-current-color-scheme)))))
     (preferences:set 'framework:color-scheme (color-scheme-name color-scheme))
     (define old-wob (preferences:get 'framework:white-on-black?))
     (define new-wob (color-scheme-white-on-black-base? color-scheme))
@@ -852,7 +855,6 @@
   (for/list ([(name a-color-scheme) (in-hash known-color-schemes)])
     name))
 
-;; symbol (-> (or/c (is-a?/c style-delta%) (is-a?/c color%)) void) -> void
 (define (register-color-scheme-entry-change-callback color fn [weak? #f])
   (define wb/f (if weak? (make-weak-box fn) fn))
   ;; so we know which callbacks to call when a color scheme change happens
@@ -972,7 +974,8 @@
      name
      (λ (sd)
        (editor:set-standard-style-list-delta style-name sd)))
-    (editor:set-standard-style-list-delta style-name (lookup-in-color-scheme name))))
+    (define init-value (lookup-in-color-scheme name))
+    (editor:set-standard-style-list-delta style-name init-value)))
 
 (define (add-color-scheme-preferences-panel #:extras [extras void])
   (preferences:add-panel
@@ -983,6 +986,7 @@
        (new vertical-panel% 
             [parent parent]
             [style '(auto-vscroll)]))
+     (extras vp)
      (define buttons
        (for/list ([color-scheme (in-list known-color-schemes)])
          (define hp (new horizontal-panel% 
@@ -996,41 +1000,76 @@
                          [parent hp]
                          [style '(auto-hscroll no-vscroll)]
                          [editor t]))
-         (send ec set-canvas-background
-               (lookup-in-color-scheme/given-mapping 
-                'framework:basic-canvas-background
-                (hash) color-scheme))
-         (send t set-style-list (color-scheme->style-list color-scheme))
+         (define (update-colors defaults?)
+           (define bkg-name 'framework:basic-canvas-background)
+           (send ec set-canvas-background
+                 (lookup-in-color-scheme/given-mapping 
+                  bkg-name
+                  (if defaults?
+                      (hash)
+                      (preferences:get (color-scheme-entry-name->pref-name bkg-name)))
+                  color-scheme))
+           (send t set-style-list (color-scheme->style-list color-scheme defaults?)))
          (send ec set-line-count (+ 1 (for/sum ([c (in-string str)])
                                         (if (equal? c #\newline)
                                             1
                                             0))))
-         (new button%
-              [label (color-scheme-button-label color-scheme)]
-              [parent hp]
-              [callback (λ (x y) 
-                          (set-current-color-scheme
-                           (color-scheme-name color-scheme)))])))
+         (define bp (new vertical-panel% [parent hp] 
+                         [stretchable-height #f]
+                         [stretchable-width #f]))
+         (define defaults? #f)
+         (define btn
+           (new button%
+                [label (color-scheme-button-label color-scheme)]
+                [parent bp]
+                [callback (λ (x y) 
+                            (set-current-color-scheme
+                             (color-scheme-name color-scheme))
+                            (when (and default-checkbox
+                                       (send default-checkbox get-value))
+                              (revert-to-color-scheme-defaults color-scheme)))]))
+         (define default-checkbox
+           (new check-box%
+                [stretchable-width #t]
+                [label "Revert to\ndefault colors"]
+                [parent bp]
+                [callback
+                 (λ (x y)
+                   (update-colors (send default-checkbox get-value)))]))
+         (update-colors #f)
+         btn))
      (define wid (apply max (map (λ (x) (send x get-width)) buttons)))
      (for ([b (in-list buttons)])
        (send b min-width wid))
-     (extras vp)
      (void))))
 
-(define (color-scheme->style-list color-scheme)
+(define (revert-to-color-scheme-defaults color-scheme)
+  (define cs-name (color-scheme-name color-scheme))
+  (for ([name (in-set (set-union known-style-names known-color-names))])
+    (define pref-sym (color-scheme-entry-name->pref-name name))
+    (define pref-hash (preferences:get pref-sym))
+    (when (hash-ref pref-hash cs-name #f)
+      (preferences:set pref-sym (hash-remove pref-hash cs-name)))))
+
+(define (color-scheme->style-list color-scheme defaults?)
   (define style-list (new style-list%))
   
   (define standard-delta (make-object style-delta% 'change-normal))
   (send standard-delta set-delta 'change-family 'modern)
   (send standard-delta set-size-mult 0)
   (send standard-delta set-size-add (editor:get-current-preferred-font-size))
+  (send standard-delta set-delta-face (preferences:get 'framework:standard-style-list:font-name))
   (send style-list new-named-style "Standard"
         (send style-list find-or-create-style
               (send style-list basic-style)
               standard-delta))
   (for ([name (in-set known-style-names)])
+    (define pref-hash (preferences:get (color-scheme-entry-name->pref-name name)))
     (define delta
-      (lookup-in-color-scheme/given-mapping name (hash) color-scheme))
+      (lookup-in-color-scheme/given-mapping
+       name 
+       (if defaults? (hash) pref-hash)
+       color-scheme))
     (send style-list new-named-style
           (hash-ref name->style-name name)
           (send style-list find-or-create-style
