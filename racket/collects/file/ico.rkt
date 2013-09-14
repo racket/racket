@@ -417,6 +417,10 @@
                                   h
                                   (lambda (p) (split-bits (byte->integer p)))
                                   append)])
+            ;; The following check is commented out, because the "start.ico" file
+            ;; for the GUI package manager has an extra 128 0s --- and I don't know
+            ;; why. Maybe extra padding is allowed.
+            #;
             (unless (eof-object? (read-byte p))
               (error 'parse-dib "not extactly at end"))
             (list main-image mask)))))))
