@@ -653,6 +653,11 @@
             (λ (edit event)
               (send edit copy #f (send event get-time-stamp)))]
            
+           [mouse-copy-clipboard/disable-anchor
+            (λ (edit event)
+              (send edit set-anchor #f)
+              (send edit copy #f (send event get-time-stamp)))]
+           
            [mouse-paste-clipboard
             (λ (edit event)
               (send edit paste (send event get-time-stamp)))]
@@ -1112,6 +1117,7 @@
           (add "keyboard-macro-end-record" end-macro)
           
           (add-m "copy-clipboard" mouse-copy-clipboard)
+          (add-m "copy-clipboard/disable-anchor" mouse-copy-clipboard/disable-anchor)
           (add-m "cut-clipboard" mouse-cut-clipboard)
           (add-m "paste-clipboard" mouse-paste-clipboard)
           (add-m "copy-click-region" copy-click-region)
@@ -1278,7 +1284,7 @@
           (map "c:w" "cut-clipboard")
           (map "a:x" "cut-clipboard")
           (map "d:x" "cut-clipboard")
-          (map-meta "w" "copy-clipboard")
+          (map-meta "w" "copy-clipboard/disable-anchor")
           (map "a:c" "copy-clipboard")
           (map "d:c" "copy-clipboard")
           
