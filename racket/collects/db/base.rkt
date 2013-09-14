@@ -8,8 +8,8 @@
 
 ;; ============================================================
 
-(require "private/generic/interfaces.rkt"
-         "private/generic/sql-data.rkt")
+(require db/private/generic/interfaces
+         db/private/generic/sql-data)
 
 (provide (struct-out simple-result)
          (struct-out rows-result)
@@ -77,7 +77,7 @@
 
 ;; ============================================================
 
-(require "private/generic/functions.rkt")
+(require db/private/generic/functions)
 
 (define fetch-size/c
   (or/c exact-positive-integer? +inf.0))

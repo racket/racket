@@ -7,9 +7,9 @@
          racket/runtime-path
          (for-syntax (only-in racket/base quote))
          ffi/unsafe/atomic
-         "interfaces.rkt"
-         "common.rkt"
-         "prepared.rkt")
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/prepared)
 (provide place-connect
          place-proxy-connection%)
 

@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
-         "base.rkt"
-         "private/sqlite3/main.rkt")
+         db/base
+         db/private/sqlite3/place)
 
 ;; FIXME: Contracts duplicated at main.rkt
 (provide/contract

@@ -5,8 +5,8 @@
          racket/place
          racket/serialize
          racket/lazy-require
-         "interfaces.rkt"
-         "prepared.rkt")
+         db/private/generic/interfaces
+         db/private/generic/prepared)
 (provide connection-server)
 
 (define (pchan-put chan datum)
