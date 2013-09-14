@@ -5,7 +5,39 @@
          unstable/error
          "interfaces.rkt"
          (only-in "sql-data.rkt" sql-null sql-null?))
-(provide (all-defined-out))
+(provide connected?
+         disconnect
+         connection-dbsystem
+         dbsystem-name
+         dbsystem-supported-types
+         prop:statement
+         statement?
+         bind-prepared-statement
+         prepared-statement-parameter-types
+         prepared-statement-result-types
+         virtual-statement?
+         (rename-out [virtual-statement* virtual-statement])
+         query-rows
+         query-list
+         query-row
+         query-maybe-row
+         query-value
+         query-maybe-value
+         query-exec
+         query
+         in-query
+         in-query-helper ;; for contracted in-query macro in db/base
+         prepare
+         start-transaction
+         commit-transaction
+         rollback-transaction
+         call-with-transaction
+         in-transaction?
+         needs-rollback?
+         list-tables
+         table-exists?
+         group-rows
+         rows->dict)
 
 ;; == Administrative procedures
 

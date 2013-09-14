@@ -181,7 +181,7 @@
  [bind-prepared-statement
   (-> prepared-statement? list? any)]
 
- [rename virtual-statement* virtual-statement
+ [virtual-statement
   (-> (or/c string? (-> dbsystem? string?))
       virtual-statement?)]
  [virtual-statement?

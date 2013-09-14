@@ -5,8 +5,7 @@
          racket/path
          racket/file
          version/utils
-         db/base
-         db/sqlite3)
+         db/private/pre)
 
 (provide 
  (struct-out pkg)

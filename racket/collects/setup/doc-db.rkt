@@ -1,6 +1,5 @@
 #lang racket/base
-(require db/base
-         db/sqlite3
+(require db/private/pre
          racket/format
          racket/serialize
          "main-doc.rkt")
