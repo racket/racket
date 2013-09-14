@@ -435,17 +435,22 @@
  (hide-column-width-guide "Richtschnur für Spaltenbreite für Dateien mit ~a Spalten einblenden")
  (show-column-width-guide "Richtschnur für Spaltenbreite für Dateien mit ~a Spalten ausblenden") ;; filled with a number > 2
  (limit-interactions-size "Umfang der Interaktionen einschränken")
- (background-color "Hintergrundfarbe")
+ (background-color "Hintergrund")
  (default-text-color "Standard für Text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Hintergrundfarbe auswählen")
 
  (revert-to-defaults "Standardeinstellung wiederherstellen")
  (undo-changes "Änderungen rückgängig machen und schließen") ;; used in the preferences dialog to undo preference changes
 
-  (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
-  (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
+ (color-schemes "Farbschemata") ;; the label in the preferences dialog for the color scheme panel
+ (classic-color-scheme "Klassisch") ;; formerly called 'black on white'
+ (modern-color-scheme "Modern")   ;; an attempt to be more color-blind friendly
+ (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
+ ; drracket additions to the color scheme dialog; two buttons
+ (design-your-own-color-schemes "Farbschemata selbst machen") ; pointer to (english-only) docs
+ (style-and-color-names "Stil && Farbnamen")
 
-  (add-spacing-between-lines "Ein Pixel Extra-Platz zwischen den Zeilen")
+ (add-spacing-between-lines "Ein Pixel Extra-Platz zwischen den Zeilen")
 
  ; title of the color choosing dialog
 
@@ -1011,6 +1016,11 @@
   (teachpack-pre-installed/2htdp "Vorinstallierte HtDP/2e-Teachpacks")
   (teachpack-user-installed "selbst installierte Teachpacks")
   (add-teachpack-to-list... "Teachpack zu Liste hinzufügen...")
+  ; first and second ~a are teachpack names, third is a symbol identifing an export
+  (teachpack-conflict
+   "WARNUNG: Das schon installierte Teachpack ~a ist im Konflikt mit ~a (beide haben den Export ~a)")
+   ;; a button label; the two ~a are filled with teachpack names
+  (remove-and-add-teachpack "~a entfernen und ~a hinzufügen")
   (teachpack-already-installed "Ein Teachpack names '~a' ist schon installiert. Überschreiben?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
   (teachpacks-only-in-languages "Die Teachpacks sind nur in diesen Sprachen verfügbar: ~a}\n\nIn anderen Sprachen ist `require' vorgesehen.")
@@ -1390,6 +1400,7 @@
   (ml-cp-collection-paths "Pfade für Kollektionen")
 
   ;; button labels
+  ;;  The package manager uses these, too
   (ml-cp-add "Hinzufügen")
   (ml-cp-add-default "Standard hinzufügen")
   (ml-cp-remove "Entfernen")
@@ -1659,23 +1670,30 @@
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
   
   ;; GUI for installing a pkg package; available via File|Install Package...
-  ; change: (install-pkg-install-by-source "Nach Quelle installieren") ; tab label
-  ; change: (install-pkg-install-from-list "Von Liste installieren") ; tab label
-  ; change: (install-pkg-install-installed "Installiert")         ; tab label
-  ; change: (install-pkg-migrate-from "Migrieren von")           ; tab label
+  (install-pkg-install-by-source "Tu was ich meine") ; tab label
+  (install-pkg-install-from-list "Im Katalog verfügbar") ; tab label
+  (install-pkg-install-installed "Momentan installiert")         ; tab label
+  (install-pkg-migrate-from "Kopieren von Version")           ; tab label
+  (install-pkg-settings "Einstellungen")                        ; tab label
   (install-pkg-menu-item... "Paket installieren...")
   (install-pkg-dialog-title "Paket installieren")
-  (install-pkg-source-label "Packet-Quelltext")
-  (install-pkg-type-label "Typ Paket-Quelltext")
+  (install-pkg-source-label "Paket-Quelle")
+  (install-pkg-package-name "Paket-Name")
+  (install-pkg-package-source-desc "Eine Paket-Quelle ist ein Paket-Name, eine Datei, ein Verzeichnis, eine URL oder ein Verweis auf Github")
   (install-pkg-infer "Inferieren")
+  (install-pkg-use "Benutzen") ; as opposed to "Infer", label for text box
+  (install-pkg-type-label "Typ Paket-Quelle")
   (install-pkg-file "Datei")
   (install-pkg-dir "Verzeichnis")
-  ; change: "URL" -> "Remote" (install-pkg-dir-url "URL Verzeichnis")
-  ; change: "URL" -> "Remote" (install-pkg-file-url "URL Datei")
+  (install-pkg-dir-url "Verzeichnis woanders")
+  (install-pkg-file-url "Datei woanders")
   (install-pkg-github "Github")
   (install-pkg-name "Name (frage Auflöser)")
   (install-pkg-inferred-as "Typ inferiert als ~a") ; ~a gets install-pkg-{file,dir,...}
-  ; change: "force" is not "overwrite", not a question (install-pkg-force? "Existierendes überschreiben?")
+  (install-pkg-link-dirs "Lokales Verzeichnis als Link")
+  (install-pkg-file-or-dir? "Datei oder Verzeichnis auswählen")
+  (install-pkg-force? "Konflikte ignorieren")
+  (install-pkg-replace? "Existierende Installation überschreiben")
   (install-pkg-command-line "Äquivalenter Kommandozeilen-Aufruf:")
   (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
 
@@ -1688,6 +1706,7 @@
   (install-pkg-action-inferred-to-be-install "Maßnahme als Installation inferiert")
   (install-pkg-default "Standard")
   (install-pkg-scope-label "Paket-Einzugsbereich")
+  (install-pkg-default-scope-label "Standard-Paket-Einzugsbereich") ; for picking the scope to be default
   (install-pkg-installation "Bestimmte Racket-Installation")
   (install-pkg-user "Bestimmter Benutzer und Racket-Version")
   (install-pkg-set-as-default "Als Standard setzen")
@@ -1703,9 +1722,13 @@
   (install-pkg-update-catalogs "Aktualisieren")
   (install-pkg-do-not-update-catalogs "Nicht aktualisieren")
   (install-pkg-really-remove? "Sind Sie sicher, dass Sie die folgenden selektierten Pakete entfernen wollen?")
+  (install-pkg-promote "Von \"automatisch installiert\" befördern")
+  (install-pkg-demote "Nach \"automatisch installiert\" zurückstufen")
   (install-pkg-abort-install "Installation abbrechen")
   (install-pkg-abort-update "Aktualisierung abbrechen")
   (install-pkg-abort-remove "Entfernung abbrechen")
+  (install-pkg-abort-demote "Zurückstufung abbrechen")
+  (install-pkg-abort-promote "Beförderung abbrechen")
   (install-pkg-abort-migrate "Migration abbrechen")
   (install-pkg-abort-generic-action "Aktion abbrechen")
   (install-pkg-show-all-options "Alle Optionen anzeigen")
@@ -1717,16 +1740,20 @@
 
   (install-pkg-abort-set-scope "Änderung des Einzugsbereich widerrufen")
 
-  ; change: "installation" -> "installation/update" (install-pkg-dependencies-fail "Fehlschlag: widerruft die Installation falls Abhänigkeiten fehlen")
-  (install-pkg-dependencies-force "Trotzdem: installieren trotz fehlender abhängigkeiten")
+  (install-pkg-dependencies-fail "Fehlschlag: Installation/Aktualisierung widerrufen, falls Abhänigkeiten fehlen")
+  (install-pkg-dependencies-force "Trotzdem: Installieren trotz fehlender Abhängigkeiten")
   (install-pkg-dependencies-search-ask "Fragen: bei jeder fehlenden Abhänigkeit fragen (nicht unterstützt in GUI)")
   (install-pkg-dependencies-search-auto "Auto: fehlende Abhänigkeiten automatisch installieren")
 
   (install-pkg-dependencies-mode "Modus Abhängigkeiten")
 
   (install-pkg-dependencies-search-ask-not-supported-in-gui
-   "Der “Fragen“-Modus für Abhänigkeiten ist im GUI-Installierer nicht unterstützt.")
+   "Der “Fragen“-Modus für Abhängigkeiten ist im GUI-Installierer nicht unterstützt.")
+  ;; "~a" is pre-":" part of `install-pkg-dependencies-fail' or `install-pkg-dependencies-search-auto':
   (install-pkg-deps-is "Standard-Modus für Abhängigkeiten ist ~a")
+
+  (install-pkg-package-catalogs "Paket-Kataloge") ; label for a list box
+  (install-pkg-add-package-catalog "Paket-Katalog hinzufügen")
 
   
   )
