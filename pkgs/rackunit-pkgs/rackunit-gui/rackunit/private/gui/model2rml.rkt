@@ -122,7 +122,8 @@
                                     count-successes
                                     num-tests))
                        (for-each (lambda (m) (render-model/short m)) successes)
-                       (blank)))
+                       (blank))
+                     (render-timing model))
               (if finished?
                   (put '()
                        "This test suite is empty.")
@@ -158,7 +159,7 @@
                   (put `(,style)
                        (format " (~a)"
                                (n-things total-failures "failure" "failures"))))
-                (put '(test-unexecuted) " not yet executed"))
+                (put '(test-unexecuted) " not yet finished"))
             (blank)))))
 
     (define/private (render-case-short-form model)
@@ -428,7 +429,7 @@
           (blank))))
 
     (define/private (render-timing model)
-      (let [(timing (send/i model case<%> get-timing))]
+      (let [(timing (send/i model result<%> get-timing))]
         (when timing
           (let ([cpu (car timing)]
                 [real (cadr timing)]

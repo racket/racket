@@ -80,6 +80,9 @@
     (define/public (get-output) (reverse output))
     (define/public (has-output?) (pair? output))))
 
+;; An aggr contains aggregate information about a suite's children.
+(struct aggr (cases successes failures has-output? has-trash? tcpu treal tgc)
+        #:transparent)
 
 ;; suite-result%
 (define suite-result%
@@ -104,31 +107,37 @@
       (send/i (get-controller) controller<%> on-model-status-change this))
 
     (define children-cache
-      (cache (for/fold ([cs 0] [ss 0] [fs 0] [out? #f] [trash? #f])
-                 ([c (in-gvector children)])
-               (values (+ cs (send/i c result<%> get-total-cases))
-                       (+ ss (send/i c result<%> get-total-successes))
-                       (+ fs (send/i c result<%> get-total-failures))
-                       (or out? (send/i c result<%> has-output?))
-                       (or trash? (send/i c result<%> has-trash?))))))
+      (cache (call-with-values
+                 (lambda ()
+                   (for/fold ([cs 0] [ss 0] [fs 0] [out? #f] [trash? #f]
+                              [tcpu 0] [treal 0] [tgc 0])
+                       ([c (in-gvector children)])
+                     (let ([timing (or (send/i c result<%> get-timing) '(0 0 0))])
+                       (values (+ cs (send/i c result<%> get-total-cases))
+                               (+ ss (send/i c result<%> get-total-successes))
+                               (+ fs (send/i c result<%> get-total-failures))
+                               (or out? (send/i c result<%> has-output?))
+                               (or trash? (send/i c result<%> has-trash?))
+                               (+ tcpu (car timing))
+                               (+ treal (cadr timing))
+                               (+ tgc (caddr timing))))))
+               aggr)))
 
     (define/public (finished?)
       done?)
     (define/public (get-total-cases)
-      (define-values (c _s _f _o _t) (cache-ref children-cache))
-      c)
+      (aggr-cases (cache-ref children-cache)))
     (define/public (get-total-successes)
-      (define-values (_c s _f _o _t) (cache-ref children-cache))
-      s)
+      (aggr-successes (cache-ref children-cache)))
     (define/public (get-total-failures)
-      (define-values (_c _s f _o _t) (cache-ref children-cache))
-      f)
+      (aggr-failures (cache-ref children-cache)))
     (define/public (has-output?)
-      (define-values (_c _s _f o _t) (cache-ref children-cache))
-      o)
+      (aggr-has-output? (cache-ref children-cache)))
     (define/public (has-trash?)
-      (define-values (_c _s _f _o t) (cache-ref children-cache))
-      t)
+      (aggr-has-trash? (cache-ref children-cache)))
+    (define/public (get-timing)
+      (let ([a (cache-ref children-cache)])
+        (list (aggr-tcpu a) (aggr-treal a) (aggr-tgc a))))
 
     (define/public (success?)
       (and (finished?) (zero? (get-total-failures))))
@@ -138,10 +147,8 @@
 
     ;; on-child-status-change : model<%> -> void
     (define/public (on-child-status-change child)
-      (let ([result
-             (call-with-values (lambda () (cache-ref children-cache)) list)])
+      (let ([result (cache-ref children-cache)])
         (cache-invalidate! children-cache)
-        (let ([new-result
-               (call-with-values (lambda () (cache-ref children-cache)) list)])
+        (let ([new-result (cache-ref children-cache)])
           (unless (equal? new-result result)
             (send/i (get-controller) controller<%> on-model-status-change this)))))))

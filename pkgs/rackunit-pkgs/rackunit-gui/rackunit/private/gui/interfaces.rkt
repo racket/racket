@@ -33,6 +33,7 @@
    error?
    has-output?
    has-trash?
+   get-timing
 
    get-total-cases
    get-total-successes
@@ -41,7 +42,6 @@
 (define-interface case<%> (result<%>)
   (update
    get-result
-   get-timing
    get-output
    get-trash
    get-property
