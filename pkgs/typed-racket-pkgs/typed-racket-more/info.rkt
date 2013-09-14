@@ -8,6 +8,7 @@
 	       "net-lib"
                "draw-lib"
                "rackunit-lib"
+               "rackunit-gui"
                "typed-racket-lib"
                "gui-lib"))
 (define build-deps '("scribble-lib"))

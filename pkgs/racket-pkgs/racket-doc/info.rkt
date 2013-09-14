@@ -20,6 +20,7 @@
                      "data-lib"
                      "pconvert-lib"
                      "rackunit-lib"
+                     "rackunit-gui"
                      "unstable-contract-lib"
                      "web-server"
                      "gui"

@@ -14,7 +14,6 @@
                "scheme-lib"
                "scribble-lib"
                "string-constants-lib"
-               "unstable-list-lib" ; for class-iop
                "unstable-options-lib"
                "unstable-2d"
                "compatibility-lib"

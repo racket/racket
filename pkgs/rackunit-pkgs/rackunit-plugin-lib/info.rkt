@@ -5,6 +5,7 @@
 (define deps '("base"
                "data-lib"
                "rackunit-lib"
+               "rackunit-gui"
                "gui-lib"
                "drracket-plugin-lib"))
 

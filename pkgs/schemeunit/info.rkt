@@ -2,8 +2,8 @@
 
 (define collection "schemeunit")
 (define deps '("base"
-               "gui-lib"
-               "rackunit-lib"))
+               "rackunit-lib"
+               "rackunit-gui"))
 
 (define pkg-desc "Legacy SchemeUnit testing framework")
 
