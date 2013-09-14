@@ -33,4 +33,6 @@
    [(:or "!=" #\= #\? #\~ #\. #\, ":-") (syn-val lexeme 'parenthesis #f start-pos end-pos)]
    [(eof) (syn-val lexeme 'eof #f start-pos end-pos)]
    [#\" ((colorize-string start-pos) input-port)]
-   [any-char (syn-val lexeme 'error #f start-pos end-pos)]))
+   [any-char (syn-val lexeme 'error #f start-pos end-pos)]
+   [(special) (syn-val lexeme 'error #f start-pos end-pos)]
+   [(special-comment) (syn-val lexeme 'error #f start-pos end-pos)]))
