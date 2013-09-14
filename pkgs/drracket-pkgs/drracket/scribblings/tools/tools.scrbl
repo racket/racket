@@ -25,7 +25,7 @@
 
 @author["Robert Bruce Findler"]
 
-@defmodule*[(drracket/tool-lib drscheme/tool-lib)]
+@defmodule*[(drracket/tool-lib drracket/tool drscheme/tool-lib drscheme/tool)]
 
 This manual describes DrRacket's plugins interface. It assumes
 familiarity with 
@@ -41,9 +41,9 @@ The Framework, as described in
 @(other-manual '(lib "scribblings/framework/framework.scrbl")),
 may also come in handy.
 
-The @racketmodname[drscheme/tool-lib] library is for backward
-compatibility; it exports all of the bindings of
-@racketmodname[drracket/tool-lib].
+The @racketmodname[drscheme/tool-lib] and @racketmodname[drscheme/tool]
+libraries are for backward compatibility; they exports all of the bindings of
+their @tt{drracket} counterpart.
 
 @table-of-contents[]
 
@@ -1032,8 +1032,6 @@ not part of DrRacket proper, but one helper library is documented here.
 }
 
 @section{Signatures}
-
-@defmodule*[(drracket/tool drscheme/tool)]
 
 @defsignature[drracket:tool^ ()]{
   This signature includes all of the names in this manual that begin
