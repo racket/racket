@@ -3,10 +3,11 @@
            drracket/private/drsig
            racket/gui/base
            racket/list
+           racket/class
            framework)
   
-  
-  (import)
+  (import [prefix drracket: drracket:interface^]
+          [prefix drracket:rep: drracket:rep^])
   (export drracket:init^)
   
   (define original-output-port (current-output-port))
@@ -114,4 +115,25 @@
      ;; this  may raise an exception if the port is gone.
      (with-handlers ([exn:fail? (λ (x) (void))])
        (original-error-display-handler msg exn))
-     (channel-put error-display-chan (list msg exn))))
+     (channel-put error-display-chan (list msg exn))
+     
+     ;; try to end any unclosed edit-sequences in any definitions
+     ;; texts or interactions texts. That is, we try to recover a
+     ;; little bit from errors that are raised in the dynamic 
+     ;; extent of an edit-sequence.
+     (when (eq? (current-thread) (eventspace-handler-thread system-eventspace))
+       (for ([f (in-list (get-top-level-windows))])
+         (when (is-a? f drracket:unit:frame<%>)
+           (let loop ([o f])
+             (cond
+               [(is-a? o editor-canvas%)
+                (define t (send o get-editor))
+                (when (or (is-a? t drracket:unit:definitions-text<%>)
+                          (is-a? t drracket:rep:text<%>))
+                  (let loop ()
+                    (when (send t in-edit-sequence?)
+                      (send t end-edit-sequence)
+                      (loop))))]
+               [(is-a? o area-container<%>)
+                (for ([c (in-list (send o get-children))])
+                  (loop c))])))))))
