@@ -45,5 +45,7 @@
 
     (define/public (set-label s)
       (gtk_frame_set_label gtk s))
+
+    (define/override (gets-focus?) #f)
     
     (define/override (get-client-gtk) client-gtk)))
