@@ -580,7 +580,8 @@ TODO
         (define locs (or (get-error-ranges) '())) ;; calling set-error-range cleans up the locs
         (define error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows)))
         
-        (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
+        (for ([loc (in-list locs)])
+          (send (srcloc-source loc) begin-edit-sequence #t #f))
         
         (when color?
           (let ([resets
@@ -639,7 +640,7 @@ TODO
         (when (and (is-a? source text%)
                    (srcloc-position loc)
                    (srcloc-span loc))
-          (send source begin-edit-sequence)
+          (send source begin-edit-sequence #t #f)
           
           (clear-error-highlighting) ;; clear the 'highlight-range' from previous errors
           

@@ -224,7 +224,7 @@
     
     (define/public (get-show-docs?) (and the-strs (or locked? mouse-in-blue-box?)))
     (define/public (toggle-syncheck-docs)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (invalidate-blue-box-region)
       (cond
         [locked?
@@ -240,7 +240,7 @@
       (end-edit-sequence))
     (define/public (update-mouse-in-blue-box b)
       (unless (equal? b mouse-in-blue-box?)
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (invalidate-blue-box-region)
         (set! mouse-in-blue-box? b)
         (invalidate-blue-box-region)
@@ -248,7 +248,7 @@
     (define/public (update-locked b)
       (preferences:set 'drracket:syncheck:contracts-locked? b)
       (unless (equal? b locked?)
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (invalidate-blue-box-region)
         (set! locked? b)
         (invalidate-blue-box-region)
@@ -256,7 +256,7 @@
     (define/public (update-mouse-in-lock-icon/read-more? lk? rm?)
       (unless (and (equal? lk? mouse-in-lock-icon?)
                    (equal? rm? mouse-in-read-more?))
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (invalidate-blue-box-region)
         (set! mouse-in-lock-icon? lk?)
         (set! mouse-in-read-more? rm?)
@@ -426,7 +426,7 @@
     (define/private (update-the-strs)
       (update-the-strs/maybe-invalidate
        (λ ()
-         (begin-edit-sequence)
+         (begin-edit-sequence #t #f)
          (invalidate-blue-box-region))
        (λ ()
          (when last-evt-seen
@@ -485,7 +485,7 @@
                      (< where the-strs-id-end))
                 (and delete? (<= the-strs-id-start (+ where len) the-strs-id-end)))
         (when the-strs
-          (begin-edit-sequence)
+          (begin-edit-sequence #t #f)
           (invalidate-blue-box-region)
           (set! the-strs #f)
           (set! the-strs-id-start #f)

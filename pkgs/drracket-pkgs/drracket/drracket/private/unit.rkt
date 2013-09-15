@@ -607,7 +607,7 @@
               ;; the reader-module method's result is used a test of whether or
               ;; not the get-metadata method is used for this language
               (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
-                (begin-edit-sequence #f)
+                (begin-edit-sequence #f #f)
                 (begin-metadata-changes)
                 (let ([locked? (is-locked?)])
                   (when locked? (lock #f))
@@ -648,7 +648,7 @@
           
           (define/augment (on-load-file filename format)
             (inner (void) on-load-file filename format)
-            (begin-edit-sequence #f))
+            (begin-edit-sequence #f #f))
           (define/augment (after-load-file success?)
             (when success?
               (let-values ([(module-language module-language-settings)
@@ -902,7 +902,7 @@
                           next-settings))))
             (when auto-text
               (set! ignore-edits? #t)
-              (begin-edit-sequence #f)
+              (begin-edit-sequence #f #f)
               (insert auto-text)
               (set-modified #f)
               (set! ignore-edits? #f)
@@ -912,7 +912,7 @@
             (when (and (not really-modified?)
                        (not (get-filename))
                        (> (last-position) 0))
-              (begin-edit-sequence #f)
+              (begin-edit-sequence #f #f)
               (send this erase)
               (set-modified #f)
               (end-edit-sequence)
@@ -2394,7 +2394,7 @@
         (cond
           [(and name (file-exists? name))
            (ensure-rep-hidden)
-           (send definitions-text begin-edit-sequence)
+           (send definitions-text begin-edit-sequence #t #f)
            (send definitions-text load-file/gui-error name)
            (send definitions-text end-edit-sequence)
            (send language-message set-yellow #f)]
@@ -3003,8 +3003,8 @@
             (set! interactions-text (send current-tab get-ints))
             
             (begin-container-sequence)
-            (send definitions-text begin-edit-sequence)
-            (send interactions-text begin-edit-sequence)
+            (send definitions-text begin-edit-sequence #t #f)
+            (send interactions-text begin-edit-sequence #t #f)
             (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text #f))
                       definitions-canvases)
             (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text #f))

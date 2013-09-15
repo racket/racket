@@ -1336,7 +1336,7 @@ profile todo:
                     src
                     (λ ()
                       (hash-set! edit-sequence-ht src #f)
-                      (send src begin-edit-sequence #f)
+                      (send src begin-edit-sequence #f #f)
                       (when (send src is-locked?)
                         (hash-set! locked-ht src #t)
                         (send src lock #f))))))
@@ -1394,7 +1394,7 @@ profile todo:
                       (hash-for-each
                        edit-sequence-ht
                        (λ (txt _) 
-                         (send txt begin-edit-sequence #f)))
+                         (send txt begin-edit-sequence #f #f)))
                       (hash-for-each
                        edit-sequence-ht
                        (λ (txt _) 
@@ -1889,7 +1889,7 @@ profile todo:
       ;; clear-profile-display : -> void
       ;; clears out the GUI showing the profile results
       (define/public (clear-profile-display)
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (let ([locked? (is-locked?)])
           (lock #f)
           (clear-old-results)
@@ -1910,7 +1910,7 @@ profile todo:
       ;; does the work to erase any existing profile info
       ;; and make new profiling info.
       (define/public (refresh-profile profile-info definitions-text)
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (lock #f)
         (erase)
         (clear-old-results)
@@ -1952,7 +1952,7 @@ profile todo:
                                (number? span))
                       (unless (hash-ref in-edit-sequence src (λ () #f))
                         (hash-set! in-edit-sequence src #t)
-                        (send src begin-edit-sequence))
+                        (send src begin-edit-sequence #t #f))
                       (let* ([color (get-color-value 
                                      (if (eq? (preferences:get 'drracket:profile-how-to-count) 'time)
                                          (prof-info-time info)
@@ -2058,7 +2058,7 @@ profile todo:
                 (λ ()
                   (hash-for-each
                    in-edit-sequence
-                   (λ (key val) (send key begin-edit-sequence)))
+                   (λ (key val) (send key begin-edit-sequence #t #f)))
                   (clear-highlight)
                   (hash-for-each
                    in-edit-sequence
