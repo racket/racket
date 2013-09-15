@@ -1035,7 +1035,7 @@ added get-regions
     ;; See docs
     ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (define closers (map symbol->string (map cadr pairs)))
       (define closer (get-close-paren pos
                                       (if fixup? ;; Ensure preference for given character:

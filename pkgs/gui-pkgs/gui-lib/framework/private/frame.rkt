@@ -2099,7 +2099,7 @@
                      (define start-pos (min first-pos last-pos))
                      (define end-pos (max first-pos last-pos))
                      
-                     (send text begin-edit-sequence)
+                     (send text begin-edit-sequence #t #f)
                      (send text set-caret-owner #f 'display)
                      (send text set-position start-pos end-pos #f #f 'local)
                      
@@ -2435,7 +2435,7 @@
         (unless (memq search/replace-panel (send super-root get-children))
           (send super-root add-child search/replace-panel))
         (search-parameters-changed)
-        (send find-edit begin-edit-sequence)
+        (send find-edit begin-edit-sequence #t #f)
         (when new-search-string-from-selection?
           (update-search-string-from-selection))
         (when focus?
@@ -2449,7 +2449,7 @@
         (let ([canvas (and text-to-search (send text-to-search get-canvas))])
           (cond
             [(or (not text-to-search) (and canvas (send canvas has-focus?)))
-             (send find-edit begin-edit-sequence)
+             (send find-edit begin-edit-sequence #t #f)
              (when new-search-string-from-selection?
                (update-search-string-from-selection))
              (send find-edit set-position 0 (send find-edit last-position))

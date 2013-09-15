@@ -576,7 +576,7 @@
     (define/public (get-edition-number) edition)
     
     (define/augment (on-insert start len)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (inner (void) on-insert start len))
     (define/augment (after-insert start len)
       (set! edition (+ edition 1))
@@ -871,7 +871,7 @@
     (inherit begin-edit-sequence end-edit-sequence delete insert get-character)
     (define/augment (on-insert start len)
       (inner (void) on-insert start len)
-      (begin-edit-sequence))
+      (begin-edit-sequence #t #f))
     (inherit find-string)
     (define/augment (after-insert start len)
       (unless rewriting
@@ -922,7 +922,7 @@
              'end)))
         (define old-char-w char-width)
         (set! char-width new-cw)
-        (begin-edit-sequence)
+        (begin-edit-sequence #t #f)
         (inv old-char-w)
         (inv char-width)
         (end-edit-sequence)))
@@ -1149,7 +1149,7 @@
     (define/public (get-anchor-pos) anchor-pos)
 
     (define/public (set-search-anchor position)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (when anchor-pos (unhighlight-anchor))
       (cond
         [(and position
@@ -1229,7 +1229,7 @@
                   (unhighlight-replace))]
                [else
                 (define next (do-search (get-start-position) 'eof))
-                (begin-edit-sequence)
+                (begin-edit-sequence #t #f)
                 (cond
                   [next
                    (unless (and to-replace-highlight
@@ -1286,7 +1286,7 @@
               (clear-yellow)
               (set! clear-yellow void)]
              [else
-              (begin-edit-sequence)
+              (begin-edit-sequence #t #f)
               (clear-yellow)
               (set! clear-yellow void)
               (when (and searching-str (= (string-length searching-str) (- end start)))
@@ -1351,7 +1351,7 @@
               (end-edit-sequence))
             (pause)
             (when was-in-edit-sequence?
-              (begin-edit-sequence))
+              (begin-edit-sequence #t #f))
             (set! did-something? #f)
             (set! start-time (current-inexact-milliseconds))
             #t]
@@ -1404,7 +1404,7 @@
          
          (maybe-pause)
          
-         (begin-edit-sequence)
+         (begin-edit-sequence #t #f)
          (clear-all-regions)
          
          (maybe-pause)
@@ -1420,7 +1420,7 @@
          (update-yellow) 
          (end-edit-sequence)]
         [else
-         (begin-edit-sequence)
+         (begin-edit-sequence #t #f)
          (clear-all-regions)
          (set! search-hit-count 0)
          (set! before-caret-search-hit-count 0)

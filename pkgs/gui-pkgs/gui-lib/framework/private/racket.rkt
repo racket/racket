@@ -767,7 +767,7 @@
     (define (insert-return)
       (if (tabify-on-return?)
           (begin 
-            (begin-edit-sequence)
+            (begin-edit-sequence #t #f)
             (insert #\newline)
             (tabify (get-start-position))
             (set-position 
@@ -1076,7 +1076,7 @@
                [closer (and paren? 
                             (get-forward-sexp pos))])
           (if (and paren? closer)
-              (begin (begin-edit-sequence)
+              (begin (begin-edit-sequence #t #f)
                      (delete pos (add1 pos))
                      (delete (-  closer 2) (- closer 1))
                      (end-edit-sequence))
@@ -1131,7 +1131,7 @@
          (end-edit-sequence))))
     
     (define/public (move-sexp-out begin-inner)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (let ([end-inner (get-forward-sexp begin-inner)]
             [begin-outer (find-up-sexp begin-inner)])
         (cond
@@ -1147,7 +1147,7 @@
       (end-edit-sequence))
     
     (define/public (kill-enclosing-parens begin-inner)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (define begin-outer (find-up-sexp begin-inner))
       (cond
         [begin-outer
@@ -1163,7 +1163,7 @@
     
     ;; change the parens following the cursor from () to [] or vice versa
     (define/public (toggle-round-square-parens start-pos)
-      (begin-edit-sequence)
+      (begin-edit-sequence #t #f)
       (let* ([sexp-begin (skip-whitespace start-pos 'forward #f)]
              [sexp-end (get-forward-sexp sexp-begin)])
         (cond [(and sexp-end
@@ -1562,7 +1562,7 @@
     (define selection-start (send text get-start-position))
     (define selection-end (send text get-end-position))
     (define open-len (if (string? open-brace) (string-length open-brace) 1))
-    (send text begin-edit-sequence)
+    (send text begin-edit-sequence #t #f)
     (send text insert open-brace selection-start)
     (define tok-type (send text classify-position selection-start))
     (when (or (not checkp)
