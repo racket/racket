@@ -13,7 +13,7 @@
   (mysql-connect
    mysql-guess-socket-path
    mysql-password-hash)]
- [db/private/sqlite3/main
+ ["private/sqlite3/place.rkt"
   (sqlite3-connect
    sqlite3-available?)]
  ["private/odbc/main.rkt"

@@ -45,8 +45,7 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
                   (sqlite3-connect #:database db
                                    #:mode mode
                                    #:busy-retry-delay busy-retry-delay
-                                   #:busy-retry-limit busy-retry-limit
-                                   #:use-place #f)]
+                                   #:busy-retry-limit busy-retry-limit)]
                  [(list 'odbc dsn user password strict-param? char-mode)
                   (odbc-connect #:dsn dsn
                                 #:user user
