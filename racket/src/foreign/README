@@ -23,6 +23,8 @@ Local changes:
  * In "x86/ffi.c" for Win32, don't try to align stack for
    stdcall, fastcall, or thiscall.
 
+ * In "x86/freebsd.S", align the stack pointer to 16 bytes.
+
 ========== libffi_msvc directory =====================================
 
 This directory is synced from the CTypes repository
