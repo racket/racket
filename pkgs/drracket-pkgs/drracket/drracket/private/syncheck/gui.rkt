@@ -305,7 +305,7 @@ If the namespace does not, they are colored the unbound color.
         (mixin ((class->interface text%)) (cs-clearing<%>)
           (inherit begin-edit-sequence end-edit-sequence)
           (define/augment (on-delete start len)
-            (begin-edit-sequence #f #t)
+            (begin-edit-sequence #t #f)
             (inner (void) on-delete start len))
           (define/augment (after-delete start len)
             (inner (void) after-delete start len)
@@ -313,7 +313,7 @@ If the namespace does not, they are colored the unbound color.
             (end-edit-sequence))
           
           (define/augment (on-insert start len)
-            (begin-edit-sequence #f #t)
+            (begin-edit-sequence #t #f)
             (inner (void) on-insert start len))
           (define/augment (after-insert start len)
             (inner (void) after-insert start len)
