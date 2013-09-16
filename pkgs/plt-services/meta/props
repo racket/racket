@@ -812,7 +812,6 @@ path/s is either such a string or a list of them.
 "pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (gracket *)
 "pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (gracket *)
 "pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (gracket *)
-"pkgs/gui-pkgs/gui-lib/rackunit" responsible (ryanc)
 "pkgs/gui-pkgs/gui-test/framework" responsible (robby)
 "pkgs/gui-pkgs/gui-test/framework/tests/canvas.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/debug.rkt" drdr:command-line (mzc "-k" *)
