@@ -954,8 +954,8 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-test/tests/test-engine" responsible (kathyg)
 "pkgs/html-pkgs" responsible (jay mflatt)
 "pkgs/icons" responsible (ntoronto)
-"pkgs/images" responsible (ntoronto)
-"pkgs/images/tests/effects-tests.rkt" drdr:command-line #f
+"pkgs/images-pkgs" responsible (ntoronto)
+"pkgs/images-pkgs/images-test/images/tests/effects-tests.rkt" drdr:command-line #f
 "pkgs/lazy" responsible (eli stchang)
 "pkgs/lazy/tests/main.rkt" drdr:command-line #f
 "pkgs/macro-debugger-pkgs" responsible (ryanc)
