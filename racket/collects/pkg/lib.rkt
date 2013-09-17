@@ -1220,12 +1220,16 @@
 
 (define (format-deps update-deps)
   (format-list (for/list ([ud (in-list update-deps)])
-                 (if (pkg-desc? ud)
-                   (pkg-desc-name ud)
+                 (cond
+                  [(pkg-desc? ud)
+                   (pkg-desc-name ud)]
+                  [(string? ud)
+                   ud]
+                  [else
                    (format "~a (have ~a, need ~a)"
                            (car ud)
                            (caddr ud)
-                           (cadddr ud))))))
+                           (cadddr ud))]))))
 
 (define (install-packages
          #:old-infos old-infos
@@ -1799,7 +1803,7 @@
                         (string-append*
                          (for/list ([p*ds (in-list summary-deps)])
                            (match-define (vector n ds) p*ds)
-                           (format "\ndependencies of ~a:~a"
+                           (format "\n dependencies of ~a:~a"
                                    n
                                    (if updating?
                                      (format-deps ds)
