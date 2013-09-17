@@ -317,15 +317,15 @@
   ;; else, do the unboxing here
 
   ;; we can unbox literals right away
-  (pattern (quote n*)
+  (pattern (quote n*:number)
     #:do [(define n (syntax->datum #'n*))]
-    #:when (and (number? n) (not (equal? (imag-part n) 0)))
+    #:when (not (equal? (imag-part n) 0))
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "unboxed literal")]
     #:with (bindings ...)
       #`(((real-binding) '#,(exact->inexact (real-part n)))
          ((imag-binding) '#,(exact->inexact (imag-part n)))))
-  (pattern (quote n*)
+  (pattern (quote n*:number)
     #:do [(define n (syntax->datum #'n*))]
     #:when (real? n)
     #:with real-binding (generate-temporary "unboxed-real-")
