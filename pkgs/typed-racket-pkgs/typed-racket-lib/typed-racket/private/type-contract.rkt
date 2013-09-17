@@ -2,7 +2,8 @@
 
 ;; Contract generation for Typed Racket
 
-(provide type->contract define/fixup-contract? change-contract-fixups)
+(provide type->contract define/fixup-contract? change-contract-fixups
+         type->contract-fail)
 
 (require
  "../utils/utils.rkt"
@@ -14,6 +15,8 @@
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match syntax/stx racket/syntax racket/list
+ racket/format
+ unstable/list
  unstable/sequence
  (contract-req)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
@@ -44,6 +47,19 @@
       (typechecker:flat-contract-def stx)
       (typechecker:contract-def/maker stx)))
 
+;; type->contract-fail : Syntax Type #:ctc-str String
+;;                       -> #:reason (Option String) -> Void
+;; Curried function that produces a function to report
+;; type->contract failures
+(define ((type->contract-fail to-check to-report
+                              #:ctc-str [ctc-str "contract"])
+         #:reason [reason #f])
+  (tc-error/stx
+   to-report
+   (~a "Type ~a could not be converted to a "
+       ctc-str
+       (if reason (~a ": " reason) "."))
+   to-check))
 
 (define (generate-contract-def stx)
   (define prop (define/fixup-contract? stx))
@@ -61,11 +77,7 @@
                              ;; this is for a `require/typed', so the value is not from the typed side
                              #:typed-side #f
                              #:kind kind
-                             (λ () 
-                               (tc-error/stx 
-                                prop 
-				"Type ~a could not be converted to a contract."
-				typ)))])
+                             (type->contract-fail typ prop))])
            (quasisyntax/loc 
 	    stx
 	    (define-values (n) 
@@ -80,9 +92,6 @@
     (if (not (define/fixup-contract? e))
         e
         (generate-contract-def e))))
-
-(define (no-duplicates l)
-  (= (length l) (length (remove-duplicates l))))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
@@ -230,7 +239,9 @@
                                 null
                                 (map t->c rngs)
                                 (and rst (t->c/neg rst)))
-                        (exit (fail)))]
+                        (exit (fail #:reason
+                                    (~a "cannot generate contract for function type"
+                                        " with filters or objects."))))]
                    [_ (exit (fail))]))
                (with-syntax*
                 ([(dom* ...)     (process-dom dom*)]
@@ -246,12 +257,16 @@
                             #'(dom* ... rst-spec ... . -> . rng*)
                             #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
                         #'(dom* ... . -> . rng*)))))
-             (unless (no-duplicates (for/list ([t (in-list arrs)])
-                                      (match t
-                                        [(arr: dom _ _ _ _) (length dom)]
-                                        ;; is there something more sensible here?
-                                        [(top-arr:) (int-err "got top-arr")])))
-               (exit (fail)))
+             (define arities (for/list ([t (in-list arrs)])
+                               (match t
+                                 [(arr: dom _ _ _ _) (length dom)]
+                                 ;; is there something more sensible here?
+                                 [(top-arr:) (int-err "got top-arr")])))
+             (define maybe-dup (check-duplicate arities #:same? =))
+             (when maybe-dup
+               (define reason
+                 (~a "function type has two cases of arity " maybe-dup))
+               (exit (fail #:reason reason)))
              (match (map (f (not (= 1 (length arrs)))) arrs)
                [(list e) e]
                [l #`(case-> #,@l)])])]
@@ -259,10 +274,16 @@
 
       ;; Helpers for contract requirements
       (define (set-impersonator!)
-        (when (not (equal? kind impersonator-sym)) (exit (fail)))
+        (when (not (equal? kind impersonator-sym))
+          (exit (fail #:reason
+                      (~a "required a chaperone or flat contract but could"
+                          " only generate an impersonator contract."))))
         (increase-current-contract-kind! impersonator-sym))
       (define (set-chaperone!)
-        (when (equal? kind flat-sym) (exit (fail)))
+        (when (equal? kind flat-sym)
+          (exit (fail #:reason
+                      (~a "required a first-order contract but could"
+                          " only generate a higher-order contract."))))
         (increase-current-contract-kind! chaperone-sym))
 
 
@@ -341,7 +362,8 @@
          #`(and/c #,(t->c par) (flat-contract #,p?))]
         [(Union: elems)
          (let-values ([(vars notvars) (partition F? elems)])
-           (unless (>= 1 (length vars)) (exit (fail)))
+           (unless (>= 1 (length vars))
+             (exit (fail #:reason "union type includes multiple distinct type variables")))
            (with-syntax
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
@@ -386,7 +408,7 @@
                [(PolyDots: _ body) (loop body)]
                [_ #f])))
          (unless function-type?
-           (exit (fail)))
+           (exit (fail #:reason "cannot generate contract for non-function polymorphic type")))
          (if (not (from-untyped? typed-side))
              ;; in typed positions, no checking needed for the variables
              (parameterize ([vars (append (for/list ([v (in-list vs)]) (list v #'any/c)) (vars))])
@@ -431,9 +453,11 @@
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>
             cdr]
-           [proc (exit (fail))]
+           [proc (exit (fail #:reason "procedural structs are not supported"))]
            [(and (equal? kind flat-sym) (ormap values mut?))
-            (exit (fail))]
+            (exit (fail #:reason
+                        (~a "expected a first-order contract, but got"
+                            " a struct with at least one mutable field")))]
            [poly?
             (with-syntax* ([struct-ctc (generate-temporary 'struct-ctc)])
               (define field-contracts
@@ -462,6 +486,6 @@
          (when (equal? kind flat-sym) (exit (fail)))
          #`(hash/c #,(t->c k #:kind chaperone-sym) #,(t->c v) #:immutable 'dont-care)]
         [else
-         (exit (fail))]))))
+         (exit (fail #:reason "contract generation not supported for this type"))]))))
 
 

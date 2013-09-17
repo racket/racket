@@ -8,13 +8,21 @@
          rackunit)
 
 (define-syntax-rule (t e)
-  (test-not-exn (format "~a" e) (lambda () (type->contract e (lambda _ (error "type could not be converted to contract"))))))
+  (test-not-exn
+   (format "~a" e)
+   (λ ()
+     (type->contract
+      e
+      (λ (#:reason [reason #f])
+        (error "type could not be converted to contract"))))))
 
 (define-syntax-rule (t/fail e)
-  (test-not-exn (format "~a" e) (lambda () 
-                                  (let/ec exit
-                                    (type->contract e (lambda _ (exit #t)))
-                                    (error "type could be converted to contract")))))
+  (test-not-exn
+   (format "~a" e)
+   (λ ()
+     (let/ec exit
+       (type->contract e (λ (#:reason [reason #f]) (exit #t)))
+       (error "type could be converted to contract")))))
 
 (define (contract-tests)
   (test-suite "Contract Tests"
