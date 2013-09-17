@@ -33,6 +33,19 @@
            (when (equal? r-value tr-value)
              (fail-check "Known bug no longer exists."))))]))
 
+(define-syntax good-opt
+  (syntax-parser
+    [(_ exp:expr)
+     #`(test-case #,(format "~a" (syntax->datum #'exp))
+         (define r-value (racket-eval #'exp))
+         (define tr-value (tr-eval #'exp))
+         (with-check-info (['r-value r-value]
+                           ['tr-value tr-value]
+                           ['location (build-source-location-list (quote-syntax exp))])
+           (when (not (equal? r-value tr-value))
+             (fail-check "Optimizer regression"))))]))
+
+
 ;; TODO add this as a test
 ;; type-before = Single-Flonum-Complex
 ;; type-after = Float-Complex
@@ -44,12 +57,12 @@
   (test-suite "Known bugs"
 
     ;; Arguments are converted to inexact too early
-    (bad-opt (* (make-rectangular -inf.0 1) (* 1 1)))
+    (good-opt (* (make-rectangular -inf.0 1) (* 1 1)))
     (bad-opt (/ -inf.0-inf.0i 8))
-    (bad-opt (- (* -1 1 +nan.0) 1.0+1.0i))
-    (bad-opt (- (* (/ 6 11) (/ 1.2345678f0 123456.7f0)) (make-rectangular 0.0 0.3)))
+    (good-opt (- (* -1 1 +nan.0) 1.0+1.0i))
+    (good-opt (- (* (/ 6 11) (/ 1.2345678f0 123456.7f0)) (make-rectangular 0.0 0.3)))
     (bad-opt (/ 1.0 0.0+0.0i))
-    (bad-opt (+ 0.0+0.0i (* 1 1 +inf.0)))
+    (good-opt (+ 0.0+0.0i (* 1 1 +inf.0)))
 
     ;; Unary division has bad underflow
     (bad-opt (/ (make-rectangular 1e+100 1e-300)))
@@ -75,11 +88,11 @@
     (bad-opt (magnitude 3.0e300+4.0e300i))
 
     ;; Negation should correctly compute sign of 0.0
-    (bad-opt (- 0.0+0.0i))
+    (good-opt (- 0.0+0.0i))
     (bad-opt (- 0+0i 0.0+0.0i))
 
     ;; Conjugate should correctly compute sign of 0.0
-    (bad-opt (conjugate 0.0+0.0i))))
+    (good-opt (conjugate 0.0+0.0i))))
 
 (module+ main
   (require rackunit/text-ui)
