@@ -21,7 +21,7 @@
   (and (file-exists? p)
        p))
 
-(define (with-fake-installation* t)
+(define (with-fake-installation* t #:default-scope [default-scope "installation"])
   (define tmp-dir
     (make-temporary-file ".racket.fake-installation~a" 'directory
                          (find-system-path 'temp-dir)))
@@ -41,7 +41,7 @@
             "test"
 
             'default-scope
-            "installation"
+            default-scope
 
             ;; Find existing links and packages from the
             ;; old configuration:
@@ -150,10 +150,15 @@
              (run-pkg-tests* run-pkg-tests)))))]))
 
 (define (run-pkg-tests* t)
+  (putenv "PLT_PKG_NOSETUP" "y")
   (with-servers
-   (with-fake-root
-    (parameterize ([current-directory test-directory])
-      (t)))))
+   (with-fake-installation*
+    #:default-scope "user"
+    (lambda ()
+      (shelly-case "setup info cache" $ "raco setup -nDKxiI --no-foreign-libs")
+      (with-fake-root
+       (parameterize ([current-directory test-directory])
+         (t)))))))
 
 (define-syntax-rule (shelly-install** message pkg rm-pkg (pre ...) (more ...))
   (with-fake-root

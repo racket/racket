@@ -29,14 +29,6 @@
      (shelly-case "All tests"
                   (for-each (λ (x) (x)) l)))))
 
-(let ([v (getenv "PLT_PKG_NOSETUP")])
-  (unless (and v (not (string=? v "")))
-    (error "Set the PLT_PKG_NOSETUP environment variable before running these tests\n")))
-
-(unless (equal? "user\n" (with-output-to-string
-                           (lambda () (pkg-config-command #:installation #t "default-scope"))))
-  (error "Run this test suite with `user' default package scope"))
-
 (run-tests
  "name"
  "basic" "create" "install" "permissions"
