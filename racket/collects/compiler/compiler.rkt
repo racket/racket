@@ -2,40 +2,28 @@
 ;; Main compilation procedures
 ;; (c) 1997-2013 PLT Design Inc.
 
-;; The various procedures provided by this library are implemented
-;;  by dynamically linking to code supplied by the MzLib, dynext, and
-;;  compiler collections.
-
-
-(require racket/unit
-
-         "sig.rkt"
-         dynext/file-sig
-         dynext/link-sig
-         dynext/compile-sig
-
-         syntax/toplevel
+(require syntax/toplevel
          syntax/moddep
-
+	 dynext/file
          racket/file
          compiler/compile-file
          compiler/cm
+	 compiler/option
          setup/getinfo
          setup/main-collects
          setup/private/omitted-paths)
 
-(provide compiler@)
+(provide compile-zos
+	 
+	 compile-collection-zos
+	 compile-directory-zos
+	 compile-directory-srcs
+	 
+	 current-compiler-dynamic-require-wrapper
+	 compile-notify-handler)
 
 (define-namespace-anchor anchor)
 (define orig-namespace (namespace-anchor->empty-namespace anchor))
-
-;; ;;;;;;;; ----- The main compiler unit ------ ;;;;;;;;;;
-(define-unit compiler@
-  (import compiler:option^
-          dynext:compile^
-          dynext:link^
-          dynext:file^)
-  (export compiler^)
 
   (define compile-notify-handler
     (make-parameter void))
@@ -98,7 +86,7 @@
                    file))
              source-files))
       (for ([f source-files] [b file-bases])
-        (let ([zo (append-zo-suffix b)])
+        (let ([zo (path-add-suffix b #".zo")])
           (compile-to-zo f zo n prefix verbose? mod?)))))
 
   (define (compile-directory-visitor dir info worker omit-root
@@ -214,4 +202,3 @@
   (define compile-directory-zos compile-directory)
   (define compile-directory-srcs get-compile-directory-srcs)
 
-  )

@@ -2,7 +2,7 @@
 (require scheme/cmdline
          raco/command-name
          compiler/cm
-         "../compiler.rkt"
+         compiler/compiler
          dynext/file
          setup/parallel-build
          racket/match)

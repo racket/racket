@@ -3,8 +3,7 @@
 
 #lang racket/base
 
-(require racket/unit
-         racket/path
+(require racket/path
          racket/file
          racket/port
          racket/match
@@ -15,10 +14,11 @@
          planet/planet-archives
          planet/private/planet-shared
 
-         "option-sig.rkt"
-         compiler/sig
-         launcher/launcher-sig
-         dynext/dynext-sig
+         "option.rkt"
+         compiler/compiler
+         (prefix-in compiler:option: compiler/option)
+         launcher/launcher
+         dynext/file
 
          "unpack.rkt"
          "getinfo.rkt"
@@ -54,15 +54,9 @@
                          #:namespace info-ns
                          #:bootstrap? #t))))))
 
-(provide setup@)
+(provide setup-core)
 
-(define-unit setup@
-  (import setup-option^
-          compiler^
-          dynext:file^
-          (prefix compiler:option: compiler:option^)
-          launcher^)
-  (export)
+(define (setup-core)
 
   (define name-str (setup-program-name))
   (define name-sym (string->symbol name-str))
@@ -247,7 +241,7 @@
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
-    ;; this check is also done in compiler/compiler-unit, in compile-directory
+    ;; this check is also done in compiler/compiler, in compile-directory
     (and (not (eq? 'all (omitted-paths path getinfo omit-root)))
          (make-cc collection path
                   (if name
@@ -1733,9 +1727,9 @@
                                         (verbose))
       (set! exit-code 1)))
 
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; setup-unit Body                ;;
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; setup Body                     ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
   (setup-printf "installation name" "~a" (get-installation-name))

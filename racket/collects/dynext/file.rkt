@@ -1,9 +1,70 @@
 #lang racket/base
-(require racket/unit)
 
-(require "file-sig.rkt"
-         "file-unit.rkt")
+(provide append-zo-suffix
+	 append-c-suffix
+	 append-constant-pool-suffix
+	 append-object-suffix
+	 append-extension-suffix
+	 
+	 extract-base-filename/ss
+	 extract-base-filename/c
+	 extract-base-filename/kp
+	 extract-base-filename/o
+	 extract-base-filename/ext)
 
-(define-values/invoke-unit/infer dynext:file@)
+(define (append-zo-suffix s)
+  (path-add-suffix s #".zo"))
 
-(provide-signature-elements dynext:file^)
+(define (append-c-suffix s)
+  (path-add-suffix s #".c"))
+
+(define (append-constant-pool-suffix s)
+  (path-add-suffix s #".kp"))
+
+(define (append-object-suffix s)
+  (path-add-suffix s (case (system-type)
+		       [(unix macosx) #".o"]
+		       [(windows) #".obj"])))
+
+(define (append-extension-suffix s)
+  (path-add-suffix s (system-type 'so-suffix)))
+
+(define (extract-suffix appender)
+  (subbytes (path->bytes (appender (bytes->path #"x"))) 1))
+
+(define-values (extract-base-filename/ss
+		extract-base-filename/c
+		extract-base-filename/kp
+		extract-base-filename/o
+		extract-base-filename/ext)
+  (let ([mk
+	 (lambda (who pat kind simple)
+	   (define (extract-base-filename s [p #f])
+	     (define rx
+	       (byte-pregexp (bytes-append #"^(.*)\\.(?i:" pat #")$")))
+	     (unless (path-string? s)
+		     (raise-type-error who "path or valid-path string" s))
+	     (cond [(regexp-match
+		     rx (path->bytes (if (path? s) s (string->path s))))
+		    => (lambda (m) (bytes->path (cadr m)))]
+		   [p (if simple
+                          (error p "not a ~a filename (doesn't end with ~a): ~a"
+                                 kind simple s)
+                          (path-replace-suffix s #""))]
+		   [else #f]))
+	   extract-base-filename)])
+    (values
+     (mk 'extract-base-filename/ss #"rkt|ss|scm" "Racket" #f)
+     (mk 'extract-base-filename/c
+	 #"c|cc|cxx|cpp|c[+][+]|m" "C" ".c, .cc, .cxx, .cpp, .c++, or .m")
+     (mk 'extract-base-filename/kp #"kp" "constant pool" ".kp")
+     (mk 'extract-base-filename/o
+	 (case (system-type)
+	   [(unix beos macos macosx) #"o"]
+	   [(windows) #"obj"])
+	 "compiled object"
+	 (extract-suffix append-object-suffix))
+     (mk 'extract-base-filename/ext
+	 (regexp-quote (subbytes (system-type 'so-suffix) 1) #f)
+	 "Racket extension"
+	 (extract-suffix append-extension-suffix)))))
