@@ -59,7 +59,15 @@
                     (with-pkg-lock/read-only
                      (define-values (pkg scope)
                        (for/fold ([prev-pkg #f] [prev-scope #f]) ([pkg (in-list pkgs)])
-                         (define pkg-name (package-source->name pkg pkgs-type))
+                         (define-values (pkg-name pkg-type)
+                           (package-source->name+type pkg pkgs-type
+                                                      #:must-infer-name? #t
+                                                      #:complain
+                                                      (lambda (s msg)
+                                                        ((current-pkg-error) 
+                                                         (~a "~a\n"
+                                                             "  given: ~a")
+                                                         msg s))))
                          (define scope (find-pkg-installation-scope pkg-name))
                          (cond
                           [(not prev-pkg) (values pkg scope)]

@@ -86,7 +86,7 @@
       (λ ()
         (delete-directory/files tmp-dir))))
 (define-syntax-rule (with-fake-root e ...)
-  (with-fake-installation* (λ ()  e ...)))
+  (with-fake-root* (λ ()  e ...)))
 
 (define (with-thread start-thread thunk)
   (define thread-id (thread start-thread))

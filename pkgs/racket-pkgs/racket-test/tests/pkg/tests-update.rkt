@@ -19,6 +19,9 @@
 
   (shelly-case
    "update"
+   (shelly-case "update of bad name"
+                $ "raco pkg update bad#2" =exit> 1
+                =stderr> #rx"disallowed")
    (shelly-install "local packages can't be updated (file)"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg update pkg-test1" =exit> 1)

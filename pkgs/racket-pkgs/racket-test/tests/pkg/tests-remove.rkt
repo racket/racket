@@ -22,6 +22,12 @@
    (shelly-case "remove of not installed package fails"
                 $ "raco pkg show -u -a" =stdout> " [none]\n"
                 $ "raco pkg remove not-there" =exit> 1)
+   (shelly-case "remove of bad name"
+                $ "raco pkg remove bad/" =exit> 1
+                =stderr> #rx"disallowed")
+   (shelly-case "remove of bad name"
+                $ "raco pkg remove bad#2" =exit> 1
+                =stderr> #rx"disallowed")
    (shelly-install "remove test"
                    "test-pkgs/pkg-test1.zip")
    (shelly-install "remove test with immediately redundant package name"
