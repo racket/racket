@@ -255,10 +255,15 @@
                               setup-printf)))))
 
   (define (can-build*? docs) (can-build? only-dirs docs))
-  (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
-  (define auto-user? (and auto-start-doc? (ormap can-build*? user-docs)))
+  (define auto-main? (and auto-start-doc? 
+                          (or (ormap can-build*? main-docs)
+                              (and tidy? (not avoid-main?)))))
+  (define auto-user? (and auto-start-doc? 
+                          (or (ormap can-build*? user-docs)
+                              (and tidy? make-user?))))
+  (define (can-build**? docs) (can-build? only-dirs docs auto-main? auto-user?))
   (define force-out-of-date? #f)
-
+  
   (define lock-ch #f)
   (define lock-ch-in #f)
   (define (init-lock-ch!)
@@ -289,7 +294,7 @@
                             [else
                              (add1 (loop (cdr docs)))])))
   (define infos
-    (and (ormap can-build*? docs)
+    (and (ormap can-build**? docs)
          (filter 
           values
           (if ((min worker-count (length docs)) . < . 2)
@@ -517,14 +522,17 @@
                 ;; Record a definite dependency:
                 (define i (out-path->info found-dep infos out-path->info-cache))
                 (unless i
-                  (error "failed to find info for path: ~s" found-dep))
-                ;; Record this known dependency:
-                (when (not (hash-ref known-deps i #f))
-                  (hash-set! known-deps i #t))
-                (when (not (hash-ref deps i #f))
-                  ;; Record dependency in "expected", too, which triggers
-                  ;; a re-run if needed:
-                  (add-dependency info i)))
+                  (setup-printf
+                   "WARNING" "failed to find info for path: ~a"
+                   found-dep))
+                (when i
+                  ;; Record this known dependency:
+                  (when (not (hash-ref known-deps i #f))
+                    (hash-set! known-deps i #t))
+                  (when (not (hash-ref deps i #f))
+                    ;; Record dependency in "expected", too, which triggers
+                    ;; a re-run if needed:
+                    (add-dependency info i))))
               (for ([s-key (in-list missing)])
                 (not-found s-key))))
           ;; Check whether this document needs a re-run:
@@ -791,8 +799,12 @@
    [else
     (build-path (if user? (find-user-doc-dir) (find-doc-dir)) "docindex.sqlite")]))
 
-(define (can-build? only-dirs doc)
+(define (can-build? only-dirs doc [auto-main? #f] [auto-user? #f])
   (or (not only-dirs)
+      (and auto-main?
+           (memq 'depends-all-main (doc-flags doc)))
+      (and auto-user?
+           (memq 'depends-all (doc-flags doc)))
       (ormap (lambda (d)
                (let ([d (path->directory-path d)])
                  (let loop ([dir (path->directory-path (doc-src-dir doc))])

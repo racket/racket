@@ -1193,8 +1193,9 @@
                      (lambda (exn)
                        (setup-printf #f "docs failure: ~a" (exn->string exn)))])
       (define auto-start-doc?
-        (and (not (null? (archives)))
-             (archive-implies-reindex)))
+        (or (and (not (null? (archives)))
+                 (archive-implies-reindex))
+            (make-doc-index)))
       (doc:setup-scribblings #f auto-start-doc?)))
 
   (define (doc-pdf-dest-step)
