@@ -572,7 +572,7 @@ when you want to provide a more specific list of modules (e.g., to
 name both a specific module and one that combines several modules) via
 your own @racket[declare-exporting] declaration
 
-Unless @racket[#:link-target?] is specified with an expression that
+When @racket[#:link-target?] is specified with an expression that
 produces a true value, then the @racket[module-path]s are also
 declared as link targets though a @racket[part-tag-decl] (which means
 that the @racket[defmodule] form must appear before any
