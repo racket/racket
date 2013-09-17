@@ -144,8 +144,8 @@
     #:do [(log-unboxing-opt "unboxed unary float complex")]
     #:with (bindings ...)
       #`(c1.bindings ...
-         [(real-binding) (unsafe-fl- 0.0 c1.real-binding)]
-         [(imag-binding) (unsafe-fl- 0.0 c1.imag-binding)]))
+         [(real-binding) (unsafe-fl* -1.0 c1.real-binding)]
+         [(imag-binding) (unsafe-fl* -1.0 c1.imag-binding)]))
 
   (pattern (#%plain-app op:*^
                         c1:unboxed-float-complex-opt-expr
