@@ -255,6 +255,7 @@
                         (unsafe-fl* c.imag-binding c.imag-binding))))))
 
   (pattern (#%plain-app op:exp^ c:unboxed-float-complex-opt-expr)
+    #:when (subtypeof? this-syntax -FloatComplex)
     #:with (real-binding imag-binding) (binding-names)
     #:with scaling-factor (generate-temporary "unboxed-scaling-")
     #:do [(log-unboxing-opt "unboxed unary float complex")]
@@ -286,12 +287,14 @@
 
   ;; we can eliminate boxing that was introduced by the user
   (pattern (#%plain-app op:make-rectangular^ real:float-arg-expr imag:float-arg-expr)
+    #:when (subtypeof? this-syntax -FloatComplex)
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "make-rectangular elimination")]
     #:with (bindings ...)
       #'(((real-binding) real.opt)
          ((imag-binding) imag.opt)))
   (pattern (#%plain-app op:make-polar^ r:float-arg-expr theta:float-arg-expr)
+    #:when (subtypeof? this-syntax -FloatComplex)
     #:with radius       (generate-temporary)
     #:with angle        (generate-temporary)
     #:with (real-binding imag-binding) (binding-names)
