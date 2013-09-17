@@ -241,7 +241,7 @@ approaches @racket[_p2], assuming that @racket[n] increases uniformly.
 
 The @racket[fast-end] mapping is concave, so that
 
-@racketblock[(slide-pict _base _p _p1 _p2 (fast-start _n))]
+@racketblock[(slide-pict _base _p _p1 _p2 (fast-end _n))]
 
 appears to move slowly away from @racket[_p1] and then quicly as it
 approaches @racket[_p2], assuming that @racket[_n] increases uniformly.
@@ -249,7 +249,7 @@ approaches @racket[_p2], assuming that @racket[_n] increases uniformly.
 The @racket[fast-edges] mapping is convex at first and concave at the
 end, so that
 
-@racketblock[(slide-pict _base _p _p1 _p2 (fast-start _n))]
+@racketblock[(slide-pict _base _p _p1 _p2 (fast-edges _n))]
 
 appears to move quickly away from @racket[_p1], then more slowly, and
 then quickly again near @racket[_p2], assuming that @racket[_n] increases
@@ -258,7 +258,7 @@ uniformly.
 The @racket[fast-middle] mapping is concave at first and convex at the
 end, so that
 
-@racketblock[(slide-pict _base _p _p1 _p2 (fast-start _n))]
+@racketblock[(slide-pict _base _p _p1 _p2 (fast-middle _n))]
 
 appears to move slowly away from @racket[_p1], then more quickly, and
 then slowly again near @racket[_p2], assuming that @racket[_n] increases
