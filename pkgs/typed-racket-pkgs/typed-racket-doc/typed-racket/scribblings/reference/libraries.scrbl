@@ -67,11 +67,13 @@ The following libraries are included with Typed Racket in the
 @defmodule[typed/rackunit]
 @defmodule[typed/srfi/14]
 
-Other libraries included in the main distribution that are either
-written in Typed Racket or have adapter modules that are typed:
+@; FIXME -- once we can reference these without causing a dependency problem
 
-@defmodule[math #:no-declare #:link-target? #f]
-@defmodule[plot/typed #:no-declare #:link-target? #f]
+@;Other libraries included in the main distribution that are either
+@;written in Typed Racket or have adapter modules that are typed:
+
+@;@defmodule[math #:no-declare #:link-target? #f]
+@;@defmodule[plot/typed #:no-declare #:link-target? #f]
 
 @section{Porting Untyped Modules to Typed Racket}
 

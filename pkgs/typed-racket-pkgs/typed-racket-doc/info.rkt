@@ -13,8 +13,7 @@
                      "at-exp-lib"
                      "scribble-lib"
                      "typed-racket-lib"
-                     "racket-doc"
-                     "math" "plot"))
+                     "racket-doc"))
 (define deps '("base"))
 
 (define pkg-desc "documentation part of \"typed-racket\"")
