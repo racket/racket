@@ -85,7 +85,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lazy-require ["../rep/type-rep.rkt" (make-Opaque Error?)]
                 [syntax/define (normalize-definition)]
                 [typed-racket/private/parse-type (parse-type)]
-                [typed-racket/private/type-contract (type->contract)]
+                [typed-racket/private/type-contract (type->contract type->contract-fail)]
                 [typed-racket/env/type-name-env (register-type-name)]))
 
 (define-for-syntax (ignore stx) (ignore-property stx #t))
@@ -161,8 +161,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  ;; this is for a `require/typed', so the value is not
                  ;; from the typed side
                  #:typed-side #f
-                 (lambda ()
-                   (tc-error/stx #'ty "Type ~a could not be converted to a contract." typ)))))
+                 (type->contract-fail typ #'ty))))
              ;; in the fix-up case, the contract is just an identifier
              ;; that is defined below
              (generate-temporary #'nm.nm)))
@@ -270,7 +269,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      #:kind 'flat
                      ;; the value is not from the typed side
                      #:typed-side #f
-                     (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a predicate." typ)))
+                     (type->contract-fail typ #'ty #:ctc-str "predicate"))
                    #t)
                (Any -> Boolean : ty)))))]))
 
@@ -316,8 +315,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     typ
                     ;; the value is not from the typed side
                     #:typed-side #f
-                    (lambda ()
-                      (tc-error/stx #'ty "Type ~a could not be converted to a contract" typ))))))])]))
+                    (type->contract-fail typ #'ty)))))])]))
 
 (define-for-syntax (fail stx)
   (syntax-parse stx
