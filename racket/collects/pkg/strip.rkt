@@ -87,7 +87,7 @@
           [(built)
            (immediate-doc/css-or-doc/js?)])))
   
-  (define (fixup new-p path src-base)
+  (define (fixup new-p path src-base level)
     (unless (eq? mode 'source)
       (define bstr (path->bytes path))
       (cond
@@ -95,12 +95,19 @@
         (fixup-html new-p)]
        [(and (eq? mode 'binary)
              (equal? #"info.rkt" bstr))
-        (fixup-info new-p src-base)]
+        (fixup-info new-p src-base level)]
        [(and (eq? mode 'binary)
              (regexp-match? #rx"[.]zo$" bstr))
         (fixup-zo new-p)])))
   
-  (define (explore base paths drops keeps)
+  (define (explore base   ; containing directory relative to `dir`, 'base at start
+                   paths  ; paths in `base'
+                   drops  ; hash table of paths (relative to start) to drop
+                   keeps  ; hash table of paths (relative to start) to keep
+                   level) ; 'package, 'collection, or 'subcollection
+    (define next-level (case level
+                         [(package) 'collection]
+                         [else 'subcollection]))
     (for ([path (in-list paths)])
       (define p (if (eq? base 'same)
                     path
@@ -118,7 +125,7 @@
           (file-or-directory-modify-seconds
            new-p
            (file-or-directory-modify-seconds old-p))
-          (fixup new-p path base)]
+          (fixup new-p path base level)]
          [(directory-exists? old-p)
           (define-values (new-drops new-keeps)
             (add-drop+keeps old-p p drops keeps))
@@ -126,15 +133,27 @@
           (explore p
                    (directory-list old-p)
                    new-drops
-                   new-keeps)]
+                   new-keeps
+                   next-level)]
          [else (error 'strip "file or directory disappeared?")]))))
 
   (define-values (drops keeps)
     (add-drop+keeps dir 'same #hash() #hash()))
+
+  (define level
+    (let ([i (get-info/full dir #:namespace drop-keep-ns)])
+      (cond
+       [(or (not get-info) 
+            (not (eq? 'multi (i 'collection (lambda () #t)))))
+        'collection] ; single-collection package
+       [else 'package])))
   
-  (explore 'same (directory-list dir) drops keeps)
+  (explore 'same (directory-list dir) drops keeps level)
   (case mode
     [(binary built) (unmove-files dir dest-dir drop-keep-ns)]
+    [else (void)])
+  (case mode
+    [(binary) (assume-virtual dest-dir (eq? level 'collection))]
     [else (void)]))
 
 (define (fixup-html new-p)
@@ -195,7 +214,8 @@
      #:exists 'truncate/replace
      (lambda (out) (write-bytes new-bstr out)))))
 
-(define (fixup-info new-p src-base)
+;; Used in binary mode:
+(define (fixup-info new-p src-base level)
   (define dir (let-values ([(base name dir?) (split-path new-p)])
                 base))
   ;; check format:
@@ -216,7 +236,7 @@
         [`(module info ,info-lib (#%module-begin . ,defns))
          `(module info ,info-lib
             (#%module-begin
-             (define assume-virtual-sources '())
+             (define assume-virtual-sources #t)
              . ,(filter values
                         (map (fixup-info-definition get-info) defns))))]))
     ;; write updated:
@@ -231,12 +251,13 @@
       (error 'pkg-binary-create "rewrite failed"))
     ;; compile it, if not top level:
     (when (strip-binary-compile-info)
-      (unless (eq? src-base 'same)
+      (unless (eq? level 'package)
         (managed-compile-zo new-p)))))
 
 (define ((fixup-info-definition get-info) defn)
   (match defn
     [`(define build-deps . ,v) #f]
+    [`(define assume-virtual-sources . ,v) #f]
     [`(define copy-foreign-libs . ,v)
      `(define move-foreign-libs . ,v)]
     [`(define copy-shared-files . ,v)
@@ -272,3 +293,22 @@
     (unmove-tag 'move-man-pages find-user-man-dir)
     (unmove-in dir dest-dir))
   (unmove dir dest-dir))
+
+(define (assume-virtual dest-dir in-collection?)
+  ;; If an "info.rkt" file doesn't exists in a collection,
+  ;; add one so that `assume-virtual-sources` is defined.
+  (cond
+   [in-collection?
+    (define info-path (build-path dest-dir "info.rkt"))
+    (unless (file-exists? info-path)
+      (call-with-output-file* 
+       info-path
+       (lambda (o)
+         (write `(module info setup/infotab (define assume-virtual-sources #t)) o)
+         (newline o)))
+      (when (strip-binary-compile-info)
+        (managed-compile-zo info-path)))]
+   [else
+    (for ([f (in-list (directory-list dest-dir #:build? #t))])
+      (when (directory-exists? f)
+        (assume-virtual f #t)))]))

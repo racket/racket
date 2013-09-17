@@ -26,8 +26,8 @@
  $ "racket -l racket/base -e '(require (submod x test))'"
  $ "racket -l racket/base -e '(require (submod y/other doc))'"
 
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #t)'"
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'"
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #t)'" =stderr> ""
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'" =stderr> ""
 
  (make-directory* "test-pkgs/src-pkgs")
  (make-directory* "test-pkgs/built-pkgs")
@@ -47,8 +47,8 @@
  $ "raco pkg remove pkg-x pkg-y pkg-z"
  (putenv "PLT_PKG_NOSETUP" "1")
 
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #f)'"
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #f)'"
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #f)'" =stderr> ""
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #f)'" =stderr> ""
 
  (define tmp-dir (make-temporary-file "unpack-~a" 'directory))
 
@@ -146,10 +146,27 @@
             (unless (file-exists? (build-path td f))
               (error 'built "missing source ~s" f)))))
       (parameterize ([current-directory bd])
+        (define (extra-info? p)
+          ;; A binary package can have extra "info.rkt" files in collections
+          ;; to set `assume-virtual-sources` to #t.
+          (let-values ([(base name dir?) (split-path p)])
+            (define s (path->string name))
+            (and (or (equal? "info.rkt" s)
+                     (equal? "info_rkt.zo" s)
+                     (equal? "info_rkt.dep" s))
+                 (or (eq? base 'relative)
+                     (and (path? base)
+                          (let-values ([(base name dir?) (split-path base)])
+                            (or (eq? base 'relative)
+                                (and (path? name)
+                                     (equal? (path->string name) "compiled")
+                                     (let-values ([(base name dir?) (split-path base)])
+                                       (eq? base 'relative))))))))))
         (for ([f (in-directory)])
           (when (file-exists? f)
             (unless (file-exists? (build-path td f))
-              (error 'built "missing binary ~s" f)))))))
+              (unless (extra-info? f)
+                (error 'built "missing binary ~s" f))))))))
   (unpack-built "x")
   (unpack-built "y")
   (unpack-built "z")
@@ -180,8 +197,8 @@
  $ "racket -l racket/base -l y -e '(y)'" =stdout> "'y\n"
  $ "racket -l racket/base -l y/sub/s -e '(s)'" =stdout> "'s\n"
 
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #f)'"
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'"
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #f)'" =stderr> ""
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'" =stderr> ""
 
  $ "racket -l racket/base -e '(require (submod x test))'" =exit> 1
  $ "racket -l racket/base -e '(require (submod y/other doc))'" =exit> 1
@@ -205,8 +222,8 @@
  =stdout> #rx"syncing: [^\n]*x\n[^\n]*syncing: [^\n]*y"
  (putenv "PLT_PKG_NOSETUP" "1")
 
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #t)'"
- $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'"
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #t)'" =stderr> ""
+ $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'" =stderr> ""
  $ "racket -l racket/base -l x -e '(x)'" =stdout> "'x\n"
  $ "racket -l racket/base -l y -e '(y)'" =stdout> "'y\n"
  $ "racket -l racket/base -l y/sub/s -e '(s)'" =stdout> "'s\n"

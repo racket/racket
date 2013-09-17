@@ -20,7 +20,7 @@
     (call-with-input-file* 
      p
      (lambda (in)
-       (define m (regexp-match #rx"<script [^>]*src=\"([^\"]*)local-redirect.js\"[^>]*>" in))
+       (define m (regexp-match #rx"<script [^>]*src=\"(?:file://)?([^\"]*)local-redirect.js\"[^>]*>" in))
        (define ref (url->path
                     (string->url
                      (bytes->string/utf-8
