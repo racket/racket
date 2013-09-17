@@ -151,7 +151,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-    #:when (or (subtypeof? this-syntax -FloatComplex) (subtypeof? this-syntax -Number))
+    #:when (subtypeof? this-syntax -FloatComplex)
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "unboxed binary float complex")]
     #:with (bindings ...)
