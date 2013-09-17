@@ -132,7 +132,7 @@
 
   ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
   (define (mk-value-triple internal-id new-id ty)
-    (define contract (type->contract ty (λ () #f)))
+    (define contract (type->contract ty (λ (#:reason [reason #f]) #f)))
 
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
