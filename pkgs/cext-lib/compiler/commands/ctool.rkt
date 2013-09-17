@@ -5,8 +5,8 @@
 
 (error-print-width 512)
 
-(require (prefix-in compiler:option: "../option.rkt")
-         "../compiler.rkt"
+(require (prefix-in compiler:option: compiler/option)
+         compiler/compiler
          raco/command-name
          racket/cmdline
          dynext/file

@@ -4,7 +4,7 @@
            "private/dirs.rkt"
            "private/stdio.rkt"
            "private/cmdargs.rkt"
-           "filename-version.rkt")
+           dynext/filename-version)
 
   (require "link-sig.rkt")
 

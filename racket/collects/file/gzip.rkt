@@ -186,10 +186,6 @@
 
 (define head-vec-delta WSIZE)
 
-;; The gzip code wasn't defined for threads (or even to be
-;;  multiply invoked), so we pack it up into a unit to
-;;  invoke each time we need it.
-
 ;; /* Data structure describing a single value and its code string. */
 (define-struct ct_data (freq code dad len) #:mutable)
 ;;    union {
@@ -374,8 +370,13 @@
     #x2d02ef8d))
 
 (define (code)
+
+  ;; The gzip code wasn't defined for threads (or even to be
+  ;;  multiply invoked), so we pack it up into a function to
+  ;;  invoke each time we need it.
+
   ;; The original code uses many `static' mutable variables, and that
-  ;; strategy is largely intact in this port, so we group all of the
+  ;; strategy is largely intact in this port, so we group all of it
   ;; here with local variables to instantiate with the functions.
 
   ;; /* ===========================================================================

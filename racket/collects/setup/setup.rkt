@@ -1,17 +1,8 @@
 #lang racket/base
-(require racket/unit
-         
-         ;; All the rest are to get the imports for setup@:
-         "option-sig.rkt"
-         "setup-unit.rkt"
-         "option-unit.rkt"
-         launcher/launcher-sig
-         launcher/launcher-unit
-         dynext/dynext-sig
-         dynext/dynext-unit
-         compiler/sig
-         compiler/option-unit
-         compiler/compiler-unit)
+(require "option.rkt"
+         "setup-core.rkt"
+         launcher/launcher
+         compiler/compiler)
 
 (provide setup)
 
@@ -26,69 +17,44 @@
                #:tidy? [tidy? #f]
                #:avoid-main? [avoid-main? #f]
                #:jobs [parallel #f])
-  (define-unit set-options@
-    (import setup-option^ compiler^)
-    (export)
-    ;; >>>>>>>>>>>>>> <<<<<<<<<<<<<<<
-    ;; Here's where we tell setup the archive file:
-    (unless (or clean? (not file))
-      (archives (list file))
-      (when planet-specs
-        (archive-implies-reindex #f)))
+  (parameterize 
+   (;; Here's where we tell setup the archive file:
+    [archives (if (or clean? (not file)) (archives) (list file))]
+    [archive-implies-reindex (if (and planet-specs (and (not clean?) file))
+                                 #f
+                                 (archive-implies-reindex))]
     
     ;; Here's where we make get a directory:
-    (current-target-directory-getter
-     get-target-dir)
+    [current-target-directory-getter get-target-dir]
     
-    (when planet-specs
-      (specific-planet-dirs planet-specs))
+    [specific-planet-dirs (if planet-specs planet-specs (specific-planet-dirs))]
     
-    (when collections
-      (specific-collections collections))
-
-    (when (or planet-specs collections)
-      (make-only #t))
-
-    (unless make-user?
-      (make-user #f))
-
-    (unless make-docs?
-      (make-docs #f))
-    (when make-doc-index?
-      (make-doc-index #t))
-
-    (when tidy?
-      (make-tidy #t))
-
-    (when avoid-main?
-      (avoid-main-installation #t))
+    [specific-collections (if collections collections (specific-collections))]
     
-    (when clean?
-      (clean #t)
-      (make-zo #f)
-      (make-launchers #f)
-      (make-info-domain #t)
-      (call-install #f)
-      (make-docs #f))
+    [make-only (if (or planet-specs collections) #t (make-only))]
     
-    (setup-program-name "raco setup")
+    [make-user (if make-user? (make-user) #f)]
     
-    (when parallel
-      (parallel-workers parallel)))
+    [make-docs (if make-docs? (make-docs) #f)]
+    
+    [make-doc-index (if make-doc-index? #t (make-doc-index))]
 
-  (let/ec esc
-    (parameterize ([exit-handler
-                    (lambda (v) (esc (void)))])
-      (invoke-unit
-       (compound-unit/infer
-        (import)
-        (export)
-        (link launcher@
-              dynext:compile@
-              dynext:link@
-              dynext:file@
-              compiler:option@
-              compiler@
-              setup:option@
-              set-options@
-              setup@))))))
+    [make-tidy (if tidy? #t (make-tidy))]
+
+    [avoid-main-installation (if avoid-main? #t (avoid-main-installation))]
+    
+    [clean (if clean? #t (clean))]
+    [make-zo (if clean? #f (make-zo))]
+    [make-launchers (if clean? #f (make-launchers))] 
+    [make-info-domain (if clean? #t (make-info-domain))]
+    [call-install (if clean? #f (call-install))]
+    [make-docs (if clean? #f (make-docs))]
+    
+    [setup-program-name "raco setup"]
+    
+    [parallel-workers (if parallel parallel (parallel-workers))])
+
+   (let/ec esc
+     (parameterize ([exit-handler
+                     (lambda (v) (esc (void)))])
+       (setup-core)))))

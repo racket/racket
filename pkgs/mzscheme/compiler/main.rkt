@@ -22,17 +22,30 @@
 (error-print-width 512)
 
 (require (prefix-in compiler:option: compiler/option)
-         "compiler.rkt")
+         compiler/compiler)
 
 ;; Read argv array for arguments and input file name
 (require racket/cmdline
          dynext/file
-         dynext/compile
-         dynext/link
          scheme/pretty
          setup/pack
          setup/getinfo
-         setup/dirs)
+         setup/dirs
+	 racket/lazy-require)
+
+(lazy-require [dynext/compile (use-standard-compiler get-standard-compilers current-extension-compiler
+                               current-extension-compiler-flags current-extension-preprocess-flags
+			       compile-variant compile-extension)]
+	      [dynext/link (use-standard-linker expand-for-link-variant current-extension-linker
+			    current-extension-linker-flags current-standard-link-libraries
+			    link-variant link-extension)]
+	      [compiler/cm (managed-compile-zo manager-compile-notify-handler manager-trace-handler)]
+	      [compiler/xform (xform)]
+	      [compiler/distribute (assemble-distribution)]
+	      [compiler/zo-parse (zo-parse)]
+	      [compiler/private/embed (mzc:embedding-executable-add-suffix write-module-bundle
+				       mzc:create-embedding-executable)]
+	      [compiler/decompile (decompile)])
 
 (define dest-dir (make-parameter #f))
 (define auto-dest-dir (make-parameter #f))
@@ -363,6 +376,11 @@
 (define-values (mode source-files prefix)
   (parse-options (current-command-line-arguments)))
 
+(define (compiler-warning)
+  (eprintf "Warning: ~a\n         ~a\n"
+           "compilation to C is usually less effective for performance"
+           "than relying on the bytecode just-in-time compiler."))
+
 (when (compiler:option:somewhat-verbose)
   (printf "mzc v~a [~a], Copyright (c) 2004-2013 PLT Design Inc.\n"
           (version)
@@ -374,11 +392,6 @@
 (if (compiler:option:3m)
   (begin (link-variant '3m)  (compile-variant '3m))
   (begin (link-variant 'cgc) (compile-variant 'cgc)))
-
-(define (compiler-warning)
-  (eprintf "Warning: ~a\n         ~a\n"
-           "compilation to C is usually less effective for performance"
-           "than relying on the bytecode just-in-time compiler."))
 
 (case mode
   [(zo)
@@ -402,34 +415,31 @@
                     (pretty-print (syntax->datum (expand e)))
                     (loop))))))))))]
   [(decompile)
-   (let ([zo-parse (dynamic-require 'compiler/zo-parse 'zo-parse)]
-         [decompile (dynamic-require 'compiler/decompile 'decompile)])
-     (for ([zo-file source-files])
-       (let ([zo-file (path->complete-path zo-file)])
-         (let-values ([(base name dir?) (split-path zo-file)])
-           (let ([alt-file (build-path base "compiled" (path-add-suffix name #".zo"))])
-             (parameterize ([current-load-relative-directory base]
-                            [print-graph #t])
-               (pretty-print
-                (decompile
-                 (call-with-input-file*
-                  (if (file-exists? alt-file) alt-file zo-file)
-                  (lambda (in)
-                    (zo-parse in)))))))))))]
+   (for ([zo-file source-files])
+     (let ([zo-file (path->complete-path zo-file)])
+       (let-values ([(base name dir?) (split-path zo-file)])
+         (let ([alt-file (build-path base "compiled" (path-add-suffix name #".zo"))])
+           (parameterize ([current-load-relative-directory base]
+                          [print-graph #t])
+             (pretty-print
+              (decompile
+               (call-with-input-file*
+                (if (file-exists? alt-file) alt-file zo-file)
+                (lambda (in)
+                  (zo-parse in))))))))))]
   [(make-zo)
    (let ([n (make-base-empty-namespace)]
-         [mc (dynamic-require 'compiler/cm 'managed-compile-zo)]
-         [cnh (dynamic-require 'compiler/cm 'manager-compile-notify-handler)]
-         [cth (dynamic-require 'compiler/cm 'manager-trace-handler)]
          [did-one? #f])
      (parameterize ([current-namespace n]
-                    [cth (lambda (p)
-                           (when (compiler:option:verbose)
-                             (printf "  ~a\n" p)))]
-                    [cnh (lambda (p)
-                           (set! did-one? #t)
-                           (when (compiler:option:somewhat-verbose)
-                             (printf "  making ~s\n" (path->string p))))])
+                    [manager-trace-handler
+                     (lambda (p)
+                       (when (compiler:option:verbose)
+                         (printf "  ~a\n" p)))]
+                    [manager-compile-notify-handler
+                     (lambda (p)
+                       (set! did-one? #t)
+                       (when (compiler:option:somewhat-verbose)
+                         (printf "  making ~s\n" (path->string p))))])
        (for ([file source-files])
          (unless (file-exists? file)
            (error 'mzc "file does not exist: ~a" file))
@@ -439,7 +449,7 @@
              (printf "\"~a\":\n" file))
            (parameterize ([compile-context-preservation-enabled
                            (disable-inlining)])
-             (mc file))
+             (managed-compile-zo file))
            (let ([dest (append-zo-suffix
                         (let-values ([(base name dir?) (split-path file)])
                           (build-path (if (symbol? base) 'same base)
@@ -487,7 +497,7 @@
             [out-file  (if (dest-dir)
                          (build-path (dest-dir) out-file)
                          out-file)])
-       ((dynamic-require 'compiler/xform 'xform)
+       (xform
         (not (compiler:option:verbose))
         file
         out-file
@@ -498,12 +508,10 @@
    (unless (= 1 (length source-files))
      (error 'mzc "expected a single module source file to embed; given: ~e"
             source-files))
-   (let ([dest ((dynamic-require 'compiler/private/embed
-                                 'mzc:embedding-executable-add-suffix)
+   (let ([dest (mzc:embedding-executable-add-suffix
                 (exe-output)
                 (eq? mode 'gui-exe))])
-     ((dynamic-require 'compiler/private/embed
-                       'mzc:create-embedding-executable)
+     (mzc:create-embedding-executable
       dest
       #:mred? (eq? mode 'gui-exe)
       #:variant (if (compiler:option:3m) '3m 'cgc)
@@ -531,7 +539,7 @@
    (let ([dest (mods-output)])
      (let-values ([(in out) (make-pipe)])
        (parameterize ([current-output-port out])
-         ((dynamic-require 'compiler/embed 'write-module-bundle)
+         (write-module-bundle
           #:modules
           (append (map (lambda (l) `(#f (file ,l))) source-files)
              (map (lambda (l) `(#t (lib ,l))) (exe-embedded-libraries)))))
@@ -567,7 +575,7 @@
      (when (compiler:option:somewhat-verbose)
        (printf " [output to \"~a\"]\n" dest)))]
   [(exe-dir)
-   ((dynamic-require 'compiler/distribute 'assemble-distribution)
+   (assemble-distribution
     (exe-dir-output)
     source-files
     #:collects-path (exe-embedded-collects-path)

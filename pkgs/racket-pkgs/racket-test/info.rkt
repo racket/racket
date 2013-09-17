@@ -23,6 +23,8 @@
                "typed-racket-lib"
                "serialize-cstruct-lib"
 
+               "cext-lib"
+
                ;; for random testing:
                "redex-lib"))
 

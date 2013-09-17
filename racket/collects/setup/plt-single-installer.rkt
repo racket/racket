@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/unit
-         "setup.rkt")
+(require "setup.rkt")
 
 (provide run-single-installer install-planet-package clean-planet-package reindex-user-documentation)
 
