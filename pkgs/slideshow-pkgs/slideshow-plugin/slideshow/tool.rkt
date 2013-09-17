@@ -201,6 +201,8 @@ pict snip :
                                  [this this]
                                  [build-bitmap/check build-bitmap/check]
                                  [drs-eventspace drs-eventspace]
+                                 [current-eventspace current-eventspace]
+                                 [queue-callback queue-callback]
                                  [(subsnips ...) (map snp/pos-snp snp/poss)]
                                  [(bitmap-ids ...) (generate-ids "drawer-id" (map snp/pos-snp snp/poss))])
                      (syntax
