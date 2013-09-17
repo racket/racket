@@ -45,7 +45,7 @@ installation name/version.}
 @defparam[current-pkg-error err procedure?]{
 
 A parameter whose value is used to report errors that are normally
-intended for an end uses. The arguments to the procedure are the same
+intended for end uses. The arguments to the procedure are the same
 as for @racket[error], except that an initial symbol argument is
 omitted.
 
