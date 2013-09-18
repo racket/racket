@@ -6,6 +6,7 @@
 
 (provide
   unboxed-funs-table
+  add-unboxed-fun!
   add-unboxed-var!
   unboxed-var)
 
@@ -35,3 +36,6 @@
 ;; the new calling convention for these functions have all real parts of unboxed
 ;; params first, then all imaginary parts, then all boxed arguments
 (define unboxed-funs-table (make-free-id-table))
+
+(define (add-unboxed-fun! fun-name unboxed boxed)
+  (dict-set! unboxed-funs-table fun-name (list unboxed boxed)))
