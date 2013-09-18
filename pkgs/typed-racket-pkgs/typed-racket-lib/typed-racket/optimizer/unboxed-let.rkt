@@ -130,7 +130,7 @@
          (for ((v (in-syntax #'(opt-candidates.id ...)))
                (r (in-syntax #'(opt-candidates.real-binding ...)))
                (i (in-syntax #'(opt-candidates.imag-binding ...))))
-           (dict-set! unboxed-vars-table v (list r i v)))]
+           (add-unboxed-var! v r i))]
    ;; in the case where no bindings are unboxed, we create a let
    ;; that is equivalent to the original, but with all parts optimized
    #:with opt (quasisyntax/loc/origin
@@ -274,10 +274,7 @@
                         body.opt ...))]
               [(memq i to-unbox)
                ;; we unbox the current param, add to the table
-               (dict-set! unboxed-vars-table (car params)
-                          (list (car real-parts)
-                                (car imag-parts)
-                                (car params)))
+               (add-unboxed-var! (car params) (car real-parts) (car imag-parts))
                (loop (cdr params) (add1 i)
                      (cdr real-parts) (cdr imag-parts)
                      boxed)]
