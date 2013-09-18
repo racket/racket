@@ -5,13 +5,17 @@
          (utils tc-utils))
 
 (provide
-  unboxed-vars-table 
   unboxed-funs-table
+  add-unboxed-var!
   unboxed-var)
 
 ;; contains the bindings which actually exist as separate bindings for each component
 ;; associates identifiers to lists (real-binding imag-binding orig-binding-occurrence)
 (define unboxed-vars-table (make-free-id-table))
+
+(define (add-unboxed-var! orig-binding real-binding imag-binding)
+  (dict-set! unboxed-vars-table orig-binding
+             (list real-binding imag-binding orig-binding)))
 
 (define-syntax-class unboxed-var
   #:attributes (real-binding imag-binding)
