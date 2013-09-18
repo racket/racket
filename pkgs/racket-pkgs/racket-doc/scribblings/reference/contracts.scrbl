@@ -1174,8 +1174,8 @@ earlier fields.}}
 #:literals (struct rename)
 (contract-out p/c-item ...)
 ([p/c-item
-  (struct id ((id contract-expr) ...))
-  (struct (id identifier) ((id contract-expr) ...))
+  (struct id ((id contract-expr) ...) struct-option)
+  (struct (id identifier) ((id contract-expr) ...) struct-option)
   (rename orig-id id contract-expr)
   (id contract-expr)
   (code:line #:∃ poly-variables)
@@ -1183,7 +1183,9 @@ earlier fields.}}
   (code:line #:∀ poly-variables)
   (code:line #:forall poly-variables)]
  [poly-variables identifier
-                 (identifier ...)])]{
+                 (identifier ...)]
+ [struct-option (code:line)
+                #:omit-constructor])]{
 
 A @racket[_provide-spec] for use in @racket[provide] (currently only for
 the same @tech{phase level} as the @racket[provide] form; for example,
@@ -1222,6 +1224,8 @@ parent are only used in the contract for the sub-struct's constructor, and
 the selector or mutators for the super-struct are not provided. The
 exported structure-type name always doubles as a constructor, even if
 the original structure-type name does not act as a constructor.
+If the @racket[#:omit-constructor] option is present, the constructor
+is not provided.
 
 The @racket[#:∃], @racket[#:exists], @racket[#:∀], and @racket[#:forall]
 clauses define new abstract contracts. The variables are bound in the

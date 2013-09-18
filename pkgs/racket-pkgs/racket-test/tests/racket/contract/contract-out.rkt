@@ -871,6 +871,49 @@
       
       (eval '(require 'provide/contract44-m2))))
   
+  (test/spec-passed/result
+   'provide/contract45
+   '(begin
+      (eval '(module provide/contract45-m1 racket/base
+               (require racket/contract)
+               (struct heap (v) #:transparent)
+               (provide 
+                (contract-out 
+                 (struct heap ([v integer?]) #:omit-constructor)))
+               (define a-heap (heap 11))
+               (provide a-heap)))
+      
+      (eval '(module provide/contract45-m2 racket/base
+               (require racket/contract 'provide/contract45-m1)
+               (define provide/contract45-x (heap-v a-heap))
+               (provide provide/contract45-x)))
+      
+      (eval '(require 'provide/contract45-m2))
+      (eval 'provide/contract45-x))
+   11)
+  
+  (test/spec-passed/result
+   'provide/contract46
+   '(begin
+      (eval '(module provide/contract46-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 (struct s ([x any/c]) #:omit-constructor)))
+               (struct s (x))
+               (define an-s (s 123))
+               (provide an-s)))
+      (eval '(module provide/contract46-m2 racket/base
+               (require 'provide/contract46-m1
+                        racket/match)
+               (define provide/contract46-x
+                 (match an-s
+                   [(s x) x]))
+               (provide provide/contract46-x)))
+      (eval '(require 'provide/contract46-m2))
+      (eval 'provide/contract46-x))
+   123)
+  
   (contract-error-test
    'contract-error-test8
    #'(begin
@@ -1019,6 +1062,36 @@
           ;; testing that the error says "contract-out" and not "provide/contract"
           (regexp-match #rx"contract-out: found 2 fields" (exn-message x)))))
   
+  (contract-error-test
+   'contract-error-test19
+   #'(begin
+       (eval '(module pce19-bug racket
+                (struct point (x y))
+                (provide (contract-out
+                          (struct point ([x integer?] [y integer?])
+                            #:omit-constructor)))))
+       (eval '(module pce19-b racket
+                (require 'pce19-bug)
+                make-point)))
+   (λ (x)
+     (and (exn:fail:syntax? x)
+          (regexp-match #rx"unbound identifier .* make-point" (exn-message x)))))
+  
+  (contract-error-test
+   'contract-error-test20
+   #'(begin
+       (eval '(module pce20-bug racket
+                (struct point (x y))
+                (provide (contract-out
+                          (struct point ([x integer?] [y integer?])
+                            #:omit-constructor)))))
+       (eval '(module pce20-b racket
+                (require 'pce20-bug)
+                point)))
+   (λ (x)
+     (and (exn:fail:syntax? x)
+          (regexp-match #rx"point: .* cannot be used as an expression" (exn-message x)))))
+  
   (contract-eval
    `(,test
      'pos
@@ -1100,8 +1173,6 @@
       (eval '(require 'contract-out-rename1-b))
       (eval 'contract-out-rename1-my-f))
    11)
-  
-  
   
   (contract-eval
    '(module contract-test-suite-inferred-name1 racket/base

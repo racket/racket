@@ -188,8 +188,8 @@
                                         clause)]
                    [else
                     (syntax-case (cadr clauses) ()
-		      [x
-		       (identifier? #'x)
+                      [x
+                       (identifier? #'x)
                        (if just-check-errors?
                            (loop (cddr clauses) exists-binders)
                            (with-syntax ([(x-gen) (generate-temporaries #'(x))])
@@ -245,18 +245,27 @@
                                      (syntax this-name))]
                 [(rename . _)
                  (raise-syntax-error who "malformed rename clause" provide-stx clause)]
-                [(struct struct-name ((field-name contract) ...))
+                [(struct struct-name ((field-name contract) ...) options ...)
                  (and (well-formed-struct-name? (syntax struct-name))
                       (andmap identifier? (syntax->list (syntax (field-name ...)))))
-                 (begin
+                 (let ()
+                   (for ([option (in-list (syntax->list #'(options ...)))])
+                     (unless (member (syntax-e option) '(#:omit-constructor))
+                       (raise-syntax-error who
+                                           "malformed struct option" 
+                                           provide-stx
+                                           option)))
                    (add-to-dups-table #'struct-name)
+                   (define omit-constructor? 
+                     (member '#:omit-constructor (map syntax-e (syntax->list #'(options ...)))))
                    (if just-check-errors?
                        (loop (cdr clauses) exists-binders)
                        (let ([sc (build-struct-code provide-stx
                                                     (syntax struct-name)
                                                     (syntax->list (syntax (field-name ...)))
                                                     (map (λ (x) (add-exists-binders x exists-binders))
-                                                         (syntax->list (syntax (contract ...)))))])
+                                                         (syntax->list (syntax (contract ...))))
+                                                    omit-constructor?)])
                          (cons sc (loop (cdr clauses) exists-binders)))))]
                 [(struct name)
                  (identifier? (syntax name))
@@ -270,26 +279,25 @@
                                      "name must be an identifier or two identifiers with parens around them"
                                      provide-stx
                                      (syntax name))]
-                [(struct name (fields ...))
-                 (for-each (λ (field)
-                             (syntax-case field ()
-                               [(x y)
-                                (identifier? (syntax x))
-                                (void)]
-                               [(x y)
-                                (raise-syntax-error who
-                                                    "malformed struct field, expected identifier"
-                                                    provide-stx
-                                                    (syntax x))]
-                               [else
-                                (raise-syntax-error who
-                                                    "malformed struct field"
-                                                    provide-stx
-                                                    field)]))
-                           (syntax->list (syntax (fields ...))))
-
-                 ;; if we didn't find a bad field something is wrong!
-                 (raise-syntax-error who "internal error.1" provide-stx clause)]
+                [(struct name (fields ...) options ...)
+                 (let ()
+                   (for ([field [in-list (syntax->list (syntax (fields ...)))]])
+                     (syntax-case field ()
+                       [(x y)
+                        (identifier? (syntax x))
+                        (void)]
+                       [(x y)
+                        (raise-syntax-error who
+                                            "malformed struct field, expected identifier"
+                                            provide-stx
+                                            (syntax x))]
+                       [else
+                        (raise-syntax-error who
+                                            "malformed struct field"
+                                            provide-stx
+                                            field)]))
+                   ;; if we didn't find a bad field something is wrong!
+                   (raise-syntax-error who "internal error.1" provide-stx clause))]
                 [(struct name . fields)
                  (raise-syntax-error who
                                      "malformed struct fields"
@@ -331,7 +339,8 @@
        ;; build-struct-code : syntax syntax (listof syntax) (listof syntax) -> syntax
        ;; constructs the code for a struct clause
        ;; first arg is the original syntax object, for source locations
-       (define (build-struct-code stx struct-name-position field-names field-contracts)
+       (define (build-struct-code stx struct-name-position field-names field-contracts 
+                                  omit-constructor?)
          (let* ([struct-name (syntax-case struct-name-position ()
                                [(a b) (syntax a)]
                                [else struct-name-position])]
@@ -372,12 +381,13 @@
                                          field-names
                                          field-contracts)]
                 [struct:struct-name
-                 (datum->syntax
-                  struct-name
-                  (string->symbol
-                   (string-append
-                    "struct:"
-                    (symbol->string (syntax-e struct-name)))))]
+                 (or (list-ref the-struct-info 0)
+                     (datum->syntax
+                      struct-name
+                      (string->symbol
+                       (string-append
+                        "struct:"
+                        (symbol->string (syntax-e struct-name))))))]
 
                 [-struct:struct-name
                  (datum->syntax
@@ -508,15 +518,17 @@
                          [(predicate-code predicate-new-name)
                           (code-for-one-id/new-name stx predicate-id #f (syntax predicate/c) #f)]
                          [(constructor-code constructor-new-name)
-                          (code-for-one-id/new-name
-                           stx
-                           chaperone-constructor-id struct-name
-                           (build-constructor-contract stx
-                                                       field-contract-ids
-                                                       predicate-id)
-                           constructor-id
-                           #t
-                           (not type-is-only-constructor?))]
+                          (if omit-constructor?
+                              #'((void) (void))
+                              (code-for-one-id/new-name
+                               stx
+                               chaperone-constructor-id struct-name
+                               (build-constructor-contract stx
+                                                           field-contract-ids
+                                                           predicate-id)
+                               constructor-id
+                               #t
+                               (not type-is-only-constructor?)))]
 
                          [(field-contract-id-definitions ...)
                           (filter values (map (λ (field-contract-id field-contract)
@@ -555,25 +567,26 @@
                                                         [else #f]))
                                                     (syntax->list #'(mutator-codes/mutator-new-names ...)))]
                                               [(exported-selector-ids ...) (reverse selector-ids)])
+                                  (define proc
+                                    #`(λ ()
+                                        (list (quote-syntax -struct:struct-name)
+                                              #,(if type-is-only-constructor?
+                                                    #'(quote-syntax id-rename)
+                                                    #'(quote-syntax constructor-new-name))
+                                              (quote-syntax predicate-new-name)
+                                              (list (quote-syntax rev-selector-new-names) ...
+                                                    (quote-syntax rev-selector-old-names) ...)
+                                              (list mutator-id-info ...)
+                                              super-id)))
                                   #`(begin
                                       (provide (rename-out [id-rename struct-name]))
                                       (define-syntax id-rename
-                                        #,(let ([proc
-                                                 #`(lambda ()
-                                                     (list (quote-syntax -struct:struct-name)
-                                                           #,(if type-is-only-constructor?
-                                                                 #'(quote-syntax id-rename)
-                                                                 #'(quote-syntax constructor-new-name))
-                                                           (quote-syntax predicate-new-name)
-                                                           (list (quote-syntax rev-selector-new-names) ...
-                                                                 (quote-syntax rev-selector-old-names) ...)
-                                                           (list mutator-id-info ...)
-                                                           super-id))])
-                                            (if type-is-constructor?
-                                                #`(make-applicable-struct-info #,proc
-                                                                               (lambda ()
-                                                                                 (quote-syntax constructor-new-name)))
-                                                #`(make-struct-info #,proc))))))]
+                                        #,(if (and type-is-constructor? (not omit-constructor?))
+                                              #`(make-applicable-struct-info 
+                                                 #,proc
+                                                 (lambda ()
+                                                   (quote-syntax constructor-new-name)))
+                                              #`(make-struct-info #,proc)))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -633,7 +646,8 @@
        ;; get-field-counts/struct-names : syntax syntax -> (listof (cons number symbol))
        ;; returns a list of numbers corresponding to the numbers of fields for each of the parent structs
        (define (get-field-counts/struct-names struct-name provide-stx)
-         (let loop ([parent-info-id struct-name])
+         (let loop ([parent-info-id struct-name]
+                    [orig-struct? #t])
            (let ([parent-info
                   (and (identifier? parent-info-id)
                        (a:lookup-struct-info parent-info-id provide-stx))])
@@ -647,12 +661,13 @@
                           (not (last fields)))
                      (raise-syntax-error
                       who
-                      "cannot determine the number of fields in super struct"
+                      (format "cannot determine the number of fields in ~astruct"
+                              (if orig-struct? "" "parent "))
                       provide-stx
                       struct-name)]
                     [else
                      (cons (cons (length fields) (predicate->struct-name provide-stx predicate))
-                           (loop (list-ref parent-info 5)))]))]))))
+                           (loop (list-ref parent-info 5) #f))]))]))))
 
        (define (predicate->struct-name orig-stx stx)
          (and stx
@@ -822,10 +837,10 @@
          [else
           (for ([clause (in-list p/c-clauses)])
             (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-              [(struct a ((fld ctc) ...))
+              [(struct a ((fld ctc) ...) options ...)
                (identifier? #'a)
                (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
-              [(struct (a b) ((fld ctc) ...))
+              [(struct (a b) ((fld ctc) ...) options ...)
                (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
               [_ (void)]))
           (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)])
