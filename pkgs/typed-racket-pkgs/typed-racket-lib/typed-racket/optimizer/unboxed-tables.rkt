@@ -1,14 +1,27 @@
 #lang racket/base
 
-(require syntax/id-table)
+(require syntax/id-table syntax/parse racket/dict 
+         "../utils/utils.rkt"
+         (utils tc-utils))
 
 (provide
   unboxed-vars-table 
-  unboxed-funs-table)
+  unboxed-funs-table
+  unboxed-var)
 
 ;; contains the bindings which actually exist as separate bindings for each component
 ;; associates identifiers to lists (real-binding imag-binding orig-binding-occurrence)
 (define unboxed-vars-table (make-free-id-table))
+
+(define-syntax-class unboxed-var
+  #:attributes (real-binding imag-binding)
+  (pattern v:id
+    #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
+    #:when (syntax->datum #'unboxed-info)
+    #:with (real-binding imag-binding orig-binding) #'unboxed-info
+    ;; we need to introduce both the binding and the use at the same time
+    #:do [(add-disappeared-use (syntax-local-introduce #'v))
+          (add-disappeared-binding (syntax-local-introduce #'orig-binding))]))
 
 ;; associates the names of functions with unboxed args (and whose call sites have to
 ;; be modified) to the arguments which can be unboxed and those which have to be boxed

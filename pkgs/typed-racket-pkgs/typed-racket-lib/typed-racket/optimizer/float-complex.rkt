@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx syntax/id-table racket/dict racket/promise
+(require syntax/parse syntax/stx racket/dict racket/promise
          racket/syntax racket/match syntax/parse/experimental/specialize
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
@@ -291,15 +291,8 @@
          ((imag-binding) (unsafe-fl* radius (unsafe-flsin angle)))))
 
   ;; if we see a variable that's already unboxed, use the unboxed bindings
-  (pattern v:id
-    #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
-    #:when (syntax->datum #'unboxed-info)
-    #:with (real-binding imag-binding orig-binding) #'unboxed-info
-    #:do [(log-unboxing-opt "leave var unboxed")
-          ;; we need to introduce both the binding and the use at the
-          ;; same time
-          (add-disappeared-use (syntax-local-introduce #'v))
-          (add-disappeared-binding (syntax-local-introduce #'orig-binding))]
+  (pattern :unboxed-var
+    #:do [(log-unboxing-opt "leave var unboxed")]
     #:with (bindings ...) #'())
 
   ;; else, do the unboxing here
@@ -464,18 +457,11 @@
            #'(let*-values (exp.bindings ...)
                (unsafe-make-flrectangular exp.real-binding exp.imag-binding))))))
 
-  (pattern v:id
-    #:do [(define unboxed-info (dict-ref unboxed-vars-table #'v #f))]
-    #:when unboxed-info
-    #:when (subtypeof? #'v -FloatComplex)
-    #:with (real-binding imag-binding orig-binding) unboxed-info
-    ;; we need to introduce both the binding and the use at the same time
+  (pattern (~and :unboxed-var v:float-complex-expr)
     ;; unboxed variable used in a boxed fashion, we have to box
     #:attr opt
       (delay
        (log-unboxing-opt "unboxed complex variable")
-       (add-disappeared-use (syntax-local-introduce #'v))
-       (add-disappeared-binding (syntax-local-introduce #'orig-binding))
        #'(unsafe-make-flrectangular real-binding imag-binding))))
 
 
