@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/math
+         racket/match
          racket/list
          racket/function
          data/gvector)
@@ -200,42 +201,72 @@
                (- (* 2 n) 1)
                (* 2 (abs n))))))
 
-;; sum :: enum a, enum b -> enum (a or b)
+;; sum :: enum a, enum b -> enum (U a b)
 (define sum/e
   (case-lambda
     [(e) e]
     [(e1 e2)
-     (cond
-      [(= 0 (size e1)) e2]
-      [(= 0 (size e2)) e1]
-      [(not (infinite? (enum-size e1)))
-       (enum (+ (enum-size e1)
-                (enum-size e2))
-             (λ (n)
-                (if (< n (enum-size e1))
-                    ((enum-from e1) n)
-                    ((enum-from e2) (- n (enum-size e1)))))
-             (λ (x)
-                (with-handlers ([exn:fail? (λ (_)
-                                              (+ (enum-size e1)
-                                                 ((enum-to e2) x)))])
-                  ((enum-to e1) x))))]
-      [(not (infinite? (enum-size e2)))
-       (sum/e e2 e1)]
-      [else ;; both infinite, interleave them
-       (enum +inf.f
-             (λ (n)
-                (if (even? n)
-                    ((enum-from e1) (/ n 2))
-                    ((enum-from e2) (/ (- n 1) 2))))
-             (λ (x)
-                (with-handlers ([exn:fail? 
-                                 (λ (_)
-                                    (+  (* ((enum-to e2) x) 2)
-                                        1))])
-                  (* ((enum-to e1) x) 2))))])]
+     ;; Sum two enumerators of different sizes
+     (define (sum-uneven less/e more/e)
+       ;; interleave until less/e is exhausted
+       ;; pairsdone is 1+ the highest index using less/e
+       (let* ([less-size (size less/e)]
+              [pairsdone (* 2 less-size)])
+         (enum (+ less-size (size more/e))
+               (λ (n)
+                  (if (< n pairsdone)
+                      (let-values ([(q r) (quotient/remainder n 2)])
+                        ;; Always put e1 first though!
+                        (decode (match r
+                                  [0 e1]
+                                  [1 e2])
+                                q))
+                      (decode more/e (- n less-size))))
+               (λ (x)
+                  (with-handlers
+                      ([exn:fail?
+                        (λ (_)
+                           (let ([i (encode more/e x)])
+                             (if (< i less-size)
+                                 (+ (* 2 i) 1)
+                                 (+ (- i less-size) pairsdone))))])
+                    (* 2 (encode less/e x)))))))
+     (let* ([s1 (size e1)]
+            [s2 (size e2)])
+       (cond
+        [(= 0 s1) e2]
+        [(= 0 s2) e1]
+        [(< s1 s2)
+         (sum-uneven e1 e2)]
+        [(< s2 s1)
+         (sum-uneven e2 e1)]
+        [else ;; both the same length, interleave them
+         (enum (+ s1 s2)
+               (λ (n)
+                  (if (even? n)
+                      ((enum-from e1) (/ n 2))
+                      ((enum-from e2) (/ (- n 1) 2))))
+               (λ (x)
+                  (with-handlers ([exn:fail? 
+                                   (λ (_)
+                                      (+  (* ((enum-to e2) x) 2)
+                                          1))])
+                    (* ((enum-to e1) x) 2))))]))]
     [(a b c . rest)
-     (sum/e a (apply sum/e b c rest))]))
+     ;; map-pairs : (a, a -> b), (a -> b), listof a -> listof b
+     ;; apply the function to every pair, applying f to the first element of an odd length list
+     (define (map-pairs f d l)
+       (define (map-pairs/even l)
+         (match l
+           ['() '()]
+           [`(,x ,y ,rest ...)
+            (cons (f x y)
+                  (map-pairs f d rest))]))
+       (if (even? (length l))
+           (map-pairs/even l)
+           (cons (d (car l))
+                 (map-pairs/even (cdr l)))))
+     (apply sum/e (map-pairs sum/e identity (list* a b c rest)))]))
 
 (define n*n
   (enum +inf.f

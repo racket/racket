@@ -410,19 +410,12 @@
            (match sub-pat
              [`(repeat ,pat #f #f)
               (map/e
-               (λ (n-ts)
-                  (repeat (car n-ts)
-                          (cdr n-ts)))
+               (λ (ts)
+                  (repeat (length ts)
+                          ts))
                (λ (rep)
-                  (cons (repeat-n rep)
-                        (repeat-terms rep)))
-               (sum/e
-                (const/e (cons 0 '()))
-                (dep/e
-                 (nats+/e 1)
-                 (λ (n)
-                    (list/e
-                     (build-list n (const (loop pat))))))))]
+                  (repeat-terms rep))
+               (many/e (loop pat)))]
              [`(repeat ,pat ,name #f)
               (error 'unimplemented "named-repeat")]
              [`(repeat ,pat #f ,mismatch)
