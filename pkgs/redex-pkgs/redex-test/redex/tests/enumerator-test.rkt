@@ -91,34 +91,33 @@
 
 (test-begin
  (let ([bool-or-num (sum/e bools/e
-                           (from-list/e '(0 1 2)))]
+                           (from-list/e '(0 1 2 3)))]
        [bool-or-nat (sum/e bools/e
                            nats)]
        [nat-or-bool (sum/e nats
                            bools/e)]
        [odd-or-even (sum/e evens/e
                            odds/e)])
-   (check-equal? (size bool-or-num)
-                 5)
+   (check-equal? (size bool-or-num) 6)
+   
    (check-equal? (decode bool-or-num 0) #t)
-   (check-equal? (decode bool-or-num 1) #f)
-   (check-equal? (decode bool-or-num 2) 0)
+   (check-equal? (decode bool-or-num 1) 0)
+   (check-equal? (decode bool-or-num 2) #f)
+   (check-equal? (decode bool-or-num 3) 1)
+   (check-equal? (decode bool-or-num 4) 2)
+   (check-equal? (decode bool-or-num 5) 3)
+   
    (check-exn exn:fail?
               (λ ()
-                 (decode bool-or-num 5)))
-   (check-equal? (encode bool-or-num #f) 1)
-   (check-equal? (encode bool-or-num 2) 4)
+                 (decode bool-or-num 6)))
    (check-bijection? bool-or-num)
    
    (check-equal? (size bool-or-nat)
                  +inf.f)
    (check-equal? (decode bool-or-nat 0) #t)
-   (check-equal? (decode bool-or-nat 2) 0)
+   (check-equal? (decode bool-or-nat 1) 0)
    (check-bijection? bool-or-nat)
    
-   (check-equal? (encode bool-or-num #f) 1)
-   (check-equal? (encode bool-or-num 2) 4)
-
    (check-equal? (size odd-or-even)
                  +inf.f)
    (check-equal? (decode odd-or-even 0) 0)
