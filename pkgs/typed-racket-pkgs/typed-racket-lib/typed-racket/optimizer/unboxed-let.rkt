@@ -6,7 +6,7 @@
          (for-template racket/base)
          (types numeric-tower utils type-table)
          (rep type-rep) (env mvar-env)
-         (optimizer utils logging float-complex))
+         (optimizer utils logging float-complex unboxed-tables))
 
 (provide unboxed-let-opt-expr)
 
