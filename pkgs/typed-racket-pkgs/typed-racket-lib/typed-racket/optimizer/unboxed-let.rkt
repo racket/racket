@@ -33,10 +33,9 @@
                          loop-fun:id)) ; sole element of the body
             args:expr ...)
     #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
-    #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
-    #:when (syntax->datum #'unboxed-info)
-    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
-    #:with (~var || (float-complex-call-site-opt-expr #'unboxed-info #'operator.opt)) this-syntax))
+    #:with loop-fun2:unboxed-fun #'loop-fun
+    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun2)]
+    #:with (~var || (float-complex-call-site-opt-expr #'loop-fun2.unboxed-info #'operator.opt)) this-syntax))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
@@ -245,19 +244,15 @@
 (define-syntax-class unboxed-fun-clause
   #:commit
   #:attributes (res)
-  (pattern ((id:id) (#%plain-lambda params body:opt-expr ...))
-    #:with unboxed-info (dict-ref unboxed-funs-table #'id #f)
-    #:when (syntax->datum #'unboxed-info)
-    ;; partition of the arguments
-    #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
+  (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
     #:with (real-params ...)
-    (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(to-unbox ...))
+    (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(fun.unboxed ...))
     #:with (imag-params ...)
-    (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(to-unbox ...))
-    #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'id)]
+    (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(fun.unboxed ...))
+    #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'fun)]
     #:with res
     ;; add unboxed parameters to the unboxed vars table
-    (let ((to-unbox (syntax->datum #'(to-unbox ...))))
+    (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
       (let loop ((params     (syntax->list #'params))
                  (i          0)
                  (real-parts (syntax->list #'(real-params ...)))
@@ -267,7 +262,7 @@
                ;; real parts of unboxed parameters go first, then all
                ;; imag parts, then boxed occurrences of unboxed
                ;; parameters will be inserted when optimizing the body
-               #`((id) (#%plain-lambda
+               #`((fun) (#%plain-lambda
                         (real-params ... imag-params ...  #,@(reverse boxed))
                         body.opt ...))]
               [(memq i to-unbox)

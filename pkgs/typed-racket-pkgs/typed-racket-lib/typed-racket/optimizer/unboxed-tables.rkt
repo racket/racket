@@ -5,8 +5,8 @@
          (utils tc-utils))
 
 (provide
-  unboxed-funs-table
   add-unboxed-fun!
+  unboxed-fun
   add-unboxed-var!
   unboxed-var)
 
@@ -39,3 +39,10 @@
 
 (define (add-unboxed-fun! fun-name unboxed boxed)
   (dict-set! unboxed-funs-table fun-name (list unboxed boxed)))
+
+(define-syntax-class unboxed-fun
+  #:attributes ((unboxed 1) (boxed 1) unboxed-info)
+  (pattern op:id
+    #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)
+    #:when (syntax->datum #'unboxed-info)
+    #:with ((unboxed ...) (boxed ...)) #'unboxed-info))
