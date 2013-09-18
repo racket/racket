@@ -6,13 +6,12 @@
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
          (types numeric-tower subtype type-table utils)
-         (optimizer utils numeric-utils logging float))
+         (optimizer utils numeric-utils logging float unboxed-tables))
 
 (provide float-complex-opt-expr
          float-complex-arith-expr
          unboxed-float-complex-opt-expr
-         float-complex-call-site-opt-expr arity-raising-opt-msg
-         unboxed-vars-table unboxed-funs-table)
+         float-complex-call-site-opt-expr arity-raising-opt-msg)
 
 (define-literal-syntax-class +)
 (define-literal-syntax-class -)
@@ -33,20 +32,6 @@
 
 (define-syntax-class/specialize float-expr (subtyped-expr -Flonum))
 (define-syntax-class/specialize float-complex-expr (subtyped-expr -FloatComplex))
-
-
-;; contains the bindings which actually exist as separate bindings for each component
-;; associates identifiers to lists (real-binding imag-binding orig-binding-occurrence)
-(define unboxed-vars-table (make-free-id-table))
-
-;; associates the names of functions with unboxed args (and whose call sites have to
-;; be modified) to the arguments which can be unboxed and those which have to be boxed
-;; entries in the table are of the form:
-;; ((unboxed ...) (boxed ...))
-;; all these values are indices, since arg names don't make sense for call sites
-;; the new calling convention for these functions have all real parts of unboxed
-;; params first, then all imaginary parts, then all boxed arguments
-(define unboxed-funs-table (make-free-id-table))
 
 (define (binding-names)
   (generate-temporaries (list "unboxed-real-" "unboxed-imag-")))
