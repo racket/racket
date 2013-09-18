@@ -100,9 +100,7 @@
                                     ;; if so, add to the table of functions with
                                     ;; unboxed params, so we can modify its call
                                     ;; sites, its body and its header
-                                    (dict-set! unboxed-funs-table fun-name
-                                               (list (reverse unboxed)
-                                                     (reverse boxed))))]
+                                    (add-unboxed-fun! fun-name unboxed boxed))]
                               [(and (equal? (car doms) -FloatComplex)
                                     (could-be-unboxed-in?
                                      (car params) #'(begin body ...)))
