@@ -396,7 +396,7 @@
 
   (pattern (#%plain-app op:unboxed-fun args:expr ...)
     ;no need to optimize op
-    #:with (~var || (float-complex-call-site-opt-expr #'op.unboxed-info #'op)) this-syntax
+    #:with (~var || (float-complex-call-site-opt-expr #'op.unboxed-info)) #'(op args ...)
     #:do [(log-arity-raising-opt "call to fun with unboxed args")])
 
   (pattern :float-complex-arith-opt-expr))
@@ -480,19 +480,19 @@
 ;; takes as argument a structure describing which arguments will be unboxed
 ;; and the optimized version of the operator. operators are optimized elsewhere
 ;; to benefit from local information
-(define-syntax-class (float-complex-call-site-opt-expr unboxed-info opt-operator)
+(define-syntax-class (float-complex-call-site-opt-expr unboxed-info)
   #:commit
   #:attributes (opt)
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
-  (pattern (#%plain-app op:expr args:expr ...)
+  (pattern (op:expr args:expr ...)
     #:with (unboxed-args ...) unboxed-info
     #:with opt
       (syntax-parse #'((unboxed-args args) ...)
         [(e:possibly-unboxed ...)
          (log-unboxing-opt "unboxed call site")
          #`(let*-values (e.bindings ... ...)
-             (#%plain-app #,opt-operator
+             (#%plain-app op
                           e.real-binding ... ...
                           e.imag-binding ... ...
                           e.boxed-binding ... ...))])))
