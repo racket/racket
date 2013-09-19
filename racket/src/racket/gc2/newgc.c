@@ -1529,12 +1529,14 @@ uintptr_t add_no_overflow(uintptr_t a, uintptr_t b)
 
 int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
 {
-#ifdef NEWGC_BTC_ACCOUNT
   NewGC *gc = GC_get_GC();
 
-  if (premaster_or_place_gc(gc)) {
-    if (BTC_single_allocation_limit(gc, request_size_bytes))
-      return 0;
+#ifdef NEWGC_BTC_ACCOUNT
+  if (request_size_bytes > 0) {
+    if (premaster_or_place_gc(gc)) {
+      if (BTC_single_allocation_limit(gc, request_size_bytes))
+        return 0;
+    }
   }
 #endif
 

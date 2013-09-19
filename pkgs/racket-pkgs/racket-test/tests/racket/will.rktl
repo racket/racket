@@ -216,7 +216,19 @@
   (collect-garbage)
   (test #t < (current-memory-use) (+ m (expt 2 28)))
   (test #t < (current-memory-use c) (+ mc (expt 2 28)))
-  (semaphore-post s))
+  (semaphore-post s)
+
+  (let ([done? #f])
+    (sync
+     (let ([c (make-custodian)])
+       (parameterize ([current-custodian c])
+         (thread
+          (lambda ()
+            (custodian-limit-memory c 10000000)
+            (define b (make-phantom-bytes 100))
+            (set-phantom-bytes! b 0)
+            (set! done? #t))))))
+    (test #t values done?)))
 
 ;; ----------------------------------------
 ;; Check that local variables are cleared for space safety
