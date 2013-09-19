@@ -247,28 +247,21 @@
     #:with res
     ;; add unboxed parameters to the unboxed vars table
     (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
-      (let loop ((params     (syntax->list #'params))
-                 (i          0)
-                 (real-parts (syntax->list #'(real-params ...)))
-                 (imag-parts (syntax->list #'(imag-params ...)))
-                 (boxed      '()))
-        (cond [(null? params) ; done, create the new clause
-               ;; real parts of unboxed parameters go first, then all
-               ;; imag parts, then boxed occurrences of unboxed
-               ;; parameters will be inserted when optimizing the body
-               #`((fun) (#%plain-lambda
-                        (real-params ... imag-params ...  #,@(reverse boxed))
-                        body.opt ...))]
-              [(memq i to-unbox)
-               ;; we unbox the current param, add to the table
-               (add-unboxed-var! (car params) (car real-parts) (car imag-parts))
-               (loop (cdr params) (add1 i)
-                     (cdr real-parts) (cdr imag-parts)
-                     boxed)]
-              [else ; that param stays boxed, keep going
-               (loop (cdr params) (add1 i)
-                     real-parts imag-parts
-                     (cons (car params) boxed))])))))
+      (for ([index (in-list to-unbox)]
+            [real-part (in-syntax #'(real-params ...))]
+            [imag-part (in-syntax #'(imag-params ...))])
+        (add-unboxed-var! (list-ref (syntax->list #'params) index) real-part imag-part))
+      (define boxed
+        (for/list ([param (in-syntax #'params)]
+                   [i (in-naturals)]
+                   #:unless (memq i to-unbox))
+          param))
+      ;; real parts of unboxed parameters go first, then all
+      ;; imag parts, then boxed occurrences of unboxed
+      ;; parameters will be inserted when optimizing the body
+      #`((fun) (#%plain-lambda
+                 (real-params ... imag-params ... #,@(reverse boxed))
+                 body.opt ...)))))
 
 (define-syntax-class opt-let-clause
   #:commit
