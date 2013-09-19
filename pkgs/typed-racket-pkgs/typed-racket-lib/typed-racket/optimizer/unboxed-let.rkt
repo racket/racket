@@ -45,7 +45,7 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   (pattern
-   (letk:let-like-keyword ((~and clause (lhs rhs ...)) ...)
+   (letk:let-like-keyword ((~and clause (lhs rhs)) ...)
                           body:opt-expr ...)
    ;; we look for bindings of complexes that are not mutated and only
    ;; used in positions where we would unbox them
@@ -74,7 +74,7 @@
                (and
                 ;; if the function escapes, we can't change its interface
                 (not (is-var-mutated? fun-name))
-                (not (escapes? fun-name #'(begin rhs ... ...) #f))
+                (not (escapes? fun-name #'(begin rhs ...) #f))
                 (not (escapes? fun-name #'(begin body ...) let-loop?))
                 (match (type-of (cadr p)) ; rhs, we want a lambda
                   [(tc-result1: (Function: (list (arr: doms rngs
