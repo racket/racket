@@ -38,15 +38,15 @@
 (define unboxed-funs-table (make-free-id-table))
 
 (define (add-unboxed-fun! fun-name unboxed-args)
-  (define unboxed
-    (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:when unboxed?) i))
-  (define boxed
-    (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:unless unboxed?) i))
-  (dict-set! unboxed-funs-table fun-name (list unboxed boxed)))
+  (dict-set! unboxed-funs-table fun-name unboxed-args))
 
 (define-syntax-class unboxed-fun
-  #:attributes ((unboxed 1) (boxed 1) unboxed-info)
+  #:attributes ((unboxed 1) unboxed-info)
   (pattern op:id
-    #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)
-    #:when (syntax->datum #'unboxed-info)
-    #:with ((unboxed ...) (boxed ...)) #'unboxed-info))
+    #:do [(define unboxed-args (dict-ref unboxed-funs-table #'op #f))]
+    #:when unboxed-args
+    #:with ((unboxed ...) (boxed ...))
+           (list
+             (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:when unboxed?) i)
+             (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:unless unboxed?) i))
+    #:with (~and unboxed-info (unboxed-args ...)) unboxed-args))
