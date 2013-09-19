@@ -86,9 +86,8 @@
                    (syntax-parse (cadr p)
                      #:literal-sets (kernel-literals)
                      [(#%plain-lambda params body ...)
-                      (define-values (unboxed boxed)
-                        (for/fold ([unboxed empty] [boxed empty])
-                                  ([param (in-syntax #'params)]
+                      (define unboxed-args
+                        (for/list ([param (in-syntax #'params)]
                                    [dom doms]
                                    [i (in-naturals)])
                           (cond
@@ -98,14 +97,14 @@
                                     #'(begin body ...)))
                              ;; we can unbox
                              (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
-                             (values (cons i unboxed) boxed)]
-                            [else (values unboxed (cons i boxed))])))
+                             #t]
+                            [else #f])))
                       ;; can we unbox anything?
-                      (and (> (length unboxed) 0)
+                      (and (member #t unboxed-args)
                            ;; if so, add to the table of functions with
                            ;; unboxed params, so we can modify its call
                            ;; sites, its body and its header
-                           (add-unboxed-fun! fun-name unboxed boxed))]
+                           (add-unboxed-fun! fun-name unboxed-args))]
                      [_ #f])]
                   [_ #f])))))
           rest)))
