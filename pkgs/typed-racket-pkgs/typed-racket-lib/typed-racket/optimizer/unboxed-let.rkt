@@ -86,32 +86,26 @@
                    (syntax-parse (cadr p)
                      #:literal-sets (kernel-literals)
                      [(#%plain-lambda params body ...)
-                      ;; keep track of the param # of each param that can be
-                      ;; unboxed
-                      (let loop ((unboxed '())
-                                 (boxed   '())
-                                 (i        0)
-                                 (params   (syntax->list #'params))
-                                 (doms     doms))
-                        (cond [(null? params)
-                               ;; done. can we unbox anything?
-                               (and (> (length unboxed) 0)
-                                    ;; if so, add to the table of functions with
-                                    ;; unboxed params, so we can modify its call
-                                    ;; sites, its body and its header
-                                    (add-unboxed-fun! fun-name unboxed boxed))]
-                              [(and (equal? (car doms) -FloatComplex)
-                                    (could-be-unboxed-in?
-                                     (car params) #'(begin body ...)))
-                               ;; we can unbox
-                               (log-optimization "unboxed var -> table"
-                                                 arity-raising-opt-msg
-                                                 (car params))
-                               (loop (cons i unboxed) boxed
-                                     (add1 i) (cdr params) (cdr doms))]
-                              [else ; can't unbox
-                               (loop unboxed (cons i boxed)
-                                     (add1 i) (cdr params) (cdr doms))]))]
+                      (define-values (unboxed boxed)
+                        (for/fold ([unboxed empty] [boxed empty])
+                                  ([param (in-syntax #'params)]
+                                   [dom doms]
+                                   [i (in-naturals)])
+                          (cond
+                            [(and (equal? dom -FloatComplex)
+                                  (could-be-unboxed-in?
+                                    param
+                                    #'(begin body ...)))
+                             ;; we can unbox
+                             (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
+                             (values (cons i unboxed) boxed)]
+                            [else (values unboxed (cons i boxed))])))
+                      ;; can we unbox anything?
+                      (and (> (length unboxed) 0)
+                           ;; if so, add to the table of functions with
+                           ;; unboxed params, so we can modify its call
+                           ;; sites, its body and its header
+                           (add-unboxed-fun! fun-name unboxed boxed))]
                      [_ #f])]
                   [_ #f])))))
           rest)))
