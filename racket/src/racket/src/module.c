@@ -8340,9 +8340,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
     if (rec[drec].depth == -2) {
       /* This was a local expand. Flush definitions, because the body expand may start over. */
-      flush_definitions(env->genv);
-      if (env->genv->exp_env)
-        flush_definitions(env->genv->exp_env);
+      Scheme_Env *f_genv = env->genv;
+      while (f_genv) {
+        flush_definitions(f_genv);
+        f_genv = f_genv->exp_env;
+      }
     }
 
     p = SCHEME_STX_CAR(form);

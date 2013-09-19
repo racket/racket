@@ -980,6 +980,30 @@
   (eval '(define-syntax (m stx)
            (syntax-local-lift-require ''m (datum->syntax stx '(x)))))
   (eval '(m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that local-expanding module body
+;; doesn't pollute future expansion with
+;; bindings in any phase (such as phase 2)
+
+(module check-defn-le-lang racket
+   (provide
+    (except-out (all-from-out racket) #%module-begin)
+    (rename-out [module-begin #%module-begin]))
+
+   (define-syntax (module-begin stx)
+     (syntax-case stx ()
+       ((_ . bs)
+        (local-expand
+         #'(#%module-begin . bs)
+         'module-begin null)))))
+
+(module check-defn-le-module 'check-defn-le-lang
+   (require (for-meta 2 racket/base))
+   (define x 0)
+   (begin-for-syntax
+     (begin-for-syntax
+       (define y 2))))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
