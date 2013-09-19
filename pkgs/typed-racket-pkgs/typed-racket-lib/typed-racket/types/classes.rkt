@@ -197,7 +197,7 @@
   #:attributes (row-var extends-types
                 inits fields methods augments)
   (pattern (~seq (~or (~optional (~seq #:row-var row-var:id))
-                      (~seq #:implements extends-type:expr)
+                      (~seq #:implements extends-type:id)
                       (~var clause (type-clause parse-type)))
                  ...)
            #:attr inits (apply append (attribute clause.init-entries))
