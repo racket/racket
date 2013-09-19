@@ -43,13 +43,6 @@
   (make-element (make-style #f (list (make-background-color-property "yellow"))) content))
 ;; ---------------------------------------------------------------------------------------------------
 
-(begin-for-syntax
- (define-splicing-syntax-class link-target?-kw
-   #:description "#:link-target? keyword"
-   (pattern (~seq #:link-target? expr))
-   (pattern (~seq)
-            #:with expr #'#t)))
-
 (define-syntax (defmodule stx)
   (syntax-parse stx
     [(_ (~or (~seq #:require-form req)
@@ -58,6 +51,7 @@
              name)
         (~or (~optional (~seq #:link-target? link-target-expr)
                         #:defaults ([link-target-expr #'#t]))
+             (~optional (~and #:indirect indirect))
              (~optional (~seq #:use-sources (pname ...)))
              (~optional (~seq #:module-paths (modpath ...)))
              (~optional (~seq #:packages (pkg ...)))
@@ -71,7 +65,10 @@
                                     #'(name2 ...))]
                    [(pname ...) (if (attribute pname)
                                     #'(pname ...)
-                                    #'())])
+                                    #'())]
+                   [(indirect-kw ...) (if (attribute indirect)
+                                          #'(#:indirect)
+                                          #'())])
        (with-syntax ([(decl-exp ...)
                       (if (attribute no-declare)
                           #'()
@@ -83,7 +80,7 @@
                             [(attribute readr) #''reader]
                             [else #'#f])]
                      [modpaths (if (attribute modpath)
-                                   #'(list (racketmodname modpath) ...)
+                                   #'(list (racketmodname modpath indirect-kw ...) ...)
                                    #'#f)]
                      [packages (if (attribute pkg)
                                    #'(list pkg ...)
@@ -100,7 +97,7 @@
                      [(show-name ...)
                       (if (attribute modpath)
                           #'(name2 ...)
-                          #'((racketmodname name2) ...))])
+                          #'((racketmodname name2 indirect-kw ...) ...))])
          #'(begin
              decl-exp ...
              (*defmodule (list show-name ...)

@@ -13,8 +13,8 @@
 (define multi-html:render-mixin
   (lambda (%) (html:render-multi-mixin (html:render-mixin %))))
 
-(define current-render-mixin       (make-parameter text:render-mixin))
-(define current-html               (make-parameter #f))
+(define current-render-mixin       (make-parameter html:render-mixin))
+(define current-html               (make-parameter #t))
 (define current-dest-directory     (make-parameter #f))
 (define current-dest-name          (make-parameter #f))
 (define current-info-output-file   (make-parameter #f))
@@ -35,8 +35,6 @@
       (let ([v (read i)])
         (and (eof-object? (read i)) v)))))
 
-(current-render-mixin html:render-mixin)
-
 (define (run)
   (command-line
    #:program (short-program+command-name)
@@ -48,17 +46,22 @@
     (current-html #t)
     (current-render-mixin multi-html:render-mixin)]
    [("--latex") "generate LaTeX-format output"
+    (current-html #f)
     (current-render-mixin latex:render-mixin)]
    [("--pdf") "generate PDF-format output (with PDFLaTeX)"
+    (current-html #f)
     (current-render-mixin pdf:render-mixin)]
    [("--latex-section") n "generate LaTeX-format output for section depth <n>"
+    (current-html #f)
     (let ([v (string->number n)])
       (unless (exact-nonnegative-integer? v)
         (raise-user-error 'scribble (format "bad section depth: ~a" n)))
       (current-render-mixin (latex:make-render-part-mixin v)))]
    [("--text") "generate text-format output"
+    (current-html #f)
     (current-render-mixin text:render-mixin)]
    [("--markdown") "generate markdown-format output"
+    (current-html #f)
     (current-render-mixin markdown:render-mixin)]
    #:once-each
    [("--dest") dir "write output in <dir>"

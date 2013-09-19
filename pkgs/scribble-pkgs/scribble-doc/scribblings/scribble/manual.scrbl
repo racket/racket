@@ -537,6 +537,7 @@ corresponding @racketidfont{racket...} binding.}
                        #:no-declare
                        (code:line #:use-sources (src-module-path ...))
                        (code:line #:link-target? link-target?-expr)
+                       #:indirect
                        #:lang
                        #:reader
                        (code:line #:packages (pkg-expr ...))])]{
@@ -578,6 +579,12 @@ that the @racket[defmodule] form must appear before any
 sub-parts). These link targets are referenced via
 @racket[racketmodname], which thus points to the enclosing section,
 rather than the individual @racket[module-path]s.
+
+Specifying @racket[#:indirect] normally makes sense only when
+@racket[#:link-target?] is specified with a true value. Specifying
+@racket[#:indirect] makes the module path that is displayed (and that
+normally refers to some other declaration of the module) use
+@racket[racketmodname] with @racket[#:indirect].
 
 If @racket[#:lang] is provided as an option, then the module name is
 shown after @hash-lang[] (instead of in a @racket[require] form) to

@@ -1220,7 +1220,8 @@
                              (and ext? external-tag-path))
                          ;; Redirected to search:
                          (url->string*
-                          (let ([u (string->url external-tag-path)])
+                          (let ([u (string->url (or external-tag-path
+                                                    "http://doc.racket-lang.com/"))])
                             (struct-copy
                              url
                              u
