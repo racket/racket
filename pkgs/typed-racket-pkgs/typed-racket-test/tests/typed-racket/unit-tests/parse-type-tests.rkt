@@ -174,14 +174,8 @@
     (make-PolyRow (list 'r)
                   (list null null null null)
                   (make-Class (make-F 'r) null null null null))]
-   [(All (r #:row) (Class #:implements (Class #:row-var r)))
-    (make-PolyRow (list 'r)
-                  (list null null null null)
-                  (make-Class (make-F 'r) null null null null))]
-   [(All (r #:row) (Class #:implements (Class) #:row-var r))
-    (make-PolyRow (list 'r)
-                  (list null null null null)
-                  (make-Class (make-F 'r) null null null null))]
+   [FAIL (All (r #:row) (Class #:implements (Class #:row-var r)))]
+   [FAIL (All (r #:row) (Class #:implements (Class) #:row-var r))]
    [FAIL (Class #:row-var 5)]
    [FAIL (Class #:row-var (list 3))]
    [FAIL (Class #:implements (Class #:row-var r) #:row-var x)]
@@ -190,21 +184,17 @@
            (All (x #:row)
             (Class #:implements (Class #:row-var r) #:row-var x)))]
    [FAIL (All (r #:row) (Class #:implements (Class #:row-var r) #:row-var r))]
-   ;; test #:implements
-   [(Class #:implements (Class [m (Number -> Number)]) (field [x Number]))
-    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))) null)]
-   [(Class #:implements (Class [m (Number -> Number)])
-           #:implements (Class [n (Number -> Number)])
-           (field [x Number]))
-    (make-Class #f null `((x ,-Number))
-                `((n ,(t:-> N N)) (m ,(t:-> N N))) null)]
-   [(Class #:implements (Class [m (Number -> Number)])
-           #:implements (Class [m (Number -> Number)])
-           (field [x Number]))
-    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))) null)]
-   [(Class #:implements (Class (init [x Integer]) [m (Number -> Number)])
-           (field [x Number]))
-    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))) null)]
+   ;; Test #:implements, some of these used to work but now they have to
+   ;; refer to type aliases. Testing actual type aliases is hard here though.
+   [FAIL (Class #:implements (Class [m (Number -> Number)]) (field [x Number]))]
+   [FAIL (Class #:implements (Class [m (Number -> Number)])
+                #:implements (Class [n (Number -> Number)])
+                (field [x Number]))]
+   [FAIL (Class #:implements (Class [m (Number -> Number)])
+                #:implements (Class [m (Number -> Number)])
+                (field [x Number]))]
+   [FAIL (Class #:implements (Class (init [x Integer]) [m (Number -> Number)])
+                (field [x Number]))]
    [FAIL (Class #:implements Number)]
    [FAIL (Class #:implements Number [m (Number -> Number)])]
    [FAIL (Class #:implements (Class [m (Number -> Number)]) [m String])]
