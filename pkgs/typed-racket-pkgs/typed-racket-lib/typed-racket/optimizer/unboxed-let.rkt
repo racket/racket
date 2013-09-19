@@ -35,8 +35,11 @@
     #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
     #:with loop-fun2:unboxed-fun #'loop-fun
     #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun2)]
-    #:with (~var || (float-complex-call-site-opt-expr #'loop-fun2.unboxed-info))
-            #'(operator.opt args ...)))
+    #:with (~var call (float-complex-call-site-opt-expr #'loop-fun2.unboxed-info))
+            #'(args ...)
+    #:with opt #'(let*-values
+                   (((op) operator.opt) call.bindings ...)
+                   (op call.args ...))))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
