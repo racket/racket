@@ -44,36 +44,40 @@ Other libraries can be used with Typed Racket via
 The following libraries are included with Typed Racket in the
 @racketfont{typed} collection:
 
+@(define-syntax-rule @defmodule/incl[name]
+   @defmodule[name #:no-declare])
+
 @;; framework and mred left out until support for classes
 @;; is more complete
-@defmodule[typed/file]
-@defmodule[typed/net/base64]
-@defmodule[typed/net/cgi]
-@defmodule[typed/net/cookie]
-@defmodule[typed/net/dns]
-@defmodule[typed/net/ftp]
-@defmodule[typed/net/gifwrite]
-@defmodule[typed/net/head]
-@defmodule[typed/net/imap]
-@defmodule[typed/net/mime]
-@defmodule[typed/net/nntp]
-@defmodule[typed/net/pop3]
-@defmodule[typed/net/qp]
-@defmodule[typed/net/sendmail]
-@defmodule[typed/net/sendurl]
-@defmodule[typed/net/smtp]
-@defmodule[typed/net/uri-codec]
-@defmodule[typed/net/url]
-@defmodule[typed/rackunit]
-@defmodule[typed/srfi/14]
+@defmodule/incl[typed/file]
+@defmodule/incl[typed/net/base64]
+@defmodule/incl[typed/net/cgi]
+@defmodule/incl[typed/net/cookie]
+@defmodule/incl[typed/net/dns]
+@defmodule/incl[typed/net/ftp]
+@defmodule/incl[typed/net/gifwrite]
+@defmodule/incl[typed/net/head]
+@defmodule/incl[typed/net/imap]
+@defmodule/incl[typed/net/mime]
+@defmodule/incl[typed/net/nntp]
+@defmodule/incl[typed/net/pop3]
+@defmodule/incl[typed/net/qp]
+@defmodule/incl[typed/net/sendmail]
+@defmodule/incl[typed/net/sendurl]
+@defmodule/incl[typed/net/smtp]
+@defmodule/incl[typed/net/uri-codec]
+@defmodule/incl[typed/net/url]
+@defmodule/incl[typed/rackunit]
+@defmodule/incl[typed/srfi/14]
 
-@; FIXME -- once we can reference these without causing a dependency problem
+Other libraries included in the main distribution that are either
+written in Typed Racket or have adapter modules that are typed:
 
-@;Other libraries included in the main distribution that are either
-@;written in Typed Racket or have adapter modules that are typed:
+@(define-syntax-rule @defmodule/also[name]
+   @defmodule[name #:no-declare #:link-target? #f #:indirect])
 
-@;@defmodule[math #:no-declare #:link-target? #f]
-@;@defmodule[plot/typed #:no-declare #:link-target? #f]
+@defmodule/also[math]
+@defmodule/also[plot/typed]
 
 @section{Porting Untyped Modules to Typed Racket}
 
