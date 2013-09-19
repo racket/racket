@@ -333,7 +333,7 @@
          ((real-binding) (exact->inexact (real-part e*)))
          ((imag-binding) (exact->inexact (imag-part e*)))))
   (pattern e:expr
-    #:do [(error (format "non exhaustive pattern match" #'e))]
+    #:do [(error (format "non exhaustive pattern match ~a" #'e))]
     #:with (bindings ...) (list)
     #:with real-binding #f
     #:with imag-binding #f))
