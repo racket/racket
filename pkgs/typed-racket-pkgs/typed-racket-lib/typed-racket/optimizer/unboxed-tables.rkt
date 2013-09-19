@@ -37,7 +37,11 @@
 ;; params first, then all imaginary parts, then all boxed arguments
 (define unboxed-funs-table (make-free-id-table))
 
-(define (add-unboxed-fun! fun-name unboxed boxed)
+(define (add-unboxed-fun! fun-name unboxed-args)
+  (define unboxed
+    (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:when unboxed?) i))
+  (define boxed
+    (for/list ([i (in-naturals)] [unboxed? unboxed-args] #:unless unboxed?) i))
   (dict-set! unboxed-funs-table fun-name (list unboxed boxed)))
 
 (define-syntax-class unboxed-fun
