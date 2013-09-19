@@ -463,6 +463,20 @@
        #'(unsafe-make-flrectangular real-binding imag-binding))))
 
 
+(define-syntax-class possibly-unboxed
+  #:attributes ([bindings 1] [real-binding 1] [imag-binding 1] [boxed-binding 1])
+  (pattern (#t arg:unboxed-float-complex-opt-expr)
+    #:with (bindings ...) #'(arg.bindings ...)
+    #:with (real-binding ...) #'(arg.real-binding)
+    #:with (imag-binding ...) #'(arg.imag-binding)
+    #:with (boxed-binding ...) #'())
+  (pattern (#f arg:opt-expr)
+    #:with binding-name (generate-temporary 'boxed-binding)
+    #:with (bindings ...) #'(((binding-name) arg.opt))
+    #:with (real-binding ...) #'()
+    #:with (imag-binding ...) #'()
+    #:with (boxed-binding ...) #'(binding-name)))
+
 ;; takes as argument a structure describing which arguments will be unboxed
 ;; and the optimized version of the operator. operators are optimized elsewhere
 ;; to benefit from local information
@@ -472,21 +486,17 @@
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
   (pattern (#%plain-app op:expr args:expr ...)
-    #:with ((to-unbox ...) (boxed ...)) unboxed-info
+    #:with (unboxed-args ...) unboxed-info
     #:with opt
-    (let ((args    (syntax->list #'(args ...)))
-          (unboxed (syntax->datum #'(to-unbox ...)))
-          (boxed   (syntax->datum #'(boxed ...))))
-      (define (get-arg i) (list-ref args i))
-      (syntax-parse (map get-arg unboxed)
-        [(e:unboxed-float-complex-opt-expr ...)
+      (syntax-parse #'((unboxed-args args) ...)
+        [(e:possibly-unboxed ...)
          (log-unboxing-opt "unboxed call site")
          #`(let*-values (e.bindings ... ...)
              (#%plain-app #,opt-operator
-                          e.real-binding ...
-                          e.imag-binding ...
-                          #,@(map (lambda (i) ((optimize) (get-arg i)))
-                                  boxed)))])))) ; boxed params
+                          e.real-binding ... ...
+                          e.imag-binding ... ...
+                          e.boxed-binding ... ...))])))
+
 
 (define-syntax-class/specialize float-complex-arith-opt-expr (float-complex-arith-expr* #t))
 (define-syntax-class/specialize float-complex-arith-expr (float-complex-arith-expr* #f))
