@@ -28,15 +28,11 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   (pattern (#%plain-app
-            (~and let-e (letrec-values
-                         bindings
-                         loop-fun:id)) ; sole element of the body
-            args:expr ...)
-    #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
-    #:with loop-fun2:unboxed-fun #'loop-fun
-    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun2)]
-    #:with (~var call (float-complex-call-site-opt-expr #'loop-fun2.unboxed-info))
-            #'(args ...)
+             (~and (letrec-values _ :id) ; sole element of the body is an id
+                   (~var operator (unboxed-let-opt-expr-internal #t))
+                   (letrec-values _ loop-fun:unboxed-fun)) .
+             (~var call (float-complex-call-site-opt-expr #'loop-fun.unboxed-info)))
+    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
     #:with opt #'(let*-values
                    (((op) operator.opt) call.bindings ...)
                    (op call.args ...))))

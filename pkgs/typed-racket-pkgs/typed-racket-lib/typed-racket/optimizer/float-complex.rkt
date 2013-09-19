@@ -394,9 +394,8 @@
     #:with opt #`(let*-values (exp.bindings ...)
                    (unsafe-make-flrectangular exp.real-binding exp.imag-binding)))
 
-  (pattern (#%plain-app op:unboxed-fun args:expr ...)
-    ;no need to optimize op
-    #:with (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)) #'(args ...)
+  (pattern (#%plain-app op:unboxed-fun .
+             (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)))
     #:do [(log-arity-raising-opt "call to fun with unboxed args")]
     #:with opt #'(let*-values (call.bindings ...) (op call.args ...)))
 
