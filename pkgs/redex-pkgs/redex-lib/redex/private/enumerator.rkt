@@ -670,11 +670,16 @@
 
 ;; thunk/e : Nat or +-Inf, ( -> enum a) -> enum a
 (define (thunk/e s thunk)
-  (enum s
-        (λ (n)
-           (decode (thunk) n))
-        (λ (x)
-           (encode (thunk) x))))
+  (let* ([e #f]
+         [get-e (λ ()
+                   (or e
+                       (and (set! e (thunk))
+                            e)))])
+    (enum s
+          (λ (n)
+             (decode (get-e) n))
+          (λ (x)
+             (encode (get-e) x)))))
 
 ;; many/e : enum a -> enum (listof a)
 ;;       or : enum a, #:length natural -> enum (listof a)
