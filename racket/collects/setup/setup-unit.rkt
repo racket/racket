@@ -788,8 +788,9 @@
                   (unless (relative-path-string? v)
                     (error "result is not a relative path string: " v))
                   (define p (build-path (cc-path cc) v))
-                  (unless (file-exists? p)
-                    (error "installer file does not exist: " p)))))
+                  (unless (or (file-exists? p)
+                              (bytecode-file-exists? p))
+                    (error "installer file does not exista: " p)))))
             (define installer
               (with-handlers ([exn:fail?
                                (lambda (exn)
@@ -816,6 +817,11 @@
               (installer dir (cc-path cc))]
              [else
               (installer dir)]))))))
+
+  (define (bytecode-file-exists? p)
+    (let-values ([(base name dir?) (split-path p)])
+      (define zo (build-path base mode-dir (path-add-suffix name #".zo")))
+      (file-exists? zo)))
 
   (define (this-platform? info)
     (define sys
