@@ -112,15 +112,9 @@
    #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
    #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
    #:with (opt-others:opt-let-clause ...) #'(others ...)
+   ;; only log when we actually optimize
    #:do [(unless (zero? (syntax-length #'(opt-candidates.id ...)))
-           ;; only log when we actually optimize
-           (log-opt "unboxed let bindings" arity-raising-opt-msg))
-         ;; add the unboxed bindings to the table, for them to be used by
-         ;; further optimizations
-         (for ((v (in-syntax #'(opt-candidates.id ...)))
-               (r (in-syntax #'(opt-candidates.real-binding ...)))
-               (i (in-syntax #'(opt-candidates.imag-binding ...))))
-           (add-unboxed-var! v r i))]
+           (log-opt "unboxed let bindings" arity-raising-opt-msg))]
    ;; in the case where no bindings are unboxed, we create a let
    ;; that is equivalent to the original, but with all parts optimized
    #:with opt (quasisyntax/loc/origin
@@ -228,7 +222,8 @@
 (define-syntax-class unboxed-let-clause
   #:commit
   #:attributes (id real-binding imag-binding (bindings 1))
-  (pattern ((id:id) :unboxed-float-complex-opt-expr)))
+  (pattern ((id:id) :unboxed-float-complex-opt-expr)
+    #:do [(add-unboxed-var! #'id #'real-binding #'imag-binding)]))
 
 ;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
