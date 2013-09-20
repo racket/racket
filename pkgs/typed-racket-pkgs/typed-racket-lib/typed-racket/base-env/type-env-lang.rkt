@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/parse))
+(require (for-syntax racket/base syntax/parse syntax/stx))
 
 (define-syntax (#%module-begin stx)
   (syntax-parse stx #:literals (require)
@@ -9,7 +9,9 @@
         (begin
           (define-syntax (nm stx)
             (raise-syntax-error
-             'type-check "type name used out of context" stx))
+             'type-check "type name used out of context"
+             stx
+             (and (stx-pair? stx) (stx-car stx))))
           ...
           (provide nm) ...
           (begin-for-syntax

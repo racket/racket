@@ -499,7 +499,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                  ([omit #f])))
      #`(begin
          #,(if (not (attribute omit))
-               (ignore #'(define-syntax tname (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))))
+               (ignore #'(define-syntax tname
+                           (lambda (stx)
+                             (raise-syntax-error
+                              'type-check
+                              "type name used out of context"
+                              stx
+                              (and (stx-pair? stx) (stx-car stx))))))
                #'(begin))
          #,(internal (syntax/loc stx (define-type-alias-internal tname rest))))]
     [(_ (tname:id args:id ...) rest)

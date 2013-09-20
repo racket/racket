@@ -7,7 +7,7 @@
      (or v (error (format "Assertion failed on ~v" v))))
     ((assert v pred)
      (let ((val v))
-       (if (pred val)
+       (if ((#%expression pred) val)
            val
            (error (format "Assertion ~a failed on ~v" pred val)))))))
 
