@@ -3,6 +3,7 @@
          (for-syntax racket/base
                      racket/require-transform
                      racket/provide-transform
+                     syntax/stx
                      syntax/private/modcollapse-noctc))
 
 (provide for-doc require/doc
@@ -11,6 +12,8 @@
          parameter-doc
          proc-doc
          proc-doc/names
+         struct-doc
+         struct*-doc
          generate-delayed-documents
          begin-for-doc)
 
@@ -451,12 +454,12 @@
       [(_ id (parameter/c contract) arg-id desc)
        (begin
          (unless (identifier? #'arg-id)
-           (raise-syntax-error 'parameter/doc 
+           (raise-syntax-error 'parameter-doc 
                                "expected an identifier"
                                stx
                                #'arg-id))
          (unless (identifier? #'id)
-           (raise-syntax-error 'parameter/doc 
+           (raise-syntax-error 'parameter-doc 
                                "expected an identifier"
                                stx
                                #'id))
@@ -465,6 +468,88 @@
           #'(defparam id arg-id contract . desc)
           #'((only-in scribble/manual defparam))
           #'id))])))
+
+(define-for-syntax (struct-doc-transformer stx result-form)
+  (syntax-case stx ()
+    [(_ struct-name ([field-name contract-expr-datum] ...) . stuff)
+     (let ()
+       (define the-name #f)
+       (syntax-case #'struct-name ()
+         [x (identifier? #'x) (set! the-name #'x)]
+         [(x y) (and (identifier? #'x) (identifier? #'y)) 
+                (set! the-name #'x)]
+         [_
+          (raise-syntax-error #f 
+                              "expected an identifier or sequence of two identifiers"
+                              stx
+                              #'struct-name)])
+       (for ([f (in-list (syntax->list #'(field-name ...)))])
+         (unless (identifier? f)
+           (raise-syntax-error #f 
+                               "expected an identifier"
+                               stx
+                               f)))
+       (define omit-constructor? #f)
+       (define-values (ds-args desc)
+         (let loop ([ds-args '()]
+                    [stuff #'stuff])
+           (syntax-case stuff ()
+             [(#:mutable . more-stuff)
+              (loop (cons (stx-car stuff) ds-args)
+                    #'more-stuff)]
+             [(#:inspector #f . more-stuff)
+              (loop (list* (stx-car (stx-cdr stuff))
+                           (stx-car stuff)
+                           ds-args)
+                    #'more-stuff)]
+             [(#:prefab . more-stuff) 
+              (loop (cons (stx-car stuff) ds-args)
+                    #'more-stuff)]
+             [(#:transparent . more-stuff)
+              (loop (cons (stx-car stuff) ds-args)
+                    #'more-stuff)]
+             [(#:constructor-name id . more-stuff)
+              (loop (list* (stx-car (stx-cdr stuff))
+                           (stx-car stuff)
+                           ds-args)
+                    #'more-stuff)]
+             [(#:extra-constructor-name id . more-stuff)
+              (loop (list* (stx-car (stx-cdr stuff))
+                           (stx-car stuff)
+                           ds-args)
+                    #'more-stuff)]
+             [(#:omit-constructor . more-stuff)
+              (begin
+                (set! omit-constructor? #t)
+                (loop (cons (stx-car stuff) ds-args)
+                      #'more-stuff))]
+             [(x . more-stuff)
+              (keyword? (syntax-e #'x))
+              (raise-syntax-error #f
+                                  "unknown keyword"
+                                  stx
+                                  (stx-car stuff))]
+             [(desc)
+              (values (reverse ds-args) #'desc)]
+             [_
+              (raise-syntax-error #f "bad syntax" stx)])))
+       (values
+        #`(struct struct-name ((field-name contract-expr-datum) ...) 
+            #,@(if omit-constructor?
+                   '(#:omit-constructor)
+                   '()))
+        #`(#,result-form struct-name ([field-name contract-expr-datum] ...)
+                         #,@(reverse ds-args)
+                         #,@desc)
+        #`((only-in scribble/manual #,result-form))
+        the-name))]))
+
+(define-provide/doc-transformer struct-doc
+  (λ (stx) 
+    (struct-doc-transformer stx #'defstruct)))
+(define-provide/doc-transformer struct*-doc
+  (λ (stx) 
+    (struct-doc-transformer stx #'defstruct*)))
 
 (define-provide/doc-transformer thing-doc
   (lambda (stx)

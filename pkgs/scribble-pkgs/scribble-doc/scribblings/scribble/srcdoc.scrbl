@@ -136,6 +136,25 @@ Like @racket[proc-doc], but for an export of an arbitrary value.}
 
 Like @racket[proc-doc], but for exporting a parameter.}
 
+@defform[(struct*-doc struct-name 
+                      ([field-name contract-expr-datum] ...)
+                      maybe-omit-constructor
+                      maybe-mutable maybe-non-opaque maybe-constructor
+                      (desc-expr ...))
+         #:grammar ([maybe-omit-constructor (code:line) #:omit-constructor])]{
+  Like @racket[proc-doc], but for struct declarations that use @racket[struct].
+  
+  The @racket[maybe-mutable], @racket[maybe-non-opaque], and @racket[maybe-constructor]
+  options are as in @racket[defstruct].
+}
+
+@defform[(struct-doc struct-name 
+                     ([field-name contract-expr-datum] ...) 
+                     maybe-omit-constructor
+                     maybe-mutable maybe-non-opaque maybe-constructor
+                     (desc-expr ...))]{
+  Like @racket[struct*-doc], but for struct declarations that use @racket[define-struct].
+}
 
 @defform[(begin-for-doc form ...)]{
 
