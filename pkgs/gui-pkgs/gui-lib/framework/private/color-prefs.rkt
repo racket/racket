@@ -597,8 +597,8 @@
   (string-append
    "#lang racket   ; draw a graph of\n"
    "(require plot) ; cos and log\n"
-   "(plot (list (function cos -5 5)\n"
-   "            (function log -5 5)))\n"
+   "(plot #:label \"y = cos(x) & y = log(x)\"\n"
+   "      (list (function cos -5 5) (function log -5 5)))\n"
    "\"an unclosed string is an error"))
 
 (struct color-scheme (name button-label white-on-black-base? mapping example) #:transparent)

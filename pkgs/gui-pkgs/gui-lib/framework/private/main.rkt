@@ -360,7 +360,7 @@
                cond
                delay
                unit compound-unit compound-unit/sig
-               public private override
+               public private override require
                inherit sequence))
   (for-each (λ (x) (hash-set! defaults-ht x 'lambda))
             `(
