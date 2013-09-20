@@ -8696,7 +8696,7 @@ static void done_with_GC()
 }
 
 #ifdef MZ_PRECISE_GC
-static char *gc_num(char *nums, int v)
+static char *gc_num(char *nums, intptr_t v)
 /* format a number with commas */
 {
   int i, j, len, clen, c, d;
@@ -8706,7 +8706,7 @@ static char *gc_num(char *nums, int v)
 
   v /= 1024; /* bytes => kbytes */
 
-  sprintf(nums+i, "%d", v);
+  sprintf(nums+i, "%" PRIdPTR, v);
   for (len = 0; nums[i+len]; len++) { }
   clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
   
