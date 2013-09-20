@@ -14,10 +14,7 @@
 (define-unsafe-syntax-class unbox)
 (define-unsafe-syntax-class set-box!)
 
-(define-syntax-class box-op
-  #:attributes (unsafe)
-  (pattern :unbox^)
-  (pattern :set-box!^))
+(define-merged-syntax-class box-op (unbox^ set-box!^))
 
 (define-syntax-class box-opt-expr
   #:commit
