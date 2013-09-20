@@ -111,7 +111,7 @@
                 (kernel-syntax-case* body #f (values :-internal define-type-alias-internal)
                   [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
                    (register-resolved-type-alias #'nm (parse-type #'ty))]
-                  [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
+                  [(#%expression (begin (quote-syntax (:-internal nm ty)) (#%plain-app values)))
                    (register-type-if-undefined #'nm (parse-type #'ty))
                    (register-scoped-tvars #'nm (parse-literal-alls #'ty))]
                   [_ (void)]))
