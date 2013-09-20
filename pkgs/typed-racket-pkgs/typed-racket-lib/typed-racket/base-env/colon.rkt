@@ -1,40 +1,56 @@
 #lang racket/base
 
 (require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
-                     "internal.rkt" "../utils/disappeared-use.rkt")
+                     "../utils/disappeared-use.rkt")
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 
 (provide :)
 
+(begin-for-syntax
+ (define (err stx str . sub)
+   (apply raise-syntax-error '|type declaration| str stx sub))
+
+ ;; Wrap the `:-expr` with a `define-values`. This is like
+ ;; what `internal` does, but the work is spread out among two
+ ;; macros to delay the unbound identifier check.
+ (define (wrap stx :-expr)
+   (quasisyntax/loc stx (define-values () #,:-expr))))
+
 (define-syntax (: stx)
-  (define stx*
-    ;; make it possible to add another colon after the id for clarity
-    ;; and in that case, a `->' on the RHS does not need to be
-    ;; explicitly parenthesized
-    (syntax-parse stx #:literals (: t:->)
-      [(: id (~and kw :) x ...)
-       #:fail-unless (for/first ([i (in-syntax #'(x ...))]
-                                 #:when (identifier? i)
-                                 #:when (free-identifier=? i #'t:->))
-                       i) 
-       #f
-       (add-disappeared-use #'kw)
-       (syntax/loc stx (: id (x ...)))]
-      [(: id : . more)
-       (syntax/loc stx (: id . more))]
-      [_ stx]))
-  (define (err str . sub)
-    (apply raise-syntax-error '|type declaration| str stx sub))
-  (syntax-parse stx*
+  (define ctx (syntax-local-context))
+  (define top-level? (eq? 'top-level ctx))
+  ;; make it possible to add another colon after the id for clarity
+  ;; and in that case, a `->' on the RHS does not need to be
+  ;; explicitly parenthesized
+  (syntax-parse stx #:literals (: t:->)
     [_
-     #:when (eq? 'expression (syntax-local-context))
-     (err "must be used in a definition context")]
-    [(_ i:id ty)
-     (syntax-property (internal (syntax/loc stx (:-internal i ty)))
+     #:when (eq? 'expression ctx)
+     (err stx "must be used in a definition context")]
+    [(: id (~and kw :) x ...)
+     #:fail-unless (for/first ([i (in-syntax #'(x ...))]
+                               #:when (identifier? i)
+                               #:when (free-identifier=? i #'t:->))
+                     i)
+     #f
+     (add-disappeared-use #'kw)
+     (wrap stx #`(:-helper #,top-level? id (x ...)))]
+    [(: id : . more)
+     (wrap stx #`(:-helper #,top-level? id . more))]
+    [(: e ...) (wrap stx #`(:-helper #,top-level? e ...))]))
+
+(define-syntax (:-helper stx)
+  (syntax-parse stx
+    [(_ top-level? i:id ty)
+     (unless (or (syntax-e #'top-level?)
+                 (identifier-binding #'i))
+       (raise-syntax-error #f "unbound identifier in module" #'i))
+     (syntax-property (syntax/loc stx (begin (quote-syntax (:-internal i ty))
+                                             (#%plain-app values)))
                       'disappeared-use #'i)]
-    [(_ i:id x ...)
+    [(_ _ i:id x ...)
      (case (syntax-length #'(x ...))
-       [(1)  (err "can only annotate identifiers with types" #'i)]
-       [(0)  (err "missing type")]
-       [else (err "bad syntax (multiple types after identifier)")])]))
+       [(1)  (err stx "can only annotate identifiers with types" #'i)]
+       [(0)  (err stx "missing type")]
+       [else (err stx "bad syntax (multiple types after identifier)")])]))
+
