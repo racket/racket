@@ -1173,7 +1173,8 @@ Examples:
                                   (code:line #:inspector #f)]
                 [maybe-constructor code:blank
                                    (code:line #:constructor-name constructor-id)
-                                   (code:line #:extra-constructor-name constructor-id)])]
+                                   (code:line #:extra-constructor-name constructor-id)
+                                   (code:line #:omit-constructor)])]
 )]{
 
 Similar to @racket[defform] or @racket[defproc], but for a structure

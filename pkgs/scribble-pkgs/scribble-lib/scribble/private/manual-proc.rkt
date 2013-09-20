@@ -615,14 +615,22 @@
              #:with opacity #''opaque))
   
   (define-splicing-syntax-class constructor-kw
-    #:description "#:constructor-name or #:extra-constructor-name keyword"
+    #:description "#:constructor-name, #:extra-constructor-name, or #:omit-constructor keyword"
     (pattern (~seq #:constructor-name id)
+             #:with omit? #'#f
              #:with given? #'#t
              #:with extra? #'#f)
     (pattern (~seq #:extra-constructor-name id)
+             #:with omit? #'#f
              #:with given? #'#t
              #:with extra? #'#t)
+    (pattern (~seq #:omit-constructor)
+             #:with omit? #'#t
+             #:with id #'#f
+             #:with given? #'#f
+             #:with extra? #'#f)
     (pattern (~seq)
+             #:with omit? #'#f
              #:with id #'#f
              #:with given? #'#f
              #:with extra? #'#f)))
@@ -634,9 +642,9 @@
        [(_ lt:link-target?-kw name fields 
            m:mutable-kw o:opacity-kw c:constructor-kw 
            desc ...)
-        #'(**defstruct lt.expr name fields 
+        #`(**defstruct lt.expr name fields 
                        m.immutable? o.opacity
-                       c.id c.given? c.extra? default-extra?
+                       c.id c.given? c.extra? default-extra? c.omit?
                        desc ...)]))))
 
 (define-defstruct defstruct #t)
@@ -644,20 +652,20 @@
 
 (define-syntax-rule (**defstruct link? name ([field field-contract] ...) 
                                  immutable? opacity 
-                                 cname cname-given? extra-cname? default-extra?
+                                 cname cname-given? extra-cname? default-extra? omit-constructor?
                                  desc ...)
   (with-togetherable-racket-variables
    ()
    ()
    (*defstruct link? (quote-syntax/loc name) 'name 
-               (quote-syntax/loc cname) cname-given? extra-cname? default-extra?
+               (quote-syntax/loc cname) cname-given? extra-cname? default-extra? omit-constructor?
                '([field field-contract] ...)
                (list (lambda () (racketblock0 field-contract)) ...)
                immutable? opacity
                (lambda () (list desc ...)))))
 
 (define (*defstruct link? stx-id name 
-                    alt-cname-id cname-given? extra-cname? default-extra?
+                    alt-cname-id cname-given? extra-cname? default-extra? omit-constructor?
                     fields field-contracts 
                     immutable? opacity
                     content-thunk)
@@ -670,6 +678,7 @@
     (if (pair? (car f)) (make-shaped-parens (car f) #\[) (car f)))
   (define cname-id
     (cond
+     [omit-constructor? #f]
      [(identifier? alt-cname-id) alt-cname-id]
      [(not default-extra?) #f]
      [else (let ([name-id (if (identifier? stx-id)
