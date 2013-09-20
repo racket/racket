@@ -27,6 +27,7 @@
          compiler/bundle-dist
          (prefix-in file: file/convertible)
          "rep.rkt"
+         "local-member-names.rkt"
          (prefix-in pict-snip: "pict-snip.rkt"))
   
   (import [prefix drracket:debug: drracket:debug^]
@@ -34,15 +35,19 @@
           [prefix drracket:rep: drracket:rep^]
           [prefix drracket:init: drracket:init^]
           [prefix drracket:help-desk: drracket:help-desk^])
-  (export drracket:language^)
+  (export drracket:language/int^)
   
   (define original-output-port (current-output-port))
   (define (oprintf . args) (apply fprintf original-output-port args)) 
-  
-  (define-struct text/pos (text start end))
-  ;; text/pos = (make-text/pos (instanceof text% number number))
-  ;; this represents a portion of a text to be processed.
-  
+
+(define text/pos-text drracket:language:text/pos-text)
+(define text/pos-start drracket:language:text/pos-start)
+(define text/pos-end drracket:language:text/pos-end)
+(define make-text/pos make-drracket:language:text/pos)
+(define text/pos? drracket:language:text/pos?)
+(define struct:text/pos struct:drracket:language:text/pos)
+(define text/pos make-text/pos)
+
   (define language<%>
     (interface ()
       marshall-settings
@@ -191,20 +196,18 @@
         (simple-module-based-language-render-value/format value settings port 'infinity))
       (super-new)))
   
-  ;; settings for a simple module based language
-  (define-struct simple-settings (case-sensitive 
-                                  printing-style
-                                  fraction-style
-                                  show-sharing
-                                  insert-newlines
-                                  annotations))
-  ;;  case-sensitive  : boolean
-  ;;  printing-style  : (union 'print 'write 'trad-write 'constructor 'quasiquote)
-  ;;  fraction-style  : (union 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
-  ;;  show-sharing    : boolean
-  ;;  insert-newlines : boolean
-  ;;  annotations     : (union 'none 'debug 'debug/profile 'test-coverage)
-  (define simple-settings->vector (make-->vector simple-settings))
+(define simple-settings-case-sensitive drracket:language:simple-settings-case-sensitive)
+(define simple-settings-fraction-style drracket:language:simple-settings-fraction-style)
+(define simple-settings-show-sharing drracket:language:simple-settings-show-sharing)
+(define simple-settings-insert-newlines drracket:language:simple-settings-insert-newlines)
+(define simple-settings-annotations drracket:language:simple-settings-annotations)
+(define simple-settings-printing-style drracket:language:simple-settings-printing-style)
+(define struct:simple-settings struct:drracket:language:simple-settings)
+(define simple-settings? drracket:language:simple-settings?)
+(define make-simple-settings make-drracket:language:simple-settings)
+(define simple-settings make-simple-settings)
+
+  (define simple-settings->vector (make-->vector drracket:language:simple-settings))
   
   ;; simple-module-based-language-config-panel :
   ;;   parent [#:case-sensitive (union #f #t '?)]

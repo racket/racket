@@ -8,7 +8,8 @@
          setup/dirs
          help/search
          help/private/buginfo
-         drracket/private/drsig)
+         drracket/private/drsig
+         "local-member-names.rkt")
 
 (import [prefix drracket:frame: drracket:frame^]
         [prefix drracket:language-configuration: drracket:language-configuration/internal^]
@@ -88,6 +89,3 @@
 
 (define (help-desk [key #f] [context #f])
   (if key (perform-search key context) (send-main-page)))
-
-;; here for legacy code that should be removed
-(define (get-docs) '())

@@ -6,6 +6,7 @@
          racket/pretty
          drracket/private/drsig
          "frame-icon.rkt"
+         "local-member-names.rkt"
          mred
          framework
          racket/list
@@ -29,9 +30,9 @@
         [prefix drracket:module-language: drracket:module-language/int^]
         [prefix drracket:tools: drracket:tools^]
         [prefix drracket:debug: drracket:debug^]
-        [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:frame: drracket:frame/int^]
         [prefix drracket:font: drracket:font^]
-        [prefix drracket:modes: drracket:modes^]
+        [prefix drracket:modes: drracket:modes/int^]
         [prefix drracket:help-desk: drracket:help-desk^]
         [prefix drracket:multi-file-search: drracket:multi-file-search^])
 (export)

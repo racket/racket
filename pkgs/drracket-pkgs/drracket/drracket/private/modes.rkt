@@ -4,21 +4,29 @@
          racket/list
          framework
          racket/gui/base
-         drracket/private/drsig)
+         drracket/private/drsig
+         "local-member-names.rkt")
 
 (import [prefix drracket:module-language: drracket:module-language/int^])
-(export drracket:modes^)
+(export drracket:modes/int^)
 
-(define-struct mode (name surrogate repl-submit matches-language))
+(define mode? drracket:modes:mode?)
+(define mode-name drracket:modes:mode-name)
+(define mode-surrogate drracket:modes:mode-surrogate)
+(define mode-repl-submit drracket:modes:mode-repl-submit)
+(define mode-matches-language drracket:modes:mode-matches-language)
+(define struct:mode struct:drracket:modes:mode)
+
+
 (define modes (list))
 
 (define (get-modes) modes)
 
 (define (add-mode name surrogate repl-submit matches-language)
-  (let ([new-mode (make-mode name 
-                             surrogate
-                             repl-submit
-                             matches-language)])
+  (let ([new-mode (drracket:modes:mode name 
+                                       surrogate
+                                       repl-submit
+                                       matches-language)])
     (set! modes (cons new-mode modes))
     new-mode))
 

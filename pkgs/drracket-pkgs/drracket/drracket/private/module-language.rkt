@@ -85,11 +85,11 @@
 
 (define-unit module-language@
   (import [prefix drracket:language-configuration: drracket:language-configuration/internal^]
-          [prefix drracket:language: drracket:language^]
+          [prefix drracket:language: drracket:language/int^]
           [prefix drracket:unit: drracket:unit^]
           [prefix drracket:rep: drracket:rep^]
           [prefix drracket:init: drracket:init^]
-          [prefix drracket:module-language-tools: drracket:module-language-tools^]
+          [prefix drracket:module-language-tools: drracket:module-language-tools/int^]
           [prefix drracket: drracket:interface^])
   (export drracket:module-language/int^)
   

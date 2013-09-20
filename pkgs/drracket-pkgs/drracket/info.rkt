@@ -26,7 +26,7 @@
                "racket-index"
                "racket-doc"
                "html-lib"
-               "images"
+               "images-lib"
                "icons"
                "typed-racket-more"
                "trace"

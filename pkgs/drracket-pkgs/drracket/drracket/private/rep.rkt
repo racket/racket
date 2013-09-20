@@ -49,7 +49,7 @@ TODO
 (define-unit rep@
   (import [prefix drracket:init: drracket:init^]
           [prefix drracket:language-configuration: drracket:language-configuration/internal^]
-          [prefix drracket:language: drracket:language^]
+          [prefix drracket:language: drracket:language/int^]
           [prefix drracket:app: drracket:app^]
           [prefix drracket:frame: drracket:frame^]
           [prefix drracket:unit: drracket:unit^]
@@ -59,7 +59,7 @@ TODO
           [prefix drracket:eval: drracket:eval^]
           [prefix drracket:module-language: drracket:module-language/int^]
           [prefix drracket: drracket:interface^])
-  (export (rename drracket:rep^
+  (export (rename drracket:rep/int^
                   [-text% text%]
                   [-text<%> text<%>]))
   
@@ -276,6 +276,7 @@ TODO
                         'change-style
                         'italic))
   (send error-delta set-delta-foreground (make-object color% 255 0 0))
+  (define (get-error-delta) error-delta)
   (send result-delta set-delta-foreground (make-object color% 0 0 175))
   (send output-delta set-delta-foreground (make-object color% 150 0 150))
   

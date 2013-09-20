@@ -38,13 +38,13 @@
          (submod "." install-pkg))
 (provide frame@)
 (define-unit frame@  
-  (import [prefix drracket:unit: drracket:unit^]
+  (import [prefix drracket:unit: drracket:unit/int^]
           [prefix drracket:app: drracket:app^]
           [prefix help: drracket:help-desk^]
           [prefix drracket:multi-file-search: drracket:multi-file-search^]
           [prefix drracket:init: drracket:init^]
           [prefix drracket: drracket:interface^])
-  (export (rename drracket:frame^
+  (export (rename drracket:frame/int^
                   [-mixin mixin]))
   
   (define last-keybindings-planet-attempt "")

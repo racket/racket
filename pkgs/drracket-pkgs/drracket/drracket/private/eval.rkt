@@ -7,6 +7,7 @@
            syntax/toplevel
            framework
            "eval-helpers.rkt"
+           "local-member-names.rkt"
            drracket/private/drsig)
   
   ;; to ensure this guy is loaded (and the snipclass installed)

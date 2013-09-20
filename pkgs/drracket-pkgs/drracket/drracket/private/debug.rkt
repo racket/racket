@@ -42,7 +42,7 @@ profile todo:
 (define-unit debug@
   (import [prefix drracket:rep: drracket:rep^]
           [prefix drracket:frame: drracket:frame^]
-          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:unit: drracket:unit/int^]
           [prefix drracket:language: drracket:language^]
           [prefix drracket:language-configuration: drracket:language-configuration/internal^]
           [prefix drracket:init: drracket:init^]

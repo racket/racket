@@ -11,32 +11,100 @@ all of the names in the tools library, for use defining keybindings
          racket/unit 
          racket/contract
          racket/class
+         racket/struct-info
          
          ;; these have to be absolute requires for `include-extracted'
          ;; to work with this file.
          drracket/private/link
          drracket/private/drsig
          drracket/private/language-object-contract
+         drracket/private/local-member-names
          
          framework
          framework/splash
          
          mrlib/switchable-button
-         scribble/srcdoc)
+         scribble/srcdoc
+         
+         net/url)
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base racket/list racket/struct-info))
 
 (generate-delayed-documents) ; avoids a distribution dependency on `scribblings/tools/doc-util'
 (require (for-doc drracket/private/ts
                   racket/base scribble/manual
                   scribblings/tools/doc-util
+                  net/url
                   (for-label errortrace/errortrace-key
                              racket/place
                              racket/pretty 
                              mzlib/pconvert
-                             syntax/toplevel)))
+                             syntax/toplevel
+                             drracket/tool-lib)))
 
-(define-values/invoke-unit/infer drracket@)
+;; these two declarations produce all of the struct names
+;; but with "drscheme" in front instead of drracket
+(begin
+  (module drr-structs racket/base
+    (require drracket/private/local-member-names)
+    (provide 
+     (combine-out
+      (struct-out drracket:language-configuration:language-settings)
+      (struct-out drracket:unit:teachpack-callbacks)
+      (struct-out drracket:language:text/pos) 
+      (struct-out drracket:language:simple-settings)
+      (struct-out drracket:modes:mode))))
+  (require racket/require
+           (filtered-in 
+            (λ (x) (regexp-replace #rx"drracket:" x "drscheme:"))
+            (submod "." drr-structs))))
+
+
+;; would like to use except here, but that
+;; is allowed only on imports,
+;; so just rename to something unused.
+(define-syntax (dv/iu/i/drop-struct stx)
+  (syntax-case stx ()
+    [(_ sig stuff ...)
+     (let ()
+       (define (get-ids prefix sid-flds)
+         (syntax-case sid-flds ()
+           [(struct-id constructor? fields ...)
+            (let ()
+              (define include-constructor? (syntax-e #'constructor?))
+              (unless (boolean? include-constructor?)
+                (raise-syntax-error #f "expected boolean?" stx #'constructor?))
+              (define (fmt str . args)
+                (define orig
+                  (string->symbol
+                    (apply format str (map (λ (x) (if (syntax? x) (syntax-e x) x))
+                                           args))))
+                `(,(datum->syntax #'sig (string->symbol (format "___~a" orig)))
+                  ,(datum->syntax #'sig orig)))
+              (append (list (fmt "~a~a?" prefix #'struct-id))
+                      (if include-constructor?
+                          (list (fmt "~a~a" prefix #'struct-id))
+                          '())
+                      (for/list ([fld (in-list (syntax->list #'(fields ...)))])
+                        (fmt "~a~a-~a" prefix #'struct-id fld))))]))
+     #`(define-values/invoke-unit/infer 
+         (export (rename sig
+                         #,@(apply
+                             append
+                             (for/list ([sid-flds (syntax->list #'(stuff ...))])
+                               (append (get-ids 'drracket: sid-flds)
+                                       (get-ids 'drscheme: sid-flds))))))
+         drracket@))]))
+(dv/iu/i/drop-struct 
+ drscheme/drracket:tool^
+ (language-configuration:language-settings #t language settings)
+ (unit:teachpack-callbacks #t get-names add remove remove-all)
+ (language:text/pos #t text start end)
+ (language:simple-settings #t case-sensitive printing-style
+                           fraction-style show-sharing
+                           insert-newlines annotations)
+ (modes:mode #t name surrogate repl-submit matches-language))
+ 
 (provide-signature-elements drracket:tool-cm^) ;; provide all of the classes & interfaces
 (provide-signature-elements drscheme:tool-cm^) ;; provide the classes & interfaces w/ drscheme: prefix
 
@@ -50,38 +118,77 @@ all of the names in the tools library, for use defining keybindings
 (language-object-abstraction drracket:language:object/c #t)
 
 (define-syntax (provide/dr/doc stx)
-  (let* ([munge-id
-          (λ (stx)
-            (datum->syntax
-             stx
-             (string->symbol
-              (regexp-replace #rx"^drracket:" (symbol->string (syntax-e stx)) "drscheme:"))
-             stx))]
-         [defthings
-           (syntax-case stx ()
-             [(_ case ...)
-              (map
-               (λ (case)
-                 (with-syntax ([(id ctc)
-                                (syntax-case case (proc-doc/names proc-doc parameter-doc parameter/c)
-                                  [(proc-doc/names id ctc . stuff)
-                                   (identifier? #'id)
-                                   #'(id ctc)]
-                                  [(proc-doc id ctc . stuff)
-                                   (identifier? #'id)
-                                   #'(id ctc)]
-                                  [(parameter-doc id (parameter/c ctc) arg-id . stuff)
-                                   (and (identifier? #'id)
-                                        (identifier? #'arg-id))
-                                   #'(id (parameter/c ctc))]
-                                  [_
-                                   (raise-syntax-error 'provide/dr/doc "unknown thing" case)])])
-                   (with-syntax ([mid (munge-id #'id)])
-                     #`(thing-doc mid ctc (@undefined-const "This is provided for backwards compatibility; new code should use " (racket id) " instead.")))))
-               (syntax->list #'(case ...)))])])
+  (define (munge-id stx)
+    (datum->syntax
+     stx
+     (string->symbol
+      (regexp-replace #rx"drracket:" (symbol->string (syntax-e stx)) "drscheme:"))
+     stx))
+  (define (handle-one id ctc)
+    (with-syntax ([id id]
+                  [ctc ctc]
+                  [mid (munge-id id)])
+      #`(thing-doc 
+         mid ctc 
+         ("This binding provided for backwards compatibility; new code should use " 
+          (racket id)
+          " instead."))))
+  (define (remove-src-locs stx)
+    (let loop ([x stx])
+      (cond
+        [(syntax? x) (datum->syntax x (loop (syntax-e x)) #f)]
+        [(pair? x) (cons (loop (car x)) (loop (cdr x)))]
+        [else x])))
+  
+  (define (handle-struct a fld/ctc omit-constructor?)
+    (with-syntax ([([fld ctc] ...) fld/ctc])
+      (define (ds fmt . args)
+        (datum->syntax a
+                       (string->symbol (apply format fmt args))))
+      (let* ([flds (syntax->list #'(fld ...))]
+             [ctcs (syntax->list #'(ctc ...))]
+             [st-name (syntax-e a)]
+             [pid (ds "~a?" st-name)])
+        #`(combine-out
+           #,(handle-one pid (remove-src-locs #`(-> any/c boolean?)))
+           #,(if omit-constructor?
+                 #'(combine-out)
+                 (handle-one (ds "make-~a" st-name) (remove-src-locs #`(-> #,@ctcs #,pid))))
+           #,@(for/list ([fld (in-list flds)]
+                         [ctc (in-list ctcs)])
+                (define id (ds "~a-~a" st-name (syntax-e fld)))
+                (handle-one id (remove-src-locs #`(-> #,pid #,ctc))))))))
+  
+  (define defthings
     (syntax-case stx ()
-      [(_  rst ...)
-       #`(provide/doc #,@defthings rst ...)])))
+      [(_ case ...)
+       (for/list ([case (in-list (syntax->list #'(case ...)))])
+         (syntax-case case (thing-doc
+                            proc-doc/names proc-doc 
+                            parameter-doc parameter/c
+                            struct-doc)
+           [(proc-doc/names id ctc . stuff)
+            (identifier? #'id)
+            (handle-one #'id #'ctc)]
+           [(proc-doc id ctc . stuff)
+            (identifier? #'id)
+            (handle-one #'id #'ctc)]
+           [(parameter-doc id (parameter/c ctc) arg-id . stuff)
+            (and (identifier? #'id)
+                 (identifier? #'arg-id))
+            (handle-one #'id (remove-src-locs #`(parameter/c ctc)))]
+           [(thing-doc id ctc . stuff)
+            (identifier? #'id)
+            (handle-one #'id #'ctc)]
+           [(struct-doc a ([fld ctc] ...) #:omit-constructor stuff)
+            (handle-struct #'a #'([fld ctc] ...) #t)]
+           [(struct-doc a ([fld ctc] ...) stuff)
+            (handle-struct #'a #'([fld ctc] ...) #f)]
+           [_
+            (raise-syntax-error 'provide/dr/doc "unknown clause" case)]))]))
+  (syntax-case stx ()
+    [(_  rst ...)
+     #`(provide #,@defthings rst ...)]))
 
 (provide/dr/doc
  
@@ -244,7 +351,8 @@ all of the names in the tools library, for use defining keybindings
                         a parameter that kills the user's custodian; and}
               @item{the snip-class-list, returned by
                     @racket[get-the-snip-class-list]
-                    is initialized with all of the snipclasses in DrRacket's eventspace's snip-class-list.}]})
+                    is initialized with all of the snipclasses in DrRacket's eventspace's 
+                    snip-class-list.}]})
  
  (proc-doc/names
   drracket:eval:get-snip-classes
@@ -254,7 +362,7 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:eval:expand-program
-  (->* ((or/c port? drracket:language:text/pos?)
+  (->* ((or/c input-port? drracket:language:text/pos?)
         drracket:language-configuration:language-settings?
         boolean?
         (-> void?)
@@ -324,7 +432,7 @@ all of the names in the tools library, for use defining keybindings
         (-> void?)
         (-> void?))
        (#:gui-modules? boolean?)
-       (-> (or/c port? drracket:language:text/pos?)
+       (-> (or/c input-port? drracket:language:text/pos?)
            (-> (or/c eof-object? syntax? (cons/c string? any/c))
                (-> any)
                any)
@@ -347,7 +455,7 @@ all of the names in the tools library, for use defining keybindings
         (-> void?)
         (-> void?))
        (#:gui-modules? boolean?)
-       (-> (or/c port? drracket:language:text/pos?)
+       (-> (or/c input-port? drracket:language:text/pos?)
            (-> (or/c eof-object? syntax? (cons/c string? any/c))
                (-> any)
                any)
@@ -466,9 +574,10 @@ all of the names in the tools library, for use defining keybindings
     and a clickable icon for the source of the error (read & syntax errors show their source
     locations and otherwise the first place in the stack trace is shown).
     
-    If @racket[stack] is false, then the stack traces embedded in the @racket[exn] argument (if any) are used.
-    Specifically, this function looks for a stacktrace via
-    @racket[errortrace-key] in the continuation marks of @racket[exn] and @racket[continuation-mark-set->context].
+    If @racket[stack] is false, then the stack traces embedded in the @racket[exn] argument (if any)
+    are used. Specifically, this function looks for a stacktrace via
+    @racket[errortrace-key] in the continuation marks of @racket[exn] and
+    @racket[continuation-mark-set->context].
     
     If @racket[stack] is not false, that stack is added to the stacks already in the exception.
     
@@ -512,6 +621,62 @@ all of the names in the tools library, for use defining keybindings
   (-> void?)
   ()
   @{Adds the profiling preferences panel.})
+ 
+ (proc-doc/names
+  drracket:debug:make-debug-eval-handler
+  (-> (-> any/c any) (-> any/c any))
+  (oe)
+  @{Returns a function suitable for use with 
+    @racket[current-eval].
+                                             
+    The result function first adds debugging information to
+    its argument and then passes it to @racket[oe].})
+ 
+ (parameter-doc
+  drracket:debug:test-coverage-enabled
+  (parameter/c boolean?)
+  enabled?
+  @{Determines if the test-coverage annotation is added
+    by the result of @racket[drracket:debug:make-debug-eval-handler].})
+ 
+ (thing-doc
+  drracket:debug:test-coverage-on-style-name
+  string?
+  @{The name of the 
+    @racket[style%] object (in @racket[editor:get-standard-style-name])
+    used to indicate a covered region of code.})
+ 
+ (thing-doc
+  drracket:debug:test-coverage-off-style-name
+  string?
+  @{The name of the 
+    @racket[style%] object (in @racket[editor:get-standard-style-name])
+    used to indicate a region of code that tests (or any code, really)
+    didn't cover.})
+ 
+ (parameter-doc
+  drracket:debug:profiling-enabled
+  (parameter/c boolean?)
+  enabled?
+  @{Determines if the profiling annotation is added
+    by the result of @racket[drracket:debug:make-debug-eval-handler].})
+ 
+ (proc-doc/names
+  drracket:debug:bug-info->ticket-url
+  (-> (listof (cons/c symbol? (or/c #f string?)))
+      url?)
+  (query)
+  @{Builds a url that goes to the trac report system. 
+    The @racket[query] argument is used as the 
+    url's query field.})
+ 
+ (thing-doc
+  drracket:debug:small-planet-bitmap
+  (is-a?/c bitmap%)
+  @{The icon used in the DrRacket REPL when an exception is 
+    raised that includes blame information blaming a PLaneT
+    package. (Clicking the icon connects to the PLaneT bug
+    report form.)})
  
  (proc-doc/names
   drracket:debug:open-and-highlight-in-file
@@ -610,6 +775,15 @@ all of the names in the tools library, for use defining keybindings
     
     })
  
+ (proc-doc
+  drracket:debug:get-error-color
+  (-> (is-a?/c color%))
+  @{Returns the background color used to highlight errors in the definitions window
+    (and other places, possibly).
+    
+    The result depends on the @racket['framework:white-on-black?] preference
+    setting.})
+ 
  (proc-doc/names
   drracket:debug:show-backtrace-window
   (->* (string?
@@ -691,6 +865,11 @@ all of the names in the tools library, for use defining keybindings
        
        Otherwise, calls @racket[send-main-page] with no arguments.})
  
+ (proc-doc
+  drracket:help-desk:goto-plt-license
+  (-> void?)
+  @{Opens the user's web browser and points it at the license for PLT software.})
+ 
  
  ;                           
  ;                           
@@ -756,6 +935,50 @@ all of the names in the tools library, for use defining keybindings
   added, then @racket[add-sep] is called before the menu item is
   created.
   })
+ 
+ (struct-doc 
+  drracket:unit:teachpack-callbacks
+  ([get-names (-> any/c (listof string?))]
+   [add (-> any/c path-string? any/c)]
+   [remove (-> path-string? any/c any/c)]
+   [remove-all (-> any/c any/c)])
+  @{Holds callbacks for teachpack operations. DrRacket invokes
+    these functions in response to GUI operations being triggered.
+    
+    Each of the @racket[any/c]s that appear in the field
+    contracts are actually the settings of a language.
+    
+    The @racket[get-names] field returns the names
+    of the teachpacks in the given settings; @racket[add]
+    returns a new settings that includes the @racket[path-string?]
+    argument as a new teachpack; @racket[remove] removes the
+    given teachpack and @racket[remove-all] removes them all.})
+ 
+ (thing-doc
+  drracket:unit:struct:teachpack-callbacks
+  struct-type?
+  @{This is an alias for @racket[struct:drracket:unit:teachpack-callbacks].})
+ 
+ (thing-doc
+  drracket:unit:make-teachpack-callbacks
+  procedure?
+  @{This is an alias for @racket[make-drracket:unit:teachpack-callbacks].})
+ 
+ 
+ (proc-doc/names
+  drracket:unit:find-symbol
+  (-> (is-a?/c text%) exact-nonnegative-integer? string?)
+  (text pos)
+  @{returns a string that corresponds to the a
+    symbol surrounding @racket[pos] (in @racket[text]).
+    
+    This is intended to be used with the ``f1'' keybinding
+    for searching in the documentation, so the result is
+    not always a symbol, but instead a best effort to find 
+    something that is likely to be useful to search for around
+    a point in the @racket[text].})
+  
+
   
  
  ;                                            
@@ -778,12 +1001,11 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:modes:add-mode
-  (string?
-   (or/c false/c (is-a?/c mode:surrogate-text<%>))
-   ((is-a?/c drracket:rep:text%) number? . -> . boolean?)
-   ((or/c false/c (listof string?)) . -> . boolean?)
-   . -> .
-   drracket:modes:mode?)
+  (-> string?
+      (or/c #f (is-a?/c mode:surrogate-text<%>))
+      (-> (is-a?/c drracket:rep:text%) number? boolean?)
+      (-> (or/c #f (listof string?)) boolean?)
+      drracket:modes:mode?)
   (name surrogate repl-submit matches-language)
   @{Adds a mode to DrRacket. Returns a mode value
     that identifies the mode.
@@ -824,53 +1046,25 @@ all of the names in the tools library, for use defining keybindings
     See also
     @racket[drracket:modes:get-modes].})
  
- (proc-doc/names
-  drracket:modes:mode?
-  (any/c . -> . boolean?)
-  (val)
-  @{Determines if @racket[val] is a mode.})
+ (struct-doc 
+  drracket:modes:mode
+  ([name string?]
+   [surrogate (or/c #f (is-a?/c mode:surrogate-text<%>))]
+   [repl-submit (-> (is-a?/c drracket:rep:text%) number? boolean?)]
+   [matches-language (-> (or/c #f (listof string?)) boolean?)])
+  #:omit-constructor
+  @{See @racket[drracket:modes:add-mode] for details on modes.})
  
+ (thing-doc
+  drracket:modes:struct:mode
+  struct-type?
+  @{An alias for @racket[struct:drracket:modes:mode].})
+
  (proc-doc/names
   drracket:modes:get-modes
   (-> (listof drracket:modes:mode?))
   ()
   @{Returns all of the modes currently added to DrRacket.
-    
-    See also
-    @racket[drracket:modes:add-mode].})
- 
- (proc-doc/names
-  drracket:modes:mode-name
-  (drracket:modes:mode? . -> . string?)
-  (mode)
-  @{Extracts the name of the mode.
-    
-    See also
-    @racket[drracket:modes:add-mode].})
- 
- (proc-doc/names
-  drracket:modes:mode-surrogate
-  (drracket:modes:mode? . -> . (or/c false/c (is-a?/c mode:surrogate-text<%>)))
-  (mode)
-  @{Extracts the surrogate of the mode.
-    
-    See also
-    @racket[drracket:modes:add-mode].})
- 
- (proc-doc/names
-  drracket:modes:mode-repl-submit
-  (drracket:modes:mode? . -> . any)
-  (mode)
-  @{Extracts the repl submission predicate of the mode.
-    
-    See also
-    @racket[drracket:modes:add-mode].})
- 
- (proc-doc/names
-  drracket:modes:mode-matches-language
-  (drracket:modes:mode? . -> . ((or/c false/c (listof string?)) . -> . boolean?))
-  (mode)
-  @{Extracts the language matching predicate of the mode.
     
     See also
     @racket[drracket:modes:add-mode].})
@@ -900,6 +1094,7 @@ all of the names in the tools library, for use defining keybindings
   ()
   @{Returns a style delta that matches the style and color of the 
     phrase ``Welcome to'' in the beginning of the interactions window.})
+    
  
  (proc-doc/names
   drracket:rep:get-dark-green-delta
@@ -907,6 +1102,12 @@ all of the names in the tools library, for use defining keybindings
   ()
   @{Returns a style delta that matches the style and color of the 
     name of a language in the interactions window.})
+ 
+ (proc-doc
+  drracket:rep:get-error-delta 
+  (-> (is-a?/c style-delta%))
+  @{Returns a style delta that matches the style and color of 
+    errors that get shown in the interactions window.})
  
  (proc-doc/names
   drracket:rep:get-drs-bindings-keymap
@@ -949,6 +1150,14 @@ all of the names in the tools library, for use defining keybindings
   @{This parameter is used by @method[drracket:rep:text% evaluate-from-port].
     When it is a thunk, then DrRacket invokes the thunk on the user's thread
     as the last thing it does (before cleaning up).})
+ 
+ (parameter-doc
+  drracket:rep:current-language-settings
+  (parameter/c drracket:language-configuration:language-settings?)
+  language-settings
+  @{This parameter is set (on the user's thread) to the 
+    @racket[drracket:language-configuration:language-settings]
+    for the currently running language.})
   
  
  
@@ -1218,61 +1427,26 @@ all of the names in the tools library, for use defining keybindings
     or
     @racket[preferences:set].})
  
- (proc-doc/names
+ (struct-doc
   drracket:language-configuration:language-settings
-  ((or/c (is-a?/c drracket:language:language<%>)
-         drracket:language:object/c)
-   any/c
-   . -> .
-   drracket:language-configuration:language-settings?)
-  (language settings)
-  
-  @{This is the constructor for a record consisting of two
-    elements, a language and its settings. 
+  ([language (or/c (is-a?/c drracket:language:language<%>) 
+                   drracket:language:object/c)]
+   [settings any/c])
+  @{This struct pairs together a language and some specific settings
+    for the language.
     
     The settings is a language-specific record that holds a
-    value describing a parameterization of the language.
-    
-    It has two selectors,
-    @racket[drracket:language-configuration:language-settings-language]
-    and 
-    @racket[drracket:language-configuration:language-settings-settings], and a predicate,
-    @racket[drracket:language-configuration:language-settings?]})
+    value describing a parameterization of the language.})
  
- #;
- (proc-doc/names
+ (thing-doc
+  drracket:language-configuration:struct:language-settings
+  struct-type?
+  @{An alias for @racket[struct:drracket:language-configuration:language-settings].})
+ 
+ (thing-doc
   drracket:language-configuration:make-language-settings
-  ((or/c (is-a?/c drracket:language:language<%>) drracket:language:object/c)
-   any/c
-   . -> .
-   drracket:language-configuration:language-settings?)
-  (language settings)
-  
-  @{This is an alias for @racket[drrracket:language-configuration:language-settings]})
- 
- (proc-doc/names
-  drracket:language-configuration:language-settings-settings
-  (-> drracket:language-configuration:language-settings?
-      any/c)
-  (ls)
-  @{Extracts the settings field of a language-settings.})
- 
- (proc-doc/names
-  drracket:language-configuration:language-settings-language
-  (drracket:language-configuration:language-settings?
-   . -> .
-   (or/c (is-a?/c drracket:language:language<%>) 
-         drracket:language:object/c))
-  (ls)
-  
-  @{Extracts the language field of a language-settings.})
- 
- (proc-doc/names
-  drracket:language-configuration:language-settings?
-  (any/c . -> . boolean?)
-  (val)
-  
-  @{Determines if the argument is a language-settings or not.})
+  procedure?
+  @{An alias for @racket[make-drracket:language-configuration:language-settings].})
  
  (proc-doc/names
   drracket:language-configuration:language-dialog
@@ -1366,7 +1540,8 @@ all of the names in the tools library, for use defining keybindings
                           (item @racket['key : contract = default]
                                 "--- " desc ...)])])
        (itemize
-        @cap[drracket:check-syntax-button boolean? #t]{controls the visiblity of the check syntax button}
+        @cap[drracket:check-syntax-button boolean? #t]{controls the visiblity of
+                                                       the check syntax button}
         @cap[drracket:language-menu-title string?
              (string-constant scheme-menu-name)]{
           controls the name of the menu just to the right of the language
@@ -1640,7 +1815,8 @@ all of the names in the tools library, for use defining keybindings
    use-copy?)
   
   @{Like
-    @racket[drracket:language:create-module-based-stand-alone-executable], but packages the stand-alone executable into a distribution.})
+    @racket[drracket:language:create-module-based-stand-alone-executable], 
+    but packages the stand-alone executable into a distribution.})
  
  (proc-doc/names
   drracket:language:create-distribution-for-executable
@@ -1653,14 +1829,15 @@ all of the names in the tools library, for use defining keybindings
    gui?
    make-executable)
   
-  @{Creates a distribution where the given @racket[make-executable] procedure
-                                           creates the stand-alone executable to be distributed. 
-                                           The @racket[make-executable] procedure is given the name of the 
-                                           executable to create. The @racket[gui?] argument is needed in case the
-                                           executable's name (which @racket[drracket:language:create-distribution-for-executable] 
-                                           must generate) depends on the type of executable. During the distribution-making 
-                                           process, a progress dialog is shown to the user, and the user can click an 
-                                           @onscreen{Abort} button that sends a break to the current thread.})
+  @{Creates a distribution where the given
+    @racket[make-executable] procedure
+    creates the stand-alone executable to be distributed. 
+    The @racket[make-executable] procedure is given the name of the 
+    executable to create. The @racket[gui?] argument is needed in case the
+    executable's name (which @racket[drracket:language:create-distribution-for-executable] 
+    must generate) depends on the type of executable. During the distribution-making 
+    process, a progress dialog is shown to the user, and the user can click an 
+    @onscreen{Abort} button that sends a break to the current thread.})
  
  (proc-doc/names
   drracket:language:create-module-based-launcher
@@ -1676,7 +1853,8 @@ all of the names in the tools library, for use defining keybindings
    use-copy?)
   
   @{This procedure is identical to 
-    @racket[drracket:language:create-module-based-stand-alone-executable], except that it creates a launcher instead of a
+    @racket[drracket:language:create-module-based-stand-alone-executable], 
+    except that it creates a launcher instead of a
     stand-alone executable.})
  
  (proc-doc/names
@@ -1721,150 +1899,49 @@ all of the names in the tools library, for use defining keybindings
     procedure is invoked.
     })
  
- (proc-doc/names
-  drracket:language:text/pos-text
-  (drracket:language:text/pos? . -> . (is-a?/c text%))
-  (text/pos)
-  
-  @{Selects the @racket[text%] from a text/pos.})
- 
- (proc-doc/names
-  drracket:language:text/pos-start
-  (drracket:language:text/pos? . -> . number?)
-  (text/pos)
-  
-  @{Selects the starting position from a text/pos.})
- 
- (proc-doc/names
-  drracket:language:text/pos-end
-  (drracket:language:text/pos? . -> . number?)
-  (text/pos)
-  
-  @{Selects the ending position from a text/pos.})
- 
- (proc-doc/names
-  drracket:language:text/pos?
-  (any/c . -> . boolean?)
-  (val)
-  
-  @{Returns @racket[#t] if @racket[val] is a text/pos, and @racket[#f]
-            otherwise.})
- 
- (proc-doc/names
+ (struct-doc
   drracket:language:text/pos
-  ((is-a?/c text%) number? number?
-                   . -> .
-                   drracket:language:text/pos?)
-  (text start end)
-  
-  @{Constructs a text/pos.})
+  ([text (is-a?/c text%)]
+   [start exact-nonnegative-integer?]
+   [end exact-nonnegative-integer?])
+  @{A record that tracks a @racket[text%] object and a range inside it.})
  
- (proc-doc/names
+ (thing-doc
   drracket:language:make-text/pos
-  ((is-a?/c text%) number? number?
-                   . -> .
-                   drracket:language:text/pos?)
-  (text start end)
-  
-  @{An alias for @racket[drracket:language:text/pos]})
+  procedure?
+  @{An alias for @racket[make-drracket:language:text/pos].})
  
- (proc-doc/names
-  drracket:language:simple-settings-case-sensitive 
-  (drracket:language:simple-settings? . -> . boolean?)
-  (simple-settings)
-  
-  @{Extracts the case-sensitive setting from a simple-settings.})
+ (thing-doc
+  drracket:language:struct:text/pos
+  struct-type?
+  @{An alias for @racket[struct:drracket:language:text/pos].})
  
- (proc-doc/names
-  drracket:language:simple-settings-printing-style
-  (drracket:language:simple-settings?
-   . -> .
-   (or/c 'constructor 'quasiquote 'write 'trad-write 'print))
-  (simple-settings)
-  
-  @{Extracts the printing-style setting from a simple-settings.})
- 
- (proc-doc/names
-  drracket:language:simple-settings-fraction-style
-  (drracket:language:simple-settings?
-   . -> .
-   (or/c 'mixed-fraction
-            'mixed-fraction-e
-            'repeating-decimal
-            'repeating-decimal-e))
-  (simple-settings)
-  
-  @{Extracts the fraction-style setting from a simple-settings.})
- 
- (proc-doc/names
-  drracket:language:simple-settings-show-sharing
-  (drracket:language:simple-settings?
-   . -> .
-   boolean?)
-  (simple-settings)
-  
-  @{Extracts the show-sharing setting from a simple-settings.})
- 
- (proc-doc/names
-  drracket:language:simple-settings-insert-newlines
-  (drracket:language:simple-settings?
-   . -> .
-   boolean?)
-  (simple-settings)
-  
-  @{Extracts the insert-newline setting from a simple-settings.})
- 
- (proc-doc/names
-  drracket:language:simple-settings-annotations
-  (drracket:language:simple-settings?
-   . -> .
-   (or/c 'none 'debug 'debug/profile 'test-coverage))
-  (simple-settings)
-  
-  @{Extracts the debugging setting from a simple-settings.})
- 
- (proc-doc/names
-  drracket:language:simple-settings?
-  (any/c . -> . boolean?)
-  (val)
-  
-  @{Determines if @racket[val] is a simple-settings.})
- 
- (proc-doc/names
+ (struct-doc
   drracket:language:simple-settings
-  (-> boolean?
-      (or/c 'constructor 'quasiquote 'write 'trad-write 'print)
-      (or/c 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
-      boolean?
-      boolean?
-      (or/c 'none 'debug 'debug/profile 'test-coverage)
-      drracket:language:simple-settings?)
-  (case-sensitive
-   printing-style
-   fraction-style
-   show-sharing
-   insert-newlines
-   annotations)
-  
-  @{Constructs a simple settings.})
+  ([case-sensitive boolean?]
+   [printing-style (or/c 'constructor
+                         'quasiquote
+                         'write
+                         'trad-write
+                         'print)]
+   [fraction-style (or/c 'mixed-fraction
+                         'mixed-fraction-e
+                         'repeating-decimal
+                         'repeating-decimal-e)]
+   [show-sharing boolean?]
+   [insert-newlines boolean?]
+   [annotations (or/c 'none 'debug 'debug/profile 'test-coverage)])
+  @{A struct that tracks commonly used settings for a language.})
  
- (proc-doc/names
+ (thing-doc
   drracket:language:make-simple-settings
-  (-> boolean?
-      (or/c 'constructor 'quasiquote 'write 'trad-write 'print)
-      (or/c 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
-      boolean?
-      boolean?
-      (or/c 'none 'debug 'debug/profile 'test-coverage)
-      drracket:language:simple-settings?)
-  (case-sensitive
-   printing-style
-   fraction-style
-   show-sharing
-   insert-newlines
-   annotations)
-  
-  @{An alias for @racket[drracket:language:simple-settings].})
+  procedure?
+  @{An alias for @racket[make-drracket:language:simple-settings].})
+ 
+ (thing-doc
+  drracket:language:struct:simple-settings
+  struct-type?
+  @{An alias for @racket[struct:drracket:language:simple-settings].})
  
  (proc-doc/names
   drracket:language:simple-settings->vector

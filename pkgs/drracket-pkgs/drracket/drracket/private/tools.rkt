@@ -4,17 +4,17 @@
          racket/list
          racket/runtime-path
          racket/contract
+         racket/struct-info
          setup/getinfo
          mred
          framework
          framework/splash
          drracket/private/drsig
          "language-object-contract.rkt"
+         "wrap-tool-inputs.rkt"
          mrlib/switchable-button
+         net/url
          string-constants)
-
-(require (for-syntax racket/base racket/match
-                     compiler/cm-accomplice))
 
 (import [prefix drracket:frame: drracket:frame^]
         [prefix drracket:unit: drracket:unit^]
@@ -29,7 +29,7 @@
         [prefix drracket:modes: drracket:modes^]
         [prefix drracket:tracing: drracket:tracing^]
         [prefix drracket:module-language: drracket:module-language^]
-        [prefix drracket:module-language-tools: drracket:module-language-tools^]
+        [prefix drracket:module-language-tools: drracket:module-language-tools/int^]
         [prefix drracket:tools-drs: drracket:tools-drs^]
         [prefix drracket: drracket:interface^])
 (export drracket:tools^)
@@ -324,42 +324,6 @@
                          phase2-thunk)
                         successfully-loaded-tools))))))))
 
-(define-syntax (wrap-tool-inputs stx)
-  (syntax-case stx ()
-    [(_ body tool-name)
-     (let ()
-       (define tool-lib-src (collection-file-path "tool-lib.rkt" "drracket"))
-       
-       (define full-sexp
-         (call-with-input-file tool-lib-src
-           (λ (port)
-             (parameterize ([read-accept-reader #t])
-               (read port)))))
-
-       (register-external-file tool-lib-src)
-       
-       (let loop ([sexp full-sexp])
-         (match sexp
-           [`((#%module-begin ,body ...))
-            (loop body)]
-           [`((provide/dr/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
-            #`(let #,(map (λ (name ctc) 
-                            (with-syntax ([name (datum->syntax #'tool-name name)]
-                                          [ctc (datum->syntax #'tool-name ctc)])
-                              #`[name (contract (let ([name ctc]) name)
-                                                name 
-                                                'drracket 
-                                                tool-name
-                                                (quote name)
-                                                (quote-syntax name))]))
-                          name
-                          ctc)
-                body)]
-           [`(,a . ,b) 
-            (loop b)]
-           [`()
-            (error 'tools.rkt "did not find provide/dr/doc: ~a" full-sexp)])))]))
-
 ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
 ;; invokes the tools and returns the two phase thunks.
 (define (invoke-tool unit tool-name)
@@ -370,7 +334,8 @@
      (define-values/invoke-unit unit@
        (import drracket:tool^) (export drracket:tool-exports^))
      (values phase1 phase2))
-   tool-name))
+   tool-name
+   #f))
 
 ;; show-error : string (union exn TST) -> void
 (define (show-error title x)

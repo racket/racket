@@ -20,7 +20,7 @@
           [prefix drracket:language: drracket:language^]
           [prefix drracket:language-configuration: drracket:language-configuration^]
           [prefix drracket: drracket:interface^])
-  (export drracket:module-language-tools^)
+  (export drracket:module-language-tools/int^)
 
   (define-struct opt-out-toolbar-button (make-button id number) #:transparent)
   (define opt-out-toolbar-buttons '())

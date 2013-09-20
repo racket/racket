@@ -105,7 +105,7 @@
           [prefix drracket:app: drracket:app^]
           [prefix drracket:frame: drracket:frame^]
           [prefix drracket:text: drracket:text^]
-          [prefix drracket:rep: drracket:rep^]
+          [prefix drracket:rep: drracket:rep/int^]
           [prefix drracket:language-configuration: drracket:language-configuration/internal^]
           [prefix drracket:language: drracket:language^]
           [prefix drracket:get/extend: drracket:get/extend^]
@@ -117,17 +117,17 @@
           [prefix drracket:modes: drracket:modes^]
           [prefix drracket:debug: drracket:debug^]
           [prefix drracket: drracket:interface^])
-  (export (rename drracket:unit^ [-frame% frame%]))
+  (export (rename drracket:unit/int^ [-frame% frame%]))
   (init-depend drracket:module-language/int^)
-    
-  (define-struct teachpack-callbacks 
-    (get-names   ;; settings -> (listof string)
-     add ;; settings path -> settings
-     remove  ;; string[returned from teachpack-names] settings -> settings
-     remove-all ;; settings -> settings
-     ))
-  
-  ;; get rid of set-user-teachpack-cache method
+
+  (define struct:teachpack-callbacks struct:drracket:unit:teachpack-callbacks)
+  (define teachpack-callbacks? drracket:unit:teachpack-callbacks?)
+  (define teachpack-callbacks-get-names drracket:unit:teachpack-callbacks-get-names)
+  (define teachpack-callbacks-add drracket:unit:teachpack-callbacks-add)
+  (define teachpack-callbacks-remove drracket:unit:teachpack-callbacks-remove)
+  (define teachpack-callbacks-remove-all drracket:unit:teachpack-callbacks-remove-all)
+  (define make-teachpack-callbacks drracket:unit:teachpack-callbacks)
+  (define teachpack-callbacks drracket:unit:teachpack-callbacks)
   
   (keymap:add-to-right-button-menu
    (let ([old (keymap:add-to-right-button-menu)])

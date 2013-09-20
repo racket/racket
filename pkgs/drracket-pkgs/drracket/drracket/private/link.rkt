@@ -25,7 +25,7 @@
          "module-language-tools.rkt"
          "interface.rkt")
 
-(provide drracket@)
+(provide drracket@ drscheme/drracket:tool^)
 
 (define-compound-unit/infer drracket-unit@
   (import)

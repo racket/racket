@@ -1,25 +1,26 @@
 #lang racket/base
 (require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
-           racket/unit
-           mrlib/hierlist
-           racket/class
-           racket/contract
-           racket/string
-           racket/list
-           racket/gui/base
-           drracket/private/drsig
-           "tooltip.rkt"
-           string-constants
-           framework
-           setup/getinfo
-           setup/xref
-           scribble/xref
-           scribble/tag
-           net/url
-           syntax/toplevel
-           browser/external
-           (only-in mzlib/struct make-->vector))
-  
+         racket/unit
+         mrlib/hierlist
+         racket/class
+         racket/contract
+         racket/string
+         racket/list
+         racket/gui/base
+         drracket/private/drsig
+         "tooltip.rkt"
+         "local-member-names.rkt"
+         string-constants
+         framework
+         setup/getinfo
+         setup/xref
+         scribble/xref
+         scribble/tag
+         net/url
+         syntax/toplevel
+         browser/external
+         (only-in mzlib/struct make-->vector))
+
   (define original-output (current-output-port))
   (define (oprintf . args) (apply fprintf original-output args))
   
@@ -65,6 +66,13 @@
             [prefix drracket:module-language: drracket:module-language/int^]
             [prefix drracket: drracket:interface^])
     (export drracket:language-configuration/internal^)
+    
+    (define struct:language-settings struct:drracket:language-configuration:language-settings)
+    (define language-settings? drracket:language-configuration:language-settings?)
+    (define language-settings-language drracket:language-configuration:language-settings-language)
+    (define language-settings-settings drracket:language-configuration:language-settings-settings)
+    (define make-language-settings drracket:language-configuration:language-settings)
+    (define language-settings make-language-settings)
     
     ;; settings-preferences-symbol : symbol
     ;; this pref used to depend on `version', but no longer does.
@@ -148,8 +156,6 @@
                       (list-ref (get-languages) 0))])
         (language-settings lang (send lang default-settings))))
     
-    ;; type language-settings = (language-settings (instanceof language<%>) settings)
-    (define-struct language-settings (language settings))
     
     
     ;                                                                                                      
@@ -2040,7 +2046,7 @@
     
     (define (not-a-language-extra-mixin %)
       (class* % (not-a-language-language<%>)
-        (define/override (get-style-delta) drracket:rep:error-delta)
+        (define/override (get-style-delta) (drracket:rep:get-error-delta))
         
         (define/override (first-opened) 
           (not-a-language-message)

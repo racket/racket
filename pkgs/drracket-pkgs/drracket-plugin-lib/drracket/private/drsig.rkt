@@ -6,6 +6,7 @@
          drracket:module-language^
          drracket:module-language/int^
          drracket:module-language-tools^
+         drracket:module-language-tools/int^
          drracket:get-collection^
          drracket:main^
          drracket:init^
@@ -15,18 +16,23 @@
          drracket:tools-drs^
          drracket:get/extend^
          drracket:unit^
+         drracket:unit/int^
          drracket:frame^
+         drracket:frame/int^
          drracket:program^
          drracket:text^
          drracket:rep^
+         drracket:rep/int^
          drracket:app^
          drracket:draw-arrow^
          drracket:help-desk^
          drracket:language^
+         drracket:language/int^
          drracket:multi-file-search^
          drracket:module-overview^
          drracket:font^
          drracket:modes^
+         drracket:modes/int^
          drracket:tracing^
          drracket:tool-exports^
          drracket:tool^
@@ -40,10 +46,10 @@
 (define-signature drracket:modes^ extends drracket:modes-cm^
   (add-mode
    get-modes
-   add-initial-modes
-   make-mode
    (struct mode (name surrogate repl-submit matches-language) 
-           #:omit-constructor)))
+     #:omit-constructor)))
+(define-signature drracket:modes/int^ extends drracket:modes^
+  (add-initial-modes))
 
 (define-signature drracket:font-cm^
   ())
@@ -114,10 +120,9 @@
 (define-signature drracket:module-language-tools^ extends drracket:module-language-tools-cm^
   (add-opt-out-toolbar-button
    add-online-expansion-handler
-   register-online-expansion-pref
-   
-   ;; the below should be hidden from tools
-   get-online-expansion-pref-funcs
+   register-online-expansion-pref))
+(define-signature drracket:module-language-tools/int^ extends drracket:module-language-tools^
+  (get-online-expansion-pref-funcs
    (struct online-expansion-handler (mod-path id local-handler))
    get-online-expansion-handlers
    no-more-online-expansion-handlers))
@@ -155,8 +160,7 @@
    make-language-settings
    get-settings-preferences-symbol
    language-dialog
-   fill-language-dialog
-   language-allows-executable-creation?))
+   fill-language-dialog))
 
 (define-signature drracket:language-configuration/internal^ extends drracket:language-configuration^
   (add-info-specified-languages
@@ -165,7 +169,8 @@
    get-all-scheme-manual-keywords
    get-all-manual-keywords
    add-built-in-languages
-   not-a-language-language<%>))
+   not-a-language-language<%>
+   language-allows-executable-creation?))
 
 (define-signature drracket:tools-cm^
   ())
@@ -212,16 +217,19 @@
    find-symbol
    get-program-editor-mixin
    add-to-program-editor-mixin
-   forget-saved-bug-report
-   record-saved-bug-report
-   (struct teachpack-callbacks (get-names remove add))
+   (struct teachpack-callbacks (get-names add remove remove-all))
    make-teachpack-callbacks
    add-search-help-desk-menu-item))
+(define-signature drracket:unit/int^ extends drracket:unit^
+  (forget-saved-bug-report
+   record-saved-bug-report))
 
 (define-signature drracket:frame-cm^
   (mixin
    basics-mixin))
 (define-signature drracket:frame^ extends drracket:frame-cm^
+  ())
+(define-signature drracket:frame/int^ extends drracket:frame^
   (create-root-menubar
    add-keybindings-item
    planet-spec?))
@@ -262,10 +270,11 @@
    current-value-port
    after-expression
    get-drs-bindings-keymap
-   error-delta
+   get-error-delta
    get-welcome-delta 
-   get-dark-green-delta
-   drs-autocomplete-mixin))
+   get-dark-green-delta))
+(define-signature drracket:rep/int^ extends drracket:rep^
+  (drs-autocomplete-mixin))
 
 (define-signature drracket:app-cm^
   ())
@@ -284,8 +293,7 @@
   ())
 (define-signature drracket:help-desk^ extends drracket:help-desk-cm^
   (help-desk
-   goto-plt-license
-   get-docs))
+   goto-plt-license))
 
 (define-signature drracket:language-cm^
   (language<%>
@@ -320,18 +328,19 @@
                             annotations))
    simple-settings->vector
    
-   simple-module-based-language-config-panel
    simple-module-based-language-convert-value
    setup-printing-parameters
    make-setup-printing-parameters
    
    add-snip-value
-   setup-setup-values
    
    register-capability
    capability-registered?
    get-capability-default
    get-capability-contract))
+(define-signature drracket:language/int^ extends drracket:language^
+  (simple-module-based-language-config-panel
+   setup-setup-values))
 
 (define-signature drracket:multi-file-search-cm^
   ())
