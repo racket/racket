@@ -522,8 +522,9 @@
                        ,(if expand? 9660 9658))))
                (td () ,@num)
                (td () ,@title))))
-        `(div ([class "tocviewlist"]
-               ,@(if top? `([style "margin-bottom: 1em;"]) '()))
+        `(div ([class ,(if top?
+                           "tocviewlist tocviewlisttopspace"
+                           "tocviewlist")])
            ,(if top? `(div ([class "tocviewtitle"]) ,header) header)
            ,(if (null? children)
               ""
@@ -626,7 +627,7 @@
                            blocks))
              (table-blockss table)))
           (define ps
-            ((if (nearly-top? d) values (lambda (p) (if (pair? p) (cdr p) null)))
+            ((if (or (nearly-top? d) (eq? d top)) values (lambda (p) (if (pair? p) (cdr p) null)))
              (let flatten ([d d] [prefixes null] [top? #t])
                (let ([prefixes (if (and (not top?) (part-tag-prefix d))
                                    (cons (part-tag-prefix d) prefixes)
@@ -1344,7 +1345,7 @@
            [(roman) '([class "sroman"])]
            [(url) '([class "url"])]
            [(no-break) '([class "nobreak"])]
-           [(sf) '([style "font-family: sans-serif; font-size: 80%; font-weight: bold"])]
+           [(sf) '([class "ssansserif"])]
            [(superscript) '([style "vertical-align: super; font-size: 80%"])]
            [(subscript) '([style "vertical-align: sub; font-size: 80%"])]
            [(smaller) '([class "Smaller"])]
@@ -1466,14 +1467,15 @@
            ,@(super render-compound-paragraph t part ri starting-item?)))))
 
     (define/override (render-itemization t part ri)
-      (let ([style-str (or (and (string? (style-name (itemization-style t)))
-                                (style-name (itemization-style t)))
-                           (and (eq? 'compact (itemization-style t))
-                                "compact"))])
+      (let ([style-str (and (string? (style-name (itemization-style t)))
+                            (style-name (itemization-style t)))])
         `((,(if (eq? 'ordered (style-name (itemization-style t)))
                 'ol
                 'ul)
-           ,(style->attribs (itemization-style t))
+           (,@(style->attribs (itemization-style t))
+            ,@(if (eq? 'compact (style-name (itemization-style t)))
+                  `([class "compact"])
+                  '()))
            ,@(map (lambda (flow) `(li ,(if style-str
                                            `([class ,(string-append style-str "Item")])
                                            `())

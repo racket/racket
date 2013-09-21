@@ -83,7 +83,6 @@
 \newcommand{\badlink}[1]{#1}
 \newcommand{\indexlink}[1]{#1}
 \newcommand{\noborder}[1]{#1}
-\newcommand{\imageleft}[1]{} % drop it
 \newcommand{\Smaller}[1]{\textsmaller{#1}}
 \newcommand{\Larger}[1]{\textlarger{#1}}
 \newcommand{\planetName}[1]{PLane\hspace{-0.1ex}T}
@@ -171,7 +170,7 @@
 
 \newcommand{\refparaleft}[1]{\reversemarginpar\marginpar{\raggedright \footnotesize #1}}
 \newcommand{\refelemleft}[1]{\refparaleft{#1}}
-\newenvironment{refcolumnleft}{\begin{refcolumn}}{\end{refcolumn}}
+\newenvironment{refcolumnleft}{}{}
 
 % Macros used by `title' and `author':
 \newcommand{\titleAndVersionAndAuthors}[3]{\title{#1\\{\normalsize \SVersionBefore{}#2}}\author{#3}\maketitle}

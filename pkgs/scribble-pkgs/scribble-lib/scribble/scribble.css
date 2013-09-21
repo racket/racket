@@ -18,8 +18,12 @@
 }
 
 /* Sans-serif: */
-.version, .versionNoNav {
+.version, .versionNoNav, .ssansserif {
   font-family: sans-serif;
+}
+.ssansserif {
+  font-size: 80%;
+  font-weight: bold;
 }
 
 /* ---------------------------------------- */
@@ -193,7 +197,7 @@ table td {
   margin-bottom: 0;
 }
 
-.refparaleft {
+.refparaleft, .refelemleft {
   position: relative;
   float: left;
   right: 2em;
@@ -202,7 +206,7 @@ table td {
   margin: 0em 0em 0em -13em;
 }
 
-.refcolumnleft, .refelemleft {
+.refcolumnleft {
   background-color: #F5F5DC;
   display: block;
   position: relative;
@@ -260,6 +264,10 @@ table td {
 }
 .tocviewlist table {
   font-size: 82%;
+}
+
+.tocviewlisttopspace {
+  margin-bottom: 1em;
 }
 
 .tocviewsublist, .tocviewsublistonly, .tocviewsublisttop, .tocviewsublistbottom {
@@ -328,14 +336,6 @@ table td {
   margin: 0.2em;
 }
 
-.sepspace {
-  font-size: 40%;
-}
-
-.septitle {
-  font-size: 70%;
-}
-
 /* ---------------------------------------- */
 /* Some inline styles */
 
@@ -347,16 +347,6 @@ table td {
   white-space: nowrap;
 }
 
-.stt {
-}
-
-.title {
-  font-size: 200%;
-  font-weight: normal;
-  margin-top: 2.8em;
-  text-align: center;
-}
-
 pre { margin-left: 2em; }
 blockquote { margin-left: 2em; }
 
@@ -364,9 +354,6 @@ ol          { list-style-type: decimal; }
 ol ol       { list-style-type: lower-alpha; }
 ol ol ol    { list-style-type: lower-roman; }
 ol ol ol ol { list-style-type: upper-alpha; }
-
-i {
-}
 
 .SCodeFlow {
   display: block;
@@ -431,11 +418,11 @@ i {
   margin-right: 0.3em;
 }
 
-.Smaller{
+.Smaller {
   font-size: 82%;
 }
 
-.Larger{
+.Larger {
   font-size: 122%;
 }
 

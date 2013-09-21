@@ -404,7 +404,7 @@ The recognized @tech{style properties} are as follows:
        the listing.}
 
  @item{@racket['no-toc] --- As a @tech{style property} for the main part of a
-       document, causes the HTML output to not include a margin box
+       rendered page, causes the HTML output to not include a margin box
        for the main table of contents; the ``on this page'' box that
        contains @racket[toc-element] and @racket[toc-target-element]
        links (and that only includes an ``on this page'' label for
