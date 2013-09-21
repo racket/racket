@@ -10,6 +10,7 @@
 
 (provide float-complex-opt-expr
          float-complex-expr
+         binding-names
          float-complex-arith-expr
          unboxed-float-complex-opt-expr
          float-complex-call-site-opt-expr arity-raising-opt-msg)
