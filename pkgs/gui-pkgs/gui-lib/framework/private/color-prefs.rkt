@@ -628,6 +628,7 @@
    "color-names: ~a\nstyle-names:\n~a\n" 
    (sort (set->list known-color-names) symbol<?)
    (sort (set->list known-style-names) symbol<?))
+  (define preferred-color-scheme (preferences:get 'framework:color-scheme))
   (for ([dir (in-list (find-relevant-directories '(framework:color-schemes)))])
     (define info (get-info/full dir))
     (when info
@@ -658,7 +659,11 @@
             "expected something matching:\n~a\nfor framework:color-schemes in ~a, got\n~a"
             (pretty-format (contract-name info-file-result-check?))
             dir
-            (pretty-format cs-info)))]))))
+            (pretty-format cs-info)))])))
+  ;; the color-scheme saved in the user's preferences may not be known
+  ;; until after the code above executes, which would mean that the 
+  ;; color scheme in effect up to that point may be wrong. So fix that here:
+  (set-current-color-scheme preferred-color-scheme #t))
 
 
 ;; register-color-scheme : string boolean? (listof (cons/c symbol? (listof props)) -> void
@@ -693,12 +698,7 @@
                               (props->color (cdr line))]
                              [(set-member? known-style-names name)
                               (props->style-delta (cdr line))]))))
-                  example))))
-  
-  ;; the color-scheme saved in the user's preferences may not be known
-  ;; until after the code above executes, which would mean that the 
-  ;; color scheme in effect up to that point may be wrong. So fix that here:
-  (set-current-color-scheme (preferences:get 'framework:color-scheme) #t))
+                  example)))))
 
 (define valid-props? 
   (listof (or/c 'bold 'italic 'underline
