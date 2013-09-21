@@ -48,68 +48,32 @@
   (pattern
    (letk:let-like-keyword ((~and clause (lhs rhs)) ...)
                           body:opt-expr ...)
+   #:do [(define-syntax-class non-escaping-function
+           (pattern fun-name:id
+              #:when (not (or (escapes? #'fun-name #'(begin rhs ...) #f)
+                              (escapes? #'fun-name #'(begin body ...) let-loop?)))))
+         ;; clauses of form ((v) rhs), currently only supports 1 lhs var
+         (define-syntax-class unboxed-let-clause?
+           (pattern ((v:id) rhs:float-complex-expr)
+             #:when (could-be-unboxed-in? #'v #'(begin body ...))))
+         ;; extract function bindings that have float-complex arguments
+         ;; we may be able to pass arguments unboxed
+         ;; this covers loop variables
+         ;; if the function escapes, we can't change its interface
+         ;; Currently can only optimize terms that bind one value
+         (define-syntax-class unboxed-fun-clause?
+           (pattern (~and ((_:non-escaping-function) . _)
+                          _:unboxed-fun-definition)))]
+
    ;; we look for bindings of complexes that are not mutated and only
    ;; used in positions where we would unbox them
    ;; these are candidates for unboxing
    #:with ((candidates ...) (function-candidates ...) (others ...))
-   (let*-values
-       (((candidates rest)
-         ;; clauses of form ((v) rhs), currently only supports 1 lhs var
-         (partition
-          (lambda (p)
-            (and (subtypeof? (cadr p) -FloatComplex)
-                 (could-be-unboxed-in? (car (syntax-e (car p)))
-                                       #'(begin body ...))))
-          (stx-map syntax->list #'(clause ...))))
-        ((function-candidates others)
-         ;; extract function bindings that have float-complex arguments
-         ;; we may be able to pass arguments unboxed
-         ;; this covers loop variables
-         (partition
-          (lambda (p)
-            (and
-             ;; typed racket introduces let-values that bind no values
-             ;; we can't optimize these
-             (not (null? (syntax-e (car p))))
-             (let ((fun-name (car (syntax-e (car p)))))
-               (and
-                ;; if the function escapes, we can't change its interface
-                (not (is-var-mutated? fun-name))
-                (not (escapes? fun-name #'(begin rhs ...) #f))
-                (not (escapes? fun-name #'(begin body ...) let-loop?))
-                (match (type-of (cadr p)) ; rhs, we want a lambda
-                  [(tc-result1: (Function: (list (arr: doms rngs
-                                                       (and rests #f)
-                                                       (and drests #f)
-                                                       (and kws '())))))
-                   ;; at least 1 argument has to be of type float-complex
-                   ;; and can be unboxed
-                   (syntax-parse (cadr p)
-                     #:literal-sets (kernel-literals)
-                     [(#%plain-lambda params body ...)
-                      (define unboxed-args
-                        (for/list ([param (in-syntax #'params)]
-                                   [dom doms]
-                                   [i (in-naturals)])
-                          (cond
-                            [(and (equal? dom -FloatComplex)
-                                  (could-be-unboxed-in?
-                                    param
-                                    #'(begin body ...)))
-                             ;; we can unbox
-                             (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
-                             #t]
-                            [else #f])))
-                      ;; can we unbox anything?
-                      (and (member #t unboxed-args)
-                           ;; if so, add to the table of functions with
-                           ;; unboxed params, so we can modify its call
-                           ;; sites, its body and its header
-                           (add-unboxed-fun! fun-name unboxed-args))]
-                     [_ #f])]
-                  [_ #f])))))
-          rest)))
-     (list candidates function-candidates others))
+     (syntax-parse #'(clause ...)
+      [((~or candidates:unboxed-let-clause?
+             function-candidates:unboxed-fun-clause?
+             others) ...)
+       #'((candidates ...) (function-candidates ...) (others ...))])
    #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
    #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
    #:with (opt-others:opt-let-clause ...) #'(others ...)
@@ -125,6 +89,49 @@
                            opt-others.res ...
                            opt-candidates.bindings ... ...)
                           body.opt ...))))
+
+(define-syntax-class constant-var
+  #:attributes ()
+  (pattern v:id
+    #:when (not (is-var-mutated? #'v))))
+
+(define-syntax-class unboxed-fun-definition
+  #:attributes ()
+  #:literal-sets (kernel-literals)
+  (pattern ((fun-name:constant-var) (~and fun (#%plain-lambda params body ...)))
+    #:do [(define doms
+            (match (type-of #'fun)
+              [(tc-result1: (Function: (list (arr: doms rngs
+                                                   (and rests #f)
+                                                   (and drests #f)
+                                                   (and kws '())))))
+               doms]
+              [_ #f])) ]
+    #:when doms
+    #:do [
+       ;; at least 1 argument has to be of type float-complex
+       ;; and can be unboxed
+       (define unboxed-args
+              (for/list ([param (in-syntax #'params)]
+                         [dom doms]
+                         [i (in-naturals)])
+                (cond
+                  [(and (equal? dom -FloatComplex)
+                        (could-be-unboxed-in?
+                          param
+                          #'(begin body ...)))
+                   ;; we can unbox
+                   (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
+                   #t]
+                  [else #f])))]
+    #:when
+       ;; can we unbox anything?
+       (and (member #t unboxed-args)
+            ;; if so, add to the table of functions with
+            ;; unboxed params, so we can modify its call
+            ;; sites, its body and its header
+            (add-unboxed-fun! #'fun-name unboxed-args))))
+
 
 (define-splicing-syntax-class let-like-keyword
   #:commit
