@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require syntax/parse syntax/stx unstable/syntax unstable/sequence
+         syntax/parse/experimental/template
          racket/list racket/dict racket/match racket/syntax
+         racket/promise
          "../utils/utils.rkt"
          (for-template racket/base)
          (types numeric-tower utils type-table)
@@ -66,42 +68,56 @@
                           _:unboxed-fun-definition)))
 
          (define-syntax-class unboxed-clause?
+            #:attributes ([candidates 1]
+                          [function-candidates 1]
+                          [others 1]
+                          bindings)
             (pattern v:unboxed-let-clause?
               #:with (candidates ...) #'(v)
               #:with (function-candidates ...) #'()
-              #:with (others ...) #'())
+              #:with (others ...) #'()
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [c:unboxed-let-clause
+                     #'(c.bindings ...)])))
             (pattern v:unboxed-fun-clause?
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'(v)
-              #:with (others ...) #'())
+              #:with (others ...) #'()
+              #:with bindings (list))
             (pattern v
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'()
-              #:with (others ...) #'(v)))
+              #:with (others ...) #'(v)
+              #:with bindings (list)))
          ]
 
    ;; we look for bindings of complexes that are not mutated and only
    ;; used in positions where we would unbox them
    ;; these are candidates for unboxing
-   #:with ((candidates ...) (function-candidates ...) (others ...))
+   #:with opt
      (syntax-parse #'(clause ...)
-      [(:unboxed-clause? ...)
-       #'((candidates ... ...) (function-candidates ... ...) (others ... ...))])
-   #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
-   #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
-   #:with (opt-others:opt-let-clause ...) #'(others ...)
-   ;; only log when we actually optimize
-   #:do [(unless (zero? (syntax-length #'(opt-candidates.id ...)))
-           (log-opt "unboxed let bindings" arity-raising-opt-msg))]
-   ;; in the case where no bindings are unboxed, we create a let
-   ;; that is equivalent to the original, but with all parts optimized
-   #:with opt (quasisyntax/loc/origin
-                this-syntax #'letk.kw
-                (letk.key ...
-                          (opt-functions.bindings ... ...
-                           opt-others.bindings ... ...
-                           opt-candidates.bindings ... ...)
-                          body.opt ...))))
+      [(clause:unboxed-clause? ...)
+       (syntax-parse #'((clause.candidates ... ...)
+                        (clause.function-candidates ... ...)
+                        (clause.others ... ...))
+        [((opt-candidates:unboxed-let-clause ...)
+          (opt-functions:unboxed-fun-clause ...)
+          (opt-others:opt-let-clause ...))
+         ;; only log when we actually optimize
+         (unless (zero? (syntax-length #'(opt-candidates.id ...)))
+           (log-opt "unboxed let bindings" arity-raising-opt-msg))
+         ;#'(clause.bindings ...)
+         (quasisyntax/loc/origin
+            this-syntax #'letk.kw
+            (letk.key ...
+                      (opt-functions.bindings ... ...
+                       opt-others.bindings ... ...
+                       opt-candidates.bindings ... ...)
+                      body.opt ...))])])))
+
+
 
 (define-syntax-class constant-var
   #:attributes ()
