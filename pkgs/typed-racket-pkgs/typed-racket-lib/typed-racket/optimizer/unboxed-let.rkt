@@ -98,8 +98,8 @@
    #:with opt (quasisyntax/loc/origin
                 this-syntax #'letk.kw
                 (letk.key ...
-                          (opt-functions.res ...
-                           opt-others.res ...
+                          (opt-functions.bindings ... ...
+                           opt-others.bindings ... ...
                            opt-candidates.bindings ... ...)
                           body.opt ...))))
 
@@ -252,14 +252,14 @@
 ;; boxed
 (define-syntax-class unboxed-fun-clause
   #:commit
-  #:attributes (res)
+  #:attributes ([bindings 1])
   (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
     #:with (real-params ...)
     (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(fun.unboxed ...))
     #:with (imag-params ...)
     (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(fun.unboxed ...))
     #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'fun)]
-    #:with res
+    #:with (bindings ...)
     ;; add unboxed parameters to the unboxed vars table
     (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
       (for ([index (in-list to-unbox)]
@@ -274,12 +274,12 @@
       ;; real parts of unboxed parameters go first, then all
       ;; imag parts, then boxed occurrences of unboxed
       ;; parameters will be inserted when optimizing the body
-      #`((fun) (#%plain-lambda
-                 (real-params ... imag-params ... #,@(reverse boxed))
-                 body.opt ...)))))
+      #`(((fun) (#%plain-lambda
+                  (real-params ... imag-params ... #,@(reverse boxed))
+                  body.opt ...))))))
 
 (define-syntax-class opt-let-clause
   #:commit
-  #:attributes (res)
+  #:attributes ([bindings 1])
   (pattern (vs rhs:opt-expr)
-    #:with res #'(vs rhs.opt)))
+    #:with (bindings ...) #'((vs rhs.opt))))
