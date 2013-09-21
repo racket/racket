@@ -81,7 +81,7 @@
               #:attr bindings
                 (delay
                   (syntax-parse #'v
-                    [c:unboxed-let-clause
+                    [((id:id) c:unboxed-float-complex-opt-expr)
                      #'(c.bindings ...
                         ((real-binding) c.real-binding)
                         ((imag-binding) c.imag-binding))])))
@@ -258,13 +258,6 @@
                     (free-identifier=? #'i v)]
                    [_ #f])))
        (rec exp)))
-
-;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
-(define-syntax-class unboxed-let-clause
-  #:commit
-  #:attributes (id real-binding imag-binding (bindings 1))
-  (pattern ((id:id) :unboxed-float-complex-opt-expr)
-    #:do [(add-unboxed-var! #'id #'real-binding #'imag-binding)]))
 
 ;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
