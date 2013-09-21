@@ -94,7 +94,11 @@
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'()
               #:with (others ...) #'(v)
-              #:with bindings (list)))
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [(vs rhs:opt-expr)
+                     #'((vs rhs.opt))]))))
          ]
 
    ;; we look for bindings of complexes that are not mutated and only
@@ -108,7 +112,7 @@
                         (clause.others ... ...))
         [((_ ...)
           (opt-functions:unboxed-fun-clause ...)
-          (opt-others:opt-let-clause ...))
+          (_ ...))
          ;; only log when we actually optimize
          (unless (zero? (syntax-length #'(clause.candidates ... ...)))
            (log-opt "unboxed let bindings" arity-raising-opt-msg))
@@ -117,7 +121,6 @@
             this-syntax #'letk.kw
             (letk.key ...
                       (opt-functions.bindings ... ...
-                       opt-others.bindings ... ...
                        new-binds ... ...)
                       body.opt ...))])])))
 
@@ -291,8 +294,3 @@
                   (real-params ... imag-params ... #,@(reverse boxed))
                   body.opt ...))))))
 
-(define-syntax-class opt-let-clause
-  #:commit
-  #:attributes ([bindings 1])
-  (pattern (vs rhs:opt-expr)
-    #:with (bindings ...) #'((vs rhs.opt))))
