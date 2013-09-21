@@ -56,8 +56,8 @@
                               (escapes? #'fun-name #'(begin body ...) let-loop?)))))
          ;; clauses of form ((v) rhs), currently only supports 1 lhs var
          (define-syntax-class unboxed-let-clause?
-           (pattern ((v:id) rhs:float-complex-expr)
-             #:when (could-be-unboxed-in? #'v #'(begin body ...))))
+           (pattern ((id:id) rhs:float-complex-expr)
+             #:when (could-be-unboxed-in? #'id #'(begin body ...))))
          ;; extract function bindings that have float-complex arguments
          ;; we may be able to pass arguments unboxed
          ;; this covers loop variables
@@ -76,11 +76,15 @@
               #:with (candidates ...) #'(v)
               #:with (function-candidates ...) #'()
               #:with (others ...) #'()
+              #:with (real-binding imag-binding) (binding-names)
+              #:do [(add-unboxed-var! #'v.id #'real-binding #'imag-binding)]
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [c:unboxed-let-clause
-                     #'(c.bindings ...)])))
+                     #'(c.bindings ...
+                        ((real-binding) c.real-binding)
+                        ((imag-binding) c.imag-binding))])))
             (pattern v:unboxed-fun-clause?
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'(v)
@@ -102,19 +106,19 @@
        (syntax-parse #'((clause.candidates ... ...)
                         (clause.function-candidates ... ...)
                         (clause.others ... ...))
-        [((opt-candidates:unboxed-let-clause ...)
+        [((_ ...)
           (opt-functions:unboxed-fun-clause ...)
           (opt-others:opt-let-clause ...))
          ;; only log when we actually optimize
          (unless (zero? (syntax-length #'(clause.candidates ... ...)))
            (log-opt "unboxed let bindings" arity-raising-opt-msg))
-         ;#'(clause.bindings ...)
+         (define/with-syntax ((new-binds ...) ...) #'(clause.bindings ...))
          (quasisyntax/loc/origin
             this-syntax #'letk.kw
             (letk.key ...
                       (opt-functions.bindings ... ...
                        opt-others.bindings ... ...
-                       opt-candidates.bindings ... ...)
+                       new-binds ... ...)
                       body.opt ...))])])))
 
 
