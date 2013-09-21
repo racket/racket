@@ -9,6 +9,7 @@
          (optimizer utils numeric-utils logging float unboxed-tables))
 
 (provide float-complex-opt-expr
+         float-complex-expr
          float-complex-arith-expr
          unboxed-float-complex-opt-expr
          float-complex-call-site-opt-expr arity-raising-opt-msg)
