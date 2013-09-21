@@ -106,7 +106,7 @@
           (opt-functions:unboxed-fun-clause ...)
           (opt-others:opt-let-clause ...))
          ;; only log when we actually optimize
-         (unless (zero? (syntax-length #'(opt-candidates.id ...)))
+         (unless (zero? (syntax-length #'(clause.candidates ... ...)))
            (log-opt "unboxed let bindings" arity-raising-opt-msg))
          ;#'(clause.bindings ...)
          (quasisyntax/loc/origin
