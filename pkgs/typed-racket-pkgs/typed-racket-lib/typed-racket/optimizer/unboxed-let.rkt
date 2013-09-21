@@ -63,17 +63,30 @@
          ;; Currently can only optimize terms that bind one value
          (define-syntax-class unboxed-fun-clause?
            (pattern (~and ((_:non-escaping-function) . _)
-                          _:unboxed-fun-definition)))]
+                          _:unboxed-fun-definition)))
+
+         (define-syntax-class unboxed-clause?
+            (pattern v:unboxed-let-clause?
+              #:with (candidates ...) #'(v)
+              #:with (function-candidates ...) #'()
+              #:with (others ...) #'())
+            (pattern v:unboxed-fun-clause?
+              #:with (candidates ...) #'()
+              #:with (function-candidates ...) #'(v)
+              #:with (others ...) #'())
+            (pattern v
+              #:with (candidates ...) #'()
+              #:with (function-candidates ...) #'()
+              #:with (others ...) #'(v)))
+         ]
 
    ;; we look for bindings of complexes that are not mutated and only
    ;; used in positions where we would unbox them
    ;; these are candidates for unboxing
    #:with ((candidates ...) (function-candidates ...) (others ...))
      (syntax-parse #'(clause ...)
-      [((~or candidates:unboxed-let-clause?
-             function-candidates:unboxed-fun-clause?
-             others) ...)
-       #'((candidates ...) (function-candidates ...) (others ...))])
+      [(:unboxed-clause? ...)
+       #'((candidates ... ...) (function-candidates ... ...) (others ... ...))])
    #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
    #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
    #:with (opt-others:opt-let-clause ...) #'(others ...)
