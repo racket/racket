@@ -89,7 +89,11 @@
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'(v)
               #:with (others ...) #'()
-              #:with bindings (list))
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [c:unboxed-fun-clause
+                     #'(c.bindings ...)])))
             (pattern v
               #:with (candidates ...) #'()
               #:with (function-candidates ...) #'()
@@ -107,22 +111,13 @@
    #:with opt
      (syntax-parse #'(clause ...)
       [(clause:unboxed-clause? ...)
-       (syntax-parse #'((clause.candidates ... ...)
-                        (clause.function-candidates ... ...)
-                        (clause.others ... ...))
-        [((_ ...)
-          (opt-functions:unboxed-fun-clause ...)
-          (_ ...))
-         ;; only log when we actually optimize
-         (unless (zero? (syntax-length #'(clause.candidates ... ...)))
-           (log-opt "unboxed let bindings" arity-raising-opt-msg))
-         (define/with-syntax ((new-binds ...) ...) #'(clause.bindings ...))
-         (quasisyntax/loc/origin
-            this-syntax #'letk.kw
-            (letk.key ...
-                      (opt-functions.bindings ... ...
-                       new-binds ... ...)
-                      body.opt ...))])])))
+       ;; only log when we actually optimize
+       (unless (zero? (syntax-length #'(clause.candidates ... ...)))
+         (log-opt "unboxed let bindings" arity-raising-opt-msg))
+       (define/with-syntax ((new-binds ...) ...) #'(clause.bindings ...))
+       (quasisyntax/loc/origin
+          this-syntax #'letk.kw
+          (letk.key ...  (new-binds ... ...) body.opt ...))])))
 
 
 
