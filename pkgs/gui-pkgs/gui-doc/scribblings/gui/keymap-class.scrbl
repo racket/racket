@@ -196,6 +196,7 @@ A key identifier can be either a character on the keyboard (e.g.,
  special names are as follows:
 
 @itemize[
+#:style 'compact
 @item{@litchar{leftbutton} (button down)}
 @item{@litchar{rightbutton}}
 @item{@litchar{middlebutton}}

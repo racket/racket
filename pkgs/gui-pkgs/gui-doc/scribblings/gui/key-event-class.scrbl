@@ -68,6 +68,7 @@ Gets the virtual key code for the key event. The virtual key code is
  either a character or a special key symbol, one of the following:
 
 @itemize[
+#:style 'compact
 @item{@indexed-racket['start]}
 @item{@indexed-racket['cancel]}
 @item{@indexed-racket['clear]}
