@@ -1769,7 +1769,7 @@ as follows:
        @racket[keyword].}
 
        @specsubform[(code:line keyword [id default-expr])]{The
-       procedure accepts a keyword-based using @racket[keyword]. The
+       procedure accepts a keyword-based argument using @racket[keyword]. The
        @racket[id] is associated with a keyword-based actual argument
        using @racket[keyword], if supplied in an application;
        otherwise, the @racket[default-expr] is evaluated to obtain a
