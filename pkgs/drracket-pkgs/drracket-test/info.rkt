@@ -11,6 +11,8 @@
                      "compatibility-lib"
                      "gui-lib"
                      "htdp"
+                     "compiler-lib"
+                     "cext-lib"
                      "scribble-lib"
                      "string-constants-lib"))
 

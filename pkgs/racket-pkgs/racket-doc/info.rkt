@@ -16,6 +16,7 @@
                      "errortrace-doc"
                      "typed-racket-doc"
                      "unstable"
+                     "compiler-lib"
                      "at-exp-lib"
                      "data-lib"
                      "pconvert-lib"
@@ -40,7 +41,8 @@
                      "compatibility-lib"
                      "future-visualizer"
                      "distributed-places-doc"
-                     "serialize-cstruct-lib"))
+                     "serialize-cstruct-lib"
+                     "cext-lib"))
 
 (define pkg-desc "Base Racket documentation")
 

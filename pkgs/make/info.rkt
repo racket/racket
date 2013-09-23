@@ -5,6 +5,7 @@
 (define scribblings '(("make.scrbl" (multi-page) (tool-library))))
 (define deps '("scheme-lib"
                "base"
+               "cext-lib"
                "compiler-lib"
                "compatibility-lib"))
 (define build-deps '("racket-doc"
