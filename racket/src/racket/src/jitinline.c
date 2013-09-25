@@ -3650,7 +3650,10 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 #ifdef MZ_USE_FUTURES
     if (scheme_is_multithreaded(0)) {
       jit_lock_cmpxchgr_l(JIT_R1, JIT_V1); /* implicitly uses JIT_R0 */
-      reffalse = (JNEm(jit_forward(), 0,0,0), jit_get_ip());
+      if (result_ignored)
+        reffalse = NULL;
+      else
+        reffalse = (JNEm(jit_forward(), 0,0,0), jit_get_ip());
     } else
 #endif
       {
@@ -3665,13 +3668,17 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       scheme_add_branch_false(for_branch, reffalse);
       __END_SHORT_JUMPS__(branch_short);
     } else {
-      (void)jit_movi_p(dest, scheme_true);
-      reftrue = jit_jmpi(jit_forward());
+      if (!result_ignored) {
+        (void)jit_movi_p(dest, scheme_true);
+        reftrue = jit_jmpi(jit_forward());
         
-      mz_patch_branch(reffalse);
-      (void)jit_movi_p(dest, scheme_false);
+        mz_patch_branch(reffalse);
+        (void)jit_movi_p(dest, scheme_false);
+
+        mz_patch_branch(reftrue);
+      } else if (reffalse)
+        mz_patch_branch(reffalse);
         
-      mz_patch_branch(reftrue);
       __END_TINY_JUMPS__(1);
     }
 
