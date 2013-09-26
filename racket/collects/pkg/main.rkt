@@ -151,6 +151,7 @@
              #:once-each
              catalog-flags ...
              [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
+             [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
              job-flags ...
              #:args pkg-source
@@ -159,8 +160,18 @@
               'install
               scope scope-dir installation user #f a-type
               (lambda ()
+                (when (and name (> (length pkg-source) 1))
+                  ((current-pkg-error) (format "the --name flag only makes sense with a single package source")))
                 (unless (or (not name) (package-source->name name))
                   ((current-pkg-error) (format "~e is an invalid package name" name)))
+                ;; if no sources were supplied, and `--pkgs` was not
+                ;; explicitly specified, install the current directory
+                ;; as a linked directory
+                (define-values (sources a-type*)
+                  (if (and (not pkgs) (null? pkg-source))
+                      (values (list (path->string (current-directory)))
+                              'link)
+                      (values pkg-source a-type)))
                 (define setup-collects
                   (with-pkg-lock
                    (parameterize ([current-pkg-catalogs (and catalog
@@ -173,8 +184,8 @@
                                   #:update-deps? update-deps
                                   #:strip (or (and source 'source) (and binary 'binary))
                                   #:link-dirs? link-dirs?
-                                  (for/list ([p (in-list pkg-source)])
-                                    (pkg-desc p a-type name checksum #f))))))
+                                  (for/list ([p (in-list sources)])
+                                    (pkg-desc p a-type* name checksum #f))))))
                 (setup no-setup setup-collects jobs)))]
             ;; ----------------------------------------
             [update

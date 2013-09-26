@@ -1,8 +1,9 @@
 Version 5.90.0.9
-Allow hash table chaperones and impersonators to Support efficient
+Allow hash table chaperones and impersonators to support efficient
  hash-clear and hash-clear!
 setup/collection-name: added
 syntax/unsafe/for-transform: added
+raco pkg install with no arguments installs the current directory.
 
 Version 5.90.0.6
 Added path<?, symbol<?

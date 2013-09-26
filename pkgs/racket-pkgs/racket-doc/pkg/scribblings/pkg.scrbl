@@ -322,6 +322,9 @@ sub-commands.
      If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
 
+     If no @nonterm{pkg-source}s are supplied, the current directory is
+     installed as a link. See the @DFlag{link} flag below for more details.
+
  The @exec{install} sub-command accepts 
  the following @nonterm{option}s:
 
@@ -376,6 +379,9 @@ sub-commands.
   @item{@DFlag{static-link} --- Implies @DFlag{link}, and also indicates that subdirectories
         of the given directory will not change for each given directory that implements a
         @tech{multi-collection package}.}
+
+  @item{@DFlag{pkgs} --- Disables default installation of the current directory when no @nonterm{pkg-source}s
+        are supplied.}
 
   @item{@DFlag{copy} --- Disables default handling of directory @tech{package sources} as links,
         and instead treats them like other sources: package content is copied to install.}
