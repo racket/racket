@@ -12,6 +12,7 @@
 (define (reset-type-table) (set! table (make-hasheq)))
 
 (define (add-typeof-expr e t)
+  (log-message online-check-syntax-logger 'info #f "type of expression" (list e t))
   (when (optimize?)
     (hash-update! table e
                   ;; when typechecking a case-> type, types get added for
@@ -30,6 +31,7 @@
                        (ret (map Un old-ts t-ts))]
                       [(_ _) t])) ; irrelevant to the optimizer, just clobber
                   t)))
+(define-logger online-check-syntax)
 
 (define (type-of e)
   (hash-ref table e
