@@ -39,7 +39,7 @@
 	      [dynext/link (use-standard-linker expand-for-link-variant current-extension-linker
 			    current-extension-linker-flags current-standard-link-libraries
 			    link-variant link-extension)]
-	      [compiler/cm (managed-compile-zo manager-compile-notify-handler manager-trace-handler)]
+	      [compiler/cm (managed-compile-zo)]
 	      [compiler/xform (xform)]
 	      [compiler/distribute (assemble-distribution)]
 	      [compiler/zo-parse (zo-parse)]
@@ -430,6 +430,10 @@
   [(make-zo)
    (let ([n (make-base-empty-namespace)]
          [did-one? #f])
+     (define manager-trace-handler
+       (dynamic-require 'compiler/cm 'manager-trace-handler))
+     (define manager-compile-notify-handler
+       (dynamic-require 'compiler/cm 'manager-compile-notify-handler))
      (parameterize ([current-namespace n]
                     [manager-trace-handler
                      (lambda (p)
