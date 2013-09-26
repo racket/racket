@@ -300,10 +300,9 @@ get started.
 Whether creating a @tech{single-collection package} or a
 @tech{multi-collection package}, the next step is to link your
 development directory as a locally installed package. Use
-@command-ref{install} in the directory where you created the
-@nonterm{pkg-name} directory:
+@command-ref{install} in the @nonterm{pkg-name} directory:
 
-@commandline{raco pkg install --link @nonterm{pkg-name}}
+@commandline{raco pkg install}
 
 If you use @command-ref{show} at this point, you'll see a line for
 @nonterm{pkg-name}. The ``Source'' column will show that it's a
