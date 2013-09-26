@@ -27,6 +27,8 @@
 (struct named-t (val term) #:transparent)
 (struct mismatch (name val) #:transparent)
 (struct mismatch-t (vals term) #:transparent)
+(struct named-rep (name) #:transparent)
+(struct named-rep-t (n t) #:transparent)
 
 (struct name-ref (name) #:transparent)
 (struct mismatch-ref (name) #:transparent)
@@ -51,9 +53,7 @@
                              l-enums))))
      cur-lang))
   (let-values ([(fin-lang rec-lang)
-                (sep-lang
-                 (map ((curry map-nt-rhs-pat) name-all-repeats)
-                      lang))])
+                (sep-lang lang)])
     (enumerate-lang fin-lang
                     (λ (rhs enums)
                        (enumerate-rhss rhs enums unused-var/e)))
@@ -68,6 +68,7 @@
 (define (pat-enumerator l-enum pat)
   (map/e
    to-term
+   ;;identity
    (λ (_)
       (error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
@@ -203,10 +204,11 @@
                 (match sub-pat
                   [`(repeat ,pat #f #f)
                    (loop pat named-pats)]
+                  [`(repeat ,pat ,name #f)
+                   ;; Only works if there are no variables inside the repeat
+                   (add-named-rep name named-pats)]
                   [`(repeat ,pat ,name ,mismatch)
-                   (error 'unimplemented)
-                   (loop pat
-                         (unimplemented "named/mismatched repeat"))]
+                   (error 'unimplemented)]
                   [else (loop sub-pat named-pats)]))
              named-pats
              sub-pats)]
@@ -250,6 +252,13 @@
         [else
          (add-named-pats n
                          (mismatch n (list pat))
+                         nps)]))
+
+(define (add-named-rep n nps)
+  (cond [(member-named-pats n nps) nps]
+        [else
+         (add-named-pats n
+                         (named-rep n)
                          nps)]))
 
 (define (named-pats-set n val nps)
@@ -353,7 +362,25 @@
                                 (hash-set env
                                           name
                                           terms))))))]
-                   [else (error 'unexpected "expected name, mismatch or unimplemented, got: ~a in ~a" cur nps)]))])))
+                   [(named-rep? cur)
+                    (let* ([name (named-rep-name cur)]
+                           [f/e  (λ (n)
+                                    (rec (rest-named-pats nps)
+                                         (hash-set env name n)))])
+                      (map/e
+                       (λ (n-t)
+                          (named-rep-t (car n-t)
+                                       (cdr n-t)))
+                       (λ (n-rep-t)
+                          (cons (named-rep-t-n n-rep-t)
+                                (named-rep-t-t n-rep-t)))
+                       (sum/e (map/e
+                               (λ (t)
+                                  (cons 0 t))
+                               cdr
+                               (f/e 0))
+                              (dep/e (nats+/e 1) f/e))))]
+                   [else (error 'unexpected "expected name, mismatch or named-repeat, got: ~a in ~a" cur nps)]))])))
 
 (define (pat/e-with-names pat nt-enums named-terms unused-var/e)
   (let loop ([pat pat])
@@ -417,8 +444,15 @@
                   (repeat-terms rep))
                (many/e (loop pat)))]
              [`(repeat ,pat ,name #f)
-              (error 'unimplemented "named-repeat")]
-             [`(repeat ,pat #f ,mismatch)
+              (let ([n (hash-ref named-terms name)])
+                (map/e
+                 (λ (ts)
+                    (repeat n ts))
+                 (λ (rep)
+                    (repeat-terms rep))
+                 (many/e (loop pat)
+                         n)))]
+             [`(repeat ,pat ,name ,mismatch)
               (error 'unimplemented "mismatch-repeat")]
              [else (loop sub-pat)]))
         sub-pats))]
@@ -485,6 +519,7 @@
          bool/e
          var/e))
 
+;; to-term : augmented term -> redex term
 (define (to-term aug)
   (cond [(named? aug)
          (rep-name aug)]
@@ -492,6 +527,8 @@
          (rep-mismatches aug)]
         [(decomposition? aug)
          (plug-hole aug)]
+        [(named-rep-t? aug)
+         (to-term (named-rep-t-t aug))]
         [(repeat? aug)
          (map-repeat to-term
                      aug)]

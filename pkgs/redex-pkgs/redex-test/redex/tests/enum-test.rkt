@@ -94,3 +94,10 @@
   (var variable-not-otherwise-mentioned))
 
 (try-it 20 VarMentioned var)
+
+(define-language NRep
+  (v (natural ..._1 natural ..._1))
+  (v2 (v ..._1 v ..._2 v ..._1 v ..._2)))
+
+(try-it 100 NRep v)
+(try-it 100 NRep v2)
