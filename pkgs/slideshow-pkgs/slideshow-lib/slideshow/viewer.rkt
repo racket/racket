@@ -835,7 +835,7 @@
 
 	  (define/private (paint-prefetch dc)
 	    (let-values ([(cw ch) (get-client-size)])
-	      (paint-letterbox dc cw ch config:use-screen-w config:use-screen-h)
+              (paint-letterbox dc cw ch config:use-screen-w config:use-screen-h #f)
 	      (let ([dx (floor (/ (- cw config:use-screen-w) 2))]
 		    [dy (floor (/ (- ch config:use-screen-h) 2))])
 		(send dc draw-bitmap prefetch-bitmap dx dy)
@@ -1039,23 +1039,30 @@
 	  (define/public (redraw) (unless printing? (on-paint)))
 	  (super-new)))
 
-      (define (paint-letterbox dc cw ch usw ush)
-	(when (or (< usw cw)
-		  (< ush ch))
-	  (let ([b (send dc get-brush)]
-		[p (send dc get-pen)])
-	    (send dc set-brush black-brush)
-	    (send dc set-pen clear-pen)
-	    (when (< usw cw)
-	      (let ([half (/ (- cw usw) 2)])
-		(send dc draw-rectangle 0 0 half ch)
-		(send dc draw-rectangle (- cw half) 0 half ch)))
-	    (when (< ush ch)
-	      (let ([half (/ (- ch ush) 2)])
-		(send dc draw-rectangle 0 0 cw half)
-		(send dc draw-rectangle 0 (- ch half) cw half)))
-	    (send dc set-brush b)
-	    (send dc set-pen p))))
+      (define (paint-letterbox dc cw ch usw ush clip?)
+	(and (or (< usw cw)
+                 (< ush ch))
+             (let ([b (send dc get-brush)]
+                   [p (send dc get-pen)])
+               (send dc set-brush black-brush)
+               (send dc set-pen clear-pen)
+               (when (< usw cw)
+                 (let ([half (/ (- cw usw) 2)])
+                   (send dc draw-rectangle 0 0 half ch)
+                   (send dc draw-rectangle (- cw half) 0 half ch)))
+               (when (< ush ch)
+                 (let ([half (/ (- ch ush) 2)])
+                   (send dc draw-rectangle 0 0 cw half)
+                   (send dc draw-rectangle 0 (- ch half) cw half)))
+               (send dc set-brush b)
+               (send dc set-pen p)
+               (and clip?
+                    (begin0
+                     (send dc get-clipping-region)
+                     (send dc set-clipping-rect 
+                           (/ (- cw usw) 2) 
+                           (/ (- ch ush) 2)
+                           usw ush))))))
 
       (define paint-slide
 	(case-lambda
@@ -1078,7 +1085,7 @@
 		 [sy (/ ush config:screen-h)]
 		 [mx (/ (- cw usw) 2)]
 		 [my (/ (- ch ush) 2)])
-	    (paint-letterbox dc cw ch usw ush)
+	    (define clip-rgn (paint-letterbox dc cw ch usw ush #t))
 	    
             (when config:smoothing?
               (send dc set-smoothing 'aligned))
@@ -1111,7 +1118,10 @@
 			(- cw w 5 (* sx (sinset-r ins)) (/ (- cw usw) 2))
 			(- ch h 5 (* sy (sinset-b ins)) (/ (- ch ush) 2))))
 		(send dc set-text-foreground c)
-		(send dc set-font f))))]))
+		(send dc set-font f)))
+
+            (when clip-rgn
+              (send dc set-clipping-region clip-rgn)))]))
 
       ;; prefetched-page : (union #f number)
       (define prefetched-page #f)
