@@ -99,8 +99,7 @@
 			   (lambda ()
 			     (retract-most-recent-slide)
 			     (load-content
-			      (build-path (collection-path "slideshow")
-                                          "tutorial-show.rkt")))))
+			      (collection-file-path "tutorial-show.rkt" "slideshow")))))
 	 (page-para* (link "Open File..."
 			   (lambda ()
 			     (let ([file (get-file)])
