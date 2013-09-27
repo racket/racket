@@ -68,6 +68,10 @@ the settings above should match r5rs
     
     (prepare-for-test-expression)
     
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")
+    
     (test-expression "'|.|" "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
                      "#t")
@@ -145,7 +149,11 @@ the settings above should match r5rs
     
     (test-expression "#lang racket" #rx"read: #lang not enabled in the current context" "")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "a: b")))
+                     "a: b")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 
 ;                                                                               
@@ -249,7 +257,11 @@ the settings above should match r5rs
                      ""
                      #rx"read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "a: b")))
+                     "a: b")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 ;                                      
 ;                                      
@@ -358,7 +370,11 @@ the settings above should match r5rs
                      (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
                      #rx"read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     #rx"cannot reference undefined identifier")))
+                     #rx"cannot reference undefined identifier")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     #rx"require: undefined"
+                     #rx"require: undefined")))
 
 
 ;                                                             
@@ -507,7 +523,11 @@ the settings above should match r5rs
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                        "define: expected at least one variable after the function name, but found none"
-                       #rx"define: function definitions are not allowed in the interactions window"))
+                       #rx"define: function definitions are not allowed in the interactions window")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}"))
 
 
 ;                                                                            
@@ -657,7 +677,11 @@ the settings above should match r5rs
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      "define: expected at least one variable after the function name, but found none"
-                     #rx"define: function definitions are not allowed in the interactions window")))
+                     #rx"define: function definitions are not allowed in the interactions window")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 
 ;                                                                                          
@@ -802,7 +826,11 @@ the settings above should match r5rs
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      "define: expected at least one variable after the function name, but found none"
-                     #rx"define: expected at least one variable after the function name, but found none")))
+                     #rx"define: expected at least one variable after the function name, but found none")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 
 
@@ -944,7 +972,11 @@ the settings above should match r5rs
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                        "define: expected at least one variable after the function name, but found none"
-                     #rx"define: expected at least one variable after the function name, but found none")))
+                     #rx"define: expected at least one variable after the function name, but found none")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 
 
@@ -1095,9 +1127,11 @@ the settings above should match r5rs
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      #rx"raise-user-error"
-                     #rx"raise-user-error")))
-
-
+                     #rx"raise-user-error")
+    
+    (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
+                     "{image}"
+                     "{image}")))
 
 
 (define (prepare-for-test-expression)

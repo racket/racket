@@ -523,6 +523,7 @@
   ;; leave-snips-alone-hook : any? (any? -> printable) any? -> printable
   (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
     (if (or (is-a? expr snip%)
+            (is-a? expr bitmap%)
             (to-snip-value? expr))
         expr
         (sh expr basic-convert sub-convert)))
