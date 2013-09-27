@@ -1009,7 +1009,7 @@
     (let ([bm (cond
 	       [(bitmap-draft-mode) #f]
 	       [(filename . is-a? . bitmap%) filename]
-	       [(path-string? filename) (make-object bitmap% filename 'unknown/mask)]
+	       [(path-string? filename) (make-object bitmap% filename 'unknown/alpha)]
 	       [(and (gui-available?)
                      (filename . is-a? . (gui-dynamic-require 'image-snip%)))
                 (send filename get-bitmap)])])
@@ -1018,7 +1018,7 @@
 		[h (send bm get-height)])
 	    (dc
 	     (lambda (dc x y)
-	       (send dc draw-bitmap bm x y 'solid black-color (send bm get-loaded-mask)))
+	       (send dc draw-bitmap bm x y 'solid black-color))
 	     w h))
 	  (frame (inset (colorize (text "bitmap failed") "red") 2)))))
   
