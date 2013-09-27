@@ -12,7 +12,7 @@
 
 (define sys-path 
   (lambda (f)
-    (build-path (collection-path "icons") f)))
+    (collection-file-path f "icons")))
 
 (define local-path 
   (let ([d (current-load-relative-directory)])

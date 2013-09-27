@@ -1642,9 +1642,10 @@
                                                     src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
                                                     style color mask)
       (check-ok who)
-      (let-values ([(src src-x src-y)
+      (let-values ([(src src-x src-y use-alpha)
                     (if (and (alpha . < . 1.0)
-                             (send src is-color?))
+                             (send src is-color?)
+                             (or mask (collapse-bitmap-b&w?)))
                         ;; need a faded source
                         (let* ([alpha-mask (make-object bitmap% (floor src-w) (floor src-h))]
                                [adc (make-object -bitmap-dc% alpha-mask)])
@@ -1655,9 +1656,9 @@
                           (send adc set-bitmap #f)
                           (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 
                                                                style black 1.0 alpha-mask)])
-                            (values tmp-bm 0 0)))
+                            (values tmp-bm 0 0 1.0)))
                         ;; no change to source
-                        (values src src-x src-y))]
+                        (values src src-x src-y alpha))]
                    [(clip-mask) (and mask 
                                      (not (can-mask-bitmap?))
                                      (let* ([bm-w (floor src-w)]
@@ -1686,22 +1687,22 @@
             ;; Need to ensure that the result is still B&W
             (let-values ([(tmp-bm tmp-mask) (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask #t)])
               (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t tmp-mask 
-                                      clip-mask CAIRO_OPERATOR_SOURCE))]
+                                      clip-mask CAIRO_OPERATOR_SOURCE 1.0))]
            [(and mask
                  (or (and (or (not black?) (eq? style 'opaque))
                           (not (send src is-color?)))
-                     (alpha . < . 1.0)))
+                     (use-alpha . < . 1.0)))
             ;; mask plus color or alpha with a color bitmap
-            (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
+            (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color use-alpha #f)])
               (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask 
-                                      clip-mask #f))]
+                                      clip-mask #f 1.0))]
            [else
             ;; Normal combination...
             (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
-                                    style color black? mask clip-mask #f)]))))
+                                    style color black? mask clip-mask #f use-alpha)]))))
 
     (define/public (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y 
-                                           style color black? mask clip-mask op)
+                                           style color black? mask clip-mask op use-alpha)
       (with-cr
        (void)
        cr
@@ -1776,7 +1777,9 @@
                  (begin
                    (cairo_new_path cr)
                    (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
-                   (cairo_fill cr)))
+                   (if (= use-alpha 1.0)
+                       (cairo_fill cr)
+                       (cairo_paint_with_alpha cr use-alpha))))
              (cairo_set_source cr s)
              (cairo_pattern_destroy s))]
           [else

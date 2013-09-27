@@ -98,6 +98,7 @@
 
 ;; Context
 (define-cairo cairo_paint (_cfun _cairo_t -> _void))
+(define-cairo cairo_paint_with_alpha (_cfun _cairo_t _double* -> _void))
 (define-cairo cairo_fill (_cfun _cairo_t -> _void))
 (define-cairo cairo_fill_preserve (_cfun _cairo_t -> _void))
 (define-cairo cairo_stroke (_cfun _cairo_t -> _void))
