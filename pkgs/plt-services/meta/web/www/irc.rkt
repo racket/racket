@@ -28,6 +28,7 @@
       (hash-ref! t type (λ() (a href: (symlink (format "~a/~a" base type)
                                                (format "irc-logs/~a" type))
                                 text))))))
+(void (irc-logs ".htaccess"))
 
 (provide irc-quick)
 (define (irc-quick)
