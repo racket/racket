@@ -95,6 +95,8 @@
                         (hash-ref pkg-info 'name) key)]
                 ['ring
                  *default-ring*]
+                ['checksum-error
+                 #f]
                 ['tags
                  empty]
                 ['versions
@@ -815,9 +817,9 @@
           (td "Checksum")
           (td ,(package-ref* i 'checksum "")))
          ,@(if (package-ref* i 'checksum-error #f)
-             `(tr (td "Error")
-                  (td "The last time we attempted to update this checksum. The following error was thrown:"
-                      (pre ,(package-ref* i 'checksum-error ""))))
+             `((tr (td "Error")
+                   (td "The last time we attempted to update this checksum. The following error was thrown:"
+                       (pre ,(package-ref* i 'checksum-error "")))))
              empty)
          (tr
           (td "Last Update")
@@ -955,6 +957,7 @@
 (define (update-from-content i)
   (define-values (checksum module-paths dependencies)
     (pkg:get-pkg-content (pkg:pkg-desc (hash-ref i 'source)
+                                       #f
                                        #f
                                        (hash-ref i 'checksum)
                                        #f)))
