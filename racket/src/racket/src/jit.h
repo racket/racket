@@ -135,15 +135,6 @@ END_XFORM_ARITH;
 # define LONG_JUMPS_DEFAULT(x) 1
 #endif
 
-#if defined(MZ_PRECISE_GC)
-# if defined(MZ_USE_JIT_I386)
-#  define USE_FLONUM_UNBOXING
-# endif
-# if defined(MZ_USE_JIT_ARM) && defined(__ARM_PCS_VFP)
-#  define USE_FLONUM_UNBOXING
-# endif
-#endif
-
 #ifdef MZ_USE_FUTURES
 # define MZ_USE_LWC
 #endif
@@ -165,6 +156,15 @@ END_XFORM_ARITH;
 # define INLINE_FP_COMP
 # ifdef CAN_INLINE_ALLOC
 #  define INLINE_FP_OPS
+# endif
+#endif
+
+#if defined(CAN_INLINE_ALLOC)
+# if defined(MZ_USE_JIT_I386)
+#  define USE_FLONUM_UNBOXING
+# endif
+# if defined(MZ_USE_JIT_ARM) && defined(__ARM_PCS_VFP)
+#  define USE_FLONUM_UNBOXING
 # endif
 #endif
 
