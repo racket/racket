@@ -33,15 +33,24 @@
 (define-runtime-path missed-optimizations-dir "./missed-optimizations")
 
 ;; these two return lists of tests to be run for that category of tests
-(define (test-opt name logs)
-  (compare-logs name tests-dir logs))
-(define (test-missed-optimization name logs)
-  (compare-logs name missed-optimizations-dir logs))
+(define (test-opt name)
+  (compare-logs name
+                tests-dir
+                (delay/thread (generate-log name tests-dir))))
+(define (test-missed-optimization name)
+  (compare-logs name
+                missed-optimizations-dir
+                (delay/thread (generate-log name missed-optimizations-dir))))
 
 (define (test-file? name)
   (and (regexp-match ".*rkt$" name)
        ;; skip emacs temp unsaved file backups
        (not (regexp-match "^\\.#" name))))
+
+(define (mk-test-opt name logs)
+  (compare-logs name tests-dir logs))
+(define (mk-test-missed-optimization name logs)
+  (compare-logs name missed-optimizations-dir logs))
 
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
@@ -54,6 +63,10 @@
           (proc name logs))))))
 
 (define (optimization-tests)
-  (mk-suite "Optimization Tests" tests-dir test-opt))
+  (mk-suite "Optimization Tests"
+            tests-dir
+            mk-test-opt))
 (define (missed-optimization-tests)
-  (mk-suite "Missed Optimization Tests" missed-optimizations-dir test-missed-optimization))
+  (mk-suite "Missed Optimization Tests"
+            missed-optimizations-dir
+            mk-test-missed-optimization))
