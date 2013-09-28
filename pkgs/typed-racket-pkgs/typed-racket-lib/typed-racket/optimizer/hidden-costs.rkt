@@ -29,6 +29,8 @@
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
   (pattern (#%plain-app op:id args:opt-expr ...)
-    #:when (struct-constructor? #'op)
+    #:when (let ([constructor-for (syntax-property #'op 'constructor-for)])
+             (or (and constructor-for (struct-constructor? constructor-for))
+                 (struct-constructor? #'op)))
     #:do [(log-optimization-info "struct constructor" #'op)]
     #:with opt #'(op args.opt ...)))
