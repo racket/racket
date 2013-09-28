@@ -3,15 +3,18 @@
 PLTHOME="/home/scheme/plt"
 WEBSRC="collects/meta/web"      # relative to PLTHOME
 SRCDIR="$HOME/src/plt/$WEBSRC"  # empty => use code in PLTHOME
-SRCDIR="$HOME/src/plt/$WEBSRC"  # empty => use code in PLTHOME
 DIFFTO="/tmp/w"                 # empty => no diffing
 WEBDIR="/home/scheme/web"
 export GIT_DIR="$HOME/src/plt/.git" # for tag info
 EXTRA="$HOME/work/iplt/web/all.rkt"
 export KNOWN_MIRRORS_FILE="/home/scheme/known-mirror-urls" # to poll mirrors
 
-# Build straight from ~/src/plt, or from ~plt  <<<<<<<<<<<<<<<<<<
-PLTHOME="$HOME/src/plt"; SRCDIR=""
+# Build from here, to here
+HERE="$(cd $(dirname "$0"); pwd)"
+SRCDIR="$HERE/web"
+WEBDIR="$HERE/output"
+PLTHOME="$HOME/src/plt"
+WEBSRC="pkgs/plt-services/meta/web"
 # PLTHOME="/home/scheme/plt"; SRCDIR=""
 
 # clear
@@ -23,13 +26,14 @@ if [ "x$SRCDIR" != "x" ]; then
   echo ""
 fi
 cleanup() {
-  if [ "x$SRCDIR" != "x" ]; then
+  if [ -d "$PLTHOME/$WEBSRC.orig" ] && [ "x$SRCDIR" != "x" ]; then
     echo -n "Restoring web sources"
     rm -rf "$PLTHOME/$WEBSRC"
     mv "$PLTHOME/$WEBSRC.orig" "$PLTHOME/$WEBSRC"
     echo ""
   fi
 }
+trap cleanup 0 3 9 15
 
 EXE="$PLTHOME/bin/racket"
 if [ ! -x "$EXE" ]; then EXE="$PLTHOME/racket/bin/racket"; fi
@@ -38,7 +42,7 @@ if [ ! -x "$EXE" ]; then
 fi
 
 "$EXE" -l meta/web/build -- \
-  --local --dist --extra "$EXTRA" --force --output "$WEBDIR" "$@" \
+  --local --extra "$EXTRA" --force --output "$WEBDIR" "$@" \
 || { cleanup; exit 1; }
 
 symlinks2files() {
