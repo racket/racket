@@ -1,0 +1,75 @@
+#!/bin/sh
+
+PLTHOME="/home/scheme/plt"
+WEBSRC="collects/meta/web"      # relative to PLTHOME
+SRCDIR="$HOME/src/plt/$WEBSRC"  # empty => use code in PLTHOME
+SRCDIR="$HOME/src/plt/$WEBSRC"  # empty => use code in PLTHOME
+DIFFTO="/tmp/w"                 # empty => no diffing
+WEBDIR="/home/scheme/web"
+export GIT_DIR="$HOME/src/plt/.git" # for tag info
+EXTRA="$HOME/work/iplt/web/all.rkt"
+export KNOWN_MIRRORS_FILE="/home/scheme/known-mirror-urls" # to poll mirrors
+
+# Build straight from ~/src/plt, or from ~plt  <<<<<<<<<<<<<<<<<<
+PLTHOME="$HOME/src/plt"; SRCDIR=""
+# PLTHOME="/home/scheme/plt"; SRCDIR=""
+
+# clear
+
+if [ "x$SRCDIR" != "x" ]; then
+  echo -n "Copying web sources from $SRCDIR"
+  mv "$PLTHOME/$WEBSRC" "$PLTHOME/$WEBSRC.orig"
+  cp -a "$SRCDIR" "$PLTHOME/$WEBSRC"
+  echo ""
+fi
+cleanup() {
+  if [ "x$SRCDIR" != "x" ]; then
+    echo -n "Restoring web sources"
+    rm -rf "$PLTHOME/$WEBSRC"
+    mv "$PLTHOME/$WEBSRC.orig" "$PLTHOME/$WEBSRC"
+    echo ""
+  fi
+}
+
+EXE="$PLTHOME/bin/racket"
+if [ ! -x "$EXE" ]; then EXE="$PLTHOME/racket/bin/racket"; fi
+if [ ! -x "$EXE" ]; then
+  echo "racket executable not found" 2>&1; cleanup; exit 1;
+fi
+
+"$EXE" -l meta/web/build -- \
+  --web --dist --extra "$EXTRA" --force --output "$WEBDIR" "$@" \
+|| { cleanup; exit 1; }
+
+symlinks2files() {
+  find "$1" -type l |
+  while read F; do
+    L="`readlink \"$F\"`"
+    rm "$F"
+    echo "$L" > "$F...symlink"
+  done
+}
+files2symlinks() {
+  find "$1" -type f -name "*...symlink" |
+  while read F; do
+    L="`cat \"$F\"`"
+    rm "$F"
+    F="${F%%...symlink}"
+    ln -s "$L" "$F"
+  done
+}
+if [ "x$DIFFTO" != "x" ]; then
+  echo "---- diff ----"
+  symlinks2files "$DIFFTO"
+  symlinks2files "$WEBDIR"
+  diff -rq "$DIFFTO" "$WEBDIR" 2>& 1 \
+  | grep -v "^Only in .*captcha[0-9].jpg...symlink$" \
+  | grep -v "httpd/bug-report-captcha and .* differ$" \
+  | grep -v "bugs/index.html and .* differ$" \
+  | grep -v "internal/build.html and .* differ"
+  files2symlinks "$DIFFTO"
+  files2symlinks "$WEBDIR"
+  echo "--------------"
+fi
+
+cleanup
