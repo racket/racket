@@ -5,6 +5,10 @@
 @(define (row . content) (apply div class: "row" content))
 @(define (js . args) @script[type: "text/javascript" @(apply literal args) "\n"])
 @(define (tagline l) @span[style: "font-style: italic" l])
+
+@(define prev @img[src: "img/prev.png"  style: "width: 50px"])
+@(define next @img[src: "img/next.png"  style: "width: 50px"])
+
 @; The new racket web pages
 
 @literal{<!doctype html>}
@@ -49,13 +53,13 @@
      @li{@a[href: "https://pkg.racket-lang.org"]{Packages}}
      @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
      @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
-     @li[button: "medium metro info btn icon-left entypo icon-install"]{
-       @a[href: "#"]{Download}}}}}
+     @li{@button[class: "medium metro info btn icon-left entypo icon-install"]{
+       @a[href: "#"]{Download}}}}}}
 
 @row{
  @div[class: "ten columns centered"]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{
-  @strong{Racket} @;&nbsp;&mdash;&nbsp;
+  @strong{Racket} @|nbsp mdash nbsp|
   @tagline{a programmable programming language}}}}
 
 @row{
@@ -81,24 +85,36 @@ computing and from databases to charts.
          @icon["icon-help"]}}
      @a[href: "#" class: "toggle narrow_only"
         gumby-trigger: ".unique_lines|.web_scraper"
-        style: "position: absolute; top: -40%; left: 35%"]{
-        @img[src: "img/prev.png"  style: "width: 50px"]}
+        style: "position: absolute; top: -40%; left: 35%"]{@prev}
 
      @a[href: "#" class: "toggle narrow_only"
         gumby-trigger: ".unique_lines|.web_scraper"
-        style: "position: absolute; top: -40%; right: 35%"]{
-        @img[src: "img/next.png"  style: "width: 50px"]}
+        style: "position: absolute; top: -40%; right: 35%"]{@next}
 
      @a[href: "#" class: "toggle wide_only"
         gumby-trigger: ".unique_lines|.web_scraper"
-        style: "position: absolute; top: 40%; left: -15%"]{
-        @img[src: "img/prev.png"  style: "width: 50px"]}
+        style: "position: absolute; top: 40%; left: -15%"]{@prev}
 
      @a[href: "#" class: "toggle wide_only"
         gumby-trigger: ".unique_lines|.web_scraper"
-        style: "position: absolute; top: 40%; right: -15%"]{
-        @img[src: "img/next.png"  style: "width: 50px"]}}}}}
+        style: "position: absolute; top: 40%; right: -15%"]{@next}}}
 
+@div[class: "one column"]{}
+
+@div[class: "three columns" style: "text-color: black"]{
+  @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
+  @p{Racket version 5.3.5 has been released.}
+  @p{Racket videos are now available.}
+  @p{@a[href: "racketcon.html"]{RacketCon 2013} will be in September in Boston.}}}
+
+
+@row{
+@p[class: "twelve columns centered" style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
+@a[href: "http://docs.racket-lang.org/quick/"]{Draw more pictures} or
+@a[href: "http://docs.racket-lang.org/more/"]{build a web server from scratch}.  Racket includes both
+@a[href: "http://docs.racket-lang.org/"]{batteries} and a @a[href: "http://docs.racket-lang.org/drracket/"]{programming environment},
+so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
+}}}
 
 
   @;<!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
