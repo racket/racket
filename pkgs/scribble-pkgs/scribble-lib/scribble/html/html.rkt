@@ -10,7 +10,7 @@
 (provide doctype)
 (define (doctype type)
   (cond [(string? type) (literal "<!DOCTYPE " type ">\n")]
-        [(eq? 'html type)  (doctype type)]
+        [(eq? 'html type) (doctype "html")]
         [(eq? 'xhtml type)
          (list (literal "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
                (doctype (string-append
