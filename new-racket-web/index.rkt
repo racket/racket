@@ -7,7 +7,7 @@
 @(define (tagline l) @span[style: "font-style: italic" l])
 @; The new racket web pages
 
-@(printf "<!doctype html>\n")
+@literal{<!doctype html>}
 
 @html{
  @head{
