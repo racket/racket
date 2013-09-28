@@ -51,6 +51,17 @@
 ;; page layout function
 (define-syntax (page stx)
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
+(define preamble
+  @list{
+    @doctype['html]
+    @; paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/
+    @comment{[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]}
+    @comment{[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]}
+    @comment{[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]}
+    @comment{[if IE 9]>    <html class="no-js ie9" lang="en"> <![endif]}
+    @comment{[if gt IE 9]><!--> <html class="no-js" lang="en" itemscope itemtype="http://schema.org/Product"> <!--<![endif]}
+    })
+
 (define (page* #:id [id #f] #:dir [dir #f] #:file [file #f]
                ;; if this is true, return only the html -- don't create
                ;; a resource -- therefore no file is made, and no links
@@ -94,7 +105,7 @@
               [(#f) (div class: 'bodycontent content0)]
               [else (div class: 'bodycontent style: @list{width: @|width|@";"}
                       content0)])))
-    @list{@doctype['html]
+    @list{@preamble
           @html{@||
                 @head
                 @(if body-attrs
