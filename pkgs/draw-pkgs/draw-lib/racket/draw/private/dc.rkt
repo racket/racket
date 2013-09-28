@@ -1441,7 +1441,7 @@
                                   ;; No good glyph; look for an alternate face
                                   (install-alternate-face ch layout font desc attrs context))
                                 ;; layout-info vector is (vector _layout _xform _run _font _glyphs)
-                                (let ([layout-info (vector layout xform #f #f #f)])
+                                (let ([layout-info (vector layout xform #f #f #f #f)])
                                   (extract-only-run layout layout-info)
                                   (hash-set! layouts (char->integer ch) layout-info)
                                   layout-info)))]
@@ -1586,7 +1586,6 @@
              [done? (or (not (pango_layout_iter_next_run iter))
                         (and (not (pango_layout_iter_get_run_readonly iter))
                              (not (pango_layout_iter_next_run iter))))])
-        (pango_layout_iter_free iter)
         (or (and run
                  done?
                  (= 1 (PangoGlyphString-num_glyphs (PangoGlyphItem-glyphs run)))
@@ -1594,11 +1593,15 @@
                    (vector-set! vec 2 run)
                    (vector-set! vec 3 (PangoItem-font (PangoGlyphItem-item run)))
                    (vector-set! vec 4 (PangoGlyphString-glyphs (PangoGlyphItem-glyphs run)))
+                   (vector-set! vec 5 iter)
                    #t))
-            (begin
+            (let ([old-iter (vector-ref vec 5)])
+              (pango_layout_iter_free iter)
+              (when old-iter (pango_layout_iter_free old-iter))
               (vector-set! vec 2 #f)
               (vector-set! vec 3 #f)
-              (vector-set! vec 4 #f)))))
+              (vector-set! vec 4 #f)
+              (vector-set! vec 5 #f)))))
 
     (def/public (start-doc [string? desc])
       (check-ok 'start-doc))
