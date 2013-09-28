@@ -541,3 +541,15 @@
     .codemodpath:hover {
       text-decoration: none;
     }})
+
+#|
+
+  >>> For additional resources of all kinds:
+
+(define js/foo.js
+  @plain{
+    This is an example of generating some random file
+  })
+
+(void (copyfile (in-here "index.rkt")))
+|#

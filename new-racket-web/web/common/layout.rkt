@@ -201,6 +201,8 @@
 
 (define (html-favicon-maker icon)
   (define headers
+    @; Place favicon.ico and apple-touch-icon.png in the root
+    @;   directory: mathiasbynens.be/notes/touch-icons
     @list{@link[rel: "icon"          href: icon type: "image/ico"]
           @link[rel: "shortcut icon" href: icon type: "image/x-icon"]})
   (λ () headers))
@@ -218,8 +220,6 @@
       @; Mobile viewport optimized: j.mp/bplateviewport
       @meta[name: "viewport"
             content: "width=device-width, initial-scale=1.0, maximum-scale=1"]
-      @; Place favicon.ico and apple-touch-icon.png in the root
-      @;   directory: mathiasbynens.be/notes/touch-icons
       @; CSS: implied media=all
       @; CSS concatenated and minified via ant build script
       @; @link[rel: "stylesheet" href="css/minified.css"]
@@ -227,9 +227,10 @@
       @;   production
       @; ... TODO: distribute the CSS stuffs ...
       @; @link[rel: "stylesheet" href: "css/gumby.css"]
-      @; @link[rel: "stylesheet" href: "css/style.css"]    <-- DROP?? (next line)
-      @; @link[rel: "stylesheet" href: "css/scribble.css"] <-- DROP?? (more.css)
+      @; TODO: Modify `racket-style' definition (and what it depends on)
+      @;   in "resources.rkt"
       @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
+      @; TODO: Edit the `more.css' definition in www/index.rkt
       @; More ideas for your <head> here: h5bp.com/d/head-Tips
       @; All JavaScript at the bottom, except for Modernizr / Respond.
       @; Modernizr enables HTML5 elements & feature detects; Respond is
