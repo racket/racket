@@ -94,12 +94,13 @@
               [(#f) (div class: 'bodycontent content0)]
               [else (div class: 'bodycontent style: @list{width: @|width|@";"}
                       content0)])))
-    @xhtml{@||
-           @head
-           @(if body-attrs
-              (apply body `(,@body-attrs ,content))
-              (body content))
-           @||})
+    @list{@doctype['html]
+          @html{@||
+                @head
+                @(if body-attrs
+                   (apply body `(,@body-attrs ,content))
+                   (body content))
+                @||}})
   (define this (and (not html-only?)
                     (resource/referrer (get-path 'page id file "html" dir)
                                        (file-writer output-xml page)
