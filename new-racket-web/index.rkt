@@ -1,10 +1,21 @@
 #lang scribble/html
-
+@(require racket/format)
 @(define (css url) @link[href: url rel: "stylesheet" type: "text/css"]{})
 @(define (icon name) @i[class: name]{})
 @(define (row . content) (apply div class: "row" content))
 @(define (js . args) @script[type: "text/javascript" @(apply literal args) "\n"])
 @(define (tagline l) @span[style: "font-style: italic" l])
+
+@(define (growbox title . body)
+   @columns[4]{@div[class: 'panetitle (string-append "Grow your " title)]{} @(apply p body)})
+
+@(define (print-num n)
+  (list-ref 
+   '("one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten" "eleven" "twelve" "thirteen") 
+   (sub1 n)))
+@(define (columns n #:row? [row? #f] #:center? [center? #f] #:tag [tag div] . body)
+  (define d (apply tag class: (~a (print-num n) " columns" (if center? " centered" "")) body))
+  (if row? (row d) d))
 
 @(define prev @img[src: "img/prev.png"  style: "width: 50px"])
 @(define next @img[src: "img/next.png"  style: "width: 50px"])
@@ -56,27 +67,25 @@
      @li{@button[class: "medium metro info btn icon-left entypo icon-install"]{
        @a[href: "#"]{Download}}}}}}
 
-@row{
- @div[class: "ten columns centered"]{
+ @columns[10 #:row? #t #:center? #t]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{
   @strong{Racket} @|nbsp mdash nbsp|
-  @tagline{a programmable programming language}}}}
+  @tagline{a programmable programming language}}}
 
-@row{
- @div[class: "eight columns centered"
-      style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
-Racket is a wide-spectrum programming language that inherits from Lisp
+@columns[8 #:center? #t #:row? #t
+         style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
+Racket is a full-spectrum programming language that inherits from Lisp
 and Scheme but also provides dialects that support objects, types,
 laziness, and many other paradigms. Racket's module system allows
 programmers to write and link together components written in different
 dialects.  Racket's libraries range from web servers to distributed
 computing and from databases to charts.
-}}
+}
 
 @div[id: "topcontent"]{
 @row{
- @div[class: "one columns"]{}
- @div[class: "seven columns"]{
+ @columns[1]
+ @columns[7]{
    @h2[style: "font-size: 180%; margin-bottom: 10pt"]{Start Quickly}
    @div[style: "position: relative"]{
      @p[class: "metro primary btn"
@@ -99,22 +108,55 @@ computing and from databases to charts.
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: 40%; right: -15%"]{@next}}}
 
-@div[class: "one column"]{}
+@columns[1]
 
-@div[class: "three columns" style: "text-color: black"]{
+@columns[3 style: "text-color: black"]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
   @p{Racket version 5.3.5 has been released.}
   @p{Racket videos are now available.}
   @p{@a[href: "racketcon.html"]{RacketCon 2013} will be in September in Boston.}}}
 
 
-@row{
-@p[class: "twelve columns centered" style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
+@columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
 @a[href: "http://docs.racket-lang.org/quick/"]{Draw more pictures} or
 @a[href: "http://docs.racket-lang.org/more/"]{build a web server from scratch}.  Racket includes both
 @a[href: "http://docs.racket-lang.org/"]{batteries} and a @a[href: "http://docs.racket-lang.org/drracket/"]{programming environment},
 so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
-}}}
+}}
+
+@columns[10 #:row? #t #:center? #t]{@h3{Go Further}}
+
+@row[id: 'growboxes]{
+
+
+@growbox["Program"]{Racket's
+@a[href: "http://docs.racket-lang.org/guide/intro.html#(part._.Interacting_with_.Racket)"]{interactive
+mode} encourages experimentation, and quick scripts easily compose
+into larger systems.  Small scripts and large systems both benefit
+from
+@a[href: "http://docs.racket-lang.org/guide/performance.html"]{native-code
+JIT compilation} When a system gets too big to keep in your head, you
+can add
+@a[href: "http://docs.racket-lang.org/ts-guide/index.html"]{static
+types}.}
+
+@growbox["Language"]{@a[href: "http://docs.racket-lang.org/guide/languages.html"]{Extend
+Racket} whenever you need to.  Mold it to better suit your tasks
+without sacrificing
+@a[href: "http://docs.racket-lang.org/guide/dialects.html"]{interoperability}
+with existing libraries and without having to modify the
+@a[href: "http://docs.racket-lang.org/guide/intro.html"]{tool chain}.
+When less is more, you can remove parts of a language or start over
+and build a new one.}
+
+@growbox["Skills"]{Whether you're just
+@a[href: "http://htdp.org/"]{starting out}, want to know more about
+programming language @a[href: "http://www.plai.org/"]{applications} or
+@a[href: "http://redex.racket-lang.org/"]{models}, looking to
+@a[href: "http://docs.racket-lang.org/continue/"]{expand your
+horizons}, or ready to dive into @a[href: "learning.html"]{research},
+Racket can help you become a better programmer and system builder.}}
+
 
 
   @;<!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
