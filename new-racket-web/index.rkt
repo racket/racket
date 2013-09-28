@@ -8,13 +8,19 @@
 
 @(define (growbox title . body)
    @columns[4]{@div[class: 'panetitle (string-append "Grow your " title)]{} @(apply p body)})
+@(define (docelem kw name link . text)
+   (apply p @a[href: link]{@strong[kw]: @|name| } text))
+
+@(define (sectitle name) @columns[10 #:center? #t #:row? #t]{@h3[name]})
 
 @(define (print-num n)
   (list-ref 
    '("one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten" "eleven" "twelve" "thirteen") 
    (sub1 n)))
-@(define (columns n #:row? [row? #f] #:center? [center? #f] #:tag [tag div] . body)
-  (define d (apply tag class: (~a (print-num n) " columns" (if center? " centered" "")) body))
+@(define (columns n #:row? [row? #f] #:center? [center? #f] #:tag [tag div] #:push [push #f] . body)
+  (define d (apply tag class: (~a (print-num n) " columns" 
+                                  (if center? " centered" "") 
+                                  (if push (~a " push_" (print-num push)) "")) body))
   (if row? (row d) d))
 
 @(define prev @img[src: "img/prev.png"  style: "width: 50px"])
@@ -58,9 +64,9 @@
   @row{
    @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
      @icon{icon-menu}}
-   @a[class: "two columns logo" href: ""]{
+   @a[class: "five columns logo" href: ""]{
      @img[class: "logo" src: "img/logo.png"]}
-   @ul[class: "five columns push_four"]{
+   @ul[class: "five columns"]{
      @li{@a[href: "https://pkg.racket-lang.org"]{Packages}}
      @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
      @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
@@ -124,7 +130,7 @@ computing and from databases to charts.
 so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
 }}
 
-@columns[10 #:row? #t #:center? #t]{@h3{Go Further}}
+@sectitle{Go Further}
 
 @row[id: 'growboxes]{
 
@@ -157,7 +163,36 @@ programming language @a[href: "http://www.plai.org/"]{applications} or
 horizons}, or ready to dive into @a[href: "learning.html"]{research},
 Racket can help you become a better programmer and system builder.}}
 
+@sectitle{Documentation}
 
+@row{
+@columns[5]{
+  @div[class: 'panetitle]{For getting started}
+  @docelem['Quick "An Introduction to Racket with Pictures" "http://docs.racket-lang.org/quick/"]{
+    gives you a taste of Racket.}
+  @docelem['More "Systems Programming with Racket" "http://docs.racket-lang.org/more/"]{
+    dives much deeper and much faster, showing how to build a complete
+    continuation-based web server.}
+  @docelem['Guide "Racket" "http://docs.racket-lang.org/guide/"]{
+    starts with a tutorial on Racket basics, and then it
+    describes the rest of the Racket language.}}
+
+
+@columns[5 #:push 2]{
+  @div[class: 'panetitle]{For experienced Racketeers}
+  @docelem['Reference "Racket" "http://docs.racket-lang.org/reference/"]{
+provides comprehensive coverage of all of Racket.}
+  @docelem['Continue "Web Applications in Racket" "http://docs.racket-lang.org/continue/"]{
+  describes how to use the
+    Racket @a[href: "http://docs.racket-lang.org/web-server/"]{web
+    server} to build dynamic web applications.}
+  @docelem["Package Management" "Racket" "http://docs.racket-lang.org/pkg/"]{
+explains how to install
+    @a[href: "https://pkg.racket-lang.org"]{packages}, and how to
+    build and distribute your own.}}
+}
+
+@sectitle{Community}
 
   @;<!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
   @script[src: "http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"]
