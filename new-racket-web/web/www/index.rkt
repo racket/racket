@@ -268,6 +268,7 @@
            Racket provides a rich language extension API, the DrRacket @;
            integrated development environment, and many batteries-included @;
            libraries.}
+        @; Ask google to not use the ODP description
         #:extra-headers @list{@meta[name: "robots" content: "NOODP"]
                               @(lazy more.css)}
     @div[class: 'leftpane]{
