@@ -5,7 +5,10 @@
 @title[#:tag "top"]{The Typed Racket Guide}
 
 @author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]
-        @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
+        @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
+        @author+email["Eric Dobson" "endobson@racket-lang.org"]
+        @author+email["Asumu Takikawa" "asumu@racket-lang.org"]
+        ]
 
 @section-index["typechecking" "typechecker" "typecheck"]
 
