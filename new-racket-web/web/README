@@ -1,0 +1,47 @@
+Sources:
+========
+
+* common: specific code for the racket web pages.
+
+* www: actual content of main site.
+
+* download: content of download site (only installer pages and such)
+
+* */all.rkt: files that just require all the necessary modules to build
+  the whole site or sub-sites
+
+* */resources.rkt: files that define the resources for a site (icon,
+  css, logo)
+
+* minis: smaller one-source-file sites
+
+* stubs: template "sites" that are intended to be hooked into other
+  systems to get the racket look.
+
+To build:
+=========
+
+* Run `build.rkt' as the main entry point to building the web pages.
+  (Use `-h' as usual.)
+
+* You need to choose `-w' or `-l' for a web or local mode respectively.
+  The difference is that in local mode inter-site links are set up as
+  relative links so you can see all sites from the resulting
+  directories, and this is what you usually need to test things out.
+  (You will still need to deal with an occasional addition of
+  "index.html" which is not done when looking at file:// URLs.)
+
+* Use `-o <dir>' to specify a directory where the built contents is
+  placed, otherwise the content will be placed in the current directory.
+  (Use `-f' in scripts to avoid answering the question about deleting
+  existing files.)
+
+* If you're not running from a git repository, you will also need to set
+  a $GIT_DIR environment variable otherwise the resulting build will not
+  have release information for the various builds.  (This doesn't matter
+  if you're not working on download pages.)
+
+* You can also include more files that hook additional contents with
+  with `-e <some-file>'.  These files are required dynamically, and they
+  set things up to add more content building.  The common example here
+  is "web/all.rkt" in iplt.
