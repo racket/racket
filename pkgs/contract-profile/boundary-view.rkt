@@ -187,7 +187,7 @@
   (printf "splines=\"true\"\n") ; polyline kinda works too, maybe
 
   ;; cluster nodes per module, to show boundaries
-  (for ([module-nodes (in-list (group-by equal? nodes #:key node->module))]
+  (for ([module-nodes (in-list (group-by node->module nodes))]
         [cluster-idx  (in-naturals 1)])
     (define known-module? (node->module (first module-nodes)))
     ;; don't cluster nodes for which we have no module info

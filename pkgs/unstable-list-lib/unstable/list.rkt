@@ -158,10 +158,10 @@
 
 ;; stamourv added:
 
-;; (y y -> bool) (listof x) #:key (x -> y) -> (listof (listof x))
+;; (x -> y) (listof x) [(y y -> bool)] -> (listof (listof x))
 ;; groups together elements that are considered equal
 ;; =? should be reflexive, transitive and commutative
-(define (group-by =? l #:key [key values])
+(define (group-by key l [=? equal?])
   (for/fold ([res '()]) ; list of lists
       ([elt (in-list l)])
     (let loop ([classes     res] ; "zipper" of the equivalence classes
@@ -180,7 +180,7 @@
                    (cons (car classes) rev-classes))]))))
 
 (provide/contract
- [group-by (->* (procedure? list?) (#:key procedure?)
+ [group-by (->* (procedure? list?) (procedure?)
                 list?)])
 
 ;; endobson added:

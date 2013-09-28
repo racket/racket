@@ -65,8 +65,8 @@
 
   (displayln "\nBY CONTRACT\n")
   (define samples-by-contract
-    (sort (group-by equal? live-contract-samples
-                    #:key (lambda (x) (blame-contract (car x))))
+    (sort (group-by (lambda (x) (blame-contract (car x)))
+                    live-contract-samples)
           > #:key length #:cache-keys? #t))
   (for ([c (in-list samples-by-contract)])
     (define representative (caar c))
@@ -78,8 +78,9 @@
     (define representative (caar g))
     (print-contract/loc representative)
     (for ([x (sort
-              (group-by equal? g
-                        #:key (lambda (x) (blame-value (car x)))) ; callee source, maybe
+              (group-by (lambda (x)
+                          (blame-value (car x))) ; callee source, maybe
+                        g)
               > #:key length)])
       (printf "  ~a\n  ~a ms\n"
               (blame-value (caar x))
@@ -88,8 +89,8 @@
 
   (define samples-by-contract-by-caller
     (for/list ([g (in-list samples-by-contract)])
-      (sort (group-by equal? (map sample-prune-stack-trace g)
-                      #:key cddr) ; pruned stack trace
+      (sort (group-by cddr ; pruned stack trace
+                      (map sample-prune-stack-trace g))
             > #:key length)))
 
   (displayln "\nBY CALLER\n")

@@ -161,16 +161,16 @@ for which @racket[pred] produces a true value.
 
 @addition{Vincent St-Amour}
 
-@defproc[(group-by [=? (-> B B any/c)]
+@defproc[(group-by [extract-key (-> A B)]
                    [lst (listof A)]
-                   [#:key extract-key (-> A B) values])
+                   [=? (-> B B any/c) equal?])
          (listof (listof A))]{
 
 Groups the given list into equivalence classes, with equivalence being
 determined by @racket[=?].
 
 @examples[#:eval the-eval
-(group-by = '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
+(group-by (lambda (x) (modulo x 3)) '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
 ]
 }
 
