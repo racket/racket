@@ -1549,7 +1549,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth);
 int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, data->num_params)
- int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, data->num_params)
 #endif

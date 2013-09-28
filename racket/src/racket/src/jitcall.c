@@ -1191,6 +1191,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
         rand = (alt_rands 
                 ? alt_rands[i+1+args_already_in_place] 
                 : app->args[i+1+args_already_in_place]);
+        arg_tmp_offset += MZ_FPUSEL(extfl, 2*sizeof(double), sizeof(double));
         /* Boxing definitely isn't needed if the value was from a local that doesn't hold
            an unboxed value, otherwise we generate code to check dynamically. */
         if (!SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
@@ -1198,7 +1199,6 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
             || (extfl && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_EXTFLONUM))) {
           GC_CAN_IGNORE jit_insn *iref;
           int aoffset;
-          arg_tmp_offset += MZ_FPUSEL(extfl, 2*sizeof(double), sizeof(double));
           aoffset = JIT_FRAME_FLOSTACK_OFFSET - arg_tmp_offset;
           if (i != num_rands - 1)
             mz_pushr_p(JIT_R0);
@@ -1235,6 +1235,15 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 
     /* Arguments already in place may also need to be boxed. */
     arg_tmp_offset = jitter->self_restart_offset;
+    for (i = jitter->self_data->closure_size; i--; ) {
+      /* Skip over flonums unpacked from the closure. I think this never
+         happens, because I think that a self-call with already-in-place
+         flonum arguments will only happen when the closure is empty. */
+      if (CLOSURE_CONTENT_IS_FLONUM(jitter->self_data, i))
+        arg_tmp_offset -= sizeof(double);
+      else if (CLOSURE_CONTENT_IS_EXTFLONUM(jitter->self_data, i))
+        arg_tmp_offset -= 2*sizeof(double);
+    }
     for (i = 0; i < args_already_in_place; i++) {
       if (CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i)
           || CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i)) {
