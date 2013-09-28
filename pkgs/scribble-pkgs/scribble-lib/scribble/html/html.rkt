@@ -5,15 +5,26 @@
 (require "xml.rkt" scribble/text)
 
 ;; ----------------------------------------------------------------------------
+;; Doctype line
+
+(provide doctype)
+(define (doctype type)
+  (cond [(string? type) (literal "<!DOCTYPE " type ">\n")]
+        [(eq? 'html type)  (doctype type)]
+        [(eq? 'xhtml type)
+         (list (literal "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+               (doctype (string-append
+                         "html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""
+                         " \"http://www.w3.org/TR/xhtml1/DTD/"
+                         "xhtml1-strict.dtd\"")))]
+        [else (raise-type-error 'doctype
+                                "string or known doctype symbol" type)]))
+
+;; ----------------------------------------------------------------------------
 ;; Xhtml toplevel
 
 ;; creation of xhtml files requires some extra stuff
-(define xhtml-prefix
-  (literal
-   (string-append
-    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-    "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""
-    " \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n")))
+(define xhtml-prefix (doctype 'xhtml))
 (provide xhtml)
 (define (xhtml . body)
   (list xhtml-prefix
