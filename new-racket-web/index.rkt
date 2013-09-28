@@ -11,7 +11,7 @@
 
 @; The new racket web pages
 
-@literal{<!doctype html>}
+@doctype['html]
 
 @html{
  @head{
