@@ -62,6 +62,20 @@
     @comment{[if gt IE 9]><!--> <html class="no-js" lang="en" @;
              itemscope itemtype="http://schema.org/Product"> <!--<![endif]}
     })
+(define postamble
+  @list{
+    @; Grab Google CDN's jQuery, with a protocol relative URL;
+    @;   fall back to local if offline
+    @; ... TODO: distribute the JS stuffs ...
+    @; @script[src: '("http://ajax.googleapis.com/"
+    @;                "ajax/libs/jquery/1.9.1/jquery.min.js")]
+    @; @script/inline{
+    @;   window.jQuery || document.write(@;
+    @;     '<script src="/js/libs/jquery-1.9.1.min.js"><\/script>')}
+    @; @script[src: "js/libs/gumby.min.js"]
+    @; @script[src: "js/plugins.js"]
+    @; @script[src: "js/main.js"]
+    })
 
 (define (page* #:id [id #f] #:dir [dir #f] #:file [file #f]
                ;; if this is true, return only the html -- don't create
@@ -112,7 +126,8 @@
                 @(if body-attrs
                    (apply body `(,@body-attrs ,content))
                    (body content))
-                @||}})
+                @postamble}
+          @||})
   (define this (and (not html-only?)
                     (resource/referrer (get-path 'page id file "html" dir)
                                        (file-writer output-xml page)
