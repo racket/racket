@@ -15,6 +15,7 @@ SRCDIR="$HERE/web"
 WEBDIR="$HERE/output"
 PLTHOME="$HOME/src/plt"
 WEBSRC="pkgs/plt-services/meta/web"
+DIFFTO="/tmp/nw"
 # PLTHOME="/home/scheme/plt"; SRCDIR=""
 
 # clear
