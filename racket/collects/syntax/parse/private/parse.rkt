@@ -461,7 +461,7 @@ Conventions:
                    [tx (cdr datum)]
                    [tpr (ps-add-cdr pr)])
                (parse:matrix ((hx hcx hpr es) (tx tcx tpr es) . ins) inner))
-             (let ([es* (if (and 'proper? (null? datum)) (es-add-proper es) es)])
+             (let ([es* (if (and 'proper? (null? datum)) (es-add-proper-pair es) es)])
                (fail (failure pr es*)))))]
     [(parse:pk (in1 . ins) #s(pk/and inner))
      #'(parse:matrix (in1 in1 . ins) inner)]))
