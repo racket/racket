@@ -58,24 +58,16 @@
          (define-syntax-class unboxed-let-clause?
            (pattern ((id:id) rhs:float-complex-expr)
              #:when (could-be-unboxed-in? #'id #'(begin body ...))))
-         ;; extract function bindings that have float-complex arguments
-         ;; we may be able to pass arguments unboxed
-         ;; this covers loop variables
-         ;; if the function escapes, we can't change its interface
-         ;; Currently can only optimize terms that bind one value
+
+         ;; Clauses that define functions that can be lifted
          (define-syntax-class unboxed-fun-clause?
            (pattern (~and ((_:non-escaping-function) . _)
                           _:unboxed-fun-definition)))
 
          (define-syntax-class unboxed-clause?
-            #:attributes ([candidates 1]
-                          [function-candidates 1]
-                          [others 1]
-                          bindings)
+            #:attributes (unboxed-let bindings)
             (pattern v:unboxed-let-clause?
-              #:with (candidates ...) #'(v)
-              #:with (function-candidates ...) #'()
-              #:with (others ...) #'()
+              #:attr unboxed-let #t
               #:with (real-binding imag-binding) (binding-names)
               #:do [(add-unboxed-var! #'v.id #'real-binding #'imag-binding)]
               #:attr bindings
@@ -86,38 +78,35 @@
                         ((real-binding) c.real-binding)
                         ((imag-binding) c.imag-binding))])))
             (pattern v:unboxed-fun-clause?
-              #:with (candidates ...) #'()
-              #:with (function-candidates ...) #'(v)
-              #:with (others ...) #'()
+              #:attr unboxed-let #f
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [c:unboxed-fun-clause
                      #'(c.bindings ...)])))
             (pattern v
-              #:with (candidates ...) #'()
-              #:with (function-candidates ...) #'()
-              #:with (others ...) #'(v)
+              #:attr unboxed-let #f
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [(vs rhs:opt-expr)
                      #'((vs rhs.opt))]))))
-         ]
+         (define full-syntax this-syntax)
 
-   ;; we look for bindings of complexes that are not mutated and only
-   ;; used in positions where we would unbox them
-   ;; these are candidates for unboxing
+         (define-syntax-class unboxed-clauses
+           #:attributes ([bindings 1])
+           (pattern (clauses:unboxed-clause? ...)
+             ;; only log when we actually optimize
+             #:do [(when (member #t (attribute clauses.unboxed-let))
+                     (log-optimization "unboxed let bindings" arity-raising-opt-msg full-syntax))]
+             #:with (bindings ...) (template ((?@ . clauses.bindings) ...))))]
+
    #:with opt
      (syntax-parse #'(clause ...)
-      [(clause:unboxed-clause? ...)
-       ;; only log when we actually optimize
-       (unless (zero? (syntax-length #'(clause.candidates ... ...)))
-         (log-opt "unboxed let bindings" arity-raising-opt-msg))
-       (define/with-syntax ((new-binds ...) ...) #'(clause.bindings ...))
+      [clauses:unboxed-clauses
        (quasisyntax/loc/origin
           this-syntax #'letk.kw
-          (letk.key ...  (new-binds ... ...) body.opt ...))])))
+          (letk.key ... (clauses.bindings ...) body.opt ...))])))
 
 
 
