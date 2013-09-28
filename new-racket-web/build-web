@@ -38,7 +38,7 @@ if [ ! -x "$EXE" ]; then
 fi
 
 "$EXE" -l meta/web/build -- \
-  --web --dist --extra "$EXTRA" --force --output "$WEBDIR" "$@" \
+  --local --dist --extra "$EXTRA" --force --output "$WEBDIR" "$@" \
 || { cleanup; exit 1; }
 
 symlinks2files() {
