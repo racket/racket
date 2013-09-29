@@ -125,7 +125,7 @@
                                     stx pats)])))))))
 
 (define (trans-match pred transformer pat)
-  (make-And (list (make-Pred pred) (make-App transformer pat))))
+  (make-And (list (make-Pred pred) (make-App transformer (list pat)))))
 
 ;; transform a match-expander application
 ;; parse : stx -> pattern

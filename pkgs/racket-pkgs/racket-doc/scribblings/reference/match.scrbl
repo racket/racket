@@ -313,14 +313,16 @@ In more detail, patterns match as follows:
         [_ 'no])
        ]}
 
- @item{@racket[(#,(racketidfont "app") _expr _pat)] --- applies
+ @item{@racket[(#,(racketidfont "app") _expr _pats ...)] --- applies
        @racket[_expr] to the value to be matched; the result of the
-       application is matched against @racket[_pat].
+       application is matched against @racket[_pats].
 
        @examples[
        #:eval match-eval
        (match '(1 2)
         [(app length 2) 'yes])
+       (match '(1 2)
+        [(app (lambda (v) (split-at v 1)) '(1) '(2)) 'yes])
        ]}
 
  @item{@racket[(#,(racketidfont "?") _expr _pat ...)] --- applies

@@ -234,11 +234,12 @@
      (unless (null? (cdr block))
        (error 'compile-one "App block with multiple rows: ~a" block))
      (let* ([row (car block)]
-            [pats (Row-pats row)])
-       (with-syntax ([(t) (generate-temporaries #'(t))])
-         #`(let ([t (#,(App-expr first) #,x)])
-             #,(compile* (cons #'t xs)
-                         (list (make-Row (cons (App-p first) (cdr pats))
+            [pats (Row-pats row)]
+            [app-pats (App-ps first)])
+       (with-syntax ([(t ...) (generate-temporaries app-pats)])
+         #`(let-values ([(t ...) (#,(App-expr first) #,x)])
+             #,(compile* (append (syntax->list #'(t ...)) xs)
+                         (list (make-Row (append app-pats (cdr pats))
                                          (Row-rhs row)
                                          (Row-unmatch row)
                                          (Row-vars-seen row)))
