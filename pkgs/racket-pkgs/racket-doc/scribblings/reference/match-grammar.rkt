@@ -28,7 +28,7 @@ pat     ::= id                                @match anything, bind identifier
          |  (AND pat ...)                     @match when all pats match
          |  (OR pat ...)                      @match when any pat match
          |  (NOT pat ...)                     @match when no pat matches
-         |  (APP expr pat)                    @match (expr value) to pat
+         |  (APP expr pats ...)               @match (expr value) output values to pats
          |  (? expr pat ...)                  @match if (expr value) and pats
          |  (QUASIQUOTE qp)                   @match a quasipattern
          |  derived-pattern                   @match using extension

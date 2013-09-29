@@ -3,6 +3,7 @@
 (require scheme/match
 	 scheme/mpair
          scheme/control scheme/foreign
+         (only-in racket/list split-at)
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
          (only-in srfi/13 string-contains)
@@ -276,6 +277,11 @@
    (comp 1
          (match '(1 2)
            [(or (list a 1) (list a 2)) a]
+           [_ 'bad]))
+
+   (comp 'yes
+         (match '(1 2)
+           [(app (lambda (v) (split-at v 1)) '(1) '(2)) 'yes]
            [_ 'bad]))
 
    (comp '(2 3)

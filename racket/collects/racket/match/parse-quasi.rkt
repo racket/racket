@@ -60,7 +60,7 @@
            [pats (cdr (vector->list (struct->vector (syntax-e #'struct))))])
        (make-And (list (make-Pred #`(struct-type-make-predicate (prefab-key->struct-type '#,key #,(length pats))))
                        (make-App #'struct->vector
-                                 (make-Vector (cons (make-Dummy #f) (map pq pats))))))
+                                 (list (make-Vector (cons (make-Dummy #f) (map pq pats)))))))
        #;
        (make-PrefabStruct key (map pq pats)))]
     ;; the hard cases
@@ -73,7 +73,7 @@
             (syntax->list #'(p ...)))
      (make-And (list (make-Pred #'vector?)
                      (make-App #'vector->list
-                               (pq (quasisyntax/loc stx (p ...))))))]
+                               (list (pq (quasisyntax/loc stx (p ...)))))))]
     [#(p ...)
      (make-Vector (map pq (syntax->list #'(p ...))))]
     [bx

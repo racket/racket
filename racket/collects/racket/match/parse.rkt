@@ -166,8 +166,8 @@
             (And (map rearm+parse (syntax->list #'(q1 qs ...))))))]
     [(? p)
      (Pred (rearm #'p))]
-    [(app f p)
-     (App #'f (rearm+parse #'p))]
+    [(app f ps ...) ;; only make a list for more than one pattern
+     (App #'f (map rearm+parse (syntax->list #'(ps ...))))]
     [(quasiquote p)
      (parse-quasi #'p rearm+parse)]
     [(quasiquote . _)

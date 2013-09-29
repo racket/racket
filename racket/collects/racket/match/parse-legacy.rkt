@@ -42,7 +42,7 @@
      (ormap ddk? (syntax->list #'(es ...)))
      (make-And (list (make-Pred #'vector?)
                      (make-App #'vector->list
-                               (parse (syntax/loc stx (es ...))))))]
+                               (list (parse (syntax/loc stx (es ...)))))))]
     [#(es ...)
      (make-Vector (map parse (syntax->list #'(es ...))))]
     [($ s . pats)
@@ -53,7 +53,7 @@
     [(? p)
      (make-Pred (rearm #'p))]
     [(= f p)
-     (make-App #'f (parse #'p))]
+     (make-App #'f (list (parse #'p)))]
     [(quasiquote p)
      (parse-quasi #'p parse)]
     [(quote . rest)
