@@ -6,8 +6,10 @@
 @(define (js . args) @script[type: "text/javascript" @(apply literal args) "\n"])
 @(define (tagline l) @span[style: "font-style: italic" l])
 
+@(define (panetitle l) @div[class: "panetitle" l])
+
 @(define (growbox title . body)
-   @columns[4]{@div[class: 'panetitle (string-append "Grow your " title)]{} @(apply p body)})
+   @columns[4 (panetitle (string-append "Grow your " title)) (apply p body)])
 @(define (docelem kw name link . text)
    (apply p @a[href: link]{@strong[kw]: @|name| } text))
 
@@ -167,7 +169,7 @@ Racket can help you become a better programmer and system builder.}}
 
 @row{
 @columns[5]{
-  @div[class: 'panetitle]{For getting started}
+  @panetitle{For getting started}
   @docelem['Quick "An Introduction to Racket with Pictures" "http://docs.racket-lang.org/quick/"]{
     gives you a taste of Racket.}
   @docelem['More "Systems Programming with Racket" "http://docs.racket-lang.org/more/"]{
@@ -179,7 +181,7 @@ Racket can help you become a better programmer and system builder.}}
 
 
 @columns[5 #:push 2]{
-  @div[class: 'panetitle]{For experienced Racketeers}
+  @panetitle{For experienced Racketeers}
   @docelem['Reference "Racket" "http://docs.racket-lang.org/reference/"]{
 provides comprehensive coverage of all of Racket.}
   @docelem['Continue "Web Applications in Racket" "http://docs.racket-lang.org/continue/"]{
@@ -193,6 +195,95 @@ explains how to install
 }
 
 @sectitle{Community}
+
+@row{
+@columns[4]{
+@panetitle{News & Events}
+@p{@a[href: "racketcon.html"]{RacketCon} — the annual
+  Racket meeting, coming up in September.  Previously
+  in @a[href: "http://con.racket-lang.org/2012"]{2012}
+  and @a[href: "http://con.racket-lang.org/2012"]{2011}.}
+
+@p{@a[href: "http://blog.racket-lang.org/"]{Blog}
+  — announcements, helpful hints, and thoughtful rants.}
+@p{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
+— short bits of Racket news.}
+}
+
+@columns[4]{
+@panetitle{Discussion}
+@p{@a[href: "http://lists.racket-lang.org/"]{Mailing lists}
+  — discussion for using and developing Racket.}
+@p{@a[href: "http://racket-lang.org/irc-chat.html"]{IRC}   —
+Chat in the @tt[style: "background-color: #d8d8e8;"]{@big{@strong{#racket}}} channel on
+@a[href: "http://freenode.net"]{@tt{freenode.net}} — an informal
+discussion channel for all things related to Racket.
+(@a[href: "https://botbot.me/freenode/racket/"]{Browse the logs}.)}
+
+@p{@a[href: "http://racket-lang.org/people.html"]{People}   —
+The people behind Racket.}
+}
+
+
+
+@columns[4]{
+@panetitle{Contributing}
+@p{@a[href: "https://github.com/plt/racket/"]{Code}
+  — the Racket source code on GitHub.}
+@p{@a[href: "https://github.com/plt/racket/wiki"]{Wiki}   —
+Useful pages
+  include @a[href: "https://github.com/plt/racket/wiki/Intro-Projects"]{Intro
+    Projects}
+  and @a[href: "https://github.com/plt/racket/wiki/Videos"]{Videos},
+  including tutorials, interviews, and more.}
+@p{@a[href: "http://www.cs.utah.edu/plt/snapshots"]{Snapshot builds}   —
+The freshest versions of Racket.}
+
+@p{@a[href: "http://bugs.racket-lang.org"]{Bug reports}   —
+File, query and maybe fix existing reports.}}}
+
+@sectitle{Learning}
+
+@row{
+@row{
+@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+  @a[href: "http://www.htdp.org"]{@img[src: "img/htdp-cover.gif"]}}
+@columns[4]{@panetitle{How to Design Programs}
+@p{A principled approach to program design}
+@ul{
+    @li{Teaching language support built-in to DrRacket}
+    @li{Aimed at the programming novice}}}
+
+@columns[4]{@panetitle{Realm of Racket}
+  @p{Learn Racket and programming, one game at a time}
+  @ul{
+    @li{Sample game code comes with the Racket distribution}
+    @li{For those just starting out with Racket}
+}}
+@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+  @a[href: "http://www.realmofracket.com"]{@img[src: "img/racket_cover_web.png"]}}
+}}
+
+@row{
+@row{
+@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+  @a[href: "http://cs.brown.edu/~sk/Publications/Books/ProgLangs/2007-04-26/"]{@img[src: "img/plai-cover.jpg"]}}
+@columns[4]{@panetitle{PLAI}
+@p{Foundations of programming languages}
+@ul{
+    @li{Understand the features that make languages tick}
+    @li{For undergraduates, graduate students, and experts}}}
+
+@columns[4]{@panetitle{Semantics Engineering with PLT Redex}
+  @p{Lightweight automation for semantics}
+  @ul{
+    @li{Model your own programming language semantics}
+    @li{For the working language engineer}
+}}
+@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+  @a[href: "http://redex.racket-lang.org/"]{@img[src: "img/redex-cover.jpg"]}}
+}}
+
 
   @;<!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
   @script[src: "http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"]
