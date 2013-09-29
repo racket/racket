@@ -665,7 +665,8 @@ produce variables that are always distinct.
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform/subs[(define-language lang-name 
+@defform/subs[#:literals (::=)
+              (define-language lang-name 
                 non-terminal-def ...)
               ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
                                  (non-terminal-name @#,ttpattern ...+)
@@ -704,7 +705,8 @@ A non-terminal's names and productions may be separated by the keyword @racket[:
 Use of the @racket[::=] keyword outside a language definition is a syntax error.
 }
 
-@defform/subs[(define-extended-language extended-lang base-lang 
+@defform/subs[#:literals (::=)
+              (define-extended-language extended-lang base-lang 
                 non-terminal-def ...)
               ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
                                  (non-terminal-name @#,ttpattern ...+)
