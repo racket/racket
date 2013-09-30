@@ -1,4 +1,11 @@
 ------------------------------
+       Version 6.1
+------------------------------
+
+  . changed the online expansion handler machinery so that
+    the handlers receive exceptions when expansion raises one
+
+------------------------------
        Version 6.0
 ------------------------------
 

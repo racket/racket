@@ -42,6 +42,8 @@
                    . 
                    body)))
 
+(define-logger online-check-syntax)
+
 (define (tc-setup/proc orig-stx stx expand-ctxt init checker f)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
@@ -62,6 +64,12 @@
       (when (show-input?)
         (pretty-print (syntax->datum fully-expanded-stx)))
       (do-time "Local Expand Done")
+      (let ([exprs (syntax->list (syntax-local-introduce fully-expanded-stx))])
+        (when (pair? exprs)
+          (log-message online-check-syntax-logger
+                       'info
+                       "TR's expanded syntax objects; this message is ignored"
+                       (cdr exprs))))
       (init)
       (do-time "Initialized Envs")
       (find-mutated-vars fully-expanded-stx mvar-env)

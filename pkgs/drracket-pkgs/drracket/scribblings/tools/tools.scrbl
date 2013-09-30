@@ -1011,6 +1011,27 @@ Finally, Check Syntax only draws arrows between identifiers that are @racket[syn
 or that have the @racket[syntax-property] @racket['original-for-check-syntax]
 set to @racket[#t].
 
+@section{Cooperating with Background Check Syntax}
+
+DrRacket's continuous, background check syntax runs each time 
+an edit to the definitions text happens. In some cases, that
+expansion process fails, but there is still a well-formed syntax
+object that check syntax can use to display information to the user.
+In order to communicate that syntax object to check syntax, 
+send a log message with the name @racket['online-check-syntax],
+e.g.
+@racketblock[(define-logger online-check-syntax)
+             (log-message online-check-syntax-logger
+                          'info
+                          "ignored message"
+                          list-of-syntax-objects)]
+The fourth argument to @racket[log-message] should be a list 
+of syntax objects; these are processed as if they were the result
+of expansion. 
+
+Note: the identifiers in these objects should be @racket[syntax-original?]
+or else they will be ignored by check syntax.
+
 @section{Teaching Languages}
 
 The teaching language are implemented via the tools interface and thus

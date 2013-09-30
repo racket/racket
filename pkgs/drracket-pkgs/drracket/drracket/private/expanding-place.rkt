@@ -9,10 +9,13 @@
 
 (struct exn-info (str src-vecs exn-stack missing-mods) #:prefab)
 
-(struct job (cust response-pc working-thd stop-watching-abnormal-termination))
+(struct job (cust working-thd stop-watching-abnormal-termination))
 
 ;; key : any (used by equal? for comparision, but back in the main place)
-(struct handler (key proc))
+;; monitor-pc : (or/c #f place-channel)
+;;     -- #f means a "end of expansion" notification,
+;;     -- place-channel means to notify at the beginning
+(struct handler (key monitor-pc proc) #:transparent)
 (define handlers '())
 
 (define module-language-parallel-lock-client
@@ -39,10 +42,15 @@
          (current-custodian)))
   
   ;; get the handlers in a second message
-  (set! handlers (for/list ([lst (place-channel-get p)])
-                   (define file (list-ref lst 0))
-                   (define id (list-ref lst 1))
-                   (handler lst (dynamic-require file id))))
+  (set! handlers 
+        (filter
+         values
+         (for/list ([lst (place-channel-get p)])
+           (define file (list-ref lst 0))
+           (define id (list-ref lst 1))
+           (define monitor-pc (list-ref lst 2))
+           (handler (list file id) monitor-pc (dynamic-require file id)))))
+  
   (let loop ([current-job #f]
              ;; the old-registry argument holds on to the namespace-module-registry
              ;; from a previous run in order to keep entries in the bytecode cache
@@ -100,6 +108,23 @@
     (parameterize ([current-custodian cust])
       (thread
        (λ ()
+         
+         (ep-log-info "expanding-place.rkt: 00 starting monitors")
+         (for ([handler (in-list handlers)])
+           (define pc (handler-monitor-pc handler))
+           (when pc 
+             (define (failed x)
+               (eprintf "starting monitor ~s failed:\n" (handler-key handler))
+               ((error-display-handler) (exn-message x) x))
+             (with-handlers ([exn:fail? failed])
+               (define (send-back val)
+                 (place-channel-put 
+                  response-pc
+                  (vector 'monitor-message
+                          (handler-key handler)
+                          val)))
+               ((handler-proc handler) send-back path the-source orig-cust))))
+         
          (ep-log-info "expanding-place.rkt: 01 starting thread")
          (define sema (make-semaphore 0))
          (ep-log-info "expanding-place.rkt: 02 setting basic parameters")
@@ -186,12 +211,14 @@
          (place-channel-put pc-status-expanding-place 'finished-expansion)
          (ep-log-info "expanding-place.rkt: 10 expanded")
          (define handler-results
-           (for/list ([handler (in-list handlers)])
-             (list (handler-key handler)
-                   ((handler-proc handler) expanded
-                                           path
-                                           the-source
-                                           orig-cust))))
+           (for/list ([handler (in-list handlers)]
+                      #:unless (handler-monitor-pc handler))
+             (define proc-res
+               ((handler-proc handler) expanded
+                                       path
+                                       the-source
+                                       orig-cust))
+             (list (handler-key handler) proc-res)))
          (ep-log-info "expanding-place.rkt: 11 handlers finished")
          
          (parameterize ([current-custodian orig-cust])
@@ -250,6 +277,13 @@
          (λ (exn+loaded-paths)
            (place-channel-put pc-status-expanding-place 'exn-raised)
            (define main-exn (list-ref exn+loaded-paths 0))
+           
+           ;; inform the handlers that an exn has been raised
+           (when (exn? main-exn)
+             (for ([handler (in-list handlers)]
+                   #:unless (handler-monitor-pc handler))
+               ((handler-proc handler) main-exn path the-source orig-cust)))
+           
            (define exn-type
              (cond
                [(exn:access? main-exn)
@@ -318,7 +352,7 @@
              exn-infos
              (list-ref exn+loaded-paths 1)))))))))
   
-  (job cust response-pc working-thd stop-watching-abnormal-termination))
+  (job cust working-thd stop-watching-abnormal-termination))
 
 (define (catch-and-log port sema)
   (let loop ()

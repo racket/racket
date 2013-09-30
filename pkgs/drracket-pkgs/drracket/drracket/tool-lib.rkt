@@ -227,19 +227,25 @@ all of the names in the tools library, for use defining keybindings
       void?)
   (mod-path id local-handler)
   @{Registers a pair of procedures with DrRacket's online expansion machinery. 
+    (See also @racket[drracket:module-language-tools:add-online-expansion-monitor].)
     
     The first two arguments name a procedure in a module that is loaded by 
-    @racket[dynamic-require] is a separate place. When DrRacket detects that
+    @racket[dynamic-require] is specially designed separate @racket[place].
+    When DrRacket detects that
     the editor has been modified, it sends the contents of the editor over to
     that separate place, @racket[expand]s the program there, and then supplies
-    the fully expanded object to that first procedure. (The procedure is called
-    in the same context as the expansion process.) 
+    the fully expanded object to that first procedure. (The procedure is called 
+    in the same context as the expansion process.)
+
+    If the expansion raises an exception, then that exception is supplied as the 
+    first argument instead of the syntax object. If a non-@racket[exn?] is raised, 
+    or if the expansion process is terminated (e.g. via @racket[custodian-shutdown-all]
+    called during expansion), then the expansion monitor is not notified.
     
     The contract for that procedure is
-    @racketblock[(-> syntax? path? any/c custodian? 
+    @racketblock[(-> (or/c syntax? exn?) path? any/c custodian? 
                      any)]
-    There are three other arguments.
-    
+    There are three other arguments:
     @itemize[
       @item{
     The @racket[path?] argument is the path that was the @racket[current-directory]
@@ -271,12 +277,68 @@ all of the names in the tools library, for use defining keybindings
     since this procedure is invoked on DrRacket's eventspace's handler thread.})
  
  (proc-doc/names
+  drracket:module-language-tools:add-online-expansion-monitor
+  (-> path-string? symbol?
+      (-> (is-a?/c drracket:unit:definitions-text<%>)
+          (or/c drracket:module-language-tools:start?
+                any/c)
+          any)
+      void?)
+  (mod-path id local-handler)
+  @{Registers a pair of procedures with DrRacket's online expansion machinery. 
+    
+    Like @racket[drracket:module-language-tools:add-online-expansion-handler], 
+    the first two arguments name a procedure that is called in the separate place
+    designated for expansion.
+    
+    The procedure is called before expansion starts and once it returns, expansion
+    begins. The procedure should match this contract:
+    @racketblock[(-> (-> any/c void?)
+                     path? any/c custodian? 
+                     any)]
+    The first argument is a function that transmits its argument back to the
+    DrRacket place, send it to the @racket[local-handler] argument.
+    The other three arguments are the same as the corresponding procedure used
+    by @racket[drracket:module-language-tools:add-online-expansion-handler].
+    
+    The expectation is that this procedure creates a thread and monitors the 
+    expansion process, sending back information to the main place while
+    expansion is progressing.
+    
+    The @racket[local-handler] procedure is called each time the 
+    @racket[(-> any/c void?)] procedure (described just above) is called.
+    It is also called each time an expansion starts; it receives a value
+    that returns @racket[#t] from @racket[drracket:module-language-tools:start?]
+    in that case.})
+
+ (proc-doc/names
+  drracket:module-language-tools:start?
+  (-> any/c boolean?)
+  (val)
+  @{Returns @racket[#t] if this is a special (unique) value, used as
+    discussed in @racket[drracket:module-language-tools:add-online-expansion-monitor].
+    Returns @racket[#f] otherwise.})
+ 
+ (proc-doc/names
   drracket:module-language-tools:register-online-expansion-pref
   (-> (-> (is-a?/c vertical-panel%) void?) void?)
   (func)
   @{Registers @racket[func] so that it is called while building the
     preferences panel. The function is passed a panel that contains 
     other configuration controls for online expansion.})
+ 
+ (proc-doc/names
+  drracket:module-language-tools:done?
+  (-> any/c boolean?)
+  (val)
+  @{Returns @racket[#t] for @racket[drracket:module-language-tools:done]
+            and @racket[#f] otherwise.})
+ 
+ (thing-doc
+  drracket:module-language-tools:done
+  drracket:module-language-tools:done?
+  @{Used to inform a monitor-based handler that the online expansion has finished.})
+  
  
  (proc-doc/names
   drracket:module-language:add-module-language
@@ -291,6 +353,7 @@ all of the names in the tools library, for use defining keybindings
   @{Extends @racket[super%] by overriding the @method[editor<%> put-file] method
     to use a default name from the buffer, if the buffer contains something like
     @tt{(module name ...)}.})
+  
   
  
  ;                           

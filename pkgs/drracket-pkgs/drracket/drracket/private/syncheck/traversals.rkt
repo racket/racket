@@ -205,7 +205,6 @@
                     [else
                      (loop fst)
                      (body-loop (car bodies) (cdr bodies))]))))
-            
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values
                                                   set! quote quote-syntax with-continuation-mark
                                                   #%plain-app #%top #%plain-module-begin
