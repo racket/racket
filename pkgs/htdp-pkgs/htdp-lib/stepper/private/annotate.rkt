@@ -679,7 +679,7 @@
             [(stepper-syntax-property exp 'stepper-skipto/discard)
              (dont-annotate 'discard)]
             [(to-be-skipped? exp)
-             (vector (wcm-wrap 13 exp) null)]
+             (vector (wcm-wrap "supposed to be skipped" exp) null)]
             
             [else
              (let ([exp (syntax-disarm exp saved-code-inspector)])
