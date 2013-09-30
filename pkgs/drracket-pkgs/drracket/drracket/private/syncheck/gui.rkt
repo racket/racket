@@ -355,7 +355,7 @@ If the namespace does not, they are colored the unbound color.
                      highlight-range unhighlight-range
                      paragraph-end-position first-line-currently-drawn-specially?
                      line-end-position position-line
-                     syncheck:add-docs-range)
+                     syncheck:add-docs-range get-padding)
             
             ;; arrow-records : (U #f hash[text% => arrow-record])
             ;; arrow-record = interval-map[(listof arrow-entry)]
@@ -578,7 +578,7 @@ If the namespace does not, they are colored the unbound color.
                 (when (update-latent-arrows #f #f)
                   (update-drawn-arrows))
                 (syncheck:clear-coloring)
-                (invalidate-bitmap-cache)))
+                (invalidate-bitmap-cache/padding)))
             
             (define/public (syncheck:clear-coloring)
               (when cleanup-texts
@@ -892,7 +892,7 @@ If the namespace does not, they are colored the unbound color.
                          (set! any-tacked? #t)
                          (k (void))))))
                   (when any-tacked?
-                    (invalidate-bitmap-cache)))))
+                    (invalidate-bitmap-cache/padding)))))
             
             (define view-corner-hash (make-weak-hasheq))
             
@@ -1130,7 +1130,7 @@ If the namespace does not, they are colored the unbound color.
               (update-tooltip-frame-and-matching-identifiers #f)
               (update-docs-background cursor-eles)
               (unless (equal? latent-stuff cursor-stuff)
-                (invalidate-bitmap-cache)))
+                (invalidate-bitmap-cache/padding)))
             
             (define mouse-admin #f)  ; editor admin for the last mouse move
             (define mouse-x #f)      ; last known mouse position
@@ -1487,7 +1487,7 @@ If the namespace does not, they are colored the unbound color.
                          (hash-set! tacked-hash-table arrow (not untack-arrows?)))
                        (list arrow))]))
                  arrows))
-              (invalidate-bitmap-cache))
+              (invalidate-bitmap-cache/padding))
             
             (define/private (tack-crossing-arrows-callback arrow-record start end text kinds)
               (define (xor a b)
@@ -1507,7 +1507,7 @@ If the namespace does not, they are colored the unbound color.
                              (within va-end-text va-end))
                     (when (memq (var-arrow-level va) kinds)
                       (hash-set! tacked-hash-table va #t)))))
-              (invalidate-bitmap-cache))
+              (invalidate-bitmap-cache/padding))
 
             (define/private (untack-crossing-arrows arrow-record start end)
               ;; FIXME: same comment as in 'tack-crossing...'
@@ -1667,6 +1667,10 @@ If the namespace does not, they are colored the unbound color.
                                (snip-loop (send snip next)))]
                           [else 
                            (snip-loop (send snip next))]))]))]))
+            
+            (define/private (invalidate-bitmap-cache/padding)
+              (define-values (l t r b) (get-padding))
+              (invalidate-bitmap-cache l))
             
             (super-new)))))
     
