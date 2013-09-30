@@ -1086,6 +1086,55 @@ a black outline.
                                      (rectangle 32 32 "outline" "black")))]
 }
 
+@defproc[(place-images [images (listof image?)]
+                       [posns (listof posn?)]
+                       [scene image?])
+         image?]{
+ 
+ Places each of @racket[images] into @racket[scene] like 
+                @racket[place-image] would, using the coordinates
+                in @racket[posns] as the @racket[_x]
+                and @racket[_y] arguments to @racket[place-image].
+                  
+ @crop-warning
+                
+ @image-examples[(place-images
+                  (list (circle 4 "solid" "white")
+                        (circle 4 "solid" "white")
+                        (circle 4 "solid" "white")
+                        (circle 4 "solid" "white"))
+                  (list (make-posn 18 20)
+                        (make-posn 0 6)
+                        (make-posn 14 2)
+                        (make-posn 8 14))
+                  (rectangle 24 24 "solid" "goldenrod"))]
+}
+
+
+@defproc[(place-images/align [images (listof image?)]
+                             [posns (listof posn?)]
+                             [x-place x-place?]
+                             [y-place y-place?]
+                             [scene image?])
+         image?]{
+ 
+ Like @racket[place-images], except that it places the images
+      with respect to @racket[x-place] and @racket[y-place].
+                         
+ @crop-warning
+
+ @image-examples[(place-images/align
+                  (list (triangle 48 "solid" "yellowgreen")
+                        (triangle 48 "solid" "yellowgreen")
+                        (triangle 48 "solid" "yellowgreen")
+                        (triangle 48 "solid" "yellowgreen"))
+                  (list (make-posn 64 64) 
+                        (make-posn 64 48)
+                        (make-posn 64 32)
+                        (make-posn 64 16))
+                  "right" "bottom"
+                  (rectangle 64 64 "solid" "mediumgoldenrod"))]
+}
 @defproc[(scene+line [scene image?]
                      [x1 real?] [y1 real?]
                      [x2 real?] [y2 real?]

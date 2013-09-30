@@ -126,6 +126,9 @@
                 i
                 arg)
      (to-img arg)]
+    [(images)
+     (check-arg fn-name (and (list? arg) (andmap image? arg)) 'image-list i arg)
+     arg]
     [(mode)
      (check-arg fn-name
                 (mode? arg)
@@ -247,6 +250,17 @@
      (check-arg fn-name
                 (>= (length arg) 3)
                 'list-of-at-least-three-posns
+                i arg)
+     arg]
+    [(zero-or-more-posns)
+     (check-arg fn-name
+                (and (list? arg)
+                     (andmap posn? arg))
+                'list-of-posns
+                i arg)
+     (check-arg fn-name
+                (andmap real-valued-posn? arg)
+                'list-of-posns-with-real-valued-x-and-y-coordinates
                 i arg)
      arg]
     [(int0-255-1 int0-255-2 int0-255-3 int0-255-4)

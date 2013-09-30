@@ -425,6 +425,23 @@
                         "when x-place or y-place is ~e or ~e, the the first image argument must have a pinhole"
                         'pinhole "pinhole"))
   (place-image/internal image1 x1 y1 image2 x-place y-place))
+(define/chk (place-images images zero-or-more-posns image2)
+  (check-place-images-dependency 'place-images images zero-or-more-posns)
+  (for/fold ([image2 image2]) ([image1 (in-list (reverse images))] 
+                               [posn (in-list (reverse zero-or-more-posns))])
+    (place-image/internal
+     image1 (posn-x posn) (posn-y posn) image2 'middle 'middle)))
+(define/chk (place-images/align images zero-or-more-posns x-place y-place image2)
+  (check-place-images-dependency 'place-images/align images zero-or-more-posns)
+  (for/fold ([image2 image2]) ([image1 (in-list (reverse images))] 
+                               [posn (in-list (reverse zero-or-more-posns))])
+    (place-image/internal
+     image1 (posn-x posn) (posn-y posn) image2 x-place y-place)))
+
+(define (check-place-images-dependency who images zero-or-more-posns)
+  (check-dependencies who
+                      (= (length images) (length zero-or-more-posns))
+                      "expected images and posns arguments to have the same length"))
 
 (define (place-image/internal image orig-dx orig-dy scene x-place y-place)
   (let ([dx (- orig-dx (find-x-spot x-place image))]
@@ -1472,7 +1489,8 @@
 
          place-image
          place-image/align
-         
+         place-images
+         place-images/align
          
          save-image
          save-svg-image

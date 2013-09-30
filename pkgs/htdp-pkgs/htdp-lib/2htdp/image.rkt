@@ -66,6 +66,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          frame
          place-image
          place-image/align
+         place-images
+         place-images/align
          
          scale
          scale/xy

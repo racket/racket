@@ -1624,6 +1624,34 @@
                    2 7
                    (circle 4 'solid 'black)))
 
+(let ()
+  (define image1 (circle 8 'solid 'red))
+  (define image2 (rectangle 40 4 'solid 'blue))
+  (define image3 (rectangle 4 40 'solid 'green))
+  (define background (rectangle 40 40 'solid 'black))
+  (define spot 20)
+  (define p (make-posn spot spot))
+  
+  (test (place-images (list image1 image2 image3)
+                      (list (make-posn 30 10) p p)
+                      background)
+        =>
+        (place-image image1 30 10
+                     (place-image image2 spot spot
+                                  (place-image image3 spot spot
+                                               background))))
+  
+  (test (place-images/align (list image1 image2 image3)
+                            (list (make-posn 30 10) p p)
+                            'center 'center
+                            background)
+        =>
+        (place-image image1 30 10
+                     (place-image image2 spot spot
+                                  (place-image image3 spot spot
+                                               background)))))
+
+
 ;; this test case checks to make sure the number of crops doesn't 
 ;; grow when normalizing shapes.
 
