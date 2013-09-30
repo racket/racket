@@ -10,6 +10,7 @@
          racket/math
          racket/match
          racket/set
+         racket/place
          racket/gui/base
          compiler/embed
          compiler/cm
@@ -131,6 +132,7 @@
   (define default-submodules-to-run (list '(main) '(test)))
   (define default-enforce-module-constants #t)
   (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
+  
   
   ;; module-mixin : (implements drracket:language:language<%>)
   ;;             -> (implements drracket:language:language<%>)
@@ -2131,7 +2133,9 @@
                         (module-language-settings->prefab-module-settings settings)
                         (λ (res) (oc-finished res))
                         (λ (a b) (oc-status-message a b))
-                        (get-currently-open-files))]
+                        (λ (key val) (oc-monitor-value key val))
+                        (get-currently-open-files)
+                        (send dirty/pending-tab get-defs))]
         [else
          (line-of-interest)
          (send dirty/pending-tab set-oc-status
@@ -2142,7 +2146,7 @@
                                       #f))))
          (oc-maybe-start-something)])))
 
-  (define/oc-log (oc-finished res)
+  (define/oc-log (oc-finished res)    
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
     (when running-tab
       (cond
@@ -2157,9 +2161,15 @@
                (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
                      (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
              (when (equal? this-key that-key)
-               ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) 
-                (send running-tab get-defs)
-                val))))
+               (cond
+                 [(drracket:module-language-tools:online-expansion-handler-monitor? o-e-h)
+                  ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h)
+                   (send running-tab get-defs)
+                   drracket:module-language-tools:done)]
+                 [else
+                  ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) 
+                   (send running-tab get-defs)
+                   val)]))))
          
          (send running-tab set-oc-status (clean #f #f))
          (send running-tab set-dep-paths (list->set (vector-ref res 2)) #f)]
@@ -2178,6 +2188,19 @@
     (when running-tab
       (line-of-interest)
       (send running-tab set-oc-status (running sym str))))
+  
+  (define/oc-log (oc-monitor-value key val)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (when running-tab
+      (line-of-interest)
+      (for ([handler (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
+        (when (equal? (list (drracket:module-language-tools:online-expansion-handler-mod-path handler)
+                            (drracket:module-language-tools:online-expansion-handler-id handler))
+                      key)
+          (line-of-interest)
+          ((drracket:module-language-tools:online-expansion-handler-local-handler handler)
+           (send running-tab get-defs)
+           val)))))
   
   ;; get-focus-tab : -> (or/c tab #f)
   (define (get-focus-tab)
@@ -2212,7 +2235,9 @@
                          prefab-module-settings 
                          show-results 
                          tell-the-tab-show-bkg-running
-                         currently-open-files)
+                         monitor-status
+                         currently-open-files
+                         defs)
     (unless expanding-place
       (set! expanding-place (dynamic-place expanding-place.rkt 'start))
       (place-channel-put expanding-place module-language-compile-lock)
@@ -2220,7 +2245,15 @@
        expanding-place 
        (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
          (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
-               (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
+               (drracket:module-language-tools:online-expansion-handler-id o-e-h)
+               (drracket:module-language-tools:online-expansion-handler-monitor? o-e-h)))))
+    
+    (for ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
+      (when (drracket:module-language-tools:online-expansion-handler-monitor? o-e-h)
+        ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h)
+         defs
+         drracket:module-language-tools:start)))
+    
     (set-pending-thread
      tell-the-tab-show-bkg-running
      (thread (λ () 
@@ -2248,14 +2281,27 @@
                                 (pending-tell-the-tab-show-bkg-running
                                  'finished-expansion
                                  sc-online-expansion-running)))))))
-               (define res (place-channel-get pc-out))
-               (queue-callback
-                (λ ()
-                  (when (eq? us pending-thread)
-                    (set-pending-thread #f #f))
-                  (when (getenv "PLTDRPLACEPRINT")
-                    (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                  (show-results res)))))))
+               
+               ;; this loop catches all responses but handles the monitor response
+               ;; response here and keeps waiting for the actual result in that case.
+               (let loop ()
+                 (define res (place-channel-get pc-out))
+                 (cond
+                   [(equal? (vector-ref res 0) 'monitor-message)
+                    (queue-callback
+                     (λ ()
+                       (when (getenv "PLTDRPLACEPRINT")
+                         (printf "PLTDRPLACEPRINT: got monitor result back from the place\n"))
+                       (monitor-status (vector-ref res 1) (vector-ref res 2))))
+                    (loop)]
+                   [else
+                    (queue-callback
+                     (λ ()
+                       (when (eq? us pending-thread)
+                         (set-pending-thread #f #f))
+                       (when (getenv "PLTDRPLACEPRINT")
+                         (printf "PLTDRPLACEPRINT: got results back from the place\n"))
+                       (show-results res)))]))))))
   
   (define (stop-place-running)
     (when expanding-place

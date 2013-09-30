@@ -279,6 +279,19 @@ all of the names in the tools library, for use defining keybindings
     other configuration controls for online expansion.})
  
  (proc-doc/names
+  drracket:module-language-tools:done?
+  (-> any/c boolean?)
+  (val)
+  @{Returns @racket[#t] for @racket[drracket:module-language-tools:done]
+            and @racket[#f] otherwise.})
+ 
+ (thing-doc
+  drracket:module-language-tools:done
+  drracket:module-language-tools:done?
+  @{Used to inform a monitor-based handler that the online expansion has finished.})
+  
+ 
+ (proc-doc/names
   drracket:module-language:add-module-language
   (-> any)
   ()
@@ -291,6 +304,7 @@ all of the names in the tools library, for use defining keybindings
   @{Extends @racket[super%] by overriding the @method[editor<%> put-file] method
     to use a default name from the buffer, if the buffer contains something like
     @tt{(module name ...)}.})
+  
   
  
  ;                           
