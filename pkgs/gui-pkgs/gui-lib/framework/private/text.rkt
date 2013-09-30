@@ -4274,22 +4274,23 @@ designates the character that triggers autocompletion
         (setup-padding))
       (inner (void) after-edit-sequence))
     
-    (define/private (draw-numbers dc top bottom dx dy start-line end-line)
-      (define last-paragraph #f)
-      (define insertion-para
-        (let ([sp (get-start-position)])
-          (if (= sp (get-end-position))
-              (position-paragraph sp)
-              #f)))
-      (for ([line (in-range start-line end-line)])
-        (define y (line-location line))
-        (define yb (line-location line #f))
-        (define this-paragraph (line-paragraph line))
-        (when (and (y . <= . bottom) (yb . >= . top))
-          (do-draw-single-line dc dx dy line y last-paragraph 
-                               (and insertion-para
-                                    (= insertion-para this-paragraph))))
-        (set! last-paragraph this-paragraph)))
+    (define/private (draw-numbers dc left top right bottom dx dy start-line end-line)
+      (unless (left . > . (line-x-coordinate dc dx))
+        (define last-paragraph #f)
+        (define insertion-para
+          (let ([sp (get-start-position)])
+            (if (= sp (get-end-position))
+                (position-paragraph sp)
+                #f)))
+        (for ([line (in-range start-line end-line)])
+          (define y (line-location line))
+          (define yb (line-location line #f))
+          (define this-paragraph (line-paragraph line))
+          (when (and (y . <= . bottom) (yb . >= . top))
+            (do-draw-single-line dc dx dy line y last-paragraph 
+                                 (and insertion-para
+                                      (= insertion-para this-paragraph))))
+          (set! last-paragraph this-paragraph))))
     
     (define/public (do-draw-single-line dc dx dy line y last-paragraph is-insertion-line?)
       (define single-space (text-width dc "0"))
@@ -4338,13 +4339,16 @@ designates the character that triggers autocompletion
 
     ;; draw the line between the line numbers and the actual text
     (define/public (draw-separator dc top bottom dx dy)
-      (define x (text-width dc (number-space)))
-      (define line-x (+ (left-space dc dx) x))
+      (define line-x (line-x-coordinate dc dx))
       (define line-y1 (+ dy top))
       (define line-y2 (+ dy bottom))
       (send dc set-pen (get-foreground) 1 'solid)
       (send dc draw-line line-x line-y1
                          line-x line-y2))
+    
+    (define/private (line-x-coordinate dc dx)
+      (define x (text-width dc (number-space)))
+      (+ (left-space dc dx) x))
 
     ;; `line-numbers-space' will get mutated in the `on-paint' method
     ;; (define line-numbers-space 0)
@@ -4356,7 +4360,7 @@ designates the character that triggers autocompletion
       (define end-line (box 0))
       (get-visible-line-range start-line end-line #f)
 
-      (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
+      (draw-numbers dc left top right bottom dx dy (unbox start-line) (add1 (unbox end-line)))
       (draw-separator dc top bottom dx dy)
       (restore-dc-state dc saved-dc))
 
