@@ -2,7 +2,8 @@
 (require racket/future)
 
 ;; other params are provided by declaration
-(provide set-flag-params
+(provide call-with-flag-params
+         set-flag-params
 	 setup-program-name
 	 specific-collections
 	 specific-planet-dirs
@@ -20,14 +21,28 @@
       (let ([param (make-parameter default)])
 	(defined-flag-params (cons (cons 'name param) (defined-flag-params)))
 	param))))
+
+;; this macro is used to actually do the setting, `more ...' is for additional
+;; parameters to set
+(define (call-with-flag-params flags k)
+  (let loop ([flag-params (defined-flag-params)])
+    (cond
+     [(null? flag-params) (k)]
+     [else 
+      (define name+param (car flag-params))
+      (define x (assq (car name+param) flags))
+      (if x
+          (parameterize ([(cdr name+param) (cadr x)])
+            (loop (cdr flag-params)))
+          (loop (cdr flag-params)))])))
+
+;; Imperative version of `with-flag-params':
+(define-syntax-rule (set-flag-params flags more ...)
+  (set-flag-params* flags (list* (cons 'more more) ... (defined-flag-params))))
 (define (set-flag-params* flags flag-params)
   (for ([name+param flag-params])
     (cond [(assq (car name+param) flags)
            => (lambda (x) ((cdr name+param) (cadr x)))])))
-;; this macro is used to actually do the setting, `more ...' is for additional
-;; parameters to set
-(define-syntax-rule (set-flag-params flags more ...)
-  (set-flag-params* flags (list* (cons 'more more) ... (defined-flag-params))))
 
 (define setup-program-name (make-parameter "raco setup"))
 
