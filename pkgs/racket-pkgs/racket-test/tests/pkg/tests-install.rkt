@@ -27,6 +27,13 @@
                     "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
                     "pkg-test1 pkg-test3")
 
+   (with-fake-root
+    (shelly-case
+     "local package (old plt)" 
+     $ "raco pkg install test-pkgs/pkg-test-ancient.plt"
+     $ "racket -l test-pkg-ancient" =stdout> "'yea\n"
+     $ "raco pkg remove pkg-test-ancient"))
+
    (shelly-case
     "invalid package format is an error"
     $ "raco pkg install test-pkgs/pkg-test1.zip.CHECKSUM" =exit> 1)

@@ -1090,7 +1090,17 @@
                       (lambda (x) (log-pkg-debug "~a" x))
                       (lambda () pkg-dir)
                       #f
-                      (lambda (auto-dir main-dir file) pkg-dir))]
+                      (lambda (auto-dir main-dir file) pkg-dir))
+              (define info-path (build-path pkg-dir "info.rkt"))
+              (unless (file-exists? info-path)
+                ;; Add in "info.rkt" file to make it multi-collection,
+                ;; since a ".plt" archive is never single-collection. This
+                ;; is needed for supporting old ".plt" archives as packages.
+                (call-with-output-file info-path
+                  (lambda (o)
+                    (fprintf o "#lang setup/infotab\n")
+                    (write '(define collection 'multi) o)
+                    (newline o))))]
              [x
               (pkg-error "invalid package format\n  given: ~a" x)])
 
