@@ -144,7 +144,7 @@ the state transitions / contracts are:
              (error 'preferences:set
                     (string-append
                      "new value doesn't satisfy preferences:set-default predicate\n"
-                     "  pref sym: ~e\n"
+                     "  pref sym: ~v\n"
                      "  given: ~e\n"
                      "  predicate: ~e")
                      p value checker?))
