@@ -456,8 +456,11 @@
        (get-current-preferred-font-size))))
   
   
-  (define/contract (set-current-preferred-font-size new-size)
-    (-> exact-nonnegative-integer? void?)
+  (define (set-current-preferred-font-size new-size)
+    (unless (exact-nonnegative-integer? new-size)
+      (raise-argument-error 'set-current-preferred-font-size
+                            "exact-nonnegative-integer?"
+                            new-size))
     (define old-pref (preferences:get 'framework:standard-style-list:font-size))
     (define current-mons (get-current-monitor-sizes))
     (define new-monitor-sizes
