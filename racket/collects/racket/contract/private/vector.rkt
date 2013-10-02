@@ -175,7 +175,8 @@
 (define/subexpression-pos-prop (vector-immutableof c)
   (vectorof c #:immutable #t))
 
-(define-struct base-vector/c (elems immutable))
+(define-struct base-vector/c (elems immutable)
+  #:property prop:custom-write custom-write-property-proc)
 
 (define (vector/c-name c)
   (let ([immutable (base-vector/c-immutable c)])
