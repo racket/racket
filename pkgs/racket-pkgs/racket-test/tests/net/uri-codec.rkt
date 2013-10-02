@@ -96,6 +96,7 @@
         (uri-path-segment-decode "M~%28@%3B%20")   =>  "M~(@; "
         (uri-path-segment-unreserved-decode "M~(@%3B%20")   =>  "M~(@; "
         (uri-encode "æçè") => "%C3%A6%C3%A7%C3%A8"
+        (uri-encode "Kidô senkan Nadeshiko") => "Kid%C3%B4%20senkan%20Nadeshiko"
         ))
 
 ;; tests adapted from Noel Welsh's original test suite
