@@ -1,9 +1,8 @@
 #;#;
 #<<END
-TR info: struct-constructor.rkt 15:7 foo -- struct constructor
+TR info: struct-constructor.rkt 14:7 foo -- struct constructor
 END
-#<<END
-END
+""
 
 
 #lang typed/racket

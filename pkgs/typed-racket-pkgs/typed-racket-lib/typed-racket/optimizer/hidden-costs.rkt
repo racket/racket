@@ -16,6 +16,7 @@
 ;; It only logs operations with hidden costs, for use by Optimization Coach.
 (define-syntax-class hidden-cost-log-expr
   #:commit
+  #:literal-sets (kernel-literals)
   ;; Log functions that access parameters implicitly (e.g. `display', which
   ;; accesses `current-output-port').
   (pattern (#%plain-app op:hidden-port-parameter-function args:opt-expr ...)
@@ -28,9 +29,12 @@
     #:with opt #'(op args.opt ...))
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
-  (pattern (#%plain-app op:id args:opt-expr ...)
+  ;; Note: Sometimes constructors are wrapped in `#%expression', need to watch
+  ;;  for that too.
+  (pattern (#%plain-app (~and op-part (~or op:id (#%expression op:id)))
+                        args:opt-expr ...)
     #:when (let ([constructor-for (syntax-property #'op 'constructor-for)])
              (or (and constructor-for (struct-constructor? constructor-for))
                  (struct-constructor? #'op)))
     #:do [(log-optimization-info "struct constructor" #'op)]
-    #:with opt #'(op args.opt ...)))
+    #:with opt #'(op-part args.opt ...)))
