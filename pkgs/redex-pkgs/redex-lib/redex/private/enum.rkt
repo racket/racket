@@ -8,6 +8,7 @@
          "enumerator.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
+         "preprocess.rkt"
          "recursive-lang.rkt")
 
 (provide 
@@ -85,8 +86,9 @@
           rhss)))
 
 (define (pat/e pat l-enums unused/e)
-  (enum-names pat
-              (sep-names pat)
+  (define processed (preprocess pat))
+  (enum-names processed
+              (sep-names processed)
               l-enums
               unused/e))
 
