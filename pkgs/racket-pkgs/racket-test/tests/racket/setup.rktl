@@ -29,7 +29,12 @@
 
 (for ([i '([("main.rkt" "racket") (lib "racket/main.rkt")]
            [("reader.rkt" "scribble") (lib "scribble/reader.rkt")])])
-  (test (cadr i) path->module-path (apply collection-file-path (car i))))
+  (define p (apply collection-file-path (car i)))
+  (test (cadr i) path->module-path p)
+  (let ([out (build-path (let-values ([(base name dir?) (split-path p)])
+                           base)
+                         "../info.rkt")])
+    (test (simplify-path out) path->module-path out)))
 (test "a/b" path->module-path "a/b")
 (test (find-system-path 'temp-dir) path->module-path (find-system-path 'temp-dir))
 

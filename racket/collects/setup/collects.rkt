@@ -27,8 +27,9 @@
                         (if pkg-collect
                             (cons pkg-collect l)
                             l)))
-      (define c-p (apply collection-file-path (car p-l) new-c-l
-                         #:fail (lambda (msg) #f)))
+      (define c-p (and (pair? (cdr p-l))
+                       (apply collection-file-path (car p-l) new-c-l
+                              #:fail (lambda (msg) #f))))
       (and c-p
            (equal? c-p simple-p)
            (make-result new-c-l (car p-l)))]
