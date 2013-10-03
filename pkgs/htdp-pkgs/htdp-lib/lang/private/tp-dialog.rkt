@@ -22,11 +22,7 @@
 (define teachpack-installation-dir 
   (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
 
-(define (get-teachpack-from-user parent [already-installed-teachpacks '()])
-  (define tp-dirs (list "htdp" "2htdp"))
-  (define labels (list (string-constant teachpack-pre-installed/htdp)
-                       (string-constant teachpack-pre-installed/2htdp)))
-  (define tp-syms '(htdp-teachpacks 2htdp-teachpacks))
+(define (get-teachpack-from-user parent tp-dirs labels tp-syms [already-installed-teachpacks '()])
   (define tpss (map tp-dir->tps tp-syms))
   
   (define label+mpss

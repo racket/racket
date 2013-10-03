@@ -565,7 +565,11 @@
                     (htdp-lang-settings-teachpacks settings)))
              (λ (settings parent) 
                (define old-tps (htdp-lang-settings-teachpacks settings))
-               (define-values (tp-to-remove tp-to-add) (get-teachpack-from-user parent old-tps))
+	       (define tp-dirs (list "htdp" "2htdp"))
+	       (define labels (list (string-constant teachpack-pre-installed/htdp)
+				    (string-constant teachpack-pre-installed/2htdp)))
+	       (define tp-syms '(htdp-teachpacks 2htdp-teachpacks))
+               (define-values (tp-to-remove tp-to-add) (get-teachpack-from-user parent tp-dirs labels tp-syms old-tps))
                (define new-tps (let ([removed (if tp-to-remove
                                                   (remove tp-to-remove old-tps)
                                                   old-tps)])
