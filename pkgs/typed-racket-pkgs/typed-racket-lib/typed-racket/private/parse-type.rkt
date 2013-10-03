@@ -4,7 +4,8 @@
 
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep filter-rep) make-arr)
-         (rename-in (types abbrev union utils filter-ops resolve classes)
+         (rename-in (types abbrev union utils filter-ops resolve
+                           classes subtype)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
@@ -537,12 +538,16 @@
     (cond [maybe-dup
            (define type (car (dict-ref types maybe-dup)))
            (define super-type (car (dict-ref super-types maybe-dup)))
-           (cond [;; if there is a duplicate, but the type is the same,
+           (cond [;; if there is a duplicate, but the type is a subtype,
                   ;; then let it through and check for any other duplicates
-                  (type-equal? type super-type)
+                  (unless (subtype type super-type)
+                    ;; FIXME: this error message may need rewording
+                    (tc-error (~a "Type for member " maybe-dup
+                                  " in class type is not a subtype of the type"
+                                  " in the parent class type")))
                   (check-duplicate-clause
-                   (remove maybe-dup names) super-names
-                   (dict-remove types maybe-dup) super-types
+                   names (remove maybe-dup super-names)
+                   types (dict-remove super-types maybe-dup)
                    err-msg)]
                  [else
                   (tc-error/stx stx err-msg maybe-dup)])]
