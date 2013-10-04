@@ -348,8 +348,12 @@
                 (equal? arg +nan.0)))))
                                
 (define (angle->proper-range α)
-  (+ (modulo (round α) 360)
-     (- α (round α))))
+  (define whole-part (modulo (round α) 360))
+  (define decimal-part (- α (round α)))
+  (if (and (zero? whole-part)
+           (negative? decimal-part))
+      (+ 360 decimal-part)
+      (+ whole-part decimal-part)))
 
 (module+ test
   (require rackunit)
@@ -357,4 +361,7 @@
   (check-equal? (angle->proper-range 361) 1)
   (check-equal? (angle->proper-range 0.5) 0.5)
   (check-equal? (angle->proper-range -1) 359)
-  (check-equal? (angle->proper-range -1.5) 358.5))
+  (check-equal? (angle->proper-range -1.5) 358.5)
+  (check-equal? (angle->proper-range -.1) 359.9)
+  (check-equal? (angle->proper-range #i-7.347880794884119e-016) 
+                (+ 360 #i-7.347880794884119e-016)))
