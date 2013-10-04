@@ -10,7 +10,6 @@ run() {
 
 cd tests 
 
-run stop-when-error.rkt
 run key-error.rkt
 run run-movie.rkt
 run bad-draw.rkt
@@ -38,7 +37,9 @@ run server-rename.rkt
 run world0-stops.rkt
 run record.rkt
 run record-stop-when.rkt
+run stop-when-error.rkt
 run stop-when-crash.rkt
+run stop-when-not-boolean.rkt
 run on-tick-universe-with-limit.rkt
 run on-tick-with-limit.rkt
 run on-release-no-key.rkt
