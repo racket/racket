@@ -1306,8 +1306,10 @@
 (define blue2x1 (list->bytes '(255 0 0 255   255 0 255 0)))
 ;(call-with-values (λ () (scale blue2x1 2 1 20)) show-bitmap)
 
-(define blue2x2 (list->bytes '(255 0 0 255   255 0 0 255   255 0 0 255   255 0 0 255)))
-(define gray2x2 (list->bytes '(255 100 100 100   255 100 100 100   255 100 100 100   255 100 100 100)))
+(define blue2x2 
+  (list->bytes '(255 0 0 255       255 0 0 255       255 0 0 255       255 0 0 255)))
+(define gray2x2 
+  (list->bytes '(255 100 100 100   255 100 100 100   255 100 100 100   255 100 100 100)))
 ;; Some blue x green checkerboards:
 (define checker2x2 (list->bytes '(255 0 0 255   255 0 255 0
                                       255 0 255 0   255 0 0 255)))
@@ -1500,6 +1502,7 @@
 
 
 (define-runtime-path u.png "u.png")
+(define u-bitmap (read-bitmap u.png))
 (let ()
   (define i (rotate 0 (make-object bitmap% u.png 'unknown/mask)))
   (define t (new text%))
@@ -1641,6 +1644,16 @@
                                   (place-image image3 spot spot
                                                background))))
   
+  (test (place-images (list u-bitmap)
+                      (list (make-posn 0 0))
+                      background)
+        =>
+        (place-image u-bitmap 0 0 background))
+  
+  (test (place-images '() '() background)
+        =>
+        background)
+  
   (test (place-images/align (list image1 image2 image3)
                             (list (make-posn 30 10) p p)
                             'center 'center
@@ -1691,10 +1704,12 @@
 (test (image-height (crop 0 0 101 61 (rectangle 100 60 'outline 'black)))
       => 
       61)
-(test (image-width (crop -1 -1 12 12 (rectangle 10 10 'outline (pen "black" 2 "solid" "round" "round"))))
+(test (image-width (crop -1 -1 12 12 (rectangle 10 10 'outline
+                                                (pen "black" 2 "solid" "round" "round"))))
       =>
       12)
-(test (image-height (crop -1 -1 12 12 (rectangle 10 10 'outline (pen "black" 4 "solid" "round" "round"))))
+(test (image-height (crop -1 -1 12 12 (rectangle 10 10 'outline
+                                                 (pen "black" 4 "solid" "round" "round"))))
       =>
       12)
 

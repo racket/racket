@@ -128,7 +128,8 @@
      (to-img arg)]
     [(images)
      (check-arg fn-name (and (list? arg) (andmap image? arg)) 'image-list i arg)
-     arg]
+     (for/list ([i (in-list arg)])
+       (to-img i))]
     [(mode)
      (check-arg fn-name
                 (mode? arg)
