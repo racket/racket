@@ -1132,8 +1132,7 @@
    #:ssl-cert (build-path root "server-cert.pem")
    #:ssl-key (build-path root "private-key.pem")
    #:extra-files-paths
-   (list (build-path src "static")
-         (build-path root "static"))
+   (list (build-path src "static"))
    #:servlet-regexp #rx""
    #:port port))
 
