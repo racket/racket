@@ -461,10 +461,20 @@ Conventions:
                    [tx (cdr datum)]
                    [tpr (ps-add-cdr pr)])
                (parse:matrix ((hx hcx hpr es) (tx tcx tpr es) . ins) inner))
-             (let ([es* (if (and 'proper? (null? datum)) (es-add-proper-pair es) es)])
+             (let ([es* (if (and 'proper? (null? datum))
+                            (es-add-proper-pair (first-desc:matrix inner) es)
+                            es)])
                (fail (failure pr es*)))))]
     [(parse:pk (in1 . ins) #s(pk/and inner))
      #'(parse:matrix (in1 in1 . ins) inner)]))
+
+(define-syntax (first-desc:matrix stx)
+  (syntax-case stx ()
+    [(fdm (#s(pk (pat1 . pats) k)))
+     #'(first-desc:S pat1)]
+    [(fdm (pk ...))
+     ;; FIXME
+     #'#f]))
 
 ;; ----
 
@@ -582,7 +592,7 @@ Conventions:
                       [tpr (ps-add-cdr pr)])
                   (parse:S hx hcx head hpr es
                            (parse:S tx cx tail tpr es k)))
-                (let ([es* (if (and 'proper? (null? datum)) (es-add-proper-pair es) es)])
+                (let ([es* (if (and 'proper? (null? datum)) (es-add-proper-pair (first-desc:S head) es) es)])
                   (fail (failure pr es*)))))]
        [#s(pat:vector _attrs subpattern)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)])
@@ -638,6 +648,33 @@ Conventions:
                   (let-attributes (name-attr ...) k)
                   (let ([es* (es-add-thing pr 'description #t role es)])
                     (fail (failure pr es*))))))])]))
+
+;; (first-desc:S S-pattern) : expr[FirstDesc]
+(define-syntax (first-desc:S stx)
+  (syntax-case stx ()
+    [(fds p)
+     (syntax-case #'p ()
+       [#s(pat:any _as)
+        #''(any)]
+       [#s(pat:var _as name #f _ () _ _ _)
+        #''(any)]
+       [#s(pat:var _ ...)
+        #'#f] ;; FIXME: need access to (constant) description as field
+       [#s(pat:datum _as d)
+        #''(datum d)]
+       [#s(pat:literal _as id _ip _lp)
+        #''(literal id)]
+       [#s(pat:describe _as _p description _t? _role)
+        #'description] ;; FIXME??? only constants?
+       [#s(pat:delimit _a pattern)
+        #'(first-desc:S pattern)]
+       [#s(pat:commit _a pattern)
+        #'(first-desc:S pattern)]
+       [#s(pat:post _a pattern)
+        #'(first-desc:S pattern)]
+       [#s(pat:integrated _as _name _pred description _role)
+        #''description]
+       [_ #'#f])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
 (define-syntax (disjunct stx)
