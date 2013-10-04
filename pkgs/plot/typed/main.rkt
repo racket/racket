@@ -74,3 +74,6 @@
 
 (require "plot3d/rectangle.rkt")
 (provide (all-from-out "plot3d/rectangle.rkt"))
+
+(require "plot3d/decoration.rkt")
+(provide (all-from-out "plot3d/decoration.rkt"))

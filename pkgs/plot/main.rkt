@@ -78,6 +78,9 @@
 (require "plot3d/rectangle.rkt")
 (provide (activate-contract-out rectangles3d discrete-histogram3d stacked-histogram3d))
 
+(require "plot3d/decoration.rkt")
+(provide (activate-contract-out point-label3d))
+
 ;; ===================================================================================================
 ;; Deprecated functions
 

@@ -67,7 +67,8 @@
          "plot3d/line.rkt"
          "plot3d/point.rkt"
          "plot3d/isosurface.rkt"
-         "plot3d/rectangle.rkt")
+         "plot3d/rectangle.rkt"
+         "plot3d/decoration.rkt")
 
 (provide (only-doc-out
           (combine-out (all-from-out "plot3d/plot.rkt")
@@ -76,7 +77,8 @@
                        (all-from-out "plot3d/line.rkt")
                        (all-from-out "plot3d/point.rkt")
                        (all-from-out "plot3d/isosurface.rkt")
-                       (all-from-out "plot3d/rectangle.rkt"))))
+                       (all-from-out "plot3d/rectangle.rkt")
+                       (all-from-out "plot3d/decoration.rkt"))))
 
 ;; ===================================================================================================
 ;; Deprecated functions

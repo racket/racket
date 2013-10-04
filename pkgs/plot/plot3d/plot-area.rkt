@@ -15,7 +15,15 @@
          "shape.rkt"
          "clip.rkt")
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         plot3d-back-layer
+         plot3d-area-layer
+         plot3d-front-layer
+         )
+
+(define plot3d-back-layer 2)
+(define plot3d-area-layer 1)
+(define plot3d-front-layer 0)
 
 (define plot3d-subdivisions (make-parameter 0))
 
@@ -643,12 +651,12 @@
       (send pd set-alpha (shape-alpha s))
       (match s
         ;; shapes
-        [(shapes alpha _ ss)  (draw-shapes ss)]
+        [(shapes alpha _ _ ss)  (draw-shapes ss)]
         ;; polygon
-        [(polygon alpha _ vs normal pen-color pen-width pen-style brush-color brush-style)
+        [(polygon alpha _ _ vs normal pen-color pen-width pen-style brush-color brush-style)
          (draw-polygon alpha center vs normal pen-color pen-width pen-style brush-color brush-style)]
         ;; rectangle
-        [(rectangle alpha _ r pen-color pen-width pen-style brush-color brush-style)
+        [(rectangle alpha _ _ r pen-color pen-width pen-style brush-color brush-style)
          (for ([face  (in-list (rect-visible-faces r theta))])
            (match face
              [(list normal vs ...)  (draw-polygon alpha center vs
@@ -656,25 +664,25 @@
                                                   brush-color brush-style)]
              [_  (void)]))]
         ;; line
-        [(line alpha _ v1 v2 pen-color pen-width pen-style)
+        [(line alpha _ _ v1 v2 pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-line (norm->dc v1) (norm->dc v2))]
         ;; text
-        [(text alpha _ anchor angle dist str font-size font-family color)
+        [(text alpha _ _ anchor angle dist str font-size font-family color outline?)
          (send pd set-font font-size font-family)
          (send pd set-text-foreground color)
-         (send pd draw-text str (view->dc center) anchor angle dist)]
+         (send pd draw-text str (view->dc center) anchor angle dist #:outline? outline?)]
         ;; glyph
-        [(glyph alpha _ symbol size pen-color pen-width pen-style brush-color brush-style)
+        [(glyph alpha _ _ symbol size pen-color pen-width pen-style brush-color brush-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd set-brush brush-color brush-style)
          (send pd draw-glyphs (list (view->dc center)) symbol size)]
         ;; tick glyph
-        [(tick-glyph alpha _ radius angle pen-color pen-width pen-style)
+        [(tick-glyph alpha _ _ radius angle pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-tick (view->dc center) radius angle)]
         ;; arrow glyph
-        [(arrow-glyph alpha _ v1 v2 pen-color pen-width pen-style)
+        [(arrow-glyph alpha _ _ v1 v2 pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-arrow (norm->dc v1) (norm->dc v2))]
         [_  (error 'draw-shapes "shape not implemented: ~e" s)]))
@@ -829,12 +837,14 @@
                                    (values v1 v2))])
           (unless (and v1 v2) (return (void)))
           (cond [identity-transforms?
-                 (add-shape! (line alpha (plot->norm c) (plot->norm v1) (plot->norm v2)
+                 (add-shape! (line alpha (plot->norm c) plot3d-area-layer
+                                   (plot->norm v1) (plot->norm v2)
                                    pen-color pen-width pen-style))]
                 [else
                  (define vs (subdivide-line plot->dc v1 v2))
                  (for ([v1  (in-list vs)] [v2  (in-list (rest vs))])
-                   (add-shape! (line alpha (plot->norm c) (plot->norm v1) (plot->norm v2)
+                   (add-shape! (line alpha (plot->norm c) plot3d-area-layer
+                                     (plot->norm v1) (plot->norm v2)
                                      pen-color pen-width pen-style)))]))))
     
     (define/public (put-lines vs)
@@ -856,7 +866,7 @@
                         vs)]
                [vs  (if identity-transforms? vs (subdivide-polygon plot->dc vs))])
           (when (empty? vs) (return lst))
-          (cons (polygon alpha (plot->norm c) (map plot->norm vs)
+          (cons (polygon alpha (plot->norm c) plot3d-area-layer (map plot->norm vs)
                          normal pen-color pen-width pen-style brush-color brush-style)
                 lst))))
     
@@ -868,7 +878,7 @@
                                            #:when (not (empty? vs)))
                     (add-polygon lst vs (vcenter vs))))
       (when (not (empty? lst))
-        (add-shape! (shapes alpha (plot->norm c) lst))))
+        (add-shape! (shapes alpha (plot->norm c) plot3d-area-layer lst))))
     
     (define/public (put-rect r [c (rect-center r)])
       (when (rect-rational? r)
@@ -876,35 +886,37 @@
           (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
           (match-let ([(vector x-min y-min z-min)  (plot->norm (vector x-min y-min z-min))]
                       [(vector x-max y-max z-max)  (plot->norm (vector x-max y-max z-max))])
-            (add-shape! (rectangle alpha (plot->norm c)
+            (add-shape! (rectangle alpha (plot->norm c) plot3d-area-layer
                                    (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
                                    pen-color pen-width pen-style brush-color brush-style))))))
     
-    (define/public (put-text str v [anchor 'center] [angle 0] [dist 0])
+    (define/public (put-text str v [anchor 'center] [angle 0] [dist 0]
+                             #:outline? [outline? #f]
+                             #:layer [layer plot3d-area-layer])
       (when (and (vrational? v) (in-bounds? v))
-        (add-shape! (text alpha (plot->norm v) anchor angle dist str
-                          font-size font-family text-foreground))))
+        (add-shape! (text alpha (plot->norm v) layer anchor angle dist str
+                          font-size font-family text-foreground outline?))))
     
-    (define/public (put-glyphs vs symbol size)
+    (define/public (put-glyphs vs symbol size #:layer [layer plot3d-area-layer])
       (for ([v  (in-list vs)])
         (when (and (vrational? v) (in-bounds? v))
           (add-shape!
-           (glyph alpha (plot->norm v) symbol size
+           (glyph alpha (plot->norm v) layer symbol size
                   pen-color pen-width pen-style brush-color brush-style)))))
     
     (define/public (put-arrow v1 v2 [c (v* (v+ v1 v2) 1/2)])
       (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
         (cond [(in-bounds? v2)
                (add-shape!
-                (arrow-glyph alpha (plot->norm c) (plot->norm v1) (plot->norm v2)
+                (arrow-glyph alpha (plot->norm c) plot3d-area-layer (plot->norm v1) (plot->norm v2)
                              (->brush-color (plot-background)) (+ 2 pen-width) 'solid))
                (add-shape!
-                (arrow-glyph alpha (plot->norm c) (plot->norm v1) (plot->norm v2)
+                (arrow-glyph alpha (plot->norm c) plot3d-area-layer (plot->norm v1) (plot->norm v2)
                              pen-color pen-width pen-style))]
               [else  (put-line v1 v2)])))
     
-    (define/public (put-tick v radius angle)
+    (define/public (put-tick v radius angle #:layer [layer plot3d-area-layer])
       (when (and (vrational? v) (in-bounds? v))
-        (add-shape! (tick-glyph alpha (plot->norm v) radius angle
+        (add-shape! (tick-glyph alpha (plot->norm v) layer radius angle
                                 pen-color pen-width pen-style))))
     )) ; end class

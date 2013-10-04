@@ -33,4 +33,8 @@
  (activate-contract-out default-ticks-fun
                         function-bounds-fun function-interval-bounds-fun
                         inverse-bounds-fun inverse-interval-bounds-fun
-                        surface3d-bounds-fun))
+                        surface3d-bounds-fun)
+ plot3d-back-layer
+ plot3d-area-layer
+ plot3d-front-layer
+ )

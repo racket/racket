@@ -202,3 +202,9 @@ Think of it as a version of @racket[discrete-histogram] that allows multiple val
                  (plot3d (stacked-histogram3d data #:labels '("Red" #f "Blue")
                                               #:alphas '(2/3 1 2/3)))]
 }
+
+@doc-apply[point-label3d]{
+Returns a renderer that draws a labeled point.
+If @(racket label) is @(racket #f), the point is labeled with its position.
+Analogous to @racket[point-label].
+}

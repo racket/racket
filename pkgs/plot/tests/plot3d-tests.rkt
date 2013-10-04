@@ -249,3 +249,8 @@
 
 (time
  (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y))) -min.0 +min.0 -min.0 +min.0)))
+
+(time
+ (define (f x y) (* (sin x) (cos y)))
+ (plot3d (list (contour-intervals3d f -3 3 -3 3)
+               (point-label3d (list -1 1 (f -1 1))))))
