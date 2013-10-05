@@ -87,14 +87,15 @@
               (define ___  (begin 'dummy body ...))
 	      (define n (if (object-name name) (object-name name) name))
               (define nxt (name (send universe get) a ...))
-              (define-values (u mails bad)
-                (if (stop-the-world? nxt)
-		    (stop! (stop-the-world-world nxt))
-                    (bundle> n nxt)))
-              (send universe set (format "value returned from ~a" 'name) u)
-              (unless (boolean? to-string) (send gui add (to-string u)))
-              (broadcast mails)
-              (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)))))
+              (cond
+                [(stop-the-world? nxt) (stop! (stop-the-world-world nxt))]
+                [else 
+                 (define-values (u mails bad)
+                   (bundle> n nxt))
+                 (send universe set (format "value returned from ~a" 'name) u)
+                 (unless (boolean? to-string) (send gui add (to-string u)))
+                 (broadcast mails)
+                 (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)])))))
       
       ;; [Listof Mail] -> Void
       ;; send payload of messages to designated worlds 
