@@ -288,7 +288,7 @@
       (loop))))
 
 (define (fallback-empty? d)
-  (if (dict-iterate-first d) #t #f))
+  (not (dict-iterate-first d)))
 
 (define (fallback-count d)
   (let loop ([n 0] [i (dict-iterate-first d)])
