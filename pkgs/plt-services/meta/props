@@ -639,6 +639,9 @@ path/s is either such a string or a list of them.
 "native-pkgs" responsible (mflatt)
 "pkgs/algol60" responsible (mflatt robby)
 "pkgs/base" responsible (mflatt)
+"pkgs/cext-lib" responsible (mflatt)
+"pkgs/cext-lib/compiler/commands/ctool.rkt" drdr:command-line (mzc *)
+"pkgs/cext-lib/dynext/private/stdio.rkt" drdr:command-line #f
 "pkgs/compatibility-pkgs" responsible (eli mflatt robby samth)
 "pkgs/compatibility-pkgs/compatibility-doc/mzlib" responsible (mflatt)
 "pkgs/compatibility-pkgs/compatibility-lib/mzlib/contract.rkt" responsible (robby)
@@ -649,7 +652,6 @@ path/s is either such a string or a list of them.
 "pkgs/compatibility-pkgs/compatibility-lib/mzlib/shared.rkt" responsible (robby)
 "pkgs/compatibility-pkgs/compatibility-lib/mzlib/traceld.rkt" drdr:command-line #f
 "pkgs/compiler-lib" responsible (mflatt)
-"pkgs/compiler-lib/compiler/commands/ctool.rkt" drdr:command-line #f
 "pkgs/compiler-lib/compiler/commands/exe-dir.rkt" drdr:command-line #f
 "pkgs/compiler-lib/compiler/commands/exe.rkt" drdr:command-line #f
 "pkgs/compiler-lib/compiler/commands/make.rkt" drdr:command-line (mzc *)
@@ -1582,7 +1584,6 @@ path/s is either such a string or a list of them.
 "pkgs/xrepl-pkgs" responsible (eli)
 "pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/main.rkt" drdr:command-line #f
 "racket" responsible (mflatt)
-"racket/collects/dynext/private/stdio.rkt" drdr:command-line #f
 "racket/collects/ffi" responsible (eli mflatt)
 "racket/collects/ffi/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
