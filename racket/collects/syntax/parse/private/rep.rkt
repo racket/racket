@@ -1041,7 +1041,10 @@
              (append-iattrs (side-clauses-attrss defaults))]
             [all-iattrs
              (union-iattrs (list pattern-iattrs defaults-iattrs))])
-       (check-iattrs-subset defaults-iattrs pattern-iattrs stx)
+       (when (eq? (stxclass-lookup-config) 'yes)
+         ;; Only check that attrs in defaults clause agree with attrs
+         ;; in pattern when attrs in pattern are known to be complete.
+         (check-iattrs-subset defaults-iattrs pattern-iattrs stx))
        (values #'p head all-iattrs name too-many-msg defaults))]))
 
 ;; -- EH patterns
