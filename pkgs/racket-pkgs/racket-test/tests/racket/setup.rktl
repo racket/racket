@@ -34,7 +34,7 @@
   (let ([out (build-path (let-values ([(base name dir?) (split-path p)])
                            base)
                          "../info.rkt")])
-    (test (simplify-path out) path->module-path out)))
+    (test out path->module-path out)))
 (test "a/b" path->module-path "a/b")
 (test (find-system-path 'temp-dir) path->module-path (find-system-path 'temp-dir))
 
