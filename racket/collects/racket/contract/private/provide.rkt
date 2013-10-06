@@ -606,11 +606,14 @@
                        selector-codes ...
                        mutator-codes ...
                        predicate-code
-                       (define (#,chaperone-constructor-id constructor-args ...)
-                         (chaperone-struct (#,constructor-id constructor-args ...)
-                                           struct-info
-                                           (λ (struct-type skipped?)
-                                             (values -struct:struct-name skipped?))))
+                       (define #,chaperone-constructor-id
+                         (let ([struct-name
+                                (λ (constructor-args ...)
+                                  (chaperone-struct (#,constructor-id constructor-args ...)
+                                                    struct-info
+                                                    (λ (struct-type skipped?)
+                                                      (values -struct:struct-name skipped?))))])
+                           struct-name))
                        constructor-code
 
                        ;; expanding out the body of the `make-pc-struct-type' function

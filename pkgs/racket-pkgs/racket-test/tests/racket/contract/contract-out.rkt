@@ -914,6 +914,20 @@
       (eval 'provide/contract46-x))
    123)
   
+  (test/spec-passed/result
+   'provide/contract47
+   '(begin
+      (eval '(module provide/contract47-m1 racket
+               (struct the-name-of-my-struct ())
+               (provide (contract-out (struct the-name-of-my-struct ())))))
+      (eval '(module provide/contract47-m2 racket
+               (require 'provide/contract47-m1)
+               (define provide/contract47-x (object-name the-name-of-my-struct))
+               (provide provide/contract47-x)))
+      (eval '(require 'provide/contract47-m2))
+      (eval 'provide/contract47-x))
+   'the-name-of-my-struct)
+  
   (contract-error-test
    'contract-error-test8
    #'(begin
