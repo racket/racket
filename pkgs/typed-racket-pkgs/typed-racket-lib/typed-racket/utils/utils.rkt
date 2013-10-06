@@ -87,6 +87,7 @@ at least theoretically.
 (define-requirer types types-out)
 (define-requirer optimizer optimizer-out)
 (define-requirer base-env base-env-out)
+(define-requirer static-contracts static-contracts-out)
 
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)

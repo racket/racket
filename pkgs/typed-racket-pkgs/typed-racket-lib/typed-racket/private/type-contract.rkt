@@ -18,6 +18,7 @@
  racket/format
  unstable/list
  unstable/sequence
+ (static-contracts types instantiate)
  (contract-req)
  (for-syntax racket/base syntax/parse racket/syntax)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
@@ -144,9 +145,13 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-
 (define (type->contract ty fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
-  (define vars (make-parameter '()))
+  (let/ec escape
+    (define (fail/t->sc) (escape (fail)))
+    (instantiate (type->static-contract ty #:typed-side typed-side fail/t->sc) fail kind)))
+
+(define (type->contract-old ty fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+  (define vars (make-parameter '()))  
   (define current-contract-kind (make-parameter flat-sym))
   (define (increase-current-contract-kind! kind)
     (current-contract-kind (contract-kind-max (current-contract-kind) kind)))
