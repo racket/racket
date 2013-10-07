@@ -139,3 +139,17 @@
                  [(_ x y:id)
                   #:declare x id #:role "thing"
                   'b]))))
+
+;; Expected more terms
+
+(terx (1)
+      (a b)
+      #rx"expected more terms starting with any term$")
+
+(terx (1)
+      (a b:id)
+      #rx"expected more terms starting with identifier$")
+
+(terx (1)
+      (a (~describe "thing" b))
+      #rx"expected more terms starting with thing$")

@@ -534,3 +534,11 @@
 (terx (x y) ((~describe #:opaque "an X" x:id) n:number)
       #rx"expected number"
       (not #rx"expected an X"))
+
+;; from Eric Dobson (10/5/2013)
+(test-case "optional/defaults checks delayed in stxclass def"
+  (let ()
+    (define-syntax-class blah
+      #:attributes (a)
+      [pattern ((~seq (~optional :one #:defaults [(a 'bar)])))])
+    (void)))
