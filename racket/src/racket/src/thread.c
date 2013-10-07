@@ -8676,35 +8676,6 @@ static void done_with_GC()
 }
 
 #ifdef MZ_PRECISE_GC
-static char *gc_num(char *nums, int v)
-/* format a number with commas */
-{
-  int i, j, len, clen, c, d;
-  for (i = 0; nums[i] || nums[i+1]; i++) {
-  }
-  i++;
-
-  v /= 1024; /* bytes => kbytes */
-
-  sprintf(nums+i, "%d", v);
-  for (len = 0; nums[i+len]; len++) { }
-  clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
-  
-  c = 0;
-  d = (clen - len);
-  for (j = i + clen - 1; j > i; j--) {
-    if (c == 3) {
-      nums[j] = ',';
-      d--;
-      c = 0;
-    } else {
-      nums[j] = nums[j - d];
-      c++;
-    }
-  }
-
-  return nums + i;
-}
 
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
@@ -8721,7 +8692,7 @@ static void inform_GC(int master_gc, int major_gc,
     /* Don't use scheme_log(), because it wants to allocate a buffer
        based on the max value-print width, and we may not be at a
        point where parameters are available. */
-    char buf[256], nums[128];
+    char buf[256];
     intptr_t buflen, delta, admin_delta;
     Scheme_Object *vec, *v;
 
@@ -8753,22 +8724,24 @@ static void inform_GC(int master_gc, int major_gc,
 
     START_XFORM_SKIP;
 
-    memset(nums, 0, sizeof(nums));
-
     delta = pre_used - post_used;
     admin_delta = (pre_admin - post_admin) - delta;
-    sprintf(buf,
-            "" PLACE_ID_FORMAT "%s @ %sK(+%sK)[+%sK];"
-            " free %sK(%s%sK) %" PRIdPTR "ms @ %" PRIdPTR,
+    snprintf(buf,
+             sizeof(buf),
+             "" PLACE_ID_FORMAT "%s @ %lldK(+%lldK)[+%lldK];"
+             " free %lldK(%s%lldK) %" PRIdPTR "ms @ %" PRIdPTR,
 #ifdef MZ_USE_PLACES
-            scheme_current_place_id,
+             scheme_current_place_id,
 #endif
-            (master_gc ? "MST" : (major_gc ? "MAJ" : "min")),
-            gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
-            gc_num(nums, scheme_code_page_total),
-            gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),
-            (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)),
-            start_this_gc_time);
+             (master_gc ? "MST" : (major_gc ? "MAJ" : "min")),
+             (long long) pre_used / 1024,
+             (long long) (pre_admin - pre_used) / 1024,
+             (long long) scheme_code_page_total / 1024,
+             (long long) delta / 1024,
+             ((admin_delta < 0) ? "" : "+"),
+             (long long) admin_delta / 1024,
+             (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)),
+             start_this_gc_time);
     buflen = strlen(buf);
 
     END_XFORM_SKIP;
