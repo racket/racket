@@ -41,9 +41,10 @@
   (define (cache url file)
     (define p (build-path cache-dir file))
     (make-directory* (path-only p))
-    (with-output-to-file p
-      #:exists 'replace
-      (λ () ((response-output (dispatch (url->request url))) (current-output-port)))))
+    (void
+     (with-output-to-file p
+       #:exists 'replace
+       (λ () ((response-output (dispatch (url->request url))) (current-output-port))))))
 
   (cache "/" "index.html")
   (cache "/pkgs" "pkgs")

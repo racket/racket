@@ -227,8 +227,9 @@
           (when-delete?
            (delete-file dest))
           (unless (file-exists? dest)
-            (printf "Downloading ~a\n"
-                    pkg-short)
+            (when #f
+              (printf "Downloading ~a\n"
+                      pkg-short))
             (define pkg-bs
               (call/input-url dl-url get-impure-port
                               (λ (in)
