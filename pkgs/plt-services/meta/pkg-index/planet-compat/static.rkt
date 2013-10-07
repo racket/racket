@@ -24,7 +24,7 @@
                (file->string
                 (build-path pkg-depo pkg-depo-dir (format "~a.plt.CHECKSUM" pkg-name)))
                'source
-               (format "https://planet-compat.racket-lang.org/~a/~a.plt"
+               (format "http://planet-compat.racket-lang.org/~a/~a.plt"
                        pkg-depo-dir pkg-name)
                'url
                (let ()

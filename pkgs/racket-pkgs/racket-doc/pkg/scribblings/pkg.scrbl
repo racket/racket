@@ -240,7 +240,7 @@ local catalog in the form of an SQLite database or a directory tree.
 
 PLT supports two @tech{package catalog} servers that are enabled by
 default: @url{https://pkg.racket-lang.org} for new packages and
-@url{https://planet-compat.racket-lang.org} for automatically
+@url{http://planet-compat.racket-lang.org} for automatically
 generated packages for old @|PLaneT| packages. Anyone may host a
 @tech{package catalog}, and any file-serving HTTP host can act
 as a basic @tech{package catalog} server. See @secref["catalog-protocol"]
@@ -796,7 +796,7 @@ PLT maintains a @tech{package catalog} to serve packages that
 were developed using the original @seclink[#:doc '(lib
 "planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
 compatibility catalog is at
-@link["https://planet-compat.racket-lang.org/"]{https://planet-compat.racket-lang.org/},
+@link["http://planet-compat.racket-lang.org/"]{http://planet-compat.racket-lang.org/},
 which is included by default in the package-server search path.
 
 Copies of @|Planet1| packages are automatically created by the

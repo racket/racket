@@ -559,7 +559,7 @@
     (match k
       ['catalogs
        (list "https://pkg.racket-lang.org"
-             "https://planet-compat.racket-lang.org")]
+             "http://planet-compat.racket-lang.org")]
       ['default-scope "user"]
       ['installation-name (version)]
       [_ #f]))
