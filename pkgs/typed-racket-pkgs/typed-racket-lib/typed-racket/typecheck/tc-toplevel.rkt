@@ -150,7 +150,7 @@
        (list)]
 
       ;; top-level type annotation
-      [(define-values () (#%expression (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values))))
+      [(define-values () (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values)))
        (register-type/undefined #'id (parse-type #'ty))
        (register-scoped-tvars #'id (parse-literal-alls #'ty))
        (list)]

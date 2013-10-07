@@ -11,11 +11,11 @@
  (define (err str stx . sub)
    (apply raise-syntax-error '|type declaration| str stx sub))
 
- ;; Wrap the `:-expr` with two things:
- ;;   * (define-values () ...) to do what `internal` does
- ;;   * (#%expression ...) to delay the unbound id check
+ ;; Wrap the `:-expr` with a `define-values`. This is like
+ ;; what `internal` does, but the work is spread out among two
+ ;; macros to delay the unbound identifier check.
  (define (wrap stx :-expr)
-   (quasisyntax/loc stx (define-values () (#%expression #,:-expr)))))
+   (quasisyntax/loc stx (define-values () #,:-expr))))
 
 (define-syntax (: stx)
   ;; make it possible to add another colon after the id for clarity
