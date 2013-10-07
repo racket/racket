@@ -305,6 +305,8 @@
                         #:end-pull (end-pull 1/4)
                         #:line-width (line-width #f)
                         #:color (color #f)
+                        #:alpha (alpha 1)
+                        #:style (style 'solid)
                         #:under? (under? #f)
                         #:x-adjust (x-adjust 0)
                         #:y-adjust (y-adjust 0))
@@ -314,7 +316,7 @@
     pict src-pict src-coord-fn dest-pict dest-coord-fn
     #:start-angle start-angle #:end-angle end-angle
     #:start-pull start-pull #:end-pull end-pull
-    #:line-width line-width #:color color #:under? under?)
+    #:line-width line-width #:color color #:alpha alpha #:style style #:under? under?)
    src-pict src-coord-fn dest-pict dest-coord-fn
    #:x-adjust x-adjust #:y-adjust y-adjust))
 
@@ -331,8 +333,10 @@
              #:end-pull (end-pull 1/4)
              #:line-width (line-width #f)
              #:color (color #f)
+             #:alpha (alpha 1)
              #:under? (under? #f)
              #:solid? (solid? #t)
+             #:style (style 'solid)
              #:hide-arrowhead? (hide-arrowhead? #f)
              #:x-adjust (x-adjust 0)
              #:y-adjust (y-adjust 0))
@@ -343,6 +347,9 @@
         #:start-angle start-angle #:end-angle end-angle
         #:start-pull start-pull #:end-pull end-pull
         #:line-width line-width #:color color #:under? under?
+        #:style style
+        #:alpha alpha
+        #:solid? solid?
         #:hide-arrowhead? hide-arrowhead?)
        src-pict src-coord-fn dest-pict dest-coord-fn
        #:x-adjust x-adjust #:y-adjust y-adjust))
@@ -356,6 +363,8 @@
         #:start-pull real? #:end-pull real?
         #:line-width (or/c real? #f)
         #:color (or/c #f string? (is-a?/c color%))
+        #:style pen-style/c
+        #:alpha (real-in 0 1)
         #:under? any/c #:hide-arrowhead? any/c
         #:x-adjust real? #:y-adjust real?]
        pict?))
