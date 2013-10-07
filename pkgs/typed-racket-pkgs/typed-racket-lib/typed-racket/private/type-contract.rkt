@@ -18,7 +18,7 @@
  racket/format
  unstable/list
  unstable/sequence
- (static-contracts types instantiate)
+ (static-contracts types instantiate optimize)
  (contract-req)
  (for-syntax racket/base syntax/parse racket/syntax)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
@@ -145,10 +145,15 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-(define (type->contract ty fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+(define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
   (let/ec escape
-    (define (fail/t->sc) (escape (fail)))
-    (instantiate (type->static-contract ty #:typed-side typed-side fail/t->sc) fail kind)))
+    (define (fail) (escape (init-fail)))
+    (instantiate
+      (optimize
+        (type->static-contract ty #:typed-side typed-side fail)
+        (if typed-side 'covariant 'contravariant))
+      fail
+      kind)))
 
 (define (type->contract-old ty fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
   (define vars (make-parameter '()))  
