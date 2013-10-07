@@ -2,6 +2,7 @@
 (module+ test
   (require rackunit))
 (require web-server/http
+         "common.rkt"
          web-server/servlet-env
          racket/file
          xml
@@ -37,24 +38,6 @@
 
 (define (salty str)
   (sha1 (open-input-string str)))
-
-(define-runtime-path src ".")
-
-(define-runtime-path root "root")
-(make-directory* root)
-(define secret-key
-  (make-secret-salt/file
-   (build-path root "secret.key")))
-(define users-path (build-path root "users"))
-(make-directory* users-path)
-(define users.new-path (build-path root "users.new"))
-(make-directory* users.new-path)
-
-(github-client_id (file->string (build-path root "client_id")))
-(github-client_secret (file->string (build-path root "client_secret")))
-
-(define pkgs-path (build-path root "pkgs"))
-(make-directory* pkgs-path)
 
 (define id-cookie-name "pnrid")
 
@@ -158,9 +141,6 @@
                      [else
                       new-v]))
                  #f)))
-
-(define (author->list as)
-  (string-split as))
 
 (define (page/rss req)
   (define ps
@@ -1132,7 +1112,7 @@
    #:ssl-cert (build-path root "server-cert.pem")
    #:ssl-key (build-path root "private-key.pem")
    #:extra-files-paths
-   (list (build-path src "static"))
+   (list static-path)
    #:servlet-regexp #rx""
    #:port port))
 

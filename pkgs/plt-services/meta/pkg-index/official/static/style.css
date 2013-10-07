@@ -51,7 +51,7 @@ table.packages thead tr {
     background: #FFCC66;
 }
 
-table.packages tbody tr:nth-child(2n) {
+table.packages tbody tr.even {
     background: #F5F5DC;
 }
 
