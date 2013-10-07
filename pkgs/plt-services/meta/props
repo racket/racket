@@ -1079,7 +1079,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/net/main.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/net/stress" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/stress/websocket.rkt" drdr:random #t
-"pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt" responsible (jay)
+"pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt" responsible (jay) drdr:timeout 300
 "pkgs/racket-pkgs/racket-test/tests/net/websocket" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket/example.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/net/websocket.rkt" responsible (jay)
@@ -1346,7 +1346,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/prompt-sfs.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/prompt-tests.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/prompt.rktl" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl" drdr:timeout 360
+"pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl" drdr:timeout 600
 "pkgs/racket-pkgs/racket-test/tests/racket/read.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/resource.rktl" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/runaway-place.rkt" drdr:random #t
