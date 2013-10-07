@@ -400,7 +400,7 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
-                      [#:alpha alpha (real-in 0.0 1.0)]
+                      [#:alpha alpha (real-in 0.0 1.0) #f]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
@@ -419,7 +419,7 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
-                      [#:alpha alpha (real-in 0.0 1.0)]
+                      [#:alpha alpha (real-in 0.0 1.0) #f]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
@@ -427,7 +427,7 @@ argument for consistency with the other functions.}
                                'solid]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
-		      [#:hide-arrowhead? any/c #f])
+		      [#:hide-arrowhead? hide-arrowhead? any/c #f])
             pict?]
            [(pin-arrows-line [arrow-size real?] [pict pict?]
                       [src pict-path?]
@@ -440,14 +440,14 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
-                      [#:alpha alpha (real-in 0.0 1.0)]
+                      [#:alpha alpha (real-in 0.0 1.0) #f]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
                                                'xor-dot-dash)]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
-		      [#:hide-arrowhead? any/c #f])
+		      [#:hide-arrowhead? hide-arrowhead? any/c #f])
             pict?])]{
 
 Adds a line or line-with-arrows onto @racket[pict], using one of the
