@@ -138,7 +138,9 @@
     (for/list ([(responsible ht) (in-hash responsible-ht)]
                #:when (ormap (curry hash-has-key? ht)
                              (take responsible-ht-severity 3)))
-      responsible))
+      (match responsible
+        ["nobody" "drdr-nobody"]
+        [x x])))
   (define committer
     (with-handlers ([exn:fail? (lambda (x) #f)])
       (scm-commit-author 
