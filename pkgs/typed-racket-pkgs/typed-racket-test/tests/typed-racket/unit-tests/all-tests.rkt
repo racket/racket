@@ -23,6 +23,8 @@
   "subtype-tests.rkt"
   "type-equal-tests.rkt"
   "remove-intersect-tests.rkt"
+  "static-contract-conversion-tests.rkt"
+  "static-contract-optimizer-tests.rkt"
   "parse-type-tests.rkt"
   "subst-tests.rkt"
   "infer-tests.rkt"
