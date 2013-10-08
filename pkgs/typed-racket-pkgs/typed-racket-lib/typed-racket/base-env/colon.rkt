@@ -18,6 +18,8 @@
    (quasisyntax/loc stx (define-values () #,:-expr))))
 
 (define-syntax (: stx)
+  (define ctx (syntax-local-context))
+  (define top-level? (eq? 'top-level ctx))
   ;; make it possible to add another colon after the id for clarity
   ;; and in that case, a `->' on the RHS does not need to be
   ;; explicitly parenthesized
@@ -32,15 +34,15 @@
                      i)
      #f
      (add-disappeared-use #'kw)
-     (wrap stx #`(:-helper #,(syntax-local-context) id (x ...)))]
+     (wrap stx #`(:-helper #,top-level? id (x ...)))]
     [(: id : . more)
-     (wrap stx #`(:-helper #,(syntax-local-context) id . more))]
-    [(: e ...) (wrap stx #`(:-helper #,(syntax-local-context) e ...))]))
+     (wrap stx #`(:-helper #,top-level? id . more))]
+    [(: e ...) (wrap stx #`(:-helper #,top-level? e ...))]))
 
 (define-syntax (:-helper stx)
   (syntax-parse stx
-    [(_ ctx i:id ty)
-     (unless (or (eq? 'top-level (syntax-e #'ctx))
+    [(_ top-level? i:id ty)
+     (unless (or (syntax-e #'top-level?)
                  (identifier-binding #'i))
        (raise-syntax-error #f "unbound identifier in module" #'i))
      (syntax-property (syntax/loc stx (begin (quote-syntax (:-internal i ty))
