@@ -40,6 +40,12 @@ $( document ).ready(function() {
         $( "#pi_description" ).text( pkgi['description'] );
         $( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
             return [tag, " "]; } ) )
+        $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
+            return [ $('<tr>').append( $('<td>').html(v),
+                                     $('<td>').html(vo['source']) ),
+                     $('<tr>').append( $('<td>').html(""),
+                                     $('<td>').html(vo['checksum']) ),
+                     " "]; } ) )
         active_info = pkgi; };
 
     var search_terms = { };
