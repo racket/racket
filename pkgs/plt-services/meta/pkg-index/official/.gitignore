@@ -3,3 +3,4 @@
 /static/pkg
 /static/pkgs-all
 *json
+/static/atom.xml

@@ -3,19 +3,43 @@
 // xxx what user am i
 // xxx upload
 // xxx update
-// xxx show info about a package (make sure url is same as in atom feed)
+// xxx show info about a package
 
 $( document ).ready(function() {
     $("#package_info").dialog({
         autoOpen: false,
+        minWidth: 600,
+        minHeight: 600,
         position: { my: "center", at: "center", of: "#search_menu" },
         modal: true });
+
+    function format_time( t ) {
+        var d = new Date( t * 1000 );
+        return d.toLocaleString(); }
 
     var active_info = false;
     var target_pkg = false;
     function update_info( pkgi ) {
         console.log( pkgi );
         change_hash( "[" + pkgi['name'] + "]" );
+        $( "#pi_name" ).text( pkgi['name'] );
+        $( "#pi_name_inst" ).text( pkgi['name'] );
+        $( "#pi_ring" ).text( pkgi['ring'] );
+        $( "#pi_authors" ).html("")
+            .append( $.map( pkgi['authors'],
+                            function ( author, i ) {
+                                return [author, " "]; } ) )
+
+        $( "#pi_source" ).html( $('<a>', { text: pkgi['source'],
+                                           href: pkgi['source_url']  } ));
+
+        $( "#pi_checksum" ).text( pkgi['checksum'] );
+        $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
+        $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
+        $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
+        $( "#pi_description" ).text( pkgi['description'] );
+        $( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
+            return [tag, " "]; } ) )
         active_info = pkgi; };
 
     var search_terms = { };
@@ -112,12 +136,7 @@ $( document ).ready(function() {
 
         var shown_terms_keys = object_keys(shown_terms);
         var shown_terms_skeys = shown_terms_keys.sort(function(a,b) {
-            var va = shown_terms[a];
-            var vb = shown_terms[b];
-            if ( va < 0 && vb < 0 ) { return ((a < b) ? -1 : ((a > b) ? 1 : 0)); }
-            else if ( va >= 0 && vb >= 0 ) { return ((va < vb) ? -1 : ((va > vb) ? 1 : 0)); }
-            else if ( va < 0 ) { return -1; }
-            else if ( vb < 0 ) { return 1; } });
+            return ((a < b) ? -1 : ((a > b) ? 1 : 0)); });
 
         change_hash( "" );
         $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {

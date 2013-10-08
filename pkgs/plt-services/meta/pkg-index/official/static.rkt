@@ -119,32 +119,67 @@
                 (packages-conflict?/cache pkg other-pkg)))
             ring-01))
 
+  (define (package-url->useful-url pkg-url-str)
+    (define pkg-url
+      (string->url pkg-url-str))
+    (match (url-scheme pkg-url)
+      ["github"
+       (match (url-path pkg-url)
+         [(list* user repo branch path)
+          (url->string
+           (struct-copy
+            url pkg-url
+            [scheme "http"]
+            [path (list* user repo (path/param "tree" empty) branch path)]))]
+         [_
+          pkg-url-str])]
+      ["git"
+       (match (url-path pkg-url)
+         ;; xxx make this more robust
+         [(list user repo)
+          (url->string
+           (struct-copy
+            url pkg-url
+            [scheme "http"]
+            [path (list user repo (path/param "tree" empty) 
+                        (path/param "master" empty))]))]
+         [_
+          pkg-url-str])]
+      [_
+       pkg-url-str]))
+
   (for ([pkg (in-hash-keys pkg-ht)])
     (hash-update!
      pkg-ht pkg
      (λ (ht)
        (define conflicts (package-conflicts? pkg))
-       (hash-set* ht
-                  'conflicts conflicts
-                  'search-terms
-                  (let* ([st (hasheq)]
-                         [st (for/fold ([st st])
-                                 ([t (in-list (hash-ref ht 'tags))])
-                               (hash-set st (string->symbol t) #t))]
-                         [st (hash-set st (string->symbol (format "ring:~a" (hash-ref ht 'ring))) #t)]
-                         [st (for/fold ([st st])
-                                 ([a (in-list (author->list (hash-ref ht 'author)))])
-                               (hash-set st (string->symbol (format "author:~a" a)) #t))]
-                         [st (if (empty? (hash-ref ht 'tags))
-                               (hash-set st ':no-tag: #t)
-                               st)]
-                         [st (if (hash-ref ht 'checksum-error)
-                               (hash-set st ':error: #t)
-                               st)]
-                         [st (if (empty? conflicts)
-                               st
-                               (hash-set st ':conflicts: #t))])
-                    st)))))
+       (hash-set*
+        ht
+        'conflicts conflicts
+        'source_url (package-url->useful-url (hash-ref ht 'source))
+        'search-terms
+        (let* ([st (hasheq)]
+               [st (for/fold ([st st])
+                       ([t (in-list (hash-ref ht 'tags))])
+                     (hash-set st (string->symbol t) #t))]
+               [st (hash-set
+                    st
+                    (string->symbol
+                     (format "ring:~a" (hash-ref ht 'ring))) #t)]
+               [st (for/fold ([st st])
+                       ([a (in-list (author->list (hash-ref ht 'author)))])
+                     (hash-set
+                      st (string->symbol (format "author:~a" a)) #t))]
+               [st (if (empty? (hash-ref ht 'tags))
+                     (hash-set st ':no-tag: #t)
+                     st)]
+               [st (if (hash-ref ht 'checksum-error)
+                     (hash-set st ':error: #t)
+                     st)]
+               [st (if (empty? conflicts)
+                     st
+                     (hash-set st ':conflicts: #t))])
+          st)))))
 
 
   (define basic-dispatch
