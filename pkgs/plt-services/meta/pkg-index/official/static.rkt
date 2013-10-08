@@ -23,6 +23,8 @@
     n]
    [#f
     #f]
+   [#t
+    #t]
    [(? symbol? s)
     (symbol->string s)]
    [(? keyword? s)
@@ -48,10 +50,27 @@
     (pkg-index/basic
      (λ () pkg-list)
      (λ (pkg-name)
-       (define ht (file->value (build-path pkgs-path pkg-name)))
+       (define ht (file->value (build-path pkgs-path pkg-name)))       
+
        (hash-set* ht
                   'name pkg-name
                   'tags (hash-ref ht 'tags empty)
+                  'search-terms 
+                  (let* ([st (hasheq)]
+                         [st (for/fold ([st st])
+                                 ([t (in-list (hash-ref ht 'tags empty))])
+                               (hash-set st (string->symbol t) #t))]
+                         [st (hash-set st (string->symbol (format "ring:~a" (hash-ref ht 'ring 2))) #t)]
+                         [st (for/fold ([st st])
+                                 ([a (in-list (author->list (hash-ref ht 'author "")))])
+                               (hash-set st (string->symbol (format "author:~a" a)) #t))]
+                         [st (if (empty? (hash-ref ht 'tags empty))
+                               (hash-set st ':no-tag: #t)
+                               st)]
+                         [st (if (hash-ref ht 'checksum-error #f)
+                               (hash-set st ':error: #t)
+                               st)])
+                    st)
                   'authors (author->list (hash-ref ht 'author ""))))))
 
   (define (url->request u)

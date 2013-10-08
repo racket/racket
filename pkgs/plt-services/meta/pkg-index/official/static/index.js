@@ -6,13 +6,13 @@
 // xxx manage packages
 
 $( document ).ready(function() {
-    var search_terms = [ "!main-tests", "!main-distribution" ];
+    var search_terms = { "!main-tests": true, "!main-distribution": true };
 
     function addfilterlink ( text, term ) {
         return [$('<a>', { text: text,
                            href: "javascript:void(0)",
                            click: function () {
-                               search_terms.push(term);
+                               search_terms[term] = true;
                                evaluate_search();
                            } } ),
                 " "
@@ -22,16 +22,59 @@ $( document ).ready(function() {
         return [$('<a>', { text: text,
                            href: "javascript:void(0)",
                            click: function () {
-                               search_terms = $.grep( search_terms, function (v) { return v != term } );
+                               delete search_terms[term];
                                evaluate_search();
                            } } ),
                 " "
                ];
     };
 
-    $.getJSON( "/pkgs-all.json", function( resp ) {
+    function evaluate_search () {
+        $.each( $('#packages_table tr'), function (key, dom) {
+            var value = $(dom).data("obj");
+            var show = true;
+            var vterms = value['search-terms'];
+
+            $.each(search_terms,
+                   function ( term, termv ) {
+                       if ( term.charAt(0) == "!" ) {
+                           if ( vterms[term.substring(1)] ) {
+                               show = false;
+                           }
+                       } else {
+                           if ( ! vterms[term] ) {
+                               show = false;
+                           }
+                       }
+                   });
+
+            if ( show ) {
+                $(dom).show();
+            } else {
+                $(dom).hide();
+            }
+
+        });
+
+        // xxx handle search button
+
+        // xxx update menu available
+        $("#search_menu").html("").append( $.map( search_terms, function ( term, i ) {
+            return removefilterlink ( i, i );
+        } ) );
+
+        $("#packages_table tr:visible:even").removeClass("even");
+        $("#packages_table tr:visible:odd").addClass("even");
+    };
+
+    function object_keys ( o ) {
         var names = [];
-        $.each(resp, function(key, value) { names.push(key) });
+        $.each(o, function(key, value) { names.push(key) });
+        return names;
+    }
+
+    $.getJSON( "/pkgs-all.json", function( resp ) {
+        var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0));
         })
@@ -63,54 +106,4 @@ $( document ).ready(function() {
 
         evaluate_search();
     });
-
-    function evaluate_search_term( value, term ) {
-        if ( term == ":error:") {
-            return value['checksum-error'];
-        } else if ( term == ":no-tag:") {
-            return value['tags'].length == 0;
-        } else if ( term.substring(0, 5) == "ring:") {
-            return value['ring'] == term.substring(5);
-        } else if ( term.substring(0, 7) == "author:") {
-            return ($.inArray( term.substring(7), value['authors'] ) != -1);
-        } else if ( term.charAt(0) == "!" ) {
-            return ! evaluate_search_term( value, term.substring(1) );
-        } else if ( $.inArray( term, value['tags']) != -1 ) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function evaluate_search () {
-        $.each( $('#packages_table tr'), function (key, dom) {
-            var value = $(dom).data("obj");
-            var show = true;
-
-            for (termi in search_terms) {
-                var term = search_terms[termi];
-                if ( ! evaluate_search_term( value, term ) ) {
-                    show = false;
-                }
-            }
-
-            if ( show ) {
-                $(dom).show();
-            } else {
-                $(dom).hide();
-            }
-
-        });
-        
-        // xxx handle search button
-
-        // xxx update menu available
-        $("#search_menu").html("").append( $.map( search_terms, function ( term, i ) {
-            return removefilterlink ( term, term );
-        } ) );
-
-        $("#packages_table tr:visible:even").removeClass("even");
-        $("#packages_table tr:visible:odd").addClass("even");
-    };
-
 });
