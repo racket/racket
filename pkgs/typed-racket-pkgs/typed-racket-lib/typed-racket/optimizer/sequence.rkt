@@ -27,7 +27,13 @@
   (typed-expr (disjoin Vector? HeterogeneousVector?)))
 
 (define-syntax-rule (log-seq-opt opt-label stx)
-  (log-optimization opt-label "Sequence type specialization." stx))
+  (log-optimization
+   opt-label
+   (format
+    "~a\n~a~a~a"
+    "Sequence type specialization."
+    "(You may get better performance by using `" opt-label "' directly.)")
+   stx))
 
 (define-syntax-class make-sequence
   (pattern op:id
