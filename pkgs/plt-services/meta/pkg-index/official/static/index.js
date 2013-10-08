@@ -1,6 +1,5 @@
 // xxx display curation if allowed
 // xxx display conflicts as a tag
-// xxx rss
 // xxx logout
 // xxx what user am i
 // xxx upload
