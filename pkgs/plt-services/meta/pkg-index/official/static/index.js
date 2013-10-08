@@ -8,28 +8,30 @@
 $( document ).ready(function() {
     var search_terms = { "!main-tests": true, "!main-distribution": true };
 
-    function addfilterlink ( text, term ) {
+    function filterlink ( text, tclass, f ) {
         return [$('<a>', { text: text,
+                           class: tclass,
                            href: "javascript:void(0)",
-                           click: function () {
-                               search_terms[term] = true;
-                               evaluate_search();
-                           } } ),
-                " "
-               ];
-    };
-    function removefilterlink ( text, term ) {
-        return [$('<a>', { text: text,
-                           href: "javascript:void(0)",
-                           click: function () {
-                               delete search_terms[term];
-                               evaluate_search();
-                           } } ),
-                " "
-               ];
-    };
+                           click: f } ),
+                " " ]; };
+
+    function addfilterlink ( text, term, tclass ) {
+        return filterlink( text, tclass, function () {
+            search_terms[term] = true;
+            evaluate_search(); } ); };
+    function removefilterlink ( text, term, tclass ) {
+        return filterlink( text, tclass, function () {
+            delete search_terms[term];
+            evaluate_search(); } ); };
+    function changefilterlink ( text, term, nterm, tclass ) {
+        return filterlink( text, tclass, function () {
+            delete search_terms[term];
+            search_terms["!" + term] = true;
+            evaluate_search(); } ); };
 
     function evaluate_search () {
+        var shown_terms = {};
+
         $.each( $('#packages_table tr'), function (key, dom) {
             var value = $(dom).data("obj");
             var show = true;
@@ -39,45 +41,58 @@ $( document ).ready(function() {
                    function ( term, termv ) {
                        if ( term.charAt(0) == "!" ) {
                            if ( vterms[term.substring(1)] ) {
-                               show = false;
-                           }
-                       } else {
+                               show = false; } }
+                       else {
                            if ( ! vterms[term] ) {
-                               show = false;
-                           }
-                       }
-                   });
+                               show = false; } } });
 
             if ( show ) {
                 $(dom).show();
-            } else {
-                $(dom).hide();
-            }
 
-        });
+                $.each(vterms, function ( term, termv ) {
+                    if ( term.substring(0,7) != "author:") { shown_terms[term]++; } }); }
+            else {
+                $(dom).hide(); } });
+
+        $.each(search_terms,
+               function ( term, termv ) {
+                   if ( term.charAt(0) == "!" ) {
+                       shown_terms[ term.substring(1) ] = -2; }
+                   else {
+                       shown_terms[ term ] = -1; } });
 
         // xxx handle search button
 
-        // xxx update menu available
-        $("#search_menu").html("").append( $.map( search_terms, function ( term, i ) {
-            return removefilterlink ( i, i );
-        } ) );
+        var shown_terms_keys = object_keys(shown_terms);
+        var shown_terms_skeys = shown_terms_keys.sort(function(a,b) {
+            var va = shown_terms[a];
+            var vb = shown_terms[b];
+            if ( va < 0 && vb < 0 ) { return ((a < b) ? -1 : ((a > b) ? 1 : 0)); }
+            else if ( va >= 0 && vb >= 0 ) { return ((va < vb) ? -1 : ((va > vb) ? 1 : 0)); }
+            else if ( va < 0 ) { return -1; }
+            else if ( vb < 0 ) { return 1; } });
+
+        $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {
+            if ( shown_terms[term] < 0 ) {
+                if ( shown_terms[term] == -1 ) {
+                    return changefilterlink ( term, term, "!" + term, "active" ); }
+                else {
+                    return removefilterlink ( term, "!" + term, "inactive" ); } }
+            else {
+                return addfilterlink ( term, term, "possible" ); } } ) );
 
         $("#packages_table tr:visible:even").removeClass("even");
-        $("#packages_table tr:visible:odd").addClass("even");
-    };
+        $("#packages_table tr:visible:odd").addClass("even"); };
 
     function object_keys ( o ) {
         var names = [];
         $.each(o, function(key, value) { names.push(key) });
-        return names;
-    }
+        return names; }
 
     $.getJSON( "/pkgs-all.json", function( resp ) {
         var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
-            return ((a < b) ? -1 : ((a > b) ? 1 : 0));
-        })
+            return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
 
         var now = new Date().getTime() / 1000;
 
@@ -87,23 +102,19 @@ $( document ).ready(function() {
                     var value = resp[name];
 
                     $('<tr>',
-                      { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") }).
-                        data( "obj", value).append(
+                      { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
+                        .data( "obj", value)
+                        .append(
                             $('<td>').html( $('<a>', { text: value['name'],
                                                        href: "javascript:void(0)",
                                                        click: function () {
                                                            // XXX open up a subwindow
-                                                           console.log(value);
-                                                       } } ) ),
+                                                           console.log(value); } } ) ),
                             $('<td>').append( $.map( value['authors'], function ( author, i ) {
-                                return addfilterlink ( author, "author:" + author );
-                            } ) ),
+                                return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                             $('<td>').text( value['description'] ),
                             $('<td>').append( $.map( value['tags'], function ( tag, i ) {
-                                return addfilterlink ( tag, tag );
-                            } ) )).appendTo('#packages_table');
-                });
+                                return addfilterlink ( tag, tag, "possible" ); } ) ))
+                        .appendTo('#packages_table'); });
 
-        evaluate_search();
-    });
-});
+        evaluate_search(); }); });

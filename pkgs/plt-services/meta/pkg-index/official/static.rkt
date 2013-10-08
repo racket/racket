@@ -21,10 +21,8 @@
               (convert-to-json v)))]
    [(? number? n)
     n]
-   [#f
-    #f]
-   [#t
-    #t]
+   [(? boolean? b)
+    b]
    [(? symbol? s)
     (symbol->string s)]
    [(? keyword? s)

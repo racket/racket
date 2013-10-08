@@ -143,3 +143,12 @@ div.install {
    background: rgb(90%, 70%, 70%);
 }
 
+a.active {
+    font-weight: bold;
+}
+a.inactive {
+    font-weight: bold;
+    text-decoration: line-through;
+}
+a.possible {
+}
