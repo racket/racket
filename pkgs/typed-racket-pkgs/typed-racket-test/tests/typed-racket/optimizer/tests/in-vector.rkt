@@ -2,7 +2,7 @@
 #<<END
 TR info: in-vector.rkt 11:7 display -- hidden parameter
 TR info: in-vector.rkt 11:7 display -- hidden parameter
-TR opt: in-vector.rkt 8:0 #%module-begin -- in-vector
+TR opt: in-vector.rkt 10:20 (vector 1 2 3) -- in-vector
 END
 "123"
 #lang typed/scheme

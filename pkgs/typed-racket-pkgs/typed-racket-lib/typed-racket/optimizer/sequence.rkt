@@ -26,8 +26,8 @@
 (define-syntax-class/specialize vector-expr
   (typed-expr (disjoin Vector? HeterogeneousVector?)))
 
-(define-syntax-rule (log-seq-opt opt-label)
-  (log-opt opt-label "Sequence type specialization."))
+(define-syntax-rule (log-seq-opt opt-label stx)
+  (log-optimization opt-label "Sequence type specialization." stx))
 
 (define-syntax-class make-sequence
   (pattern op:id
@@ -39,7 +39,7 @@
   ;; if we're iterating (with the for macros) over something we know is a list,
   ;; we can generate code that would be similar to if in-list had been used
   (pattern (#%plain-app op:make-sequence _ l:list-expr)
-    #:do [(log-seq-opt "in-list")]
+    #:do [(log-seq-opt "in-list" #'l)]
     #:with opt #'(let ((i l.opt))
                    (values unsafe-car unsafe-cdr i
                            (lambda (x) (not (null? x)))
@@ -47,7 +47,7 @@
                            (lambda (x y) #t))))
   ;; idem for vectors
   (pattern (#%plain-app op:make-sequence _ v:vector-expr)
-    #:do [(log-seq-opt "in-vector")]
+    #:do [(log-seq-opt "in-vector" #'v)]
     #:with opt #'(let* ((i   v.opt)
                         (len (unsafe-vector-length i)))
                    (values (lambda (x) (unsafe-vector-ref i x))
@@ -58,7 +58,7 @@
                            (lambda (x y) #t))))
   ;; and (byte) strings
   (pattern (#%plain-app op:make-sequence _ s:string-expr)
-    #:do [(log-seq-opt "in-string")]
+    #:do [(log-seq-opt "in-string" #'s)]
     #:with opt #'(let* ((i   s.opt)
                         (len (string-length i)))
                    (values (lambda (x) (string-ref i x))
@@ -68,7 +68,7 @@
                            (lambda (x) #t)
                            (lambda (x y) #t))))
   (pattern (#%plain-app op:make-sequence _ s:bytes-expr)
-    #:do [(log-seq-opt "in-bytes")]
+    #:do [(log-seq-opt "in-bytes" #'s)]
     #:with opt #'(let* ((i   s.opt)
                         (len (bytes-length i)))
                    (values (lambda (x) (bytes-ref i x))
@@ -78,7 +78,7 @@
                            (lambda (x) #t)
                            (lambda (x y) #t))))
   (pattern (#%plain-app op:make-sequence _ s:int-expr) ; one-arg in-range
-    #:do [(log-seq-opt "in-range")]
+    #:do [(log-seq-opt "in-range" #'s)]
     #:with opt #'(let* ((end s.opt))
                    (values (lambda (x) x)
                            (lambda (x) (unsafe-fx+ 1 x))
