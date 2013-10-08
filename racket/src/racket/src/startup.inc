@@ -767,7 +767,7 @@
 "(finish i sep(add1 i))"
 "(loop i)))))))"
 "(loop(bytes-length bs)))))"
-"(if(path? base)"
+"(if(path-for-some-system? base)"
 "(build-path base new-name)"
 " new-name)))))"
 "(define-values(path-replace-suffix)"
