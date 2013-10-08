@@ -47,35 +47,18 @@
   (define pkg-list
     (map path->string (directory-list pkgs-path)))
   (define pkg-ht
-    (for/hash ([pkg-name (in-list pkg-list)])
-      (define ht (file->value (build-path pkgs-path pkg-name)))
+    (make-hash))
 
-      (values pkg-name
-              (hash-set* ht
-                         'name pkg-name
-                         'tags (hash-ref ht 'tags empty)
-                         'search-terms
-                         (let* ([st (hasheq)]
-                                [st (for/fold ([st st])
-                                        ([t (in-list (hash-ref ht 'tags empty))])
-                                      (hash-set st (string->symbol t) #t))]
-                                [st (hash-set st (string->symbol (format "ring:~a" (hash-ref ht 'ring 2))) #t)]
-                                [st (for/fold ([st st])
-                                        ([a (in-list (author->list (hash-ref ht 'author "")))])
-                                      (hash-set st (string->symbol (format "author:~a" a)) #t))]
-                                [st (if (empty? (hash-ref ht 'tags empty))
-                                      (hash-set st ':no-tag: #t)
-                                      st)]
-                                [st (if (hash-ref ht 'checksum-error #f)
-                                      (hash-set st ':error: #t)
-                                      st)])
-                           st)
-                         'authors (author->list (hash-ref ht 'author ""))))))
+  (for ([pkg-name (in-list pkg-list)])
+    (define ht (file->value (build-path pkgs-path pkg-name)))
 
-  (define basic-dispatch
-    (pkg-index/basic
-     (λ () pkg-list)
-     (λ (pkg-name) (hash-ref pkg-ht pkg-name))))
+    (hash-set!
+     pkg-ht pkg-name
+     (hash-set* ht
+                'name pkg-name
+                'ring (hash-ref ht 'ring 2)
+                'tags (hash-ref ht 'tags empty)
+                'authors (author->list (hash-ref ht 'author "")))))
 
   (define (package-info pn)
     (hash-ref pkg-ht pn))
@@ -86,6 +69,88 @@
         (parameterize ([date-display-format 'iso-8601])
           (date->string (seconds->date s #f) #t)))
       ""))
+
+  (define (module-lists-conflict? left right)
+    (define seen? (make-hash))
+    (for ([l (in-list left)])
+      (hash-set! seen? l #t))
+    (for/or ([r (in-list right)])
+      (hash-ref seen? r #f)))
+
+  (define (string-min x y)
+    (if (string<=? x y)
+      x
+      y))
+
+  (define (string-max x y)
+    (if (string<? x y)
+      y
+      x))
+
+  (define (packages-conflict? left right)
+    (define left-i (package-info left))
+    (define right-i (package-info right))
+    (define left-m (and left-i (hash-ref left-i 'modules #f)))
+    (define right-m (and right-i (hash-ref right-i 'modules #f)))
+    (if (and left-m right-m)
+      (module-lists-conflict? left-m right-m)
+      ;; We have to say #t here because otherwise things with no
+      ;; information won't be conflicting.
+      #t))
+
+  (define conflict-cache
+    (make-hash))
+
+  (define (packages-conflict?/cache left right)
+    (define smin (string-min left right))
+    (define smax (string-max left right))
+    (hash-ref! conflict-cache
+               (cons smin smax)
+               (λ ()
+                 (packages-conflict? smin smax))))
+
+  (define ring-01
+    (filter (λ (p) (member (hash-ref (package-info p) 'ring) '(0 1))) pkg-list))
+
+  (define (package-conflicts? pkg)
+    (filter (λ (other-pkg)
+              (if (equal? pkg other-pkg)
+                #f
+                (packages-conflict?/cache pkg other-pkg)))
+            ring-01))
+
+  (for ([pkg (in-hash-keys pkg-ht)])
+    (hash-update!
+     pkg-ht pkg
+     (λ (ht)
+       (define conflicts (package-conflicts? pkg))
+       (hash-set* ht
+                  'conflicts conflicts
+                  'search-terms
+                  (let* ([st (hasheq)]
+                         [st (for/fold ([st st])
+                                 ([t (in-list (hash-ref ht 'tags))])
+                               (hash-set st (string->symbol t) #t))]
+                         [st (hash-set st (string->symbol (format "ring:~a" (hash-ref ht 'ring))) #t)]
+                         [st (for/fold ([st st])
+                                 ([a (in-list (author->list (hash-ref ht 'author)))])
+                               (hash-set st (string->symbol (format "author:~a" a)) #t))]
+                         [st (if (empty? (hash-ref ht 'tags))
+                               (hash-set st ':no-tag: #t)
+                               st)]
+                         [st (if (hash-ref ht 'checksum-error)
+                               (hash-set st ':error: #t)
+                               st)]
+                         [st (if (empty? conflicts)
+                               st
+                               (hash-set st ':conflicts: #t))])
+                    st)))))
+
+
+  (define basic-dispatch
+    (pkg-index/basic
+     (λ () pkg-list)
+     (λ (pkg-name) (hash-ref pkg-ht pkg-name))))
 
   (define (page/atom.xml req)
     (define ps
