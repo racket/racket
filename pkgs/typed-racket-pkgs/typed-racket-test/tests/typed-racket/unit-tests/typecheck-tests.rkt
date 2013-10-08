@@ -1796,6 +1796,10 @@
           (void))
         ;; type doesn't really matter, just make sure it typechecks
         -Void]
+
+       ;; Unit test for PR 13298. Should raise an unbound id error
+       ;; instead of just allowing `x` to be undefined
+       [tc-err (let () (: x Number) 3)]
         )
   (test-suite
    "tc-literal tests"
