@@ -1018,7 +1018,7 @@
 		[h (send bm get-height)])
 	    (dc
 	     (lambda (dc x y)
-	       (send dc draw-bitmap bm x y 'solid black-color))
+	       (send dc draw-bitmap bm x y 'solid black-color (send bm get-loaded-mask)))
 	     w h))
 	  (frame (inset (colorize (text "bitmap failed") "red") 2)))))
   
