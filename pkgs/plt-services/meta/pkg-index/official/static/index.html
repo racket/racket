@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
   <head>
-    <title>Packages &gt; Search &gt; !main-distribution &gt; !main-tests</title>
+    <title>Packages</title>
     <script src="/sorttable.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="/index.js"></script>
@@ -9,29 +9,28 @@
   </head>
   <body>
     <div class="breadcrumb">
-      <span><a href="/">Packages</a></span> &gt;
-      <span>Search</span>
+      <span><a href="/">Packages</a></span>
 
-      <span id="logout">jay.mccarthy@gmail.com | <a href="/curate">curate</a> | <a href="/rss">rss</a> | <a href="/account/login">re-login</a> | <a href="/account/logout">logout</a></span>
+      <span id="logout">jay.mccarthy@gmail.com | <a href="/upload">upload</a> | <a href="/update">update</a> | <a href="/account/logout">logout</a> </span>
     </div>
-    <div id="menu"><span class="menu_option"><a href="/manage">Manage Your Packages</a></span>
-    </form></div>
     <p id="search_menu"></p>
     <table class="packages sortable">
-      <thead><tr>
+      <thead>
+        <tr>
           <th>Package</th>
           <th>Authors</th>
           <th>Description</th>
           <th>Tags</th>
-      </tr></thead>
+        </tr>
+      </thead>
       <tbody id="packages_table">
       </tbody>
-      <tfoot></tfoot>
     </table>
     <div id="footer">
       Powered by <a href="http://racket-lang.org">Racket</a> and a
       mess of ugly JS. Written
       by <a href="http://faculty.cs.byu.edu/~jay">Jay McCarthy</a>.
+      <a href="/rss">RSS</a> feed available.
     </div>
   </body>
 </html>

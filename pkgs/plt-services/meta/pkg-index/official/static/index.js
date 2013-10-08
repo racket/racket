@@ -1,12 +1,31 @@
-// xxx curate
+// xxx display curation if allowed
+// xxx display conflicts as a tag
 // xxx rss
-// xxx re-login
 // xxx logout
 // xxx what user am i
-// xxx manage packages
+// xxx upload
+// xxx update
 
 $( document ).ready(function() {
-    var search_terms = { "!main-tests": true, "!main-distribution": true };
+    var search_terms = { };
+    { var h = window.location.hash; 
+      if ( h == "" ) { 
+          search_terms["!main-tests"] = true; 
+          search_terms["!main-distribution"] = true; }
+      else {
+          h = h.substring(1);
+          console.log(h);
+          while ( h != "" ) {
+              if ( h.charAt(0) == "(" ) {
+                  var end = 1;
+                  while ( h.charAt(end) != ")" ) {
+                      end++;
+                      if ( ! h.charAt(end) ) { break; } }
+                  console.log( h, end, h.substring(1, end), h.substring(end) );
+                  search_terms[ h.substring(1, end) ] = true;
+                  h = h.substring(end+1); } 
+              else {
+                  h = ""; } } } }
 
     function filterlink ( text, tclass, f ) {
         return [$('<a>', { text: text,
@@ -61,8 +80,6 @@ $( document ).ready(function() {
                    else {
                        shown_terms[ term ] = -1; } });
 
-        // xxx handle search button
-
         var shown_terms_keys = object_keys(shown_terms);
         var shown_terms_skeys = shown_terms_keys.sort(function(a,b) {
             var va = shown_terms[a];
@@ -72,11 +89,14 @@ $( document ).ready(function() {
             else if ( va < 0 ) { return -1; }
             else if ( vb < 0 ) { return 1; } });
 
+        window.location.hash = "";
         $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {
             if ( shown_terms[term] < 0 ) {
                 if ( shown_terms[term] == -1 ) {
+                    window.location.hash = window.location.hash + "(" + term + ")";
                     return changefilterlink ( term, term, "!" + term, "active" ); }
                 else {
+                    window.location.hash = window.location.hash + "(" + "!" + term + ")";
                     return removefilterlink ( term, "!" + term, "inactive" ); } }
             else {
                 return addfilterlink ( term, term, "possible" ); } } ) );
