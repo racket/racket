@@ -7,24 +7,40 @@
 
 $( document ).ready(function() {
     var search_terms = { };
-    { var h = window.location.hash; 
-      if ( h == "" ) { 
-          search_terms["!main-tests"] = true; 
+
+    function parse_hash ( h ) {
+        while ( h != "" ) {
+            if ( h.charAt(0) == "(" ) {
+                var end = 1;
+                while ( h.charAt(end) != ")" ) {
+                    end++;
+                    if ( ! h.charAt(end) ) { break; } }
+                search_terms[ h.substring(1, end) ] = true;
+                h = h.substring(end+1); }
+            else {
+                h = ""; } } }
+
+    { var h = window.location.hash;
+      if ( h == "" ) {
+          search_terms["!main-tests"] = true;
           search_terms["!main-distribution"] = true; }
       else {
           h = h.substring(1);
-          console.log(h);
-          while ( h != "" ) {
-              if ( h.charAt(0) == "(" ) {
-                  var end = 1;
-                  while ( h.charAt(end) != ")" ) {
-                      end++;
-                      if ( ! h.charAt(end) ) { break; } }
-                  console.log( h, end, h.substring(1, end), h.substring(end) );
-                  search_terms[ h.substring(1, end) ] = true;
-                  h = h.substring(end+1); } 
-              else {
-                  h = ""; } } } }
+          parse_hash(h); } }
+
+    var expected_hash = "";
+    function change_hash ( v ) {
+        expected_hash = v;
+        window.location.hash = v; }
+
+    $(window).bind( 'hashchange', function(e) {
+        var actual_hash = window.location.hash;
+        if ( expected_hash != actual_hash ) {
+            // xxx Do something here. It is hard to do the right
+            // thing, particularly with the Back button because we
+            // don't add the tags in the same order the user add them
+            // in. We could do that though.
+            console.log("hash changed beneath me!"); } });
 
     function filterlink ( text, tclass, f ) {
         return [$('<a>', { text: text,
@@ -88,14 +104,14 @@ $( document ).ready(function() {
             else if ( va < 0 ) { return -1; }
             else if ( vb < 0 ) { return 1; } });
 
-        window.location.hash = "";
+        change_hash( "" );
         $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {
             if ( shown_terms[term] < 0 ) {
                 if ( shown_terms[term] == -1 ) {
-                    window.location.hash = window.location.hash + "(" + term + ")";
+                    change_hash( window.location.hash + "(" + term + ")" );
                     return changefilterlink ( term, term, "!" + term, "active" ); }
                 else {
-                    window.location.hash = window.location.hash + "(" + "!" + term + ")";
+                    change_hash( window.location.hash + "(" + "!" + term + ")" );
                     return removefilterlink ( term, "!" + term, "inactive" ); } }
             else {
                 return addfilterlink ( term, term, "possible" ); } } ) );
