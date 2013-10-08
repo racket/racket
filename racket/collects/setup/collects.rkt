@@ -27,7 +27,7 @@
                         (if pkg-collect
                             (cons pkg-collect l)
                             l)))
-      (define c-p (and (pair? (cdr p-l))
+      (define c-p (and (pair? new-c-l)
                        (apply collection-file-path (car p-l) new-c-l
                               #:fail (lambda (msg) #f))))
       (and c-p
@@ -37,6 +37,8 @@
   (define p-l (reverse (explode-path simple-p)))
   (or (and ((length p-l) . > . 2)
            (regexp-match? #rx#"^[-a-zA-Z0-9_+%.]*$" (path-element->bytes (car p-l)))
+           ;; Try using path suffixes as library names, checking whether
+           ;; `collection-file-path' locates the same path.
            (let ([file (path-element->string (car p-l))])
              (let loop ([c-l null] [p-l (cdr p-l)])
                (cond
@@ -50,7 +52,11 @@
                      (make-result new-c-l file)
                      (loop new-c-l (cdr p-l)))]
                 [else #f]))))
+      ;; The approach above won't work if a single-collection package's directory
+      ;; doesn't match the name of the single collection. In that case, we can
+      ;; check whether the directory is in a package, and so on.
       (try-pkg)
+      ;; If we get here, no module path reaches the file.
       p))
 
 (define (path->module-path p #:cache [cache #f])
