@@ -1,4 +1,3 @@
-
 (load-relative "loadtest.rktl")
 
 (Section 'path)
@@ -16,10 +15,18 @@
 (test (string->path "x.zo") path-replace-suffix "x.rkt" #".zo")
 (test (string->path "x.zo") path-replace-suffix "x" #".zo")
 (test (string->path "x.o.zo") path-replace-suffix "x.o.rkt" #".zo")
+(test (string->some-system-path "p/x.zo" 'unix)
+  path-replace-suffix (string->some-system-path "p/x.rkt" 'unix) ".zo")
+(test (string->some-system-path "p/x.zo" 'windows)
+  path-replace-suffix (string->some-system-path "p/x.rkt" 'windows) ".zo")
 (test (string->path "x_rkt.zo") path-add-suffix "x.rkt" ".zo")
 (test (string->path "x_rkt.zo") path-add-suffix "x.rkt" #".zo")
 (test (string->path "x.zo") path-add-suffix "x" #".zo")
 (test (string->path "x.o_rkt.zo") path-add-suffix "x.o.rkt" #".zo")
+(test (string->some-system-path "p/x.zo" 'unix)
+  path-add-suffix (string->some-system-path "p/x" 'unix) ".zo")
+(test (string->some-system-path "p/x.zo" 'windows)
+  path-add-suffix (string->some-system-path "p/x" 'windows) ".zo")
 
 (define (make-/tf p exn?)
   (lambda args
