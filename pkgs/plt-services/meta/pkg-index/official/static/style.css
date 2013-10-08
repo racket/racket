@@ -96,12 +96,13 @@ table.packages tbody tr.even {
 }
 .package table td:nth-child(2) {
     text-align: left;
+    width: 60%;
 }
 .package table td.submit {
     text-align: center;
 }
 .package input {
-    width: 100%;
+    width: 50%;
 }
 .package textarea {
     width: 100%;

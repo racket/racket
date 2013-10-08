@@ -1,9 +1,10 @@
 // xxx display curation if allowed -- http://localhost:8001/#(!:conflicts:)(ring:2)
 // xxx logout
 // xxx what user am i
-// xxx upload
+// xxx upload package
+// xxx bulk upload api
 // xxx update
-// xxx show info about a package
+// xxx add a tag api
 
 $( document ).ready(function() {
     $("#package_info").dialog({
@@ -42,11 +43,22 @@ $( document ).ready(function() {
             return [tag, " "]; } ) )
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
             return [ $('<tr>').append( $('<td>').html(v),
-                                     $('<td>').html(vo['source']) ),
+                                       $('<td>').html(vo['source']) ),
                      $('<tr>').append( $('<td>').html(""),
-                                     $('<td>').html(vo['checksum']) ),
+                                       $('<td>').html(vo['checksum']) ),
                      " "]; } ) )
         active_info = pkgi; };
+
+    function submit_add_tag () {
+        var it = $( "#pi_add_tag_text" );
+        // <xxx>
+        active_info['tags'].push( it.val() );
+        update_info( active_info );
+        // </xxx>
+        it.val("");}
+    $( "#pi_add_tag_text" ).keypress( function (e) {
+        if (e.which == 13) { submit_add_tag (); } } );
+    $( "#pi_add_tag_button" ).click( function (e) { submit_add_tag (); } );
 
     var search_terms = { };
 
