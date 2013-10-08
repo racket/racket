@@ -3,9 +3,11 @@
   <head>
     <title>Packages</title>
     <script src="/sorttable.js"></script>
+    <link rel="stylesheet" href="/plt-theme/jquery-ui-1.10.3.custom.min.css" />
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
     <script src="/index.js"></script>
-    <link rel="stylesheet" type="text/css" href="/style.css">
+    <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <div class="breadcrumb">
@@ -14,6 +16,24 @@
       <span id="logout">jay.mccarthy@gmail.com | <a href="/upload">upload</a> | <a href="/update">update</a> | <a href="/account/logout">logout</a> </span>
     </div>
     <p id="search_menu"></p>
+
+    <div id="package_info">
+      <span class="field">Package Name: <span id="pi_name">XXX</span></span>
+      <span class="field">Ring: <span id="pi_ring">XXX</span></span>
+      <span class="field">Authors: <span id="pi_authors">XXX</span></span>
+      <span class="field">Source: <span id="pi_source">XXX</span></span>
+      <span class="field">Checksum: <span id="pi_checksum">XXX</span></span>
+      <span class="field">Last Update: <span id="pi_last_update">XXX</span></span>
+      <span class="field">Last Checked: <span id="pi_last_checked">XXX</span></span>
+      <span class="field">Last Edit: <span id="pi_last_edit">XXX</span></span>
+      <span class="field">Description: <span id="pi_description">XXX</span></span>
+      <span class="field">Tags: <span id="pi_tags">XXX</span></span>
+      XXX Add a tag
+      XXX Version exceptions
+
+      <div class="install">Install this package with:<br><br><tt>raco pkg install <span id="pi_name_inst">XXX</span></tt><br><br>or, with the 'File|Install Package...' menu option in DrRacket.</div>
+    </div>
+
     <table class="packages sortable">
       <thead>
         <tr>

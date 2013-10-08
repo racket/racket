@@ -1,10 +1,23 @@
-// xxx display curation if allowed
+// xxx display curation if allowed -- http://localhost:8001/#(!:conflicts:)(ring:2)
 // xxx logout
 // xxx what user am i
 // xxx upload
 // xxx update
+// xxx show info about a package (make sure url is same as in atom feed)
 
 $( document ).ready(function() {
+    $("#package_info").dialog({
+        autoOpen: false,
+        position: { my: "center", at: "center", of: "#search_menu" },
+        modal: true });
+
+    var active_info = false;
+    var target_pkg = false;
+    function update_info( pkgi ) {
+        console.log( pkgi );
+        change_hash( "[" + pkgi['name'] + "]" );
+        active_info = pkgi; };
+
     var search_terms = { };
 
     function parse_hash ( h ) {
@@ -16,6 +29,9 @@ $( document ).ready(function() {
                     if ( ! h.charAt(end) ) { break; } }
                 search_terms[ h.substring(1, end) ] = true;
                 h = h.substring(end+1); }
+            else if ( h.charAt(0) == "[" ) {
+                target_pkg = h.substring(1, h.length - 1 );
+                h = ""; }
             else {
                 h = ""; } } }
 
@@ -123,6 +139,10 @@ $( document ).ready(function() {
         $.each(o, function(key, value) { names.push(key) });
         return names; }
 
+    function open_info ( i ) {
+        update_info( i );
+        $( "#package_info" ).dialog( "open" ); }
+
     $.getJSON( "/pkgs-all.json", function( resp ) {
         var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
@@ -142,8 +162,7 @@ $( document ).ready(function() {
                             $('<td>').html( $('<a>', { text: value['name'],
                                                        href: "javascript:void(0)",
                                                        click: function () {
-                                                           // XXX open up a subwindow
-                                                           console.log(value); } } ) ),
+                                                           open_info ( value ); } } ) ),
                             $('<td>').append( $.map( value['authors'], function ( author, i ) {
                                 return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                             $('<td>').text( value['description'] ),
@@ -151,4 +170,7 @@ $( document ).ready(function() {
                                 return addfilterlink ( tag, tag, "possible" ); } ) ))
                         .appendTo('#packages_table'); });
 
-        evaluate_search(); }); });
+        evaluate_search();
+
+        if ( target_pkg && resp[target_pkg] ) {
+            open_info ( resp[target_pkg] ) } }); });
