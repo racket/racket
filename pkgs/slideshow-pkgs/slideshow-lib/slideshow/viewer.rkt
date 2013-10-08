@@ -906,7 +906,7 @@
 		 [(equal? prefetched-page current-page)
 		  (paint-prefetch offscreen)]
 		 [else
-		  (paint-slide this offscreen)])
+		  (paint-slide this offscreen #f)])
 		(let ([bm (send offscreen get-bitmap)])
 		  (send (get-dc) draw-bitmap bm 0 0))]
 	       [(equal? prefetched-page current-page)
@@ -1001,7 +1001,7 @@
 			  (send dc set-brush b)))])
 		    (send dc set-scale 1 1))]
 		 [else
-		  (paint-slide this dc current-page 2/3 1 cw ch cw ch #f)
+		  (paint-slide this dc #t current-page 2/3 1 cw ch cw ch #f)
 		  (let ([pen (send dc get-pen)]
 			[brush (send dc get-brush)])
 		    (send dc set-pen "black" 1 'solid)
@@ -1023,6 +1023,7 @@
 		    (send dc draw-rectangle (* cw 2/3) 0 (* cw 1/3) ch)
                     (paint-slide this
                                  dc
+                                 #t
 				 (+ current-page 1)
 				 1/3 1/2
 				 cw ch cw ch
@@ -1066,11 +1067,12 @@
 
       (define paint-slide
 	(case-lambda
-	 [(canvas dc) (paint-slide canvas dc current-page)]
-	 [(canvas dc page) 
+	 [(canvas dc) (paint-slide canvas dc #t current-page)]
+	 [(canvas dc clip?) (paint-slide canvas dc clip? current-page)]
+	 [(canvas dc clip? page) 
 	  (let-values ([(cw ch) (send dc get-size)])
-	    (paint-slide canvas dc page 1 1 cw ch config:use-screen-w config:use-screen-h #t))]
-	 [(canvas dc page extra-scale-x extra-scale-y cw ch usw ush to-main?)
+	    (paint-slide canvas dc clip? page 1 1 cw ch config:use-screen-w config:use-screen-h #t))]
+	 [(canvas dc clip? page extra-scale-x extra-scale-y cw ch usw ush to-main?)
 	  (let* ([slide (if (sliderec? page)
                             page
                             (talk-list-ref page))]
@@ -1085,7 +1087,7 @@
 		 [sy (/ ush config:screen-h)]
 		 [mx (/ (- cw usw) 2)]
 		 [my (/ (- ch ush) 2)])
-	    (define clip-rgn (paint-letterbox dc cw ch usw ush #t))
+	    (define clip-rgn (paint-letterbox dc cw ch usw ush clip?))
 	    
             (when config:smoothing?
               (send dc set-smoothing 'aligned))
@@ -1114,7 +1116,7 @@
 		(send dc set-font (current-page-number-font))
 		(send dc set-text-foreground (current-page-number-color))
 		(let-values ([(w h d a) (send dc get-text-extent s)])
-		  (send dc draw-text s 
+		  (send dc draw-text s
 			(- cw w 5 (* sx (sinset-r ins)) (/ (- cw usw) 2))
 			(- ch h 5 (* sy (sinset-b ins)) (/ (- ch ush) 2))))
 		(send dc set-text-foreground c)
@@ -1159,7 +1161,7 @@
 	    (set! click-regions null)
 	    (set! interactives #hash())
 	    (set! adjust-cursor void)
-	    (paint-slide canvas prefetch-dc n)
+	    (paint-slide canvas prefetch-dc #f n)
 	    (set! prefetched-click-regions click-regions)
 	    (set! prefetched-interactives interactives)
 	    (set! click-regions old-click-regions)
