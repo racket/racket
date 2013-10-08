@@ -291,9 +291,10 @@
             (and (identifier? gen-id)
                  (syntax-local-value gen-id (lambda () #f))))
           (unless (generic-info? gen-val)
-            (bad "the first argument to the "
+            (bad "the first argument to the"
                  (car p)
-                 " is not a name for a generic interface"))
+                 " is not a name for a generic interface"
+                 (cadr p)))
           (loop (list* #'#:property
                        (quasisyntax/loc gen-id
                          (generic-property #,gen-id))

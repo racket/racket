@@ -43,6 +43,13 @@
                                   #:methods gen:foobar
                                   [(define foo 0)])
                           'ignore))))
+  ;; Test for PR 14069, make sure that the error reports
+  ;; the faulty syntax as `bar` and not `#:methods`
+  (check-exn #rx"at: bar"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                          (struct foo () #:methods bar [])
+                          'ignore))))
   (check-exn #rx"foo: not implemented for 5"
              (lambda () (let ()
                           (define-generics foobar
