@@ -6,6 +6,7 @@
          racket/match racket/set
          rackunit)
 (provide tests)
+(gen-test-main)
 
 (define-syntax-rule (t arg expected)
   (begin

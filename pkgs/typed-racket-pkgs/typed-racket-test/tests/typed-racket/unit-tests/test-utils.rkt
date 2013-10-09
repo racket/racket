@@ -4,7 +4,7 @@
          scheme/match
          scheme/gui/dynamic
          typed-racket/utils/utils
-         (for-syntax scheme/base)
+         (for-syntax scheme/base syntax/parse)
          (types utils)
          (rep type-rep)
          rackunit rackunit/text-ui)
@@ -25,3 +25,10 @@
   (syntax-case stx ()
     [(_ nm a b)
      (syntax/loc stx (test-case nm (check-tc-result-equal?* a b)))]))
+
+(define-syntax gen-test-main
+  (syntax-parser
+    [(stx:id)
+     #`(module* main #f
+         (require rackunit/text-ui)
+         (void (run-tests #,(datum->syntax #'stx 'tests))))]))

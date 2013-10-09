@@ -5,6 +5,7 @@
          (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
 (provide tests)
+(gen-test-main)
 
 (define-syntax (over-tests stx)
   (syntax-case stx ()

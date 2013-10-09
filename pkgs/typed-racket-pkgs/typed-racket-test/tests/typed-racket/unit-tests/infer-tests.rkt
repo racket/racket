@@ -3,8 +3,8 @@
          rackunit
          (types numeric-tower utils abbrev))
 
-
 (provide tests)
+(gen-test-main)
 
 (define-syntax-rule (fv-t ty elems ...)
   (let ([ty* ty])

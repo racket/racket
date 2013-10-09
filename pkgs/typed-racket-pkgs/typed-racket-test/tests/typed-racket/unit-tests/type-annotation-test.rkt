@@ -13,6 +13,7 @@
 (initialize-type-names)
 
 (provide tests)
+(gen-test-main)
 
 (define-syntax-rule (tat ann-stx ty)
   (check-tc-result-equal? (format "~a" (quote ann-stx))
