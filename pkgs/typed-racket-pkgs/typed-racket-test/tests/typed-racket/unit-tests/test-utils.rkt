@@ -1,5 +1,4 @@
 #lang scheme/base
-(provide (all-defined-out))
 
 (require scheme/require-syntax
          scheme/match
@@ -10,7 +9,7 @@
          (rep type-rep)
          rackunit rackunit/text-ui)
 
-(provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env)
+(provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env (all-defined-out))
 
 (define (mk-suite ts)
   (match (map (lambda (f) (f)) ts)

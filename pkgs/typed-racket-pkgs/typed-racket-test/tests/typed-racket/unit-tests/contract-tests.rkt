@@ -7,6 +7,7 @@
          (rep type-rep)
          (types abbrev numeric-tower union)
          rackunit)
+(provide contract-tests)
 
 
 (define-syntax-rule (t e)
@@ -91,5 +92,3 @@
                       "multiple distinct type variables")
               ))
 
-(define-go contract-tests)
-(provide contract-tests)

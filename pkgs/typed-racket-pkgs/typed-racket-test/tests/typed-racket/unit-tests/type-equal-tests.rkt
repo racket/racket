@@ -46,8 +46,3 @@
                   (-struct #'heap-node #f
                            (map fld* (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty))))))
              (-base 'heap-empty))]))
-
-(define-go
-  type-equal-tests)
-
-

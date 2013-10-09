@@ -20,6 +20,7 @@
          typed-racket/base-env/prims
          typed-racket/base-env/base-types
          (for-syntax typed-racket/standard-inits))
+(provide typecheck-special-tests)
 
 (begin-for-syntax (do-standard-inits))
 
@@ -137,5 +138,3 @@
    ))
 
 
-(define-go typecheck-special-tests)
-(provide typecheck-special-tests)
