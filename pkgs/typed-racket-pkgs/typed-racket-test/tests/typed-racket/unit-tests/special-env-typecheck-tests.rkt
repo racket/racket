@@ -1,6 +1,7 @@
 #lang racket
 
 (require "test-utils.rkt"
+         "evaluator.rkt"
          (for-syntax scheme/base)
          (for-template scheme/base)
          (rep type-rep filter-rep object-rep)
@@ -13,6 +14,7 @@
          rackunit rackunit/text-ui
          syntax/parse
          racket/file racket/port
+         syntax/location
          (for-syntax syntax/kerncase syntax/parse racket/syntax
                      (types abbrev numeric-tower utils)
                      (utils mutated-vars) (env mvar-env)
@@ -29,13 +31,15 @@
 (define-syntax (tc-e stx)
   (syntax-parse stx
     [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
-    [(_ a #:ret b)
-     (quasisyntax/loc stx
-       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'a)
-                               #,(let ([ex (local-expand #'a 'expression null)])
-                                   (find-mutated-vars ex mvar-env)
-                                   (tc-expr ex))
-                               #,(syntax-local-eval #'b)))]))
+    [(id a #:ret b)
+     (syntax/loc stx
+       (let ([res1 (phase1-phase0-eval
+                     (let ([ex (local-expand #'a 'expression null)])
+                       (find-mutated-vars ex mvar-env)
+                       #`'#,(tc-expr ex)))]
+             [res2 (phase1-phase0-eval #`'#,b)])
+         (check-tc-result-equal? (format "~a ~a" (quote-line-number id) 'a)
+                                 res1 res2)))]))
 
 (define typecheck-special-tests
   (test-suite

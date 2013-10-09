@@ -12,23 +12,21 @@
  "infer-tests.rkt" ;; pass
  "type-annotation-test.rkt" ;; pass
  "keyword-expansion-test.rkt" ;;pass
+ "special-env-typecheck-tests.rkt" ;;pass"
 
  "contract-tests.rkt"
  "interactive-tests.rkt"
 
- racket/runtime-path
  rackunit)
 
 (provide unit-tests)
 
-(define-runtime-path special "special-env-typecheck-tests.rkt")
 
 (define unit-tests
   (make-test-suite
    "Unit Tests"
    (list 
-    ;; this uses dynamic require because the file fails to compile when there's a test failure
-    (dynamic-require special 'typecheck-special-tests)
+    typecheck-special-tests
     typecheck-tests
     subtype-tests
     type-equal-tests
