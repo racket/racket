@@ -8,6 +8,7 @@
          (for-syntax scheme/base))
 
 (provide tests)
+(gen-test-main)
 
 (define-syntax (subtyping-tests stx)
   (define (single-test stx)

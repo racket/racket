@@ -8,6 +8,7 @@
          (types abbrev numeric-tower union)
          rackunit)
 (provide tests)
+(gen-test-main)
 
 
 (define-syntax-rule (t e)

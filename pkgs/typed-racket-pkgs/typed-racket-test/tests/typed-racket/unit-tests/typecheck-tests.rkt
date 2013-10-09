@@ -55,12 +55,14 @@
 
 (require
   "evaluator.rkt"
+  "test-utils.rkt"
   (for-syntax
     racket/base
     syntax/parse
     'tester))
 
 (provide tests)
+(gen-test-main)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

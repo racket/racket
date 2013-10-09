@@ -5,6 +5,7 @@
          (types utils abbrev numeric-tower substitute)
          rackunit)
 (provide tests)
+(gen-test-main)
 
 (define-syntax-rule (s img var tgt result)
   (test-eq? "test" (substitute img 'var tgt) result))

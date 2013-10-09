@@ -23,6 +23,7 @@
          typed-racket/base-env/base-types
          (for-syntax typed-racket/standard-inits))
 (provide tests)
+(gen-test-main)
 
 (begin-for-syntax (do-standard-inits))
 

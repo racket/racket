@@ -13,6 +13,7 @@
          racket/dict)
 
 (provide tests)
+(gen-test-main)
 
 ;; HORRIBLE HACK!
 ;; We are solving the following problem:

@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require
+  "test-utils.rkt"
   racket/base
   racket/port
   racket/promise
@@ -11,6 +12,7 @@
     syntax/parse))
 
 (provide tests)
+(gen-test-main)
 
 (define promised-ns
   (delay

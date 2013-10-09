@@ -6,6 +6,7 @@
          rackunit)
 
 (provide tests)
+(gen-test-main)
 
 (define (-base x) (make-Base x #'dummy values #f))
 
