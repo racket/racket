@@ -7,7 +7,7 @@
          (rep type-rep)
          (types abbrev numeric-tower union)
          rackunit)
-(provide contract-tests)
+(provide tests)
 
 
 (define-syntax-rule (t e)
@@ -48,7 +48,7 @@
 
 
 
-(define contract-tests
+(define tests
   (test-suite "Contract Tests"
               known-bugs
               (t (-Number . -> . -Number))

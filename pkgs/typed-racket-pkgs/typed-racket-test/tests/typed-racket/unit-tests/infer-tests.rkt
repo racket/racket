@@ -4,7 +4,7 @@
          (types numeric-tower utils abbrev))
 
 
-(provide fv-tests)
+(provide tests)
 
 (define-syntax-rule (fv-t ty elems ...)
   (let ([ty* ty])
@@ -13,7 +13,7 @@
                 (fv ty*)
                 (list (quote elems) ...))))
 
-(define fv-tests
+(define tests
   (test-suite "Tests for fv"
               (fv-t -Number)
               [fv-t (-v a) a]

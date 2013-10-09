@@ -7,7 +7,7 @@
          rackunit
          (for-syntax scheme/base))
 
-(provide subtype-tests)
+(provide tests)
 
 (define-syntax (subtyping-tests stx)
   (define (single-test stx)
@@ -26,7 +26,7 @@
 (define t1 (-mu T (-lst (Un (-v a) T))))
 (define t2 (unfold t1))
 
-(define subtype-tests
+(define tests
   (subtyping-tests
    ;; trivial examples
    (Univ Univ)

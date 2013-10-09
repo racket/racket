@@ -10,7 +10,7 @@
     racket/format
     syntax/parse))
 
-(provide interactive-tests)
+(provide tests)
 
 (define promised-ns
   (delay
@@ -42,7 +42,7 @@
                        ,(syntax->datum #'form)) (force promised-ns)))))))]))
 
 ;; Add 'only at the toplevel tests'
-(define interactive-tests
+(define tests
   (test-suite "Interactive tests"
 
     (test-form #rx""

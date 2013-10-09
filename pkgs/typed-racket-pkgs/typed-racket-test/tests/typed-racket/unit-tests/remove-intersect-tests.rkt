@@ -4,6 +4,7 @@
          (r:infer infer)
          (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
+(provide tests)
 
 (define-syntax (over-tests stx)
   (syntax-case stx ()
@@ -66,5 +67,8 @@
    [(-pair -Number (-v a)) (-pair Univ Univ) (Un)]
    ))
 
-(provide remove-tests restrict-tests overlap-tests)
-
+(define tests
+  (test-suite "Remove Intersect"
+     remove-tests
+     restrict-tests
+     overlap-tests))

@@ -4,6 +4,7 @@
          (rep type-rep)
          (types utils abbrev numeric-tower substitute)
          rackunit)
+(provide tests)
 
 (define-syntax-rule (s img var tgt result)
   (test-eq? "test" (substitute img 'var tgt) result))
@@ -11,7 +12,7 @@
 (define-syntax-rule (s... imgs var tgt result)
   (test-eq? "test" (substitute-dots (list . imgs) #f 'var tgt) result))
 
-(define subst-tests
+(define tests
   (test-suite "Tests for substitution"
               (s -Number a (-v a) -Number)
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots null -Number (-v a) 'a))) (-Number -Boolean . -> . -Number))

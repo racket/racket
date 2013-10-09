@@ -22,7 +22,7 @@
          typed-racket/base-env/prims
          typed-racket/base-env/base-types
          (for-syntax typed-racket/standard-inits))
-(provide typecheck-special-tests)
+(provide tests)
 
 (begin-for-syntax (do-standard-inits))
 
@@ -41,7 +41,7 @@
          (check-tc-result-equal? (format "~a ~a" (quote-line-number id) 'a)
                                  res1 res2)))]))
 
-(define typecheck-special-tests
+(define tests
   (test-suite
    "Special Typechecker tests"
    ;; should work but don't -- need expected type
