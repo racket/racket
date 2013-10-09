@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot/doc
+(require plot/private/doc
          scribble/manual
          scribble/render
          scribble/text-render

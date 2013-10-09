@@ -3,9 +3,10 @@
 @(require "common.rkt"
           (for-label (rename-in racket/draw [font-family/c ff/c])))
 
-@declare-exporting[plot/utils]
-
 @title[#:tag "contracts"]{Plot Contracts}
+
+@declare-exporting[plot/utils]
+@defmodule*/no-declare[(plot/utils) #:link-target? #f]
 
 @section{Plot Element Contracts}
 

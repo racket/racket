@@ -2,20 +2,20 @@
 
 (require rackunit racket/date
          plot plot/utils
-         plot/common/utils
-         (only-in plot/common/math
+         plot/private/common/utils
+         (only-in plot/private/common/math
                   vector-andmap
                   vector-ormap)
-         (only-in plot/common/date-time
+         (only-in plot/private/common/date-time
                   utc-seconds-round-year
                   utc-seconds-round-month
                   seconds-per-minute
                   seconds-per-hour
                   seconds-per-day
                   seconds-per-week)
-         (only-in plot/common/format
+         (only-in plot/private/common/format
                   int-str->e-str frac-str->e-str)
-         plot/common/worker-thread)
+         plot/private/common/worker-thread)
 
 (check-equal? (linear-seq 1 1 2) '(1 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))

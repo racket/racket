@@ -1,38 +1,38 @@
-#lang typed/racket/base
+#lang racket/base
 
 ;; The commented-out module paths are those that don't exist yet
 
-(require "common/types.rkt"
-         ;"common/marching-squares.rkt"
-         ;"common/marching-cubes.rkt"
-         "contracted/parameters.rkt"
-         "contracted/math.rkt"
-         "contracted/axis-transform.rkt"
-         "contracted/ticks.rkt"
-         "contracted/format.rkt"
-         "contracted/draw.rkt"
-         "contracted/sample.rkt"  ; incomplete
-         ;"contracted/samplers.rkt"
-         ;"contracted/legend.rkt"
-         ;"contracted/plot-element.rkt"
-         "contracted/date-time.rkt"
-         "contracted/kde.rkt"
+(require "private/common/types.rkt"
+         ;"private/common/marching-squares.rkt"
+         ;"private/common/marching-cubes.rkt"
+         "private/contracted/parameters.rkt"
+         "private/contracted/math.rkt"
+         "private/contracted/axis-transform.rkt"
+         "private/contracted/ticks.rkt"
+         "private/contracted/format.rkt"
+         "private/contracted/draw.rkt"
+         "private/contracted/sample.rkt"  ; incomplete
+         ;"private/contracted/samplers.rkt"
+         ;"private/contracted/legend.rkt"
+         ;"private/contracted/plot-element.rkt"
+         "private/contracted/date-time.rkt"
+         "private/contracted/kde.rkt"
          )
 
 (provide (all-from-out
-          "common/types.rkt"
-          ;"common/marching-squares.rkt"
-          ;"common/marching-cubes.rkt"
-          "contracted/parameters.rkt"
-          "contracted/math.rkt"
-          "contracted/axis-transform.rkt"
-          "contracted/ticks.rkt"
-          "contracted/format.rkt"
-          "contracted/draw.rkt"
-          "contracted/sample.rkt"  ; incomplete
-          ;"contracted/samplers.rkt"
-          ;"contracted/legend.rkt"
-          ;"contracted/plot-element.rkt"
-          "contracted/date-time.rkt"
-          "contracted/kde.rkt"
+          "private/common/types.rkt"
+          ;"private/common/marching-squares.rkt"
+          ;"private/common/marching-cubes.rkt"
+          "private/contracted/parameters.rkt"
+          "private/contracted/math.rkt"
+          "private/contracted/axis-transform.rkt"
+          "private/contracted/ticks.rkt"
+          "private/contracted/format.rkt"
+          "private/contracted/draw.rkt"
+          "private/contracted/sample.rkt"  ; incomplete
+          ;"private/contracted/samplers.rkt"
+          ;"private/contracted/legend.rkt"
+          ;"private/contracted/plot-element.rkt"
+          "private/contracted/date-time.rkt"
+          "private/contracted/kde.rkt"
           ))

@@ -2,9 +2,10 @@
 
 @(require "common.rkt")
 
-@declare-exporting[plot]
-
 @title[#:tag "renderer2d"]{2D Renderers}
+
+@declare-exporting[plot]
+@defmodule*/no-declare[(plot plot/typed) #:link-target? #f]
 
 @section[#:tag "renderer2d-function-arguments"]{2D Renderer Function Arguments}
 

@@ -4,6 +4,8 @@
 
 @title[#:tag "intro"]{Introduction}
 
+@defmodule*/no-declare[(plot plot/typed) #:link-target? #f]
+
 @section{Plotting 2D Graphs}
 
 To plot a one-input, real-valued function, do something like
@@ -11,12 +13,12 @@ To plot a one-input, real-valued function, do something like
 @racketinput[(require plot)]
 @interaction[#:eval plot-eval (plot (function sin (- pi) pi #:label "y = sin(x)"))]
 
-(If you're not using DrRacket, start with
+The first argument to @(racket function) is the function to be plotted, and the @(racket #:label) argument becomes the name of the function in the legend.
+
+If you're not using DrRacket, start with
 @racketblock[(require plot)
              (plot-new-window? #t)]
-to open each plot in a new window.)
-
-The first argument to @(racket function) is the function to be plotted, and the @(racket #:label) argument becomes the name of the function in the legend.
+to open each plot in a new window.
 
 @section{Terminology}
 

@@ -2,9 +2,10 @@
 
 @(require "common.rkt")
 
-@declare-exporting[plot]
-
 @title[#:tag "params"]{Plot and Renderer Parameters}
+
+@declare-exporting[plot]
+@defmodule*/no-declare[(plot plot/typed) #:link-target? #f]
 
 @section{Compatibility}
 
@@ -37,7 +38,7 @@ If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog whe
 @doc-apply[plot-background]{
 The plot foreground and background color.
 That both are @(racket 0) by default is not a mistake: for foreground colors, @(racket 0) is interpreted as black; for background colors, @(racket 0) is interpreted as white.
-See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT interprets integer colors.}
+See @(racket ->pen-color) and @(racket ->brush-color) for details on how @(plot-name) interprets integer colors.}
 @doc-apply[plot-foreground-alpha]
 @doc-apply[plot-background-alpha]{The opacity of the background and foreground colors.}
 @doc-apply[plot-font-size]{The font size of the title, axis labels, tick labels, and other labels, in drawing units.}
@@ -93,7 +94,7 @@ Use these along with @racket[x-axis] and @racket[y-axis] if you want axes that i
 }
 
 @doc-apply[plot-animating?]{
-When @(racket #t), certain renderers draw simplified plots to speed up drawing. PLoT sets it to @(racket #t), for example, when a user is clicking and dragging a 3D plot to rotate it.
+When @(racket #t), certain renderers draw simplified plots to speed up drawing. @(plot-name) sets it to @(racket #t), for example, when a user is clicking and dragging a 3D plot to rotate it.
 }
 
 @doc-apply[animated-samples]{

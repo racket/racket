@@ -2,27 +2,25 @@
 
 @(require "common.rkt")
 
-@declare-exporting[plot]
-
-@title[#:tag "porting"]{Porting From PLoT <= 5.1.3}
+@title[#:tag "porting"]{Porting From @(plot-name) <= 5.1.3}
 
 If it seems porting will take too long, you can get your old code running more quickly using the @secref["compat"].
 
-The update from PLoT version 5.1.3 to 5.2 introduces a few incompatibilities:
+The update from @(plot-name) version 5.1.3 to 5.2 introduces a few incompatibilities:
 @itemlist[
-          @item{PLoT now allows plot elements to request plot area bounds, and finds bounds large enough to fit all plot elements.
+          @item{@(plot-name) now allows plot elements to request plot area bounds, and finds bounds large enough to fit all plot elements.
                 The old default plot area bounds of [-5,5] × [-5,5] cannot be made consistent with the improved behavior; the default bounds are now "no bounds".
                 This causes code such as @(racket (plot (line sin))), which does not state bounds, to fail.}
           @item{The @(racket #:width) and @(racket #:style) keyword arguments to @(racket vector-field) have been replaced by @(racket #:line-width) and @(racket #:scale) to be consistent with other functions.}
           @item{The @(racket plot) function no longer takes a @(racket ((is-a?/c 2d-view%) . -> . void?)) as an argument, but a @(racket (treeof renderer2d?)).
                 The argument change in @(racket plot3d) is similar.
-                This should not affect most code because PLoT encourages regarding these data types as black boxes.}
+                This should not affect most code because @(plot-name) encourages regarding these data types as black boxes.}
           @item{The @(racket plot-extend) module no longer exists.}
           @item{The @racket[fit] function and @racket[fit-result] struct type have been removed.}
 
           ]
 
-This section of the PLoT manual will help you port code written for PLoT 5.1.3 and earlier to the most recent PLoT.
+This section of the @(plot-name) manual will help you port code written for @(plot-name) 5.1.3 and earlier to the most recent @(plot-name).
 There are four main tasks:
 @itemlist[
           @item{Replace deprecated functions.}
@@ -50,7 +48,7 @@ The number of contour levels is therefore some number between @(racket 4) and @(
 
 The safest way to ensure that @(racket plot) can determine bounds for the plot area is to add @(racket #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5) to every call to @(racket plot). Similarly, add @(racket #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5 #:z-min -5 #:z-max 5) to every call to @(racket plot3d).
 
-Because PLoT is now smarter about choosing bounds, there are better ways. For example, suppose you have
+Because @(plot-name) is now smarter about choosing bounds, there are better ways. For example, suppose you have
 
 @interaction[#:eval plot-eval
                     (eval:alts
@@ -106,12 +104,15 @@ For example, if @(racket vs) is the list of vectors, send @(racket (map (λ (v) 
 
 Chances are, if you used @(racket plot-extend), you no longer need it.
 The canonical @(racket plot-extend) example used to be a version of @(racket line) that drew dashed lines.
-Every line-drawing function in PLoT now has a @(racket #:style) or @(racket #:line-style) keyword argument.
+Every line-drawing function in @(plot-name) now has a @(racket #:style) or @(racket #:line-style) keyword argument.
 
-The rewritten PLoT will eventually have a similar extension mechanism.
+The rewritten @(plot-name) will eventually have a similar extension mechanism.
 
 
 @section{Deprecated Functions}
+
+@declare-exporting[plot]
+@defmodule*/no-declare[(plot) #:link-target? #f]
 
 The following functions exist for backward compatibility, but may be removed in the future.
 Set @(racket (plot-deprecation-warnings? #t)) to be alerted the first time each is used.

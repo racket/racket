@@ -10,7 +10,7 @@
                     unstable/contract)
          plot
          plot/utils
-         plot/doc
+         plot/private/doc
          unstable/latent-contract/defthing)
 
 (provide (all-defined-out)
@@ -23,19 +23,17 @@
                                   plot/utils
                                   unstable/contract))
          (all-from-out plot)
-         (all-from-out plot/doc)
+         (all-from-out plot/private/doc)
          (all-from-out plot/utils)
          doc-apply)
 
-(define (plot-name) "PLoT")
+(define (plot-name) "Plot")
 
 (define plot-eval
   (let ([eval  (make-base-eval)])
     (eval '(begin
              (require racket/math racket/match racket/list racket/draw racket/class
-                      (rename-in (except-in plot plot plot3d)
-                                 [plot-pict  plot]
-                                 [plot3d-pict  plot3d])
+                      plot/pict
                       plot/utils)))
     eval))
 

@@ -4,7 +4,8 @@
                      plot/compat)
           plot/compat
           (only-in unstable/latent-contract/defthing
-                   doc-apply))
+                   doc-apply)
+          (only-in "common.rkt" plot-name))
 
 @title[#:tag "compat"]{Compatibility Module}
 
@@ -12,7 +13,7 @@
 
 @defmodule[plot/compat]
 
-This module provides an interface compatible with PLoT 5.1.3 and earlier.
+This module provides an interface compatible with @(plot-name) 5.1.3 and earlier.
 
 @bold{Do not use both @racketmodname[plot] and @racketmodname[plot/compat] in the same module.}
 It is tempting to try it, to get both the new features and comprehensive backward compatibility.

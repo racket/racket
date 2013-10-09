@@ -4,11 +4,8 @@
 
 @title[#:tag "utils"]{Plot Utilities}
 
-@defmodule[plot/utils]
-
-Typed Racket users should use
-
-@defmodule*/no-declare[(plot/typed/utils)]
+@declare-exporting[plot/utils]
+@defmodule*/no-declare[(plot/utils plot/typed/utils)]
 
 @;====================================================================================================
 @section{Formatting}
@@ -66,7 +63,7 @@ Converts an integer into a string of superscript Unicode characters.
 @examples[#:eval plot-eval
                  (integer->superscript -1234567890)]
 Systems running some out-of-date versions of Windows XP have difficulty with Unicode superscripts for 4 and up.
-Because @racket[integer->superscript] is used by every number formatting function to format exponents, if you have such a system, PLoT will apparently not format all numbers with exponents correctly (until you update it).
+Because @racket[integer->superscript] is used by every number formatting function to format exponents, if you have such a system, @(plot-name) will apparently not format all numbers with exponents correctly (until you update it).
 }
 
 @;{
@@ -453,7 +450,7 @@ Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d)
 @subsection[#:tag "math.rectangles"]{Rectangles and Rectangle Functions}
 
 @margin-note*{The @racket[rect-meet] and @racket[rect-join] functions define a @link["http://en.wikipedia.org/wiki/Lattice_%28order%29"]{pointed lattice} over rectangles.
-                  This fact may seem esoteric, but it allows PLoT to combine multiple renderers with different rectangular bounds in a way that is intuitive and mathematically sound.}
+                  This fact may seem esoteric, but it allows @(plot-name) to combine multiple renderers with different rectangular bounds in a way that is intuitive and mathematically sound.}
 @defproc[(rect-meet [i (vectorof ivl?)] ...) (vectorof ivl?)]{
 }
 
@@ -505,7 +502,7 @@ To keep time zone offsets from influencing the plot, set them to @racket[0] firs
                       [day exact-integer?])]{
 A time representation that accounts for days, negative times (using negative days), and fractional seconds.
 
-PLoT (specifically @racket[time-ticks]) uses @racket[plot-time] internally to format times, but because renderer-producing functions require only real values,
+@(plot-name) (specifically @racket[time-ticks]) uses @racket[plot-time] internally to format times, but because renderer-producing functions require only real values,
 user code should not need it. It is provided just in case.
 }
 

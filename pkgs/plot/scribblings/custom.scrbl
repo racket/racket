@@ -5,8 +5,7 @@
 @title[#:tag "custom"]{Custom Plot Elements}
 
 @declare-exporting[plot/utils]
-
-The following API is provided by @racketmodname[plot/utils].
+@defmodule*/no-declare[(plot/utils plot/typed/utils) #:link-target? #f]
 
 @section{Plot Elements}
 

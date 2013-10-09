@@ -2,9 +2,10 @@
 
 @(require "common.rkt" (for-label racket/date db))
 
-@declare-exporting[plot]
-
 @title[#:tag "ticks and transforms"]{Axis Transforms and Ticks}
+
+@declare-exporting[plot]
+@defmodule*/no-declare[(plot plot/typed) #:link-target? #f]
 
 @section[#:tag "transforms"]{Axis Transforms}
 
@@ -38,7 +39,7 @@ Here, the renderer returned by @racket[surface3d] does not have to bend the poly
 @doc-apply[plot-x-transform]
 @doc-apply[plot-y-transform]
 @doc-apply[plot-z-transform]{
-Independent, per-axis, monotone, nonlinear transforms. PLoT comes with some typical (and some atypical) axis transforms, documented immediately below.
+Independent, per-axis, monotone, nonlinear transforms. @(plot-name) comes with some typical (and some atypical) axis transforms, documented immediately below.
 }
 
 @doc-apply[id-transform]{
@@ -358,7 +359,7 @@ The @racket[#:formats] keyword argument is a list of three format strings, repre
 @doc-apply[currency-ticks-formats]{
 The default currency scales and formats.
 
-For example, a PLoT user in France would probably begin programs with
+For example, a @(plot-name) user in France would probably begin programs with
 @racketblock[(require plot)
              (currency-ticks-scales eu-currency-scales)
              (currency-ticks-formats eu-currency-formats)]
