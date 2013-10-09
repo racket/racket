@@ -11,7 +11,7 @@
      #'(test-suite "Tests for intersect"
                    (test-check (format "Overlap test: ~a ~a" t1 t2) (lambda (a b) (eq? (not (not a)) b)) (overlap t1 t2) res) ...)]))
 
-(define (overlap-tests)
+(define overlap-tests
   (over-tests
    [-Number -Integer #t]))
 
@@ -22,7 +22,7 @@
                    (test-check (format "Restrict test: ~a ~a" t1 t2) type-compare? (restrict t1 t2) res) ...)]))
 
 
-(define (restrict-tests)
+(define restrict-tests
   (restr-tests
    [-Number (Un -Number -Symbol) -Number]
    [-Number -Number -Number]
@@ -50,7 +50,7 @@
        (test-suite "Tests for remove"
                    (test-check (format "Remove test: ~a ~a" t1 t2) type-compare? (remove t1 t2) res) ...))]))
 
-(define (remove-tests)
+(define remove-tests
   (remo-tests
    [(Un -Number -Symbol) -Number -Symbol]
    [-Number -Number (Un)]

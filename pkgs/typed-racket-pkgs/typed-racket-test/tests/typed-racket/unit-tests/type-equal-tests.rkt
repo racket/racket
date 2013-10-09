@@ -26,7 +26,7 @@
 
 (define (fld* t) (make-fld t (datum->syntax #'here 'values) #f))
 
-(define (type-equal-tests)
+(define type-equal-tests
   (te-tests
    [-Number -Number]
    [(Un -Number) -Number]

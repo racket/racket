@@ -73,7 +73,7 @@
 (define B -Boolean)
 (define Sym -Symbol)
 
-(define (parse-type-tests)
+(define parse-type-tests
   (pt-tests
    "parse-type tests"
    [FAIL UNBOUND]

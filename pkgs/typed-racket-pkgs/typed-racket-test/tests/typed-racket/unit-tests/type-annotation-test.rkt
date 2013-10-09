@@ -25,7 +25,7 @@
                                                (expand 'ann-stx))))
                           ty))
 
-(define (type-annotation-tests)
+(define type-annotation-tests
   (test-suite
    "Type Annotation tests"
    ;; FIXME - ask Ryan

@@ -190,7 +190,7 @@
          (make-Path p var))))
 
 
-(define (typecheck-tests)
+(define typecheck-tests
   (test-suite
     "Typechecker tests"
     #reader typed-racket/typed-reader

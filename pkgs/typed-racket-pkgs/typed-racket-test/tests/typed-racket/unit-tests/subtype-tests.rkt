@@ -26,7 +26,7 @@
 (define t1 (-mu T (-lst (Un (-v a) T))))
 (define t2 (unfold t1))
 
-(define (subtype-tests)
+(define subtype-tests
   (subtyping-tests
    ;; trivial examples
    (Univ Univ)

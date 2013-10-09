@@ -25,7 +25,7 @@
        (type->contract e (λ (#:reason [reason #f]) (exit #t)))
        (error "type could be converted to contract")))))
 
-(define (contract-tests)
+(define contract-tests
   (test-suite "Contract Tests"
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
