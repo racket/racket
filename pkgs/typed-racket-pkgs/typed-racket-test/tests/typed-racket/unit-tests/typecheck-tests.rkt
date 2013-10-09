@@ -60,7 +60,7 @@
     syntax/parse
     'tester))
 
-(provide typecheck-tests)
+(provide tests)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +179,7 @@
          (make-Path p var))))
 
 
-(define typecheck-tests
+(define tests
   (test-suite
     "Typechecker tests"
     #reader typed-racket/typed-reader

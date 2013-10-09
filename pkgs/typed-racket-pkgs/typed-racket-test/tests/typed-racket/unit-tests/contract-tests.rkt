@@ -6,7 +6,7 @@
          (private type-contract)
          (types abbrev numeric-tower)
          rackunit)
-(provide contract-tests)
+(provide tests)
 
 (define-syntax-rule (t e)
   (test-not-exn
@@ -25,7 +25,7 @@
        (type->contract e (λ (#:reason [reason #f]) (exit #t)))
        (error "type could be converted to contract")))))
 
-(define contract-tests
+(define tests
   (test-suite "Contract Tests"
               (t (-Number . -> . -Number))
               (t (-Promise -Number))

@@ -12,7 +12,7 @@
 
 (initialize-type-names)
 
-(provide type-annotation-tests)
+(provide tests)
 
 (define-syntax-rule (tat ann-stx ty)
   (check-tc-result-equal? (format "~a" (quote ann-stx))
@@ -25,7 +25,7 @@
                                                (expand 'ann-stx))))
                           ty))
 
-(define type-annotation-tests
+(define tests
   (test-suite
    "Type Annotation tests"
    ;; FIXME - ask Ryan

@@ -12,7 +12,7 @@
          rackunit
          racket/dict)
 
-(provide parse-type-tests)
+(provide tests)
 
 ;; HORRIBLE HACK!
 ;; We are solving the following problem:
@@ -73,7 +73,7 @@
 (define B -Boolean)
 (define Sym -Symbol)
 
-(define parse-type-tests
+(define tests
   (pt-tests
    "parse-type tests"
    [FAIL UNBOUND]

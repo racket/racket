@@ -1,41 +1,33 @@
-#lang scheme/base
+#lang racket/base
 
 (require
- "test-utils.rkt"
- "typecheck-tests.rkt" ;;pass
-
- "subtype-tests.rkt" ;; pass
- "type-equal-tests.rkt" ;; pass
- "remove-intersect-tests.rkt" ;; pass
- "parse-type-tests.rkt" ;; pass
- "subst-tests.rkt" ;; pass
- "infer-tests.rkt" ;; pass
- "type-annotation-test.rkt" ;; pass
- "keyword-expansion-test.rkt" ;;pass
- "special-env-typecheck-tests.rkt" ;;pass"
-
- "contract-tests.rkt"
- "interactive-tests.rkt"
-
- rackunit)
+ rackunit
+ (for-syntax racket/base syntax/parse racket/syntax))
 
 (provide unit-tests)
 
+(define-syntax define-tests
+  (syntax-parser
+    [(_ test-name:id files:expr ...)
+     (define/with-syntax (new-names ...)
+       (generate-temporaries #'(files ...)))
+     #'(begin
+         (require (only-in files [tests new-names]) ...)
+         (define test-name
+           (make-test-suite
+             "Unit Tests"
+             (list new-names ...))))]))
 
-(define unit-tests
-  (make-test-suite
-   "Unit Tests"
-   (list 
-    typecheck-special-tests
-    typecheck-tests
-    subtype-tests
-    type-equal-tests
-    restrict-tests
-    remove-tests
-    overlap-tests
-    parse-type-tests
-    type-annotation-tests
-    fv-tests
-    contract-tests
-    keyword-tests
-    interactive-tests)))
+(define-tests unit-tests
+  "typecheck-tests.rkt"
+  "subtype-tests.rkt"
+  "type-equal-tests.rkt"
+  "remove-intersect-tests.rkt"
+  "parse-type-tests.rkt"
+  "subst-tests.rkt"
+  "infer-tests.rkt"
+  "type-annotation-test.rkt"
+  "keyword-expansion-test.rkt"
+  "special-env-typecheck-tests.rkt"
+  "contract-tests.rkt"
+  "interactive-tests.rkt")
