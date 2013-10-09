@@ -28,7 +28,7 @@
          (places (and (integer? n) (> n 1) n)))]
  ["--gui" "run using the gui"
           (if (gui-available?)
-              (begin (exec go))
+              (exec go)
               (error "GUI not available"))])
 
 (start-workers)

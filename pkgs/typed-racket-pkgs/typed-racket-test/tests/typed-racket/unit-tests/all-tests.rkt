@@ -46,6 +46,6 @@
 
 
 
-(define-go (lambda () unit-tests))
+(define go (lambda () unit-tests))
 
 
