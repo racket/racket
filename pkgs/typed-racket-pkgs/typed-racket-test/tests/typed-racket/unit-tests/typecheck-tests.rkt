@@ -6,25 +6,14 @@
     typed-racket/utils/utils
     racket/base
     syntax/parse
-    (base-env
-      base-env-indexing
-      base-special-env
-      base-structs)
+    (for-template (only-in typed-racket/typed-racket do-standard-inits))
     (typecheck typechecker)
     (utils mutated-vars)
-    (env mvar-env)
-    (prefix-in b: (base-env base-env))
-    (prefix-in n: (base-env base-env-numeric))
-    (submod typed-racket/base-env/base-types initialize))
+    (env mvar-env))
   (provide test-literal test test/proc tc tc-literal tr-expand)
 
 
-  (b:init)
-  (n:init)
-  (initialize-structs)
-  (initialize-indexing)
-  (initialize-type-names)
-  (initialize-special)
+  (do-standard-inits)
   
   ;; tr-expand: syntax? -> syntax?
   ;; Expands out a form and annotates it with necesarry TR machinery.
