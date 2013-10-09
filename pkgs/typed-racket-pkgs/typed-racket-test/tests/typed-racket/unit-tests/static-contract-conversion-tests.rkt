@@ -7,7 +7,8 @@
          (for-syntax
            syntax/parse
            racket/base
-           (static-contracts types instantiate)
+           (private type-contract)
+           (static-contracts instantiate)
            (types abbrev numeric-tower union)))
 
 (provide tests)
