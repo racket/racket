@@ -608,24 +608,27 @@
                 [(pair? v)
                  (if (eq? #t (car v))
                      ;; Share decoded wraps with all nested parts.
-                     (let loop ([v (cdr v)])
+                     (let iloop ([v (cdr v)])
                        (cond
                          [(pair? v) 
                           (let ploop ([v v])
                             (cond
                               [(null? v) null]
-                              [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
-                              [else (loop v)]))]
-                         [(box? v) (add-wrap (box (loop (unbox v))))]
+                              [(pair? v) (add-wrap (cons (iloop (car v)) (ploop (cdr v))))]
+                              [else (iloop v)]))]
+                         [(box? v) (add-wrap (box (iloop (unbox v))))]
                          [(vector? v)
-                          (add-wrap (list->vector (map loop (vector->list v))))]
+                          (add-wrap (list->vector (map iloop (vector->list v))))]
+                         [(hash? v)
+                          (add-wrap (for/hash ([(k v) (in-hash v)])
+                                      (values k (iloop v))))]
                          [(prefab-struct-key v)
                           => (lambda (k)
                                (add-wrap
                                 (apply
                                  make-prefab-struct 
                                  k
-                                 (map loop (struct->list v)))))]
+                                 (map iloop (struct->list v)))))]
                          [else (add-wrap v)]))
                      ;; Decode sub-elements that have their own wraps:
                      (let-values ([(v counter) (if (exact-integer? (car v))
@@ -641,6 +644,9 @@
                 [(box? v) (add-wrap (box (loop (unbox v))))]
                 [(vector? v)
                  (add-wrap (list->vector (map loop (vector->list v))))]
+                [(hash? v)
+                 (add-wrap (for/hash ([(k v) (in-hash v)])
+                             (values k (loop v))))]
                 [(prefab-struct-key v)
                  => (lambda (k)
                       (add-wrap

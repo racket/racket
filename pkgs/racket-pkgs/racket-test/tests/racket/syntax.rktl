@@ -1800,5 +1800,18 @@
 (expand '(#%variable-reference))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshal & unmarshal of a syntax object
+;; containing a list with a hash table
+
+(let ([v #'(quote-syntax (#hash((1 . 2))))])
+  (define-values (i o) (make-pipe))
+  (write (compile v) o)
+  (close-output-port o)
+  (define e
+    (parameterize ([read-accept-compiled #t])
+      (read i)))
+  (test (syntax->datum (eval v)) syntax->datum (eval e)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
