@@ -13,7 +13,6 @@
  "type-annotation-test.rkt" ;; pass
  "keyword-expansion-test.rkt" ;;pass
 
- "module-tests.rkt" ;; pass
  "contract-tests.rkt"
  "interactive-tests.rkt"
 
@@ -37,7 +36,6 @@
                   overlap-tests
                   parse-type-tests
                   type-annotation-tests
-                  module-tests
                   fv-tests
                   contract-tests
                   keyword-tests
@@ -49,7 +47,5 @@
 
 
 (define-go (lambda () unit-tests))
-
-;(go/gui)
 
 

@@ -6,6 +6,7 @@
          (private type-contract)
          (types abbrev numeric-tower)
          rackunit)
+(provide contract-tests)
 
 (define-syntax-rule (t e)
   (test-not-exn
@@ -35,7 +36,5 @@
               (t (-poly (a) (-poly (b) (-> a a))))
               (t (-poly (a) (-App (-poly (b) (-> a a)) (list -Number) #'#f)))
               (t/fail (-poly (a) -Flonum))
-              (t/fail (-poly (a) (-set -Number)))))
-
-(define-go contract-tests)
-(provide contract-tests)
+              (t/fail (-poly (a) (-set -Number)))
+              (t/fail ((-poly (a) (-vec a)) . -> . -Symbol))))

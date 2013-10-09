@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "test-utils.rkt" (for-syntax scheme/base)
+(require "test-utils.rkt"
          (rep type-rep)
          (types utils abbrev numeric-tower substitute)
          rackunit)
@@ -19,6 +19,3 @@
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'a))) (-String (-v b) (-v b) . -> . -Number))
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'b)))
                     (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'b))))))
-
-(define-go subst-tests)
-

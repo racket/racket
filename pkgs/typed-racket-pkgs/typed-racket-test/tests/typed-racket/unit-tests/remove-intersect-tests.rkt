@@ -1,6 +1,6 @@
-#lang scheme/base
-(require "test-utils.rkt" (for-syntax scheme/base)
-         (rep type-rep)
+#lang racket/base
+(require "test-utils.rkt"
+         (for-syntax racket/base)
          (r:infer infer)
          (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
@@ -66,20 +66,5 @@
    [(-pair -Number (-v a)) (-pair Univ Univ) (Un)]
    ))
 
-(define-go
-  restrict-tests
-  remove-tests
-  overlap-tests)
-
-(define x1
-  (-mu list-rec
-       (Un
-        (-val '())
-        (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
-               list-rec))))
-(define x2
-  (Un (-val '())
-      (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
-             (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x))))))
 (provide remove-tests restrict-tests overlap-tests)
 

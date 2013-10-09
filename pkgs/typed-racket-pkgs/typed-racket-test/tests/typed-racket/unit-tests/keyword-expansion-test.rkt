@@ -75,10 +75,4 @@
              (-> one two three true true result)
              (-> one two false true false  result)
              (-> one false false false false result))]
-
-
-
-
     ))
-
-(define-go keyword-tests)

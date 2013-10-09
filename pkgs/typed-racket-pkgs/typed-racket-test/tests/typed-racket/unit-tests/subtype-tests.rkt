@@ -253,6 +253,3 @@
    [(make-ListDots (-> -Symbol (make-F 'a)) 'a) (-lst (-> -Symbol Univ))]
 
    ))
-
-(define-go
-  subtype-tests)
