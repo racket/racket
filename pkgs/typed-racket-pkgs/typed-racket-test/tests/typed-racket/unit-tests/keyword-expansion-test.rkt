@@ -37,7 +37,7 @@
 (define three (-val 'three))
 (define four (-val 'four))
 
-(define (keyword-tests)
+(define keyword-tests
   (test-suite "Tests for keyword expansion"
 
     [t (-> result) (-> result)]

@@ -48,7 +48,7 @@
 
 
 
-(define (contract-tests)
+(define contract-tests
   (test-suite "Contract Tests"
               known-bugs
               (t (-Number . -> . -Number))

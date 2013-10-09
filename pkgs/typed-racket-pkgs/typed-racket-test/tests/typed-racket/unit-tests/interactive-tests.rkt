@@ -42,7 +42,7 @@
                        ,(syntax->datum #'form)) (force promised-ns)))))))]))
 
 ;; Add 'only at the toplevel tests'
-(define (interactive-tests)
+(define interactive-tests
   (test-suite "Interactive tests"
 
     (test-form #rx""

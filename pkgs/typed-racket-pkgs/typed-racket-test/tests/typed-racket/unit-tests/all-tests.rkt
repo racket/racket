@@ -17,35 +17,27 @@
  "interactive-tests.rkt"
 
  racket/runtime-path
- rackunit rackunit/text-ui)
+ rackunit)
 
 (provide unit-tests)
-
 
 (define-runtime-path special "special-env-typecheck-tests.rkt")
 
 (define unit-tests
   (make-test-suite
    "Unit Tests"
-   (for/list ([f (list
-                  typecheck-tests
-                  subtype-tests
-                  type-equal-tests
-                  restrict-tests
-                  remove-tests
-                  overlap-tests
-                  parse-type-tests
-                  type-annotation-tests
-                  fv-tests
-                  contract-tests
-                  keyword-tests
-                  interactive-tests
-                  ;; this uses dynamic require because the file fails to compile when there's a test failure
-                  (λ () ((dynamic-require special 'typecheck-special-tests))))])
-     (f))))
-
-
-
-(define go (lambda () unit-tests))
-
-
+   (list 
+    ;; this uses dynamic require because the file fails to compile when there's a test failure
+    (dynamic-require special 'typecheck-special-tests)
+    typecheck-tests
+    subtype-tests
+    type-equal-tests
+    restrict-tests
+    remove-tests
+    overlap-tests
+    parse-type-tests
+    type-annotation-tests
+    fv-tests
+    contract-tests
+    keyword-tests
+    interactive-tests)))

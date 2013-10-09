@@ -13,7 +13,7 @@
                 (fv ty*)
                 (list (quote elems) ...))))
 
-(define (fv-tests)
+(define fv-tests
   (test-suite "Tests for fv"
               (fv-t -Number)
               [fv-t (-v a) a]

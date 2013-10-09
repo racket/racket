@@ -37,7 +37,7 @@
                                    (tc-expr ex))
                                #,(syntax-local-eval #'b)))]))
 
-(define (typecheck-special-tests)
+(define typecheck-special-tests
   (test-suite
    "Special Typechecker tests"
    ;; should work but don't -- need expected type
@@ -136,5 +136,3 @@
    [tc-e (in-values*-sequence '(a b c))
          (-seq (one-of/c 'a 'b 'c))]
    ))
-
-
