@@ -252,34 +252,33 @@ $( document ).ready(function() {
                    curate_link ( curate_span, false, value ),
                    "&nbsp;"); }
 
+    var now = new Date().getTime() / 1000;
+    function add_package_to_list ( value ) {
+        var curate_span = $('<span>', { class: "curate_link" } ).hide();
+        update_curate_span (curate_span, value);
+
+        $('<tr>',
+          { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
+            .data( "obj", value)
+            .append(
+                $('<td>').html("")
+                    .append( curate_span,
+                             jslink( value['name'], function () { open_info ( value ); }) ),
+                $('<td>').append( $.map( value['authors'], function ( author, i ) {
+                    return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
+                $('<td>').text( value['description'] ),
+                $('<td>').append( $.map( value['tags'], function ( tag, i ) {
+                    return addfilterlink ( tag, tag, "possible" ); } ) ))
+            .appendTo('#packages_table'); }
+
     $.getJSON( "/pkgs-all.json", function( resp ) {
         var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
 
-        var now = new Date().getTime() / 1000;
-
-        $.each( snames,
-                function (name_i) {
-                    var name = snames[name_i];
-                    var value = resp[name];
-
-                    var curate_span = $('<span>', { class: "curate_link" } ).hide();
-                    update_curate_span (curate_span, value);
-
-                    $('<tr>',
-                      { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
-                        .data( "obj", value)
-                        .append(
-                            $('<td>').html("")
-                                .append( curate_span,
-                                         jslink( value['name'], function () { open_info ( value ); }) ),
-                            $('<td>').append( $.map( value['authors'], function ( author, i ) {
-                                return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
-                            $('<td>').text( value['description'] ),
-                            $('<td>').append( $.map( value['tags'], function ( tag, i ) {
-                                return addfilterlink ( tag, tag, "possible" ); } ) ))
-                        .appendTo('#packages_table'); });
+        $.each( snames, function (name_i) {
+            var name = snames[name_i];
+            add_package_to_list ( resp[name] ); });
 
         evaluate_search();
 
