@@ -5,6 +5,9 @@ var dynamic_port = 9004;
 function dynamic_url ( u ) {
     return "https://" + dynamic_host + ":" + dynamic_port + u + "?callback=?"; }
 
+function me () {
+    return localStorage['email']; }
+
 $( document ).ready(function() {
     $("#package_info").dialog({
         autoOpen: false,
@@ -22,6 +25,9 @@ $( document ).ready(function() {
     function update_info( pkgi ) {
         console.log( pkgi );
         change_hash( "[" + pkgi['name'] + "]" );
+
+        // xxx allow editing of stuff
+
         $( "#pi_name" ).text( pkgi['name'] );
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
@@ -38,9 +44,18 @@ $( document ).ready(function() {
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
         $( "#pi_description" ).text( pkgi['description'] );
-        // xxx show delete tag buttons
-        $( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
-            return [tag, " "]; } ) )
+
+        if ( pkgi['authors'][me()] ) {
+            ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
+                return [tag, " "]; } ) )); }
+        else {
+            ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
+                return [ tag, $('<a>', { text: "[x]",
+                                         href: "javascript:void(0)",
+                                         click: function () {
+                                             submit_remove_tag(tag); } } ),
+                         " "]; } ) )); }
+
         // xxx show add and delete buttons
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
             return [ $('<tr>').append( $('<td>').html(v),
@@ -50,10 +65,17 @@ $( document ).ready(function() {
                      " "]; } ) )
         active_info = pkgi; };
 
+    function submit_remove_tag ( tag ) {
+        var tag_index = $.inArray(tag, active_info['tags']);
+        // XXX really remove tag        
+        active_info['tags'].splice( tag_index, 1 );
+        // xxx also on sterms
+        update_info( active_info ); }
     function submit_add_tag () {
         var it = $( "#pi_add_tag_text" );
         // XXX really add tag
         active_info['tags'].push( it.val() );
+        // xxx also on sterms
         update_info( active_info );
 
         it.val("");}
@@ -99,7 +121,7 @@ $( document ).ready(function() {
     $(window).bind( 'hashchange', function(e) {
         var actual_hash = window.location.hash;
         if ( expected_hash != actual_hash ) {
-            // xxx Do something here. It is hard to do the right
+            // TODO Do something here. It is hard to do the right
             // thing, particularly with the Back button because we
             // don't add the tags in the same order the user add them
             // in. We could do that though.
@@ -289,7 +311,7 @@ $( document ).ready(function() {
                                           $( "#login" ).dialog( "open" ); } } ) ); }
     function menu_loggedin ( curate_p ) {
         $("#logout").html("")
-            .append( localStorage['email'],
+            .append( me(),
                      ( curate_p ? [ " (", $('<a>', { text: "curator",
                                                      href: "javascript:void(0)",
                                                      click: function () {
@@ -332,5 +354,4 @@ $( document ).ready(function() {
     if ( localStorage['email'] && localStorage['passwd'] ) {
         initial_login();
     } else {
-        menu_logout ();
-    } });
+        menu_logout (); } });
