@@ -1,10 +1,9 @@
-// xxx display curation if allowed -- http://localhost:8001/#(!:conflicts:)(ring:2)
-// xxx logout
-// xxx what user am i
-// xxx upload package
-// xxx bulk upload api
-// xxx update
-// xxx add a tag api
+// xxx change these to the real thing
+var dynamic_host = "localhost";
+var dynamic_port = 9004;
+
+function dynamic_url ( u ) {
+    return "https://" + dynamic_host + ":" + dynamic_port + u + "?callback=?"; }
 
 $( document ).ready(function() {
     $("#package_info").dialog({
@@ -39,8 +38,10 @@ $( document ).ready(function() {
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
         $( "#pi_description" ).text( pkgi['description'] );
+        // xxx show delete tag buttons
         $( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
             return [tag, " "]; } ) )
+        // xxx show add and delete buttons
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
             return [ $('<tr>').append( $('<td>').html(v),
                                        $('<td>').html(vo['source']) ),
@@ -51,16 +52,21 @@ $( document ).ready(function() {
 
     function submit_add_tag () {
         var it = $( "#pi_add_tag_text" );
-        // <xxx>
+        // XXX really add tag
         active_info['tags'].push( it.val() );
         update_info( active_info );
-        // </xxx>
+
         it.val("");}
     $( "#pi_add_tag_text" ).keypress( function (e) {
         if (e.which == 13) { submit_add_tag (); } } );
     $( "#pi_add_tag_button" ).click( function (e) { submit_add_tag (); } );
 
     var search_terms = { };
+
+    function clear_terms () {
+        $.each(search_terms,
+               function ( term, termv ) {
+                   delete search_terms[term];} ); }
 
     function parse_hash ( h ) {
         while ( h != "" ) {
@@ -143,7 +149,11 @@ $( document ).ready(function() {
                 $.each(vterms, function ( term, termv ) {
                     if ( term.substring(0,7) != "author:") { shown_terms[term]++; } }); }
             else {
-                $(dom).hide(); } });
+                $(dom).hide();
+
+                $.each(vterms, function ( term, termv ) {
+                    if ( term.substring(0,7) != "author:") {
+                        if ( ! shown_terms[term]) { shown_terms[term] = 0; } } });} });
 
         $.each(search_terms,
                function ( term, termv ) {
@@ -165,6 +175,8 @@ $( document ).ready(function() {
                 else {
                     change_hash( window.location.hash + "(" + "!" + term + ")" );
                     return removefilterlink ( term, "!" + term, "inactive" ); } }
+            else if ( shown_terms[term] == 0 ) {
+                return [ term, " " ]; }
             else {
                 return addfilterlink ( term, term, "possible" ); } } ) );
 
@@ -193,6 +205,7 @@ $( document ).ready(function() {
                     var value = resp[name];
 
                     $('<tr>',
+                      // xxx show curate links
                       { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
                         .data( "obj", value)
                         .append(
@@ -210,4 +223,111 @@ $( document ).ready(function() {
         evaluate_search();
 
         if ( target_pkg && resp[target_pkg] ) {
-            open_info ( resp[target_pkg] ) } }); });
+            open_info ( resp[target_pkg] ) } });
+
+    $("#login").dialog({
+        autoOpen: false,
+        minWidth: 600,
+        minHeight: 600,
+        position: { my: "center", at: "center", of: "#search_menu" },
+        modal: true });
+
+    var saved_password = false;
+    function login_submit () {
+        $( "#login_error" ).html( "" );
+
+        var et = $( "#login_email_text" );
+        var pt = $( "#login_passwd_text" );
+
+        var e = et.val();
+        var p;
+        var c;
+        if ( saved_password ) {
+            p = saved_password;
+            c = pt.val(); }
+        else {
+            p = pt.val();
+            c = ""; }
+
+        $.getJSON( dynamic_url("/jsonp/authenticate"),
+                   { email: e, passwd: p, code: c },
+                   function( resp ) {
+                       if ( resp == "emailed" ) {
+                           saved_password = p;
+                           $( "#login_passwd_label" ).html( "Code:" );
+                           pt.val("");
+                           $( "#login_error" ).html( "Check your email for an email code." ); }
+                       else if ( resp == "wrong-code" ) {
+                           pt.val("");
+                           $( "#login_error" ).html( "That is the incorrect code." ); }
+                       else if ( resp ) {
+                           $( "#login_passwd_label" ).html( "Password:" );
+
+                           et.val("");
+                           pt.val("");
+
+                           localStorage['email'] = e;
+                           localStorage['passwd'] = p;
+
+                           $( "#login" ).dialog( "close" );
+
+                           initial_login(); }
+                       else {
+                           pt.val("");
+                           $( "#login_error" ).html( "Incorrect password, please retry" ); }; } ); }
+    $( "#login_passwd_text" ).keypress( function (e) {
+        if (e.which == 13) { login_submit (); } } );
+    $( "#login_button" ).click( function (e) { login_submit (); } );
+
+    function menu_logout () {
+        $("#logout").html( $('<a>', { text: "login",
+                                      href: "javascript:void(0)",
+                                      click: function () {
+                                          $( "#login" ).dialog( "open" ); } } ) ); }
+    function menu_loggedin ( curate_p ) {
+        // xxx enable curate links
+        $("#logout").html("")
+            .append( localStorage['email'],
+                     ( curate_p ? [ " (", $('<a>', { text: "curator",
+                                                     href: "javascript:void(0)",
+                                                     click: function () {
+                                                         clear_terms();
+                                                         search_terms[ "!:conflicts:" ] = true;
+                                                         search_terms[ "ring:2" ] = true;
+                                                         evaluate_search(); } } ),
+                                    ")" ] : ""),
+                     " | ",
+                     $('<a>', { text: "upload",
+                                href: "javascript:void(0)",
+                                click: function () {
+                                    console.log("XXX upload"); } } ),
+                     " | ",
+                     $('<a>', { text: "update",
+                                href: "javascript:void(0)",
+                                click: function () {
+                                    console.log("XXX update"); } } ),
+                     " | ",
+                     $('<a>', { text: "logout",
+                                href: "javascript:void(0)",
+                                click: function () {
+                                    localStorage['email'] = "";
+                                    localStorage['passwd'] = "";
+
+                                    menu_logout (); } } ) ); }
+
+    function initial_login () {
+        $.getJSON( dynamic_url("/jsonp/authenticate"),
+                   { email: localStorage['email'], passwd: localStorage['passwd'], code: "" },
+                   function( resp ) {
+                       if ( $.isPlainObject(resp) ) {
+                           menu_loggedin( resp['curation'] ); }
+                       else {
+                           menu_logout();
+                           console.log( "login failed" ); } } ); }
+
+
+    if ( localStorage['email'] && localStorage['passwd'] ) {
+        initial_login();
+    } else {
+        menu_logout ();
+    } });

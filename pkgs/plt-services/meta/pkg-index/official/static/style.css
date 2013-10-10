@@ -145,3 +145,8 @@ a.inactive {
 }
 a.possible {
 }
+
+#login table tr:nth-child(3) td {
+    text-align: center;
+    color: red;
+}

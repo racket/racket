@@ -12,10 +12,22 @@
   <body>
     <div class="breadcrumb">
       <span><a href="/">Packages</a></span>
-
-      <span id="logout">jay.mccarthy@gmail.com | <a href="/upload">upload</a> | <a href="/update">update</a> | <a href="/account/logout">logout</a> </span>
+      <span id="logout"></span>
     </div>
     <p id="search_menu"></p>
+
+    <div id="login" class="package">
+      <table>
+        <tr><td>Email Address:</td><td><input id="login_email_text" type="text"></td></tr>
+        <tr><td id="login_passwd_label">Password:</td><td><input id="login_passwd_text" type="password"></td></tr>
+        <tr><td colspan="2" id="login_error"></td></tr>
+      </table>
+      <button id="login_button">Log In</button>
+      <p>If you enter an unclaimed email address, then an account will
+        be created.</p>
+      <p>Passwords are stored in the delicious bcrypt format, but
+        transfered as plain-text over the HTTPS connection.</p>
+    </div>
 
     <div id="package_info" class="package">
       <table>
