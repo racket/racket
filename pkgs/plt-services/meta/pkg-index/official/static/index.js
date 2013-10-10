@@ -10,14 +10,13 @@ function me () {
 
 $( document ).ready(function() {
     function jslink ( texts, clickf) {
-        return $('<a>', { text: texts,
-                          href: "javascript:void(0)",
-                          click: clickf } ); }
+        return $('<a>', { href: "javascript:void(0)",
+                          click: clickf } ).html(texts); }
 
     function dynamic_send ( u, o ) {
         o['email'] = localStorage['email'];
         o['passwd'] = localStorage['passwd'];
-        $.getJSON( dynamic_url(u), o ); }
+        $.getJSON( dynamic_url(u), o, function (r) { return; } ); }
 
     function dynamic_pkgsend ( u, o ) {
         o['pkg'] = active_info['name'];
@@ -77,19 +76,26 @@ $( document ).ready(function() {
         active_info = pkgi; };
 
     function submit_remove_tag ( tag ) {
-        var tag_index = $.inArray(tag, active_info['tags']);
         dynamic_pkgsend( "/jsonp/package/tag/del", { tag: tag } );
+
+        var tag_index = $.inArray(tag, active_info['tags']);
         active_info['tags'].splice( tag_index, 1 );
         delete active_info['search-terms'][ tag ];
+        evaluate_search();
+
         update_info( active_info ); }
     function submit_add_tag () {
         var it = $( "#pi_add_tag_text" );
-        dynamic_pkgsend( "/jsonp/package/tag/add", { tag: tag } );
-        active_info['tags'].push( it.val() );
-        active_info['search-terms'][ tag ] = true;
-        update_info( active_info );
+        var tag = it.val();
+        it.val("");
 
-        it.val("");}
+        dynamic_pkgsend( "/jsonp/package/tag/add", { tag: tag } );
+
+        active_info['tags'].push( tag );
+        active_info['search-terms'][ tag ] = true;
+        evaluate_search();
+
+        update_info( active_info ); }
     $( "#pi_add_tag_text" ).keypress( function (e) {
         if (e.which == 13) { submit_add_tag (); } } );
     $( "#pi_add_tag_button" ).click( function (e) { submit_add_tag (); } );
@@ -139,7 +145,7 @@ $( document ).ready(function() {
             console.log("hash changed beneath me!"); } });
 
     function filterlink ( text, tclass, f ) {
-        return [ jslink(text, f), " " ]; };
+        return [ jslink(text, f).addClass(tclass), " " ]; };
 
     function addfilterlink ( text, term, tclass ) {
         return filterlink( text, tclass, function () {
@@ -182,7 +188,7 @@ $( document ).ready(function() {
 
                 $.each(vterms, function ( term, termv ) {
                     if ( term.substring(0,7) != "author:") {
-                        if ( ! shown_terms[term]) { shown_terms[term] = 0; } } });} });
+                        if ( ! shown_terms[term] ) { shown_terms[term] = 0; } } });} });
 
         $.each(search_terms,
                function ( term, termv ) {
@@ -221,6 +227,31 @@ $( document ).ready(function() {
         update_info( i );
         $( "#package_info" ).dialog( "open" ); }
 
+    function curate_link ( curate_span, down_p, value ) {
+        var dr = (down_p ? -1 : +1);
+        var old_ring = value['ring'];
+        var new_ring = Math.min(Math.max(0, old_ring + dr), 2);
+        if ( new_ring == old_ring ) {
+            return ""; }
+        else {
+            return jslink((down_p ? "&blacktriangledown;" : "&blacktriangle;"),
+                          function () {
+                              dynamic_send ( "/jsonp/package/curate",
+                                             { pkg: value['name'],
+                                               ring: new_ring } );
+                              value['ring'] = new_ring;
+                              delete value['search-terms']["ring:" + old_ring];
+                              value['search-terms']["ring:" + new_ring] = true;
+                              evaluate_search();
+                              update_curate_span (curate_span, value); }); } }
+
+    function update_curate_span (curate_span, value) {
+        curate_span.html("").
+            append(curate_link ( curate_span, true, value ),
+                   value['ring'],
+                   curate_link ( curate_span, false, value ),
+                   "&nbsp;"); }
+
     $.getJSON( "/pkgs-all.json", function( resp ) {
         var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
@@ -233,14 +264,15 @@ $( document ).ready(function() {
                     var name = snames[name_i];
                     var value = resp[name];
 
+                    var curate_span = $('<span>', { class: "curate_link" } ).hide();
+                    update_curate_span (curate_span, value);
+
                     $('<tr>',
                       { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
                         .data( "obj", value)
                         .append(
                             $('<td>').html("")
-                                .append( $('<span>', { class: "curate_link" } ).hide()
-                                         // xxx make these links
-                                         .append("&blacktriangledown;", "1", "&blacktriangle;", "&nbsp;"),
+                                .append( curate_span,
                                          jslink( value['name'], function () { open_info ( value ); }) ),
                             $('<td>').append( $.map( value['authors'], function ( author, i ) {
                                 return addfilterlink ( author, "author:" + author, "possible" ); } ) ),

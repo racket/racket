@@ -184,7 +184,7 @@
                ""
                correct-email-code
                ""
-               "This code will expire, so if it is not available, you'll have to try to register again."))        
+               "This code will expire, so if it is not available, you'll have to try to register again."))
 
         "emailed"])]
     [#t
@@ -192,32 +192,48 @@
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/modify)
+  (jsonp/package/modify
+   ['pkg pkg]
+   ['name mn-name]
+   ['desc mn-desc]
+   ['source mn-source]
+   ['authors mn-authors])
   #f)
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/version/add)
+  (jsonp/package/version/add
+   ['pkg pkg]
+   ['version version]
+   ['source source])
   #f)
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/version/del)
+  (jsonp/package/version/del
+   ['pkg pkg]
+   ['version version])
   #f)
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/tag/add)
+  (jsonp/package/tag/add
+   ['pkg pkg]
+   ['tag tag])
   #f)
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/tag/del)
+  (jsonp/package/tag/del
+   ['pkg pkg]
+   ['tag tag])
   #f)
 
 ;; XXX
 (define-jsonp/auth
-  (jsonp/package/curate)
+  (jsonp/package/curate
+   ['pkg pkg]
+   ['ring ring-s])
   #f)
 
 ;; XXX
