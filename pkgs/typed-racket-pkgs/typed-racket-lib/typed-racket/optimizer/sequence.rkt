@@ -91,4 +91,10 @@
                            0
                            (lambda (x) (unsafe-fx< x end))
                            (lambda (x) #t)
-                           (lambda (x y) #t)))))
+                           (lambda (x y) #t))))
+  (pattern (#%plain-app op:make-sequence arg:opt-expr s:opt-expr)
+    #:do [(log-missed-optimization
+           "non-specialized for clause"
+           "Typed Racket failed to specialize this `for' clause, which introduces run-time dispatch overhead. You can avoid this by limiting the sequence's type to a single kind of sequence (e.g. lists, vectors, or integers) or specializing the sequence manually (e.g. by wrapping it in an `in-list', `in-vector' or `in-range')."
+           #'s)]
+    #:with opt #'(op arg.opt s.opt)))
