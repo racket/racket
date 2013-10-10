@@ -53,7 +53,7 @@
 (define* (-rcon [year #f] . text)
   (define years '(2013 2012 2011))
   (a href: (list "http://con.racket-lang.org/"
-                 (and year (not (eq? year (car years))) (list year "/")))
+                 (and year (list year "/")))
      (cond [(pair? text) text]
            [(not year) "RacketCon"]
            [else year])))
