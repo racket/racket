@@ -353,7 +353,27 @@ $( document ).ready(function() {
                                     ")" ] : ""),
                      " | ",
                      jslink( "upload", function () {
-                         console.log("XXX upload"); }),
+                         var value = { name: "",
+                                       author: me(),
+                                       authors: [ me() ],
+                                       'checksum-error': false,
+                                       conficts: [],
+                                       dependencies: [],
+                                       description: "",
+                                       'last-checked': now,
+                                       'last-edit': now,
+                                       'last-updated': now,
+                                       modules: [],
+                                       ring: 2,
+                                       source: "",
+                                       'source_url': "",
+                                       tags: [],
+                                       versions: []};
+                         value['search-terms'] = {};
+                         value['search-terms'][("author:" + me())] = true;
+                         add_package_to_list (value);
+                         evaluate_search();
+                         open_info(value); }),
                      " | ",
                      jslink( "update", function () {
                          dynamic_send ( "/jsonp/update", {} ); }),
