@@ -41,14 +41,14 @@ $( document ).ready(function() {
 
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
 
-        // xxx allow editing of stuff
-
         $( "#pi_name" ).text( pkgi['name'] );
         if ( mypkg_p ) {
+            // xxx make this button do something
             $( "#pi_name" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
+        // xxx show add/delete buttons
         $( "#pi_authors" ).html("")
             .append( $.map( pkgi['authors'],
                             function ( author, i ) {
@@ -56,12 +56,19 @@ $( document ).ready(function() {
 
         $( "#pi_source" ).html( $('<a>', { text: pkgi['source'],
                                            href: pkgi['source_url']  } ));
+        if ( mypkg_p ) {
+            // xxx make this button do something
+            $( "#pi_source" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
 
         $( "#pi_checksum" ).text( pkgi['checksum'] );
         $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
+
         $( "#pi_description" ).text( pkgi['description'] );
+        if ( mypkg_p ) {
+            // xxx make this button do something
+            $( "#pi_description" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
 
         if ( mypkg_p ) {
             ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
