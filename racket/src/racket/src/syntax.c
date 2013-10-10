@@ -4756,7 +4756,7 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
 
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym)
 {
-  return scheme_stx_module_eq3(a, b, phase, phase, NULL);
+  return scheme_stx_module_eq3(a, b, phase, phase, asym);
 }
 
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
