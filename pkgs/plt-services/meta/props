@@ -965,9 +965,9 @@ path/s is either such a string or a list of them.
 "pkgs/main-distribution" responsible (eli jay matthias mflatt robby)
 "pkgs/main-distribution-test" responsible (eli jay matthias mflatt robby)
 "pkgs/make" responsible (mflatt)
-"pkgs/math" responsible (ntoronto)
-"pkgs/math/tests/bigfloat-custodian.rkt" drdr:random #t
-"pkgs/math/tests/matrix-tests.rkt" drdr:timeout 120
+"pkgs/math-pkgs" responsible (ntoronto)
+"pkgs/math-pkgs/math-test/math/tests/bigfloat-custodian.rkt" drdr:random #t
+"pkgs/math-pkgs/math-test/math/tests/matrix-tests.rkt" drdr:timeout 120
 "pkgs/mysterx" responsible (mflatt)
 "pkgs/mysterx/main.rkt" drdr:command-line (mzc *)
 "pkgs/mysterx/mysterx.rkt" drdr:command-line (mzc *)
@@ -995,10 +995,10 @@ path/s is either such a string or a list of them.
 "pkgs/plai/tests/test-random-mutator.rkt" responsible (jay robby)
 "pkgs/plai/tests/web.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/planet-lib" responsible (mflatt)
-"pkgs/plot" responsible (ntoronto)
-"pkgs/plot/scribblings/plot.scrbl" drdr:timeout 180
-"pkgs/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
-"pkgs/plot/tests/slideshow-test.rkt" drdr:command-line #f
+"pkgs/plot-pkgs" responsible (ntoronto)
+"pkgs/plot-pkgs/plot-doc/plot/scribblings/plot.scrbl" drdr:timeout 180
+"pkgs/plot-pkgs/plot-test/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
+"pkgs/plot-pkgs/plot-test/plot/tests/slideshow-test.rkt" drdr:command-line #f
 "pkgs/plt-services" responsible (eli mflatt)
 "pkgs/plt-services/meta" responsible (eli)
 "pkgs/plt-services/meta/build" drdr:command-line #f
