@@ -9,6 +9,20 @@ function me () {
     return localStorage['email']; }
 
 $( document ).ready(function() {
+    function jslink ( texts, clickf) {
+        return $('<a>', { text: texts,
+                          href: "javascript:void(0)",
+                          click: clickf } ); }
+
+    function dynamic_send ( u, o ) {
+        o['email'] = localStorage['email'];
+        o['passwd'] = localStorage['passwd'];
+        $.getJSON( dynamic_url(u), o ); }
+
+    function dynamic_pkgsend ( u, o ) {
+        o['pkg'] = active_info['name'];
+        dynamic_send ( u, o ); }
+
     $("#package_info").dialog({
         autoOpen: false,
         minWidth: 600,
@@ -50,10 +64,7 @@ $( document ).ready(function() {
                 return [tag, " "]; } ) )); }
         else {
             ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
-                return [ tag, $('<a>', { text: "[x]",
-                                         href: "javascript:void(0)",
-                                         click: function () {
-                                             submit_remove_tag(tag); } } ),
+                return [ tag, jslink( "[x]", function () { submit_remove_tag(tag); }),
                          " "]; } ) )); }
 
         // xxx show add and delete buttons
@@ -67,15 +78,15 @@ $( document ).ready(function() {
 
     function submit_remove_tag ( tag ) {
         var tag_index = $.inArray(tag, active_info['tags']);
-        // XXX really remove tag        
+        dynamic_pkgsend( "/jsonp/package/tag/del", { tag: tag } );
         active_info['tags'].splice( tag_index, 1 );
-        // xxx also on sterms
+        delete active_info['search-terms'][ tag ];
         update_info( active_info ); }
     function submit_add_tag () {
         var it = $( "#pi_add_tag_text" );
-        // XXX really add tag
+        dynamic_pkgsend( "/jsonp/package/tag/add", { tag: tag } );
         active_info['tags'].push( it.val() );
-        // xxx also on sterms
+        active_info['search-terms'][ tag ] = true;
         update_info( active_info );
 
         it.val("");}
@@ -128,11 +139,7 @@ $( document ).ready(function() {
             console.log("hash changed beneath me!"); } });
 
     function filterlink ( text, tclass, f ) {
-        return [$('<a>', { text: text,
-                           class: tclass,
-                           href: "javascript:void(0)",
-                           click: f } ),
-                " " ]; };
+        return [ jslink(text, f), " " ]; };
 
     function addfilterlink ( text, term, tclass ) {
         return filterlink( text, tclass, function () {
@@ -234,10 +241,7 @@ $( document ).ready(function() {
                                 .append( $('<span>', { class: "curate_link" } ).hide()
                                          // xxx make these links
                                          .append("&blacktriangledown;", "1", "&blacktriangle;", "&nbsp;"),
-                                         $('<a>', { text: value['name'],
-                                                    href: "javascript:void(0)",
-                                                    click: function () {
-                                                        open_info ( value ); } } ) ),
+                                         jslink( value['name'], function () { open_info ( value ); }) ),
                             $('<td>').append( $.map( value['authors'], function ( author, i ) {
                                 return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                             $('<td>').text( value['description'] ),
@@ -305,40 +309,29 @@ $( document ).ready(function() {
     $( "#login_button" ).click( function (e) { login_submit (); } );
 
     function menu_logout () {
-        $("#logout").html( $('<a>', { text: "login",
-                                      href: "javascript:void(0)",
-                                      click: function () {
-                                          $( "#login" ).dialog( "open" ); } } ) ); }
+        $("#logout").html( jslink( "login", function () { $( "#login" ).dialog( "open" ); } ) ); }
     function menu_loggedin ( curate_p ) {
         $("#logout").html("")
             .append( me(),
-                     ( curate_p ? [ " (", $('<a>', { text: "curator",
-                                                     href: "javascript:void(0)",
-                                                     click: function () {
-                                                         $( "span.curate_link" ).show();
-                                                         clear_terms();
-                                                         search_terms[ "!:conflicts:" ] = true;
-                                                         search_terms[ "ring:2" ] = true;
-                                                         evaluate_search(); } } ),
+                     ( curate_p ? [ " (", jslink( "curator", function () {
+                         $( "span.curate_link" ).show();
+                         clear_terms();
+                         search_terms[ "!:conflicts:" ] = true;
+                         search_terms[ "ring:2" ] = true;
+                         evaluate_search(); }),
                                     ")" ] : ""),
                      " | ",
-                     $('<a>', { text: "upload",
-                                href: "javascript:void(0)",
-                                click: function () {
-                                    console.log("XXX upload"); } } ),
+                     jslink( "upload", function () {
+                         console.log("XXX upload"); }),
                      " | ",
-                     $('<a>', { text: "update",
-                                href: "javascript:void(0)",
-                                click: function () {
-                                    console.log("XXX update"); } } ),
+                     jslink( "update", function () {
+                         dynamic_send ( "/jsonp/update", {} ); }),
                      " | ",
-                     $('<a>', { text: "logout",
-                                href: "javascript:void(0)",
-                                click: function () {
-                                    localStorage['email'] = "";
-                                    localStorage['passwd'] = "";
+                     jslink( "logout", function () {
+                         localStorage['email'] = "";
+                         localStorage['passwd'] = "";
 
-                                    menu_logout (); } } ) ); }
+                         menu_logout (); }) ); }
 
     function initial_login () {
         $.getJSON( dynamic_url("/jsonp/authenticate"),

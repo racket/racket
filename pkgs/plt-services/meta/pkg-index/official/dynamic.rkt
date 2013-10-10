@@ -234,7 +234,7 @@
    [("jsonp" "package" "version" "del") jsonp/package/version/del]
    [("jsonp" "package" "tag" "add") jsonp/package/tag/add]
    [("jsonp" "package" "tag" "del") jsonp/package/tag/del]
-   [("jsonp" "package" "curate") jsonp/package/currate]
+   [("jsonp" "package" "curate") jsonp/package/curate]
    [("api" "upload") #:method "post" api/upload]
    [else redirect-to-static]))
 
