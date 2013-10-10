@@ -205,14 +205,17 @@ $( document ).ready(function() {
                     var value = resp[name];
 
                     $('<tr>',
-                      // xxx show curate links
                       { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
                         .data( "obj", value)
                         .append(
-                            $('<td>').html( $('<a>', { text: value['name'],
-                                                       href: "javascript:void(0)",
-                                                       click: function () {
-                                                           open_info ( value ); } } ) ),
+                            $('<td>').html("")
+                                .append( $('<span>', { class: "curate_link" } ).hide()
+                                         // xxx make these links
+                                         .append("&blacktriangledown;", "1", "&blacktriangle;", "&nbsp;"),
+                                         $('<a>', { text: value['name'],
+                                                    href: "javascript:void(0)",
+                                                    click: function () {
+                                                        open_info ( value ); } } ) ),
                             $('<td>').append( $.map( value['authors'], function ( author, i ) {
                                 return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                             $('<td>').text( value['description'] ),
@@ -285,12 +288,12 @@ $( document ).ready(function() {
                                       click: function () {
                                           $( "#login" ).dialog( "open" ); } } ) ); }
     function menu_loggedin ( curate_p ) {
-        // xxx enable curate links
         $("#logout").html("")
             .append( localStorage['email'],
                      ( curate_p ? [ " (", $('<a>', { text: "curator",
                                                      href: "javascript:void(0)",
                                                      click: function () {
+                                                         $( "span.curate_link" ).show();
                                                          clear_terms();
                                                          search_terms[ "!:conflicts:" ] = true;
                                                          search_terms[ "ring:2" ] = true;
