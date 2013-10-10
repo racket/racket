@@ -4707,6 +4707,7 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
 {
   Scheme_Object *bsym;
   Scheme_Hash_Table *free_id_recur;
+  int must_be_lex;
 
   if (!a || !b)
     return (a == b);
@@ -4730,9 +4731,18 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
       asym = a;
   }
 
+  must_be_lex = 0;
+
   /* Same name? */
-  if (!SAME_OBJ(asym, bsym))
-    return 0;
+  if (!SAME_OBJ(asym, bsym)) {
+    /* It's ok to have different names if they have
+       the same symbolic name and the same lexical binding,
+       so double-check that our shortcut worked... */
+    if (SAME_OBJ(SCHEME_STX_VAL(a), SCHEME_STX_VAL(b)))
+      must_be_lex = 1;
+    else
+      return 0;
+  }
 
   if ((a == asym) || (b == bsym))
     return 1;
@@ -4740,6 +4750,9 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   free_id_recur = make_recur_table();
   a = resolve_env(a, a_phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);
   release_recur_table(free_id_recur);
+
+  if (must_be_lex && !SCHEME_SYMBOLP(a))
+    return 0;
 
   free_id_recur = make_recur_table();
   b = resolve_env(b, b_phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);

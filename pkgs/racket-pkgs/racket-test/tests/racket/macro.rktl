@@ -971,5 +971,32 @@
     (lam x x)))
 
 ;; ----------------------------------------
+;; Check consistency of `free-identifier=?' and binding
+
+(module consistency-free-id-A racket
+  (provide g (rename-out [*a a]))
+  (define *a 10)
+  (define a 10)
+  (define-syntax g #'a))
+
+(module consistency-free-id-B racket
+  (require 'consistency-free-id-A)
+  (provide consistency-free-id)
+  (define-syntax (n stx)
+    (syntax-case stx ()
+      [(_ ref)
+       (with-syntax ([in (syntax-local-introduce
+                          (syntax-local-value #'g))])
+         #'(let ([in 10]) ; BINDING
+             (list (free-identifier=? #'in #'ref)
+                   in
+                   ref)))])) ; REFERENCE
+  (define (consistency-free-id) (n a)))
+
+(require 'consistency-free-id-B)
+
+(test (list #t 10 10) consistency-free-id)
+
+;; ----------------------------------------
 
 (report-errs)
