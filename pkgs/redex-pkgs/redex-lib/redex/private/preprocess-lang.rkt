@@ -26,21 +26,24 @@
                     (hash-ref edges name))))
      (hash)
      lang))
-  (let* ([edges (find-edges lang)]
-         [cyclic-nts (find-cycles edges)])
-    (let-values ([(cyclic non-cyclic)
-                  (partition (λ (nt)
-                                (set-member? cyclic-nts (nt-name nt)))
-                             lang)])
-      (let ([sorted-left (topo-sort non-cyclic
-                                    (filter-edges edges non-cyclic))] ;; topological sort
-            [sorted-right (sort-nt-terms cyclic
-                                         cyclic-nts)] ;; rhs sort
-            )
-        (values sorted-left
-                sorted-right)))))
+  (define edges (find-edges lang))
+  (define cyclic-nts (find-cycles edges))
+  (define-values (cyclic non-cyclic)
+    (partition (λ (nt)
+                  (set-member? cyclic-nts (nt-name nt)))
+               lang))
+  ;; topological sort
+  (define sorted-left
+    (topo-sort non-cyclic
+               (filter-edges edges non-cyclic)))
+  ;; rhs sort
+  (define sorted-right
+    (sort-nt-terms cyclic
+                   cyclic-nts))
+  (values sorted-left
+          sorted-right))
 
-;; find-edges : lang -> (hash symbol -o> (setof symbol))
+;; find-edges : lang -> (hash[symbol] -o> (setof (listof symbol)))
 (define (find-edges lang)
   (foldl
    (λ (nt m)
@@ -50,46 +53,32 @@
         (λ (rhs)
            (let loop ([pat (rhs-pattern rhs)]
                       [s (set)])
-             (match-a-pattern
-              pat
-              [`any s]
-              [`number s]
-              [`string s]
-              [`natural s]
-              [`integer s]
-              [`real s]
-              [`boolean s]
-              [`variable s]
-              [`(variable-except ,v ...) s]
-              [`(variable-prefix ,v) s]
-              [`variable-not-otherwise-mentioned s]
-              [`hole s]
-              [`(nt ,id)
-               (set-add s id)]
-              [`(name ,name ,pat)
-               (loop pat s)]
-              [`(mismatch-name ,name ,pat)
-               (loop pat s)]
-              [`(in-hole ,p1 ,p2)
-               (set-union (loop p1 s)
-                          (loop p2 s))]
-              [`(hide-hole ,p) (loop p s)]
-              [`(side-condition ,p ,g ,e) s]
-              [`(cross ,s) s]
-              [`(list ,sub-pats ...)
-               (fold-map/set
-                (λ (sub-pat)
-                   (match sub-pat
-                     [`(repeat ,pat ,name ,mismatch)
-                      (loop pat s)]
-                     [else (loop sub-pat s)]))
-                sub-pats)]
-              [(? (compose not pair?)) s])))
+             (match
+               pat
+               [`(nt ,id)
+                (set-add s id)]
+               [`(name ,name ,pat)
+                (loop pat s)]
+               [`(mismatch-name ,name ,pat)
+                (loop pat s)]
+               [`(in-hole ,p1 ,p2)
+                (set-union (loop p1 s)
+                           (loop p2 s))]
+               [`(hide-hole ,p) (loop p s)]
+               [`(list ,sub-pats ...)
+                (fold-map/set
+                 (λ (sub-pat)
+                    (match sub-pat
+                      [`(repeat ,pat ,name ,mismatch)
+                       (loop pat s)]
+                      [else (loop sub-pat s)]))
+                 sub-pats)]
+               [else s])))
         (nt-rhs nt))))
    (hash)
    lang))
 
-;; find-cycles : (hashsymbol -o> (setof symbol)) -> (setof symbol)
+;; find-cycles : (hash[symbol] -o> (setof symbol)) -> (setof symbol)
 (define (find-cycles edges)
   (foldl
    (λ (v s)
@@ -146,22 +135,20 @@
                   [else (rec sub-pat)]))
              sub-pats)]
      [(? (compose not pair?)) #f])))
+      
+;; recursive-rhss : lang (hash[symbol] -o> symbol)
+;;                  -> (hash[symbol] -o> (assoclist rhs bool))
+(define (recursive-rhss cyclic recs)
+  (for/hash ([cur-nt (in-list cyclic)])
+    (match-define (nt cur-name cur-rhss) cur-nt)
+    (define rhss
+      (for/list ([cur-rhs (in-list cur-rhss)])
+        (cons cur-rhs
+              (calls-rec? (rhs-pattern cur-rhs)
+                          recs))))
+    (values cur-name rhss)))
 
-;; recursive-rhss : lang (hash symbol -o> (setof symbol)) -> (hash symbol -o> (assoclist rhs bool))
-(define (recursive-rhss lang recs)
-  (foldl
-   (λ (nt m)
-      (let ([rhs (nt-rhs nt)])
-        (hash-set m (nt-name nt)
-                  (map (λ (rhs)
-                          (cons rhs
-                                (calls-rec? (rhs-pattern rhs)
-                                            recs)))
-                       rhs))))
-   (hash)
-   lang))
-
-;; topo-sort : lang (hash symbol -o> (setof symbol)) -> lang
+;; topo-sort : lang (hash[symbol] -o> (setof symbol)) -> lang
 (define (topo-sort lang edges)
   (define (find-top rem edges)
     (let find ([rem rem])
@@ -181,24 +168,51 @@
              (loop (remove v rem)
                    (hash-remove edges v)
                    (cons
-                    (findf
-                     (λ (nt)
-                        (eq? v (nt-name nt)))
-                     lang)
+                    (find-nt lang v)
                     out-lang)))])))
 
-;; sort-nt-terms : lang (setof symbol) -> lang
-(define (sort-nt-terms lang nts)
-  (let ([recs (recursive-rhss lang nts)])
-    (map
-     (λ (nt)
-        (let ([rec-nts (hash-ref recs (nt-name nt))])
-          (make-nt (nt-name nt)
-                   (sort (nt-rhs nt)
-                         (λ (r1 r2)
-                            (and (not (cdr (assoc r1 rec-nts)))
-                                 (cdr (assoc r2 rec-nts))))))))
-     lang)))
+;; find-nt : lang, symbol -> nt
+(define (find-nt lang name)
+  (findf (λ (nt)
+            (eq? name (nt-name nt)))
+         lang))
+
+
+;; sort-nt-terms : lang, (hash[symbol] -o> (setof symbol)) -> lang
+(define (sort-nt-terms cyclic nts)
+  (define recs (recursive-rhss cyclic nts))
+  (for/list ([cur-nt (in-list cyclic)])
+    (match cur-nt
+      [(nt name rhs)
+       (define rec-nts (hash-ref recs name))
+       (nt name
+           (sort rhs
+                 (λ (r1 r2)
+                    (and (not (cdr (assoc r1 rec-nts)))
+                         (cdr (assoc r2 rec-nts))))))])))
+
+;; directly-used-nts : pat -> (setof symbol)
+(define (directly-used-nts pat)
+  (match pat
+    [`(nt id) (set nt)]
+    [(or `(name ,n ,p)
+         `(mismatch-name ,n ,p))
+     (directly-used-nts p)]
+    [`(in-hole ,p1 ,p2)
+     (set-union (directly-used-nts p1)
+                (directly-used-nts p2))]
+    [`(hide-hole ,p)
+     (directly-used-nts p)]
+    [`(list ,sub-pats ...)
+     (fold-map/set
+      (λ (sub-pat)
+         (match sub-pat
+           ;; Not a direct reference since an empty list can always be
+           ;; enumerated
+           [`(repeat ,p ,n ,m) (set)]
+           [else (directly-used-nts sub-pat)]))
+      sub-pats)]
+    [else (set)]))
 
 ;; used-vars : lang -> (listof symbol)
 (define (used-vars lang)
@@ -222,7 +236,6 @@
               [`(variable-prefix ,s) (set)]
               [`variable-not-otherwise-mentioned (set)]
               [`hole (set)]
-              ;; Not sure
               [`(nt ,id) (set)]
               [`(name ,name ,pat) (set)]
               [`(mismatch-name ,name ,pat) (set)]
