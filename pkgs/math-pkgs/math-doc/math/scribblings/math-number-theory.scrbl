@@ -17,7 +17,7 @@
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
-@interaction-eval[#:eval untyped-eval (require racket/list
+@interaction-eval[#:eval untyped-eval (require (except-in racket/list permutations)
                                                racket/function)]
 
 @(define math-style tt)
