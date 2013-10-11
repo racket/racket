@@ -1,5 +1,4 @@
-// xxx change these to the real thing
-var dynamic_host = "localhost";
+var dynamic_host = "pkg-dyn.racket-lang.org";
 var dynamic_port = 9004;
 
 function dynamic_url ( u ) {

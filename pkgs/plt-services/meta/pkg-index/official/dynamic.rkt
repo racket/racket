@@ -373,12 +373,19 @@
    [("api" "upload") #:method "post" api/upload]
    [else redirect-to-static]))
 
+(define-syntax-rule (forever . body)
+  (let loop () (begin . body) (loop)))
+
 (define (go port)
   (printf "launching on port ~a\n" port)
+  (signal-static! empty)
+  (thread
+   (λ ()     
+     (forever
+      (sleep (* 24 60 60))
+      (signal-update! empty))))
   (serve/servlet
-   (λ (req)
-     ;; (displayln (url->string (request-uri req)))
-     (main-dispatch req))
+   main-dispatch
    #:command-line? #t
    #:listen-ip #f
    #:ssl? #t
