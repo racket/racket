@@ -41,10 +41,20 @@ $( document ).ready(function() {
 
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
 
+        function make_editbutton ( spot, initv, fun ) {
+            if ( mypkg_p ) {
+                $( "#" + spot ).append( $('<button>')
+                                        .button({ icons: { primary: "ui-icon-pencil" } })
+                                        .click( function (e) {
+                                            $( "#" + spot ).html("").append(
+                                                $('<input id="' + spot + '_text" type="text" class="text ui-widget-content ui-corner-all">') );
+                                            var it = $( "#" + spot + "_text" );
+                                            it.keypress( function (e) {
+                                                if (e.which == 13) { fun (it.val()); } } );
+                                            it.val(initv).focus(); } ) ); } }
+
         $( "#pi_name" ).text( pkgi['name'] );
-        if ( mypkg_p ) {
-            // xxx make this button do something
-            $( "#pi_name" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
+        make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
@@ -63,9 +73,7 @@ $( document ).ready(function() {
 
         $( "#pi_source" ).html( $('<a>', { text: pkgi['source'],
                                            href: pkgi['source_url']  } ));
-        if ( mypkg_p ) {
-            // xxx make this button do something
-            $( "#pi_source" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
+        make_editbutton ( "pi_source", pkgi['source'], submit_mod_source );
 
         $( "#pi_checksum" ).text( pkgi['checksum'] );
         $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
@@ -73,9 +81,7 @@ $( document ).ready(function() {
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
 
         $( "#pi_description" ).text( pkgi['description'] );
-        if ( mypkg_p ) {
-            // xxx make this button do something
-            $( "#pi_description" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
+        make_editbutton ( "pi_description", pkgi['description'], submit_mod_description );
 
         ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
             if ( mypkg_p ) {
@@ -170,6 +176,24 @@ $( document ).ready(function() {
     $( "#pi_add_version_source_text" ).keypress( function (e) {
         if (e.which == 13) { submit_add_version (); } } );
     $( "#pi_add_version_button" ).click( function (e) { submit_add_version (); } );
+
+    function submit_mod ( new_name, new_description, new_source ) {
+        dynamic_pkgsend( "/jsonp/package/modify",
+                         { name: new_name,
+                           description: new_description,
+                           source: new_source } );
+
+        active_info['name'] = new_name;
+        active_info['description'] = new_description;
+        active_info['source'] = new_source;
+
+        update_info( active_info ); }
+    function submit_mod_name ( newv ) {
+        submit_mod ( newv, active_info['description'], active_info['source'] ); }
+    function submit_mod_description ( newv ) {
+        submit_mod ( active_info['name'], newv, active_info['source'] ); }
+    function submit_mod_source ( newv ) {
+        submit_mod ( active_info['name'], active_info['description'], newv ); }
 
     var search_terms = { };
 

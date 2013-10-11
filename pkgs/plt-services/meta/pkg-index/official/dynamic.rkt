@@ -195,9 +195,8 @@
   (jsonp/package/modify
    ['pkg pkg]
    ['name mn-name]
-   ['desc mn-desc]
-   ['source mn-source]
-   ['authors mn-authors])
+   ['description mn-desc]
+   ['source mn-source])
   #f)
 
 ;; XXX

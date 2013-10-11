@@ -46,7 +46,8 @@
 (define-syntax-rule (define-jsonp (f . pat) . body)
   (define f
     (make-jsonp-responder
-     (match-lambda [(hash-table . pat) . body]))))
+     (match-lambda [(hash-table . pat) . body]
+                   [x (error 'f "ill formatted request: ~v" x)]))))
 
 (provide define-jsonp
          make-jsonp-responder)
