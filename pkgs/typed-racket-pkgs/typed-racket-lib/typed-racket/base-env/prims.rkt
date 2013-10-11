@@ -460,9 +460,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (let: stx)
   (syntax-parse stx #:literals (:)
     [(let: nm:id ~! ; named let:
-           (~and (~seq rest ...)
-                 (~seq (~optional (~seq : ret-ty))
-                       (bs:optionally-annotated-binding ...) body ...)))
+           (~and (~seq (~optional (~seq : ret-ty))
+                       (bs:optionally-annotated-binding ...) body ...)
+                 (~seq rest ...)))
      (quasisyntax/loc stx
        (#,(syntax-parse #'(rest ...)
             #:literals (:)
