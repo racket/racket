@@ -36,7 +36,7 @@ $( document ).ready(function() {
     var active_info = false;
     var target_pkg = false;
     function update_info( pkgi ) {
-        console.log( pkgi );
+        // console.log( pkgi );
         change_hash( "[" + pkgi['name'] + "]" );
 
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
@@ -48,11 +48,18 @@ $( document ).ready(function() {
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
-        // xxx show add/delete buttons
         $( "#pi_authors" ).html("")
             .append( $.map( pkgi['authors'],
                             function ( author, i ) {
-                                return [author, " "]; } ) )
+                                if ( mypkg_p && author != me() ) {
+                                    return [ author, jslink( "[x]", function () { submit_remove_author(author); }),
+                                             " "]; }
+                                else {
+                                    return [author, " "]; }} ) );
+        if ( mypkg_p ) {
+            $( "#pi_add_author_row" ).show(); }
+        else {
+            $( "#pi_add_author_row" ).hide(); }
 
         $( "#pi_source" ).html( $('<a>', { text: pkgi['source'],
                                            href: pkgi['source_url']  } ));
@@ -70,13 +77,12 @@ $( document ).ready(function() {
             // xxx make this button do something
             $( "#pi_description" ).append( $('<button>').button({ icons: { primary: "ui-icon-pencil" } }) ); }
 
-        if ( mypkg_p ) {
-            ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
+        ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
+            if ( mypkg_p ) {
                 return [ tag, jslink( "[x]", function () { submit_remove_tag(tag); }),
-                         " "]; } ) )); }
-        else {
-            ($( "#pi_tags" ).html("").append( $.map( pkgi['tags'], function ( tag, i ) {
-                return [tag, " "]; } ) )); }
+                         " "]; }
+            else {
+                return [tag, " "]; } } ) ));
 
         // xxx show add and delete buttons
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
@@ -111,6 +117,31 @@ $( document ).ready(function() {
     $( "#pi_add_tag_text" ).keypress( function (e) {
         if (e.which == 13) { submit_add_tag (); } } );
     $( "#pi_add_tag_button" ).click( function (e) { submit_add_tag (); } );
+
+    function submit_remove_author ( author ) {
+        dynamic_pkgsend( "/jsonp/package/author/del", { author: author } );
+
+        var author_index = $.inArray(author, active_info['authors']);
+        active_info['authors'].splice( author_index, 1 );
+        delete active_info['search-terms'][ "author:" + author ];
+        evaluate_search();
+
+        update_info( active_info ); }
+    function submit_add_author () {
+        var it = $( "#pi_add_author_text" );
+        var author = it.val();
+        it.val("");
+
+        dynamic_pkgsend( "/jsonp/package/author/add", { author: author } );
+
+        active_info['authors'].push( author );
+        active_info['search-terms'][ "author:" + author ] = true;
+        evaluate_search();
+
+        update_info( active_info ); }
+    $( "#pi_add_author_text" ).keypress( function (e) {
+        if (e.which == 13) { submit_add_author (); } } );
+    $( "#pi_add_author_button" ).click( function (e) { submit_add_author (); } );
 
     var search_terms = { };
 
@@ -154,7 +185,8 @@ $( document ).ready(function() {
             // thing, particularly with the Back button because we
             // don't add the tags in the same order the user add them
             // in. We could do that though.
-            console.log("hash changed beneath me!"); } });
+            // console.log("hash changed beneath me!"); 
+            return 42; } });
 
     function filterlink ( text, tclass, f ) {
         return [ jslink(text, f).addClass(tclass), " " ]; };

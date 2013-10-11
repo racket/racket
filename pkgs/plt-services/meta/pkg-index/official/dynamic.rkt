@@ -180,7 +180,7 @@
          (list email)
          empty empty
          (list "Someone tried to register your email address for an account on the Racket Package Catalog."
-               "If you want to proceed, use this email code:"
+               "If you want to proceed, use this code:"
                ""
                correct-email-code
                ""
@@ -231,6 +231,20 @@
 
 ;; XXX
 (define-jsonp/auth
+  (jsonp/package/author/add
+   ['pkg pkg]
+   ['author author])
+  #f)
+
+;; XXX
+(define-jsonp/auth
+  (jsonp/package/author/del
+   ['pkg pkg]
+   ['author author])
+  #f)
+
+;; XXX
+(define-jsonp/auth
   (jsonp/package/curate
    ['pkg pkg]
    ['ring ring-s])
@@ -250,6 +264,8 @@
    [("jsonp" "package" "version" "del") jsonp/package/version/del]
    [("jsonp" "package" "tag" "add") jsonp/package/tag/add]
    [("jsonp" "package" "tag" "del") jsonp/package/tag/del]
+   [("jsonp" "package" "author" "add") jsonp/package/author/add]
+   [("jsonp" "package" "author" "del") jsonp/package/author/del]
    [("jsonp" "package" "curate") jsonp/package/curate]
    [("api" "upload") #:method "post" api/upload]
    [else redirect-to-static]))
@@ -257,7 +273,9 @@
 (define (go port)
   (printf "launching on port ~a\n" port)
   (serve/servlet
-   main-dispatch
+   (λ (req)
+     (displayln (url->string (request-uri req)))
+     (main-dispatch req))
    #:command-line? #t
    #:listen-ip #f
    #:ssl? #t
