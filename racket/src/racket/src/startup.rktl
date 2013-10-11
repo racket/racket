@@ -481,7 +481,12 @@
       (cond
        [(complete-path? p) p]
        [else
-        (path->complete-path p (find-main-collects))])))
+        (path->complete-path p (or (find-main-collects)
+                                   ;; If we get here, then something is configured wrong,
+                                   ;; and making up paths relative to the current directory
+                                   ;; is not great --- but we have to come up with some
+                                   ;; path at this point.
+                                   (current-directory)))])))
 
   (define-values (exe-relative-path->complete-path)
     (lambda (collects-path)
