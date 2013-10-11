@@ -558,8 +558,8 @@
   (define (get-default)
     (match k
       ['catalogs
-       (list "https://pkg.racket-lang.org"
-             "http://planet-compat.racket-lang.org")]
+       (list "http://pkgs.racket-lang.org"
+             "http://planet-compats.racket-lang.org")]
       ['default-scope "user"]
       ['installation-name (version)]
       [_ #f]))

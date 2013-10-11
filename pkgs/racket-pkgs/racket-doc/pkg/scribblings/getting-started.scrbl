@@ -131,7 +131,7 @@ treated as a explicitly installed package.
 
 The PLT @tech{package catalog} at
 
-@centerline{@url{https://pkg.racket-lang.org}}
+@centerline{@url{http://pkgs.racket-lang.org}}
 
 provides a centralized listing of available Racket packages. The PLT
 @tech{package catalog} normally will be the first place you check when
@@ -423,7 +423,7 @@ by a simple name until it is listed on a @tech{package catalog}.
 
 If you'd like to use the PLT @tech{package catalog}, browse
 to
-@link["https://pkg.racket-lang.org/manage/upload"]{https://pkg.racket-lang.org/manage/upload}
+@link["http://pkgs.racket-lang.org/manage/upload"]{http://pkgs.racket-lang.org/manage/upload}
 and upload a new package. You will need to create an account and log
 in first.
 

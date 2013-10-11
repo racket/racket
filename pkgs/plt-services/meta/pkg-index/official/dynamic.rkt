@@ -65,9 +65,8 @@
    (url->string
     (struct-copy url (request-uri req)
                  [scheme "http"]
-                 ;; XXX change these to the real static site
-                 [host "localhost"]
-                 [port 8001]))))
+                 [host "pkgs.racket-lang.org"]
+                 [port 80]))))
 
 (define-syntax-rule (define-jsonp/auth (f . pat) . body)
   (define-jsonp
