@@ -174,15 +174,32 @@
 					     (/ (- (/ client-w 2) margin) client-w)))
 			  (define (set-origin x y)
 			    (send dc set-origin (+ orig-ox (* x orig-sx)) (+ orig-oy (* y orig-sy))))
+                          (define (call-with-clipping thunk)
+                            (let ([clip-rgn (send dc get-clipping-region)])
+                              (send dc set-clipping-rect 
+                                    (- margin)
+                                    (- margin)
+                                    (+ client-w (* 2 margin))
+                                    (+ client-h (* 2 margin)))
+                              (thunk)
+                              (send dc set-clipping-region clip-rgn)))
 			  (send dc set-scale (* orig-sx scale) (* orig-sy scale))
 			  (set-origin x y)
-			  ((sliderec-drawer a) dc 0 0)
+                          (call-with-clipping
+                           (lambda ()
+                             ((sliderec-drawer a) dc 0 0)))
 			  (set-origin (+ x (/ client-w 2) margin) y)
-			  ((sliderec-drawer b) dc 0 0)
+                          (call-with-clipping
+                           (lambda ()
+                             ((sliderec-drawer b) dc 0 0)))
 			  (set-origin x (+ y (/ client-h 2) margin))
-			  ((sliderec-drawer c) dc 0 0)
+                          (call-with-clipping
+                           (lambda ()
+                             ((sliderec-drawer c) dc 0 0)))
 			  (set-origin (+ x (/ client-w 2) margin) (+ y (/ client-h 2) margin))
-			  ((sliderec-drawer d) dc 0 0)
+                          (call-with-clipping
+                           (lambda ()
+                             ((sliderec-drawer d) dc 0 0)))
 			  (send dc set-scale orig-sx orig-sy)
 			  (set-origin x y)
 			  (send dc draw-line (/ client-w 2) 0 (/ client-w 2) client-h)
@@ -1380,9 +1397,12 @@
 		(let ([xs (/ config:use-screen-w config:screen-w)]
 		      [ys (/ config:use-screen-h config:screen-h)])
 		  (send ps-dc set-scale xs ys)
-		  ((sliderec-drawer slide) ps-dc 
-		   (+ margin (/ (- config:actual-screen-w config:use-screen-w) 2 xs))
-		   (+ margin (/ (- config:actual-screen-h config:use-screen-h) 2 ys))))
+                  (let ([clip (send ps-dc get-clipping-region)]
+                        [dx (/ (- config:actual-screen-w config:use-screen-w) 2 xs)]
+                        [dy (/ (- config:actual-screen-h config:use-screen-h) 2 ys)])
+                    (send ps-dc set-clipping-rect dx dy config:screen-w config:screen-h)
+                    ((sliderec-drawer slide) ps-dc (+ margin dx) (+ margin dy))
+                    (send ps-dc set-clipping-region clip)))
 		(when show-page-numbers?
 		  (send ps-dc set-scale 1 1)
 		  (let ([s (slide-page-string slide)])
