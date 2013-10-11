@@ -10,7 +10,8 @@
          racket/list
          racket/path
          racket/promise
-         meta/pkg-index/basic/main)
+         meta/pkg-index/basic/main
+         "common.rkt")
 
 (define convert-to-json
   (match-lambda
@@ -41,13 +42,9 @@
    [x
     (error 'convert-to-json-key "~e" x)]))
 
-(module+ main
-  (require "common.rkt")
-
-  (define pkg-list
-    (map path->string (directory-list pkgs-path)))
-  (define pkg-ht
-    (make-hash))
+(define (generate-static)
+  (define pkg-list (package-list))
+  (define pkg-ht (make-hash))
 
   (for ([pkg-name (in-list pkg-list)])
     (define ht (file->value (build-path pkgs-path pkg-name)))
@@ -141,7 +138,7 @@
            (struct-copy
             url pkg-url
             [scheme "http"]
-            [path (list user repo (path/param "tree" empty) 
+            [path (list user repo (path/param "tree" empty)
                         (path/param "master" empty))]))]
          [_
           pkg-url-str])]
@@ -255,3 +252,13 @@
   (cache "/pkgs-all" "pkgs-all")
   (for ([p (in-list pkg-list)])
     (cache (format "/pkg/~a" p) (format "pkg/~a" p))))
+
+(module+ main
+  (require racket/cmdline)
+
+  (command-line
+   #:program "static"
+   #:args pkgs
+   ;; FUTURE make this more efficient
+   (generate-static)
+   (run-s3! pkgs)))

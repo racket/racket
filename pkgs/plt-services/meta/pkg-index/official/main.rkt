@@ -42,50 +42,10 @@
 (define id-cookie-name "pnrid")
 
 ;; XXX Add a caching system
-(define (package-list)
-  (sort (map path->string (directory-list pkgs-path))
-        string-ci<=?))
 (define (package-exists? pkg-name)
   (file-exists? (build-path pkgs-path pkg-name)))
 (define (package-remove! pkg-name)
   (delete-file (build-path pkgs-path pkg-name)))
-(define (package-info pkg-name #:version [version #f])
-  (define no-version (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
-  (cond
-    [(and version
-          (hash-ref no-version 'versions #f)
-          (hash-ref (hash-ref no-version 'versions) version #f))
-     =>
-     (λ (version-ht)
-       (hash-merge version-ht no-version))]
-    [else
-     no-version]))
-(define (package-info-set! pkg-name i)
-  (write-to-file i (build-path pkgs-path pkg-name)
-                 #:exists 'replace))
-
-(define (hash-merge from to)
-  (for/fold ([to to])
-      ([(k v) (in-hash from)])
-    (hash-set to k v)))
-
-(define (package-ref pkg-info key)
-  (hash-ref pkg-info key
-            (λ ()
-              (match key
-                [(or 'author 'checksum 'source)
-                 (error 'pkg "Package ~e is missing a required field: ~e"
-                        (hash-ref pkg-info 'name) key)]
-                ['ring
-                 *default-ring*]
-                ['checksum-error
-                 #f]
-                ['tags
-                 empty]
-                ['versions
-                 (hash)]
-                [(or 'last-checked 'last-edit 'last-updated)
-                 -inf.0]))))
 
 (define-values (main-dispatch main-url)
   (dispatch-rules
@@ -663,9 +623,6 @@
     (request-binding/string req "tag" #f))
   (add-tag! pkg-name new-tag)
   (redirect-to (main-url page/info pkg-name)))
-
-(define (valid-name? t)
-  (not (regexp-match #rx"[^a-zA-Z0-9_\\-]" t)))
 
 (module+ test
   (check-equal? (valid-name? "net") #t)

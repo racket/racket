@@ -2,6 +2,10 @@
 (require racket/file
          racket/runtime-path
          pkg/util
+         racket/match
+         racket/list
+         racket/date
+         racket/system
          racket/string
          web-server/http/id-cookie)
 
@@ -25,7 +29,89 @@
 
 (define static-path (build-path src "static"))
 
+(define (package-list)
+  (sort (map path->string (directory-list pkgs-path))
+        string-ci<=?))
+(define (package-info pkg-name #:version [version #f])
+  (define no-version (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
+  (cond
+    [(and version
+          (hash-ref no-version 'versions #f)
+          (hash-ref (hash-ref no-version 'versions) version #f))
+     =>
+     (λ (version-ht)
+       (hash-merge version-ht no-version))]
+    [else
+     no-version]))
+
+(define (package-ref pkg-info key)
+  (hash-ref pkg-info key
+            (λ ()
+              (match key
+                [(or 'author 'checksum 'source)
+                 (error 'pkg "Package ~e is missing a required field: ~e"
+                        (hash-ref pkg-info 'name) key)]
+                ['ring
+                 2]
+                ['checksum-error
+                 #f]
+                ['tags
+                 empty]
+                ['versions
+                 (hash)]
+                [(or 'last-checked 'last-edit 'last-updated)
+                 -inf.0]))))
+
+(define (package-info-set! pkg-name i)
+  (write-to-file i (build-path pkgs-path pkg-name)
+                 #:exists 'replace))
+
+(define (hash-merge from to)
+  (for/fold ([to to])
+      ([(k v) (in-hash from)])
+    (hash-set to k v)))
+
 (define (author->list as)
   (string-split as))
+
+(define (valid-name? t)
+  (not (regexp-match #rx"[^a-zA-Z0-9_\\-]" t)))
+
+(define (valid-author? a)
+  (not (regexp-match #rx"[ :]" a)))
+
+(define valid-tag?
+  valid-name?)
+
+(define-runtime-path update.rkt "update.rkt")
+(define-runtime-path static.rkt "static.rkt")
+(define-runtime-path s3.rkt "s3.rkt")
+
+(define run-sema (make-semaphore 1))
+(define (run! file args)
+  (call-with-semaphore
+   run-sema
+   (λ ()
+     (parameterize ([date-display-format 'iso-8601])
+       (printf "~a: ~a ~v\n" (date->string (current-date) #t) file args))
+     (apply system* (find-executable-path (find-system-path 'exec-file))
+            "-t" file
+            "--"
+            args)
+     (printf "~a: done\n" (date->string (current-date) #t)))))
+
+(define (run-update! pkgs)
+  (run! update.rkt pkgs))
+(define (run-static! pkgs)
+  (run! static.rkt pkgs))
+(define (run-s3! pkgs)
+  (run! s3.rkt pkgs))
+
+(define (signal-update! pkgs)
+  (thread (λ () (run-update! pkgs))))
+(define (signal-static! pkgs)
+  (thread (λ () (run-static! pkgs))))
+(define (signal-s3! pkgs)
+  (thread (λ () (run-s3! pkgs))))
 
 (provide (all-defined-out))

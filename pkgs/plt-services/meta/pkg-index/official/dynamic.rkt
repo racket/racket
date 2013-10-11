@@ -4,51 +4,22 @@
          "jsonp.rkt"
          web-server/servlet-env
          racket/file
-         xml
-         racket/function
-         racket/runtime-path
          web-server/dispatch
-         pkg/util
-         (prefix-in pkg: pkg/lib)
          racket/match
-         racket/package
-         racket/system
-         racket/date
          racket/string
-         web-server/servlet
-         web-server/formlets
-         racket/bool
+         net/url
          racket/list
          net/sendmail
          meta/pkg-index/basic/main
-         web-server/http/id-cookie
          file/sha1
          (prefix-in bcrypt- bcrypt)
          version/utils)
 
-(define (package-info pkg-name #:version [version #f])
-  (define no-version (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
-  (cond
-    [(and version
-          (hash-ref no-version 'versions #f)
-          (hash-ref (hash-ref no-version 'versions) version #f))
-     =>
-     (λ (version-ht)
-       (hash-merge version-ht no-version))]
-    [else
-     no-version]))
-
-(define (package-info-set! pkg-name i)
-  (write-to-file i (build-path pkgs-path pkg-name)
-                 #:exists 'replace))
+(define (package-remove! pkg-name)
+  (delete-file (build-path pkgs-path pkg-name)))
 
 (define (package-exists? pkg-name)
   (file-exists? (build-path pkgs-path pkg-name)))
-
-(define (hash-merge from to)
-  (for/fold ([to to])
-      ([(k v) (in-hash from)])
-    (hash-set to k v)))
 
 (define (hash-deep-merge ht more-ht)
   (for/fold ([ht ht])
@@ -86,12 +57,8 @@
                             (for/fold ([pi new-pi]) ([k (in-list '(last-edit last-checked last-updated))])
                               (hash-set pi k now))))
        (package-info-set! p updated-pi)
-       (signal-update! #t p))
+       (signal-update! (list p)))
      (response/sexpr #t)]))
-
-(define (signal-update! force? pkg)
-  ;; XXX
-  (void))
 
 (define (redirect-to-static req)
   (redirect-to
@@ -190,69 +157,206 @@
     [#t
      (hasheq 'curation (curation-administrator? email))]))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/modify
    ['pkg pkg]
    ['name mn-name]
    ['description mn-desc]
    ['source mn-source])
-  #f)
+  (cond
+    [(equal? pkg "")
+     (cond
+       [(package-exists? mn-name)
+        #f]
+       [else
+        (package-info-set! mn-name
+                           (hasheq 'name mn-name
+                                   'source mn-source
+                                   'author (current-user)
+                                   'description mn-desc
+                                   'last-edit (current-seconds)))
+        (signal-update! (list mn-name))
+        #t])]
+    [else
+     (ensure-package-author
+      pkg
+      (λ ()
+        (cond
+          [(equal? mn-name pkg)
+           (package-info-set! pkg
+                              (hash-set* (package-info pkg)
+                                         'source mn-source
+                                         'description mn-desc
+                                         'last-edit (current-seconds)))
+           (signal-update! (list pkg))
+           #t]
+          [(and (valid-name? mn-name)
+                (not (package-exists? mn-name)))
+           (package-info-set! mn-name
+                              (hash-set* (package-info pkg)
+                                         'name mn-name
+                                         'source mn-source
+                                         'description mn-desc
+                                         'last-edit (current-seconds)))
+           (package-remove! pkg)
+           (signal-update! (list mn-name))
+           #t]
+          [else
+           #f])))]))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/version/add
    ['pkg pkg]
    ['version version]
    ['source source])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (cond
+       [(valid-version? version)
+        (package-info-set!
+         pkg
+         (hash-update (package-info pkg) 'versions
+                      (λ (v-ht)
+                        (hash-set v-ht version
+                                  (hasheq 'source source
+                                          'checksum "")))
+                      hash))
+        (signal-update! (list pkg))
+        #t]
+       [else
+        #f]))))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/version/del
    ['pkg pkg]
    ['version version])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (cond
+       [(valid-version? version)
+        (package-info-set!
+         pkg
+         (hash-update (package-info pkg) 'versions
+                      (λ (v-ht)
+                        (hash-remove v-ht version))
+                      hash))
+        (signal-update! (list pkg))
+        #t]
+       [else
+        #f]))))
 
-;; XXX
+(define (tags-normalize ts)
+  (remove-duplicates (sort ts string-ci<?)))
+
 (define-jsonp/auth
   (jsonp/package/tag/add
    ['pkg pkg]
    ['tag tag])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (cond
+       [(valid-tag? tag)
+        (define i (package-info pkg))
+        (package-info-set!
+         pkg
+         (hash-set i 'tags (tags-normalize (cons tag (package-ref i 'tags)))))
+        (signal-static! (list pkg))
+        #t]
+       [else
+        #f]))))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/tag/del
    ['pkg pkg]
    ['tag tag])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (define i (package-info pkg))
+     (package-info-set!
+      pkg
+      (hash-set i 'tags
+                (remove tag
+                        (package-ref i 'tags))))
+     (signal-static! (list pkg))
+     #t)))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/author/add
    ['pkg pkg]
    ['author author])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (cond
+       [(valid-author? author)
+        (define i (package-info pkg))
+        (package-info-set!
+         pkg
+         (hash-set i 'author (format "~a ~a" (package-ref i 'author) author)))
+        (signal-static! (list pkg))
+        #t]
+       [else
+        #f]))))
 
-;; XXX
+(define (ensure-package-author pkg f)
+  (cond
+    [(package-author? pkg (current-user))
+     (f)]
+    [else
+     #f]))
+
 (define-jsonp/auth
   (jsonp/package/author/del
    ['pkg pkg]
    ['author author])
-  #f)
+  (ensure-package-author
+   pkg
+   (λ ()
+     (cond
+       [(not (equal? (current-user) author))
+        (define i (package-info pkg))
+        (package-info-set!
+         pkg
+         (hash-set i 'author
+                   (string-join
+                    (remove author
+                            (author->list (package-ref i 'author))))))
+        (signal-static! (list pkg))
+        #t]
+       [else
+        #f]))))
 
-;; XXX
 (define-jsonp/auth
   (jsonp/package/curate
    ['pkg pkg]
    ['ring ring-s])
-  #f)
+  (cond
+    [(curation-administrator? (current-user))
+     (define i (package-info pkg))
+     (define ring-n (string->number ring-s))
+     (package-info-set!
+      pkg
+      (hash-set i 'ring (min 2 (max 0 ring-n))))
+     (signal-static! (list pkg))
+     #t]
+    [else
+     #f]))
 
-;; XXX
+(define (package-author? p u)
+  (define i (package-info p))
+  (member u (author->list (package-ref i 'author))))
+
+(define (packages-of u)
+  (filter (λ (p) (package-author? p u)) (package-list)))
+
 (define-jsonp/auth
   (jsonp/update)
-  #f)
+  (signal-update! (packages-of (current-user)))
+  #t)
 
 (define-values (main-dispatch main-url)
   (dispatch-rules
@@ -273,7 +377,7 @@
   (printf "launching on port ~a\n" port)
   (serve/servlet
    (λ (req)
-     (displayln (url->string (request-uri req)))
+     ;; (displayln (url->string (request-uri req)))
      (main-dispatch req))
    #:command-line? #t
    #:listen-ip #f
