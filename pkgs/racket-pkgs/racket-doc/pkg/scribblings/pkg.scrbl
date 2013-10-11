@@ -683,15 +683,15 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
  @item{@racketidfont{collection} --- either @racket['multi] to
        implement a @tech{multi-collection package} or a string or
-       @racket['same-as-pkg] to implement a @tech{single-collection
+       @racket['use-pkg-name] to implement a @tech{single-collection
        package}. If @racketidfont{collection} is defined as a string,
        then the string is used as the name of the collection
        implemented by the package. If @racketidfont{collection} is
-       defined as @racket['same-as-pkg], then the package name is used
+       defined as @racket['use-pkg-name], then the package name is used
        as the package's collection name.
 
        Beware that omitting @racketidfont{collection} or defining it
-       as @racket['same-as-pkg] means that a package's content
+       as @racket['use-pkg-name] means that a package's content
        effectively changes with the package's name. A package's
        content should normally be independent of the package's name,
        and so defining @racketidfont{collection} to a string is
