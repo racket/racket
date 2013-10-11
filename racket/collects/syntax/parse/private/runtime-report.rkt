@@ -98,13 +98,19 @@ complicated.
                     (report (prose-for-expects (expect:disj-expects frame-expect))
                             context frame-stx within-stx)]
                    [else
-                    (report (prose-for-expect frame-expect) context frame-stx within-stx)]))])))
+                    (report (prose-for-expects (list frame-expect))
+                            context frame-stx within-stx)]))])))
 
 ;; prose-for-expects : (listof Expect) -> string
 ;; FIXME: partition by role first?
 (define (prose-for-expects expects)
-  (join-sep (for/list ([expect expects])
-              (prose-for-expect expect))
+  (join-sep (append (for/list ([expect expects]
+                               #:when (not (expect:proper-pair? expect)))
+                      (prose-for-expect expect))
+                    (let ([proper-pair-expects (filter expect:proper-pair? expects)])
+                      (if (pair? proper-pair-expects)
+                          (list (prose-for-proper-pair-expects proper-pair-expects))
+                          null)))
             ";" "or"))
 
 ;; prose-for-expect : Expect -> string
@@ -124,15 +130,28 @@ complicated.
     [(expect:message message _)
      (format "~a" message)]
     [(expect:proper-pair '#f _)
-     "expected more terms"]
-    [(expect:proper-pair first-desc _)
-     (format "expected more terms starting with ~a"
-             (match first-desc
-               [(? string?) first-desc]
-               [(list 'any) "any term"]
-               [(list 'literal id) (format "the literal symbol `~s'" id)]
-               [(list 'datum d) (format "the literal ~s" d)]))]))
+     "expected more terms"]))
 
+;; prose-for-proper-pair-expects : (listof expect:proper-pair) -> string
+(define (prose-for-proper-pair-expects es)
+  (define descs (remove-duplicates (map expect:proper-pair-first-desc es)))
+  (cond [(for/or ([desc descs]) (equal? desc #f))
+         ;; FIXME: better way to indicate unknown ???
+         "expected more terms"]
+        [else
+         (format "expected more terms starting with ~a"
+                 (join-sep (map prose-for-first-desc descs)
+                           "," "or"))]))
+
+;; prose-for-first-desc : FirstDesc -> string
+(define (prose-for-first-desc desc)
+  (match desc
+    [(? string?) desc]
+    [(list 'any) "any term"] ;; FIXME: maybe should cancel out other descs ???
+    [(list 'literal id) (format "the literal symbol `~s'" id)]
+    [(list 'datum d) (format "the literal ~s" d)]))
+
+;; context-prose-for-expect : expect:thing -> (listof string)
 (define (context-prose-for-expect e)
   (match e
     [(expect:thing stx+index description transparent? role _)
