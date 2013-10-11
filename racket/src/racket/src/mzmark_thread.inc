@@ -106,6 +106,7 @@ static int mark_custodian_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->mrefs, gc);
   gcMARK2(m->closers, gc);
   gcMARK2(m->data, gc);
+  gcMARK2(m->data_ptr, gc);
 
   gcMARK2(m->parent, gc);
   gcMARK2(m->sibling, gc);
@@ -127,6 +128,7 @@ static int mark_custodian_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->mrefs, gc);
   gcFIXUP2(m->closers, gc);
   gcFIXUP2(m->data, gc);
+  gcFIXUP2(m->data_ptr, gc);
 
   gcFIXUP2(m->parent, gc);
   gcFIXUP2(m->sibling, gc);

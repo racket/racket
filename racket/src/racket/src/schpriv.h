@@ -665,6 +665,7 @@ struct Scheme_Custodian {
   Scheme_Custodian_Reference **mrefs;
   Scheme_Close_Custodian_Client **closers;
   void **data;
+  void ***data_ptr; /* points to `data`, registered as finalizer data for strong retention */
 
   /* weak indirections: */
   Scheme_Custodian_Reference *parent;

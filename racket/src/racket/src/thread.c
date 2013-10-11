@@ -922,6 +922,7 @@ static void ensure_custodian_space(Scheme_Custodian *m, int k)
     m->boxes = naya_boxes;
     m->closers = naya_closers;
     m->data = naya_data;
+    *m->data_ptr = naya_data;
     m->mrefs = naya_mrefs;
   }
 }
@@ -1082,6 +1083,11 @@ static void adjust_custodian_family(void *mgr, void *skip_move)
   CUSTODIAN_FAM(r->global_next) = NULL;
 }
 
+static void do_adjust_custodian_family(void *mgr, void *for_retain)
+{
+  adjust_custodian_family(mgr, NULL);
+}
+
 void insert_custodian(Scheme_Custodian *m, Scheme_Custodian *parent)
 {
   /* insert into parent's list: */
@@ -1118,6 +1124,7 @@ Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *parent)
 {
   Scheme_Custodian *m;
   Scheme_Custodian_Reference *mw;
+  void ***data_ptr;
 
   if (!parent)
     parent = main_custodian; /* still NULL if we're creating main; that's ok */
@@ -1141,9 +1148,12 @@ Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *parent)
 
   CUSTODIAN_FAM(m->children) = NULL;
 
+  data_ptr = (void ***)scheme_malloc(sizeof(void**));
+  m->data_ptr = data_ptr;
+
   insert_custodian(m, parent);
 
-  scheme_add_finalizer(m, adjust_custodian_family, NULL);
+  scheme_add_finalizer(m, do_adjust_custodian_family, data_ptr);
 
   return m;
 }
@@ -1417,6 +1427,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     m->boxes = NULL;
     m->closers = NULL;
     m->data = NULL;
+    *m->data_ptr = NULL;
     m->mrefs = NULL;
     m->shut_down = 1;
     

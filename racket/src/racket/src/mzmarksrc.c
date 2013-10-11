@@ -1894,6 +1894,7 @@ mark_custodian_val {
   gcMARK2(m->mrefs, gc);
   gcMARK2(m->closers, gc);
   gcMARK2(m->data, gc);
+  gcMARK2(m->data_ptr, gc);
 
   gcMARK2(m->parent, gc);
   gcMARK2(m->sibling, gc);
