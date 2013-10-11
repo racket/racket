@@ -64,8 +64,8 @@ complicated.
     (raise-syntax-error/reports stx0 reports)))
 
 ;; A Report is
-;;   - (report string (listof string) stx)
-(define-struct report (message context stx) #:prefab)
+;;   - (report string (listof string) stx stx)
+(define-struct report (message context stx within-stx) #:prefab)
 
 ;; report/class : (non-empty-listof Failure) -> (listof Report)
 (define (report/class fs)
@@ -82,22 +82,23 @@ complicated.
   (let ([frame-expect (and (pair? es) (car es))]
         [context (append* (map context-prose-for-expect (if (pair? es) (cdr es) null)))])
     (cond [(not frame-expect)
-           (report "bad syntax" context #f)]
+           (report "bad syntax" context #f #f)]
           [else
-           (let ([frame-stx
-                  (let-values ([(x cx) (stx-list-drop/cx stx stx index)])
-                    (datum->syntax cx x cx))])
+           (let-values ([(frame-stx within-stx)
+                         (let-values ([(x cx) (stx-list-drop/cx stx stx index)])
+                           (values (datum->syntax cx x cx)
+                                   (if (syntax? x) #f cx)))])
              (cond [(equal? frame-expect (expect:atom '() #f))
                     (syntax-case frame-stx ()
                       [(one . more)
-                       (report "unexpected term" context #'one)]
+                       (report "unexpected term" context #'one #f)]
                       [_
-                       (report (prose-for-expect frame-expect) context frame-stx)])]
+                       (report (prose-for-expect frame-expect) context frame-stx within-stx)])]
                    [(expect:disj? frame-expect)
                     (report (prose-for-expects (expect:disj-expects frame-expect))
-                            context frame-stx)]
+                            context frame-stx within-stx)]
                    [else
-                    (report (prose-for-expect frame-expect) context frame-stx)]))])))
+                    (report (prose-for-expect frame-expect) context frame-stx within-stx)]))])))
 
 ;; prose-for-expects : (listof Expect) -> string
 ;; FIXME: partition by role first?
@@ -161,6 +162,7 @@ complicated.
          [message0 (report-message report)]
          [context (report-context report)])
     (raise-syntax-error* message0 stx0 (report-stx report)
+                         #:within (report-within-stx report)
                          '("parsing context" multi maybe) context
                          '("note" maybe) (and more? "additional errors omitted"))))
 

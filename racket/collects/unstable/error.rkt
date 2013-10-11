@@ -37,7 +37,8 @@ TODO
        any)]
  [raise-syntax-error*
   (->* [string? (or/c syntax? #f) (or/c syntax? #f)]
-       [#:continued (or/c string? (listof string))]
+       [#:continued (or/c string? (listof string))
+        #:within (or/c #f syntax?)]
        #:rest details-list/c
        any)]
  [compose-error-message
@@ -63,10 +64,11 @@ TODO
 
 (define (raise-syntax-error* message0 stx sub-stx
                              #:who [who #f]
+                             #:within [within-stx #f]
                              #:continued [continued-message null]
                              #:extra-sources [extra-stxs null]
                              . field+detail-list)
-  (let* ([source-stx (or stx sub-stx)]
+  (let* ([source-stx (or stx sub-stx within-stx)]
          [who (or who
                   (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
                     (if (identifier? maybe-id) (syntax-e maybe-id) '?)))]
@@ -76,6 +78,9 @@ TODO
                  '("at" maybe) (and sub-stx
                                     (error-print-source-location)
                                     (format "~.s" (syntax->datum sub-stx)))
+                 '("within" maybe) (and within-stx
+                                        (error-print-source-location)
+                                        (format "~.s" (syntax->datum within-stx)))
                  '("in" maybe) (and stx
                                     (error-print-source-location)
                                     (format "~.s" (syntax->datum stx)))
@@ -87,7 +92,8 @@ TODO
     (raise
      (exn:fail:syntax message
                       (current-continuation-marks)
-                      (cond [sub-stx (cons sub-stx extra-stxs)]
+                      (cond [within-stx (cons within-stx extra-stxs)]
+                            [sub-stx (cons sub-stx extra-stxs)]
                             [stx (cons stx extra-stxs)]
                             [else extra-stxs])))))
 
