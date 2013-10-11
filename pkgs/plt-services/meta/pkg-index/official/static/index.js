@@ -84,13 +84,18 @@ $( document ).ready(function() {
             else {
                 return [tag, " "]; } } ) ));
 
-        // xxx show add and delete buttons
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
-            return [ $('<tr>').append( $('<td>').html(v),
+            return [ $('<tr>').append( $('<td>').html("").append(
+                v, (mypkg_p ? ["&nbsp;", jslink( "[x]", function () { submit_remove_version(v); }) ] : "") ),
                                        $('<td>').html(vo['source']) ),
                      $('<tr>').append( $('<td>').html(""),
                                        $('<td>').html(vo['checksum']) ),
-                     " "]; } ) )
+                     " "]; } ) );
+        if ( mypkg_p ) {
+            $( "#pi_add_version_row" ).show(); }
+        else {
+            $( "#pi_add_version_row" ).hide(); }
+
         active_info = pkgi; };
 
     function submit_remove_tag ( tag ) {
@@ -143,6 +148,29 @@ $( document ).ready(function() {
         if (e.which == 13) { submit_add_author (); } } );
     $( "#pi_add_author_button" ).click( function (e) { submit_add_author (); } );
 
+    function submit_remove_version ( version ) {
+        dynamic_pkgsend( "/jsonp/package/version/del", { version: version } );
+
+        delete active_info['versions'][version];
+
+        update_info( active_info ); }
+    function submit_add_version () {
+        var it = $( "#pi_add_version_text" );
+        var version = it.val();
+        it.val("");
+        it = $( "#pi_add_version_source_text" );
+        var source = it.val();
+        it.val("");
+
+        dynamic_pkgsend( "/jsonp/package/version/add", { version: version, source: source } );
+
+        active_info['versions'][version] = { source: source, checksum: "" };
+
+        update_info( active_info ); }
+    $( "#pi_add_version_source_text" ).keypress( function (e) {
+        if (e.which == 13) { submit_add_version (); } } );
+    $( "#pi_add_version_button" ).click( function (e) { submit_add_version (); } );
+
     var search_terms = { };
 
     function clear_terms () {
@@ -185,7 +213,7 @@ $( document ).ready(function() {
             // thing, particularly with the Back button because we
             // don't add the tags in the same order the user add them
             // in. We could do that though.
-            // console.log("hash changed beneath me!"); 
+            // console.log("hash changed beneath me!");
             return 42; } });
 
     function filterlink ( text, tclass, f ) {
