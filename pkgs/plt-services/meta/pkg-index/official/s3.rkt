@@ -11,7 +11,7 @@
   (make-directory* (path-only p)))
 
 (define s3-config (build-path (find-system-path 'home-dir) ".s3cfg-plt"))
-(define s3-bucket "pkg.racket-lang.org")
+(define s3-bucket "pkgs.racket-lang.org")
 
 (define static.gz-path (path-add-suffix static-path ".gz"))
 

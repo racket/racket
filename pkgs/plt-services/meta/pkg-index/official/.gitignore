@@ -1,7 +1,3 @@
 /root
-/static/pkgs
-/static/pkg
-/static/pkgs-all
-*json
-/static/atom.xml
-/static.gz
+/static-gen
+/static-gen.gz

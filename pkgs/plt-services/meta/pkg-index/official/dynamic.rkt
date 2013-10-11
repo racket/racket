@@ -53,9 +53,11 @@
                     (package-info p)
                     #hash()))
        (define new-pi (hash-deep-merge pi more-pi))
-       (define updated-pi (let ([now (current-seconds)])
-                            (for/fold ([pi new-pi]) ([k (in-list '(last-edit last-checked last-updated))])
-                              (hash-set pi k now))))
+       (define updated-pi
+         (let ([now (current-seconds)])
+           (for/fold ([pi new-pi]) 
+               ([k (in-list '(last-edit last-checked last-updated))])
+             (hash-set pi k now))))
        (package-info-set! p updated-pi)
        (signal-update! (list p)))
      (response/sexpr #t)]))
@@ -379,7 +381,7 @@
   (printf "launching on port ~a\n" port)
   (signal-static! empty)
   (thread
-   (λ ()     
+   (λ ()
      (forever
       (sleep (* 24 60 60))
       (signal-update! empty))))

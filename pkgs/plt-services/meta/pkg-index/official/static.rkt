@@ -2,6 +2,8 @@
 (require web-server/http
          web-server/dispatch
          racket/file
+         racket/port
+         racket/system
          racket/match
          json
          racket/date
@@ -239,13 +241,25 @@
   (define (cache url file)
     (define p (build-path static-path file))
     (make-directory* (path-only p))
-    (with-output-to-file p
-      #:exists 'replace
-      (λ () ((response-output (main-dispatch (url->request url))) (current-output-port))))
-    (with-output-to-file (path-add-suffix p #".json")
-      #:exists 'replace
-      (λ () (write-json (convert-to-json (file->value p)))))
+
+    (define bs
+      (with-output-to-bytes
+       (λ ()
+         ((response-output (main-dispatch (url->request url)))
+          (current-output-port)))))
+    (unless (and (file-exists? p)
+                 (bytes=? bs (file->bytes p)))
+      (with-output-to-file p
+        #:exists 'replace
+        (λ () (display bs)))
+      (with-output-to-file (path-add-suffix p #".json")
+        #:exists 'replace
+        (λ () (write-json (convert-to-json (file->value p))))))
     (void))
+
+  (system (format "cp -pr ~a/* ~a/"
+                  static.src-path
+                  static-path))
 
   (cache "/atom.xml" "atom.xml")
   (cache "/pkgs" "pkgs")

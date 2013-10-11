@@ -27,7 +27,8 @@
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
-(define static-path (build-path src "static"))
+(define static.src-path (build-path src "static"))
+(define static-path (build-path src "static-gen"))
 
 (define (package-list)
   (sort (map path->string (directory-list pkgs-path))
