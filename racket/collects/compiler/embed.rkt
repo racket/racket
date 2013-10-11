@@ -964,18 +964,19 @@
                                             (orig name rel-to stx load?)))))])])
            (current-module-name-resolver embedded-resolver))))))
 
-(define (ss<->rkt path)
+(define (ss<->rkt path mk-full)
   (cond
    [(regexp-match? #rx#"[.]ss$" path)
-    (ss<->rkt (path-replace-suffix path #".rkt"))]
+    (ss<->rkt (path-replace-suffix path #".rkt") mk-full)]
    [(regexp-match? #rx#"[.]rkt$" path)
-    (if (file-exists? path)
-        path
-        (let ([p2 (path-replace-suffix path #".ss")])
-          (if (file-exists? path)
+    (define full-path (mk-full path))
+    (if (file-exists? full-path)
+        full-path
+        (let ([p2 (mk-full (path-replace-suffix path #".ss"))])
+          (if (file-exists? p2)
               p2
-              path)))]
-   [else path]))
+              full-path)))]
+   [else (mk-full path)]))
 
 (define (path-extra-suffix p sfx)
   ;; Library names may have a version number preceded
@@ -1151,11 +1152,13 @@
                                                                                                `(lib ,(car s) ,@(reverse (cdr s)))))))
                                                                                    p)])
                                                                         (ss<->rkt
-                                                                         (apply collection-file-path
-                                                                                (cadr p)
-                                                                                (if (null? (cddr p))
-                                                                                    (list "mzlib")
-                                                                                    (cddr p)))))]
+                                                                         (cadr p)
+                                                                         (lambda (file)
+                                                                           (apply collection-file-path
+                                                                                  file
+                                                                                  (if (null? (cddr p))
+                                                                                      (list "mzlib")
+                                                                                      (cddr p))))))]
                                                                      [(and (list? p)
                                                                            (eq? 'module (car p)))
                                                                       sym]

@@ -114,12 +114,29 @@
                                             (if (regexp-match? #rx"[./]" s)
                                                 s
                                                 (string-append s "/main.rkt"))))])
-                 (apply collection-file-path
-                        (last strs)
-                        (if (and (null? (cddr p))
-                                 (null? (cdr strs)))
-                            (list "mzlib")
-                            (append (cddr p) (drop-right strs 1)))))]
+                 (let ([file (last strs)]
+                       [coll (if (and (null? (cddr p))
+                                      (null? (cdr strs)))
+                                 (list "mzlib")
+                                 (append (cddr p) (drop-right strs 1)))])
+                   (let ([file (if (regexp-match? #rx#"[.]ss$" file)
+                                   ;; normalize to ".rkt":
+                                   (path-replace-suffix file #".rkt")
+                                   file)])
+                     (let ([p (apply collection-file-path
+                                     file
+                                     coll)])
+                       (cond
+                        [(and (regexp-match? #rx#"[.]rkt$" file)
+                              (not (file-exists? p)))
+                         ;; Try ".ss":
+                         (define p2 (apply collection-file-path
+                                           (path-replace-suffix file #".ss")
+                                           coll))
+                         (if (file-exists? p2)
+                             p2
+                             p)]
+                        [else p])))))]
               [(and (list? p)
                     ((length p) . = . 3)
                     (eq? 'module (car p))
