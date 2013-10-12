@@ -635,6 +635,26 @@ Returns the currently active tab.
   Switches to the previous tab.
 }
 
+@defmethod[(move-current-tab-right) void?]{
+  Swaps the current tab with its right-hand neighbor.
+}
+
+@defmethod[(move-current-tab-left) void?]{
+  Swaps the current tab with its left-hand neighbor.
+}
+
+@defmethod[(reorder-tabs [tab-order (listof exact-nonnegative-integer?)]) void?]{
+  Reorders the tabs according to @racket[tab-order].
+                                 
+  Each element in @racket[tab-order] identifies a tab by its position in the list
+  @method[drracket:unit:frame<%> get-tabs], and the position of this element identifies
+  the new position of the tab.
+  
+  For example, considering that there are only 3 tabs open, 
+  @racket[(send a-drracket-frame reorder-tabs '(2 1 0))]
+  swaps the first and last tabs, leaving the middle one unchanged.
+}
+
 @defmethod[#:mode public-final (close-current-tab) void?]{
   Closes the current tab, making some other tab visible.
   If there is only one tab open, this method does nothing.

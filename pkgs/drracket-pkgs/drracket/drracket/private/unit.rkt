@@ -3056,7 +3056,52 @@
       
       (define/private (change-to-delta-tab dt)
         (change-to-nth-tab (modulo (+ (send current-tab get-i) dt) (length tabs))))
-      
+
+      ;; Re-orders the tabs according to the specified order
+      (define/public (reorder-tabs tab-order)
+        (unless (and
+                  ((listof exact-nonnegative-integer?) tab-order)
+                  (equal? (sort tab-order <)
+                          (range (length tabs))))
+          (raise-argument-error 'reorder-tabs 
+                 "list of unique integers from 0 to n where n is the current number of tabs"
+                 tab-order))
+        (begin-container-sequence)
+        (define-values (new-tabs-rev new-labels-rev)
+          (for/fold ([new-tabs '()]
+                     [new-labels '()]
+                     )([new-i (in-naturals)]
+                       [old-i tab-order])
+            (define t (list-ref tabs old-i))
+            (send t set-i new-i)
+            (values (cons t new-tabs)
+                    (cons (send tabs-panel get-item-label old-i)
+                          new-labels))))
+        (set! tabs (reverse new-tabs-rev))
+        (send tabs-panel set (reverse new-labels-rev))
+        (send tabs-panel set-selection (send current-tab get-i))
+        (end-container-sequence)
+        (update-menu-bindings)
+        (update-tabs-labels))
+
+      ;; Swaps the current tab with its right-hand neighbor
+      (define/public (move-current-tab-right)
+        (define i (send current-tab get-i))
+        (unless (= i (- (length tabs) 1))
+          (reorder-tabs
+           (append (range i)
+                   (list (+ i 1) i)
+                   (range (+ i 2) (length tabs))))))
+
+      ;; Swaps the current tab with its left-hand neighbor
+      (define/public (move-current-tab-left)
+        (define i (send current-tab get-i))
+        (unless (= i 0)
+          (reorder-tabs
+           (append (range (- i 1))
+                   (list i (- i 1))
+                   (range (+ i 1) (length tabs))))))
+
       (define/public-final (close-current-tab)
         (cond
           [(null? tabs) (void)]
