@@ -1,8 +1,5 @@
-// xxx change this once the new dns entries are in
-//var dynamic_host = "pkgd.racket-lang.org";
-//var dynamic_port = 443;
-var dynamic_host = "plt-etc.byu.edu";
-var dynamic_port = 9004;
+var dynamic_host = "pkgd.racket-lang.org";
+var dynamic_port = 443;
 
 function dynamic_url ( u ) {
     return "https://" + dynamic_host + ":" + dynamic_port + u + "?callback=?"; }
