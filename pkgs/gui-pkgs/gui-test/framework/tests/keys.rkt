@@ -128,6 +128,19 @@
                     (list '((#\f control)) '((right)))
                     (list '((#\f control)) '((right))))
      
+     (make-key-spec/allplatforms (build-buff-spec "\n\n\n\n" 2 2)
+                                 (build-buff-spec "\n" 0 0)
+                                 '(((#\x control) (#\o control))))
+     (make-key-spec/allplatforms (build-buff-spec "  \n  \n  \n  \n" 7 7)
+                                 (build-buff-spec "  \n" 1 1)
+                                 '(((#\x control) (#\o control))))
+     (make-key-spec/allplatforms (build-buff-spec "\n\n\n\n" 0 0)
+                                 (build-buff-spec "\n" 0 0)
+                                 '(((#\x control) (#\o control))))
+     (make-key-spec/allplatforms (build-buff-spec "abcdef\n\n\n\nxyzpdq\n" 8 8)
+                                 (build-buff-spec "abcdef\n\nxyzpdq\n" 7 7)
+                                 '(((#\x control) (#\o control))))
+     
      ;; TeX-compress tests
      (make-key-spec/allplatforms 
       (build-buff-spec "\\ome" 4 4)

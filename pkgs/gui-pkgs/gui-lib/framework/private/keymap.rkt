@@ -458,65 +458,58 @@
            
            [collapse-newline
             (λ (edit event)
-              (letrec ([find-nonwhite
-                        (λ (pos d offset)
-                          (let/ec escape
-                            (let ([max (if (> offset 0)
-                                           (send edit last-position)
-                                           0)])
-                              (let loop ([pos pos])
-                                (if (= pos max)
-                                    (escape pos)
-                                    (let ([c (send edit get-character (+ pos offset))])
-                                      (cond
-                                        [(char=? #\newline c)
-                                         (loop (+ pos d))
-                                         (escape pos)]
-                                        [(char-whitespace? c) 
-                                         (loop (+ pos d))]
-                                        [else pos])))))))])
-                (let ([sel-start (send edit get-start-position)]
-                      [sel-end (send edit get-end-position)])
-                  (when (= sel-start sel-end)
-                    (let* ([pos-line (send edit position-line sel-start #f)]
-                           [pos-line-start (send edit line-start-position pos-line)]
-                           [pos-line-end (send edit line-end-position pos-line)]
-                           
-                           [whiteline?
-                            (let loop ([pos pos-line-start])
-                              (if (>= pos pos-line-end)
-                                  #t
-                                  (and (char-whitespace? (send edit get-character pos))
-                                       (loop (add1 pos)))))]
-                           
-                           [start (find-nonwhite pos-line-start -1 -1)]
-                           [end (find-nonwhite pos-line-end 1 0)]
-                           
-                           [start-line 
-                            (send edit position-line start #f)]
-                           [start-line-start
-                            (send edit line-start-position start-line)]
-                           [end-line
-                            (send edit position-line end #f)]
-                           [end-line-start
-                            (send edit line-start-position (add1 end-line))])
-                      (cond
-                        [(and whiteline?
-                              (= start-line pos-line)
-                              (= end-line pos-line))
-                         ; Special case: just delete this line
-                         (send edit delete pos-line-start (add1 pos-line-end))]
-                        [(and whiteline? (< start-line pos-line))
-                         ; Can delete before & after
-                         (send* edit 
-                           (begin-edit-sequence)
-                           (delete (add1 pos-line-end) end-line-start)
-                           (delete start-line-start pos-line-start)
-                           (end-edit-sequence))]
-                        [else
-                         ; Only delete after
-                         (send edit delete (add1 pos-line-end) 
-                               end-line-start)]))))))]
+              (define (find-nonwhite pos d offset)
+                (define done (if (= offset -1) 0 (send edit last-position)))
+                (let/ec escape
+                  (let loop ([pos pos])
+                    (cond
+                      [(= pos done) (escape pos)]
+                      [else
+                       (define c (send edit get-character (+ pos offset)))
+                       (cond
+                         [(char=? #\newline c)
+                          (loop (+ pos d))
+                          (escape pos)]
+                         [(char-whitespace? c)
+                          (loop (+ pos d))]
+                         [else pos])]))))
+              (define sel-start (send edit get-start-position))
+              (define sel-end (send edit get-end-position))
+              (when (= sel-start sel-end)
+                (define pos-para (send edit position-paragraph sel-start #f))
+                (define pos-para-start (send edit paragraph-start-position pos-para))
+                (define pos-para-end (send edit paragraph-end-position pos-para))
+                       
+                (define whitepara?
+                  (let loop ([pos pos-para-start])
+                    (if (>= pos pos-para-end)
+                        #t
+                        (and (char-whitespace? (send edit get-character pos))
+                             (loop (add1 pos))))))
+                       
+                (define start (find-nonwhite pos-para-start -1 -1))
+                (define end (find-nonwhite pos-para-end 1 0))
+                
+                (define start-para (send edit position-paragraph start #f))
+                (define start-para-start (send edit paragraph-start-position start-para))
+                (define end-para (send edit position-paragraph end #f))
+                (define end-para-start (send edit paragraph-start-position (add1 end-para)))
+                (cond
+                  [(and whitepara?
+                        (= start-para pos-para)
+                        (= end-para pos-para))
+                   ; Special case: just delete this para
+                   (send edit delete pos-para-start (add1 pos-para-end))]
+                  [(and whitepara? (< start-para pos-para))
+                   ; Can delete before & after
+                   (send* edit 
+                     (begin-edit-sequence)
+                     (delete (add1 pos-para-end) end-para-start)
+                     (delete start-para-start pos-para-start)
+                     (end-edit-sequence))]
+                  [else
+                   ; Only delete after
+                   (send edit delete (add1 pos-para-end) end-para-start)])))]
            
            [open-line
             (λ (edit event)
