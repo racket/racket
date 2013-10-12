@@ -1371,7 +1371,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	
           return k;
         } else
-          return k + (PTR_TO_LONG(o) >> 2);
+          return k + PTR_TO_LONG(o);
       }
     }
   case scheme_box_type:
@@ -1496,7 +1496,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	
 	return k + (MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC);
       } else
-	return k + (PTR_TO_LONG(o) >> 2);
+	return k + PTR_TO_LONG(o);
     }
 # endif
   case scheme_resolved_module_path_type:
@@ -1532,7 +1532,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       if (h1)
         return h1(o, k, hi);
       else
-        return k + (PTR_TO_LONG(o) >> 2);
+        return k + PTR_TO_LONG(o);
     }
   }
 
