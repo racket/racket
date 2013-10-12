@@ -17,12 +17,15 @@ This test checks:
     that it opens, that it catches a GC message, and that
     it closes)
 
+  - that the reorder tabs method doesn't break
+
 |#
 
 (require "private/drracket-test-util.rkt"
          drracket/private/local-member-names
          racket/gui/base
          framework
+	 rackunit
          string-constants)
 
 (define (main)
@@ -40,6 +43,7 @@ This test checks:
      #:prefs '([plt:framework-pref:drracket:online-compilation-default-on #f]) 
      (λ ()
        (define drr (wait-for-drracket-frame))
+       (check-reorder-tabs drr)
        (check-log-panel drr)
        (check-menus drr)
        
@@ -168,6 +172,25 @@ This test checks:
   
   (process-container (send frame get-menu-bar))
   (check-shortcuts))
+
+(define (check-reorder-tabs drr)
+  (test:menu-select "File" "New")
+  (define drr2 (wait-for-new-frame drr))
+
+  (send drr2 create-new-tab)
+  (send drr2 create-new-tab)
+  (define tabs (send drr2 get-tabs))
+
+  (send drr2 reorder-tabs (reverse (range (length tabs))))
+  (define new-tabs (send drr2 get-tabs))
+  (check-equal? new-tabs (reverse tabs))
+
+  (send drr2 reorder-tabs (reverse (range (length tabs))))
+  (define new-tabs2 (send drr2 get-tabs))
+  (check-equal? new-tabs2 tabs)
+
+  (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Window"))
+  (wait-for-new-frame drr2))
 
 (define (check-log-panel drr)
   
