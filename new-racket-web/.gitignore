@@ -44,3 +44,6 @@ dwsync.xml
 .idea
 
 output
+*/compiled
+compiled/
+web/out
