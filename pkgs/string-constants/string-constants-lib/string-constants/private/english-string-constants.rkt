@@ -854,6 +854,8 @@ please adhere to these guidelines:
  (most-recent-window "Most Recent Window")
   (next-tab "Next Tab")
   (prev-tab "Previous Tab")
+  (move-current-tab-right "Move Tab &Right")
+  (move-current-tab-left "Move Tab &Left")
   ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
   (tab-i "Tab ~a: ~a")
 
