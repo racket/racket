@@ -55,6 +55,10 @@
      pkg-ht pkg-name
      (hash-set* ht
                 'name pkg-name
+                'last-updated (hash-ref ht 'last-updated (current-seconds))
+                'last-checked (hash-ref ht 'last-checked (current-seconds))
+                'last-edit (hash-ref ht 'last-edit (current-seconds))
+                'versions (hash-ref ht 'versions empty)
                 'ring (hash-ref ht 'ring 2)
                 'tags (hash-ref ht 'tags empty)
                 'authors (author->list (hash-ref ht 'author "")))))

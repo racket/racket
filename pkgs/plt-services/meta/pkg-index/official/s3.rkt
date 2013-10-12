@@ -28,7 +28,10 @@
     (define gf (build-path static.gz-path rf))
     (make-parent-directory* gf)
 
-    (define g.time (file-or-directory-modify-seconds gf))
+    (define g.time
+      (if (file-exists? gf)
+        (file-or-directory-modify-seconds gf)
+        -inf.0))
 
     (when (> f.time g.time)
       (printf "gzipping ~a\n" f)

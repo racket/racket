@@ -5,8 +5,8 @@ rsync -a --progress -h --delete --exclude root --exclude static-gen --exclude st
 rsync -a --progress -h --delete plt-etc:local/galaxy-roots/planet-compat/ planet-compat/root/
 rsync -a --progress -h --delete plt-etc:local/galaxy-roots/official/ official/root/
 
-rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen official/static-gen 
-rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen.gz official/static-gen.gz
+rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen/ official/static-gen 
+rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen.gz/ official/static-gen.gz
 
 # official
 rsync -a --progress -h --delete --exclude root --exclude compiled --exclude doc ../../meta/pkg-index/ plt-etc:local/galaxy/meta/pkg-index/
