@@ -747,6 +747,24 @@
                         (when frame
                           (send frame next-tab))))])
      
+     (new menu-item% 
+          [parent windows-menu]
+          [label (string-constant move-current-tab-right)]
+          [demand-callback dc]
+          [callback (λ (item _) 
+                      (let ([frame (find-frame item)])
+                        (when frame
+                          (send frame move-current-tab-right))))])
+     
+     (new menu-item% 
+          [parent windows-menu]
+          [label (string-constant move-current-tab-left)]
+          [demand-callback dc]
+          [callback (λ (item _) 
+                      (let ([frame (find-frame item)])
+                        (when frame
+                          (send frame move-current-tab-left))))])
+     
      (let ([frame (find-frame windows-menu)])
        (unless (or (not frame) (= 1 (send frame get-tab-count)))
          (unless (eq? (system-type) 'macosx)
