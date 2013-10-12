@@ -51,6 +51,22 @@ static void register_traversers(void);
 #define to_signed_hash(v) ((intptr_t)v)
 #define to_unsigned_hash(v) ((uintptr_t)v)
 
+#ifdef OBJHEAD_HAS_HASH_BITS
+/* In 3m mode, we only have 14 bits of hash code in the
+   Scheme_Object header. But the GC-level object header has some
+   leftover bits (currently 9, 11, 41, or 43, depending on the
+   platform), so use those, too. That only works for GCable
+   objects, so we use 1 of our 14 bits to indicate whether the
+   other bits are present. */
+# define GCABLE_OBJ_HASH_BIT 0x0004
+# define OBJ_HASH_USELESS_BITS 3
+#else
+# define GCABLE_OBJ_HASH_BIT 0
+# define OBJ_HASH_USELESS_BITS 2
+#endif
+#define OBJ_HASH_USEFUL_BITS (16 - OBJ_HASH_USELESS_BITS)
+#define OBJ_HASH_USEFUL_MASK ((1 << OBJ_HASH_USEFUL_BITS)-1)
+
 #ifdef MZ_PRECISE_GC
 /* keygen race conditions below are "ok", because keygen is randomness
    used to create a hashkey. Technically, a race condition allows
@@ -59,7 +75,7 @@ static void register_traversers(void);
    that only one thread at a time sets a hash code in a specific
    object, though, and watch out for a race with JIT-generated code
    running in a future and setting flags on pairs. */
-SHARED_OK static uintptr_t keygen;
+SHARED_OK static uintptr_t keygen = GCABLE_OBJ_HASH_BIT;
 
 XFORM_NONGCING static MZ_INLINE
 uintptr_t PTR_TO_LONG(Scheme_Object *o)
@@ -76,17 +92,11 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
     uintptr_t local_keygen = keygen;
     v |= (short)local_keygen;
 #ifdef OBJHEAD_HAS_HASH_BITS
-    /* In 3m mode, we only have 14 bits of hash code in the
-       Scheme_Object header. But the GC-level object header has some
-       leftover bits (currently 9, 11, 41, or 43, depending on the
-       platform), so use those, too. That only works for GCable
-       objects, so we use 1 of our 14 bits to indicate whether the
-       other bit are present. */
     if (GC_is_allocated(o)) {
       OBJHEAD_HASH_BITS(o) = (local_keygen >> 16);
-      v |= 0x4000;
+      v |= GCABLE_OBJ_HASH_BIT;
     } else
-      v &= ~0x4000;
+      v &= ~GCABLE_OBJ_HASH_BIT;
 #endif
     if (!v) v = 0x1AD0;
 #ifdef MZ_USE_FUTURES
@@ -99,11 +109,11 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
     } else
 #endif
       o->keyex = v;
-    keygen += 4;
+    keygen += (1 << OBJ_HASH_USELESS_BITS);
   }
 
 #ifdef OBJHEAD_HAS_HASH_BITS
-  if (v & 0x4000)
+  if (v & GCABLE_OBJ_HASH_BIT)
     bits = OBJHEAD_HASH_BITS(o);
   else
 #endif
@@ -112,7 +122,7 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
   /* We need to drop the low two bits of `v', which
      are used for non-hashing purposes in some types. */
 
-  return (bits << 14) | ((v >> 2) & 0x3FFF);
+  return (bits << OBJ_HASH_USEFUL_BITS) | ((v >> OBJ_HASH_USELESS_BITS) & OBJ_HASH_USEFUL_MASK);
 }
 #else
 # define PTR_TO_LONG(p) ((uintptr_t)(p)>>2)
