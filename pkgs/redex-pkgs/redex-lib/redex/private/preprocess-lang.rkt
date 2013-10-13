@@ -1,8 +1,12 @@
 #lang racket/base
-(require racket/contract
+(require (for-syntax racket/base)
+         racket/bool
+         racket/contract
          racket/list
+         racket/math
          racket/match
          racket/set
+         "build-nt-property.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt")
 
@@ -38,7 +42,7 @@
                (filter-edges edges non-cyclic)))
   ;; rhs sort
   (define sorted-right
-    (sort-nt-terms cyclic
+    (sort-productions cyclic
                    cyclic-nts))
   (values sorted-left
           sorted-right))
@@ -136,18 +140,6 @@
              sub-pats)]
      [(? (compose not pair?)) #f])))
       
-;; recursive-rhss : lang (hash[symbol] -o> symbol)
-;;                  -> (hash[symbol] -o> (assoclist rhs bool))
-(define (recursive-rhss cyclic recs)
-  (for/hash ([cur-nt (in-list cyclic)])
-    (match-define (nt cur-name cur-rhss) cur-nt)
-    (define rhss
-      (for/list ([cur-rhs (in-list cur-rhss)])
-        (cons cur-rhs
-              (calls-rec? (rhs-pattern cur-rhs)
-                          recs))))
-    (values cur-name rhss)))
-
 ;; topo-sort : lang (hash[symbol] -o> (setof symbol)) -> lang
 (define (topo-sort lang edges)
   (define (find-top rem edges)
@@ -178,23 +170,55 @@
          lang))
 
 
-;; sort-nt-terms : lang, (hash[symbol] -o> (setof symbol)) -> lang
-(define (sort-nt-terms cyclic nts)
-  (define recs (recursive-rhss cyclic nts))
-  (for/list ([cur-nt (in-list cyclic)])
-    (match cur-nt
-      [(nt name rhs)
-       (define rec-nts (hash-ref recs name))
-       (nt name
-           (sort rhs
-                 (λ (r1 r2)
-                    (and (not (cdr (assoc r1 rec-nts)))
-                         (cdr (assoc r2 rec-nts))))))])))
+;; sort-productions : lang, (hash[symbol] -o> (setof symbol)) -> lang
+(define (sort-productions cyclic nts)
+  (define table (terminal-distance-table cyclic nts))
+  (define resp
+    (for/list ([cur-nt (in-list cyclic)])
+     (match cur-nt
+       [(nt name productions)
+        (define (max-terminal-distance pat)
+          (define referenced-nts (directly-used-nts pat))
+          (define maximum
+            (for/max ([cur-name (in-set referenced-nts)])
+              (if (symbol=? cur-name name)
+                  +inf.0
+                  (hash-ref table cur-name 0))))
+          (if (and (negative? maximum)
+                   (infinite? maximum))
+              0
+              maximum))
+        (nt name
+            (sort productions
+                  <
+                  #:key (compose max-terminal-distance rhs-pattern)
+                  #:cache-keys? #t))])))
+  resp)
+
+;; terminal-distance-table : lang (hash[symbol] -o> symbol)
+;;                         -> (hash[symbol] -o> (U natural +inf)
+(define (terminal-distance-table cyclic recs)
+  (define (terminal-distance pat this-nt-name table)
+    (define referenced-nts (directly-used-nts pat))
+    (define maximum
+      (for/max ([cur-name (in-set referenced-nts)])
+        (cond [(symbol=? cur-name this-nt-name)
+               +inf.0]
+              [else
+               (hash-ref table cur-name 0)])))
+    (or (and (infinite? maximum)
+             (negative? maximum)
+             0)
+        (add1 maximum)))
+  (build-nt-property/name cyclic
+                          terminal-distance
+                          +inf.0
+                          min))
 
 ;; directly-used-nts : pat -> (setof symbol)
 (define (directly-used-nts pat)
   (match pat
-    [`(nt id) (set nt)]
+    [`(nt ,id) (set id)]
     [(or `(name ,n ,p)
          `(mismatch-name ,n ,p))
      (directly-used-nts p)]
@@ -268,3 +292,20 @@
       (set-union (f x) s))
    (set)
    l))
+
+;; Short circuits for +inf
+(define-syntax (for/max stx)
+  (syntax-case stx ()
+    [(_ clauses . defs+exprs)
+     (with-syntax ([original stx])
+       #'(for/fold/derived original
+                           ([current-max -inf.0])
+                           clauses
+           #:break (and (infinite? current-max)
+                        (positive? current-max))
+           (define maybe-new-max
+             (let () . defs+exprs))
+           (if (> maybe-new-max current-max)
+               maybe-new-max
+               current-max)))]))
+
