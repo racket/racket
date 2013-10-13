@@ -6,7 +6,7 @@
  (with-fake-root
   (shelly-case
    "reading and writing configs"
-   $ "raco pkg config catalogs" =stdout> "https://pkg.racket-lang.org\nhttps://planet-compat.racket-lang.org\n"
+   $ "raco pkg config catalogs" =stdout> "http://pkgs.racket-lang.org\nhttp://planet-compats.racket-lang.org\n"
    $ "raco pkg config -u --set catalogs http://localhost:9000"
    $ "raco pkg config -u catalogs" =stdout> "http://localhost:9000\n"
 

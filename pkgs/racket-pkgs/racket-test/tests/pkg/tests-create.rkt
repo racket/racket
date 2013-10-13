@@ -45,6 +45,8 @@
    (shelly-create "pkg-test3" "zip")
    (shelly-create "pkg-test3-v2" "zip")
    (shelly-create "pkg-test3-v3" "zip")
+   (shelly-create "pkg-b-second" "plt")
+   (shelly-create "pkg-a-first" "plt")
 
    $ "raco pkg create --format txt test-pkgs/pkg-test1" =exit> 1
 

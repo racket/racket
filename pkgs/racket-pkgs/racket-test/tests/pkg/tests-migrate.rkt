@@ -5,11 +5,6 @@
          "util.rkt")
 
 (pkg-tests
- (shelly-case
-  "migrate packages"
-  $ "raco pkg create --format plt test-pkgs/pkg-b-second"
-  $ "raco pkg create --format plt test-pkgs/pkg-a-first")
-
  (with-fake-root
   (shelly-case
    "install package, copy to other, remove, then migrate"
