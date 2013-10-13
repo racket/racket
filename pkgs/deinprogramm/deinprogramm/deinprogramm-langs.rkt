@@ -12,6 +12,8 @@
 	 mzlib/list
 	 racket/match
 	 racket/path
+         (only-in racket/list add-between last)
+         racket/contract
 	 mzlib/struct
 	 mzlib/compile
 	 drscheme/tool
@@ -79,8 +81,10 @@
       ;; tracing? : boolean
       ;; teachpacks : (listof require-spec)
       (define-struct (deinprogramm-lang-settings drscheme:language:simple-settings)
-	(writing-style tracing? teachpacks))
+        (writing-style tracing? teachpacks))
       (define deinprogramm-lang-settings->vector (make-->vector deinprogramm-lang-settings))
+      (define deinprogramm-teachpacks-field-index 
+        (+ (procedure-arity drscheme:language:simple-settings) 2))
       
       (define image-string "<image>")
       
@@ -829,6 +833,9 @@
           (inherit-field reader-module)
           (define/override (get-reader-module) reader-module)
           (define/override (get-metadata modname settings)
+            (define parsed-tps 
+              (marshall-teachpack-settings
+               (deinprogramm-lang-settings-teachpacks settings)))
             (string-append
              ";; Die ersten drei Zeilen dieser Datei wurden von DrRacket eingefügt. Sie enthalten Metadaten\n"
              ";; über die Sprachebene dieser Datei in einer Form, die DrRacket verarbeiten kann.\n"
@@ -836,8 +843,13 @@
                      reader-module
                      `((modname ,modname)
                        (read-case-sensitive ,(drscheme:language:simple-settings-case-sensitive settings))
-                       (teachpacks ,(deinprogramm-lang-settings-teachpacks settings))
-                       (deinprogramm-settings ,(deinprogramm-lang-settings->vector settings))))))
+                       (teachpacks ,parsed-tps)
+                       (deinprogramm-settings 
+                        ,(for/vector ([e (in-vector (deinprogramm-lang-settings->vector settings))]
+                                      [i (in-naturals)])
+                           (cond
+                             [(= i deinprogramm-teachpacks-field-index) parsed-tps]
+                             [else e])))))))
           
           (inherit default-settings)
           (define/override (metadata->settings metadata)
@@ -847,9 +859,43 @@
                   (let ([settings-list (vector->list (cadr ssv))])
                     (if (equal? (length settings-list)
                                 (procedure-arity make-deinprogramm-lang-settings))
-                        (apply make-deinprogramm-lang-settings settings-list)
+                        (apply make-deinprogramm-lang-settings 
+                               (for/list ([i (in-naturals)]
+                                          [e (in-list settings-list)])
+                                 (cond
+                                   [(= i deinprogramm-teachpacks-field-index)
+                                    (unmarshall-teachpack-settings e)]
+                                   [else e])))
                         (default-settings)))
                   (default-settings))))
+          
+          ;; these are used for the benefit of v5.3.6 and earlier drracket's
+          ;; specifically, those language doesn't work right with teachpack
+          ;; paths of the form (lib "a/b/c.rkt"), but they do with ones of the
+          ;; form (lib "c.rkt" "a" "b"), so we do that conversion here when
+          ;; sending out a file that might go into 5.3.6.
+          
+          (define/private (unmarshall-teachpack-settings obj)
+            (cond
+              [(list? obj)
+               (for/list ([obj (in-list obj)])
+                 (match obj
+                   [`(lib ,(? string? s1) ,(? string? s2) ...)
+                    `(lib ,(apply string-append (add-between (append s2 (list s1)) "/")))]
+                   [else obj]))]
+              [else obj]))
+          
+          (define/private (marshall-teachpack-settings obj)
+            (define (has-slashes? s) (regexp-match? #rx"/" s))
+            (cond
+              [(list? obj) 
+               (for/list ([obj (in-list obj)])
+                 (match obj
+                   [`(lib ,(? (and/c string? has-slashes?) s))
+                    (define split (regexp-split #rx"/" s))
+                    `(lib ,(last split) ,@(reverse (cdr (reverse split))))]
+                   [else obj]))]
+              [else obj]))
           
           (define/private (metadata->table metadata)
             (let ([p (open-input-string metadata)])

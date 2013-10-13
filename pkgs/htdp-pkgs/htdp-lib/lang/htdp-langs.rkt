@@ -54,6 +54,7 @@
       ;; teachpacks : (listof require-spec)
       (define-struct (htdp-lang-settings drscheme:language:simple-settings) (tracing? teachpacks))
       (define htdp-lang-settings->vector (make-->vector htdp-lang-settings))
+      (define teachpacks-field-index (+ (procedure-arity drscheme:language:simple-settings) 1))
       
       (define image-string "<image>")
       
@@ -619,6 +620,9 @@
           (inherit-field reader-module)
           (define/override (get-reader-module) reader-module)
           (define/override (get-metadata modname settings)
+            (define parsed-tps 
+              (marshall-teachpack-settings
+               (htdp-lang-settings-teachpacks settings)))
             (string-append
              (apply string-append
                     (map (λ (x) (string-append x "\n"))
@@ -628,20 +632,63 @@
                      `((modname ,modname)
                        (read-case-sensitive
                         ,(drscheme:language:simple-settings-case-sensitive settings))
-                       (teachpacks ,(htdp-lang-settings-teachpacks settings))
-                       (htdp-settings ,(htdp-lang-settings->vector settings))))))
+                       (teachpacks ,parsed-tps)
+                       (htdp-settings
+                        ,(for/vector ([e (in-vector (htdp-lang-settings->vector settings))]
+                                      [i (in-naturals)])
+                           (cond
+                             [(= i teachpacks-field-index) parsed-tps]
+                             [else e])))))))
           
           (inherit default-settings)
           (define/override (metadata->settings metadata)
-            (let* ([table (massage-metadata (metadata->table metadata))] ;; extract the table
-                   [ssv (assoc 'htdp-settings table)])
-              (if ssv
-                  (let ([settings-list (vector->list (cadr ssv))])
-                    (if (equal? (length settings-list)
-                                (procedure-arity make-htdp-lang-settings))
-                        (apply make-htdp-lang-settings settings-list)
-                        (default-settings)))
-                  (default-settings))))
+            (define table (massage-metadata (metadata->table metadata)))
+            (define ssv (assoc 'htdp-settings table))
+            (cond
+              [ssv
+               (define settings-list (vector->list (cadr ssv)))
+               (cond
+                 [(equal? (length settings-list)
+                          (procedure-arity make-htdp-lang-settings))
+                  (define new-settings-list
+                    (for/list ([i (in-naturals)]
+                               [e (in-list settings-list)])
+                      (cond
+                        [(= i teachpacks-field-index)
+                         (unmarshall-teachpack-settings e)]
+                        [else e])))
+                  (apply make-htdp-lang-settings new-settings-list)]
+                 [else
+                  (default-settings)])]
+              [else (default-settings)]))
+          
+          ;; these are used for the benefit of v5.3.6 and earlier drracket's
+          ;; specifically, those language doesn't work right with teachpack
+          ;; paths of the form (lib "a/b/c.rkt"), but they do with ones of the
+          ;; form (lib "c.rkt" "a" "b"), so we do that conversion here when
+          ;; sending out a file that might go into 5.3.6.
+          
+          (define/private (unmarshall-teachpack-settings obj)
+            (cond
+              [(list? obj)
+               (for/list ([obj (in-list obj)])
+                 (match obj
+                   [`(lib ,(? string? s1) ,(? string? s2) ...)
+                    `(lib ,(apply string-append (add-between (append s2 (list s1)) "/")))]
+                   [else obj]))]
+              [else obj]))
+          
+          (define/private (marshall-teachpack-settings obj)
+            (define (has-slashes? s) (regexp-match? #rx"/" s))
+            (cond
+              [(list? obj) 
+               (for/list ([obj (in-list obj)])
+                 (match obj
+                   [`(lib ,(? (and/c string? has-slashes?) s))
+                    (define split (regexp-split #rx"/" s))
+                    `(lib ,(last split) ,@(reverse (cdr (reverse split))))]
+                   [else obj]))]
+              [else obj]))
           
           (define/private (massage-metadata md)
             (if (and (list? md)
