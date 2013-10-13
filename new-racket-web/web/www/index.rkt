@@ -655,7 +655,7 @@ File, query and maybe fix existing reports.}}}
 
 ;; resources that are specific to the front page
 
-(define loud (copyfile (in-here "loud.png")))
+(define loud (copyfile (in-here "img/loud.png")))
 
 
 (define more.css

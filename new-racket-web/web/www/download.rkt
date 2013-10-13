@@ -8,8 +8,8 @@
         #:file "download/" #:part-of 'download]{
     @(render-download-page)})
 
-(define images (list (copyfile (in-here "download.png"))
-                     (copyfile (in-here "download-dark.png"))))
+(define images (list (copyfile (in-here "img/download.png"))
+                     (copyfile (in-here "img/download-dark.png"))))
 
 (provide download-button)
 (define (download-button)
