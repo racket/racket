@@ -119,9 +119,13 @@
                              (boolean? (car x))
                              (memq (cdr x) '(left top top-no-label right)))))
 
-(drr:set-default 'drracket:htdp:last-set-teachpacks
-                 '() 
-                 (listof (cons/c 'lib (listof string?))))
+;; call this 'multi-lib' because older versions of Racket didn't
+;; allow (lib "a/b/x.rkt") in the teaching languages, but instead
+;; insisted on (lib "x.rkt" "a" "b"). (We use the more compact
+;; form now because that's what lower-level primitives return to us)
+(preferences:set-default 'drracket:htdp:last-set-teachpacks/multi-lib
+                         '() 
+                         (listof (cons/c 'lib (listof string?))))
 (drr:set-default 'drracket:defs/ints-horizontal #f boolean?)
 
 (drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)

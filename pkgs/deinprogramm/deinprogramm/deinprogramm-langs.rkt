@@ -56,7 +56,7 @@
     (procedure-rename void '?))
 
   ;; adapted from collects/drracket/private/main.rkt
-  (preferences:set-default 'drscheme:deinprogramm:last-set-teachpacks
+  (preferences:set-default 'drracket:deinprogramm:last-set-teachpacks/multi-lib
                            '() 
                            (lambda (x)
                              (and (list? x)
@@ -113,7 +113,7 @@
              'none
 	     writing-style
              #f
-	     (preferences:get 'drscheme:deinprogramm:last-set-teachpacks)))
+	     (preferences:get 'drracket:deinprogramm:last-set-teachpacks/multi-lib)))
           
           (define/override (default-settings? s)
             (and (not (drscheme:language:simple-settings-case-sensitive s))
@@ -788,7 +788,7 @@
                                      removed
                                      (append removed (list tp-to-add)))))
 
-	       (preferences:set 'drscheme:deinprogramm:last-set-teachpacks new-tps)
+	       (preferences:set 'drracket:deinprogramm:last-set-teachpacks/multi-lib new-tps)
 	       (make-deinprogramm-lang-settings
 		(drscheme:language:simple-settings-case-sensitive settings)
 		(drscheme:language:simple-settings-printing-style settings)
@@ -802,7 +802,7 @@
              (lambda (settings name) 
                (let ([new-tps (filter (lambda (x) (not (equal? (tp-require->str x) name)))
                                       (deinprogramm-lang-settings-teachpacks settings))])
-                 (preferences:set 'drscheme:deinprogramm:last-set-teachpacks new-tps)
+                 (preferences:set 'drracket:deinprogramm:last-set-teachpacks/multi-lib new-tps)
                  (make-deinprogramm-lang-settings
                   (drscheme:language:simple-settings-case-sensitive settings)
                   (drscheme:language:simple-settings-printing-style settings)
@@ -814,7 +814,7 @@
                   (deinprogramm-lang-settings-tracing? settings)
                   new-tps)))
              (lambda (settings) 
-               (preferences:set 'drscheme:deinprogramm:last-set-teachpacks '())
+               (preferences:set 'drracket:deinprogramm:last-set-teachpacks/multi-lib '())
                (make-deinprogramm-lang-settings
                 (drscheme:language:simple-settings-case-sensitive settings)
                 (drscheme:language:simple-settings-printing-style settings)
