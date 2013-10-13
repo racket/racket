@@ -316,19 +316,7 @@
            integrated development environment, and many batteries-included @;
            libraries.}
         @; Ask google to not use the ODP description
-        #:extra-headers @list{@meta[name: "robots" content: "NOODP"]
-                              @;<!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
-                              @script[src: (copyfile (in-here "js/libs/modernizr-2.6.2.min.js"))]
-
-                              @script[src: "http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"]
-  @js{window.jQuery || document.write('<script src="@|jquery-js|"><\/script>')}
-
-                              @script[src: gumby-js]
-                              @script[src: plugins-js]
-                              @script[src: main-js]
-                              @css[gumby-css]
-                              @css[style]
-                              @css[scribble-css]}]{
+        #:extra-headers @list{@meta[name: "robots" content: "NOODP"]{
 @div[class: "navbar" gumby-fixed: "top" id: "nav1"]{
   @row{
    @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
@@ -561,11 +549,13 @@ File, query and maybe fix existing reports.}}}
     (set! button-ids+labels (cons (cons id txt) button-ids+labels))
     (a href: "#" id: id onclick: (list onclick "; return false;") title: tip
        nbsp)) ; empty, filled by JS code, so JS-less browsers won't see it
+  (define next (img src: (copyfile (in-here "img/next.png")) width: 10))
+  (define prev (img src: (copyfile (in-here "img/prev.png")) width: 10))
   (div class: 'slideshow
     (div class: 'buttonpanel
-      @button["<" "Previous example"  'rewindbutton  "rewind_show()"]
-      @button[">" "Next example"      'advancebutton "advance_show()"]
-      @button["?" "Explain this code" 'helpbutton "set_help(!help_showing)"]
+      @button[prev "Previous example"  'rewindbutton  "rewind_show()"]
+      @button[next "Next example"      'advancebutton "advance_show()"]
+      @button["?"  "Explain this code" 'helpbutton "set_help(!help_showing)"]
       (div class: 'hiddenhelp id: "helppanel" style: "display: none;"
         (div class: 'helpcontent
           @button["close" "Close help" 'closebutton "set_help(false)"]
@@ -628,7 +618,7 @@ File, query and maybe fix existing reports.}}}
       @(add-newlines
         (for/list ([id+label (in-list button-ids+labels)])
           (let ([id (car id+label)] [label (cdr id+label)])
-            @list{document.getElementById("@id").textContent = "@label"@";"})))
+            @list{document.getElementById("@id").innerHTML = '@label'@";"})))
     }))
 
 ;; TODO
@@ -661,6 +651,8 @@ File, query and maybe fix existing reports.}}}
 (define more.css
   @plain[#:referrer (λ (url) (link rel: "stylesheet" type: "text/css"
                                    href: url title: "default"))]{
+    @; TODO: from here to END it's css that should probably be removed;
+    @;   after that it's all scribble stuff.
     .bodycontent {
       background-image: url('@loud');
       background-repeat: no-repeat;
@@ -744,6 +736,7 @@ File, query and maybe fix existing reports.}}}
       position: relative;
       float: right;
     }
+    @; END
     @;
     .codecomment {
       color: #c2741f;
@@ -780,16 +773,11 @@ File, query and maybe fix existing reports.}}}
     }
     .codemodpath:hover {
       text-decoration: none;
-    }})
-
-#|
-
-  >>> For additional resources of all kinds:
-
-(define js/foo.js
-  @plain{
-    This is an example of generating some random file
+    }
+    .codesnip {
+      display: none;
+    }
+    .codesnip.active {
+      display: block;
+    }
   })
-
-(void (copyfile (in-here "index.rkt")))
-|#
