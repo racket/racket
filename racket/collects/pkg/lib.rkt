@@ -2048,6 +2048,10 @@
                                                     #:ignore-checksums? ignore-checksums?)
                                 pkgs))
   (cond
+    [(empty? pkgs)
+     (unless quiet?
+       (printf/flush "No packages given to update, did you mean to pass -a?\n"))
+     'skip]
     [(empty? to-update)
      (unless quiet?
        (printf/flush "No updates available\n"))
