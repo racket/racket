@@ -37,7 +37,7 @@
    [(m . < . n)
     (string-append s (make-string (- n m) #\space))]
    [else
-    (substring s n)]))
+    (substring s 0 n)]))
 
 (define (display-check-info-name-value name value [value-printer write])
   (display (string-pad-right

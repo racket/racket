@@ -70,14 +70,19 @@
 
 (define-syntax fail-check
   (syntax-rules ()
-    ((_)
-     (let ([marks (current-continuation-marks)])
+    ((_ message*)
+     (let ([message message*]
+           [marks (current-continuation-marks)])
+       (unless (string? message)
+         (raise-type-error 'fail-check "string" message))
        (test-log! #f)
        (raise
         (make-exn:test:check
-         "Check failure"
+         message
          marks
-         (check-info-stack marks)))))))
+         (check-info-stack marks)))))
+    ((_)
+     (fail-check "Check failure"))))
 
 (define-syntax fail-internal
   (syntax-rules ()
