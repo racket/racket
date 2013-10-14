@@ -981,7 +981,7 @@
                    (and (render-pict-as? v)
                         (render-pict-as-type v)))
                  (style-properties (part-style d)))
-          ""))
+          'png-images))
     
     (define/override (render-part-content d ri)
       (parameterize ([current-render-pict-as (extract-render-pict-as d)])
