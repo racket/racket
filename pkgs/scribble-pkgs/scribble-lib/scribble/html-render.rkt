@@ -977,14 +977,14 @@
                       ri))))))
 
     (define/public (extract-render-pict-as d)
-      (or (ormap (lambda (v)
+      (ormap (lambda (v)
                    (and (render-pict-as? v)
                         (render-pict-as-type v)))
-                 (style-properties (part-style d)))
-          'png-images))
+                 (style-properties (part-style d))))
     
     (define/override (render-part-content d ri)
-      (parameterize ([current-render-pict-as (extract-render-pict-as d)])
+      (parameterize ([current-render-pict-as (or (extract-render-pict-as d) 
+                                                 (current-render-pict-as))])
         (let ([number (collected-info-number (part-collected-info d ri))])
           `(,@(let ([pres (extract-pretitle d)])
                 (append-map (lambda (pre)
