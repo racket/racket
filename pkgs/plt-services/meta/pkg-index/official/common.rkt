@@ -49,9 +49,11 @@
   (hash-ref pkg-info key
             (λ ()
               (match key
-                [(or 'author 'checksum 'source)
+                [(or 'author 'source)
                  (error 'pkg "Package ~e is missing a required field: ~e"
                         (hash-ref pkg-info 'name) key)]
+                ['checksum
+                 ""]
                 ['ring
                  2]
                 ['checksum-error

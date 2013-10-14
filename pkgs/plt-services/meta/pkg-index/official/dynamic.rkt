@@ -332,6 +332,16 @@
         #f]))))
 
 (define-jsonp/auth
+  (jsonp/package/del
+   ['pkg pkg])
+  (ensure-package-author
+   pkg
+   (λ ()
+     (package-remove! pkg)
+     (signal-static! empty)
+     #f)))
+
+(define-jsonp/auth
   (jsonp/package/curate
    ['pkg pkg]
    ['ring ring-s])
@@ -363,6 +373,7 @@
   (dispatch-rules
    [("jsonp" "authenticate") jsonp/authenticate]
    [("jsonp" "update") jsonp/update]
+   [("jsonp" "package" "del") jsonp/package/del]
    [("jsonp" "package" "modify") jsonp/package/modify]
    [("jsonp" "package" "version" "add") jsonp/package/version/add]
    [("jsonp" "package" "version" "del") jsonp/package/version/del]
@@ -384,6 +395,7 @@
    (λ ()
      (forever
       (sleep (* 24 60 60))
+      (printf "Running scheduled update.\n")
       (signal-update! empty))))
   (serve/servlet
    main-dispatch

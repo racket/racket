@@ -54,6 +54,13 @@ $( document ).ready(function() {
 
         $( "#pi_name" ).text( pkgi['name'] );
         make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );
+        if ( mypkg_p ) {
+            $( "#pi_name" ).append( $('<button>')
+                                    .button({ icons: { primary: "ui-icon-trash" } })
+                                    .click( function (e) {
+                                        dynamic_pkgsend( "/jsonp/package/del", { } );
+                                        $(pkgi['dom_obj']).remove();
+                                        $("#package_info").dialog("close"); } ) ); }
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
@@ -261,6 +268,7 @@ $( document ).ready(function() {
 
         $.each( $('#packages_table tr'), function (key, dom) {
             var value = $(dom).data("obj");
+            value['dom_obj'] = dom;
             var show = true;
             var vterms = value['search-terms'];
 
@@ -366,7 +374,7 @@ $( document ).ready(function() {
                     return addfilterlink ( tag, tag, "possible" ); } ) ))
             .appendTo('#packages_table'); }
 
-    $.getJSON( "/pkgs-all.json", function( resp ) {
+    $.getJSON( "/pkgs-all.json.gz", function( resp ) {
         var names = object_keys(resp);
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
@@ -414,7 +422,7 @@ $( document ).ready(function() {
                            $( "#login_error" ).html( "Check your email for an email code." ); }
                        else if ( resp == "wrong-code" ) {
                            pt.val("");
-                           $( "#login_error" ).html( "That is the incorrect code." ); }
+                           $( "#login_error" ).html( "That is not the correct code." ); }
                        else if ( resp ) {
                            $( "#login_passwd_label" ).html( "Password:" );
 
