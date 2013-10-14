@@ -81,7 +81,10 @@ $( document ).ready(function() {
                                            href: pkgi['source_url']  } ));
         make_editbutton ( "pi_source", pkgi['source'], submit_mod_source );
 
-        $( "#pi_checksum" ).text( pkgi['checksum'] );
+        $( "#pi_checksum" ).html("").text( pkgi['checksum'] );
+        if ( pkgi['checksum-error'] ) {
+            $( "#pi_checksum" ).append( [ "Error:", $("<pre>").text(pkgi['checksum-error']) ] ); }
+
         $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
