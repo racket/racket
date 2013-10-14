@@ -51,32 +51,6 @@
 ;; page layout function
 (define-syntax (page stx)
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
-(define preamble
-  @list{
-    @doctype['html]
-    @; paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/
-    @comment{[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]}
-    @comment{[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]}
-    @comment{[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]}
-    @comment{[if IE 9]>    <html class="no-js ie9" lang="en"> <![endif]}
-    @comment{[if gt IE 9]><!--> <html class="no-js" lang="en" @;
-             itemscope itemtype="http://schema.org/Product"> <!--<![endif]}
-    })
-(define postamble
-  @list{
-    @; Grab Google CDN's jQuery, with a protocol relative URL;
-    @;   fall back to local if offline
-    @; ... TODO: distribute the JS stuffs ...
-    @; @script[src: '("http://ajax.googleapis.com/"
-    @;                "ajax/libs/jquery/1.9.1/jquery.min.js")]
-    @; @script/inline{
-    @;   window.jQuery || document.write(@;
-    @;     '<script src="/js/libs/jquery-1.9.1.min.js"><\/script>')}
-    @; @script[src: "js/libs/gumby.min.js"]
-    @; @script[src: "js/plugins.js"]
-    @; @script[src: "js/main.js"]
-    })
-
 (define (page* #:id [id #f] #:dir [dir #f] #:file [file #f]
                ;; if this is true, return only the html -- don't create
                ;; a resource -- therefore no file is made, and no links
@@ -106,27 +80,31 @@
   (define (page)
     (define desc
       (and description (meta name: 'description content: description)))
-    (define headers
-      (if (and extra-headers desc)
-        (list desc "\n" extra-headers)
-        (or desc extra-headers)))
     (define resources (force resources0))
-    (define head   (resources 'head wintitle headers))
-    (define navbar (resources 'navbar (or part-of this)))
+    (define header
+      (let ([headers (resources 'headers)]
+            [extras  (if (and extra-headers desc)
+                       (list desc "\n" extra-headers)
+                       (or desc extra-headers))])
+        (if extras (list headers "\n" extras) headers)))
+    (define navbar ((resources 'make-navbar) (or part-of this)))
     (define content
       (list navbar "\n"
             (case width
               [(full) content0]
               [(#f) (div class: 'bodycontent content0)]
               [else (div class: 'bodycontent style: @list{width: @|width|@";"}
-                      content0)])))
-    @list{@preamble
+                      content0)])
+            (resources 'postamble)))
+    @list{@resources['preamble]
           @html{@||
-                @head
+                @head{@||
+                      @title{@wintitle}
+                      @header
+                      @||}
                 @(if body-attrs
                    (apply body `(,@body-attrs ,content))
-                   (body content))
-                @postamble}
+                   (body content))}
           @||})
   (define this (and (not html-only?)
                     (resource/referrer (get-path 'page id file "html" dir)
@@ -189,7 +167,7 @@
                        nav))))
                (force pages-promise)
                (force pages-parts-of-promise)))))
-  (λ (this)
+  (λ(this)
     (div class: 'racketnav
       (div class: 'navcontent
         (table border: 0 cellspacing: 0 cellpadding: 0 width: "100%"
@@ -199,68 +177,95 @@
                     (span class: 'helpicon (if (eq? this help) nbsp help)))))
           (tr (td colspan: 2 (links-table this))))))))
 
-(define (html-favicon-maker icon)
-  (define headers
-    @; Place favicon.ico and apple-touch-icon.png in the root
-    @;   directory: mathiasbynens.be/notes/touch-icons
-    @list{@link[rel: "icon"          href: icon type: "image/ico"]
-          @link[rel: "shortcut icon" href: icon type: "image/x-icon"]})
-  (λ () headers))
+(define html-preamble
+  @list{
+    @doctype['html]
+    @; paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/
+    @comment{[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]}
+    @comment{[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]}
+    @comment{[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]}
+    @comment{[if IE 9]>    <html class="no-js ie9" lang="en"> <![endif]}
+    @comment{[if gt IE 9]><!--> <html class="no-js" lang="en" @;
+             itemscope itemtype="http://schema.org/Product"> <!--<![endif]}
+    })
 
-(define (html-head-maker style favicon)
-  (define headers
-    @list{
-      @meta[name: "generator" content: "Racket"]
-      @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
-      @meta[charset: "utf-8"]
-      @; Use the .htaccess and remove this line to avoid edge case issues.
-      @; More info: h5bp.com/b/378
-      @meta[http-equiv: "X-UA-Compatible" content: "IE=edge,chrome=1"]
-      @favicon
-      @; Mobile viewport optimized: j.mp/bplateviewport
-      @meta[name: "viewport"
-            content: "width=device-width, initial-scale=1.0, maximum-scale=1"]
-      @; CSS: implied media=all
-      @; CSS concatenated and minified via ant build script
-      @; @link[rel: "stylesheet" href="css/minified.css"]
-      @; CSS imports non-minified for staging, minify before moving to
-      @;   production
-      @; ... TODO: distribute the CSS stuffs ...
-      @; @link[rel: "stylesheet" href: "css/gumby.css"]
-      @; TODO: Modify `racket-style' definition (and what it depends on)
-      @;   in "resources.rkt"
-      @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
-      @; TODO: Edit the `more.css' definition in www/index.rkt
-      @; More ideas for your <head> here: h5bp.com/d/head-Tips
-      @; All JavaScript at the bottom, except for Modernizr / Respond.
-      @; Modernizr enables HTML5 elements & feature detects; Respond is
-      @;   a polyfill for min/max-width CSS3 Media Queries
-      @; For optimal performance, use a custom Modernizr build:
-      @;   www.modernizr.com/download/
-      @script[src: "js/libs/modernizr-2.6.2.min.js"]
-      })
-  (λ (title* more-headers)
-    (head "\n" (title title*)
-          "\n" headers
-          (and more-headers (list "\n" more-headers))
-          "\n")))
+(define html-postamble
+  @list{
+    @||
+    @; Grab Google CDN's jQuery, with a protocol relative URL;
+    @;   fall back to local if offline
+    @; ... TODO: distribute the JS stuffs ...
+    @; @script[src: '("http://ajax.googleapis.com/"
+    @;                "ajax/libs/jquery/1.9.1/jquery.min.js")]
+    @; @script/inline{
+    @;   window.jQuery || document.write(@;
+    @;     '<script src="/js/libs/jquery-1.9.1.min.js"><\/script>')}
+    @; @script[src: "js/libs/gumby.min.js"]
+    @; @script[src: "js/plugins.js"]
+    @; @script[src: "js/main.js"]
+    @||
+    })
+
+(define (html-icon-headers icon)
+  @; Place favicon.ico and apple-touch-icon.png in the root
+  @;   directory: mathiasbynens.be/notes/touch-icons
+  @list{@link[rel: "icon"          href: icon type: "image/ico"]
+        @link[rel: "shortcut icon" href: icon type: "image/x-icon"]})
+
+(define (html-headers style favicon)
+  @list{
+    @meta[name: "generator" content: "Racket"]
+    @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
+    @meta[charset: "utf-8"]
+    @; Use the .htaccess and remove this line to avoid edge case issues.
+    @; More info: h5bp.com/b/378
+    @meta[http-equiv: "X-UA-Compatible" content: "IE=edge,chrome=1"]
+    @favicon
+    @; Mobile viewport optimized: j.mp/bplateviewport
+    @meta[name: "viewport"
+          content: "width=device-width, initial-scale=1.0, maximum-scale=1"]
+    @; CSS: implied media=all
+    @; CSS concatenated and minified via ant build script
+    @; @link[rel: "stylesheet" href="css/minified.css"]
+    @; CSS imports non-minified for staging, minify before moving to
+    @;   production
+    @; ... TODO: distribute the CSS stuffs ...
+    @; @link[rel: "stylesheet" href: "css/gumby.css"]
+    @; TODO: Modify `racket-style' definition (and what it depends on)
+    @;   in "resources.rkt"
+    @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
+    @; TODO: Edit the `more.css' definition in www/index.rkt
+    @; More ideas for your <head> here: h5bp.com/d/head-Tips
+    @; All JavaScript at the bottom, except for Modernizr / Respond.
+    @; Modernizr enables HTML5 elements & feature detects; Respond is
+    @;   a polyfill for min/max-width CSS3 Media Queries
+    @; For optimal performance, use a custom Modernizr build:
+    @;   www.modernizr.com/download/
+    @script[src: "js/libs/modernizr-2.6.2.min.js"]
+    })
 
 (define (make-resources files)
-  (define (getfile what) (cadr (assq what files)))
-  (define favicon     (html-favicon-maker (getfile 'icon)))
-  (define make-head   (html-head-maker (getfile 'style) favicon))
-  (define make-navbar (navbar-maker (getfile 'logo)))
-  (λ (what . more)
-    (apply (case what
-             [(head)   make-head]
-             [(navbar) make-navbar]
-             [(favicon-headers) favicon]
-             [(icon-path logo-path style-path)
-              (λ () (let* ([x (symbol->string what)]
-                           [x (regexp-replace #rx"-path$" x "")])
-                      (url-of (getfile (string->symbol x)))))]
-             [else (error 'resources "internal error")])
-           more)))
+  (define (resources what)
+    (case what
+      ;; composite resources
+      [(preamble)     html-preamble] ; not really a resource, since it's static
+      [(postamble)    html-postamble]
+      [(headers)      headers]
+      [(make-navbar)  make-navbar] ; page -> navbar
+      [(icon-headers) icon-headers]
+      ;; aliases for specific resource files
+      [(style-path) (resources "plt.css")]
+      [(logo-path)  (resources "logo.png")]
+      [(icon-path)  (resources "plticon.ico")]
+      ;; get a resource file path
+      [else (cond [(assoc what files)
+                   ;; delay the `url-of' until we're in the rendering context
+                   => (λ(f) (λ() (url-of (cadr f))))]
+                  [else (error 'resource "unknown resource: ~e" what)])]))
+  (define icon-headers (html-icon-headers (resources 'icon-path)))
+  (define headers      (html-headers (resources 'style-path) icon-headers))
+  (define make-navbar  (navbar-maker (resources 'logo-path)))
+  resources)
 
 ;; `define+provide-context' should be used in each toplevel directory (= each
 ;; site) to have its own resources (and possibly other customizations).

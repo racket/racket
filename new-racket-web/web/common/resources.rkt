@@ -18,44 +18,45 @@
 ;; added to the standard contents -- which is the user-agent line and the
 ;; ErrorDocument respectively.
 (define (make-resource-files page dir robots htaccess)
-  (define (copyfile file [target file])
-    (copyfile-resource (in-here file) (web-path dir target)))
+  ;; the default target argument duplicate the behavior in "utils.rkt"
+  (define (copyfile file [target (basename file)])
+    (list target (copyfile-resource (in-here file) (web-path dir target))))
   (define (writefile file . contents)
-    (resource (web-path dir file) (file-writer output (list contents "\n"))))
-  `([logo  ,(copyfile  "logo.png")]
-    [icon  ,(copyfile  "plticon.ico")]
-    [style ,(writefile "plt.css" racket-style)]
+    (list file (resource (web-path dir file)
+                         (file-writer output (list contents "\n")))))
+  (define (pagefile file . contents)
+    (list file
+          (apply page (string->symbol (regexp-replace #rx"[.]html$" file ""))
+                 contents)))
+  `(,(copyfile  "logo.png")
+    ,(copyfile  "plticon.ico")
+    ,(writefile "plt.css" racket-style)
     ;; the following resources are not used directly, so their names are
     ;; irrelevant
-    [verification:google
-     @,writefile["google5b2dc47c0b1b15cb.html"]{
-       google-site-verification: google5b2dc47c0b1b15cb.html}]
-    [verification:bing
-     @,writefile["BingSiteAuth.xml"]{
-       <?xml version="1.0"?>
-       <users><user>140BE58EEC31CB97382E1016E21C405A</user></users>}]
-    [robots
-     ;; #t (the default) => no-op file, good to avoid error-log lines
-     ,(let* ([t (if (eq? #t robots) "Disallow:" robots)]
-             [t (and t (list "User-agent: *\n" t))])
-        (and t (writefile "robots.txt" t)))]
-    ;; Seems like there are still some clients that look for a favicon.ico file
-    [favicon ,(copyfile "plticon.ico" "favicon.ico")]
-    [404
-     @,page['page-not-found]{
-       @h1[style: '("text-align: center; margin: 3em 0 1em 0;")]{
-         Page not found}
-       @(λ xs (table align: 'center (tr (td (pre xs))))){
-         > (@a[href: "/"]{(uncaught-exception-handler)}
-            (*(+(*)(*(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*))))@;
-              (+(*)(*)(*)(*))))
-         uncaught exception: 404}}]
+    @,writefile["google5b2dc47c0b1b15cb.html"]{
+      google-site-verification: google5b2dc47c0b1b15cb.html}
+    @,writefile["BingSiteAuth.xml"]{
+      <?xml version="1.0"?>
+      <users><user>140BE58EEC31CB97382E1016E21C405A</user></users>}
+    ;; #t (the default) => no-op file, good to avoid error-log lines
+    ,(let* ([t (if (eq? #t robots) "Disallow:" robots)]
+            [t (and t (list "User-agent: *\n" t))])
+       (if t (writefile "robots.txt" t) '(#f #f)))
+    ;; There are still some clients that look for a favicon.ico file
+    ,(copyfile "plticon.ico" "favicon.ico")
+    @,pagefile["page-not-found.html"]{
+      @h1[style: "text-align: center; margin: 3em 0 1em 0;"]{
+        Page not found}
+      @(λ xs (table align: 'center (tr (td (pre xs))))){
+        > (@a[href: "/"]{(uncaught-exception-handler)}
+           (*(+(*)(*(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*))))@;
+             (+(*)(*)(*)(*))))
+        uncaught exception: 404}}
     ;; set the 404 page in htaccess instead of in the conf file, so we get it
     ;; only in sites that we generate here
-    [.htaccess
-     ,(let* ([t (and htaccess "ErrorDocument 404 /page-not-found.html")]
-             [t (if (boolean? htaccess) t (list htaccess "\n" t))])
-        (and t (writefile ".htaccess" t)))]))
+    ,(let* ([t (and htaccess "ErrorDocument 404 /page-not-found.html")]
+            [t (if (boolean? htaccess) t (list htaccess "\n" t))])
+       (if t (writefile ".htaccess" t) '(#f #f)))))
 
 (define page-sizes
   @list{

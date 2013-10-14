@@ -25,14 +25,16 @@
     @navbar-style
   })
 
-(define (get-resource-text . args)
-  (let ([str (xml->string (apply www:the-resources args))])
-    ;; due to some obscure xml issue the `nbsp' entity is not recognized
-    ;; in blogger pages
-    (regexp-replace* #rx"&nbsp;" str "\\&#160;")))
+(define (get-resource-text what #:args [args #f])
+  (define r   (www:the-resources what))
+  (define xml (if args (apply r args) r))
+  (define str (xml->string xml))
+  ;; due to some obscure xml issue the `nbsp' entity is not recognized
+  ;; in blogger pages
+  (regexp-replace* #rx"&nbsp;" str "\\&#160;"))
 
-(define (racket-navbar)  (get-resource-text 'navbar 'community))
-(define (racket-favicon) (get-resource-text 'favicon-headers))
+(define (racket-navbar)  (get-resource-text 'make-navbar #:args '(community)))
+(define (racket-favicon) (get-resource-text 'icon-headers))
 
 (provide blog)
 (define blog
