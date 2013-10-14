@@ -752,9 +752,11 @@
                         (when frame
                           (send frame next-tab))))])
      
-     (define mprefix (if (eq? (system-type) 'windows)
-                         (list* 'alt 'shift (get-default-shortcut-prefix))
-                         (cons 'shift (get-default-shortcut-prefix))))
+     (define mprefix (case (system-type)
+                       [(windows unix)
+                        (list* 'alt 'shift (get-default-shortcut-prefix))]
+                       [(macosx)
+                        (list* 'option (get-default-shortcut-prefix))]))
 
      (new menu-item% 
           [parent windows-menu]
