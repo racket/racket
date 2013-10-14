@@ -584,18 +584,15 @@
              (get-output-bytes s))]
           [(svg-bytes)
            (let ([s (open-output-bytes)])
-             (define tmp (make-temporary-file "rkttmp~a.svg"))
-             (delete-file tmp)
              (define dc (new svg-dc% 
                              [width  (pict-width p)]
                              [height (pict-height p)]
-                             [output tmp]))
+                             [output s]))
              (send dc start-doc "Generating svg")
              (send dc start-page)
              (draw-pict p dc 0 0)
              (send dc end-page)
              (send dc end-doc)
-             (call-with-input-file tmp (λ (from) (copy-port from s)))
              (regexp-replace "width=\"(.*pt)\" height=\"(.*pt)\"" 
                              (get-output-bytes s)
                              (λ (all w h) 
