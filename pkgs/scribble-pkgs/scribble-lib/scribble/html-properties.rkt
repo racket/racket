@@ -24,4 +24,5 @@
  [install-resource ([path path-string?])]
  [link-resource ([path path-string?])]
 
- [head-extra ([xexpr xexpr/c])])
+ [head-extra ([xexpr xexpr/c])]
+ [render-pict-as ([type symbol?])])

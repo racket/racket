@@ -94,6 +94,7 @@
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
 (define current-part-files (make-parameter #f))
+(define current-render-pict-as (make-parameter 'png-images))
 
 (define (url->string* u)
   (parameterize ([current-url-encode-mode 'unreserved])
@@ -975,54 +976,62 @@
                       d
                       ri))))))
 
+    (define/public (extract-render-pict-as d)
+      (or (ormap (lambda (v)
+                   (and (render-pict-as? v)
+                        (render-pict-as-type v)))
+                 (style-properties (part-style d)))
+          ""))
+    
     (define/override (render-part-content d ri)
-      (let ([number (collected-info-number (part-collected-info d ri))])
-        `(,@(let ([pres (extract-pretitle d)])
-              (append-map (lambda (pre)
-                            (do-render-paragraph pre d ri #f #t))
-                          pres))
-          ,@(cond
-              [(and (not (part-title-content d)) (null? number)) null]
-              [(part-style? d 'hidden)
-               (map (lambda (t)
-                      `(a ((name ,(format "~a" (anchor-name 
-                                                (add-current-tag-prefix
-                                                 (tag-key t ri))))))))
-                    (part-tags d))]
-              [else `((,(case (number-depth number)
-                          [(0) 'h2]
-                          [(1) 'h3]
-                          [(2) 'h4]
-                          [else 'h5])
-                       ,@(format-number number '((tt nbsp)))
-                       ,@(map (lambda (t)
-                                `(a ([name ,(format "~a" (anchor-name
-                                                          (add-current-tag-prefix
-                                                           (tag-key t ri))))])))
-                              (part-tags d))
-                       ,@(if (part-title-content d)
-                           (render-content (part-title-content d) d ri)
-                           null)))])
-          ,@(let ([auths (extract-authors d)])
-              (if (null? auths)
-                  null
-                  `((div ([class "SAuthorListBox"])
-                         (span ([class "SAuthorList"])
-                              ,@(apply
-                                 append
-                                 (for/list ([auth (in-list auths)]
-                                            [pos (in-naturals)])
-                                   (let ([v (do-render-paragraph auth d ri #f #t)])
-                                     (if (zero? pos)
-                                         v
-                                         (cons '(span ([class "SAuthorSep"]) (br)) v))))))))))
-          ,@(render-flow* (part-blocks d) d ri #f #f)
-          ,@(let loop ([pos 1]
-                       [secs (part-parts d)])
-              (if (null? secs)
-                null
-                (append (render-part (car secs) ri)
-                        (loop (add1 pos) (cdr secs))))))))
+      (parameterize ([current-render-pict-as (extract-render-pict-as d)])
+        (let ([number (collected-info-number (part-collected-info d ri))])
+          `(,@(let ([pres (extract-pretitle d)])
+                (append-map (lambda (pre)
+                              (do-render-paragraph pre d ri #f #t))
+                            pres))
+            ,@(cond
+                [(and (not (part-title-content d)) (null? number)) null]
+                [(part-style? d 'hidden)
+                 (map (lambda (t)
+                        `(a ((name ,(format "~a" (anchor-name 
+                                                  (add-current-tag-prefix
+                                                   (tag-key t ri))))))))
+                      (part-tags d))]
+                [else `((,(case (number-depth number)
+                            [(0) 'h2]
+                            [(1) 'h3]
+                            [(2) 'h4]
+                            [else 'h5])
+                         ,@(format-number number '((tt nbsp)))
+                         ,@(map (lambda (t)
+                                  `(a ([name ,(format "~a" (anchor-name
+                                                            (add-current-tag-prefix
+                                                             (tag-key t ri))))])))
+                                (part-tags d))
+                         ,@(if (part-title-content d)
+                               (render-content (part-title-content d) d ri)
+                               null)))])
+            ,@(let ([auths (extract-authors d)])
+                (if (null? auths)
+                    null
+                    `((div ([class "SAuthorListBox"])
+                           (span ([class "SAuthorList"])
+                                 ,@(apply
+                                    append
+                                    (for/list ([auth (in-list auths)]
+                                               [pos (in-naturals)])
+                                      (let ([v (do-render-paragraph auth d ri #f #t)])
+                                        (if (zero? pos)
+                                            v
+                                            (cons '(span ([class "SAuthorSep"]) (br)) v))))))))))
+            ,@(render-flow* (part-blocks d) d ri #f #f)
+            ,@(let loop ([pos 1]
+                         [secs (part-parts d)])
+                (if (null? secs)
+                    null
+                    (append (render-part (car secs) ri)
+                            (loop (add1 pos) (cdr secs)))))))))
 
     (define/private (render-flow* p part ri starting-item? special-last?)
       ;; Wrap each table with <p>, except for a trailing table
@@ -1091,7 +1100,7 @@
       (cond
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
-        [(and (equal? (current-html-render-pict-as) 'png)
+        [(and (equal? (current-render-pict-as) 'png-images)
               (convertible? e)
               (convert e 'png-bytes))
          => (lambda (bstr)
@@ -1101,7 +1110,7 @@
                         [alt "image"]
                         [width ,(number->string w)]
                         [height ,(number->string h)])))))]
-        [(and (equal? (current-html-render-pict-as) 'svg)
+        [(and (equal? (current-render-pict-as) 'svg-images)
               (convertible? e)
               (convert e 'svg-bytes))
          => (lambda (bstr)

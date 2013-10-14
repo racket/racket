@@ -6,14 +6,13 @@
          "decode-struct.rkt"
          "html-properties.rkt"
          "tag.rkt"
-         "parameters.rkt"
          scheme/list
          scheme/class
          racket/contract/base
          racket/contract/combinator
          (for-syntax scheme/base))
 
-(provide (all-from-out "tag.rkt" "parameters.rkt"))
+(provide (all-from-out "tag.rkt"))
 
 ;; ----------------------------------------
 
