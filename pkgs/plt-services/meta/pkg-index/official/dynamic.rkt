@@ -55,7 +55,7 @@
        (define new-pi (hash-deep-merge pi more-pi))
        (define updated-pi
          (let ([now (current-seconds)])
-           (for/fold ([pi new-pi]) 
+           (for/fold ([pi new-pi])
                ([k (in-list '(last-edit last-checked last-updated))])
              (hash-set pi k now))))
        (package-info-set! p updated-pi)
@@ -116,45 +116,69 @@
    ['email email]
    ['passwd passwd]
    ['code email-code])
+
+  (define passwd-path (build-path users.new-path email))
+  (define (generate-a-code email)
+    (define correct-email-code
+      (number->string (random (expt 10 8))))
+
+    (hash-set! email-codes email correct-email-code)
+
+    correct-email-code)
+  (define (check-code-or true false)
+    (cond
+      [(and (not (string=? "" email-code))
+            (hash-ref email-codes email #f))
+       => (λ (correct-email-code)
+            (cond
+              [(equal? correct-email-code email-code)
+               (display-to-file (bcrypt-encode (string->bytes/utf-8 passwd))
+                                passwd-path
+                                #:exists 'replace)
+
+               (hash-remove! email-codes email)
+
+               (true)]
+              [else
+               "wrong-code"]))]
+      [else
+       (false)
+
+       #f]))
+
   (match (ensure-authenticate email passwd (λ () #t))
-    ["failed" #f]
-    ["new-user"
-     (define passwd-path (build-path users.new-path email))
-
-     (cond
-       [(and (not (string=? "" email-code))
-             (hash-ref email-codes email #f))
-        => (λ (correct-email-code)
-             (cond
-               [(equal? correct-email-code email-code)
-                (when (not (file-exists? passwd-path))
-                  (display-to-file (bcrypt-encode (string->bytes/utf-8 passwd))
-                                   passwd-path))
-
-                (hash-remove! email-codes email)
-
-                #t]
-               [else
-                "wrong-code"]))]
-       [else
-        (define correct-email-code
-          (number->string (random (expt 10 8))))
-
-        (hash-set! email-codes email correct-email-code)
-
+    ["failed"
+     (check-code-or
+      (λ () (hasheq 'curation (curation-administrator? email)))
+      (λ ()
         (send-mail-message
          "pkg@racket-lang.org"
-         "Account confirmation for Racket PNR"
+         "Account password reset for Racket Package Catalog"
          (list email)
          empty empty
-         (list "Someone tried to register your email address for an account on the Racket Package Catalog."
-               "If you want to proceed, use this code:"
-               ""
-               correct-email-code
-               ""
-               "This code will expire, so if it is not available, you'll have to try to register again."))
-
-        "emailed"])]
+         (list
+          "Someone tried to login with your email address for an account on the Racket Package Catalog, but failed."
+          "If you this was you, please use this code to reset your password:"
+          ""
+          (generate-a-code email)
+          ""
+          "This code will expire, so if it is not available, you'll have to try to again."))))]
+    ["new-user"
+     (check-code-or
+      (λ () #t)
+      (λ ()
+        (send-mail-message
+         "pkg@racket-lang.org"
+         "Account confirmation for Racket Package Catalog"
+         (list email)
+         empty empty
+         (list
+          "Someone tried to register your email address for an account on the Racket Package Catalog."
+          "If you want to proceed, use this code:"
+          ""
+          (generate-a-code email)
+          ""
+          "This code will expire, so if it is not available, you'll have to try to register again."))))]
     [#t
      (hasheq 'curation (curation-administrator? email))]))
 

@@ -367,7 +367,7 @@ $( document ).ready(function() {
           { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
             .data( "obj", value)
             .append(
-                $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")               
+                $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")
                     .append( curate_span ),
                 $('<td>').html("")
                     .append( jslink( value['name'], function () { open_info ( value ); }) ),
@@ -399,52 +399,56 @@ $( document ).ready(function() {
         position: { my: "center", at: "center", of: "#search_menu" },
         modal: true });
 
-    var saved_password = false;
     function login_submit () {
         $( "#login_error" ).html( "" );
 
-        var et = $( "#login_email_text" );
-        var pt = $( "#login_passwd_text" );
+        var e = $( "#login_email_text" ).val();
+        var p = $( "#login_passwd_text" ).val();
+        var cp = $( "#login_confirm_text" ).val();
+        var c = $( "#login_code_text" ).val();
 
-        var e = et.val();
-        var p;
-        var c;
-        if ( saved_password ) {
-            p = saved_password;
-            c = pt.val(); }
+        if ( c && p != cp ) {
+            $( "#login_error" ).html( "You did not type in the same password." ); }
         else {
-            p = pt.val();
-            c = ""; }
+            $.getJSON( dynamic_url("/jsonp/authenticate"),
+                       { email: e, passwd: p, code: c },
+                       function( resp ) {
+                           if ( resp == "emailed" ) {
+                               $( "#login_confirm_row" ).show();
+                               $( "#login_code_row" ).show();
 
-        $.getJSON( dynamic_url("/jsonp/authenticate"),
-                   { email: e, passwd: p, code: c },
-                   function( resp ) {
-                       if ( resp == "emailed" ) {
-                           saved_password = p;
-                           $( "#login_passwd_label" ).html( "Code:" );
-                           pt.val("");
-                           $( "#login_error" ).html( "Check your email for an email code." ); }
-                       else if ( resp == "wrong-code" ) {
-                           pt.val("");
-                           $( "#login_error" ).html( "That is not the correct code." ); }
-                       else if ( resp ) {
-                           $( "#login_passwd_label" ).html( "Password:" );
+                               $( "#login_error" ).html( "Check your email for an email code." ); }
+                           else if ( resp == "wrong-code" ) {
+                               $( "#login_code_text" ).val("");
+                               $( "#login_error" ).html( "That is not the correct code." ); }
+                           else if ( resp ) {
+                               $( "#login_email_text" ).val("");
+                               $( "#login_passwd_text" ).val("");
+                               $( "#login_confirm_text" ).val("");
+                               $( "#login_code_text" ).val("");
 
-                           et.val("");
-                           pt.val("");
+                               $( "#login_confirm_row" ).hide();
+                               $( "#login_code_row" ).hide();
 
-                           localStorage['email'] = e;
-                           localStorage['passwd'] = p;
+                               localStorage['email'] = e;
+                               localStorage['passwd'] = p;
 
-                           $( "#login" ).dialog( "close" );
+                               $( "#login" ).dialog( "close" );
 
-                           initial_login(); }
-                       else {
-                           pt.val("");
-                           $( "#login_error" ).html( "Incorrect password, please retry" ); }; } ); }
+                               initial_login(); }
+                           else {
+                               $( "#login_confirm_row" ).show();
+                               $( "#login_code_row" ).show();
+
+                               $( "#login_error" ).html( "Incorrect password, please retry or check your email for a change password code." ); }; } ); } }
     $( "#login_passwd_text" ).keypress( function (e) {
         if (e.which == 13) { login_submit (); } } );
+    $( "#login_code_text" ).keypress( function (e) {
+        if (e.which == 13) { login_submit (); } } );
     $( "#login_button" ).click( function (e) { login_submit (); } );
+
+    $( "#login_confirm_row" ).hide();
+    $( "#login_code_row" ).hide();
 
     function menu_logout () {
         $("#logout").html( jslink( "login", function () { $( "#login" ).dialog( "open" ); } ) ); }

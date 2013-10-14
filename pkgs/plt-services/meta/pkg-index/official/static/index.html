@@ -19,15 +19,26 @@
     <div id="login" class="package">
       <table>
         <tr><td>Email Address:</td><td><input id="login_email_text" type="text"></td></tr>
-        <tr><td id="login_passwd_label">Password:</td><td><input id="login_passwd_text" type="password"></td></tr>
+        <tr><td>Password:</td><td><input id="login_passwd_text" type="password"></td></tr>
+        <tr id="login_confirm_row"><td>Confirm Password:</td><td><input id="login_confirm_text" type="password"></td></tr>
+        <tr id="login_code_row"><td>Email Code:</td><td><input id="login_code_text" type="password"></td></tr>
         <tr><td colspan="2" id="login_error"></td></tr>
       </table>
       <button id="login_button">Log In</button>
-      <p>If you enter an unclaimed email address, then an account will
-        be created with the password you type in, after you confirm
-        the email address.</p>
-      <p>Passwords are stored in the delicious bcrypt format, but
-        transferred as plain-text over an HTTPS connection.</p>
+      <p>If you enter an unclaimed email address, then we will email
+        you a code. If you type in that code and confirm the password
+        you typed in, then we will create an account for you with the
+        given password.</p>
+      <p>If you enter an claimed email address, but an incorrect
+        password, then we will email you a code. If you type in that
+        code and confirm the password you typed in, then we will change
+        your password to the one you typed in.</p>
+      <p>Passwords are transferred over an HTTPS connection, but not
+        the same connection you got this page from. The passwords are
+        transferred in plain-text, but stored on the server in the
+        delicious bcrypt format. This means that someone could hack
+        our server and watch you transmit your password live but not
+        be able to use our password database.</p>
     </div>
 
     <div id="package_info" class="package">
