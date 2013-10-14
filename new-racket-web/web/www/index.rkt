@@ -308,6 +308,7 @@
 
 (define index
   @page[#:window-title "The Racket Language"
+        #:width 'full
         #:description
         @'{Racket is a modern programming language in the Lisp/Scheme family, @;
            suitable for a wide range of applications.  @;
