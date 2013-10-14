@@ -101,3 +101,14 @@
 
 (try-it 100 NRep v)
 (try-it 100 NRep v2)
+
+;; Test production sort
+(define-language rec
+  (e (e e)
+     v)
+  (v (λ (x) e)
+     x)
+  (x variable-not-otherwise-mentioned))
+
+(try-it 100 rec e)
+(try-it 100 rec v)

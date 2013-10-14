@@ -8,8 +8,8 @@
          "enumerator.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
-         "preprocess.rkt"
-         "recursive-lang.rkt")
+         "preprocess-pat.rkt"
+         "preprocess-lang.rkt")
 
 (provide 
  (contract-out

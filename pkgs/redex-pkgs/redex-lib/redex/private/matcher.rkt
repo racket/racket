@@ -46,6 +46,7 @@ See match-a-pattern.rkt for more details
          data/union-find
          racket/performance-hint
          (for-syntax racket/base)
+         "build-nt-property.rkt"
          "underscore-allowed.rkt"
          "match-a-pattern.rkt"
          "lang-struct.rkt"
@@ -359,30 +360,6 @@ See match-a-pattern.rkt for more details
    #f
    (λ (x y) (or x y))))
 
-;; build-nt-property : lang 
-;;                     (pattern hash[nt -o> ans] -> ans)
-;;                     init-ans
-;;                     (ans ans ans) 
-;;                  -> hash[nt -o> ans]
-;; builds a property table using a fixed point computation,
-;; using base-answer and lub as the lattice
-(define (build-nt-property lang test-rhs base-answer lub)
-  (define ht (make-hash))
-  (for ([nt (in-list lang)])
-    (hash-set! ht (nt-name nt) base-answer))
-  (let loop ()
-    (define something-changed? #f)
-    (for ([nt (in-list lang)])
-      (define next-val
-        (for/fold ([acc base-answer])
-                  ([rhs (in-list (nt-rhs nt))])
-          (lub acc (test-rhs (rhs-pattern rhs) ht))))
-      (unless (equal? next-val (hash-ref ht (nt-name nt)))
-        (hash-set! ht (nt-name nt) next-val)
-        (set! something-changed? #t)))
-    (when something-changed? (loop)))
-  ht)
-  
 ;; build-compatible-context-language : lang -> lang
 (define (build-compatible-context-language clang-ht lang)
   (remove-empty-compatible-contexts
