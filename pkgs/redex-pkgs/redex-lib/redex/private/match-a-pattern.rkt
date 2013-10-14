@@ -2,7 +2,7 @@
 (require racket/match 
          (for-syntax racket/match
                      racket/base))
-(provide match-a-pattern)
+(provide match-a-pattern match-a-pattern/single-base-case)
 
 #|
 
@@ -72,9 +72,10 @@ turns into this:
 
 |#
 
-(define-syntax (match-a-pattern stx)
+(define-for-syntax (match-a-pattern/proc stx skip-non-recursive?)
   (define (check-pats pats allow-else?)
     (let ()
+      (define (non-recursive? x) (or (<= x 12) (= x 20)))
       (define should-be-pats
         (append '(`any
                   `number
@@ -96,45 +97,53 @@ turns into this:
                   `(side-condition ,pat ,condition ,srcloc-expr)
                   `(cross ,var)
                   `(list ,lpat ...)
-                  (? (compose not pair?))) ;; pattern for literals (numbers, strings, prefabs, etc etc etc)
-                (if allow-else?
+                  
+                   ;; pattern for literals (numbers, strings, prefabs, etc etc etc)
+                  (? (compose not pair?)))
+                (if (or allow-else? skip-non-recursive?)
                     (list '_)
                     (list))))
-      (for ([pat (in-list pats)])
+      (for ([pat (in-list pats)]
+            [i (in-naturals)])
         (when (null? should-be-pats)
-          (raise-syntax-error 'match-a-pattern "too many patterns" stx pat))
+          (raise-syntax-error #f "too many patterns" stx pat))
         (define should-be (car should-be-pats))
         (set! should-be-pats (cdr should-be-pats))
-        (define pats-match?
-          (let loop ([pat (syntax->datum pat)]
-                     [should-be should-be])
-            (cond
-              [(and (null? pat) (null? should-be)) #t]
-              [(and (pair? pat) (pair? should-be))
-               (cond
-                 [(eq? (car should-be) 'unquote)
-                  (eq? (car pat) 'unquote)]
-                 [else
-                  (and (loop (car pat) (car should-be))
-                       (loop (cdr pat) (cdr should-be)))])]
-              [else (equal? pat should-be)])))
-        (unless pats-match?
-          (raise-syntax-error 'match-a-pattern
-                              (format "expected pattern ~s" 
-                                      should-be)
-                              stx
-                              pat)))
+        (unless (and (non-recursive? i) skip-non-recursive?)
+          (define pats-match?
+            (let loop ([pat (syntax->datum pat)]
+                       [should-be should-be])
+              (cond
+                [(and (null? pat) (null? should-be)) #t]
+                [(and (pair? pat) (pair? should-be))
+                 (cond
+                   [(eq? (car should-be) 'unquote)
+                    (eq? (car pat) 'unquote)]
+                   [else
+                    (and (loop (car pat) (car should-be))
+                         (loop (cdr pat) (cdr should-be)))])]
+                [else (equal? pat should-be)])))
+          (unless pats-match?
+            (raise-syntax-error #f
+                                (format "expected pattern ~s" 
+                                        should-be)
+                                stx
+                                pat))))
       (unless (null? should-be-pats)
-        (raise-syntax-error 'match-a-pattern 
+        (raise-syntax-error #f 
                             (format "did not find pattern ~s"
                                     (car should-be-pats))
                             stx))))
   (syntax-case stx ()
     [(_ #:allow-else to-match [pats rhs ...] ...)
+     (not skip-non-recursive?)
      (let ()
        (check-pats (syntax->list #'(pats ...)) #t)
        #'(match to-match [pats rhs ...] ...))]
     [(_ to-match [pats rhs ...] ...)
      (let ()
-       (check-pats (syntax->list #'(pats ...)) #f)
+       (check-pats (syntax->list #'(pats ...)) skip-non-recursive?)
        #'(match to-match [pats rhs ...] ...))]))
+
+(define-syntax (match-a-pattern stx) (match-a-pattern/proc stx #f))
+(define-syntax (match-a-pattern/single-base-case stx) (match-a-pattern/proc stx #f))
