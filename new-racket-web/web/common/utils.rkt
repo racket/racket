@@ -39,13 +39,17 @@
         [(resource? referable)  (referable absolute?)]
         [else (raise-type-error 'url-of "referable" referable)]))
 
+(provide basename)
+(define (basename path)
+  (define-values [base file dir?] (split-path path))
+  (path->string file))
+
 ;; simple file resources
-(define ((make-path-resourcer file-op) source [target #f] #:dir [dir #f])
-  (let ([target (or target (let-values ([(base file dir?) (split-path source)])
-                             (path->string file)))])
-    (resource (if (eq? void file-op)
-                (void) (if dir (web-path dir target) target))
-              (λ (file) (file-op source file)))))
+(define ((make-path-resourcer file-op)
+         source [target (basename source)] #:dir [dir #f])
+  (resource (if (eq? void file-op) (void)
+              (if dir (web-path dir target) target))
+            (λ (file) (file-op source file))))
 
 (provide copyfile-resource symlink-resource)
 (define copyfile-resource (make-path-resourcer copy-file))

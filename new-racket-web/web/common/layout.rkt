@@ -172,7 +172,7 @@
           (middle-text 60 ")")
           (middle-text 80 ")")
           (middle-text 100 ")")))
-  (define (header-cell logo)
+  (define (header-cell)
     (td (a href: (url-of (force top-promise))
            OPEN
            (img src: logo alt: "[logo]"
@@ -193,7 +193,7 @@
     (div class: 'racketnav
       (div class: 'navcontent
         (table border: 0 cellspacing: 0 cellpadding: 0 width: "100%"
-          (tr (header-cell logo)
+          (tr (header-cell)
               (td class: 'helpiconcell
                   (let ([help (force help-promise)])
                     (span class: 'helpicon (if (eq? this help) nbsp help)))))
@@ -292,16 +292,19 @@
                                        #:resources (lazy resources-id)
                                        content))
                               dir robots htaccess)))])
-         #'(begin (define resources-id resources)
-                  (define-syntax-rule (page-id . xs)
-                    (page #:resources resources-id #:dir dir . xs))
-                  (define-syntax-rule (plain-id . xs)
-                    (plain #:dir dir . xs))
-                  (define (copyfile-id source [target #f])
-                    (copyfile-resource source target #:dir dir))
-                  (define (symlink-id source [target #f])
-                    (symlink-resource source target #:dir dir))
-                  provides)))]))
+         #'(begin
+             (define resources-id resources)
+             (define-syntax-rule (page-id . xs)
+               (page #:resources resources-id #:dir dir . xs))
+             (define-syntax-rule (plain-id . xs)
+               (plain #:dir dir . xs))
+             (define copyfile-id
+               (case-lambda [(s)   (copyfile-resource s #:dir dir)]
+                            [(s t) (copyfile-resource s t #:dir dir)]))
+             (define symlink-id
+               (case-lambda [(s)   (symlink-resource s #:dir dir)]
+                            [(s t) (symlink-resource s t #:dir dir)]))
+             provides)))]))
 (define-syntax (define+provide-context stx)
   (make-define+provide-context stx #t))
 (define-syntax (define-context stx)
