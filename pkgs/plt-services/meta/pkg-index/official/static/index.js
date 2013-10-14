@@ -367,9 +367,10 @@ $( document ).ready(function() {
           { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
             .data( "obj", value)
             .append(
+                $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")               
+                    .append( curate_span ),
                 $('<td>').html("")
-                    .append( curate_span,
-                             jslink( value['name'], function () { open_info ( value ); }) ),
+                    .append( jslink( value['name'], function () { open_info ( value ); }) ),
                 $('<td>').append( $.map( value['authors'], function ( author, i ) {
                     return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                 $('<td>').text( value['description'] ),
