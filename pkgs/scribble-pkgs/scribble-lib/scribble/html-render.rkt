@@ -1,5 +1,4 @@
 #lang scheme/base
-
 (require "core.rkt"
          "private/render-utils.rkt"
          "html-properties.rkt"
@@ -1092,7 +1091,8 @@
       (cond
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
-        [(and (convertible? e)
+        [(and (equal? (current-html-render-pict-as) 'png)
+              (convertible? e)
               (convert e 'png-bytes))
          => (lambda (bstr)
               (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
@@ -1101,6 +1101,13 @@
                         [alt "image"]
                         [width ,(number->string w)]
                         [height ,(number->string h)])))))]
+        [(and (equal? (current-html-render-pict-as) 'svg)
+              (convertible? e)
+              (convert e 'svg-bytes))
+         => (lambda (bstr)
+             `((object
+                ([data ,(install-file "pict.svg" bstr)]
+                 [type "image/svg+xml"]))))]
         [(image-element? e)
          (let* ([src (collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]

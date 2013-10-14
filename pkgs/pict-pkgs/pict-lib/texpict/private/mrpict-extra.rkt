@@ -3,10 +3,13 @@
   (require racket/class)
 
   (require racket/draw/draw-sig
-           racket/gui/dynamic)
+           racket/gui/dynamic
+           (only-in racket/file make-temporary-file)
+           (only-in racket/port copy-port))
 
   (require "mrpict-sig.rkt"
            "common-sig.rkt")
+  
 
   (import draw^
           texpict-common^
@@ -578,6 +581,27 @@
                (draw-pict p dc 0 0)
                (send dc end-page)
                (send dc end-doc))
+             (get-output-bytes s))]
+          [(svg-bytes)
+           (let ([s (open-output-bytes)])
+             (define tmp (make-temporary-file "rkttmp~a.svg"))
+             (delete-file tmp)
+             (define dc (new svg-dc% 
+                             [width  (pict-width p)]
+                             [height (pict-height p)]
+                             [output tmp]))
+             (send dc start-doc "Generating svg")
+             (send dc start-page)
+             (draw-pict p dc 0 0)
+             (send dc end-page)
+             (send dc end-doc)
+             (call-with-input-file tmp (λ (from) (copy-port from s)))
+             (regexp-replace "width=\"(.*pt)\" height=\"(.*pt)\"" 
+                             (get-output-bytes s)
+                             (λ (all w h) 
+                               (define (rem x) (bytes->string/utf-8 (regexp-replace "pt" x "")))
+                               (string->bytes/utf-8
+                                (string-append "width=\"" (rem w) "\" height=\"" (rem h) "\""))))
              (get-output-bytes s))]
           [else default]))
 
