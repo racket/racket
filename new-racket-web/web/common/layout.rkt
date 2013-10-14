@@ -189,20 +189,19 @@
              itemscope itemtype="http://schema.org/Product"> <!--<![endif]}
     })
 
-(define html-postamble
+(define (make-html-postamble resources)
   @list{
     @||
     @; Grab Google CDN's jQuery, with a protocol relative URL;
     @;   fall back to local if offline
-    @; ... TODO: distribute the JS stuffs ...
-    @; @script[src: '("http://ajax.googleapis.com/"
-    @;                "ajax/libs/jquery/1.9.1/jquery.min.js")]
-    @; @script/inline{
-    @;   window.jQuery || document.write(@;
-    @;     '<script src="/js/libs/jquery-1.9.1.min.js"><\/script>')}
-    @; @script[src: "js/libs/gumby.min.js"]
-    @; @script[src: "js/plugins.js"]
-    @; @script[src: "js/main.js"]
+    @script[src: '("http://ajax.googleapis.com/"
+                   "ajax/libs/jquery/1.9.1/jquery.min.js")]
+    @script/inline{
+      window.jQuery || document.write(@;
+        '<script src="/js/libs/jquery-1.9.1.min.js"><\/script>')}
+    @script[src: (resources "gumby.min.js")]
+    @script[src: (resources "plugins.js")]
+    @script[src: (resources "main.js")]
     @||
     })
 
@@ -212,7 +211,8 @@
   @list{@link[rel: "icon"          href: icon type: "image/ico"]
         @link[rel: "shortcut icon" href: icon type: "image/x-icon"]})
 
-(define (html-headers style favicon)
+(define (html-headers resources favicon)
+  (define style (resources 'style-path))
   @list{
     @meta[name: "generator" content: "Racket"]
     @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
@@ -229,10 +229,9 @@
     @; @link[rel: "stylesheet" href="css/minified.css"]
     @; CSS imports non-minified for staging, minify before moving to
     @;   production
-    @; ... TODO: distribute the CSS stuffs ...
-    @; @link[rel: "stylesheet" href: "css/gumby.css"]
+    @link[rel: "stylesheet" href: (resources "gumby.css")]
     @; TODO: Modify `racket-style' definition (and what it depends on)
-    @;   in "resources.rkt"
+    @;   in "resources.rkt", possibly do something similar with the new files
     @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
     @; TODO: Edit the `more.css' definition in www/index.rkt
     @; More ideas for your <head> here: h5bp.com/d/head-Tips
@@ -262,9 +261,10 @@
                    ;; delay the `url-of' until we're in the rendering context
                    => (λ(f) (λ() (url-of (cadr f))))]
                   [else (error 'resource "unknown resource: ~e" what)])]))
-  (define icon-headers (html-icon-headers (resources 'icon-path)))
-  (define headers      (html-headers (resources 'style-path) icon-headers))
-  (define make-navbar  (navbar-maker (resources 'logo-path)))
+  (define icon-headers   (html-icon-headers (resources 'icon-path)))
+  (define headers        (html-headers resources icon-headers))
+  (define make-navbar    (navbar-maker (resources 'logo-path)))
+  (define html-postamble (make-html-postamble resources))
   resources)
 
 ;; `define+provide-context' should be used in each toplevel directory (= each
