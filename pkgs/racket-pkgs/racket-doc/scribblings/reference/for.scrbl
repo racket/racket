@@ -308,7 +308,7 @@ for each @racket[accum-id], and the corresponding current accumulator
 value is placed into the location. The last expression in
 @racket[body] must produce as many values as @racket[accum-id]s, and
 those values become the current accumulator values. When iteration
-terminates, the results of the @racket[fold/for] expression are the
+terminates, the results of the @racket[for/fold] expression are the
 accumulator values.
 
 @examples[
