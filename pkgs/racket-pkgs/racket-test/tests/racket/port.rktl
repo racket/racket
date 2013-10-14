@@ -505,6 +505,19 @@
     (test #"12311-" values s))
   (test 3 write-bytes-avail #"1234" out))
 
+;; Further test of peeking in a limited pipe (shouldn't get stuck):
+(let-values ([(i o) (make-pipe 50)]
+             [(s) (make-semaphore)])
+  (define t
+    (thread (lambda ()
+              (peek-bytes 100 0 i)
+              (semaphore-wait s)
+              (peek-bytes 200 0 i))))
+  (display (make-bytes 100 65) o)
+  (sync (system-idle-evt))
+  (semaphore-post s)
+  (display (make-bytes 100 66) o)
+  (sync t))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Provide a location proc:
