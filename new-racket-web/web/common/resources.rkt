@@ -21,6 +21,15 @@
   ;; the default target argument duplicate the behavior in "utils.rkt"
   (define (copyfile file [target (basename file)])
     (list target (copyfile-resource (in-here file) (web-path dir target))))
+  (define (copydir/flat dir* [target (basename dir*)])
+    (let loop ([dir* (in-here dir*)])
+      (append-map
+       (λ(p) (define path (build-path dir* p))
+             (cond [(file-exists? path)
+                    (define str (path->string p))
+                    `([,str ,(copyfile-resource path (web-path dir str))])]
+                   [(directory-exists? path) (loop path)]))
+       (directory-list dir*))))
   (define (writefile file . contents)
     (list file (resource (web-path dir file)
                          (file-writer output (list contents "\n")))))
@@ -28,9 +37,11 @@
     (list file
           (apply page (string->symbol (regexp-replace #rx"[.]html$" file ""))
                  contents)))
-  `(,(copyfile  "logo.png")
-    ,(copyfile  "plticon.ico")
-    ,(writefile "plt.css" racket-style)
+  `(,(writefile "plt.css" racket-style)
+    ;; resource files are everything in this directory, copied to the toplevel
+    ;; web directory (if there's ever a name clash, the rendering will throw an
+    ;; error, and this can be changed accordingly)
+    ,@(copydir/flat "resources")
     ;; the following resources are not used directly, so their names are
     ;; irrelevant
     @,writefile["google5b2dc47c0b1b15cb.html"]{
@@ -43,7 +54,7 @@
             [t (and t (list "User-agent: *\n" t))])
        (if t (writefile "robots.txt" t) '(#f #f)))
     ;; There are still some clients that look for a favicon.ico file
-    ,(copyfile "plticon.ico" "favicon.ico")
+    ,(copyfile "resources/plticon.ico" "favicon.ico")
     @,pagefile["page-not-found.html"]{
       @h1[style: "text-align: center; margin: 3em 0 1em 0;"]{
         Page not found}
