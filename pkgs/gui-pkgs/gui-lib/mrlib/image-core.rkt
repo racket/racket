@@ -238,6 +238,7 @@ has been moved out).
                      (let ([s (open-output-bytes)])
                        (send (to-bitmap (to-img img)) save-file s 'png)
                        (get-output-bytes s))]
+                    [(svg-bytes) (to-svg-bytes img)]
                     [else default]))]
                [prop:pict-convertible
                 (λ (image)
@@ -266,6 +267,19 @@ has been moved out).
   (render-image img bdc 0 0)
   (send bdc set-bitmap #f)
   bm)
+
+(define (to-svg-bytes img)
+  (define bb (send img get-bb))
+  (define w (min (inexact->exact (ceiling (bb-right bb))) maximum-width))
+  (define h (min (inexact->exact (ceiling (bb-bottom bb))) maximum-height)) 
+  (define s (open-output-bytes))
+  (define svg-dc (new svg-dc% [width w] [height h] [output s]))
+  (send svg-dc start-doc "")
+  (send svg-dc start-page)
+  (render-image img svg-dc 0 0)
+  (send svg-dc end-page)
+  (send svg-dc end-doc)
+  (get-output-bytes s))
 
 (define-local-member-name 
   set-use-bitmap-cache?!
