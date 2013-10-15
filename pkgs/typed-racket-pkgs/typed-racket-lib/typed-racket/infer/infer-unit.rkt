@@ -87,7 +87,7 @@
 ;; dbound : index variable
 ;; vars : listof[type variable] - temporary variables
 ;; cset : the constraints being manipulated
-;; takes the constraints on vars and creates a dmap entry contstraining dbound to be |vars|
+;; takes the constraints on vars and creates a dmap entry constraining dbound to be |vars|
 ;; with the constraints that cset places on vars
 (define/cond-contract (move-vars-to-dmap cset dbound vars)
   (cset? symbol? (listof symbol?) . -> . cset?)
