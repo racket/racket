@@ -47,7 +47,7 @@
                           (define old-checksum (hash-ref vi 'checksum ""))
                           (define new-checksum
                             (package-url->checksum
-                             (hash-ref vi 'source)))
+                             (hash-ref vi 'source "")))
                           (values v
                                   (hash-set vi 'checksum
                                             (or new-checksum

@@ -77,11 +77,11 @@ $( document ).ready(function() {
         else {
             $( "#pi_add_author_row" ).hide(); }
 
-        $( "#pi_source" ).html( $('<a>', { text: pkgi['source'],
-                                           href: pkgi['source_url']  } ));
-        make_editbutton ( "pi_source", pkgi['source'], submit_mod_source );
+        $( "#pi_source" ).html( $('<a>', { text: pkgi['versions']['default']['source'],
+                                           href: pkgi['versions']['default']['source_url']  } ));
+        make_editbutton ( "pi_source", pkgi['versions']['default']['source'], submit_mod_source );
 
-        $( "#pi_checksum" ).html("").text( pkgi['checksum'] );
+        $( "#pi_checksum" ).html("").text( pkgi['versions']['default']['checksum'] );
         if ( pkgi['checksum-error'] ) {
             $( "#pi_checksum" ).append( [ "Error:", $("<pre>").text(pkgi['checksum-error']) ] ); }
 
@@ -100,12 +100,16 @@ $( document ).ready(function() {
                 return [tag, " "]; } } ) ));
 
         $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
-            return [ $('<tr>').append( $('<td>').html("").append(
-                v, (mypkg_p ? ["&nbsp;", jslink( "[x]", function () { submit_remove_version(v); }) ] : "") ),
-                                       $('<td>').html(vo['source']) ),
-                     $('<tr>').append( $('<td>').html(""),
-                                       $('<td>').html(vo['checksum']) ),
-                     " "]; } ) );
+            if ( v == 'default' ) {
+                return []; }
+            else {
+                return [ $('<tr>').append( $('<td>').html("").append(
+                    v, (mypkg_p ? ["&nbsp;", jslink( "[x]", function () { submit_remove_version(v); }) ] : "") ),
+                                           $('<td>').html( $('<a>', { text: vo['source'],
+                                                                      href: vo['source_url']  } ) ) ),
+                         $('<tr>').append( $('<td>').html(""),
+                                           $('<td>').html(vo['checksum']) ),
+                         " "]; } } ) );
         if ( mypkg_p ) {
             $( "#pi_add_version_row" ).show(); }
         else {

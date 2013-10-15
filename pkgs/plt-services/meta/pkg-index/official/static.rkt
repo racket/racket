@@ -51,14 +51,34 @@
   (for ([pkg-name (in-list pkg-list)])
     (define ht (file->value (build-path pkgs-path pkg-name)))
 
+    (define versions-ht 
+      (hash-set (hash-ref ht 'versions (hash))
+                'default
+                (hasheq 'source (hash-ref ht 'source "")
+                        'checksum (hash-ref ht 'checksum ""))))
+    
+    (define (hash-ref-or ht ks)
+      (or (for/or ([k (in-list ks)])
+            (hash-ref ht k #f))
+          (error 'hash-ref-or "Keys (~v) not found in ~e" ks ht)))
+
+    (define versions-5.3.6 
+      (hash-ref-or versions-ht '("5.3.6" default)))
+    (define source-5.3.6
+      (hash-ref versions-5.3.6 'source))
+    (define checksum-5.3.6
+      (hash-ref versions-5.3.6 'checksum))
+
     (hash-set!
      pkg-ht pkg-name
      (hash-set* ht
                 'name pkg-name
+                'source source-5.3.6
+                'checksum checksum-5.3.6
                 'last-updated (hash-ref ht 'last-updated (current-seconds))
                 'last-checked (hash-ref ht 'last-checked (current-seconds))
                 'last-edit (hash-ref ht 'last-edit (current-seconds))
-                'versions (hash-ref ht 'versions empty)
+                'versions versions-ht
                 'ring (hash-ref ht 'ring 2)
                 'tags (hash-ref ht 'tags empty)
                 'authors (author->list (hash-ref ht 'author "")))))
@@ -159,7 +179,11 @@
        (hash-set*
         ht
         'conflicts conflicts
-        'source_url (package-url->useful-url (hash-ref ht 'source))
+        'versions
+        (for/hash ([(v vht) (in-hash (hash-ref ht 'versions))])
+          (values v 
+                  (hash-set vht 'source_url
+                            (package-url->useful-url (hash-ref vht 'source)))))
         'search-terms
         (let* ([st (hasheq)]
                [st (for/fold ([st st])
