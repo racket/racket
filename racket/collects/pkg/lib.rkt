@@ -1424,7 +1424,7 @@
           (match this-dep-behavior
            ['fail
             (clean!)
-            (pkg-error (~a "missing dependencies\n"
+            (pkg-error (~a "missing dependencies, specify --deps search-auto to install them or --deps search-ask to be asked about installing them\n"
                            " for package: ~a\n"
                            " missing packages:~a")
                        pkg
