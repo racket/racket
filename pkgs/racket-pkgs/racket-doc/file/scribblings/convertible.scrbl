@@ -22,12 +22,13 @@ should be considered standard:
  @item{@racket['text] --- a string for human-readable text}
  @item{@racket['gif-bytes] --- a byte string containing a GIF image encoding}
  @item{@racket['png-bytes] --- a byte string containing a PNG image encoding}
+ @item{@racket['svg-bytes] --- a byte string containing a SVG image encoding}
  @item{@racket['ps-bytes] --- a byte string containing a PostScript document}
  @item{@racket['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
  @item{@racket['pdf-bytes] --- a byte string containing a PDF document}
  @item{@racket['pdf-bytes+bounds] --- a list containing a byte string and four numbers; 
-        the byte string contains a PDF document and the four numbers are sizing information for the PDF document, 
-        namely the width, height, ascent and descent in that order}
+        the byte string contains a PDF document and the four numbers are sizing information
+        for the PDF document, namely the width, height, ascent and descent in that order}
 ]
 
 @defthing[prop:convertible struct-type-property?]{
@@ -48,7 +49,7 @@ Returns @racket[#t] if @racket[v] supports the conversion protocol,
 @defproc[(convert [v convertible?] [request symbol?] [default any/c #f])
          (case request
            [(text) (or/c string? (λ (x) (eq? x default)))]
-           [(gif-bytes png-bytes ps-bytes eps-bytes pdf-bytes)
+           [(gif-bytes png-bytes ps-bytes eps-bytes pdf-bytes svg-bytes)
             (or/c bytes? (λ (x) (eq? x default)))]
            [(pdf-bytes+bounds) (or/c (list/c bytes?
                                              (and/c real? (not/c negative?))
