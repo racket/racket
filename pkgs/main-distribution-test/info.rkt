@@ -16,7 +16,15 @@
                "typed-racket-test"
                "xrepl-test"
                "scribble-test"
-               "unstable-test"))
+               "unstable-test"
+               "compiler-test"
+               "data-test"
+               "net-test"
+               "planet-test"
+               "syntax-color-test"
+               "images-test"
+               "plot-test"
+               "math-test"))
 
 (define pkg-desc "tests for \"main-distribution\"")
 

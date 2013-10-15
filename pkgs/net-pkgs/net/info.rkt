@@ -1,8 +1,9 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("srfi-lite-lib"
-               "base"))
+
+(define deps '("net-lib" "net-doc"))
+(define implies '("net-lib" "net-doc"))
 
 (define pkg-desc "Networking libraries")
 

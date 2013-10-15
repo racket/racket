@@ -1,8 +1,9 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("scheme-lib"
-               "base"))
+
+(define deps '("mzscheme-lib" "mzscheme-doc"))
+(define implies '("mzscheme-lib" "mzscheme-doc"))
 
 (define pkg-desc "The legacy MzScheme language")
 

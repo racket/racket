@@ -4,12 +4,10 @@
 
 (define deps '("rackunit-lib"
                "rackunit-doc"
-               "rackunit-tests"
                "rackunit-gui"
                "rackunit-plugin-lib"))
 (define implies '("rackunit-lib"
                   "rackunit-doc"
-                  "rackunit-tests"
                   "rackunit-gui"
                   "rackunit-plugin-lib"))
 

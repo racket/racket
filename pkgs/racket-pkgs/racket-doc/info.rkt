@@ -43,7 +43,11 @@
                      "future-visualizer"
                      "distributed-places-doc"
                      "serialize-cstruct-lib"
-                     "cext-lib"))
+                     "cext-lib"
+                     "data-doc"
+                     "net-doc"
+                     "planet-doc"
+                     "mzscheme-doc"))
 
 (define pkg-desc "Base Racket documentation")
 

@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define build-deps '("scheme-lib"
+(define build-deps '("mzscheme-doc"
+                     "net-doc"
+                     "scheme-lib"
                      "draw-doc"
                      "gui-doc"
                      "slideshow-doc"

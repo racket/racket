@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("scheme-lib"
+(define build-deps '("mzscheme-doc"
+                     "scheme-lib"
                      "scribble-lib"
                      "r5rs-lib"
                      "compatibility-lib"

@@ -12,4 +12,6 @@
 (define pkg-desc "documentation part of \"compatibility\"")
 
 (define pkg-authors '(eli mflatt robby samth))
-(define build-deps '("scheme-lib"))
+(define build-deps '("data-doc"
+                     "mzscheme-doc"
+                     "scheme-lib"))

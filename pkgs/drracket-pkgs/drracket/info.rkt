@@ -37,7 +37,10 @@
                "unstable"
                "drracket-plugin-lib"
                "gui-pkg-manager-lib"))
-(define build-deps '("compatibility-doc"
+(define build-deps '("mzscheme-doc"
+                     "net-doc"
+                     "planet-doc"
+                     "compatibility-doc"
                      "string-constants-doc"
                      "draw-doc"
                      "errortrace-doc"

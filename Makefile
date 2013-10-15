@@ -29,7 +29,7 @@ PKGS = main-distribution plt-services
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
-MACOSX_CHECK = $(PLAIN_RACKET) -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
+MACOSX_CHECK = $(PLAIN_RACKET) -G build/config -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 
 LINK_MODE = --save
 

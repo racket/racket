@@ -2,8 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("plot-lib" "plot-gui-lib" "plot-doc" "plot-test"))
-(define implies '("plot-lib" "plot-gui-lib" "plot-doc" "plot-test"))
+(define deps '("plot-lib" "plot-gui-lib" "plot-doc"))
+(define implies '("plot-lib" "plot-gui-lib" "plot-doc"))
 
 (define pkg-desc "Functions (and docs and tests) for plotting")
 

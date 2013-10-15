@@ -11,7 +11,8 @@
     "htdp-lib"
     "sandbox-lib"
     "pict-lib"))
-(define build-deps '("scheme-lib"
+(define build-deps '("mzscheme-doc"
+                     "scheme-lib"
                      "compatibility-doc"
                      "draw-doc"
                      "drracket"
