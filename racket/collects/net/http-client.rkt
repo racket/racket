@@ -30,10 +30,10 @@
 
 ;; Core
 
-(struct http-conn (host to from abandon-p) #:mutable)
+(struct http-conn (host port port-usual? to from abandon-p) #:mutable)
 
 (define (make-http-conn)
-  (http-conn #f #f #f #f))
+  (http-conn #f #f #f #f #f #f))
 
 (define (http-conn-live? hc)
   (and (http-conn-to hc)
@@ -46,23 +46,26 @@
 
   (define-values (from to)
     (cond [ssl?
+           (set-http-conn-port-usual?! hc (= 443 port))
            (cond
              [(or ssl-available? (not win32-ssl-available?))
-              (set-http-conn-abandon-p! hc ssl-abandon-port)
+              (set-http-conn-abandon-p! hc ssl-abandon-port)              
               (ssl-connect host port ssl-version)]
              [else
               (set-http-conn-abandon-p! hc win32-ssl-abandon-port)
               (win32-ssl-connect host port ssl-version)])]
           [else
            (set-http-conn-abandon-p! hc plain-tcp-abandon-port)
+           (set-http-conn-port-usual?! hc (= 80 port))
            (plain-tcp-connect host port)]))
 
   (set-http-conn-host! hc host)
+  (set-http-conn-port! hc port)
   (set-http-conn-to! hc to)
   (set-http-conn-from! hc from))
 
 (define (http-conn-close! hc)
-  (match-define (http-conn host to from abandon) hc)
+  (match-define (http-conn host port port-usual? to from abandon) hc)
   (set-http-conn-host! hc #f)
   (when to
     (abandon to)
@@ -73,7 +76,7 @@
   (set-http-conn-abandon-p! hc #f))
 
 (define (http-conn-abandon! hc)
-  (match-define (http-conn host to from abandon) hc)
+  (match-define (http-conn host port port-usual? to from abandon) hc)
   (when to
     (abandon to)
     (set-http-conn-to! hc #f)))
@@ -84,10 +87,13 @@
                          #:headers [headers-bs empty]
                          ;; xxx maybe support other kinds of data (ports and writing functions)
                          #:data [data-bsf #f])
-  (match-define (http-conn host to from _) hc)
+  (match-define (http-conn host port port-usual? to from _) hc)
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
-    (fprintf to "Host: ~a\r\n" host))
+    (fprintf to "Host: ~a\r\n" 
+             (if port-usual?
+               host
+               (format "~a:~a" host port))))
   (unless (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs)
     (fprintf to "Accept-Encoding: gzip\r\n"))
   (define data
