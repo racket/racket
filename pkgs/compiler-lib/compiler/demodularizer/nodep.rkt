@@ -124,13 +124,14 @@
 (define (construct-provide->toplevel prefix provides)
   (define provide-ht (make-hasheq))
   (for ([tl (prefix-toplevels prefix)]
-          [i (in-naturals)])
+        [i (in-naturals)])
       (when (symbol? tl)
         (hash-set! provide-ht (intern tl) i)))  
   (lambda (sym pos)
-    (log-debug (format "Looking up ~S@~a in ~S" sym pos prefix))
+    (define isym (intern sym))
+    (log-debug (format "Looking up ~S@~a [~S] in ~S" sym pos isym prefix))
     (define res
-      (hash-ref provide-ht (intern sym)
+      (hash-ref provide-ht isym
               (lambda ()
                 (error 'provide->toplevel "Cannot find ~S in ~S" sym prefix))))
     (log-debug (format "Looked up ~S@~a and got ~v" sym pos res))
@@ -142,14 +143,15 @@
                        unexported max-let-depth dummy lang-info internal-context
                        flags pre-submodules post-submodules))
      (define new-prefix prefix)
-     ; Cache all the mpi paths
+     ;; Cache all the mpi paths
      (for-each (match-lambda
                  [(and mv (struct module-variable (modidx sym pos phase constantness)))
                   (mpi->path! modidx)]
                  [tl
                   (void)])
                (prefix-toplevels new-prefix))
-     (log-debug (format "[~S] module-variables: ~S" name (length (filter module-variable? (prefix-toplevels new-prefix)))))
+     (define mvs (filter module-variable? (prefix-toplevels new-prefix)))
+     (log-debug (format "[~S] module-variables: ~S - ~S" name (length mvs) mvs))
      (values (make-modvar-rewrite self-modidx (construct-provide->toplevel new-prefix provides))
              lang-info
              (append (requires->modlist requires phase)

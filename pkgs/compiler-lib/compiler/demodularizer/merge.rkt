@@ -68,13 +68,18 @@
     [(struct module-variable (modidx sym pos phase constantness))
      (match rw
        [(struct modvar-rewrite (self-modidx provide->toplevel))
-        (log-debug (format "Rewriting ~a of ~S" pos (mpi->path* modidx)))
+        (log-debug (format "Rewriting ~a@~a of ~S" sym pos (mpi->path* modidx)))
+        (define tl (provide->toplevel sym pos))
+        (log-debug (format "Rewriting ~a@~a of ~S to ~S" sym pos (mpi->path* modidx) tl))
         (match-define (toplevel-offset-rewriter rewrite-fun meta)
                       (hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
                                 (lambda ()
                                   (error 'compute-new-modvar "toplevel offset not yet computed: ~S" self-modidx))))
-        (log-debug (format "Rewriting ~a of ~S from ~S" pos (mpi->path* modidx) meta))
-        (rewrite-fun (provide->toplevel sym pos))])]))
+        (log-debug (format "Rewriting ~a@~a of ~S (which is ~a) with ~S" sym pos (mpi->path* modidx) tl meta))
+        (define res (rewrite-fun tl))
+        (log-debug (format "Rewriting ~a@~a of ~S (which is ~a) with ~S and got ~S"
+                           sym pos (mpi->path* modidx) tl meta res))
+        res])]))
 
 (define (filter-rewritable-module-variable? toplevel-offset mod-toplevels)
   (define-values
@@ -86,7 +91,7 @@
       (match tl
         [(and mv (struct module-variable (modidx sym pos phase constantness)))
          (define rw ((current-get-modvar-rewrite) modidx))
-                                        ; XXX We probably don't need to deal with #f phase
+         ;; XXX We probably don't need to deal with #f phase
          (unless (or (not phase) (zero? phase))
            (error 'eliminate-module-variables "Non-zero phases not supported: ~S" mv))
          (cond
