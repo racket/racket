@@ -5,7 +5,6 @@
 (define deps '("srfi-lite-lib"
                "data-lib"
                "base"
-               "rackunit-lib"
                "syntax-color-lib"
                "draw-lib"
                "snip-lib"
@@ -22,7 +21,8 @@
                ("gui-ppc-macosx" #:platform "ppc-macosx")
                ("gui-win32-i386" #:platform "win32\\i386")
                ("gui-win32-x86_64" #:platform "win32\\x86_64")))
-(define build-deps '("at-exp-lib"))
+(define build-deps '("at-exp-lib"
+                     "rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"gui\"")
 

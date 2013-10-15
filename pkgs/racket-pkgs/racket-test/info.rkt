@@ -7,10 +7,9 @@
                "sandbox-lib"
                "compatibility-lib"
                "planet-lib"
+               "net-lib"
                "distributed-places-lib"
                "eli-tester"
-               ;; for `net` tests
-               "net-lib"
                ;; for `pkg` tests
                "web-server-lib"
                "rackunit-lib"
@@ -21,7 +20,6 @@
                "scribble-lib"
                "syntax-color-lib"
                "typed-racket-lib"
-               "serialize-cstruct-lib"
 
                "cext-lib"
 

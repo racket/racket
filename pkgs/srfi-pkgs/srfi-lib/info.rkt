@@ -5,7 +5,6 @@
 (define deps '("scheme-lib"
                "base"
                "srfi-lite-lib"
-               "r5rs-lib"
                "r6rs-lib"
                "compatibility-lib"))
 

@@ -7,7 +7,7 @@
 (define build-deps '("racket-doc"
                      "scribble-lib"
                      "rackunit-lib"
-                     "math"))
+                     "math-lib"))
 
 (define pkg-desc "Profiling tool for contracts")
 

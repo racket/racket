@@ -9,7 +9,7 @@
                "scribble-lib"
                "slideshow-lib"
                "unstable-macro-testing-lib"))
-(define imples '("unstable-macro-testing-lib"))
+(define implies '("unstable-macro-testing-lib"))
 (define build-deps '())
 
 (define pkg-desc "implementation (no documentation) part of \"unstable\"")

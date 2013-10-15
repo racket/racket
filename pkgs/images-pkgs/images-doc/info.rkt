@@ -2,9 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("base"
-               "images-lib"))
-(define build-deps '("draw-doc"
+(define deps '("base"))
+(define build-deps '("images-lib"
+                     "draw-doc"
                      "gui-doc"
                      "pict-doc"
                      "slideshow-doc"

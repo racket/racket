@@ -17,7 +17,7 @@
 
 ; (define scribblings '(("htdp.scrbl")))
 (define deps '("base"
-               "htdp"))
+               "htdp-lib"))
 (define build-deps '("rackunit-lib"))
 
 (define pkg-desc "Sample code for _Realm of Racket_")

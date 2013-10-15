@@ -21,7 +21,7 @@
 (define drracket-tool-names '("Lazy Racket"))
 (define deps '("base"
                "drracket-plugin-lib"
-               "htdp"
+               "htdp-lib"
                "string-constants-lib"
                "compatibility-lib"))
 (define build-deps '("mzscheme-doc"

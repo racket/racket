@@ -2,6 +2,8 @@
 
 (define deps
   '("base" "db-lib" "db-doc"))
+(define implies
+  '("db-lib" "db-doc"))
 
 (define pkg-desc "Database connectivity")
 

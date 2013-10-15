@@ -11,8 +11,8 @@
                "drracket"
                "gui-lib"
 	       "net-lib"
-               "htdp"
-               "math"
+               "htdp-lib"
+               "math-lib"
                "scribble-lib"
                "sgl"
                "srfi-lib"
@@ -21,7 +21,8 @@
                      "gui-doc"
                      "racket-doc"
                      "pict-lib"
-                     "rackunit-lib"))
+                     "rackunit-lib"
+                     "htdp-doc"))
 
 (define pkg-desc "Games")
 

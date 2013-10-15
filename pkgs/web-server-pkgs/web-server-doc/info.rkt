@@ -7,7 +7,7 @@
                      "compatibility-doc"
                      "db-doc"
                      "scribble-doc"
-                     "unstable"
+                     "unstable-doc"
                      "compatibility-lib"
                      "db-lib"
 		     "net-lib"
