@@ -350,7 +350,7 @@
           [(hash? v)
            (or (for/or ([vers (in-list (list (current-pkg-scope-version)
                                              'default))])
-                 (define ht2 (hash-ref v (current-pkg-scope-version) #f))
+                 (define ht2 (hash-ref v vers #f))
                  (and ht2
                       ;; Override fields of `ht' with values from `ht2':
                       (for/fold ([ht ht]) ([(k v) (in-hash ht2)])
@@ -2514,9 +2514,10 @@
     (for ([name (in-list (if all?
                              (hash-keys all-details)
                              names))])
-      (define details (if all?
-                          (hash-ref all-details name)
-                          (get-pkg-details-from-catalogs name)))
+      (define details (select-info-version
+                       (if all?
+                           (hash-ref all-details name)
+                           (get-pkg-details-from-catalogs name))))
       (printf "Package name: ~a\n" name)
       (for ([key '(author source checksum tags description)])
         (define v (hash-ref details key #f))
