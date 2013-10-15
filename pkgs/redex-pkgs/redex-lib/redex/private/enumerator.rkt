@@ -14,7 +14,7 @@
          const/e
          from-list/e
          sum/e
-         prod/e
+         cons/e
          dep/e
          dep2/e ;; requires size (eventually should replace dep/e with this)
          map/e
@@ -25,6 +25,7 @@
          many1/e
          list/e
          traverse/e
+         hash-traverse/e
          
          fail/e
          
@@ -288,8 +289,8 @@
                 l))) ;; (n,m) -> (n+m)(n+m+1)/2 + n
         ))
 
-;; prod/e : enum a, enum b -> enum (a,b)
-(define prod/e
+;; cons/e : enum a, enum b -> enum (cons a b)
+(define cons/e
   (case-lambda
     [(e) e]
     [(e1 e2)
@@ -365,14 +366,29 @@
                              2)
                           l))))])]
     [(a b c . rest)
-     (prod/e a (apply prod/e b c rest))]))
+     (cons/e a (apply cons/e b c rest))]))
 
 ;; Traversal (maybe come up with a better name
 ;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
 (define (traverse/e f xs)
   (list/e (map f xs)))
 
-;; sequence/e : listof (enum a) -> enum (listof a)
+;; Hash Traversal
+;; hash-traverse/e : (a -> enum b), (hash[k] -o> a) -> enum (hash[k] -o> b)
+(define (hash-traverse/e f ht)
+  ;; as-list : listof (cons k a)
+  (define as-list (hash->list ht))
+  ;; on-cdr : (cons k a) -> enum (cons k b)
+  (define/match (on-cdr pr)
+    [((cons k v))
+     (cons/e (const/e k)
+             (f v))])
+  ;; enum (listof (cons k b))
+  (define assoc/e
+    (traverse/e on-cdr as-list))
+  (map/e make-immutable-hash
+         hash->list
+         assoc/e))
 
 ;; the nth triangle number
 (define (tri n)
@@ -471,7 +487,7 @@
                 (λ (ab)
                    (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                       (encode e (car ab)))))]
-         [else ;; both infinite, same as prod/e
+         [else ;; both infinite, same as cons/e
           (enum +inf.f               
                 (λ (n)
                    (let* ([k (floor-untri n)]
@@ -596,7 +612,7 @@
               (λ (ab)
                  (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                     (encode e (car ab)))))]
-       [else ;; both infinite, same as prod/e
+       [else ;; both infinite, same as cons/e
         (enum +inf.f               
               (λ (n)
                  (let* ([k (floor-untri n)]
@@ -693,17 +709,19 @@
       (λ ()
          (sum/e
           (const/e '())
-          (prod/e e (many/e e)))))]
+          (cons/e e (many/e e)))))]
     [(e n)
      (list/e (build-list n (const e)))]))
 
 ;; many1/e : enum a -> enum (nonempty listof a)
 (define (many1/e e)
-  (prod/e e (many/e e)))
+  (cons/e e (many/e e)))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
-  (apply prod/e (append es `(,(const/e '())))))
+  (foldr cons/e
+         (const/e '())
+         es))
 
 (define (nats+/e n)
   (map/e (λ (k)

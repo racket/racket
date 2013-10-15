@@ -132,12 +132,12 @@
    (check-equal? (encode odd-or-even 3) 3)
    (check-bijection? odd-or-even)))
 
-;; prod/e tests
-(define bool*bool (prod/e bools/e bools/e))
-(define 1*b (prod/e (const/e 1) bools/e))
-(define bool*nats (prod/e bools/e nats))
-(define nats*bool (prod/e nats bools/e))
-(define nats*nats (prod/e nats nats))
+;; cons/e tests
+(define bool*bool (cons/e bools/e bools/e))
+(define 1*b (cons/e (const/e 1) bools/e))
+(define bool*nats (cons/e bools/e nats))
+(define nats*bool (cons/e nats bools/e))
+(define nats*nats (cons/e nats nats))
 (define ns-equal? (λ (ns ms)
                      (and (= (car ns)
                              (car ms))

@@ -16,6 +16,10 @@
                          (generate-term l p #:i-th i))
                   (error 'bad-term "line ~a: i=~a" line i)))))))]))
 
+(define-language Nats
+  (n natural))
+(try-it 100 Nats n)
+
 ;; Repeat test
 (define-language Rep
   (r (variable variable ...)))
@@ -29,7 +33,6 @@
      x)
   (x (variable-except λ)))
 
-;; slow: fix dep/enum
 (try-it 250 Λc e)
 (try-it 24 Λc x)
 

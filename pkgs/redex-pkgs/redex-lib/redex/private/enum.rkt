@@ -6,6 +6,7 @@
          racket/set
 
          "enumerator.rkt"
+         "env.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
          "preprocess-pat.rkt"
@@ -45,14 +46,12 @@
     (except/e var/e
               (used-vars lang)))
   (define (enumerate-lang cur-lang enum-f)
-    (for-each
-     (λ (nt)
-        (hash-set! l-enums
+    (for ([nt (in-list cur-lang)])
+      (hash-set! l-enums
                    (nt-name nt)
                    (with-handlers ([exn:fail? fail/e])
                      (enum-f (nt-rhs nt)
-                             l-enums))))
-     cur-lang))
+                             l-enums)))))
   (let-values ([(fin-lang rec-lang)
                 (sep-lang lang)])
     (enumerate-lang fin-lang
@@ -68,8 +67,7 @@
 
 (define (pat-enumerator l-enum pat)
   (map/e
-   to-term
-   ;;identity
+   fill-refs
    (λ (_)
       (error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
@@ -78,19 +76,88 @@
 
 (define (enumerate-rhss rhss l-enums unused/e)
   (apply sum/e
-         (map
-          (λ (rhs)
-             (pat/e (rhs-pattern rhs)
-                    l-enums
-                    unused/e))
-          rhss)))
+         (for/list ([production (in-list rhss)])
+           (pat/e (rhs-pattern production)
+                  l-enums
+                  unused/e))))
 
 (define (pat/e pat l-enums unused/e)
-  (define processed (preprocess pat))
-  (enum-names processed
-              (sep-names processed)
-              l-enums
-              unused/e))
+  (match-define (ann-pat nv pp-pat) (preprocess pat))
+  (map/e
+   (λ (e-p)
+      (ann-pat (car e-p) (cdr e-p)))
+   (λ (ap)
+      (cons (ann-pat-ann ap)
+            (ann-pat-pat ap)))
+   (cons/e (env/e nv l-enums unused/e)
+           (pat-refs/e pp-pat l-enums unused/e))))
+
+(define (pat-refs/e pat nt-enums unused/e)
+  (define (loop pat)
+    (match-a-pattern
+     pat
+     [`any (sum/e any/e (many/e any/e))]
+     [`number num/e]
+     [`string string/e]
+     [`natural natural/e]
+     [`integer integer/e]
+     [`real real/e]
+     [`boolean bool/e]
+     [`variable var/e]
+     [`(variable-except ,s ...)
+      (except/e var/e s)]
+     [`(variable-prefix ,s)
+      ;; todo
+      (error 'unimplemented "var-prefix")]
+     [`variable-not-otherwise-mentioned
+      unused/e]
+     [`hole
+      (const/e the-hole)]
+     [`(nt ,id)
+      (hash-ref nt-enums id)]
+     [`(name ,n ,pat)
+      (const/e (name-ref n))]
+     [`(mismatch-name ,n ,pat)
+      (const/e (mismatch-ref n))]
+     [`(in-hole ,p1 ,p2) ;; untested
+      (map/e
+       (λ (ts)
+          (decomposition (car ts)
+                         (cdr ts)))
+       (λ (decomp)
+          (cons (decomposition-ctx decomp)
+                (decomposition-term decomp)))
+       (cons/e
+        (loop p1)
+        (loop p2)))]
+     [`(hide-hole ,p)
+      (loop p)]
+     [`(side-condition ,p ,g ,e)
+      (unsupported pat)]
+     [`(cross ,s)
+      (unsupported pat)]
+     [`(list ,sub-pats ...)
+      ;; enum-list
+      (list/e
+       (for/list ([sub-pat (in-list sub-pats)])
+         (match sub-pat
+           [`(repeat ,pat ,n ,m)
+            (error 'unimplemented "repeats")]
+           [else (loop sub-pat)])))]
+     [(? (compose not pair?)) 
+      (const/e pat)]))
+  (loop pat))
+
+(define (env/e nv l-enums unused/e)
+  (define names (env-names nv))
+  (define (val/e p)
+    (pat/e p l-enums unused/e))
+  (define names-env
+    (hash-traverse/e val/e names))
+  (map/e
+   env
+   env-names
+   names-env))
 
 (define (map-nt-rhs-pat f nonterminal)
   (nt (nt-name nonterminal)
@@ -409,7 +476,7 @@
      [`hole
       (const/e the-hole)]
      [`(nt ,id)
-      (hash-ref nt-enums id)]
+      (fill-refs (hash-ref nt-enums id))]
      [`(name ,n ,pat)
       (const/e (name-ref n))]
      [`(mismatch-name ,n ,pat)
@@ -422,7 +489,7 @@
        (λ (decomp)
           (cons (decomposition-ctx decomp)
                 (decomposition-term decomp)))
-       (prod/e
+       (cons/e
         (loop p1)
         (loop p2)))]
      [`(hide-hole ,p)
@@ -520,6 +587,21 @@
          string/e
          bool/e
          var/e))
+
+;; fill-refs : (ann-pat env pat-with-refs) -> redex term
+(define/match (fill-refs ap)
+  [((ann-pat nv term))
+   (define (rec term)
+     (cond [(ann-pat? term)
+            (fill-refs term)]
+           [(name-ref? term)
+            (fill-refs (env-name-ref nv (name-ref-name term)))]
+           [(decomposition? term)
+            (error 'unsupported "in-hole")]
+           [(list? term)
+            (map rec term)]
+           [else term]))
+   (rec term)])
 
 ;; to-term : augmented term -> redex term
 (define (to-term aug)
