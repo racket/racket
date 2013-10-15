@@ -180,6 +180,13 @@ flags:
   mismatches by adjusting package @filepath{info.rkt} files (which makes
   sense only for packages that are installed as links).}
 
+ @item{@DFlag{unused-pkg-deps} --- attempt to report dependencies that
+  are declared but are unused. Beware that some package dependencies
+  may be intentionally unused (e.g., declared to force installation of
+  other packages as a convenience), and beware that package
+  dependencies may be reported as unused only because compilation of
+  relevant modules has been suppressed.}
+
  @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
    other than the default compiler, and put the resulting
    @filepath{.zo} files in a subdirectory (of the usual place) named

@@ -26,13 +26,15 @@
          coll-main?s
          coll-modes
          setup-printf setup-fprintf
-         fix? verbose?)
+         check-unused? fix? verbose?)
   ;; Tables
   (define missing (make-hash))
   (define skip-pkgs (make-hash))
   (define pkg-internal-deps (make-hash)) ; dependencies available for a package's own use
   (define pkg-immediate-deps (make-hash)) ; save immediate dependencies
   (define pkg-external-deps (make-hash)) ; dependencies made available though `implies'
+  (define pkg-actual-deps (make-hash)) ; found dependencies (when checking for unused)
+  (define pkg-implies (make-hash)) ; for checking unused
   (define pkg-reps (make-hash)) ; for union-find on external deps
   (define mod-pkg (make-hash))
   (define path-cache (make-hash))
@@ -131,6 +133,8 @@
                                                (set-add runtime-deps
                                                         'core))
                                               pkg))
+    (when check-unused?
+      (hash-set! pkg-implies pkg implies))
     (values deps implies))
   
   ;; ----------------------------------------
@@ -184,7 +188,11 @@
       (let ([imm-depss (hash-ref pkg-immediate-deps pkg)])
         (hash-set! pkg-internal-deps
                    pkg
-                   (map flatten imm-depss)))
+                   (map flatten imm-depss))
+        (when check-unused?
+          (hash-set! pkg-actual-deps
+                     pkg
+                     (map (lambda (ignored) (make-hash)) imm-depss))))
       (when verbose?
         (define (make-list s)
           (apply
@@ -196,7 +204,7 @@
                         " declared accesses, counting `implies'\n"
                         "  for package: ~s\n"
                         "  packages:~a\n"
-                        "  packages for build:~a")
+                        "  packages for build:~a\n")
                        pkg
                        (make-list (car (hash-ref pkg-internal-deps pkg)))
                        (make-list (cadr (hash-ref pkg-internal-deps pkg)))))))
@@ -205,6 +213,11 @@
   ;; Check use of `src-pkg' (in `mode') from `pkg':
   (define (check-dep! pkg src-pkg mode)
     (define flat-depss (hash-ref pkg-internal-deps pkg))
+    (when check-unused?
+      (define actual-depss (hash-ref pkg-actual-deps pkg))
+      (hash-set! (if (eq? mode 'run) (car actual-depss) (cadr actual-depss))
+                 src-pkg
+                 #t))
     (or (set-member? (if (eq? mode 'run)
                          (car flat-depss)
                          (cadr flat-depss))
@@ -382,6 +395,47 @@
                 (check-mod! mod 'build pkg f dir)))))
         ;; Treat all (direct) documentation links as 'build mode:
         (register-or-check-docs #t pkg path coll-main?))))
+
+  (when check-unused?
+    (for ([(pkg actuals) (in-hash pkg-actual-deps)])
+      (define availables (hash-ref pkg-internal-deps pkg))
+      (define unused
+        (for/hash ([actual (in-list actuals)]
+                   [available (in-list availables)]
+                   [mode '(run build)]
+                   #:when #t
+                   [i (in-set available)]
+                   #:unless (or (equal? i pkg)
+                                (equal? i core-pkg)
+                                (equal? i 'core)
+                                (hash-ref actual i #f)
+                                ;; If `i` is implied, then there's a
+                                ;; good reason for the dependency.
+                                (set-member? (hash-ref pkg-implies pkg (set)) i)
+                                ;; If `i' is implied by a package
+                                ;; that is used directly, then there's
+                                ;; no way around the dependency, so don't
+                                ;; report it.
+                                (for/or ([a (in-hash-keys actual)])
+                                  (set-member? (hash-ref pkg-implies a (set)) i))))
+          ;; note that 'build override 'run
+          (values i mode)))
+      (unless (zero? (hash-count unused))
+        (setup-fprintf (current-error-port) #f 
+                       (apply
+                        string-append
+                        "unused dependenc~a detected\n"
+                        "  for package: ~s\n"
+                        "  on package~a:"
+                        (for/list ([(i mode) (in-hash unused)])
+                          (format "\n   ~s~a" 
+                                  i
+                                  (if (eq? mode 'run)
+                                      " for run"
+                                      ""))))
+                       (if (= (hash-count unused) 1) "y" "ies")
+                       pkg
+                       (if (= (hash-count unused) 1) "" "s")))))
   
   ;; Report result summary and (optionally) repair:
   (unless (zero? (hash-count missing))

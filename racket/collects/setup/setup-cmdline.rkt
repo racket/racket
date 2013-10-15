@@ -83,6 +83,9 @@
      [("--fix-pkg-deps") "Auto-repair package-dependency declarations"
       (add-flags '((check-dependencies #t)
                    (fix-dependencies #t)))]
+     [("--unused-pkg-deps") "Check for unused package-dependency declarations"
+      (add-flags '((check-dependencies #t)
+                   (check-unused-dependencies #t)))]
      [("--mode") mode "Select a compilation mode"
       (add-flags `((compile-mode ,mode)))]
      [("-v" "--verbose") "See names of compiled files and info printfs"

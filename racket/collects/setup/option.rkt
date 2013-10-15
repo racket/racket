@@ -68,6 +68,7 @@
 (define-flag-param make-doc-index #f)
 (define-flag-param check-dependencies #t)
 (define-flag-param fix-dependencies #f)
+(define-flag-param check-unused-dependencies #f)
 (define-flag-param call-install #t)
 (define-flag-param call-post-install #t)
 (define-flag-param pause-on-errors #f)

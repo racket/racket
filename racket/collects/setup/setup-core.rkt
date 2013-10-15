@@ -1723,6 +1723,7 @@
                                                      'build
                                                      'run))))
                                         setup-printf setup-fprintf
+                                        (check-unused-dependencies)
                                         (fix-dependencies)
                                         (verbose))
       (set! exit-code 1)))
