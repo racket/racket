@@ -39,9 +39,11 @@
  "locking"
  "overwrite"
  "config"
- ;; "network"
- ;; "planet"
- ;; "main-server"
+
+ "network"
+ "planet"
+ "main-server"
+
  "update-deps"
  "update-auto"
  "scope"

@@ -13,10 +13,4 @@
   (shelly-case
    "planet compatibility tests - deps"
    $ "raco pkg install --deps search-auto planet-dyoo-union-find1"
-   $ "racket -e '(require dyoo/union-find1/test-union-find)'"))
-
- (with-fake-root
-  (shelly-case
-   "planet compatibility tests - deps"
-   $ "raco pkg install --deps search-auto planet-neil-rackonsole1"
-   $ "racket -e '(require neil/rackonsole1/test-rackonsole)'")))
+   $ "racket -e '(require dyoo/union-find1/test-union-find)'")))

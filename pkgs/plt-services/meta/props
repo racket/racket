@@ -1087,6 +1087,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/openssl" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/pkg" responsible (jay) drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-test/tests/pkg/test.rkt" responsible (jay) drdr:command-line (raco "test" *)
 "pkgs/racket-pkgs/racket-test/tests/pkg/test-pkgs" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/planet" responsible (robby jay)
 "pkgs/racket-pkgs/racket-test/tests/planet/cmdline-tool.rkt" drdr:command-line (raco "make" *)
