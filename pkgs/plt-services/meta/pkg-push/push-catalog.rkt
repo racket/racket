@@ -167,14 +167,21 @@
 (for ([p (in-list new-checksums&files)])
   (sync-one (car p) (cdr p)))
 
+;; Use 'default version, if any
+(define (hash-ref* ht k def)
+  (define ht2 (hash-ref (hash-ref ht 'versions (hash))
+                        'default
+                        ht))
+  (hash-ref ht2 k (hash-ref ht k def)))
+
 ;; Update the catalog:
 (let ([changed-pkgs
        (for/hash ([(k v) (in-hash new-pkgs)]
                   #:unless (let ([ht (hash-ref current-pkgs k #hash())])
                              (and (equal? (hash-ref v 'source)
-                                          (hash-ref ht 'source #f))
+                                          (hash-ref* ht 'source #f))
                                   (equal? (hash-ref v 'checksum)
-                                          (hash-ref ht 'checksum #f)))))
+                                          (hash-ref* ht 'checksum #f)))))
          (define (add-tag v t)
            (define l (hash-ref v 'tags '()))
            (if (member t l)
