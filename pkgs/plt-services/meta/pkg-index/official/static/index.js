@@ -115,6 +115,28 @@ $( document ).ready(function() {
         else {
             $( "#pi_add_version_row" ).hide(); }
 
+        if ( (! mypkg_p) && Object.keys(pkgi['versions']).length == 1 ) {
+            $( "#pi_versions_row" ).hide(); }
+        else {
+            $( "#pi_versions_row" ).show(); }
+
+        ($( "#pi_dependencies" ).html("").append( $.map( pkgi['dependencies'], function ( pkg, i ) {
+            return [jslink(pkg, function () { update_info(pkgdb[pkg]); } ), " "]; } ) ));
+        if ( pkgi['dependencies'].length == 0 ) {
+            $( "#pi_dependencies_row" ).hide(); }
+        else {
+            $( "#pi_dependencies_row" ).show(); }
+        ($( "#pi_conflicts" ).html("").append( $.map( pkgi['conflicts'], function ( pkg, i ) {
+            return [jslink(pkg, function () { update_info(pkgdb[pkg]); } ), " "]; } ) ));
+        if ( pkgi['conflicts'].length == 0 ) {
+            $( "#pi_conflicts_row" ).hide(); }
+        else {
+            $( "#pi_conflicts_row" ).show(); }
+        ($( "#pi_modules" ).html("").append( $.map( pkgi['modules'], function ( m, i ) {
+            return [ $("<code>").text(m[1]), " "]; } ) ));
+
+        $("#pi_install").hide();
+
         active_info = pkgi; };
 
     function submit_remove_tag ( tag ) {
@@ -382,19 +404,22 @@ $( document ).ready(function() {
                     return addfilterlink ( tag, tag, "possible" ); } ) ))
             .appendTo('#packages_table'); }
 
+    var pkgdb = {};
     $.getJSON( "/pkgs-all.json.gz", function( resp ) {
-        var names = object_keys(resp);
+        pkgdb = resp;
+
+        var names = object_keys(pkgdb);
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
 
         $.each( snames, function (name_i) {
             var name = snames[name_i];
-            add_package_to_list ( resp[name] ); });
+            add_package_to_list ( pkgdb[name] ); });
 
         evaluate_search();
 
-        if ( target_pkg && resp[target_pkg] ) {
-            open_info ( resp[target_pkg] ) } });
+        if ( target_pkg && pkgdb[target_pkg] ) {
+            open_info ( pkgdb[target_pkg] ) } });
 
     $("#login").dialog({
         autoOpen: false,

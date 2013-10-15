@@ -80,6 +80,8 @@
                 'last-edit (hash-ref ht 'last-edit (current-seconds))
                 'versions versions-ht
                 'ring (hash-ref ht 'ring 2)
+                'dependencies (hash-ref ht 'dependencies empty)
+                'modules (hash-ref ht 'modules empty)
                 'tags (hash-ref ht 'tags empty)
                 'authors (author->list (hash-ref ht 'author "")))))
 
@@ -202,6 +204,9 @@
                      st)]
                [st (if (hash-ref ht 'checksum-error)
                      (hash-set st ':error: #t)
+                     st)]
+               [st (if (equal? "" (hash-ref ht 'description ""))
+                     (hash-set st ':no-desc: #t)
                      st)]
                [st (if (empty? conflicts)
                      st
