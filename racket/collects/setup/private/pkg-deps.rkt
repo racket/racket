@@ -218,7 +218,7 @@
   ;; ----------------------------------------
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
   (define reported (make-hash))
-  (define (check-mod! mod mode pkg f)
+  (define (check-mod! mod mode pkg f dir)
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
     (when src-pkg
@@ -237,7 +237,7 @@
                           mode
                           pkg
                           src-pkg
-                          f
+                          (build-path dir f)
                           mod)))))
 
   
@@ -297,7 +297,7 @@
                               (cadr m)
                               m)))
             (when (and (pair? mod) (eq? 'lib (car mod)))
-              (check-mod! mod 'run pkg zo-f)))
+              (check-mod! mod 'run pkg zo-f dir)))
           ;; Recur for submodules:
           (for-each loop
                     (append
@@ -373,7 +373,7 @@
                          (eq? 'collects (car dep)))
                 (define path-strs (map bytes->string/utf-8 (cdr dep)))
                 (define mod `(lib ,(string-join path-strs "/")))
-                (check-mod! mod 'build pkg f)))))
+                (check-mod! mod 'build pkg f dir)))))
         ;; Treat all (direct) documentation links as 'build mode:
         (register-or-check-docs #t pkg path coll-main?))))
   
