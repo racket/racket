@@ -5621,7 +5621,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
         new_bits = SCHEME_INT_VAL(l);
       } else
         scheme_wrong_contract("file-or-directory-permissions", 
-                              "(or/c #f 'bits (integer-in 0 65535)",
+                              "(or/c #f 'bits (integer-in 0 65535))",
                               1, argc, argv);
     }
   }
