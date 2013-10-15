@@ -128,10 +128,13 @@
       (when (symbol? tl)
         (hash-set! provide-ht (intern tl) i)))  
   (lambda (sym pos)
-    (log-debug (format "Looking up ~S@~a" sym pos))
-    (hash-ref provide-ht (intern sym)
+    (log-debug (format "Looking up ~S@~a in ~S" sym pos prefix))
+    (define res
+      (hash-ref provide-ht (intern sym)
               (lambda ()
-                (error 'provide->toplevel "Cannot find ~S in ~S" sym prefix)))))
+                (error 'provide->toplevel "Cannot find ~S in ~S" sym prefix))))
+    (log-debug (format "Looked up ~S@~a and got ~v" sym pos res))
+    res))
 
 (define (nodep-module mod-form phase)
   (match mod-form
