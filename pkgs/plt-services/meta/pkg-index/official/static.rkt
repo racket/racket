@@ -51,18 +51,18 @@
   (for ([pkg-name (in-list pkg-list)])
     (define ht (file->value (build-path pkgs-path pkg-name)))
 
-    (define versions-ht 
+    (define versions-ht
       (hash-set (hash-ref ht 'versions (hash))
                 'default
                 (hasheq 'source (hash-ref ht 'source "")
                         'checksum (hash-ref ht 'checksum ""))))
-    
+
     (define (hash-ref-or ht ks)
       (or (for/or ([k (in-list ks)])
             (hash-ref ht k #f))
           (error 'hash-ref-or "Keys (~v) not found in ~e" ks ht)))
 
-    (define versions-5.3.6 
+    (define versions-5.3.6
       (hash-ref-or versions-ht '("5.3.6" default)))
     (define source-5.3.6
       (hash-ref versions-5.3.6 'source))
@@ -183,7 +183,7 @@
         'conflicts conflicts
         'versions
         (for/hash ([(v vht) (in-hash (hash-ref ht 'versions))])
-          (values v 
+          (values v
                   (hash-set vht 'source_url
                             (package-url->useful-url (hash-ref vht 'source)))))
         'search-terms
@@ -258,9 +258,15 @@
               ,(cdata #f #f
                       (format "<![CDATA[~a]]>"
                               (xexpr->string
-                               `(p
-                                 ,(format "~a package updated on ~a."
-                                          p lu)))))))))))
+                               `(div
+                                 (p ,(format "~a package updated on ~a."
+                                             p lu))
+                                 (p ,(format
+                                      "Checksum: ~a"
+                                      (hash-ref (hash-ref (hash-ref i 'versions (hash)) 
+                                                          'default (hasheq))
+                                                'checksum "")))
+                                 (p ,(hash-ref i 'description))))))))))))
 
   (define-values (main-dispatch main-url)
     (dispatch-rules
