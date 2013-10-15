@@ -9413,7 +9413,7 @@ static char *cmdline_protect(char *s)
 static intptr_t mz_spawnv(char *command, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
 			  int new_process_group,
-                          void *env)
+                          void *env, char *wd)
 {
   int i, l, len = 0;
   intptr_t cr_flag;
@@ -9462,7 +9462,7 @@ static intptr_t mz_spawnv(char *command, const char * const *argv,
 
   if (CreateProcessW(WIDE_PATH_COPY(command), WIDE_PATH_COPY(cmdline), 
 		     NULL, NULL, 1 /*inherit*/,
-		     cr_flag, env, NULL,
+		     cr_flag, env, WIDE_PATH_COPY(wd),
 		     &startup, &info)) {
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
@@ -9772,9 +9772,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
     config = scheme_current_config();
         
-    /* Set real CWD before spawn: */
     tcd = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
-    scheme_os_setcwd(SCHEME_BYTE_STR_VAL(tcd), 0);
 
     envvar = scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS);
 
@@ -9787,7 +9785,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 			     err_subprocess[1],
 			     &pid,
                              new_process_group,
-                             env);
+                             env, SCHEME_BYTE_STR_VAL(tcd));
 
     if (spawn_status != -1)
       sc = (void *)spawn_status;
