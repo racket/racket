@@ -1954,7 +1954,7 @@
       (match orig-pkg
         [`(,(or 'link 'static-link) ,_)
          (if must-update?
-             (pkg-error (~a "cannot update linked packages\n"
+             (pkg-error (~a "cannot update linked packages without --link\n"
                             "  package name: ~a\n"
                             "  package source: ~a")
                         pkg-name
