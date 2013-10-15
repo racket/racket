@@ -99,7 +99,8 @@ $( document ).ready(function() {
             else {
                 return [tag, " "]; } } ) ));
 
-        $( "#pi_versions" ).html("").append( $.map( pkgi['versions'], function ( vo, v ) {
+        $( "#pi_versions" ).html("").append( $.map( Object.keys(pkgi['versions']).sort(), function ( v, vi ) {
+            var vo = pkgi['versions'][v];
             if ( v == 'default' ) {
                 return []; }
             else {
