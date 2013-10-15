@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("compatibility-doc"
+(define build-deps '("rackunit-doc"
+                     "compatibility-doc"
                      "db-doc"
                      "scribble-doc"
                      "unstable"

@@ -6,7 +6,8 @@
   '(("scribblings/unstable.scrbl" (multi-page) (experimental))
     ("scribblings/gui/unstable-gui.scrbl" (multi-page) (experimental))))
 (define deps '("base"))
-(define build-deps '("scheme-lib"
+(define build-deps '("rackunit-doc"
+                     "scheme-lib"
                      "at-exp-lib"
                      "compatibility-lib"
                      "draw-lib"

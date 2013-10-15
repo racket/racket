@@ -12,7 +12,8 @@
                "compiler-lib"
                "scribble-lib"
                "racket-index"))
-(define build-deps '("compatibility-doc"
+(define build-deps '("rackunit-doc"
+                     "compatibility-doc"
                      "errortrace-doc"
                      "typed-racket-doc"
                      "unstable"
