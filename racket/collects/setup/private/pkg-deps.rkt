@@ -2,6 +2,7 @@
 (require syntax/modread
          syntax/modcollapse
          pkg/lib
+         pkg/name
          racket/set
          racket/string
          racket/list
@@ -93,8 +94,13 @@
     (unless deps+build-deps
       (hash-set! skip-pkgs pkg #t)
       (setup-printf #f "package declares no dependencies: ~s" pkg))
-    (define deps (if deps+build-deps (cdr deps+build-deps) '()))
-    (define runtime-deps (if deps+build-deps (list->set (car deps+build-deps)) (set)))
+    (define deps (if deps+build-deps
+                     (filter-map package-source->name (cdr deps+build-deps))
+                     '()))
+    (define runtime-deps (if deps+build-deps
+                             (list->set (filter-map package-source->name
+                                                    (car deps+build-deps)))
+                             (set)))
     (define implies 
       (list->set (let ([i (get-info/full dir #:namespace metadata-ns)])
                    (if i
