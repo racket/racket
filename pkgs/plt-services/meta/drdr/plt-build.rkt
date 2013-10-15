@@ -181,7 +181,7 @@
   (define test-workers (make-job-queue (number-of-cpus)))
 
   (define pkgs-pths
-    (list (build-path trunk-dir "racket" "lib" "collects")
+    (list (build-path trunk-dir "racket" "collects")
           (build-path trunk-dir "pkgs")))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
