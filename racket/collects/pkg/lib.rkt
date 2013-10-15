@@ -1399,7 +1399,7 @@
                             "in different scopes "
                             "")
                         pkg conflicting-pkg (pretty-module-path mp))
-             (pkg-error (~a "package conflicts with existing installed\n"
+             (pkg-error (~a "package conflicts with existing installed module\n"
                             "  package: ~a\n"
                             "  module path: ~s")
                         pkg (pretty-module-path mp))))]
