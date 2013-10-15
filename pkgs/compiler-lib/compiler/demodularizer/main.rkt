@@ -35,7 +35,7 @@
           (path-add-suffix file-to-batch #"_merged.zo")))
     
     ;; Transformations
-    (define path-cache (make-hash))
+    (define path-cache (make-hasheq))
     
     (log-info "Removing dependencies")
     (define-values (batch-nodep top-lang-info top-self-modidx get-modvar-rewrite)
