@@ -34,7 +34,7 @@
      (img-eval '(extra-margin 0))))
      
 
-@teachpack["image"]{Images}
+@teachpack[#:svg? #t "image"]{Images}
 
 @(define mode/color-and-nitty-text
    (make-splice

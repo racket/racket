@@ -1,12 +1,17 @@
 #lang racket/base
 
-(require scribble/manual)
+(require scribble/manual 
+         scribble/core
+         scribble/html-properties)
 
 (provide teachpack
          beginner-require)
 
-(define (teachpack tp . name)
+(define (teachpack #:svg? [svg? #f] tp . name)
   (apply title #:tag tp
+         #:style (if svg? 
+                     (style "svg" (list (render-pict-as 'svg-images)))
+                     #f)
          `(,@name ": " ,(filepath (format "~a.rkt" tp))
            ,(index (format "~a teachpack" tp)))))
 

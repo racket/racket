@@ -12,7 +12,9 @@
           "img-eval.rkt"
           scribble/decode
           scribble/manual
-          scribble/eval)
+          scribble/eval
+          scribble/core
+          scribble/html-properties)
 
 @(define guide-eval (make-img-eval))
 
@@ -20,7 +22,7 @@
    (image-examples exp ...)
    (examples #:eval guide-eval exp ...))
 
-@(define-syntax-rule 
+@(define-syntax-rule
    (image-interaction exp ...)
    (interaction #:eval guide-eval exp ...))
 
@@ -35,8 +37,8 @@
 @(interaction-eval #:eval guide-eval 
                    (require racket/list racket/local))
 
-
-@title[#:tag "image-guide"]{Image Guide}
+@title[#:style (style "svg" (list (render-pict-as 'svg-images)))
+               #:tag "image-guide"]{Image Guide}
 
 This section introduces the @racketmodname[2htdp/image] library
 through a series of increasingly complex image constructions
