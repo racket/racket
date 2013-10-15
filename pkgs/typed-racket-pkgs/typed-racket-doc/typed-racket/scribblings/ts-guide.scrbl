@@ -26,6 +26,7 @@ with Racket.  For an introduction to Racket, see the @(other-manual '(lib "scrib
 @include-section["guide/occurrence.scrbl"]
 @include-section["guide/typed-untyped-interaction.scrbl"]
 @include-section["guide/optimization.scrbl"]
+@include-section["guide/caveats.scrbl"]
 
 @;@section{How the Type System Works}
 
