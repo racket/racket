@@ -13,7 +13,7 @@
   (values (get-output-string o) (get-output-string e)))
 
 (define (test-on-program filename)
-  ; run modular program, capture output
+  ;; run modular program, capture output
   (define-values (modular-output modular-error)
     (capture-output (find-exe) filename))
   
@@ -24,15 +24,15 @@
         (find-system-path 'temp-dir)
         (path-add-suffix filename #"_merged.zo")))))
   
-  ; demodularize
+  ;; demodularize
   (parameterize ([current-input-port (open-input-string "")])
     (system* (find-exe) "-l-" "raco" "demod" "-o" demod-filename filename))
   
-  ; run whole program
+  ;; run whole program
   (define-values (whole-output whole-error)
     (capture-output (find-exe) demod-filename))
   
-  ; compare output 
+  ;; compare output 
   (test
    #:failure-prefix (format "~a stdout" filename)
    whole-output => modular-output
