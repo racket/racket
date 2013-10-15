@@ -50,4 +50,5 @@
  "platform"
  "raco"
  "binary"
- "catalogs")
+ "catalogs"
+ "failure")

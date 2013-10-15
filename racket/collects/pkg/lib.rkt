@@ -658,14 +658,34 @@
            [`(,(or 'link 'static-link) ,orig-pkg-dir)
             (path->complete-path orig-pkg-dir (pkg-installed-dir))]
            [_
-            (build-path (pkg-installed-dir) pkg-name)]))))
+            (build-path (pkg-installed-dir) 
+                        (or (cond
+                             [(pkg-info/alt? info)
+                              (pkg-info/alt-dir-name info)]
+                             [(sc-pkg-info/alt? info)
+                              (sc-pkg-info/alt-dir-name info)]
+                             [else #f])
+                            pkg-name))]))))
+
+(define (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name)
+  ;; Picks the right structure subtype
+  (if single-collect
+      (if alt-dir-name
+          (sc-pkg-info/alt orig-pkg checksum auto? single-collect alt-dir-name)
+          (sc-pkg-info orig-pkg checksum auto? single-collect))
+      (if alt-dir-name
+          (pkg-info/alt orig-pkg checksum auto? alt-dir-name)
+          (pkg-info orig-pkg checksum auto?))))
 
 (define (update-auto this-pkg-info auto?)
   (match-define (pkg-info orig-pkg checksum _) this-pkg-info)
-  (if (sc-pkg-info? this-pkg-info)
-      (sc-pkg-info orig-pkg checksum auto?
-                   (sc-pkg-info-collect this-pkg-info))
-      (pkg-info orig-pkg checksum auto?)))
+  (make-pkg-info orig-pkg checksum auto?
+                 (and (sc-pkg-info? this-pkg-info)
+                      (sc-pkg-info-collect this-pkg-info))
+                 (or (and (sc-pkg-info/alt? this-pkg-info)
+                          (sc-pkg-info/alt-dir-name this-pkg-info))
+                     (and (pkg-info/alt? this-pkg-info)
+                          (pkg-info/alt-dir-name this-pkg-info)))))
 
 (define (demote-packages quiet? pkg-names)
   (define db (read-pkg-db))
@@ -1567,7 +1587,8 @@
          (define final-pkg-dir
            (cond
              [clean?
-              (define final-pkg-dir (build-path (pkg-installed-dir) pkg-name))
+              (define final-pkg-dir (select-package-directory
+                                     (build-path (pkg-installed-dir) pkg-name)))
               (make-parent-directory* final-pkg-dir)
               (copy-directory/files pkg-dir final-pkg-dir #:keep-modify-seconds? #t)
               (clean!)
@@ -1589,10 +1610,13 @@
                 #:root? (not single-collect)
                 #:static-root? (and (pair? orig-pkg)
                                     (eq? 'static-link (car orig-pkg))))
+         (define alt-dir-name
+           ;; If we had to pick an alternate dir name, then record it:
+           (let-values ([(base name dir?) (split-path final-pkg-dir)])
+             (and (regexp-match? #rx"[+]" name)
+                  (path->string name))))
          (define this-pkg-info
-           (if single-collect
-               (sc-pkg-info orig-pkg checksum auto? single-collect)
-               (pkg-info orig-pkg checksum auto?)))
+           (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name))
          (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
          (update-pkg-db! pkg-name this-pkg-info))]))
   (define metadata-ns (make-metadata-namespace))
@@ -1729,6 +1753,35 @@
       ;; more packages to setup and check:
       (loop new-check
             (set-union setup-pkgs new-check))])))
+
+(define (select-package-directory dir #:counter [counter 0])
+  (define full-dir (if (zero? counter)
+                       dir
+                       (let-values ([(base name dir?) (split-path dir)])
+                         (define new-name (bytes->path
+                                           (bytes-append (path->bytes name)
+                                                         (string->bytes/utf-8
+                                                          (~a "+" counter)))))
+                         (if (path? base)
+                             (build-path base new-name)
+                             new-name))))
+  (cond
+   [(directory-exists? full-dir)
+    ;; If the directory exists, assume that we'd like to replace it.
+    ;; Maybe the directory couldn't be deleted when a package was
+    ;; uninstalled, and maybe it will work now (because some process
+    ;; has completed on Windows or some other filesystem with locks).
+    (with-handlers ([exn:fail:filesystem?
+                     (lambda (exn)
+                       (log-pkg-warning "error deleting old directory: ~a" 
+                                        (exn-message exn))
+                       (select-package-directory dir #:counter (add1 counter)))])
+      (delete-directory/files full-dir)
+      ;; delete succeeded:
+      full-dir)]
+   [else
+    ;; all clear to use the selected name:
+    full-dir]))
 
 (define (snoc l x)
   (append l (list x)))

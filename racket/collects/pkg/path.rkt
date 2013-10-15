@@ -2,7 +2,9 @@
 (require setup/dirs)
 
 (provide (struct-out pkg-info)
+         (struct-out pkg-info/alt)
          (struct-out sc-pkg-info)
+         (struct-out sc-pkg-info/alt)
          get-pkgs-dir
          read-pkgs-db
          read-pkg-file-hash
@@ -11,7 +13,9 @@
          path->pkg+subpath+collect)
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
+(struct pkg-info/alt pkg-info (dir-name) #:prefab) ; alternate installation directory
 (struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
+(struct sc-pkg-info/alt sc-pkg-info (dir-name) #:prefab) ; alternate installation
 
 (define (check-scope who scope)
   (unless (or (eq? scope 'user)
@@ -103,10 +107,13 @@
      [(sub-path? < p d)
       ;; Under the installation mode's package directory.
       ;; We assume that no one else writes there, so the
-      ;; next path element is the package name.
+      ;; next path element is the package name (or the package
+      ;; name followed by "+<n>")
       (define len (length d))
       (define pkg-name (path-element->string (list-ref p len)))
-      (values pkg-name
+      (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
+                  (regexp-replace #rx"[+].*$" pkg-name "")
+                  pkg-name)
               (build-path* (list-tail p (add1 len)))
               (and want-collect?
                    (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
