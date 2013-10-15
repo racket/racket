@@ -15,21 +15,31 @@
 utilities for working with package paths and installed-package
 databases.}
 
-@defstruct[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
-                                     (list/c 'url string?)
-                                     (list/c 'link string?)
-                                     (list/c 'static-link string?))]
-                     [checksum (or/c #f string?)]
-                     [auto? boolean?])
-                     #:prefab]{
+@defstruct*[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
+                                      (list/c 'url string?)
+                                      (list/c 'link string?)
+                                      (list/c 'static-link string?))]
+                      [checksum (or/c #f string?)]
+                      [auto? boolean?])
+                      #:prefab]{
 
 A structure type that is used to report installed-package information.}
 
 
-@defstruct[(sc-pkg-info pkg-info) ()]{
+@defstruct*[(sc-pkg-info pkg-info) ()]{
 
 A structure subtype that represents a package that is installed as
 single-collection.}
+
+@deftogether[(
+@defstruct*[(pkg-info/alt pkg-info) ([dir-name string?])]
+@defstruct*[(sc-pkg-info/alt sc-pkg-info) ([dir-name string?])]
+)]{
+
+Structure subtypes that are used when the installation directory for a
+package does not match the package name, but is instead
+@racket[dir-name]. The directory name always includes a @litchar{+}
+(which is disallowed in a package name).}
 
 
 @defproc[(path->pkg [path path-string?]

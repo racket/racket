@@ -66,9 +66,15 @@
       (delete-directory path)]
      [else
       (when must-exist?
-        (error 'delete-directory/files
-               "encountered ~a, neither a file nor a directory"
-               path))])))
+        (raise-not-a-file-or-directory 'delete-directory/files path))])))
+
+(define (raise-not-a-file-or-directory who path)
+  (raise
+   (make-exn:fail:filesystem
+    (format "~a: encountered ~a, neither a file nor a directory"
+            who
+            path)
+    (current-continuation-marks))))
 
 (define (copy-directory/files src dest 
                               #:keep-modify-seconds? [keep-modify-seconds? #f])
@@ -85,9 +91,7 @@
                        (loop (build-path src e)
                              (build-path dest e)))
                      (sorted-dirlist src))]
-          [else (error 'copy-directory/files
-                       "encountered ~a, neither a file nor a directory"
-                       src)])))
+          [else (raise-not-a-file-or-directory 'copy-directory/files src)])))
 
 (define (make-directory* dir)
   (let-values ([(base name dir?) (split-path dir)])
