@@ -20,7 +20,9 @@
          (run-tests*
           (list (let ()
                   (local-require (only-in tests-f run-pkg-tests))
-                  run-pkg-tests)
+                  (λ ()
+                    (printf "starting ~a\n" 'tests-f)
+                    (run-pkg-tests)))
                 ...))))]))
 
 (define (run-tests* l)
@@ -47,7 +49,7 @@
  "update-deps"
  "update-auto"
  "scope"
- "migrate" 
+ "migrate"
  "versions"
  "platform"
  "raco"
