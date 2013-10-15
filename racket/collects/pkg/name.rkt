@@ -6,18 +6,22 @@
          net/url)
 
 (provide
+ package-source-format?
  (contract-out
-  [package-source->name+type (->* (string? (or/c #f symbol?))
+  [package-source->name+type (->* (string? (or/c #f package-source-format?))
                                   (#:complain (-> string? string? any)
                                               #:must-infer-name? boolean?
                                               #:link-dirs? boolean?)
-                                  (values (or/c #f string?) (or/c #f symbol?)))]
+                                  (values (or/c #f string?) (or/c #f package-source-format?)))]
   [package-source->name (->* (string?)
-                             ((or/c #f symbol?))
+                             ((or/c #f package-source-format?))
                              (or/c #f string?))]))
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
 (define rx:archive #rx"[.](plt|zip|tar|tgz|tar[.]gz)$")
+
+(define package-source-format?
+  (or/c 'name 'file 'dir 'github 'file-url 'dir-url 'link 'static-link))
 
 (define (validate-name name complain inferred?)
   (and name
