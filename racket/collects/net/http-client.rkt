@@ -85,6 +85,7 @@
                          #:version [version-bs #"1.1"]
                          #:method [method-bss #"GET"]
                          #:headers [headers-bs empty]
+                         #:content-decode [decodes '(gzip)]
                          ;; xxx maybe support other kinds of data (ports and writing functions)
                          #:data [data-bsf #f])
   (match-define (http-conn host port port-usual? to from _) hc)
@@ -94,7 +95,8 @@
              (if port-usual?
                host
                (format "~a:~a" host port))))
-  (unless (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs)
+  (unless (or (not (memq 'gzip decodes))
+              (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
     (fprintf to "Accept-Encoding: gzip\r\n"))
   (define data
     (if (string? data-bsf)
@@ -180,6 +182,7 @@
   hc)
 
 (define (http-conn-recv! hc
+                         #:content-decode [decodes '(gzip)]
                          #:close? [iclose? #f])
   (define status (http-conn-status! hc))
   (define headers (http-conn-headers! hc))
@@ -206,7 +209,7 @@
        (http-conn-response-port/rest! hc)]))
   (define decoded-response-port
     (cond
-      [(regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
+      [(and (memq 'gzip decodes) (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers))
        (define-values (in out) (make-pipe PIPE-SIZE))
        (thread
         (λ ()
@@ -222,13 +225,17 @@
                              #:method [method-bss #"GET"]
                              #:headers [headers-bs empty]
                              #:data [data-bsf #f]
+                             #:content-decode [decodes '(gzip)]
                              #:close? [close? #f])
   (http-conn-send! hc url-bs
                    #:version version-bs
                    #:method method-bss
                    #:headers headers-bs
+                   #:content-decode decodes
                    #:data data-bsf)
-  (http-conn-recv! hc #:close? close?))
+  (http-conn-recv! hc 
+                   #:content-decode decodes
+                   #:close? close?))
 
 (define (http-sendrecv host-bs url-bs
                        #:ssl? [ssl? #f]
@@ -236,13 +243,15 @@
                        #:version [version-bs #"1.1"]
                        #:method [method-bss #"GET"]
                        #:headers [headers-bs empty]
-                       #:data [data-bsf #f])
+                       #:data [data-bsf #f]
+                       #:content-decode [decodes '(gzip)])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
   (http-conn-sendrecv! hc url-bs
                        #:version version-bs
                        #:method method-bss
                        #:headers headers-bs
                        #:data data-bsf
+                       #:content-decode decodes
                        #:close? #t))
 
 (provide
@@ -271,6 +280,7 @@
     (#:version (or/c bytes? string?)
                #:method (or/c bytes? string? symbol?)
                #:headers (listof (or/c bytes? string?))
+               #:content-decode (listof symbol?)                           
                #:data (or/c false/c bytes? string?))
     void)]
   ;; Derived
@@ -281,7 +291,8 @@
         http-conn?)]
   [http-conn-recv!
    (->* (http-conn-live?)
-        (#:close? boolean?)
+        (#:content-decode (listof symbol?) 
+                          #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-conn-sendrecv!
    (->* (http-conn-live? (or/c bytes? string?))
@@ -289,6 +300,7 @@
                    #:method (or/c bytes? string? symbol?)
                    #:headers (listof (or/c bytes? string?))
                    #:data (or/c false/c bytes? string?)
+                   #:content-decode (listof symbol?) 
                    #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-sendrecv
@@ -298,5 +310,6 @@
                 #:version (or/c bytes? string?)
                 #:method (or/c bytes? string? symbol?)
                 #:headers (listof (or/c bytes? string?))
-                #:data (or/c false/c bytes? string?))
+                #:data (or/c false/c bytes? string?)
+                #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))

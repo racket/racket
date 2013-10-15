@@ -147,6 +147,7 @@
   (hc:http-conn-send! hc access-string
                       #:method (if get? "GET" "POST")
                       #:headers strings
+                      #:content-decode '()
                       #:data post-data)
   hc)
 
@@ -204,7 +205,7 @@
 (define (http-conn-impure-port hc)
   (define-values (in out) (make-pipe 4096))
   (define-values (status headers response-port)
-    (hc:http-conn-recv! hc #:close? #t))
+    (hc:http-conn-recv! hc #:close? #t #:content-decode '()))
   (fprintf out "~a\r\n" status)
   (for ([h (in-list headers)])
     (fprintf out "~a\r\n" h))
@@ -239,6 +240,7 @@
                  (http://getpost-impure-port
                   get? url post-data strings
                   make-ports #f)
+                  #:content-decode '()
                  #:close? #t))
               response-port]
              [else
@@ -270,7 +272,7 @@
                                     make-ports)
                                   (and conn #t)))
     (define-values (status headers response-port)
-      (hc:http-conn-recv! hc #:close? (not conn)))
+      (hc:http-conn-recv! hc #:close? (not conn) #:content-decode '()))
 
     (define new-url
       (ormap (λ (h)
@@ -662,6 +664,7 @@
     (hc:http-conn-send! hc access-string
                         #:method method
                         #:headers strings
+                        #:content-decode '()
                         #:data data)
     (http-conn-impure-port hc)))
 
@@ -730,7 +733,8 @@
 (define (http-sendrecv/url u
                            #:method [method-bss #"GET"]
                            #:headers [headers-bs empty]
-                           #:data [data-bsf #f])
+                           #:data [data-bsf #f]
+                           #:content-decode [decodes '(gzip)])
   (unless (member (url-scheme u) '(#f "http" "https"))
     (error 'http-sendrecv/url "URL scheme ~e not supported" (url-scheme u)))
   (define ssl?
@@ -757,7 +761,8 @@
    #:port port
    #:method method-bss
    #:headers headers-bs
-   #:data data-bsf))
+   #:data data-bsf
+   #:content-decode decodes))
 
 (provide
  (contract-out
@@ -765,5 +770,6 @@
    (->* (url?)
         (#:method (or/c bytes? string? symbol?)
                   #:headers (listof (or/c bytes? string?))
-                  #:data (or/c false/c bytes? string?))
+                  #:data (or/c false/c bytes? string?)
+                  #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))

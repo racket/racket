@@ -433,7 +433,8 @@ mapping is the empty list (i.e., no proxies).}
 @defproc[(http-sendrecv/url [u url?]
                             [#:method method (or/c bytes? string? symbol?) #"GET"]
                             [#:headers headers (listof (or/c bytes? string?)) empty]
-                            [#:data data (or/c false/c bytes? string?) #f])
+                            [#:data data (or/c false/c bytes? string?) #f]
+                            [#:content-decode decodes (listof symbol?) '(gzip)])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, and SSL parameters.
