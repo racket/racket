@@ -72,6 +72,7 @@ Closes the output side of @racket[hc], if it is live.
                           [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
+                          [#:content-decode decodes (listof symbol?) '(gzip)]
                           [#:data data (or/c false/c bytes? string?) #f])
          void?]{
 
@@ -80,16 +81,22 @@ HTTP version @racket[version] the method @racket[method] and the
 additional headers given in @racket[headers] and the additional data
 @racket[data].
 
+If @racket[headers] does not contain an @litchar{Accept-Encoding}
+header, then a header indicating that encodings from @racket[decodes]
+are accepted is automatically added.
+
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
 
 }
 
 @defproc[(http-conn-recv! [hc http-conn-live?]
+                          [#:content-decode decodes (listof symbol?) '(gzip)]
                           [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
 
-Parses an HTTP response from @racket[hc].
+Parses an HTTP response from @racket[hc], while decoding the encodings
+listed in @racket[decodes].
 
 Returns the status line, a list of headers, and an port which contains
 the contents of the response.
@@ -106,6 +113,7 @@ to do so.
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
                               [#:data data (or/c false/c bytes? string?) #f]
+                              [#:content-decode decodes (listof symbol?) '(gzip)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
 
@@ -119,7 +127,8 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
                         [#:version version (or/c bytes? string?) #"1.1"]                          
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
-                        [#:data data (or/c false/c bytes? string?) #f])
+                        [#:data data (or/c false/c bytes? string?) #f]
+                        [#:content-decode decodes (listof symbol?) '(gzip)])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in
