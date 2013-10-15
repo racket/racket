@@ -322,15 +322,12 @@
 # endif
 
 # include <sys/param.h>
-# if OpenBSD < 201211
-/* This is needed for (pre-5.2) userspace threads: */
-#  define ASSUME_FIXED_STACK_SIZE
-#  define FIXED_STACK_SIZE 1048576
-# endif
 
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 # define HAS_BSD_IOB
+# undef UNIX_FIND_STACK_BOUNDS
+# define PTHREAD_STACKSEG_FIND_STACK_BOUNDS
 
 /* Default UNIX_STACK_MAXIMUM is too big for a non-root user. */
 # undef UNIX_STACK_MAXIMUM
@@ -1515,6 +1512,8 @@
      line.
     ASSUME_FIXED_STACK_SIZE assumes that the main stack size is
      always FIXED_STACK_SIZE.
+    PTHREAD_STACKSEG_FIND_STACK_BOUNDS finds stack bounds using
+     pthread_stackseg_np().
     Use only one of these if DO_STACK_CHECK is used, or none otherwise. */
 
  /* FIXED_STACK_SIZE <X> sets the stack size to <X> when the

@@ -28,7 +28,7 @@
 #include "schmach.h"
 #include "schexpobs.h"
 
-#define MIN(l,o) ((l) < (o) ? (l) : (o))
+#define mz_MIN(l,o) ((l) < (o) ? (l) : (o))
 
 /* globals */
 SHARED_OK Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
@@ -3673,7 +3673,7 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
   else if (SCHEME_BYTE_STRINGP(rmp_val) && SCHEME_SYMBOLP(o)) {
     return !strncmp(SCHEME_BYTE_STR_VAL(rmp_val), 
                     SCHEME_SYM_VAL(o), 
-                    MIN(SCHEME_BYTE_STRLEN_VAL(rmp_val), SCHEME_SYM_LEN(o)));
+                    mz_MIN(SCHEME_BYTE_STRLEN_VAL(rmp_val), SCHEME_SYM_LEN(o)));
   }  else {
     scheme_arg_mismatch("scheme_resolved_module_path_value_matches", 
                         "internal error: unknown type of resolved_module_path_value",

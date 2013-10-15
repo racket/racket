@@ -144,6 +144,11 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+#ifdef PTHREAD_STACKSEG_FIND_STACK_BOUNDS
+# include <sys/signal.h>
+# include <pthread.h>
+# include <pthread_np.h>
+#endif
 #ifdef WINDOWS_FIND_STACK_BOUNDS
 #include <windows.h>
 #endif
@@ -595,9 +600,6 @@ void scheme_init_stack_check()
 {
   int *v, stack_grows_up;
   uintptr_t deeper;
-#ifdef UNIX_FIND_STACK_BOUNDS
-  struct rlimit rl;
-#endif
   
   deeper = scheme_get_deeper_address();
   stack_grows_up = (deeper > (uintptr_t)&v);
@@ -665,11 +667,13 @@ void scheme_init_stack_check()
 # endif
 
 # ifdef UNIX_FIND_STACK_BOUNDS
-    getrlimit(RLIMIT_STACK, &rl);
-  
     {
+      struct rlimit rl;
       uintptr_t bnd, lim;
+
       bnd = (uintptr_t)scheme_get_current_os_thread_stack_base();
+
+      getrlimit(RLIMIT_STACK, &rl);
 
 #  ifdef LINUX_FIND_STACK_BASE
       bnd = adjust_stack_base(bnd);
@@ -687,6 +691,14 @@ void scheme_init_stack_check()
         bnd += (STACK_SAFETY_MARGIN - lim);
 
       scheme_stack_boundary = bnd;
+    }
+# endif
+
+# ifdef PTHREAD_STACKSEG_FIND_STACK_BOUNDS
+    {
+      stack_t stack;
+      pthread_stackseg_np(pthread_self(), &stack);
+      scheme_stack_boundary = (uintptr_t)((char *)stack.ss_sp - (stack.ss_size - STACK_SAFETY_MARGIN));
     }
 # endif
   }

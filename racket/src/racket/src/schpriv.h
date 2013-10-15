@@ -1705,7 +1705,7 @@ typedef struct Scheme_Overflow {
 #if defined(UNIX_FIND_STACK_BOUNDS) || defined(WINDOWS_FIND_STACK_BOUNDS) \
     || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
     || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
-    || defined(PALM_FIND_STACK_BOUNDS)
+    || defined(PALM_FIND_STACK_BOUNDS) || defined(PTHREAD_STACKSEG_FIND_STACK_BOUNDS)
 # define USE_STACK_BOUNDARY_VAR
 THREAD_LOCAL_DECL(extern uintptr_t scheme_stack_boundary);
 /* Same as scheme_stack_boundary, but set to an extreme value when feul auto-expires,
