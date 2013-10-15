@@ -1100,23 +1100,17 @@
       (cond
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
-        [(and (equal? (current-render-pict-as) 'png-images)
+        [(and (convertible? e)
+              (equal? (current-render-pict-as) 'png-images)
               (convertible? e)
-              (convert e 'png-bytes))
-         => (lambda (bstr)
-              (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
-                    [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
-                `((img ([src ,(install-file "pict.png" bstr)]
-                        [alt "image"]
-                        [width ,(number->string w)]
-                        [height ,(number->string h)])))))]
+              (or (render-as-png e)
+                  (render-as-svg e)))
+         => values]
         [(and (equal? (current-render-pict-as) 'svg-images)
               (convertible? e)
-              (convert e 'svg-bytes))
-         => (lambda (bstr)
-             `((object
-                ([data ,(install-file "pict.svg" bstr)]
-                 [type "image/svg+xml"]))))]
+              (or (render-as-svg e)
+                  (render-as-png e)))
+         => values]
         [(image-element? e)
          (let* ([src (collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]
@@ -1266,6 +1260,27 @@
                          (render-plain-content e part ri))))))))]
         [else 
          (render-plain-content e part ri)]))
+    
+    (define/private (render-as-png e)
+      (cond
+        [(convert e 'png-bytes)
+         => 
+         (lambda (bstr)
+           (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
+                 [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
+             `((img ([src ,(install-file "pict.png" bstr)]
+                     [alt "image"]
+                     [width ,(number->string w)]
+                     [height ,(number->string h)])))))]
+        [else #f]))
+    (define/private (render-as-svg e)
+      (cond
+        [(convert e 'svg-bytes)
+         => (lambda (bstr)
+              `((object
+                 ([data ,(install-file "pict.svg" bstr)]
+                  [type "image/svg+xml"]))))]
+        [else #f]))
 
     (define/private (render-plain-content e part ri)
       (define (attribs) (content-attribs e))
