@@ -3,12 +3,12 @@
 (define collection 'multi)
 
 (define deps '("rackunit-lib"
-               "rackunit-docs"
+               "rackunit-doc"
                "rackunit-tests"
                "rackunit-gui"
                "rackunit-plugin-lib"))
 (define implies '("rackunit-lib"
-                  "rackunit-docs"
+                  "rackunit-doc"
                   "rackunit-tests"
                   "rackunit-gui"
                   "rackunit-plugin-lib"))

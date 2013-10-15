@@ -122,8 +122,9 @@
             (define f-name (path->string f))
             (when (hash-ref found f-name #f)
               (error 'pack-local 
-                     "found packages multiple times: ~a and ~a"
-                     (hash-ref found f)
+                     "found package ~a multiple times: ~a and ~a"
+                     f-name
+                     (hash-ref found f-name)
                      src-f))
             (hash-set! found f-name src-f))]
          [(directory-exists? src-f)
