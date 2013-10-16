@@ -135,6 +135,8 @@
             ;; ----------------------------------------
             [install
              "Install packages"
+             #:usage-help "Installs the packages specified by <pkg-source> ..."
+                          "If no sources are specified, installs the current directory."
              #:once-each
              install-type-flags ...
              #:once-any

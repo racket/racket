@@ -98,9 +98,15 @@
              #:attr (call 1)
              (syntax->list #'(o.call ... ...))])
 
+  (define-splicing-syntax-class usage-help
+    #:attributes ((command-line 1))
+    [pattern (~seq #:usage-help s:str ...)
+             #:attr (command-line 1)
+             (syntax->list #'(#:usage-help s ...))])
+
   (define-syntax-class command
     #:attributes (name function variables command-line)
-    [pattern (name:id doc:expr og:option-group ... #:args args body:expr ...)
+    [pattern (name:id doc:expr uh:usage-help ... og:option-group ... #:args args body:expr ...)
              #:do
              [(define name-str (symbol->string (syntax->datum #'name)))]
              #:attr function
@@ -114,6 +120,7 @@
              (quasisyntax/loc #'name
                [#,name-str
                 doc doc
+                uh.command-line ... ...
                 og.command-line ... ...
                 #:args args
                 (args-app args (name og.call ... ...))])]))
