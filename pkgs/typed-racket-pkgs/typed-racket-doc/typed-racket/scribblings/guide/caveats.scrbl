@@ -19,7 +19,7 @@ In Typed Racket, the @racket[Integer] type corresponds to values
 that return @racket[#t] for the @racket[exact-integer?] predicate,
 @bold{@emph{not}} the @racket[integer?] predicate. In particular,
 values that return @racket[#t] for @racket[integer?] may be
-an @rtech{inexact number} (e.g, @racket[1.0]).
+@rtech{inexact number}s (e.g, @racket[1.0]).
 
 When porting a program to Typed Racket, you may need to replace
 uses of functions like @racket[round] and @racket[floor] with
