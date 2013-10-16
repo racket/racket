@@ -54,3 +54,42 @@ at a specific type:
   (map (inst cons Symbol Integer) '(a b c d) '(1 2 3 4))
 ]
 
+@section{Typed-untyped interaction and contract generation}
+
+When a typed module @racket[require]s bindings from an untyped
+module (or vice-versa), there are some types that cannot be
+converted to a corresponding contract.
+
+This could happen because a type is not yet supported in the
+contract system, because Typed Racket's contract generator has
+not been updated, or because the contract is too difficult
+to generate. In some of these cases, the limitation will be
+fixed in a future release.
+
+The following illustrates an example type that cannot be
+converted to a contract:
+
+@interaction[#:eval the-eval
+  (require/typed racket/base [object-name (case-> (Struct-Type-Property -> Symbol)
+                                                  (Regexp -> (U String Bytes)))])
+]
+
+This function type by cases is a valid type, but a corresponding
+contract is difficult to generate because the check on the result
+depends on the check on the domain. In the future, this may be
+supported with dependent contracts.
+
+A more approximate type will work for this case, but with a loss
+of type precision at use sites:
+
+@interaction[#:eval the-eval
+  (require/typed racket/base [object-name ((U Struct-Type-Property Regexp)
+                                           -> (U String Bytes Symbol))])
+  (object-name #rx"a regexp")
+]
+
+@section{Classes and units}
+
+Classes and units are not currently supported in Typed Racket. Support
+for classes is under development and will be in a future release.
+
