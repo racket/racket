@@ -750,6 +750,11 @@
                      (list syms (Poly-body* syms t))))
                  (list nps bp)))])))
 
+;; Helper for fresh match expanders below, creates a
+;; fresh name that prints the same as the original
+(define (fresh-name sym)
+  (string->uninterned-symbol (symbol->string sym)))
+
 ;; This match expander creates new fresh names for exploring the body
 ;; of the polymorphic type. When lexical scoping of type variables is a concern, you
 ;; should use this form.
@@ -761,7 +766,7 @@
             (app (lambda (t)
                    (let* ([n (Poly-n t)]
                           [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))]
-                          [fresh-syms (map gensym syms)])
+                          [fresh-syms (map fresh-name syms)])
                      (list syms fresh-syms (Poly-body* fresh-syms t))))
                  (list nps freshp bp)))])))
 
