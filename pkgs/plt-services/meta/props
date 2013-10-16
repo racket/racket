@@ -1485,7 +1485,7 @@ path/s is either such a string or a list of them.
 "pkgs/srfi-pkgs/srfi-lib/srfi/74/blob.scm" drdr:command-line #f
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/check-reference.scm" drdr:command-line #f
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/examples-78.scm" drdr:command-line #f
-"pkgs/string-constants" responsible (robby)
+"pkgs/string-constants-pkgs" responsible (robby)
 "pkgs/swindle" responsible (eli)
 "pkgs/syntax-color-pkgs" responsible (mflatt)
 "pkgs/trace" responsible (mflatt robby)
