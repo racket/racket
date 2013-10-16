@@ -8,6 +8,8 @@
                "compatibility-lib"
                "planet-lib"
                "net-lib"
+               "net-test" ; for tests/net/available
+               "serialize-cstruct-lib" ; tested here
                "distributed-places-lib"
                "eli-tester"
                ;; for `pkg` tests
