@@ -11,6 +11,10 @@ $( document ).ready(function() {
     function jslink ( texts, clickf) {
         return $('<a>', { href: "javascript:void(0)",
                           click: clickf } ).html(texts); }
+    function jslinki ( texts, clickf) {
+        var i = $('<a>', { href: "javascript:void(0)",
+                          click: function () { clickf(i); } } );
+        return i.html(texts); }
 
     function dynamic_send ( u, o ) {
         o['email'] = localStorage['email'];
@@ -516,8 +520,9 @@ $( document ).ready(function() {
                          evaluate_search();
                          open_info(value); }),
                      " | ",
-                     jslink( "update", function () {
-                         dynamic_send ( "/jsonp/update", {} ); }),
+                     jslinki( "update", function (i) {
+                         dynamic_send ( "/jsonp/update", {} );
+                         i.text("updating..."); }),
                      " | ",
                      jslink( "logout", function () {
                          localStorage['email'] = "";
