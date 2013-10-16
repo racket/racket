@@ -27,7 +27,7 @@ corresponding exact functions like @racket[exact-round] and
 @racket[exact-floor].
 
 In other cases, it may be necessary to use @racket[assert]ions
-or casts.
+or @racket[cast]s.
 
 @section{Type inference for polymorphic functions}
 
