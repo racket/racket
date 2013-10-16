@@ -588,6 +588,7 @@
                              [width  (pict-width p)]
                              [height (pict-height p)]
                              [output s]))
+             (send dc set-smoothing 'smoothed)
              (send dc start-doc "Generating svg")
              (send dc start-page)
              (draw-pict p dc 0 0)
