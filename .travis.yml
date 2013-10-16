@@ -6,16 +6,16 @@ compiler:
   - clang
 # Just run tests for the core
 script:
-  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib"
+  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
   - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
   - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/file/main.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/net/head.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/net/uri-codec.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/net/url.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/net/encoders.rkt
+  - raco test pkgs/net-pkgs/net-test/tests/net/head.rkt
+  - raco test pkgs/net-pkgs/net-test/tests/net/uri-codec.rkt
+  - raco test pkgs/net-pkgs/net-test/tests/net/url.rkt
+  - raco test pkgs/net-pkgs/net-test/tests/net/url-port.rkt
+  - raco test pkgs/net-pkgs/net-test/tests/net/encoders.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/openssl/https.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/match/plt-match-tests.rkt
