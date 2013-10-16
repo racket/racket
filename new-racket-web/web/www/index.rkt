@@ -1,6 +1,7 @@
 #lang meta/web
 
 (require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt")
+(require racket/format)
 
 (define (doc path . text)
   (apply a href: (list "http://docs.racket-lang.org/" path) text))
@@ -259,7 +260,7 @@
   (when news-flashes (error 'set-news-flashes! "text already set"))
   (set! news-flashes text))
 
-(require racket/format)
+
 (define (css url) @link[href: url rel: "stylesheet" type: "text/css"]{})
 (define (icon name) @i[class: name]{})
 (define (row . content) (apply div class: "row" content))
@@ -288,22 +289,6 @@
 (define prev @img[src: (copyfile (in-here "img/prev.png"))  style: "width: 50px"])
 (define next @img[src: (copyfile (in-here "img/next.png"))  style: "width: 50px"])
 
-(define gumby-css (copyfile (in-here "css/gumby.css")
-                            "css/gumby.css"))
-(define style (copyfile (in-here "css/style.css")
-                        "css/style.css"))
-(define scribble-css (copyfile (in-here "css/scribble.css") 
-                               "css/scribble.css"))
-(define gumby-js (copyfile (in-here "js/libs/gumby.min.js")))
-(define plugins-js (copyfile (in-here"js/plugins.js")))
-(define main-js (copyfile (in-here "js/main.js")))
-(define jquery-js (copyfile (in-here "js/libs/jquery-1.9.1.min.js")))
-
-(copyfile (in-here "fonts/icons/entypo.woff") "fonts/icons/entypo.woff")
-(copyfile (in-here "fonts/icons/entypo.ttf") "fonts/icons/entypo.ttf")
-(copyfile (in-here "fonts/icons/entypo.eot") "fonts/icons/entypo.eot")
-
-
 (provide index)
 
 (define index
@@ -316,24 +301,14 @@
            integrated development environment, and many batteries-included @;
            libraries.}
         @; Ask google to not use the ODP description
-        #:extra-headers @list{@meta[name: "robots" content: "NOODP"]{
-@div[class: "navbar" gumby-fixed: "top" id: "nav1"]{
-  @row{
-   @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
-     @icon{icon-menu}}
-   @a[class: "five columns logo" href: ""]{
-     @img[class: "logo" src: (copyfile (in-here "img/logo-new.png"))]}
-   @ul[class: "five columns"]{
-     @li{@a[href: "https://pkg.racket-lang.org"]{Packages}}
-     @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
-     @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
-     @li{@button[class: "medium metro info btn icon-left entypo icon-install"]{
-       @a[href: "#"]{Download}}}}}}
-
+        #:extra-headers @list{@css[(copyfile (in-here "css/frontpage-style.css"))]
+                              @css[(copyfile (in-here "css/scribble.css"))]
+                              @script[src: (copyfile (in-here "js/slideshow.js"))]
+                              @meta[name: "robots" content: "NOODP"]}]{
  @columns[10 #:row? #t #:center? #t]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{
-  @strong{Racket} @|nbsp mdash nbsp|
-  @tagline{a programmable programming language}}}
+  @strong{Racket} @|nbsp|@|mdash|@|nbsp| 
+   @tagline{a programmable programming language}}}
 
 @columns[8 #:center? #t #:row? #t
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
@@ -352,24 +327,25 @@ computing and from databases to charts.
    @h2[style: "font-size: 180%; margin-bottom: 10pt"]{Start Quickly}
    @div[style: "position: relative"]{
      @p[class: "metro primary btn"
-        style: "position: absolute; top: -10%; right: 0%;"]{
-        @a[href: "#" class: "switch" gumby-trigger: "#modal1"]{
+        style: "position: absolute; top: -20%; right: 0%;"]{
+        @a[href: "#" class: "switch question_button" gumby-trigger: "#modal1"]{
          @icon["icon-help"]}}
-     @a[href: "#" class: "toggle narrow_only"
+     @a[href: "#" class: "toggle narrow_only prev_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: -40%; left: 35%"]{@prev}
 
-     @a[href: "#" class: "toggle narrow_only"
+     @a[href: "#" class: "toggle narrow_only next_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: -40%; right: 35%"]{@next}
 
-     @a[href: "#" class: "toggle wide_only"
+     @a[href: "#" class: "toggle wide_only prev_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: 40%; left: -15%"]{@prev}
 
-     @a[href: "#" class: "toggle wide_only"
+     @a[href: "#" class: "toggle wide_only next_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
-        style: "position: absolute; top: 40%; right: -15%"]{@next}}}
+        style: "position: absolute; top: 40%; right: -15%"]{@next}
+   @(apply slideshow-panel examples)}}
 
 @columns[1]
 
@@ -549,8 +525,15 @@ File, query and maybe fix existing reports.}}}
     (set! button-ids+labels (cons (cons id txt) button-ids+labels))
     (a href: "#" id: id onclick: (list onclick "; return false;") title: tip
        nbsp)) ; empty, filled by JS code, so JS-less browsers won't see it
-  (define next (img src: (copyfile (in-here "img/next.png")) width: 10))
-  (define prev (img src: (copyfile (in-here "img/prev.png")) width: 10))
+  ;(define next (img src: (copyfile (in-here "img/next.png")) width: 10))
+  ;(define prev (img src: (copyfile (in-here "img/prev.png")) width: 10))
+  
+  
+  (for/list ([elem (in-list l)] [pos (in-naturals)])
+    @pre[style: "font-size: 140%;"
+         class: (append (list "codesnip") (if (zero? pos) (list " active") null)) 
+         id: @list{codesnip@pos}]{@(example-code elem)})
+  #;
   (div class: 'slideshow
     (div class: 'buttonpanel
       @button[prev "Previous example"  'rewindbutton  "rewind_show()"]

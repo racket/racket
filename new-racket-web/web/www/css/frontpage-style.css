@@ -11,9 +11,9 @@ However, this blank file is available if you prefer
   #growboxes { margin-top: 10pt; }
   .panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
 
-  pre.codesnip { font-size: 140%; }
+  .codesnip { display: none; } 
+  .codesnip.active { display: block; }
 
-  .racketnav { display: none }
 
  .wide_only { display: block; }
  .narrow_only { display: none; }

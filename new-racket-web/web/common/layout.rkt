@@ -127,55 +127,22 @@
     (set-box! navbar-info (list (lazy pages) (lazy top) (lazy help)))))
 
 (define navbar-info (box #f))
-(define (navbar-maker logo)
-  (define pages-promise
-    (lazy (car (or (unbox navbar-info)
-                   (error 'navbar "no navbar info set")))))
-  (define top-promise  (lazy (cadr  (unbox navbar-info))))
-  (define help-promise (lazy (caddr (unbox navbar-info))))
-  (define pages-parts-of-promise
-    (lazy (map pages->part-of (force pages-promise))))
-  (define (middle-text size x)
-    (span style: `("font-size: ",size"px; vertical-align: middle;")
-          class: 'navtitle
-          x))
-  (define OPEN
-    (list (middle-text 100 "(")
-          (middle-text 80 "(")
-          (middle-text 60 "(")
-          (middle-text 40 nbsp)))
-  (define CLOSE
-    (list (middle-text 80 "Racket")
-          (middle-text 40 nbsp)
-          (middle-text 60 ")")
-          (middle-text 80 ")")
-          (middle-text 100 ")")))
-  (define (header-cell)
-    (td (a href: (url-of (force top-promise))
-           OPEN
-           (img src: logo alt: "[logo]"
-                style: '("vertical-align: middle; "
-                         "margin: 13px 0.25em 0 0; border: 0;"))
-           CLOSE)))
-  (define (links-table this)
-    (table width: "100%"
-      (tr (map (λ (nav navpart)
-                 (td class: 'navlinkcell
-                   (span class: 'navitem
-                     (span class: (if (eq? (pages->part-of this) navpart)
-                                    'navcurlink 'navlink)
-                       nav))))
-               (force pages-promise)
-               (force pages-parts-of-promise)))))
-  (λ(this)
-    (div class: 'racketnav
-      (div class: 'navcontent
-        (table border: 0 cellspacing: 0 cellpadding: 0 width: "100%"
-          (tr (header-cell)
-              (td class: 'helpiconcell
-                  (let ([help (force help-promise)])
-                    (span class: 'helpicon (if (eq? this help) nbsp help)))))
-          (tr (td colspan: 2 (links-table this))))))))
+(define ((navbar-maker logo) this)
+  (define (icon name) @i[class: name]{})
+  (define (row . content) (apply div class: "row" content))
+  
+  @div[class: "navbar" gumby-fixed: "top" id: "nav1"]{
+  @row{
+   @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
+     @icon{icon-menu}}
+   @a[class: "five columns logo" href: ""]{
+     @img[class: "logo" src: logo]}
+   @ul[class: "five columns"]{
+     @li{@a[href: "https://pkg.racket-lang.org"]{Packages}}
+     @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
+     @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
+     @li{@div[class: "medium metro info btn icon-left entypo icon-install"]{
+       @a[href: "./download/"]{Download}}}}}})
 
 (define html-preamble
   @list{
@@ -230,9 +197,10 @@
     @; CSS imports non-minified for staging, minify before moving to
     @;   production
     @link[rel: "stylesheet" href: (resources "gumby.css")]
+    @;@link[rel: "stylesheet" href: (resources "style.css")]
     @; TODO: Modify `racket-style' definition (and what it depends on)
     @;   in "resources.rkt", possibly do something similar with the new files
-    @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
+    @;@link[rel: "stylesheet" type: "text/css" href: style title: "default"]
     @; TODO: Edit the `more.css' definition in www/index.rkt
     @; More ideas for your <head> here: h5bp.com/d/head-Tips
     @; All JavaScript at the bottom, except for Modernizr / Respond.
@@ -240,7 +208,7 @@
     @;   a polyfill for min/max-width CSS3 Media Queries
     @; For optimal performance, use a custom Modernizr build:
     @;   www.modernizr.com/download/
-    @script[src: "js/libs/modernizr-2.6.2.min.js"]
+    @script[src: (resources "modernizr-2.6.2.min.js")]
     })
 
 (define (make-resources files)
