@@ -64,6 +64,14 @@
                           (let ([a (syntax-e (car lst))]
                                 [pieces (up-to-next-keyword (cdr lst))])
                             (case a
+                              [(#:usage-help)
+                               (for ([x (in-list pieces)])
+                                 (unless (string? (syntax-e x))
+                                   (serror "#:usage-help clause contains non-string"
+                                           x)))
+                               (loop (at-next-keyword (cdr lst))
+                                     (cons (list* #'list #`(quote usage-help) pieces)
+                                           accum))]
                               [(#:help-labels)
                                (for ([x (in-list pieces)])
                                  (unless (string? (syntax-e x))
@@ -243,11 +251,11 @@
   (for ([spec (in-list table)])
     (unless (and (list? spec) (pair? spec))
       (bad-table "spec-set must be a non-empty list: ~a" spec))
-    (unless (memq (car spec) '(once-any once-each multi final help-labels ps))
-      (bad-table "spec-set type must be 'once-any, 'once-each, 'multi, 'final, 'help-labels, or 'ps: ~a"
+    (unless (memq (car spec) '(once-any once-each multi final help-labels usage-help ps))
+      (bad-table "spec-set type must be 'once-any, 'once-each, 'multi, 'final, 'help-labels, 'usage-help, or 'ps: ~a"
                  (car spec)))
     (for ([line (in-list (cdr spec))])
-      (if (memq (car spec) '(help-labels ps))
+      (if (memq (car spec) '(help-labels ps usage-help))
         (unless (string? line)
           (bad-table "~a line must be a string: ~e" (car spec) line))
         (begin
@@ -338,9 +346,13 @@
                     (let ([sp (open-output-string)])
                       (fprintf sp "~a [ <option> ... ]" (program-name program))
                       (print-args sp finish-help finish)
+                      (for ([set (in-list table)]
+                            #:when (eq? (car set) 'usage-help))
+                        (for ([line (in-list (cdr set))])
+                          (fprintf sp "\n  ~a" line)))
                       (fprintf sp "\n where <option> is one of\n")
                       (for ([set (in-list table)] ; the original table
-                            #:unless (eq? (car set) 'ps))
+                            #:unless (memq (car set) '(ps usage-help)))
                         (if (eq? (car set) 'help-labels)
                           (for ([line (in-list (cdr set))])
                             (fprintf sp " ~a\n" line))
@@ -398,6 +410,8 @@
                       (cdr spec)))]
                [(eq? (car spec) 'once-any)
                 (once-spec-set (cdr spec))]
+               [(eq? (car spec) 'usage-help)
+                null]
                [(eq? (car spec) 'help-labels)
                 null]
                [(eq? (car spec) 'multi)
