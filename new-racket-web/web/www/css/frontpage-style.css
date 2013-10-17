@@ -8,6 +8,9 @@ However, this blank file is available if you prefer
   .modal h2, .modal .btn { margin: 10px 0 0px; }
   .navbar div ul li a:hover { background: #292929; }
 
+  b { font-weight: bold; }
+  tt { font-family: "Inconsolata"; }
+
   #growboxes { margin-top: 10pt; }
   .panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
 

@@ -6,10 +6,10 @@
 (define (doc path . text)
   (apply a href: (list "http://docs.racket-lang.org/" path) text))
 
-(struct example (code desc))
+(struct example (title code desc))
 
-(define ((example-with-help . help) code desc)
-  (example code (list desc help)))
+(define ((example-with-help . help) code desc #:title title)
+  (example title code (list desc help)))
 (define generic-example
   @example-with-help{
     @p{To run the example, install Racket, start DrRacket, paste the example
@@ -35,7 +35,7 @@
     @p{To run the example, install Racket, start DrRacket, paste the example
        program into the top area in DrRacket, and click the Run button.}})
 
-(define desc div)
+(define desc p)
 (define (elemcode . strs) (apply tt strs))
 
 (define examples
@@ -43,7 +43,7 @@
   (list
    @; Candidates for initial example: --------------------------------
    (list
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Find Racket files" ; -----------------------------------------------
      @code{#lang racket
            ;; Finds Racket sources in all subdirs
            (for ([path (in-directory)])
@@ -54,7 +54,7 @@
        and generates paths in the tree.  The @elemcode{for} form binds
        @elemcode{p} to each path in the sequence, and @elemcode{regexp-match?}
        applies a pattern to the path.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Simple Web Server" ; -----------------------------------------------
      @code{#lang web-server/insta
            ;; A "hello world" web server
            (define (start request)
@@ -65,7 +65,7 @@
        @elemcode{web-server/insta} language.  Each time a connection is made to
        the server, the @elemcode{start} function is called to get the HTML to
        send back to the client.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "TCP Echo Server"; -----------------------------------------------
      @code{#lang racket  ; An echo server
            (define listener (tcp-listen 12345))
            (let echo-server ()
@@ -76,7 +76,7 @@
      @desc{Racket makes it easy to use TCP sockets and spawn threads to handle
        them.  This program starts a server at TCP port 12345 that echos
        anything a client sends back to the client.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Unique Lines"; -----------------------------------------------
      @code{#lang racket
            ;; Report each unique line from stdin
            (let ([saw (make-hash)])
@@ -88,7 +88,7 @@
        program in DrRacket, but it makes more sense from the command line.}))
    @; Additional examples: -------------------------------------------
    (list
-    (graphical-example ; ---------------------------------------------
+    (graphical-example #:title "Sierpinski Triangle"; ---------------------------------------------
      @code{#lang racket  ; A picture
            (require 2htdp/image)
            (let sierpinski ([n 8])
@@ -101,7 +101,7 @@
        easily as it can display a number result.  In this case, a
        @elemcode{sierpinski} function is defined and called (at the same time)
        to generate a Sierpinski triangle of depth 8.})
-    (graphical-example ; ---------------------------------------------
+    (graphical-example #:title "GUI Programming"; ---------------------------------------------
      @code{#lang racket/gui ; A GUI guessing game
            (define f (new frame% [label "Guess"]))
            (define n (random 5))  (send f show #t)
@@ -114,7 +114,7 @@
        @elemcode{button%} obviously implements a button. The @elemcode{check}
        function defined here produces an function that is used for the button's
        callback action.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Web Scraper"; -----------------------------------------------
      @code{#lang racket ; Simple web scraper
            (require net/url net/uri-codec)
            (define (let-me-google-that-for-you str)
@@ -124,7 +124,7 @@
                (regexp-match* rx (get-pure-port (string->url u)))))}
      @desc{Add a call to @elemcode{let-me-google-that-for-you} to get a list of
        search results.})
-    (cmdline-example ; -----------------------------------------------
+    (cmdline-example #:title "Command Line Dice"; -----------------------------------------------
      @code{#lang racket
            ;; A dice-rolling command-line utility
            (command-line
@@ -136,7 +136,7 @@
        @elemcode{command-line} form makes sure that the right number of
        arguments are provided and automatically implements the @tt{--help}
        switch.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Greek Letters"; -----------------------------------------------
      @code{#lang racket
            ;; Print the Greek alphabet
            (for ([i (in-range 25)])
@@ -146,8 +146,8 @@
      @desc{The only reason we use the encoded form of a character
        @elemcode{#\u3B1} instead of the more direct form @elemcode{#\α} is that
        we don't trust your browser to render it correctly.  DrRacket is
-       perfectly happy with @elemcode{#\α}.})
-    (graphical-example ; ---------------------------------------------
+       perfectly happy with @elemcode{#\α}.}) ;; FIXME -- what browsers does this not work on?
+    (graphical-example #:title "Functional Animations"; ---------------------------------------------
      @code{#lang htdp/bsl ; Any key inflates the balloon
            (require 2htdp/image) (require 2htdp/universe)
            (define (balloon b) (circle b "solid" "red"))
@@ -160,7 +160,7 @@
        @elemcode{2htdp/image} library for creating pictures in the teaching
        languages, and the @elemcode{2htdp/universe} library for interactive
        animations.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Lazy Programming"; -----------------------------------------------
      @code{#lang lazy
            ;; An infinite list:
            (define fibs
@@ -171,7 +171,7 @@
      @desc{And now for something completely different.  The @elemcode{lazy}
        language is more like Haskell than Lisp, so feel free to build an
        infinite list and look at only part of it.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Typed Racket"; -----------------------------------------------
      @code{#lang typed/racket
            ;; Using higher-order occurrence typing
            (define-type SrN (U String Number))
@@ -182,7 +182,7 @@
      @desc{Racket's type system is designed to let you add types after you've
        worked for a while in untyped mode — even if your untyped program
        wouldn't fit nicely in a conventional type system.})
-    (scribble-example ; ----------------------------------------------
+    (scribble-example #:title "Scribble for Documentation"; ----------------------------------------------
      @code|{#lang scribble/base
             @; Generate a PDF or HTML document
             @title{Bottles --- @italic{Abridged}}
@@ -191,7 +191,7 @@
                 @item{@(format "~a" n) bottles.}))}|
      @desc{This program uses the @elemcode{scribble/base} language for
        generating documents using a prose-friendly syntax.})
-    (graphical-example ; ---------------------------------------------
+    (graphical-example #:title "Plot and graphs"; ---------------------------------------------
      @code{#lang racket   ; draw a graph of cos
            (require plot) ; and deriv^3(cos)
            (define ((deriv f) x)
@@ -202,7 +202,7 @@
      @desc{This program uses the @elemcode{plot} library to draw plots of
        functions.  Note that the plots are actual value, which DrRacket shows
        in graphical form.})
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Sending email"; -----------------------------------------------
      @code{#lang racket ; Sending email from racket
            (require net/sendmail)
            (sleep (* (- (* 60 4) 15) 60)) ; 4h - 15m
@@ -211,8 +211,8 @@
             (list (getenv "EMAIL")) null null
             '("Time to go out and move your car."))}
      @desc{Racket comes with plenty of libraries.})
-    (generic-example ; -----------------------------------------------
-     @code{#lang scheme/base ; Simple use of the FFI
+    (generic-example #:title "FFI"; -----------------------------------------------
+     @code{#lang racket ; Simple use of the FFI
            (require ffi/unsafe)
            (define mci-send-string
              (get-ffi-obj "mciSendStringA" "Winmm"
@@ -223,7 +223,7 @@
        libraries: pulling out a foreign function is easy, and can even be done
        dynamically on the REPL.})
     ;; Is this effective without any highlights?
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Datalog"; -----------------------------------------------
      @code{#lang datalog
            ancestor(A, B) :- parent(A, B).
            ancestor(A, B) :-
@@ -236,7 +236,7 @@
       language.  If you use this from DrRacket, you'll see that it provides
       proper highlighting, Check Syntax, and a Datalog-specific REPL.})
     #; ; Not easy to present something like this.
-    (generic-example ; -----------------------------------------------
+    (generic-example #:title "Customizing your language"; -----------------------------------------------
      @code{#lang racket
            (provide (except-out (all-from-out racket)
                                 #%top #%app)
@@ -280,9 +280,10 @@
  (list-ref 
   '("one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten" "eleven" "twelve" "thirteen") 
   (sub1 n)))
-(define (columns n #:row? [row? #f] #:center? [center? #f] #:tag [tag div] #:push [push #f] . body)
+(define (columns n #:row? [row? #f] #:center-text? [center-text? #f ]#:center? [center? #f] #:tag [tag div] #:push [push #f] . body)
  (define d (apply tag class: (~a (print-num n) " columns" 
-                                 (if center? " centered" "") 
+                                 (if center? " centered" "")
+                                 (if center-text? " center-text" "")
                                  (if push (~a " push_" (print-num push)) "")) body))
  (if row? (row d) d))
 
@@ -319,6 +320,8 @@ programmers to write and link together components written in different
 dialects.  Racket's libraries range from web servers to distributed
 computing and from databases to charts.
 }
+                                                                            
+@(apply slideshow-explain examples)
 
 @div[id: "topcontent"]{
 @row{
@@ -328,7 +331,7 @@ computing and from databases to charts.
    @div[style: "position: relative"]{
      @p[class: "metro primary btn"
         style: "position: absolute; top: -20%; right: 0%;"]{
-        @a[href: "#" class: "switch question_button" gumby-trigger: "#modal1"]{
+        @a[href: "#" class: "switch" id: "question_button"]{
          @icon["icon-help"]}}
      @a[href: "#" class: "toggle narrow_only prev_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
@@ -516,6 +519,22 @@ File, query and maybe fix existing reports.}}}
 }}
   })
 
+(define (slideshow-explain l1 l2)
+  (define l (append l1 l2))
+  (for/list ([elem (in-list l)] [pos (in-naturals)])
+    @div[class: "modal" id: @list{code-modal@pos}]{
+      @div[class: "content"]{
+        @a[class: "close switch" gumby-trigger: @list{|#code-modal@pos}]{@i[class: "icon-cancel"]}
+        @row{@columns[10 #:center? #t #:center-text? #t]{
+          @h4{@(example-title elem)}
+          @pre[style: "font-size: 140%; margin-top: 2%; margin-bottom: 3%;"]{@(example-code elem)}}}
+        @row{@columns[10 #:center? #t #:center-text? #t]{
+               @(example-desc elem)
+               @p[style: "font-size: 80%;"]{
+            Form and function names in the code are hyperlinked to
+            documentation, so click on them for more information.}
+             }}}}))
+
 (define (slideshow-panel l1 l2)
   (define l (append l1 l2))
   (define button-ids+labels '())
@@ -530,9 +549,11 @@ File, query and maybe fix existing reports.}}}
   
   
   (for/list ([elem (in-list l)] [pos (in-naturals)])
-    @pre[style: "font-size: 140%;"
-         class: (append (list "codesnip") (if (zero? pos) (list " active") null)) 
-         id: @list{codesnip@pos}]{@(example-code elem)})
+    @list{
+     @invisible-separator
+     @pre[style: "font-size: 140%;"
+          class: (append (list "codesnip") (if (zero? pos) (list " active") null)) 
+          id: @list{codesnip@pos}]{@(example-code elem)}})
   #;
   (div class: 'slideshow
     (div class: 'buttonpanel
