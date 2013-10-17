@@ -1,20 +1,21 @@
 #lang meta/web
 
-(require "resources.rkt" "data.rkt" "installer-pages.rkt" "symlinks.rkt"
+(require "resources.rkt" "data.rkt" "installer-pages.rkt" "symlinks.rkt" "../www/gumby.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
 (define (render-download-page [release current-release] [package 'racket])
   (define version (release-version release))
-  @center-div{
-    @h2{@(package->name package) v@version (@(release-date-string release))}
+  (list
+   @columns[10 #:center? #t #:row? #t #:center-text? #t]{
+    @h2[style: "text-align: center"]{@(package->name package) v@version (@(release-date-string release))}
     @div[id: "download_panel" align: "center" style: "display: none;"]{
       @input[type: 'submit value: "Download" onclick: "do_jump();"
              style: '("font-size: 200%; font-weight: bolder;"
                       " letter-spacing: 0.2em;"
-                      " margin: 0.5ex 0 1ex 0; width: 100%;")]
+                      " margin: 0.5ex 0 1ex 0; width: 50%;")]
       @br
-      @div{
+      @div[style: "margin-bottom: 20px"]{
         Platform:
         @select[id: "platform_selector"
                 onchange:   "selection_changed();"
@@ -22,35 +23,33 @@
           @(for/list ([i (in-list all-installers)]
                       #:when (and (equal? release (installer-release i))
                                   (equal? package (installer-package i))))
-             (installer->page i 'render-option))}}
-      @|br br|
+             (installer->page i 'render-option))}}}}
+  @columns[8 #:center? #t #:center-text? #t #:row? #t]{
       @(let* ([sep   @list{@nbsp @bull @nbsp}]
-              [links (λ links @(tr (td (div style: "margin: 1ex 4ex;"
-                                            (add-between links sep)))))]
+              [links (λ links @(div style: "margin: 1ex 4ex;" (add-between links sep)))]
               [docs  @list{@|docs|/@|version|/html}])
-        @table[style: "text-align: center; font-size: small;"
-               frame: 'hsides rules: 'rows]{
-          @links[@list{Release: @nbsp @(release-page release){Announcement}}
-                 @a[href: @list{@|docs|/release/}]{Notes}
-                 @a[href: @docs]{Documentation}]
-          @links[@license{License}
-                 all-version-pages
-                 @pre:installers{Nightly Installers}]})
-      @br
-      @div[id: "linux_explain"
-           style: '("font-size: 75%; display: none; width: 28em;"
-                    " margin-top: 1ex; text-align: center;")]{
+         (list
+          @row{
+            @links[@list{Release: @nbsp @(release-page release){Announcement}}
+                       @a[href: @list{@|docs|/release/}]{Notes}
+                       @a[href: @docs]{Documentation}]}
+          @row{@links[@license{License}
+                       all-version-pages
+                       @pre:installers{Nightly Installers}]}))}
+  @columns[4 #:center? #t #:center-text? #t #:row? #t]{ @div[id: "linux_explain"
+           style: '("font-size: 75%; display: none;"
+                    " margin-top: 1ex;")]{
         @b{Note about the Linux installers:} if you don't see an option for
         your particular platform, try other Linux installers, starting from
         similar ones.  Very often, a build on one Linux variant will work on
-        others too.}}
+        others too.}
     @downloader-script
     @noscript{
       Installers are available for the following platforms:
       @ul{@(for/list ([i (in-list all-installers)]
                       #:when (and (equal? release (installer-release i))
                                   (equal? package (installer-package i))))
-             @li{@(installer->page i 'only-platform)})}}})
+             @li{@(installer->page i 'only-platform)})}}}))
 
 (define (release-page* rel)
   (define ver (release-version rel))
@@ -70,7 +69,7 @@
       (define ver   (release-version rel))
       (define file  (format "~a-v~a.html" pkg ver))
       (define title @list{Download @(package->name pkg) v@ver})
-      @page[#:file file #:title title #:part-of 'download]{
+      @page[#:file file #:title title #:width 'full #:part-of 'download]{
         @(render-download-page rel pkg)})
     (define style
       @style/inline[type: 'text/css]{
@@ -87,7 +86,8 @@
           background-color: #eeee22;
         }})
     @page[#:id 'all-versions #:title "All Versions" #:part-of 'download
-          #:extra-headers style]{
+          #:extra-headers style #:width 'full]{
+     @columns[10 #:center? #t #:row? #t]{
       @table[align: 'center cellspacing: 0 cellpadding: 4 frame: 'box
              rules: 'groups]{
         @thead{
@@ -117,7 +117,7 @@
           @tr[class: 'version-row]{
             @td[align: 'center colspan: 3]{@pre:installers}
             @td{@nbsp @pre:docs[#:sub 'html]{[HTML]} @;
-                @nbsp @pre:docs[#:sub 'pdf]{[PDF]} @nbsp}}}}}))
+                @nbsp @pre:docs[#:sub 'pdf]{[PDF]} @nbsp}}}}}}))
 
 (define license
   @page[#:title "Software License" #:part-of 'download]{

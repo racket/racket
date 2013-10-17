@@ -142,7 +142,7 @@
      @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
      @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
      @li{@div[class: "medium metro info btn icon-left entypo icon-install"]{
-       @a[href: "./download/"]{Download}}}}}})
+       @a[href: 'download]{Download}}}}}})
 
 (define html-preamble
   @list{

@@ -55,7 +55,13 @@
     #:location "Worcester, MA"
     #:url "http://web.cs.wpi.edu/~kfisler/"
     (person 'kathi "Kathi Fisler"
-            #:url "http://web.cs.wpi.edu/~kfisler/"))))
+            #:url "http://web.cs.wpi.edu/~kfisler/"))
+   (place ; -------------------------------------------------------------------
+    'indiana "Indiana University"
+    #:location "Bloomington, IN"
+    #:url "http://homes.soic.indiana.edu/samth/"
+    (person 'samth "Sam Tobin-Hochstadt"
+            #:url "http://homes.soic.indiana.edu/samth/"))))
 
 ;; ----------------------------------------------------------------------------
 

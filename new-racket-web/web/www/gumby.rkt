@@ -4,7 +4,7 @@
 
 (define (css url) @link[href: url rel: "stylesheet" type: "text/css"]{})
 (define (icon name) @i[class: name]{})
-(define (row . content) (div class: "row" content))
+(define (row . content) (apply div class: "row" content))
 
 (define (panetitle . l) @div[class: "panetitle" l])
 
@@ -19,7 +19,7 @@
                  #:push [push #f] . body)
   (define d (apply tag class: (list (print-num n) " columns" 
                                     (and center? " centered")
-                                    (and center-text? " center-text")
+                                    (and center-text? " text-center")
                                     (and push 
                                          (list " push_" (print-num push))))
                    body))

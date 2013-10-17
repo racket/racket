@@ -5,7 +5,7 @@
 (provide download)
 (define download
   @page[#:link-title "Download" #:window-title "Download Racket"
-        #:file "download/" #:part-of 'download]{
+        #:file "download/" #:part-of 'download #:width 'full]{
     @(render-download-page)})
 
 (define images (list (copyfile (in-here "img/download.png"))
