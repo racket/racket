@@ -43,7 +43,7 @@
     (and (not (set-member? badnames name))
          name))
   (define (strip pat)
-    (match pat
+    (match-a-pattern/single-base-case pat
       [`(name ,n ,subpat)
        (strip-named n subpat (λ (n s) `(name ,n ,s)))]
       [`(mismatch-name ,n ,subpat)
@@ -53,6 +53,8 @@
                  ,(strip p2))]
       [`(hide-hole ,p)
        `(hide-hole ,(strip p))]
+      [`(side-condition ,p ,c ,s)
+       `(side-condition ,(strip p) ,c ,s)]
       [`(list ,sub-pats ...)
        (cons 'list
              (map (match-lambda
@@ -63,19 +65,23 @@
                     `(repeat ,sub ,s-n ,s-m)]
                    [sub-pat (strip sub-pat)])
                   sub-pats))]
-      [else pat]))
+      [_ pat]))
   (strip pat))
 
 (define (find-names pat)
-  (match pat
-    [(or `(name ,n ,subpat)
-         `(mismatch ,n ,subpat))
+  (match-a-pattern/single-base-case pat
+    [`(name ,n ,subpat)
+     (2set-add (find-names subpat)
+               n)]
+    [`(mismatch-name ,n ,subpat)
      (2set-add (find-names subpat)
                n)]
     [`(in-hole ,p1 ,p2)
      (2set-union (find-names p1)
                  (find-names p2))]
     [`(hide-hole ,p)
+     (find-names p)]
+    [`(side-condition ,p ,c ,s)
      (find-names p)]
     [`(list ,sub-pats ...)
      (foldr 2set-union
@@ -85,4 +91,4 @@
                    (2set-add (find-names p) n m)]
                   [sub-pat (find-names sub-pat)])
                  sub-pats))]
-    [else 2set-empty]))
+    [_ 2set-empty]))

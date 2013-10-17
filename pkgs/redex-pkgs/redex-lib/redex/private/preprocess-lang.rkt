@@ -57,10 +57,9 @@
         (λ (rhs)
            (let loop ([pat (rhs-pattern rhs)]
                       [s (set)])
-             (match
+             (match-a-pattern/single-base-case
                pat
-               [`(nt ,id)
-                (set-add s id)]
+               
                [`(name ,name ,pat)
                 (loop pat s)]
                [`(mismatch-name ,name ,pat)
@@ -69,6 +68,7 @@
                 (set-union (loop p1 s)
                            (loop p2 s))]
                [`(hide-hole ,p) (loop p s)]
+               [`(side-condition ,p ,_ ,_) (loop p s)]
                [`(list ,sub-pats ...)
                 (fold-map/set
                  (λ (sub-pat)
@@ -77,7 +77,11 @@
                        (loop pat s)]
                       [else (loop sub-pat s)]))
                  sub-pats)]
-               [else s])))
+               [_ (match pat
+                    [`(nt ,id)
+                     (set-add s id)]
+                    [_ s])
+                  ])))
         (nt-rhs nt))))
    (hash)
    lang))
@@ -217,15 +221,18 @@
 
 ;; directly-used-nts : pat -> (setof symbol)
 (define (directly-used-nts pat)
-  (match pat
-    [`(nt ,id) (set id)]
-    [(or `(name ,n ,p)
-         `(mismatch-name ,n ,p))
+  (match-a-pattern/single-base-case pat
+                                    
+    [`(name ,n ,p)
+     (directly-used-nts p)]
+    [`(mismatch-name ,n ,p)
      (directly-used-nts p)]
     [`(in-hole ,p1 ,p2)
      (set-union (directly-used-nts p1)
                 (directly-used-nts p2))]
     [`(hide-hole ,p)
+     (directly-used-nts p)]
+    [`(side-condition ,p ,c ,v)
      (directly-used-nts p)]
     [`(list ,sub-pats ...)
      (fold-map/set
@@ -236,7 +243,9 @@
            [`(repeat ,p ,n ,m) (set)]
            [else (directly-used-nts sub-pat)]))
       sub-pats)]
-    [else (set)]))
+    [_ (match pat
+         [`(nt ,id) (set id)]
+         [_ (set)])]))
 
 ;; used-vars : lang -> (listof symbol)
 (define (used-vars lang)

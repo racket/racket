@@ -23,7 +23,7 @@ a self-reference in the grammar.
   condition ::= (-> bindings? any) ;; any is treated like a boolean
 
 Also, the `(cross ,nt) pattern alwyas has hypenated non-terminals, ie
-(cross e) in the source turns into (cross e-e) after translation (which
+(cross e) in the source turns into (cross e-e) after translation which
 means that the other cross non-terminals, e.g. (cross e-v), are not
 directly available as redex patterns, but can only be used via the
 non-terminals that Redex creates for the cross languages.
@@ -75,7 +75,7 @@ turns into this:
 (define-for-syntax (match-a-pattern/proc stx skip-non-recursive?)
   (define (check-pats pats allow-else?)
     (let ()
-      (define (non-recursive? x) (or (<= x 12) (= x 20)))
+      (define (non-recursive? x) (or (<= x 12) (= x 18) (= x 20)))
       (define should-be-pats
         (append '(`any
                   `number
@@ -103,37 +103,42 @@ turns into this:
                 (if (or allow-else? skip-non-recursive?)
                     (list '_)
                     (list))))
-      (for ([pat (in-list pats)]
-            [i (in-naturals)])
-        (when (null? should-be-pats)
-          (raise-syntax-error #f "too many patterns" stx pat))
-        (define should-be (car should-be-pats))
-        (set! should-be-pats (cdr should-be-pats))
-        (unless (and (non-recursive? i) skip-non-recursive?)
-          (define pats-match?
-            (let loop ([pat (syntax->datum pat)]
-                       [should-be should-be])
-              (cond
-                [(and (null? pat) (null? should-be)) #t]
-                [(and (pair? pat) (pair? should-be))
-                 (cond
-                   [(eq? (car should-be) 'unquote)
-                    (eq? (car pat) 'unquote)]
-                   [else
-                    (and (loop (car pat) (car should-be))
-                         (loop (cdr pat) (cdr should-be)))])]
-                [else (equal? pat should-be)])))
-          (unless pats-match?
-            (raise-syntax-error #f
-                                (format "expected pattern ~s" 
+      (define unused-supplied-pats
+        (for/fold ([supplied-pats pats])
+                  ([should-be (in-list should-be-pats)]
+                   [i (in-naturals)])
+          
+          (when (null? supplied-pats)
+            (raise-syntax-error #f 
+                                (format "did not find pattern ~s"
                                         should-be)
-                                stx
-                                pat))))
-      (unless (null? should-be-pats)
-        (raise-syntax-error #f 
-                            (format "did not find pattern ~s"
-                                    (car should-be-pats))
-                            stx))))
+                                stx))
+          (define supplied-pat (car supplied-pats))
+          (cond [(and (non-recursive? i) skip-non-recursive?)
+                 supplied-pats]
+                [else
+                 (define pats-match?
+                   (let loop ([pat (syntax->datum supplied-pat)]
+                              [should-be should-be])
+                     (cond
+                      [(and (null? pat) (null? should-be)) #t]
+                      [(and (pair? pat) (pair? should-be))
+                       (cond
+                        [(eq? (car should-be) 'unquote)
+                         (eq? (car pat) 'unquote)]
+                        [else
+                         (and (loop (car pat) (car should-be))
+                              (loop (cdr pat) (cdr should-be)))])]
+                      [else (equal? pat should-be)])))
+                 (unless pats-match?
+                   (raise-syntax-error #f
+                                       (format "expected pattern ~s" 
+                                               should-be)
+                                       stx
+                                       supplied-pats))
+                 (cdr supplied-pats)])))      
+      (unless (null? unused-supplied-pats)
+        (raise-syntax-error #f "too many patterns" stx unused-supplied-pats))))
   (syntax-case stx ()
     [(_ #:allow-else to-match [pats rhs ...] ...)
      (not skip-non-recursive?)
@@ -146,4 +151,4 @@ turns into this:
        #'(match to-match [pats rhs ...] ...))]))
 
 (define-syntax (match-a-pattern stx) (match-a-pattern/proc stx #f))
-(define-syntax (match-a-pattern/single-base-case stx) (match-a-pattern/proc stx #f))
+(define-syntax (match-a-pattern/single-base-case stx) (match-a-pattern/proc stx #t))
