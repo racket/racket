@@ -2758,7 +2758,7 @@ An example
 
 (define (class/c-check-first-order ctc cls fail)
   (unless (class? cls)
-    (fail "not a class"))
+    (fail '(expected: "a class" given: "~v") cls))
   (let ([method-ht (class-method-ht cls)]
         [beta-methods (class-beta-methods cls)]
         [meth-flags (class-meth-flags cls)]) 
@@ -3516,7 +3516,7 @@ An example
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)
-    (fail "not a object"))
+    (fail '(expected: "an object" given: "~e") obj))
   (let ([cls (object-ref obj)])
     (let ([method-ht (class-method-ht cls)])
       (for ([m methods])
@@ -3580,7 +3580,7 @@ An example
       (let ([p (proj blame)])
         (λ (val)
           (unless (object? val)
-            (raise-blame-error blame val "expected an object, got ~v" val))
+            (raise-blame-error blame val '(expected: "an object" given: "~e") val))
           (let ([original-obj (if (has-original-object? val) (original-object val) val)]
                 [new-cls (p (object-ref val))])
             (impersonate-struct val object-ref (λ (o c) new-cls)

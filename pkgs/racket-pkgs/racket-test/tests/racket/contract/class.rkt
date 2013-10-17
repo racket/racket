@@ -1748,4 +1748,24 @@
      (class object%
        (super-new)
        (define/public (callback f) (f 1))))
-   promised-produced?)))
+   promised-produced?))
+
+(let ([expected-obj
+       (λ (exn) (regexp-match? #rx"promised: an object" (exn-message exn)))]
+      [expected-class
+       (λ (exn) (regexp-match? #rx"promised: a class" (exn-message exn)))])
+  (contract-error-test
+   'not-an-object-1
+   '(contract (object/c) 3 'pos 'neg)
+   expected-obj)
+
+  (contract-error-test
+   'not-an-object-2
+   '(contract (instanceof/c (class/c)) 3 'pos 'neg)
+   expected-obj)
+
+  (contract-error-test
+   'not-a-class-1
+   '(contract (class/c) 3 'pos 'neg)
+   expected-class)))
+
