@@ -2,7 +2,7 @@
 ;; stress tests for place-channels communciating symbols
 (require racket/place
          racket/match
-         "place-utils.rkt")
+         tests/racket/place-utils)
 
 (define (symbol-test)
   (splat

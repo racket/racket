@@ -24,7 +24,8 @@
                "syntax-color-test"
                "images-test"
                "plot-test"
-               "math-test"))
+               "math-test"
+               "racket-benchmarks"))
 
 (define pkg-desc "tests for \"main-distribution\"")
 

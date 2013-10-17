@@ -2,7 +2,7 @@
 ;; stress tests for place-channels
 (require racket/place
          racket/match
-         "place-utils.rkt")
+         tests/racket/place-utils)
 
 (define (place-launch-test)
   (splat
