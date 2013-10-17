@@ -1,7 +1,13 @@
 #lang meta/web
 
-(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt")
-(require racket/format)
+
+;; TODO
+;; -- add links in top paragraph
+;; Remaining Eli comments:
+;; -- use links
+;; -- indentation
+
+(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "gumby.rkt")
 
 (define (doc path . text)
   (apply a href: (list "http://docs.racket-lang.org/" path) text))
@@ -261,31 +267,18 @@
   (set! news-flashes text))
 
 
-(define (css url) @link[href: url rel: "stylesheet" type: "text/css"]{})
-(define (icon name) @i[class: name]{})
-(define (row . content) (apply div class: "row" content))
-(define (js . args) @script[type: "text/javascript" @(apply literal args) "\n"])
-(define (tagline l) @span[style: "font-style: italic" l])
-
-(define (panetitle l) @div[class: "panetitle" l])
-
-(define (growbox title . body)
-  @columns[4 (panetitle (string-append "Grow your " title)) (apply p body)])
-(define (docelem kw name link . text)
-  (apply p @a[href: link]{@strong[kw]: @|name| } text))
 
 (define (sectitle name) @columns[10 #:center? #t #:row? #t]{@h3[name]})
 
-(define (print-num n)
- (list-ref 
-  '("one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten" "eleven" "twelve" "thirteen") 
-  (sub1 n)))
-(define (columns n #:row? [row? #f] #:center-text? [center-text? #f ]#:center? [center? #f] #:tag [tag div] #:push [push #f] . body)
- (define d (apply tag class: (~a (print-num n) " columns" 
-                                 (if center? " centered" "")
-                                 (if center-text? " center-text" "")
-                                 (if push (~a " push_" (print-num push)) "")) body))
- (if row? (row d) d))
+(define (book-image . l)
+  @div[class: "two columns image rounded" style: "margin-top: 2pt" l])
+
+(define (growbox title . body)
+  @columns[4 (panetitle (string-append "Grow your " title)) (p body)])
+(define (docelem kw name link . text)
+  (p @a[href: link]{@strong[kw]: @|name| } text))
+
+
 
 (define prev @img[src: (copyfile (in-here "img/prev.png"))  style: "width: 50px"])
 (define next @img[src: (copyfile (in-here "img/next.png"))  style: "width: 50px"])
@@ -309,7 +302,7 @@
  @columns[10 #:row? #t #:center? #t]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{
   @strong{Racket} @|nbsp|@|mdash|@|nbsp| 
-   @tagline{a programmable programming language}}}
+   @span[style: "font-style: italic;"]{a programmable programming language}}}
 
 @columns[8 #:center? #t #:row? #t
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
@@ -362,7 +355,8 @@ computing and from databases to charts.
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
 @a[href: "http://docs.racket-lang.org/quick/"]{Draw more pictures} or
 @a[href: "http://docs.racket-lang.org/more/"]{build a web server from scratch}.  Racket includes both
-@a[href: "http://docs.racket-lang.org/"]{batteries} and a @a[href: "http://docs.racket-lang.org/drracket/"]{programming environment},
+@a[href: "http://docs.racket-lang.org/"]{batteries} and a 
+@a[href: "http://docs.racket-lang.org/drracket/"]{programming environment},
 so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
 }}
 
@@ -480,7 +474,7 @@ File, query and maybe fix existing reports.}}}
 
 @row{
 @row{
-@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+@book-image{
   @a[href: "http://www.htdp.org"]{@img[src: (copyfile (in-here "img/htdp-cover.gif"))]}}
 @columns[4]{@panetitle{How to Design Programs}
 @p{A principled approach to program design}
@@ -494,14 +488,15 @@ File, query and maybe fix existing reports.}}}
     @li{Sample game code comes with the Racket distribution}
     @li{For those just starting out with Racket}
 }}
-@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+@book-image{
   @a[href: "http://www.realmofracket.com"]{@img[src: (copyfile (in-here "img/racket_cover_web.png"))]}}
 }}
 
 @row{
 @row{
-@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
-  @a[href: "http://cs.brown.edu/~sk/Publications/Books/ProgLangs/2007-04-26/"]{@img[src: (copyfile (in-here "img/plai-cover.jpg"))]}}
+@book-image{
+  @a[href: "http://cs.brown.edu/~sk/Publications/Books/ProgLangs/2007-04-26/"]{
+     @img[src: (copyfile (in-here "img/plai-cover.jpg"))]}}
 @columns[4]{@panetitle{PLAI}
 @p{Foundations of programming languages}
 @ul{
@@ -514,7 +509,7 @@ File, query and maybe fix existing reports.}}}
     @li{Model your own programming language semantics}
     @li{For the working language engineer}
 }}
-@div[class: "two columns image rounded" style: "margin-top: 2pt"]{
+@book-image{
   @a[href: "http://redex.racket-lang.org/"]{@img[src: (copyfile (in-here "img/redex-cover.jpg"))]}}
 }}
   })
