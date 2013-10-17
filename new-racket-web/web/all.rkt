@@ -1,5 +1,6 @@
 #lang meta/web
 
 (require "www/all.rkt" "download/all.rkt" "minis/all.rkt" "stubs/all.rkt")
-(set-navbar! (list main download documentation planet community learning)
+(set-navbar! `((main . ,main) (download . ,download) (documentation . ,documentation)) 
+             ;; pkgs should be here too, needs a stub
              main help)

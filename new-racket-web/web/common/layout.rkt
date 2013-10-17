@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-(require scribble/html (for-syntax racket/base syntax/name syntax/parse)
+(require scribble/html racket/dict (for-syntax racket/base syntax/name syntax/parse)
          "utils.rkt" "resources.rkt")
 
 (define-for-syntax (process-contents who layouter stx xs)
@@ -131,18 +131,21 @@
   (define (icon name) @i[class: name]{})
   (define (row . content) (apply div class: "row" content))
   
+  (define download-promise (lazy (dict-ref (force (first (unbox navbar-info))) 'download)))
+  (define main-promise (lazy (second (unbox navbar-info))))
+  
   @div[class: "navbar" gumby-fixed: "top" id: "nav1"]{
   @row{
    @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
      @icon{icon-menu}}
-   @a[class: "five columns logo" href: ""]{
+   @a[class: "five columns logo" href: (url-of (force main-promise))]{
      @img[class: "logo" src: logo]}
    @ul[class: "five columns"]{
-     @li{@a[href: "https://pkg.racket-lang.org"]{Packages}}
-     @li{@a[href: "https://docs.racket-lang.org"]{Documentation}}
-     @li{@a[href: "https://blog.racket-lang.org"]{Blog}}
+     @li{@a[href: "http://pkg.racket-lang.org"]{Packages}}
+     @li{@a[href: "http://docs.racket-lang.org"]{Documentation}}
+     @li{@a[href: "http://blog.racket-lang.org"]{Blog}}
      @li{@div[class: "medium metro info btn icon-left entypo icon-install"]{
-       @a[href: 'download]{Download}}}}}})
+       @(force download-promise)}}}}})
 
 (define html-preamble
   @list{

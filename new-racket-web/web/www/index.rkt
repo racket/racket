@@ -520,10 +520,10 @@ File, query and maybe fix existing reports.}}}
     @div[class: "modal" id: @list{code-modal@pos}]{
       @div[class: "content"]{
         @a[class: "close switch" gumby-trigger: @list{|#code-modal@pos}]{@i[class: "icon-cancel"]}
-        @row{@columns[10 #:center? #t #:center-text? #t]{
+        @row{@columns[10 #:center? #t]{
           @h4{@(example-title elem)}
           @pre[style: "font-size: 140%; margin-top: 2%; margin-bottom: 3%;"]{@(example-code elem)}}}
-        @row{@columns[10 #:center? #t #:center-text? #t]{
+        @row{@columns[10 #:center? #t]{
                @(example-desc elem)
                @p[style: "font-size: 80%;"]{
             Form and function names in the code are hyperlinked to
