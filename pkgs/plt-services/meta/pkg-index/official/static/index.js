@@ -13,7 +13,7 @@ $( document ).ready(function() {
                           click: clickf } ).html(texts); }
     function jslinki ( texts, clickf) {
         var i = $('<a>', { href: "javascript:void(0)",
-                          click: function () { clickf(i); } } );
+                           click: function () { clickf(i); } } );
         return i.html(texts); }
 
     function dynamic_send ( u, o ) {
@@ -502,7 +502,7 @@ $( document ).ready(function() {
                                        author: me(),
                                        authors: [ me() ],
                                        'checksum-error': false,
-                                       conficts: [],
+                                       conflicts: [],
                                        dependencies: [],
                                        description: "",
                                        'last-checked': now,
@@ -510,12 +510,15 @@ $( document ).ready(function() {
                                        'last-updated': now,
                                        modules: [],
                                        ring: 2,
-                                       source: "",
-                                       'source_url': "",
-                                       tags: [],
-                                       versions: []};
+                                       tags: []};
                          value['search-terms'] = {};
                          value['search-terms'][("author:" + me())] = true;
+                         value['versions'] = {};
+                         value['versions']['default'] = {};
+                         value['versions']['default']['source'] = "";
+                         value['versions']['default']['source_url'] = "";
+                         value['versions']['default']['checksum'] = "";
+                         
                          add_package_to_list (value);
                          evaluate_search();
                          open_info(value); }),
