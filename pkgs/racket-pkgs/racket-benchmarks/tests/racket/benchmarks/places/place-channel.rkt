@@ -1,7 +1,7 @@
 #lang racket/base
 ;; stress tests for place-channels
 (require (prefix-in pp: "place-processes.rkt")
-         (prefix-in pu: "place-utils.rkt"))
+         (prefix-in pu: tests/racket/place-utils))
 (require racket/place
          racket/path
          racket/system)
