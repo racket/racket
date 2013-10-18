@@ -536,7 +536,9 @@ bindings of each @racket[require-spec] are visible for expanding later
   ]}
 
  @defsubform[(combine-in require-spec ...)]{
-  The union of the @racket[require-spec]s.
+  The union of the @racket[require-spec]s. If two or more imports from the 
+  @racket[require-spec]s have the same identifier name but they do not refer to
+  the same original binding, a syntax error is reported.
   
   @defexamples[#:eval (syntax-eval)
     (require (combine-in (only-in racket/tcp tcp-accept)
@@ -619,7 +621,9 @@ bindings of each @racket[require-spec] are visible for expanding later
 
  @specsubform[#:literals (for-label)
               (for-label require-spec ...)]{Same as 
-  @racket[(for-meta #f require-spec ...)].}
+  @racket[(for-meta #f require-spec ...)]. If an identifier in any of the
+  @racket[require-spec]s is bound at more than one phase level, a syntax error
+  is reported.}
 
  @specsubform[derived-require-spec]{See @racket[define-require-syntax]
  for information on expanding the set of @racket[require-spec]
