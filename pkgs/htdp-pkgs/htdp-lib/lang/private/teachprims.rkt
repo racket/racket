@@ -265,11 +265,13 @@ namespace.
 (define (tequal? x y epsilon)
   (let ([union-equal!? (make-union-equal!?)]
 	[fail (lambda (fmt arg)
-		(raise (make-exn:fail:contract (if (or (eq? arg x)
-						       (eq? arg y))
-						   (format fmt arg)
-						   (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
-					       (current-continuation-marks))))])
+		(raise
+                 (make-exn:fail:contract
+                  (if (or (eq? arg x)
+                          (eq? arg y))
+                      (format fmt arg)
+                      (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+                  (current-continuation-marks))))])
     (let ? ([a x][b y])
       (cond
         [(number? a)
@@ -285,11 +287,13 @@ namespace.
 (define (teach-equal? x y)
 
   (let ([fail (lambda (fmt arg)
-		(raise (make-exn:fail:contract (if (or (eq? arg x)
-						       (eq? arg y))
-						   (format fmt arg)
-						   (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
-					       (current-continuation-marks))))]
+		(raise
+                 (make-exn:fail:contract 
+                  (if (or (eq? arg x)
+                          (eq? arg y))
+                      (format fmt arg)
+                      (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+                  (current-continuation-marks))))]
 	[union-equal!? (make-union-equal!?)])
 	      
     (let recur ([a x] [b y])
@@ -349,7 +353,8 @@ namespace.
 (define-teach intermediate build-string
   (lambda (n f)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (hocheck 'build-string "second argument must be a function that accepts one argument, given ~e" f))
+      (hocheck 'build-string
+               "second argument must be a function that accepts one argument, given ~e" f))
     (unless (and (number? n) (integer? n) (>= n 0))
       (hocheck 'build-string "first argument must be a natural number, given ~e" n))
     (build-string n (lambda (i)
@@ -466,7 +471,9 @@ namespace.
   (unless (list? s) (err tag "expected a ~a, but received: ~e" 1-LETTER* s))
   (for-each 
    (lambda (c) 
-     (unless (string? c) (err tag "expected a ~a, but received: ~e\n which contains the non-1-letter string: ~e" 1-LETTER* s c)))
+     (unless (string? c)
+       (err tag "expected a ~a, but received: ~e\n which contains the non-1-letter string: ~e" 
+            1-LETTER* s c)))
    s)
   (andmap (compose (curry = 1) string-length) s))
 
@@ -485,11 +492,13 @@ namespace.
     [(tag check-result format-msg actual)
      (unless check-result
        (displayln `(cerr ,actual))
-       (err tag (string-append "expected " (a-or-an format-msg) " " format-msg ", but received ~e") actual))]
+       (err tag (string-append "expected " (a-or-an format-msg) " " format-msg ", but received ~e")
+            actual))]
     [(tag check-result format-msg actual snd)
      (unless check-result
-       (err tag (string-append "expected " (a-or-an format-msg) " " format-msg " for the ~a argument, but received ~e")
-            snd actual))]))
+       (define a (a-or-an format-msg))
+       (define f (string-append "expected " a " " format-msg " for the ~a argument, but received ~e"))
+       (err tag f snd actual))]))
 
 ;; -----------------------------------------------------------------------------
 

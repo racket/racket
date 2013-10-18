@@ -9,6 +9,8 @@
            "../posn.rkt"
            (for-syntax scheme/base))
 
+(define advanced-list? list?)
+
 ;; Documents the procedures:
 (require "provide-and-scribble.rkt")
 
@@ -94,7 +96,8 @@
       (display 'hello)]
     } 
     @defproc[(write [x any]) void]{
-    Prints the argument to stdout (in a traditional style that is somewhere between @racket[print] and @racket[display]).
+    Prints the argument to stdout (in a traditional style that is somewhere 
+    between @racket[print] and @racket[display]).
     @interaction[#:eval (asl)
       (write 10)
       (write "hello")
@@ -118,10 +121,10 @@
     Reads input from the user.}) 
    
    ("Lists"
-    @defproc[(list? [x any]) boolean]{
-    Determines whether some value is a list. 
-    In ASL, @racket[list?] also deals with cyclic lists. 
-    } 
+;    @defproc[((advanced-list? list?) [x any]) boolean]{
+;    Determines whether some value is a list. 
+;    In ASL, @racket[list?] also deals with cyclic lists. 
+;    } 
     @defproc[((advanced-list* list*) [x any] ... [l (listof any)]) (listof any)]{
     Constructs a list by adding multiple items to a list.
     In ASL, @racket[list*] also deals with cyclic lists. 

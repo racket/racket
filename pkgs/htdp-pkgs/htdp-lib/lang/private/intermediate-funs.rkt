@@ -52,7 +52,13 @@
     In ISL and up: @racket[append] also works when applied to one list or none. 
     @interaction[#:eval (isl)
 		  (append (cons 1 (cons 2 empty)) (cons "a" (cons "b" empty)))
-		  (append)]})
+		  (append)]}
+    @defproc[((beginner-list? list?) [x any]) boolean?]{
+    Checks whether the given value is a list.
+    @interaction[#:eval (isl)
+		  (list? 42)
+		  (list? (cons 1 (cons 2 empty)))]}
+)
  
   ("Higher-Order Functions"
     @defproc[(map [f (X ... -> Z)] [l (listof X)] ...) (listof Z)]{
