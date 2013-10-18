@@ -23,7 +23,7 @@
     (get-view #f #f w h #f))
 
   (def/override (get-view [maybe-box? x] [maybe-box? y] [maybe-box? w] [maybe-box? h] 
-                          [(make-or-false snip%) snip])
+                          [(make-or-false snip%) [snip #f]])
     (let ([admin (send editor get-admin)]
           [zeros (lambda ()
                    (when x (set-box! x 0.0))
