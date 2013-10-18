@@ -34,6 +34,7 @@
                "net-lib"
                "srfi-lib"
                "srfi-doc"
+               "tex-table"
                "unstable-lib"
                "drracket-plugin-lib"
                "gui-pkg-manager-lib"))

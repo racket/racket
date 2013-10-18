@@ -10,11 +10,11 @@
          racket/pretty
          racket/gui/base
          racket/string
-         "jdg-gen.rkt"
-         "judgment-form.rkt"
-         "search.rkt"
-         "trace-layout.rkt"
-         (only-in "pat-unify.rkt"
+         redex/private/jdg-gen
+         redex/private/judgment-form
+         redex/private/search
+         redex/private/trace-layout
+         (only-in redex/private/pat-unify
                   dq
                   env-eqs
                   env-dqs))

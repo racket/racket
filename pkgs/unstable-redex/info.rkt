@@ -7,7 +7,7 @@
 
 (define deps '("base"
                "pict-lib"
-               "redex-lib"
+               "redex-gui-lib"
                "scribble-lib"
                "unstable-lib"))
 

@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/place 
-         redex
+         redex/reduction-semantics
          racket/runtime-path)
 
 (define-language L

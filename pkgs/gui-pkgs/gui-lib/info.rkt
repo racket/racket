@@ -16,6 +16,7 @@
                "unstable-options-lib"
                "unstable-2d"
                "compatibility-lib"
+               "tex-table"
                ("gui-i386-macosx" #:platform "i386-macosx")
                ("gui-x86_64-macosx" #:platform "x86_64-macosx")
                ("gui-ppc-macosx" #:platform "ppc-macosx")

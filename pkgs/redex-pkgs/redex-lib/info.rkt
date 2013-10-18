@@ -4,12 +4,10 @@
 
 (define deps '("scheme-lib"
                "base"
-               "draw-lib"
-               "gui-lib"
                "data-lib"
+               "tex-table"
                "profile-lib"
-               "unstable-2d"
-               "pict-lib"))
+               "unstable-2d"))
 (define build-deps '("rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"redex\"")

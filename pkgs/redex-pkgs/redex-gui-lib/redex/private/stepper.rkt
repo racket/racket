@@ -23,7 +23,7 @@ todo:
          racket/contract
          "sexp-diffs.rkt"
          "size-snip.rkt"
-         "reduction-semantics.rkt")
+         redex/private/reduction-semantics)
   
   (provide stepper stepper/seed
            

@@ -5,7 +5,7 @@
 (define deps '("base"
                "compiler-lib"
                "rackunit-lib"
-               "redex-lib"
+               "redex-gui-lib"
                "slideshow-lib"))
 (define build-deps '())
 

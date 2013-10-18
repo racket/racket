@@ -1,5 +1,5 @@
 #lang scheme
-(require redex)
+(require redex/reduction-semantics)
 (require racket/set)
 (provide red detect-hole detect-hole2 hole-table Get-Free-Name-Patterns 
          Flush1

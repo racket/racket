@@ -6,11 +6,11 @@
 
 (require "private/stepper.rkt"
          "private/traces.rkt"
-         "private/matcher.rkt"
-         "private/reduction-semantics.rkt"
+         redex/private/matcher
+         redex/private/reduction-semantics
          "private/size-snip.rkt"
          "private/show-derivations.rkt"
-         "private/judgment-form.rkt"
+         redex/private/judgment-form
          mrlib/graph
          racket/contract
          racket/class

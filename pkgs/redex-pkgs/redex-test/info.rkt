@@ -9,12 +9,11 @@
                "drracket"
                "gui-lib"
                "pict-lib"
-               "redex-lib"
+               "redex-gui-lib"
                "scribble-lib"
                "redex-examples"
                "data-lib"))
-(define build-deps '("scheme-lib"
-                     ))
+(define build-deps '("scheme-lib"))
 
 (define pkg-desc "tests for \"redex\"")
 

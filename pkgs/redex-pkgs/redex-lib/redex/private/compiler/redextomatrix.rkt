@@ -3,7 +3,7 @@
 (require (except-in racket/base compile)
          racket/function
          racket/match)
-(require (except-in redex make-bind plug))
+(require (except-in redex/reduction-semantics make-bind plug))
 (require "match.rkt")
 (require racket/set)
 (require profile)
