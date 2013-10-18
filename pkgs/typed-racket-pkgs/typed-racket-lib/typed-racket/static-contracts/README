@@ -1,0 +1,43 @@
+Static Contracts:
+-----------------
+
+Purpose:
+Static contracts are a data structure that correspond to a regular contract.
+The twe differences are that a static contract corresponds to a contract at a lower phase,
+and that they are designed to support introspection and manipulation.
+
+Operations:
+
+various constructors : * -> static-contract?
+Construct a static contract corresponding to a regular contract.
+
+optimize : static-contract? variance/c -> static-contract?
+Changes a static contract into another one that is cheaper to check. It also removes all covariant
+checks, where the input variance describes the initial position of the static contract.
+
+instantiate : static-contract? (-> none/c) [kind/c] -> syntax?
+Turns a static contract into syntax that when evaluated is the corresponding contract.
+The failure continuation is invoked if the translation fails to produce a contract of the right kind.
+
+Internal Implementation Details:
+
+A static contract is one of three things:
+
+recursive-contract:
+  This introduces bindings for recursive contracts.
+recursive-contract-use:
+  This is a reference to a previously introduced recursive contract.
+combinator:
+  This is a combinator or leaf contract.
+
+These support a couple of different operations:
+
+sc-map: Calls a function on each sub static contract
+
+These are not applicable to recursive contract; instantaite uses them in its implementation, and
+directly deals with the recursive casses.
+
+sc->contract: Turns a static contract into syntax
+sc->constraints: Turns a static contract into constraints about the contract kind
+
+
