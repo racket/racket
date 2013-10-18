@@ -102,7 +102,7 @@
      (let* ([exn (test-failure-result result)]
             [stack (exn:test:check-stack exn)])
        (textui-display-check-info-stack stack verbose?)
-       (when #t
+       (parameterize ([error-print-context-length 0])
          ((error-display-handler) (exn-message exn) exn)))]
     [(test-error? result)
      (let ([exn (test-error-result result)])
