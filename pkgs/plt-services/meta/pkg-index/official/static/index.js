@@ -26,6 +26,7 @@ $( document ).ready(function() {
         dynamic_send ( u, o ); }
 
     $("#package_info").dialog({
+        beforeClose: function ( event, ui ) { evaluate_search(); },
         autoOpen: false,
         minWidth: 600,
         minHeight: 600,
@@ -39,6 +40,7 @@ $( document ).ready(function() {
     var active_info = false;
     var target_pkg = false;
     function update_info( pkgi ) {
+        update_package_on_list ( pkgi );
         // console.log( pkgi );
         change_hash( "[" + pkgi['name'] + "]" );
 
@@ -225,13 +227,13 @@ $( document ).ready(function() {
 
         active_info['name'] = new_name;
         active_info['description'] = new_description;
-        active_info['source'] = new_source;
+        active_info['versions']['default']['source'] = new_source;
 
         update_info( active_info ); }
     function submit_mod_name ( newv ) {
-        submit_mod ( newv, active_info['description'], active_info['source'] ); }
+        submit_mod ( newv, active_info['description'], active_info['versions']['default']['source'] ); }
     function submit_mod_description ( newv ) {
-        submit_mod ( active_info['name'], newv, active_info['source'] ); }
+        submit_mod ( active_info['name'], newv, active_info['versions']['default']['source'] ); }
     function submit_mod_source ( newv ) {
         submit_mod ( active_info['name'], active_info['description'], newv ); }
 
@@ -302,7 +304,6 @@ $( document ).ready(function() {
 
         $.each( $('#packages_table tr'), function (key, dom) {
             var value = $(dom).data("obj");
-            value['dom_obj'] = dom;
             var show = true;
             var vterms = value['search-terms'];
 
@@ -389,14 +390,23 @@ $( document ).ready(function() {
                    curate_link ( curate_span, false, value ),
                    "&nbsp;"); }
 
-    var now = new Date().getTime() / 1000;
     function add_package_to_list ( value ) {
+        var dom = $('<tr>');
+
+        value['dom_obj'] = dom;
+        dom.appendTo('#packages_table');
+        update_package_on_list ( value ); }
+
+    var now = new Date().getTime() / 1000;
+    function update_package_on_list ( value ) {
         var curate_span = $('<span>', { class: "curate_link" } ).hide();
         update_curate_span (curate_span, value);
 
-        $('<tr>',
-          { class: ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old") })
+        var dom = value['dom_obj'];
+
+        dom.attr("class", ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old"))
             .data( "obj", value)
+            .html("")
             .append(
                 $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")
                     .append( curate_span ),
@@ -406,8 +416,7 @@ $( document ).ready(function() {
                     return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                 $('<td>').text( value['description'] ),
                 $('<td>').append( $.map( value['tags'], function ( tag, i ) {
-                    return addfilterlink ( tag, tag, "possible" ); } ) ))
-            .appendTo('#packages_table'); }
+                    return addfilterlink ( tag, tag, "possible" ); } ) )); }
 
     var pkgdb = {};
     $.getJSON( "/pkgs-all.json.gz", function( resp ) {
@@ -518,7 +527,7 @@ $( document ).ready(function() {
                          value['versions']['default']['source'] = "";
                          value['versions']['default']['source_url'] = "";
                          value['versions']['default']['checksum'] = "";
-                         
+
                          add_package_to_list (value);
                          evaluate_search();
                          open_info(value); }),
