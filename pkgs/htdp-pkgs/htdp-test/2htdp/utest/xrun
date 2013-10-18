@@ -1,3 +1,11 @@
-mred balls.ss &
-./player carl & 
-./player sam &
+#! /bin/sh
+#|
+exec racket -tm "$0" ${1+"$@"}
+|#
+
+#lang racket 
+
+(require 2htdp/universe "balls.rkt" "shared.ss")
+
+(launch-many-worlds (run 'go) (make-player 200 "carl") (make-player 200 "sam"))
+

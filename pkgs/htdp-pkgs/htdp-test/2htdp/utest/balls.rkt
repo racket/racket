@@ -1,5 +1,7 @@
 #lang scheme
 
+(provide run)
+
 (require 2htdp/universe htdp/testing)
 
 ;; rotate through a bunch of players with the ball until nobody is left 
@@ -84,4 +86,4 @@
             (on-msg switch)
             (on-disconnect disconnect)))
 
-(run 'go)
+; (run 'go)

@@ -3,7 +3,7 @@
 exec mred -qu "$0" ${1+"$@"}
 |#
 
-#lang scheme
+#lang racket
 
 (require "shared.ss")
 
