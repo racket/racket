@@ -141,7 +141,7 @@
          (trim-current-directory
           (location->string
            (check-info-value info)))
-         display)]
+         displayln)]
        [(check-params? info)
         (display-check-info-name-value
          'params
