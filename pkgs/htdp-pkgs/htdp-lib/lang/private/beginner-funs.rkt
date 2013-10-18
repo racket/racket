@@ -227,9 +227,15 @@
                                      Computes the arccosine (inverse of cos) of a number. 
                                      @interaction[#:eval (bsl) (acos 0)]
                                      }
-  @defproc[(atan [x number] [y number]) number]{
-                                                Computes the arctan of the given number or the ratio of the two given numbers. 
-                                                @interaction[#:eval (bsl) (atan 0) (atan 3 4)]
+  @defproc[(atan [x number]) number]{
+   Computes the arctangent of the given number:  
+   @interaction[#:eval (bsl) (atan 0) (atan 0.5)]
+
+   Also comes in a two-argument version where @racket[(atan x y)] computes
+   @racket[(atan (/ x y))] but the signs of @racket[x] and @racket[y]
+   determine the quadrant of the result and the result tends to be more
+   accurate than that of the 1-argument version in borderline cases:
+   @interaction[#:eval (bsl) (atan 3 4) (atan -2 -1)]
                                                 }
   @defproc[(sinh [x number]) number]{
                                      Computes the hyperbolic sine of a number. 
