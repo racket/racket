@@ -1,7 +1,6 @@
 #lang info
 
 (define collection 'multi)
-(define pkg-authors '(eli jay mflatt robby samth stamourv))
 
 (define deps '("base"
                "compatibility-lib"
@@ -10,3 +9,6 @@
                "srfi-lite-lib"
                "racket-test"
                "typed-racket-lib"))
+
+(define pkg-desc "Racket benchmarks")
+(define pkg-authors '(eli jay mflatt robby samth stamourv))
