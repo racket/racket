@@ -39,12 +39,11 @@
    [else
     (substring s 0 n)]))
 
-(define (display-check-info-name-value name value [value-printer write])
+(define (display-check-info-name-value name value [value-printer (lambda (x) (write x) (newline))])
   (display (string-pad-right
             (string-append (symbol->string name) ": ")
             name-width))
-  (value-printer value)
-  (newline))
+  (value-printer value))
 
 (define display-check-info
   (match-lambda [(struct check-info (name value))
