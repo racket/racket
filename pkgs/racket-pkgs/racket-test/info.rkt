@@ -6,23 +6,25 @@
                "compiler-lib"
                "sandbox-lib"
                "compatibility-lib"
+               "eli-tester"
                "planet-lib"
                "net-lib"
                "net-test" ; for tests/net/available
-               "serialize-cstruct-lib" ; tested here
-               "eli-tester"
+               "serialize-cstruct-lib" ; tested here               
+               "cext-lib" ; tested here
+
                ;; for `pkg` tests
                "web-server-lib"
                "rackunit-lib"
+
                ;; for `json` tests
                "at-exp-lib"
 
-               "r5rs-lib"
+               ;; used to test setup, module readers, pkg system
                "scribble-lib"
-               "syntax-color-lib"
-               "typed-racket-lib"
 
-               "cext-lib"
+               ;; used for futures tests
+               "typed-racket-lib"
 
                ;; for random testing:
                "redex-lib"))
