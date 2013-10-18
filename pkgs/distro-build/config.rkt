@@ -124,6 +124,8 @@
     [(#:build-stamp) (string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
+    [(#:server-port) (and (exact-integer? val) (<= 1 val 65535))]
+    [(#:server-hosts) (and (list? val) (andmap simple-string? val))]
     [(#:host) (simple-string? val)]
     [(#:user) (or (not val) (simple-string? val))]
     [(#:port) (and (exact-integer? val) (<= 1 val 65535))]

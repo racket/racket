@@ -8,19 +8,35 @@
          racket/cmdline
          racket/file
          racket/path
+         racket/string
+         racket/tcp
+         racket/port
          racket/system
+         (only-in "config.rkt" extract-options)
          "readme.rkt")
 
 (define from-dir "built")
 
-(define during-cmd-line
+(define-values (config-file config-mode 
+                            default-server-hosts default-server-port 
+                            during-cmd-line)
   (command-line
    #:once-each
    [("--mode") dir "Serve package archives from <dir> subdirectory"
     (set! from-dir dir)]
-   #:args during-cmd
-   during-cmd))
+   #:args (config-file config-mode server-hosts server-port . during-cmd)
+   (values config-file config-mode 
+           server-hosts (string->number server-port)
+           during-cmd)))
 
+(define server-hosts
+  (hash-ref (extract-options config-file config-mode)
+            '#:server-hosts
+            (string-split default-server-hosts ",")))
+(define server-port
+  (hash-ref (extract-options config-file config-mode)
+            '#:server-port
+            default-server-port))
 
 (define build-dir (path->complete-path "build"))
 (define built-dir (build-path build-dir from-dir))
@@ -111,11 +127,33 @@
    [("pkg" (string-arg)) write-info]
    [("upload" (string-arg)) #:method "put" receive-file]))
 
+;; Tunnel extra hosts to first one:
+(when (and (pair? server-hosts)
+           (pair? (cdr server-hosts)))
+  (for ([host (in-list (cdr server-hosts))])
+    (thread
+     (lambda ()
+       (define l (tcp-listen server-port 5 #t host))
+       (let loop ()
+         (define-values (i o) (tcp-accept l))
+         (define-values (i2 o2) (tcp-connect (car server-hosts) server-port))
+         (thread (lambda () 
+                   (copy-port i o2)
+                   (close-input-port i)
+                   (close-output-port o2)))
+         (thread (lambda () 
+                   (copy-port i2 o)
+                   (close-input-port i2)
+                   (close-output-port o)))
+         (loop))))))
+
 (define (go)
   (serve/servlet
    dispatch
    #:command-line? #t
-   #:listen-ip #f
+   #:listen-ip (if (null? server-hosts)
+                   #f
+                   (car server-hosts))
    #:extra-files-paths
    (append
     (list (build-path build-dir "origin"))
@@ -125,7 +163,7 @@
     ;; for ".git":
     (list (current-directory)))
    #:servlet-regexp #rx""
-   #:port 9440))
+   #:port server-port))
 
 (define readmes-dir (build-path build-dir "readmes"))
 (make-directory* readmes-dir)

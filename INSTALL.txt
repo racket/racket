@@ -229,11 +229,11 @@ configuration for a client #t instead of #f.
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
 documentation search URL, but defaults can be provided as `make'
-arguments via `PKGS', `SERVER', `DIST_NAME', `DIST_BASE', and
-`DIST_DIR', `DOC_SEARCH', respectively. The site configuration's
-top-level options for packages and documentation search URL are used
-to configure the set of packages that are available to client
-machines to include in installers.
+arguments via `PKGS', `SERVER' plus `SERVER_PORT` plus `SERVER_HOSTS`,
+`DIST_NAME', `DIST_BASE', and `DIST_DIR', `DOC_SEARCH',
+respectively. The site configuration's top-level options for packages
+and documentation search URL are used to configure the set of packages
+that are available to client machines to include in installers.
 
 For each installer written to "build/installers", the installer's name
 is

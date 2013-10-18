@@ -26,7 +26,7 @@ locally.
 
 Each client is normally built by running commands via `ssh', where
 the client's host, `#:host' (with and optional `#:port' and/or
-`#:user') indicate the ssh target. Each client machine must be set
+`#:user') indicate the SSH target. Each client machine must be set
 up with a public-key authentication, because a direct `ssh' is
 expected to work without a password prompt. An exception is when
 the host is "localhost" and user is #f, in which case a shell is
@@ -54,7 +54,7 @@ Normally, the client directory is a git clone:
     that the server and client are in sync), which means that the
     server's directory must be a git clone.
 
-Note that neither ssh nor git turn out to be needed when the host
+Note that neither SSH nor git turn out to be needed when the host
 is "localhost", the user is #f, and the directory is not specified
 (which corresponds to the defaults in all cases).
 
@@ -79,13 +79,13 @@ Machine Requirements
 
 Each Unix or Mac OS X client needs the following available:
 
-  * ssh server with public-key authentication (except "localhost")
+  * SSH server with public-key authentication (except "localhost")
   * git (unless the working directory is ready)
   * gcc, make, etc.
 
 Each Windows client needs the following:
 
-  * ssh server with public-key authentication
+  * SSH server with public-key authentication
   * git (unless the working directory is ready)
   * Microsoft Visual Studio 9.0 (2008), installed in the
     default folder:
@@ -111,9 +111,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:host <string*> --- defaults to "localhost"
 
-  #:port <integer> --- ssh port for the client; defaults to 22
+  #:port <integer> --- SSH port for the client; defaults to 22
 
-  #:user <string*/false> --- ssh user for the client; defaults to #f,
+  #:user <string*/false> --- SSH user for the client; defaults to #f,
     which means the current user
 
   #:dir <path-string> --- defaults to "build/plt" or "build\\plt", or
@@ -121,7 +121,20 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     is #f
 
   #:server <string*> --- the address of the server as accessed by the
-    client; defaults to the `SERVER' makefile variable
+    client; when ssh remote tunneling works, then "localhost" should
+    always work to reach the server; defaults to the `SERVER' makefile
+    variable, which in turn defaults to "localhost"
+
+  #:server-port <integer> --- the port of the server as accessed by
+    the client, and a port used on clients to tunnel back to the
+    server; defaults to the `SERVER_PORT' makefile variable, which in
+    turn defaults to 9440
+
+  #:server-hosts <list-of-string*> --- addresses that determine the
+    interfaces on which the server listens; an empty list means all of
+    the server's interface, while '("localhost") would listen only on
+    the loopback device; defaults to the `SERVER_HOSTS` makefile
+    variable split on comma, which in turn defaults to the empty list
 
   #:repo <string> --- the git repository for Racket; defaults to
     "http://<server>:9440/.git"

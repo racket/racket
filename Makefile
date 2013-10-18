@@ -12,7 +12,7 @@
 #  base = build in "racket" only (i.e., first step of `in-place')
 #
 #  server = build base, build packages listed in $(PKGS) or specified
-#           via $(CONFIG), start server at port 9440
+#           via $(CONFIG), start server at port $(SERVER_PORT)
 #
 #  client = build base, create an installer with $(PKGS) with the help
 #           of $(SERVER); result is recorded in "bundle/installer.txt"
@@ -118,6 +118,12 @@ DOC_SEARCH =
 # Server for built packages (i.e., the host where you'll run the
 # server):
 SERVER = localhost
+SERVER_PORT = 9440
+# Set `SERVER_HOSTS` to a comma-delimited set of server addresses
+# that determine the interfaces on which the server listens; for
+# example, set SERVER_HOSTS to "localhost" to listen only on the
+# loopback device:
+SERVER_HOSTS = 
 
 # Set to "--release" to create release-mode installers (as opposed to
 # snapshot installers):
@@ -193,6 +199,8 @@ DISTRO_BUILD_PKGS = distro-build
 # instead of from an installed package:
 DISTBLD = pkgs/distro-build
 
+SVR_PRT = $(SERVER):$(SERVER_PORT)
+
 # Helper macros:
 USER_CONFIG = -G build/user/config -A build/user
 RACKET = racket/bin/racket $(USER_CONFIG)
@@ -203,8 +211,8 @@ X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
-REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
-REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation $(X_AUTO_OPTIONS)
+REMOTE_USER_AUTO = --catalog http://$(SVR_PRT)/ $(USER_AUTO_OPTIONS)
+REMOTE_INST_AUTO = --catalog http://$(SVR_PRT)/ --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 
@@ -341,7 +349,7 @@ built-catalog:
 # as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	$(RACKET) -l distro-build/serve-catalog $(SERVE_DURING_CMD_qq)
+	$(RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
@@ -349,7 +357,7 @@ built-catalog-server:
 binary-catalog:
 	$(RACKET) -l- distro-build/pack-built --mode binary
 binary-catalog-server:
-	$(RACKET) -l- distro-build/serve-catalog --mode binary
+	$(RACKET) -l- distro-build/serve-catalog --mode binary $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT)
 
 # ------------------------------------------------------------
 # On each supported platform (for an installer build):
@@ -362,7 +370,8 @@ binary-catalog-server:
 # keep the "build/user" directory on the grounds that the
 # client is the same as the server.
 
-COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
+COPY_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
+            PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
@@ -401,14 +410,14 @@ bundle-from-server:
 	rm -rf bundle
 	mkdir -p bundle/racket
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
-	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
+	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS) $(REQUIRED_PKGS)
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 bundle-config:
 	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 
-UPLOAD_q = --readme http://$(SERVER):9440/$(README) --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
+UPLOAD_q = --readme http://$(SVR_PRT)/$(README) --upload http://$(SVR_PRT)/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # Create an installer from the build (with installed packages) that's
@@ -428,7 +437,7 @@ win32-bundle:
 
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
+	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
@@ -439,7 +448,8 @@ win32-installer-from-bundle:
 # Drive installer build across server and clients:
 
 DRIVE_ARGS_q = $(RELEASE_MODE) $(SOURCE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
-               $(SERVER) "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+               $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
+               "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':

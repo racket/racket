@@ -25,7 +25,8 @@
 (define snapshot-install-name "snapshot")
 
 (define-values (config-file config-mode
-                            default-server default-pkgs default-doc-search
+                            default-server default-server-port default-server-hosts
+                            default-pkgs default-doc-search
                             default-dist-name default-dist-base default-dist-dir)
   (command-line
    #:once-each
@@ -34,10 +35,10 @@
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
    #:args (config-file config-mode 
-                       server pkgs doc-search
+                       server server-port server-hosts pkgs doc-search
                        dist-name dist-base dist-dir)
    (values config-file config-mode
-           server pkgs doc-search
+           server server-port server-hosts pkgs doc-search
            dist-name dist-base dist-dir)))
 
 (define config (parameterize ([current-mode config-mode])
@@ -192,7 +193,7 @@
 (define scp (find-executable-path "scp"))
 (define ssh (find-executable-path "ssh"))
 
-(define (ssh-script host port user kind . cmds)
+(define (ssh-script host port user server-port kind . cmds)
   (for/and ([cmd (in-list cmds)])
     (when cmd (display-time))
     (or (not cmd)
@@ -201,6 +202,8 @@
             (apply system*/show cmd)
             (apply system*/show ssh 
                    "-p" (~a port)
+                   ;; create tunnel to connect back to server:
+                   "-R" (~a server-port ":localhost:" server-port)
                    (if user 
                        (~a user "@" host)
                        host)
@@ -237,7 +240,7 @@
                           "\\\"")))
                    "\"")]))
 
-(define (client-args c server kind readme)
+(define (client-args c server server-port kind readme)
   (define desc (client-name c))
   (define pkgs (let ([l (get-opt c '#:pkgs)])
                  (if l
@@ -263,6 +266,7 @@
                                                     ""
                                                     (current-stamp))))
   (~a " SERVER=" server
+      " SERVER_PORT=" server-port
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
       " DIST_DESC=" (q desc)
@@ -280,13 +284,14 @@
                               (q ""))
       " README=" (q (file-name-from-path readme))))
 
-(define (unix-build c host port user server repo clean? pull? readme)
+(define (unix-build c host port user server server-port repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build/plt" #:localhost (current-directory)))
   (define (sh . args)
     (list "/bin/sh" "-c" (apply ~a args)))
   (define j (or (get-opt c '#:j) 1))
   (ssh-script
    host port user
+   server-port
    'unix
    (and clean?
         (sh "rm -rf  " (q dir)))
@@ -298,11 +303,11 @@
             "git pull"))
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args c server 'unix readme)
+       (client-args c server server-port 'unix readme)
        " JOB_OPTIONS=\"-j " j "\""
        " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null) 'unix))))
 
-(define (windows-build c host port user server repo clean? pull? readme)
+(define (windows-build c host port user server server-port repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build\\plt" #:localhost (current-directory)))
   (define bits (or (get-opt c '#:bits) 64))
   (define vc (or (get-opt c '#:vc)
@@ -314,6 +319,7 @@
     (list "cmd" "/c" (apply ~a args)))
   (ssh-script
    host port user
+   server-port
    'windows
    (and clean?
         (cmd "IF EXIST " (q dir) " rmdir /S /Q " (q dir)))
@@ -326,7 +332,7 @@
         " " vc
         " && nmake win32-client" 
        " JOB_OPTIONS=\"-j " j "\""
-        (client-args c server 'windows readme))))
+        (client-args c server server-port 'windows readme))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -336,8 +342,10 @@
   (define user (get-opt c '#:user))
   (define server (or (get-opt c '#:server)
                      default-server))
+  (define server-port (or (get-opt c '#:server-port)
+                          default-server-port))
   (define repo (or (get-opt c '#:repo)
-                   (~a "http://" server ":9440/.git")))
+                   (~a "http://" server ":" server-port "/.git")))
   (define clean? (get-opt c '#:clean? default-clean? #:localhost #f))
   (define pull? (get-opt c '#:pull? #t #:localhost #f))
 
@@ -372,7 +380,7 @@
    ((case (or (get-opt c '#:platform) (system-type))
       [(unix macosx) unix-build]
       [else windows-build])
-    c host port user server repo clean? pull? readme)
+    c host port user server server-port repo clean? pull? readme)
 
    (delete-file readme)))
 
