@@ -10,6 +10,7 @@
          (for-syntax racket/base syntax/srcloc unstable/struct)
          racket/stxparam
          racket/splicing
+         racket/string
          scribble/text/wrap)
 
 (provide interaction
@@ -215,8 +216,8 @@
       (define s (getter ev))
       (if (string? s)
         s
-        (error who "missing ~a, possibly from a sandbox ~a"
-               what "without a `sandbox-output' configured to 'string")))
+        (error who "missing ~a, possibly from a sandbox without a `sandbox-~a' configured to 'string"
+               what (string-join (string-split what) "-"))))
     (list (get get-output "output") (get get-error-output "error output")))
   (define (render-value v)
     (let-values ([(eval-print eval-print-as-expr?)
