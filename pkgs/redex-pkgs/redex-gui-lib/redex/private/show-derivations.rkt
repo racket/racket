@@ -5,7 +5,7 @@
          racket/pretty
          framework
          "size-snip.rkt"
-         "judgment-form.rkt"
+         redex/private/judgment-form
          "traces.rkt")
 
 (provide show-derivations

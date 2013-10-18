@@ -5,8 +5,8 @@
 ;; equal hash-table
 
 (require mrlib/graph
-         "reduction-semantics.rkt"
-         "matcher.rkt"
+         redex/private/reduction-semantics
+         redex/private/matcher
          "size-snip.rkt"
          "dot.rkt"
          racket/gui/base

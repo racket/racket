@@ -3,8 +3,8 @@
 (require racket/contract
          "private/pict.rkt"
          "private/core-layout.rkt"
-         "private/loc-wrapper.rkt"
-         "reduction-semantics.rkt"
+         redex/private/loc-wrapper
+         redex/reduction-semantics
          texpict/mrpict)
 
 (define reduction-rule-style/c

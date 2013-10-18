@@ -10,18 +10,18 @@
          texpict/mrpict
          texpict/utils
          
-         "reduction-semantics.rkt"
-         "judgment-form.rkt"
-         "struct.rkt"
-         "loc-wrapper.rkt"
-         "matcher.rkt"
-         "arrow.rkt"
+         redex/private/reduction-semantics
+         redex/private/judgment-form
+         redex/private/struct
+         redex/private/loc-wrapper
+         redex/private/matcher
+         redex/private/arrow
          "core-layout.rkt")
-(require (prefix-in lw/ct: "loc-wrapper-ct.rkt")
-         (prefix-in lw/rt: "loc-wrapper-rt.rkt"))
+(require (prefix-in lw/ct: redex/private/loc-wrapper-ct)
+         (prefix-in lw/rt: redex/private/loc-wrapper-rt))
 
 (require (for-syntax racket/base
-                     "term-fn.rkt"))
+                     redex/private/term-fn))
 
 (provide render-term 
          term->pict

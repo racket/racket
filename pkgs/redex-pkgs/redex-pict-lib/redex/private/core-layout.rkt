@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require "loc-wrapper.rkt"
-         "matcher.rkt"
-         "reduction-semantics.rkt"
-         "underscore-allowed.rkt"
+(require redex/private/loc-wrapper
+         redex/private/matcher
+         redex/private/reduction-semantics
+         redex/private/underscore-allowed
          
          texpict/utils
          texpict/mrpict

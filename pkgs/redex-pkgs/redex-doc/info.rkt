@@ -13,7 +13,7 @@
                      "gui-lib"
                      "htdp-lib"
                      "pict-lib"
-                     "redex-lib"))
+                     "redex-gui-lib"))
 
 (define pkg-desc "documentation part of \"redex\"")
 
