@@ -7,7 +7,7 @@
          unstable/function
 
          (prefix-in c: (contract-req))
-         (rename-in (rep type-rep object-rep rep-utils)
+         (rename-in (rep type-rep filter-rep object-rep rep-utils)
                     [make-Base make-Base*])
          (types union numeric-tower)
          ;; Using this form so all-from-out works
@@ -285,8 +285,10 @@
 (define/cond-contract make-pred-ty
   (c:case-> (c:-> Type/c Type/c)
             (c:-> (c:listof Type/c) Type/c Type/c Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c integer? Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c integer? (c:listof PathElem?) Type/c))
+            (c:-> (c:listof Type/c) Type/c Type/c
+                  (c:or/c integer? name-ref/c) Type/c)
+            (c:-> (c:listof Type/c) Type/c Type/c
+                  (c:or/c integer? name-ref/c) (c:listof PathElem?) Type/c))
   (case-lambda
     [(in out t n p)
      (make-Function
