@@ -3,6 +3,7 @@
 (require racket/dict syntax/id-table racket/match
          mzlib/pconvert racket/syntax
          "../utils/utils.rkt"
+         (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
          (env init-envs)
@@ -46,10 +47,10 @@
     #'(begin adds ...)))
 
 (provide/cond-contract
- [add-struct-fn! (identifier? StructPE? boolean? . -> . any/c)]
- [add-struct-constructor! (identifier? . -> . any)]
- [struct-constructor? (identifier? . -> . boolean?)]
- [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]
- [struct-mutator? (identifier? . -> . (or/c #f StructPE?))]
- [struct-fn-idx (identifier? . -> . exact-integer?)]
- [make-struct-table-code (-> syntax?)])
+ [add-struct-fn! (identifier? StructPE? boolean? . c:-> . c:any/c)]
+ [add-struct-constructor! (identifier? . c:-> . any)]
+ [struct-constructor? (identifier? . c:-> . boolean?)]
+ [struct-accessor? (identifier? . c:-> . (c:or/c #f StructPE?))]
+ [struct-mutator? (identifier? . c:-> . (c:or/c #f StructPE?))]
+ [struct-fn-idx (identifier? . c:-> . exact-integer?)]
+ [make-struct-table-code (c:-> syntax?)])
