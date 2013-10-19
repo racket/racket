@@ -24,13 +24,16 @@ client machines hierarchically, where configuration options
 propagate down the hierarchy when they are not overridden more
 locally.
 
-Each client is normally built by running commands via `ssh', where
-the client's host, `#:host' (with and optional `#:port' and/or
-`#:user') indicate the SSH target. Each client machine must be set
-up with a public-key authentication, because a direct `ssh' is
-expected to work without a password prompt. An exception is when
-the host is "localhost" and user is #f, in which case a shell is
-used directly instead of `ssh'.
+Each client is normally built by running commands via `ssh', where the
+client's host, `#:host' (with and optional `#:port' and/or `#:user')
+indicate the `ssh' target. Each client machine must be set up with a
+public-key authentication, because a direct `ssh' is expected to work
+without a password prompt. An exception is when the host is
+"localhost" and user is #f, in which case a shell is used directly
+instead of `ssh'. When `ssh` is used, -R is also used to create a
+tunnel back to the server, and the client by default uses that tunnel
+for all communication, and the server by default accepts only
+connections via "localhost".
 
 On the client machine, all work is performed at a specified
 directory as specified by `#:dir'. The directory defaults to
@@ -54,7 +57,7 @@ Normally, the client directory is a git clone:
     that the server and client are in sync), which means that the
     server's directory must be a git clone.
 
-Note that neither SSH nor git turn out to be needed when the host
+Note that neither `ssh' nor `git' turn out to be needed when the host
 is "localhost", the user is #f, and the directory is not specified
 (which corresponds to the defaults in all cases).
 
@@ -124,22 +127,23 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:server <string*> --- the address of the server as accessed by the
     client; when ssh remote tunneling works, then "localhost" should
-    always work to reach the server; defaults to the `SERVER' makefile
+    work to reach the server; defaults to the `SERVER' makefile
     variable, which in turn defaults to "localhost"
 
   #:server-port <integer> --- the port of the server as accessed by
-    the client, and a port used on clients to tunnel back to the
-    server; defaults to the `SERVER_PORT' makefile variable, which in
-    turn defaults to 9440
+    the client, and also the port started on clients to tunnel back to
+    the server; defaults to the `SERVER_PORT' makefile variable, which
+    in turn defaults to 9440
 
   #:server-hosts <list-of-string*> --- addresses that determine the
     interfaces on which the server listens; an empty list means all of
-    the server's interface, while '("localhost") would listen only on
-    the loopback device; defaults to the `SERVER_HOSTS` makefile
-    variable split on comma, which in turn defaults to the empty list
+    the server's interfaces, while `(list "localhost")' listens only
+    on the loopback device; defaults to the `SERVER_HOSTS` makefile
+    variable split on commas, which in turn defaults to `(list
+    "localhost")'
 
   #:repo <string> --- the git repository for Racket; defaults to
-    "http://<server>:9440/.git"
+    "http://<server>:<server-port>/.git"
 
   #:pkgs '(<string*> ...) --- packages to install; defaults to the
     `PKGS' makefile variable
@@ -467,12 +471,12 @@ installers might look like this:
    
     (sequential
      #:pkgs '("drracket")
+     #:server-hosts '() ; Insecure? See below.
      (machine
       #:desc "Linux (32-bit, Precise Pangolin)"
       #:name "Ubuntu 32"
       #:vbox "Ubuntu 12.04"
-      #:host "192.168.56.102"
-      #:server "192.168.56.1")
+      #:host "192.168.56.102")
      (machine
       #:desc "Windows (64-bit)"
       #:name "Windows 64"
@@ -483,9 +487,22 @@ installers might look like this:
       #:bits 64))
 
 The configuration describes using the hosts "192.168.56.1" and
-"192.168.56.103" for Linux and Windows builds, respectively, which are
-run one at a time. Furthermore, the Linux machine runs in VirtualBox
-on the server machine (in a virtual machine named "Ubuntu 12.04").
+"10.0.0.7" for Linux and Windows builds, respectively, which are run
+one at a time. 
+
+The Linux machine runs in VirtualBox on the server machine (in a
+virtual machine named "Ubuntu 12.04"). It contacts the server still as
+"localhost", and that works because the ssh connection to the Linux
+machine creates a tunnel (at the same port as the server's, wjich
+defaults to 9440).
+
+The Windows machine uses freeSSHd (not a `bash'-based SSH server like
+Cygwin) and communicates back to the server as "10.0.0.1" instead of
+using an SSH tunnel. To make that work, `#:server-hosts' is specified
+as the empty list to make the server listen on all interfaces (instead
+of just "localhost") --- which is possibly less secure than the
+default restriction that allows build-server connections only via
+"localhost".
 
 With this configuration file in "site.rkt",
 

@@ -119,11 +119,12 @@ DOC_SEARCH =
 # server):
 SERVER = localhost
 SERVER_PORT = 9440
+
 # Set `SERVER_HOSTS` to a comma-delimited set of server addresses
-# that determine the interfaces on which the server listens; for
-# example, set SERVER_HOSTS to "localhost" to listen only on the
-# loopback device:
-SERVER_HOSTS = 
+# that determine the interfaces on which the server listens; the
+# default, "localhost", listens only on the loopback device, while
+# anf empty value listens on all interfaces:
+SERVER_HOSTS = localhost
 
 # Set to "--release" to create release-mode installers (as opposed to
 # snapshot installers):

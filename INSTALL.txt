@@ -314,10 +314,23 @@ Roughly, the steps are
     so that it redirects to the given URL when a remote search is
     necessary.
 
+    Add `SERVER_PORT=...' to the `server' line to choose the port on
+    which the server listens to clients. The default is port 9440.
+
+    Add `SERVER_HOSTS="..."' to determine the interfaces at which the
+    server listens. The default is "localhost" which listens only on
+    the loopback device (for security). Supply the empty string to
+    listen on all interfaces. Supply multiple addresses by separating
+    them with a comma.
+
  2. On each client machine:
       make client SERVER=... PKGS="..."
     or
       nmake win32-client SERVER=... PKGS="..."
+
+    Add `SERVER_PORT=...' to the `client' line if you picked an
+    alternate port in the `server` line; it shoul dbe the same as for
+    the `server' line.
 
     Add `DOC_SEARCH="..."' to the `client' line, if needed;
     normally, it should be the same as for the `server' line.
@@ -356,15 +369,18 @@ In more detail:
  1a. Build "racket" on a server.
     
      The `base' target of the makefile will do that, if you haven't
-     done it already. On Windows, use `nmake win32-base'.
+     done it already. (The server only works on non-Windows platforms,
+     currently.)
 
  1b. On the server, build packages and start a catalog server.
 
-     The `server-from-base' target of the makefile will do that. (The
-     server only works on non-Windows platforms, currently.)
+     The `server-from-base' target of the makefile will do that.
 
      Alternatively, use the `server' target, which combines `base' and
      `server-from-base' (i.e., steps 1a and 1b).
+
+     The `SERVER_PORT' and `SERVER_HOSTS' variables of the makefile
+     configure the prt and interfaces of the server.
 
      The `PKGS' variable of the makefile determines which packages are
      built for potential inclusion in a distribution.
@@ -396,8 +412,15 @@ In more detail:
  2b. On each client, create an installer.
 
      The `client' (or `win32-client') target of the makefile will do
-     that. Provide `SERVER' as the hostname of the server machine, and
-     provide the same `PKGS' (or a subset) as in step 1b if you want a
+     that.
+
+     Provide `SERVER' as the hostname of the server machine, but a
+     "locahost"-based tunnel back to the server is more secure and
+     avoids the need to specify `SERVER_HOSTS' when starting the
+     server in step 1b. Also, provide `SERVER_PORT' if an alternate
+     port was specified in step 1b.
+
+     Provide the same `PKGS' (or a subset) as in step 1b if you want a
      different set than the ones listed in the makefile. Similarly,
      `DOC_SEARCH' normally should be the same as in step 1b, but for a
      client, it affects future documentation builds in the
