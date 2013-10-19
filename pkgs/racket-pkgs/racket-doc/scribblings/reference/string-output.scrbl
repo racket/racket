@@ -3,14 +3,14 @@
 
 @title{Byte and String Output}
 
-@defproc[(write-char [char character?] [out output-port? (current-output-port)])
+@defproc[(write-char [char char?] [out output-port? (current-output-port)])
          void?]{
 
 Writes a single character to @racket[out]; more precisely, the bytes
 that are the UTF-8 encoding of @racket[char] are written to
 @racket[out].}
 
-@defproc[(write-byte [byte any/c] [out output-port? (current-output-port)]) 
+@defproc[(write-byte [byte byte?] [out output-port? (current-output-port)])
          void?]{
 
 Writes a single byte to @racket[out].}
