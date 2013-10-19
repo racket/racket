@@ -131,7 +131,7 @@
     [(#:port) (and (exact-integer? val) (<= 1 val 65535))]
     [(#:dir) (path-string? val)]
     [(#:vbox) (string? val)]
-    [(#:platform) (memq val '(unix windows))]
+    [(#:platform) (memq val '(unix macosx windows windows/bash))]
     [(#:configure) (and (list? val) (andmap string? val))]
     [(#:bits) (or (equal? val 32) (equal? val 64))]
     [(#:vc) (or (equal? val "x86") (equal? val "x64"))]

@@ -85,7 +85,9 @@ Each Unix or Mac OS X client needs the following available:
 
 Each Windows client needs the following:
 
-  * SSH server with public-key authentication
+  * SSH server with public-key authentication, providing either a
+    Windows command line (like freeSSHd) or bash with access to
+    cmd.exe (like Cygwin's opensshd)
   * git (unless the working directory is ready)
   * Microsoft Visual Studio 9.0 (2008), installed in the
     default folder:
@@ -195,8 +197,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     in the Virtual Box GUI); if provided, the virtual machine is
     started and stopped on the server as needed
 
-  #:platform <symbol> --- 'windows, 'macosx, or 'unix; defaults to
-    `(system-type)'
+  #:platform <symbol> --- 'unix, 'macosx, 'windows, or 'windows/bash
+    (which means 'windows though an SSH server providing `bash', such
+    as Cygwin's); defaults to `(system-type)'
 
   #:configure '(<string> ...) --- arguments to `configure'
 

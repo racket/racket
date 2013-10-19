@@ -222,23 +222,39 @@
 
 (define (qq l kind)
   (case kind
-    [(unix) (~a "'"
-                (apply ~a #:separator " " (map q l))
-                "'")]
-    [(windows) (~a "\""
-                   (apply 
-                    ~a #:separator " " 
-                    (for/list ([i (in-list l)])
-                      (~a "\\\""
-                          i
-                          ;; A backslash is literal unless followed by a
-                          ;; quote. If `i' ends in backslashes, they
-                          ;; must be doubled, because the \" added to
-                          ;; the end will make them treated as escapes.
-                          (let ([m (regexp-match #rx"\\\\*$" i)])
-                            (car m))
-                          "\\\"")))
-                   "\"")]))
+    [(unix macosx)
+     (~a "'"
+         (apply ~a #:separator " " (map q l))
+         "'")]
+    [(windows windows/bash)
+     (~a "\""
+         (apply 
+          ~a #:separator " " 
+          (for/list ([i (in-list l)])
+            (~a "\\\""
+                i
+                ;; A backslash is literal unless followed by a
+                ;; quote. If `i' ends in backslashes, they
+                ;; must be doubled, because the \" added to
+                ;; the end will make them treated as escapes.
+                (let ([m (regexp-match #rx"\\\\*$" i)])
+                  (car m))
+                "\\\"")))
+         "\"")]))
+
+(define (shell-protect s kind)
+  (case kind
+    [(windows/bash)
+     ;; protect Windows arguments to go through bash, where
+     ;; backslashes must be escaped, but quotes are effectively
+     ;; preserved by the shell; also, "&&" must be quoted to
+     ;; parsing by bash
+     (regexp-replace* "&&"
+                      (regexp-replace* #rx"[\\]"
+                                       s
+                                       "\\\\\\0")
+                      "\"\\&\\&\"")]
+    [else s]))
 
 (define (client-args c server server-port kind readme)
   (define desc (client-name c))
@@ -284,7 +300,7 @@
                               (q ""))
       " README=" (q (file-name-from-path readme))))
 
-(define (unix-build c host port user server server-port repo clean? pull? readme)
+(define (unix-build c platform host port user server server-port repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build/plt" #:localhost (current-directory)))
   (define (sh . args)
     (list "/bin/sh" "-c" (apply ~a args)))
@@ -307,7 +323,7 @@
        " JOB_OPTIONS=\"-j " j "\""
        " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null) 'unix))))
 
-(define (windows-build c host port user server server-port repo clean? pull? readme)
+(define (windows-build c platform host port user server server-port repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build\\plt" #:localhost (current-directory)))
   (define bits (or (get-opt c '#:bits) 64))
   (define vc (or (get-opt c '#:vc)
@@ -316,11 +332,11 @@
                      "x64")))
   (define j (or (get-opt c '#:j) 1))
   (define (cmd . args) 
-    (list "cmd" "/c" (apply ~a args)))
+    (list "cmd" "/c" (shell-protect (apply ~a args) platform)))
   (ssh-script
    host port user
    server-port
-   'windows
+   platform
    (and clean?
         (cmd "IF EXIST " (q dir) " rmdir /S /Q " (q dir)))
    (cmd "IF NOT EXIST " (q dir) " git clone " (q repo) " " (q dir))
@@ -332,7 +348,7 @@
         " " vc
         " && nmake win32-client" 
        " JOB_OPTIONS=\"-j " j "\""
-        (client-args c server server-port 'windows readme))))
+        (client-args c server server-port platform readme))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -375,12 +391,14 @@
        ;; ensure a newline at the end:
        (newline o))))
 
+  (define platform (or (get-opt c '#:platform) (system-type)))
+
   (begin0
 
-   ((case (or (get-opt c '#:platform) (system-type))
+   ((case platform
       [(unix macosx) unix-build]
       [else windows-build])
-    c host port user server server-port repo clean? pull? readme)
+    c platform host port user server server-port repo clean? pull? readme)
 
    (delete-file readme)))
 
