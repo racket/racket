@@ -741,6 +741,8 @@
  (most-recent-window "Letztes Fenster")
  (next-tab "Nächster Tab")
  (prev-tab "Vorheriger Tab")
+ (move-current-tab-right "Tab nach &rechts bewegen")
+ (move-current-tab-left "Tab nach &links bewegen")
  (tab-i "Tab ~a: ~a") ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
 
  (view-menu-label "&Anzeigen")
