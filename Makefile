@@ -164,6 +164,10 @@ BUILD_STAMP =
 # the default as the version number:
 INSTALL_NAME =
 
+# A signing identity (spaces allowed) for Mac OS X binaries in an
+# installer:
+SIGN_IDENTITY = 
+
 # A README file to download from the server for the client:
 README = README.txt
 
@@ -377,7 +381,7 @@ COPY_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
-            DIST_DESC="$(DIST_DESC)" README="$(README)" \
+            DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)"\
             JOB_OPTIONS="$(JOB_OPTIONS)"
 
 client:
@@ -419,7 +423,9 @@ bundle-config:
 	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 
 UPLOAD_q = --readme http://$(SVR_PRT)/$(README) --upload http://$(SVR_PRT)/ --desc "$(DIST_DESC)"
-DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) \
+              "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
+              "$(SIGN_IDENTITY)"
 
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":

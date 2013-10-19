@@ -16,7 +16,7 @@
 (define upload-desc "")
 (define download-readme #f)
 
-(define-values (short-human-name human-name base-name dir-name dist-suffix)
+(define-values (short-human-name human-name base-name dir-name dist-suffix sign-identity)
   (command-line
    #:once-each
    [("--release") "Create a release installer"
@@ -30,7 +30,7 @@
    [("--readme") readme "URL for README.txt to include"
     (set! download-readme readme)]
    #:args
-   (human-name base-name dir-name dist-suffix)
+   (human-name base-name dir-name dist-suffix sign-identity)
    (values human-name
            (format "~a v~a" human-name (version))
            (format "~a-~a" base-name (version))
@@ -39,7 +39,8 @@
                (format "~a-~a" dir-name (version)))
            (if (string=? dist-suffix "")
                ""
-               (string-append "-" dist-suffix)))))
+               (string-append "-" dist-suffix))
+           sign-identity)))
 
 (display-time)
 
@@ -57,7 +58,7 @@
       (installer-tgz base-name dir-name dist-suffix readme)
       (case (system-type)
         [(unix) (installer-sh human-name base-name dir-name release? dist-suffix readme)]
-        [(macosx) (installer-dmg human-name base-name dist-suffix readme)]
+        [(macosx) (installer-dmg human-name base-name dist-suffix readme sign-identity)]
         [(windows) (installer-exe short-human-name base-name release? dist-suffix readme)])))
 
 (call-with-output-file*

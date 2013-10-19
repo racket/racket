@@ -10,15 +10,17 @@
          make-dmg)
 
 (define hdiutil "/usr/bin/hdiutil")
+(define codesign "/usr/bin/codesign")
 
 (define-runtime-path bg-image "macosx-installer/racket-rising.png")
 
 (define (system*/show . l)
   (displayln (apply ~a #:separator " " l))
+  (flush-output)
   (unless (apply system* l)
     (error "failed")))
 
-(define (make-dmg volname src-dir dmg bg readme)
+(define (make-dmg volname src-dir dmg bg readme sign-identity)
   (define tmp-dmg (make-temporary-file "~a.dmg"))
   (define work-dir
     (let-values ([(base name dir?) (split-path src-dir)])
@@ -27,7 +29,8 @@
   (delete-directory/files work-dir #:must-exist? #f)
   (make-directory* work-dir)
   (printf "Copying ~a\n" src-dir)
-  (copy-directory/files src-dir (build-path work-dir volname)
+  (define dest-dir (build-path work-dir volname))
+  (copy-directory/files src-dir dest-dir
                         #:keep-modify-seconds? #t)
   (when readme
     (call-with-output-file*
@@ -37,6 +40,8 @@
        (display readme o))))
   (when bg
     (copy-file bg (build-path work-dir ".bg.png")))
+  (unless (string=? sign-identity "")
+    (sign-executables dest-dir sign-identity))
   ;; The following command should work fine, but it looks like hdiutil in 10.4
   ;; is miscalculating the needed size, making it too big in our case (and too
   ;; small with >8GB images).  It seems that it works to first generate an
@@ -57,6 +62,35 @@
                 "convert" "-format" "UDBZ" "-imagekey" "zlib-level=9" "-ov"
                 tmp-dmg "-o" dmg)
   (delete-file tmp-dmg))
+
+(define (sign-executables dest-dir sign-identity)
+  ;; Sign any executable in "bin", top-level ".app", or either of those in "lib"
+  (define (check-bins dir)
+    (for ([f (in-list (directory-list dir #:build? #t))])
+      (when (and (file-exists? f)
+                 (member 'execute (file-or-directory-permissions f))
+                 (member (call-with-input-file 
+                          f
+                          (lambda (i)
+                            (define bstr (read-bytes 4 i))
+                            (and (bytes? bstr)
+                                 (= 4 (bytes-length bstr))
+                                 (integer-bytes->integer bstr #f))))
+                         '(#xFeedFace #xFeedFacf)))
+        (system*/show codesign "-s" sign-identity f))))
+  (define (check-apps dir)
+    (for ([f (in-list (directory-list dir #:build? #t))])
+      (when (and (directory-exists? f)
+                 (regexp-match #rx#".app$" f))
+        (define name (let-values ([(base name dir?) (split-path f)])
+                       (path-replace-suffix name #"")))
+        (define exe (build-path f "Contents" "MacOS" name))
+        (when (file-exists? exe)
+          (system*/show codesign "-s" sign-identity exe)))))
+  (check-bins (build-path dest-dir "bin"))
+  (check-bins (build-path dest-dir "lib"))
+  (check-apps dest-dir)
+  (check-apps (build-path dest-dir "lib")))
 
 (define (dmg-layout dmg volname bg)
   (define-values (mnt del?)
@@ -99,10 +133,10 @@
   (when del?
     (delete-directory mnt)))
 
-(define (installer-dmg human-name base-name dist-suffix readme)
+(define (installer-dmg human-name base-name dist-suffix readme sign-identity)
   (define dmg-name (format "bundle/~a-~a~a.dmg"
                            base-name
                            (system-library-subpath #f)
                            dist-suffix))
-  (make-dmg human-name "bundle/racket" dmg-name bg-image readme)
+  (make-dmg human-name "bundle/racket" dmg-name bg-image readme sign-identity)
   dmg-name)

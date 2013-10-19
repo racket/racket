@@ -271,6 +271,7 @@
                        default-dist-dir))
   (define dist-suffix (get-opt c '#:dist-suffix ""))
   (define dist-catalogs (choose-catalogs c '("")))
+  (define sign-identity (get-opt c '#:sign-identity ""))
   (define release? (get-opt c '#:release? default-release?))
   (define source? (get-opt c '#:source? #f))
   (define source-pkgs? (get-opt c '#:source-pkgs? source?))
@@ -291,6 +292,7 @@
       " DIST_DIR=" dist-dir
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
+      " SIGN_IDENTITY=" (q sign-identity)
       " INSTALL_NAME=" (q install-name)
       " BUILD_STAMP=" (q build-stamp)
       " RELEASE_MODE=" (if release? "--release" (q ""))

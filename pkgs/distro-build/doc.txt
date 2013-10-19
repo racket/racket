@@ -212,6 +212,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
     default depends on `#:bits'
 
+  #:sign-identity <string> --- provides an identity to be passed to
+    `codesign` for code signing on Mac OS X (for all executables in a
+    distribution), where an empty string disables signing; the default
+    is ""
+
   #:j <integer> --- parallelism for `make' on Unix and Mac OS X and
     for `raco setup' on all platforms; defaults to 1
 

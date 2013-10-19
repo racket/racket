@@ -135,6 +135,7 @@
     [(#:configure) (and (list? val) (andmap string? val))]
     [(#:bits) (or (equal? val 32) (equal? val 64))]
     [(#:vc) (or (equal? val "x86") (equal? val "x64"))]
+    [(#:sign-identity) (string? val)]
     [(#:timeout) (real? val)]
     [(#:j) (exact-positive-integer? val)]
     [(#:repo) (string? val)]
