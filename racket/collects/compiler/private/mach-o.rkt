@@ -27,11 +27,11 @@
 (define (round-up-page v)
   (bitwise-and #xFFFFF000 (+ v #xFFF)))
 
-(define (mult-of-4 n)
-  (let ([m (modulo n 4)])
+(define (mult-of-8 n)
+  (let ([m (modulo n 8)])
     (if (zero? m)
         n
-        (+ n (- 4 m)))))
+        (+ n (- 8 m)))))
 
 (define move-link-edit? #t)
 
@@ -365,7 +365,7 @@
                                 [segname (car (regexp-match #rx#"^[^\0]*" segname))])
                            (if (regexp-match rx segname)
                                (let* ([newnamelen (and out
-                                                       (mult-of-4 (+ 1 (bytes-length new-path))))]
+                                                       (mult-of-8 (+ 1 (bytes-length new-path))))]
                                       [delta (if out
                                                  (-  newnamelen namelen)
                                                  0)])
