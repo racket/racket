@@ -41,6 +41,7 @@
                             #:docs-url [docs-url #f]
                             #:pdf-docs-url [pdf-docs-url #f]
                             #:title [title "Racket Downloads"]
+                            #:current-rx [current-rx #f]
                             #:git-clone [git-clone #f]
                             #:post-content [post-content null])
 
@@ -131,9 +132,12 @@
                     [(2) (~a "major" (if key "" " group"))]
                     [(3) "minor"]
                     [else "subminor"]))
+                (define num-cols (if current-rx
+                                     "7"
+                                     "5"))
                 (cond
                  [(not mid-cols)
-                  `(tr (td ((colspan "5")) nbsp))]
+                  `(tr (td ((colspan ,num-cols)) nbsp))]
                  [inst
                   `(tr (td
                         ,@(for/list ([col (in-list mid-cols)])
@@ -158,10 +162,24 @@
                                        ,(call-with-input-file*
                                          (build-path (path-only table-file)
                                                      inst)
-                                         sha1)))))]
+                                         sha1))))
+                       ,@(if current-rx
+                             `((td nbsp)
+                               (td (span ([class "detail"])
+                                         ,(if (regexp-match? current-rx inst)
+                                              `(a ([href ,(url->string
+                                                           (combine-url/relative
+                                                            (string->url installers-url)
+                                                            (bytes->string/utf-8
+                                                             (regexp-replace current-rx
+                                                                             (string->bytes/utf-8 inst)
+                                                                             #"current"))))])
+                                                  "as " ldquo "current" rdquo)
+                                              'nbsp))))
+                             null))]
                  [else
                   `(tr (td ((class ,level-class)
-                            (colspan "5"))
+                            (colspan ,num-cols))
                            ,@(for/list ([col (in-list mid-cols)])
                                `(span nbsp nbsp nbsp))
                            ,last-col))])))

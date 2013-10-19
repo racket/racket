@@ -50,9 +50,23 @@
       (flush-output)
       (delete-directory/files (build-path snapshots-dir s)))))
 
-(printf "Creating \"current\" link\n")
+(define current-rx (regexp (regexp-quote (version))))
+
+(printf "Creating \"current\" links\n")
 (flush-output)
 (make-file-or-directory-link current-snapshot link-file)
+(let ([installer-dir (build-path snapshots-dir current-snapshot "installers")])
+  (for ([f (in-list (directory-list installer-dir))])
+    (when (regexp-match? current-rx f)
+      (define file-link (build-path
+                         installer-dir
+                         (bytes->path
+                          (regexp-replace current-rx
+                                          (path->bytes f)
+                                          "current"))))
+      (when (link-exists? file-link)
+        (delete-file file-link))
+      (make-file-or-directory-link f file-link))))
 
 (make-download-page (build-path site-dir
                                 installers-dir
@@ -64,6 +78,7 @@
                                         "current/pdf-doc/")
                     #:dest (build-path snapshots-dir
                                        "index.html")
+                    #:current-rx current-rx
                     #:git-clone (current-directory)
                     #:post-content `((p "Snapshot ID: " 
                                         (a ((href ,(string-append current-snapshot
