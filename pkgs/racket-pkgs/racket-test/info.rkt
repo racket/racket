@@ -23,9 +23,6 @@
                ;; used to test setup, module readers, pkg system
                "scribble-lib"
 
-               ;; used for futures tests
-               "typed-racket-lib"
-
                ;; for random testing:
                "redex-lib"))
 
