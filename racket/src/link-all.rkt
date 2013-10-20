@@ -6,7 +6,8 @@
          racket/string
          racket/set
          setup/getinfo
-         pkg/lib)
+         pkg/lib
+         (prefix-in db: pkg/db))
 
 (define config-dir-path (build-path "racket" "etc"))
 (define config-file-path (build-path config-dir-path "config.rktd"))
@@ -140,6 +141,9 @@
   (parameterize ([use-compiled-file-paths '()])
     (get-info/full pkg-dir #:namespace metadata-ns)))
 
+(define missing-desc null)
+(define missing-authors null)
+
 (define all-pkgs
   (let loop ([all-pkgs pkgs] [pkgs pkgs])
     (define new-pkgs
@@ -150,6 +154,10 @@
         (define i (get-pkg-info dir))
         (define deps
           (extract-pkg-dependencies i #:filter? #t))
+        (unless (string? (i 'pkg-desc (lambda _ #f)))
+          (set! missing-desc (cons pkg-name missing-desc)))
+        (unless (list? (i 'pkg-authors (lambda _ #f)))
+          (set! missing-authors (cons pkg-name missing-authors)))
         (set-union
          new-pkgs
          (for/set ([dep (in-list deps)]
@@ -186,6 +194,14 @@
                              #f
                              #f
                              auto?))))))
+
+(for ([p (in-list missing-desc)])
+  (printf "Missing package description for ~a\n" p))
+(for ([p (in-list missing-authors)])
+  (printf "Missing package authors for ~a\n" p))
+
+(unless (and (null? missing-authors) (null? missing-desc))
+   (error 'link-all "not all packages have description and authors."))
 
 ;; link configuration
 (unless (file-exists? config-file-path)
