@@ -12,6 +12,7 @@
                "net-test" ; for tests/net/available
                "serialize-cstruct-lib" ; tested here               
                "cext-lib" ; tested here
+               "pconvert-lib" ; tested here
 
                ;; for `pkg` tests
                "web-server-lib"
