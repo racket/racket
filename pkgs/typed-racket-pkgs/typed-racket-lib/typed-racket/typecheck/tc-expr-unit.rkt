@@ -18,67 +18,8 @@
 
 (require (for-template racket/base racket/private/class-internal))
 
-(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^)
+(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^ tc-expression^)
 (export tc-expr^)
-
-;; do-inst : syntax type -> type
-(define (do-inst stx ty)
-  (define inst (type-inst-property stx))
-  (define (split-last l)
-    (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
-      (values all-but (car last-list))))
-  (define (in-improper-stx stx)
-    (let loop ([l stx])
-      (match l
-        [#f null]
-        [(cons a b) (cons a (loop b))]
-        [e (list e)])))
-  (match ty
-    [(list ty)
-     (list
-      (for/fold ([ty ty])
-        ([inst (in-list (in-improper-stx inst))])
-        (cond [(not inst) ty]
-              [(not (or (Poly? ty) (PolyDots? ty)))
-               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
-                              (cleanup-type ty))]
-              [(and (Poly? ty)
-                    (not (= (syntax-length inst) (Poly-n ty))))
-               (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                              (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-              [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
-               ;; we can provide 0 arguments for the ... var
-               (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                              (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
-              [(PolyDots? ty)
-               ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-               ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-               ;; In the case that the list is empty we also do the normal thing
-               (let ((stx-list (syntax->list inst)))
-                 (if (null? stx-list)
-                     (instantiate-poly ty (map parse-type stx-list))
-                     (let-values ([(all-but-last last-stx) (split-last stx-list)])
-                       (match (syntax-e last-stx)
-                         [(cons last-ty-stx (? identifier? last-id-stx))
-                          (unless (bound-index? (syntax-e last-id-stx))
-                            (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-                          (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
-                              (let* ([last-id (syntax-e last-id-stx)]
-                                     [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
-                                (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                              (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                             ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
-                         [_
-                          (instantiate-poly ty (map parse-type stx-list))]))))]
-              [else
-               (instantiate-poly ty (stx-map parse-type inst))])))]
-    [_ (if inst
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -112,43 +53,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let loop ([form* form] [expected expected] [checked? #f])
-      (cond [(type-ascription form*)
-             =>
-             (lambda (ann)
-               (let* ([r (tc-expr/check/internal form* ann)]
-                      [r* (check-below (check-below r ann) expected)])
-                 ;; add this to the *original* form, since the newer forms aren't really in the program
-                 (add-typeof-expr form r)
-                 ;; around again in case there is an instantiation
-                 ;; remove the ascription so we don't loop infinitely
-                 (loop (remove-ascription form*) r* #t)))]
-            [(type-inst-property form*)
-             ;; check without property first
-             ;; to get the appropriate type to instantiate
-             (match (tc-expr (type-inst-property form* #f))
-               [(tc-results: ts fs os)
-                ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form* ts)]
-                       [ts** (ret ts* fs os)])
-                  (add-typeof-expr form ts**)
-                  ;; make sure the new type is ok
-                  (check-below ts** expected))]
-               ;; no annotations possible on dotted results
-               [ty (add-typeof-expr form ty) ty])]
-            [(external-check-property form*)
-             =>
-             (lambda (check)
-               (check form*)
-               (loop (external-check-property form* #f)
-                     expected
-                     checked?))]
-            ;; nothing to see here
-            [checked? expected]
-            [else 
-             (define t (tc-expr/check/internal form* expected))
-             (add-typeof-expr form t)
-             (check-below t expected)]))))
+    (define t (tc-expr/check/internal form expected))
+    (add-typeof-expr form t)
+    (check-below t expected)))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -238,7 +145,7 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [(#%expression e) (tc-expr/check #'e expected)]
+      [(#%expression _) (tc/expression form expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -379,7 +286,7 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
-      [(#%expression e) (tc-expr #'e)]
+      [(#%expression _) (tc/expression form #f)]
       ;; #%variable-reference
       [(#%variable-reference . _)
        (ret -Variable-Reference)]
@@ -412,19 +319,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (cond
-      [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
-      [else 
-       (let ([ty (internal-tc-expr form)])
-         (match ty
-           [(tc-any-results:)
-            (add-typeof-expr form ty)
-            ty]
-           [(tc-results: ts fs os)
-            (let* ([ts* (do-inst form ts)]
-                   [r (ret ts* fs os)])
-              (add-typeof-expr form r)
-              r)]))])))
+    (let ([ty (internal-tc-expr form)])
+      (add-typeof-expr form ty)
+      ty)))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))

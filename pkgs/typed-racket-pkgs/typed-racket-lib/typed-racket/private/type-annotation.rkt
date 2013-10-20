@@ -4,17 +4,17 @@
          (rep type-rep)
          (utils tc-utils)
          (env global-env mvar-env scoped-tvar-env)
-         (except-in (types subtype union utils generalize))
+         (types subtype union resolve utils generalize)
          (private parse-type syntax-properties)
          (contract-req)
          racket/match)
 
 (provide type-annotation
+         ascribed-scoped-type-vars
          get-type
          get-types
          get-type/infer
          type-ascription
-         remove-ascription
          check-type
          dotted?)
 
@@ -38,7 +38,6 @@
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
   (cond
     [(type-label-property stx) => pt]
-    [(type-ascription-property stx) => pt]
     ;; this is so that : annotation works in internal def ctxts
     [(and (identifier? stx) (lookup-type stx (lambda () #f)))
      =>
@@ -47,38 +46,26 @@
        t)]
     [else #f]))
 
-;(trace type-annotation)
-
 (define (type-ascription stx)
-  (define (pt prop)
-    (add-scoped-tvars stx (parse-literal-alls prop))
-    (if (syntax? prop)
-        (parse-tc-results prop)
-        (parse-tc-results/id stx prop)))
   (cond
     [(type-ascription-property stx)
      =>
      (lambda (prop)
-       (let loop ((prop prop))
-         (if (pair? prop)
-             (loop (cdr prop))
-             (pt prop))))]
+       (unless (syntax? prop)
+         (int-err "Type ascription is bad: ~a" prop))
+       (parse-tc-results prop))]
     [else #f]))
 
-(define (remove-ascription stx)
-  (type-ascription-property
-    stx 
-    (cond
-      [(type-ascription-property stx)
-       =>
-       (lambda (prop)
-         (if (pair? prop)
-             (let loop ((prop (cdr prop)) (last (car prop)))
-               (if (pair? prop)
-                   (cons last (loop (cdr prop) (car prop)))
-                   last))
-               #f))]
-      [else #f])))
+(define (ascribed-scoped-type-vars stx)
+  (cond
+    [(type-ascription-property stx)
+     =>
+     (lambda (prop)
+       (unless (syntax? prop)
+         (int-err "Type ascription is bad: ~a" prop))
+       (parse-literal-alls prop))]
+    [else #f]))
+
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
