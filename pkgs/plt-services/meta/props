@@ -1322,7 +1322,6 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/parallel.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/path.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/pconvert.rktl" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/place" responsible (tewk)
 "pkgs/racket-pkgs/racket-test/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
 "pkgs/racket-pkgs/racket-test/tests/racket/place-chan-rand.rkt" responsible (tewk)
 "pkgs/racket-pkgs/racket-test/tests/racket/place-channel-fd.rkt" responsible (tewk) drdr:random #t
