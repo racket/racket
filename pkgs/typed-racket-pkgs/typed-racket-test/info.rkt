@@ -8,6 +8,7 @@
                      "rackunit-lib"
                      "compiler-lib"
                      "redex-lib"
+                     "htdp-lib"
                      "sandbox-lib"
                      "unstable-flonum-lib"
                      "unstable"))
