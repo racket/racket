@@ -321,8 +321,6 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
 # endif
 
-# include <sys/param.h>
-
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 # define HAS_BSD_IOB
