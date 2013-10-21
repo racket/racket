@@ -47,41 +47,48 @@
 (begin-for-syntax
  (module+ test (require rackunit))
 
+ ;; forms that are not allowed by Typed Racket yet
+ (define unsupported-forms
+   (list (quote-syntax init-rest)
+         (quote-syntax augride)
+         ;; FIXME: see if override contracts are enough
+         ;;        to keep these at bay or whether they
+         ;;        need to be handled
+         (quote-syntax public-final)
+         (quote-syntax override-final)
+         (quote-syntax augment-final)
+         (quote-syntax overment)
+         (quote-syntax abstract)
+         (quote-syntax rename-super)
+         (quote-syntax inherit/super)
+         (quote-syntax inherit/inner)
+         (quote-syntax rename-inner)))
+
  ;; basically the same stop forms that class-internal uses
  (define stop-forms
    (append (kernel-form-identifier-list)
+           unsupported-forms
            (list
             (quote-syntax :)
             (quote-syntax #%app)
             (quote-syntax lambda)
             (quote-syntax init)
-            (quote-syntax init-rest)
             (quote-syntax field)
             (quote-syntax init-field)
             (quote-syntax inherit-field)
             (quote-syntax private)
             (quote-syntax public)
             (quote-syntax override)
-            (quote-syntax augride)
-            (quote-syntax public-final)
-            (quote-syntax override-final)
-            (quote-syntax augment-final)
             (quote-syntax pubment)
-            (quote-syntax overment)
             (quote-syntax augment)
-            (quote-syntax rename-super)
             (quote-syntax inherit)
-            (quote-syntax inherit/super)
-            (quote-syntax inherit/inner)
-            (quote-syntax rename-inner)
-            (quote-syntax abstract)
             (quote-syntax super)
             (quote-syntax inner)
             (quote-syntax this)
             (quote-syntax this%)
+            (quote-syntax super-new)
             (quote-syntax super-instantiate)
             (quote-syntax super-make-object)
-            (quote-syntax super-new)
             (quote-syntax inspect)))))
 
 (begin-for-syntax
@@ -201,7 +208,8 @@
                                           (~literal augment-final)
                                           (~literal inherit)
                                           (~literal inherit/super)
-                                          (~literal inherit/inner)))
+                                          (~literal inherit/inner)
+                                          (~literal rename-super)))
                    names:method-decl ...)
                   form)
             #:attr data
@@ -339,6 +347,7 @@
                            clause?
                            non-clause?))
         (define name-dict (extract-names clauses))
+        (check-unsupported-features name-dict)
         (add-names-to-intdef-context def-ctx name-dict)
         (internal-definition-context-seal def-ctx)
         (define-values (annotated-methods other-top-level private-fields)
@@ -466,6 +475,18 @@
       (list (init-clause #'(init [x 0]) #'init #'([x x]) (list #t))
             (init-clause #'(init [(a b)]) #'init #'([a b]) (list #f))))
      (list #'x)))
+
+  ;; check-unsupported-features : Dict<Identifier, Names> -> Void
+  ;; Check if features that are not supported were used and
+  ;; raise an error if they are present
+  (define (check-unsupported-features id-table)
+    (for ([form unsupported-forms])
+      (define entry (dict-ref id-table form null))
+      (unless (null? entry)
+        (tc-error/stx
+         (car entry)
+         "unsupported class clause: ~a"
+         (syntax-e form)))))
 
   ;; This is a neat/horrible trick
   ;;
