@@ -42,7 +42,7 @@
            [_ (err tag p)])))]
     [(_ arity #:except extra ...)
      (lambda (tag)
-       (lambda (p)
+       (lambda (p [tag tag])
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            extra ...
@@ -95,7 +95,7 @@
                   (define n  (string->symbol (format "~a handler" (syntax-e (caar spec)))))
                   (syntax-property  i 'inferred-name n))]
                [else (loop (cdr spec))])))
-         (if r ((third s) r) (fourth s)))
+         (if r ((third s) r `',(car r)) (fourth s)))
        Spec))
 
 ;; check whether rec? occurs, produces list of keyword x clause pairs 
