@@ -12,7 +12,7 @@
   (let ([os (system-type 'os)]
         [machine (system-type 'machine)])
     (cond [(eq? os 'macosx) 'macosx]
-          [(regexp-match #rx"Linux.*86" machine) 'linux86] ;; includes x86_64
+          [(regexp-match #rx"^Linux" machine) 'linux]
           [else #f])))
 
 #|
@@ -30,7 +30,7 @@ macosx (64):
 
 (define _socklen_t
   (case platform
-    ((linux86) _uint)    ;; in practice, _uint32
+    ((linux)  _uint)    ;; in practice, _uint32
     ((macosx) _uint32)))
 
 (define-cstruct _linux_sockaddr_un
@@ -52,8 +52,8 @@ macosx (64):
   (_fun #:save-errno 'posix
         _int
         (case platform
-          ((linux86) _linux_sockaddr_un-pointer)
-          ((macosx)  _macosx_sockaddr_un-pointer)
+          ((linux)  _linux_sockaddr_un-pointer)
+          ((macosx) _macosx_sockaddr_un-pointer)
           (else _pointer)) ;; dummy type to avoid error
         _int
         -> _int))
@@ -66,7 +66,7 @@ macosx (64):
 ;; make-sockaddr : bytes -> (U _linux_sockaddr_un _macosx_sockaddr_un)
 (define (make-sockaddr path)
   (case platform
-    ((linux86)
+    ((linux)
      (make-linux_sockaddr_un AF_UNIX path))
     ((macosx)
      (make-macosx_sockaddr_un (bytes-length path) AF_UNIX path))
@@ -74,7 +74,7 @@ macosx (64):
 
 (define strerror_r
   (get-ffi-obj (case platform
-                 ((linux86) "__xpg_strerror_r")
+                 ((linux) "__xpg_strerror_r")
                  (else "strerror_r"))
                #f
                (_fun (errno) ::
