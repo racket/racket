@@ -165,7 +165,7 @@ at least theoretically.
       (lambda (stx)
         (syntax-parse stx
           [(_ head cnt . body)
-           #'(define head . body)]))))
+           (syntax/loc stx (define head . body))]))))
 
 (define-syntax define-struct/cond-contract
   (if enable-contracts?

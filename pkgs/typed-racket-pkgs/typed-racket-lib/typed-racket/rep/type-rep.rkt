@@ -8,7 +8,7 @@
 ;; TODO use contract-req
 (require (utils tc-utils)
          "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         racket/match
+         racket/match racket/list
          racket/contract
          racket/lazy-require
          (for-syntax racket/base syntax/parse))
@@ -100,11 +100,13 @@
 
 ;; free type variables
 ;; n is a Name
-(def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars] [#:fold-rhs #:base])
+(def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars]
+  [#:fold-rhs #:base])
 
 ;; id is an Identifier
 ;; This will always resolve to a struct
-(def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
+(def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f]
+  [#:fold-rhs #:base])
 
 ;; rator is a type
 ;; rands is a list of types
@@ -180,7 +182,7 @@
 
 ;; elem is a Type
 (def-type Set ([elem Type/c])
-  [#:key 'set])
+  [#:key #f])
 
 ;; result is a Type
 (def-type Evt ([result Type/c])
@@ -197,7 +199,6 @@
   [#:key (if numeric?
              'number
              (case name
-               [(Number Integer) 'number]
                [(Boolean) 'boolean]
                [(String) 'string]
                [(Symbol) 'symbol]
@@ -375,10 +376,13 @@
   [#:fold-rhs #:base] [#:key 'continuation-mark-key])
 
 ;; v : Racket Value
-(def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
-                                                                  [(boolean? v) 'boolean]
-                                                                  [(null? v) 'null]
-                                                                  [else #f])])
+(def-type Value (v) [#:frees #f] [#:fold-rhs #:base]
+  [#:key (cond [(or (eq? v 0) (eq? v 1)) 'number]
+               ;; other numbers don't work with the optimizations in subtype.rkt
+               ;; which assume that unions of numbers are subtyped in simple ways
+               [(boolean? v) 'boolean]
+               [(null? v) 'null]
+               [else #f])])
 
 ;; elems : Listof[Type]
 (def-type Union ([elems (and/c (listof Type/c)
@@ -394,12 +398,18 @@
                                        sorted?))))])
   [#:frees (λ (f) (combine-frees (map f elems)))]
   [#:fold-rhs (apply Un (map type-rec-id elems))]
-  [#:key (let loop ([res null] [ts elems])
-           (if (null? ts) res
-               (let ([k (Type-key (car ts))])
-                 (cond [(pair? k) (loop (append k res) (cdr ts))]
-                       [k (loop (cons k res) (cdr ts))]
-                       [else #f]))))])
+  [#:key 
+   (let ()
+     (define d
+       (let loop ([ts elems] [res null])
+         (cond [(null? ts) res]
+               [else
+                (define k (Type-key (car ts)))
+                (cond [(not k) (list #f)]
+                      [(pair? k) (loop (cdr ts) (append k res))]
+                      [else (loop (cdr ts) (cons k res))])])))
+     (define d* (remove-duplicates d))
+     (if (and (pair? d*) (null? (cdr d*))) (car d*) d*))])
 
 (def-type Univ () [#:frees #f] [#:fold-rhs #:base])
 
