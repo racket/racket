@@ -1,15 +1,20 @@
 #lang racket/base
-(require racket/match/match
+(require racket/match/match "match/runtime.rkt"
          (for-syntax racket/base))
 (provide (except-out (all-from-out racket/match/match)
                      define-match-expander)
+         failure-cont
          (rename-out [define-match-expander* define-match-expander]))
+
 
 (define-for-syntax (no-old-match-form stx)
   (raise-syntax-error
    #f
    "works only for constructor-based `match' form"
    stx))
+
+(define-syntax-rule (failure-cont) (fail))
+
 
 (define-syntax define-match-expander*
   (syntax-rules ()

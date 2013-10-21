@@ -710,5 +710,11 @@
            (match-let ([(list x y) (list 1 22)] [(list y z) '(2 3)])
                       (list x y z))))
 
-
+   (comp 1
+         (match (cons 1 2)
+           [(cons a b)
+            (if (< a b)
+                (failure-cont)
+                0)]
+           [_ 1]))
 ))

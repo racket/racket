@@ -34,7 +34,8 @@ arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
-otherwise the behavior of matching is unpredictable.
+otherwise the behavior of matching is unpredictable. See also
+@racket[failure-cont].
 
 The grammar of @racket[pat] is as follows, where non-italicized
 identifiers are recognized symbolically (i.e., not by binding).
@@ -516,6 +517,13 @@ b
 
 @defproc[(exn:misc:match? [v any/c]) boolean?]{
 A predicate for the exception raised in the case of a match failure.
+}
+
+@defform[(failure-cont)]{
+Continues matching as if the current pattern failed.  Note that unlike
+use of the @racket[=>] form, this does @emph{not} escape the current
+context, and thus should only be used in tail position with respect to
+the @racket[match] form.
 }
 
 
