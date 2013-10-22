@@ -12,26 +12,28 @@
 (define (transform file dir)
   ;; generate the new log, that will become the expected log
   (define-values (new-tr-log new-output) (generate-log file dir))
-  (define in (open-input-file (build-path dir file)))
-  (read-line in) ; drop the #;#;
-  (read in) ; drop the old expected tr log
-  (read in) ; drop the old expected output
-  (let ([rest (port->string in)])
-    (with-output-to-file (build-path dir file) #:exists 'truncate
-      (lambda ()
-        (displayln "#;#;")
-        (displayln "#<<END")
-        (for ((entry new-tr-log))
-          (displayln entry))
-        (displayln "END")
-        (if (regexp-match "\n" new-output)
-            (begin
-              (displayln "#<<END")
-              (displayln new-output)
-              (display "END"))
-            (begin
-              (write new-output)))
-        (display rest)))))
+  (define source-code
+    (call-with-input-file* (build-path dir file)
+      (lambda (in)
+        (read-line in) ; drop the #;#;
+        (read in) ; drop the old expected tr log
+        (read in) ; drop the old expected output
+        (port->string in))))
+  (with-output-to-file (build-path dir file) #:exists 'truncate
+    (lambda ()
+      (displayln "#;#;")
+      (displayln "#<<END")
+      (for ((entry new-tr-log))
+        (displayln entry))
+      (displayln "END")
+      (if (regexp-match "\n" new-output)
+          (begin
+            (displayln "#<<END")
+            (displayln new-output)
+            (display "END"))
+          (begin
+            (write new-output)))
+          (display source-code))))
 
 ;; proc returns the list of tests to be run on each file
 (define (transform-dirs dirs)
@@ -45,16 +47,16 @@
 (start-workers)
 (cond [(= (vector-length (current-command-line-arguments)) 0)
        (transform-dirs (list tests-dir missed-optimizations-dir))]
-      [else ; set of paths to transform
-       (define l (vector->list (current-command-line-arguments)))
-       (for-each (lambda (f)
-                   (define-values (path p b) (split-path f))
-                   (define dir (path->string path))
-                   ;; this only works if run from the optimizer tests dir
-                   (transform
-                    p
-                    (cond [(equal? dir "tests/")
-                           tests-dir]
-                          [(equal? dir "missed-optimizations/")
-                           missed-optimizations-dir])))
-                 l)])
+      [else ; set of paths to transform (only works if run from the optimizer tests dir)
+       (define results
+         (for/list ([f (in-vector (current-command-line-arguments))])
+           (define-values (dir-path file-name _) (split-path f))
+           (define dir (path->string dir-path))
+           (delay/thread
+             (transform
+               file-name
+               (cond [(equal? dir "tests/")
+                      tests-dir]
+                     [(equal? dir "missed-optimizations/")
+                      missed-optimizations-dir])))))
+       (for-each force results)])
