@@ -717,4 +717,15 @@
                 (failure-cont)
                 0)]
            [_ 1]))
+   
+   (comp 0
+         (match (cons 1 2)
+           [(cons a b) #:when (= a b) 1]
+           [_ 0]))
+   
+   (comp 1
+         (match (cons 1 1)
+           [(cons a b) #:when (= a b) 1]
+           [_ 0]))
+   
 ))

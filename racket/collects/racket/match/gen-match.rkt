@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "patterns.rkt" "compiler.rkt"
-         syntax/stx syntax/parse
-         (for-template racket/base (only-in "runtime.rkt" match:error)))
+         syntax/stx syntax/parse racket/syntax
+         (for-template racket/base (only-in "runtime.rkt" match:error fail)))
 
 (provide go go/one)
 
@@ -20,62 +20,53 @@
 
 ;; this parses the clauses using parse, then compiles them
 ;; go : syntax syntax syntax -> syntax
-(define (go parse stx exprs clauses)
-  (syntax-case clauses ()
+(define (go parse stx es clauses)
+  (syntax-parse clauses
     [([pats . rhs] ...)
      (parameterize ([orig-stx stx])
-       (unless (syntax->list exprs)
-         (raise-syntax-error
-          'match*
-          "expected a sequence of expressions to match"
-          exprs)))
-     (let ([len (length (syntax->list exprs))]
-           [srcloc-list (list
-                         #`(quote #,(syntax-source stx))
-                         #`(quote #,(syntax-line stx))
-                         #`(quote #,(syntax-column stx))
-                         #`(quote #,(syntax-position stx))
-                         #`(quote #,(syntax-span stx)))])
-       (with-syntax ([(xs ...) (generate-temporaries exprs)]
-                     [(exprs ...) exprs]
-                     [(fail) (generate-temporaries #'(fail))])
-         (with-syntax ([body 
-                        (compile*
-                         (syntax->list #'(xs ...))
-                         (for/list ([clause (syntax->list clauses)]
-                                    [pats (syntax->list #'(pats ...))]
-                                    [rhs (syntax->list #'(rhs ...))])
-                           (unless (syntax->list pats)
-                             (raise-syntax-error 
-                              'match*
-                              "expected a sequence of patterns"
-                              pats))
-                           (let ([lp (length (syntax->list pats))])
-                             (when (null? (syntax->list rhs))
-                               (raise-syntax-error 
-                                'match
-                                "expected at least one expression on the right-hand side"
-                                clause))
-                             (unless (= len lp)
-                               (raise-syntax-error
-                                'match
-                                (format 
-                                 "wrong number of match clauses, expected ~a and got ~a"
-                                 len lp)
-                                pats))
-                             (let ([mk (lambda (unm rhs)
-                                         (make-Row (for/list ([p (syntax->list pats)])
-                                                     (parse p))
-                                                   #`(let-values () . #,rhs) unm null))])
-                               (syntax-case* rhs (=>)
-                                             (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
-                                 [((=> unm) . rhs) (mk #'unm #'rhs)]
-                                 [_ (mk #f rhs)]))))
-                         #'fail)]
-                       [orig-expr 
-                        (if (= 1 len) (stx-car #'(xs ...)) #'(list xs ...))])
-           (quasisyntax/loc stx
-             (let ([xs exprs] ...)
-               (let ([fail (lambda ()
-                             #,(quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)))))])
-                 body))))))]))
+       (unless (syntax->list es)
+         (raise-syntax-error 'match* "expected a sequence of expressions to match" es)))
+     (define len (length (syntax->list es)))
+     (define srcloc-list (list #`(quote #,(syntax-source stx))
+                               #`(quote #,(syntax-line stx))
+                               #`(quote #,(syntax-column stx))
+                               #`(quote #,(syntax-position stx))
+                               #`(quote #,(syntax-span stx))))
+     (define/with-syntax (xs ...) (generate-temporaries es))
+     (define/with-syntax (exprs ...) es)
+     (define/with-syntax outer-fail (generate-temporary #'fail))
+     (define/with-syntax orig-expr (if (= 1 len) (stx-car #'(xs ...)) #'(list xs ...)))
+     (define/with-syntax raise-error (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)))))
+     (define parsed-clauses
+       (for/list ([clause (syntax->list clauses)]
+                  [pats (syntax->list #'(pats ...))]
+                  [rhs (syntax->list #'(rhs ...))])
+         (unless (syntax->list pats)
+           (raise-syntax-error 'match* "expected a sequence of patterns" pats))
+         (define lp (length (syntax->list pats)))
+         (unless (= len lp)
+           (raise-syntax-error 
+            'match (format "wrong number of match clauses, expected ~a and got ~a" len lp) pats))
+         (define (mk unm rhs)
+           (make-Row (for/list ([p (syntax->list pats)]) (parse p))
+                     #`(let () . #,rhs) unm null))
+         (syntax-parse rhs
+           [()
+            (raise-syntax-error 
+             'match
+             "expected at least one expression on the right-hand side"
+             clause)]
+           [(#:when e)
+            (raise-syntax-error 
+             'match
+             "expected at least one expression on the right-hand side after #:when clause"
+             clause)]
+           [(#:when e rest ...) (mk #f #'((if e (let () rest ...) (fail))))]
+           [(((~datum =>) unm) . rhs) (mk #'unm #'rhs)]
+           [_ (mk #f rhs)])))
+     (define/with-syntax body 
+       (compile* (syntax->list #'(xs ...)) parsed-clauses #'outer-fail))
+    (quasisyntax/loc stx
+      (let ([xs exprs] ...)
+        (define (outer-fail) raise-error)
+        body))]))
