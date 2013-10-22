@@ -1,18 +1,17 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx syntax/id-table racket/dict racket/promise
+(require syntax/parse syntax/stx racket/dict racket/promise
          racket/syntax racket/match syntax/parse/experimental/specialize
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
          (types numeric-tower subtype type-table utils)
-         (optimizer utils numeric-utils logging float))
+         (optimizer utils numeric-utils logging float unboxed-tables))
 
 (provide float-complex-opt-expr
          float-complex-arith-expr
          unboxed-float-complex-opt-expr
-         float-complex-call-site-opt-expr arity-raising-opt-msg
-         unboxed-vars-table unboxed-funs-table)
+         float-complex-call-site-opt-expr arity-raising-opt-msg)
 
 (define-literal-syntax-class +)
 (define-literal-syntax-class -)
@@ -34,20 +33,6 @@
 (define-syntax-class/specialize float-expr (subtyped-expr -Flonum))
 (define-syntax-class/specialize float-complex-expr (subtyped-expr -FloatComplex))
 
-
-;; contains the bindings which actually exist as separate bindings for each component
-;; associates identifiers to lists (real-binding imag-binding orig-binding-occurrence)
-(define unboxed-vars-table (make-free-id-table))
-
-;; associates the names of functions with unboxed args (and whose call sites have to
-;; be modified) to the arguments which can be unboxed and those which have to be boxed
-;; entries in the table are of the form:
-;; ((unboxed ...) (boxed ...))
-;; all these values are indices, since arg names don't make sense for call sites
-;; the new calling convention for these functions have all real parts of unboxed
-;; params first, then all imaginary parts, then all boxed arguments
-(define unboxed-funs-table (make-free-id-table))
-
 (define (binding-names)
   (generate-temporaries (list "unboxed-real-" "unboxed-imag-")))
 
@@ -56,6 +41,13 @@
   (log-opt opt-label "Complex number unboxing."))
 (define-syntax-rule (log-arity-raising-opt opt-label)
   (log-opt opt-label arity-raising-opt-msg))
+(define-syntax-rule (log-missed-complex-expr)
+  (log-missed-optimization
+    "Non complex value in complex arithmetic"
+    (string-append
+      "This expression has a non FloatComplex type and thus cannot "
+      "be promoted to unboxed arithmetic.")
+    this-syntax))
 
 ;; If a part is 0.0?
 (define (0.0? stx)
@@ -140,14 +132,14 @@
     #:do [(log-unboxing-opt "unboxed unary float complex")]
     #:with (bindings ...)
       #`(c1.bindings ...
-         [(real-binding) (unsafe-fl- 0.0 c1.real-binding)]
-         [(imag-binding) (unsafe-fl- 0.0 c1.imag-binding)]))
+         [(real-binding) (unsafe-fl* -1.0 c1.real-binding)]
+         [(imag-binding) (unsafe-fl* -1.0 c1.imag-binding)]))
 
   (pattern (#%plain-app op:*^
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-    #:when (or (subtypeof? this-syntax -FloatComplex) (subtypeof? this-syntax -Number))
+    #:when (subtypeof? this-syntax -FloatComplex)
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "unboxed binary float complex")]
     #:with (bindings ...)
@@ -234,7 +226,7 @@
     #:do [(log-unboxing-opt "unboxed unary float complex")]
     #:with (bindings ...)
       #`(c.bindings ...
-         ((imag-binding) (unsafe-fl- 0.0 c.imag-binding))))
+         ((imag-binding) (unsafe-fl* -1.0 c.imag-binding))))
 
   (pattern (#%plain-app op:magnitude^ c:unboxed-float-complex-opt-expr)
     #:with real-binding (generate-temporary "unboxed-real-")
@@ -248,6 +240,8 @@
                         (unsafe-fl* c.imag-binding c.imag-binding))))))
 
   (pattern (#%plain-app op:exp^ c:unboxed-float-complex-opt-expr)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with (real-binding imag-binding) (binding-names)
     #:with scaling-factor (generate-temporary "unboxed-scaling-")
     #:do [(log-unboxing-opt "unboxed unary float complex")]
@@ -279,12 +273,16 @@
 
   ;; we can eliminate boxing that was introduced by the user
   (pattern (#%plain-app op:make-rectangular^ real:float-arg-expr imag:float-arg-expr)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "make-rectangular elimination")]
     #:with (bindings ...)
       #'(((real-binding) real.opt)
          ((imag-binding) imag.opt)))
   (pattern (#%plain-app op:make-polar^ r:float-arg-expr theta:float-arg-expr)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with radius       (generate-temporary)
     #:with angle        (generate-temporary)
     #:with (real-binding imag-binding) (binding-names)
@@ -296,29 +294,22 @@
          ((imag-binding) (unsafe-fl* radius (unsafe-flsin angle)))))
 
   ;; if we see a variable that's already unboxed, use the unboxed bindings
-  (pattern v:id
-    #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
-    #:when (syntax->datum #'unboxed-info)
-    #:with (real-binding imag-binding orig-binding) #'unboxed-info
-    #:do [(log-unboxing-opt "leave var unboxed")
-          ;; we need to introduce both the binding and the use at the
-          ;; same time
-          (add-disappeared-use (syntax-local-introduce #'v))
-          (add-disappeared-binding (syntax-local-introduce #'orig-binding))]
+  (pattern :unboxed-var
+    #:do [(log-unboxing-opt "leave var unboxed")]
     #:with (bindings ...) #'())
 
   ;; else, do the unboxing here
 
   ;; we can unbox literals right away
-  (pattern (quote n*)
+  (pattern (quote n*:number)
     #:do [(define n (syntax->datum #'n*))]
-    #:when (and (number? n) (not (equal? (imag-part n) 0)))
+    #:when (not (equal? (imag-part n) 0))
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "unboxed literal")]
     #:with (bindings ...)
       #`(((real-binding) '#,(exact->inexact (real-part n)))
          ((imag-binding) '#,(exact->inexact (imag-part n)))))
-  (pattern (quote n*)
+  (pattern (quote n*:number)
     #:do [(define n (syntax->datum #'n*))]
     #:when (real? n)
     #:with real-binding (generate-temporary "unboxed-real-")
@@ -345,7 +336,7 @@
          ((real-binding) (exact->inexact (real-part e*)))
          ((imag-binding) (exact->inexact (imag-part e*)))))
   (pattern e:expr
-    #:do [(error (format "non exhaustive pattern match" #'e))]
+    #:do [(error (format "non exhaustive pattern match ~a" #'e))]
     #:with (bindings ...) (list)
     #:with real-binding #f
     #:with imag-binding #f))
@@ -406,12 +397,11 @@
     #:with opt #`(let*-values (exp.bindings ...)
                    (unsafe-make-flrectangular exp.real-binding exp.imag-binding)))
 
-  (pattern (#%plain-app op:id args:expr ...)
-    #:do [(define unboxed-info (dict-ref unboxed-funs-table #'op #f))]
-    #:when unboxed-info
-    ;no need to optimize op
-    #:with (~var || (float-complex-call-site-opt-expr unboxed-info #'op)) this-syntax
-    #:do [(log-arity-raising-opt "call to fun with unboxed args")])
+  (pattern (#%plain-app op:unboxed-fun .
+             (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)))
+    #:do [(log-unboxing-opt "unboxed call site")
+          (log-arity-raising-opt "call to fun with unboxed args")]
+    #:with opt #'(let*-values (call.bindings ...) (op call.args ...)))
 
   (pattern :float-complex-arith-opt-expr))
 
@@ -469,45 +459,44 @@
            #'(let*-values (exp.bindings ...)
                (unsafe-make-flrectangular exp.real-binding exp.imag-binding))))))
 
-  (pattern v:id
-    #:do [(define unboxed-info (dict-ref unboxed-vars-table #'v #f))]
-    #:when unboxed-info
-    #:when (subtypeof? #'v -FloatComplex)
-    #:with (real-binding imag-binding orig-binding) unboxed-info
-    ;; we need to introduce both the binding and the use at the same time
+  (pattern (~and :unboxed-var v:float-complex-expr)
     ;; unboxed variable used in a boxed fashion, we have to box
     #:attr opt
       (delay
        (log-unboxing-opt "unboxed complex variable")
-       (add-disappeared-use (syntax-local-introduce #'v))
-       (add-disappeared-binding (syntax-local-introduce #'orig-binding))
        #'(unsafe-make-flrectangular real-binding imag-binding))))
 
 
+(define-syntax-class possibly-unboxed
+  #:attributes ([bindings 1] [real-binding 1] [imag-binding 1] [boxed-binding 1])
+  (pattern (#t arg:unboxed-float-complex-opt-expr)
+    #:with (bindings ...) #'(arg.bindings ...)
+    #:with (real-binding ...) #'(arg.real-binding)
+    #:with (imag-binding ...) #'(arg.imag-binding)
+    #:with (boxed-binding ...) #'())
+  (pattern (#f arg:opt-expr)
+    #:with binding-name (generate-temporary 'boxed-binding)
+    #:with (bindings ...) #'(((binding-name) arg.opt))
+    #:with (real-binding ...) #'()
+    #:with (imag-binding ...) #'()
+    #:with (boxed-binding ...) #'(binding-name)))
+
 ;; takes as argument a structure describing which arguments will be unboxed
-;; and the optimized version of the operator. operators are optimized elsewhere
-;; to benefit from local information
-(define-syntax-class (float-complex-call-site-opt-expr unboxed-info opt-operator)
+(define-syntax-class (float-complex-call-site-opt-expr unboxed-info)
   #:commit
-  #:attributes (opt)
+  #:attributes ((bindings 1) (args 1))
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
-  (pattern (#%plain-app op:expr args:expr ...)
-    #:with ((to-unbox ...) (boxed ...)) unboxed-info
-    #:with opt
-    (let ((args    (syntax->list #'(args ...)))
-          (unboxed (syntax->datum #'(to-unbox ...)))
-          (boxed   (syntax->datum #'(boxed ...))))
-      (define (get-arg i) (list-ref args i))
-      (syntax-parse (map get-arg unboxed)
-        [(e:unboxed-float-complex-opt-expr ...)
-         (log-unboxing-opt "unboxed call site")
-         #`(let*-values (e.bindings ... ...)
-             (#%plain-app #,opt-operator
-                          e.real-binding ...
-                          e.imag-binding ...
-                          #,@(map (lambda (i) ((optimize) (get-arg i)))
-                                  boxed)))])))) ; boxed params
+  (pattern (orig-args:expr ...)
+    #:with (unboxed-args ...) unboxed-info
+    #:with ((bindings ...) (args ...))
+      (syntax-parse #'((unboxed-args orig-args) ...)
+        [(e:possibly-unboxed ...)
+         #'((e.bindings ... ...)
+            (e.real-binding ... ...
+             e.imag-binding ... ...
+             e.boxed-binding ... ...))])))
+
 
 (define-syntax-class/specialize float-complex-arith-opt-expr (float-complex-arith-expr* #t))
 (define-syntax-class/specialize float-complex-arith-expr (float-complex-arith-expr* #f))

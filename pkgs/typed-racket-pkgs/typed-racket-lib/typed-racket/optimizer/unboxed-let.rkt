@@ -6,7 +6,7 @@
          (for-template racket/base)
          (types numeric-tower utils type-table)
          (rep type-rep) (env mvar-env)
-         (optimizer utils logging float-complex))
+         (optimizer utils logging float-complex unboxed-tables))
 
 (provide unboxed-let-opt-expr)
 
@@ -28,15 +28,15 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   (pattern (#%plain-app
-            (~and let-e (letrec-values
-                         bindings
-                         loop-fun:id)) ; sole element of the body
-            args:expr ...)
-    #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
-    #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
-    #:when (syntax->datum #'unboxed-info)
-    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
-    #:with (~var || (float-complex-call-site-opt-expr #'unboxed-info #'operator.opt)) this-syntax))
+             (~and (letrec-values _ :id) ; sole element of the body is an id
+                   (~var operator (unboxed-let-opt-expr-internal #t))
+                   (letrec-values _ loop-fun:unboxed-fun)) .
+             (~var call (float-complex-call-site-opt-expr #'loop-fun.unboxed-info)))
+    #:do [(log-opt "unboxed call site" "Complex number unboxing")
+          (log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
+    #:with opt #'(let*-values
+                   (((op) operator.opt) call.bindings ...)
+                   (op call.args ...))))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
@@ -46,7 +46,7 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   (pattern
-   (letk:let-like-keyword ((~and clause (lhs rhs ...)) ...)
+   (letk:let-like-keyword ((~and clause (lhs rhs)) ...)
                           body:opt-expr ...)
    ;; we look for bindings of complexes that are not mutated and only
    ;; used in positions where we would unbox them
@@ -75,7 +75,7 @@
                (and
                 ;; if the function escapes, we can't change its interface
                 (not (is-var-mutated? fun-name))
-                (not (escapes? fun-name #'(begin rhs ... ...) #f))
+                (not (escapes? fun-name #'(begin rhs ...) #f))
                 (not (escapes? fun-name #'(begin body ...) let-loop?))
                 (match (type-of (cadr p)) ; rhs, we want a lambda
                   [(tc-result1: (Function: (list (arr: doms rngs
@@ -87,34 +87,25 @@
                    (syntax-parse (cadr p)
                      #:literal-sets (kernel-literals)
                      [(#%plain-lambda params body ...)
-                      ;; keep track of the param # of each param that can be
-                      ;; unboxed
-                      (let loop ((unboxed '())
-                                 (boxed   '())
-                                 (i        0)
-                                 (params   (syntax->list #'params))
-                                 (doms     doms))
-                        (cond [(null? params)
-                               ;; done. can we unbox anything?
-                               (and (> (length unboxed) 0)
-                                    ;; if so, add to the table of functions with
-                                    ;; unboxed params, so we can modify its call
-                                    ;; sites, its body and its header
-                                    (dict-set! unboxed-funs-table fun-name
-                                               (list (reverse unboxed)
-                                                     (reverse boxed))))]
-                              [(and (equal? (car doms) -FloatComplex)
-                                    (could-be-unboxed-in?
-                                     (car params) #'(begin body ...)))
-                               ;; we can unbox
-                               (log-optimization "unboxed var -> table"
-                                                 arity-raising-opt-msg
-                                                 (car params))
-                               (loop (cons i unboxed) boxed
-                                     (add1 i) (cdr params) (cdr doms))]
-                              [else ; can't unbox
-                               (loop unboxed (cons i boxed)
-                                     (add1 i) (cdr params) (cdr doms))]))]
+                      (define unboxed-args
+                        (for/list ([param (in-syntax #'params)]
+                                   [dom doms]
+                                   [i (in-naturals)])
+                          (cond
+                            [(and (equal? dom -FloatComplex)
+                                  (could-be-unboxed-in?
+                                    param
+                                    #'(begin body ...)))
+                             ;; we can unbox
+                             (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
+                             #t]
+                            [else #f])))
+                      ;; can we unbox anything?
+                      (and (member #t unboxed-args)
+                           ;; if so, add to the table of functions with
+                           ;; unboxed params, so we can modify its call
+                           ;; sites, its body and its header
+                           (add-unboxed-fun! fun-name unboxed-args))]
                      [_ #f])]
                   [_ #f])))))
           rest)))
@@ -122,15 +113,9 @@
    #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
    #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
    #:with (opt-others:opt-let-clause ...) #'(others ...)
+   ;; only log when we actually optimize
    #:do [(unless (zero? (syntax-length #'(opt-candidates.id ...)))
-           ;; only log when we actually optimize
-           (log-opt "unboxed let bindings" arity-raising-opt-msg))
-         ;; add the unboxed bindings to the table, for them to be used by
-         ;; further optimizations
-         (for ((v (in-syntax #'(opt-candidates.id ...)))
-               (r (in-syntax #'(opt-candidates.real-binding ...)))
-               (i (in-syntax #'(opt-candidates.imag-binding ...))))
-           (dict-set! unboxed-vars-table v (list r i v)))]
+           (log-opt "unboxed let bindings" arity-raising-opt-msg))]
    ;; in the case where no bindings are unboxed, we create a let
    ;; that is equivalent to the original, but with all parts optimized
    #:with opt (quasisyntax/loc/origin
@@ -238,7 +223,8 @@
 (define-syntax-class unboxed-let-clause
   #:commit
   #:attributes (id real-binding imag-binding (bindings 1))
-  (pattern ((id:id) :unboxed-float-complex-opt-expr)))
+  (pattern ((id:id) :unboxed-float-complex-opt-expr)
+    #:do [(add-unboxed-var! #'id #'real-binding #'imag-binding)]))
 
 ;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
@@ -247,44 +233,30 @@
 (define-syntax-class unboxed-fun-clause
   #:commit
   #:attributes (res)
-  (pattern ((id:id) (#%plain-lambda params body:opt-expr ...))
-    #:with unboxed-info (dict-ref unboxed-funs-table #'id #f)
-    #:when (syntax->datum #'unboxed-info)
-    ;; partition of the arguments
-    #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
+  (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
     #:with (real-params ...)
-    (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(to-unbox ...))
+    (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(fun.unboxed ...))
     #:with (imag-params ...)
-    (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(to-unbox ...))
-    #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'id)]
+    (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(fun.unboxed ...))
+    #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'fun)]
     #:with res
     ;; add unboxed parameters to the unboxed vars table
-    (let ((to-unbox (syntax->datum #'(to-unbox ...))))
-      (let loop ((params     (syntax->list #'params))
-                 (i          0)
-                 (real-parts (syntax->list #'(real-params ...)))
-                 (imag-parts (syntax->list #'(imag-params ...)))
-                 (boxed      '()))
-        (cond [(null? params) ; done, create the new clause
-               ;; real parts of unboxed parameters go first, then all
-               ;; imag parts, then boxed occurrences of unboxed
-               ;; parameters will be inserted when optimizing the body
-               #`((id) (#%plain-lambda
-                        (real-params ... imag-params ...  #,@(reverse boxed))
-                        body.opt ...))]
-              [(memq i to-unbox)
-               ;; we unbox the current param, add to the table
-               (dict-set! unboxed-vars-table (car params)
-                          (list (car real-parts)
-                                (car imag-parts)
-                                (car params)))
-               (loop (cdr params) (add1 i)
-                     (cdr real-parts) (cdr imag-parts)
-                     boxed)]
-              [else ; that param stays boxed, keep going
-               (loop (cdr params) (add1 i)
-                     real-parts imag-parts
-                     (cons (car params) boxed))])))))
+    (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
+      (for ([index (in-list to-unbox)]
+            [real-part (in-syntax #'(real-params ...))]
+            [imag-part (in-syntax #'(imag-params ...))])
+        (add-unboxed-var! (list-ref (syntax->list #'params) index) real-part imag-part))
+      (define boxed
+        (for/list ([param (in-syntax #'params)]
+                   [i (in-naturals)]
+                   #:unless (memq i to-unbox))
+          param))
+      ;; real parts of unboxed parameters go first, then all
+      ;; imag parts, then boxed occurrences of unboxed
+      ;; parameters will be inserted when optimizing the body
+      #`((fun) (#%plain-lambda
+                 (real-params ... imag-params ... #,@(reverse boxed))
+                 body.opt ...)))))
 
 (define-syntax-class opt-let-clause
   #:commit
