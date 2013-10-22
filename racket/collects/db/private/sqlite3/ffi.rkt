@@ -7,16 +7,16 @@
 (provide (all-from-out "ffi-constants.rkt")
          (protect-out (all-defined-out)))
 
-(define sqlite-lib
-  (case (system-type)
-    [(windows) (ffi-lib "sqlite3.dll" #:fail (lambda () #f))]
-    [else (ffi-lib "libsqlite3" '("0" #f) #:fail (lambda () #f))]))
-
 ;; raco distribute should include Racket's sqlite3 if present
-(define-runtime-path _sqlite-lib-for-distribute
+(define-runtime-path sqlite-so
   (case (system-type)
     [(windows) '(so "sqlite3")]
     [else '(so "libsqlite3")]))
+
+(define sqlite-lib
+  (case (system-type)
+    [(windows) (ffi-lib sqlite-so #:fail (lambda () #f))]
+    [else (ffi-lib sqlite-so '("0" #f) #:fail (lambda () #f))]))
 
 (define-ffi-definer define-sqlite
   sqlite-lib
