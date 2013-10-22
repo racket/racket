@@ -91,6 +91,7 @@ library.
                      public pubment override augment private inherit
                      begin)
          (class superclass-expr
+           maybe-type-parameters
            class-clause ...)
          #:grammar ([class-clause (inspect inspector-expr)
                                   (init init-decl ...)
@@ -107,6 +108,9 @@ library.
                                   definition
                                   expr
                                   (begin class-clause ...)]
+                    [maybe-type-parameters (code:line)
+                                           (code:line #:forall type-variable)
+                                           (code:line #:forall (type-variable ...))]
                     [init-decl id/type
                                [renamed]
                                [renamed : type-expr]
@@ -177,6 +181,21 @@ library.
         (super-new)
         (init-field x y)))
     point%
+  ]
+
+  When @racket[type-variable] is provided, the class is parameterized
+  over the given type variables. These type variables are in scope inside
+  the body of the class. The resulting class can be instantiated at
+  particular types using @racket[inst].
+
+  @ex[
+    (define cons%
+      (class object%
+        #:forall (X Y)
+        (super-new)
+        (init-field [car : X] [cdr : Y])))
+    cons%
+    (new (inst cons% Integer String) [car 5] [cdr "foo"])
   ]
 }
 
