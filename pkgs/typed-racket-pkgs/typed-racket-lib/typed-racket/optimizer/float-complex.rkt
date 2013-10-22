@@ -41,6 +41,13 @@
   (log-opt opt-label "Complex number unboxing."))
 (define-syntax-rule (log-arity-raising-opt opt-label)
   (log-opt opt-label arity-raising-opt-msg))
+(define-syntax-rule (log-missed-complex-expr)
+  (log-missed-optimization
+    "Non complex value in complex arithmetic"
+    (string-append
+      "This expression has a non FloatComplex type and thus cannot "
+      "be promoted to unboxed arithmetic.")
+    this-syntax))
 
 ;; If a part is 0.0?
 (define (0.0? stx)
@@ -240,7 +247,8 @@
                         (unsafe-fl* c.imag-binding c.imag-binding))))))
 
   (pattern (#%plain-app op:exp^ c:unboxed-float-complex-opt-expr)
-    #:when (subtypeof? this-syntax -FloatComplex)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with (real-binding imag-binding) (binding-names)
     #:with scaling-factor (generate-temporary "unboxed-scaling-")
     #:do [(log-unboxing-opt "unboxed unary float complex")]
@@ -272,14 +280,16 @@
 
   ;; we can eliminate boxing that was introduced by the user
   (pattern (#%plain-app op:make-rectangular^ real:float-arg-expr imag:float-arg-expr)
-    #:when (subtypeof? this-syntax -FloatComplex)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "make-rectangular elimination")]
     #:with (bindings ...)
       #'(((real-binding) real.opt)
          ((imag-binding) imag.opt)))
   (pattern (#%plain-app op:make-polar^ r:float-arg-expr theta:float-arg-expr)
-    #:when (subtypeof? this-syntax -FloatComplex)
+    #:when (or (subtypeof? this-syntax -FloatComplex)
+               (and (log-missed-complex-expr) #f))
     #:with radius       (generate-temporary)
     #:with angle        (generate-temporary)
     #:with (real-binding imag-binding) (binding-names)
