@@ -464,8 +464,8 @@
     (flatten
      (for/list ([clause clauses]
                 #:when (init-clause? clause))
-       (for/list ([id-pair (stx->list (clause-ids clause))]
-                  [optional? (init-clause-optional? clause)]
+       (for/list ([id-pair (in-list (stx->list (clause-ids clause)))]
+                  [optional? (in-list (init-clause-optional? clause))]
                   #:when optional?)
          (stx-car id-pair)))))
 
