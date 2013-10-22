@@ -32,7 +32,8 @@
                    (~var operator (unboxed-let-opt-expr-internal #t))
                    (letrec-values _ loop-fun:unboxed-fun)) .
              (~var call (float-complex-call-site-opt-expr #'loop-fun.unboxed-info)))
-    #:do [(log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
+    #:do [(log-opt "unboxed call site" "Complex number unboxing")
+          (log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
     #:with opt #'(let*-values
                    (((op) operator.opt) call.bindings ...)
                    (op call.args ...))))

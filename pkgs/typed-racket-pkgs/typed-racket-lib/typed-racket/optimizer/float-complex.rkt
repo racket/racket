@@ -406,7 +406,8 @@
 
   (pattern (#%plain-app op:unboxed-fun .
              (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)))
-    #:do [(log-arity-raising-opt "call to fun with unboxed args")]
+    #:do [(log-unboxing-opt "unboxed call site")
+          (log-arity-raising-opt "call to fun with unboxed args")]
     #:with opt #'(let*-values (call.bindings ...) (op call.args ...)))
 
   (pattern :float-complex-arith-opt-expr))
@@ -488,6 +489,7 @@
     #:with (boxed-binding ...) #'(binding-name)))
 
 ;; takes as argument a structure describing which arguments will be unboxed
+;; We cannot log opt here because this doesn't see the full original syntax
 (define-syntax-class (float-complex-call-site-opt-expr unboxed-info)
   #:commit
   #:attributes ((bindings 1) (args 1))
@@ -498,7 +500,6 @@
     #:with ((bindings ...) (args ...))
       (syntax-parse #'((unboxed-args orig-args) ...)
         [(e:possibly-unboxed ...)
-         (log-unboxing-opt "unboxed call site")
          #'((e.bindings ... ...)
             (e.real-binding ... ...
              e.imag-binding ... ...
