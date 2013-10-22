@@ -3,9 +3,11 @@
 (define collection 'multi)
 
 (define deps '("unstable-lib"
-               "unstable-doc"))
+               "unstable-doc"
+               "unstable-test"))
 (define implies '("unstable-lib"
-                  "unstable-doc"))
+                  "unstable-doc"
+                  "unstable-test"))
 
 (define pkg-desc "Experimental libraries")
 

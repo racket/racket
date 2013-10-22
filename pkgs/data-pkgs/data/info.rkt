@@ -2,8 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("data-lib" "data-doc"))
-(define implies '("data-lib" "data-doc"))
+(define deps '("data-lib" "data-doc" "data-test"))
+(define implies '("data-lib" "data-doc" "data-test"))
 
 (define pkg-desc "Data strucutures")
 

@@ -1,9 +1,11 @@
 #lang info
 
+(define collection 'multi)
+
 (define deps
-  '("base" "db-lib" "db-doc"))
+  '("db-lib" "db-doc" "db-test"))
 (define implies
-  '("db-lib" "db-doc"))
+  '("db-lib" "db-doc" "db-test"))
 
 (define pkg-desc "Database connectivity")
 
