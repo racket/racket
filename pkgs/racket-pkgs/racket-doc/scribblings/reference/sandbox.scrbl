@@ -293,9 +293,7 @@ used from a module (by using a new namespace):
 A predicate and accessor for exceptions that are raised when a sandbox
 is terminated.  Once a sandbox raises such an exception, it will
 continue to raise it on further evaluation attempts.
-
-@racket[call-with-limits].  The @racket[resource] field holds a symbol,
-either @racket['time] or @racket['memory].}
+}
 
 
 @; ----------------------------------------------------------------------
