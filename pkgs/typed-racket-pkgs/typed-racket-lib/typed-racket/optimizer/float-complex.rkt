@@ -399,7 +399,8 @@
 
   (pattern (#%plain-app op:unboxed-fun .
              (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)))
-    #:do [(log-arity-raising-opt "call to fun with unboxed args")]
+    #:do [(log-unboxing-opt "unboxed call site")
+          (log-arity-raising-opt "call to fun with unboxed args")]
     #:with opt #'(let*-values (call.bindings ...) (op call.args ...)))
 
   (pattern :float-complex-arith-opt-expr))
@@ -491,7 +492,6 @@
     #:with ((bindings ...) (args ...))
       (syntax-parse #'((unboxed-args orig-args) ...)
         [(e:possibly-unboxed ...)
-         (log-unboxing-opt "unboxed call site")
          #'((e.bindings ... ...)
             (e.real-binding ... ...
              e.imag-binding ... ...
