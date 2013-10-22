@@ -68,11 +68,11 @@ otherwise.
 }
 
 @defproc[(make-readtable [readtable readtable?]
-                         [key (or/c character? #f)]
+                         [key (or/c char? #f)]
                          [mode (or/c (or/c 'terminating-macro
                                            'non-terminating-macro
                                            'dispatch-macro)
-                                     character?)]
+                                     char?)]
                          [action (or/c procedure?
                                        readtable?)]
                         ...+)
@@ -160,8 +160,8 @@ value (see @secref["special-comments"]) to cause the consumed
 character to be treated as whitespace, and it might use
 @racket[read/recursive] or @racket[read-syntax/recursive].}
 
-@defproc[(readtable-mapping [readtable readtable?] [char character?])
-         (values (or/c character? 
+@defproc[(readtable-mapping [readtable readtable?] [char char?])
+         (values (or/c char?
                        (or/c 'terminating-macro
                              'non-terminating-macro))
                  (or/c #f procedure?)

@@ -288,7 +288,7 @@ used from a module (by using a new namespace):
 
 @defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
            [(exn:fail:sandbox-terminated-reason [exn exn:fail:sandbox-terminated?])
-            symbol/c])]{
+            symbol?])]{
 
 A predicate and accessor for exceptions that are raised when a sandbox
 is terminated.  Once a sandbox raises such an exception, it will
@@ -608,7 +608,7 @@ appropriate error message (see
 @racket[exn:fail:sandbox-terminated-reason]).}
 
 
-@defparam[sandbox-memory-limit limit (or/c nonnegative-number? #f)]{
+@defparam[sandbox-memory-limit limit (or/c (>=/c 0) #f)]{
 
 A @tech{parameter} that determines the total memory limit on the sandbox in
 megabytes (it can hold a rational or a floating point number).  When
@@ -643,8 +643,8 @@ than one block counts against the interaction limit).}
 
 
 @defparam[sandbox-eval-limits limits
-          (or/c (list/c (or/c nonnegative-number? #f)
-                        (or/c nonnegative-number? #f))
+          (or/c (list/c (or/c (>=/c 0) #f)
+                        (or/c (>=/c 0) #f))
                 #f)]{
 
 A @tech{parameter} that determines the default limits on @italic{each} use of

@@ -766,7 +766,7 @@ Returns the next key press in the @racket[viewport] or returns
 @racket[#f] if none is available. Unlike @racket[get-key-press],
 @racket[ready-key-press] always returns immediately.}
 
-@defproc[(key-value [key-press key-press?]) (or/c character? symbol?)]{
+@defproc[(key-value [key-press key-press?]) (or/c char? symbol?)]{
 
 Returns a character or special symbol for the key that was
 pressed. For example, the Enter key generates @racket[#\return], and the
