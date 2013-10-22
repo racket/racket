@@ -10,6 +10,9 @@
 ;; Use this script with caution.
 
 (define (transform file dir)
+  (define (write-stringln s)
+    (write-string s)
+    (newline))
   ;; generate the new log, that will become the expected log
   (define-values (new-tr-log new-output) (generate-log file dir))
   (define source-code
@@ -21,19 +24,19 @@
         (port->string in))))
   (with-output-to-file (build-path dir file) #:exists 'truncate
     (lambda ()
-      (displayln "#;#;")
-      (displayln "#<<END")
+      (write-stringln "#;#;")
+      (write-stringln "#<<END")
       (for ((entry new-tr-log))
-        (displayln entry))
-      (displayln "END")
+        (write-stringln entry))
+      (write-stringln "END")
       (if (regexp-match "\n" new-output)
           (begin
-            (displayln "#<<END")
-            (displayln new-output)
-            (display "END"))
+            (write-stringln "#<<END")
+            (write-stringln new-output)
+            (write-string "END"))
           (begin
             (write new-output)))
-          (display source-code))))
+          (write-string source-code))))
 
 ;; proc returns the list of tests to be run on each file
 (define (transform-dirs dirs)
