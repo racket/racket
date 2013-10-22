@@ -178,10 +178,9 @@
             #:with ids #'ren.ids))
 
  (define-syntax-class class-clause
-   (pattern (~and ((~and clause-name (~or (~literal init)
-                                          (~literal init-field)))
-                   names:init-decl ...)
-                  form)
+   (pattern ((~and clause-name (~or (~literal init)
+                                    (~literal init-field)))
+             names:init-decl ...)
             ;; in the future, use a data structure and
             ;; make this an attribute instead to represent
             ;; internal and external names
@@ -191,36 +190,34 @@
                          (stx->list #'(names.ids ...))
                          (attribute names.type)
                          (attribute names.optional?)))
-   (pattern (~and ((~literal field) names:field-decl ...) form)
+   (pattern ((~literal field) names:field-decl ...)
             #:attr data (clause #'(field names.form ...)
                                 #'field
                                 (stx->list #'(names.ids ...))
                                 (attribute names.type)))
-   (pattern (~and ((~and clause-name (~or (~literal inherit-field)
-                                          (~literal public)
-                                          (~literal pubment)
-                                          (~literal public-final)
-                                          (~literal override)
-                                          (~literal overment)
-                                          (~literal override-final)
-                                          (~literal augment)
-                                          (~literal augride)
-                                          (~literal augment-final)
-                                          (~literal inherit)
-                                          (~literal inherit/super)
-                                          (~literal inherit/inner)
-                                          (~literal rename-super)))
-                   names:method-decl ...)
-                  form)
+   (pattern ((~and clause-name (~or (~literal inherit-field)
+                                    (~literal public)
+                                    (~literal pubment)
+                                    (~literal public-final)
+                                    (~literal override)
+                                    (~literal overment)
+                                    (~literal override-final)
+                                    (~literal augment)
+                                    (~literal augride)
+                                    (~literal augment-final)
+                                    (~literal inherit)
+                                    (~literal inherit/super)
+                                    (~literal inherit/inner)
+                                    (~literal rename-super)))
+             names:method-decl ...)
             #:attr data
             (clause #'(clause-name names.form ...)
                     #'clause-name
                     (stx->list #'(names.ids ...))
                     (attribute names.type)))
-   (pattern (~and ((~and clause-name (~or (~literal private)
-                                          (~literal abstract)))
-                   names:private-decl ...)
-                  form)
+   (pattern ((~and clause-name (~or (~literal private)
+                                    (~literal abstract)))
+             names:private-decl ...)
             #:attr data
             (clause #'(clause-name names.form ...)
                     #'clause-name
@@ -464,8 +461,8 @@
     (flatten
      (for/list ([clause clauses]
                 #:when (init-clause? clause))
-       (for/list ([id-pair (stx->list (clause-ids clause))]
-                  [optional? (init-clause-optional? clause)]
+       (for/list ([id-pair (in-list (stx->list (clause-ids clause)))]
+                  [optional? (in-list (init-clause-optional? clause))]
                   #:when optional?)
          (stx-car id-pair)))))
 
