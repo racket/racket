@@ -17,7 +17,8 @@ on regular-expression matching on strings, bytes, and streams.
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat body ...+]
-                       [pat (=> id) body ...+]])]{
+                       [pat (=> id) body ...+]
+                       [pat #:when cond-expr body ...+]])]{
 
 Finds the first @racket[pat] that matches the result of
 @racket[val-expr], and evaluates the corresponding @racket[body]s with
@@ -28,14 +29,21 @@ the @racket[match] expression.
 To find a match, the @racket[clause]s are tried in order. If no
 @racket[clause] matches, then the @exnraise[exn:misc:match?].
 
+An optional @racket[#:when cond-expr] specifies that the pattern
+should only match if @racket[cond-expr] produces a true value.
+@racket[cond-expr] is in the scope of all of the variables bound in
+@racket[pat]. @racket[cond-expr] must not mutate the object being
+matched before calling the failure procedure, otherwise the behavior
+of matching is unpredictable. See also @racket[failure-cont], which is
+a lower-level mechanism achieving the same ends.
+
 An optional @racket[(=> id)] between a @racket[pat] and the
 @racket[body]s is bound to a @defterm{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
-otherwise the behavior of matching is unpredictable. See also
-@racket[failure-cont].
+otherwise the behavior of matching is unpredictable. 
 
 The grammar of @racket[pat] is as follows, where non-italicized
 identifiers are recognized symbolically (i.e., not by binding).
