@@ -7,6 +7,7 @@
          "interning.rkt"
          racket/lazy-require
          racket/stxparam
+         racket/unsafe/ops
          (for-syntax
           racket/match
           (except-in syntax/parse id identifier keyword)
@@ -352,6 +353,11 @@
                 [Filter def-filter #:Filter filter-case print-filter filter-name-ht filter-rec-id]
                 [Object def-object #:Object object-case print-object object-name-ht object-rec-id]
                 [PathElem def-pathelem #:PathElem pathelem-case print-pathelem pathelem-name-ht pathelem-rec-id])
+
+;; NOTE: change these if the definitions above change, or everything will segfault
+(define-syntax-rule (unsafe-Rep-seq v) (unsafe-struct*-ref v 0))
+(define-syntax-rule (unsafe-Type-key v) (unsafe-struct*-ref v 1))
+(provide unsafe-Rep-seq unsafe-Type-key)
 
 (define (Rep-values rep)
   (match rep
