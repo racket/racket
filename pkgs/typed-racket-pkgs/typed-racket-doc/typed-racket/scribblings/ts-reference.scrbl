@@ -32,6 +32,7 @@ For a friendly introduction, see the companion manual
 @include-section["reference/exploring-types.scrbl"]
 @include-section["reference/no-check.scrbl"]
 @include-section["reference/typed-regions.scrbl"]
+@include-section["reference/typed-classes.scrbl"]
 @include-section["reference/optimization.scrbl"]
 @include-section["reference/legacy.scrbl"]
 @include-section["reference/compatibility-languages.scrbl"]
