@@ -487,6 +487,10 @@
                   (map list mname (map type-rec-id mty))
                   (map list aname (map type-rec-id aty)))])])
 
+;; Supertype of all Class types, cannot instantiate
+;; or subclass these
+(def-type ClassTop () [#:fold-rhs #:base])
+
 ;; row-ext : Option<(U F B Row)>
 ;; row     : Row
 ;;

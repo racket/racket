@@ -58,6 +58,13 @@ library.
   clause may appear in a class type.
 }
 
+@defidform[ClassTop]{
+  The supertype of all class types. A value of this type
+  cannot be used for subclassing, object creation, or most
+  other class functions. Its primary use is for reflective
+  operations such as @racket[is-a?].
+}
+
 @defform[#:literals (field)
          (Object object-type-clause ...)
          #:grammar ([object-type-clause name+type

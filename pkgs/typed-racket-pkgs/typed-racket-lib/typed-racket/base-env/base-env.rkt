@@ -22,6 +22,8 @@
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
           make-Class
+          make-ClassTop
+          make-Instance
           make-Name
           make-ValuesDots
           make-MPairTop
@@ -963,6 +965,9 @@
 
 ;; Section 6.2 (Classes)
 [object% (make-Class #f null null null null)]
+[is-a? (-> (make-Instance (make-Class #f null null null null))
+           (make-ClassTop)
+           -Boolean)]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]
