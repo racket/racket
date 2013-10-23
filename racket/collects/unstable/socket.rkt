@@ -1,23 +1,29 @@
 #lang racket/base
-;
-; Support for connecting to UNIX domain sockets.
-;
+
+;; Support for connecting to UNIX domain sockets.
+
+#|
+References:
+linux (64):
+  Linux Standard Base Core Specification 4.1
+macosx (64):
+  /usr/include/i386/_types.h: __darwin_socklen_t
+  /usr/include/sys/socket.h: AF_UNIX
+  /usr/include/sys/un.h: struct sockaddr_un
+|#
 
 (require racket/contract
          (rename-in ffi/unsafe (-> -->))
          ffi/unsafe/define
-         ffi/file)
-
-(require "error.rkt")
+         ffi/file
+         unstable/error)
 
 (provide
  (contract-out
   [unix-socket-available?
    boolean?]
-
   [unix-socket-connect
    (-> unix-socket-path? (values input-port? output-port?))]
-
   [unix-socket-path?
    (-> any/c boolean?)]))
 
@@ -27,10 +33,8 @@
   (cond
     [(eq? (system-type 'os) 'macosx)
      'macosx]
-
     [(regexp-match? #rx"^Linux" (system-type 'machine))
      'linux]
-
     [else
      #f]))
 
@@ -66,12 +70,6 @@
     [(linux)  _linux_sockaddr_un-pointer]
     [(macosx) _macosx_sockaddr_un-pointer]
     [else     _pointer]))
-
-(define sockaddr_un?
-  (case platform
-    [(linux)  linux_sockaddr_un?]
-    [(macosx) macosx_sockaddr_un?]
-    [else     cpointer?]))
 
 
 (define-ffi-definer define-libc (ffi-lib #f)
@@ -135,7 +133,6 @@
   (case platform
     [(linux)
      (make-linux_sockaddr_un AF-UNIX path-bytes)]
-
     [(macosx)
      (make-macosx_sockaddr_un (bytes-length path-bytes) AF-UNIX path-bytes)]))
 
@@ -168,7 +165,8 @@
                 "errno" errno
                 '("error" maybe) (strerror_r errno))))
 
-    (with-handlers ([values (lambda (exn)
-                              (close socket-fd)
-                              (raise exn))])
+    (with-handlers ([(lambda (e) #t)
+                     (lambda (exn)
+                       (close socket-fd)
+                       (raise exn))])
       (scheme_make_fd_output_port socket-fd 'unix-socket #f #f #t))))
