@@ -964,9 +964,7 @@
 
 ;; Section 6.2 (Classes)
 [object% (make-Class #f null null null null)]
-[is-a? (-> (make-Instance (make-Class #f null null null null))
-           (make-ClassTop)
-           -Boolean)]
+[is-a? (-> Univ (make-ClassTop) -Boolean)]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]
