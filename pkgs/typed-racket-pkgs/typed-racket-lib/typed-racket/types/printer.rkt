@@ -499,6 +499,7 @@
     [(Syntax: t) `(Syntaxof ,(t->s t))]
     [(Instance: (and (? has-name?) cls)) `(Instance ,(t->s cls))]
     [(Instance: (? Class? cls)) (class->sexp cls #:object? #t)]
+    [(ClassTop:) 'ClassTop]
     [(? Class?) (class->sexp type)]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
     [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]

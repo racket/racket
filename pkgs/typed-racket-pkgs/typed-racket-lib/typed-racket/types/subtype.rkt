@@ -599,6 +599,7 @@
           (and ;; Note that init & augment clauses don't matter for objects
                (subtype-clause? method-map method-map*)
                (subtype-clause? field-map field-map*))]
+         [((? Class?) (ClassTop:)) A0]
          [((Class: row inits fields methods augments)
            (Class: row* inits* fields* methods* augments*))
           ;; TODO: should the result be folded instead?
