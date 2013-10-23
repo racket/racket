@@ -1246,8 +1246,9 @@
              append
              (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
                         #:when (exn-info-missing-mods error/status-message-str+srcloc))
-               (pkg-catalog-suggestions-for-module 
-                (exn-info-missing-mods error/status-message-str+srcloc)))))
+               (define missing-mods (exn-info-missing-mods error/status-message-str+srcloc))
+               (with-handlers ([exn:fail? (λ (x) '())])
+                 (pkg-catalog-suggestions-for-module missing-mods)))))
           (define (combine-msg vec)
             (define msg (exn-info-str vec))
             (define stack (exn-info-src-vecs vec))
