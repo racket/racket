@@ -2379,6 +2379,20 @@
                         (define/public (m) (get-field n this))))
            (void))
          -Void]
+   ;; Test set-field!
+   [tc-e (set-field! x
+           (new (class object%
+                  (super-new)
+                  (field [x : String "foo"])))
+           "bar")
+         -Void]
+   ;; fails, check set-field! type error
+   [tc-err (set-field! x
+             (new (class object%
+                    (super-new)
+                    (field [x : String "foo"])))
+             'not-string)
+           #:msg #rx"set-field! only allowed with"]
    ;; fails, field's default value has wrong type
    [tc-err (class object% (super-new)
              (: x Symbol)

@@ -4,9 +4,11 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
-         racket/dict racket/list
+         racket/dict
+         racket/format
+         racket/list
          (typecheck signatures)
-         (types resolve union utils)
+         (types base-abbrev resolve subtype union utils)
          (rep type-rep)
          (utils tc-utils)
 
@@ -36,7 +38,13 @@
      (check-get-field #'meth #'obj))
   (pattern (gf . args)
      #:declare gf (id-from 'get-field/proc 'racket/private/class-internal)
-     (int-err "unexpected arguments to get-field/proc")))
+     (int-err "unexpected arguments to get-field/proc"))
+  (pattern (sf field obj val)
+     #:declare sf (id-from 'set-field!/proc 'racket/private/class-internal)
+     (check-set-field #'field #'obj #'val))
+  (pattern (sf . args)
+     #:declare sf (id-from 'set-field!/proc 'racket/private/class-internal)
+     (int-err "unexpected arguments to set-field!/proc")))
 
 ;; check-do-make-object : Syntax Syntax Listof<Syntax> Listof<Syntax> -> TCResult
 ;; do-make-object now takes blame as its first argument, which isn't checked
@@ -118,4 +126,42 @@
     [(tc-result1: t)
      (tc-error/expr #:return (ret (Un))
                     "expected an object value for get-field, got ~a" t)]))
+
+;; check-set-field : Syntax Syntax Syntax -> TCResult
+;; type-check the `set-field!` operation on objects
+(define (check-set-field field obj val)
+  (define maybe-field-sym
+    (syntax-parse field [(quote f:id) (syntax-e #'f)] [_ #f]))
+  (unless maybe-field-sym
+    (tc-error/expr #:return (ret (Un))
+                   "expected a symbolic field name, but got ~a" field))
+  (define obj-type (tc-expr/t obj))
+  (define val-type (tc-expr/t val))
+  (define (check obj-type)
+    (match (resolve obj-type)
+      ;; FIXME: handle unions
+      [(and ty (Instance: (Class: _ _ (list fields ...) _ _ _)))
+       (cond [(assq maybe-field-sym fields) =>
+              (λ (field-entry)
+                (define field-type (cadr field-entry))
+                (unless (subtype val-type field-type)
+                  (tc-error/expr/fields "type mismatch"
+                                        #:more "set-field! only allowed with compatible types"
+                                        "expected" field-type
+                                        "given" val-type))
+                (ret -Void))]
+             [else
+              (tc-error/expr/fields "type mismatch"
+                                    #:more (~a "expected an object with field "
+                                               maybe-field-sym)
+                                    #:return (ret (Un))
+                                    "given" ty)])]
+      [(Instance: type)
+       (check (make-Instance (resolve type)))]
+      [type
+       (tc-error/expr/fields "type mismatch"
+                             #:more "expected an object value for set-field!"
+                             #:return (ret (Un))
+                             "given" type)]))
+  (check obj-type))
 
