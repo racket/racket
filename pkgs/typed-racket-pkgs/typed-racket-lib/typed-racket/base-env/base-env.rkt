@@ -6,21 +6,13 @@
  (for-template
   (except-in racket -> ->* one-of/c)
   racket/unsafe/ops
-  racket/tcp
-  racket/fixnum
-  racket/future
   ;(only-in rnrs/lists-6 fold-left)
   '#%paramz
   "extra-procs.rkt"
   (only-in '#%kernel [apply kernel:apply] [reverse kernel:reverse])
   (only-in racket/private/pre-base new-apply-proc)
-  racket/promise racket/system
-  racket/function
   compatibility/mlist
-  racket/base
-  racket/set
-  racket/place
-  syntax/stx racket/private/stx
+  racket/private/stx
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
  "base-structs.rkt"
