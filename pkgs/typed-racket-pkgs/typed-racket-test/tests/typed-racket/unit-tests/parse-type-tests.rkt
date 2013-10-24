@@ -200,26 +200,25 @@
     (->optkey -String [] #:rest -String #:a -String #f -String)]
 
    ;;; Classes
-   [(Class) (make-Class #f null null null null)]
+   [(Class) (-class)]
    [(Class (init [x Number] [y Number]))
-    (make-Class #f `((x ,-Number #f) (y ,-Number #f)) null null null)]
+    (-class #:init ([x -Number #f] [y -Number #f]))]
    [(Class (init [x Number] [y Number #:optional]))
-    (make-Class #f `((x ,-Number #f) (y ,-Number #t)) null null null)]
+    (-class #:init ([x -Number #f] [y -Number #t]))]
    [(Class (init [x Number]) (init-field [y Number]))
-    (make-Class #f `((x ,-Number #f) (y ,-Number #f)) `((y ,-Number))
-                null null)]
+    (-class #:init ([x -Number #f]) #:init-field ([y -Number #f]))]
    [(Class [m (Number -> Number)])
-    (make-Class #f null null `((m ,(t:-> N N))) null)]
+    (-class #:method ([m (t:-> N N)]))]
    [(Class [m (Number -> Number)] (init [x Number]))
-    (make-Class #f `((x ,-Number #f)) null `((m ,(t:-> N N))) null)]
+    (-class #:init ([x -Number #f]) #:method ([m (t:-> N N)]))]
    [(Class [m (Number -> Number)] (field [x Number]))
-    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))) null)]
+    (-class #:field ([x -Number]) #:method ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]))
-    (make-Class #f null null null `((m ,(t:-> N N))))]
+    (-class #:augment ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]) (field [x Number]))
-    (make-Class #f null `((x ,-Number)) null `((m ,(t:-> N N))))]
+    (-class #:augment ([m (t:-> N N)]) #:field ([x -Number]))]
    [(Class (augment [m (-> Number)]) [m (-> Number)])
-    (make-Class #f null null `((m ,(t:-> N))) `((m ,(t:-> N))))]
+    (-class #:method ([m (t:-> N)]) #:augment ([m (t:-> N)]))]
    [FAIL (Class foobar)]
    [FAIL (Class [x UNBOUND])]
    [FAIL (Class [x Number #:random-keyword])]
@@ -238,7 +237,7 @@
    [(All (r #:row) (Class #:row-var r))
     (make-PolyRow (list 'r)
                   (list null null null null)
-                  (make-Class (make-F 'r) null null null null))]
+                  (-class #:row (make-F 'r)))]
    [FAIL (All (r #:row) (Class #:implements (Class #:row-var r)))]
    [FAIL (All (r #:row) (Class #:implements (Class) #:row-var r))]
    [FAIL (Class #:row-var 5)]
@@ -272,12 +271,11 @@
    [FAIL (Class #:implements (Class (augment [m (Number -> Number)]))
                 (augment [m (-> Number)]))]
    ;; Test Object types
-   [(Object) (make-Instance (make-Class #f null null null null))]
+   [(Object) (-object)]
    [(Object [m (Number -> Number)])
-    (make-Instance (make-Class #f null null `((m ,(t:-> N N))) null))]
+    (-object #:method ([m (t:-> N N)]))]
    [(Object [m (Number -> Number)] (field [f Number]))
-    (make-Instance (make-Class #f null `((f ,N))
-                               `((m ,(t:-> N N))) null))]
+    (-object #:method ([m (t:-> N N)]) #:field ([f N]))]
    [FAIL (Object foobar)]
    [FAIL (Object [x UNBOUND])]
    [FAIL (Object [x Number #:random-keyword])]
@@ -289,13 +287,11 @@
    ;; Test row polymorphic types
    [(All (r #:row) ((Class #:row-var r) -> (Class #:row-var r)))
     (-polyrow (r) (list null null null null)
-      (t:-> (make-Class r null null null null)
-            (make-Class r null null null null)))]
+      (t:-> (-class #:row r) (-class #:row r)))]
    [(All (r #:row (init x y z) (field f) m n)
       ((Class #:row-var r) -> (Class #:row-var r)))
     (-polyrow (r) (list '(x y z) '(f) '(m n) '())
-      (t:-> (make-Class r null null null null)
-            (make-Class r null null null null)))]
+      (t:-> (-class #:row r) (-class #:row r)))]
    ;; Class types cannot use a row variable that doesn't constrain
    ;; all of its members to be absent in the row
    [FAIL (All (r #:row (init x))
