@@ -990,15 +990,15 @@
 [continuation-marks
  (->opt (Un (-val #f) -Thread) [(make-Prompt-TagTop)] -Cont-Mark-Set)]
 [current-continuation-marks (->opt [(make-Prompt-TagTop)] -Cont-Mark-Set)]
-[continuation-mark-set->list 
+[continuation-mark-set->list
  (-poly (a)
-        (cl->* 
+        (cl->*
          (->opt -Cont-Mark-Set (make-Continuation-Mark-Keyof a)
                 [(make-Prompt-TagTop)] (-lst a))
          (->opt -Cont-Mark-Set Univ [(make-Prompt-TagTop)] (-lst Univ))))]
-[continuation-mark-set->list* 
+[continuation-mark-set->list*
  (-poly (a b)
-        (cl->* 
+        (cl->*
          (->opt -Cont-Mark-Set
                 (-lst (make-Continuation-Mark-Keyof a))
                 [b (make-Prompt-TagTop)]
@@ -1007,7 +1007,7 @@
                 (-lst Univ)
                 [Univ (make-Prompt-TagTop)]
                 (-lst (-vec Univ)))))]
-[continuation-mark-set-first 
+[continuation-mark-set-first
  (-poly (a b)
         (cl->*
          (-> (-opt -Cont-Mark-Set) (make-Continuation-Mark-Keyof a)
@@ -2062,7 +2062,7 @@
 
 ;; Section 15.1 (Path Manipulation)
 [path? (make-pred-ty -Path)]
-[path-string? (asym-pred Univ B 
+[path-string? (asym-pred Univ B
                          (-FS (-filter (Un -Path -String) 0)
                               (-not-filter -Path 0)))]
 [path-for-some-system? (make-pred-ty -SomeSystemPath)]
@@ -2349,7 +2349,7 @@
 [system/exit-code ((Un -String -Bytes) [] #:set-pwd? Univ #f . ->optkey . -Byte)]
 [system*/exit-code (-Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f . ->optkey . -Byte)]
 
-[process (->key 
+[process (->key
 	  -String
 	   #:set-pwd? Univ #f
 	  (-values (list -Input-Port -Output-Port -Nat -Input-Port
@@ -2707,7 +2707,7 @@
  (let ((lock-there-type (-opt (-> -Path Univ)))
        (max-delay-type -Real))
    (->optkey -Real -Symbol [(-> Univ) Univ (-opt -Pathlike)]
-             #:lock-there lock-there-type #f #:max-delay max-delay-type #f 
+             #:lock-there lock-there-type #f #:max-delay max-delay-type #f
              (-> -Pathlike Univ))))
 (call-with-file-lock/timeout
  (-poly
@@ -2762,7 +2762,7 @@
   (-values (list -Input-Port -Output-Port))))
 (call-with-input-file
     (-poly (a) (->key -Pathlike (-> -Input-Port a) #:mode (Un (-val 'binary) (-val 'text)) #f a)))
-(call-with-output-file    
+(call-with-output-file
     (-poly (a)
      (->key
       -Pathlike
@@ -2802,7 +2802,7 @@
       (one-of/c 'binary 'text)
       #f
       a)))
-(port->lines  
+(port->lines
  (->optkey [-Input-Port] #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -String)))
 (port->bytes-lines
   (->optkey [-Input-Port] #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes)))
@@ -2821,7 +2821,7 @@
     (->optkey -StrRx -StrInput (N ?N -Bytes)
               #:match-select (sel -String) #f #:gap-select Univ #f
               (-lst -String))
-    (->optkey -BtsRx (Un -StrInput -BtsInput) (N ?N -Bytes) 
+    (->optkey -BtsRx (Un -StrInput -BtsInput) (N ?N -Bytes)
               #:match-select (sel -Bytes) #f #:gap-select Univ #f
               (-lst -Bytes))
     (->optkey -Pattern -BtsInput (N ?N -Bytes)
