@@ -106,10 +106,10 @@
       (-pair (-val 'planet)
 	     (Un (-lst* -Symbol)
 		 (-lst* -String)
-		 (-lst* -String 
-			(-lst* 
+		 (-lst* -String
+			(-lst*
 			 -String -String
-			 #:tail (make-Listof 
+			 #:tail (make-Listof
 				 (Un -Nat
 				     (-lst* (Un -Nat (one-of/c '= '+ '-))
 					    -Nat)))))))))
