@@ -21,7 +21,6 @@
  (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
-          make-Class
           make-ClassTop
           make-Instance
           make-Name
@@ -964,7 +963,9 @@
 [struct-type? (make-pred-ty (make-StructTypeTop))]
 
 ;; Section 6.2 (Classes)
-[object% (make-Class #f null null null null)]
+[object% (-class)]
+
+;; Section 6.11 (Object, Class, and Interface Utilities)
 [is-a? (-> Univ (make-ClassTop) -Boolean)]
 
 ;; Section 9.1

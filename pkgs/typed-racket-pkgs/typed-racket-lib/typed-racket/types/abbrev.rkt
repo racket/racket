@@ -17,6 +17,8 @@
          ;; Using this form so all-from-out works
          "base-abbrev.rkt" "match-expanders.rkt"
 
+         (for-syntax racket/base syntax/parse)
+
          ;; for base type contracts and predicates
          ;; use '#%place to avoid the other dependencies of `racket/place`
          (for-template
@@ -263,3 +265,61 @@
 
 (define-syntax-rule (->opt args ... [opt ...] res)
   (opt-fn (list args ...) (list opt ...) res))
+
+;; class utilities
+
+(begin-for-syntax
+ (define-syntax-class names+types
+   #:attributes (data)
+   (pattern [(name:id type) ...]
+            #:with data #'(list (list (quote name) type) ...)))
+
+ (define-syntax-class names+types+opt
+   #:attributes (data no-opts)
+   (pattern [(name:id type opt?) ...]
+            #:with data #'(list (list (quote name) type opt?) ...)
+            #:with no-opts #'(list (list (quote name) type) ...)))
+
+ (define-splicing-syntax-class -class-clause
+   #:attributes (inits fields methods augments)
+   (pattern (~seq #:init sub-clauses:names+types+opt)
+            #:with inits #'sub-clauses.data
+            #:with fields #'null
+            #:with methods #'null
+            #:with augments #'null)
+   (pattern (~seq #:init-field sub-clauses:names+types+opt)
+            #:with inits #'sub-clauses.data
+            #:with fields #'sub-clauses.no-opts
+            #:with methods #'null
+            #:with augments #'null)
+   (pattern (~seq #:method sub-clauses:names+types)
+            #:with inits #'null
+            #:with fields #'null
+            #:with methods #'sub-clauses.data
+            #:with augments #'null)
+   (pattern (~seq #:field sub-clauses:names+types)
+            #:with inits #'null
+            #:with fields #'sub-clauses.data
+            #:with methods #'null
+            #:with augments #'null)
+   (pattern (~seq #:augment sub-clauses:names+types)
+            #:with inits #'null
+            #:with fields #'null
+            #:with methods #'null
+            #:with augments #'sub-clauses.data)))
+
+(define-syntax (-class stx)
+  (syntax-parse stx
+    [(_ (~or (~optional (~seq #:row var:expr)
+                        #:defaults ([var #'#f]))
+             ?clause:-class-clause) ...)
+     #'(make-Class
+        var
+        (append ?clause.inits ...)
+        (append ?clause.fields ...)
+        (append ?clause.methods ...)
+        (append ?clause.augments ...))]))
+
+(define-syntax-rule (-object . ?clauses)
+  (make-Instance (-class . ?clauses)))
+
