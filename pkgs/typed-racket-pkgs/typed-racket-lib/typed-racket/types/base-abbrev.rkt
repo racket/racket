@@ -1,9 +1,12 @@
 #lang racket/base
-;; This file is for the abbreviations need to implement union.rkt
 
-(require "../utils/utils.rkt")
+;; This file is for the abbreviations needed to implement union.rkt
+;;
+;; The "abbrev.rkt" module imports this module, re-exports it, and
+;; extends it with more types and type abbreviations.
 
-(require (rep type-rep filter-rep object-rep rep-utils)
+(require "../utils/utils.rkt"
+         (rep type-rep filter-rep object-rep rep-utils)
          (env mvar-env)
          racket/match racket/list (prefix-in c: (contract-req))
          (for-syntax racket/base syntax/parse racket/list)
@@ -28,7 +31,7 @@
   (begin (define id e)
 	 (declare-predefined-type! id)))
 
-;Top and error types
+;; Top and error types
 (define/decl Univ (make-Univ))
 (define/decl -Bottom (make-Union null))
 (define/decl Err (make-Error))
@@ -36,11 +39,10 @@
 (define/decl -False (make-Value #f))
 (define/decl -True (make-Value #t))
 
-;A Type that corresponds to the any contract for the
-;return type of functions
+;; A Type that corresponds to the any contract for the
+;; return type of functions
 (define/decl ManyUniv (make-AnyValues))
 
-;;Convinient constructors
 (define -val make-Value)
 
 ;; Char type and List type (needed because of how sequences are checked in subtype)
@@ -60,11 +62,7 @@
 (define (-lst* #:tail [tail (-val null)] . args)
   (for/fold ([tl tail]) ([a (in-list (reverse args))]) (-pair a tl)))
 
-
-;; Simple union type, does not check for overlaps
-
-
-;; Union constructor
+;; Simple union type constructor, does not check for overlaps
 ;; Normalizes representation by sorting types.
 ;; Type * -> Type
 ;; The input types can be union types, but should not have a complicated
@@ -101,17 +99,16 @@
      (let ([var (-v var)])
        (make-Mu 'var ty))]))
 
-;;Results
+;; Results
 (define/cond-contract (-result t [f -no-filter] [o -no-obj])
   (c:->* (Type/c) (FilterSet? Object?) Result?)
   (make-Result t f o))
 
-;;Filters
+;; Filters
 (define/decl -top (make-Top))
 (define/decl -bot (make-Bot))
 (define/decl -no-filter (make-FilterSet -top -top))
 (define/decl -no-obj (make-Empty))
-
 
 (define/cond-contract (-FS + -)
   (c:-> Filter/c Filter/c FilterSet?)
@@ -143,7 +140,6 @@
   (match o
     [(Path: p i) (-not-filter t i p)]
     [_ -top]))
-
 
 ;; Function types
 (define/cond-contract (make-arr* dom rng
@@ -266,8 +262,7 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-
-;; convenient syntax
+;; Convenient syntax for polymorphic types
 (define-syntax -poly
   (syntax-rules ()
     [(_ (vars ...) ty)
