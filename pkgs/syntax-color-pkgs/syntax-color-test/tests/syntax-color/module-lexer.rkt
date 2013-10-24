@@ -64,6 +64,10 @@
 (check-equal? (lex "#lang at-exp racket/baseBOGUS" #t)
               `(("#lang at-exp" error 1 30 #f)
                 (,eof eof #f #f no-lang-line)))
+(check-equal? (lex " #lang BOGUS" #t)
+              `((" " white-space 1 2 #f)
+                ("#lang BOGUS" error 2 13 before-lang-line)
+                (,eof eof #f #f no-lang-line)))
 (check same?
        (lex "#lang at-exp racket/base\n1\n" #t)
        `(("#lang at-exp racket/base" other 1 25 #f)

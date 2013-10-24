@@ -94,7 +94,7 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
            ;; sync ports
            (for ([i (in-range (file-position in) (file-position p))])
              (read-byte-or-special in))
-           (values lexeme 'error data 1 end-pos 0 'no-lang-line)]
+           (values lexeme 'error data new-token-start end-pos 0 'no-lang-line)]
           [else 
            (for ([i (in-range (file-position in) (file-position lexer-port))])
              (read-byte-or-special in))
