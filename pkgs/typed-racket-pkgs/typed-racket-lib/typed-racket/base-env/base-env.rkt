@@ -42,7 +42,7 @@
           make-Prompt-TagTop
           make-ListDots))
 
-;Section 9.2
+;; Section 10.2
 
 [raise (cl->* (Univ . -> . (Un))
               (Univ Univ . -> . (Un)))]
@@ -230,7 +230,7 @@
 [null (-val null)]
 [char? (make-pred-ty -Char)]
 
-;Section 3.1
+;; Section 4.1
 
 [boolean? (make-pred-ty B)]
 [not (make-pred-ty (-val #f))]
@@ -243,7 +243,7 @@
 [prop:equal+hash -Struct-Type-Property]
 
 
-;; racket/bool
+;; Section 4.1.1 (racket/bool)
 [true (-val #t)]
 [false (-val #f)]
 [boolean=? (B B . -> . B)]
@@ -285,7 +285,7 @@
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
 
-;; Section 10.2.1
+;; Section 11.2.1
 [evt? (make-pred-ty (make-Evt Univ))]
 [sync (-poly (a) (->* '() (make-Evt a) a))]
 [sync/timeout
@@ -319,7 +319,7 @@
 [current-evt-pseudo-random-generator
  (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 
-;; Section 10.2.2
+;; Section 11.2.2
 [make-channel (-poly (a) (-> (-channel a)))]
 [channel? (make-pred-ty (make-ChannelTop))]
 [channel-get (-poly (a) ((-channel a) . -> . a))]
@@ -328,7 +328,7 @@
 [channel-put-evt (-poly (a) (-> (-channel a) a (-mu x (make-Evt x))))]
 [channel-put-evt? (asym-pred Univ B (-FS (-filter (-mu x (make-Evt x)) 0) -top))]
 
-;Section 3.3
+;; Section 4.3
 
 [string? (make-pred-ty -String)]
 ;make-string (in Index)
@@ -401,7 +401,7 @@
 
 
 
-; racket/string
+;; Section 4.3.5 (racket/string)
 [string-append*
  (cl->* (-> (-lst -String) -String)
         (-> -String (-lst -String) -String))]
@@ -412,7 +412,7 @@
            -String)]
 
 
-;Section 3.6
+;; Section 4.6
 [symbol? (make-pred-ty Sym)]
 [symbol-interned? (-> Sym B)]
 [symbol-unreadable? (-> Sym B)]
@@ -475,21 +475,21 @@
 [matchable? (make-pred-ty (Un -String -Bytes))]
 
 
-;Section 3.18
+;; Section 4.18
 
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 
-;Section 10.1
+;; Section 11.1
 
-;Section 10.1.1
+;; Section 11.1.1
 [thread (-> (-> Univ) -Thread)]
 [thread? (make-pred-ty -Thread)]
 [current-thread (-> -Thread)]
 [thread/suspend-to-kill (-> (-> Univ) -Thread)]
 [call-in-nested-thread (-poly (a) (->opt (-> a) [-Custodian] a))]
 
-;Section 10.1.2
+;; Section 11.1.2
 [thread-suspend (-Thread . -> . -Void)]
 [thread-resume (->opt -Thread [(Un (-val #f) -Thread -Custodian)] -Void)]
 [kill-thread (-Thread . -> . -Void)]
@@ -498,13 +498,13 @@
 [thread-running? (-Thread . -> . B)]
 [thread-dead? (-Thread . -> . B)]
 
-;Section 10.1.3
+;; Section 11.1.3
 [thread-wait (-Thread . -> . -Void)]
 [thread-dead-evt (-> -Thread (-mu x (make-Evt x)))]
 [thread-resume-evt (-> -Thread (-mu x (make-Evt x)))]
 [thread-suspend-evt (-> -Thread (-mu x (make-Evt x)))]
 
-;Section 10.1.4
+;; Section 11.1.4
 [thread-send
  (-poly (a) (cl->* (-> -Thread Univ -Void)
                    (-> -Thread Univ (-val #f) (-opt -Void))
@@ -514,7 +514,7 @@
 [thread-receive-evt (-> (-mu x (make-Evt x)))]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
 
-;Section 10.3.1 (Thread Cells)
+;; Section 11.3.1 (Thread Cells)
 
 [thread-cell? (make-pred-ty (make-ThreadCellTop))]
 [make-thread-cell (-poly (a) (->opt a [Univ] (-thread-cell a)))]
@@ -524,7 +524,7 @@
  (cl->* (-> Univ) (-> Univ -Void))]
 
 
-;Section 10.3.3 (Parameters)
+;; Section 11.3.3 (Parameters)
 
 ;hidden parameter bindings
 [parameterization-key Sym]
@@ -609,7 +609,7 @@
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
 
-;Procedures Section 3.17
+;; Section 4.17 (Procedures)
 [procedure? (make-pred-ty top-func)]
 [compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
 [compose1 (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
@@ -638,8 +638,7 @@
 
 
 
-;; Section 3.7
-;; Regular Expressions
+;; Section 4.7 (Regular Expressions)
 
 [regexp? (make-pred-ty -Regexp)]
 [pregexp? (make-pred-ty -PRegexp)]
@@ -720,7 +719,7 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-;Section 3.8 (Keywords)
+;; Section 4.8 (Keywords)
 [keyword? (make-pred-ty -Keyword)]
 [string->keyword (-String . -> . -Keyword)]
 [keyword->string (-Keyword . -> . -String)]
@@ -750,14 +749,14 @@
                       (-Integer Univ . -> . -Date))]
 [current-seconds (-> -Integer)]
 
-;Section 14.2
+;; Section 15.2
 
-;Section 14.2.1
+;; Section 15.2.1
 [find-system-path (Sym . -> . -Path)]
 [path-list-string->path-list ((Un -String -Bytes) (-lst -Path) . -> . (-lst -Path))]
 [find-executable-path (->opt -Pathlike [(-opt -Pathlike) Univ] (-opt -Path))]
 
-;Section 14.2.2
+;; Section 15.2.2
 [file-exists? (-> -Pathlike B)]
 [link-exists? (-> -Pathlike B)]
 [delete-file (-> -Pathlike -Void)]
@@ -785,7 +784,7 @@
 [copy-file (-> -Pathlike -Pathlike -Void)]
 [make-file-or-directory-link (-> -Pathlike -Pathlike -Void)]
 
-;Section 14.2.3
+;; Section 15.2.3
 [current-directory (-Param -Pathlike -Path)]
 [current-drive (-> -Path)]
 
@@ -795,10 +794,9 @@
 [directory-list (->opt [-Pathlike] (-lst -Path))]
 [filesystem-root-list (-> (-lst -Path))]
 
-;Section 14.2.4
+;; Section 15.2.4
 
-;Section 14.2.5
-;racket/file
+;; Section 15.2.5 (racket/file)
 [copy-directory/files (->key -Pathlike -Pathlike  #:keep-modify-seconds? Univ #f -Void)]
 [delete-directory/files (->key -Pathlike #:must-exist? Univ #f -Void)]
 
@@ -917,7 +915,7 @@
 
 
 
-;Section 3.13 (Hash Tables)
+;; Section 4.13 (Hash Tables)
 [hash? (make-pred-ty -HashTop)]
 [hash-eq? (-> -HashTop B)]
 [hash-eqv? (-> -HashTop B)]
@@ -988,7 +986,7 @@
 [make-immutable-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
-;Section 3.14 (Sequences and Streams)
+;; Section 4.14 (Sequences and Streams)
 [in-directory (-> (-seq -Path))]
 
 [sequence? (make-pred-ty (-seq Univ))]
@@ -1025,7 +1023,7 @@
                                 ((a . -> . Univ) (-lst a) . -> . (-seq a))))]
 [sequence-add-between (-poly (a) ((-seq a) a . -> . (-seq a)))]
 
-;Section 3.16 (Sets)
+;; Section 4.16 (Sets)
 [set (-poly (e) (->* (list) e (-set e)))]
 [seteqv (-poly (e) (->* (list) e (-set e)))]
 [seteq (-poly (e) (->* (list) e (-set e)))]
@@ -1060,7 +1058,7 @@
 [list->seteqv (-poly (e) (-> (-lst e) (-set e)))]
 [set->list (-poly (e) (-> (-set e) (-lst e)))]
 
-;Section 3.4 (Byte Strings)
+;; Section 4.4 (Byte Strings)
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
 [make-bytes (cl-> [(-Integer -Integer) -Bytes]
@@ -1140,7 +1138,7 @@
 
 
 
-;Section 13.1 (Namespaces)
+;; Section 14.1 (Namespaces)
 [namespace? (make-pred-ty -Namespace)]
 [make-namespace (->opt [(one-of/c  'empty 'initial)] -Namespace)]
 [make-empty-namespace (-> -Namespace)]
@@ -1184,7 +1182,7 @@
 
 
 
-;Section 9.7 (Exiting)
+;; Section 10.7 (Exiting)
 [exit (->opt [Univ] (Un))]
 [exit-handler (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
 [executable-yield-handler (-Param (-> -Byte ManyUniv) (-> -Byte ManyUniv))]
@@ -1193,7 +1191,7 @@
 [current-memory-use (-> -Nat)]
 [dump-memory-stats (-> Univ)]
 
-;Section 14.7
+;; Section 15.7
 [getenv (-> -String (Un -String (-val #f)))]
 [putenv (-> -String -String B)]
 [system-type
@@ -1219,7 +1217,7 @@
 
 
 
-;Section 11.2
+;; Section 12.2
 [syntax? (make-pred-ty (-Syntax Univ))]
 
 [syntax-source (-> (-Syntax Univ) Univ)]
@@ -1267,7 +1265,7 @@
 [identifier-prune-lexical-context (->opt (-Syntax Sym) [(-lst Sym)] (-Syntax Sym))]
 [identifier-prune-to-source-module (-> (-Syntax Sym) (-Syntax Sym))]
 
-;Section 11.3
+;; Section 12.3
 
 [bound-identifier=? (Ident Ident [(-opt -Integer)] . ->opt . B)]
 
@@ -1321,7 +1319,7 @@
           (-opt -Integer)
           (-opt -Integer))))]
 
-;Section 11.4
+;; Section 12.4
 [set!-transformer? (-> Univ B)]
 [make-set!-transformer (-> (-> (-Syntax Univ) (-Syntax Univ)) Univ)]
 [set!-transformer-procedure (-> Univ (-> (-Syntax Univ) (-Syntax Univ)))]
@@ -1416,20 +1414,20 @@
 [syntax-local-module-defined-identifiers (-> (-HT (Un (-val #f) -Int) (-lst (-Syntax Sym))))]
 [syntax-local-module-required-identifiers (-> (-opt -Module-Path) (Un B -Int) (-lst (-pair (-opt -Int) (-lst (-Syntax Sym)))))]
 
-;Section 11.5
+;; Section 12.5
 
-;Section 11.6
+;; Section 12.6
 
-;Section 11.7
+;; Section 12.7
 [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                    (-> (-Syntax Univ) Univ Univ)))]
 [syntax-property-symbol-keys (-> (-Syntax Univ) (-lst Sym))]
 [syntax-track-origin (-poly (a) (-> (-Syntax a) (-Syntax Univ) (-Syntax Univ) (-Syntax a)))]
 
-;Section 11.8
+;; Section 12.8
 [syntax-recertify (-poly (a) (-> (-Syntax a) (-Syntax Univ) -Inspector Univ (-Syntax a)))]
 
-;Section 11.9
+;; Section 12.9
 [expand (-> Univ (-Syntax Univ))]
 [expand-syntax (-> (-Syntax Univ) (-Syntax Univ))]
 [expand-once (-> Univ (-Syntax Univ))]
@@ -1516,8 +1514,7 @@
 [argmin (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 [argmax (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 
-;;Section 14.3.1
-;;racket/tcp
+;; Section 15.3.1 (racket/tcp)
 
 [tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
 [tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
@@ -1541,8 +1538,7 @@
 [tcp-port? (asym-pred Univ B (-FS (-filter (Un -Input-Port -Output-Port) 0) -top))]
 
 
-;;Section 14.3.2
-;;racket/udp
+;; Section 15.3.2 (racket/udp)
 
 [udp-open-socket (->opt [(-opt -String) (-opt -String)] -UDP-Socket)]
 [udp-bind! (-> -UDP-Socket (-opt -String) -Nat -Void)]
@@ -1647,7 +1643,7 @@
 
 ;vector->values
 
-;Section 14.4 (Processes)
+;; Section 15.4 (Processes)
 
 ;; `subprocess' has 3 arguments and 3 return values which are either
 ;; ports or false. There is a relation that if a port argument is
@@ -1705,7 +1701,7 @@
 [shell-execute (-> (-opt -String) -String -String -Pathlike Sym (-val #f))]
 
 
-;Section 14.4.1 (racket/system)
+;; Section 15.4.1 (racket/system)
 [system ((Un -String -Bytes) [] #:set-pwd? Univ #f . ->optkey . -Boolean)]
 [system* (-Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f . ->optkey . -Boolean)]
 [system/exit-code ((Un -String -Bytes) [] #:set-pwd? Univ #f . ->optkey . -Byte)]
@@ -1872,7 +1868,7 @@
 [mreverse! (-poly (a) (-> (-mlst a) (-mlst a)))]
 [mappend (-poly (a) (->* (list) (-mlst a) (-mlst a)))]
 
-;Section 13.2 (Evaluation and Compilation)
+;; Section 14.2 (Evaluation and Compilation)
 [current-eval (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
 [eval (->opt Univ [-Namespace] ManyUniv)]
 [eval-syntax (->opt (-Syntax Univ) [-Namespace] ManyUniv)]
@@ -1909,7 +1905,7 @@
 [eval-jit-enabled (-Param B B)]
 [load-on-demand-enabled (-Param B B)]
 
-;;Section 13.4 (Module Names and Loading)
+;; Section 14.4 (Module Names and Loading)
 [resolved-module-path? (make-pred-ty -Resolved-Module-Path)]
 [make-resolved-module-path (-> (Un -Symbol -Path) -Resolved-Module-Path)]
 [resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
@@ -1976,7 +1972,7 @@
  (-> -Compiled-Module-Expression
      (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
 
-;Section 13.4.3
+;; Section 14.4.3
 [dynamic-require
  (let ((mod (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)))
   (-poly (a)
@@ -2024,7 +2020,7 @@
 
 
 
-;Section 13.5 (Impersonators and Chaperones)
+;; Section 14.5 (Impersonators and Chaperones)
 [impersonator? (Univ . -> . B)]
 [chaperone? (Univ . -> . B)]
 [impersonator-of? (Univ Univ . -> . B)]
@@ -2035,7 +2031,7 @@
 [impersonator-property-accessor-procedure? (-> Univ B)]
 [impersonator-prop:application-mark -Impersonator-Property]
 
-;Section 13.6 (Security Guards)
+;; Section 14.6 (Security Guards)
 [security-guard? (make-pred-ty -Security-Guard)]
 [make-security-guard
  (->opt -Security-Guard
@@ -2045,7 +2041,7 @@
         -Security-Guard)]
 [current-security-guard (-Param -Security-Guard -Security-Guard)]
 
-;Section 13.7 (Custodians)
+;; Section 14.7 (Custodians)
 [custodian? (make-pred-ty -Custodian)]
 [make-custodian (->opt [-Custodian] -Custodian)]
 [custodian-shutdown-all (-> -Custodian -Void)]
@@ -2059,12 +2055,12 @@
 [custodian-box? (make-pred-ty (-poly (a) (make-CustodianBox a)))]
 [custodian-box-value (-poly (a) (-> (make-CustodianBox a) a))]
 
-;Section 13.8 (Thread Groups)
+;; Section 14.8 (Thread Groups)
 [make-thread-group (->opt [-Thread-Group] -Thread-Group)]
 [thread-group? (make-pred-ty -Thread-Group)]
 [current-thread-group (-Param -Thread-Group -Thread-Group)]
 
-;Section 13.9 (Structure Inspectors)
+;; Section 14.9 (Structure Inspectors)
 [inspector? (make-pred-ty -Inspector)]
 [make-inspector (->opt [-Inspector] -Inspector)]
 [make-sibling-inspector (->opt [-Inspector] -Inspector)]
@@ -2076,7 +2072,7 @@
 [struct-type-make-predicate (-> Univ (-> Univ B))]
 [object-name (-> Univ Univ)]
 
-;Section 13.9 (Code Inspectors)
+;; Section 14.9 (Code Inspectors)
 [current-code-inspector (-Param -Inspector -Inspector)]
 
 ;ephemerons
@@ -2088,7 +2084,7 @@
 [stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
 [stx-list? (-> (-Syntax Univ) -Boolean)]
 
-;; Section 9.4 (Continuations)
+;; Section 10.4 (Continuations)
 [call-with-continuation-prompt
  (-polydots (a b d c)
    (cl->*
@@ -2126,7 +2122,7 @@
 [continuation-prompt-tag? (make-pred-ty (make-Prompt-TagTop))]
 [dynamic-wind (-poly (a) (-> (-> ManyUniv) (-> a) (-> ManyUniv) a))]
 
-;; Section 9.5 (Continuation Marks)
+;; Section 10.5 (Continuation Marks)
 ;; continuation-marks needs type for continuations as other
 ;; possible first argument
 [continuation-marks
@@ -2168,13 +2164,13 @@
  (-> -Cont-Mark-Set (-lst (-pair (-opt Sym) Univ)))] ;TODO add srcloc
 
 
-;Section 14.6 (Time)
+;; Section 15.6 (Time)
 [current-milliseconds (-> -Fixnum)]
 [current-inexact-milliseconds (-> -Real)]
 [current-gc-milliseconds (-> -Fixnum)]
 [current-process-milliseconds (-> -Fixnum)]
 
-;Section 14.5 (Logging)
+;; Section 15.5 (Logging)
 [logger? (make-pred-ty -Logger)]
 [make-logger (->opt [(-opt Sym) (-opt -Logger)] -Logger)]
 [logger-name (-> -Logger (-opt Sym))]
@@ -2187,7 +2183,7 @@
 [log-receiver? (make-pred-ty -Log-Receiver)]
 [make-log-receiver (-> -Logger -Log-Level -Log-Receiver)]
 
-;Section 10.2.3 Semaphores
+;; Section 11.2.3 Semaphores
 
 [semaphore? (make-pred-ty -Semaphore)]
 [make-semaphore (->opt [-Nat] -Semaphore)]
@@ -2200,14 +2196,14 @@
 ;[call-with-semaphore ???]
 ;[call-with-semaphore/enable-break ???]
 
-;Section 17.2 (Libraries and Collections)
+;; Section 18.2 (Libraries and Collections)
 [find-library-collection-paths (->opt [(-lst -Pathlike) (-lst -Pathlike)] (-lst -Path))]
 [collection-file-path (->* (list -Pathlike) -Pathlike -Path)]
 [collection-path (->* (list) -Pathlike -Path)]
 [current-library-collection-paths (-Param -Path -Path)]
 [use-user-specific-search-paths (-Param Univ B)]
 
-;3.2.2.7 (Random Numbers)
+;; Section 4.2.2.7 (Random Numbers)
 
 [random
   (cl->* (->opt -Int [-Pseudo-Random-Generator] -Nat)
@@ -2224,13 +2220,13 @@
 [vector->pseudo-random-generator!
  (-> -Pseudo-Random-Generator (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
 
-;Section 9.6
+;; Section 10.6
 [break-enabled (cl->* (-> B) (-> B -Void))]
 
 
 
 
-;Section 4.3 (Structure Type Properties)
+;; Section 5.3 (Structure Type Properties)
 [make-struct-type-property
  (->opt Sym
        [(Un (one-of/c #f 'can-impersonate) (-> Univ (-lst Univ)))
@@ -2250,14 +2246,14 @@
 
 
 
-;Section 12
+;; Section 13
 
-;Section 12.1 (Ports)
+;; Section 13.1 (Ports)
 
-;Section 12.1.1
+;; Section 13.1.1
 [current-locale (-Param -String -String)]
 
-;Section 12.1.2
+;; Section 13.1.2
 
 [input-port? (make-pred-ty -Input-Port)]
 [output-port? (make-pred-ty -Output-Port)]
@@ -2281,7 +2277,7 @@
 [eof (-val eof)]
 [eof-object? (make-pred-ty (-val eof))]
 
-;Section 12.1.3
+;; Section 13.1.3
 [flush-output (->opt [-Output-Port] -Void)]
 [file-stream-buffer-mode (cl-> [(-Port) (one-of/c 'none 'line 'block #f)]
                                [(-Port (one-of/c 'none 'line 'block)) -Void])]
@@ -2289,12 +2285,12 @@
                      [(-Port -Integer) -Void])]
 [file-position* (-> -Port (Un -Nat (-val #f)))]
 
-;Section 12.1.4
+;; Section 13.1.4
 [port-count-lines! (-> (Un -Input-Port -Output-Port) -Void)]
 [port-next-location (-> (Un -Input-Port -Output-Port) (-values (list (-opt -PosInt) (-opt -Nat) (-opt -PosInt))))]
 [port-count-lines-enabled (-Param Univ B)]
 
-;Section 12.1.5
+;; Section 13.1.5
 #|
 [open-input-file (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Input-Port)]
 
@@ -2525,7 +2521,7 @@
 
 
 
-;; Byte and String Output (Section 12.3 of the Reference)
+;; Section 13.3 (Byte and String Output)
 ;; some are now in base-env-indexing-abs.rkt
 
 [write-char (cl-> [(-Char) -Void]
@@ -2553,8 +2549,7 @@
 [port-writes-special? (-Output-Port . -> . -Boolean)]
 
 
-;Section 12.4
-;Reading
+;; Section 13.4 (Reading)
 
 [read (->opt [-Input-Port] Univ)]
 [read-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
@@ -2582,8 +2577,7 @@
  (cl->* (-> -Input-Port (->opt -Input-Port [Univ] Univ))
         (-> -Input-Port (->opt -Input-Port [Univ] Univ) -Void))]
 
-; Section 12.5
-; Writing
+;; Section 13.5 (Writing)
 [write   (Univ [-Output-Port] . ->opt . -Void)]
 [display (Univ [-Output-Port] . ->opt . -Void)]
 [print   (Univ [-Output-Port (one-of/c 0 1)] . ->opt . -Void)]
@@ -2621,18 +2615,7 @@
 [global-port-print-handler (-Param (Un (-> Univ -Output-Port ManyUniv) (-> Univ -Output-Port (one-of/c 0 1) ManyUniv))
                                    (-> Univ -Output-Port (one-of/c 0 1) ManyUniv))]
 
-
-
-;Section 12.6
-;The Reader
-
-;Section 12.7
-;The Printer
-
-
-
-;Section 12.8
-;; racket/pretty
+;; Section 13.6 (racket/pretty)
 
 [pretty-print (Univ [-Output-Port (one-of/c 0 1)] . ->opt . -Void)]
 [pretty-write (Univ [-Output-Port] . ->opt . -Void)]
@@ -2667,9 +2650,9 @@
 [tentative-pretty-print-port-cancel (-> -Output-Port -Void)]
 
 
-;Section 12.9
+;; Section 13.7
 
-;12.9.1
+;; Section 13.7.1
 [readtable? (make-pred-ty -Read-Table)]
 [make-readtable
  (cl->*
@@ -2704,17 +2687,17 @@
                                                  (-opt -PosInt) (-opt -Nat) Univ)
                                              (-> -Char -Input-Port Univ)))))))]
 
-;12.9.2
-;Nothing defined here
+;; Section 13.7.2
+;; Nothing defined here
 
 
-;12.9.3
+;; Section 13.7.3
 
 [special-comment? (make-pred-ty -Special-Comment)]
 [make-special-comment (-> Univ -Special-Comment)]
 [special-comment-value (-> -Special-Comment Univ)]
 
-;Section 12.10
+;; Section 13.8
 
 
 [prop:custom-write -Struct-Type-Property]
@@ -2726,13 +2709,13 @@
 [custom-print-quotable? (-> Univ B)]
 [custom-print-quotable-accessor (-> Univ Univ)]
 
-;Section 12.11
+;; Section 13.9
 
-;Section 12.12
+;; Section 13.10
 
 
 
-;Section 10.5 (Places)
+;; Section 11.5 (Places)
 
 [place? (make-pred-ty -Place)]
 [place-channel? (make-pred-ty -Place-Channel)]
@@ -2751,14 +2734,14 @@
 [place-channel-put/get (-> -Place-Channel Univ Univ)]
 
 
-;Section 9.3 (Delayed Evaluation)
+;; Section 10.3 (Delayed Evaluation)
 [promise? (make-pred-ty (-Promise Univ))]
 [force (-poly (a) (->acc (list (-Promise a)) a (list -force)))]
 [promise-forced? (-poly (a) (-> (-Promise a) B))]
 [promise-running? (-poly (a) (-> (-Promise a) B))]
 
 
-;Section 15.3 (Wills and Executors)
+;; Section 16.3 (Wills and Executors)
 [make-will-executor (-> -Will-Executor)]
 [will-executor? (make-pred-ty -Will-Executor)]
 [will-register (-poly (a) (-> -Will-Executor a (-> a ManyUniv) -Void))]
