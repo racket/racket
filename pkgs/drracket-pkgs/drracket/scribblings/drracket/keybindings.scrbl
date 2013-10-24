@@ -16,7 +16,7 @@
      (define id @racket[#%module-begin])))
 @(def-mod-beg mz-mod-begin)
 
-@title{Keyboard Shortcuts}
+@title[#:tag "keybindings"]{Keyboard Shortcuts}
 
 @index['("keybindings")]{Most} key presses simply insert a character
 into the editor, such as @litchar{a}, @litchar{3}, or
