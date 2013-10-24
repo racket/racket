@@ -137,6 +137,11 @@ In addition, the cells coordinates pairs have source locations of the first
 character that is inside the corresponding cell. (Currently the span
 is always @racket[1], but that may change.)
 
+@section{Editing 2D}
+
+DrRacket provides a number of keybindings to help editing @litchar{#2d} expressions.
+See @secref["keybindings" #:doc '(lib "scribblings/drracket/drracket.scrbl")].
+
 @section{2D Cond}
 
 @defmodule[unstable/2d/cond]
