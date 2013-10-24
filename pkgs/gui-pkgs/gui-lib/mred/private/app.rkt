@@ -117,7 +117,9 @@
                (lambda () (if (send af accept-drag?)
                               (send af on-drop-file f)
                               (set! saved-files (cons f saved-files))))))
-             (set! saved-files (cons f saved-files)))))))
+             (begin
+               (add-active-frame-callback! requeue-saved-files)
+               (set! saved-files (cons f saved-files))))))))
 
   (define (requeue-saved-files)
     (as-entry

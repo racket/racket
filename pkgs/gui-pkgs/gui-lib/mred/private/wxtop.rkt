@@ -13,7 +13,8 @@
            "wxcontainer.rkt")
 
   (provide (protect-out active-main-frame
-			set-root-menu-wx-frame!)
+			set-root-menu-wx-frame!
+                        add-active-frame-callback!)
 	   get-display-size
 	   get-display-left-top-inset
 	   get-display-count
@@ -24,6 +25,10 @@
 
   ;; Weak boxed:
   (define active-main-frame (make-weak-box #f))
+
+  (define active-frame-callbacks null)
+  (define (add-active-frame-callback! cb)
+    (set! active-frame-callbacks (cons cb active-frame-callbacks)))
   
   (define root-menu-wx-frame #f)
   (define (set-root-menu-wx-frame! f)
@@ -633,7 +638,10 @@
                          (when (and (wx:main-eventspace? (get-eventspace))
                                     (not (eq? this root-menu-wx-frame))
                                     (not floating-window?))
-                           (set! active-main-frame (make-weak-box this))))
+                           (set! active-main-frame (make-weak-box this))
+                           (let ([cbs (reverse active-frame-callbacks)])
+                             (set! active-frame-callbacks null)
+                             (for ([cb (in-list cbs)]) (cb)))))
                        ;; Send refresh to subwindows that need it
                        (set! activate-refresh-wins (filter weak-box-value activate-refresh-wins))
                        (for-each (lambda (b)

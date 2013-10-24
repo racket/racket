@@ -67,10 +67,10 @@ When the current eventspace is the initial eventspace, this procedure
 
 The default handler queues a callback to the
 @method[window<%> on-drop-file] method of the most-recently activated frame in the main eventspace (see
-@racket[get-top-level-edit-target-window]), if
+@racket[get-top-level-edit-target-window]), if any such frame exists and if
  drag-and-drop is enabled for that frame. Otherwise, it saves
  the filename and re-queues the handler event when the application
- file handler is later changed.
+ file handler is later changed or when a frame becomes active.
 
 On Windows, when the application is @italic{not} running and user double-clicks an
  application-handled file or drags a file onto the application's icon,
