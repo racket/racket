@@ -964,7 +964,24 @@
 [object% (-class)]
 
 ;; Section 6.11 (Object, Class, and Interface Utilities)
+[object? (make-pred-ty (-object))]
+[class? (make-pred-ty (make-ClassTop))]
+;; TODO: interface?
+;;       generic?
+[object=? (-> (-object) (-object) -Boolean)]
+[object->vector (->opt (-object) [Univ] (-vec Univ))]
+;; TODO: class->interface
+;;       object-interface
 [is-a? (-> Univ (make-ClassTop) -Boolean)]
+[subclass? (-> Univ (make-ClassTop) -Boolean)]
+;; TODO: implementation?
+;;       interface-extension?
+;;       method-in-interface?
+;;       interface->method-names
+[object-method-arity-includes? (-> (-object) -Symbol -Nat -Boolean)]
+[field-names (-> (-object) (-lst -Symbol))]
+[object-info (-> (-object) (-values (list (Un (make-ClassTop) (-val #f)) -Boolean)))]
+;; TODO: class-info (is this sound to allow?)
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]
