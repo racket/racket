@@ -167,7 +167,8 @@
               (map make-def-binding vars ts))]
            ;; if this already had an annotation, we just construct the binding reps
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
-            (for-each finish-register-type vars)
+            (define top-level? (eq? (syntax-local-context) 'top-level))
+            (for ([var (in-list vars)]) (finish-register-type var top-level?))
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
            ;; special case to infer types for top level defines
            [else
