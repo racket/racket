@@ -62,6 +62,7 @@
            (struct-out exn:fail:object)
            make-primitive-class
            class/c ->m ->*m ->dm case->m object/c instanceof/c
+           dynamic-object/c
            
            ;; "keywords":
            private public override augment

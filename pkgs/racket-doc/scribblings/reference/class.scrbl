@@ -2076,6 +2076,17 @@ Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].
 }
 
+@defproc[(dynamic-object/c [method-names (listof symbol?)]
+                           [method-contracts (listof contract?)]
+                           [field-names (listof symbol?)]
+                           [field-contracts (listof contract?)])
+         contract?]{
+Produces a contract for an object, similar to @racket[object/c] but
+where the names and contracts for both methods and fields can be
+computed dynamically. The list of names and contracts for both
+methods and field respectively must have the same lengths.
+}
+
 @defform/subs[
 #:literals (field -> ->* ->d)
 
