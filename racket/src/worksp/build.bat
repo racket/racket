@@ -57,5 +57,5 @@ if errorlevel 1 exit /B 1
 copy ..\COPYING.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
-..\..\racket -G %BUILD_CONFIG% -N "raco setup" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
+..\..\racket -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1

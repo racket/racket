@@ -77,7 +77,7 @@ both:
 # Install (common) ----------------------------------------
 
 INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
-SETUP_ARGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) -N "raco setup" -l- setup $(PLT_SETUP_OPTIONS) $(PLT_ISO) @INSTALL_SETUP_FLAGS@
+SETUP_ARGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) -N "raco" -l- setup @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
 
 # Pass compile and link flags to `make install' for use by any
 #  collection-setup actions that compile and link C code:
