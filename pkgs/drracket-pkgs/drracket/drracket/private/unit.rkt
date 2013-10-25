@@ -1582,7 +1582,8 @@
                         (new text-field% 
                              [parent logger-gui-content-panel] 
                              [label "‹level›@‹name› ..."]
-                             [init-value (send (get-interactions-text) get-user-log-receiver-args-str)]
+                             [init-value 
+                              (send (get-interactions-text) get-user-log-receiver-args-str)]
                              [callback
                               (λ (tf evt)
                                 (define str (send (send tf get-editor) get-text))
