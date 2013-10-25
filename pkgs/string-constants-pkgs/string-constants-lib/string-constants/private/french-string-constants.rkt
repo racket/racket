@@ -840,6 +840,7 @@
   (move-current-tab-left "Déplacer à &gauche")
   ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
   (tab-i "Onglet ~a: ~a")
+  (tab-i/no-name "Onglet ~a")
 
   (view-menu-label "&Montrer")
   (show-overview "Montrer le contour du &programme")
