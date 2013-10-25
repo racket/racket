@@ -780,22 +780,41 @@
                         (when frame
                           (send frame move-current-tab-left))))])
      
-     (let ([frame (find-frame windows-menu)])
-       (unless (or (not frame) (= 1 (send frame get-tab-count)))
-         (unless (eq? (system-type) 'macosx)
-           (new separator-menu-item% [parent windows-menu]))
-         (for ([i (in-range 0 (send frame get-tab-count))]
-               #:when (< i 9))
-           (new menu-item% 
-                [parent windows-menu]
-                [label (format (string-constant tab-i)
-                               (+ i 1)
-                               (send frame get-tab-filename i))]
-                [shortcut (integer->char (+ (char->integer #\1) i))]
-                [callback
-                 (λ (a b)
-                   (send frame change-to-nth-tab i))]))))
-     
+     (define frame (find-frame windows-menu))
+     (when frame
+       (define tab-count (send frame get-tab-count))
+       (unless (eq? (system-type) 'macosx)
+         (new separator-menu-item% [parent windows-menu]))
+       (for ([i (in-range 1 10)])
+         (define sc (integer->char (+ (char->integer #\0) i)))
+         (cond
+           [(or (< tab-count i) (= 1 tab-count))
+            (send (new menu-item% 
+                       [parent windows-menu]
+                       [label (format (string-constant tab-i/no-name) i)]
+                       [shortcut sc]
+                       [callback void])
+                  enable #f)]
+           [(= i 9)
+            (new menu-item% 
+                 [parent windows-menu]
+                 [label (format (string-constant tab-i)
+                                i
+                                (send frame get-tab-filename (- tab-count 1)))]
+                 [shortcut sc]
+                 [callback
+                  (λ (a b)
+                    (send frame change-to-nth-tab (- tab-count 1)))])]
+           [else
+            (new menu-item% 
+                 [parent windows-menu]
+                 [label (format (string-constant tab-i)
+                                i
+                                (send frame get-tab-filename (- i 1)))]
+                 [shortcut sc]
+                 [callback
+                  (λ (a b)
+                    (send frame change-to-nth-tab (- i 1)))])])))
      (when (eq? (system-type) 'macosx)
        (new separator-menu-item% [parent windows-menu])))))
 

@@ -2267,18 +2267,21 @@
         (get-defs-tab-filename (send (list-ref tabs i) get-defs)))
       
       (define/private (get-defs-tab-label defs tab)
-        (let ([fn (send defs get-filename)]
-              [i-prefix (or (for/or ([i (in-list tabs)]
-                                     [n (in-naturals 1)]
-                                     #:when (<= n 9))
-                              (and (eq? i tab)
-                                   (format "~a: " n)))
-                            "")])
-          (add-modified-flag
-           defs
-           (string-append
-            i-prefix
-            (get-defs-tab-filename defs)))))
+        (define tab-index
+          (for/or ([i (in-list tabs)]
+                   [n (in-naturals 1)])
+            (and (eq? i tab) n)))
+        (define i-prefix
+          (cond
+            [(not tab-index) ""]
+            [(<= tab-index 8) (format "~a: " tab-index)]
+            [(= tab-index (get-tab-count)) "9: "]
+            [else ""]))
+        (add-modified-flag
+         defs
+         (string-append
+          i-prefix
+          (get-defs-tab-filename defs))))
       
       (define/private (get-defs-tab-filename defs)
         (let ([fn (send defs get-filename)])
