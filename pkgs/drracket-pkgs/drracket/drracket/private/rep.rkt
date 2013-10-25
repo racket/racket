@@ -192,6 +192,8 @@ TODO
     (add-drs-function "run"  (λ (frame) (send frame execute-callback)))
     (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
     (add-drs-function "prev-tab" (λ (frame) (send frame prev-tab)))
+    (add-drs-function "move-current-tab-left" (λ (frame) (send frame move-current-tab-left)))
+    (add-drs-function "move-current-tab-right" (λ (frame) (send frame move-current-tab-right)))
     (add-drs-function "collapse" (λ (frame) (send frame collapse)))
     (add-drs-function "split"    (λ (frame) (send frame split)))
     
@@ -218,6 +220,8 @@ TODO
   (send drs-bindings-keymap map-function "c:s:tab" "prev-tab")
   (send drs-bindings-keymap map-function "c:pagedown" "next-tab")
   (send drs-bindings-keymap map-function "c:pageup" "prev-tab")
+  (send drs-bindings-keymap map-function "c:s:pagedown" "move-current-tab-right")
+  (send drs-bindings-keymap map-function "c:s:pageup" "move-current-tab-left")
   
   (send drs-bindings-keymap map-function "c:x;0" "collapse")
   (send drs-bindings-keymap map-function "c:x;2" "split")
