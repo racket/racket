@@ -4,7 +4,8 @@
          syntax-color/scribble-lexer
          syntax-color/lexer-contract
          unstable/options
-         unstable/2d/private/lexer)
+         unstable/2d/private/lexer
+         racket/port)
 
 (check-equal? (cropped-regions 0 10 '()) '())
 (check-equal? (cropped-regions 0 10 '((0 . 10))) '((0 . 10)))
@@ -16,16 +17,26 @@
 (check-equal? (cropped-regions 0 10 '((-5 . 10))) '((0 . 10)))
 (check-equal? (cropped-regions 13 37 '((11 . 13))) '())
 
-(define (run-lexer #:sub-lexer [sub-lexer/no-ex racket-lexer] . strs)
+(define (run-lexer #:sub-lexer [sub-lexer/no-ex racket-lexer] . strs/specials)
   (define sub-lexer (if (has-option? sub-lexer/no-ex)
                         (exercise-option sub-lexer/no-ex)
                         sub-lexer/no-ex))
-  (define port (open-input-string (apply string-append strs)))
-  (port-count-lines! port)
+  (define-values (in out) (make-pipe-with-specials))
+  (thread
+   (λ ()
+     (let loop ([s strs/specials])
+       (cond
+         [(list? s)
+          (for ([s (in-list strs/specials)])
+            (loop s))]
+         [(string? s) (display s out)]
+         [else (write-special s out)]))
+     (close-output-port out)))
+  (port-count-lines! in)
   (define the-lexer (exercise-option (2d-lexer sub-lexer)))
   (let loop ([mode #f])
     (define-values (val tok paren start end backup new-mode) 
-      (the-lexer port 0 mode))
+      (the-lexer in 0 mode))
     (cons (list val tok paren start end backup)
           (cond
             [(equal? tok 'eof) '()]
@@ -310,3 +321,49 @@
             "╠═════╬═══════╣\n"
             "║@h{z}║ @i{w} ║\n"
             "╚═════╩═══════╝\n"))
+
+(check-equal?
+ (run-lexer "#2" 'not-a-char)
+ `(("#2" error #f 1 3 0) 
+   ("" no-color #f 3 4 0) 
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2d\n" 'not-a-char)
+ `(("#2d" hash-colon-keyword #f 1 4 0)
+   ("\n" white-space #f 4 5 4)
+   (" " error #f 5 6 5)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2d\n╔" 'not-a-char)
+ `(("#2d" hash-colon-keyword #f 1 4 0)
+   ("\n" white-space #f 4 5 4)
+   ("╔" no-color #f 5 6 5)
+   (" " error #f 6 7 6)
+   (,eof eof #f #f #f 0)))
+
+
+(check-equal?
+ (run-lexer "#2dsomething\n"
+            "╔═══╗\n"
+            "║ " 'special " ║\n"
+            "╚═══╝")
+ `(("#2dsomething" hash-colon-keyword #f 1 13 0) 
+   ("\n" white-space #f 13 14 13) 
+   ("╔═══╗\n║ " no-color #f 14 22 14)
+   ("  ║\n╚═══╝" error #f 22 31 22)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2dsomething\n"
+            "╔═══╗\n"
+            'special
+             "   ║\n"
+            "╚═══╝")
+ `(("#2dsomething" hash-colon-keyword #f 1 13 0)
+   ("\n" white-space #f 13 14 13)
+   ("╔═══╗\n" no-color #f 14 20 14)
+   ("    ║\n╚═══╝" error #f 20 31 20)
+   (,eof eof #f #f #f 0)))
+

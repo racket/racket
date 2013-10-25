@@ -312,18 +312,20 @@ example uses:
       (set! current-line-number (+ current-line-number 1)))
     (define chars
       (let loop ([chars-read 0])
-        (define c (read-char port))
+        (define c (read-char-or-special port))
         (cond
           [(eof-object? c) 
            (raise-read-eof-error
             "unexpected eof; "
             source _line _col _pos 
             (and _pos (- (+ current-line-start-position chars-read) _pos)))]
+          [(not (char? c))
+           (readerr "unexpected special" chars-read)]
           [(equal? c #\return)
            (cond
-             [(equal? #\newline (peek-char port))
+             [(equal? #\newline (peek-char-or-special port))
               (set! newline-char-count 2)
-              (list c (read-char port))]
+              (list c (read-char-or-special port))]
              [else
               (set! newline-char-count 1)
               (list c)])]

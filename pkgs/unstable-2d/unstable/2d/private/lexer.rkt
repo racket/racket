@@ -48,11 +48,15 @@ todo:
            ;;    (the ones outside the table, 
            ;;    specifically, are always just spaces)
            (unless (eq? tok 'white-space)
-             (define c1 (string-ref val i))
-             (unless (equal? c1 c2)
-               (error '2d/lexer.rkt "expected a ~s, got ~s while feeding token ~s" 
-                      c1 c2 
-                      (car (2d-lexer-state-pending-tokens a-2d-lexer-state)))))))
+             
+             ;; 3) sometimes we get specials in the port
+             (when (char? c2)
+
+               (define c1 (string-ref val i))
+               (unless (equal? c1 c2)
+                 (error '2d/lexer.rkt "expected a ~s, got ~s while feeding token ~s" 
+                        c1 c2 
+                        (car (2d-lexer-state-pending-tokens a-2d-lexer-state))))))))
        
        ;; actually read the characters in
        (define last-i (- end start))
@@ -65,12 +69,12 @@ todo:
                   ;; of those and then use str-offset when indexing into the string
                   [str-offset 0])
          (unless (= i last-i)
-           (define c2 (read-char port))
+           (define c2 (read-char-or-special port))
            (check-char (+ str-offset i) c2)
            (cond
              [(and (equal? c2 #\return)
-                   (equal? (peek-char port) #\newline))
-              (read-char port)
+                   (equal? (peek-char-or-special port) #\newline))
+              (read-char-or-special port)
               (check-char (+ str-offset i 1) #\newline)
               (loop (+ i 1)
                     (+ str-offset 1))]
@@ -92,9 +96,11 @@ todo:
                (if (null? next-tokens)
                    new-state
                    (dont-stop new-state)))]
-      [(equal? #\# (peek-char port))
+      [(equal? #\# (peek-char-or-special port))
        (define pp (peeking-input-port port))
-       (define chars (list (read-char pp) (read-char pp) (read-char pp)))
+       (define chars (list (read-char-or-special pp) 
+                           (read-char-or-special pp) 
+                           (read-char-or-special pp)))
        (cond
          [(equal? chars '(#\# #\2 #\d))
           (start-new-2d-cond-lexing port a-2d-lexer-state uniform-chained-lexer offset)]
@@ -119,9 +125,9 @@ todo:
 (define (start-new-2d-cond-lexing port a-2d-lexer-state uniform-chained-lexer offset)
   (define-values (line col pos) (port-next-location port))
   ;; consume #\# #\2 and #\d that must be there (peeked them earlier)
-  (read-char port)
-  (read-char port)
-  (read-char port)
+  (read-char-or-special port)
+  (read-char-or-special port)
+  (read-char-or-special port)
   ;; read in the keyword and get those tokens
   
   (define-values (backwards-chars eol-string)
@@ -135,7 +141,7 @@ todo:
                  (equal? c #\newline))
              (values kwd-chars (string c))]
             [else 
-             (read-char port) ;; actually get the char
+             (read-char-or-special port) ;; actually get the char
              (loop (cons c kwd-chars))])))
   (define first-tok-string
     (apply string (reverse backwards-chars)))
@@ -157,7 +163,11 @@ todo:
          c-pos))
      (define peek-port (peeking-input-port port))
      ;; pull the newline out of the peek-port
-     (for ([x (in-range (string-length eol-string))]) (read-char peek-port))
+     (for ([x (in-range (string-length eol-string))]
+           [c1 (in-string eol-string)])
+       (define c2 (read-char-or-special peek-port))
+       (unless (equal? c1 c2)
+         (error 'unstable/2d/lexer.rkt "got an unexpected char.1 ~s vs ~s" c1 c2)))
      
      (define the-state (make-state line pos (string-length first-tok-string)))
      (setup-state the-state)
@@ -205,7 +215,7 @@ todo:
              (define error-pos (- (srcloc-position (car (exn:fail:read-srclocs failed)))
                                   base-position)) ;; account for the newline
              (when (< error-pos 0)
-               (error 'unstable/2d/lexer.rkt "got error-pos < 0: ~s ~s\n" 
+               (error 'unstable/2d/lexer.rkt "got error-pos < 0: ~s ~s" 
                       (srcloc-position (car (exn:fail:read-srclocs failed)))
                       base-position))
              (define peek-port2 (peeking-input-port port))
@@ -216,13 +226,20 @@ todo:
                 (let loop ([n n])
                   (cond
                     [(zero? n) '()]
-                    [else (cons (read-char peek-port2) (loop (- n 1)))]))))
+                    [else 
+                     (define c (read-char-or-special peek-port2))
+                     (cond
+                       [(char? c)
+                        (cons c (loop (- n 1)))]
+                       [else
+                        ;; drop replace specials with spaces
+                        (cons #\space (loop (- n 1)))])]))))
              (cond
                
                [else
                 
                 ;; pull the newline out of peek-port2
-                (for ([x (in-range (string-length eol-string))]) (read-char peek-port2))
+                (for ([x (in-range (string-length eol-string))]) (read-char-or-special peek-port2))
                 
                 (define before-token (list (pull-chars error-pos)
                                            'no-color
@@ -232,14 +249,22 @@ todo:
                 (define end-of-table-approx
                   (let ([peek-port3 (peeking-input-port peek-port2)])
                     (port-count-lines! peek-port3)
+                    (define (read-line/check-double-barred)
+                      (let loop ([found-double-barred? #f])
+                        (define c (read-char-or-special peek-port3))
+                        (cond
+                          [(or (equal? c #\n) (eof-object? c))
+                           found-double-barred?]
+                          [else (loop (or found-double-barred?
+                                          (member c double-barred-chars)))])))
                     (let loop ()
-                      (define l (read-line peek-port3))
-                      (define-values (line col pos) (port-next-location peek-port3))
+                      (define found-double-barred? (read-line/check-double-barred))
                       (cond
-                        [(and (string? l)
-                              (regexp-match double-barred-chars-regexp l))
+                        [found-double-barred?
                          (loop)]
-                        [else pos]))))
+                        [else
+                         (define-values (line col pos) (port-next-location peek-port3))
+                         pos]))))
                 (define after-token
                   (list (pull-chars (- end-of-table-approx 1))
                         'error
@@ -251,7 +276,9 @@ todo:
                     (list newline-token before-token after-token))])]
             [else
              
-             (define lhses (close-cell-graph cell-connections (length table-column-breaks) (length rows)))
+             (define lhses (close-cell-graph cell-connections 
+                                             (length table-column-breaks)
+                                             (length rows)))
              (define scratch-string (make-string (for/sum ([ss (in-list rows)])
                                                    (for/sum ([s (in-list ss)])
                                                      (string-length s)))
