@@ -2076,6 +2076,18 @@ Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].
 }
 
+@defproc[(make-object/c [method-names (listof symbol?)]
+                        [method-contracts (listof contract?)]
+                        [field-names (listof symbol?)]
+                        [field-contracts (listof contract?)])
+         contract?]{
+Produces a contract for an object, similar to @racket[object/c].
+
+This function provides an alternative method to construct
+@racket[object/c] contracts in order to allow library writers
+to create variants or extensions of object contracts at runtime.
+}
+
 @defform/subs[
 #:literals (field -> ->* ->d)
 
