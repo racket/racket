@@ -73,8 +73,8 @@
 (define (unregister-type id)
   (free-id-table-remove! the-mapping id))
 
-(define (finish-register-type id)
-  (unless (maybe-finish-register-type id)
+(define (finish-register-type id [top-level? #f])
+  (unless (or top-level? (maybe-finish-register-type id))
     (tc-error/expr #:stx id "Duplicate definition for ~a" (syntax-e id)))
   (void))
 
