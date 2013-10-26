@@ -40,7 +40,17 @@
 ;; used to time how long it takes to set a preference; the value is not actually used.
 (preferences:set-default 'drracket:prefs-debug #f (λ (x) #t))
 
+;; 'framework:spell-check-on? is only for people who had set
+;; prefs in old versions; it isn't used except to provide the
+;; default values for the newer prefs: 'framework:spell-check-strings?
+;; and 'framework:spell-check-text?
 (preferences:set-default 'framework:spell-check-on? #f boolean?)
+(preferences:set-default 'framework:spell-check-strings? 
+                         (preferences:get 'framework:spell-check-on?)
+                         boolean?)
+(preferences:set-default 'framework:spell-check-text?
+                         (preferences:get 'framework:spell-check-on?)
+                         boolean?)
 
 (preferences:set-default 'framework:always-use-platform-specific-linefeed-convention #f boolean?)
 

@@ -67,6 +67,8 @@ added get-regions
     
     set-spell-check-strings
     get-spell-check-strings
+    set-spell-check-text
+    get-spell-check-text
     get-spell-current-dict))
 
 (define text-mixin
@@ -233,15 +235,24 @@ added get-regions
     ;; ---------------------- Preferences -------------------------------
     (define should-color? #t)
     (define token-sym->style #f)
-    (define spell-check-strings? (preferences:get 'framework:spell-check-on?))
+    (define spell-check-strings? (preferences:get 'framework:spell-check-strings?))
+    (define spell-check-text? (preferences:get 'framework:spell-check-text?))
     
     (define/public (get-spell-check-strings) spell-check-strings?)
+    (define/public (get-spell-check-text) spell-check-text?)
     (define/public (set-spell-check-strings s) 
       (define new-val (and s #t))
-      (unless (eq? new-val spell-check-strings?)
+      (unless (equal? new-val spell-check-strings?)
         (set! spell-check-strings? s)
-        (reset-tokens)
-        (start-colorer token-sym->style get-token pairs)))
+        (spell-checking-values-changed)))
+    (define/public (set-spell-check-text s) 
+      (define new-val (and s #t))
+      (unless (equal? new-val spell-check-text?)
+        (set! spell-check-text? s)
+        (spell-checking-values-changed)))
+    (define/private (spell-checking-values-changed)
+      (reset-tokens)
+      (start-colorer token-sym->style get-token pairs))
     (define current-dict (preferences:get 'framework:aspell-dict))
     (define/public (set-spell-current-dict d)
       (unless (equal? d current-dict)
@@ -390,8 +401,13 @@ added get-regions
       (define ep (+ in-start-pos (sub1 new-token-end)))
       (define style-name (token-sym->style type))
       (define color (send (get-style-list) find-named-style style-name))
+      (define do-spell-check?
+        (cond
+          [(equal? type 'string) spell-check-strings?]
+          [(equal? type 'text) spell-check-text?]
+          [else #f]))
       (cond
-        [(and spell-check-strings? (eq? type 'string))
+        [do-spell-check?
          (define misspelled-color (send (get-style-list) find-named-style misspelled-text-color-style-name))
          (cond
            [misspelled-color

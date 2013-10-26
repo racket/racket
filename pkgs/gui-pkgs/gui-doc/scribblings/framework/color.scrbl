@@ -200,7 +200,19 @@
   
   @defmethod[(set-spell-check-strings [b? boolean?]) void?]{
     If called with @racket[#t], tell the colorer to spell-check
-    string constants. Otherwise, disable spell-checking of constants.
+    string constants. Otherwise, disable spell-checking of 
+    string constants.
+  }
+  
+  @defmethod[(get-spell-check-text) boolean?]{
+    Returns @racket[#t] if the colorer will attempt to
+    spell-check text (e.g., the words inside @litchar[@"{"] and
+    @litchar[@"}"] in Scribble documents).
+  }
+  
+  @defmethod[(set-spell-check-text [b? boolean?]) void?]{
+    If called with @racket[#t], tell the colorer to spell-check
+    text constants. Otherwise, disable spell-checking of text.
   }
   
   @defmethod[(set-spell-current-dict [dict (or/c string? #f)]) void?]{
