@@ -627,8 +627,12 @@ profile todo:
   
   ;; with-mark : mark-stx syntax (any? -> syntax) -> syntax
   ;; a member of stacktrace-imports^
-  ;; guarantees that the continuation marks associated with errortrace-key are
-  ;; members of the debug-source type, after unwrapped with st-mark-source
+  ;; This uses the following format for continuation marks:
+  ;;    (cons Dummy srcloc-list)
+  ;; where Dummy is always ignored.
+  
+  ;; Note that this is not necessarily the same format used by `make-st-mark`
+  ;; which is unspecified.
   (define (with-mark src-stx expr phase)
     (let ([source (cond
                     [(path? (syntax-source src-stx))
@@ -874,7 +878,7 @@ profile todo:
   
   ;; show-frame : (instanceof editor-canvas%)
   ;;              (instanceof text%) 
-  ;;              st-mark?
+  ;;              st-mark   // see format description at `with-mark`
   ;;              def ints  // definitions and interactions texts
   ;;              -> 
   ;;              void 
