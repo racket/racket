@@ -905,10 +905,6 @@ profile todo:
               (λ (ed start end)
                 (open-and-highlight-in-file (list di) edition))))
       
-      ;; make bindings hier-list
-      (let ([bindings (st-mark-bindings di)])
-        (when (not (null? bindings))
-          (send text insert (render-bindings/snip bindings))))
       (unless (zero? skip-count)
         (send text insert " skipped ")
         (send text insert (number->string skip-count))
