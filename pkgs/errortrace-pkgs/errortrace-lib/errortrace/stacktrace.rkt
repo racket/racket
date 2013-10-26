@@ -336,8 +336,8 @@
               ;; lexical variable - no error possile
               expr]
              [(and (pair? b) (let-values ([(base rel) (module-path-index-split (car b))])
-                               (equal? '(quote #%kernel) base)))
-              ;; built-in - no error possible
+                               (and base rel)))
+              ;; from another module -- no error possible
               expr]
              [else
               ;; might be undefined/uninitialized
