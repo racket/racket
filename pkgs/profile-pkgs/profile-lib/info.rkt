@@ -1,6 +1,6 @@
 #lang info
 
-(define collection 'multi)
+(define collection "profile")
 (define deps '("base"))
 (define build-deps '("at-exp-lib"
                      "rackunit-lib"))
