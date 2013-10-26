@@ -520,14 +520,6 @@
                         (rebuild disarmed-expr (list (cons #'tst w-tst)
                                                      (cons #'thn w-thn)
                                                      (cons #'els w-els))))))]
-         [(if tst thn)
-          (let ([w-tst (annotate (syntax tst) phase)]
-                [w-thn (annotate (syntax thn) phase)])
-            (with-mrk* expr
-                       (rearm
-                        expr
-                        (rebuild disarmed-expr (list (cons #'tst w-tst)
-                                                     (cons #'thn w-thn))))))]
          [(with-continuation-mark . body)
           (with-mrk* expr
                      (rearm
