@@ -95,16 +95,14 @@
               (dynamic-require "fasta.rkt" #f)))))
       f))
 
+  (define-runtime-path sumcol-input "sumcol-input.txt")
+
   (define/kw (mk-sumcol-input n #:optional moments?)
     (let ([f (build-path (find-system-path 'temp-dir) (string-append (if moments? "moments-" "sumcol-")
                                                                      (number->string n)))])
       (unless (file-exists? f)
         (printf "Building ~a ~a input: ~a\n" (if moments? "moments" "sumcol") n f)
-        (let ([c (with-input-from-file (build-path (collection-path "tests")
-                                                   "racket"
-                                                   "benchmarks"
-                                                   "shootout"
-                                                   "sumcol-input.txt")
+        (let ([c (with-input-from-file sumcol-input
                    (lambda ()
                      (if moments?
                          (apply string-append ; like sumcol, but with floats
