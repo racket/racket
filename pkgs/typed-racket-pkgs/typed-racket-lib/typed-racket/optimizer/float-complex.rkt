@@ -410,7 +410,7 @@
              (~var call (float-complex-call-site-opt-expr #'op.unboxed-info)))
     #:do [(log-unboxing-opt "unboxed call site")
           (log-arity-raising-opt "call to fun with unboxed args")]
-    #:with opt #'(let*-values (call.bindings ...) (op call.args ...)))
+    #:with opt ((attribute call.opt-app) #'op))
 
   (pattern :float-complex-arith-opt-expr))
 
@@ -494,18 +494,19 @@
 ;; We cannot log opt here because this doesn't see the full original syntax
 (define-syntax-class (float-complex-call-site-opt-expr unboxed-info)
   #:commit
-  #:attributes ((bindings 1) (args 1))
+  #:attributes (opt-app)
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
   (pattern (orig-args:expr ...)
     #:with (unboxed-args ...) unboxed-info
-    #:with ((bindings ...) (args ...))
-      (syntax-parse #'((unboxed-args orig-args) ...)
-        [(e:possibly-unboxed ...)
-         #'((e.bindings ... ...)
-            (e.real-binding ... ...
-             e.imag-binding ... ...
-             e.boxed-binding ... ...))])))
+    #:attr opt-app
+      (λ (op)
+        (syntax-parse #'((unboxed-args orig-args) ...)
+          [(e:possibly-unboxed ...)
+           #`(let*-values (e.bindings ... ...)
+               (#,op e.real-binding ... ...
+                     e.imag-binding ... ...
+                     e.boxed-binding ... ...))]))))
 
 
 (define-syntax-class/specialize float-complex-arith-opt-expr (float-complex-arith-expr* #t))
