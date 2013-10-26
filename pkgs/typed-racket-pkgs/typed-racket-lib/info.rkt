@@ -8,6 +8,7 @@
                "pconvert-lib"
                "unstable-contract-lib"
                "unstable-list-lib"
+               "source-syntax"
                "compatibility-lib" ;; to assign types
                "string-constants-lib"))
 

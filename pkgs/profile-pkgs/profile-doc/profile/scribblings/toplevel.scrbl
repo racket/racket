@@ -2,6 +2,7 @@
 
 @(require scribble/manual
           (for-label racket/base racket/contract profile profile/sampler
+                     errortrace/errortrace-lib
                      (only-in profile/analyzer analyze-samples profile?)
                      (prefix-in text: profile/render-text)))
 
@@ -23,7 +24,8 @@ intended as a convenient tool for profiling code.
           [#:periodic-renderer periodic-renderer
            (or/c #f (list/c (>=/c 0.0)
                             (profile? . -> . any/c)))
-           #f])
+           #f]
+          [#:use-errortrace? use-errortrace? any/c #f])
          void?]{
 
 Executes the given @racket[thunk] and collect profiling data during
@@ -39,6 +41,14 @@ can customize the profiling:
   be close, but not identical to, the frequency in which data is
   actually sampled.  (The @racket[delay] value is passed on to
   @racket[create-sampler], which creates the sampler thread.)}
+ 
+@item{When @racket[use-errortrace?] is not @racket[#f], more accurate
+  stack snapshots are captured using 
+  @other-doc['(lib "errortrace/scribblings/errortrace.scrbl")]. Note that
+  when this is provided, it will only profile uncompiled files and files
+  compiled while using @racket[errortrace-compile-handler], and the profiled program
+  must be run using @commandline{racket -l errortrace -t program.rkt}
+  Removing compiled files (with extension @tt{.zo}) is sufficient to enable this.}
 
 @item{Due to the statistical nature of the profiler, longer executions
   result in more accurate analysis.  You can specify a number of

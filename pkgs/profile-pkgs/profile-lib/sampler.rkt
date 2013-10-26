@@ -6,8 +6,24 @@
 
 (provide create-sampler)
 
+(require errortrace/errortrace-key)
+
+;; (cons sexp srcloc) -> (cons symbol srcloc)
+;; just take the first symbol we find
+(define (errortrace-preprocess frame)
+  (cons (and (cadr frame)
+             (let loop ([e (cadr frame)])
+               (cond [(symbol? e) e]
+                     [(pair? e) (loop (car e))]                
+                     [else (error 'errortrace-preprocess
+                                  "unexpected frame: ~a" frame)])))
+        (and (cddr frame)
+             (apply srcloc (cddr frame)))))
+
 ;; create-sampler : creates a sample collector thread, which tracks the given
 ;; `to-track' value every `delay' seconds.
+;; Uses errortrace annotations when #:use-errortrace? is specified, otherwise
+;;   uses the native stack traces provided by `cms->context`.
 ;; * The input value can be either a thread (track just that thread), a
 ;;   custodian (track all threads managed by the custodian), or a list of
 ;;   threads and/or custodians.  If a custodian is given, it must be
@@ -57,7 +73,8 @@
 ;;     same format as the output of continuation-mark-set->list*.
 (define (create-sampler to-track delay
                         [super-cust  (current-custodian)]
-                        [custom-keys #f])
+                        [custom-keys #f]
+                        #:use-errortrace? [do-errortrace #f])
   ;; the collected data
   (define snapshots '())
   ;; listof (cons continuation-mark-key value/#f)
@@ -116,9 +133,15 @@
                  (set! snapshots
                        (cons (list* (thread-id t)
                                     (current-process-milliseconds t)
-                                    (map intern-entry
-                                         (continuation-mark-set->context
-                                          (continuation-marks t))))
+                                    (if do-errortrace
+                                        (for/list ([frame (in-list
+                                                           (continuation-mark-set->list
+                                                            (continuation-marks t)
+                                                            errortrace-key))])
+                                            (intern-entry (errortrace-preprocess frame)))
+                                        (map intern-entry
+                                             (continuation-mark-set->context
+                                              (continuation-marks t)))))
                              snapshots)))]
               [(custodian? t)
                (for-each loop (custodian-managed-list t super-cust))]

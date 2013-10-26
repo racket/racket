@@ -2,10 +2,14 @@
 (require racket/unit
          syntax/kerncase
          syntax/stx
+         syntax/source-syntax
          (for-template racket/base)
          (for-syntax racket/base)) ; for matching
 
-(provide stacktrace@ stacktrace^ stacktrace-imports^)
+(define original-stx (make-parameter #f))
+(define expanded-stx (make-parameter #f))
+
+(provide stacktrace@ stacktrace^ stacktrace-imports^ original-stx expanded-stx)
 (define-signature stacktrace-imports^
   (with-mark
    
@@ -18,6 +22,15 @@
    initialize-profile-point
    register-profile-start
    register-profile-done))
+
+;; The intentionally-undocumented format of bindings introduced by `make-st-mark` is:
+;; (cons syntax? (cons syntax? srcloc-list))
+
+;; The first syntax object is the original annotated source expression as a (shrunken)
+;; datum.
+
+;; The second syntax object is some part of the original syntax as a (shrunken)
+;; datum, which contains the code that expanded to the annotated expression.
 
 (define-signature stacktrace^
   (annotate-top
@@ -55,14 +68,25 @@
       [(syntax? v) (short-version (syntax-e v) depth)]
       [else v]))
   
+  (define recover-table (make-hash))
+
   (define (make-st-mark stx phase)
     (unless (syntax? stx)
       (error 'make-st-mark
              "expected syntax object as argument, got ~e" stx))
     (cond
       [(syntax-source stx)
+       ;; this horrible indirection is needed because the errortrace
+       ;; unit is invoked only once but annotate-top might be called
+       ;; many times with diferent values for original-stx and
+       ;; expanded-stx
+       (define recover (hash-ref! recover-table (cons (original-stx) (expanded-stx))
+				  (lambda ()
+				    (recover-source-syntax (original-stx) (expanded-stx)))))
+       (define better-stx (and stx (recover stx)))
        (with-syntax ([quote (syntax-shift-phase-level #'quote phase)])
          #`(quote (#,(short-version stx 10)
+                   #,(short-version better-stx 10)
                    #,(syntax-source stx)
                    #,(syntax-line stx)
                    #,(syntax-column stx)
@@ -72,7 +96,7 @@
   
   (define (st-mark-source src)
     (and src
-         (datum->syntax #f (car src) (cdr src) #f)))
+         (datum->syntax #f (car src) (cddr src) #f)))
   
   (define (st-mark-bindings x) null)
   
