@@ -36,9 +36,7 @@
              (~var call (float-complex-call-site-opt-expr #'loop-fun.unboxed-info)))
     #:do [(log-opt "unboxed call site" "Complex number unboxing")
           (log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
-    #:with opt #'(let*-values
-                   (((op) operator.opt) call.bindings ...)
-                   (op call.args ...))))
+    #:with opt #`(let*-values (((op) operator.opt)) #,((attribute call.opt-app) #'op))))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
