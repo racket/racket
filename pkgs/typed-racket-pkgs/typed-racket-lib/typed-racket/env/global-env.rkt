@@ -74,7 +74,7 @@
   (free-id-table-remove! the-mapping id))
 
 (define (finish-register-type id [top-level? #f])
-  (unless (or top-level? (maybe-finish-register-type id))
+  (unless (or (maybe-finish-register-type id) top-level?)
     (tc-error/expr #:stx id "Duplicate definition for ~a" (syntax-e id)))
   (void))
 
