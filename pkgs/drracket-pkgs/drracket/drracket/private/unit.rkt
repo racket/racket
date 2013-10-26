@@ -3827,30 +3827,44 @@
       
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
-        (new menu:can-restore-checkable-menu-item%
-             [label (string-constant spell-check-string-constants)]
-             [shortcut #\c]
-             [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
-             [parent edit-menu]
-             [demand-callback
-              (λ (item)
-                (define ed (get-edit-target-object))
-                (define on? (and ed (is-a? ed color:text<%>)))
-                (send item enable ed)
-                (send item check (and on? (send ed get-spell-check-strings))))]
-             [callback
-              (λ (item evt)
-                (define problem (aspell-problematic?))
-                (cond
-                 [problem
-                  (message-box (string-constant drscheme)
-                               problem)
-                  (preferences:set 'framework:spell-check-on? #f)]
-                 [else
+        (define (mk-menu-item checking-turned-on? 
+                              turn-checking-on
+                              pref-sym
+                              shortcut
+                              label)
+          (new menu:can-restore-checkable-menu-item%
+               [label label]
+               [shortcut shortcut]
+               [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+               [parent edit-menu]
+               [demand-callback
+                (λ (item)
                   (define ed (get-edit-target-object))
-                  (define old-val (send ed get-spell-check-strings))
-                  (preferences:set 'framework:spell-check-on? (not old-val))
-                  (send ed set-spell-check-strings (not old-val))]))])
+                  (define on? (and ed (is-a? ed color:text<%>)))
+                  (send item enable ed)
+                  (send item check (and on? (checking-turned-on? ed))))]
+               [callback
+                (λ (item evt)
+                  (define problem (aspell-problematic?))
+                  (cond
+                    [problem
+                     (message-box (string-constant drscheme) problem)
+                     (preferences:set pref-sym #f)]
+                    [else
+                     (define ed (get-edit-target-object))
+                     (define old-val (checking-turned-on? ed))
+                     (preferences:set pref-sym (not old-val))
+                     (turn-checking-on ed (not old-val))]))]))
+        (mk-menu-item (λ (ed) (send ed get-spell-check-strings)) 
+                      (λ (ed new-val) (send ed set-spell-check-strings new-val))
+                      'framework:spell-check-strings?
+                      #\c
+                      (string-constant spell-check-string-constants))
+        (mk-menu-item (λ (ed) (send ed get-spell-check-text)) 
+                      (λ (ed new-val) (send ed set-spell-check-text new-val))
+                      'framework:spell-check-text?
+                      #\t
+                      (string-constant spell-check-scribble-text))
         (define dicts (get-aspell-dicts))
         (when dicts
           (define dicts-menu (new menu:can-restore-underscore-menu% 
