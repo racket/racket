@@ -335,6 +335,7 @@ please adhere to these guidelines:
  (scheme-mode-color-keyword "Keyword")
  (scheme-mode-color-comment "Comment")
  (scheme-mode-color-string "String")
+ (scheme-mode-color-text "Text")
  (scheme-mode-color-constant "Constant")
  (scheme-mode-color-parenthesis "Parenthesis")
  (scheme-mode-color-hash-colon-keyword "#:Keyword")
