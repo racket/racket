@@ -214,8 +214,8 @@
             ;; Read string up to @, }, or newline
             (regexp-match? (text-string-rx l) in)
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
-              (values 'string
-                      'string
+              (values 'text
+                      'text
                       #f
                       pos
                       end-pos
