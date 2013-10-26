@@ -11,12 +11,14 @@
                        #:repeat  [rpt 1]
                        #:threads [threads? #f]
                        #:render  [renderer text:render]
-                       #:periodic-renderer [periodic-renderer #f])
+                       #:periodic-renderer [periodic-renderer #f]
+                       #:use-errortrace? [et? #f])
   (define cust (and threads? (make-custodian (current-custodian))))
   (define sampler (create-sampler (if threads?
                                     (list cust (current-thread))
                                     (current-thread))
-                                  delay))
+                                  delay
+                                  #:use-errortrace? et?))
   (define periodic-thread
     (and periodic-renderer
          (let ([delay (car periodic-renderer)]

@@ -433,8 +433,10 @@
 (define errortrace-annotate
   (lambda (top-e)
     (define (normal e)
-      (annotate-top (expand-syntax e) 
-                    (namespace-base-phase)))
+      (define expanded-e (expand-syntax e))
+      (parameterize ([original-stx e]
+                     [expanded-stx expanded-e])
+        (annotate-top expanded-e (namespace-base-phase))))
     (syntax-case top-e ()
       [(mod name . reste)
        (and (identifier? #'mod)
@@ -443,11 +445,11 @@
                                (namespace-base-phase)))
        (if (eq? (syntax-e #'name) 'errortrace-key)
            top-e
-           (let ([top-e (normal top-e)])
+           (let ([expanded-e (normal top-e)])
              (initialize-test-coverage)
              (add-test-coverage-init-code
               (transform-all-modules 
-               top-e
+               expanded-e
                (lambda (top-e mod-id)
                  (syntax-case top-e ()
                    [(mod name init-import mb)

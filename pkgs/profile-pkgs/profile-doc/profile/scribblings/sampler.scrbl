@@ -1,7 +1,8 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label racket/base racket/contract profile/sampler profile/analyzer))
+          (for-label racket/base racket/contract profile/sampler profile/analyzer
+                     errortrace/errortrace-key))
 
 @title[#:tag "sampler"]{Collecting Profile Information}
 
@@ -11,7 +12,8 @@
                                          (listof (or/c thread? custodian?)))]
                          [delay (>=/c 0.0)]
                          [super-cust custodian? (current-custodian)]
-                         [custom-keys (listof any/c) '()])
+                         [custom-keys (listof any/c) '()]
+                         [#:use-errortrace? use-errortrace? any/c #f])
          ((symbol?) (any/c) . ->* . any/c)]{
 
 Creates a stack-snapshot collector thread, which tracks the given
@@ -25,6 +27,10 @@ custodian.
 When @racket[custom-keys] are provided, the sampler takes snapshots of the
 continuation marks corresponding to the given keys, in addition to taking
 snapshots of the stack.
+
+When @racket[use-errortrace?] is not @racket[#f], the @racket[errortrace-key] is 
+used to sample snapshots instead of the implicit key used by 
+@racket[continuation-mark-set->context].
 
 The resulting value is a controller function, which consumes a message
 consisting of a symbol and an optional argument, and can affect the
