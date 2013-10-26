@@ -1789,6 +1789,7 @@ please adhere to these guidelines:
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "Spell Check String Constants")
+  (spell-check-scribble-text "Spell Check Text (between {} in Scribble)")
   (spelling-dictionaries "Spelling Dictionaries") ; (sub)menu whose items are the different possible dictionaries
   (default-spelling-dictionary "Default Dictionary") ; first item in menu from previous line
   (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
