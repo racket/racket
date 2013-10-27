@@ -66,15 +66,20 @@
     (bad-opt (* 1.0f-30 1.0f-30 1.0e60+1.0e60i))
 
     ;; Unary division has bad underflow
-    (bad-opt (/ (make-rectangular 1e+100 1e-300)))
-    (bad-opt (/ 0.5+1.7e+308i))
+    (good-opt (/ (make-rectangular 1e+100 1e-300)))
+    (good-opt (/ 0.5+1.7e+308i))
+    (bad-opt (/ 1 (make-rectangular 1e+100 1e-300)))
+    (bad-opt (/ 1 0.5+1.7e+308i))
 
     ;; Division of complex 0 should only make part of the result nan
-    (bad-opt (/ 0.0+0.0i))
+    (good-opt (/ 0.0+0.0i))
+    (bad-opt (/ 1 0.0+0.0i))
 
     ;; Division of complex infinity should only make part of the result nan
-    (bad-opt (/ (make-rectangular 1.0 +inf.0)))
-    (bad-opt (/ (make-rectangular +inf.0 1.0)))
+    (good-opt (/ (make-rectangular 1.0 +inf.0)))
+    (good-opt (/ (make-rectangular +inf.0 1.0)))
+    (bad-opt (/ 1 (make-rectangular 1.0 +inf.0)))
+    (bad-opt (/ 1 (make-rectangular +inf.0 1.0)))
 
     ;; Exp of large real should have 0 imaginary component
     (good-opt (+ (exp 1.7976931348623151e+308) 0.0+0.0i))
