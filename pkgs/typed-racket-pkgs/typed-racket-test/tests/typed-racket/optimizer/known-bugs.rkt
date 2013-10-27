@@ -72,7 +72,11 @@
     (bad-opt (+ (expt 10 501) (expt -10 501) 1.0+1.0i))
 
     ;; Negation should correctly compute sign of 0.0
-    (bad-opt (- (+ 0 0) 0.0+0.0i))))
+    (bad-opt (- 0.0+0.0i))
+    (bad-opt (- 0+0i 0.0+0.0i))
+
+    ;; Conjugate should correctly compute sign of 0.0
+    (bad-opt (conjugate 0.0+0.0i))))
 
 (module+ main
   (require rackunit/text-ui)
