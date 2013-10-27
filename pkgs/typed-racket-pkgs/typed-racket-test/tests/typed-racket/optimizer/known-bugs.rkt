@@ -57,7 +57,7 @@
   (test-suite "Known bugs"
 
     ;; Arguments are converted to inexact too early
-    (good-opt (* (make-rectangular -inf.0 1) (* 1 1)))
+    (bad-opt (* (make-rectangular -inf.0 1) (* 1 1)))
     (bad-opt (/ -inf.0-inf.0i 8))
     (good-opt (- (* -1 1 +nan.0) 1.0+1.0i))
     (good-opt (- (* (/ 6 11) (/ 1.2345678f0 123456.7f0)) (make-rectangular 0.0 0.3)))
