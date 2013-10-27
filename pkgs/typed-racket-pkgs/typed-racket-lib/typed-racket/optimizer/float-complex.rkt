@@ -96,6 +96,39 @@
                   [(unsafe-fl= #,c 0.0) #,c=0-case]
                   [else                 #,general-case])]]))
 
+;; a+bi / c+di, names for real and imag parts of result -> one let-values binding clause
+;; b = exact 0
+;; a,c,d are floats (!= exact 0)
+(define (unbox-one-float-complex-/ a c d res-real res-imag)
+  ;; TODO: In what cases is the negation in the d=0 case useful
+  (define d=0-case
+    #`(values (unsafe-fl/ #,a #,c)
+              (unsafe-fl* -1.0 (unsafe-fl* #,d #,a))))
+  (define c=0-case
+    #`(values (unsafe-fl* #,c #,a)
+              (unsafe-fl* -1.0 (unsafe-fl/ #,a #,d))))
+
+
+  (define general-case
+    #`(let* ([cm    (unsafe-flabs #,c)]
+             [dm    (unsafe-flabs #,d)]
+             [swap? (unsafe-fl< cm dm)]
+             [a     #,a]
+             [c     (if swap? #,d #,c)]
+             [d     (if swap? #,c #,d)]
+             [r     (unsafe-fl/ c d)]
+             [den   (unsafe-fl+ d (unsafe-fl* c r))]
+             [i     (if swap?
+                        (unsafe-fl/ (unsafe-fl* -1.0 (unsafe-fl* a r)) den)
+                        (unsafe-fl/ (unsafe-fl* -1.0 a) den))]
+             [j     (if swap? a (unsafe-fl* a r))])
+          (values (unsafe-fl/ j den) i)))
+  #`[(#,res-real #,res-imag)
+     (cond [(unsafe-fl= #,d 0.0) #,d=0-case]
+           [(unsafe-fl= #,c 0.0) #,c=0-case]
+           [else                 #,general-case])])
+
+
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
 ;; we keep the real and imaginary parts unboxed as long as we stay within
@@ -225,8 +258,8 @@
     #:do [(log-unboxing-opt "unboxed unary float complex")]
     #:with (bindings ...)
       #`(c1.bindings ...
-         #,(unbox-one-complex-/ #'1.0 #'0.0 #'c1.real-binding #'c1.imag-binding
-                                #'real-binding #'imag-binding)))
+         #,(unbox-one-float-complex-/ #'1.0 #'c1.real-binding #'c1.imag-binding
+                                      #'real-binding #'imag-binding)))
 
   (pattern (#%plain-app op:conjugate^ c:unboxed-float-complex-opt-expr)
     #:when (subtypeof? this-syntax -FloatComplex)
