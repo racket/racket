@@ -122,6 +122,10 @@
                (list
                 #`((real-binding) #,(fl-sum #'(cs.real-binding ...)))
                 #`((imag-binding) #,(fl-sum #'(cs.imag-binding ...)))))))
+  (pattern (#%plain-app op:+^ :unboxed-float-complex-opt-expr)
+    #:when (subtypeof? this-syntax -FloatComplex)
+    #:do [(log-unboxing-opt "unboxed unary float complex")])
+
 
   (pattern (#%plain-app op:-^ (~between cs:unboxed-float-complex-opt-expr 2 +inf.0) ...)
     #:when (subtypeof? this-syntax -FloatComplex)
@@ -188,6 +192,9 @@
                                                #`(unsafe-fl- (unsafe-fl* #,o1 #,(car e1))
                                                              (unsafe-fl* #,o2 #,(car e2))))))
                                  res))))))))
+  (pattern (#%plain-app op:*^ :unboxed-float-complex-opt-expr)
+    #:when (subtypeof? this-syntax -FloatComplex)
+    #:do [(log-unboxing-opt "unboxed unary float complex")])
 
   (pattern (#%plain-app op:/^
                         c1:unboxed-float-complex-opt-expr
