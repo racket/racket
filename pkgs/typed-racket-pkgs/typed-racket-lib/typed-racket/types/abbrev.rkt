@@ -1,5 +1,9 @@
 #lang racket/base
 
+;; This module provides abbreviations that are used to construct types
+;; and data that show up in types. These are intended for internal use
+;; within Typed Racket implementation code.
+
 (require "../utils/utils.rkt"
          racket/list
          racket/match
@@ -21,17 +25,14 @@
          racket/tcp racket/flonum
          '#%place) ;; avoid the other dependencies of `racket/place`
 
-
 (provide (except-out (all-defined-out) make-Base)
          (all-from-out "base-abbrev.rkt" "match-expanders.rkt"))
 
-;; all the types defined here are not numeric
+;; All the types defined here are not numeric
 (define (make-Base name contract predicate)
   (make-Base* name contract predicate #f))
 
-;; convenient constructors
-
-
+;; Convenient constructors
 (define -App make-App)
 (define -mpair make-MPair)
 (define -Param make-Param)
@@ -42,14 +43,13 @@
 (define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)
+
 (define (-seq . args) (make-Sequence args))
+
 (define (one-of/c . args)
   (apply Un (map -val args)))
+
 (define (-opt t) (Un (-val #f) t))
-
-
-
-
 
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
@@ -57,11 +57,7 @@
 (define (-Tuple* l b)
   (foldr -pair b l))
 
-
-
-
-
-;; convenient constructor for Values
+;; Convenient constructor for Values
 ;; (wraps arg types with Result)
 (define/cond-contract (-values args)
   (c:-> (c:listof Type/c) (c:or/c Type/c Values?))
@@ -69,7 +65,7 @@
     ;[(list t) t]
     [_ (make-Values (for/list ([i (in-list args)]) (-result i)))]))
 
-;; convenient constructor for ValuesDots
+;; Convenient constructor for ValuesDots
 ;; (wraps arg types with Result)
 (define/cond-contract (-values-dots args dty dbound)
   (c:-> (c:listof Type/c) Type/c (c:or/c symbol? c:natural-number/c)
@@ -77,19 +73,14 @@
   (make-ValuesDots (for/list ([i (in-list args)]) (-result i))
                    dty dbound))
 
-;; basic types
-
-
-
+;; Basic types
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
-
 (define/decl -Boolean (Un -False -True))
 (define/decl -Undefined
   (make-Base 'Undefined
              #'(lambda (x) (equal? (letrec ([y y]) y) x)) ; initial value of letrec bindings
              (lambda (x) (equal? (letrec ([y y]) y) x))))
 (define/decl -Bytes (make-Base 'Bytes #'bytes? bytes?))
-
 (define/decl -Base-Regexp (make-Base 'Base-Regexp
                            #'(and/c regexp? (not/c pregexp?))
                            (conjoin regexp? (negate pregexp?))))
@@ -97,7 +88,6 @@
 				 #'pregexp?
 				 pregexp?))
 (define/decl -Regexp (Un -PRegexp -Base-Regexp))
-
 (define/decl -Byte-Base-Regexp
   (make-Base 'Byte-Base-Regexp
 	     #'(and/c byte-regexp? (not/c byte-pregexp?))
@@ -105,16 +95,7 @@
 (define/decl -Byte-PRegexp
   (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp?))
 (define/decl -Byte-Regexp (Un -Byte-Base-Regexp -Byte-PRegexp))
-
 (define/decl -Pattern (Un -Bytes -Regexp -Byte-Regexp -String))
-
-
-
-
-
-
-
-
 (define/decl -Keyword (make-Base 'Keyword #'keyword? keyword?))
 (define/decl -Thread (make-Base 'Thread #'thread? thread?))
 (define/decl -Module-Path
@@ -125,10 +106,10 @@
       (-pair (-val 'planet)
 	     (Un (-lst* -Symbol)
 		 (-lst* -String)
-		 (-lst* -String 
-			(-lst* 
+		 (-lst* -String
+			(-lst*
 			 -String -String
-			 #:tail (make-Listof 
+			 #:tail (make-Listof
 				 (Un -Nat
 				     (-lst* (Un -Nat (one-of/c '= '+ '-))
 					    -Nat)))))))))
@@ -151,9 +132,7 @@
 (define/decl -Input-Port (make-Base 'Input-Port #'input-port? input-port?))
 (define/decl -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener? tcp-listener?))
 (define/decl -UDP-Socket (make-Base 'UDP-Socket #'udp? udp?))
-
 (define/decl -FlVector (make-Base 'FlVector #'flvector? flvector?))
-
 (define -Syntax make-Syntax)
 (define/decl In-Syntax
   (-mu e
@@ -162,9 +141,7 @@
            (make-Box (-Syntax e))
            (make-Listof (-Syntax e))
            (-pair (-Syntax e) (-Syntax e)))))
-
 (define/decl Any-Syntax (-Syntax In-Syntax))
-
 (define (-Sexpof t)
   (-mu sexp
        (Un (-val '())
@@ -173,24 +150,13 @@
            (make-Vector sexp)
            (make-Box sexp)
            t)))
-
 (define/decl -Sexp (-Sexpof (Un)))
-
 (define Syntax-Sexp (-Sexpof Any-Syntax))
-
 (define Ident (-Syntax -Symbol))
-
-
-
-
 (define -HT make-Hashtable)
-
 (define/decl -HashTop (make-HashtableTop))
 (define/decl -VectorTop (make-VectorTop))
-
-
 (define/decl -Port (Un -Output-Port -Input-Port))
-
 (define/decl -SomeSystemPath (Un -Path -OtherSystemPath))
 (define/decl -Pathlike (Un -String -Path))
 (define/decl -SomeSystemPathlike (Un -String -SomeSystemPath))
@@ -198,36 +164,21 @@
 (define/decl -SomeSystemPathlike*
   (Un -String -SomeSystemPath(-val 'up) (-val 'same)))
 (define/decl -PathConventionType (Un (-val 'unix) (-val 'windows)))
-
-
-
 (define/decl -Pretty-Print-Style-Table
   (make-Base 'Pretty-Print-Style-Table #'pretty-print-style-table? pretty-print-style-table?))
-
-
 (define/decl -Read-Table
   (make-Base 'Read-Table #'readtable? readtable?))
-
 (define/decl -Special-Comment
   (make-Base 'Special-Comment #'special-comment? special-comment?))
-
 (define/decl -Custodian (make-Base 'Custodian #'custodian? custodian?))
-
 (define/decl -Parameterization (make-Base 'Parameterization #'parameterization? parameterization?))
-
-
 (define/decl -Inspector (make-Base 'Inspector #'inspector inspector?))
-
 (define/decl -Namespace-Anchor (make-Base 'Namespace-Anchor #'namespace-anchor? namespace-anchor?))
-
 (define/decl -Variable-Reference (make-Base 'Variable-Reference #'variable-reference? variable-reference?))
-
-
 (define/decl -Internal-Definition-Context
   (make-Base 'Internal-Definition-Context
 	     #'internal-definition-context?
 	     internal-definition-context?))
-
 (define/decl -Subprocess
   (make-Base 'Subprocess #'subprocess? subprocess?))
 (define/decl -Security-Guard
@@ -238,31 +189,19 @@
   (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property?))
 (define/decl -Impersonator-Property
   (make-Base 'Impersonator-Property #'impersonator-property? impersonator-property?))
-
-
-
-
 (define/decl -Semaphore (make-Base 'Semaphore #'semaphore? semaphore?))
 (define/decl -Bytes-Converter (make-Base 'Bytes-Converter #'bytes-converter? bytes-converter?))
 (define/decl -Pseudo-Random-Generator
   (make-Base 'Pseudo-Random-Generator #'pseudo-random-generator? pseudo-random-generator?))
-
-
 (define/decl -Logger (make-Base 'Logger #'logger? logger?))
 (define/decl -Log-Receiver (make-Base 'LogReceiver #'log-receiver? log-receiver?))
 (define/decl -Log-Level (one-of/c 'fatal 'error 'warning 'info 'debug))
-
-
 (define/decl -Place (make-Base 'Place #'place? place?))
 (define/decl -Base-Place-Channel
   (make-Base 'Base-Place-Channel #'(and/c place-channel? (not/c place?))  (conjoin place-channel? (negate place?))))
-
 (define/decl -Place-Channel (Un -Place -Base-Place-Channel))
-
 (define/decl -Will-Executor
   (make-Base 'Will-Executor #'will-executor? will-executor?))
-
-
 
 ;; Paths
 (define/decl -car (make-CarPE))
@@ -270,14 +209,12 @@
 (define/decl -syntax-e (make-SyntaxPE))
 (define/decl -force (make-ForcePE))
 
-
-;; function type constructors
-
-(define/decl top-func (make-Function (list (make-top-arr))))
-
-
+;; Structs
 (define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy])
   (make-Struct name parent flds proc poly pred))
+
+;; Function type constructors
+(define/decl top-func (make-Function (list (make-top-arr))))
 
 (define (asym-pred dom rng filter)
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))
