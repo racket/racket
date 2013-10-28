@@ -309,7 +309,9 @@
                       (abort-to-racklog-prompt #f))))
          (abort-to-racklog-prompt
           (list (cons 'v (logic-var-val* v))
-                ...)))))))
+                ...)))))
+    [(%which (v ...) g ...)
+     (%which (v ...) (%and g ...))]))
 
 (define (%more)
   (with-racklog-prompt

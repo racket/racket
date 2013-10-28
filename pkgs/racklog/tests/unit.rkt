@@ -556,5 +556,8 @@
  (%more) => #f
  (%which () (%let (x) (%var 1))) => #f
  (%which () (%let (x) (%and (%= x 1) (%var x)))) => #f
+
+ (%which () %true %true) => empty
+ (%more) => #f
  
  )
