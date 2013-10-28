@@ -146,7 +146,8 @@
 	(set! click-regions (cons cr click-regions)))
 
       (define (add-interactive! ir)
-        (set! interactives (hash-set interactives ir #t)))
+        (set! interactives (hash-set interactives ir #t))
+        (send c queue-interactive-check))
 
       (define (make-quad l)
 	(cond
@@ -862,6 +863,8 @@
                 (set! interactives (for/hash ([k (in-hash-keys prefetched-interactives)])
                                      (values (shift-interact k dx dy)
                                              #t)))
+                (when (positive? (hash-count prefetched-interactives))
+                  (queue-interactive-check))
 		(send f set-blank-cursor (null? click-regions)))))
 	  (define/override (on-size w h)
 	    (unless resizing-frame?
@@ -969,6 +972,22 @@
             (lambda (on?)
               (unless on?
                 (swap-interactives! interactives #hash()))))
+
+          (define/public (queue-interactive-check)
+            ;; If a superwindow is hidden before we ere get a notification
+            ;; that the superwindow was visible, then we don't get a
+            ;; notification that the window is hidden. Use a low-priority
+            ;; callback to double-check.
+            (queue-callback (lambda ()
+                              (when (positive? (hash-count interactives))
+                                (let loop ([p this])
+                                  (cond
+                                   [(not p) (void)]
+                                   [(send p is-shown?) (loop (send p get-parent))]
+                                   [else
+                                    ;; some superwindow is hidden
+                                    (swap-interactives! interactives #hash())]))))
+                            #f))
 
           (define/public (call-with-suspended-interactive thunk)
             (define i interactives)
