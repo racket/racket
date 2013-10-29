@@ -293,7 +293,7 @@
         [(Univ:)
          (cond [(from-typed? typed-side)
                 (set-chaperone!)
-                #'any-wrap/c]
+                #'any-wrap/c]p
                [else #'any/c])]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
@@ -413,7 +413,7 @@
              ;; in typed positions, no checking needed for the variables
              (parameterize ([vars (append (for/list ([v (in-list vs)]) (list v #'any/c)) (vars))])
                (t->c b))
-             ;; in untyped positions, use `parameteric/c'
+             ;; in untyped positions, use `parametric->/c'
              (match-let ([(Poly-names: vs-nm _) ty])
                (with-syntax ([(v ...) (generate-temporaries vs-nm)])
                  (set-impersonator!)
