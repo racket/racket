@@ -1342,7 +1342,7 @@
    (call/input-url (string->url string)
                    get-pure-port
                    (λ (port)
-                     (make-object bitmap% port 'unknown #f #t)))))
+                     (make-object bitmap% port 'unknown/alpha #f #t)))))
                       
 (define/chk (bitmap/file filename)
   (unless (file-exists? filename)
