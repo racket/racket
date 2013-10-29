@@ -14,7 +14,8 @@ An @deftech{impersonator} is a wrapper for a value where the wrapper
 redirects some of the value's operations. Impersonators apply only to procedures,
 @tech{structures} for which an accessor or mutator is available,
 @tech{structure types}, @tech{hash tables}, @tech{vectors},
-@tech{box}es, and @tech{prompt tag}s. An impersonator is @racket[equal?] to the original
+@tech{box}es, @tech{channels}, and @tech{prompt tag}s.
+An impersonator is @racket[equal?] to the original
 value, but not @racket[eq?] to the original value.
 
 A @deftech{chaperone} is a kind of impersonator whose refinement of a value's
@@ -45,6 +46,7 @@ the impersonator:
             unbox set-box!
             vector-ref vector-set!
             hash-ref hash-set hash-set! hash-remove hash-remove!
+            channel-get channel-put
             call-with-continuation-prompt
             abort-current-continuation]
 
@@ -350,6 +352,32 @@ to @racket[impersonate-hash] must be odd) add impersonator properties
 or override impersonator-property values of @racket[hash].}
 
 
+@defproc[(impersonate-channel [channel channel?]
+                              [get-proc (channel? . -> . (values channel? (any/c . -> . any/c)))]
+                              [put-proc (channel? any/c . -> . any/c)]
+                              [prop impersonator-property?]
+                              [prop-val any] ... ...)
+          (and/c channel? impersonator?)]{
+
+Returns an impersonator of @racket[channel], which redirects the
+@racket[channel-get] and @racket[channel-put] operations.
+
+The @racket[get-proc] generator is called on @racket[channel-get]
+or any other operation that fetches results from the channel (such
+as a @racket[sync] on the channel). The @racket[get-proc] must return
+two values: a @tech{channel} that is an impersonator of @racket[channel], and a
+procedure that is used to check the channel's contents.
+
+The @racket[put-proc] must accept @racket[channel] and the value passed to
+@racket[channel-put]; it must produce a replacement
+value, which is used with @racket[channel-put] on the original
+@racket[channel] to send the value over the channel.
+
+Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
+to @racket[impersonate-channel] must be odd) add impersonator properties
+or override impersonator-property values of @racket[channel].}
+
+
 @defproc[(impersonate-prompt-tag [prompt-tag continuation-prompt-tag?]
                                  [handle-proc procedure?]
                                  [abort-proc procedure?]
@@ -647,6 +675,31 @@ and it must return a chaperone of that value.
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[chaperone-evt] must be even) add impersonator properties
 or override impersonator-property values of @racket[evt].}
+
+
+@defproc[(chaperone-channel [channel channel?]
+                            [get-proc (channel? . -> . (values channel? (any/c . -> . any/c)))]
+                            [put-proc (channel? any/c . -> . any/c)]
+                            [prop impersonator-property?]
+                            [prop-val any] ... ...)
+          (and/c channel? chaperone?)]{
+
+Like @racket[impersonate-channel], but with restrictions on the
+@racket[get-proc] and @racket[put-proc] procedures.
+
+The @racket[get-proc] must return two values: a @tech{channel}
+that is a chaperone of @racket[channel], and a procedure that
+is used to check the channel's contents. The latter procedure
+must return the original value or a chaperone of that value.
+
+The @racket[put-proc] must produce a replacement value that is
+either the original value communicated on the channel or a
+chaperone of that value.
+
+Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
+to @racket[chaperone-channel] must be odd) add impersonator properties
+or override impersonator-property values of @racket[channel].}
+
 
 @defproc[(chaperone-prompt-tag [prompt-tag continuation-prompt-tag?]
                                [handle-proc procedure?]
