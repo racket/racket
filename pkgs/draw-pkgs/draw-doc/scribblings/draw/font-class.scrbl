@@ -211,7 +211,7 @@ Gets the font's weight. See @racket[font%] for information about
 
 }
 
-@defmethod[(screen-glyph-exists? [c char]
+@defmethod[(screen-glyph-exists? [c char?]
                                  [for-label? any/c #f])
            boolean?]{
 

@@ -162,7 +162,7 @@ See also @racket[path-dialog%] for a richer interface.
 
 @defproc[(get-directory [message (or/c label-string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                        [directory (or/c path? #f) #f]
+                        [directory (or/c path-string? #f) #f]
                         [style (listof (or/c 'enter-packages 'common)) null]
                         [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path #f)]{

@@ -2576,7 +2576,7 @@ not including fields whose names are local (i.e., declared with
 ]}
 
 
-@defproc[(object-info [object any/c]) (values (or/c class? #f) boolean?)]{
+@defproc[(object-info [object object?]) (values (or/c class? #f) boolean?)]{
 
 Returns two values, analogous to the return
 values of @racket[struct-info]:
