@@ -1,12 +1,14 @@
-# 1. Section
+# Title
+
+## 1. Section
 
 This is a top-level section.
 
-## 1.1. Subsection
+### 1.1. Subsection
 
 This is a subsection.
 
-### 1.1.1. Subsubsection
+#### 1.1.1. Subsubsection
 
 This is a subsubsection.
 

@@ -44,9 +44,7 @@
     (define/override (render-part d ht)
       (let ([number (collected-info-number (part-collected-info d ht))])
         (unless (part-style? d 'hidden)
-          (unless (zero? (number-depth number))
-            (printf (make-string (number-depth number) #\#))
-            (printf " "))
+          (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
           (let ([s (format-number number '())])
             (unless (null? s)
               (printf "~a.~a" 

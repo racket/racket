@@ -5,6 +5,8 @@
 @(define my-eval (make-base-eval))
 @(my-eval '(require racket/base))
 
+@title{Title}
+
 @section{Section}
 
 This is a top-level section.
@@ -66,7 +68,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Example of a defmodule:
 
-@defmodule[racket/string]
+@defmodule[racket/string #:packages ()]
 
 Example of a defproc:
 
