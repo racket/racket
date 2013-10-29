@@ -3450,7 +3450,7 @@ static Scheme_Object *impersonator_guard_proc(void *data, int argc, Scheme_Objec
   return do_chaperone_guard_proc(1, data, argc, argv);
 }
 
-static Scheme_Object *do_chaperone_evt(const char *name, int is_impersonator, int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_do_chaperone_evt(const char *name, int is_impersonator, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
   Scheme_Object *o, *val, *a[1];
@@ -3496,7 +3496,7 @@ static Scheme_Object *do_chaperone_evt(const char *name, int is_impersonator, in
 
 static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_evt("chaperone-evt", 0, argc, argv);
+  return scheme_do_chaperone_evt("chaperone-evt", 0, argc, argv);
 }
 
 static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)

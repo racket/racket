@@ -1120,6 +1120,47 @@
   (test 18 (chaperone-evt an-e void) 9))
 
 ;; ----------------------------------------
+;; channel chaperones
+
+(let ([ch (make-channel)])
+  (test #t chaperone-of?/impersonator ch ch))
+(test #f chaperone-of? (make-channel) (make-channel))
+(test #f impersonator-of? (make-channel) (make-channel))
+(test #t chaperone?/impersonator (chaperone-channel (make-channel) (lambda (c) (values c values)) (lambda (c v) v)))
+(test #t channel? (chaperone-channel (make-channel) (lambda (c) (values c values)) (lambda (c v) v)))
+(let ([ch (make-channel)])
+  (test #t
+        chaperone-of?/impersonator
+        (chaperone-channel ch (lambda (c) (values c values)) (lambda (c v) v))
+        ch))
+(let ([ch (make-channel)])
+  (thread (lambda () (channel-put ch 3.14)))
+  (test 3.14 channel-get (chaperone-channel ch (lambda (c) (values c values)) (lambda (c v) v))))
+(let ([ch (make-channel)])
+  (thread (lambda () (channel-put ch 3.14)))
+  (test 2.71 channel-get (impersonate-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v))))
+(let ([ch (make-channel)])
+  (thread (lambda () (channel-put (impersonate-channel
+                                   ch
+                                   (lambda (c) (values c values))
+                                   (lambda (c v) 2.71))
+                                  3.14)))
+  (test 2.71 channel-get ch))
+
+(err/rt-test (chaperone-channel ch (lambda (c) (values c values)) (lambda (v) v)))
+(err/rt-test (chaperone-channel ch (lambda () (values 0 values)) (lambda (c v) v)))
+(err/rt-test (chaperone-channel ch (lambda () (values 0 values)) (lambda (c v) v)))
+(err/rt-test (chaperone-channel ch (lambda () (values 0 values))))
+(err/rt-test (chaperone-channel ch))
+(err/rt-test (chaperone-channel 5 (lambda (c) (values c values)) (lambda (c v) v)))
+(let ([ch (make-channel)])
+  (thread (lambda () (channel-put ch 3.14)))
+  (err/rt-test (channel-get (impersonate-channel ch (lambda (c) c) (lambda (c v) v)))))
+(let ([ch (make-channel)])
+  (thread (lambda () (channel-put ch 3.14)))
+  (err/rt-test (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
+
+;; ----------------------------------------
 
 (let ()
   (define (a-impersonator-of v) (a-x v))
