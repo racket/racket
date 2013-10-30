@@ -21,7 +21,16 @@
     (define b&w? #f)
     
     (when _bm
-      (do-set-bitmap _bm #f))
+      (do-set-bitmap _bm #f)
+      ;; Needed if the bitmap has a device scale:
+      (when c (init-cr-matrix c)))
+
+    (define/override (init-cr-matrix cr)
+      (when bm
+        (define s (send bm get-cairo-device-scale))
+        (unless (= s 1)
+          (cairo_scale cr s s)))
+      (super init-cr-matrix cr))
 
     (define/override (ok?) (and c #t))
 

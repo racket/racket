@@ -1774,6 +1774,15 @@
                                        (send src get-cairo-surface)
                                        (- a-dest-x a-src-x)
                                        (- a-dest-y a-src-y))
+             (let ([sc (send src get-cairo-device-scale)])
+               (unless (= sc 1)
+                 (let ([m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
+                   (cairo_matrix_init_translate m 0 0)
+                   (cairo_matrix_scale m sc sc)
+                   (cairo_matrix_translate m
+                                           (- (- a-dest-x a-src-x))
+                                           (- (- a-dest-y a-src-y)))
+                   (cairo_pattern_set_matrix (cairo_get_source cr) m))))
              (adjust-pattern-filter (cairo_get_source cr))
              (if mask
                  (stamp-pattern mask a-msrc-x a-msrc-y)

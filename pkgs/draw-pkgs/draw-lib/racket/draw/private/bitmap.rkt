@@ -504,6 +504,13 @@
         (let ([p (cairo_get_source cr)])
           (cairo_pattern_reference p)
           (cairo_set_source_surface cr (get-cairo-surface) (- x) (- y))
+          (let ([sc (get-cairo-device-scale)])
+            (unless (= sc 1)
+              (let ([m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
+                (cairo_matrix_init_translate m 0 0)
+                (cairo_matrix_scale m sc sc)
+                (cairo_matrix_translate m x y)
+                (cairo_pattern_set_matrix (cairo_get_source cr) m))))
           (cairo_new_path cr)
           (cairo_rectangle cr 0 0 w h)
           (cairo_fill cr)
@@ -632,6 +639,10 @@
                 (prep-alpha)
                 alpha-s))
           (get-empty-surface)))
+
+    (define/public (get-cairo-device-scale) 1.0)
+
+    (define/public (get-backing-scale) (get-cairo-device-scale))
 
     (define/public (get-handle) s)
 
@@ -912,15 +923,24 @@
 
 (define quartz-bitmap%
   (class bitmap%
-    (init w h [with-alpha? #t])
+    (init w h [with-alpha? #t] [resolution 1.0])
     (super-make-object (make-alternate-bitmap-kind w h))
-
+    
+    (define cocoa-resolution resolution)
+    
+    (define/override (get-cairo-device-scale)
+      cocoa-resolution)
+    
     (define s
       (let ([s (cairo_quartz_surface_create (if with-alpha?
                                                 CAIRO_FORMAT_ARGB32
                                                 CAIRO_FORMAT_RGB24)
-                                            w
-                                            h)])
+                                            (inexact->exact
+                                             (ceiling
+                                              (* cocoa-resolution w)))
+                                            (inexact->exact
+                                             (ceiling
+                                              (* cocoa-resolution h))))])
         ;; initialize bitmap to empty - needed?
         (let ([cr (cairo_create s)])
           (cairo_set_operator cr (if with-alpha?

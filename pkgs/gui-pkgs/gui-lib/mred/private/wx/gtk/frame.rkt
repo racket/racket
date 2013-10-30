@@ -22,6 +22,7 @@
               display-origin
               display-size
 	      display-count
+              display-bitmap-resolution
               location->window
               get-current-mouse-state))
 
@@ -557,6 +558,13 @@
 
 (define (display-count)
   (gdk_screen_get_n_monitors (gdk_screen_get_default)))
+
+(define (display-bitmap-resolution num fail)
+  (if (zero? num)
+      1.0
+      (if (num . < . (gdk_screen_get_n_monitors (gdk_screen_get_default)))
+          1.0
+          (fail))))
 
 (define (location->window x y)
   (for/or ([f (in-hash-keys all-frames)])

@@ -53,6 +53,7 @@
   get-highlight-background-color
   get-highlight-text-color
   check-for-break)
+ display-bitmap-resolution
  make-screen-bitmap
  make-gl-bitmap
  show-print-setup
@@ -156,10 +157,6 @@
 (define (is-color-display?) #t)
 (define (id-to-menu-item id) id)
 (define (can-show-print-setup?) #t)
-
-(define/top (make-screen-bitmap [exact-positive-integer? w]
-                                [exact-positive-integer? h])
-  (make-object quartz-bitmap% w h))
 
 (define/top (make-gl-bitmap [exact-positive-integer? w]
                             [exact-positive-integer? h]

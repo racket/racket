@@ -76,6 +76,18 @@ the bitmap is selected into another DC, attached as a button label, etc.).
 
 }
 
+@defmethod[(get-backing-scale)
+           (>/c 0.0)]{
+
+Gets the number of pixels that correspond to a drawing unit for the
+bitmap, either when the bitmap is used as a target for drawing or when
+the bitmap is drawn into another context.
+
+For example, on Mac OS X when the main monitor is in Retina mode,
+@racket[make-screen-bitmap] returns a bitmap whose backing scale is
+@racket[2.0].}
+
+
 @defmethod[(get-depth)
            exact-nonnegative-integer?]{
 

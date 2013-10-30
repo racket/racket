@@ -197,8 +197,9 @@ Returns @|void-const|.
     Called when the displays configuration changes.
 
     To determine the new monitor configuration, use
-    @racket[get-display-count], @racket[get-display-size], and
-    @racket[get-display-left-top-inset]. 
+    @racket[get-display-count], @racket[get-display-size],
+    @racket[get-display-left-top-inset], and
+    @racket[get-display-backing-scale].
 
     Note that this method may be invoked multiple times for a single
     logical change to the monitors.

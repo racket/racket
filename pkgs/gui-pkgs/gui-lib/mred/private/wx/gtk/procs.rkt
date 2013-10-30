@@ -48,6 +48,7 @@
  show-print-setup
  display-origin
  display-size
+ display-bitmap-resolution
  flush-display
  location->window
  make-screen-bitmap

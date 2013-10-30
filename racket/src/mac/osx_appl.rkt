@@ -15,8 +15,17 @@
 	   racket/file
            racket/path)
 
+  (define (try . l)
+    (or (ormap (lambda (f)
+		 (and (file-exists? f)
+		      f))
+	       l)
+	(car (reverse l))))
+
   (define rez-path (or (getenv "REZ")
-		       "/Developer/Tools/Rez"))
+		       (find-executable-path "Rez")
+		       (try "/Applications/Xcode.app/Contents/Developer/Tools/Rez"
+			    "/Developer/Tools/Rez")))
 
   (define for-3m? (getenv "BUILDING_3M"))
 
@@ -101,7 +110,9 @@
 	   (assoc-pair "CFBundleVersion"
 		       ,(version))
 	   (assoc-pair "CFBundleShortVersionString"
-		       ,(version))))
+		       ,(version))
+	   (assoc-pair "NSPrincipalClass" "NSApplicationMain")
+	   (assoc-pair "NSHighResolutionCapable" (true))))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
                 (string-append "GRacket" suffix)

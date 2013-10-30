@@ -22,7 +22,8 @@
  (protect-out frame%
               display-size
               display-origin
-	      display-count))
+	      display-count
+              display-bitmap-resolution))
 
 (define-user32 SetLayeredWindowAttributes (_wfun _HWND _COLORREF _BYTE _DWORD -> _BOOL))
 (define-user32 GetActiveWindow (_wfun -> _HWND))
@@ -152,7 +153,18 @@
     (set-box! yb 0)]))
 
 (define (display-count)
-  (length (get-all-screen-rects)))
+  (let ([pos 0])
+    (EnumDisplayMonitors #f #f (lambda (mon dc r ptr)
+                                 (set! pos (add1 pos))
+                                 #t)
+                         #f)
+    pos))
+
+(define (display-bitmap-resolution num fail)
+  (if (or (zero? num)
+          (num . < . (display-count)))
+      1.0
+      (fail)))
 
 (define mouse-frame #f)
 

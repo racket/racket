@@ -1,6 +1,10 @@
+Version 5.90.0.9
+Added get-display-backing-scale
+Added get-backing-scale to bitmap%
+
 Version 5.90.0.5
 
-Fix key-event% get-key-release-code to return 'press instead of 'down
+Fixed key-event% get-key-release-code to return 'press instead of 'down
  for a key-down event
 
 ----------------------------------------

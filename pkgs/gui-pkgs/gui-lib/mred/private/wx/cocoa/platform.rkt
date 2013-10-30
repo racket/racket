@@ -62,6 +62,7 @@
    display-size
    display-origin
    display-count
+   display-bitmap-resolution
    flush-display
    get-current-mouse-state
    fill-private-color

@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/class
+(require "../../syntax.rkt"
+         racket/class
          ffi/unsafe
          ffi/unsafe/objc
          racket/draw/unsafe/cairo
@@ -16,9 +17,11 @@
 
 (provide 
  (protect-out dc%
-              do-backing-flush))
+              do-backing-flush)
+ display-bitmap-resolution
+ make-screen-bitmap)
 
-(import-class NSOpenGLContext)
+(import-class NSOpenGLContext NSScreen)
 (define NSOpenGLCPSwapInterval 222)
 
 (define dc%
@@ -59,7 +62,8 @@
     ;; Use a quartz bitmap so that text looks good:
     (define trans? transparent?)
     (define/override (make-backing-bitmap w h) 
-      (make-object quartz-bitmap% w h trans?))
+      (make-object quartz-bitmap% w h trans? 
+                   (display-bitmap-resolution 0 void)))
     (define/override (can-combine-text? sz) #t)
 
     (define/override (get-backing-size xb yb)
@@ -104,3 +108,23 @@
                  (backing-draw-bm bm cr (unbox w) (unbox h))
                  (cairo_destroy cr))))))
    (tellv ctx restoreGraphicsState)))
+
+(define (display-bitmap-resolution num fail)
+  (let ([r (atomically
+            (with-autorelease
+             (let ([s (if (zero? num)
+                          (tell NSScreen mainScreen)
+                          (let ([screens (tell NSScreen screens)])
+                            (if (num . < . (tell #:type _NSUInteger screens count))
+                                (tell screens objectAtIndex: #:type _NSUInteger num)
+                                #f)))])
+               (and s
+                    (tell #:type _CGFloat s backingScaleFactor)))))])
+    (cond
+     [(not r) (fail)]
+     [(zero? r) 1.0]
+     [else r])))
+
+(define/top (make-screen-bitmap [exact-positive-integer? w]
+                                [exact-positive-integer? h])
+  (make-object quartz-bitmap% w h #t (display-bitmap-resolution 0 void)))

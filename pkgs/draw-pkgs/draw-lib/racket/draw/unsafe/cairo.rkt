@@ -265,6 +265,10 @@
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_ps_surface_create (_cfun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_surface_set_fallback_resolution (_cfun _cairo_surface_t _double* _double* -> _void))
+(define-cairo cairo_surface_get_fallback_resolution (_cfun _cairo_surface_t (x : (_ptr o _double)) (y :  (_ptr o _double))
+                                                           -> _void
+                                                           -> (values x y)))
 
 ;; Stream surfaces
 

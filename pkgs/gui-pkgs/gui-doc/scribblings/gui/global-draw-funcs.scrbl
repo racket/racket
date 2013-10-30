@@ -14,13 +14,26 @@ Normally, drawing is automatically flushed to the screen. Use
 other actions depend on updating the display.}
 
 
+@defproc[(get-display-backing-scale [#:monitor monitor exact-nonnegative-integer? 0])
+                                    (or/c (>/c 0.0) #f)]{
+
+Returns the number of pixels that correspond to one drawing unit on a
+monitor.  The result is normally @racket[1.0], but it is @racket[2.0] on
+Mac OS X in Retina display mode.
+
+On Mac OS X, the result can change at any time.  See also
+@xmethod[top-level-window<%> display-changed].
+
+If @racket[monitor] is not less than the current number of available
+ monitors (which can change at any time), the is @racket[#f]. See also
+ @xmethod[top-level-window<%> display-changed].}
+
+
 @defproc[(get-display-count) exact-positive-integer?]{
 Returns the number of monitors currently active. 
 
 On Windows and Mac OS X, the result can change at any time.
-See also @xmethod[top-level-window<%> display-changed].
-
-}
+See also @xmethod[top-level-window<%> display-changed].}
 
 
 @defproc[(get-display-depth)

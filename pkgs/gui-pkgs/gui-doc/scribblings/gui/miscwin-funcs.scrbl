@@ -275,8 +275,13 @@ environment of the result namespace.}
 Creates a bitmap that draws in a way that is the same as drawing to a
 canvas in its default configuration.
 
-See also @secref[#:doc '(lib "scribblings/draw/draw.scrbl") "Portability"].
-}
+In particular, on Mac OS X when the main monitor is in Retina display
+mode, a drawing unit corresponds to two pixels, and the bitmap
+internally contains four times as many pixels as requested by
+@racket[width] and @racket[height]. See also
+@racket[get-display-backing-scale].
+
+See also @secref[#:doc '(lib "scribblings/draw/draw.scrbl") "Portability"].}
 
 
 @defproc[(play-sound [filename path-string?]

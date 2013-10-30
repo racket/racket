@@ -251,6 +251,7 @@
 	   get-display-size
 	   get-display-left-top-inset
 	   get-display-count
+           get-display-backing-scale
 	   get-color-from-user
 	   get-font-from-user
            append-editor-operation-menu-items

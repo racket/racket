@@ -82,6 +82,7 @@ get-color-from-user
 get-current-mouse-state
 get-default-shortcut-prefix
 get-directory
+get-display-backing-scale
 get-display-count
 get-display-depth
 get-display-left-top-inset

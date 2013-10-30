@@ -18,6 +18,7 @@
 	   get-display-size
 	   get-display-left-top-inset
 	   get-display-count
+	   get-display-backing-scale
 	   (protect-out make-top-container%
 			make-top-level-window-glue%
 			wx-frame%
@@ -58,6 +59,12 @@
   (define get-display-count
     (lambda ()
       (wx:display-count)))
+
+  (define get-display-backing-scale
+    (lambda (#:monitor [monitor 0])
+      (unless (exact-nonnegative-integer? monitor)
+	(raise-argument-error 'get-display-backing-scale "exact-nonnegative-integer?" monitor))
+      (wx:display-bitmap-resolution monitor (lambda () #f))))
 
   (define-values (left-margin top-margin init-top-x init-top-y)
     (let-values ([(x y) (get-display-left-top-inset #f)]

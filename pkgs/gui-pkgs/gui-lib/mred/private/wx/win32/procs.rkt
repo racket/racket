@@ -53,6 +53,7 @@
  file-creator-and-type
  display-origin
  display-size
+ display-bitmap-resolution
  make-screen-bitmap
  make-gl-bitmap
  special-control-key
