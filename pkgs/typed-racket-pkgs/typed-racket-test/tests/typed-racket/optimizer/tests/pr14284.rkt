@@ -3,7 +3,7 @@
 TR info: pr14284.rkt 26:26 displayln -- hidden parameter
 TR opt: pr14284.rkt 24:13 0.0+2.0i -- unboxed literal
 TR opt: pr14284.rkt 24:6 (+ 1.0 0.0+2.0i) -- unboxed binary float complex
-TR opt: pr14284.rkt 24:9 1.0 -- float-arg-expr in complex ops
+TR opt: pr14284.rkt 24:9 1.0 -- float in complex ops
 TR opt: pr14284.rkt 25:27 x -- unboxed var -> table
 TR opt: pr14284.rkt 25:4 optimizable -- fun -> unboxed fun
 TR opt: pr14284.rkt 27:25 (+ x y) -- unboxed binary float complex

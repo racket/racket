@@ -31,6 +31,7 @@
 
 (define-merged-syntax-class float-complex-op (+^ -^ *^ conjugate^ exp^))
 
+(define-syntax-class/specialize number-expr (subtyped-expr -Number))
 (define-syntax-class/specialize float-expr (subtyped-expr -Flonum))
 (define-syntax-class/specialize float-complex-expr (subtyped-expr -FloatComplex))
 
@@ -331,22 +332,28 @@
          ((real-binding) (unsafe-flreal-part e*))
          ((imag-binding) (unsafe-flimag-part e*))))
 
-  ;; The following optimizations are incorrect and cause bugs because they turn exact numbers into inexact
-  (pattern e:float-arg-expr
-    #:with real-binding (generate-temporary 'unboxed-float-)
-    #:with imag-binding #'0.0
-    #:do [(log-unboxing-opt "float-arg-expr in complex ops")]
-    #:with (bindings ...) #`(((real-binding) e.opt)))
-
-  (pattern e:opt-expr
-    #:when (subtypeof? #'e -Number) ; complex, maybe exact, maybe not
+  ;; The following optimization is incorrect and causes bugs because it turns exact numbers into inexact
+  (pattern e:number-expr
     #:with e* (generate-temporary)
     #:with (real-binding imag-binding) (binding-names)
-    #:do [(log-unboxing-opt "unbox complex")]
+    #:do [(log-unboxing-opt
+            (if (subtypeof? #'e -Flonum)
+                "float in complex ops"
+                "non float complex in complex ops"))]
+    #:with real-binding-value
+      (cond
+        [(subtypeof? #'e -Flonum) #'e*]
+        [(subtypeof? #'e -Real) #'(real->double-flonum e*)]
+        [else #'(real->double-flonum (real-part e*))])
+    #:with imag-binding-value
+      (cond
+        [(subtypeof? #'e -Real) #'0.0]
+        [else #'(real->double-flonum (imag-part e*))])
+
     #:with (bindings ...)
       #'(((e*) e.opt)
-         ((real-binding) (real->double-flonum (real-part e*)))
-         ((imag-binding) (real->double-flonum (imag-part e*)))))
+         ((real-binding) real-binding-value)
+         ((imag-binding) imag-binding-value)))
   (pattern e:expr
     #:do [(error (format "non exhaustive pattern match ~a" #'e))]
     #:with (bindings ...) (list)

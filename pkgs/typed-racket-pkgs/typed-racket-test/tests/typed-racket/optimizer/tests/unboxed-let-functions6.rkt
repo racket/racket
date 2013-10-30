@@ -12,7 +12,7 @@ TR opt: unboxed-let-functions6.rkt 31:10 (loop (+ z (car l)) (cdr l)) -- call to
 TR opt: unboxed-let-functions6.rkt 31:10 (loop (+ z (car l)) (cdr l)) -- unboxed call site
 TR opt: unboxed-let-functions6.rkt 31:16 (+ z (car l)) -- unboxed binary float complex
 TR opt: unboxed-let-functions6.rkt 31:19 z -- leave var unboxed
-TR opt: unboxed-let-functions6.rkt 31:21 (car l) -- float-arg-expr in complex ops
+TR opt: unboxed-let-functions6.rkt 31:21 (car l) -- non float complex in complex ops
 TR opt: unboxed-let-functions6.rkt 31:21 (car l) -- pair
 TR opt: unboxed-let-functions6.rkt 32:16 (cdr l) -- pair
 END
