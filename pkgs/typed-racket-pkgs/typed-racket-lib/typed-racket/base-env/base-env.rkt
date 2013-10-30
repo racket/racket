@@ -546,7 +546,7 @@
 
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
-[processor-count (-> -Nat)]
+[processor-count (-> -PosInt)]
 
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
