@@ -2,7 +2,7 @@
 #<<END
 TR missed opt: unexpected-complex.rkt 18:0 (sqrt (ann 4 Integer)) -- unexpected complex type
 TR opt: unexpected-complex.rkt 19:0 (+ 1.2+3.4i 2.0) -- unboxed binary float complex
-TR opt: unexpected-complex.rkt 19:12 2.0 -- float-arg-expr in complex ops
+TR opt: unexpected-complex.rkt 19:12 2.0 -- float in complex ops
 TR opt: unexpected-complex.rkt 19:3 1.2+3.4i -- unboxed literal
 END
 #<<END

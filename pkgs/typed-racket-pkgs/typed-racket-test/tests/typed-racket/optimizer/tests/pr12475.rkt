@@ -5,7 +5,7 @@ TR opt: pr12475.rkt 18:21 for-loop -- fun -> unboxed fun
 TR opt: pr12475.rkt 19:29 so-far-init -- unboxed var -> table
 TR opt: pr12475.rkt 21:26 (* so-far-init (quote 1.0)) -- unboxed binary float complex
 TR opt: pr12475.rkt 21:29 so-far-init -- leave var unboxed
-TR opt: pr12475.rkt 21:41 (quote 1.0) -- float-arg-expr in complex ops
+TR opt: pr12475.rkt 21:41 (quote 1.0) -- float in complex ops
 TR opt: pr12475.rkt 22:26 so-far-init -- dead else branch
 TR opt: pr12475.rkt 23:5 for-loop -- unboxed let loop
 TR opt: pr12475.rkt 24:3 (quote 0.0+0.0i) -- unboxed literal
