@@ -71,6 +71,9 @@
     ;; Addition of multiple args should keep exact semantics for exact args
     (bad-opt (+ (expt 10 501) (expt -10 501) 1.0+1.0i))
 
+    ;; Magnitude should not overflow unless necessary
+    (bad-opt (magnitude 3.0e300+4.0e300i))
+
     ;; Negation should correctly compute sign of 0.0
     (bad-opt (- 0.0+0.0i))
     (bad-opt (- 0+0i 0.0+0.0i))
