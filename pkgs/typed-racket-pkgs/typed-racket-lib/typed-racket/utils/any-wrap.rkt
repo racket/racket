@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/match racket/contract/base racket/contract/combinator
-         racket/promise)
+         racket/promise racket/set)
 
 (define undef (letrec ([x x]) x))
 
@@ -84,6 +84,10 @@
                                  (lambda (h v) v) ;; remove
                                  (lambda (h k) (t k)))] ;; key
       [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
+      [(? set?)
+       (for/set ([i (in-set v)]) (t i))]
+      ;; could do something with generic sets here if they had
+      ;; chaperones, or if i could tell if they were immutable.
       [(? struct?) (wrap-struct v)]
       [(? procedure?)
        (if (procedure-arity-includes? v 0)
