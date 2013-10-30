@@ -316,8 +316,8 @@
     #:with (real-binding imag-binding) (binding-names)
     #:do [(log-unboxing-opt "unboxed literal")]
     #:with (bindings ...)
-      #`(((real-binding) '#,(exact->inexact (real-part n)))
-         ((imag-binding) '#,(exact->inexact (imag-part n)))))
+      #`(((real-binding) '#,(real->double-flonum (real-part n)))
+         ((imag-binding) '#,(real->double-flonum (imag-part n)))))
   (pattern (quote n*:number)
     #:do [(define n (syntax->datum #'n*))]
     #:when (real? n)
@@ -325,7 +325,7 @@
     #:with imag-binding #'0.0
     #:do [(log-unboxing-opt "unboxed literal")]
     #:with (bindings ...)
-      #`(((real-binding) '#,(exact->inexact n))))
+      #`(((real-binding) '#,(real->double-flonum n))))
 
   (pattern e:float-complex-expr
     #:with e* (generate-temporary)
@@ -342,8 +342,8 @@
     #:do [(log-unboxing-opt "unbox complex")]
     #:with (bindings ...)
       #'(((e*) e.opt)
-         ((real-binding) (exact->inexact (real-part e*)))
-         ((imag-binding) (exact->inexact (imag-part e*)))))
+         ((real-binding) (real->double-flonum (real-part e*)))
+         ((imag-binding) (real->double-flonum (imag-part e*)))))
   (pattern e:expr
     #:do [(error (format "non exhaustive pattern match ~a" #'e))]
     #:with (bindings ...) (list)

@@ -67,7 +67,7 @@
   (pattern (quote n)
     #:when (and (real?  (syntax->datum #'n))
                 (exact? (syntax->datum #'n)))
-    #:with opt #`'#,(exact->inexact (syntax->datum #'n)))
+    #:with opt #`'#,(real->double-flonum (syntax->datum #'n)))
   (pattern e:fixnum-expr
     #:attr opt (delay #'(unsafe-fx->fl e.opt)))
   (pattern e:int-expr
