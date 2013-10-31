@@ -408,23 +408,23 @@ extern USItype __MPN(udiv_qrnnd) _PROTO ((USItype *, USItype, USItype, USItype))
 
 #if (defined (__i386__) || defined (__i486__)) && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
-  __asm__ ("addl %5,%1\n\tadcl %3,%0"					\
-	   : "=r" ((USItype)(sh)), "=&r" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
+  __asm__ ("addl %5,%k1\n\tadcl %3,%k0"					\
+	   : "=r" (sh), "=&r" (sl)					\
+	   : "0"  ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
-  __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
-	   : "=r" ((USItype)(sh)), "=&r" ((USItype)(sl))		\
+  __asm__ ("subl %5,%k1\n\tsbbl %3,%k0"					\
+	   : "=r" (sh), "=&r" (sl)					\
 	   : "0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define umul_ppmm(w1, w0, u, v) \
   __asm__ ("mull %3"							\
 	   : "=a" (w0), "=d" (w1)					\
 	   : "%0" ((USItype)(u)), "rm" ((USItype)(v)))
-#define udiv_qrnnd(q, r, n1, n0, d) \
-  __asm__ ("divl %4"							\
+#define udiv_qrnnd(q, r, n1, n0, dx) /* d renamed to dx avoiding "=d" */\
+  __asm__ ("divl %4"		     /* stringification in K&R C */	\
 	   : "=a" (q), "=d" (r)						\
-	   : "0" ((USItype)(n0)), "1" ((USItype)(n1)), "rm" ((USItype)(d)))
+	   : "0" ((USItype)(n0)), "1" ((USItype)(n1)), "rm" ((USItype)(dx)))
 #define count_leading_zeros(count, x) \
   do {									\
     USItype __cbtmp;							\
