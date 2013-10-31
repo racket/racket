@@ -377,8 +377,9 @@ appear in the original program.
 @section{Additional Matching Forms}
 
 @defform/subs[(match* (val-expr ...+) clause* ...)
-	      ([clause* [(pat ...+) body ...+]
-			[(pat ...+) (=> id) body ...+]])]{
+              ([clause* [(pat ...+) body ...+]
+               [(pat ...+) (=> id) body ...+]
+               [(pat ...+) #:when cond-expr body ...+]])]{
 Matches a sequence of values against each clause in order, matching
 only when all patterns in a clause match.  Each clause must have the
 same number of patterns as the number of @racket[val-expr]s.
@@ -386,6 +387,10 @@ same number of patterns as the number of @racket[val-expr]s.
 @examples[#:eval match-eval
 (match* (1 2 3)
  [(_ (? number?) x) (add1 x)])
+(match* (15 17)
+ [((? number? a) (? number? b))
+  #:when (= (+ a 2) b)
+  'diff-by-two])
 ]
 }
 
@@ -407,7 +412,8 @@ many values to expect from @racket[expr].
         (code:line keyword arg-id)
         (code:line keyword [arg-id default-expr])]
    [match*-clause [(pat ...+) body ...+]
-                  [(pat ...+) (=> id) body ...+]])
+                  [(pat ...+) (=> id) body ...+]
+                  [(pat ...+) #:when cond-expr body ...+]])
 ]{
   Binds @racket[id] to a procedure that is defined by pattern matching
   clauses using @racket[match*]. Each clause takes a sequence of
@@ -415,15 +421,17 @@ many values to expect from @racket[expr].
   The arguments are ordered as they appear in the function header for
   matching purposes.
 
-  The function header may contain optional or keyword arguments, or
-  may be in curried form.
-
   @defexamples[#:eval match-eval
     (define/match (fact n)
       [(0) 1]
       [(n) (* n (fact (sub1 n)))])
     (fact 5)
+  ]
 
+  The function header may also contain optional or keyword arguments,
+  may have curried arguments, and may also contain a rest argument.
+
+  @defexamples[#:eval match-eval
     (define/match ((f x) #:y [y '(1 2 3)])
       [((regexp #rx"p+") `(,a 2 3)) a]
       [(_ _) #f])
