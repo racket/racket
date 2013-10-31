@@ -1851,7 +1851,8 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
                        (code:line #:retries retries-expr)
                        (code:line #:print? print?-expr)
                        (code:line #:attempt-size attempt-size-expr)
-                       (code:line #:prepare prepare-expr)])
+                       (code:line #:prepare prepare-expr)
+                       (code:line #:keep-going? keep-going?-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
                            [relation-expr reduction-relation?]
@@ -1908,6 +1909,11 @@ hypothesis.
 The @racket[#:retries] keyword behaves identically as in @racket[generate-term],
 controlling the number of times the generation of any pattern will be
 reattempted. It can't be used together with @racket[#:satisfying].
+
+If @racket[keep-going?-expr] produces any non-@racket[#f] value,
+@racket[redex-check] will stop only when it hits the limit on the number of attempts 
+showing all of the errors it finds. This argument is allowed only when 
+@racket[print?-expr] is not @racket[#f].
 
 When passed a metafunction or reduction relation via the optional @racket[#:source]
 argument, @racket[redex-check] distributes its attempts across the left-hand sides

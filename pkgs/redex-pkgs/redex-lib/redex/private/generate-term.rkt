@@ -78,6 +78,8 @@
 (define-for-syntax attempt-size-keyword
   (list '#:attempt-size #'default-attempt-size 
         (list #'attempt-size/c "#:attempt-size argument")))
+(define-for-syntax keep-going-keyword
+  (list '#:keep-going? #'#f (list #'boolean? "#:keep-going? argument")))
 (define-for-syntax (prepare-keyword lists?)
   (list '#:prepare #f 
         (list (if lists? #'(-> list? list?) #'(-> any/c any/c)) 
@@ -88,12 +90,14 @@
 
 (define-syntax (redex-check stx)
   (define valid-kws 
-    (cons '#:satisfying (map car (list attempts-keyword
-                                       source-keyword
-                                       retries-keyword
-                                       print?-keyword
-                                       attempt-size-keyword
-                                       (prepare-keyword #f)))))
+    (list* '#:satisfying
+           (map car (list attempts-keyword
+                          source-keyword
+                          retries-keyword
+                          print?-keyword
+                          attempt-size-keyword
+                          keep-going-keyword
+                          (prepare-keyword #f)))))
   (define used-kws
     (for/fold ([kws (set)])
               ([maybe-kw-stx (in-list (syntax->list stx))])
@@ -122,7 +126,7 @@
 (define-struct gen-fail ())
 
 (define-for-syntax (redex-check/jf orig-stx form lang jf-id pats property kw-args)
-  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx keep-going-stx)
     (parse-redex-check-kw-args kw-args orig-stx form))
   (define nts (definition-nts lang orig-stx 'redex-check))
   (unless (judgment-form-id? jf-id)
@@ -155,10 +159,11 @@
                               [(and res (? values)) res]
                               [else (gen-fail)])
                             #f))
-                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match)))))))
+                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match
+                         #,keep-going-stx)))))))
 
 (define-for-syntax (redex-check/mf orig-stx form lang mf-id args-stx res-stx property kw-args)
-  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+  (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx keep-going-stx)
     (parse-redex-check-kw-args kw-args orig-stx form))
   (define nts (definition-nts lang orig-stx 'redex-check))
   (define m (metafunc mf-id))
@@ -191,7 +196,8 @@
                               [(and res (? values)) res]
                               [else (gen-fail)])
                             #f))
-                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match)))))))
+                         property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match
+                         #,keep-going-stx)))))))
 
 (define-for-syntax (redex-check/pat orig-stx form lang pat property kw-args)
   (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
@@ -199,7 +205,7 @@
                   lang
                   'redex-check #t pat)]
                 [show (show-message orig-stx)])
-    (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+    (define-values (attempts-stx source-stx retries-stx print?-stx size-stx fix-stx keep-going-stx)
       (parse-redex-check-kw-args kw-args orig-stx form)) 
     (with-syntax ([property #`(bind-prop
                                (λ (bindings)
@@ -210,6 +216,7 @@
               [ret #,retries-stx]
               [print? #,print?-stx]
               [fix #,fix-stx]
+              [keep-going? #,keep-going-stx]
               [term-match (λ (generated)
                             (cond [(test-match #,lang #,pat generated) => values]
                                   [else (redex-error 'redex-check "~s does not match ~s" generated '#,pat)]))])
@@ -232,10 +239,12 @@
                        'redex-check
                        (and print? show)
                        fix
+                       keep-going?
                        #:term-match term-match))
                   #`(check-one
                      #,(term-generator lang #'pattern 'redex-check)
-                     property att ret (and print? show) fix (and fix term-match)))))))))
+                     property att ret (and print? show) fix (and fix term-match)
+                     keep-going?))))))))
 
 (define-for-syntax (parse-redex-check-kw-args kw-args orig-stx form-name)
   (apply values
@@ -244,7 +253,8 @@
                               retries-keyword
                               print?-keyword
                               attempt-size-keyword
-                              (prepare-keyword #f))
+                              (prepare-keyword #f)
+                              keep-going-keyword)
                         kw-args
                         orig-stx
                         (syntax-e form-name))))
@@ -252,8 +262,8 @@
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
 
-(define (check-one generator property attempts retries show term-fix term-match) 
-  (define c (check generator property attempts retries show 
+(define (check-one generator property attempts retries show term-fix term-match keep-going?)
+  (define c (check generator property attempts retries show keep-going?
                    #:term-fix term-fix
                    #:term-match term-match))
   (cond 
@@ -271,7 +281,7 @@
 (define-struct term-prop (pred))
 (define-struct bind-prop (pred))
 
-(define (check generator property attempts retries show
+(define (check generator property attempts retries show keep-going?
                #:source [source #f]
                #:term-fix [term-fix #f]
                #:term-match [term-match #f]
@@ -324,9 +334,11 @@
                         (format-attempts attempt)
                         (if source (format " with ~a" source) "")))
                (pretty-write term (current-output-port)))
-             (make-counterexample term)])])])))
+             (if keep-going?
+                 (loop (sub1 remaining))
+                 (make-counterexample term))])])])))
 
-(define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix
+(define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix keep-going?
                         #:term-match [term-match #f])
   (define lang-gen (compile lang what))
   (define-values (pats srcs skip-term?)
@@ -360,24 +372,26 @@
                     attempts
                     retries
                     show
+                    keep-going?
                     #:skip-term? skip-term?
                     #:source (car srcs)
                     #:term-match term-match
                     #:term-fix term-fix))])
-          (if (counterexample? c)
+          (if (and (not keep-going?) (counterexample? c))
               (unless show c)
               (loop (cdr pats) (cdr srcs)))))))
 
 (define-syntax (check-metafunction stx)
   (syntax-case stx ()
     [(form name property . kw-args)
-     (let-values ([(attempts retries print? size fix)
+     (let-values ([(attempts retries print? size fix keep-going?)
                    (apply values
                           (parse-kw-args (list attempts-keyword
                                                retries-keyword
                                                print?-keyword
                                                attempt-size-keyword
-                                               (prepare-keyword #t))
+                                               (prepare-keyword #t)
+                                               keep-going-keyword)
                                          (syntax kw-args)
                                          stx
                                          (syntax-e #'form)))]
@@ -395,7 +409,8 @@
               ret
               'check-metafunction
               (and #,print? #,(show-message stx))
-              fix)))))]))
+              fix
+              #,keep-going?)))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc)
@@ -409,13 +424,14 @@
 (define-syntax (check-reduction-relation stx)
   (syntax-case stx ()
     [(form relation property . kw-args)
-     (let-values ([(attempts retries print? size fix)
+     (let-values ([(attempts retries print? size fix keep-going?)
                    (apply values
                           (parse-kw-args (list attempts-keyword
                                                retries-keyword
                                                print?-keyword
                                                attempt-size-keyword
-                                               (prepare-keyword #f))
+                                               (prepare-keyword #f)
+                                               keep-going-keyword)
                                          (syntax kw-args)
                                          stx
                                          (syntax-e #'form)))])
@@ -424,7 +440,8 @@
            (let ([att #,attempts]
                  [ret #,retries]
                  [rel #,(apply-contract #'reduction-relation? #'relation #f (syntax-e #'form))]
-                 [fix #,fix])
+                 [fix #,fix]
+                 [keep-going? #,keep-going?])
              (check-lhs-pats
               (reduction-relation-lang rel)
               rel
@@ -433,7 +450,8 @@
               ret
               'check-reduction-relation
               (and #,print? #,(show-message stx))
-              fix)))))]))
+              fix
+              keep-going?)))))]))
 
 (define-syntax (generate-term stx)
   (let ([l (cdr (syntax->list stx))])

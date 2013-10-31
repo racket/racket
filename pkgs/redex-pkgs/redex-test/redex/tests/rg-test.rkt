@@ -1373,6 +1373,16 @@
                        5)
         '((sum (s z) (s z)) = (s (s z)))))
 
+(let ()
+  (define-language L)
+  (define tries 0)
+  (output
+   (λ ()
+     (redex-check L any
+                  (begin (set! tries (+ tries 1)) #f)
+                  #:attempts 10
+                  #:keep-going? #t)))
+  (test tries 10))
 
 ;; redex-test-seed
 (let ([seed 0])
