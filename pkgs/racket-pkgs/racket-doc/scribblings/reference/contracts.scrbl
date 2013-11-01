@@ -548,6 +548,25 @@ to the input.  The result will be a copy for immutable hash tables, and either a
 }
 
 
+@defproc[(channel/c [val contract?])
+          contract?]{
+Produces a contract that recognizes @tech{channel}s that communicate
+values as specified by the @racket[val] argument.
+
+If the @racket[val] argument is a chaperone contract, then the resulting contract
+is a chaperone contract. Otherwise, the resulting contract is an impersonator
+contract. When a channel contract is applied to a channel, the resulting channel
+is not @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+  (define/contract chan
+    (channel/c string?)
+    (make-channel))
+  (thread (λ () (channel-get chan)))
+  (channel-put chan 'not-a-string)
+]}
+
+
 @defform/subs[#:literals (values)
   (prompt-tag/c contract ... maybe-call/cc)
   ([maybe-call/cc (code:line)

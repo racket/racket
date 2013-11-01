@@ -39,6 +39,8 @@
          prompt-tag/c
          continuation-mark-key/c
 
+         channel/c
+
          chaperone-contract?
          impersonator-contract?
          flat-contract?
@@ -1122,6 +1124,67 @@
    #:first-order continuation-mark-key/c-first-order
    #:stronger continuation-mark-key/c-stronger?
    #:name continuation-mark-key/c-name))
+
+
+;; channel/c
+(define/subexpression-pos-prop (channel/c ctc-arg)
+  (define ctc (coerce-contract 'channel/c ctc-arg))
+  (cond [(chaperone-contract? ctc)
+         (chaperone-channel/c ctc)]
+        [else
+         (impersonator-channel/c ctc)]))
+
+(define (channel/c-name ctc)
+  (build-compound-type-name
+   'channel/c
+   (base-channel/c-ctc ctc)))
+
+(define ((channel/c-proj proxy) ctc)
+  (define ho-proj
+    (contract-projection (base-channel/c-ctc ctc)))
+  (λ (blame)
+    (define proj1 (λ (ch) (values ch (λ (v) ((ho-proj blame) v)))))
+    (define proj2 (λ (ch v) ((ho-proj (blame-swap blame)) v)))
+    (λ (val)
+      (unless (contract-first-order-passes? ctc val)
+        (raise-blame-error
+         blame val
+         '(expected: "~s" given: "~e")
+         (contract-name ctc)
+         val))
+      (proxy val proj1 proj2
+             impersonator-prop:contracted ctc))))
+
+(define ((channel/c-first-order ctc) v)
+  (channel? v))
+
+(define (channel/c-stronger? this that)
+  (and (base-channel/c? that)
+       (contract-stronger?
+        (base-channel/c-ctc this)
+        (base-channel/c-ctc that))))
+
+(define-struct base-channel/c (ctc))
+
+(define-struct (chaperone-channel/c base-channel/c)
+  ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (channel/c-proj chaperone-channel)
+   #:first-order channel/c-first-order
+   #:stronger channel/c-stronger?
+   #:name channel/c-name))
+
+(define-struct (impersonator-channel/c base-channel/c)
+  ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:projection (channel/c-proj impersonate-channel)
+   #:first-order channel/c-first-order
+   #:stronger channel/c-stronger?
+   #:name channel/c-name))
 
 
 (define (flat-contract-predicate x)
