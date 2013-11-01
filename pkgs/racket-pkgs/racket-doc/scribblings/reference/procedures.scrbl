@@ -3,7 +3,7 @@
 
 @title[#:tag "procedures"]{Procedures}
 
-@defproc[(procedure? [v any/c]) boolean]{ Returns @racket[#t] if
+@defproc[(procedure? [v any/c]) boolean?]{ Returns @racket[#t] if
 @racket[v] is a procedure, @racket[#f] otherwise.}
 
 
