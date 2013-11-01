@@ -1234,7 +1234,7 @@ the values they accept and ensure that the exported functions are treated
 parametrically. See @racket[new-∃/c] and @racket[new-∀/c] for details
 on how the clauses hide the values.
 
-The implementation of @racket[contract-out] attaches uses
+The implementation of @racket[contract-out] uses
 @racket[syntax-property] to attach properties to the code it generates
 that records the syntax of the contracts in the fully expanded program.
 Specifically, the symbol @racket['provide/contract-original-contract]
