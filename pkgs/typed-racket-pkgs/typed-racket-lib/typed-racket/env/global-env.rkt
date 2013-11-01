@@ -58,7 +58,7 @@
 ;; given an identifier, return the type associated with it
 ;; if none found, calls lookup-fail
 ;; identifier -> type
-(define (lookup-type id [fail-handler (λ () (lookup-type-fail id))])
+(define (lookup-type id [fail-handler (λ () (lookup-fail id))])
   (define v (free-id-table-ref the-mapping id fail-handler))
   (cond [(box? v) (unbox v)] 
         [(procedure? v) (define t (v)) (register-type id t) t]
