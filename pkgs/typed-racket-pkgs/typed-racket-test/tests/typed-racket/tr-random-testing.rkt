@@ -270,6 +270,7 @@
  (lambda ()
    (redex-check tr-arith E (check-all-reals (term E))
                 #:attempts n-attempts
-                #:prepare exp->real-exp)))
+                #:prepare exp->real-exp
+                #:keep-going? #t)))
 
 (printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)
