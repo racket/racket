@@ -1,3 +1,6 @@
+Version 5.90.0.10
+Added chaperone-channel and impersonate-channel
+
 Version 5.90.0.9
 Allow hash table chaperones and impersonators to support efficient
  hash-clear and hash-clear!
