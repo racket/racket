@@ -65,15 +65,20 @@
     (ptr-set! rawcopy _byte n 0)
     copy))
 
+(define (points-to-end? tail sql-buffer)
+  (ptr-equal? tail
+              (ptr-add sql-buffer (bytes-length sql-buffer))))
+
 (define-sqlite sqlite3_prepare
   (_fun (db sql) ::
         (db : _sqlite3_database)
         (sql-buffer : _bytes = (copy-buffer sql))
         ((bytes-length sql-buffer) : _int)
         (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _bytes)) ;; points into sql-buffer (atomic-interior)
+        (tail : (_ptr o _gcpointer)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
-        -> (values result statement (and tail (positive? (bytes-length tail))))))
+        -> (values result statement (and tail
+                                         (not (points-to-end? tail sql-buffer))))))
 
 (define-sqlite sqlite3_prepare_v2
   (_fun (db sql) ::
@@ -82,9 +87,10 @@
         ((bytes-length sql-buffer) : _int)
         ;; bad prepare statements set statement to NULL, with no error reported
         (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _bytes)) ;; points into sql-buffer (atomic-interior)
+        (tail : (_ptr o _gcpointer)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
-        -> (values result statement (and tail (positive? (bytes-length tail)))))
+        -> (values result statement (and tail
+                                         (not (points-to-end? tail sql-buffer)))))
   #:fail (lambda () sqlite3_prepare))
 
 (define-sqlite sqlite3_finalize
