@@ -30,6 +30,7 @@
                datalog/eval) 
       (define pred %empty-rel)
       ...
+      (provide pred ...)
       #,@(map compile-statement p)))))
 
 (define coerce-sym
