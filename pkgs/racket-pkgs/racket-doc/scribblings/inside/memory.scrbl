@@ -56,9 +56,12 @@ The basic collector allocation functions are:
  in @secref["im:3m"]).}
 
  @item{@cppi{scheme_malloc_allow_interior} --- Allocates an array of
- pointers such that the array is never moved by the garbage collector
- and references are allowed into the middle of the block on 3m (and
- pointers to the middle prevent the block from being collected). Use
+ pointers with special treatment by 3m: the array is never moved by
+ the garbage collector, references are allowed into the middle of the
+ block, and even-valued pointers to the middle of the block prevent
+ the block from being collected.  (Beware that the memory manager
+ treats any odd-valued pointer as a fixnum, even if it refers to the
+ middle of a block that allows interior pointers.) Use
  this procedure sparingly, because small, non-moving objects are
  handled less efficiently than movable objects by the 3m collector.
  This procedure is the same as @cppi{scheme_malloc} with the
