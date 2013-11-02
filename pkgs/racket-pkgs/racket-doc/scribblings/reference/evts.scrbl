@@ -150,10 +150,7 @@ of arguments accetped by @racket[wrap] must match the number of values
 for the synchronization result of @racket[evt].
 
 The call to @racket[wrap] is
-@racket[parameterize-break]ed to disable breaks initially. The
-@racket[evt] cannot be an event created by @racket[handle-evt] or any
-combination of @racket[choice-evt] involving an event from
-@racket[handle-evt].
+@racket[parameterize-break]ed to disable breaks initially.
 
 @examples[#:eval evt-eval
   (define ch (make-channel))
