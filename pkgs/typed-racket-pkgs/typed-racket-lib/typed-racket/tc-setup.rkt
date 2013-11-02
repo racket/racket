@@ -59,7 +59,6 @@
       (define fully-expanded-stx (disarm* (local-expand stx expand-ctxt (list #'module*))))
       (when (show-input?)
         (pretty-print (syntax->datum fully-expanded-stx)))
-      (log-message online-check-syntax-logger 'info #f "" fully-expanded-stx)
       (do-time "Local Expand Done")
       (init)
       (do-time "Initialized Envs")
