@@ -35,32 +35,38 @@
                           (cons (syntax-e id) ty))))))
 
 (define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker pre-result post-result . body)
-  (let ()
-    (set-box! typed-context? #t)
-    ;(start-timing (syntax-property stx 'enclosing-module-name))
-    (with-handlers
-        (#;[(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
+  (tc-setup/proc orig-stx stx expand-ctxt init checker
+                 (λ (fully-expanded-stx pre-result post-result) 
+                   . 
+                   body)))
+
+(define (tc-setup/proc orig-stx stx expand-ctxt init checker f)
+  (set-box! typed-context? #t)
+  ;(start-timing (syntax-property stx 'enclosing-module-name))
+  (with-handlers
+      (#;[(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
           (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
-      (parameterize (;; do we report multiple errors
-                     [delay-errors? #t]
-                     ;; do we print the fully-expanded syntax?
-                     [print-syntax? #f]
-                     ;; this parameter is just for printing types
-                     ;; this is a parameter to avoid dependency issues
-                     [current-type-names (init-current-type-names)]
-                     ;; reinitialize disappeared uses
-                     [disappeared-use-todo      null]
-                     [disappeared-bindings-todo null])
-        (define fully-expanded-stx (disarm* (local-expand stx expand-ctxt (list #'module*))))
-        (when (show-input?)
-          (pretty-print (syntax->datum fully-expanded-stx)))
-        (do-time "Local Expand Done")
-        (init)
-        (do-time "Initialized Envs")
-        (find-mutated-vars fully-expanded-stx mvar-env)
-        (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
-                       [expanded-module-stx fully-expanded-stx])
-          (do-time "Starting `checker'")
-          (define-values (pre-result post-result) (checker fully-expanded-stx))
-          (do-time "Typechecking Done")
-          (let () . body))))))
+    (parameterize (;; do we report multiple errors
+                   [delay-errors? #t]
+                   ;; do we print the fully-expanded syntax?
+                   [print-syntax? #f]
+                   ;; this parameter is just for printing types
+                   ;; this is a parameter to avoid dependency issues
+                   [current-type-names (init-current-type-names)]
+                   ;; reinitialize disappeared uses
+                   [disappeared-use-todo      null]
+                   [disappeared-bindings-todo null])
+      (define fully-expanded-stx (disarm* (local-expand stx expand-ctxt (list #'module*))))
+      (when (show-input?)
+        (pretty-print (syntax->datum fully-expanded-stx)))
+      (log-message online-check-syntax-logger 'info #f "" fully-expanded-stx)
+      (do-time "Local Expand Done")
+      (init)
+      (do-time "Initialized Envs")
+      (find-mutated-vars fully-expanded-stx mvar-env)
+      (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
+                     [expanded-module-stx fully-expanded-stx])
+        (do-time "Starting `checker'")
+        (define-values (pre-result post-result) (checker fully-expanded-stx))
+        (do-time "Typechecking Done")
+        (f fully-expanded-stx pre-result post-result)))))
