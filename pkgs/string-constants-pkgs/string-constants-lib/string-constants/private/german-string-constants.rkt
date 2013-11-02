@@ -233,6 +233,7 @@
  (scheme-mode-color-keyword "Schlüsselwort")
  (scheme-mode-color-comment "Kommentar")
  (scheme-mode-color-string "Zeichenkette")
+ (scheme-mode-color-text "Text")
  (scheme-mode-color-constant "Literal")
  (scheme-mode-color-parenthesis "Klammer")
  (scheme-mode-color-hash-colon-keyword "#:Keyword")
@@ -1664,6 +1665,7 @@
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "String-Konstanten korrekturlesen")
+  (spell-check-scribble-text "Text korrekturlesen (zwischen {} in Scribble)")
   (spelling-dictionaries "Wörterbücher für die Rechtschreibprüfung") ; (sub)menu whose items are the different possible dictionaries
   (default-spelling-dictionary "Standard-Wörterbuch") ; first item in menu from previous line
   (misspelled-text-color "Rechtschreibfehler in Textfarbe") ;; in the preferences dialog  
