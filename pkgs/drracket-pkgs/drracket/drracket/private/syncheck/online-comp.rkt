@@ -1,8 +1,6 @@
 #lang racket/base
 (require racket/class
          racket/place
-         racket/match
-         racket/contract
          (for-syntax racket/base)
          "../../private/eval-helpers.rkt"
          "traversals.rkt"
@@ -10,7 +8,7 @@
          "intf.rkt"
          "xref.rkt")
 
-(provide go monitor)
+(provide go)
 
 (define obj%
   (class (annotations-mixin object%)
@@ -69,8 +67,7 @@
   (parameterize (#;[current-custodian orig-cust])
     (thread
      (λ () 
-       (with-handlers ([exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n"
-                                                  (exn-message x)))])
+       (with-handlers ((exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n" (exn-message x)))))
          (let loop ()
            (define id/name (place-channel-get local-chan))
            (define id (list-ref id/name 0))
@@ -80,15 +77,7 @@
            (loop))))))
   (void))
 
-(define-logger online-check-syntax)
 (define (go expanded path the-source orig-cust)
-  (define c (make-channel))
-  (log-message online-check-syntax-logger 'info  "" expanded)
-  (log-message online-check-syntax-logger 'info  "" c)
-  ;; wait for everything to actually get sent back to the main place
-  (channel-get c))
-
-(define (build-trace stx the-source orig-cust path)
   (parameterize ([current-max-to-send-at-once 50])
     (with-handlers ((exn:fail? (λ (x) 
                                  (printf "exception noticed in online-comp.rkt\n")
@@ -108,27 +97,6 @@
         (make-traversal (current-namespace)
                         (get-init-dir path)))
       (parameterize ([current-annotations obj])
-        (expanded-expression stx)
+        (expanded-expression expanded)
         (expansion-completed))
       (send obj get-trace))))
-
-(define (monitor send-back path the-source orig-cust)
-  (define lr (make-log-receiver (current-logger)
-                                'info
-                                'online-check-syntax))
-  (thread
-   (λ ()
-     (let loop ()
-       (define val (sync lr))
-       (match val
-         [(vector level message obj name)
-          (cond
-            [(syntax? obj)
-             (define trace (build-trace obj the-source orig-cust path))
-             (send-back trace)]
-            [(channel? obj)
-             ;; signal back to the main place that we've gotten everything
-             ;; and sent it back over
-             (channel-put obj (void))])]
-         [_ (void)])
-       (loop)))))

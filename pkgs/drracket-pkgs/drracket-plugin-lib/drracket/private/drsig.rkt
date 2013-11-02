@@ -120,15 +120,10 @@
 (define-signature drracket:module-language-tools^ extends drracket:module-language-tools-cm^
   (add-opt-out-toolbar-button
    add-online-expansion-handler
-   add-online-expansion-monitor
-   register-online-expansion-pref
-   done
-   done?
-   start
-   start?))
+   register-online-expansion-pref))
 (define-signature drracket:module-language-tools/int^ extends drracket:module-language-tools^
   (get-online-expansion-pref-funcs
-   (struct online-expansion-handler (mod-path id local-handler monitor?))
+   (struct online-expansion-handler (mod-path id local-handler))
    get-online-expansion-handlers
    no-more-online-expansion-handlers))
 

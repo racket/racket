@@ -3,7 +3,6 @@
 (require mrlib/switchable-button 
          mrlib/bitmap-label
          racket/contract
-         racket/place
          framework
          racket/unit
          racket/class
@@ -33,8 +32,7 @@
     
   (define-local-member-name
     set-lang-toolbar-buttons
-    get-lang-toolbar-buttons
-    get-online-expansion-monitor-pcs)
+    get-lang-toolbar-buttons)
     
   (define tab-mixin
     (mixin (drracket:unit:tab<%>) (drracket:module-language-tools:tab<%>)
@@ -162,26 +160,21 @@
       
       (define/public (move-to-new-language)
         (let* ([port (open-input-text-editor this)]
-               ;; info-result : 
-               ;;  (or/c #f   [#lang without a known language]
-               ;;        (vector <get-info-proc>) 
-               ;;                [no #lang line, so we use the '#lang racket' info proc]
-               ;;        <get-info-proc>) [the get-info proc for the program in the definitions]
-               [info-result 
-                (with-handlers ([exn:fail? 
-                                 (λ (x)
-                                   (log-debug
-                                    (format 
-                                     "DrRacket: error duing call to read-language for ~a:\n  ~a"
-                                     (or (send this get-filename) "<<unsaved file>>")
-                                     (regexp-replace* #rx"\n(.)" (exn-message x) "\n\\1  ")))
-                                   #f)])
-                  (read-language 
-                   port
-                   (lambda () 
-                     ;; fall back to whatever #lang racket does if
-                     ;; we don't have a #lang line present in the file
-                     (vector (read-language (open-input-string "#lang racket"))))))])
+               ;; info-result : (or/c #f   [#lang without a known language]
+               ;;                     (vector <get-info-proc>) [no #lang line, so we use the '#lang racket' info proc]
+               ;;                     <get-info-proc>  [the get-info proc for the program in the definitions]
+               [info-result (with-handlers ((exn:fail? 
+                                             (λ (x)
+                                               (log-debug (format "DrRacket: error duing call to read-language for ~a:\n  ~a"
+                                                                  (or (send this get-filename) "<<unsaved file>>")
+                                                                  (regexp-replace* #rx"\n(.)" (exn-message x) "\n\\1  ")))
+                                               #f)))
+                              (read-language 
+                               port
+                               (lambda () 
+                                 ;; fall back to whatever #lang racket does if
+                                 ;; we don't have a #lang line present in the file
+                                 (vector (read-language (open-input-string "#lang racket"))))))])
           
           ; sometimes I get eof here, but I don't know why and can't seem to 
           ;; make it happen outside of DrRacket
@@ -211,35 +204,28 @@
                               (get-lang-name pos))
                           'drracket/private/module-language-tools))
               
-              (define lang-wants-big-defs/ints-labels?
-                (and info-proc (info-proc 'drracket:show-big-defs/ints-labels #f)))
+              (define lang-wants-big-defs/ints-labels? (and info-proc (info-proc 'drracket:show-big-defs/ints-labels #f)))
               (set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
-              (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels?
-                    lang-wants-big-defs/ints-labels?)
+              (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
               
               (when info-result
                 (register-new-buttons
-                 (ctc-on-info-proc-result 
-                  (or/c #f (listof (or/c (list/c string?
-                                                 (is-a?/c bitmap%)
-                                                 (-> (is-a?/c drracket:unit:frame<%>) any))
-                                         (list/c string?
-                                                 (is-a?/c bitmap%)
-                                                 (-> (is-a?/c drracket:unit:frame<%>) any)
-                                                 (or/c real? #f)))))
-                  (or (info-proc 'drracket:toolbar-buttons #f)
-                      (info-proc 'drscheme:toolbar-buttons #f)))
-                 (ctc-on-info-proc-result 
-                  (or/c #f (listof symbol?))
-                  (or (info-proc 'drracket:opt-out-toolbar-buttons '())
-                      (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))))
+                 (ctc-on-info-proc-result (or/c #f (listof (or/c (list/c string?
+                                                                         (is-a?/c bitmap%)
+                                                                         (-> (is-a?/c drracket:unit:frame<%>) any))
+                                                                 (list/c string?
+                                                                         (is-a?/c bitmap%)
+                                                                         (-> (is-a?/c drracket:unit:frame<%>) any)
+                                                                         (or/c real? #f)))))
+                                          (or (info-proc 'drracket:toolbar-buttons #f)
+                                              (info-proc 'drscheme:toolbar-buttons #f)))
+                 (ctc-on-info-proc-result (or/c #f (listof symbol?))
+                                          (or (info-proc 'drracket:opt-out-toolbar-buttons '())
+                                              (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))))
       
       
       (define/private (register-new-buttons buttons opt-out-ids)
-        ;; cleaned-up-buttons : (listof (list/c string?
-        ;;                                      (is-a?/c bitmap%) 
-        ;;                                      (-> (is-a?/c drracket:unit:frame<%>) any) 
-        ;;                                      (or/c real? #f)))
+        ;; cleaned-up-buttons : (listof (list/c string? (is-a?/c bitmap%) (-> (is-a?/c drracket:unit:frame<%>) any) (or/c real? #f)))
         (define cleaned-up-buttons
           (cond
             [(not buttons) '()]
@@ -248,47 +234,46 @@
                (if (= 3 (length button))
                    (append button (list #f))
                    button))]))
-        (define tab (get-tab))
-        (define frame (send tab get-frame))
-        (send frame when-initialized
-              (λ ()
-                (send frame begin-container-sequence)
-                
-                ;; avoid any time with both sets of buttons in the
-                ;; panel so the window doesn't get too wide
-                (send (send frame get-toolbar-button-panel) change-children (λ (prev) '()))
-                
-                (define directly-specified-buttons
-                  (map (λ (button-spec)
-                         (new switchable-button%
-                              [label (list-ref button-spec 0)]
-                              [bitmap (list-ref button-spec 1)]
-                              [parent (send frame get-toolbar-button-panel)]
-                              [callback
-                               (lambda (button)
-                                 ((list-ref button-spec 2) frame))]))
-                       cleaned-up-buttons))
-                (define directly-specified-button-numbers 
-                  (map (λ (button-spec) (list-ref button-spec 3)) 
-                       cleaned-up-buttons))
-                (define opt-out-buttons+numbers
-                  (cond
-                    [(eq? opt-out-ids #f) '()]
-                    [else
-                     (for/list ([opt-out-toolbar-button (in-list opt-out-toolbar-buttons)]
-                                #:unless (member 
-                                          (opt-out-toolbar-button-id opt-out-toolbar-button) 
-                                          opt-out-ids))
-                       (list ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
-                              frame
-                              (send frame get-toolbar-button-panel))
-                             (opt-out-toolbar-button-number opt-out-toolbar-button)))]))
-                (send tab set-lang-toolbar-buttons
-                      (append directly-specified-buttons
-                              (map (λ (x) (list-ref x 0)) opt-out-buttons+numbers))
-                      (append directly-specified-button-numbers
-                              (map (λ (x) (list-ref x 1)) opt-out-buttons+numbers)))
-                (send frame end-container-sequence))))
+        (let* ([tab (get-tab)]
+               [frame (send tab get-frame)])
+          (send frame when-initialized
+                (λ ()
+                  (send frame begin-container-sequence)
+                  
+                  ;; avoid any time with both sets of buttons in the panel so the window doesn't get too wide
+                  (send (send frame get-toolbar-button-panel) change-children (λ (prev) '()))
+                  
+                  (let ([directly-specified-buttons
+                         (map (λ (button-spec)
+                                (new switchable-button%
+                                     [label (list-ref button-spec 0)]
+                                     [bitmap (list-ref button-spec 1)]
+                                     [parent (send frame get-toolbar-button-panel)]
+                                     [callback
+                                      (lambda (button)
+                                        ((list-ref button-spec 2) frame))]))
+                              cleaned-up-buttons)]
+                        [directly-specified-button-numbers (map (λ (button-spec) (list-ref button-spec 3)) 
+                                                                cleaned-up-buttons)]
+                        [opt-out-buttons+numbers
+                         (if (eq? opt-out-ids #f)
+                             '()
+                             (map
+                              (λ (opt-out-toolbar-button)
+                                (list ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
+                                       frame
+                                       (send frame get-toolbar-button-panel))
+                                      (opt-out-toolbar-button-number opt-out-toolbar-button)))
+                              (filter (λ (opt-out-toolbar-button)
+                                        (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
+                                                     opt-out-ids)))
+                                      opt-out-toolbar-buttons)))])
+                    (send tab set-lang-toolbar-buttons
+                          (append directly-specified-buttons
+                                  (map (λ (x) (list-ref x 0)) opt-out-buttons+numbers))
+                          (append directly-specified-button-numbers
+                                  (map (λ (x) (list-ref x 1)) opt-out-buttons+numbers))))
+                  (send frame end-container-sequence)))))
       
       (inherit get-text)
       (define/private (get-lang-name pos)
@@ -304,21 +289,6 @@
       (define/private (clear-things-out)
         (send (get-tab) set-lang-toolbar-buttons '() '()))
       
-      
-      ;; online-expansion-monitor-table : hash[(cons mod-path id) -o> (cons/c local-pc remote-pc)]
-      (define online-expansion-monitor-table (make-hash))
-      (define/public (get-online-expansion-monitor-pcs an-online-expansion-handler)
-        (define key (cons (online-expansion-handler-mod-path an-online-expansion-handler)
-                          (online-expansion-handler-id an-online-expansion-handler)))
-        (define old (hash-ref online-expansion-monitor-table key #f))
-        (cond
-          [old
-           (values (car old) (cdr old))]
-          [else
-           (define-values (local-pc remote-pc) (place-channel))
-           (hash-set! key (cons local-pc remote-pc))
-           (values local-pc remote-pc)]))
-      
       (define/augment (after-set-next-settings settings)
         (update-in-module-language?
          (is-a? (drracket:language-configuration:language-settings-language settings)
@@ -332,20 +302,9 @@
   
   (define no-more-online-expansion-handlers? #f)
   (define (no-more-online-expansion-handlers) (set! no-more-online-expansion-handlers? #t))
-  (define-values (done done?)
-    (let ()
-      (struct done ())
-      (values (done) done?)))
-  (define-values (start start?)
-    (let ()
-      (struct start ())
-      (values (start) start?)))
-  ;; mod-path : module-path?
-  ;; id : symbol?
-  ;; local-handler : ... -> ...
-  (struct online-expansion-handler (mod-path id local-handler monitor?))
+  (struct online-expansion-handler (mod-path id local-handler))
   (define online-expansion-handlers '())
-  (define (get-online-expansion-handlers)
+  (define (get-online-expansion-handlers) 
     (cond
       [no-more-online-expansion-handlers?
        online-expansion-handlers]
@@ -353,32 +312,15 @@
        (error 'get-online-expansion-handlers 
               "online-expansion-handlers can still be registered")]))
   (define (add-online-expansion-handler mod-path id local-handler)
-    (check-bad-registration 'add-online-expansion-handler mod-path id local-handler)
-    (set! online-expansion-handlers
-          (cons (online-expansion-handler mod-path id local-handler #f)
-                online-expansion-handlers)))
-  
-  (define (add-online-expansion-monitor mod-path id local-handler)
-    (check-bad-registration 'add-online-expansion-monitor mod-path id local-handler)
-    (set! online-expansion-handlers
-          (cons (online-expansion-handler mod-path id local-handler #t)
-                online-expansion-handlers)))
-      
-  (define (check-bad-registration who mod-path id local-handler)
-    (when no-more-online-expansion-handlers?
-      (error who 
-             "no more online-expansion-handlers can be registered; got ~e ~e ~e"
-             mod-path id local-handler))
-    (for ([handler (in-list online-expansion-handlers)])
-      (when (and (equal? (online-expansion-handler-mod-path handler) mod-path)
-                 (equal? (online-expansion-handler-id handler) id))
-        (error who
-               (string-append
-                "already registered a handler with the same mod-path and id\n"
-                " mod-path: ~e\n"
-                " id: ~e")
-               mod-path
-               id))))
+    (cond
+      [no-more-online-expansion-handlers?
+       (error 'add-online-expansion-handler 
+              "no more online-expansion-handlers can be registered; got ~e ~e ~e"
+              mod-path id local-handler)]
+      [else
+       (set! online-expansion-handlers
+             (cons (online-expansion-handler mod-path id local-handler)
+                   online-expansion-handlers))]))
   
   (define online-expansion-pref-funcs '())
   (define (get-online-expansion-pref-funcs) online-expansion-pref-funcs)

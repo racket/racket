@@ -23,7 +23,6 @@ TODO
          racket/port
          racket/set
          
-         syntax/rect
          string-constants
          setup/xref
          racket/gui/base
@@ -551,66 +550,10 @@ TODO
       ;; error-ranges : (union false? (cons srcloc (listof srcloc)))
       (define error-ranges #f)
       (define/public (get-error-ranges) error-ranges)
-      (define/public (set-error-ranges srclocs [srcloc-rects #f])
-        (define candidate-srclocs
-          (and srclocs
-               (not (null? srclocs))
-               (cleanup-locs srclocs)))
-        (cond
-          [(and candidate-srclocs srcloc-rects)
-           (set! error-ranges
-                 (apply
-                  append
-                  (for/list ([srcloc (in-list candidate-srclocs)])
-                    (define pending-range-start #f)
-                    (define pending-range-end #f)
-                    (define srclocs '())
-                    (for ([pos (in-range (srcloc-position srcloc)
-                                         (+ (srcloc-position srcloc) 
-                                            (srcloc-span srcloc)))])
-                      (define keep-pos?
-                        (for/or ([srcloc-rect (in-list srcloc-rects)]
-                                 #:when (equal? (srcloc-rect-source srcloc-rect)
-                                                (srcloc-source range)))
-                          (pos-in-rect? pos srcloc-rect)))
-                      
-                      (when keep-pos?
-                        (cond
-                          [(not pending-range-start)
-                           (set! pending-range-start pos)
-                           (set! pending-range-end pos)]
-                          [(= (+ pending-range-end 1) pos)
-                           (set! pending-range-end pos)]
-                          [else
-                           (set! srclocs (cons (srcloc (srcloc-source srcloc)
-                                                       #f #f
-                                                       pending-range-start
-                                                       (- pending-range-end pending-range-start))
-                                               srclocs))
-                           (set! pending-range-start pos)
-                           (set! pending-range-end pos)])))
-                    srclocs)))]
-          [else
-           (set! error-ranges candidate-srclocs)]))
-      
-      (define/private (pos-in-rect? pos srcloc-rect)
-        (define src (srcloc-rect-source srcloc-rect))
-        (define height (srcloc-rect-height srcloc-rect))
-        (define width (srcloc-rect-width srcloc-rect))
-        (cond
-          [(is-a? src text%)
-           (define start-para (send src position-paragraph (srcloc-rect-pos srcloc-rect)))
-           (define para-offset (- (srcloc-rect-pos srcloc-rect) start-para))
-           (let loop ([this-line-start (srcloc-rect-pos srcloc-rect)]
-                      [y 0])
-             (cond
-               [(= y height) #f]
-               [(<= this-line-start pos (+ this-line-start width)) #t]
-               [else 
-                (loop (+ (send src paragraph-start-position (+ start-para y)) para-offset)
-                      (+ y 1))]))]
-          [else #f]))
-      
+      (define/public (set-error-ranges ranges)
+        (set! error-ranges (and ranges 
+                                (not (null? ranges))
+                                (cleanup-locs ranges))))
       (define clear-error-highlighting void)
       (define/public (reset-error-ranges) 
         (set-error-ranges #f)
@@ -634,12 +577,11 @@ TODO
       ;; =Kernel= =handler=
       ;; highlight-errors :    (listof srcloc)
       ;;                       (union #f (listof srcloc))
-      ;;                       (union #f (listof srcloc-rect))
       ;;                    -> (void)
-      (define/public (highlight-errors raw-locs [raw-error-arrows #f] [srcloc-rects #f])
+      (define/public (highlight-errors raw-locs [raw-error-arrows #f])
         (clear-error-highlighting)
         (when definitions-text (send definitions-text set-error-arrows #f))
-        (set-error-ranges raw-locs srcloc-rects)
+        (set-error-ranges raw-locs)
         (define locs (or (get-error-ranges) '())) ;; calling set-error-range cleans up the locs
         (define error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows)))
         
@@ -693,7 +635,7 @@ TODO
                   (send tlw ensure-defs-shown))))
             
             (send first-file set-caret-owner (get-focus-snip) 'global))))
-      
+
       ;; unlike highlight-error just above, this function does not change 
       ;; what the currently noted errors locations are, it just highlights 
       ;; one of them.

@@ -28,7 +28,6 @@ profile todo:
          mrlib/include-bitmap
          images/compile-time
          pkg/lib
-         syntax/rect
          (for-syntax images/icons/misc images/icons/style images/icons/control images/logos)
          (for-syntax racket/base)
          (submod "frame.rkt" install-pkg))
@@ -339,13 +338,9 @@ profile todo:
                        [(pair? stack2)
                         (list (car stack2))]
                        [else '()])]
-           [srcloc-rects (cond
-                           [(and (exn:srcloc-rects? exn)
-                                 (exn:srclocs? exn)) ;; only look at the rects when the exn has srclocs
-                            ((exn:srcloc-rects-accessor exn) exn)]
-                           [else #f])]
            [src-locs-edition (and (pair? src-locs)
                                   (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
+
       (print-planet-icon-to-stderr exn)
       (unless (exn:fail:user? exn)
         (unless (exn:fail:syntax? exn)
@@ -367,12 +362,9 @@ profile todo:
            (λ ()
              ;; need to make sure that the user's eventspace is still the same
              ;; and still running here?
-             (send ints highlight-errors 
-                   src-locs 
-                   (if (null? stack1)
-                       stack2
-                       stack1)
-                   srcloc-rects)))))))
+             (send ints highlight-errors src-locs (if (null? stack1)
+                                                      stack2
+                                                      stack1))))))))
   
   (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])

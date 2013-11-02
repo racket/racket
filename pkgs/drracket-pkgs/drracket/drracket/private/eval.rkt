@@ -187,7 +187,6 @@
       (list ''#%foreign
             '(lib "mzlib/pconvert-prop.rkt")
             '(lib "planet/terse-info.rkt")
-            '(lib "syntax/rect.rkt")
             ;; preserve the invariant that:
             ;;   if a module is shared, so 
             ;;   are all of its submodules
