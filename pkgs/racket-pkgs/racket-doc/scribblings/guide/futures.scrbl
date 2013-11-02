@@ -10,7 +10,7 @@
 @title[#:tag "effective-futures"]{Parallelism with Futures}
 
 The @racketmodname[racket/future] library provides support for
-performance improvement through parallelism with the @racket[future]
+performance improvement through parallelism with @deftech{futures} and the @racket[future]
 and @racket[touch] functions. The level of parallelism available from
 those constructs, however, is limited by several factors, and the
 current implementation is best suited to numerical tasks.

@@ -53,6 +53,7 @@
    "Mike T. McHenry, "
    "Philippe Meunier, "
    "Scott Owens, "
+   "David T. Pierson, "
    "Jon Rafkind, "
    "Jamie Raymond, "
    "Grant Rettke, "

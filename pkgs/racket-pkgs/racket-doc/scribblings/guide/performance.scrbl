@@ -520,8 +520,3 @@ occurrence of the variable @racket[_fishes]. That constitutes
 a reference to the list, ensuring that the list is not itself
 garbage collected, and thus the red fish is not either.
 
-@; ----------------------------------------------------------------------
-
-@include-section["futures.scrbl"]
-@include-section["places.scrbl"]
-@include-section["distributed.scrbl"]

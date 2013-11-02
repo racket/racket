@@ -55,6 +55,8 @@ precise details to @|Racket| and other reference manuals.
 
 @include-section["performance.scrbl"]
 
+@include-section["parallelism.scrbl"]
+
 @include-section["running.scrbl"]
 
 @include-section["other.scrbl"]

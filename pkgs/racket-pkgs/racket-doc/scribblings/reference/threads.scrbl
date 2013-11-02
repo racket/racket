@@ -3,6 +3,8 @@
 
 @title[#:tag "threads"]{Threads}
 
+@guideintro["concurrency"]{threads}
+
 See @secref["thread-model"] for basic information on the Racket
 thread model. See also @secref["futures"].
 
