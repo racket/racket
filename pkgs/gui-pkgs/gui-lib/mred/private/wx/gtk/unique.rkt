@@ -10,9 +10,11 @@
 (provide 
  (protect-out do-single-instance))
 
+(define unique-lib-name "libunique-1.0")
+
 (define unique-lib
   (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (ffi-lib "libunique-1.0" '("0"))))
+    (ffi-lib unique-lib-name '("0"))))
 
 (define-ffi-definer define-unique unique-lib
   #:default-make-fail make-not-available)
@@ -25,7 +27,11 @@
 (define _UniqueMessageData (_cpointer 'UniqueMessageData))
 
 (define-unique unique_app_new (_fun _string _string -> _UniqueApp)
-  #:fail (lambda () (lambda args #f)))
+  #:fail (lambda () (lambda args
+                      (unless unique-lib
+                        (log-error "~s not found; single-instance mode disabled"
+                                   unique-lib-name))
+                      #f)))
 (define-unique unique_app_add_command (_fun _UniqueApp _string _int -> _void))
 (define-unique unique_app_is_running (_fun _UniqueApp -> _gboolean))
 (define-unique unique_app_send_message (_fun _UniqueApp _int _UniqueMessageData -> _int))
