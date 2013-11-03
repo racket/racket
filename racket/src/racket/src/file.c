@@ -1036,19 +1036,24 @@ static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *
     }
   }
 
-  if (i >= len)
-    p = make_protected_sized_offset_path(1, SCHEME_BYTE_STR_VAL(s),
-                                         0, len,
-                                         SCHEME_MUTABLEP(s), 0,
-                                         kind);
-  else
+  if (i >= len) {
+    if (len == 0)
+      p = NULL;
+    else
+      p = make_protected_sized_offset_path(1, SCHEME_BYTE_STR_VAL(s),
+                                           0, len,
+                                           SCHEME_MUTABLEP(s), 0,
+                                           kind);
+  } else
     p = NULL;
   
   if (!p || !is_path_element(p))
     scheme_contract_error(name,
                           "cannot be converted to a path element",
                           "path", 1, argv[0],
-                          "explanation", 0, "path can be split, is not relative, or names a special element",
+                          "explanation", 0, (len 
+                                             ? "path can be split, is not relative, or names a special element"
+                                             : "path element cannot be empty"),
                           NULL);
 
   return p;

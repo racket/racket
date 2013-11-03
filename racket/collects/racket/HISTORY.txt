@@ -1,5 +1,7 @@
 Version 5.90.0.10
 Added chaperone-channel and impersonate-channel
+Change string->path-element and bytes->path-element to raise an
+ exception for an empty [byte-]string argument
 
 Version 5.90.0.9
 Allow hash table chaperones and impersonators to support efficient

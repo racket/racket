@@ -897,6 +897,9 @@
 (err/rt-test (bytes->path-element "a/b" 'unix))
 (err/rt-test (bytes->path-element "a\\b" 'windows))
 
+(err/rt-test (bytes->path-element #""))
+(err/rt-test (string->path-element ""))
+
 (test #"\\\\?\\REL\\\\a/b" path->bytes (bytes->path-element #"a/b" 'windows))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
