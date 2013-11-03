@@ -889,11 +889,13 @@
                isnan isinf fpclass _fpclass __fpclassify __fpclassifyf __fpclassifyl
 	       _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
+               __inline_isnanl __inline_isnan
+               __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno
                isalpha isdigit isspace tolower toupper
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 
-               __builtin_constant_p
+               __builtin_constant_p __builtin_choose_expr __builtin_types_compatible_p
                __builtin___CFStringMakeConstantString
                __error __errno_location __toupper __tolower ___errno
                __attribute__ __mode__ ; not really functions in gcc
