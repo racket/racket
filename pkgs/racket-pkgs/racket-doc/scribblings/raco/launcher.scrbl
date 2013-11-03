@@ -117,11 +117,15 @@ the following additional associations apply to launchers:
 
  @item{@racket['desktop] (Unix) --- a string containing the content of
        a @filepath{.desktop} file for the launcher, where @tt{Exec}
-       and @tt{Icon} items should be omitted, because they will be
-       added automatically. The file is written to the directory
-       produced by @racket[(find-apps-dir)] or
-       @racket[(find-user-apps-dir)]. A @racket['desktop] value is
-       used only when @racket['install-mode] is also specified.}
+       and @tt{Icon} entries are added automatically. If an @tt{Exec}
+       entry exists in the string, and if its value starts with a
+       non-empty sequence of alpha-numeric ASCII characters followed
+       by a space, then the space and remainder of the value is
+       appended to the automatically generated value.
+       The @filepath{.desktop} file is written to the directory produced by
+       @racket[(find-apps-dir)] or @racket[(find-user-apps-dir)]. A
+       @racket['desktop] value is used only when
+       @racket['install-mode] is also specified.}
 
   @item{@racket['png] (Unix) : An icon file path (suffix
         @filepath{.png}) to be referenced by a @filepath{.desktop}

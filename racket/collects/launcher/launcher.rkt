@@ -539,8 +539,20 @@
              file
              #:exists 'truncate
              (lambda (o)
-               (displayln (regexp-replace #rx"\n+$" (cdr m) "") o)
-               (fprintf o "Exec=~a\n" (adjust-path dest))
+               (define content (cdr m))
+               (displayln (regexp-replace #rx"\n+$"
+                                          (regexp-replace "(?m:^Exec=.*)\n*"
+                                                          content
+                                                          "")
+                                          "")
+                          o)
+               (fprintf o "Exec=~a~a\n"
+                        (adjust-path dest)
+                        ;; Keep rest of existing line, if any:
+                        (let ([m (regexp-match "(?m:^Exec=[a-zA-Z0-9]+( .*))" content)])
+                          (if m
+                              (cadr m)
+                              "")))
                (let ([m (or (assq 'png aux)
                             (assq 'ico aux))])
                  (when m
