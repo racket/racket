@@ -593,6 +593,11 @@ case "$host_os" in
     enable_pthread=yes
     try_kqueue_syscall=yes
     ;;
+  dragonfly*)
+    LIBS="$LIBS -Wl,--export-dynamic"
+    enable_pthread=yes
+    try_kqueue_syscall=yes
+    ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
     try_kqueue_syscall=yes
