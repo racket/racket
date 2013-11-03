@@ -10095,7 +10095,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     else
       closer = interrupt_subproc;
 
-    mref = scheme_add_managed(NULL, (Scheme_Object *)subproc, closer, NULL, 1);
+    mref = scheme_add_managed_close_on_exit(NULL, (Scheme_Object *)subproc, closer, NULL);
     subproc->mref = mref;
   }
 
