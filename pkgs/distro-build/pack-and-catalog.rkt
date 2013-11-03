@@ -17,6 +17,7 @@
 (define relative? #t)
 (define get-modules? #f)
 (define checksum-dir #f)
+(define source-checksums? #f)
 
 (define src-dirs
   (command-line
@@ -27,6 +28,8 @@
     (set! native? #t)]
    [("--absolute") "Record paths as absolute"
     (set! relative? #f)]
+   [("--source-checksum") "Compute checksum from source when not packing"
+    (set! source-checksums? #t)]
    [("--at-checksum") dir "Copy each to to <dir>/<checksum>"
     (set! checksum-dir dir)]
    [("--mods") "Include modules and dependencies in catalog"
@@ -73,9 +76,10 @@
                         (build-path (path->complete-path pack-dest-dir) 
                                     zip-file)))
 
+  (define pkg-src-dir (build-path src-dir pkg-name))
+
   (when pack-dest-dir
     (define sum-file (path-add-suffix pkg-name #".srcsum"))
-    (define pkg-src-dir (build-path src-dir pkg-name))
     (printf "summing ~a\n" pkg-src-dir)
     (define src-sha1 (sha1 (stream-directory pkg-src-dir)))
     (define dest-sum (build-path (path->complete-path pack-dest-dir) sum-file))
@@ -116,7 +120,11 @@
     (define catalog-pkg-dir (build-path catalog-dir "pkg"))
     (define checksum (if dest-zip
                          (call-with-input-file* dest-zip sha1)
-                         "0"))
+                         (if source-checksums?
+                             (begin
+                               (printf "summing ~a\n" pkg-src-dir)
+                               (sha1 (stream-directory pkg-src-dir)))
+                             "0")))
     (define orig-dest (if dest-zip
                           (build-path pack-dest-dir zip-file)
                           #f))
