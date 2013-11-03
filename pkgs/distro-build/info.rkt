@@ -4,7 +4,8 @@
 
 (define deps '("base"
                "web-server-lib"
-               "ds-store-lib"))
+               "ds-store-lib"
+               "net-lib"))
 (define build-deps '("at-exp-lib"))
 
 (define pkg-desc "Tools for constructing a distribution of Racket")

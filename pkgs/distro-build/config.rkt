@@ -124,11 +124,11 @@
     [(#:build-stamp) (string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
-    [(#:server-port) (and (exact-integer? val) (<= 1 val 65535))]
+    [(#:server-port) (port-no? val)]
     [(#:server-hosts) (and (list? val) (andmap simple-string? val))]
     [(#:host) (simple-string? val)]
     [(#:user) (or (not val) (simple-string? val))]
-    [(#:port) (and (exact-integer? val) (<= 1 val 65535))]
+    [(#:port) (port-no? val)]
     [(#:dir) (path-string? val)]
     [(#:vbox) (string? val)]
     [(#:platform) (memq val '(unix macosx windows windows/bash))]
@@ -153,6 +153,13 @@
     [(#:readme) (or (string? val)
                     (and (procedure? val)
                          (procedure-arity-includes? val 1)))]
+    [(#:email-to) (and (list? val) (andmap email? val))]
+    [(#:email-from) (email? val)]
+    [(#:smtp-server) (simple-string? val)]
+    [(#:smtp-port) (port-no? val)]
+    [(#:smtp-connect) (memq val '(plain ssl tls))]
+    [(#:smtp-user) (or (not val) (string? val))]
+    [(#:smtp-password) (or (not val) (string? val))]
     [(#:custom) (and (hash? val)
                      (for/and ([k (in-hash-keys val)])
                        (keyword? k)))]
@@ -163,11 +170,18 @@
     [(#:name) (string? val)]
     [else (check-group-keyword kw val)]))
 
+(define (port-no? val)
+  (and (exact-integer? val) (<= 1 val 65535)))
+
 (define (simple-string? s)
   (and (string? s)
        ;; No spaces, quotes, or other things that could
        ;; break a command-line, path, or URL construction:
        (regexp-match #rx"^[-a-zA-A0-9.]*$" s)))
+
+(define (email? s)
+  (and (string? s)
+       (regexp-match? #rx"@" s)))
 
 (define current-mode (make-parameter "default"))
 

@@ -13,7 +13,8 @@
                   current-stamp)
          "url-options.rkt"
          "display-time.rkt"
-         "readme.rkt")
+         "readme.rkt"
+         "email.rkt")
 
 ;; See "config.rkt" for an overview.
 
@@ -407,6 +408,8 @@
 ;; ----------------------------------------
 
 (define stop? #f)
+(define failures null)
+(define failures-sema (make-semaphore 1))
 
 (define (limit-and-report-failure c timeout-factor thunk)
   (unless stop?
@@ -449,6 +452,10 @@
       (unless (parameterize ([current-output-port p]
                              [current-error-port p])
                 (thunk))
+        (call-with-semaphore
+         failures-sema
+         (lambda ()
+           (set! failures (cons (client-name c) failures))))
         (printf "Build FAILED for ~s\n" (client-name c))))
     (cond
      [sequential? (go) (thread void)]
@@ -456,6 +463,7 @@
 
 ;; ----------------------------------------
 
+(define start-seconds (current-seconds))
 (display-time)
 
 (void
@@ -500,3 +508,15 @@
                (sleep (get-opt c '#:pause-after 0)))))))]))))
 
 (display-time)
+(define end-seconds (current-seconds))
+
+(let ([opts (merge-options (hasheq) config)])
+  (let ([to-email (get-opt opts '#:email-to null)])
+    (unless (null? to-email)
+      (printf "Sending report to ~a\n" (apply ~a to-email #:separator ", "))
+      (send-email to-email (lambda (key def)
+                             (get-opt opts key def))
+                  (get-opt opts '#:build-stamp (current-stamp))
+                  start-seconds end-seconds
+                  failures)
+      (display-time))))

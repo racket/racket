@@ -116,6 +116,10 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:host <string*> --- defaults to "localhost"
 
+  #:name <string> --- defaults to host; this string is recorded as a
+    description of the installer and can be used in a generated table of
+    installer links; see also "Names and Download Pages" below
+
   #:port <integer> --- SSH port for the client; defaults to 22
 
   #:user <string*/false> --- SSH user for the client; defaults to #f,
@@ -254,13 +258,6 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     when the `#:source-runtime?' value is also #t; the default is the
     value of `#:source?'
 
-  #:site-dest <path-string> --- destination for completed build, used
-    by the `site' and `snapshot-site' makefile targets; the default is
-    "build/site"
-
-  #:pdf-doc? <boolean> --- whether to build PDF documentation when
-    assembling a site; the default is #f
-
   #:max-snapshots <number> --- number of snapshots to keep, used by
     the `snapshot-site' makefile target
 
@@ -279,11 +276,32 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     than the built-in ones, where additional entires may be useful to
     a `#:readme' procedure
 
-Machine-only keywords:
+Top keywords (recognized only in the configuration top-level):
 
-  #:name <string> --- defaults to host; this string is recorded as a
-    description of the installer and can be used in a generated table of
-    installer links; see also "Names and Download Pages" below
+  #:site-dest <path-string> --- destination for completed build, used
+    by the `site' and `snapshot-site' makefile targets; the default is
+    "build/site"
+
+  #:pdf-doc? <boolean> --- whether to build PDF documentation when
+    assembling a site; the default is #f
+
+  #:email-to <listof-of-string> --- a list of addresses to receive
+     e-mail reporting build results; mail is sent via `sendmail'
+     unless `#:smtp-...' configuration is supplied
+
+  #:email-from <string> --- address used as the sender of e-mailed
+    reports; the first string in `#:email-to' is used by default
+
+  #:smtp-server <string*>
+  #:smtp-port <string*>
+  #:smtp-connect <'plain, 'ssl, or 'tls>
+  #:smtp-user <string-or-#f>
+  #:smtp-password <string-or-#f>
+    --- configuration for sending e-mail through SMTP instead of
+    `sendmail'; the `#:smtp-port' default (25, 465, or 587) is picked
+    based on `#:smtp-connect', which in turn defaults to 'plain;
+    supply non-#f `#:smtp-user' and `#:smtp-password' when
+    authentication is required by the server
 
 More precisely, the `distro-build/config' language is like
 `racket/base' except that the module body must have exactly one
