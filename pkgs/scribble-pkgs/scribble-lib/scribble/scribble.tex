@@ -38,14 +38,14 @@
 \newcommand{\PartRefUC}[2]{Part~#1}
 
 % Variants of the above with a label for an internal reference:
-\newcommand{\BookRefLocal}[3]{\BookRef{#2}{#3}}
-\newcommand{\ChapRefLocal}[3]{\ChapRef{#2}{#3}}
-\newcommand{\SecRefLocal}[3]{\SecRef{#2}{#3}}
-\newcommand{\PartRefLocal}[3]{\PartRef{#2}{#3}}
-\newcommand{\BookRefLocalUC}[3]{\BookRefUC{#2}{#3}}
-\newcommand{\ChapRefLocalUC}[3]{\ChapRefUC{#2}{#3}}
-\newcommand{\SecRefLocalUC}[3]{\SecRefUC{#2}{#3}}
-\newcommand{\PartRefLocalUC}[3]{\PartRefUC{#2}{#3}}
+\newcommand{\BookRefLocal}[3]{\hyperref[#1]{\BookRef{#2}{#3}}}
+\newcommand{\ChapRefLocal}[3]{\hyperref[#1]{\ChapRef{#2}{#3}}}
+\newcommand{\SecRefLocal}[3]{\hyperref[#1]{\SecRef{#2}{#3}}}
+\newcommand{\PartRefLocal}[3]{\hyperref[#1]{\PartRef{#2}{#3}}}
+\newcommand{\BookRefLocalUC}[3]{\hyperref[#1]{\BookRefUC{#2}{#3}}}
+\newcommand{\ChapRefLocalUC}[3]{\hyperref[#1]{\ChapRefUC{#2}{#3}}}
+\newcommand{\SecRefLocalUC}[3]{\hyperref[#1]{\SecRefUC{#2}{#3}}}
+\newcommand{\PartRefLocalUC}[3]{\hyperref[#1]{\PartRefUC{#2}{#3}}}
 
 % Variants of the above with a section number is empty (i.e., UnNumbered):
 \newcommand{\BookRefUN}[1]{\BookRef{}{#1}}
@@ -57,7 +57,7 @@
 \newcommand{\SecRefUCUN}[1]{\SecRefUN{#1}}
 \newcommand{\PartRefUCUN}[1]{\PartRefUN{#1}}
 
-\newcommand{\BookRefLocalUN}[2]{\BookRefUN{#2}}
+\newcommand{\BookRefLocalUN}[2]{\hyperref[#1]{\BookRefUN{#2}}}
 \newcommand{\ChapRefLocalUN}[2]{\SecRefLocalUN{#1}{#2}}
 \newcommand{\SecRefLocalUN}[2]{\SecRefUN{#2} on page~\pageref{#1}}
 \newcommand{\PartRefLocalUN}[2]{\SecRefLocalUN{#1}{#2}}
