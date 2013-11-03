@@ -143,12 +143,12 @@
 ;; places images on top of each other with their upper left corners aligned. 
 ;; last one goes on the bottom
 (define/chk (overlay image image2 . image3)
-  (overlay/internal 'middle 'middle image (cons image2 image3)))
+  (overlay/internal 'middle 'middle image (cons image2 image3) #t))
 
 ;; underlay : image image image ... -> image
 (define/chk (underlay image image2 . image3)
   (let ([imgs (reverse (list* image image2 image3))])
-    (overlay/internal 'middle 'middle (car imgs) (cdr imgs))))
+    (overlay/internal 'middle 'middle (car imgs) (cdr imgs) #f)))
 
 ;; overlay/align : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
@@ -167,7 +167,7 @@
                                      image3))
                         "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
                         'pinhole "pinhole"))
-  (overlay/internal x-place y-place image (cons image2 image3)))
+  (overlay/internal x-place y-place image (cons image2 image3) #t))
 
 (define/chk (underlay/align x-place y-place image image2 . image3)
   (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
@@ -179,25 +179,27 @@
                         "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
                         'pinhole "pinhole"))
   (let ([imgs (reverse (list* image image2 image3))])
-    (overlay/internal x-place y-place (car imgs) (cdr imgs))))
+    (overlay/internal x-place y-place (car imgs) (cdr imgs) #f)))
 
 (define/chk (overlay/pinhole image1 image2 . image3)
   (overlay/internal 'pinhole 'pinhole 
                     (maybe-center-pinhole image1)
-                    (map maybe-center-pinhole (cons image2 image3))))
+                    (map maybe-center-pinhole (cons image2 image3))
+                    #t))
 
 (define/chk (underlay/pinhole image1 image2 . image3)
   (let ([imgs (map maybe-center-pinhole (reverse (list* image1 image2 image3)))])
     (overlay/internal 'pinhole 'pinhole
                       (car imgs)
-                      (cdr imgs))))
+                      (cdr imgs)
+                      #f)))
 
 (define (maybe-center-pinhole img)
   (if (send img get-pinhole)
       img
       (center-pinhole img)))
 
-(define (overlay/internal x-place y-place fst rst)
+(define (overlay/internal x-place y-place fst rst first-pinhole?)
   (let loop ([fst fst]
              [rst rst])
     (cond
@@ -215,7 +217,7 @@
                           (car rst)
                           (if (< dx 0) 0 dx)
                           (if (< dy 0) 0 dy)
-                          #t)
+                          first-pinhole?)
                (cdr rst)))])))
 
 (define (find-x-spot x-place image)

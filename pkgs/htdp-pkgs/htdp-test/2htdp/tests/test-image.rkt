@@ -716,6 +716,13 @@
        (make-bb 100 100 100)
        #f))
 
+(test (pinhole-x
+       (underlay 
+        (put-pinhole 50 50 (rectangle 100 100 "solid" "gray"))
+        (rectangle 10 10 "solid" "black")))
+      =>
+      50)
+
 (test (overlay/offset (rectangle 10 100 'solid 'red)
                       0 0
                       (rectangle 100 10 'solid 'blue))
