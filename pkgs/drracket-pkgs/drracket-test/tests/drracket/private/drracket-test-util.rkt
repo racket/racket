@@ -120,7 +120,7 @@
   ;; returns the newly opened frame, waiting until old-frame
   ;; is no longer frontmost. Optionally checks other eventspaces
   ;; waits until the new frame has a focus'd window, too. 
-  (define (wait-for-new-frame old-frame [extra-eventspaces '()] [timeout 10])
+  (define (wait-for-new-frame/proc old-frame old-frame-id-name [extra-eventspaces '()] [timeout 10])
     (define (wait-for-new-frame-pred)
       (define active (or (fw:test:get-active-top-level-window)
                          (for/or ([eventspace (in-list extra-eventspaces)]) 
@@ -130,10 +130,20 @@
                (not (eq? active old-frame)))
           active
           #f))
-    (define fr (poll-until wait-for-new-frame-pred timeout))
+    (define lab (send old-frame get-label))
+    (define fr (poll-until 
+                (procedure-rename wait-for-new-frame-pred
+                                  (string->symbol
+                                   (format "wait-for-new-frame-pred; old: ~s id: ~a"
+                                           lab old-frame-id-name)))
+                timeout))
     (when fr (wait-for-events-in-frame-eventspace fr))
     (sleep 1)
     fr)
+
+(define-syntax-rule 
+  (wait-for-new-frame a b ...)
+  (wait-for-new-frame/proc a 'a b ...))
   
   (define (wait-for-events-in-frame-eventspace fr)
     (define sema (make-semaphore 0))
@@ -242,7 +252,8 @@
   (define (queue-callback/res thunk)
     (not-on-eventspace-handler-thread 'queue-callback/res)
     (let ([c (make-channel)])
-      (queue-callback (λ () (channel-put c (with-handlers ((exn:fail? values)) (call-with-values thunk list))))
+      (queue-callback (λ () (channel-put c (with-handlers ((exn:fail? values))
+                                             (call-with-values thunk list))))
                       #f)
       (define res (channel-get c))
       (when (exn? res) (raise res))
@@ -350,13 +361,16 @@
       (unless (and (pair? in-language-spec)
                    (list? in-language-spec)
                    (andmap (lambda (x) (or string? regexp?)) in-language-spec))
-        (error 'set-language-level! "expected a non-empty list of regexps and strings for language, got: ~e" in-language-spec))
+        (error 'set-language-level!
+               "expected a non-empty list of regexps and strings for language, got: ~e"
+               in-language-spec))
       (not-on-eventspace-handler-thread 'set-language-level!)
       (let ([drs-frame (fw:test:get-active-top-level-window)])
         (fw:test:menu-select "Language" "Choose Language...")
         (define language-dialog (wait-for-new-frame drs-frame))
         (fw:test:set-radio-box-item! #rx"Other Languages")
-        (define language-choices (find-labelled-windows #f hierarchical-list% (fw:test:get-active-top-level-window)))
+        (define language-choices (find-labelled-windows #f hierarchical-list%
+                                                        (fw:test:get-active-top-level-window)))
         (define b1 (box 0))
         (define b2 (box 0))
         (define (click-on-snip snip)
@@ -395,13 +409,15 @@
                   (cond
                     [(null? (cdr language-spec))
                      (when (is-a? next-item hierarchical-list-compound-item<%>)
-                       (error 'set-language-level! "expected no more languages after ~e, but still are, input ~e"
+                       (error 'set-language-level!
+                              "expected no more languages after ~e, but still are, input ~e"
                               name in-language-spec))
                      (set! found-language? #t)
                      (click-on-snip (send next-item get-clickable-snip))]
                     [else
                      (unless (is-a? next-item hierarchical-list-compound-item<%>)
-                       (error 'set-language-level! "expected more languages after ~e, but got to end, input ~e"
+                       (error 'set-language-level!
+                              "expected more languages after ~e, but got to end, input ~e"
                               name in-language-spec))
                      (unless (send next-item is-open?)
                        (click-on-snip (send next-item get-arrow-snip)))
@@ -475,7 +491,7 @@
          (send (send drr get-interactions-text) refresh-delayed?)))))
  
   ;; has-error? : frame -> (union #f string)
-  ;; returns the error text of an error in the interactions window of the frame or #f if there is none.
+  ;; returns the text of an error in the interactions window of the frame or #f if there is none.
   ;; ensures that frame is front most.
   (define (has-error? frame)
     (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)
@@ -507,7 +523,8 @@
                            ;; return the text of the entire line containing the red text
                            (let ([para (send interactions-text position-paragraph pos)])
                              (unless (exact-nonnegative-integer? para)
-                               (error 'has-error? "got back a bad result from position-paragraph: ~s ~s\n" 
+                               (error 'has-error? 
+                                      "got back a bad result from position-paragraph: ~s ~s\n" 
                                       para
                                       (list pos (send interactions-text last-position))))
                              (send interactions-text get-text
@@ -524,17 +541,18 @@
        (run-one/sync
         (lambda ()
           (verify-drracket-frame-frontmost 'fetch-output frame)
-          (let-values ([(start end)
-                        (if (and _start _end)
-                            (values _start _end)
-                            (let* ([interactions-text (send frame get-interactions-text)]
-                                   [last-para (send interactions-text last-paragraph)])
-                              (unless (>= last-para 2)
-                                (error 'fetch-output "expected at least 2 paragraphs in interactions window, found ~a"
-                                       (+ last-para 1)))
-                              (values (send interactions-text paragraph-start-position 2)
-                                      (send interactions-text paragraph-end-position
-                                            (- (send interactions-text last-paragraph) 1)))))])
+          (define-values (start end)
+            (if (and _start _end)
+                (values _start _end)
+                (let* ([interactions-text (send frame get-interactions-text)]
+                       [last-para (send interactions-text last-paragraph)])
+                  (unless (>= last-para 2)
+                    (error 'fetch-output 
+                           "expected at least 2 paragraphs in interactions window, found ~a"
+                           (+ last-para 1)))
+                  (values (send interactions-text paragraph-start-position 2)
+                          (send interactions-text paragraph-end-position
+                                (- (send interactions-text last-paragraph) 1))))))
             (let ([interactions-text (send frame get-interactions-text)])
               
               (send interactions-text split-snip start)
@@ -587,7 +605,7 @@
                      [else
                       (loop (send snip previous)
                             (cons (format "{unknown snip: ~e}\n" snip)
-                                  strings))])]))))))]))
+                                  strings))])])))))]))
   
   ;; run-one/sync : (-> A) -> A
   ;; runs the thunk `f' as a test action, and
