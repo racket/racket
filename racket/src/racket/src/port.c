@@ -1314,36 +1314,39 @@ int scheme_get_fd_limit(void *fds)
    It's constrained because it's used by default_sleep, which
    must not allocate on Mac OS X. */
 {
-  int limit, actual_limit;
+  int actual_limit;
   fd_set *rd, *wr, *ex;
 
-#  ifdef USE_WINSOCK_TCP
-  limit = 0;
-#  else
-#   ifdef USE_ULIMIT
-  limit = ulimit(4, 0);
-#   else
-#    ifdef FIXED_FD_LIMIT
-  limit = FIXED_FD_LIMIT;
-#    else
-  limit = getdtablesize();
-#    endif
-#   endif
-#  endif
-  
   rd = (fd_set *)fds;
   wr = (fd_set *)MZ_GET_FDSET(fds, 1);
   ex = (fd_set *)MZ_GET_FDSET(fds, 2);
-#  ifdef STORED_ACTUAL_FDSET_LIMIT
+# ifdef STORED_ACTUAL_FDSET_LIMIT
   actual_limit = FDSET_LIMIT(rd);
   if (FDSET_LIMIT(wr) > actual_limit)
     actual_limit = FDSET_LIMIT(wr);
   if (FDSET_LIMIT(ex) > actual_limit)
     actual_limit = FDSET_LIMIT(ex);
   actual_limit++;
+# else
+  {
+    int limit;
+#  ifdef USE_WINSOCK_TCP
+    limit = 0;
 #  else
-  actual_limit = limit;
+#   ifdef USE_ULIMIT
+    limit = ulimit(4, 0);
+#   else
+#    ifdef FIXED_FD_LIMIT
+    limit = FIXED_FD_LIMIT;
+#    else
+    limit = getdtablesize();
+#    endif
+#   endif
 #  endif
+  
+    actual_limit = limit;
+  }
+# endif
   
   return actual_limit;
 }
@@ -6004,7 +6007,10 @@ static void filesystem_change_evt_fnl(void *fc, void *data)
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int signal_errs)
 {
   char *filename;
-  int ok = 0, errid = 0;
+  int ok = 0;
+#ifndef NO_FILESYSTEM_CHANGE_EVTS
+  int errid = 0;
+#endif
   intptr_t fd;
 
   filename = scheme_expand_string_filename(path,
@@ -6015,7 +6021,6 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 
 #if defined(NO_FILESYSTEM_CHANGE_EVTS)
   ok = 0;
-  errid = -1;
 #elif defined(FILESYSTEM_NEVER_CHANGES)
   ok = 1;
 #elif defined(HAVE_KQUEUE_SYSCALL)
