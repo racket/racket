@@ -28,6 +28,8 @@
   path-add-suffix (string->some-system-path "p/x" 'unix) ".zo")
 (test (string->some-system-path "p/x.zo" 'windows)
   path-add-suffix (string->some-system-path "p/x" 'windows) ".zo")
+(err/rt-test (path-replace-suffix ".zo" ""))
+(err/rt-test (path-replace-suffix ".zo" #""))
 
 (define (make-/tf p exn?)
   (lambda args

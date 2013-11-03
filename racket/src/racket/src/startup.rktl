@@ -880,13 +880,18 @@
         (define finish
           (lambda (i sep i2)
             (bytes->path-element
-             (bytes-append
-              (subbytes bs 0 i)
-              sep
-              (rest-bytes bs i2)
-              (if (string? sfx)
-                  (string->bytes/locale sfx (char->integer #\?))
-                  sfx))
+             (let ([res (bytes-append
+                         (subbytes bs 0 i)
+                         sep
+                         (rest-bytes bs i2)
+                         (if (string? sfx)
+                             (string->bytes/locale sfx (char->integer #\?))
+                             sfx))])
+               (if (zero? (bytes-length res))
+                   (raise-arguments-error 'path-replace-suffix
+                                          "removing suffix makes path element empty"
+                                          "given path" s)
+                   res))
              (if (path-for-some-system? s)
                  (path-convention-type s)
                  (system-path-convention-type)))))
