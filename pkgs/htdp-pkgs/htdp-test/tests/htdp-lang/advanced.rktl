@@ -220,7 +220,7 @@
 (htdp-test 13 'loop (recur f ([f 13]) f))
 (htdp-test 14 'loop (let ([f 14]) (recur f ([f f]) f)))
 
-(load (build-path (collection-path "tests" "racket") "shared-tests.rktl"))
+(load (collection-file-path "shared-tests.rktl" "tests" "racket"))
 
 (htdp-err/rt-test (cons 1 2) "cons: second argument must be a list, but received 1 and 2")
 (htdp-err/rt-test (append (list 1) 2) "append: last argument must be a list, but received 2")
