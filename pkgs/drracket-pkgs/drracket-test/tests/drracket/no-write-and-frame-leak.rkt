@@ -189,7 +189,13 @@ This test checks:
   (define new-tabs2 (send drr2 get-tabs))
   (check-equal? new-tabs2 tabs)
 
-  (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Window"))
+  (cond
+    [(eq? (system-type) 'unix)
+     (for ([_ (in-range (length tabs))])
+       (test:menu-select "File" "Close"))]
+    [else
+     (test:menu-select "File" "Close Window")])
+
   (wait-for-new-frame drr2))
 
 (define (check-log-panel drr)
