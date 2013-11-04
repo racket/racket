@@ -287,10 +287,10 @@ This function is @bold{legacy}. Its use should be avoided.
 The @racket[collection-file-path] function should be used instead.
 
 Like @racket[collection-file-path], but without a specified file name,
-so that the first directory indicated by @racket[collection]s is
-returned. If multiple packages provide @racket[collection], the path
-corresponding to the first package (in collection resolution order) is
-returned.}
+so that a directory indicated by @racket[collection]s is returned.
+If multiple packages provide @racket[collection], @racket[collection-file-path]
+will return a path to the @racket[collection] directory provided by one of
+these packages, chosen in an unspecified manner.}
 
 
 @defparam*[current-library-collection-paths paths
