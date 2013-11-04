@@ -181,14 +181,14 @@
 
 (define (show-icon)
   (make-object image-snip%
-    (build-path (collection-path "icons") "turn-up.png")))
+    (collection-file-path "turn-up.png" "icons")))
 (define (hide-icon)
   (make-object image-snip%
-    (build-path (collection-path "icons") "turn-down.png")))
+    (collection-file-path "turn-down.png" "icons")))
 
 (define (show-properties-icon)
   (make-object image-snip%
-    (build-path (collection-path "icons") "syncheck.png")))
+    (collection-file-path "syncheck.png" "icons")))
 
 
 ;; SNIPCLASS

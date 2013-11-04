@@ -260,9 +260,8 @@
       (send*/i sbview sb:syntax-browser<%>
         (add-text (if compact? "" "\n"))
         (add-text
-         (make-object image-snip% 
-                      (build-path (collection-path "icons")
-                                  "red-arrow.bmp")))
+         (make-object image-snip%
+                      (collection-file-path "red-arrow.bmp" "icons")))
         (add-text "  [")
         (add-text text)
         (add-text "]\n\n")))
