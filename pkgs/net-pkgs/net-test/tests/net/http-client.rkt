@@ -155,4 +155,13 @@
     #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nAccept-Encoding: gzip\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
-    #"This is the data in the first chand this is the second oneXXXXXXX"]))
+    #"This is the data in the first chand this is the second oneXXXXXXX"]
+
+   ["HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\nbb \r\n<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>\r\n0\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nAccept-Encoding: gzip\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
+    #"<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>"]))
+
+ 
+

@@ -2,6 +2,7 @@
 (require racket/contract/base
          racket/match
          racket/list
+         racket/string
          racket/port
          (rename-in racket/tcp
                     [tcp-connect plain-tcp-connect]
@@ -147,10 +148,12 @@
   (define (http-pipe-chunk ip op)
     (define crlf-bytes (make-bytes 2))
     (let loop ([last-bytes #f])
-      (define size-str (read-line ip 'return-linefeed))
+      (define size-str (string-trim (read-line ip 'return-linefeed)))
       (define chunk-size (string->number size-str 16))
       (unless chunk-size
-        (error 'http-conn-response/chunked "Could not parse ~S as hexadecimal number" size-str))
+        (error 'http-conn-response/chunked 
+               "Could not parse ~S as hexadecimal number"
+               size-str))
       (define use-last-bytes?
         (and last-bytes (<= chunk-size (bytes-length last-bytes))))
       (if (zero? chunk-size)
