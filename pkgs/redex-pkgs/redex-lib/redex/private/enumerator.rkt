@@ -62,10 +62,19 @@
 
 ;; Helper functions
 ;; map/e : (a -> b), (b -> a), enum a -> enum b
-(define (map/e f inv-f e)
-  (enum (size e)
-        (compose f (enum-from e))
-        (compose (enum-to e) inv-f)))
+(define (map/e f inv-f e . es)
+  (cond [(empty? es)
+         (enum (size e)
+               (compose f (enum-from e))
+               (compose (enum-to e) inv-f))]
+        [else
+         (define es/e (list/e (cons e es)))
+         (map/e
+          (λ (xs)
+             (apply f xs))
+          (λ (ys)
+             (call-with-values (λ () (inv-f ys)) list))   
+          es/e)]))
 
 ;; filter/e : enum a, (a -> bool) -> enum a
 ;; size won't be accurate!
@@ -298,24 +307,24 @@
                 (= 0 (size e2))) empty/e]
            [(not (infinite? (enum-size e1)))
             (cond [(not (infinite? (enum-size e2)))
-                   (let ([size (* (enum-size e1)
-                                  (enum-size e2))])
-                     (enum size
-                           (λ (n) ;; bijection from n -> axb
-                              (if (> n size)
-                                  (error "out of range")
-                                  (call-with-values
-                                      (λ ()
-                                         (quotient/remainder n (enum-size e2)))
-                                    (λ (q r)
-                                       (cons ((enum-from e1) q)
-                                             ((enum-from e2) r))))))
-                           (λ (xs)
-                              (unless (pair? xs)
-                                (error "not a pair"))
-                              (+ (* (enum-size e1)
-                                    ((enum-to e1) (car xs)))
-                                 ((enum-to e2) (cdr xs))))))]
+                   (define size (* (enum-size e1)
+                                   (enum-size e2)))
+                   (enum size
+                         (λ (n) ;; bijection from n -> axb
+                            (if (> n size)
+                                (error "out of range")
+                                (call-with-values
+                                    (λ ()
+                                       (quotient/remainder n (enum-size e2)))
+                                  (λ (q r)
+                                     (cons ((enum-from e1) q)
+                                           ((enum-from e2) r))))))
+                         (λ (xs)
+                            (unless (pair? xs)
+                              (error "not a pair"))
+                            (define q (encode e1 (car xs)))
+                            (define r (encode e2 (cdr xs)))
+                            (+ (* (enum-size e2) q) r)))]
                   [else
                    (enum +inf.f
                          (λ (n)
