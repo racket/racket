@@ -283,11 +283,14 @@ and the collection is not found, then the
                              [#:fail fail-proc (string? . -> . any)])
             any])]{
 
+This function is @bold{legacy}. Its use should be avoided.
+The @racket[collection-file-path] function should be used instead.
+
 Like @racket[collection-file-path], but without a specified file name,
 so that the first directory indicated by @racket[collection]s is
-returned. The @racket[collection-file-path] function normally should
-be used, instead, to support splicing of library-collection trees at
-the file level.}
+returned. If multiple packages provide @racket[collection], the path
+corresponding to the first package (in collection resolution order) is
+returned.}
 
 
 @defparam*[current-library-collection-paths paths
