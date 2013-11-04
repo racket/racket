@@ -17,25 +17,30 @@
 
 ;; This function returns an env containing all top-level name references, i.e., the ones that need to be enumerated doing anything
 (define (build-env pat)
+  (define counter 0)
+  (define (get-and-inc!)
+    (begin0 counter
+      (set! counter (add1 counter))))
   (define (walk pat)
     (match-a-pattern/single-base-case pat
       [`(name ,n ,subpat)
-       (match-define (ann-pat subenv _) (walk subpat))
+       (match-define (ann-pat subenv new-subpat) (walk subpat))
        (ann-pat (add-name subenv n subpat)
-                pat)]
+                `(name ,n ,new-subpat))]
       [`(mismatch-name ,n ,subpat)
        ;; TODO
        (unimplemented "mismatch-name")]
       [`(in-hole ,p1 ,p2)
-       (match-define (ann-pat subenv1 _)
+       (match-define (ann-pat subenv1 newsub1)
                      (walk p1))
-       (match-define (ann-pat subenv2 _)
+       (match-define (ann-pat subenv2 newsub2)
                      (walk p2))
-       (ann-pat (env-union subenv1 subenv2) pat)]
+       (ann-pat (env-union subenv1 subenv2)
+                `(in-hole ,newsub1 ,newsub2))]
       [`(hide-hole ,p)
-       (match-define (ann-pat subenv _)
+       (match-define (ann-pat subenv newsub)
                      (walk p))
-       (ann-pat subenv pat)]
+       (ann-pat subenv `(hide-hole ,newsub))]
       [`(side-condition ,p ,c ,s)
        (error 'unsupported "side condition is not supported.")]
       [`(list ,sub-pats ...)
@@ -44,19 +49,27 @@
            (match sub-pat
              [`(repeat ,p #f #f)
               (ann-pat empty-env sub-pat)]
+             [`(repeat ,p ,n #f)
+              (match-define (ann-pat subenv _)
+                            (walk p))
+              (define tag (get-and-inc!))
+              (ann-pat (add-nrep empty-env n subenv tag p)
+                       `(repeat ,tag ,n #f))]
              [`(repeat ,p ,n ,m)
-              (unimplemented "named repeat")]
+              (unimplemented (format "mismatch repeat (..._!_): ~s ~s" n m))]
              [_ (walk sub-pat)])))
        
        (define list-env
          (for/fold ([accenv empty-env])
-             ([sub-apat (in-list ann-sub-pats)])
+                   ([sub-apat (in-list ann-sub-pats)])
            (match sub-apat
              [(ann-pat subenv _)
               (env-union subenv accenv)])))
-       (ann-pat list-env pat)]
+       (ann-pat list-env (cons 'list (map ann-pat-pat ann-sub-pats)))]
       [_ (pure-ann-pat pat)]))
-  (walk pat))
+  (define res
+    (walk pat))
+  res)
 
 (define (remove-names pat)
   (define names-2set (find-names pat))

@@ -11,10 +11,10 @@
           (for ([i (in-range N)])
             (check-not-exn
              (λ ()
-                (unless (redex-match
-                         l p
-                         (generate-term l p #:i-th i))
-                  (error 'bad-term "line ~a: i=~a" line i)))))))]))
+                (define term
+                  (generate-term l p #:i-th i))
+                (unless (redex-match l p term)
+                  (error 'bad-term (format "line ~a: i=~a" line i))))))))]))
 
 (define-language Nats
   (n natural))
@@ -99,11 +99,13 @@
 (try-it 20 VarMentioned var)
 
 (define-language NRep
-  (v (natural ..._1 natural ..._1))
-  (v2 (v ..._1 v ..._2 v ..._1 v ..._2)))
+  (v  (natural ..._1 natural ..._1))
+  (v2 (v ..._1 v ..._2 v ..._1 v ..._2))
+  (v3 (natural_1 ..._1 natural_1 ..._1)))
 
 (try-it 100 NRep v)
 (try-it 100 NRep v2)
+(try-it 100 NRep v3)
 
 ;; Test production sort
 (define-language rec

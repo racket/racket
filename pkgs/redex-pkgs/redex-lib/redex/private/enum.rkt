@@ -34,6 +34,7 @@
 
 (struct name-ref (name) #:transparent)
 (struct mismatch-ref (name) #:transparent)
+(struct nrep-ref (name subpat) #:transparent)
 
 (struct named-pats (names map) #:transparent
         ) ;; listof symbol and hash symbol -o> (or named, mismatched, named-repeat, mismatch-repeat)
@@ -84,14 +85,14 @@
 (define (pat/e pat l-enums unused/e)
   (match-define (ann-pat nv pp-pat) (preprocess pat))
   (map/e
-   (λ (e-p)
-      (ann-pat (car e-p) (cdr e-p)))
+   ann-pat
    (λ (ap)
-      (cons (ann-pat-ann ap)
-            (ann-pat-pat ap)))
-   (cons/e (env/e nv l-enums unused/e)
-           (pat-refs/e pp-pat l-enums unused/e))))
+      (values (ann-pat-ann ap)
+              (ann-pat-pat ap)))
+   (env/e nv l-enums unused/e)
+   (pat-refs/e pp-pat l-enums unused/e)))
 
+;; (: pat-refs/e : Pat (HashTable Symbol (Enum Pat)) (Enum Symbol) -> Enum RefPat)
 (define (pat-refs/e pat nt-enums unused/e)
   (define (loop pat)
     (match-a-pattern
@@ -118,46 +119,59 @@
      [`(name ,n ,pat)
       (const/e (name-ref n))]
      [`(mismatch-name ,n ,pat)
-      (const/e (mismatch-ref n))]
+      (unimplemented "mismatch-name")]
      [`(in-hole ,p1 ,p2) ;; untested
-      (map/e
-       (λ (ts)
-          (decomposition (car ts)
-                         (cdr ts)))
-       (λ (decomp)
-          (cons (decomposition-ctx decomp)
-                (decomposition-term decomp)))
-       (cons/e
-        (loop p1)
-        (loop p2)))]
+      (unsupported pat)]
      [`(hide-hole ,p)
-      (loop p)]
+      (unsupported pat)]
      [`(side-condition ,p ,g ,e)
       (unsupported pat)]
      [`(cross ,s)
       (unsupported pat)]
      [`(list ,sub-pats ...)
-      ;; enum-list
       (list/e
        (for/list ([sub-pat (in-list sub-pats)])
          (match sub-pat
+           [`(repeat ,pat #f #f)
+            (map/e
+             (λ (ts)
+                (repeat (length ts)
+                        ts))
+             (λ (rep)
+                (repeat-terms rep))
+             (many/e (loop pat)))]
+           [`(repeat ,tag ,n #f)
+            (const/e (nrep-ref n tag))]
            [`(repeat ,pat ,n ,m)
-            (error 'unimplemented "repeats")]
+            (unimplemented "mismatch repeats (..._!_)")]
            [else (loop sub-pat)])))]
      [(? (compose not pair?)) 
       (const/e pat)]))
   (loop pat))
 
-(define (env/e nv l-enums unused/e)
-  (define names (env-names nv))
-  (define (val/e p)
-    (pat/e p l-enums unused/e))
-  (define names-env
-    (hash-traverse/e val/e names))
-  (map/e
-   env
-   env-names
-   names-env))
+(define/match (env/e nv l-enums unused/e)
+  [((env names nreps) _ _)
+   (define (val/e p)
+     (pat-refs/e p l-enums unused/e))
+   (define/match (reprec/e nv-t)
+     [((cons nv tpats))
+      (define tpats/e
+        (hash-traverse/e val/e tpats))
+      (many/e
+       (cons/e (env/e nv l-enums unused/e)
+               tpats/e))])
+   (define names-env
+     (hash-traverse/e val/e names))
+   
+   (define nreps-env
+     (hash-traverse/e reprec/e nreps))
+   (map/e
+    t-env
+    (match-lambda
+     [(t-env names nreps)
+      (values names nreps)])
+    names-env
+    nreps-env)])
 
 (define (map-nt-rhs-pat f nonterminal)
   (nt (nt-name nonterminal)
@@ -586,24 +600,44 @@
          bool/e
          var/e))
 
-;; fill-refs : (ann-pat env pat-with-refs) -> redex term
+;; fill-refs : (ann-pat t-env pat-with-refs) -> redex term
 (define/match (fill-refs ap)
   [((ann-pat nv term))
-   (define (rec term)
-     (cond [(ann-pat? term)
-            (fill-refs term)]
-           [(name-ref? term)
-            (fill-refs (env-name-ref nv (name-ref-name term)))]
-           [(decomposition? term)
-            (error 'unsupported "in-hole")]
-           [(list? term)
-            (append*
-             (for/list ([sub-term (in-list term)])
-               (cond [(repeat? sub-term)
-                      (map rec (repeat-terms sub-term))]
-                     [else (list (rec sub-term))])))]
-           [else term]))
-   (rec term)])
+   ((refs-to-fn term) nv)])
+
+;; refs-to-fn : RefPat -> (TEnv -> Term)
+(define (refs-to-fn refpat)
+  (match refpat
+    [(ann-pat _ _)
+     (define term
+       (fill-refs refpat))
+     (λ (_) term)]
+    [(name-ref n)
+     (λ (nv)
+        (t-env-name-ref nv n))]
+    [(list subrefpats ...)
+     (compose
+      append*
+      (sequence-fn
+       (for/list ([subrefpat (in-list subrefpats)])
+         (match subrefpat
+           [(repeat _ subs)
+            (sequence-fn (map refs-to-fn subs))]
+           [(nrep-ref n tag)
+            (λ (nv)
+               (define env-ts (t-env-nrep-ref nv n))
+               (for/list ([nv-t (in-list env-ts)])
+                 (match nv-t
+                   [(cons nv tterms)
+                    ((refs-to-fn (hash-ref tterms tag)) nv)])))]
+           [_ (sequence-fn (list (refs-to-fn subrefpat)))]))))]
+    [else (λ (_) refpat)]))
+
+;; (: sequence-fn : (All (a b) (Listof (a -> b)) -> (a -> (Listof b))))
+(define (sequence-fn fs)
+  (λ (x)
+     (for/list ([f (in-list fs)])
+       (f x))))
 
 ;; to-term : augmented term -> redex term
 (define (to-term aug)
