@@ -108,7 +108,7 @@
       (except/e var/e s)]
      [`(variable-prefix ,s)
       ;; todo
-      (error 'unimplemented "var-prefix")]
+      (unimplemented "var-prefix")]
      [`variable-not-otherwise-mentioned
       unused/e]
      [`hole
@@ -277,7 +277,7 @@
                    ;; Only works if there are no variables inside the repeat
                    (add-named-rep name named-pats)]
                   [`(repeat ,pat ,name ,mismatch)
-                   (error 'unimplemented)]
+                   (unimplemented "mismatch repeats")]
                   [else (loop sub-pat named-pats)]))
              named-pats
              sub-pats)]
@@ -470,7 +470,7 @@
       (except/e var/e s)]
      [`(variable-prefix ,s)
       ;; todo
-      (error 'unimplemented "var-prefix")]
+      (unimplemented "var-prefix")]
      [`variable-not-otherwise-mentioned
       unused-var/e]
      [`hole
@@ -522,7 +522,7 @@
                  (many/e (loop pat)
                          n)))]
              [`(repeat ,pat ,name ,mismatch)
-              (error 'unimplemented "mismatch-repeat")]
+              (unimplemented "mismatch-repeat")]
              [else (loop sub-pat)]))
         sub-pats))]
      [(? (compose not pair?)) 
@@ -560,8 +560,6 @@
    (many/e char/e)))
 
 (define integer/e
-  #; ;; Simple "turn down the volume" list
-  (from-list/e '(0 1 -1))
   (sum/e nats
          (map/e (λ (n) (- (+ n 1)))
                 (λ (n) (- (- n) 1))
@@ -599,7 +597,11 @@
            [(decomposition? term)
             (error 'unsupported "in-hole")]
            [(list? term)
-            (map rec term)]
+            (append*
+             (for/list ([sub-term (in-list term)])
+               (cond [(repeat? sub-term)
+                      (map rec (repeat-terms sub-term))]
+                     [else (list (rec sub-term))])))]
            [else term]))
    (rec term)])
 

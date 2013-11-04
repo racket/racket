@@ -5,6 +5,7 @@
 
          "2set.rkt"
          "env.rkt"
+         "error.rkt"
          "match-a-pattern.rkt")
 
 (provide preprocess
@@ -24,7 +25,7 @@
                 pat)]
       [`(mismatch-name ,n ,subpat)
        ;; TODO
-       (error 'unimplemented)]
+       (unimplemented "mismatch-name")]
       [`(in-hole ,p1 ,p2)
        (match-define (ann-pat subenv1 _)
                      (walk p1))
@@ -41,8 +42,10 @@
        (define ann-sub-pats
          (for/list ([sub-pat (in-list sub-pats)])
            (match sub-pat
+             [`(repeat ,p #f #f)
+              (ann-pat empty-env sub-pat)]
              [`(repeat ,p ,n ,m)
-              (error 'unimplemented)]
+              (unimplemented "named repeat")]
              [_ (walk sub-pat)])))
        
        (define list-env
@@ -125,3 +128,6 @@
 
 (define (pure-ann-pat pat)
   (ann-pat empty-env pat))
+
+(define (unimplemented pat-name)
+  (redex-error 'unsupported "generate-term #:i-th currently doesn't support pattern type: ~a" pat-name))
