@@ -22,6 +22,7 @@
     syntax/parse
     (base-env
       base-env-indexing
+      base-special-env
       base-structs)
     (typecheck typechecker)
     (utils mutated-vars)
@@ -37,6 +38,7 @@
   (initialize-structs)
   (initialize-indexing)
   (initialize-type-names)
+  (initialize-special)
   
   ;; tr-expand: syntax? -> syntax?
   ;; Expands out a form and annotates it with necesarry TR machinery.
