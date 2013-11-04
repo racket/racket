@@ -1802,6 +1802,21 @@
        ;; Unit test for PR 13298. Should raise an unbound id error
        ;; instead of just allowing `x` to be undefined
        [tc-err (let () (: x Number) 3)]
+
+       ;; Sets as sequences
+       [tc-e (in-set (set 1 2 3)) (-seq -PosByte)]
+       [tc-e
+        (let ()
+          (: lst (Listof Integer))
+          (define lst
+            (for/list: : (Listof Integer) ([i : Integer (set 1 2 3)]) i))
+          (void))
+        -Void]
+       [tc-e
+        (let ()
+          (for: ([k : Symbol (in-set (set 'x 'y 'z))]) (displayln k))
+          (void))
+        -Void]
         )
   (test-suite
    "tc-literal tests"

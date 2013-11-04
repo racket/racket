@@ -139,6 +139,9 @@
   ;; in-bytes-lines
   [(make-template-identifier 'in-bytes-lines 'racket/private/for)
    (->opt [-Input-Port -Symbol] (-seq -Bytes))]
+  ;; in-set
+  [(make-template-identifier 'in-set 'racket/private/set)
+   (-poly (a) (-> (-set a) (-seq a)))]
   ;; check-in-bytes-lines
   [(make-template-identifier 'check-in-bytes-lines 'racket/private/for)
    (-> Univ Univ Univ)]
