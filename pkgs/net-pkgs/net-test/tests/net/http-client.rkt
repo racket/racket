@@ -3,6 +3,7 @@
   (require rackunit
            racket/tcp
            racket/port
+           (for-syntax racket/base)
            racket/list
            (prefix-in hc: net/http-client)
            (prefix-in u: net/url))
@@ -18,52 +19,74 @@
           (loop))))
     (get-output-bytes ob))
 
-  (define-syntax-rule (tests [t ...] ...)
-    (begin (test t ...) ...))
+  (define-syntax (tests stx)
+    (syntax-case stx ()
+      [(_ t ...)
+       (with-syntax
+           ([(t.test ...)
+             (for/list ([t (in-list (syntax->list #'(t ...)))])
+               (quasisyntax/loc t
+                 (test . #,t)))])
+         (syntax/loc stx
+           (begin t.test ...)))]))
 
-  (define-syntax-rule (test-e the-port e raw ereq estatus eheaders econtent)
-    (let ()
-      (define l (tcp-listen 0 40 #t "127.0.0.1"))
-      (define-values (_1 the-port _2 _3)
-        (tcp-addresses l #t))
-      (define req #f)
-      (define lt
-        (thread
-         (λ ()
-           (define-values (in out) (tcp-accept l))
-           (tcp-close l)
-           (display raw out)
-           (flush-output out)
-           (tcp-abandon-port out)
-           (close-output-port out)
-           (set! req (port->bytes* in))
-           (tcp-abandon-port in)
-           (close-input-port in))))
-      (define-values (status headers content-port)
-        e)
-      (thread-wait lt)
-      (check-equal? (regexp-replace* (number->string the-port) req "REDACTED") ereq)
-      (check-equal? status estatus)
-      (check-equal? headers eheaders)
-      (check-equal? (port->bytes content-port) econtent)))
+  (define-syntax (test-e stx)
+    (syntax-case stx ()
+      [(_ the-port e raw ereq estatus eheaders econtent)
+       (quasisyntax/loc stx
+         (let ()
+           (define l (tcp-listen 0 40 #t "127.0.0.1"))
+           (define-values (_1 the-port _2 _3)
+             (tcp-addresses l #t))
+           (define req #f)
+           (define lt
+             (thread
+              (λ ()
+                (define-values (in out) (tcp-accept l))
+                (tcp-close l)
+                (display raw out)
+                (flush-output out)
+                (tcp-abandon-port out)
+                (close-output-port out)
+                (set! req (port->bytes* in))
+                (tcp-abandon-port in)
+                (close-input-port in))))
+           (define-values (status headers content-port)
+             e)
+           (thread-wait lt)
+           #,(syntax/loc stx
+               (check-equal? (regexp-replace* (number->string the-port) req "REDACTED")
+                             ereq))
+           #,(syntax/loc stx
+               (check-equal? status estatus))
+           #,(syntax/loc stx
+               (check-equal? headers eheaders))
+           #,(syntax/loc stx
+               (check-equal? (port->bytes content-port) econtent))))]))
 
-  (define-syntax-rule (test raw ereq estatus eheaders econtent)
-    (begin
-      (test-e the-port
-              (hc:http-sendrecv "localhost" "/"
-                                #:ssl? #f
-                                #:port the-port
-                                #:method "GET"
-                                #:headers empty
-                                #:data #f)
-              raw ereq estatus eheaders econtent)
-      (test-e the-port
-              (u:http-sendrecv/url
-               (u:make-url "http" #f "localhost" the-port #t (list (u:path/param "" empty)) empty #f)
-               #:method "GET"
-               #:headers empty
-               #:data #f)
-              raw ereq estatus eheaders econtent)))
+  (define-syntax (test stx)
+    (syntax-case stx ()
+      [(_ raw ereq estatus eheaders econtent)
+       (quasisyntax/loc stx
+         (begin
+           #,(syntax/loc stx
+               (test-e the-port
+                       (hc:http-sendrecv "localhost" "/"
+                                         #:ssl? #f
+                                         #:port the-port
+                                         #:method "GET"
+                                         #:headers empty
+                                         #:data #f)
+                       raw ereq estatus eheaders econtent))
+           #,(syntax/loc stx
+               (test-e the-port
+                       (u:http-sendrecv/url
+                        (u:make-url "http" #f "localhost" the-port #t
+                                    (list (u:path/param "" empty)) empty #f)
+                        #:method "GET"
+                        #:headers empty
+                        #:data #f)
+                       raw ereq estatus eheaders econtent))))]))
 
   (tests
    ["HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
@@ -78,10 +101,22 @@
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
+   ["HTTP/1.0 200 OK\nContent-Type: text/plain\n\nThis is the data in the first chunk and this is the second one"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nAccept-Encoding: gzip\r\n\r\n"
+    #"HTTP/1.0 200 OK"
+    '(#"Content-Type: text/plain")
+    #"This is the data in the first chunk and this is the second one"]
+
    ["HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
     #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nAccept-Encoding: gzip\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain" #"Content-Length: 62")
+    #"This is the data in the first chunk and this is the second one"]
+
+   ["HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nAccept-Encoding: gzip\r\n\r\n"
+    #"HTTP/1.0 200 OK"
+    '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\ncontent-length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
@@ -162,6 +197,3 @@
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
     #"<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>"]))
-
- 
-
