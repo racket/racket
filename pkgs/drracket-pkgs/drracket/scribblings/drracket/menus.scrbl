@@ -24,6 +24,11 @@
  @item{@defmenuitem{Open Recent} Lists recently opened
    files. Choosing one of them opens that file for editing.}
   
+ @item{@defmenuitem{Open Collection Path...} Opens a dialog where you
+        can enter in a @racket[require]-like module path (e.g.,
+        @litchar{racket/base.rkt} or @litchar{data/splay-tree.rkt})
+        and edit the corresponding files in the @tech{definitions window}.}
+  
  @item{@defmenuitem{Install PLT File...} Opens a dialog asking for the
    location of the @filepath{.plt} file (either on the local disk or
    on the web) and installs the contents of the file.}

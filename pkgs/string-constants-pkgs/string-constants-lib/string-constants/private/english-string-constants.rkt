@@ -1884,5 +1884,10 @@ please adhere to these guidelines:
 
   (install-pkg-package-catalogs "Package Catalogs") ; label for a list box
   (install-pkg-add-package-catalog "Add Package Catalog")
+
+  ;; open a file via a collection path (new "Open" menu item in DrRacket)
+  (open-collection-path "Open Collection Path...")
+  (enter-subcollection "Enter subcollection") ; button in new dialog
+  
   
   )

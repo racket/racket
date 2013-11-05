@@ -26,6 +26,7 @@
          "local-member-names.rkt"
          "eval-helpers.rkt"
          "parse-logger-args.rkt"
+         "get-module-path.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
          (prefix-in icons: images/compile-time)
          mred
@@ -3753,6 +3754,18 @@
                       (create-new-tab))))))
       [define/override file-menu:between-open-and-revert
         (lambda (file-menu)
+          (new menu:can-restore-menu-item%
+               [label (string-constant open-collection-path)]
+               [shortcut #\o]
+               [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+               [parent file-menu]
+               [callback
+                (λ (x y)
+                  (define pth
+                    (get-module-path-from-user
+                     #:init (preferences:get 'drracket:open-module-path-last-used)
+                     #:pref 'drracket:open-module-path-last-used))
+                  (when pth (handler:edit-file pth)))])
           (super file-menu:between-open-and-revert file-menu)
           (make-object separator-menu-item% file-menu))]
       (define close-tab-menu-item #f)
