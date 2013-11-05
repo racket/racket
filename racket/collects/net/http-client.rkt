@@ -11,6 +11,12 @@
          "win32-ssl.rkt"
          file/gunzip)
 
+(define tolerant? #t)
+(define eol-type
+  (if tolerant?
+    'any
+    'return-linefeed))
+
 ;; Lib
 
 (define (->string bs)
@@ -62,6 +68,10 @@
 
   (set-http-conn-host! hc host)
   (set-http-conn-port! hc port)
+
+  ;; (define-values (log-i log-o) (make-pipe))
+  ;; (thread (λ () (copy-port log-i to (current-error-port))))
+
   (set-http-conn-to! hc to)
   (set-http-conn-from! hc from))
 
@@ -115,10 +125,10 @@
   (flush-output to))
 
 (define (http-conn-status! hc)
-  (read-bytes-line/not-eof (http-conn-from hc) 'return-linefeed))
+  (read-bytes-line/not-eof (http-conn-from hc) eol-type))
 
 (define (http-conn-headers! hc)
-  (define top (read-bytes-line/not-eof (http-conn-from hc) 'return-linefeed))
+  (define top (read-bytes-line/not-eof (http-conn-from hc) eol-type))  
   (if (bytes=? top #"")
     empty
     (cons top (http-conn-headers! hc))))
@@ -148,7 +158,7 @@
   (define (http-pipe-chunk ip op)
     (define crlf-bytes (make-bytes 2))
     (let loop ([last-bytes #f])
-      (define size-str (string-trim (read-line ip 'return-linefeed)))
+      (define size-str (string-trim (read-line ip eol-type)))
       (define chunk-size (string->number size-str 16))
       (unless chunk-size
         (error 'http-conn-response/chunked 
