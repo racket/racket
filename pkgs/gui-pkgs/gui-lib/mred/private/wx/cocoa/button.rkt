@@ -42,7 +42,7 @@
         [button-type #f])
   (init-field [event-type 'button])
   (inherit get-cocoa get-cocoa-window init-font
-           register-as-child)
+           register-as-child get-wx-window)
 
   (define button-cocoa
     (let ([cocoa 
@@ -154,7 +154,22 @@
   (define default-button? (memq 'border style))
   (define/override (show-children)
     (when default-button?
-      (tellv (get-cocoa-window) setDefaultButtonCell: (tell button-cocoa cell))))
+      (send (get-wx-window) add-possible-default this)))
+  (define/override (hide-children)
+    (when default-button?
+      (send (get-wx-window) remove-possible-default this)))
+
+  (define/override (enable-window on?)
+    (super enable-window on?)
+    (when default-button?
+      (send (get-wx-window) queue-default-button-check)))
+
+  (define/public (be-default) ; called by frame, only when the button is shown
+    ;; return #t to indicate succes, #f to let some other button take over
+    (and (tell #:type _BOOL button-cocoa isEnabled)
+         (begin
+           (tellv (get-cocoa-window) setDefaultButtonCell: (tell button-cocoa cell))
+           #t)))
 
   (tellv button-cocoa setTarget: button-cocoa)
   (tellv button-cocoa setAction: #:type _SEL (selector clicked:))

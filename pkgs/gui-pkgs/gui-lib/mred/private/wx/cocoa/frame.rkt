@@ -596,6 +596,28 @@
 
     (define/public (set-icon bm1 [bm2 #f] [mode 'both]) (void)) ;; FIXME
 
+    (define default-buttons (make-hasheq))
+    (define checking-default? #f)
+    (define/public (add-possible-default button)
+      (hash-set! default-buttons button #t)
+      (queue-default-button-check))
+    (define/public (remove-possible-default button)
+      (hash-remove! default-buttons button)
+      (queue-default-button-check))
+    (define/public (queue-default-button-check)
+      (when (atomically
+             (if checking-default?
+                 #f
+                 (begin
+                   (set! checking-default? #t)
+                   #t)))
+        (queue-window-event 
+         this
+         (lambda ()
+           (set! checking-default? #f)
+           (for/or ([button (in-hash-keys default-buttons)])
+             (send button be-default))))))
+
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))
     (define/override (call-pre-on-char w e)
