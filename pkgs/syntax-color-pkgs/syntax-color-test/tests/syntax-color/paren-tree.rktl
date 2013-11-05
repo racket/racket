@@ -1,4 +1,4 @@
-(load-relative "../racket/loadtest.rktl")
+(load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
 (require mzlib/class
          syntax-color/paren-tree)
 
