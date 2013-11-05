@@ -137,6 +137,9 @@
    [(Integer -> (All (X) (X -> X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
 
+   [(Opaque foo?) (make-Opaque #'foo?)]
+   ;; PR 14122
+   [FAIL (Opaque 3)]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

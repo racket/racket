@@ -285,7 +285,7 @@
        (-val (syntax->datum #'t))]
       [((~and kw t:All) . rest)
        (parse-all-type stx)]
-      [((~and kw t:Opaque) p?)
+      [((~and kw t:Opaque) p?:id)
        (add-disappeared-use #'kw)
        (make-Opaque #'p?)]
       [((~and kw t:Parameter) t)
