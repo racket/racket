@@ -420,4 +420,20 @@
         (define k i) #:final (= k 2)
         (list i j)))
 
+;; for should discard any results and return void
+(test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
+(test (void) 'for*-0-values (for* ([x '(1 2 3)] [y '(a b c)]) (values)))
+(test (void) 'for-1-value (for ([x '(1 2 3)] [y '(a b c)]) (values x)))
+(test (void) 'for*-1-value (for* ([x '(1 2 3)] [y '(a b c)]) (values x)))
+(test (void) 'for-2-values (for ([x '(1 2 3)] [y '(a b c)]) (values x y)))
+(test (void) 'for*-2-values (for* ([x '(1 2 3)] [y '(a b c)]) (values x y)))
+
+;; for/fold with no accums
+(test '() 'for/fold-no-accum 
+      (call-with-values (λ () (for/fold () ([x '(1 2)]) (values))) (λ x x)))
+(test '() 'for*/fold-no-accum 
+      (call-with-values (λ () (for*/fold () ([x '(1 2)]) (values))) (λ x x)))
+(err/rt-test (for/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
+(err/rt-test (for*/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
+
 (report-errs)
