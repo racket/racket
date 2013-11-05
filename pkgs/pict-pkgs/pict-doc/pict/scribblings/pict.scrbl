@@ -887,6 +887,10 @@ pict with the same shape and location.}
 
 @; ----------------------------------------
 
+@include-section["anim.scrbl"]
+
+@; ----------------------------------------
+
 @section{Miscellaneous}
 
 @defproc[(hyperlinkize [pict pict?])
