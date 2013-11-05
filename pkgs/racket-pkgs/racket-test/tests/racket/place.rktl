@@ -1,6 +1,6 @@
 (load-relative "loadtest.rktl")
 (Section 'places)
-(require "benchmarks/places/place-utils.rkt")
+(require tests/racket/place-utils)
 
 (place-wait
  (place/splat (p1 ch) (printf "Hello from place\n")))
