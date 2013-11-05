@@ -179,7 +179,7 @@ an error.
 @defproc[(gc:alloc-flat (val heap-value?)) location?]{
 
 This procedure should allocate a flat value (number, symbol, boolean,
-closure or empty list) on the heap, returning its location (a number). The
+or empty list) on the heap, returning its location (a number). The
 value should occupy a single heap cell, though you may use additional space to
 store a tag, etc. You are also welcome to pre-allocate common constants (e.g.,
 the empty list). This procedure may need to perform a garbage-collection. If
