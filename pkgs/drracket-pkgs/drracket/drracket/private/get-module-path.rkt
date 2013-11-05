@@ -87,9 +87,12 @@
          [(string? what)
           (list just-one)]
          [else
-          (for/list ([dir (in-list (directory-list pth))]
-                     #:when (directory-exists? (build-path pth dir)))
-            (list (path->string dir) (build-path pth dir)))]))))
+          (cond
+            [(directory-exists? pth)
+             (for/list ([dir (in-list (directory-list pth))]
+                        #:when (directory-exists? (build-path pth dir)))
+               (list (path->string dir) (build-path pth dir)))]
+            [else '()])]))))
   
   (module+ test
     (require rackunit
