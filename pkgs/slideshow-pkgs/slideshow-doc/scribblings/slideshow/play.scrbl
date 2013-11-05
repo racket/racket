@@ -187,7 +187,7 @@ animates the wrapping of @racket[x] with a @racket[(+ .... 1)] form.}
                      [p pict?]
                      [p-from pict?]
                      [p-to pict?]
-                     [n (in-real 0.0 1.0)])
+                     [n (real-in 0.0 1.0)])
          pict?]{
 
 Pins @racket[p] onto @racket[base], sliding from @racket[p-from] to
@@ -204,16 +204,16 @@ but they can be any picts within @racket[base].}
 
 @section{Merging Animations}
 
-@defproc[(sequence-animations [gen ((real-in 0.0 1.0) . ->* . pict?)]
+@defproc[(sequence-animations [gen (-> (real-in 0.0 1.0) pict?)]
                               ...)
-         ((real-in 0.0 1.0) . ->* . pict?)]{
+         (-> (real-in 0.0 1.0) pict?)]{
 
 Converts a list of @racket[gen] functions into a single function that
 uses each @racket[gen] in sequence.}
 
-@defproc[(reverse-animations [gen ((real-in 0.0 1.0) . ->* . pict?)]
-                              ...)
-         ((real-in 0.0 1.0) . ->* . pict?)]{
+@defproc[(reverse-animations [gen (-> (real-in 0.0 1.0) pict?)]
+                             ...)
+         (-> (real-in 0.0 1.0) pict?)]{
 
 Converts a list of @racket[gen] functions into a single function that
 run @racket[(sequence-animations gen ...)] in reverse.}
@@ -223,10 +223,10 @@ run @racket[(sequence-animations gen ...)] in reverse.}
 @section{Stretching and Squashing Time}
 
 @deftogether[(
-@defproc[(fast-start [n (in-real 0.0 1.0)]) (in-real 0.0 1.0)]
-@defproc[(fast-end [n (in-real 0.0 1.0)]) (in-real 0.0 1.0)]
-@defproc[(fast-edges [n (in-real 0.0 1.0)]) (in-real 0.0 1.0)]
-@defproc[(fast-middle [n (in-real 0.0 1.0)]) (in-real 0.0 1.0)]
+@defproc[(fast-start [n (real-in 0.0 1.0)]) (real-in 0.0 1.0)]
+@defproc[(fast-end [n (real-in 0.0 1.0)]) (real-in 0.0 1.0)]
+@defproc[(fast-edges [n (real-in 0.0 1.0)]) (real-in 0.0 1.0)]
+@defproc[(fast-middle [n (real-in 0.0 1.0)]) (real-in 0.0 1.0)]
 )]{
 
 Monotonically but non-uniformly maps @racket[n] with fixed
@@ -264,8 +264,8 @@ appears to move slowly away from @racket[_p1], then more quickly, and
 then slowly again near @racket[_p2], assuming that @racket[_n] increases
 uniformly.}
 
-@defproc[(split-phase [n (in-real 0.0 1.0)])
-         (values (in-real 0.0 1.0) (in-real 0.0 1.0))]{
+@defproc[(split-phase [n (real-in 0.0 1.0)])
+         (values (real-in 0.0 1.0) (real-in 0.0 1.0))]{
 
 Splits the progression of @racket[n] from @racket[0.0] to @racket[1.0]
 into a progression from @racket[(values 0.0 0.0)] to @racket[(values
