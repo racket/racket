@@ -331,7 +331,7 @@
 ;; parent : Struct
 ;; flds : Listof[fld]
 ;; proc : Function Type
-;; poly? : is this type polymorphicly variant
+;; poly? : is this type polymorphically variant
 ;;         If not, then the predicate is enough for higher order checks
 ;; pred-id : identifier for the predicate of the struct
 ;; acc-ids : names of the accessors
