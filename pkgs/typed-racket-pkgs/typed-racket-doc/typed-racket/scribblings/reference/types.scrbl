@@ -301,9 +301,24 @@ corresponding to @racket[trest], where @racket[bound]
 @defform[(MListof t)]{Homogenous @rtech{mutable lists} of @racket[t].}
 @defform[(MPairof t u)]{@rtech{Mutable pairs} of @racket[t] and @racket[u].}
 
+@defidform[MPairTop]{is the type of a @rtech{mutable pair} with unknown
+  element types and is the supertype of all mutable pair types.
+  This type typically appears in programs via the combination of
+  occurrence typing and @racket[mpair?].
+@ex[(lambda: ([x : Any]) (if (mpair? x) x (error "not an mpair!")))]
+}
+
 @defform[(Boxof t)]{A @rtech{box} of @racket[t]}
 
 @ex[(box "hello world")]
+
+@defidform[BoxTop]{is the type of a @rtech{box} with an unknown element
+  type and is the supertype of all box types. Only read-only box operations
+  (e.g. @racket[unbox]) are allowed on values of this type. This type
+  typically appears in programs via the combination of occurrence
+  typing and @racket[box?].
+@ex[(lambda: ([x : Any]) (if (box? x) x (error "not a box!")))]
+}
 
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
 @defform[(Vector t ...)]{is the type of the list with one element, in order,
@@ -314,7 +329,8 @@ corresponding to @racket[trest], where @racket[bound]
 #(a b c)]
 
 @defidform[VectorTop]{is the type of a @rtech{vector} with unknown length and
-  element types. Only read-only vector operations (e.g. @racket[vector-ref])
+  element types and is the supertype of all vector types.
+  Only read-only vector operations (e.g. @racket[vector-ref])
   are allowed on values of this type. This type typically appears in programs
   via the combination of occurrence typing and @racket[vector?].
 @ex[(lambda: ([x : Any]) (if (vector? x) x (error "not a vector!")))]
@@ -327,7 +343,8 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[#hash((a . 1) (b . 2))]
 }
 @defidform[HashTableTop]{is the type of a @rtech{hash table} with unknown key
-  and value types. Only read-only hash table operations (e.g.
+  and value types and is the supertype of all hash table types. Only read-only
+  hash table operations (e.g.
   @racket[hash-ref]) are allowed on values of this type. This type typically
   appears in programs via the combination of occurrence typing and
   @racket[hash?].
@@ -342,6 +359,13 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[
 (ann (make-channel) (Channelof Symbol))
 ]
+}
+
+@defidform[ChannelTop]{is the type of a @rtech{channel} with unknown
+  message type and is the supertype of all channel types. This type typically
+  appears in programs via the combination of occurrence typing and
+  @racket[channel?].
+@ex[(lambda: ([x : Any]) (if (channel? x) x (error "not a channel!")))]
 }
 
 @defform*[[(Parameterof t)
@@ -361,6 +385,12 @@ type @racket[_t] on each iteration.}
 
 @defform[(Custodian-Boxof t)]{A @rtech{custodian box} of @racket[t].}
 @defform[(Thread-Cellof t)]{A @rtech{thread cell} of @racket[t].}
+@defidform[Thread-CellTop]{is the type of a @rtech{thread cell} with unknown
+  element type and is the supertype of all thread cell types. This type typically
+  appears in programs via the combination of occurrence typing and
+  @racket[thread-cell?].
+@ex[(lambda: ([x : Any]) (if (thread-cell? x) x (error "not a thread cell!")))]
+}
 
 @defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
@@ -425,6 +455,13 @@ functions and continuation mark functions.
   @ex[(make-continuation-prompt-tag 'prompt-tag)]
 }
 
+@defidform[Prompt-TagTop]{is the type of a @rtech{prompt tag} with unknown
+  body and handler types and is the supertype of all prompt tag types. This type
+  typically appears in programs via the combination of occurrence typing
+  and @racket[continuation-prompt-tag?].
+@ex[(lambda: ([x : Any]) (if (continuation-prompt-tag? x) x (error "not a prompt tag!")))]
+}
+
 @defform[(Continuation-Mark-Keyof t)]{
   A continuation mark key that is used for continuation mark
   operations such as @racket[with-continuation-mark] and
@@ -433,6 +470,13 @@ functions and continuation mark functions.
   continuation mark with this key.
 
   @ex[(make-continuation-mark-key 'mark-key)]
+}
+
+@defidform[Continuation-Mark-KeyTop]{is the type of a continuation mark
+  key with unknown element type and is the supertype of all continuation mark key
+  types. This type typically appears in programs
+  via the combination of occurrence typing and @racket[continuation-mark-key?].
+@ex[(lambda: ([x : Any]) (if (continuation-mark-key? x) x (error "not a mark key!")))]
 }
 
 
