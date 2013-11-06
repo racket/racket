@@ -21,6 +21,7 @@
          file/tar
          file/zip
          file/unzip
+         file/cache
          setup/getinfo
          setup/dirs
          racket/format
@@ -45,6 +46,13 @@
 (define current-no-pkg-db
   (make-parameter #f))
 (define current-pkg-catalogs
+  (make-parameter #f))
+
+(define current-pkg-download-cache-dir
+  (make-parameter #f))
+(define current-pkg-download-cache-max-files
+  (make-parameter #f))
+(define current-pkg-download-cache-max-bytes
   (make-parameter #f))
 
 (define (pkg-error . rest)
@@ -115,19 +123,49 @@
   (make-directory* pkg-dir)
   (untgz pkg #:dest pkg-dir #:strip-count strip-components))
 
-(define (download-file! url file #:fail-okay? [fail-okay? #f])
-  (with-handlers
-      ([exn:fail?
-        (λ (x)
-          (unless fail-okay?
-            (raise x)))])
+(define (download-file! url file checksum
+                        #:download-printf [download-printf #f]
+                        #:use-cache? [use-cache? #t]
+                        #:fail-okay? [fail-okay? #f])
+  (with-handlers ([exn:fail?
+                   (λ (x)
+                     (unless fail-okay?
+                       (raise x)))])
     (make-parent-directory* file)
     (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) file)
-    (call-with-output-file file
-      (λ (op)
-        (call/input-url+200
-         url
-         (λ (ip) (copy-port ip op)))))))
+    (define (download!)
+      (when download-printf
+        (download-printf "Downloading ~a\n" (url->string url)))
+      (call-with-output-file file
+        (λ (op)
+          (call/input-url+200
+           url
+           (λ (ip) (copy-port ip op))))))
+    (cond
+     [(and checksum use-cache?)
+      (cache-file file
+                  (list (url->string url) checksum)
+                  (get-download-cache-dir)
+                  download!
+                  #:log-error-string (lambda (s) (log-pkg-error s))
+                  #:log-debug-string (lambda (s) (log-pkg-debug s))
+                  #:notify-cache-use (lambda (s)
+                                       (when download-printf
+                                         (download-printf "Using ~a for ~a\n"
+                                                          s
+                                                          (url->string url))))
+                  #:max-cache-files (get-download-cache-max-files)
+                  #:max-cache-size (get-download-cache-max-bytes))]
+     [else (download!)])))
+
+(define (clean-cache pkg-url checksum)
+  (when pkg-url
+    ;; Something failed after download, so remove cached file (if any):
+    (with-handlers ([exn:fail? void]) ; any error is logged already
+      (cache-remove (list (url->string pkg-url) checksum)
+                    (get-download-cache-dir)
+                    #:log-error-string (lambda (s) (log-pkg-error s))
+                    #:log-debug-string (lambda (s) (log-pkg-debug s))))))
 
 (define (pkg-dir config?)
   (define scope (current-pkg-scope))
@@ -143,6 +181,16 @@
   (pkg-dir #f))
 (define (pkg-lock-file)
   (make-lock-file-name (pkg-db-file)))
+
+(define (get-download-cache-dir)
+  (or (current-pkg-download-cache-dir)
+      (read-pkg-cfg/def 'download-cache-dir)))
+(define (get-download-cache-max-files)
+  (or (current-pkg-download-cache-max-files)
+      (read-pkg-cfg/def 'download-cache-max-files)))
+(define (get-download-cache-max-bytes)
+  (or (current-pkg-download-cache-max-bytes)
+      (read-pkg-cfg/def 'download-cache-max-bytes)))
 
 (define (make-metadata-namespace)
   (make-base-empty-namespace))
@@ -427,8 +475,8 @@
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
   (case type
     [(file-url dir-url github)
-     (or (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)
-	 given-checksum)]
+     (or given-checksum
+	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name))]
     [(file)
      (define checksum-pth (format "~a.CHECKSUM" pkg-source))
      (or (and (file-exists? checksum-pth)
@@ -562,6 +610,10 @@
              "http://planet-compats.racket-lang.org")]
       ['default-scope "user"]
       ['installation-name (version)]
+      ['download-cache-dir (build-path (find-system-path 'addon-dir)
+                                       "download-cache")]
+      ['download-cache-max-files 1024]
+      ['download-cache-max-bytes (* 64 1024 1024)]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -826,10 +878,11 @@
              reason
              s))
 
-(define (check-checksum given-checksum checksum what pkg-src)
+(define (check-checksum given-checksum checksum what pkg-src cached-url)
   (when (and given-checksum
              checksum
              (not (equal? given-checksum checksum)))
+    (clean-cache cached-url checksum)
     (pkg-error (~a "~a checksum on package\n"
                    "  package source: ~a\n"
                    "  expected: ~e\n"
@@ -860,6 +913,8 @@
                             given-type
                             given-pkg-name
                             #:given-checksum [given-checksum #f]
+                            #:cached-url [cached-url #f]
+                            #:use-cache? use-cache?
                             check-sums?
                             download-printf
                             metadata-ns
@@ -894,6 +949,7 @@
     (stage-package/info (string-append "git://github.com/" pkg) type 
                         pkg-name 
                         #:given-checksum given-checksum
+                        #:use-cache? use-cache?
                         check-sums? download-printf
                         metadata-ns
                         #:strip strip-mode)]
@@ -903,18 +959,16 @@
 
     (define orig-pkg `(url ,pkg))
     (define found-checksum
-      (case type
-        [(github)
-         ;; For a github source, we want to use any given checksum to get a tarball.
-         (or given-checksum
-             (remote-package-checksum orig-pkg download-printf pkg-name))]
-        [else
-         (remote-package-checksum orig-pkg download-printf pkg-name)]))
+      ;; If a checksum is given, use that. In the case of a non-github
+      ;; source, we could try to get the checksum from the source, and
+      ;; then check whether it matches the expected one, but we choose
+      ;; to avoid an extra trip to the server.
+      (or given-checksum
+          (remote-package-checksum orig-pkg download-printf pkg-name)))
     (when check-sums?
-      (check-checksum given-checksum found-checksum "unexpected" pkg))
+      (check-checksum given-checksum found-checksum "unexpected" pkg #f))
     (define checksum (or found-checksum given-checksum))
-    (define info
-      (update-install-info-orig-pkg
+    (define downloaded-info
        (match type
          ['github
           (unless checksum
@@ -954,8 +1008,9 @@
           (dynamic-wind
               void
               (λ ()
-                 (download-printf "Downloading ~a\n" (url->string new-url))
-                 (download-file! new-url tmp.tgz)
+                 (download-file! new-url tmp.tgz checksum
+                                 #:use-cache? use-cache?
+                                 #:download-printf download-printf)
                  (define staged? #f)
                  (dynamic-wind
                      void
@@ -966,17 +1021,20 @@
                                              'dir
                                              pkg-name
                                              #:given-checksum checksum
+                                             #:cached-url new-url
+                                             #:use-cache? use-cache?
                                              check-sums?
                                              download-printf
                                              metadata-ns
                                              #:strip strip-mode
                                              #:in-place? (not strip-mode)
                                              #:in-place-clean? #t)
-                         (unless strip-mode
-                           (set! staged? #t))))
+                         (set! staged? #t)))
                      (λ ()
-                        (unless staged?
-                          (delete-directory/files tmp-dir)))))
+                       (when (and use-cache? (not staged?))
+                         (clean-cache new-url checksum))
+                       (unless (and staged? (not strip-mode))
+                         (delete-directory/files tmp-dir)))))
               (λ ()
                  (delete-directory/files tmp.tgz)))]
          [_
@@ -1022,7 +1080,9 @@
                                       pkg))
                          (for ([f (in-list manifest)])
                            (download-file! (url-like f)
-                                           (path-like f)))))]
+                                           (path-like f)
+                                           #f
+                                           #:use-cache? use-cache?))))]
              [else
               (define package-path
                 (make-temporary-file
@@ -1034,28 +1094,37 @@
               (values package-path
                       'file
                       (λ ()
-                         (download-printf "Downloading ~a\n" (url->string pkg-url))
-                         (log-pkg-debug "\tAssuming URL names a file")
-                         (download-file! pkg-url package-path)))]))
+                        (log-pkg-debug "\tAssuming URL names a file")
+                        (download-file! pkg-url package-path checksum
+                                        #:use-cache? use-cache?
+                                        #:download-printf download-printf)))]))
+          (define staged? #f)
           (dynamic-wind
               void
               (λ ()
                  (download-package!)
                  (log-pkg-debug "\tDownloading done, installing ~a as ~a"
                                 package-path pkg-name)
-                 (stage-package/info package-path
-                                     download-type
-                                     pkg-name
-                                     #:given-checksum checksum
-                                     check-sums?
-                                     download-printf
-                                     metadata-ns
-                                     #:strip strip-mode))
+                 (begin0
+                  (stage-package/info package-path
+                                      download-type
+                                      pkg-name
+                                      #:given-checksum checksum
+                                      #:cached-url pkg-url
+                                      #:use-cache? use-cache?
+                                      check-sums?
+                                      download-printf
+                                      metadata-ns
+                                      #:strip strip-mode)
+                  (set! staged? #t)))
               (λ ()
                  (when (or (file-exists? package-path)
                            (directory-exists? package-path))
-                   (delete-directory/files package-path))))])
-       orig-pkg))
+                   (when (and use-cache? (not staged?))
+                     (clean-cache pkg-url checksum))
+                   (delete-directory/files package-path))))]))
+    (define info (update-install-info-orig-pkg downloaded-info
+                                               orig-pkg))
     (when (and check-sums?
                (install-info-checksum info)
                (not checksum))
@@ -1065,7 +1134,8 @@
     (when check-sums?
       (check-checksum checksum (install-info-checksum info)
                       "mismatched"
-                      pkg))
+                      pkg
+                      (and use-cache? cached-url)))
     (update-install-info-checksum
      info
      checksum)]
@@ -1077,12 +1147,13 @@
       (and (file-exists? checksum-pth)
            check-sums?
            (file->string checksum-pth)))
-    (check-checksum given-checksum expected-checksum "unexpected" pkg)
+    (check-checksum given-checksum expected-checksum "unexpected" pkg #f)
     (define actual-checksum
       (with-input-from-file pkg
         (λ ()
            (sha1 (current-input-port)))))
-    (check-checksum expected-checksum actual-checksum "mismatched" pkg)
+    (check-checksum expected-checksum actual-checksum "mismatched" pkg
+                    (and use-cache? cached-url))
     (define checksum
       actual-checksum)
     (define pkg-format (filename-extension pkg))
@@ -1131,6 +1202,8 @@
                                   'dir
                                   pkg-name
                                   #:given-checksum checksum
+                                  #:cached-url cached-url
+                                  #:use-cache? use-cache?
                                   check-sums?
                                   download-printf
                                   metadata-ns
@@ -1196,13 +1269,14 @@
                                      #f
                                      pkg-name
                                      #:given-checksum checksum
+                                     #:use-cache? use-cache?
                                      check-sums?
                                      download-printf
                                      metadata-ns
                                      #:strip strip-mode))
     (when check-sums?
-      (check-checksum given-checksum checksum "unexpected" pkg)
-      (check-checksum checksum (install-info-checksum info) "incorrect" pkg))
+      (check-checksum given-checksum checksum "unexpected" pkg #f)
+      (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
     (update-install-info-orig-pkg
      (update-install-info-checksum
       info
@@ -1219,6 +1293,7 @@
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
                                 #:given-checksum (pkg-desc-checksum desc)
+                                #:use-cache? #f
                                 #t
                                 void
                                 metadata-ns
@@ -1270,6 +1345,7 @@
          #:update-cache update-cache
          #:updating? updating?
          #:ignore-checksums? ignore-checksums?
+         #:use-cache? use-cache?
          #:skip-installed? skip-installed?
          #:force? force?
          #:all-platforms? all-platforms?
@@ -1461,7 +1537,8 @@
                                                          #:update-cache update-cache
                                                          #:namespace metadata-ns
                                                          #:all-platforms? all-platforms?
-                                                         #:ignore-checksums? ignore-checksums?)
+                                                         #:ignore-checksums? ignore-checksums?
+                                                         #:use-cache? use-cache?)
                                      name))
                                null))
                         deps))
@@ -1558,7 +1635,8 @@
                                                                #:update-cache update-cache
                                                                #:namespace metadata-ns
                                                                #:all-platforms? all-platforms?
-                                                               #:ignore-checksums? ignore-checksums?)
+                                                               #:ignore-checksums? ignore-checksums?
+                                                               #:use-cache? use-cache?)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match this-dep-behavior
@@ -1624,6 +1702,7 @@
     (for/list ([v (in-list descs)])
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v)
                           #:given-checksum (pkg-desc-checksum v)
+                          #:use-cache? use-cache?
                           check-sums? download-printf
                           metadata-ns
                           #:strip strip-mode
@@ -1792,6 +1871,7 @@
                      #:all-platforms? [all-platforms? #f]
                      #:force? [force #f]
                      #:ignore-checksums? [ignore-checksums? #f]
+                     #:use-cache? [use-cache? #t]
                      #:skip-installed? [skip-installed? #f]
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
@@ -1827,6 +1907,7 @@
                        #:all-platforms? all-platforms?
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
+                       #:use-cache? use-cache?
                        #:dep-behavior dep-behavior
                        #:update-deps? update-deps?
                        #:update-cache update-cache
@@ -1845,6 +1926,7 @@
        #:all-platforms? all-platforms?
        #:force? force
        #:ignore-checksums? ignore-checksums?
+       #:use-cache? use-cache?
        #:skip-installed? skip-installed?
        #:dep-behavior dep-behavior
        #:update-deps? update-deps?
@@ -1890,7 +1972,8 @@
                              #:namespace metadata-ns 
                              #:update-cache update-cache
                              #:all-platforms? all-platforms?
-                             #:ignore-checksums? ignore-checksums?)
+                             #:ignore-checksums? ignore-checksums?
+                             #:use-cache? use-cache?)
          pkg-name)
   (cond
    [(pkg-desc? pkg-name)
@@ -1938,7 +2021,8 @@
                                  #:update-cache update-cache
                                  #:namespace metadata-ns
                                  #:all-platforms? all-platforms?
-                                 #:ignore-checksums? ignore-checksums?)
+                                 #:ignore-checksums? ignore-checksums?
+                                 #:use-cache? use-cache?)
              pkg-name)
             null))]
    [(eq? #t (hash-ref update-cache pkg-name #f))
@@ -2001,7 +2085,8 @@
                                       #:update-cache update-cache
                                       #:namespace metadata-ns
                                       #:all-platforms? all-platforms?
-                                      #:ignore-checksums? ignore-checksums?)
+                                      #:ignore-checksums? ignore-checksums?
+                                      #:use-cache? use-cache?)
                   ((package-dependencies metadata-ns db all-platforms?) pkg-name))
                  null))]))]
    [else null]))
@@ -2026,6 +2111,7 @@
                     #:all-platforms? [all-platforms? #f]
                     #:force? [force? #f]
                     #:ignore-checksums? [ignore-checksums? #f]
+                    #:use-cache? [use-cache? #t]
                     #:update-deps? [update-deps? #f]
                     #:quiet? [quiet? #f]
                     #:strip [strip-mode #f]
@@ -2045,7 +2131,8 @@
                                                     #:update-cache update-cache
                                                     #:namespace metadata-ns
                                                     #:all-platforms? all-platforms?
-                                                    #:ignore-checksums? ignore-checksums?)
+                                                    #:ignore-checksums? ignore-checksums?
+                                                    #:use-cache? use-cache?)
                                 pkgs))
   (cond
     [(empty? pkgs)
@@ -2073,6 +2160,7 @@
       #:all-platforms? all-platforms?
       #:force? force?
       #:ignore-checksums? ignore-checksums?
+      #:use-cache? use-cache?
       #:link-dirs? link-dirs?
       to-update)]))
 
@@ -2135,6 +2223,7 @@
                      #:force? [force? #f]
                      #:quiet? [quiet? #f]
                      #:ignore-checksums? [ignore-checksums? #f]
+                     #:use-cache? [use-cache? #t]
                      #:dep-behavior [dep-behavior #f]
                      #:strip [strip-mode #f])
   (define from-db
@@ -2175,6 +2264,7 @@
                     #:all-platforms? all-platforms?
                     #:force? force?
                     #:ignore-checksums? ignore-checksums?
+                    #:use-cache? use-cache?
                     #:skip-installed? #t
                     #:dep-behavior (or dep-behavior 'search-auto)
                     #:quiet? quiet? 
@@ -2203,6 +2293,17 @@
                          "  current package scope: ~a")
                      (current-pkg-scope)))
         (update-pkg-cfg! 'installation-name val)]
+       [(list (and key (or "download-cache-max-files"
+                           "download-cache-max-bytes"))
+              val)
+        (unless (real? (string->number val))
+          (pkg-error (~a "invalid value for config key\n"
+                         "  config key: ~a\n"
+                         "  given value: ~a\n"
+                         "  valid values: real numbers")
+                     key
+                     val))
+        (update-pkg-cfg! (string->symbol key) val)]
        [(list key)
         (pkg-error "unsupported config key\n  key: ~e" key)]
        [(list)
@@ -2218,6 +2319,10 @@
            (printf "~a\n" (read-pkg-cfg/def 'default-scope))]
           ["name"
            (printf "~a\n" (read-pkg-cfg/def 'installation-name))]
+          [(or "download-cache-dir"
+               "download-cache-max-files"
+               "download-cache-max-bytes")
+           (printf "~a\n" (read-pkg-cfg/def (string->symbol key)))]
           [_
            (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)
@@ -2839,6 +2944,12 @@
    (parameter/c procedure?)]
   [current-pkg-catalogs
    (parameter/c (or/c #f (listof url?)))]
+  [current-pkg-download-cache-dir
+   (parameter/c (or/c #f (and path-string? complete-path?)))]
+  [current-pkg-download-cache-max-files
+   (parameter/c (or/c #f real?))]
+  [current-pkg-download-cache-max-bytes
+   (parameter/c (or/c #f real?))]
   [pkg-directory
    (-> string? (or/c path-string? #f))]
   [pkg-desc 
@@ -2868,6 +2979,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary)
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
@@ -2890,6 +3002,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:use-cache? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
                         #:strip (or/c #f 'source 'binary)
@@ -2901,6 +3014,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:use-cache? boolean?
                         #:quiet? boolean?
                         #:strip (or/c #f 'source 'binary))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]

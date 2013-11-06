@@ -69,6 +69,17 @@ Returns a list of URL strings for the user's configured @tech{package
 catalogs}.}
 
 
+@deftogether[(
+@defparam[current-pkg-download-cache-dir dir (or/c #f (and/c path-string? complete-path?))]
+@defparam[current-pkg-download-cache-max-files max-files (or/c #f real?)]
+@defparam[current-pkg-download-cache-max-bytes max-bytes (or/c #f real?)]
+)]{
+
+Parameters that determine the download cache location and limits.  If
+a parameter's value is @racket[#f], then the user's configuration is
+used.}
+
+
 @defproc[(pkg-directory [name string?]) (or/c path-string? #f)]{
 
 Returns the directory that holds the installation of the installed

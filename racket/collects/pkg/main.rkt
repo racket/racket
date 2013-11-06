@@ -182,6 +182,7 @@
                                   #:all-platforms? all-platforms
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
+                                  #:use-cache? (not no-cache)
                                   #:skip-installed? skip-installed
                                   #:update-deps? update-deps
                                   #:strip (or (and source 'source) (and binary 'binary))
@@ -237,6 +238,7 @@
                                  #:all-platforms? all-platforms
                                  #:force? force
                                  #:ignore-checksums? ignore-checksums
+                                 #:use-cache? (not no-cache)
                                  #:update-deps? (or update-deps auto)
                                  #:strip (or (and source 'source) (and binary 'binary))
                                  #:link-dirs? link-dirs?))))
@@ -335,6 +337,7 @@
                                   #:force? force
                                   #:all-platforms? all-platforms
                                   #:ignore-checksums? ignore-checksums
+                                  #:use-cache? (not no-cache)
                                   #:strip (or (and source 'source) (and binary 'binary))))))
                 (setup no-setup setup-collects jobs)))]
             ;; ----------------------------------------
@@ -468,8 +471,9 @@
     "or `fail' otherwise")
    #:install-force-flags
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
-    [#:bool force () "Ignores conflicts"]
-    [#:bool ignore-checksums () "Ignores checksums"])
+    [#:bool force () "Ignore conflicts"]
+    [#:bool ignore-checksums () "Ignore checksums"]
+    [#:bool no-cache () "Disable download cache"])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"])
    #:install-copy-flags

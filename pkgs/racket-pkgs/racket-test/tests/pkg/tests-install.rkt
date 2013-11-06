@@ -90,7 +90,7 @@
     "remote/URL/file, bad checksum"
     $ "raco pkg install --checksum zzz http://localhost:9999/pkg-test1.tgz"
     =exit> 1
-    =stderr> #rx"unexpected checksum")
+    =stderr> #rx"mismatched checksum")
 
    (shelly-case
     "local directory fails when not there"

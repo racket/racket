@@ -108,7 +108,7 @@
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" 
      =exit> 0
-     =stdout> "Resolving \"pkg-test1\" via http://localhost:9990\nDownloading checksum for pkg-test1\nDownloading http://localhost:9999/pkg-test1.zip\nThe following uninstalled packages were listed as dependencies\nand they were automatically installed:\n dependencies of pkg-test2:\n   pkg-test1\n"
+     =stdout> "Resolving \"pkg-test1\" via http://localhost:9990\nDownloading http://localhost:9999/pkg-test1.zip\nThe following uninstalled packages were listed as dependencies\nand they were automatically installed:\n dependencies of pkg-test2:\n   pkg-test1\n"
      =stderr> ""
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0

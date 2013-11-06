@@ -220,6 +220,9 @@ REMOTE_USER_AUTO = --catalog http://$(SVR_PRT)/ $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog http://$(SVR_PRT)/ --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
+BUNDLE_RACO_FLAGS = -A bundle/user -l raco
+BUNDLE_RACO = bundle/racket/bin/racket $(BUNDLE_RACO_FLAGS)
+WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
@@ -416,7 +419,7 @@ bundle-from-server:
 	mkdir -p bundle/racket
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
-	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS) $(REQUIRED_PKGS)
+	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS) $(REQUIRED_PKGS)
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 bundle-config:
@@ -445,8 +448,8 @@ win32-bundle:
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
 	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
-	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
+	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)

@@ -419,6 +419,8 @@ sub-commands.
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
+  @item{@DFlag{no-cache} --- Disables use of the download cache.}
+
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
@@ -468,6 +470,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
  @item{@DFlag{force} --- Same as for @command-ref{install}.}
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
+ @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
@@ -550,6 +553,7 @@ the given @nonterm{pkg}s.
   @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
   @item{@DFlag{force} --- Same as for @command-ref{install}.}
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
+  @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
@@ -612,6 +616,15 @@ View and modify configuration of the package manager itself, with the following 
         (even for @command{config}, which is consistent but potentially confusing).}
   @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
         @tech{package scope} and defaults to the Racket version.}
+  @item{@exec{download-cache-dir} --- A directory that holds copies of
+        downloaded packages, used to avoid re-downloading if the
+        same URL and checksum combination is requested again. The default cache directory is
+        user-specific (but not specific to a Racket version or
+        installation name).}
+  @item{@exec{download-cache-max-files} --- A limit on the number of files to
+        be kept in the download cache directory.}
+  @item{@exec{download-cache-max-bytes} --- A limit on the total size of files
+        that are kept in the download cache directory.}
  ]
 }
 
