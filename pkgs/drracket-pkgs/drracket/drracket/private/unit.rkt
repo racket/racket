@@ -6,6 +6,7 @@
          racket/path
          racket/port
          racket/list
+         racket/match
          string-constants
          framework
          mrlib/name-message
@@ -37,6 +38,7 @@
          framework/private/aspell
          framework/private/logging-timer
          
+         setup/collects
          scribble/xref
          setup/xref
          scribble/tag
@@ -3761,9 +3763,18 @@
                [parent file-menu]
                [callback
                 (λ (x y)
+                  (define editing-path (send (get-definitions-text) get-filename))
+                  (define editing-module-path
+                    (and editing-path
+                         (match (path->module-path editing-path)
+                           [`(lib ,(? string? s))
+                            (define m (regexp-match #rx"^(.*/)[^/]*$" s))
+                            (and m
+                                 (list-ref m 1))])))
                   (define pth
                     (get-module-path-from-user
-                     #:init (preferences:get 'drracket:open-module-path-last-used)
+                     #:init (or editing-module-path
+                                (preferences:get 'drracket:open-module-path-last-used))
                      #:pref 'drracket:open-module-path-last-used))
                   (when pth (handler:edit-file pth)))])
           (super file-menu:between-open-and-revert file-menu)
