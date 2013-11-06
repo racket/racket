@@ -182,7 +182,7 @@
 
 ;; elem is a Type
 (def-type Set ([elem Type/c])
-  [#:key #f])
+  [#:key 'set])
 
 ;; result is a Type
 (def-type Evt ([result Type/c])

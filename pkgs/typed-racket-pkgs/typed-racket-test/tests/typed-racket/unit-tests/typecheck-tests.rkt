@@ -1817,6 +1817,14 @@
           (for: ([k : Symbol (in-set (set 'x 'y 'z))]) (displayln k))
           (void))
         -Void]
+
+       ;; PR 14139
+       [tc-e
+        (let ()
+          (: f : (U (Setof Integer) Integer) → (Setof Integer))
+          (define (f s) (if (set? s) s (set)))
+          (void))
+        -Void]
         )
   (test-suite
    "tc-literal tests"
