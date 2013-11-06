@@ -138,7 +138,7 @@
 
 (define (takef list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'takef "procedure?" 0 list pred))
+    (raise-argument-error 'takef "procedure?" 1 list pred))
   (let loop ([list list])
     (if (pair? list)
       (let ([x (car list)])
@@ -152,7 +152,7 @@
 
 (define (dropf list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'dropf "procedure?" 0 list pred))
+    (raise-argument-error 'dropf "procedure?" 1 list pred))
   (let loop ([list list])
     (if (and (pair? list) (pred (car list)))
       (loop (cdr list))
