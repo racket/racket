@@ -27,6 +27,13 @@
    (interaction #:eval guide-eval exp ...))
 
 @(define-syntax-rule
+   (image-interaction/bitmap exp)
+   (interaction #:eval guide-eval 
+                (eval:alts exp (make-object bitmap%
+                                 (open-input-bytes (convert exp 'png-bytes))
+                                 'png/alpha))))
+
+@(define-syntax-rule
    (image-interaction/margin num exp)
    (begin
      (racketinput exp)
@@ -35,7 +42,11 @@
      (guide-eval '(extra-margin 0))))
 
 @(interaction-eval #:eval guide-eval 
-                   (require racket/list racket/local))
+                   (require racket/list 
+                            racket/local
+                            file/convertible
+                            (only-in racket/draw bitmap%)
+                            racket/class))
 
 @title[#:style (style "svg" (list (render-pict-as 'svg-images)))
                #:tag "image-guide"]{Image Guide}
@@ -283,7 +294,7 @@ library, e.g.:
                                  (beside c i c)
                                  (beside c c c)))]))]
 
-@image-interaction[(sierpinski-carpet 5)]
+@image-interaction/bitmap[(sierpinski-carpet 5)]
 
 We can adjust the carpet to add a little color:
 
@@ -298,13 +309,13 @@ We can adjust the carpet to add a little color:
                                  (beside c i c)
                                  (beside c c c)))]))]
 
-@image-interaction[(colored-carpet 
-                    (list (color #x33 #x00 #xff)
-                          (color #x66 #x00 #xff)
-                          (color #x99 #x00 #xff)
-                          (color #xcc #x00 #xff)
-                          (color #xff #x00 #xff)
-                          (color 255 204 0)))]
+@image-interaction/bitmap[(colored-carpet 
+                           (list (color #x33 #x00 #xff)
+                                 (color #x66 #x00 #xff)
+                                 (color #x99 #x00 #xff)
+                                 (color #xcc #x00 #xff)
+                                 (color #xff #x00 #xff)
+                                 (color 255 204 0)))]
 
 The Koch curve can be constructed by simply placing four
 curves next to each other, rotated appropriately:
