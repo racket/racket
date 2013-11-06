@@ -318,6 +318,32 @@
                    found?))
              #f names))))
    
+   ;; Verify that check-exn and check-not-exn raise errors (not check
+   ;; failures) if not given thunks.
+   (test-case
+    "check-exn raises contract exception if not given a procedure"
+    (check-exn exn:fail:contract?
+               (lambda ()
+                 (check-exn exn:fail? 'not-a-procedure))))
+
+   (test-case
+    "check-exn raises contract exception if given a procedure with incorrect arity"
+    (check-exn exn:fail:contract?
+               (lambda ()
+                 (check-exn exn:fail? (lambda (x) x)))))
+
+   (test-case
+    "check-not-exn raises contract exception if not given a procedure"
+    (check-exn exn:fail:contract?
+               (lambda ()
+                 (check-not-exn 'not-a-procedure))))
+
+   (test-case
+    "check-not-exn raises contract exception if given a procedure with incorrect arity"
+    (check-exn exn:fail:contract?
+               (lambda ()
+                 (check-not-exn (lambda (x) x)))))
+
    ;; Regression test
    ;; Uses of check (and derived forms) used to be un-compilable!
    ;; We check that (write (compile --code-using-check--)) works.

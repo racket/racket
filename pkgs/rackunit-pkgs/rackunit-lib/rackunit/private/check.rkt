@@ -205,7 +205,13 @@
               #t
               (fail-check)))))]))
 
+(define (raise-error-if-not-thunk name thunk)
+  (unless (and (procedure? thunk)
+               (procedure-arity-includes? thunk 0))
+    (raise-arguments-error name "thunk must be a procedure that accepts 0 arguments" "thunk" thunk)))
+
 (define-check (check-exn raw-pred thunk)
+  (raise-error-if-not-thunk 'check-exn thunk)
   (let ([pred (if (regexp? raw-pred)
                   (λ (x) (and (exn:fail? x) (regexp-match raw-pred (exn-message x))))
                   raw-pred)])
@@ -236,6 +242,7 @@
        (lambda () (fail-check))))))
 
 (define-check (check-not-exn thunk)
+  (raise-error-if-not-thunk 'check-not-exn thunk)
   (with-handlers
       ([exn:test:check?
         (lambda (exn) (refail-check exn))]
