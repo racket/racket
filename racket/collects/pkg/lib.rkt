@@ -461,7 +461,7 @@
               'modules mods
               'dependencies deps))
       (hash 'source (db:pkg-source pkg)
-            'checksum (db:pkg-source pkg))))
+            'checksum (db:pkg-checksum pkg))))
 
 (define (remote-package-checksum pkg download-printf pkg-name)
   (match pkg
@@ -2551,25 +2551,28 @@
 
   (cond
    [(db-path? dest-path)
+    (define vers-details
+      (for/hash ([(k v) (in-hash details)])
+        (values k (select-info-version v))))
     (parameterize ([db:current-pkg-catalog-file dest-path])
       (db:set-catalogs! '("local"))
       (db:set-pkgs! "local"
-                    (for/list ([(k v) (in-hash details)])
+                    (for/list ([(k v) (in-hash vers-details)])
                       (db:pkg k "local"
                               (hash-ref v 'author "")
                               (hash-ref v 'source "")
                               (hash-ref v 'checksum "")
                               (hash-ref v 'description ""))))
-      (for ([(k v) (in-hash details)])
+      (for ([(k v) (in-hash vers-details)])
         (define t (hash-ref v 'tags '()))
         (unless (null? t)
           (db:set-pkg-tags! k "local" t)))
-      (for ([(k v) (in-hash details)])
+      (for ([(k v) (in-hash vers-details)])
         (define mods (hash-ref v 'modules '()))
         (unless (null? mods)
           (define cs (hash-ref v 'checksum ""))
           (db:set-pkg-modules! k "local" cs mods)))
-      (for ([(k v) (in-hash details)])
+      (for ([(k v) (in-hash vers-details)])
         (define deps (hash-ref v 'dependencies '()))
         (unless (null? deps)
           (define cs (hash-ref v 'checksum ""))

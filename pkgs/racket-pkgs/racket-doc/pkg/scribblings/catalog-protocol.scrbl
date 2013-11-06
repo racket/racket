@@ -145,7 +145,7 @@ constructed in any way as long as it contains the following tables:
 
         @verbatim[#:indent 2]{(id SMALLINT, 
                                url TEXT,
-                               pos SMALLINT)}.
+                               pos SMALLINT)}
 
        Normally, the only row in this table is @tt{(0, "local", 0)},
        but a database that records the content of a set of other
