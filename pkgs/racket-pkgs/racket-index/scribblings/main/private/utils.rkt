@@ -51,8 +51,9 @@
     ;; massage the current path to an up string
     (regexp-replace* #rx"[^/]*/" (regexp-replace #rx"[^/]+$" path "") "../"))
   (define page-title
-    (title #:style (make-style #f (cons 
+    (title #:style (make-style #f (list*
                                    'no-toc
+                                   'toc-hidden
                                    (if (not force-racket-css?)
                                        null
                                        (list
