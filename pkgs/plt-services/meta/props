@@ -1597,8 +1597,8 @@ path/s is either such a string or a list of them.
 "racket/collects/setup/main.rkt" drdr:command-line #f
 "racket/collects/setup/setup-go.rkt" drdr:command-line #f
 "racket/collects/setup/unixstyle-install.rkt" drdr:command-line (mzc *)
-"racket/collects/setup/winvers.rkt" drdr:command-line (mzc *)
 "racket/collects/setup/winstrip.rkt" drdr:command-line (mzc *)
+"racket/collects/setup/winvers.rkt" drdr:command-line (mzc *)
 "racket/collects/syntax/parse" responsible (ryanc)
 "racket/collects/syntax/parse.rkt" responsible (ryanc)
 "racket/collects/unstable/sequence.rkt" responsible (samth)
