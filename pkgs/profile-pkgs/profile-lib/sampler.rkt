@@ -8,12 +8,13 @@
 
 (require errortrace/errortrace-key)
 
-;; (cons sexp srcloc) -> (cons symbol srcloc)
-;; just take the first symbol we find
+;; (cons sexp srcloc) -> (cons sexp srcloc)
+;; abbreviate the expression for concise reports
+;; we take the first symbol we can find, and wrap it in a stub expression
 (define (errortrace-preprocess frame)
   (cons (and (car frame)
              (let loop ([e (car frame)])
-               (cond [(symbol? e) e]
+               (cond [(symbol? e) (list e '...)]
                      [(pair? e) (loop (car e))]
                      [else (error 'errortrace-preprocess
                                   "unexpected frame: ~a" frame)])))
