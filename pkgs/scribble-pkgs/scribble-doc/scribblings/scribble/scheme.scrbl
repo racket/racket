@@ -46,7 +46,8 @@ The @racket[stx-prop-expr] should produce a procedure for recording a
 
 @defproc[(to-paragraph [v any/c] 
                        [#:expr? expr? any/c #f] 
-                                [#:color? color? any/c #t]
+                       [#:escapes? escapes? any/c #t]
+                       [#:color? color? any/c #t]
                        [#:wrap-elem wrap-elem (element? . -> . element?) (lambda (e) e)])
          block?]{
 
@@ -56,7 +57,8 @@ generated layout.
 
 Identifiers that have @racket[for-label] bindings are typeset and
 hyperlinked based on definitions declared elsewhere (via
-@racket[defproc], @racket[defform], etc.). The identifiers
+@racket[defproc], @racket[defform], etc.). Unless @racket[escapes?]
+is @racket[#f], the identifiers
 @racketidfont{code:line}, @racketidfont{code:comment},
 @racketidfont{code:blank}, @racketidfont{code:hilite}, and
 @racketidfont{code:quote} are handled as in @racket[racketblock], as
@@ -85,7 +87,8 @@ be used to give a style to an element.}
 
 
 @defproc[((to-paragraph/prefix [prefix1 any/c] [prefix any/c] [suffix any/c])
-          [v any/c] [#:expr? expr? any/c #f] [#:color? color? any/c #f]
+          [v any/c] [#:expr? expr? any/c #f] [#:escapes? escapes? any/c #t]
+          [#:color? color? any/c #f]
           [#:wrap-elem wrap-elem (element? . -> . element?) (lambda (e) e)])
           block?]{
 
@@ -97,13 +100,18 @@ first line, @racket[prefix] is prefix to any subsequent line, and
 it is added to the end on its own line.}
 
 
-@defproc[(to-element [v any/c] [#:expr? expr? any/c #f]) element?]{
+@defproc[(to-element [v any/c]
+                     [#:expr? expr? any/c #f]
+                     [#:escapes? escapes? any/c #t]) element?]{
 
 Like @racket[to-paragraph], except that source-location information is
 mostly ignored, since the result is meant to be inlined into a
 paragraph.}
 
-@defproc[(to-element/no-color [v any/c] [#:expr? expr? any/c #f]) element?]{
+@defproc[(to-element/no-color [v any/c]
+                              [#:expr? expr? any/c #f]
+                              [#:escapes? escapes? any/c #t]) 
+         element?]{
 
 Like @racket[to-element], but @racket[for-syntax] bindings are
 ignored, and the generated text is uncolored. This variant is

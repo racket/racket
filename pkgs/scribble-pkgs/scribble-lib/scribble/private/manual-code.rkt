@@ -98,7 +98,8 @@
                                     (to-element (syntax-property
                                                  e
                                                  'display-string
-                                                 str)))
+                                                 str)
+                                                #:escapes? #f))
                                   pos
                                   (+ pos (syntax-span e))
                                   1)))]
