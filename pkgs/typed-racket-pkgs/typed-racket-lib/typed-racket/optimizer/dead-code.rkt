@@ -37,9 +37,12 @@
   (pattern ((~and kw if) tst:contradiction thn:expr els:opt-expr)
     #:do [(log-optimization "dead then branch" "Unreachable then branch elimination." #'thn)]
     #:with opt (syntax/loc/origin this-syntax #'kw (if tst.opt thn els.opt)))
+  (pattern ((~and kw lambda) formals . bodies)
+    #:when (dead-lambda-branch? #'formals)
+    #:with opt this-syntax)
   (pattern ((~and kw case-lambda) (formals . bodies) ...)
     #:when (for/or ((formals (in-syntax #'(formals ...))))
-             (dead-case-lambda-branch? formals))
+             (dead-lambda-branch? formals))
     #:with opt
       (quasisyntax/loc/origin
         this-syntax #'kw
@@ -47,13 +50,13 @@
           (case-lambda
             #,@(for/list ((formals (in-syntax #'(formals ...)))
                           (bodies  (in-syntax #'(bodies ...)))
-                          #:unless (dead-case-lambda-branch? formals))
+                          #:unless (dead-lambda-branch? formals))
                   (cons formals (stx-map (optimize) bodies))))
           ;; We need to keep the syntax objects around in the generated code with the correct bindings
           ;; so that CheckSyntax displays the arrows correctly
           #,@(for/list ((formals (in-syntax #'(formals ...)))
                         (bodies  (in-syntax #'(bodies ...)))
-                        #:when (dead-case-lambda-branch? formals))
+                        #:when (dead-lambda-branch? formals))
                 (log-optimization
                   "dead case-lambda branch"
                   "Unreachable case-lambda branch elimination."
