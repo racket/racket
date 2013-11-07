@@ -3,7 +3,7 @@
 (provide (struct-out env)
          empty-env
          add-name
-         add-nrep
+         pure-nrep
          env-union
          (struct-out t-env)
          t-env-name-ref
@@ -36,23 +36,18 @@
    (define update identity)
    (env (hash-update names n update default) nreps)])
 
-(: add-nrep : Env Symbol Env Tag Pattern -> Env)
-(define/match (add-nrep e n repnv tag pat)
-  [((env names nreps) _ _ _ _)
-   (: update-nreps : (Pairof Env (Tagged Pattern)) -> (Pairof Env (Tagged Pattern)))
-   (define/match (update-nreps e-t)
-     [((cons nv tagged))
-      (cons (env-union nv repnv)
-            (hash-set tagged tag pat))])
-   (: default : (-> (Pairof Env (Tagged Pattern))))
-   (define (default)
-     (: tagged : (Tagged Pattern))
-     (define tagged (hash-set (ann (hash) (Tagged Pattern))
-                              tag pat))
-     (cons repnv tagged))
-   (env names
-        (hash-update nreps n update-nreps default
-                     ))])
+(: pure-nrep : Symbol Env Tag Pattern -> Env)
+(define (pure-nrep n repnv tag pat)
+  (: nreps : (HashTable Symbol (Pairof Env (Tagged Pattern))))
+  (define nreps
+    (hash-set (ann (hash) (HashTable Symbol (Pairof Env (Tagged Pattern))))
+              n
+              (cons repnv
+                    (hash-set (ann (hash) (Tagged Pattern))
+                              tag
+                              pat))))
+  (env (hash)
+       nreps))
 
 (: t-env-name-ref : TEnv Symbol -> Pattern)
 (define/match (t-env-name-ref e n)
@@ -71,12 +66,12 @@
    (define names-union
      (hash-union ns1
                  ns2
-                 (λ (v1 v2) v1)))
-   (: combo : (Pairof Env (Tagged Pattern)) (Pairof Env (Tagged Pattern)) -> (Pairof Env (Tagged Pattern)))
-   (define/match (combo e-t1 e-t2)
-     [((cons nv1 t1) (cons nv2 t2))
+                 (λ (_ v1 v2) v1)))
+   (: combo : Symbol (Pairof Env (Tagged Pattern)) (Pairof Env (Tagged Pattern)) -> (Pairof Env (Tagged Pattern)))
+   (define/match (combo _ e-t1 e-t2)
+     [(_ (cons nv1 t1) (cons nv2 t2))
       (cons (env-union nv1 nv2)
-            (hash-union t1 t2 (λ (_1 _2) (error "2 tags should never collide"))))])
+            (hash-union t1 t2 (λ (t _1 _2) (error (format "2 tags should never collide, but these did: ~s, ~s with tag: ~s in envs ~s and ~s" _1 _2 t e1 e2)))))])
    (define nreps-union
      (hash-union rs1 rs2 combo))
    (env names-union nreps-union)])
@@ -85,7 +80,7 @@
 (define (key-set m)
   (list->set (hash-keys m)))
 
-(: hash-union : (All (k v) (HashTable k v) (HashTable k v) (v v -> v) -> (HashTable k v)))
+(: hash-union : (All (k v) (HashTable k v) (HashTable k v) (k v v -> v) -> (HashTable k v)))
 (define (hash-union m1 m2 combo)
   (: ks1 : (Setof k))
   (: ks2 : (Setof k))
@@ -98,6 +93,6 @@
     (define v2 (hash-ref m2 k (thunk #f)))
     (define v
       (cond [(and v1 v2)
-             (combo v1 v2)]
+             (combo k v1 v2)]
             [else (or v1 v2 (error "absurd"))]))
     (values k v)))

@@ -50,15 +50,14 @@
              [`(repeat ,p #f #f)
               (ann-pat empty-env sub-pat)]
              [`(repeat ,p ,n #f)
-              (match-define (ann-pat subenv _)
+              (match-define (ann-pat subenv subp)
                             (walk p))
               (define tag (get-and-inc!))
-              (ann-pat (add-nrep empty-env n subenv tag p)
+              (ann-pat (pure-nrep n subenv tag subp)
                        `(repeat ,tag ,n #f))]
              [`(repeat ,p ,n ,m)
               (unimplemented (format "mismatch repeat (..._!_): ~s ~s" n m))]
              [_ (walk sub-pat)])))
-       
        (define list-env
          (for/fold ([accenv empty-env])
                    ([sub-apat (in-list ann-sub-pats)])
