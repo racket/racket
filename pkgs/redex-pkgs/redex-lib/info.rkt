@@ -7,6 +7,7 @@
                "data-lib"
                "tex-table"
                "profile-lib"
+               "typed-racket-lib"
                "unstable-2d"))
 (define build-deps '("rackunit-lib"))
 

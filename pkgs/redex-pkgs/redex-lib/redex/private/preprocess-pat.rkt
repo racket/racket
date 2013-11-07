@@ -2,37 +2,78 @@
 
 (require racket/match
          racket/set
-         
+
+         "2set.rkt"
+         "env.rkt"
+         "error.rkt"
          "match-a-pattern.rkt")
 
-(provide preprocess)
+(provide preprocess
+         (struct-out ann-pat))
 
-;; A set that knows if an element has been added more than once
-(struct 2set (set1 set2))
-
-(define 2set-empty (2set (set) (set)))
-
-(define (2set-add ts . xs)
-  (foldr (λ (x ts)
-            (match ts
-              [(2set s1 s2)
-               (if (set-member? s1 x)
-                   (2set s1 (set-add s2 x))
-                   (2set (set-add s1 x) s2))]))
-         ts
-         xs))
-
-(define/match (2set-union ts1 ts2)
-  [((2set s11 s12) (2set s21 s22))
-   (define common (set-intersect s11 s21))
-   (2set (set-union s11 s21)
-         (set-union s12 s22 common))])
-
+;; preprocess : pat -> (ann-pat env pat)
 (define (preprocess pat)
-  (remove-names pat))
+  (build-env (remove-names pat)))
+
+;; This function returns an env containing all top-level name references, i.e., the ones that need to be enumerated doing anything
+(define (build-env pat)
+  (define counter 0)
+  (define (get-and-inc!)
+    (begin0 counter
+      (set! counter (add1 counter))))
+  (define (walk pat)
+    (match-a-pattern/single-base-case pat
+      [`(name ,n ,subpat)
+       (match-define (ann-pat subenv new-subpat) (walk subpat))
+       (ann-pat (add-name subenv n subpat)
+                `(name ,n ,new-subpat))]
+      [`(mismatch-name ,n ,subpat)
+       ;; TODO
+       (unimplemented "mismatch-name")]
+      [`(in-hole ,p1 ,p2)
+       (match-define (ann-pat subenv1 newsub1)
+                     (walk p1))
+       (match-define (ann-pat subenv2 newsub2)
+                     (walk p2))
+       (ann-pat (env-union subenv1 subenv2)
+                `(in-hole ,newsub1 ,newsub2))]
+      [`(hide-hole ,p)
+       (match-define (ann-pat subenv newsub)
+                     (walk p))
+       (ann-pat subenv `(hide-hole ,newsub))]
+      [`(side-condition ,p ,c ,s)
+       (error 'unsupported "side condition is not supported.")]
+      [`(list ,sub-pats ...)
+       (define ann-sub-pats
+         (for/list ([sub-pat (in-list sub-pats)])
+           (match sub-pat
+             [`(repeat ,p #f #f)
+              (ann-pat empty-env sub-pat)]
+             [`(repeat ,p ,n #f)
+              (match-define (ann-pat subenv subp)
+                            (walk p))
+              (define tag (get-and-inc!))
+              (ann-pat (pure-nrep n subenv tag subp)
+                       `(repeat ,tag ,n #f))]
+             [`(repeat ,p ,n ,m)
+              (unimplemented (format "mismatch repeat (..._!_): ~s ~s" n m))]
+             [_ (walk sub-pat)])))
+       (define list-env
+         (for/fold ([accenv empty-env])
+                   ([sub-apat (in-list ann-sub-pats)])
+           (match sub-apat
+             [(ann-pat subenv _)
+              (env-union subenv accenv)])))
+       (ann-pat list-env (cons 'list (map ann-pat-pat ann-sub-pats)))]
+      [_ (pure-ann-pat pat)]))
+  (define res
+    (walk pat))
+  res)
 
 (define (remove-names pat)
-  (match-define (2set names 2names) (find-names pat))
+  (define names-2set (find-names pat))
+  (define names (2set-ones names-2set))
+  (define 2names (2set-manys names-2set))
   (define badnames (set-subtract names 2names))
   (define (strip-named name subpat con)
     (define sub-stripped (strip subpat))
@@ -85,10 +126,20 @@
      (find-names p)]
     [`(list ,sub-pats ...)
      (foldr 2set-union
-            2set-empty
+            (2set)
             (map (match-lambda
                   [`(repeat ,p ,n ,m)
                    (2set-add (find-names p) n m)]
                   [sub-pat (find-names sub-pat)])
                  sub-pats))]
-    [_ 2set-empty]))
+    [_ (2set)]))
+
+;; Patterns annotated with variable/name/repeat information
+(struct ann-pat (ann pat)
+        #:transparent)
+
+(define (pure-ann-pat pat)
+  (ann-pat empty-env pat))
+
+(define (unimplemented pat-name)
+  (redex-error 'unsupported "generate-term #:i-th currently doesn't support pattern type: ~a" pat-name))

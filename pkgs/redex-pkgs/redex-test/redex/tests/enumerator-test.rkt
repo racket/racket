@@ -50,13 +50,6 @@
             (λ ()
                (decode nats -1))))
 
-#;
-(define (nats+/e n)
-  (map/e (λ (k)
-            (+ k n))
-         (λ (k)
-            (- k n))))
-
 ;; ints checks
 (test-begin
  (check-eq? (decode ints/e 0) 0)         ; 0 -> 0
@@ -132,12 +125,13 @@
    (check-equal? (encode odd-or-even 3) 3)
    (check-bijection? odd-or-even)))
 
-;; prod/e tests
-(define bool*bool (prod/e bools/e bools/e))
-(define 1*b (prod/e (const/e 1) bools/e))
-(define bool*nats (prod/e bools/e nats))
-(define nats*bool (prod/e nats bools/e))
-(define nats*nats (prod/e nats nats))
+;; cons/e tests
+(define bool*bool (cons/e bools/e bools/e))
+(define 1*b (cons/e (const/e 1) bools/e))
+(define b*1 (cons/e bools/e (const/e 1)))
+(define bool*nats (cons/e bools/e nats))
+(define nats*bool (cons/e nats bools/e))
+(define nats*nats (cons/e nats nats))
 (define ns-equal? (λ (ns ms)
                      (and (= (car ns)
                              (car ms))
@@ -151,6 +145,7 @@
  (check-equal? (decode 1*b 0) (cons 1 #t))
  (check-equal? (decode 1*b 1) (cons 1 #f))
  (check-bijection? 1*b)
+ (check-bijection? b*1)
  (check-equal? (size bool*bool) 4)
  (check-equal? (decode bool*bool 0)
                (cons #t #t))
@@ -202,6 +197,17 @@
         (cons 1 1))
  (check-bijection? nats*nats))
 
+;; multi-arg map/e test
+(define sums/e
+  (map/e
+   cons
+   (λ (x-y)
+      (values (car x-y) (cdr x-y)))
+   (from-list/e '(1 2))
+   (from-list/e '(3 4))))
+
+(test-begin
+ (check-bijection? sums/e))
 
 ;; dep/e tests
 (define (up-to n)
@@ -284,7 +290,6 @@
 
 (define nats-to-2
   (dep/e nats up-to))
-
 
 (test-begin
  (check-equal? (size 3-up-2) 6)

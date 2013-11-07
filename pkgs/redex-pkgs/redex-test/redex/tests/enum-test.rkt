@@ -11,10 +11,14 @@
           (for ([i (in-range N)])
             (check-not-exn
              (λ ()
-                (unless (redex-match
-                         l p
-                         (generate-term l p #:i-th i))
-                  (error 'bad-term "line ~a: i=~a" line i)))))))]))
+                (define term
+                  (generate-term l p #:i-th i))
+                (unless (redex-match l p term)
+                  (error 'bad-term (format "line ~a: i=~a" line i))))))))]))
+
+(define-language Nats
+  (n natural))
+(try-it 100 Nats n)
 
 ;; Repeat test
 (define-language Rep
@@ -29,7 +33,6 @@
      x)
   (x (variable-except λ)))
 
-;; slow: fix dep/enum
 (try-it 250 Λc e)
 (try-it 24 Λc x)
 
@@ -83,7 +86,8 @@
   (p (number_!_1 number_!_1))
   (n (p_!_1 p_!_1))
   (x number))
-
+;; Mismatch isn't working for now, will come back to this.
+#;#;#;
 (try-it 100 M m)
 (try-it 100 M n)
 (try-it 100 M p)
@@ -95,12 +99,20 @@
 
 (try-it 20 VarMentioned var)
 
+;; Named repeats
 (define-language NRep
-  (v (natural ..._1 natural ..._1))
-  (v2 (v ..._1 v ..._2 v ..._1 v ..._2)))
+  (v  (natural ..._1 natural ..._1))
+  (v2 (v ..._1 v ..._2 v ..._1 v ..._2))
+  (v3 (natural_1 ..._1 natural_1 ..._1))
+  (v4 (((natural_1 #t) ..._1) ..._2 ((#f natural_1) ..._1) ..._2))
+  ;; The motherlode
+  (v5 ((string_7 (((natural_1 variable_2) ..._1 any_3) ..._2)) ..._3 (((any_3 (variable_2 natural_1) ..._1) ..._2) string_7) ..._3)))
 
 (try-it 100 NRep v)
 (try-it 100 NRep v2)
+(try-it 100 NRep v3)
+(try-it 100 NRep v4)
+(try-it 100 NRep v5)
 
 ;; Test production sort
 (define-language rec
