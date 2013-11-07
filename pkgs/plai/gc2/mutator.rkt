@@ -271,7 +271,7 @@
                                 (λ (v) (set! this-loc v)
                                    (this-setter v)
                                    (for ([root (in-list this-other-roots)])
-                                     (set-root! v))))
+                                     (set-root! root v))))
                      closure-roots))])))
   (parameterize ([active-roots remaining-roots])
     (collector:closure closure (reverse closure-roots))))
