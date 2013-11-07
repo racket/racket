@@ -42,13 +42,13 @@ can customize the profiling:
   actually sampled.  (The @racket[delay] value is passed on to
   @racket[create-sampler], which creates the sampler thread.)}
  
-@item{When @racket[use-errortrace?] is not @racket[#f], more accurate
-  stack snapshots are captured using 
-  @other-doc['(lib "errortrace/scribblings/errortrace.scrbl")]. Note that
-  when this is provided, it will only profile uncompiled files and files
-  compiled while using @racket[errortrace-compile-handler], and the profiled program
-  must be run using @commandline{racket -l errortrace -t program.rkt}
-  Removing compiled files (with extension @tt{.zo}) is sufficient to enable this.}
+@item{When @racket[use-errortrace?] is not @racket[#f], more accurate stack
+  snapshots are captured using @seclink["top" #:doc '(lib
+  "errortrace/scribblings/errortrace.scrbl")]{Errortrace}. Note that when this
+  is provided, it will only profile uncompiled files and files compiled while
+  using @racket[errortrace-compile-handler], and the profiled program must be
+  run using @commandline{racket -l errortrace -t program.rkt} Removing compiled
+  files (with extension @tt{.zo}) is sufficient to enable this.}
 
 @item{Due to the statistical nature of the profiler, longer executions
   result in more accurate analysis.  You can specify a number of

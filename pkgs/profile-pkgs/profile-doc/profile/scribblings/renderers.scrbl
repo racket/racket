@@ -31,7 +31,7 @@ function that consumes a @racket[profile] instance.  See the
 Prints the given @racket[profile] results as a textual table.
 
 The printout begins with general information about the profile,
-followed by a table with an entry for each function in the call graph.
+followed by a table with an entry for each node in the call graph.
 The entries are displayed in a topological order (roughly, since the
 graph can have cycles).  This means that it is usually easy to find
 the callers and callees of a function in its close environment.
@@ -42,34 +42,35 @@ Each row in the table has the following format:
   [N1] N2(N3%) N4(N5%)  A ...path/to/source.rkt:12:34
                           C [M3] M4%}
 with the following meaning of the numbers and labels:
+
 @itemize[
-@item{@tt{A} --- the name of the function that this node represents,
-  followed by the source location for the function if it is known.
-  The name can be ``???'' for anonymous functions, which will be
+@item{@tt{A} --- the name of the function (or a stub of the expression) that
+  this node represents, followed by the source location for the function if it
+  is known.  The name can be ``???'' for anonymous functions, which will be
   identified with their source location.}
 @item{@tt{N1} --- an integer label associated with this node in the
-  printout.  This label is used to mark references to this function,
+  printout.  This label is used to mark references to this function/expression,
   since symbolic names are not unique (and they can be missing or very
   long).  The labels are assigned from the top.}
-@item{@tt{N2} --- the time (in milliseconds) that this function has
+@item{@tt{N2} --- the time (in milliseconds) that this function/expression has
   been anywhere in a stack snapshot.  This is the total time that the
-  execution was somewhere in this function or in its callees.
+  execution was somewhere in this function/expression or in its callees.
   (Corresponds to the @racket[node-total] field.)}
 @item{@tt{N3} --- this is the percentage of the node's total time
   (@tt{N2}) from the total observed time of the profile.  An entry
-  with a 100% refers to a function that was active throughout the
-  whole execution.}
-@item{@tt{N4} --- the time (in milliseconds) that this function has
+  with a 100% refers to a function/expression that was active throughout
+  the whole execution.}
+@item{@tt{N4} --- the time (in milliseconds) that this function/expression has
   been at the top of the stack snapshot.  This is the time that this
-  function was itself doing work rather than calling other functions.
-  (Corresponds to the @racket[node-self] field.)}
+  function/expression was itself doing work rather than calling other
+  functions/expressions. (Corresponds to the @racket[node-self] field.)}
 @item{@tt{N5} --- this is the percentage of @tt{N4} out of the total
-  observed time of the profile.  Functions with high values here can
+  observed time of the profile.  Functions/expressions with high values here can
   be good candidates for optimization, But, of course, they can
   represent doing real work for a caller that needs to be optimized.}
 @item{@tt{B} and @tt{C} --- these are labels for the callers and
-  callees of the function.  Any number of callers and callees can
-  appear here (including 0).  The function itself can also appear in
+  callees of the function/expression.  Any number of callers and callees can
+  appear here (including 0).  The function/expression itself can also appear in
   both places if it is (non-tail) recursive.}
 @item{@tt{M1} and @tt{M3} --- the index numbers for @tt{B} and
   @tt{C}.  They can be used to disambiguate functions with the same

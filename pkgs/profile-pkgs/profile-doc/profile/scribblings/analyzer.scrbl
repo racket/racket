@@ -54,13 +54,12 @@ Represents an analyzed profile result.
   integer identifier.  These identifiers are listed for each function
   call, and the total time spent in each thread is in this field.}
 
-@item{@racket[nodes] is a list of nodes representing all observed
-  functions.  These nodes are the components of the call-graph that
-  the analyzer assembles (see the @racket[edge] field).  The nodes are
-  sorted by a topological top-to-bottom sort, and by decreasing total
-  amount of time (time spent either in the function or in its callees)
-  as a secondary key.  It does not include the special
-  @racket[*-node].}
+@item{@racket[nodes] is a list of nodes representing all observed functions
+  (or, when using Errortrace, expressions).  These nodes are the components of
+  the call-graph that the analyzer assembles (see the @racket[edge] field).
+  The nodes are sorted by a topological top-to-bottom sort, and by decreasing
+  total amount of time (time spent either in the function or in its callees) as
+  a secondary key.  It does not include the special @racket[*-node].}
 
 @item{@racket[*-node] holds a ``special'' root node value that is
   constructed for every call graph.  This node is used as the caller
@@ -77,7 +76,7 @@ Represents an analyzed profile result.
 ]}
 
 
-@defstruct*[node ([id      (or/c #f symbol?)]
+@defstruct*[node ([id      (or/c #f symbol? any/c)]
                   [src     (or/c #f srcloc?)]
                   [thread-ids (listof exact-nonnegative-integer?)]
                   [total   exact-nonnegative-integer?]
@@ -85,38 +84,38 @@ Represents an analyzed profile result.
                   [callers (listof edge?)]
                   [callees (listof edge?)])]{
 
-Represents a function call node in the call graph of an analyzed
-profile result.
+Represents a function call (or, when using Errortrace, expression) node in the
+call graph of an analyzed profile result.
 
 @itemize[
 
-@item{The @racket[id] and @racket[src] fields hold a symbol naming the
-  function and/or its source location as a @racket[srcloc] value.
-  This is the same as the results of
-  @racket[continuation-mark-set->context], so at most one of these can
-  be @racket[#f], except for the special @racket[*-node] (see the
-  @racket[profile] struct) that can be identified by both being
-  @racket[#f].}
+@item{The @racket[id] and @racket[src] fields hold a symbol naming the function
+  (in @racket[continuation-mark-set->context] mode) or an S-expression stub (in
+  Errortrace mode), and/or its source location as a @racket[srcloc] value.
+  This is the same as the results of @racket[continuation-mark-set->context],
+  so at most one of these can be @racket[#f], except for the special
+  @racket[*-node] (see the @racket[profile] struct) that can be identified by
+  both being @racket[#f].}
 
 @item{@racket[thread-ids] holds a list of thread identifiers that were
   observed executing this function.}
 
-@item{@racket[total] holds the total time (in milliseconds) that this
-  function was anywhere on the stack.  It is common to see a few
-  toplevel functions that have close to a 100% total time, but
-  otherwise small @racket[self] times---these functions are the ones
-  that initiate the actual work, but they don't do any hard work
-  directly.}
+@item{@racket[total] holds the total time (in milliseconds) that this function
+  (or expression) was anywhere on the stack.  It is common to see a few
+  toplevel functions that have close to a 100% total time, but otherwise small
+  @racket[self] times---these functions are the ones that initiate the actual
+  work, but they don't do any hard work directly.}
 
-@item{@racket[self] holds the total time (in milliseconds) that this
-  function was observed as the leaf of the stack.  It represents the
-  actual work done by this function, rather than the @racket[total]
-  time spent by both the function and its callees.}
+@item{@racket[self] holds the total time (in milliseconds) that this function
+  (or expression) was observed as the leaf of the stack.  It represents the
+  actual work done by this function, rather than the @racket[total] time spent
+  by both the function and its callees.}
 
-@item{@racket[callers] and @racket[callees] hold the list of callers
-  and callees.  The nodes are not actually held in these lists,
-  instead, @racket[edge] values are used---and provide information
-  specific to each edge in the call-graph.}
+@item{@racket[callers] and @racket[callees] hold the list of callers and
+  callees or, in Errortrace modes, expressions that step to or from the current
+  expression.  The nodes are not actually held in these lists, instead,
+  @racket[edge] values are used---and provide information specific to each edge
+  in the call-graph.}
 
 ]}
 
@@ -127,8 +126,9 @@ profile result.
                   [callee      node?]
                   [callee-time exact-nonnegative-integer?])]{
 
-Represents an edge between two function call nodes in the call graph
-of an analyzed profile result.
+Represents an edge between two function call nodes in the call graph of an
+analyzed profile result or, in Errortrace mode, an edge corresponding to an
+evaluation step between two expressions.
 
 @itemize[
 
