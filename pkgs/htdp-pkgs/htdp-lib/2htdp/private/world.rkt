@@ -270,7 +270,10 @@
            (def/cback pub (name arg ...) transform (object-name transform))]
           [(_ pub (name arg ...) transform tag)
            ;; Any ... -> Boolean
-           (define/public (name arg ...) 
+	   (begin
+	     (pub name)
+		   
+           (define (name arg ...) 
              (queue-callback 
               (lambda ()
                 (define H (handler #t))
@@ -323,7 +326,7 @@
                         (last-draw)
                         (callback-stop! 'name)
                         (enable-images-button)])
-                     changed-world?])))))]))
+                     changed-world?]))))))]))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/cback pubment (ptock) (lambda (w) (pptock w)) (name-of-tick-handler))
