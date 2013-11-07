@@ -342,22 +342,25 @@
               (cons formal+body formals+bodies*)])
            (arities-seen-add arities-seen arity))])))
 
-
-   (apply append
-          (for/list ([fb* (in-list used-formals+bodies)])
-            (match-define (list f* b*) fb*)
-            (match (find-matching-arities f*)
-              [(list)
-               (if (and (= 1 (length used-formals+bodies)) expected-type)
-                   ;; TODO improve error message.
-                   (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
-                                  "Expected a function of type ~a, but got a function with the wrong arity"
-                                  expected-type)
-                   (tc/lambda-clause f* b*))]
-              [(list (arr: argss rets rests drests '()) ...)
-               (for/list ([args (in-list argss)] [ret (in-list rets)] [rest (in-list rests)] [drest (in-list drests)])
-                 (tc/lambda-clause/check
-                  f* b* args (values->tc-results ret (formals->list f*)) rest drest))]))))
+   (if (and
+         (empty? used-formals+bodies)
+         ;; If the empty function is expected, then don't error out
+         (match expected-type
+           [(Function: (list)) #f]
+           [_ #t]))
+       ;; TODO improve error message.
+       (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
+                      "Expected a function of type ~a, but got a function with the wrong arity"
+                      expected-type)
+       (apply append
+              (for/list ([fb* (in-list used-formals+bodies)])
+                (match-define (list f* b*) fb*)
+                (match (find-matching-arities f*)
+                  [(list) (tc/lambda-clause f* b*)]
+                  [(list (arr: argss rets rests drests '()) ...)
+                   (for/list ([args (in-list argss)] [ret (in-list rets)] [rest (in-list rests)] [drest (in-list drests)])
+                     (tc/lambda-clause/check
+                      f* b* args (values->tc-results ret (formals->list f*)) rest drest))])))))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type
