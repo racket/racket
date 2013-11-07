@@ -86,9 +86,8 @@
   (: ks2 : (Setof k))
   (define ks1 (key-set m1))
   (define ks2 (key-set m2))
-  ;; TODO: in-set should be typed in HEAD, fix this after rebasing.
   (for/hash: : (HashTable k v)
-               ([k : k (set-union ks1 ks2)])
+               ([k : k (in-set (set-union ks1 ks2))])
     (define v1 (hash-ref m1 k (thunk #f)))
     (define v2 (hash-ref m2 k (thunk #f)))
     (define v
