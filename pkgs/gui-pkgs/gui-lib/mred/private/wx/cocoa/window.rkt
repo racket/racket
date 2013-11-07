@@ -453,6 +453,7 @@
 
 (define _CGError _int32)
 (define-appserv CGWarpMouseCursorPosition (_fun _NSPoint -> _CGError))
+(define-appserv CGAssociateMouseAndMouseCursorPosition (_fun _BOOL -> _CGError))
 
 (define window%
   (class object%
@@ -895,7 +896,8 @@
       (define xb (box x))
       (define yb (box y))
       (client-to-screen xb yb)
-      (void (CGWarpMouseCursorPosition (make-NSPoint (unbox xb) (unbox yb)))))
+      (void (CGWarpMouseCursorPosition (make-NSPoint (unbox xb) (unbox yb))))
+      (void (CGAssociateMouseAndMouseCursorPosition #t)))
 
     (define/private (create-compose-window)
       (unless compose-cocoa

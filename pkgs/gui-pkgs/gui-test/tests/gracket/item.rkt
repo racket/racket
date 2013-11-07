@@ -2480,6 +2480,11 @@
 (make-object button%
 	     "Make Blue Editor" edp 
 	     (lambda (b e) (editor-frame null "blue")))
+(new horizontal-panel% [parent edp])
+(make-object button%
+	     "Warp Pointer" edp 
+	     (lambda (b e)
+               (send selector warp-pointer 5 5)))
 
 (define (choose-next radios)
   (let loop ([l radios])
