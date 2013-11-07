@@ -160,13 +160,15 @@
              adjust-client-delta
              queue-on-size)
 
+    (define floating? (memq 'float style))
+
     (define gtk (as-gtk-window-allocation
-                 (gtk_window_new (if (memq 'float style)
+                 (gtk_window_new (if floating?
 				     GTK_WINDOW_POPUP
 				     GTK_WINDOW_TOPLEVEL))))
     (when (memq 'no-caption style)
       (gtk_window_set_decorated gtk #f))
-    (when (memq 'float style)
+    (when floating?
       (gtk_window_set_keep_above gtk #t)
       (gtk_window_set_focus_on_map gtk #f))
     (define-values (vbox-gtk panel-gtk)
@@ -194,6 +196,8 @@
 
     (define/override (get-client-gtk) panel-gtk)
     (define/override (get-window-gtk) gtk)
+
+    (define/override (in-floating?) floating?)
 
     (super-new [parent parent]
                [gtk gtk]

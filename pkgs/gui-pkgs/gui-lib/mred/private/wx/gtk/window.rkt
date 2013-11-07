@@ -89,6 +89,9 @@
 (define-gtk gtk_widget_is_focus (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_widget_set_sensitive (_fun _GtkWidget _gboolean -> _void))
 
+(define-gdk gdk_keyboard_grab (_fun _GdkWindow _gboolean _int -> _void))
+(define-gdk gdk_keyboard_ungrab (_fun _int -> _void))
+
 (define _GtkAccelGroup (_cpointer 'GtkAccelGroup))
 (define-gtk gtk_accel_group_new (_fun -> _GtkAccelGroup))
 (define-gtk gtk_window_add_accel_group (_fun _GtkWindow _GtkAccelGroup -> _void))
@@ -321,6 +324,13 @@
                       (GdkEventCrossing-type event)
                       (GdkEventButton-type event)))])
     (let ([wx (gtk->wx gtk)])
+      (when (or (= type GDK_BUTTON_PRESS)
+                (= type GDK_2BUTTON_PRESS)
+                (= type GDK_3BUTTON_PRESS))
+        (let ([floating? (send wx in-floating?)])
+          (if floating?
+              (gdk_keyboard_grab (widget-window gtk) #t 0)
+              (gdk_keyboard_ungrab 0))))
       (and
        wx
        (if (or (= type GDK_2BUTTON_PRESS)
@@ -608,6 +618,9 @@
             (gtk_drag_dest_add_uri_targets gtk))
           (gtk_drag_dest_unset gtk)))
       
+    (define/public (in-floating?)
+      (send parent in-floating?))
+
     (define/public (set-focus)
       (gtk_widget_grab_focus (get-client-gtk)))
 
