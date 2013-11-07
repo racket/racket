@@ -1,11 +1,18 @@
-#lang scheme/base
-(require scheme/cmdline
+#lang racket/base
+(require racket/cmdline
          raco/command-name
-         scheme/pretty)
+         racket/pretty)
 
 (define source-files
   (command-line
    #:program (short-program+command-name)
+   #:once-each
+   [("--columns" "-n") n "Format for <n> columns"
+    (let ([num (string->number n)])
+      (unless (exact-positive-integer? num)
+        (raise-user-error (string->symbol (short-program+command-name))
+                          "not a valid column count: ~a" n))
+      (pretty-print-columns num))]
    #:args source-file
    source-file))
 
@@ -22,5 +29,5 @@
            (let loop ()
              (let ([e (read-syntax src-file in)])
                (unless (eof-object? e)
-                 (pretty-print (syntax->datum (expand e)))
+                 (pretty-write (syntax->datum (expand e)))
                  (loop))))))))))
