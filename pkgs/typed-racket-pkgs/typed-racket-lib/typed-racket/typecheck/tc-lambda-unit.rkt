@@ -334,7 +334,7 @@
              [(or (arities-seen-seen-before? arities-seen arity)
                    (and expected-type (null? (find-matching-arities formal))))
               (warn-unreachable body)
-              (add-dead-case-lambda-branch (formals-syntax formal))
+              (add-dead-lambda-branch (formals-syntax formal))
               (if (check-unreachable-code?)
                   (cons formal+body formals+bodies*)
                   formals+bodies*)]
