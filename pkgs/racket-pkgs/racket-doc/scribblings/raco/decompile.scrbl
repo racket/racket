@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual "common.rkt"
+@(require scribble/manual
+          scribble/bnf
+          "common.rkt"
           (for-label racket/base
                      compiler/decompile
                      (only-in compiler/zo-parse compilation-top? req)
@@ -119,6 +121,14 @@ Many forms in the decompiled code, such as @racket[module],
 @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
  object.}
 
+]
+
+Command-line flags:
+
+@itemlist[
+  @item{@Flag{n} @nonterm{n} or @DFlag{columns} @nonterm{n}  --- format output for a display with @nonterm{n} columns}
+  @item{@Flag{h} or @DFlag{help} --- show help information for this command}
+  @item{@DFlag{} --- do not treat remaining arguments as switches}
 ]
 
 @; ------------------------------------------------------------
