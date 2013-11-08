@@ -114,6 +114,7 @@
                                 installers-dir
                                 "table.rktd")
                     #:installers-url "installers/"
+                    #:log-dir-url "log/"
                     #:docs-url (and (directory-exists? doc-path)
                                     "doc/index.html")
                     #:pdf-docs-url (and (directory-exists? pdf-doc-path)

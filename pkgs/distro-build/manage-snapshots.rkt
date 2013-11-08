@@ -50,28 +50,57 @@
       (flush-output)
       (delete-directory/files (build-path snapshots-dir s)))))
 
+(printf "Loading past successes\n")
+(define table-file (build-path site-dir installers-dir "table.rktd"))
+(define past-successes
+  (let ([current-table (get-installers-table table-file)])
+    (for/fold ([table (hash)]) ([s (in-list (reverse (remove current-snapshot (get-snapshots))))])
+      (define past-table (get-installers-table
+                          (build-path snapshots-dir s installers-dir "table.rktd")))
+      (for/fold ([table table]) ([(k v) (in-hash past-table)])
+        (if (or (hash-ref current-table k #f)
+                (hash-ref table k #f))
+            table
+            (hash-set table k (past-success s
+                                            (string-append s "/index.html")
+                                            v)))))))
+
 (define current-rx (regexp (regexp-quote (version))))
 
 (printf "Creating \"current\" links\n")
 (flush-output)
 (make-file-or-directory-link current-snapshot link-file)
 (let ([installer-dir (build-path snapshots-dir current-snapshot "installers")])
+  (define (currentize f)
+    (regexp-replace current-rx
+                    (path->bytes f)
+                    "current"))
+  (define (make-link f to-file)
+    (define file-link (build-path
+                       installer-dir
+                       (bytes->path (currentize f))))
+    (when (link-exists? file-link)
+      (delete-file file-link))
+    (make-file-or-directory-link to-file file-link))
+  ;; Current successes:
   (for ([f (in-list (directory-list installer-dir))])
     (when (regexp-match? current-rx f)
-      (define file-link (build-path
-                         installer-dir
-                         (bytes->path
-                          (regexp-replace current-rx
-                                          (path->bytes f)
-                                          "current"))))
-      (when (link-exists? file-link)
-        (delete-file file-link))
-      (make-file-or-directory-link f file-link))))
+      (make-link f f)))
+  ;; Past successes:
+  (for ([v (in-hash-values past-successes)])
+    (when (regexp-match? current-rx (past-success-file v))
+      (make-link (string->path (past-success-file v))
+                 (build-path 'up 'up 
+                             (past-success-name v) installers-dir
+                             (past-success-file v))))))
 
-(make-download-page (build-path site-dir
-                                installers-dir
-                                "table.rktd")
+
+(printf "Generating web page\n")
+(make-download-page table-file
+                    #:past-successes past-successes
                     #:installers-url "current/installers/"
+                    #:log-dir (build-path site-dir "log")
+                    #:log-dir-url "current/log/"
                     #:docs-url (and (directory-exists? (build-path site-dir "doc"))
                                     "current/doc/index.html")
                     #:pdf-docs-url (and (directory-exists? (build-path site-dir "pdf-doc"))

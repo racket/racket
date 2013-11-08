@@ -7,7 +7,9 @@
          openssl/sha1
          xml)
 
-(provide make-download-page)
+(provide make-download-page
+         get-installers-table
+         (struct-out past-success))
 
 (module+ main
   (require racket/cmdline)
@@ -35,9 +37,24 @@
                    (map cdr args)
                    (list table-file))))
 
+(define (get-installers-table table-file)
+  (define table (call-with-input-file table-file read))
+  (unless (hash? table) 
+    (raise-user-error
+     'make-download-page
+     (~a "given file does not contain a hash table\n"
+         "  file: ~a")
+     table-file))
+  table)
+
+(struct past-success (name relative-url file) #:prefab)
+
 (define (make-download-page table-file
+                            #:past-successes [past-successes (hash)]
                             #:dest [dest "index.html"]
                             #:installers-url [installers-url "./"]
+                            #:log-dir [log-dir #f]
+                            #:log-dir-url [log-dir-url #f]
                             #:docs-url [docs-url #f]
                             #:pdf-docs-url [pdf-docs-url #f]
                             #:title [title "Racket Downloads"]
@@ -45,20 +62,22 @@
                             #:git-clone [git-clone #f]
                             #:post-content [post-content null])
 
-  (define table (call-with-input-file table-file read))
+  (define base-table (get-installers-table table-file))
 
-  (unless (hash? table) 
-    (raise-user-error
-     'make-download-page
-     (~a "given file does not contain a hash table\n"
-         "  file: ~a")
-     table-file))
+  (define table (for/fold ([table base-table]) ([(k v) (in-hash past-successes)])
+                  (if (hash-ref table k #f)
+                      table
+                      (hash-set table k v))))
 
   (define (system*/string . args)
     (define s (open-output-string))
     (parameterize ([current-output-port s])
       (apply system* args))
     (get-output-string s))
+  
+  (define log-link
+    (and log-dir-url
+         `((div (a ([class "detail"] [href ,log-dir-url]) "Build Logs")))))
 
   (define sorted
     (sort (hash-keys table) string<?))
@@ -142,40 +161,64 @@
                   `(tr (td
                         ,@(for/list ([col (in-list mid-cols)])
                             `(span nbsp nbsp nbsp))
-                        (a ((class ,(string-append "installer " level-class))
-                            (href ,(url->string
-                                    (combine-url/relative
-                                     (string->url installers-url)
-                                     inst))))
-                           ,last-col))
+                        ,(if (past-success? inst)
+                             ;; Show missing installer
+                             `(span ((class ,(string-append "no-installer " level-class)))
+                                    ,last-col)
+                             ;; Link to installer
+                             `(a ((class ,(string-append "installer " level-class))
+                                  (href ,(url->string
+                                          (combine-url/relative
+                                           (string->url installers-url)
+                                           inst))))
+                                 ,last-col)))
                        (td nbsp)
-                       (td (span ([class "detail"])
-                                 ,(~r (/ (file-size (build-path (path-only table-file)
-                                                                inst))
-                                         (* 1024 1024))
-                                      #:precision 1)
-                                 " MB"))
+                       (td ,(if (past-success? inst)
+                                `(span ([class "detail"]) "")
+                                `(span ([class "detail"])
+                                       ,(~r (/ (file-size (build-path (path-only table-file)
+                                                                      inst))
+                                               (* 1024 1024))
+                                            #:precision 1)
+                                       " MB")))
                        (td nbsp)
-                       (td (span ([class "detail"])
-                                 "SHA1: "
-                                 (span ([class "checksum"])
-                                       ,(call-with-input-file*
-                                         (build-path (path-only table-file)
-                                                     inst)
-                                         sha1))))
+                       (td ,(if (past-success? inst)
+                                `(span ([class "detail"])
+                                       ,@(if (and log-dir 
+                                                  (file-exists? (build-path log-dir key)))
+                                             `((a ([href ,(url->string
+                                                           (combine-url/relative
+                                                            (string->url log-dir-url)
+                                                            key))])
+                                                  "build failed")
+                                               "; ")
+                                             null)
+                                       "last success: "
+                                       (a ((href ,(~a (past-success-relative-url inst))))
+                                          ,(past-success-name inst)))
+                                `(span ([class "detail"])
+                                       "SHA1: "
+                                       (span ([class "checksum"])
+                                             ,(call-with-input-file*
+                                               (build-path (path-only table-file)
+                                                           inst)
+                                               sha1)))))
                        ,@(if current-rx
                              `((td nbsp)
                                (td (span ([class "detail"])
-                                         ,(if (regexp-match? current-rx inst)
-                                              `(a ([href ,(url->string
-                                                           (combine-url/relative
-                                                            (string->url installers-url)
-                                                            (bytes->string/utf-8
-                                                             (regexp-replace current-rx
-                                                                             (string->bytes/utf-8 inst)
-                                                                             #"current"))))])
-                                                  "as " ldquo "current" rdquo)
-                                              'nbsp))))
+                                         ,(let ([inst-path (if (past-success? inst)
+                                                               (past-success-file inst)
+                                                               inst)])
+                                            (if (regexp-match? current-rx inst-path)
+                                                `(a ([href ,(url->string
+                                                             (combine-url/relative
+                                                              (string->url installers-url)
+                                                              (bytes->string/utf-8
+                                                               (regexp-replace current-rx
+                                                                               (string->bytes/utf-8 inst-path)
+                                                                               #"current"))))])
+                                                    "as " ldquo "current" rdquo)
+                                                'nbsp)))))
                              null))]
                  [else
                   `(tr (td ((class ,level-class)
@@ -202,7 +245,11 @@
                    (define stamp (system*/string git "log" "-1" "--format=%H"))
                    `((p
                       (div (span ([class "detail"]) "Repository: " (span ([class "path"]) ,origin)))
-                      (div (span ([class "detail"]) "Commit: " (span ([class "checksum"]) ,stamp))))))
+                      (div (span ([class "detail"]) "Commit: " (span ([class "checksum"]) ,stamp)))
+                      ,@(or log-link null))))
+                 null)
+           ,@(if (and log-link (not git-clone))
+                 `((p ,@log-link))
                  null)
            ,@post-content))
         o)
