@@ -125,6 +125,53 @@
    (check-equal? (encode odd-or-even 3) 3)
    (check-bijection? odd-or-even)))
 
+(test-begin
+ (define bool-or-num
+   (disj-sum/e (cons bools/e boolean?)
+               (cons (from-list/e '(0 1 2 3)) number?)))
+ (define bool-or-nat
+   (disj-sum/e (cons bools/e boolean?)
+              (cons nats number?)))
+ (define nat-or-bool
+   (disj-sum/e (cons nats number?)
+              (cons bools/e boolean?)))
+ (define odd-or-even
+   (disj-sum/e (cons evens/e even?)
+          (cons odds/e odd?)))
+ (check-equal? (size bool-or-num) 6)
+   
+ (check-equal? (decode bool-or-num 0) #t)
+ (check-equal? (decode bool-or-num 1) 0)
+ (check-equal? (decode bool-or-num 2) #f)
+ (check-equal? (decode bool-or-num 3) 1)
+ (check-equal? (decode bool-or-num 4) 2)
+ (check-equal? (decode bool-or-num 5) 3)
+   
+ (check-exn exn:fail?
+            (λ ()
+               (decode bool-or-num 6)))
+ (check-bijection? bool-or-num)
+   
+ (check-equal? (size bool-or-nat)
+               +inf.f)
+ (check-equal? (decode bool-or-nat 0) #t)
+ (check-equal? (decode bool-or-nat 1) 0)
+ (check-bijection? bool-or-nat)
+   
+ (check-equal? (size odd-or-even)
+               +inf.f)
+ (check-equal? (decode odd-or-even 0) 0)
+ (check-equal? (decode odd-or-even 1) 1)
+ (check-equal? (decode odd-or-even 2) 2)
+ (check-exn exn:fail?
+            (λ ()
+               (decode odd-or-even -1)))
+ (check-equal? (encode odd-or-even 0) 0)   
+ (check-equal? (encode odd-or-even 1) 1)
+ (check-equal? (encode odd-or-even 2) 2)
+ (check-equal? (encode odd-or-even 3) 3)
+ (check-bijection? odd-or-even))
+
 ;; cons/e tests
 (define bool*bool (cons/e bools/e bools/e))
 (define 1*b (cons/e (const/e 1) bools/e))
@@ -354,3 +401,8 @@
       (except/e (up-to n) excepts))
    '(2 4 6)))
 (check-bijection? complicated)
+
+;; many/e tests
+(define natss
+  (many/e nats))
+(check-bijection? natss)

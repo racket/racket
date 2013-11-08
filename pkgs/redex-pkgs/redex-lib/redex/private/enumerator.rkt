@@ -3,6 +3,7 @@
          racket/match
          racket/list
          racket/function
+         racket/promise
          data/gvector)
 
 (provide enum
@@ -14,6 +15,7 @@
          const/e
          from-list/e
          sum/e
+         disj-sum/e
          cons/e
          dep/e
          dep2/e ;; requires size (eventually should replace dep/e with this)
@@ -21,6 +23,7 @@
          filter/e ;; very bad, only use for small enums
          except/e 
          thunk/e
+         fix/e
          many/e
          many1/e
          list/e
@@ -176,14 +179,17 @@
 ;; input list should not contain duplicates
 ;; equality on eq?
 (define (from-list/e l)
+  (define rev-map
+    (for/hash ([i (in-naturals)]
+               [x (in-list l)])
+      (values x i)))
   (if (empty? l)
       empty/e
       (enum (length l)
             (λ (n)
                (list-ref l n))
             (λ (x)
-               (length (take-while l (λ (y)
-                                        (not (eq? x y)))))))))
+               (hash-ref rev-map x)))))
 
 ;; take-while : Listof a, (a -> bool) -> Listof a
 (define (take-while l pred)
@@ -277,6 +283,63 @@
            (cons (d (car l))
                  (map-pairs/even (cdr l)))))
      (apply sum/e (map-pairs sum/e identity (list* a b c rest)))]))
+
+(define (disj-sum/e e-p . e-ps)
+  (define/match (disj-sum2/e e-p1 e-p2)
+    [((cons e1 1?) (cons e2 2?))
+     ;; Sum two enumerators of different sizes
+     (define (sum-uneven less/e less? more/e more?)
+       ;; interleave until less/e is exhausted
+       ;; pairsdone is 1+ the highest index using less/e
+       (define less-size (size less/e))
+       (define pairsdone (* 2 less-size))
+       (define (from-nat n)
+         (if (< n pairsdone)
+             (let-values ([(q r) (quotient/remainder n 2)])
+               ;; Always put e1 first though!
+               (decode (match r
+                         [0 e1]
+                         [1 e2])
+                       q))
+             (decode more/e (- n less-size))))
+       (define (to-nat x)
+         (cond [(less? x)
+                (* 2 (encode less/e x))]
+               [(more? x)
+                (define i (encode more/e x))
+                (if (< i less-size)
+                    (+ (* 2 i) 1)
+                    (+ (- i less-size) pairsdone))]
+               [else (error "bad term")]))
+       (enum (+ less-size (size more/e))
+             from-nat
+             to-nat))
+     (define s1 (size e1))
+     (define s2 (size e2))
+     (cond [(= 0 s1) e2]
+           [(= 0 s2) e1]
+           [(< s1 s2) (sum-uneven e1 1? e2 2?)]
+           [(< s2 s1) (sum-uneven e2 2? e1 1?)]
+           [else ;; both the same length, interleave them
+            (define (from-nats n)
+              (cond [(even? n) (decode e1 (/ n 2))]
+                    [else (decode e2 (/ (- n 1) 2))]))
+            (define (to-nats x)
+              (cond [(1? x) (* (encode e1 x) 2)]
+                    [(2? x) (+ 1 (* (encode e2 x) 2))]
+                    [else (error "bad term")]))
+            (enum (+ s1 s2) from-nats to-nats)])])
+  (car
+   (foldr (λ (e-p1 e-p2)
+             (match* (e-p1 e-p2)
+                     [((cons e1 1?) (cons e2 2?))
+                      (cons (disj-sum2/e e-p1
+                                         (cons e2 (negate 1?)))
+                            (λ (x)
+                               (or (1? x)
+                                   (2? x))))]))
+          (cons empty/e (λ (_) #f))
+          (cons e-p e-ps))))
 
 (define n*n
   (enum +inf.f
@@ -695,30 +758,33 @@
 
 ;; thunk/e : Nat or +-Inf, ( -> enum a) -> enum a
 (define (thunk/e s thunk)
-  (let* ([e #f]
-         [get-e (λ ()
-                   (or e
-                       (and (set! e (thunk))
-                            e)))])
-    (enum s
-          (λ (n)
-             (decode (get-e) n))
-          (λ (x)
-             (encode (get-e) x)))))
+  (define promise/e (delay (thunk)))
+  (enum s
+        (λ (n)
+           (decode (force promise/e) n))
+        (λ (x)
+           (encode (force promise/e) x))))
+
+;; fix/e : size (enum a -> enum a) -> enum a
+(define (fix/e size f/e)
+  (define self (delay (f/e (fix/e size f/e))))
+  (enum size
+        (λ (n)
+           (decode (force self) n))
+        (λ (x)
+           (encode (force self) x))))
 
 ;; many/e : enum a -> enum (listof a)
 ;;       or : enum a, #:length natural -> enum (listof a)
 (define many/e
   (case-lambda
     [(e)
-     (thunk/e
-      (if (= 0 (size e))
-          0
-          +inf.f)
-      (λ ()
-         (sum/e
-          (const/e '())
-          (cons/e e (many/e e)))))]
+     (fix/e (if (= 0 (size e))
+                0
+                +inf.f)
+            (λ (self)
+               (disj-sum/e (cons (const/e '()) null?)
+                           (cons (cons/e e self) pair?))))]
     [(e n)
      (list/e (build-list n (const e)))]))
 

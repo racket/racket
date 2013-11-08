@@ -87,7 +87,7 @@
   (define (loop pat)
     (match-a-pattern
      pat
-     [`any (sum/e any/e (many/e any/e))]
+     [`any any/e]
      [`number num/e]
      [`string string/e]
      [`natural natural/e]
@@ -175,6 +175,7 @@
      (define term
        (fill-refs refpat))
      (λ (_) term)]
+    
     [(name-ref n)
      (λ (nv)
         (t-env-name-ref nv n))]
@@ -218,10 +219,11 @@
    (many/e char/e)))
 
 (define integer/e
-  (sum/e nats
-         (map/e (λ (n) (- (+ n 1)))
-                (λ (n) (- (- n) 1))
-                nats)))
+  (disj-sum/e (cons nats (λ (n) (>= n 0)))
+              (cons (map/e (λ (n) (- (+ n 1)))
+                           (λ (n) (- (- n) 1))
+                           nats)
+                    (λ (n) (< n 0)))))
 
 ;; This is really annoying so I turned it off
 (define real/e empty/e)
@@ -238,11 +240,18 @@
    (compose string->list symbol->string)
    (many1/e char/e)))
 
+(define base/e
+  (disj-sum/e (cons (const/e '()) null?)
+              (cons num/e number?)
+              (cons string/e string?)
+              (cons bool/e boolean?)
+              (cons var/e symbol?)))
+
 (define any/e
-  (sum/e num/e
-         string/e
-         bool/e
-         var/e))
+  (fix/e +inf.f
+         (λ (any/e)
+            (disj-sum/e (cons base/e (negate pair?))
+                        (cons (cons/e any/e any/e) pair?)))))
 
 (define (unsupported pat)
   (error 'generate-term "#:i-th does not support ~s patterns" pat))
