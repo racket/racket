@@ -73,6 +73,16 @@
       `(submod ,(unprotect-path (cadr p)) . ,(cddr p))]
      [else p]))
 
+  ;; A deserialization function is provided from a `deserialize-info`
+  ;; module:
+  (define (add-submodule p)
+    (module-path-index-join '(submod "." deserialize-info)
+                            (if (resolved-module-path? p)
+                                p
+                                (module-path-index-join
+                                 p
+                                 #f))))
+
   (define (revive-symbol s)
     (if (string? s)
         (string->unreadable-symbol s)
@@ -648,7 +658,12 @@
                             (let ([p (unprotect-path (car path+name))]
                                   [sym (revive-symbol (cdr path+name))])
                               ((deserialize-module-guard) p sym)
-                              (dynamic-require p sym))
+                              (let ([sub (add-submodule p)])
+                                (if (module-declared? sub #t)
+                                    (dynamic-require sub sym)
+                                    ;; On failure, for backward compatibility,
+                                    ;; try module instead of submodule:
+                                    (dynamic-require p sym))))
                             (namespace-variable-value (cdr path+name)))])
               ;; Register maker and struct type:
               (vector-set! mod-map n des))

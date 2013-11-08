@@ -2,7 +2,8 @@
 (module serialize racket/base
   (require "private/serialize.rkt"
            (for-syntax racket/base
-                       racket/struct-info))
+                       racket/struct-info)
+           racket/runtime-path)
 
   (provide (all-from-out "private/serialize.rkt")
            serializable-struct
@@ -191,16 +192,25 @@
                      (syntax->list #'(make-proc-expr ...))
                      (syntax->list #'(cycle-make-proc-expr ...)))
              ;; =============== provide ===============
-             #,@(map (lambda (deserialize-id)
-                       (if (eq? 'top-level (syntax-local-context))
-                           ;; Top level; in case deserializer-id-stx is macro-introduced,
-                           ;;  explicitly use namespace-set-variable-value!
-                           #`(namespace-set-variable-value! '#,deserialize-id
-                                                            #,deserialize-id)
-                           ;; In a module; provide:
-                           #`(provide #,deserialize-id)))
-                     (cons deserialize-id
-                           other-deserialize-ids))))]
+             ;; If we're in a module context, then provide through
+             ;; a submodule:
+             (#,@(if (eq? 'top-level (syntax-local-context))
+                     #'(begin)
+                     #'(module+ deserialize-info))
+              #,@(map (lambda (deserialize-id)
+                        (if (eq? 'top-level (syntax-local-context))
+                            ;; Top level; in case deserializer-id-stx is macro-introduced,
+                            ;;  explicitly use namespace-set-variable-value!
+                            #`(namespace-set-variable-value! '#,deserialize-id
+                                                             #,deserialize-id)
+                            ;; In a module; provide:
+                            #`(provide #,deserialize-id)))
+                      (cons deserialize-id
+                            other-deserialize-ids)))
+             ;; Make sure submodule is pulled along for run time:
+             #,@(if (eq? 'top-level (syntax-local-context))
+                    null
+                    #'((runtime-require (submod "." deserialize-info))))))]
       ;; -- More error cases ---
       ;; Check fields
       [(_ orig-stx id/sup vers fields . _rest)

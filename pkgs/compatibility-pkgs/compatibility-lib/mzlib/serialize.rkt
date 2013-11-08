@@ -1,7 +1,8 @@
 (module serialize mzscheme
   (require-for-syntax syntax/struct)
   (require ;; core [de]serializer:
-           racket/private/serialize)
+           racket/private/serialize
+           (only racket/base module+))
 
   (provide define-serializable-struct
 	   define-serializable-struct/versions
@@ -361,7 +362,7 @@
 	  #`(begin
 	      (define deserializer-id (make-deserialize-info #,(cadr other-version)
 							     #,(caddr other-version)))
-	      #,@(make-deserialize-provide stx #'deserializer-id))))
+              #,@(make-deserialize-provide stx #'deserializer-id))))
 
       (define (make-deserialize-name id version-num)
 	(datum->syntax-object
@@ -379,9 +380,10 @@
 	    (list (quasisyntax/loc stx
 		    (namespace-set-variable-value! '#,deserializer-id-stx 
 						   #,deserializer-id-stx )))
-	    ;; In a module; provide:
+	    ;; In a module; provide via submodule:
 	    (list (quasisyntax/loc stx
-		    (provide #,deserializer-id-stx)))))
+                    (module+ deserialize-info
+                      (provide #,deserializer-id-stx))))))
 
       ;; ------------------------------
       ;;  The transformers

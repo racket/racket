@@ -5,7 +5,6 @@
                      make-page-target-element make-redirect-target-element make-link-element
                      make-index-element
                      make-target-url target-url struct:target-url target-url? target-url-addr
-                     deserialize-info:target-url-v0
                      toc-element-toc-content part-title-content paragraph-content 
                      element? element-content element-style)
           (for-label scribble/manual-struct

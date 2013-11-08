@@ -478,6 +478,47 @@
 
 ;; ----------------------------------------
 
+;; Custom deserialize:
+(module my-own-deserialize racket/base
+  (require racket/serialize)
+  (provide a
+           deserialize-info)
+  (struct a ()
+    #:property prop:serializable
+    (make-serialize-info (lambda (v) #())
+                         #'deserialize-info
+                         #f
+                         (or (current-load-relative-directory)
+                             (current-directory))))
+  (define deserialize-info
+    (make-deserialize-info (lambda () 'a)
+                           (lambda () (values 'a void)))))
+
+(require 'my-own-deserialize)
+(test 'a deserialize (serialize (a)))
+
+;; Same thing, but with submodule:
+(module my-own-deserialize/sub racket/base
+  (require racket/serialize)
+  (provide b)
+  (module+ deserialize-info
+    (provide deserialize-info))
+  (struct b ()
+    #:property prop:serializable
+    (make-serialize-info (lambda (v) #())
+                         #'deserialize-info
+                         #f
+                         (or (current-load-relative-directory)
+                             (current-directory))))
+  (define deserialize-info
+    (make-deserialize-info (lambda () 'b)
+                           (lambda () (values 'b void)))))
+
+(require 'my-own-deserialize/sub)
+(test 'b deserialize (serialize (b)))
+
+;; ----------------------------------------
+
 (let ([fn (make-temporary-file)])
   (with-output-to-file fn
     #:exists 'truncate

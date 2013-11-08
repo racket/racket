@@ -352,7 +352,8 @@
                           [sizer (-> any)]
                           [plain (-> any)])))
 
-(provide deserialize-delayed-element)
+(module+ deserialize-info
+  (provide deserialize-delayed-element))
 (define deserialize-delayed-element
   (make-deserialize-info values values))
 
@@ -396,7 +397,8 @@
                                 [sizer (-> any)]
                                 [plain (-> any)])))
 
-(provide deserialize-part-relative-element)
+(module+ deserialize-info
+  (provide deserialize-part-relative-element))
 (define deserialize-part-relative-element
   (make-deserialize-info values values))
 
@@ -437,7 +439,8 @@
 (provide/contract
  (struct delayed-index-desc ([resolve (any/c part? resolve-info? . -> . any)])))
 
-(provide deserialize-delayed-index-desc)
+(module+ deserialize-info
+  (provide deserialize-delayed-index-desc))
 (define deserialize-delayed-index-desc
   (make-deserialize-info values values))
 
@@ -457,7 +460,8 @@
    (or (current-load-relative-directory) (current-directory)))
   #:transparent)
 
-(provide deserialize-collect-element)
+(module+ deserialize-info
+  (provide deserialize-collect-element))
 (define deserialize-collect-element
   (make-deserialize-info values values))
 
@@ -481,7 +485,8 @@
    (or (current-load-relative-directory) (current-directory)))
   #:transparent)
 
-(provide deserialize-render-element)
+(module+ deserialize-info
+  (provide deserialize-render-element))
 (define deserialize-render-element
   (make-deserialize-info values values))
 
@@ -513,7 +518,8 @@
 
 (provide (struct-out generated-tag))
 
-(provide deserialize-generated-tag)
+(module+ deserialize-info
+  (provide deserialize-generated-tag))
 (define deserialize-generated-tag
   (make-deserialize-info values values))
 

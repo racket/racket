@@ -2249,7 +2249,7 @@ This form can only be used at the top level, either within a module
 or outside. The @racket[class-id] identifier is bound to the new
 class, and @racketidfont{deserialize-info:}@racket[class-id] is also
 defined; if the definition is within a module, then the latter is
-provided from the module.
+provided from a @racket[deserialize-info] submodule via @racket[module+].
 
 Serialization for the class works in one of two ways:
 

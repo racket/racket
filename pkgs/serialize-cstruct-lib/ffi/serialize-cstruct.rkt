@@ -7,6 +7,7 @@
                      syntax/stx)
          racket/promise
          racket/serialize
+         racket/runtime-path
          ffi/unsafe
          (only-in '#%foreign ctype-c->scheme))
 
@@ -67,7 +68,7 @@
                    [serialize-inplace (and (attribute serialize-inplace-kw) #t)]
                    [deserialize-inplace (and (attribute deserialize-inplace-kw) #t)])
 
-       (syntax/loc stx
+       (quasisyntax/loc stx
          (begin
            ;; the wrapped cstruct
            (define-cstruct _ID ([field-id type-expr] ...)
@@ -99,7 +100,10 @@
                  (malloc _ID malloc-mode)))
 
            ;; deserialization proc
-           (provide deser-ID)
+           #,@(if (eq? (syntax-local-context) 'module)
+                  #`((runtime-require (submod "." deserialize-info))
+                     (module+ deserialize-info (provide deser-ID)))
+                  null)
            (define deser-ID (id->deserialize-info _ID _ID-pointer deserialize-inplace malloc-ID))
 
            ;; mode-aware make-ID

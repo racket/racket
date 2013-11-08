@@ -1,7 +1,6 @@
 #lang scheme/base
 (require (rename-in (except-in "core.rkt"
-                               target-url struct:target-url target-url? target-url-addr
-                               deserialize-info:target-url-v0)
+                               target-url struct:target-url target-url? target-url-addr)
                     [make-target-url core:make-target-url])
          "private/provide-structs.rkt"
          "html-properties.rkt"

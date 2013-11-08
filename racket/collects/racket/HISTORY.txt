@@ -1,4 +1,6 @@
 Version 5.90.0.10
+Changed serializable-struct, etc. to provide deserialized-info:...
+ through a derialized-info submodule
 Added chaperone-channel and impersonate-channel
 Change string->path-element and bytes->path-element to raise an
  exception for an empty [byte-]string argument

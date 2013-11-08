@@ -8,6 +8,7 @@
          racket/stxparam
          racket/unsafe/ops
          "serialize-structs.rkt"
+         racket/runtime-path
          (for-syntax racket/stxparam
                      syntax/kerncase
                      syntax/stx
@@ -1711,7 +1712,8 @@
           #'orig-stx))
        (with-syntax ([deserialize-name-info deserialize-name-info]
                      [(provision ...) (if (eq? (syntax-local-context) 'module)
-                                          #`((provide #,deserialize-name-info))
+                                          #`((runtime-require (submod "." deserialize-info))
+                                             (module+ deserialize-info (provide #,deserialize-name-info)))
                                           #'())])
          #'(begin
              (define-values (name deserialize-name-info)
