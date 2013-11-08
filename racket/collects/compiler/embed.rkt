@@ -602,7 +602,7 @@
                                 (lambda (m)
                                   (define name (cadr (module-compiled-name m)))
                                   (cons `(submod "." ,name)
-                                        (lookup-full-name 
+                                        (lookup-full-name
                                          (collapse-module-path-index 
                                           (module-path-index-join `(submod "." ,name) #f)
                                           filename))))]
@@ -612,15 +612,20 @@
                                               (map (lambda (sub-i sub-filename sub-path)
                                                      (and (not (and collects-dest
                                                                     (is-lib-path? sub-path)))
-                                                          (let-values ([(path base) (module-path-index-split sub-i)])
-                                                            (and base ; can be #f if path isn't relative
-                                                                 (begin
-                                                                   ;; Assert: base should refer to this module:
-                                                                   (let-values ([(path2 base2) (module-path-index-split base)])
-                                                                     (when (or path2 base2)
-                                                                       (error 'embed "unexpected nested module path index")))
-                                                                   (cons path (lookup-full-name sub-filename)))))))
-                                                   all-file-imports sub-files sub-paths))
+                                                          (if sub-i
+                                                              (let-values ([(path base) (module-path-index-split sub-i)])
+                                                                (and base ; can be #f if path isn't relative
+                                                                     (begin
+                                                                       ;; Assert: base should refer to this module:
+                                                                       (let-values ([(path2 base2) (module-path-index-split base)])
+                                                                         (when (or path2 base2)
+                                                                           (error 'embed "unexpected nested module path index")))
+                                                                       (cons path (lookup-full-name sub-filename)))))
+                                                              ;; a run-time path:
+                                                              (cons sub-path (lookup-full-name sub-filename)))))
+                                                   (append all-file-imports (map (lambda (p) #f) extra-runtime-paths))
+                                                   (append sub-files (take extra-files (length extra-runtime-paths)))
+                                                   (append sub-paths extra-runtime-paths)))
                                       (map get-submod-mapping pre-submods)))])
                           ;; Record the module
                           (set-box! codes
