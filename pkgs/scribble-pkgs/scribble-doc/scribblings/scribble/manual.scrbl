@@ -746,6 +746,45 @@ and produces @racket[#f], the @racket[id] is indexed, and it also registered so
 that @racket[racket]-typeset uses of the identifier (with the same
 for-label binding) are hyperlinked to this documentation.
 
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defproc[(make-sandwich [ingredients (listof ingredient?)])
+         sandwich?]{
+  Returns a sandwich given the right ingredients.
+}
+
+@defproc[#:kind "sandwich-maker"
+         (make-reuben [ingredient sauerkraut?] ...
+                      [#:veggie? veggie? any/c #f])
+         sandwich?]{
+  Produces a reuben given some number of @racket[ingredient]s.
+
+  If @racket[veggie?] is @racket[#f], produces a standard
+  reuben with corned beef. Otherwise, produces a vegetable
+  reuben.
+}
+}|
+
+@doc-render-examples[
+ @defproc[#:link-target? #f
+          (make-sandwich [ingredients (listof ingredient?)])
+          sandwich?]{
+   Returns a sandwich given the right ingredients.
+ }
+
+ @defproc[#:kind "sandwich-maker"
+          #:link-target? #f
+          (make-reuben [ingredient sauerkraut?] ...
+                       [#:veggie? veggie? any/c #f])
+          sandwich?]{
+   Produces a reuben given some number of @racket[ingredient]s.
+
+   If @racket[veggie?] is @racket[#f], produces a standard
+   reuben with corned beef. Otherwise, produces a vegetable
+   reuben.
+ }]
+
 When @racket[id] is indexed and registered, 
 a @racket[defmodule] or @racket[declare-exporting] form (or one of the
 variants) in an enclosing section determines the @racket[id] binding
@@ -809,26 +848,6 @@ If @racket[#:id [src-id dest-id-expr]] is supplied, then
 place of @racket[src-id]. This split between @racket[src-id] and
 @racket[dest-id-expr] roles is useful for functional abstraction of
 @racket[defproc].
-
-Examples:
-@codeblock[#:keep-lang-line? #f]|{
-#lang scribble/manual
-@defproc[(make-sandwich [ingredients (listof ingredient?)])
-         sandwich?]{
-  Returns a sandwich given the right ingredients.
-}
-
-@defproc[#:kind "sandwich-maker"
-         (make-reuben [ingredient sauerkraut?] ...
-                      [#:veggie? veggie? any/c #f])
-         sandwich?]{
-  Produces a reuben given some number of @racket[ingredient]s.
-
-  If @racket[veggie?] is @racket[#f], produces a standard
-  reuben with corned beef. Otherwise, produces a vegetable
-  reuben.
-}
-}|
 }
 
 @defform[(defproc* options
@@ -858,6 +877,16 @@ Examples:
   jelly.
 }
 }|
+
+@doc-render-examples[
+  @defproc[#:link-target? #f
+           ((make-pb&j)
+            (make-pb&j [jelly jelly?]))
+           sandwich?]{
+    Returns a peanut butter and jelly sandwich. If @racket[jelly]
+    is provided, then it is used instead of the standard (grape)
+    jelly.
+  }]
 }
 
 
@@ -963,6 +992,37 @@ Examples:
   clauses adds an additional ingredient to the sandwich pipeline.
 }
 }|
+@doc-render-examples[
+  @defform[#:link-target? #f
+           (sandwich-promise sandwich-expr)
+           #:contracts ([sandwich-expr sandwich?])]{
+    Returns a promise to construct a sandwich. When forced, the promise
+    will produce the result of @racket[sandwich-expr].
+  }
+
+  @defform[#:link-target? #f
+           #:literals (sandwich mixins)
+           (sandwich-promise* [sandwich sandwich-expr]
+                              [mixins ingredient-expr ...])
+           #:contracts ([sandwich-expr sandwich?]
+                        [ingreient-expr ingredient?])]{
+    Returns a promise to construct a sandwich. When forced, the promise
+    will produce the result of @racket[sandwich-expr]. Each result of
+    the @racket[ingredient-expr]s will be mixed into the resulting
+    sandwich.
+  }
+
+  @defform[#:link-target? #f
+           (sandwich-factory maybe-name factory-component ...)
+           #:grammar
+           [(maybe-name (code:line)
+                        name)
+            (factory-component (code:line #:protein protein-expr)
+                               [vegetable vegetable-expr])]]{
+    Constructs a sandwich factory. If @racket[maybe-name] is provided,
+    the factory will be named. Each of the @racket[factory-component]
+    clauses adds an additional ingredient to the sandwich pipeline.
+  }]
 }
 
 @defform[(defform* options [form-datum ...+]
@@ -982,6 +1042,14 @@ Examples:
   is invoked when the current sandwich is eaten.
 }
 }|
+@doc-render-examples[
+@defform*[#:link-target? #f
+          ((call-with-current-sandwich expr)
+           (call-with-current-sandwich expr sandwich-handler-expr))]{
+  Runs @racket[expr] and passes it the value of the current
+  sandwich. If @racket[sandwich-handler-expr] is provided, its result
+  is invoked when the current sandwich is eaten.
+}]
 }
 
 
@@ -1079,6 +1147,17 @@ Examples:
   clauses adds an additional ingredient to the sandwich pipeline.
 }
 }|
+@doc-render-examples[
+  @defform/subs[#:link-target? #f
+                (sandwich-factory maybe-name factory-component ...)
+                [(maybe-name (code:line)
+                             name)
+                 (factory-component (code:line #:protein protein-expr)
+                                    [vegetable vegetable-expr])]]{
+    Constructs a sandwich factory. If @racket[maybe-name] is provided,
+    the factory will be named. Each of the @racket[factory-component]
+    clauses adds an additional ingredient to the sandwich pipeline.
+  }]
 }
 
 
@@ -1097,6 +1176,12 @@ Examples:
   involve eating a sandwich.
 }
 }|
+@doc-render-examples[
+  @defparam[#:link-target? #f
+            current-sandwich sandwich sandwich?]{
+    A parameter that defines the current sandwich for operations that
+    involve eating a sandwich.
+  }]
 }
 
 
@@ -1143,6 +1228,11 @@ Examples:
   Don't eat this. Provided for backwards compatibility.
 }
 }|
+@doc-render-examples[
+  @defthing[#:link-target? #f
+            moldy-sandwich sandwich?]{
+    Don't eat this. Provided for backwards compatibility.
+  }]
 }
 
 
@@ -1182,6 +1272,13 @@ Examples:
   ingredients.
 }
 }|
+@doc-render-examples[
+  @defstruct[#:link-target? #f
+             sandwich ([protein ingredient?] [sauce ingredient?])]{
+    A strucure type for sandwiches. Sandwiches are a pan-human foodstuff
+    composed of a partially-enclosing bread material and various
+    ingredients.
+  }]
 }
 
 
@@ -1203,6 +1300,13 @@ Examples:
   in writing test cases
 }
 }|
+@doc-render-examples[
+  @deftogether[(@defthing[#:link-target? #f test-sandwich-1 sandwich?]
+                @defthing[#:link-target? #f test-sandwich-2 sandwich?])]{
+    Two high-quality sandwiches. These are provided for convenience
+    in writing test cases
+  }
+]
 }
 
 

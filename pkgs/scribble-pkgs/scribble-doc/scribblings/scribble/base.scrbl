@@ -256,7 +256,7 @@ Use @racket['cont] as a cell to continue the content of the preceding
 cell in a row in the space that would otherwise be used for a new
 cell. A @racket['cont] must not appear as the first cell in a row.
 
-The @racket[style] argument is handled the same as @racket[para].}
+The @racket[style] argument is handled the same as @racket[para].
 
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
@@ -271,6 +271,17 @@ Examples:
                (list "kinpira gobō"  "burdock")
                (list "makizushi"     'cont))]
 }|
+@doc-render-examples[
+  @tabular[#:sep @hspace[1]
+           (list (list "soup" "gazpacho")
+                 (list "soup" "tonjiru"))]
+
+  @tabular[#:style 'boxed
+           (list (list @bold{recipe}   @bold{vegetable})
+                 (list "caldo verde"   "kale")
+                 (list "kinpira gobō"  "burdock")
+                 (list "makizushi"     'cont))]]
+}
 
 @defproc[(verbatim [#:indent indent exact-nonnegative-integer? 0] [elem content?] ...+)
          block?]{

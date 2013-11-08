@@ -26,7 +26,7 @@
                   scribble/eval
                   scribble/bnf)
 
-(provide scribble-examples litchar/lines)
+(provide scribble-examples litchar/lines doc-render-examples)
 
 (define (as-flow e)
   (if (block? e) e (make-paragraph plain (list e))))
@@ -227,3 +227,13 @@
 (define (ltxd n s)
   (make-element #f (cons (index (list s) (ltx s))
                          (for/list ([i (in-range n)]) (tt "{}")))))
+
+;; Utility to render examples of scribble documentation forms
+;; Note: it would be nice if this abstracted over the codeblock
+;;       that usually comes along with this too, but that's hard
+;;       because there's a read-time distinction between [...]
+;;       and |{...}|.
+(define-syntax-rule (doc-render-examples e ...)
+  (nested "Renders like:\n"
+          (nested #:style 'inset (nested #:style 'inset e ...))))
+
