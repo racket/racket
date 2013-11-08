@@ -721,6 +721,15 @@ also creating a module dependency for building and distributing
 executables.}
 
 
+@defform[(runtime-require module-path)]{
+
+Similar to @racket[define-runtime-module-path-index], but creates the
+distribution dependency without binding a module path index. When
+@racket[runtime-require] is used multiple times within a module with
+the same @racket[module-path], all but the first use expands to an
+empty @racket[begin].}
+
+
 @defform[(define-runtime-module-path id module-path)]{
 
 Similar to @racket[define-runtime-path], but @racket[id] is bound to a

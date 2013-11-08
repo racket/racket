@@ -13,6 +13,7 @@
          define-runtime-paths
          define-runtime-path-list
          define-runtime-module-path-index
+         runtime-require
          runtime-paths
          ;; from `racket/runtime-path`
          (for-syntax #%datum)
@@ -220,6 +221,20 @@
 (define-syntax (define-runtime-module-path-index stx)
   (syntax-case stx ()
     [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values #f)]))
+
+(define-for-syntax required-module-paths (make-hash))
+(define-syntax (runtime-require stx)
+  (syntax-case stx ()
+    [(_ mod-path)
+     (let ([mp (syntax->datum #'mod-path)])
+       (unless (module-path? mp)
+         (raise-syntax-error #f "not a module path" stx  #'mod-path))
+       (if (hash-ref required-module-paths mp #f)
+           #'(begin)
+           #'(begin-for-syntax
+              (register-ext-files 
+               (#%variable-reference)
+               (list `(module mod-path ,(#%variable-reference)))))))]))
 
 (define-syntax (runtime-paths stx)
   (syntax-case stx ()
