@@ -116,11 +116,11 @@ the first directory that contains @racket[_rel-string], splicing a
 search through in @racket[current-library-collection-paths] where in
 @racket[current-library-collection-links] contains @racket[#f].  The
 filesystem tree for each element in the link table and search path is
-effectively spliced together with the filesystem trees of other path
+effectively @deftech[#:key "collection splicing"]{spliced} together with the filesystem trees of other path
 elements that correspond to the same collection. Some Racket tools
 rely on unique resolution of module path names, so an installation and
 configuration should not allow multiple files to match the same
-collection and file name.
+collection and file combination.
 
 The value of the @racket[current-library-collection-links] parameter
 is initialized by the @exec{racket} executable to the result of
@@ -283,14 +283,17 @@ and the collection is not found, then the
                              [#:fail fail-proc (string? . -> . any)])
             any])]{
 
-This function is @bold{legacy}. Its use should be avoided.
-The @racket[collection-file-path] function should be used instead.
+  @deprecated[#:what "function" @racket[collection-file-path]]{
+  @tech{Collection splicing} implies that a given collection can have
+  multiple paths, such as when multiple @tech[#:doc
+  '(lib "scribblings/guide/guide.scrbl")]{packages} provide modules for a
+  collection.}
 
 Like @racket[collection-file-path], but without a specified file name,
 so that a directory indicated by @racket[collection]s is returned.
-If multiple packages provide @racket[collection], @racket[collection-file-path]
-will return a path to the @racket[collection] directory provided by one of
-these packages, chosen in an unspecified manner.}
+
+When multiple directories correspond to the collection, the first one
+found in the search sequence (see @secref["collects-search"]) is returned.}
 
 
 @defparam*[current-library-collection-paths paths
