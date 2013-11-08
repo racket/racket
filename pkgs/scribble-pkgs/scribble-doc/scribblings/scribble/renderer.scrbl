@@ -15,11 +15,12 @@
      (intro)))
 
 @(begin
-  (define-syntax-rule (def-html-render-mixin id)
+  (define-syntax-rule (def-html-render-mixin id mid)
     (begin
       (require (for-label scribble/html-render))
-      (define id @racket[render-mixin])))
-  (def-html-render-mixin html:render-mixin))
+      (define id @racket[render-mixin])
+      (define mid @racket[render-multi-mixin])))
+  (def-html-render-mixin html:render-mixin html:render-multi-mixin))
 @(begin
   (define-syntax-rule (def-latex-render-mixin id)
     (begin
@@ -53,6 +54,7 @@ function to render a document.
                  [#:info-out-file info-out-file (or/c #f path-string?) #f]
                  [#:redirect redirect (or/c #f string?) #f]
                  [#:redirect-main redirect-main (or/c #f string?) #f]
+                 [#:directory-depth directory-depth exact-nonnegative-integer? 0]
                  [#:quiet? quiet? any/c #t]
                  [#:warn-undefined? warn-undefined? any/c (not quiet?)])
           void?]{
@@ -86,6 +88,9 @@ to the @racket[set-external-tag-path] and
 @racket[set-external-root-url] methods of @|html:render-mixin| from
 @racketmodname[scribble/html-render], so they should be
 non-@racket[#f] only for HTML rendering.
+
+The @racket[directory-depth] arguments correspond to the
+@racket[set-directory-depth] method of @|html:render-multi-mixin|.
 
 If @racket[quiet?] is a false value, output-file information is
 written to the current output port.
@@ -333,7 +338,15 @@ directory.}
 
 Further specializes a rendering class produced by
 @racket[render-mixin] for generating multiple HTML
-files.}
+files.
+
+@defmethod[(set-directory-depth [depth exact-nonnegative-integer?]) void?]{
+
+Sets the depth of directory structure used when rendering parts that
+are own their own pages. A value of @racket[0] is treated the same as
+@racket[1].}
+
+}
 
 }
 

@@ -26,6 +26,7 @@
 (define current-extra-files        (make-parameter null))
 (define current-redirect           (make-parameter #f))
 (define current-redirect-main      (make-parameter #f))
+(define current-directory-depth    (make-parameter 0))
 (define current-quiet              (make-parameter #f))
 (define helper-file-prefix         (make-parameter #f))
 
@@ -45,6 +46,17 @@
    [("--htmls") "generate HTML-format output directory"
     (current-html #t)
     (current-render-mixin multi-html:render-mixin)]
+   [("--html-tree") n "generate HTML-format output directories <n> deep"
+    (let ([nv (string->number n)])
+      (unless (exact-nonnegative-integer? nv)
+        (raise-user-error 'scribble
+                          "invalid depth: ~a"
+                          n))
+      (current-directory-depth nv)
+      (current-html #t)
+      (current-render-mixin (if (zero? nv)
+                                html:render-mixin
+                                multi-html:render-mixin)))]
    [("--latex") "generate LaTeX-format output"
     (current-html #f)
     (current-render-mixin latex:render-mixin)]
@@ -137,6 +149,7 @@
           #:helper-file-prefix (helper-file-prefix)
           #:redirect (and (current-html) (current-redirect))
           #:redirect-main (and (current-html) (current-redirect-main))
+          #:directory-depth (current-directory-depth)
           #:quiet? (current-quiet)
           #:info-in-files (reverse (current-info-input-files))
           #:xrefs (for/list ([mod+id (in-list (reverse (current-xref-input-modules)))])

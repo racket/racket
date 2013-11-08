@@ -58,18 +58,29 @@
                 ;; note: file-size can be bigger than the string, but
                 ;; that's fine.
                 (read-string (file-size file)))))]
+         [adjust-rel
+          (lambda (depth p)
+            (if (and (relative-path? p)
+                     (positive? depth))
+                (let loop ([d depth] [p p])
+                  (if (zero? d)
+                      p
+                      (loop (sub1 d) (string-append "../" p))))
+                p))]
          [file-getter
           (lambda (default-file make-inline make-ref)
             (let ([c #f])
-              (lambda (file path)
+              (lambda (file path depth)
                 (cond [(bytes? file)
                        (make-inline (bytes->string/utf-8 file))]
                       [(url? file)
                        (make-ref (url->string* file))]
                       [(not (eq? 'inline path))
-                       (make-ref (or path (let-values ([(base name dir?)
-                                                        (split-path file)])
-                                            (path->string name))))]
+                       (make-ref (adjust-rel
+                                  depth
+                                  (or path (let-values ([(base name dir?)
+                                                         (split-path file)])
+                                             (path->string name)))))]
                       [(or (not file) (equal? file default-file))
                        (unless c
                          (set! c (make-inline (read-file default-file))))
@@ -208,6 +219,9 @@
   (if (null? l)
       (list `(part "???"))
       l))
+
+(define (part-parent d ri)
+  (collected-info-parent (part-collected-info d ri)))
 
 ;; ----------------------------------------
 ;;  main mixin
@@ -361,15 +375,15 @@
     ;; ----------------------------------------
 
     (define external-tag-path #f)
-    (define/public (set-external-tag-path p)
+    (define/override (set-external-tag-path p)
       (set! external-tag-path p))
 
     (define external-root-url #f)
-    (define/public (set-external-root-url p)
+    (define/override (set-external-root-url p)
       (set! external-root-url p))
 
     (define extra-script-files null)
-    (define/public (add-extra-script-file s)
+    (define/override (add-extra-script-file s)
       (set! extra-script-files (cons s extra-script-files)))
 
     (define (try-relative-to-external-root dest)
@@ -706,7 +720,10 @@
                  (style-properties (part-style d)))
           (let ([p (part-parent d ri)])
             (and p (extract-part-body-id p ri)))))
-    
+
+    (define/public (part-nesting-depth d ri)
+      0)
+
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
         (let* ([defaults (ormap (lambda (v) (and (html-defaults? v) v))
@@ -730,7 +747,8 @@
                              => (lambda (c)
                                   `(title ,@(format-number number '(nbsp))
                                           ,(content->string (strip-aux c) this d ri)))]
-                            [else `(title)])])
+                            [else `(title)])]
+               [dir-depth (part-nesting-depth d ri)])
           (unless (bytes? style-file)
             (unless (lookup-path style-file alt-paths) 
               (install-file style-file)))
@@ -751,13 +769,15 @@
                    (meta ([http-equiv "content-type"]
                           [content "text/html; charset=utf-8"]))
                    ,title
-                   ,(scribble-css-contents scribble-css (lookup-path scribble-css alt-paths))
+                   ,(scribble-css-contents scribble-css
+                                           (lookup-path scribble-css alt-paths) 
+                                           dir-depth)
                    ,@(map (lambda (style-file)
                             (if (or (bytes? style-file) (url? style-file))
-                                (scribble-css-contents style-file #f)
+                                (scribble-css-contents style-file #f dir-depth)
                                 (let ([p (lookup-path style-file alt-paths)])
                                   (unless p (install-file style-file))
-                                  (scribble-css-contents style-file p))))
+                                  (scribble-css-contents style-file p dir-depth))))
                           (append (extract-part-style-files
                                    d
                                    ri
@@ -766,13 +786,15 @@
                                    css-addition-path)
                                   (list style-file)
                                   style-extra-files))
-                   ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
+                   ,(scribble-js-contents script-file
+                                          (lookup-path script-file alt-paths)
+                                          dir-depth)
                    ,@(map (lambda (script-file)
                             (if (or (bytes? script-file) (url? script-file))
-                                (scribble-js-contents script-file #f)
+                                (scribble-js-contents script-file #f dir-depth)
                                 (let ([p (lookup-path script-file alt-paths)])
                                   (unless p (install-file script-file))
-                                  (scribble-js-contents script-file p))))
+                                  (scribble-js-contents script-file p dir-depth))))
                           (append
                            (extract-part-style-files
                             d
@@ -796,9 +818,6 @@
                        ,@(render-part d ri)
                        ,@(navigation d ri #f)))
                    (div ([id "contextindicator"]) nbsp))))))))
-
-    (define/private (part-parent d ri)
-      (collected-info-parent (part-collected-info d ri)))
 
     (define (toc-part? d ri)
       (and (part-style? d 'toc)
@@ -826,7 +845,7 @@
     (define next-content     '("next " rarr))
     (define sep-element      '(nbsp nbsp))
 
-    (define/public (derive-filename d ci ri) "bad.html")
+    (define/public (derive-filename d ci ri depth) "bad.html")
 
     (define/public (include-navigation?) search-box?)
 
@@ -1594,6 +1613,10 @@
              report-output?
              all-toc-hidden?)
 
+    (define directory-depth 1)
+    (define/override (set-directory-depth n)
+      (set! directory-depth (max 1 n)))
+
     (define/override (get-suffix) #"")
 
     (define/override (get-dest-directory [create? #f])
@@ -1621,23 +1644,34 @@
          (for/list ([p (in-list parents)])
            (or (part-tag-prefix p) "")))))
 
-    (define/override (derive-filename d ci ri)
-      (let ([fn (format "~a.html"
-                        (regexp-replace*
-                         "[^-a-zA-Z0-9_=]"
-                         (string-append
-                          (append-part-prefixes d ci ri)
-                          (let ([s (cadr (car (part-tags/nonempty d)))])
-                            (cond [(string? s) s]
-                                  [(part-title-content d)
-                                   (content->string (part-title-content d))]
-                                  [else
-                                   ;; last-ditch effort to make up a unique name:
-                                   (format "???~a" (eq-hash-code d))])))
-                         "_"))])
-        (when ((string-length fn) . >= . 48)
-          (error "file name too long (need a tag):" fn))
-        fn))
+    (define/override (part-nesting-depth d ri)
+      (min (part-depth d ri) (sub1 directory-depth)))
+
+    (define/private (part-depth d ri)
+      (define p (collected-info-parent (part-collected-info d ri)))
+      (if (not p)
+          0
+          (add1 (part-depth p ri))))
+
+    (define/override (derive-filename d ci ri depth)
+      (let ([base (regexp-replace*
+                   "[^-a-zA-Z0-9_=]"
+                   (string-append
+                    (append-part-prefixes d ci ri)
+                    (let ([s (cadr (car (part-tags/nonempty d)))])
+                      (cond [(string? s) s]
+                            [(part-title-content d)
+                             (content->string (part-title-content d))]
+                            [else
+                             ;; last-ditch effort to make up a unique name:
+                             (format "???~a" (eq-hash-code d))])))
+                   "_")])
+        (let ([fn (if (depth . < . directory-depth)
+                      (path->string (build-path base "index.html"))
+                      (format "~a.html" base))])
+          (when ((string-length fn) . >= . 48)
+            (error "file name too long (need a tag):" fn))
+          fn)))
 
     (define/override (include-navigation?) #t)
 
@@ -1677,12 +1711,13 @@
                        [collecting-whole-page (prev-sub . <= . 1)])
           (if (and (current-part-whole-page? d)
                    (not (eq? d (current-top-part))))
-            (let* ([filename (derive-filename d ci #f)]
-                   [full-filename (build-path (path-only (current-output-file))
-                                              filename)])
-              (check-duplicate-filename full-filename)
-              (parameterize ([current-output-file full-filename])
-                (super collect-part d parent ci number sub-init-number)))
+              (let* ([filename (derive-filename d ci #f (length number))]
+                     [full-filename (build-path (path-only (current-output-file))
+                                                filename)])
+                (make-directory* (path-only full-filename))
+                (check-duplicate-filename full-filename)
+                (parameterize ([current-output-file full-filename])
+                  (super collect-part d parent ci number sub-init-number)))
             (super collect-part d parent ci number sub-init-number)))))
 
     (define/override (render ds fns ri)
@@ -1720,12 +1755,15 @@
           (if (and (on-separate-page-ok)
                    (part-whole-page? d ri)
                    (not (eq? d (current-top-part))))
-            ;; Render as just a link, and put the actual content in a
-            ;; new file:
-            (let* ([filename (derive-filename d #f ri)]
+            ;; Put the actual content in a new file:
+            (let* ([filename (derive-filename d #f ri (part-depth d ri))]
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
-              (parameterize ([on-separate-page-ok #f])
+              (parameterize ([on-separate-page-ok #f]
+                             [current-subdirectory (let ([p (path-only filename)])
+                                                     (if p
+                                                         (build-path (current-subdirectory) p)
+                                                         (current-subdirectory)))])
                 ;; We use 'replace instead of the usual 'truncate/replace
                 ;;  to avoid problems where a filename changes only in case,
                 ;;  in which case some platforms will see the old file

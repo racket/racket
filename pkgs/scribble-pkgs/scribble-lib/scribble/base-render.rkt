@@ -117,6 +117,14 @@
                           (loop (modulo n 10) I V X L C D M))])))
 
     ;; ----------------------------------------
+    ;; Methods that really only work on some renderers:
+
+    (define/public (set-external-tag-path p) (void))
+    (define/public (set-external-root-url p) (void))    
+    (define/public (add-extra-script-file s) (void))
+    (define/public (set-directory-depth n) (void))
+
+    ;; ----------------------------------------
 
     (define/public (extract-part-style-files d ri stop-at-part? pred extract)
       (let ([ht (make-hash)])

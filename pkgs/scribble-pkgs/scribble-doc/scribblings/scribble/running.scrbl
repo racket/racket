@@ -23,6 +23,11 @@ its file suffix:
        a @filepath{@|fn|} directory, starting with
        @filepath{@|fn|/index.html}}
 
+ @item{@DFlag{html-tree} @nonterm{n} --- HTML pages in a directory
+       tree up to @nonterm{n} layers deep; a tree of depth @exec{0} is
+       equivalent to using @DFlag{html}, and a tree of depth @exec{1}
+       is equivalent to using @DFlag{htmls}}
+
  @item{@DFlag{latex} --- LaTeX source @filepath{@|fn|.tex}, plus
        any needed additional files (such as non-standard class files)
        needed to run @exec{latex} or @exec{pdflatex}}

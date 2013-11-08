@@ -21,6 +21,7 @@
            #:extra-files (listof path-string?)
            #:redirect (or/c #f string?)
            #:redirect-main (or/c #f string?)
+           #:directory-depth exact-nonnegative-integer?
            #:xrefs (listof xref?)
            #:info-in-files (listof path-string?)
            #:info-out-file (or/c #f path-string?)
@@ -38,6 +39,7 @@
                 #:extra-files [extra-files null]
                 #:redirect [redirect #f]
                 #:redirect-main [redirect-main #f]
+                #:directory-depth [directory-depth 0]
                 #:xrefs [xrefs null]
                 #:info-in-files [info-input-files null]
                 #:info-out-file [info-output-file #f]
@@ -55,6 +57,8 @@
       (send renderer set-external-tag-path redirect))
     (when redirect-main
       (send renderer set-external-root-url redirect-main))
+    (unless (zero? directory-depth)
+      (send renderer set-directory-depth directory-depth))
     (unless quiet?
       (send renderer report-output!))
     (let* ([fns (map (lambda (fn)
