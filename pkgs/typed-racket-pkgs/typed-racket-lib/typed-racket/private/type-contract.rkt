@@ -78,12 +78,14 @@
                              #:typed-side #f
                              #:kind kind
                              (type->contract-fail typ prop))])
-           (quasisyntax/loc 
-	    stx
-	    (define-values (n) 
-	      (recursive-contract 
-	       cnt
-	       #,(contract-kind->keyword kind))))))]
+           (ignore-property ; should be ignored by the optimizer
+            (quasisyntax/loc
+                stx
+              (define-values (n)
+                (recursive-contract
+                 cnt
+                 #,(contract-kind->keyword kind))))
+            #t)))]
     [_ (int-err "should never happen - not a define-values: ~a"
 		(syntax->datum stx))]))
 
