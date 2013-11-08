@@ -450,6 +450,16 @@ The recognized @tech{style properties} are as follows:
        content for the @tt{<head>} tag when the part corresponds to
        its own HTML page.}
 
+ @item{@racket[color-property] structure --- For HTML, applies a color
+       to the part title.}
+
+ @item{@racket[background-color-property] structure --- For HTML,
+       Applies a color to the background of the part title.}
+
+ @item{@racket[hover-property] structure --- For HTML, adds a text
+       label to the title to be shown when the mouse hovers over
+       it.}
+
 ]
 
 The @racket[to-collect] field contains @techlink{content} that is
@@ -808,8 +818,8 @@ The following @tech{style properties} are currently recognized:
  @item{@racket[color-property] structure --- Applies a color to the
        text of @racket[content].}
 
- @item{@racket[background-color-property] structure --- Applies a color to the
-       background of @racket[content].}
+ @item{@racket[background-color-property] structure --- Applies a
+       color to the background of @racket[content].}
 
  @item{@racket[alt-tag] structure --- Generates the given HTML tag
        instead of the default one (@tt{<span>}, @tt{b}, @|etc|).}
@@ -1068,7 +1078,11 @@ renderer, but at the recognized set includes at least
 @racket["white"], @racket["black"], @racket["red"], @racket["green"],
 @racket["blue"], @racket["cyan"], @racket["magenta"], and
 @racket["yellow"]. When @racket[color] is a list of bytes, the values
-are used as RGB levels.}
+are used as RGB levels.
+
+When rendering to HTML, a @racket[color-property] is also recognized
+for a @tech{block} or @racket[part] (and used for the title in the
+latter case).}
 
 
 @defstruct[background-color-property ([color (or/c string? (list/c byte? byte? byte?))])]{

@@ -141,22 +141,35 @@
                 (if (< v 16) (string-append "0" s) s)))
             c))))
 
+(define (merge-styles s l)
+  ;; merge multiple 'style attributes into one
+  (cond
+   [(null? l) (if s
+                  (list (list 'style s))
+                  null)]
+   [(eq? 'style (caar l))
+    (merge-styles (if s (string-append s "; " (cadar l)) (cadar l))
+                  (cdr l))]
+   [else (cons (car l) (merge-styles s (cdr l)))]))
+
 (define (style->attribs style [extras null])
-  (let ([a (apply
-            append
-            extras
-            (map (lambda (v)
-                   (cond
-                    [(attributes? v)
-                     (map (lambda (v) (list (car v) (cdr v))) (attributes-assoc v))]
-                    [(color-property? v)
-                     `((style ,(format "color: ~a" (color->string (color-property-color v)))))]
-                    [(background-color-property? v)
-                     `((style ,(format "background-color: ~a" (color->string (background-color-property-color v)))))]
-                    [(hover-property? v)
-                     `((title ,(hover-property-text v)))]
-                    [else null]))
-                 (style-properties style)))])
+  (let ([a (merge-styles
+            #f
+            (apply
+             append
+             extras
+             (map (lambda (v)
+                    (cond
+                     [(attributes? v)
+                      (map (lambda (v) (list (car v) (cdr v))) (attributes-assoc v))]
+                     [(color-property? v)
+                      `((style ,(format "color: ~a" (color->string (color-property-color v)))))]
+                     [(background-color-property? v)
+                      `((style ,(format "background-color: ~a" (color->string (background-color-property-color v)))))]
+                     [(hover-property? v)
+                      `((title ,(hover-property-text v)))]
+                     [else null]))
+                  (style-properties style))))])
     (let ([name (style-name style)])
       (if (string? name)
           (if (assq 'class a)
