@@ -34,12 +34,12 @@
   (pattern (internal:id external:id)))
 
 (define-syntax-class internal-class-data
-  #:literals (#%plain-app quote-syntax class:-internal begin
+  #:literals (#%plain-app quote-syntax class-internal begin
               values c:init c:init-field optional-init c:field
               c:public c:override c:private c:inherit private-field
               c:augment c:pubment)
   (pattern (begin (quote-syntax
-                   (class:-internal
+                   (class-internal
                     (c:init init-names:name-pair ...)
                     (c:init-field init-field-names:name-pair ...)
                     (optional-init optional-names:id ...)
@@ -153,10 +153,10 @@
 ;; Assumptions:
 ;;  by the time this is called, we can be sure that
 ;;  init, field, and method presence/absence is guaranteed
-;;  by the local-expansion done by class:
+;;  by the local-expansion done by `class`
 ;;
 ;;  we know by this point that #'form is an actual typed
-;;  class produced by class: due to the syntax property
+;;  class produced by `class` due to the syntax property
 (define (check-class form [expected #f])
   (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))

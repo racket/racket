@@ -2,7 +2,7 @@
 
 ;; This module provides TR primitives for classes and objects
 
-(require racket/class
+(require (rename-in racket/class [class untyped-class])
          (for-syntax
           racket/base
           racket/class
@@ -22,14 +22,14 @@
           "../types/utils.rkt"))
 
 (provide ;; Typed class macro that coordinates with TR
-         class:
+         class
          ;; for use in ~literal clauses
-         class:-internal
+         class-internal
          optional-init
          private-field)
 
 ;; give it a binding, but it shouldn't be used directly
-(define-syntax (class:-internal stx)
+(define-syntax (class-internal stx)
   (raise-syntax-error "should only be used internally"))
 
 (define-syntax (optional-init stx)
@@ -225,11 +225,10 @@
      (hash #'public (list #'(f f) #'(g g) #'(h h))
            #'init (list #'(x x) #'(y y) #'(z z)))))))
 
-(define-syntax (class: stx)
+(define-syntax (class stx)
   (syntax-parse stx
     [(_ super e ...)
      (define class-context (generate-class-expand-context))
-     ;; do a local expansion for class:
      (define (class-expand stx)
        (local-expand stx class-context stop-forms))
      ;; FIXME: potentially needs to expand super clause?
@@ -254,7 +253,7 @@
               #,(internal
                  ;; FIXME: maybe put this in a macro and/or a syntax class
                  ;;        so that it's easier to deal with
-                 #`(class:-internal
+                 #`(class-internal
                     (init #,@(dict-ref name-dict #'init '()))
                     (init-field #,@(dict-ref name-dict #'init-field '()))
                     (optional-init #,@optional-inits)
@@ -266,7 +265,7 @@
                     (inherit #,@(dict-ref name-dict #'inherit '()))
                     (augment #,@(dict-ref name-dict #'augment '()))
                     (pubment #,@(dict-ref name-dict #'pubment '()))))
-              (class #,annotated-super
+              (untyped-class #,annotated-super
                 #,@(map clause-stx clauses)
                 #,@(map non-clause-stx annotated-methods)
                 #,(syntax-property

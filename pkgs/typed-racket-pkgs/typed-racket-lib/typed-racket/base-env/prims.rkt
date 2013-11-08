@@ -28,7 +28,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          ;; provide the contracted bindings as primitives
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
-         class:
+         class
          :
          (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
