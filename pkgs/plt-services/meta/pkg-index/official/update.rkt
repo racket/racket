@@ -28,7 +28,7 @@
     (define now (current-seconds))
     (define last (hash-ref i 'last-checked -inf.0))
     (when (or force?
-              (>= (- now last) (* 24 60 60)))
+              (>= (- now last) (* 1 60 60)))
       (printf "\tupdating ~a\n" pkg-name)
       (define new-checksum
         (package-url->checksum

@@ -415,7 +415,7 @@
   (thread
    (λ ()
      (forever
-      (sleep (* 24 60 60))
+      (sleep (* 1 60 60))
       (printf "Running scheduled update.\n")
       (signal-update! empty))))
   (serve/servlet
