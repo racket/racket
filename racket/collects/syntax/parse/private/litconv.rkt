@@ -275,5 +275,5 @@ cause an error, so don't worry about that case.)
    #%top
    #%datum
    #%variable-reference
-   module #%provide #%require #%declare
+   module module* #%provide #%require #%declare
    #%plain-module-begin))
