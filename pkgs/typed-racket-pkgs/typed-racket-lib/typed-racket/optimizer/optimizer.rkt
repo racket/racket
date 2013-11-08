@@ -73,7 +73,9 @@
             e:opt-expr ...)
            #:with opt (quasisyntax/loc/origin this-syntax #'kw
                         (kw e.opt ...)))
-  (pattern (~and ((~or #%provide #%require begin-for-syntax module module*) . _) opt))
+  (pattern (~and ((~or #%provide #%require begin-for-syntax define-syntaxes module module*)
+                  . _)
+                 opt))
   (pattern (~and (~or (quote _) (quote-syntax _) :id) opt)))
 
 (define (optimize-top stx)
