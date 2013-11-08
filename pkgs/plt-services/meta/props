@@ -661,6 +661,15 @@ path/s is either such a string or a list of them.
 "pkgs/compiler-pkgs/compiler-lib/compiler/demodularizer/batch.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler" responsible (jay)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/demodularizer/demod-test.rkt" drdr:timeout 600
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed" responsible (mflatt)
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-me4.rktl" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-me9.rkt" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/alt.rkt" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/dyn-sub.rkt" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/main.rkt" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/other.rkt" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-2" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/test.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/regression.rkt" responsible (mflatt)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
@@ -1289,14 +1298,6 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-take-right.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/date.rktl" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/embed-in-c.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-me4.rktl" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-me9.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/alt.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/dyn-sub.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/main.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/other.rkt" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-2" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/embed.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/expand.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/file.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/filelib.rktl" drdr:command-line #f drdr:timeout 360
