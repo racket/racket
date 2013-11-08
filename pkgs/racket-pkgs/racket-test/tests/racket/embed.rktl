@@ -312,6 +312,14 @@
 	     (path->string (build-path (collection-path "tests" "racket") "embed-me22.rkt")))
     (try-exe (mk-dest mred?) "Configure!\nThis is 22.\n" mred?)
 
+    ;; raco exe on a module with serialization
+    (system* raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me23.rkt")))
+    (try-exe (mk-dest mred?) "1\n2\n" mred?)
+
     ;; raco exe --launcher
     (system* raco
              "exe"
