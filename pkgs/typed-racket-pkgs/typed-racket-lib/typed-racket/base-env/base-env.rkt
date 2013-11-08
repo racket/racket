@@ -4,7 +4,7 @@
 
 (require
  (for-template
-  (except-in racket -> ->* one-of/c)
+  (except-in racket -> ->* one-of/c class)
   racket/unsafe/ops
   ;(only-in rnrs/lists-6 fold-left)
   '#%paramz

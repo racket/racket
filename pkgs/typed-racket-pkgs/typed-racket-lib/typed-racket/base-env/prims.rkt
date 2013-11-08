@@ -29,7 +29,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
          (all-from-out "case-lambda.rkt")
-         class:
+         class
          :
          (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct define-struct]
