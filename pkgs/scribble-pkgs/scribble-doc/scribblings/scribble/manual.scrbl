@@ -689,14 +689,6 @@ per section, since the declaration applies to the entire section,
 although overriding @racket[declare-exporting] forms can appear in
 sub-sections.}
 
-@defform/subs[(deprecated replacement additional-notes ...)
-              ([replacement pre-content]
-               [additional-notes pre-content])]{
- produces a warning for deprecated modules. Requires a replacement suggestion; 
- additional notes are welcome. 
-}
-
-
 @defform*[[(defmodulelang one-or-multi maybe-sources option ... pre-flow ...)
            (defmodulelang one-or-multi #:module-path module-path
                           option ... pre-flow ...)]]{
@@ -1749,6 +1741,16 @@ Typesets the @racket[pre-flow]s as the content of
 @racket[filename]. For example, the content may be inset on the page
 with @racket[filename] above it. If @racket[filename] is a string, it
 is passed to @racket{filepath} to obtain an @racket[element].}
+
+@defproc[(deprecated [#:what what content? "library"]
+                     [replacement content?]
+                     [additional-notes content?] ...)
+         block?]{
+Produces an inset warning for deprecated libraries, functions, @|etc| (as
+described by @racket[what]), where @racket[replacement] describes a
+suitable replacement. The @racket[additional-notes] are included after the
+initial deprecation message.}
+
 
 @; ------------------------------------------------------------------------
 @section[#:tag "index-entries"]{Index-Entry Descriptions}

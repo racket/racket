@@ -29,15 +29,16 @@
 
 ;; @deprecated[Precontent]{Precontent ... }
 ;; produces a nested paragraph with a yellow NOTE label to warn readers of deprecated modules 
-(define-syntax-rule
-  (deprecated replacement-library additional-notes ...)
-  ;; ==> 
-  (nested #:style 'inset
-          (para (yellow (bold "NOTE:"))
-                " This library is deprecated. Use "
-                replacement-library
-                " instead. "
-                additional-notes ...)))
+(define (deprecated #:what [what "library"]
+                    replacement
+                    . additional-notes)
+  (apply nested #:style 'inset
+         (yellow (bold "NOTE:"))
+         " This " what
+         " is deprecated; use "
+         replacement
+         ", instead. "
+         additional-notes))
 
 (define (yellow . content)
   (make-element (make-style #f (list (make-background-color-property "yellow"))) content))
