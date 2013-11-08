@@ -10,4 +10,8 @@
 (define build-deps '("compiler-lib"
                      "eli-tester"
                      "net-lib"
-                     "scheme-lib"))
+                     "scheme-lib"
+                     "compatibility-lib"
+                     "gui-lib"
+                     "htdp-lib"
+                     "plai"))
