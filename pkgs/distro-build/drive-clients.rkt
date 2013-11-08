@@ -434,7 +434,8 @@
                                  (unless timeout?
                                    (set! stop? #t)))
                                (log-error "~a failed..." (client-name c))
-                               (log-error (exn-message exn)))])
+                               (log-error (exn-message exn))
+                               #f)])
          (thunk)))
      (custodian-shutdown-all cust))))
 
