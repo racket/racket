@@ -642,6 +642,8 @@
       (use-hash-for-prefs fw:preferences:low-level-get-preference
                           fw:preferences:low-level-put-preferences
                           fw:preferences:restore-defaults
+                          fw:preferences:set
+                          fw:preferences:default-set?
                           prefs)
       
       (parameterize ([current-command-line-arguments #()])
@@ -650,15 +652,15 @@
       (fw:test:use-focus-table use-focus-table?)
       
       (thread (λ () 
-		 (let ([orig-display-handler (error-display-handler)])
-		   (uncaught-exception-handler
-		    (λ (x)
-		       (if (exn? x)
-			   (orig-display-handler (exn-message x) x)
-			   (eprintf "uncaught exception ~s\n" x))
-		       (exit 1))))
-		 (run-test)
-		 (exit)))
+                (let ([orig-display-handler (error-display-handler)])
+                  (uncaught-exception-handler
+                   (λ (x)
+                     (if (exn? x)
+                         (orig-display-handler (exn-message x) x)
+                         (eprintf "uncaught exception ~s\n" x))
+                     (exit 1))))
+                (run-test)
+                (exit)))
       (yield (make-semaphore 0))))
   
   ;; fire-up-separate-drracket-and-run-tests : (-> any) -> any
@@ -691,6 +693,8 @@
              (use-hash-for-prefs (dynamic-require 'framework 'preferences:low-level-get-preference)
                                  (dynamic-require 'framework 'preferences:low-level-put-preferences)
                                  (dynamic-require 'framework 'preferences:restore-defaults)
+                                 (dynamic-require 'framework 'preferences:set)
+                                 (dynamic-require 'framework 'preferences:default-set?)
                                  '())
              (dynamic-require 'drracket #f)
              (thread (λ ()
@@ -702,6 +706,8 @@
   (define (use-hash-for-prefs preferences:low-level-get-preference 
                               preferences:low-level-put-preferences
                               preferences:restore-defaults
+                              preferences:set
+                              preferences:default-set?
                               prefs)
     ;; change the preferences system so that it doesn't write to 
     ;; a file; partly to avoid problems of concurrency in drdr
@@ -723,15 +729,23 @@
       
       ;; initialize some preferences to simulate these
       ;; being saved already in the user's prefs file 
+      ;; call preferences:set too since the prefs file
+      ;; may have been "read" already at this point
       (for ([pref (in-list prefs)])
         (define pref-key (list-ref pref 0))
         (define pref-val (list-ref pref 1))
-        (unless (regexp-match #rx"^plt:framework-pref:" (symbol->string pref-key))
-          ;; this currently doesn't happen, and it is easy to forget
-          ;; that prefix, so print a message here to remind 
-          (printf "WARNING: setting a preference that isn't set via the framework: ~s\n" 
-                  pref-key))
-        (hash-set! prefs-table pref-key pref-val))))
+        (define m (regexp-match #rx"^plt:framework-pref:(.*)$" (symbol->string pref-key)))
+        (cond
+          [m
+           (hash-set! prefs-table pref-key pref-val)
+           (define fw-pref-key (string->symbol (list-ref m 1)))
+           (when (preferences:default-set? fw-pref-key)
+             (preferences:set fw-pref-key pref-val))]
+          [else
+           ;; this currently doesn't happen, and it is easy to forget
+           ;; that prefix, so print a message here to remind 
+           (printf "WARNING: setting a preference that isn't set via the framework: ~s\n" 
+                   pref-key)]))))
   
 (define (not-on-eventspace-handler-thread fn)
   (when (eq? (current-thread) (eventspace-handler-thread (current-eventspace)))

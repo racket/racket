@@ -40,7 +40,8 @@ This test checks:
                    void
                    void)])
     (fire-up-drracket-and-run-tests 
-     #:prefs '([plt:framework-pref:drracket:online-compilation-default-on #f]) 
+     #:prefs '([plt:framework-pref:drracket:online-compilation-default-on #f]
+               [plt:framework-pref:framework:autosaving-on? #f]) 
      (λ ()
        (define drr (wait-for-drracket-frame))
        (check-reorder-tabs drr)
@@ -69,7 +70,8 @@ This test checks:
     (sync (system-idle-evt))
     
     (define drs-tabb (make-weak-box (send drs-frame1 get-current-tab)))
-    (define tab-nsb (make-weak-box (send (send (send drs-frame1 get-current-tab) get-ints) get-user-namespace)))
+    (define tab-nsb (make-weak-box (send (send (send drs-frame1 get-current-tab) get-ints)
+                                         get-user-namespace)))
     
     (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Tab"))
     (sync (system-idle-evt))
@@ -78,7 +80,9 @@ This test checks:
     (sync (system-idle-evt))
     
     (define drs-frame2b (make-weak-box (wait-for-new-frame drs-frame1)))
-    (define frame2-nsb (make-weak-box (send (send (send (weak-box-value drs-frame2b) get-current-tab) get-ints) get-user-namespace)))
+    (define frame2-nsb (make-weak-box 
+                        (send (send (send (weak-box-value drs-frame2b) get-current-tab) get-ints) 
+                              get-user-namespace)))
     
     (queue-callback/res
      (λ () (send (send (send (weak-box-value drs-frame2b) get-current-tab) get-defs) load-file
