@@ -1888,6 +1888,7 @@ please adhere to these guidelines:
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
   (open-collection-path "Open Collection Path...")
   (enter-subcollection "Enter subcollection") ; button in new dialog
-  
+  (path-to-racket-binary "Path to binary")
+  (use-a-different-racket "Use a different racket")
   
   )
