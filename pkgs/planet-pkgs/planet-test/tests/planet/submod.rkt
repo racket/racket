@@ -8,7 +8,7 @@
 
 (void
  (system* raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
-          (path->string (collection-path "tests" "racket" "embed-planet-1"))))
+          (path->string (collection-path "tests" "compiler" "embed" "embed-planet-1"))))
 
 (define (test expected got)
   (unless (equal? expected got)
