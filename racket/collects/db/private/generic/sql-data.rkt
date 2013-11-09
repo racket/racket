@@ -40,6 +40,9 @@
    (lambda _ sql-null)
    (lambda () (error 'deserialize-sql-null "cannot have cycles"))))
 
+(module+ deserialize-info
+  (provide deserialize-info:sql-null-v0))
+
 ;; ----------------------------------------
 
 ;; Dates and times
@@ -183,6 +186,9 @@ byte. (Because that's PostgreSQL's binary format.) For example:
   (make-deserialize-info
    make-sql-bits/bytes
    (lambda () (error 'deserialize-info:sql-bits-v0 "cycles not allowed"))))
+
+(module+ deserialize-info
+  (provide deserialize-info:sql-bits-v0))
 
 ;; align-sql-bits : bit-vector 'left/'right -> (values nat bytes 0)
 ;; Formats a bit-vector in postgresql ('left) or mysql ('right) binary format.
