@@ -56,7 +56,7 @@ the state transitions / contracts are:
 
 ;; these four functions determine the state of a preference
 (define (pref-un/marshall-set? pref) (hash-has-key? marshall-unmarshall pref))
-(define (pref-default-set? pref) (hash-has-key? defaults pref))
+(define (preferences:default-set? pref) (hash-has-key? defaults pref))
 (define (pref-can-init? pref)
   (and (not snapshot-grabbed?)
        (not (hash-has-key? preferences pref))))
@@ -88,7 +88,7 @@ the state transitions / contracts are:
      v]
     ;; first time reading this, check the file & unmarshall value, if
     ;; it's not there, use the default
-    [(pref-default-set? p)
+    [(preferences:default-set? p)
      (let* (;; try to read the preference from the preferences file
             [v (read-pref-from-file p)]
             [v (if (eq? v none)
@@ -99,7 +99,7 @@ the state transitions / contracts are:
        ;; set the value for future reference and return it
        (hash-set! preferences p v)
        v)]
-    [(not (pref-default-set? p))
+    [(not (preferences:default-set? p))
      (raise-unknown-preference-error
       'preferences:get
       "tried to get a preference but no default set for ~e"
@@ -137,7 +137,7 @@ the state transitions / contracts are:
      (for-each
       (λ (p value)
         (cond
-          [(pref-default-set? p)
+          [(preferences:default-set? p)
            (define default (hash-ref defaults p))
            (define checker? (default-checker default))
            (unless (checker? value)
@@ -150,7 +150,7 @@ the state transitions / contracts are:
                      p value checker?))
              (check-callbacks p value)
              (hash-set! preferences p value)]
-          [(not (pref-default-set? p))
+          [(not (preferences:default-set? p))
            (raise-unknown-preference-error
             'preferences:set
             (string-append
@@ -249,11 +249,11 @@ the state transitions / contracts are:
 
 (define (preferences:set-un/marshall p marshall unmarshall)
   (cond
-    [(and (pref-default-set? p)
+    [(and (preferences:default-set? p)
           (not (pref-un/marshall-set? p))
           (pref-can-init? p))
      (hash-set! marshall-unmarshall p (make-un/marshall marshall unmarshall))]
-    [(not (pref-default-set? p))
+    [(not (preferences:default-set? p))
      (error 'preferences:set-un/marshall
             "must call set-default for ~s before calling set-un/marshall for ~s"
             p p)]
@@ -274,7 +274,7 @@ the state transitions / contracts are:
                                  #:aliases [aliases '()]
                                  #:rewrite-aliases [rewrite-aliases (map (lambda (x) values) aliases)])
   (cond
-    [(and (not (pref-default-set? p))
+    [(and (not (preferences:default-set? p))
           (pref-can-init? p))
      (define default-okay? (checker default-value))
      (unless default-okay?
@@ -295,7 +295,7 @@ the state transitions / contracts are:
      (error 'preferences:set-default
             "tried to call set-default for preference ~e but it cannot be configured any more"
             p)]
-    [(pref-default-set? p)
+    [(preferences:default-set? p)
      (error 'preferences:set-default
             "preferences default already set for ~e" p)]
     [(not (pref-can-init? p))
@@ -434,6 +434,14 @@ the state transitions / contracts are:
     of the preferences. It defaults to @racket['()]. If @racket[rewrite-aliases]
     is present, it is used to adjust the old values of the preferences
     when they are present in the saved file.})
+ 
+ (proc-doc/names
+  preferences:default-set?
+  (-> symbol? boolean?)
+  (pref)
+  @{Returns @racket[#t] if @racket[pref] has been passed to
+            @racket[preferences:set-default], @racket[#f]
+            otherwise})
 
  (proc-doc/names
   preferences:set-un/marshall
