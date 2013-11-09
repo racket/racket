@@ -658,12 +658,15 @@
                             (let ([p (unprotect-path (car path+name))]
                                   [sym (revive-symbol (cdr path+name))])
                               ((deserialize-module-guard) p sym)
-                              (let ([sub (add-submodule p)])
+                              (let ([sub (add-submodule p)]
+                                    [fallback
+                                     (lambda ()
+                                       ;; On failure, for backward compatibility,
+                                       ;; try module instead of submodule:
+                                       (dynamic-require p sym))])
                                 (if (module-declared? sub #t)
-                                    (dynamic-require sub sym)
-                                    ;; On failure, for backward compatibility,
-                                    ;; try module instead of submodule:
-                                    (dynamic-require p sym))))
+                                    (dynamic-require sub sym fallback)
+                                    (fallback))))
                             (namespace-variable-value (cdr path+name)))])
               ;; Register maker and struct type:
               (vector-set! mod-map n des))

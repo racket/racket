@@ -554,7 +554,7 @@ must be one of the following:
  top-level is assumed. Before trying an exporting module directly,
  its @racket[deserialize-info] submodule is tried; the module
  itself is tried if no @racket[deserialize-info]
- submodule is available. In either case, @racket[syntax-e] is used to
+ submodule is available or if the export is not found. In either case, @racket[syntax-e] is used to
  obtain the name of an exported identifier or top-level definition.}
 
  @item{If @racket[deserialize-id] is a symbol, it indicates a
