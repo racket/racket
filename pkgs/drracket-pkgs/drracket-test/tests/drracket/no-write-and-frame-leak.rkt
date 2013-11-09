@@ -241,7 +241,11 @@ This test checks:
                  (send (send p get-editor) get-text)]
                 [else #f])))))
        (and str
-            (not (equal? str ""))
+            
+            ;; wait for a log message that doesn't look like a minor GC
+            (for/or ([l (in-lines (open-input-string str))])
+              (not (regexp-match? #rx"^GC: [0-9]*:min" l)))
+            
             str))))
   
   (unless (regexp-match #rx"GC: [0-9]+:MAJ" logger-string)
