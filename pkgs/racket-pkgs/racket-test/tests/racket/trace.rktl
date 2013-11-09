@@ -2,7 +2,7 @@
 
 (Section 'trace)
 
-(require scheme/trace)
+(require racket/trace)
 
 (define-syntax-rule (trace-output expr ...)
   (let ([out '()])
@@ -68,3 +68,5 @@
         'trace-quotes
         (list ">(f (1 2 3) #:q #&18)"
               "<((1 2 3) 1)")))
+
+(report-errs)

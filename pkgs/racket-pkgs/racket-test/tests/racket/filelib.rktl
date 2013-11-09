@@ -3,9 +3,9 @@
 
 (Section 'filelib)
 
-(require scheme/file
-	 mzlib/process
-	 mzlib/list)
+(require racket/file
+	 racket/system
+	 racket/list)
 
 (define tmp-name "tmp0-filelib")
 (when (file-exists? tmp-name) (delete-file tmp-name))

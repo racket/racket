@@ -1,0 +1,1 @@
+(load (collection-file-path "testing.rktl" "tests/racket"))

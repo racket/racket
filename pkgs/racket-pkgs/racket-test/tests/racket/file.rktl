@@ -1,4 +1,4 @@
-(require mzlib/os)
+
 (load-relative "loadtest.rktl")
 
 (Section 'file)

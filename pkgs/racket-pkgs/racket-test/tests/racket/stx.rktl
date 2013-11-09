@@ -483,11 +483,13 @@
                (cdddr b))
         b)))
 
-(test '('#%kernel case-lambda (lib "racket/init") case-lambda 0 0 0)
+(define base-lib (caddr (identifier-binding* #'lambda)))
+
+(test `('#%kernel case-lambda ,base-lib case-lambda 0 0 0)
       identifier-binding* #'case-lambda)
-(test '("private/promise.rkt" delay* (lib "racket/init") delay 0 0 0)
+(test `("private/promise.rkt" delay* ,base-lib delay 0 0 0)
       identifier-binding* #'delay)
-(test '('#%kernel #%module-begin (lib "racket/init") #%plain-module-begin 0 0 0)
+(test `('#%kernel #%module-begin ,base-lib #%plain-module-begin 0 0 0)
       identifier-binding* #'#%plain-module-begin)
 (require (only-in racket/base [#%plain-module-begin #%pmb]))
 (test '('#%kernel #%module-begin racket/base #%plain-module-begin 0 0 0)

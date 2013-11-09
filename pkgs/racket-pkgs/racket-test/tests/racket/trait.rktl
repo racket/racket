@@ -1,8 +1,8 @@
 
 (load-relative "loadtest.rktl")
 
-(require mzlib/class
-         mzlib/trait)
+(require racket/class
+         racket/trait)
 
 (Section 'trait)
 

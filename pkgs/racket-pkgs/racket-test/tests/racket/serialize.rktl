@@ -298,7 +298,7 @@
 ;; ----------------------------------------
 
 (module ser-mod mzscheme
-   (require mzlib/serialize)
+   (require racket/serialize)
    (provide ser-mod-test)
 
    (define-serializable-struct foo (a b))
@@ -312,7 +312,7 @@
 ;; ----------------------------------------
 ;; Classes
 
-(require mzlib/class)
+(require racket/class)
 
 (define-serializable-class s:c% object%
   (init-field [one 0])

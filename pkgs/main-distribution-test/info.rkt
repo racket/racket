@@ -18,6 +18,7 @@
                "scribble-test"
                "unstable-test"
                "compiler-test"
+               "compatibility-test"
                "data-test"
                "net-test"
                "planet-test"

@@ -49,5 +49,21 @@
 		 (define goo 10)
 		 12))
 
+(let ()
+  (test 3 (rec f (λ (x) 3)) 3)
+  (test 3 (rec f (λ (x) x)) 3)
+  (test 2 (rec f (λ (x) (if (= x 3) (f 2) x))) 3)
+  (test 3 (rec (f x) 3) 3)
+  (test 3 (rec (f x) x) 3)
+  (test 2 (rec (f x) (if (= x 3) (f 2) x)) 3)
+  (test 2 (rec (f x . y) (car y)) 1 2 3)
+  (test 2 'no-duplications
+        (let ([x 1]) (rec ignored (begin (set! x (+ x 1)) void)) x))
+  (test 'f object-name (rec (f x) x))
+  (test 'f object-name (rec (f x . y) x))
+  (test 'f object-name (rec  f (lambda (x) x)))
+  (test (list 2) (rec (f . x) (if (= (car x) 3) (f 2) x)) 3))
+
+
 (report-errs)
 

@@ -1,7 +1,7 @@
 
-(require mzlib/string
+(require racket/string
          (only-in net/url get-pure-port string->url)
-         (only-in mzlib/port copy-port))
+         (only-in racket/port copy-port))
 
 (load-relative "loadtest.rktl")
 

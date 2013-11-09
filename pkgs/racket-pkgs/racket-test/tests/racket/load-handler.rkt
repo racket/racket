@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/file
-         mzlib/compile)
+         compiler/compile-file)
 
 (provide try-load-handler-now)
 

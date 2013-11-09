@@ -8,9 +8,9 @@
 
 (require setup/pack
 	 setup/unpack
-	 mzlib/process
+	 racket/system
 	 setup/dirs
-	 mzlib/file)
+	 racket/file)
 
 ;; Test via mzc interface
 

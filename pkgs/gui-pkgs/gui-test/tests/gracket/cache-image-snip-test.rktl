@@ -1,4 +1,4 @@
-(load-relative "loadtest.rktl")
+(load (collection-file-path "loadtest.rktl" "tests/racket"))
 
 (require racket/gui/base
          mrlib/cache-image-snip

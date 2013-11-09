@@ -17,8 +17,6 @@
 (load-relative "unsafe.rktl")
 (load-relative "object.rktl")
 (load-relative "struct.rktl")
-(load-relative "unit.rktl")
-(load-relative "unitsig.rktl")
 (load-relative "thread.rktl")
 (load-relative "logger.rktl")
 (load-relative "sync.rktl")
@@ -40,8 +38,3 @@
 (unless building-flat-tests?
   (load-relative "name.rktl"))
 (load-relative "srcloc.rktl")
-
-;; Ok, so this isn't really all of them. Here are more:
-; thrport.rktl
-
-; See also README

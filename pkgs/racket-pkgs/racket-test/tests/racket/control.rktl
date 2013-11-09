@@ -8,119 +8,118 @@
 
 (Section 'control)
 
-(require mzlib/control
-         (only-in mzlib/etc rec))
+(require racket/control)
 
-;-----------------------------------------------------------------------
+;;-----------------------------------------------------------------------
 
 (define-syntax ctest
   (syntax-rules ()
     [(_ expr expect)
      (test expect 'expr expr)]))
 
-;-----------------------------------------------------------------------
-;                       Shift tests
+;;-----------------------------------------------------------------------
+;;                       Shift tests
 
 (ctest (+ 10 (reset (+ 2 (shift k (+ 100 (k (k 3)))))))
-      117)
+       117)
 
 (ctest (* 10 (reset (* 2 (shift g (reset 
                                    (* 5 (shift f (+ (f 1) 1))))))))
-      60)
+       60)
 
 (ctest (let ((f (lambda (x) (shift k (k (k x))))))
          (+ 1 (reset (+ 10 (f 100)))))
-      121)
+       121)
 
 (ctest (reset
-       (let ((x (shift f (cons 'a (f '())))))
-         (shift g x)))
-      '(a))
+        (let ((x (shift f (cons 'a (f '())))))
+          (shift g x)))
+       '(a))
 
 (define (shift* p) (shift f (p f)))
 (ctest (reset (let ((x 'abcde)) (eq? x ((shift* shift*) x))))
-      #t)
+       #t)
 
 (define traverse
   (lambda (xs)
     (letrec ((visit
-               (lambda (xs)
-                 (if (null? xs)
-                   '()
-                   (visit (shift k
-                                 (cons (car xs)
-                                       (k (cdr xs)))))))))
+              (lambda (xs)
+                (if (null? xs)
+                    '()
+                    (visit (shift k
+                                  (cons (car xs)
+                                        (k (cdr xs)))))))))
       (reset
        (visit xs)))))
 
 (ctest (traverse '(1 2 3 4 5))
-      '(1 2 3 4 5))
+       '(1 2 3 4 5))
 
-;-----------------------------------------------------------------------
-;                       Control tests
-; Example from Sitaram, Felleisen
+;;-----------------------------------------------------------------------
+;;                       Control tests
+;; Example from Sitaram, Felleisen
 
 (define (abort v) (control k v))
 
 (ctest (let ((g (prompt (* 2 (control k k)))))
-        (* 3 (prompt (* 5 (abort (g 7))))))
-      42)
+         (* 3 (prompt (* 5 (abort (g 7))))))
+       42)
 
-; Olivier Danvy's puzzle
+;; Olivier Danvy's puzzle
 
 (define traverse
   (lambda (xs)
     (letrec ((visit
-               (lambda (xs)
-                 (if (null? xs)
-                   '()
-                   (visit (control k
-                                   (cons (car xs) 
-                                         (k (cdr xs)))))))))
+              (lambda (xs)
+                (if (null? xs)
+                    '()
+                    (visit (control k
+                                    (cons (car xs) 
+                                          (k (cdr xs)))))))))
       (prompt
        (visit xs)))))
 
 (ctest (traverse '(1 2 3 4 5))
-      '(5 4 3 2 1))
+       '(5 4 3 2 1))
 
 (ctest (+ 10 (prompt (+ 2 (control k (+ 100 (k (k 3)))))))
-      117)
+       117)
 
 (ctest (prompt (let ((x (control f (cons 'a (f '()))))) (control g x)))
-      '())
+       '())
 
 (ctest (prompt ((lambda (x) (control l 2))
-               (control l (+ 1 (l 0)))))
-      2)
+                (control l (+ 1 (l 0)))))
+       2)
 (ctest (prompt (control f (cons 'a (f '()))))
-      '(a))
+       '(a))
 (ctest (prompt (let ((x (control f (cons 'a (f '()))))) 
-                (control g (g x))))
-      '(a))
+                 (control g (g x))))
+       '(a))
 
 (define (control* f) (control k (f k)))
 (ctest (prompt (let ((x 'abcde)) (eq? x ((control* control*) x))))
-      #t)
+       #t)
 
-;------------------------------------------------------------------------
-;                       shift0/control0 tests
+;;------------------------------------------------------------------------
+;;                       shift0/control0 tests
 
 (ctest (+ 10 (prompt0 (+ 2 (control k (+ 100 (k (k 3)))))))
-      117)
+       117)
 
 (ctest (prompt0 (prompt0 
-                (let ((x (control f (cons 'a (f '()))))) 
-                  (control g x))))
-      '())
+                 (let ((x (control f (cons 'a (f '()))))) 
+                   (control g x))))
+       '())
 
 (ctest (+ 10 (prompt0 (+ 2 (shift0 k (+ 100 (k (k 3)))))))
-      117)
+       117)
 
 (ctest (prompt0 (cons 'a (prompt0 (shift0 f (shift0 g '())))))
-      '())
+       '())
 
 (ctest (prompt (cons 'a (prompt (shift0 f (shift0 g '())))))
-      '(a))
+       '(a))
 
 
 ;; ----------------------------------------
@@ -154,11 +153,11 @@
                  [else #f]))))))))
 
 (ctest (same-fringe? '(1 . (2 . (3 . 4)))
-                    '(1 . ((2 . 3) . 4)))
-      #t)
+                     '(1 . ((2 . 3) . 4)))
+       #t)
 (ctest (same-fringe? '(1 . (2 . (3 . 4)))
-                    '(1 . ((2 . 5) . 4)))
-      #f)
+                     '(1 . ((2 . 5) . 4)))
+       #f)
 
 (define all-prefixes
   (lambda (l)
@@ -168,12 +167,12 @@
                          (cons (car l)
                                (fcontrol (cdr l)))))])
       (% (loop l)
-         (rec h
-              (lambda (r k)
-                (if (eq? r 'done)
-                    '()
-                    (cons (k '())
-                          (% (k (loop r)) h)))))))))
+         (letrec ([h (lambda (r k)
+                       (if (eq? r 'done)
+                           '()
+                           (cons (k '())
+                                 (% (k (loop r)) h))))])
+           h)))))
 
 (ctest (all-prefixes '(1 2 3 4))
       '((1) (1 2) (1 2 3) (1 2 3 4)))

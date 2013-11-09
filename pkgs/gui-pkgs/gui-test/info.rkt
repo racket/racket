@@ -13,7 +13,8 @@
                      "rackunit-lib"
                      "scribble-lib"
                      "pconvert-lib"
-                     "compatibility-lib"))
+                     "compatibility-lib"
+                     "sandbox-lib"))
 
 (define pkg-desc "tests for \"gui\"")
 

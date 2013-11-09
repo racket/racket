@@ -8,8 +8,8 @@
 (define-syntax (test-awk stx)
   (syntax-case stx ()
     [(_ val body ...) 
-     (with-syntax ([next (datum->syntax-object stx 'next)]
-		   [result (datum->syntax-object stx 'result)])
+     (with-syntax ([next (datum->syntax stx 'next)]
+		   [result (datum->syntax stx 'result)])
        (syntax
 	(let* ([p (open-input-string "Hello world.")]
 	       [next (lambda () (let ([o (read p)])

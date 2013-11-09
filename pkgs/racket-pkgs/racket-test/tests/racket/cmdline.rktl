@@ -3,7 +3,7 @@
 
 (Section 'command-line)
 
-(require mzlib/cmdline)
+(require racket/cmdline)
 
 (define (r-append opt . rest)
   (append opt (list (list->vector rest))))
@@ -170,34 +170,39 @@
 (err/rt-test (parse-command-line "test" #() null (lambda (x y) null) null) exn:fail?)
 
 (test (void) 'cmdline
-      (command-line "something" #("-ab")
-        (once-each
-         [("-a") "ok" 5]
-         [("-b" "--more") "Help" 7])))
+      (command-line 
+       #:program "something"
+       #:argv #("-ab")
+       #:once-each
+       [("-a") "ok" 5]
+       [("-b" "--more") "Help" 7]))
 
 ;; test that keywords are compared for the literal symbol
 (test "foo" 'cmdline
       (let ([once-each 3] [args "args"])
-        (command-line "something" #("-ab" "foo")
-          (once-each
-           [("-a") "ok" 5]
-           [("-b" "--more") "Help" 7])
-          (args (x) x))))
+        (command-line 
+         #:program "something" 
+         #:argv #("-ab" "foo")
+         #:once-each
+         [("-a") "ok" 5]
+         [("-b" "--more") "Help" 7]
+         #:args
+         (x)
+         x)))
 
-(syntax-test #'(command-line))
+(syntax-test #'(command-line . x))
 (syntax-test #'(command-line "hello"))
-(err/rt-test (command-line 'hello #("ok")))
-(syntax-test #'(command-line "hello" #("ok") (bad)))
-(syntax-test #'(command-line "hello" #("ok") (once-any ())))
-(syntax-test #'(command-line "hello" #("ok") (once-any ("-ok"))))
-(syntax-test #'(command-line "hello" #("ok") (once-any ("-ok" "the ok flag"))))
-(syntax-test #'(command-line "hello" #("ok") (once-any ("-ok" a "the ok flag"))))
-(syntax-test #'(command-line "hello" #("ok") (once-any ("-ok" (a) "the ok flag"))))
-(syntax-test #'(command-line "hello" #("ok") (once-any ("-ok" a "the ok flag") ())))
-(syntax-test #'(command-line "hello" #("ok") (args 'done) (once-any ("-ok" a "the ok flag" 7))))
-(syntax-test #'(command-line "hello" #("ok") (args (ok) 'done) (once-any ("-ok" a "the ok flag" 7))))
-(syntax-test #'(command-line "hello" #("ok") (=> 'done) (once-any ("-ok" a "the ok flag" 7))))
-(syntax-test #'(command-line "hello" #("ok") (=> 1 2 3 4) (once-any ("-ok" a "the ok flag" 7))))
+(err/rt-test (command-line #:program 'hello #:argv #("ok")))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:bad))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") (bad)))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any ()))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any [("-ok")]))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any ["-ok" "the ok flag"]))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any ["-ok" a "the ok flag"]))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any [("-ok") #() "the ok flag"]))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:once-any [("-ok") a "the ok flag"] ()))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:args 'done #:once-any [("-ok") a 7]))
+(syntax-test #'(command-line #:program "hello" #:argv #("ok") #:args (ok) 'done #:once-any [("-ok") a "the ok flag" 7]))
 
 (err/rt-test (parse-command-line "test" #("x") null (lambda () 'too-few) '("arg")))
 (err/rt-test (parse-command-line "test" #("x") null (lambda (x) 'still-too-few) '("arg")))

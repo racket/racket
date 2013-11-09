@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.rktl")
 
-(require scheme/class)
+(require racket/class)
 
 (Section 'object)
      
@@ -1361,8 +1361,9 @@
   (define class-taint-%%-init (gensym 'class-taint-%%-init))
   (define class-taint-%%-client (gensym 'class-taint-%%-client))
   (teval
-   `(module ,class-taint-%%-init mzscheme
-      (require mzlib/class)
+   `(module ,class-taint-%%-init racket/base
+      (require racket/class
+               (for-syntax racket/base))
       (define-syntax (init-private stx)
 	(syntax-case stx ()
 	  [(_ name value)
@@ -1372,11 +1373,11 @@
 		 (,form (,(if rename? '(internal-name name) 'internal-name)
 			 value))
 		 (define name internal-name)))]))
-      (provide (all-defined))))
+      (provide (all-defined-out))))
   ;; Shouldn't fail with a taint erorr:
   (teval
-   `(module ,class-taint-%%-client mzscheme
-      (require mzlib/class
+   `(module ,class-taint-%%-client racket/base
+      (require racket/class
 	       ',class-taint-%%-init)
       (define taint-error%
 	(class object%
@@ -1638,6 +1639,10 @@
                  (define/public (custom-display p) 
                    (if d-cycle?
                        (display this p)
+                       (display "HI" p)))
+                 (define/public (custom-print p) 
+                   (if d-cycle?
+                       (print this p)
                        (display "HI" p)))
                  (super-new)))
 
