@@ -3770,7 +3770,11 @@
                            [`(lib ,(? string? s))
                             (define m (regexp-match #rx"^(.*/)[^/]*$" s))
                             (and m
-                                 (list-ref m 1))])))
+                                 (list-ref m 1))]
+                           [else #f])))
+                  ;; editing-module-path won't find anything interesting
+                  ;; if the get-module-path-from-user is using some other
+                  ;; racket binary
                   (define pth
                     (get-module-path-from-user
                      #:init (or editing-module-path
