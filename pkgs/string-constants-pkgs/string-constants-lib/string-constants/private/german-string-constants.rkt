@@ -824,7 +824,7 @@
  (drscheme-internal-error "Interner Fehler in DrRacket")
  
  ;;; tools
- (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.rkt der Kollektion ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
+ (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.rkt der Collection ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
  (error-invoking-tool-title "Fehler beim Starten von Tool ~s;~s")
  (error-loading-tool-title "Fehler beim Laden von Tool ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
@@ -1390,18 +1390,18 @@
   ;; ml-cp names are all for the module language collection path
   ;; configuration. See the details portion of the language dialog
   ;; for the module language (at the bottom).
-  (ml-cp-default-collection-path "<<Standard-Pfade für Kollektionen>>")
+  (ml-cp-default-collection-path "<<Standard-Pfade für Collections>>")
 
   ;; in std get-directory 
-  (ml-cp-choose-a-collection-path "Bitte Pfad für Kollektion auswählen")
+  (ml-cp-choose-a-collection-path "Bitte Pfad für Collection auswählen")
 
   ;; err msg when adding default twice
   (ml-cp-default-already-present
-   "Standard-Pfade für Kollektionen schon vorhanden")
+   "Standard-Pfade für Collections schon vorhanden")
   
   ;; title of this section of the dialog (possibly the word
   ;; `Collection' should not be translated)
-  (ml-cp-collection-paths "Pfade für Kollektionen")
+  (ml-cp-collection-paths "Pfade für Collections")
 
   ;; button labels
   ;;  The package manager uses these, too
@@ -1760,6 +1760,11 @@
   (install-pkg-package-catalogs "Paket-Kataloge") ; label for a list box
   (install-pkg-add-package-catalog "Paket-Katalog hinzufügen")
 
+
+  ;; open a file via a collection path (new "Open" menu item in DrRacket)
+  (open-collection-path "Collection-Pfad öffnen...")
+  (enter-subcollection "Sub-Collection betreten") ; button in new dialog
+  
   
   )
 
