@@ -31,6 +31,8 @@
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
 (struct nrep-ref (name subpat) #:transparent)
+(struct decomp (ctx term) #:transparent)
+(struct hide-hole (term) #:transparent)
 
 ;; Top level exports
 (define enum-ith decode)
@@ -62,7 +64,7 @@
 
 (define (pat-enumerator l-enum pat)
   (map/e
-   fill-refs
+   to-term
    (λ (_)
       (redex-error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
@@ -114,18 +116,24 @@
              var/e)]
      [`variable-not-otherwise-mentioned
       unused/e]
-     [`hole
-      (const/e the-hole)]
+     [`hole (const/e the-hole)]
      [`(nt ,id)
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
       (const/e (name-ref n))]
      [`(mismatch-name ,n ,pat)
       (unimplemented "mismatch-name")]
-     [`(in-hole ,p1 ,p2) ;; untested
-      (unsupported pat)]
+     [`(in-hole ,p1 ,p2)
+      (map/e decomp
+             (match-lambda
+              [(decomp ctx term)
+               (values ctx term)])
+             (loop p1)
+             (loop p2))]
      [`(hide-hole ,p)
-      (unsupported pat)]
+      (map/e hide-hole
+             hide-hole-term
+             (loop p))]
      [`(side-condition ,p ,g ,e)
       (unsupported pat)]
      [`(cross ,s)
@@ -175,8 +183,8 @@
     names-env
     nreps-env)])
 
-;; fill-refs : (ann-pat t-env pat-with-refs) -> redex term
-(define/match (fill-refs ap)
+;; to-term : (ann-pat t-env pat-with-refs) -> redex term
+(define/match (to-term ap)
   [((ann-pat nv term))
    ((refs-to-fn term) nv)])
 
@@ -185,9 +193,19 @@
   (match refpat
     [(ann-pat _ _)
      (define term
-       (fill-refs refpat))
+       (to-term refpat))
      (λ (_) term)]
-    
+    [(decomp ctx-refs termpat-refs)
+     (define ctx-fn (refs-to-fn ctx-refs))
+     (define term-fn (refs-to-fn termpat-refs))
+     (λ (nv)
+        (define ctx (ctx-fn nv))
+        (define term (term-fn term))
+        (plug-hole ctx term))]
+    [(hide-hole p)
+     (define p-fn (refs-to-fn p))
+     (λ (nv)
+        (hide-hole (p-fn nv)))]
     [(name-ref n)
      (λ (nv)
         (t-env-name-ref nv n))]
@@ -208,6 +226,19 @@
                     ((refs-to-fn (hash-ref tterms tag)) nv)])))]
            [_ (sequence-fn (list (refs-to-fn subrefpat)))]))))]
     [else (λ (_) refpat)]))
+
+(define (plug-hole ctx term)
+  (define (plug ctx)
+    (match ctx
+      [(? (curry eq? the-hole)) term]
+      [(list ctxs ...) (map plug ctxs)]
+      [_ ctx]))
+  (define (unhide term)
+    (match term
+      [(list ctxs ...) (map unhide ctxs)]
+      [(hide-hole term) (unhide term)]
+      [_ term]))
+  (unhide (plug ctx)))
 
 ;; (: sequence-fn : (All (a b) (Listof (a -> b)) -> (a -> (Listof b))))
 (define (sequence-fn fs)

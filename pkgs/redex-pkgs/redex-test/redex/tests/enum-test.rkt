@@ -142,3 +142,16 @@
 
 (try-it 100 rec e)
 (try-it 100 rec v)
+
+;; Hole/in-hole test
+(define-language Holes
+  (h hole)
+  (ctx (cons hole boolean)
+       (cons boolean hole))
+  (hide (pair ctx (hide-hole ctx)))
+  (i (in-hole ctx number))
+  (i2 (in-hole hide real)))
+
+(try-it 4 Holes ctx)
+(try-it 100 Holes i)
+(try-it 100 Holes i2)
