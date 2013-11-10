@@ -1174,8 +1174,8 @@ earlier fields.}}
 #:literals (struct rename)
 (contract-out p/c-item ...)
 ([p/c-item
-  (struct id ((id contract-expr) ...) struct-option)
-  (struct (id identifier) ((id contract-expr) ...) struct-option)
+  (struct id/super ((id contract-expr) ...)
+    struct-option)
   (rename orig-id id contract-expr)
   (id contract-expr)
   (code:line #:∃ poly-variables)
@@ -1184,6 +1184,8 @@ earlier fields.}}
   (code:line #:forall poly-variables)]
  [poly-variables identifier
                  (identifier ...)]
+ [id/super id
+           (id super-id)]
  [struct-option (code:line)
                 #:omit-constructor])]{
 
