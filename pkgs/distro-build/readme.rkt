@@ -84,7 +84,7 @@
   (define src? (hash-ref config '#:source? #f))
   (define rt-src
     @~a{This distribution provides source for the Racket run-time system;
-        for build and installation instructions, see "racket/src/README".})
+        for build and installation instructions, see "src/README".})
   (define pkg-src
     @~a{(The distribution also includes the core Racket collections and any
         installed packages in source form.)})
