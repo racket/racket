@@ -2,7 +2,7 @@
 (require net/base64 net/qp tests/eli-tester)
 
 (define tricky-strings
-  (let ([net.rktl (collection-file-path "net.rktl" "tests" "racket")])
+  (let ([net.rktl (collection-file-path "base64.rkt" "tests" "net")])
     (list (make-bytes 200 32)
           (make-bytes 200 9)
           (make-bytes 200 (char->integer #\x))
