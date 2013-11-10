@@ -459,6 +459,10 @@ The recognized @tech{style properties} are as follows:
  @item{@racket[hover-property] structure --- For HTML, adds a text
        label to the title to be shown when the mouse hovers over
        it.}
+           
+ @item{@racket[render-convertible-as] structure --- For HTML, controls
+        how objects that subscribe to the @racketmodname[file/convertible]
+        protocol are rendered.}
 
 ]
 
@@ -1509,6 +1513,15 @@ Like @racket[latex-defaults], but use for the
 For a @racket[part] that corresponds to an HTML page, adds content to
 the @tt{<head>} tag.}
 
+
+@defstruct[render-convertible-as ([types (listof (or/c 'png-bytes 'svg-bytes))])]{
+ For a @racket[part] that corresponds to an HTML page,
+ controls how objects that subscribe to the @racketmodname[file/convertible]
+ protocol are rendered.
+      
+ The alternatives in the @racket[types] field are tried in order
+ and the first one that succeeds is used in the html output.
+}
 
 @defstruct[part-link-redirect ([url url?])]{
 

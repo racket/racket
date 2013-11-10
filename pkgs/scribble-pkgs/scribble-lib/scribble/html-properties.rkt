@@ -25,4 +25,4 @@
  [link-resource ([path path-string?])]
 
  [head-extra ([xexpr xexpr/c])]
- [render-pict-as ([type symbol?])])
+ [render-convertible-as ([types (listof (or/c 'png-bytes 'svg-bytes))])])

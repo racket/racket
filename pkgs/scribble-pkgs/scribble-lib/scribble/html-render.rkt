@@ -105,7 +105,7 @@
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
 (define current-part-files (make-parameter #f))
-(define current-render-pict-as (make-parameter 'png-images))
+(define current-render-convertible-requests (make-parameter '(png-bytes svg-bytes)))
 
 (define (url->string* u)
   (parameterize ([current-url-encode-mode 'unreserved])
@@ -1008,15 +1008,14 @@
                       d
                       ri))))))
 
-    (define/public (extract-render-pict-as d)
-      (ormap (lambda (v)
-                   (and (render-pict-as? v)
-                        (render-pict-as-type v)))
-                 (style-properties (part-style d))))
+    (define/public (extract-render-convertible-as d)
+      (for/or ([v (in-list (style-properties (part-style d)))])
+        (and (render-convertible-as? v)
+             (render-convertible-as-types v))))
     
     (define/override (render-part-content d ri)
-      (parameterize ([current-render-pict-as (or (extract-render-pict-as d) 
-                                                 (current-render-pict-as))])
+      (parameterize ([current-render-convertible-requests (or (extract-render-convertible-as d) 
+                                                              (current-render-convertible-requests))])
         (let ([number (collected-info-number (part-collected-info d ri))])
           `(,@(let ([pres (extract-pretitle d)])
                 (append-map (lambda (pre)
@@ -1133,15 +1132,7 @@
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
         [(and (convertible? e)
-              (equal? (current-render-pict-as) 'png-images)
-              (convertible? e)
-              (or (render-as-png e)
-                  (render-as-svg e)))
-         => values]
-        [(and (equal? (current-render-pict-as) 'svg-images)
-              (convertible? e)
-              (or (render-as-svg e)
-                  (render-as-png e)))
+              (render-as-convertible e (current-render-convertible-requests)))
          => values]
         [(image-element? e)
          (let* ([src (collects-relative->path (image-element-path e))]
@@ -1293,26 +1284,26 @@
         [else 
          (render-plain-content e part ri)]))
     
-    (define/private (render-as-png e)
-      (cond
-        [(convert e 'png-bytes)
-         => 
-         (lambda (bstr)
-           (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
-                 [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
-             `((img ([src ,(install-file "pict.png" bstr)]
-                     [alt "image"]
-                     [width ,(number->string w)]
-                     [height ,(number->string h)])))))]
-        [else #f]))
-    (define/private (render-as-svg e)
-      (cond
-        [(convert e 'svg-bytes)
-         => (lambda (bstr)
-              `((object
-                 ([data ,(install-file "pict.svg" bstr)]
-                  [type "image/svg+xml"]))))]
-        [else #f]))
+    (define/private (render-as-convertible e requests)
+      (for/or ([request (in-list requests)])
+        (cond
+          [(and (equal? request 'png-bytes)
+                (convert e 'png-bytes))
+           => 
+           (lambda (bstr)
+             (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
+                   [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
+               `((img ([src ,(install-file "pict.png" bstr)]
+                       [alt "image"]
+                       [width ,(number->string w)]
+                       [height ,(number->string h)])))))]
+          [(and (equal? request 'svg-bytes)
+                (convert e 'svg-bytes))
+           => (lambda (bstr)
+                `((object
+                   ([data ,(install-file "pict.svg" bstr)]
+                    [type "image/svg+xml"]))))]
+          [else #f])))
 
     (define/private (render-plain-content e part ri)
       (define (attribs) (content-attribs e))
