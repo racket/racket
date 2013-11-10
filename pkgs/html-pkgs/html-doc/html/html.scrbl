@@ -140,7 +140,7 @@ A @racket[Contents-of-html] is either
 
 @defstruct[(blockquote html-full) ()]{
   A @racket[blockquote] is
-  @racket[(make-blockquote (listof attribute) G2)]
+  @racket[(make-blockquote (listof attribute) (listof G2))]
 }
 
 @defstruct[(ins html-full) ()]{
@@ -785,7 +785,7 @@ A @racket[G9] is either
   @item[@racket[em]]
   @item[@racket[i]]
   @item[@racket[kbd]]
-  @item[@racket[map]]
+  @item[@racket[-map]]
   @item[@racket[pcdata]]
   @item[@racket[q]]
   @item[@racket[s]]
