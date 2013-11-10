@@ -1058,9 +1058,9 @@
       (define/private (update-bottom-bar)
         (cond
           [(running? running-status)
-           (set-bottom-bar-status/pending)]
+           (set-bottom-bar-status/blank)]
           [(and (dirty? running-status) our-turn?)
-           (set-bottom-bar-status/pending)]
+           (set-bottom-bar-status/blank)]
           [(and (dirty? running-status) (not our-turn?))
            (send (get-defs) set-bottom-bar-status (list (exn-info "" '() '() #f)) #f #f)]
           [(clean? running-status)
@@ -1068,20 +1068,11 @@
                (send (get-defs) set-bottom-bar-status 
                      (clean-error-messages+locs running-status)
                      #t #t)
-               (send (get-defs) set-bottom-bar-status
-                     (list (exn-info (string-constant online-expansion-finished) 
-                                     '()
-                                     '()
-                                     #f))
-                     #f
-                     #f))]))
+               (set-bottom-bar-status/blank))]))
       
-      (define/private (set-bottom-bar-status/pending)
+      (define/private (set-bottom-bar-status/blank)
         (send (get-defs) set-bottom-bar-status
-              (list (exn-info (string-constant online-expansion-pending) 
-                              '()
-                              '()
-                              #f))
+              (list (exn-info "" '() '() #f))
               #f
               #f))
       
