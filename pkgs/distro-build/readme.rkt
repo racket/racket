@@ -105,10 +105,20 @@
     @~a{The distribution includes any pre-installed packages in source form.}]))
 
 (define (make-macosx-notes config)
-  @~a{Install by dragging the enclosing
-        @|(hash-ref config '#:dist-name "Racket")| v@(version)
-      folder to your Applications folder --- or wherever you like. You can
-      move the folder at any time, but do not move applications or other
-      files within the folder. If you want to use the Racket command-line
-      programs, then (optionally) add the path of the "bin" subdirectory to
-      your PATH environment variable.})
+  (if (hash-ref config '#:mac-pkg? #f)
+      @~a{The installation directory is
+            /Applications/@(string-append
+                            (hash-ref config '#:dist-name "Racket")
+                            (if (hash-ref config '#:release? #f)
+                                ""
+                                (string-append " v" (version))))
+          The installer also adjusts "/etc/paths.d/racket" to point to that
+          directory's "bin" directory, which adjusts the default PATH
+          environment variable for all users.}
+      @~a{Install by dragging the enclosing
+            @|(hash-ref config '#:dist-name "Racket")| v@(version)
+          folder to your Applications folder --- or wherever you like. You can
+          move the folder at any time, but do not move applications or other
+          files within the folder. If you want to use the Racket command-line
+          programs, then (optionally) add the path of the "bin" subdirectory to
+          your PATH environment variable.}))

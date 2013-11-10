@@ -277,6 +277,7 @@
   (define source? (get-opt c '#:source? #f))
   (define source-pkgs? (get-opt c '#:source-pkgs? source?))
   (define source-runtime? (get-opt c '#:source-runtime? source?))
+  (define mac-pkg? (get-opt c '#:mac-pkg? #f))
   (define install-name (get-opt c '#:install-name (if release? 
                                                       "" 
                                                       snapshot-install-name)))
@@ -301,6 +302,7 @@
       " PKG_SOURCE_MODE=" (if source-pkgs?
                               (q "--source --no-setup")
                               (q ""))
+      " MAC_PKG_MODE=" (if mac-pkg? "--mac-pkg" (q ""))
       " README=" (q (file-name-from-path readme))))
 
 (define (unix-build c platform host port user server server-port repo clean? pull? readme)

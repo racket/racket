@@ -134,6 +134,10 @@ RELEASE_MODE =
 # proper) on a client that has the run-time system in source form:
 SOURCE_MODE =
 
+# Set to "--mac-pkg" to create ".pkg"-based installers for Mac OS X,
+# instead of a ".dmg" for drag-and-drop installation:
+MAC_PKG_MODE =
+
 # Set to "--source --no-setup" to include packages in an installer
 # (or archive) only in source form:
 PKG_SOURCE_MODE = 
@@ -380,7 +384,7 @@ binary-catalog-server:
 
 COPY_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
-	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
+	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
@@ -426,7 +430,7 @@ bundle-config:
 	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 
 UPLOAD_q = --readme http://$(SVR_PRT)/$(README) --upload http://$(SVR_PRT)/ --desc "$(DIST_DESC)"
-DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) \
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(MAC_PKG_MODE) \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)"
 

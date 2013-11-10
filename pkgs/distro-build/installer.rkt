@@ -2,6 +2,7 @@
 (require racket/cmdline
          "installer-sh.rkt"
          "installer-dmg.rkt"
+         "installer-pkg.rkt"
          "installer-exe.rkt"
          "installer-tgz.rkt"
          net/url
@@ -12,6 +13,7 @@
 
 (define release? #f)
 (define source? #f)
+(define mac-pkg? #f)
 (define upload-to #f)
 (define upload-desc "")
 (define download-readme #f)
@@ -23,6 +25,8 @@
     (set! release? #t)]
    [("--source") "Create a source installer"
     (set! source? #t)]
+   [("--mac-pkg") "Create a \".pkg\" installer on Mac OS X"
+    (set! mac-pkg? #t)]
    [("--upload") url "Upload installer"
     (set! upload-to url)]
    [("--desc") desc "Description to accompany upload"
@@ -58,7 +62,10 @@
       (installer-tgz base-name dir-name dist-suffix readme)
       (case (system-type)
         [(unix) (installer-sh human-name base-name dir-name release? dist-suffix readme)]
-        [(macosx) (installer-dmg human-name base-name dist-suffix readme sign-identity)]
+        [(macosx) (if mac-pkg?
+                      (installer-pkg (if release? short-human-name human-name)
+                                     base-name dist-suffix readme sign-identity)
+                      (installer-dmg human-name base-name dist-suffix readme sign-identity))]
         [(windows) (installer-exe short-human-name base-name release? dist-suffix readme)])))
 
 (call-with-output-file*

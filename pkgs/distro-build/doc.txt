@@ -244,7 +244,7 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     makefile variable
 
   #:source? <boolean> --- determines the default value for
-    `#:source-runtime' and `#:source-pkgs'
+    `#:source-runtime?' and `#:source-pkgs'
 
   #:source-runtime? <boolean> --- if true, then create an archive that
     contains the run-time system in source form (possibly with built
@@ -257,6 +257,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     installer/archive only in source form; a true value works best
     when the `#:source-runtime?' value is also #t; the default is the
     value of `#:source?'
+
+  #:mac-pkg? --- if true, creates a ".pkg" for Mac OS X (in
+    single-file format) instead of a ".dmg"; the default is #f
 
   #:max-snapshots <number> --- number of snapshots to keep, used by
     the `snapshot-site' makefile target
