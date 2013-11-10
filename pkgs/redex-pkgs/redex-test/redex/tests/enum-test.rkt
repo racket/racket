@@ -31,7 +31,6 @@
 (try-it 100 Base s)
 (try-it 100 Base nat)
 (try-it 100 Base i)
-#;
 (try-it 100 Base r)
 (try-it 2 Base b)
 

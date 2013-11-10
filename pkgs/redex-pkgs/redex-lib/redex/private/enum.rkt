@@ -1,9 +1,13 @@
 #lang racket/base
-(require racket/contract
+(require racket/bool
+         racket/contract
          racket/function
          racket/list
+         racket/math
          racket/match
          racket/set
+
+         math/flonum
 
          "enumerator.rkt"
          "env.rkt"
@@ -243,19 +247,58 @@
    string->list
    (many/e char/e)))
 
+(define from-1/e
+  (map/e add1
+         sub1
+         nats/e))
+
 (define integer/e
   (disj-sum/e #:alternate? #t
-              (cons nats/e (λ (n) (>= n 0)))
-              (cons (map/e (λ (n) (- (+ n 1)))
-                           (λ (n) (- (- n) 1))
-                           nats/e)
+              (cons (const/e 0) zero?)
+              (cons from-1/e (λ (n) (> n 0)))
+              (cons (map/e - - from-1/e)
                     (λ (n) (< n 0)))))
 
-;; This is really annoying so I turned it off
-(define real/e empty/e)
+;; The last 3 here are -inf.0, +inf.0 and +nan.0
+;; Consider moving those to the beginning
+(define weird-flonums/e-p
+  (cons (from-list/e '(+inf.0 -inf.0 +nan.0))
+        (λ (n)
+           (and (flonum? n)
+                (or (infinite? n)
+                    (nan? n))))))
+(define normal-flonums/e-p
+  (cons (take/e (map/e
+                 ordinal->flonum
+                 flonum->ordinal
+                 integer/e)
+                (+ 1 (* 2 9218868437227405311)))
+        (λ (n)
+           (and (flonum? n)
+                (nor (infinite? n)
+                     (nan? n))))))
+(define float/e
+  (disj-sum/e #:append? #t
+              weird-flonums/e-p
+              normal-flonums/e-p))
+
+(define real/e
+  (disj-sum/e #:alternate? #t
+              (cons integer/e exact-integer?)
+              (cons float/e flonum?)))
+
+(define non-real/e
+  (map/e make-rectangular
+         (λ (z)
+            (values (real-part z)
+                    (imag-part z)))
+         real/e
+         (except/e real/e 0 0.0)))
+
 (define num/e
-  (sum/e integer/e
-         real/e))
+  (disj-sum/e #:alternate? #t
+              (cons real/e real?)
+              (cons non-real/e complex?)))
 
 (define bool/e
   (from-list/e '(#t #f)))

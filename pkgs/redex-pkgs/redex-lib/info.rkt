@@ -5,6 +5,7 @@
 (define deps '("scheme-lib"
                "base"
                "data-lib"
+               "math-lib"
                "tex-table"
                "profile-lib"
                "typed-racket-lib"
