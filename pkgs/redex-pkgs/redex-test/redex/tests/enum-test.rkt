@@ -101,17 +101,21 @@
   (n (p_!_1 p_!_1))
   (x number))
 ;; Mismatch isn't working for now, will come back to this.
-#;#;#;
-(try-it 100 M m)
-(try-it 100 M n)
-(try-it 100 M p)
 
-;; test variable-not-otherwise-mentioned
-(define-language VarMentioned
+;; (try-it 100 M m)
+;; (try-it 100 M n)
+;; (try-it 100 M p)
+
+;; test variable filtering
+(define-language Vars
   (mention a b c x y z 2 #f #\c (vec 1 2))
-  (var variable-not-otherwise-mentioned))
+  (varpre (variable-prefix moo))
+  (varexc (variable-except x λ))
+  (varnom variable-not-otherwise-mentioned))
 
-(try-it 20 VarMentioned var)
+(try-it 100 Vars varpre)
+(try-it 100 Vars varexc)
+(try-it 100 Vars varnom)
 
 ;; Named repeats
 (define-language NRep

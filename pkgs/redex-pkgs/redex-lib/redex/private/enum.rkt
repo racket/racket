@@ -102,8 +102,16 @@
      [`(variable-except ,s ...)
       (apply except/e var/e s)]
      [`(variable-prefix ,s)
-      ;; todo
-      (unimplemented "var-prefix")]
+      (define as-str (symbol->string s))
+      (map/e (compose string->symbol
+                      (curry string-append as-str)
+                      symbol->string)
+             (compose string->symbol
+                      list->string
+                      (curry (flip drop) (string-length as-str))
+                      string->list
+                      symbol->string)
+             var/e)]
      [`variable-not-otherwise-mentioned
       unused/e]
      [`hole
@@ -323,3 +331,7 @@
             (disj-sum/e #:alternate? #t
                         (cons base/e (negate pair?))
                         (cons (cons/e any/e any/e) pair?)))))
+
+(define (flip f)
+  (λ (x y)
+     (f y x)))
