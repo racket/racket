@@ -30,6 +30,7 @@
 (struct lang-enum (enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
+(struct misname-ref (name tag) #:transparent)
 (struct nrep-ref (name subpat) #:transparent)
 (struct decomp (ctx term) #:transparent)
 (struct hide-hole (term) #:transparent)
@@ -121,8 +122,8 @@
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
       (const/e (name-ref n))]
-     [`(mismatch-name ,n ,pat)
-      (unimplemented "mismatch-name")]
+     [`(mismatch-name ,n ,tag)
+      (const/e (misname-ref n tag))]
      [`(in-hole ,p1 ,p2)
       (map/e decomp
              (match-lambda
@@ -160,9 +161,20 @@
   (loop pat))
 
 (define/match (env/e nv l-enums unused/e)
-  [((env names nreps) _ _)
+  [((env names misnames nreps) _ _)
    (define (val/e p)
      (pat-refs/e p l-enums unused/e))
+
+   (define/match (misvals/e p-ts)
+     [((cons p ts))
+      (define p/e (val/e p))
+      (fold-enum (λ (ts-excepts tag)
+                    (define excepts
+                      (map cdr ts-excepts))
+                    (cons/e (const/e tag)
+                            (apply except/e p/e excepts)))
+                 (set->list ts))])
+   
    (define/match (reprec/e nv-t)
      [((cons nv tpats))
       (define tpats/e
@@ -172,15 +184,19 @@
                tpats/e))])
    (define names-env
      (hash-traverse/e val/e names))
+
+   (define misnames-env
+     (hash-traverse/e misvals/e misnames))
    
    (define nreps-env
      (hash-traverse/e reprec/e nreps))
    (map/e
     t-env
     (match-lambda
-     [(t-env names nreps)
-      (values names nreps)])
+     [(t-env  names misnames nreps)
+      (values names misnames nreps)])
     names-env
+    misnames-env
     nreps-env)])
 
 ;; to-term : (ann-pat t-env pat-with-refs) -> redex term
@@ -209,6 +225,9 @@
     [(name-ref n)
      (λ (nv)
         (t-env-name-ref nv n))]
+    [(misname-ref n tag)
+     (λ (nv)
+        ((refs-to-fn (t-env-misname-ref nv n tag)) nv))]
     [(list subrefpats ...)
      (compose
       append*

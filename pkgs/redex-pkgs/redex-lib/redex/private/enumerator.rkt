@@ -99,7 +99,7 @@
                    (loop (+ i 1) seen)))))
         (λ (x) (encode e x))))
 
-;; except/e : enum a, a -> enum a
+;; except/e : (enum a) a* -> (enum a)
 ;; Everything inside e MUST be in the enumerator or you will get a redex-error
 (define (except/e e . excepts)
   (define (except1/e x e)

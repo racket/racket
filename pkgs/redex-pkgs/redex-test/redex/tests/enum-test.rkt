@@ -100,11 +100,10 @@
   (p (number_!_1 number_!_1))
   (n (p_!_1 p_!_1))
   (x number))
-;; Mismatch isn't working for now, will come back to this.
 
-;; (try-it 100 M m)
-;; (try-it 100 M n)
-;; (try-it 100 M p)
+(try-it 100 M m)
+(try-it 100 M n)
+(try-it 100 M p)
 
 ;; test variable filtering
 (define-language Vars
