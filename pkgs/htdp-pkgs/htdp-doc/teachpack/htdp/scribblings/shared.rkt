@@ -10,7 +10,7 @@
 (define (teachpack #:svg? [svg? #f] tp . name)
   (apply title #:tag tp
          #:style (if svg? 
-                     (style "svg" (list (render-pict-as 'svg-images)))
+                     (style #f (list (render-convertible-as '(svg-bytes png-bytes))))
                      #f)
          `(,@name ": " ,(filepath (format "~a.rkt" tp))
            ,(index (format "~a teachpack" tp)))))

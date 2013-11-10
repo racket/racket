@@ -48,8 +48,9 @@
                             (only-in racket/draw bitmap%)
                             racket/class))
 
-@title[#:style (style "svg" (list (render-pict-as 'svg-images)))
-               #:tag "image-guide"]{Image Guide}
+@title[#:style 
+       (style #f (list (render-convertible-as '(svg-bytes png-bytes))))
+       #:tag "image-guide"]{Image Guide}
 
 This section introduces the @racketmodname[2htdp/image] library
 through a series of increasingly complex image constructions
