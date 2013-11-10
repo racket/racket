@@ -1,5 +1,8 @@
 #lang typed/racket
 
+(require/typed "error.rkt"
+               [redex-error (Symbol String Any * -> Nothing)])
+
 (provide (struct-out env)
          empty-env
          add-name
@@ -52,12 +55,12 @@
 (: t-env-name-ref : TEnv Symbol -> Pattern)
 (define/match (t-env-name-ref e n)
   [((t-env names _) _)
-   (hash-ref names n (thunk (error (format "t-env-name-ref: name not found: ~s" n))))])
+   (hash-ref names n (thunk (redex-error 't-env-name-ref "name not found: ~s" n)))])
 
 (: t-env-nrep-ref : TEnv Symbol -> (Listof (Pairof TEnv Term)))
 (define/match (t-env-nrep-ref nv n)
   [((t-env _ nreps) n)
-   (hash-ref nreps n (thunk (error (format "t-env-nrep-ref: repeat not found: ~s" n))))])
+   (hash-ref nreps n (thunk (redex-error 't-env-nrep-ref "repeat not found: ~s" n)))])
 
 (: env-union : Env Env -> Env)
 (define/match (env-union e1 e2)
@@ -71,7 +74,11 @@
    (define/match (combo _ e-t1 e-t2)
      [(_ (cons nv1 t1) (cons nv2 t2))
       (cons (env-union nv1 nv2)
-            (hash-union t1 t2 (λ (t _1 _2) (error (format "2 tags should never collide, but these did: ~s, ~s with tag: ~s in envs ~s and ~s" _1 _2 t e1 e2)))))])
+            (hash-union t1 t2
+                        (λ (t _1 _2)
+                           (redex-error 'env-union
+                                        "2 tags should never collide, but these did: ~s, ~s with tag: ~s in envs ~s and ~s"
+                                        _1 _2 t e1 e2))))])
    (define nreps-union
      (hash-union rs1 rs2 combo))
    (env names-union nreps-union)])
@@ -93,5 +100,5 @@
     (define v
       (cond [(and v1 v2)
              (combo k v1 v2)]
-            [else (or v1 v2 (error "absurd"))]))
+            [else (or v1 v2 (redex-error 'absurd ""))]))
     (values k v)))

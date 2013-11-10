@@ -16,9 +16,24 @@
                 (unless (redex-match l p term)
                   (error 'bad-term (format "line ~a: i=~a" line i))))))))]))
 
-(define-language Nats
-  (n natural))
-(try-it 100 Nats n)
+;; base types
+(define-language Base
+  (a any)
+  (num number)
+  (s string)
+  (nat natural)
+  (i integer)
+  (r real)
+  (b boolean))
+
+(try-it 100 Base a)
+(try-it 100 Base num)
+(try-it 100 Base s)
+(try-it 100 Base nat)
+(try-it 100 Base i)
+#;
+(try-it 100 Base r)
+(try-it 2 Base b)
 
 ;; Repeat test
 (define-language Rep

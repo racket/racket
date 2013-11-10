@@ -7,6 +7,7 @@
 
          "enumerator.rkt"
          "env.rkt"
+         "error.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
          "preprocess-pat.rkt"
@@ -22,7 +23,6 @@
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-
 (struct lang-enum (enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
@@ -34,33 +34,33 @@
 (define (lang-enumerators lang)
   (define l-enums (make-hash))
   (define unused-var/e
-    (except/e var/e
-              (used-vars lang)))
-  (define (enumerate-lang cur-lang enum-f)
+    (apply except/e
+           var/e
+           (used-vars lang)))
+  (define (enumerate-lang! cur-lang enum-f)
     (for ([nt (in-list cur-lang)])
       (hash-set! l-enums
-                   (nt-name nt)
-                   (with-handlers ([exn:fail? fail/e])
-                     (enum-f (nt-rhs nt)
-                             l-enums)))))
-  (let-values ([(fin-lang rec-lang)
-                (sep-lang lang)])
-    (enumerate-lang fin-lang
-                    (λ (rhs enums)
-                       (enumerate-rhss rhs enums unused-var/e)))
-    (enumerate-lang rec-lang
-                    (λ (rhs enums)
-                       (thunk/e +inf.f
-                                (λ ()
-                                   (enumerate-rhss rhs enums unused-var/e)))))
+                 (nt-name nt)
+                 (with-handlers ([exn:fail:redex? fail/e])
+                   (enum-f (nt-rhs nt)
+                           l-enums)))))
+  (define-values (fin-lang rec-lang) (sep-lang lang))
+  (enumerate-lang! fin-lang
+                   (λ (rhs enums)
+                      (enumerate-rhss rhs enums unused-var/e)))
+  (enumerate-lang! rec-lang
+                   (λ (rhs enums)
+                      (thunk/e +inf.f
+                               (λ ()
+                                  (enumerate-rhss rhs enums unused-var/e)))))
 
-    (lang-enum l-enums unused-var/e)))
+  (lang-enum l-enums unused-var/e))
 
 (define (pat-enumerator l-enum pat)
   (map/e
    fill-refs
    (λ (_)
-      (error 'pat-enum "Enumerator is not a  bijection"))
+      (redex-error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
           (lang-enum-enums l-enum)
           (lang-enum-unused-var/e l-enum))))
@@ -96,7 +96,7 @@
      [`boolean bool/e]
      [`variable var/e]
      [`(variable-except ,s ...)
-      (except/e var/e s)]
+      (apply except/e var/e s)]
      [`(variable-prefix ,s)
       ;; todo
       (unimplemented "var-prefix")]
@@ -204,13 +204,38 @@
        (f x))))
 
 ;; Base Type enumerators
-(define natural/e nats)
+(define natural/e nats/e)
+
+(define (between? x low high)
+  (and (>= x low)
+       (<= x high)))
+(define (range-with-pred/e-p low high)
+  (cons (range/e low high)
+        (λ (n) (between? n low high))))
+(define low/e-p
+  (range-with-pred/e-p #x61 #x7a))
+(define up/e-p
+  (range-with-pred/e-p #x41 #x5a))
+(define bottom/e-p
+  (range-with-pred/e-p #x0 #x40))
+(define mid/e-p
+  (range-with-pred/e-p #x5b #x60))
+(define above1/e-p
+  (range-with-pred/e-p #x7b #xd7FF))
+(define above2/e-p
+  (range-with-pred/e-p #xe000 #x10ffff))
 
 (define char/e
   (map/e
    integer->char
    char->integer
-   (range/e #x61 #x7a)))
+   (disj-sum/e #:append? #t
+               low/e-p
+               up/e-p
+               bottom/e-p
+               mid/e-p
+               above1/e-p
+               above2/e-p)))
 
 (define string/e
   (map/e
@@ -219,10 +244,11 @@
    (many/e char/e)))
 
 (define integer/e
-  (disj-sum/e (cons nats (λ (n) (>= n 0)))
+  (disj-sum/e #:alternate? #t
+              (cons nats/e (λ (n) (>= n 0)))
               (cons (map/e (λ (n) (- (+ n 1)))
                            (λ (n) (- (- n) 1))
-                           nats)
+                           nats/e)
                     (λ (n) (< n 0)))))
 
 ;; This is really annoying so I turned it off
@@ -241,7 +267,8 @@
    (many1/e char/e)))
 
 (define base/e
-  (disj-sum/e (cons (const/e '()) null?)
+  (disj-sum/e #:alternate? #t
+              (cons (const/e '()) null?)
               (cons num/e number?)
               (cons string/e string?)
               (cons bool/e boolean?)
@@ -250,11 +277,6 @@
 (define any/e
   (fix/e +inf.f
          (λ (any/e)
-            (disj-sum/e (cons base/e (negate pair?))
+            (disj-sum/e #:alternate? #t
+                        (cons base/e (negate pair?))
                         (cons (cons/e any/e any/e) pair?)))))
-
-(define (unsupported pat)
-  (error 'generate-term "#:i-th does not support ~s patterns" pat))
-
-(define (unimplemented pat)
-  (error 'generate-term "#:i-th does not yet support ~s patterns" pat))

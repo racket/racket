@@ -42,7 +42,7 @@
                      (walk p))
        (ann-pat subenv `(hide-hole ,newsub))]
       [`(side-condition ,p ,c ,s)
-       (error 'unsupported "side condition is not supported.")]
+       (unsupported "side-condition")]
       [`(list ,sub-pats ...)
        (define ann-sub-pats
          (for/list ([sub-pat (in-list sub-pats)])
@@ -56,7 +56,7 @@
               (ann-pat (pure-nrep n subenv tag subp)
                        `(repeat ,tag ,n #f))]
              [`(repeat ,p ,n ,m)
-              (unimplemented (format "mismatch repeat (..._!_): ~s ~s" n m))]
+              (unimplemented "mismatch repeat")]
              [_ (walk sub-pat)])))
        (define list-env
          (for/fold ([accenv empty-env])
@@ -140,6 +140,3 @@
 
 (define (pure-ann-pat pat)
   (ann-pat empty-env pat))
-
-(define (unimplemented pat-name)
-  (redex-error 'unsupported "generate-term #:i-th currently doesn't support pattern type: ~a" pat-name))

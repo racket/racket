@@ -1,10 +1,15 @@
 #lang racket/base
-(require racket/math
-         racket/match
-         racket/list
+(require racket/bool
+         racket/contract
          racket/function
+         racket/list
+         racket/math
+         racket/match
          racket/promise
-         data/gvector)
+
+         data/gvector
+
+         "error.rkt")
 
 (provide enum
          enum?
@@ -34,14 +39,11 @@
          
          to-list
          take/e
-         drop/e
          fold-enum
-         display-enum
 
-         nats
+         nats/e
          range/e
-         nats+/e
-         )
+         nats+/e)
 
 ;; an enum a is a struct of < Nat or +Inf, Nat -> a, a -> Nat >
 (struct enum
@@ -53,14 +55,16 @@
   (enum-size e))
 
 ;; decode : enum a, Nat -> a
-(define (decode e n)
+(define/contract (decode e n)
+  (-> enum? exact-nonnegative-integer? any/c)
   (if (and (< n (enum-size e))
            (>= n 0))
       ((enum-from e) n)
-      (error 'out-of-range)))
+      (redex-error 'decode "Index into enumerator out of range")))
 
 ;; encode : enum a, a -> Nat
-(define (encode e a)
+(define/contract (encode e a)
+  (-> enum? any/c exact-nonnegative-integer?)
   ((enum-to e) a))
 
 ;; Helper functions
@@ -96,30 +100,30 @@
         (λ (x) (encode e x))))
 
 ;; except/e : enum a, a -> enum a
-(define (except/e e excepts)
-  (cond [(empty? excepts) e]
-        [else
-         (except/e
-          (begin
-            (with-handlers ([exn:fail? (λ (_) e)])
-              (let ([m (encode e (car excepts))])
-                (enum (- (size e) 1)
-                      (λ (n)
-                         (if (< n m)
-                             (decode e n)
-                             (decode e (+ n 1))))
-                      (λ (x)
-                         (let ([n (encode e x)])
-                           (cond [(< n m) n]
-                                 [(> n m) (- n 1)]
-                                 [else (error 'excepted)])))))))
-          (cdr excepts))]))
+;; Everything inside e MUST be in the enumerator or you will get a redex-error
+(define (except/e e . excepts)
+  (define (except1/e x e)
+    (cond [(= (size e) 0) e]
+          [else
+           (define xi (encode e x))
+           (define (from-nat n)
+             (cond [(< n xi) (decode e n)]
+                   [else (decode e (add1 n))]))
+           (define (to-nat y)
+             (define yi (encode e y))
+             (cond [(< yi xi) yi]
+                   [(> yi xi) (sub1 yi)]
+                   [else (redex-error 'encode "attempted to encode an excepted value")]))
+           (enum (max 0 (sub1 (size e))) from-nat to-nat)]))
+  (foldr except1/e
+         e
+         excepts))
 
 ;; to-list : enum a -> listof a
 ;; better be finite
 (define (to-list e)
   (when (infinite? (size e))
-    (error 'too-big))
+    (redex-error 'to-list "cannot encode an infinite list"))
   (map (enum-from e)
        (build-list (size e)
                    identity)))
@@ -128,30 +132,16 @@
 ;; returns an enum of the first n parts of e
 ;; n must be less than or equal to size e
 (define (take/e e n)
-  (unless (or (infinite? (size e))
-              (<= n (size e)))
-    (error 'too-big))
+  (unless (or (<= n (size e)))
+    (redex-error 'take/e "there aren't ~s elements in ~s" n e))
   (enum n
         (λ (k)
-           (unless (< k n)
-             (error 'out-of-range))
            (decode e k))
         (λ (x)
            (let ([k (encode e x)])
              (unless (< k n)
-               (error 'out-of-range))
+               (redex-error 'take/e "attempted to encode an element not in an enumerator"))
              k))))
-
-;; drop/e : enum a, Nat -> enum a
-(define (drop/e e n)
-  (unless (or (infinite? (size e))
-              (<= n (size e)))
-    (error 'too-big))
-  (enum (- (size e) n)
-        (λ (m)
-           (decode e (+ n m)))
-        (λ (x)
-           (- (encode e x) n))))
 
 ;; display-enum : enum a, Nat -> void
 (define (display-enum e n)
@@ -162,9 +152,9 @@
 (define empty/e
   (enum 0
         (λ (n)
-           (error 'empty))
+           (redex-error 'decode "absurd"))
         (λ (x)
-           (error 'empty))))
+           (redex-error 'encode "no elements in the enumerator"))))
 
 (define (const/e c)
   (enum 1
@@ -173,7 +163,7 @@
         (λ (x)
            (if (equal? c x)
                0
-               (error 'bad-val)))))
+               (redex-error 'encode "value not in enumerator")))))
 
 ;; from-list/e :: Listof a -> Gen a
 ;; input list should not contain duplicates
@@ -191,20 +181,12 @@
             (λ (x)
                (hash-ref rev-map x)))))
 
-;; take-while : Listof a, (a -> bool) -> Listof a
-(define (take-while l pred)
-  (cond [(empty? l) (error 'empty)]
-        [(not (pred (car l))) '()]
-        [else
-         (cons (car l)
-               (take-while (cdr l) pred))]))
-
-(define nats
+(define nats/e
   (enum +inf.f
         identity
         (λ (n)
            (unless (>= n 0)
-             (error 'out-of-range))
+             (redex-error 'encode "Not a natural"))
            n)))
 (define ints/e
   (enum +inf.f
@@ -284,51 +266,70 @@
                  (map-pairs/even (cdr l)))))
      (apply sum/e (map-pairs sum/e identity (list* a b c rest)))]))
 
-(define (disj-sum/e e-p . e-ps)
+(define (disj-sum/e #:alternate? [alternate? #f] #:append? [append? #f] e-p . e-ps)
   (define/match (disj-sum2/e e-p1 e-p2)
     [((cons e1 1?) (cons e2 2?))
-     ;; Sum two enumerators of different sizes
-     (define (sum-uneven less/e less? more/e more?)
+     (define (alternate-uneven less/e less? more/e more? #:less-first? less-first?)
+       (define-values (first/e second/e)
+         (if less-first?
+             (values less/e more/e)
+             (values more/e less/e)))
        ;; interleave until less/e is exhausted
        ;; pairsdone is 1+ the highest index using less/e
        (define less-size (size less/e))
        (define pairsdone (* 2 less-size))
        (define (from-nat n)
-         (if (< n pairsdone)
-             (let-values ([(q r) (quotient/remainder n 2)])
-               ;; Always put e1 first though!
-               (decode (match r
-                         [0 e1]
-                         [1 e2])
-                       q))
-             (decode more/e (- n less-size))))
+         (cond [(< n pairsdone)
+                (define-values (q r) (quotient/remainder n 2))
+                ;; Always put e1 first though!
+                (decode (match r
+                          [0 first/e]
+                          [1 second/e])
+                        q)]
+               [else (decode more/e (- n less-size))]))
        (define (to-nat x)
          (cond [(less? x)
-                (* 2 (encode less/e x))]
+                (+ (* 2 (encode less/e x))
+                   (if less-first? 0 1))]
                [(more? x)
                 (define i (encode more/e x))
                 (if (< i less-size)
-                    (+ (* 2 i) 1)
+                    (+ (* 2 i)
+                       (if less-first? 1 0))
                     (+ (- i less-size) pairsdone))]
-               [else (error "bad term")]))
+               [else (redex-error 'encode "bad term")]))
        (enum (+ less-size (size more/e))
              from-nat
-             to-nat))
+             to-nat))     
      (define s1 (size e1))
      (define s2 (size e2))
-     (cond [(= 0 s1) e2]
-           [(= 0 s2) e1]
-           [(< s1 s2) (sum-uneven e1 1? e2 2?)]
-           [(< s2 s1) (sum-uneven e2 2? e1 1?)]
-           [else ;; both the same length, interleave them
-            (define (from-nats n)
-              (cond [(even? n) (decode e1 (/ n 2))]
-                    [else (decode e2 (/ (- n 1) 2))]))
-            (define (to-nats x)
-              (cond [(1? x) (* (encode e1 x) 2)]
-                    [(2? x) (+ 1 (* (encode e2 x) 2))]
-                    [else (error "bad term")]))
-            (enum (+ s1 s2) from-nats to-nats)])])
+     (cond [(not (xor alternate? append?))
+            (redex-error 'disj-sum/e "Conflicting options chosen, must pick exactly one of #:alternate? or #:append?")]
+           [alternate?
+            (cond [(= 0 s1) e2]
+                  [(= 0 s2) e1]
+                  [(< s1 s2) (alternate-uneven e1 1? e2 2? #:less-first? #t)]
+                  [(< s2 s1) (alternate-uneven e2 2? e1 1? #:less-first? #f)]
+                  [else ;; both the same length, interleave them
+                   (define (from-nats n)
+                     (cond [(even? n) (decode e1 (/ n 2))]
+                           [else (decode e2 (/ (- n 1) 2))]))
+                   (define (to-nats x)
+                     (cond [(1? x) (* (encode e1 x) 2)]
+                           [(2? x) (+ 1 (* (encode e2 x) 2))]
+                           [else (redex-error 'encode "bad term")]))
+                   (enum (+ s1 s2) from-nats to-nats)])]
+           [append?
+            (define (from-nat n)
+              (cond [(< n s1) (decode e1 n)]
+                    [else (decode e2 (- n s1))]))
+            (define (to-nat x)
+              (cond [(1? x) (encode e1 x)]
+                    [(2? x) (+ (encode e2 x) s1)]
+                    [else (redex-error 'encode "bad term")]))
+            (enum (+ s1 s2) from-nat to-nat)]
+           [(nor alternate? append?)
+            (redex-error 'disj-sum/e "Must specify either #:alternate? or #:append?")])])
   (car
    (foldr (λ (e-p1 e-p2)
              (match* (e-p1 e-p2)
@@ -340,26 +341,6 @@
                                    (2? x))))]))
           (cons empty/e (λ (_) #f))
           (cons e-p e-ps))))
-
-(define n*n
-  (enum +inf.f
-        (λ (n)
-           ;; calculate the k for which (tri k) is the greatest
-           ;; triangle number <= n
-           (let* ([k (floor-untri n)]
-                  [t (tri k)]
-                  [l (- n t)]
-                  [m (- k l)])
-             (cons l m)))
-        (λ (ns)
-           (unless (pair? ns)
-             (error "not a list"))
-           (let ([l (car ns)]
-                 [m (cdr ns)])
-             (+ (/ (* (+ l m) (+ l m 1))
-                   2)
-                l))) ;; (n,m) -> (n+m)(n+m+1)/2 + n
-        ))
 
 ;; cons/e : enum a, enum b -> enum (cons a b)
 (define cons/e
@@ -375,7 +356,7 @@
                    (enum size
                          (λ (n) ;; bijection from n -> axb
                             (if (> n size)
-                                (error "out of range")
+                                (redex-error 'decode "out of range")
                                 (call-with-values
                                     (λ ()
                                        (quotient/remainder n (enum-size e2)))
@@ -384,7 +365,7 @@
                                            ((enum-from e2) r))))))
                          (λ (xs)
                             (unless (pair? xs)
-                              (error "not a pair"))
+                              (redex-error 'encode "not a pair"))
                             (define q (encode e1 (car xs)))
                             (define r (encode e2 (cdr xs)))
                             (+ (* (enum-size e2) q) r)))]
@@ -399,7 +380,7 @@
                                        ((enum-from e2) q)))))
                          (λ (xs)
                             (unless (pair? xs)
-                              (error "not a pair"))
+                              (redex-error 'encode "not a pair"))
                             (+ ((enum-to e1) (car xs))
                                (* (enum-size e1)
                                   ((enum-to e2) (cdr xs))))))])]
@@ -414,7 +395,7 @@
                                 ((enum-from e2) r)))))
                   (λ (xs)
                      (unless (pair? xs)
-                       (error "not a pair"))
+                       (redex-error 'encode "not a pair"))
                      (+ (* (enum-size e2)
                            ((enum-to e1) (car xs)))
                         ((enum-to e2) (cdr xs)))))]
@@ -431,7 +412,7 @@
                   (λ (xs) ;; bijection from nxn -> n, inverse of previous
                      ;; (n,m) -> (n+m)(n+m+1)/2 + n
                      (unless (pair? xs)
-                       (error "not a pair"))
+                       (redex-error 'encode "not a pair"))
                      (let ([l ((enum-to e1) (car xs))]
                            [m ((enum-to e2) (cdr xs))])
                        (+ (/ (* (+ l m) (+ l m 1))
@@ -572,7 +553,7 @@
                 (λ (xs) ;; bijection from nxn -> n, inverse of previous
                    ;; (n,m) -> (n+m)(n+m+1)/2 + n
                    (unless (pair? xs)
-                     (error "not a pair"))
+                     (redex-error 'encode "not a pair"))
                    (let ([l (encode e (car xs))]
                          [m (encode (f (car xs)) (cdr xs))])
                      (+ (/ (* (+ l m) (+ l m 1))
@@ -697,7 +678,7 @@
               (λ (xs) ;; bijection from nxn -> n, inverse of previous
                  ;; (n,m) -> (n+m)(n+m+1)/2 + n
                  (unless (pair? xs)
-                   (error "not a pair"))
+                   (redex-error 'encode "not a pair"))
                  (let ([l (encode e (car xs))]
                        [m (encode (f (car xs)) (cdr xs))])
                    (+ (/ (* (+ l m) (+ l m 1))
@@ -734,7 +715,7 @@
 ;; more utility enums
 ;; nats of course
 (define (range/e low high)
-  (cond [(> low high) (error 'bad-range)]
+  (cond [(> low high) (redex-error 'range/e "invalid range: ~s, ~s" low high)]
         [(infinite? high)
          (if (infinite? low)
              ints/e
@@ -743,18 +724,18 @@
                  (+ n low))
               (λ (n)
                  (- n low))
-              nats))]
+              nats/e))]
         [(infinite? low)
          (map/e
           (λ (n)
              (- high n))
           (λ (n)
              (+ high n))
-          nats)]
+          nats/e)]
         [else
          (map/e (λ (n) (+ n low))
-                   (λ (n) (- n low))
-                   (take/e nats (+ 1 (- high low))))]))
+                (λ (n) (- n low))
+                (take/e nats/e (+ 1 (- high low))))]))
 
 ;; thunk/e : Nat or +-Inf, ( -> enum a) -> enum a
 (define (thunk/e s thunk)
@@ -779,18 +760,21 @@
 (define many/e
   (case-lambda
     [(e)
-     (fix/e (if (= 0 (size e))
-                0
-                +inf.f)
+     (define fix-size
+       (if (= 0 (size e))
+           0
+           +inf.f))
+     (fix/e fix-size
             (λ (self)
-               (disj-sum/e (cons (const/e '()) null?)
+               (disj-sum/e #:alternate? #t
+                           (cons (const/e '()) null?)
                            (cons (cons/e e self) pair?))))]
     [(e n)
      (list/e (build-list n (const e)))]))
 
 ;; many1/e : enum a -> enum (nonempty listof a)
 (define (many1/e e)
-  (cons/e e (many/e e)))
+  (except/e (many/e e) '()))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
@@ -800,10 +784,10 @@
 
 (define (nats+/e n)
   (map/e (λ (k)
-               (+ k n))
-            (λ (k)
-               (- k n))
-            nats))
+            (+ k n))
+         (λ (k)
+            (- k n))
+         nats/e))
 
 ;; fail/e : exn -> enum ()
 ;; returns an enum that calls a thunk
