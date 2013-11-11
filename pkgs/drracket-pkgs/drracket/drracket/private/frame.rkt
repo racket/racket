@@ -129,68 +129,66 @@
                       '())))))
       
       (define/override (on-subwindow-char receiver event)
-        (let ([user-key? (send (keymap:get-user) 
-                               handle-key-event
-                               (if (is-a? receiver editor-canvas%)
-                                   (send receiver get-editor)
-                                   receiver)
-                               event)])
-          ;; (printf "user-key? ~s\n" user-key?) returns #t for key release events -- is this a problem? (we'll find out!)
-          (or user-key?
-              (super on-subwindow-char receiver event))))
+        (define user-key? (send (keymap:get-user) 
+                                handle-key-event
+                                (if (is-a? receiver editor-canvas%)
+                                    (send receiver get-editor)
+                                    receiver)
+                                event))
+        ;; (printf "user-key? ~s\n" user-key?) returns #t 
+        ;; for key release events -- is this a problem? (we'll find out!)
+        (or user-key?
+            (super on-subwindow-char receiver event)))
       
       (inherit get-edit-target-window get-edit-target-object get-menu-bar)
       (define/private (get-menu-bindings)
-        (let ([name-ht (make-hasheq)])
-          (let loop ([menu-container (get-menu-bar)])
-            (for-each
-             (λ (item)
-               (when (is-a? item selectable-menu-item<%>)
-                 (let ([short-cut (send item get-shortcut)])
-                   (when short-cut
-                     (let ([keyname
-                            (string->symbol
-                             (keymap:canonicalize-keybinding-string
-                              (string-append
-                               (menu-item->prefix-string item)
-                               (case short-cut
-                                 [(#\;) "semicolon"]
-                                 [(#\:) "colon"]
-                                 [(#\space) "space"]
-                                 [else 
-                                  (cond
-                                    [(symbol? short-cut) (symbol->string short-cut)]
-                                    [(char? short-cut) (string short-cut)])]))))])
-                       (hash-set! name-ht keyname (send item get-plain-label))))))
-               (when (is-a? item menu-item-container<%>)
-                 (loop item)))
-             (send menu-container get-items)))
-          (when (eq? (system-type) 'windows)
-            (for-each (λ (top-level-menu) 
-                        (when (is-a? top-level-menu menu%)
-                          (let ([amp-key
-                                 (let loop ([str (send top-level-menu get-label)])
-                                   (cond
-                                     [(regexp-match #rx"[^&]*[&](.)(.*)" str)
-                                      =>
-                                      (λ (m)
-                                        (let ([this-amp (list-ref m 1)]
-                                              [rest (list-ref m 2)])
-                                          (cond
-                                            [(equal? this-amp "&")
-                                             (loop rest)]
-                                            [else 
-                                             (string-downcase this-amp)])))]
-                                     [else #f]))])
-                            (when amp-key
-                              (hash-set! name-ht 
-                                         (format "m:~a" amp-key)
-                                         (format "~a menu" (send top-level-menu get-plain-label)))
-                              (hash-set! name-ht 
-                                         (format "m:s:~a" amp-key)
-                                         (format "~a menu" (send top-level-menu get-plain-label)))))))
-                      (send (get-menu-bar) get-items)))
-          name-ht))
+        (define name-ht (make-hasheq))
+        (let loop ([menu-container (get-menu-bar)])
+          (for ([item (in-list (send menu-container get-items))])
+            (when (is-a? item selectable-menu-item<%>)
+              (define short-cut (send item get-shortcut))
+              (when short-cut
+                (define keyname
+                  (string->symbol
+                   (keymap:canonicalize-keybinding-string
+                    (string-append
+                     (menu-item->prefix-string item)
+                     (case short-cut
+                       [(#\;) "semicolon"]
+                       [(#\:) "colon"]
+                       [(#\space) "space"]
+                       [else 
+                        (cond
+                          [(symbol? short-cut) (symbol->string short-cut)]
+                          [(char? short-cut) (string short-cut)])])))))
+                (hash-set! name-ht keyname (send item get-plain-label))))
+            (when (is-a? item menu-item-container<%>)
+              (loop item))))
+        (when (eq? (system-type) 'windows)
+          (for ([top-level-menu (in-list (send (get-menu-bar) get-items))])
+            (when (is-a? top-level-menu menu%)
+              (define amp-key
+                (let loop ([str (send top-level-menu get-label)])
+                  (cond
+                    [(regexp-match #rx"[^&]*[&](.)(.*)" str)
+                     =>
+                     (λ (m)
+                       (define this-amp (list-ref m 1))
+                       (define rest (list-ref m 2))
+                       (cond
+                         [(equal? this-amp "&")
+                          (loop rest)]
+                         [else 
+                          (string-downcase this-amp)]))]
+                    [else #f])))
+              (when amp-key
+                (hash-set! name-ht 
+                           (format "m:~a" amp-key)
+                           (format "~a menu" (send top-level-menu get-plain-label)))
+                (hash-set! name-ht 
+                           (format "m:s:~a" amp-key)
+                           (format "~a menu" (send top-level-menu get-plain-label)))))))
+        name-ht)
       
       (define/private (menu-item->prefix-string item)
         (apply
@@ -209,18 +207,17 @@
               (send item get-shortcut-prefix))))
       
       (define/private (copy-hash-table ht)
-        (let ([res (make-hasheq)])
-          (hash-for-each
-           ht
-           (λ (x y) (hash-set! res x y)))
-          res))
+        (define res (make-hasheq))
+        (for ([(x y) (in-hash ht)])
+          (hash-set! res x y))
+        res)
       
       (define/private (can-show-keybindings?)
-        (let ([edit-object (get-edit-target-object)])
-          (and edit-object
-               (is-a? edit-object editor<%>)
-               (let ([keymap (send edit-object get-keymap)])
-                 (is-a? keymap keymap:aug-keymap<%>)))))
+        (define edit-object (get-edit-target-object))
+        (and edit-object
+             (is-a? edit-object editor<%>)
+             (let ([keymap (send edit-object get-keymap)])
+               (is-a? keymap keymap:aug-keymap<%>))))
       
       ;; pre: (can-show-keybindings?) = #t
       (define/private (get-keybindings-to-show)
@@ -277,7 +274,8 @@
               (λ (item evt) 
                  (install-pkg this
                               (lambda (thunk)
-                                (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                                (parameterize ([error-display-handler 
+                                                drracket:init:original-error-display-handler])
                                   (thunk)))))])
         (new separator-menu-item% [parent file-menu])
         (new menu-item% 
@@ -286,7 +284,8 @@
              [callback
               (λ (item evt) 
                 (pkg-manager (lambda (thunk)
-                               (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                               (parameterize ([error-display-handler 
+                                               drracket:init:original-error-display-handler])
                                  (thunk)))))])
         (super file-menu:between-open-and-revert file-menu))
       
@@ -304,72 +303,71 @@
         (super edit-menu:between-find-and-preferences menu)
         (when (current-eventspace-has-standard-menus?)
           (new separator-menu-item% [parent menu]))
-        (let ([keybindings-on-demand
-               (λ (menu-item)
-                 (let ([last-edit-object (get-edit-target-window)])
-                   (send menu-item enable (can-show-keybindings?))))])
-          (instantiate menu% ()
-            (label (string-constant keybindings-menu-item))
-            (parent menu)
-            (demand-callback
-             (λ (keybindings-menu)
-               (for-each (λ (old) (send old delete)) 
-                         (send keybindings-menu get-items))
-               (new menu-item%
-                    (parent keybindings-menu)
-                    (label (string-constant keybindings-show-active))
-                    (callback (λ (x y) (show-keybindings)))
-                    (help-string (string-constant keybindings-info))
-                    (demand-callback keybindings-on-demand))
-               (new menu-item%
-                    (parent keybindings-menu)
-                    (label (string-constant keybindings-add-user-defined-keybindings))
-                    (callback
-                     (λ (x y)
-                       (with-handlers ([exn? (λ (x)
-                                               (printf "~a\n" (exn-message x)))])
-                         (let ([filename (finder:get-file
-                                          #f
-                                          (string-constant keybindings-choose-user-defined-file)
-                                          #f
-                                          ""
-                                          this)])
-                           (when filename
-                             (add-keybindings-item/update-prefs filename)))))))
-               (new menu-item%
-                    (parent keybindings-menu)
-                    (label (string-constant keybindings-add-user-defined-keybindings/planet))
-                    (callback
-                     (λ (x y)
-                       (let ([planet-spec (get-text-from-user (string-constant drscheme)
-                                                              (string-constant keybindings-type-planet-spec)
-                                                              this
-                                                              last-keybindings-planet-attempt)])
-                         (when planet-spec
-                           (set! last-keybindings-planet-attempt planet-spec)
-                           (cond
-                             [(planet-string-spec? planet-spec)
-                              =>
-                              (λ (planet-sexp-spec)
-                                (add-keybindings-item/update-prefs planet-sexp-spec))]
-                             [else
-                              (message-box (string-constant drscheme)
-                                           (format (string-constant keybindings-planet-malformed-spec)
-                                                   planet-spec)
-                                           #:dialog-mixin frame:focus-table-mixin)]))))))
-               (let ([ud (preferences:get 'drracket:user-defined-keybindings)])
-                 (unless (null? ud)
-                   (new separator-menu-item% (parent keybindings-menu))
-                   (for-each (λ (item)
-                               (new menu-item%
-                                    (label (format (string-constant keybindings-menu-remove)
-                                                   (if (path? item)
-                                                       (path->string item)
-                                                       (format "~s" item))))
-                                    (parent keybindings-menu)
-                                    (callback
-                                     (λ (x y) (remove-keybindings-item item)))))
-                             ud)))))))
+        (define (keybindings-on-demand menu-item)
+          (define last-edit-object (get-edit-target-window))
+          (send menu-item enable (can-show-keybindings?)))
+        (new menu%
+             (label (string-constant keybindings-menu-item))
+             (parent menu)
+             (demand-callback
+              (λ (keybindings-menu)
+                (for-each (λ (old) (send old delete)) 
+                          (send keybindings-menu get-items))
+                (new menu-item%
+                     (parent keybindings-menu)
+                     (label (string-constant keybindings-show-active))
+                     (callback (λ (x y) (show-keybindings)))
+                     (help-string (string-constant keybindings-info))
+                     (demand-callback keybindings-on-demand))
+                (new menu-item%
+                     (parent keybindings-menu)
+                     (label (string-constant keybindings-add-user-defined-keybindings))
+                     (callback
+                      (λ (x y)
+                        (with-handlers ([exn? (λ (x)
+                                                (printf "~a\n" (exn-message x)))])
+                          (let ([filename (finder:get-file
+                                           #f
+                                           (string-constant keybindings-choose-user-defined-file)
+                                           #f
+                                           ""
+                                           this)])
+                            (when filename
+                              (add-keybindings-item/update-prefs filename)))))))
+                (new menu-item%
+                     (parent keybindings-menu)
+                     (label (string-constant keybindings-add-user-defined-keybindings/planet))
+                     (callback
+                      (λ (x y)
+                        (define planet-spec
+                          (get-text-from-user (string-constant drscheme)
+                                              (string-constant keybindings-type-planet-spec)
+                                              this
+                                              last-keybindings-planet-attempt))
+                        (when planet-spec
+                          (set! last-keybindings-planet-attempt planet-spec)
+                          (cond
+                            [(planet-string-spec? planet-spec)
+                             =>
+                             (λ (planet-sexp-spec)
+                               (add-keybindings-item/update-prefs planet-sexp-spec))]
+                            [else
+                             (message-box (string-constant drscheme)
+                                          (format (string-constant keybindings-planet-malformed-spec)
+                                                  planet-spec)
+                                          #:dialog-mixin frame:focus-table-mixin)])))))
+                (define ud (preferences:get 'drracket:user-defined-keybindings))
+                (unless (null? ud)
+                  (new separator-menu-item% (parent keybindings-menu))
+                  (for ([item (in-list ud)])
+                    (new menu-item%
+                         (label (format (string-constant keybindings-menu-remove)
+                                        (if (path? item)
+                                            (path->string item)
+                                            (format "~s" item))))
+                         (parent keybindings-menu)
+                         (callback
+                          (λ (x y) (remove-keybindings-item item)))))))))
         (unless (current-eventspace-has-standard-menus?)
           (make-object separator-menu-item% menu)))
       
@@ -899,7 +897,8 @@
                           [label (brinfo-title a-brinfo)]
                           [callback
                            (λ (x y)
-                             (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))
+                             (help-desk:report-bug (brinfo-id a-brinfo) 
+                                                   #:frame-mixin basics-mixin))]))
                    (new separator-menu-item% [parent saved-bug-reports-menu])
                    (new menu-item%
                         [parent saved-bug-reports-menu]
