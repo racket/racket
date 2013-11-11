@@ -102,8 +102,7 @@ Like @racket[hash-remove!].
 }
 
 @defproc[(free-id-table-remove [table immutable-free-id-table?]
-                               [id identifier?]
-                               [v any/c])
+                               [id identifier?])
          immutable-free-id-table?]{
 
 Like @racket[hash-remove].
@@ -200,11 +199,10 @@ etc) can be used on bound-identifier tables.
                              [v any/c])
          immutable-bound-id-table?]
 @defproc[(bound-id-table-remove! [table mutable-bound-id-table?]
-                              [id identifier?])
+                                 [id identifier?])
          void?]
 @defproc[(bound-id-table-remove [table immutable-bound-id-table?]
-                             [id identifier?]
-                             [v any/c])
+                                [id identifier?])
          immutable-bound-id-table?]
 @defproc[(bound-id-table-map [table bound-id-table?]
                              [proc (-> identifier? any/c any)])
