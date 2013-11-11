@@ -43,10 +43,10 @@
   (log-opt opt-label arity-raising-opt-msg))
 (define-syntax-rule (log-missed-complex-expr)
   (log-missed-optimization
-    "Non complex value in complex arithmetic"
+    "non-complex value in complex arithmetic"
     (string-append
-      "This expression has a non FloatComplex type and thus cannot "
-      "be promoted to unboxed arithmetic.")
+      "This expression has a non-float Complex number type. "
+      "The optimizer could optimize it better if it had type Float-Complex.")
     this-syntax))
 
 ;; If a part is 0.0?
