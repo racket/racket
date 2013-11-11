@@ -37,6 +37,7 @@
       (when bin-dir
         (when (file-exists? authopen)
           (when (directory-exists? paths.d)
+            (define paths.d/racket (build-path paths.d "racket"))
             (define (add-racket/bin-to-path)
               (define sp (open-output-string))
               (define succeeded?
@@ -45,27 +46,31 @@
                                  (format "~a\n" bin-dir))]
                                [current-output-port sp]
                                [current-error-port sp])
-                  (system* authopen "-c" "-w" (path->string
-                                               (build-path
-                                                paths.d
-                                                "racket")))))
+                  (system* authopen "-c" "-w" (path->string paths.d/racket))))
               (define output (get-output-string sp))
+              (define basic-success-message
+                (format (string-constant added-racket/bin-to-path)
+                        paths.d/racket
+                        bin-dir
+                        paths.d/racket))
               (cond
                 [(and (equal? output "") succeeded?)
                  (message-box (string-constant drracket)
-                              (string-constant added-racket/bin-to-path))]
+                              basic-success-message)]
                 [succeeded?
                  (message-box (string-constant drracket)
                               (string-append
-                               (string-constant added-racket/bin-to-path)
+                               basic-success-message
                                "\n\n" output))]
                 [else
                  (message-box (string-constant drracket)
                               (string-append
-                               (string-constant adding-racket/bin-to-path-failed)
-                               (if (equal? output "")
-                                   ""
-                                   (string-append "\n\n" output))))])
+                               (format (string-constant adding-racket/bin-to-path-failed)
+                                       (if (equal? output "")
+                                           ""
+                                           (string-append "\n\n" output "\n\n"))
+                                       paths.d/racket
+                                       bin-dir)))])
               (void))
             (new menu-item% 
                  [label (string-constant add-racket/bin-to-path)]

@@ -1892,7 +1892,20 @@ please adhere to these guidelines:
   (use-a-different-racket "Use a different racket")
 
   ;; adding racket/bin to the path; only under mac os x
-  (added-racket/bin-to-path "Added racket/bin to PATH")
-  (adding-racket/bin-to-path-failed "Attempt to add racket/bin to PATH failed")
-  (add-racket/bin-to-path "Add racket/bin to PATH") ;; menu item label
+  ; first ~a is filled with either the empty string or an error message from elsewhere
+  ;  (bracketed by some newlines to separate it out)
+  ; second ~a is filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; third ~a is filled with the path to the bin directory of the current drracket
+  (adding-racket/bin-to-path-failed 
+   "Attempt to add racket support to the command line failed.~aSpecifically,"
+   " could not create \"~a\" with the contents \"~a\".")
+  ; first and third ~a are filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; and the second one is filled with the path to the bin directory that was put into that file.
+  (added-racket/bin-to-path
+   "You should now be able to use racket and its tools at the"
+   " command-line.\n\nThe"
+   " default PATH has has been configured for all users by adding the file"
+   " ~a to point to ~a. You can undo this"
+   " configuration by deleting ~a.")
+  (add-racket/bin-to-path "Configure Command Line for Racket...") ;; menu item label
   )
