@@ -168,7 +168,10 @@
            ;; if this already had an annotation, we just construct the binding reps
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
             (define top-level? (eq? (syntax-local-context) 'top-level))
-            (for ([var (in-list vars)]) (finish-register-type var top-level?))
+            (for ([var (in-list vars)])
+              (when (dict-has-key? unann-defs var)
+                (free-id-table-remove! unann-defs var))
+              (finish-register-type var top-level?))
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
            ;; special case to infer types for top level defines
            [else
