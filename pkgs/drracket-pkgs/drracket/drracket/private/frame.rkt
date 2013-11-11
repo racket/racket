@@ -23,7 +23,8 @@
   (require string-constants 
            racket/system
            racket/gui/base
-           racket/class)
+           racket/class
+           setup/dirs)
   
   (provide add-menu-macosx-path-item)
   
@@ -32,23 +33,7 @@
   
   (define (add-menu-macosx-path-item menu)
     (when (equal? (system-type) 'macosx)
-      (define binary-dir (find-system-path 'exec-file))
-      (when (relative-path? binary-dir)
-        (set! binary-dir 
-              (simplify-path (build-path (find-system-path 'orig-dir) binary-dir))))
-      (define-values (base name dir?) (split-path binary-dir))
-      (define bin-dir
-        (cond
-          [(equal? (path->string name) "DrRacket")
-           (let loop ([i 3] [pth base])
-             (cond
-               [(zero? i) (simplify-path (build-path pth "bin"))]
-               [else 
-                (define-values (base name dir?) (split-path pth))
-                (loop (- i 1) base)]))]
-          [(equal? (path->string name) "drracket")
-           base]
-          [else #f]))
+      (define bin-dir (find-console-bin-dir))
       (when bin-dir
         (when (file-exists? authopen)
           (when (directory-exists? paths.d)
