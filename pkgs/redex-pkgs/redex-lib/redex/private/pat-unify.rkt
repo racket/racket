@@ -31,6 +31,7 @@
          (struct-out unif-fail)
          not-failed?
          dq
+         dq-dq
          predef-pat?
          unique-name-nums
          fresh-pat-vars
@@ -317,23 +318,47 @@
 (define (param-elim params unquantified-dq)             
   (let loop ([dq-rest unquantified-dq]                                             
              [ps params]             
-             [new-dq-l '()]          
-             [new-dq-r '()])         
+             [new-dq-l '()]         
+             [new-dq-r '()]
+             [lhs-ps (hash)])
     (match dq-rest                   
-      ['((list) (list))              
-       (values ps `((list ,@new-dq-l) (list ,@new-dq-r)))]       
+      ['((list) (list))
+       (define-values
+         (ndql ndqr nps)
+         (for/fold ([ndql new-dq-l] [ndqr new-dq-r] [nps ps])
+           ([(p lhss) (in-hash lhs-ps)])
+           (if ((length lhss) . > . 1)
+               (values (foldr cons ndql lhss)
+                       (foldr cons ndqr (build-list (length lhss) 
+                                                    (λ (_) p)))
+                       nps)
+               (values ndql 
+                       ndqr 
+                       (remove (list-ref p 1) nps)))))
+       (values nps `((list ,@ndql) (list ,@ndqr)))]       
       [`((list (name ,v1,(bound)) ,vs ...) (list ,t1 ,ts ...))    
        (cond                         
-         [(member v1 params)         
+         [(member v1 params)
           (loop `((list ,@vs) (list ,@ts))          
                 (remove v1 ps)                      
                 new-dq-l                            
-                new-dq-r)]           
+                new-dq-r
+                lhs-ps)]
+         [(match t1
+            [`(name ,tn ,(bound)) (member tn ps)]
+            [_ #f])
+          (loop `((list ,@vs) (list ,@ts))
+                ps
+                new-dq-l
+                new-dq-r
+                (hash-set lhs-ps t1 (cons `(name ,v1 ,(bound)) 
+                                          (hash-ref lhs-ps t1 '()))))]
          [else                       
           (loop `((list ,@vs) (list ,@ts))          
                 ps                                  
                 (cons `(name ,v1 ,(bound)) new-dq-l)
-                (cons t1 new-dq-r))])]))) 
+                (cons t1 new-dq-r)
+                lhs-ps)])]))) 
 
 
 ;; the "root" pats will be pats without names,
@@ -738,7 +763,9 @@
   (define res (hash-ref env (lvar id) (λ () #f)))
   (match res
     [(lvar new-id)
-     (lookup new-id env)]
+     (define-values (rep pat) (lookup new-id env))
+     (hash-set! env (lvar id) rep)
+     (values rep pat)]
     [_
      (values (lvar id) res)]))
 
