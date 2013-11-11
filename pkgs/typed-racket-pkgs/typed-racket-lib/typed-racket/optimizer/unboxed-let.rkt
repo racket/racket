@@ -48,21 +48,27 @@
   (pattern
    (letk:let-like-keyword ((~and clause (lhs rhs)) ...)
                           body:opt-expr ...)
-   #:do [(define-syntax-class non-escaping-function
+   #:do [;; Ids that do not escape
+         (define-syntax-class non-escaping-function-id
            (pattern fun-name:id
               #:when (not (or (escapes? #'fun-name #'(begin rhs ...) #f)
                               (escapes? #'fun-name #'(begin body ...) let-loop?)))))
-         ;; clauses of form ((v) rhs), currently only supports 1 lhs var
+
+         ;; Syntax classes for detecting clauses which can be unboxed.
+         ;; This is split from actually unboxing so that variables defined in later clauses will be
+         ;; unboxed in expressions in earlier clauses.
+
+         ;; Clauses of form ((v) rhs), currently only supports 1 lhs var
          (define-syntax-class unboxed-let-clause?
            (pattern ((id:id) rhs:float-complex-expr)
              #:when (could-be-unboxed-in? #'id #'(begin body ...))))
 
          ;; Clauses that define functions that can be lifted
          (define-syntax-class unboxed-fun-clause?
-           (pattern (~and ((_:non-escaping-function) . _)
+           (pattern (~and ((_:non-escaping-function-id) body:expr)
                           _:unboxed-fun-definition)))
 
-         (define-syntax-class unboxed-clause?
+         (define-syntax-class unboxed-clause
             #:attributes (unboxed-let bindings)
             (pattern v:unboxed-let-clause?
               #:attr unboxed-let #t
@@ -89,11 +95,12 @@
                   (syntax-parse #'v
                     [(vs rhs:opt-expr)
                      #'((vs rhs.opt))]))))
+         ;; The entire let clause so that we can log with that when parsing just the clauses
          (define full-syntax this-syntax)
 
          (define-syntax-class unboxed-clauses
            #:attributes ([bindings 1])
-           (pattern (clauses:unboxed-clause? ...)
+           (pattern (clauses:unboxed-clause ...)
              ;; only log when we actually optimize
              #:do [(when (member #t (attribute clauses.unboxed-let))
                      (log-optimization "unboxed let bindings" arity-raising-opt-msg full-syntax))]
@@ -124,7 +131,7 @@
                                                    (and drests #f)
                                                    (and kws '())))))
                doms]
-              [_ #f])) ]
+              [_ #f]))]
     #:when doms
     #:do [
        ;; at least 1 argument has to be of type float-complex
@@ -174,9 +181,7 @@
 ;; it's worth unboxing
 (define (could-be-unboxed-in? v exp)
 
-  ;; if v is a direct child of exp, that means it's used in a boxed
-  ;; fashion, and is not safe to unboxed
-  ;; if not, recur on the subforms
+  ;; Recur on the subforms
   (define (look-at exp)
     (ormap rec (syntax->list exp)))
 

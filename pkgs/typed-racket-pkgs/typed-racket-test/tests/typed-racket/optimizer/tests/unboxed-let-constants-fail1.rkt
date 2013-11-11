@@ -15,7 +15,7 @@ END
 10.0
 
 END
-#lang typed/racket 
+#lang typed/racket
 
 
 (letrec-values (((x) 5.0+5.0i)
