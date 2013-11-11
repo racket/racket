@@ -219,15 +219,6 @@
       [(define-syntaxes . _) (void)]
       [(begin-for-syntax . _) (void)]
 
-      ;; FIXME - we no longer need these special cases
-      ;; these forms are handled in pass1
-      [(define-values () (begin (quote-syntax (require/typed-internal . rest)) (#%plain-app values)))
-       (void)]
-      [(define-values () (begin (quote-syntax (define-type-alias-internal . rest)) (#%plain-app values)))
-       (void)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal . rest)) (#%plain-app values)))
-       (void)]
-
       ;; submodules take care of themselves:
       [(module n spec (#%plain-module-begin body ...))
        (void)]
