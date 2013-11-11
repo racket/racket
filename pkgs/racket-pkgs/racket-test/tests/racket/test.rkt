@@ -1,3 +1,3 @@
 #lang racket/load
 
-(load "quiet.rktl")
+(load (collection-file-path "quiet.rktl" "tests/racket"))

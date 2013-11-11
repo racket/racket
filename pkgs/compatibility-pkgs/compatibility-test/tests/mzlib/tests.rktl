@@ -1,4 +1,4 @@
-(load "loadtest.rktl")
+(load-relative "loadtest.rktl")
 
 (load-in-sandbox "kw.rktl")
 (load-in-sandbox "awk.rktl")
