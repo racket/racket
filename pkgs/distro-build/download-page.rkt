@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 (require racket/format
          racket/path
          racket/system
@@ -60,6 +60,7 @@
                             #:title [title "Racket Downloads"]
                             #:current-rx [current-rx #f]
                             #:git-clone [git-clone #f]
+                            #:help-table [site-help (hash)]
                             #:post-content [post-content null])
 
   (define base-table (get-installers-table table-file))
@@ -122,6 +123,29 @@
                              (list section)))
                (loop l keys (append prev (list section)) #t)))])))
 
+  (define (get-site-help last-col)
+    (let ([h (hash-ref site-help last-col #f)])
+      (if h
+          (let* ([id "help"]
+                 [toggle (let ([elem (~a "document.getElementById" "('" id "')")])
+                           (~a elem ".style.display = ((" elem ".style.display == 'inline') ? 'none' : 'inline');"
+                               " return false;"))])
+            `(" "
+              (div ([class "helpbutton"])
+                   (a ([href "#"]
+                       [class "helpbuttonlabel"]
+                       [onclick ,toggle]
+                       [title "explain"])
+                      nbsp "?" nbsp))
+              (div ([class "hiddenhelp"]
+                    [id ,id]
+                    [onclick ,toggle]
+                    [style "display: none"])
+                   (div ([class "helpcontent"])
+                        (div ([class "helptext"])
+                             ,h)))))
+          null)))
+
   (call-with-output-file* 
    dest
    #:exists 'truncate/replace
@@ -130,12 +154,36 @@
        (write-xexpr
         `(html
           (head (title ,title)
-                (style ,(~a " .detail { font-size: small; }"
-                            " .checksum, .path { font-family: monospace; }"
-                            " .group { background-color : #ccccff; padding-left: 0.5ex; }"
-                            " .major { font-weight : bold; font-size : large; left-border: 1ex; }"
-                            " .minor { font-weight : bold; }"
-                            " a { text-decoration: none; }")))
+                (style @,~a|{ 
+                             .detail { font-size: small; }
+                             .checksum, .path { font-family: monospace; }
+                             .group { background-color : #ccccff; padding-left: 0.5ex; }
+                             .major { font-weight : bold; font-size : large; left-border: 1ex; }
+                             .minor { font-weight : bold; }
+                             .helpbutton {
+                                 display: inline;
+                                 font-family: sans-serif;
+                                 font-size : x-small;
+                                 background-color: #ffffee;
+                                 border: 1px solid black;
+                                 vertical-align: top;
+                              }
+                              .helpbuttonlabel{ vertical-align: top; }
+                             .hiddenhelp {
+                                 width: 0em;
+                                 position: absolute;
+                             }
+                             .helpcontent {
+                                 width: 20em;
+                                 font-family: serif;
+                                 font-size : small;
+                                 font-weight : normal;
+                                 background-color: #ffffee;
+                                 padding: 10px;
+                                 border: 1px solid black;
+                              }
+                            a { text-decoration: none; }
+                           }|))
           (body
            (h2 ,title)
            (table
@@ -171,7 +219,8 @@
                                           (combine-url/relative
                                            (string->url installers-url)
                                            inst))))
-                                 ,last-col)))
+                                 ,last-col))
+                        ,@(get-site-help last-col))
                        (td nbsp)
                        (td ,(if (past-success? inst)
                                 `(span ([class "detail"]) "")
@@ -225,7 +274,8 @@
                             (colspan ,num-cols))
                            ,@(for/list ([col (in-list mid-cols)])
                                `(span nbsp nbsp nbsp))
-                           ,last-col))])))
+                           ,last-col
+                           ,@(get-site-help last-col)))])))
            ,@(if docs-url
                  `((p (a ((href ,docs-url)) "Documentation")
                       ,@(if pdf-docs-url

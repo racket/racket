@@ -147,6 +147,7 @@
     [(#:source-pkgs?) (boolean? val)]
     [(#:mac-pkg?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
+    [(#:site-help) (hash? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
     [(#:pause-before) (and (real? val) (not (negative? val)))]

@@ -121,4 +121,5 @@
                                         "pdf-doc/")
                     #:dest (build-path dest-dir
                                        "index.html")
+                    #:help-table (hash-ref config '#:site-help (hash))
                     #:git-clone (current-directory))

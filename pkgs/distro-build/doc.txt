@@ -306,6 +306,13 @@ Top keywords (recognized only in the configuration top-level):
     supply non-#f `#:smtp-user' and `#:smtp-password' when
     authentication is required by the server
 
+  #:site-help <hash-table> --- hash table of extra "help" information
+    for entries on a web page created by the `site' and
+    `snapshot-site' makefile targets; the hash keys are strings for
+    row labels in the download table (after splitting on "|" and
+    removing "{...}"), and the values are X-expressions for the help
+    content
+
 More precisely, the `distro-build/config' language is like
 `racket/base' except that the module body must have exactly one
 expression (plus any number of definitions, etc.) that produces a

@@ -109,6 +109,7 @@
                                        "index.html")
                     #:current-rx current-rx
                     #:git-clone (current-directory)
+                    #:help-table (hash-ref config '#:site-help (hash))
                     #:post-content `((p "Snapshot ID: " 
                                         (a ((href ,(string-append current-snapshot
                                                                   "/index.html")))
