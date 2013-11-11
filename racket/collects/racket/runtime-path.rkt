@@ -231,10 +231,12 @@
          (raise-syntax-error #f "not a module path" stx  #'mod-path))
        (if (hash-ref required-module-paths mp #f)
            #'(begin)
-           #'(begin-for-syntax
-              (register-ext-files 
-               (#%variable-reference)
-               (list `(module mod-path ,(#%variable-reference)))))))]))
+           (begin
+             (hash-set! required-module-paths mp #t)
+             #'(begin-for-syntax
+                (register-ext-files 
+                 (#%variable-reference)
+                 (list `(module mod-path ,(#%variable-reference))))))))]))
 
 (define-syntax (runtime-paths stx)
   (syntax-case stx ()
