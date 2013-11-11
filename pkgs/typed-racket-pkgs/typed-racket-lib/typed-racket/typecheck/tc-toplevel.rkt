@@ -236,6 +236,8 @@
        (void)]
 
       ;; definitions just need to typecheck their bodies
+      [(define-values () expr)
+       (tc-expr/check #'expr (ret empty))]
       [(define-values (var ...) expr)
        (unless (for/and ([v (in-syntax #'(var ...))])
                  (free-id-table-ref unann-defs v (lambda _ #f)))
