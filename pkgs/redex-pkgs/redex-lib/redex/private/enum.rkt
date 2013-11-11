@@ -1,12 +1,17 @@
 #lang racket/base
-(require racket/contract
+(require racket/bool
+         racket/contract
          racket/function
          racket/list
+         racket/math
          racket/match
          racket/set
 
+         math/flonum
+
          "enumerator.rkt"
          "env.rkt"
+         "error.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
          "preprocess-pat.rkt"
@@ -22,11 +27,13 @@
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-
 (struct lang-enum (enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
+(struct misname-ref (name tag) #:transparent)
 (struct nrep-ref (name subpat) #:transparent)
+(struct decomp (ctx term) #:transparent)
+(struct hide-hole (term) #:transparent)
 
 ;; Top level exports
 (define enum-ith decode)
@@ -34,33 +41,33 @@
 (define (lang-enumerators lang)
   (define l-enums (make-hash))
   (define unused-var/e
-    (except/e var/e
-              (used-vars lang)))
-  (define (enumerate-lang cur-lang enum-f)
+    (apply except/e
+           var/e
+           (used-vars lang)))
+  (define (enumerate-lang! cur-lang enum-f)
     (for ([nt (in-list cur-lang)])
       (hash-set! l-enums
-                   (nt-name nt)
-                   (with-handlers ([exn:fail? fail/e])
-                     (enum-f (nt-rhs nt)
-                             l-enums)))))
-  (let-values ([(fin-lang rec-lang)
-                (sep-lang lang)])
-    (enumerate-lang fin-lang
-                    (λ (rhs enums)
-                       (enumerate-rhss rhs enums unused-var/e)))
-    (enumerate-lang rec-lang
-                    (λ (rhs enums)
-                       (thunk/e +inf.f
-                                (λ ()
-                                   (enumerate-rhss rhs enums unused-var/e)))))
+                 (nt-name nt)
+                 (with-handlers ([exn:fail:redex? fail/e])
+                   (enum-f (nt-rhs nt)
+                           l-enums)))))
+  (define-values (fin-lang rec-lang) (sep-lang lang))
+  (enumerate-lang! fin-lang
+                   (λ (rhs enums)
+                      (enumerate-rhss rhs enums unused-var/e)))
+  (enumerate-lang! rec-lang
+                   (λ (rhs enums)
+                      (thunk/e +inf.f
+                               (λ ()
+                                  (enumerate-rhss rhs enums unused-var/e)))))
 
-    (lang-enum l-enums unused-var/e)))
+  (lang-enum l-enums unused-var/e))
 
 (define (pat-enumerator l-enum pat)
   (map/e
-   fill-refs
+   to-term
    (λ (_)
-      (error 'pat-enum "Enumerator is not a  bijection"))
+      (redex-error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
           (lang-enum-enums l-enum)
           (lang-enum-unused-var/e l-enum))))
@@ -87,7 +94,7 @@
   (define (loop pat)
     (match-a-pattern
      pat
-     [`any (sum/e any/e (many/e any/e))]
+     [`any any/e]
      [`number num/e]
      [`string string/e]
      [`natural natural/e]
@@ -96,24 +103,38 @@
      [`boolean bool/e]
      [`variable var/e]
      [`(variable-except ,s ...)
-      (except/e var/e s)]
+      (apply except/e var/e s)]
      [`(variable-prefix ,s)
-      ;; todo
-      (unimplemented "var-prefix")]
+      (define as-str (symbol->string s))
+      (map/e (compose string->symbol
+                      (curry string-append as-str)
+                      symbol->string)
+             (compose string->symbol
+                      list->string
+                      (curry (flip drop) (string-length as-str))
+                      string->list
+                      symbol->string)
+             var/e)]
      [`variable-not-otherwise-mentioned
       unused/e]
-     [`hole
-      (const/e the-hole)]
+     [`hole (const/e the-hole)]
      [`(nt ,id)
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
       (const/e (name-ref n))]
-     [`(mismatch-name ,n ,pat)
-      (unimplemented "mismatch-name")]
-     [`(in-hole ,p1 ,p2) ;; untested
-      (unsupported pat)]
+     [`(mismatch-name ,n ,tag)
+      (const/e (misname-ref n tag))]
+     [`(in-hole ,p1 ,p2)
+      (map/e decomp
+             (match-lambda
+              [(decomp ctx term)
+               (values ctx term)])
+             (loop p1)
+             (loop p2))]
      [`(hide-hole ,p)
-      (unsupported pat)]
+      (map/e hide-hole
+             hide-hole-term
+             (loop p))]
      [`(side-condition ,p ,g ,e)
       (unsupported pat)]
      [`(cross ,s)
@@ -140,9 +161,20 @@
   (loop pat))
 
 (define/match (env/e nv l-enums unused/e)
-  [((env names nreps) _ _)
+  [((env names misnames nreps) _ _)
    (define (val/e p)
      (pat-refs/e p l-enums unused/e))
+
+   (define/match (misvals/e p-ts)
+     [((cons p ts))
+      (define p/e (val/e p))
+      (fold-enum (λ (ts-excepts tag)
+                    (define excepts
+                      (map cdr ts-excepts))
+                    (cons/e (const/e tag)
+                            (apply except/e p/e excepts)))
+                 (set->list ts))])
+   
    (define/match (reprec/e nv-t)
      [((cons nv tpats))
       (define tpats/e
@@ -152,19 +184,23 @@
                tpats/e))])
    (define names-env
      (hash-traverse/e val/e names))
+
+   (define misnames-env
+     (hash-traverse/e misvals/e misnames))
    
    (define nreps-env
      (hash-traverse/e reprec/e nreps))
    (map/e
     t-env
     (match-lambda
-     [(t-env names nreps)
-      (values names nreps)])
+     [(t-env  names misnames nreps)
+      (values names misnames nreps)])
     names-env
+    misnames-env
     nreps-env)])
 
-;; fill-refs : (ann-pat t-env pat-with-refs) -> redex term
-(define/match (fill-refs ap)
+;; to-term : (ann-pat t-env pat-with-refs) -> redex term
+(define/match (to-term ap)
   [((ann-pat nv term))
    ((refs-to-fn term) nv)])
 
@@ -173,11 +209,25 @@
   (match refpat
     [(ann-pat _ _)
      (define term
-       (fill-refs refpat))
+       (to-term refpat))
      (λ (_) term)]
+    [(decomp ctx-refs termpat-refs)
+     (define ctx-fn (refs-to-fn ctx-refs))
+     (define term-fn (refs-to-fn termpat-refs))
+     (λ (nv)
+        (define ctx (ctx-fn nv))
+        (define term (term-fn term))
+        (plug-hole ctx term))]
+    [(hide-hole p)
+     (define p-fn (refs-to-fn p))
+     (λ (nv)
+        (hide-hole (p-fn nv)))]
     [(name-ref n)
      (λ (nv)
         (t-env-name-ref nv n))]
+    [(misname-ref n tag)
+     (λ (nv)
+        ((refs-to-fn (t-env-misname-ref nv n tag)) nv))]
     [(list subrefpats ...)
      (compose
       append*
@@ -196,6 +246,19 @@
            [_ (sequence-fn (list (refs-to-fn subrefpat)))]))))]
     [else (λ (_) refpat)]))
 
+(define (plug-hole ctx term)
+  (define (plug ctx)
+    (match ctx
+      [(? (curry eq? the-hole)) term]
+      [(list ctxs ...) (map plug ctxs)]
+      [_ ctx]))
+  (define (unhide term)
+    (match term
+      [(list ctxs ...) (map unhide ctxs)]
+      [(hide-hole term) (unhide term)]
+      [_ term]))
+  (unhide (plug ctx)))
+
 ;; (: sequence-fn : (All (a b) (Listof (a -> b)) -> (a -> (Listof b))))
 (define (sequence-fn fs)
   (λ (x)
@@ -203,13 +266,38 @@
        (f x))))
 
 ;; Base Type enumerators
-(define natural/e nats)
+(define natural/e nats/e)
+
+(define (between? x low high)
+  (and (>= x low)
+       (<= x high)))
+(define (range-with-pred/e-p low high)
+  (cons (range/e low high)
+        (λ (n) (between? n low high))))
+(define low/e-p
+  (range-with-pred/e-p #x61 #x7a))
+(define up/e-p
+  (range-with-pred/e-p #x41 #x5a))
+(define bottom/e-p
+  (range-with-pred/e-p #x0 #x40))
+(define mid/e-p
+  (range-with-pred/e-p #x5b #x60))
+(define above1/e-p
+  (range-with-pred/e-p #x7b #xd7FF))
+(define above2/e-p
+  (range-with-pred/e-p #xe000 #x10ffff))
 
 (define char/e
   (map/e
    integer->char
    char->integer
-   (range/e #x61 #x7a)))
+   (disj-sum/e #:append? #t
+               low/e-p
+               up/e-p
+               bottom/e-p
+               mid/e-p
+               above1/e-p
+               above2/e-p)))
 
 (define string/e
   (map/e
@@ -217,17 +305,58 @@
    string->list
    (many/e char/e)))
 
-(define integer/e
-  (sum/e nats
-         (map/e (λ (n) (- (+ n 1)))
-                (λ (n) (- (- n) 1))
-                nats)))
+(define from-1/e
+  (map/e add1
+         sub1
+         nats/e))
 
-;; This is really annoying so I turned it off
-(define real/e empty/e)
+(define integer/e
+  (disj-sum/e #:alternate? #t
+              (cons (const/e 0) zero?)
+              (cons from-1/e (λ (n) (> n 0)))
+              (cons (map/e - - from-1/e)
+                    (λ (n) (< n 0)))))
+
+;; The last 3 here are -inf.0, +inf.0 and +nan.0
+;; Consider moving those to the beginning
+(define weird-flonums/e-p
+  (cons (from-list/e '(+inf.0 -inf.0 +nan.0))
+        (λ (n)
+           (and (flonum? n)
+                (or (infinite? n)
+                    (nan? n))))))
+(define normal-flonums/e-p
+  (cons (take/e (map/e
+                 ordinal->flonum
+                 flonum->ordinal
+                 integer/e)
+                (+ 1 (* 2 9218868437227405311)))
+        (λ (n)
+           (and (flonum? n)
+                (nor (infinite? n)
+                     (nan? n))))))
+(define float/e
+  (disj-sum/e #:append? #t
+              weird-flonums/e-p
+              normal-flonums/e-p))
+
+(define real/e
+  (disj-sum/e #:alternate? #t
+              (cons integer/e exact-integer?)
+              (cons float/e flonum?)))
+
+(define non-real/e
+  (map/e make-rectangular
+         (λ (z)
+            (values (real-part z)
+                    (imag-part z)))
+         real/e
+         (except/e real/e 0 0.0)))
+
 (define num/e
-  (sum/e integer/e
-         real/e))
+  (disj-sum/e #:alternate? #t
+              (cons real/e real?)
+              (cons non-real/e complex?)))
 
 (define bool/e
   (from-list/e '(#t #f)))
@@ -238,14 +367,21 @@
    (compose string->list symbol->string)
    (many1/e char/e)))
 
+(define base/e
+  (disj-sum/e #:alternate? #t
+              (cons (const/e '()) null?)
+              (cons num/e number?)
+              (cons string/e string?)
+              (cons bool/e boolean?)
+              (cons var/e symbol?)))
+
 (define any/e
-  (sum/e num/e
-         string/e
-         bool/e
-         var/e))
+  (fix/e +inf.f
+         (λ (any/e)
+            (disj-sum/e #:alternate? #t
+                        (cons base/e (negate pair?))
+                        (cons (cons/e any/e any/e) pair?)))))
 
-(define (unsupported pat)
-  (error 'generate-term "#:i-th does not support ~s patterns" pat))
-
-(define (unimplemented pat)
-  (error 'generate-term "#:i-th does not yet support ~s patterns" pat))
+(define (flip f)
+  (λ (x y)
+     (f y x)))

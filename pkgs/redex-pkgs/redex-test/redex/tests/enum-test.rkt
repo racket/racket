@@ -16,9 +16,23 @@
                 (unless (redex-match l p term)
                   (error 'bad-term (format "line ~a: i=~a" line i))))))))]))
 
-(define-language Nats
-  (n natural))
-(try-it 100 Nats n)
+;; base types
+(define-language Base
+  (a any)
+  (num number)
+  (s string)
+  (nat natural)
+  (i integer)
+  (r real)
+  (b boolean))
+
+(try-it 100 Base a)
+(try-it 100 Base num)
+(try-it 100 Base s)
+(try-it 100 Base nat)
+(try-it 100 Base i)
+(try-it 100 Base r)
+(try-it 2 Base b)
 
 ;; Repeat test
 (define-language Rep
@@ -86,18 +100,21 @@
   (p (number_!_1 number_!_1))
   (n (p_!_1 p_!_1))
   (x number))
-;; Mismatch isn't working for now, will come back to this.
-#;#;#;
+
 (try-it 100 M m)
 (try-it 100 M n)
 (try-it 100 M p)
 
-;; test variable-not-otherwise-mentioned
-(define-language VarMentioned
+;; test variable filtering
+(define-language Vars
   (mention a b c x y z 2 #f #\c (vec 1 2))
-  (var variable-not-otherwise-mentioned))
+  (varpre (variable-prefix moo))
+  (varexc (variable-except x λ))
+  (varnom variable-not-otherwise-mentioned))
 
-(try-it 20 VarMentioned var)
+(try-it 100 Vars varpre)
+(try-it 100 Vars varexc)
+(try-it 100 Vars varnom)
 
 ;; Named repeats
 (define-language NRep
@@ -124,3 +141,16 @@
 
 (try-it 100 rec e)
 (try-it 100 rec v)
+
+;; Hole/in-hole test
+(define-language Holes
+  (h hole)
+  (ctx (cons hole boolean)
+       (cons boolean hole))
+  (hide (pair ctx (hide-hole ctx)))
+  (i (in-hole ctx number))
+  (i2 (in-hole hide real)))
+
+(try-it 4 Holes ctx)
+(try-it 100 Holes i)
+(try-it 100 Holes i2)
