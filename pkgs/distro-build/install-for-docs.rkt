@@ -52,6 +52,7 @@
 (unless (apply system* (find-exe) 
                "-G" "build/docs/etc" "-l-" 
                "raco" "pkg" "install"
+               "--pkgs"
                "-i" "--deps" "search-auto"
                pkgs)
   (error "install failed"))
