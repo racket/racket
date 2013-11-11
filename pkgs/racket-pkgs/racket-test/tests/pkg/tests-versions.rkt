@@ -21,7 +21,10 @@
    "create packages"
    $ "raco pkg create --format zip test-pkgs/pkg-v-one"
    $ "raco pkg create --format zip test-pkgs/pkg-v-two"
-   $ "raco pkg create --format zip test-pkgs/pkg-w-one")
+   $ "raco pkg create --format zip test-pkgs/pkg-w-one"
+   $ "raco pkg create --format zip test-pkgs/pkg-v-three"
+   $ "raco pkg create --format zip test-pkgs/pkg-w-two"
+   $ "raco pkg create --format zip test-pkgs/pkg-w-three")
 
   (hash-set! *index-ht-1* "pkg-v"
              (hasheq 'checksum
@@ -60,6 +63,35 @@
    "update"
    (shelly-begin "auto-update now succeeds (installs and version matches)"
                  $ "raco pkg install --deps search-auto pkg-w"))
+
+  (hash-set! *index-ht-1* "pkg-v"
+             (hasheq 'checksum
+                     (file->string "test-pkgs/pkg-v-three.zip.CHECKSUM")
+                     'source
+                     "http://localhost:9999/pkg-v-three.zip"))
+  (hash-set! *index-ht-1* "pkg-w"
+             (hasheq 'checksum
+                     (file->string "test-pkgs/pkg-w-two.zip.CHECKSUM")
+                     'source
+                     "http://localhost:9999/pkg-w-two.zip"))
+
+  (shelly-case
+   "update again"
+   (shelly-begin "transitive update succeeds"
+                 $ "raco pkg update --auto pkg-w"
+                 =stdout> #rx"automatically updated.*  pkg-v"))
+
+  (hash-set! *index-ht-1* "pkg-w"
+             (hasheq 'checksum
+                     (file->string "test-pkgs/pkg-w-three.zip.CHECKSUM")
+                     'source
+                     "http://localhost:9999/pkg-w-three.zip"))
+
+  (shelly-case
+   "update again"
+   (shelly-begin "update without needed pkg-v update"
+                 $ "raco pkg update --auto pkg-w"
+                 =stdout> #rx"esolving \"pkg-v\"(?!.*pkg-v)"))
 
   (initialize-catalogs)))
 
