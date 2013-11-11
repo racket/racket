@@ -11,31 +11,10 @@
 
 ;; -------------------- the real stuff
 
-
-
-;; Look for `lookfor' in `enclosing', return chain of syntaxes from
-;; the innermost out of only syntaxes with the given src, returns #f
-;; if it can't find it.
-(define (enclosing-syntaxes-with-source enclosing lookfor src)
-  (let loop ([r '()] [stx enclosing])
-    ;(printf "stx is ~a\n" (syntax->datum stx))
-    ;(printf "source is ~a\n" (syntax-source stx))
-    (let* ([r* (if (and (syntax? stx) (eq? src (syntax-source stx)))
-                   (cons stx r)
-                   r)])
-      (if (eq? stx lookfor)
-          r*
-          (let ([stx (if (syntax? stx) (syntax-e stx) stx)])
-            (and (pair? stx)
-                 (or (loop r* (car stx)) (loop r* (cdr stx)))))))))
-
-
-
-
 ;; Look for (the outermost) syntax in `orig' that has the same
 ;; location as `lookfor' which is coming from the expanded `orig',
 ;; given in `expanded'.
-(define (recover-source-syntax orig expanded)
+(define (recover-source-syntax orig expanded #:traverse-now? [now? #f])
   (define src (syntax-source orig))
 
   ;; this maps source locations that are from orig to their syntax
@@ -55,6 +34,8 @@
       (hash-ref syntax-locs (syntax-loc expanded) #f))
 
   ;; this searches for lookfor in orig, building up the table as we go
+  ;; add-to-table: stx or #f -> stx or #f
+  ;; #f as `lookfor` indicates "traverse all of `expanded`
   (define (add-to-table lookfor)
     (let loop ([stx expanded] [target initial-target])
       (cond
@@ -68,7 +49,7 @@
 	(hash-ref! parent-table stx new-target)
 	(cond
 	 ;; if we got what we came for, stop
-	 [(eq? stx lookfor) new-target]
+	 [(and lookfor (eq? stx lookfor)) new-target]
 
 	 ;; take apart stx and loop on the components
 	 [else
@@ -77,11 +58,16 @@
               (or (loop (car stxe) stx) (loop (cdr stxe) stx)))])]
        [else #f])))
 
+  ;; if now?, add everything to the table
+  (when now?
+    (add-to-table #f))
+
   (lambda (lookfor)
     (or
      ;; we just might get a lookfor that is already in the original
      (and (eq? src (syntax-source lookfor))
           (hash-ref syntax-locs (syntax-loc lookfor) #f))
      (hash-ref parent-table lookfor (λ ()
-                                      (add-to-table lookfor)
-                                      (hash-ref parent-table lookfor #f))))))
+                                      (cond [now? #f]
+                                            [else (add-to-table lookfor)
+                                                  (hash-ref parent-table lookfor #f)]))))))
