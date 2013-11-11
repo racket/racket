@@ -82,7 +82,8 @@
        ;; expanded-stx
        (define recover (hash-ref! recover-table (cons (original-stx) (expanded-stx))
 				  (lambda ()
-				    (recover-source-syntax (original-stx) (expanded-stx)))))
+				    (recover-source-syntax (original-stx) (expanded-stx)
+                                                           #:traverse-now? #t))))
        (define better-stx (and stx (recover stx)))
        (with-syntax ([quote (syntax-shift-phase-level #'quote phase)])
          #`(quote (#,(short-version better-stx 10)
