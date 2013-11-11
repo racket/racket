@@ -534,3 +534,9 @@ extent of the change, which is an important idea for the reader. In
 addition, @racket[parameterize] ensures that your code is more likely to
 work with continuations and threads, an important idea for Racket
 programmers.
+
+
+@section{Plural}
+
+Avoid plural when naming collections and libraries. Use @racketmodname[racket/contract]
+and @racketmodname[data/heap], not @tt{racket/contracts} or @tt{data/heaps}.

@@ -8,20 +8,20 @@
 @; -----------------------------------------------------------------------------
 
 Since 1995 PLT has grown from a handful of ``repository contributors'' to
- three dozen and more. This growth implies a lot of learning on our side
- and the introduction of inconsistencies of programming styles. It is time
- to leverage the former and to start reducing the latter. Doing so will
+ three dozen and more. This growth implies a lot of learning 
+ and the introduction of inconsistencies of programming styles. This document
+ is an attempt leverage the former and to start reducing the latter. Doing so will
  help us, the developers, and our users, who use the open source code in
  our repository as an implicit guide to Racket programming.
 
-To manage the growth of PLT and to showcase good Racket coding, we need
- rules that govern the contributions to the code base. These rules should
+To help manage the growth our code and showcase good Racket style, we need
+ guidelines that shape the contributions to the code base. These guidelines should
  achieve some level of consistency across the different portions of the
- code base so that everyone who opens files should easily find his way
+ code base so that everyone who opens files can easily find their way
  around.
 
-This document spells out the rules. They cover a range of topics, from
- basic work (commit) habits to small syntactic ideas like indentations and
+This document spells out the guidelines. They cover a range of topics, from
+ basic work (commit) habits to small syntactic ideas like indentation and
  naming.
 
 Many pieces of the code base don't live up to the rules yet.  Here is how
@@ -46,7 +46,7 @@ Also, look over the commit messages. If you see problems with the code
  the first author via email. If your request gets ignored, appeal to all
  four authors.
 
-@bold{Note} The recommendations in this style guide may not jive with what
+@bold{Note} The recommendations in this style guide may not jibe with what
  you grew up with. (They conflict with some of the ideas that the primary
  author had about style.) But if you do write code that ends up in the
  Racket code base, please follow the recommendations here. If/when someone
