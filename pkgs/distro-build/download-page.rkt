@@ -126,7 +126,7 @@
   (define (get-site-help last-col)
     (let ([h (hash-ref site-help last-col #f)])
       (if h
-          (let* ([id "help"]
+          (let* ([id (~a "help" (gensym))]
                  [toggle (let ([elem (~a "document.getElementById" "('" id "')")])
                            (~a elem ".style.display = ((" elem ".style.display == 'inline') ? 'none' : 'inline');"
                                " return false;"))])
