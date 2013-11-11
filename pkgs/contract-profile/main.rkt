@@ -16,13 +16,12 @@
   (define n-samples             (length contract-samples))
   ;; combine blame info and stack trace info. samples should line up
   (define aug-contract-samples
-    (if (= (length contract-samples) (length samples))
-        (map cons contract-samples samples)
-        ;; This case happens on DrDr. Not sure how that's possible.
-        (begin (displayln contract-samples)
-               (displayln samples)
-               (error "contract-samples and samples are not of same length"
-                      (length contract-samples) " vs " (length samples)))))
+    ;; If the sampler was stopped after recording a contract sample, but
+    ;; before recording the corresponding time sample, the two lists may
+    ;; be of different lengths. That's ok, just drop the extra sample.
+    (for/list ([c-s (in-list contract-samples)]
+               [s   (in-list samples)])
+      (cons c-s s)))
   (define live-contract-samples (filter car aug-contract-samples))
   (define n-contract-samples    (length live-contract-samples))
   (define all-blames
