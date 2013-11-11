@@ -19,6 +19,74 @@
                         #:wrap-terminal-action wrap-terminal-action
                         #:package-to-offer package-to-offer)))
 
+(module add-racket-to-macosx-path racket/base
+  (require string-constants 
+           racket/system
+           racket/gui/base
+           racket/class)
+  
+  (provide add-menu-macosx-path-item)
+  
+  (define authopen "/usr/libexec/authopen")
+  (define paths.d "/etc/paths.d") 
+  
+  (define (add-menu-macosx-path-item menu)
+    (when (equal? (system-type) 'macosx)
+      (define binary-dir (find-system-path 'exec-file))
+      (when (relative-path? binary-dir)
+        (set! binary-dir 
+              (simplify-path (build-path (find-system-path 'orig-dir) binary-dir))))
+      (define-values (base name dir?) (split-path binary-dir))
+      (define bin-dir
+        (cond
+          [(equal? (path->string name) "DrRacket")
+           (let loop ([i 3] [pth base])
+             (cond
+               [(zero? i) (simplify-path (build-path pth "bin"))]
+               [else 
+                (define-values (base name dir?) (split-path pth))
+                (loop (- i 1) base)]))]
+          [(equal? (path->string name) "drracket")
+           base]
+          [else #f]))
+      (when bin-dir
+        (when (file-exists? authopen)
+          (when (directory-exists? paths.d)
+            (define (add-racket/bin-to-path)
+              (define sp (open-output-string))
+              (define succeeded?
+                (parameterize ([current-input-port 
+                                (open-input-string 
+                                 (format "~a\n" bin-dir))]
+                               [current-output-port sp]
+                               [current-error-port sp])
+                  (system* authopen "-c" "-w" (path->string
+                                               (build-path
+                                                paths.d
+                                                "racket")))))
+              (define output (get-output-string sp))
+              (cond
+                [(and (equal? output "") succeeded?)
+                 (message-box (string-constant drracket)
+                              (string-constant added-racket/bin-to-path))]
+                [succeeded?
+                 (message-box (string-constant drracket)
+                              (string-append
+                               (string-constant added-racket/bin-to-path)
+                               "\n\n" output))]
+                [else
+                 (message-box (string-constant drracket)
+                              (string-append
+                               (string-constant adding-racket/bin-to-path-failed)
+                               (if (equal? output "")
+                                   ""
+                                   (string-append "\n\n" output))))])
+              (void))
+            (new menu-item% 
+                 [label (string-constant add-racket/bin-to-path)]
+                 [parent menu]
+                 [callback (λ (x y) (add-racket/bin-to-path))])))))))
+
 (require string-constants
          racket/match
          racket/class
@@ -837,6 +905,10 @@
                         [parent saved-bug-reports-menu]
                         [label (string-constant disacard-all-saved-bug-reports)]
                         [callback (λ (x y) (discard-all-saved-bug-reports))])]))))])
+    (add-menu-macosx-path-item menu)
     (drracket:app:add-language-items-to-help-menu menu)))
 
 
+
+
+(require (submod "." add-racket-to-macosx-path))

@@ -1890,5 +1890,9 @@ please adhere to these guidelines:
   (enter-subcollection "Enter subcollection") ; button in new dialog
   (path-to-racket-binary "Path to binary")
   (use-a-different-racket "Use a different racket")
-  
+
+  ;; adding racket/bin to the path; only under mac os x
+  (added-racket/bin-to-path "Added racket/bin to PATH")
+  (adding-racket/bin-to-path-failed "Attempt to add racket/bin to PATH failed")
+  (add-racket/bin-to-path "Add racket/bin to PATH") ;; menu item label
   )
