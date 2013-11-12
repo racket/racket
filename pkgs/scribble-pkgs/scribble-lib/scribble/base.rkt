@@ -567,7 +567,7 @@
     ;; that the space is preserved exactly:
     (let ([spaces (regexp-match-positions #rx"(?:^| ) +" str)])
       (if spaces
-        (list* (substring str 0 (caar spaces))
+        (list* (make-element 'tt (substring str 0 (caar spaces)))
                (hspace (- (cdar spaces) (caar spaces)))
                (str->elts (substring str (cdar spaces))))
         (list (make-element 'tt (list str))))))
