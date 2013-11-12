@@ -317,7 +317,7 @@ void scheme_init_file(Scheme_Env *env)
   windows_symbol = scheme_intern_symbol("windows");
   unix_symbol = scheme_intern_symbol("unix");
 
-  p = scheme_make_prim_w_arity(path_p, "path?", 1, 1);
+  p = scheme_make_immed_prim(path_p, "path?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("path?", p, env);
@@ -333,49 +333,49 @@ void scheme_init_file(Scheme_Env *env)
                                                       1, 1, 1), 
 			     env);
   scheme_add_global_constant("system-path-convention-type", 
-			     scheme_make_prim_w_arity(platform_path_kind, 
-                                                      "system-path-convention-type", 
-                                                      0, 0),
+			     scheme_make_immed_prim(platform_path_kind, 
+                                                    "system-path-convention-type", 
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("path->string", 
-			     scheme_make_prim_w_arity(path_to_string, 
-						      "path->string", 
-						      1, 1), 
+			     scheme_make_immed_prim(path_to_string, 
+                                                    "path->string", 
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("path->bytes", 
-			     scheme_make_prim_w_arity(path_to_bytes, 
-						      "path->bytes", 
-						      1, 1), 
+			     scheme_make_immed_prim(path_to_bytes, 
+                                                    "path->bytes", 
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("path-element->bytes", 
-			     scheme_make_prim_w_arity(path_element_to_bytes, 
-						      "path-element->bytes", 
-						      1, 1), 
+			     scheme_make_immed_prim(path_element_to_bytes, 
+                                                    "path-element->bytes", 
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("path-element->string", 
-			     scheme_make_prim_w_arity(path_element_to_string, 
-						      "path-element->string", 
-						      1, 1), 
+			     scheme_make_immed_prim(path_element_to_string, 
+                                                    "path-element->string", 
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("string->path", 
-			     scheme_make_prim_w_arity(string_to_path, 
-						      "string->path", 
-						      1, 1), 
+			     scheme_make_immed_prim(string_to_path, 
+                                                    "string->path", 
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("bytes->path", 
-			     scheme_make_prim_w_arity(bytes_to_path, 
-						      "bytes->path", 
-						      1, 2), 
+			     scheme_make_immed_prim(bytes_to_path, 
+                                                    "bytes->path", 
+                                                    1, 2), 
 			     env);
   scheme_add_global_constant("bytes->path-element", 
-			     scheme_make_prim_w_arity(bytes_to_path_element, 
-						      "bytes->path-element", 
-						      1, 2), 
+			     scheme_make_immed_prim(bytes_to_path_element, 
+                                                    "bytes->path-element", 
+                                                    1, 2), 
 			     env);
   scheme_add_global_constant("string->path-element", 
-			     scheme_make_prim_w_arity(string_to_path_element, 
-						      "string->path-element", 
-						      1, 1), 
+			     scheme_make_immed_prim(string_to_path_element, 
+                                                    "string->path-element", 
+                                                    1, 1), 
 			     env);
 
   scheme_add_global_constant("file-exists?", 
@@ -410,19 +410,19 @@ void scheme_init_file(Scheme_Env *env)
 						      2, 3), 
 			     env);
   scheme_add_global_constant("build-path", 
-			     scheme_make_prim_w_arity(scheme_build_path,
-						      "build-path", 
-						      1, -1), 
+			     scheme_make_immed_prim(scheme_build_path,
+                                                    "build-path", 
+                                                    1, -1), 
 			     env);
   scheme_add_global_constant("build-path/convention-type", 
-			     scheme_make_prim_w_arity(build_path_kind,
-						      "build-path/convention-type", 
-						      2, -1), 
+			     scheme_make_immed_prim(build_path_kind,
+                                                    "build-path/convention-type", 
+                                                    2, -1), 
 			     env);
   scheme_add_global_constant("path->directory-path",
-			     scheme_make_prim_w_arity(path_to_directory_path,
-						      "path->directory-path",
-						      1, 1), 
+			     scheme_make_immed_prim(path_to_directory_path,
+                                                    "path->directory-path",
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("split-path", 
 			     scheme_make_prim_w_arity2(split_path,
@@ -431,29 +431,29 @@ void scheme_init_file(Scheme_Env *env)
 						       3, 3), 
 			     env);
   scheme_add_global_constant("explode-path", 
-			     scheme_make_prim_w_arity(explode_path,
-                                                      "explode-path",
-                                                      1, 1), 
+			     scheme_make_immed_prim(explode_path,
+                                                    "explode-path",
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("relative-path?", 
-			     scheme_make_prim_w_arity(relative_path_p,
-						      "relative-path?",
-						      1, 1), 
+			     scheme_make_immed_prim(relative_path_p,
+                                                    "relative-path?",
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("absolute-path?", 
-			     scheme_make_prim_w_arity(absolute_path_p,
-						      "absolute-path?",
-						      1, 1), 
+			     scheme_make_immed_prim(absolute_path_p,
+                                                    "absolute-path?",
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("complete-path?", 
-			     scheme_make_prim_w_arity(complete_path_p,
-						      "complete-path?",
-						      1, 1), 
+			     scheme_make_immed_prim(complete_path_p,
+                                                    "complete-path?",
+                                                    1, 1), 
 			     env);
   scheme_add_global_constant("path->complete-path",
-			     scheme_make_prim_w_arity(path_to_complete_path,
-						      "path->complete-path",
-						      1, 2), 
+			     scheme_make_immed_prim(path_to_complete_path,
+                                                    "path->complete-path",
+                                                    1, 2), 
 			     env);
   scheme_add_global_constant("resolve-path",
 			     scheme_make_prim_w_arity(resolve_path,

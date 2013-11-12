@@ -406,7 +406,7 @@ scheme_init_struct (Scheme_Env *env)
 				     2, 2);
     REGISTER_SO(scheme_impersonator_of_property);
     scheme_impersonator_of_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("impersonator-of"),
-                                                                        guard);
+                                                                               guard);
     scheme_add_global_constant("prop:impersonator-of", scheme_impersonator_of_property, env);
   }
 
@@ -447,7 +447,7 @@ scheme_init_struct (Scheme_Env *env)
 				     "guard-for-prop:rename-transformer",
 				     2, 2);
     rename_transformer_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("rename-transformer"),
-                                                                          guard);
+                                                                           guard);
     
     scheme_add_global_constant("prop:rename-transformer", rename_transformer_property, env);
   }
@@ -471,7 +471,7 @@ scheme_init_struct (Scheme_Env *env)
 				     2, 2);
     REGISTER_SO(scheme_checked_proc_property);
     scheme_checked_proc_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("checked-procedure"),
-                                                                             guard);
+                                                                            guard);
     scheme_add_global_constant("prop:checked-procedure", scheme_checked_proc_property, env);
   }
 
@@ -522,14 +522,14 @@ scheme_init_struct (Scheme_Env *env)
 
   scheme_add_global_constant("make-struct-type", 
                              scheme_make_struct_type_proc,
-			    env);
+                             env);
 
   scheme_add_global_constant("make-struct-type-property", 
-			    scheme_make_prim_w_arity2(make_struct_type_property,
-						      "make-struct-type-property",
-						      1, 4,
-						      3, 3),
-			    env);
+                             scheme_make_prim_w_arity2(make_struct_type_property,
+                                                       "make-struct-type-property",
+                                                       1, 4,
+                                                       3, 3),
+                             env);
 
   REGISTER_SO(scheme_make_struct_field_accessor_proc);
   scheme_make_struct_field_accessor_proc = scheme_make_prim_w_arity(make_struct_field_accessor,
@@ -592,14 +592,14 @@ scheme_init_struct (Scheme_Env *env)
 
   scheme_add_global_constant("struct-type-property?",
 			     scheme_make_folding_prim(struct_type_property_p,
-						     "struct-type-property?",
-						     1, 1, 1),
-			    env);
+                                                      "struct-type-property?",
+                                                      1, 1, 1),
+                             env);
   scheme_add_global_constant("procedure-struct-type?",
 			     scheme_make_folding_prim(proc_struct_type_p,
-						     "procedure-struct-type?",
-						     1, 1, 1),
-			    env);
+                                                      "procedure-struct-type?",
+                                                      1, 1, 1),
+                             env);
   scheme_add_global_constant("procedure-extract-target",
                              scheme_make_prim_w_arity(procedure_extract_target,
                                                       "procedure-extract-target",
@@ -636,9 +636,9 @@ scheme_init_struct (Scheme_Env *env)
 						      1, 2),
 			     env);
   scheme_add_global_constant("prefab-struct-key",
-			     scheme_make_prim_w_arity(prefab_struct_key,
-						      "prefab-struct-key",
-						      1, 1),
+			     scheme_make_immed_prim(prefab_struct_key,
+                                                    "prefab-struct-key",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("make-prefab-struct",
 			     scheme_make_prim_w_arity(make_prefab_struct,
@@ -658,52 +658,52 @@ scheme_init_struct (Scheme_Env *env)
   /*** Predicates ****/
 
   scheme_add_global_constant("struct-mutator-procedure?",
-			     scheme_make_prim_w_arity(struct_setter_p,
-						      "struct-mutator-procedure?",
-						      1, 1),
-			    env);
+			     scheme_make_immed_prim(struct_setter_p,
+                                                    "struct-mutator-procedure?",
+                                                    1, 1),
+                             env);
   scheme_add_global_constant("struct-accessor-procedure?",
-			     scheme_make_prim_w_arity(struct_getter_p,
-						      "struct-accessor-procedure?",
-						      1, 1),
-			    env);
+			     scheme_make_immed_prim(struct_getter_p,
+                                                    "struct-accessor-procedure?",
+                                                    1, 1),
+                             env);
   scheme_add_global_constant("struct-predicate-procedure?",
-			     scheme_make_prim_w_arity(struct_pred_p,
-						      "struct-predicate-procedure?",
-						      1, 1),
+			     scheme_make_immed_prim(struct_pred_p,
+                                                    "struct-predicate-procedure?",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("struct-constructor-procedure?",
-			     scheme_make_prim_w_arity(struct_constr_p,
-						      "struct-constructor-procedure?",
-						      1, 1),
+			     scheme_make_immed_prim(struct_constr_p,
+                                                    "struct-constructor-procedure?",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("struct-type-property-accessor-procedure?",
-			     scheme_make_prim_w_arity(struct_prop_getter_p,
-						      "struct-type-property-accessor-procedure?",
-						      1, 1),
+			     scheme_make_immed_prim(struct_prop_getter_p,
+                                                    "struct-type-property-accessor-procedure?",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("impersonator-property-accessor-procedure?",
-			     scheme_make_prim_w_arity(chaperone_prop_getter_p,
-						      "impersonator-property-accessor-procedure?",
-						      1, 1),
+			     scheme_make_immed_prim(chaperone_prop_getter_p,
+                                                    "impersonator-property-accessor-procedure?",
+                                                    1, 1),
 			     env);
   
   /*** Inspectors ****/
 
   REGISTER_SO(scheme_make_inspector_proc);
-  scheme_make_inspector_proc = scheme_make_prim_w_arity(make_inspector,
-                                                        "make-inspector",
-                                                        0, 1);
+  scheme_make_inspector_proc = scheme_make_immed_prim(make_inspector,
+                                                      "make-inspector",
+                                                      0, 1);
   scheme_add_global_constant("make-inspector", scheme_make_inspector_proc, env);
   scheme_add_global_constant("make-sibling-inspector",
-			     scheme_make_prim_w_arity(make_sibling_inspector,
-						      "make-sibling-inspector",
-						      0, 1),
+			     scheme_make_immed_prim(make_sibling_inspector,
+                                                    "make-sibling-inspector",
+                                                    0, 1),
 			     env);
   scheme_add_global_constant("inspector?",
-			     scheme_make_prim_w_arity(inspector_p,
+			     scheme_make_folding_prim(inspector_p,
 						      "inspector?",
-						      1, 1),
+						      1, 1, 1),
 			     env);
   
   REGISTER_SO(scheme_current_inspector_proc);
@@ -721,14 +721,14 @@ scheme_init_struct (Scheme_Env *env)
 
 
   scheme_add_global_constant("make-special-comment", 
-			     scheme_make_prim_w_arity(make_special_comment,
-						      "make-special-comment",
-						      1, 1),
+			     scheme_make_immed_prim(make_special_comment,
+                                                    "make-special-comment",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("special-comment-value", 
-			     scheme_make_prim_w_arity(special_comment_value,
-						      "special-comment-value",
-						      1, 1),
+			     scheme_make_immed_prim(special_comment_value,
+                                                    "special-comment-value",
+                                                    1, 1),
 			     env);
   scheme_add_global_constant("special-comment?", 
 			     scheme_make_folding_prim(special_comment_p,

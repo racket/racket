@@ -498,34 +498,34 @@ scheme_init_fun (Scheme_Env *env)
 						       4, 4),
 			     env);
   scheme_add_global_constant("current-milliseconds",
-			     scheme_make_prim_w_arity(current_milliseconds,
-						      "current-milliseconds",
-						      0, 0),
+			     scheme_make_immed_prim(current_milliseconds,
+                                                    "current-milliseconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("current-inexact-milliseconds",
-			     scheme_make_prim_w_arity(current_inexact_milliseconds,
-						      "current-inexact-milliseconds",
-						      0, 0),
+			     scheme_make_immed_prim(current_inexact_milliseconds,
+                                                    "current-inexact-milliseconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("current-process-milliseconds",
-			     scheme_make_prim_w_arity(current_process_milliseconds,
-						      "current-process-milliseconds",
-						      0, 1),
+			     scheme_make_immed_prim(current_process_milliseconds,
+                                                    "current-process-milliseconds",
+                                                    0, 1),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
-			     scheme_make_prim_w_arity(current_gc_milliseconds,
-						      "current-gc-milliseconds",
-						      0, 0),
+			     scheme_make_immed_prim(current_gc_milliseconds,
+                                                    "current-gc-milliseconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("current-seconds",
-			     scheme_make_prim_w_arity(current_seconds,
-						      "current-seconds",
-						      0, 0),
+			     scheme_make_immed_prim(current_seconds,
+                                                    "current-seconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("seconds->date",
-			     scheme_make_prim_w_arity(seconds_to_date,
-						      "seconds->date",
-						      1, 2),
+			     scheme_make_immed_prim(seconds_to_date,
+                                                    "seconds->date",
+                                                    1, 2),
 			     env);
 #endif
 
