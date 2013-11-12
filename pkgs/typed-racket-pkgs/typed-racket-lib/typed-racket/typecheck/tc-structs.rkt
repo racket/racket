@@ -9,11 +9,10 @@
          (private parse-type syntax-properties)
          (types abbrev utils resolve substitute type-table struct-table)
          (env global-env type-name-env tvar-env)
-         (utils tc-utils)
+         (utils tc-utils syntax-classes)
          (typecheck def-binding)
          (for-syntax syntax/parse racket/base)
-         (for-template racket/base
-                       "internal-forms.rkt"))
+         (for-template racket/base))
 
 (provide tc/struct name-of-struct d-s
          refine-struct-variance!
@@ -50,16 +49,8 @@
 
 (define (name-of-struct stx)
   (syntax-parse stx
-    #:literal-sets (kernel-literals)
-    #:literals (define-typed-struct-internal values)
-    [(#%define-values () (begin (quote-syntax
-                                  (~or
-                                    (define-typed-struct-internal
-                                      (~optional (ids:id ...))
-                                      nm/par:parent . rest)
-                                    (define-typed-struct/exec-internal
-                                      nm/par:parent . rest)))
-                                (#%plain-app values)))
+    [(~or t:typed-struct t:typed-struct/exec)
+     #:with nm/par:parent #'t.nm
      #'nm/par.name]))
 
 
