@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require (for-label (except-in racket/base
+@(require "common.rkt"
+          (for-label (except-in racket/base
                                 remove)
                      racket/contract/base
                      pkg
@@ -167,12 +168,16 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?]
-                     [#:quiet? quiet? boolean? #f])
+                     [#:quiet? quiet? boolean? #f]
+                     [#:from-command-line? from-command-line? boolean? #f])
         void?]{
 
 Implements @racket[pkg-create-command].
 
-Unless @racket[quiet?] is true, information about the output is repotred to the current output port.}
+Unless @racket[quiet?] is true, information about the output is
+reported to the current output port. If @racket[from-command-line?]
+is true, error messages may suggest specific command-line flags for
+@command-ref{create}.}
 
 
 @defproc[(pkg-install      [descs (listof pkg-desc?)]
@@ -183,6 +188,7 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
+                           [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary) #f]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
@@ -205,6 +211,9 @@ named @racket['pkg], but information that is especially relevant to a
 user (such as a download action) is reported to the current output
 port, unless @racket[quiet?] is true.
 
+If @racket[from-command-line?]  is true, error messages may suggest
+specific command-line flags for @command-ref{install}.
+
 The package lock must be held; see @racket[with-pkg-lock].}
 
 
@@ -217,6 +226,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
                           [#:quiet? boolean? quiet? #f]
+                          [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary) #f]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
@@ -231,6 +241,9 @@ A string in @racket[names] refers to an installed package that should
 be checked for updates. A @racket[pkg-desc] in @racket[names] indicates
 a package source that should replace the current installation.
 
+If @racket[from-command-line?]  is true, error messages may suggest
+specific command-line flags for @command-ref{update}.
+
 The package lock must be held; see @racket[with-pkg-lock].}
 
 
@@ -238,7 +251,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:demote? demote? boolean? #f]
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f]
-                          [#:quiet? boolean? quiet? #f])
+                          [#:quiet? boolean? quiet? #f]
+                          [#:from-command-line? from-command-line? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string? 
@@ -247,6 +261,9 @@ The package lock must be held; see @racket[with-pkg-lock].}
 Implements @racket[pkg-remove-command]. The result is the same as for
 @racket[pkg-install], indicating collects that should be setup via
 @exec{raco setup}.
+
+If @racket[from-command-line?]  is true, error messages may suggest
+specific command-line flags for @command-ref{remove}.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
@@ -270,6 +287,7 @@ The package lock must be held to allow reads; see
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
+                           [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary) #f])
          (or/c 'skip
                #f
@@ -278,6 +296,9 @@ The package lock must be held to allow reads; see
 
 Implements @racket[pkg-migrate-command].  The result is the same as for
 @racket[pkg-install].
+
+If @racket[from-command-line?]  is true, error messages may suggest
+specific command-line flags for @command-ref{migrate}.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 

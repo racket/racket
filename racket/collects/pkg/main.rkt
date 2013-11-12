@@ -178,7 +178,8 @@
                   (with-pkg-lock
                    (parameterize ([current-pkg-catalogs (and catalog
                                                              (list (catalog->url catalog)))])
-                     (pkg-install #:dep-behavior (if auto 'search-auto deps)
+                     (pkg-install #:from-command-line? #t
+                                  #:dep-behavior (if auto 'search-auto deps)
                                   #:all-platforms? all-platforms
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
@@ -234,6 +235,7 @@
                                      (if (eq? pkg-type 'name)
                                          pkg-name
                                          (pkg-desc pkg-source a-type name checksum #f))]))
+                                 #:from-command-line? #t
                                  #:all? all
                                  #:dep-behavior (if auto 'search-auto deps)
                                  #:all-platforms? all-platforms
@@ -264,6 +266,7 @@
                 (define setup-collects
                   (with-pkg-lock
                    (pkg-remove pkg
+                               #:from-command-line? #t
                                #:demote? demote
                                #:auto? auto
                                #:force? force)))
@@ -335,6 +338,7 @@
                    (parameterize ([current-pkg-catalogs (and catalog
                                                              (list (catalog->url catalog)))])
                      (pkg-migrate from-version
+                                  #:from-command-line? #t
                                   #:dep-behavior deps
                                   #:force? force
                                   #:all-platforms? all-platforms
@@ -364,6 +368,7 @@
              (parameterize ([current-pkg-error (pkg-error 'create)])
                (pkg-create (if manifest 'MANIFEST (or format 'zip)) 
                            directory-or-package
+                           #:from-command-line? #t
                            #:dest (and dest 
                                        (path->complete-path dest))
                            #:source (cond

@@ -803,7 +803,8 @@
                     #:demote? [demote? #f]
                     #:force? [force? #f]
                     #:auto? [auto? #f]
-                    #:quiet? [quiet? #f])
+                    #:quiet? [quiet? #f]
+                    #:from-command-line? [from-command-line? #f])
   (define db (read-pkg-db))
   (define all-pkgs
     (hash-keys db))
@@ -1374,6 +1375,7 @@
          #:force? force?
          #:all-platforms? all-platforms?
          #:quiet? quiet?
+         #:from-command-line? from-command-line?
          #:conversation conversation
          #:strip strip-mode
          #:link-dirs? link-dirs?
@@ -1527,9 +1529,15 @@
           (match this-dep-behavior
            ['fail
             (clean!)
-            (pkg-error (~a "missing dependencies, specify --deps search-auto to install them or --deps search-ask to be asked about installing them\n"
-                           " for package: ~a\n"
-                           " missing packages:~a")
+            (pkg-error (~a "missing dependencies"
+                           (if from-command-line?
+                               (~a ";\n"
+                                   " specify `--deps search-auto' to install them, or\n"
+                                   " specify `--deps search-ask' to be asked about installing them")
+                               "")
+                           "\n"
+                           "  for package: ~a\n"
+                           "  missing packages:~a")
                        pkg
                        (format-list unsatisfied-deps))]
            ['search-auto
@@ -1571,7 +1579,8 @@
                                                          #:namespace metadata-ns
                                                          #:all-platforms? all-platforms?
                                                          #:ignore-checksums? ignore-checksums?
-                                                         #:use-cache? use-cache?)
+                                                         #:use-cache? use-cache?
+                                                         #:from-command-line? from-command-line?)
                                      name))
                                null))
                         deps))
@@ -1673,7 +1682,8 @@
                                                                #:namespace metadata-ns
                                                                #:all-platforms? all-platforms?
                                                                #:ignore-checksums? ignore-checksums?
-                                                               #:use-cache? use-cache?)
+                                                               #:use-cache? use-cache?
+                                                               #:from-command-line? from-command-line?)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match this-dep-behavior
@@ -1917,6 +1927,7 @@
                      #:update-cache [update-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
+                     #:from-command-line? [from-command-line? #f]
                      #:conversation [conversation #f]
                      #:strip [strip-mode #f]
                      #:link-dirs? [link-dirs? #f]
@@ -1974,6 +1985,7 @@
        #:pre-succeed pre-succeed
        #:updating? updating?
        #:quiet? quiet?
+       #:from-command-line? from-command-line?
        #:conversation conversation
        #:strip strip-mode
        #:link-dirs? link-dirs?
@@ -2014,7 +2026,8 @@
                              #:update-cache update-cache
                              #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?
-                             #:use-cache? use-cache?)
+                             #:use-cache? use-cache?
+                             #:from-command-line? from-command-line?)
          pkg-name)
   (cond
    [(pkg-desc? pkg-name)
@@ -2065,7 +2078,8 @@
                                  #:namespace metadata-ns
                                  #:all-platforms? all-platforms?
                                  #:ignore-checksums? ignore-checksums?
-                                 #:use-cache? use-cache?)
+                                 #:use-cache? use-cache?
+                                 #:from-command-line? from-command-line?)
              name)
             null))]
    [(eq? #t (hash-ref update-cache pkg-name #f))
@@ -2081,9 +2095,12 @@
       (match orig-pkg
         [`(,(or 'link 'static-link) ,_)
          (if must-update?
-             (pkg-error (~a "cannot update linked packages without --link\n"
+             (pkg-error (~a "cannot update linked packages~a\n"
                             "  package name: ~a\n"
                             "  package source: ~a")
+                        (if from-command-line?
+                            " without `--link'"
+                            " without new link")
                         pkg-name
                         orig-pkg)
              null)]
@@ -2130,7 +2147,8 @@
                                       #:namespace metadata-ns
                                       #:all-platforms? all-platforms?
                                       #:ignore-checksums? ignore-checksums?
-                                      #:use-cache? use-cache?)
+                                      #:use-cache? use-cache?
+                                      #:from-command-line? from-command-line?)
                   ((package-dependencies metadata-ns db all-platforms? 
                                          #:only-implies? (not deps?))
                    pkg-name))
@@ -2171,6 +2189,7 @@
                     #:update-deps? [update-deps? #f]
                     #:update-implies? [update-implies? #t]
                     #:quiet? [quiet? #f]
+                    #:from-command-line? [from-command-line? #f]
                     #:strip [strip-mode #f]
                     #:link-dirs? [link-dirs? #f])
   (define download-printf (if quiet? void printf))
@@ -2190,12 +2209,17 @@
                                                     #:namespace metadata-ns
                                                     #:all-platforms? all-platforms?
                                                     #:ignore-checksums? ignore-checksums?
-                                                    #:use-cache? use-cache?)
+                                                    #:use-cache? use-cache?
+                                                    #:from-command-line? from-command-line?)
                                 pkgs))
   (cond
     [(empty? pkgs)
      (unless quiet?
-       (printf/flush "No packages given to update, did you mean to pass -a?\n"))
+       (printf/flush (~a "No packages given to update"
+                         (if from-command-line?
+                             ";\n use `--all' to update all packages"
+                             "")
+                         "\n")))
      'skip]
     [(empty? to-update)
      (unless quiet?
@@ -2215,6 +2239,7 @@
       #:update-implies? update-implies?
       #:update-cache update-cache
       #:quiet? quiet?
+      #:from-command-line? from-command-line?
       #:strip strip-mode
       #:all-platforms? all-platforms?
       #:force? force?
@@ -2281,6 +2306,7 @@
                      #:all-platforms? [all-platforms? #f]
                      #:force? [force? #f]
                      #:quiet? [quiet? #f]
+                     #:from-command-line? [from-command-line? #f]
                      #:ignore-checksums? [ignore-checksums? #f]
                      #:use-cache? [use-cache? #t]
                      #:dep-behavior [dep-behavior #f]
@@ -2327,6 +2353,7 @@
                     #:skip-installed? #t
                     #:dep-behavior (or dep-behavior 'search-auto)
                     #:quiet? quiet? 
+                    #:from-command-line? from-command-line?
                     #:strip strip-mode)
        (unless quiet?
          (printf "Packages migrated\n")))))
@@ -2391,6 +2418,7 @@
 
 (define (create-as-is create:format pkg-name dir orig-dir
                       #:quiet? [quiet? #f]
+                      #:from-command-line? [from-command-line? #f]
                       #:hide-src? [hide-src? #f]
                       #:dest [dest-dir #f])
   (begin
@@ -2471,6 +2499,7 @@
 (define (stripped-create mode name dir
                         #:format [create:format 'zip]
                         #:quiet? [quiet? #f]
+                        #:from-command-line? [from-command-line? #f]
                         #:dest [archive-dest-dir #f])
   (define tmp-dir (make-temporary-file "create-binary-~a" 'directory))
   (dynamic-wind
@@ -2482,6 +2511,7 @@
         (create-as-is create:format name dest-dir dir 
                       #:hide-src? #t 
                       #:quiet? quiet?
+                      #:from-command-line? from-command-line?
                       #:dest (if archive-dest-dir
                                  (path->complete-path archive-dest-dir)
                                  (current-directory))))
@@ -2492,7 +2522,8 @@
                     #:dest [dest-dir #f]
                     #:source [source 'dir]
                     #:mode [mode 'as-is]
-                    #:quiet? [quiet? #f])
+                    #:quiet? [quiet? #f]
+                    #:from-command-line? [from-command-line? #f])
   (define pkg-name
     (if (eq? source 'dir)
         (path->string (let-values ([(base name dir?) (split-path dir-or-name)])
@@ -2519,11 +2550,13 @@
     [(as-is)
      (create-as-is create:format pkg-name dir dir
                    #:dest dest-dir
-                   #:quiet? quiet?)]
+                   #:quiet? quiet?
+                   #:from-command-line? from-command-line?)]
     [else (stripped-create mode pkg-name dir
                            #:dest dest-dir
                            #:format create:format
-                           #:quiet? quiet?)]))
+                           #:quiet? quiet?
+                           #:from-command-line? from-command-line?)]))
 
 (define (pkg-catalog-copy srcs dest
                         #:from-config? [from-config? #f]
@@ -3030,6 +3063,7 @@
         (#:source (or/c 'dir 'name)
                   #:mode (or/c 'as-is 'source 'binary 'built)
                   #:quiet? boolean?
+                  #:from-command-line? boolean?
                   #:dest (or/c (and/c path-string? complete-path?) #f))
         void?)]
   [pkg-update
@@ -3039,6 +3073,7 @@
                         #:update-deps? boolean?
                         #:update-implies? boolean?
                         #:quiet? boolean?
+                        #:from-command-line? boolean?
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
@@ -3051,6 +3086,7 @@
         (#:auto? boolean?
                  #:force? boolean?
                  #:quiet? boolean?
+                 #:from-command-line? boolean?
                  #:demote? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
@@ -3069,6 +3105,7 @@
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
+                        #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary)
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
@@ -3080,6 +3117,7 @@
                         #:ignore-checksums? boolean?
                         #:use-cache? boolean?
                         #:quiet? boolean?
+                        #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-catalog-show
