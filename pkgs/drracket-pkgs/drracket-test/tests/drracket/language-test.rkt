@@ -68,6 +68,10 @@ the settings above should match r5rs
     
     (prepare-for-test-expression)
     
+    (test-expression "(print 'hello (current-output-port) 1)" "hello")
+    (test-expression "(print 'hello (current-output-port) 0)" "'hello")
+    (test-expression "(print '((x)) (current-output-port) 0)" "'((x))")
+    
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
                      "{image}")
@@ -1333,9 +1337,9 @@ the settings above should match r5rs
     
     ;; setup print / pretty-print difference
     (clear-definitions drs)
-    (for-each fw:test:keystroke
-              (string->list
-               "(define (f n)\n(cond ((zero? n) (list))\n(else (cons n (f (- n 1))))))\n(f 200)"))
+    (insert-in-definitions 
+     drs
+     "(define (f n)\n(cond ((zero? n) (list))\n(else (cons n (f (- n 1))))))\n(f 200)")
     (test "Constructor" #f #f
           (case-lambda
             [(x) (not (member #\newline (string->list x)))]
@@ -1351,7 +1355,13 @@ the settings above should match r5rs
     (test plain-print-style #f #t
           (case-lambda
             [(x) (member #\newline (string->list x))]
-            [() "newlines in result (may need to make the window smaller)"]))))
+            [() "newlines in result (may need to make the window smaller)"]))
+    
+    (when has-print-printing?
+      (clear-definitions drs)
+      (insert-in-definitions drs "(print 'hello (current-output-port) 1)")
+      (test plain-print-style #f #t "hello")
+      (test plain-print-style #f #f "hello"))))
 
 (define re:out-of-sync
   (regexp

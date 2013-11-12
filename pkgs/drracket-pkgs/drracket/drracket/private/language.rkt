@@ -570,7 +570,9 @@
             (my-setup-printing-parameters 
              (λ ()
                (parameterize ([pretty-print-columns 'infinity])
-                 ((if write? pretty-write pretty-print) converted-value port)))
+                 (if write?
+                     (pretty-write converted-value port)
+                     (pretty-print converted-value port depth))))
              setting
              'infinity))))
        (current-inspector (make-inspector))
