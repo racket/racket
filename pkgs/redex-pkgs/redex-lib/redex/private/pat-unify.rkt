@@ -38,6 +38,7 @@
          make-uid)
 
 
+
 ;;
 ;; atom := `any | `number | `string | `integer | `boolean | `real | `variable | `variable-not-otherwise-mentioned
 ;; var  := symbol?
@@ -177,7 +178,7 @@
                                (list->dq-pairs dq-sides/id)))]
                      [found-dqs
                       (for/list ([pdq found-pre-dqs])
-                        (disunify* '() (first pdq) (second pdq) (hash-copy static-eqs) L))])
+                        (disunify* '() (first pdq) (second pdq) static-eqs L))])
                 (and/fail (for/and ([d found-dqs]) d)
                           (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
                                  [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
@@ -202,19 +203,19 @@
     (define eqs (hash-copy (env-eqs e)))
     (define t* (bind-names t eqs L))
     (define u* (bind-names u eqs L))
+    (define bn-eqs (hash/mut->imm eqs))
     (cond 
       [(or (unif-fail? t*) (unif-fail? u*))
        e]
       [else
-       (define bn-eqs (hash-copy eqs))
-       (define new-dq (disunify* params t* u* eqs L)) 
+       (define new-dq (disunify* params t* u* bn-eqs L)) 
        (match new-dq
          [#f #f]
          [#t 
-          (env (hash/mut->imm bn-eqs)
+          (env bn-eqs
                (env-dqs e))]
          [_
-          (env (hash/mut->imm bn-eqs)
+          (env bn-eqs
                (cons new-dq 
                      (env-dqs e)))])])))
 
@@ -293,14 +294,15 @@
       [else
        (match notok
          [`(,(dq ps `(,vars-p* ,term-p*)) ,rest ...)
-          (let ([new-dq (disunify* ps vars-p* term-p* (hash-copy eqs) L)])
+          (let ([new-dq (disunify* ps vars-p* term-p* eqs L)])
             (and new-dq
                  (match new-dq
                    [#t (loop ok rest)]
                    [_ (loop (cons new-dq ok) rest)])))])])))
 
 ;; disunfy* pat* pat* eqs lang -> dq or boolean (dq is a pat*)
-(define (disunify* params u* t* eqs L)
+(define (disunify* params u* t* static-eqs L)
+  (define eqs (hash-copy static-eqs))
   (parameterize ([new-eqs (make-hash)])
     (let ([res (unify* u* t* eqs L)])
       (cond
@@ -312,8 +314,16 @@
          (match new-dq
            [`((list) (list))
             #f]
-           [_
-            (dq new-ps new-dq)])]))))
+           [`((list (name ,var-ids ,(bound)) ...) (list ,pats ...))
+            ;; check to see if parameter elimination exposed some
+            ;; equivalences...
+            (and
+             (or (equal? (length params) (length new-ps))
+                 (for/and ([v (in-list var-ids)] [p (in-list pats)])
+                   (or (not (hash-has-key? static-eqs (lvar v)))
+                       (not (equal? (resolve-no-nts/pat `(name ,v ,(bound)) static-eqs)
+                                    p)))))
+             (dq new-ps new-dq))])]))))
 
 (define (param-elim params unquantified-dq)             
   (let loop ([dq-rest unquantified-dq]                                             
