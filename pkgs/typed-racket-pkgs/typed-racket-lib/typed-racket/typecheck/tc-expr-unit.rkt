@@ -8,13 +8,13 @@
          (types utils abbrev union subtype type-table)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
-         (utils tc-utils)
+         (utils tc-utils syntax-classes)
          (env lexical-env tvar-env index-env)
          racket/private/class-internal
          syntax/parse syntax/stx
          unstable/syntax
          (only-in srfi/1 split-at)
-         (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
+         (for-template (only-in '#%paramz [parameterization-key pz:pk])))
 
 (require (for-template racket/base racket/private/class-internal))
 
@@ -188,8 +188,8 @@
        ;; We trust ignore to be only on syntax objects objects that are well typed
        expected]
       ;; explicit failure
-      [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
-       (explicit-fail #'stx #'msg #'var)]
+      [t:failed-typecheck
+       (explicit-fail #'t.stx #'t.message #'t.var)]
       ;; data
       [(quote #f) (ret (-val #f) -false-filter)]
       [(quote #t) (ret (-val #t) -true-filter)]
@@ -328,8 +328,8 @@
        (check-subforms/ignore form)
        (ret Univ)]
       ;; explicit failure
-      [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
-       (explicit-fail #'stx #'msg #'var)]
+      [t:failed-typecheck
+       (explicit-fail #'t.stx #'t.message #'t.var)]
       ;; data
       [(quote #f) (ret (-val #f) -false-filter)]
       [(quote #t) (ret (-val #t) -true-filter)]
