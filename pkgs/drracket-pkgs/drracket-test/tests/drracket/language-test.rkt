@@ -289,7 +289,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #f)
-    (generic-output #t #t #t #t)
+    (generic-output #t #t #f #f)
     
     (test-hash-bang)
     (test-error-after-definition)
