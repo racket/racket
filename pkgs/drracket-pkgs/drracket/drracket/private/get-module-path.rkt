@@ -23,9 +23,15 @@
           [else (super on-subwindow-char receiver event)]))
       (define/public (new-clcl/clcp clcl/clcp)
         (update-list-of-paths))
+      (define/override (on-size w h)
+        (preferences:set 'drracket:get-module-path-from-user-size (list w h)))
       (super-new)))
   
-  (define dlg (new dlg% [label ""][width 600][height 600]))
+  (define dlg (new dlg%
+                   [style '(resize-border)]
+                   [label (string-constant drracket)]
+                   [width (car (preferences:get 'drracket:get-module-path-from-user-size))]
+                   [height (cadr (preferences:get 'drracket:get-module-path-from-user-size))]))
   (define tf (new text-field% [parent dlg] [label #f]
                   [init-value init-value]
                   [callback (λ (tf evt) (tf-callback))]))
@@ -69,6 +75,8 @@
      bp 
      (λ (_1 _2) (ok))
      (λ (_1 _2) (cancel))))
+  
+  (new grow-box-spacer-pane% [parent bp])
   
   (define (tf-callback)
     (when pref-sym
@@ -179,7 +187,7 @@
                                       (send lb get-data item-to-act-on)
                                       "/"))
     (update-list-of-paths))
-    
+  
   (define (update-buttons)
     (define item-to-act-on (get-item-to-act-on))
     (cond
@@ -205,6 +213,7 @@
   (update-different-racket-gui)
   (maybe-turn-racket-path-pink)
   (send dlg show #t)
+  (send tf focus)
   (cond
     [cancelled? #f]
     [else (send lb get-data (get-item-to-act-on))]))
@@ -239,7 +248,11 @@
   (define new-clcl-thread-pending-chan (make-channel))
   (thread
    (λ () 
-     (define-values (a b) (alternate-racket-clcl/clcp (list-ref str+dlg 0)))
+     (define-values (a b) 
+       (if (path-string? (list-ref str+dlg 0))
+           (alternate-racket-clcl/clcp (list-ref str+dlg 0))
+           (values (current-library-collection-links)
+                   (current-library-collection-paths))))
      (channel-put new-clcl-thread-pending-chan
                   (list (list a b)
                         (list-ref str+dlg 1)))))
@@ -251,7 +264,7 @@
                
                ;; (cons/c string? (is-a?/c dialog%))
                [pending-str+dlg #f]
-               [clcl/clcp (if initial-alternate-racket
+               [clcl/clcp (if (path-string? initial-alternate-racket)
                               (let-values ([(a b) (alternate-racket-clcl/clcp 
                                                    initial-alternate-racket)])
                                 (list a b))
@@ -298,3 +311,7 @@
                        #f  
                        new-clcl/clcp)])))
            never-evt)))))
+
+(preferences:set-default 'drracket:get-module-path-from-user-size 
+                         (list 600 600)
+                         (list/c exact-nonnegative-integer? exact-nonnegative-integer?))
