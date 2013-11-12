@@ -1129,9 +1129,10 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     #rx"raise-user-error"
-                     #rx"raise-user-error")
+    (test-expression
+     "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+     #rx"raise-user-error"
+     #rx"raise-user-error")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
@@ -1229,7 +1230,8 @@ the settings above should match r5rs
         (eprintf "expected lines: \n  ~a\n  ~a\ngot lines:\n  ~a\n  ~a\n" 
                  line0-expect line1-expect
                  line0-got line1-got)
-        (eprintf "defs: ~s" (queue-callback/res (λ () (send (send drs get-definitions-text) get-text))))
+        (eprintf "defs: ~s"
+                 (queue-callback/res (λ () (send (send drs get-definitions-text) get-text))))
         (error 'language-test.rkt "failed get top of repl test")))))
 
 
@@ -1259,7 +1261,10 @@ the settings above should match r5rs
    (lambda () (fw:test:set-check-box! "Use decimal notation for rationals" #t))
    "Use decimal notation for rationals -- #t"
    "4/3 1/2 -1/3"
-   "{number 4/3 \"#e1.3\" decimal}\n{number 1/2 \"#e0.5\" decimal}\n{number -1/3 \"#e-0.3\" decimal}"))
+   (string-append
+    "{number 4/3 \"#e1.3\" decimal}\n"
+    "{number 1/2 \"#e0.5\" decimal}\n"
+    "{number -1/3 \"#e-0.3\" decimal}")))
 
 (define (generic-settings false/true?)
   (test-setting
@@ -1274,94 +1279,91 @@ the settings above should match r5rs
    (if false/true? "true" "#t")))
 
 (define (generic-output list? quasi-quote? has-sharing? has-print-printing?)
-  (let* ([plain-print-style (if has-print-printing? "print" "write")]
-         [drs (wait-for-drracket-frame)]
-         [expression "(define x (list 2))\n(list x x)"]
-         [set-output-choice
-          (lambda (option show-sharing pretty?)
-            (set-language #f)
-            (fw:test:set-radio-box! "Output Style" option)
-            (when (and has-sharing? show-sharing)
-              (fw:test:set-check-box!
-               "Show sharing in values"
-               (if (eq? show-sharing 'on) #t #f)))
-            (fw:test:set-check-box!
-             "Insert newlines in printed values"
-             pretty?)
-            (let ([f (test:get-active-top-level-window)])
-              (fw:test:button-push "OK")
-              (wait-for-new-frame f)))]
-         [shorten
-          (lambda (str)
-            (if ((string-length str) . <= . 45)
-                str
-                (string-append (substring str 0 45) "...")))]
-         [test
-          ;; answer must either be a string, or a procedure that accepts both zero and 1
-          ;; argument. When the procedure accepts 1 arg, the argument is `got' and
-          ;; the result must be a boolean indicating if the result was satisfactory.
-          ;; if the procedure receives no arguments, it must return a descriptive string
-          ;; for the error message
-          (lambda (option show-sharing pretty? answer)
-            (set-output-choice option show-sharing pretty?)
-            (do-execute drs)
-            (let ([got (fetch-output/should-be-tested drs)])
-              (unless (if (procedure? answer)
-                          (answer got)
-                          (whitespace-string=? answer got))
-                (eprintf "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
-                         (language) option show-sharing pretty?
-                         (shorten got)
-                         (if (procedure? answer) (answer) answer)))))])
-    
-    (clear-definitions drs)
-    (type-in-definitions drs expression)
-    
-    (test plain-print-style 'off #t "((2) (2))")
+  (define plain-print-style (if has-print-printing? "print" "write"))
+  (define drs (wait-for-drracket-frame))
+  (define expression "(define x (list 2))\n(list x x)")
+  (define (set-output-choice option show-sharing pretty?)
+    (set-language #f)
+    (fw:test:set-radio-box! "Output Style" option)
+    (when (and has-sharing? show-sharing)
+      (fw:test:set-check-box!
+       "Show sharing in values"
+       (if (eq? show-sharing 'on) #t #f)))
+    (fw:test:set-check-box!
+     "Insert newlines in printed values"
+     pretty?)
+    (let ([f (test:get-active-top-level-window)])
+      (fw:test:button-push "OK")
+      (wait-for-new-frame f)))
+  (define (shorten str)
+    (if ((string-length str) . <= . 45)
+        str
+        (string-append (substring str 0 45) "...")))
+  (define (test option show-sharing pretty? answer)
+    ;; answer must either be a string, or a procedure that accepts both zero and 1
+    ;; argument. When the procedure accepts 1 arg, the argument is `got' and
+    ;; the result must be a boolean indicating if the result was satisfactory.
+    ;; if the procedure receives no arguments, it must return a descriptive string
+    ;; for the error message
+    (set-output-choice option show-sharing pretty?)
+    (do-execute drs)
+    (define got (fetch-output/should-be-tested drs))
+    (unless (if (procedure? answer)
+                (answer got)
+                (whitespace-string=? answer got))
+      (eprintf "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
+               (language) option show-sharing pretty?
+               (shorten got)
+               (if (procedure? answer) (answer) answer))))
+  
+  (clear-definitions drs)
+  (type-in-definitions drs expression)
+  
+  (test plain-print-style 'off #t "((2) (2))")
+  (when has-sharing?
+    (test plain-print-style 'on #t "(#0=(2) #0#)"))
+  (when quasi-quote?
+    (test "Quasiquote" 'off #t "`((2) (2))")
     (when has-sharing?
-      (test plain-print-style 'on #t "(#0=(2) #0#)"))
-    (when quasi-quote?
-      (test "Quasiquote" 'off #t "`((2) (2))")
-      (when has-sharing?
-        (test "Quasiquote" 'on #t "(shared ((-1- `(2))) `(,-1- ,-1-))")))
-    
-    (test "Constructor" 'off #t
+      (test "Quasiquote" 'on #t "(shared ((-1- `(2))) `(,-1- ,-1-))")))
+  
+  (test "Constructor" 'off #t
+        (if list?
+            "(list (list 2) (list 2))"
+            "(cons (cons 2 empty) (cons (cons 2 empty) empty))"))
+  (when has-sharing?
+    (test "Constructor" 'on #t
           (if list?
-              "(list (list 2) (list 2))"
-              "(cons (cons 2 empty) (cons (cons 2 empty) empty))"))
-    (when has-sharing?
-      (test "Constructor" 'on #t
-            (if list?
-                "(shared ((-1- (list 2))) (list -1- -1-))"
-                "(shared ((-1- (cons 2 empty))) (cons -1- (cons -1- empty)))")))
-    
-    ;; setup print / pretty-print difference
+              "(shared ((-1- (list 2))) (list -1- -1-))"
+              "(shared ((-1- (cons 2 empty))) (cons -1- (cons -1- empty)))")))
+  
+  ;; setup print / pretty-print difference
+  (clear-definitions drs)
+  (insert-in-definitions 
+   drs
+   "(define (f n)\n(cond ((zero? n) (list))\n(else (cons n (f (- n 1))))))\n(f 200)")
+  (test "Constructor" #f #f
+        (case-lambda
+          [(x) (not (member #\newline (string->list x)))]
+          [() "no newlines in result"]))
+  (test "Constructor" #f #t
+        (case-lambda
+          [(x) (member #\newline (string->list x))]
+          [() "newlines in result (may need to make the window smaller)"]))
+  (test plain-print-style #f #f
+        (case-lambda
+          [(x) (not (member #\newline (string->list x)))]
+          [() "no newlines in result"]))
+  (test plain-print-style #f #t
+        (case-lambda
+          [(x) (member #\newline (string->list x))]
+          [() "newlines in result (may need to make the window smaller)"]))
+  
+  (when has-print-printing?
     (clear-definitions drs)
-    (insert-in-definitions 
-     drs
-     "(define (f n)\n(cond ((zero? n) (list))\n(else (cons n (f (- n 1))))))\n(f 200)")
-    (test "Constructor" #f #f
-          (case-lambda
-            [(x) (not (member #\newline (string->list x)))]
-            [() "no newlines in result"]))
-    (test "Constructor" #f #t
-          (case-lambda
-            [(x) (member #\newline (string->list x))]
-            [() "newlines in result (may need to make the window smaller)"]))
-    (test plain-print-style #f #f
-          (case-lambda
-            [(x) (not (member #\newline (string->list x)))]
-            [() "no newlines in result"]))
-    (test plain-print-style #f #t
-          (case-lambda
-            [(x) (member #\newline (string->list x))]
-            [() "newlines in result (may need to make the window smaller)"]))
-    
-    (when has-print-printing?
-      (clear-definitions drs)
-      (insert-in-definitions drs "(print 'hello (current-output-port) 1)")
-      (test plain-print-style #f #t "hello")
-      (test plain-print-style #f #f "hello"))))
+    (insert-in-definitions drs "(print 'hello (current-output-port) 1)")
+    (test plain-print-style #f #t "hello")
+    (test plain-print-style #f #f "hello")))
 
 (define re:out-of-sync
   (regexp
@@ -1379,7 +1381,8 @@ the settings above should match r5rs
       (let ([got
              (fetch-output/should-be-tested
               drs
-              (queue-callback/res (λ () (send interactions-text paragraph-start-position (+ last-para 1))))
+              (queue-callback/res
+               (λ () (send interactions-text paragraph-start-position (+ last-para 1))))
               (queue-callback/res
                (λ ()
                  (send interactions-text paragraph-end-position
