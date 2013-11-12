@@ -150,3 +150,10 @@ modification of a variable does not invalidate Typed Racket's
 knowledge of the type of that variable.  Also see
 @Secref["using-set!"  #:doc '(lib "scribblings/guide/guide.scrbl")].
 
+Furthermore, this means that the types of @rtech{top-level variable}s
+in the @gtech{REPL} cannot be refined by Typed Racket either. This is
+because the scope of a top-level variable includes future top-level
+interactions, which may include mutations. It is possible to work
+around this by moving the variable inside of a module or into a local
+binding form like @racket[let].
+

@@ -78,7 +78,9 @@
      #:declare i (expr/c #'identifier?)
      #:declare env (expr/c #'prop-env?)
      ;; check if i is ever the target of a set!
-     #'(if (is-var-mutated? i)
+     ;; or is a top-level variable
+     #'(if (or (is-var-mutated? i)
+               (not (identifier-binding i)))
            ;; if it is, we do nothing
            env
            ;; otherwise, refine the type
