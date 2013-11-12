@@ -13,11 +13,11 @@
     [(_ arg:expr attr:id pat)
      (let* ([i (generate-temporary)]
             [get-i (datum->syntax
-		    i
-		    (string->symbol
-		     (string-append (symbol->string (syntax-e i))
-				    "."
-				    (symbol->string (syntax-e #'attr)))))])
+                    i
+                    (string->symbol
+                     (string-append (symbol->string (syntax-e i))
+                                    "."
+                                    (symbol->string (syntax-e #'attr)))))])
        (quasisyntax/loc stx
          (syntax-parse arg
            [#,i #:declare #,i pat #'#,get-i])))]))
