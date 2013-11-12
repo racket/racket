@@ -85,13 +85,14 @@
                         ;; have the same name, results may be bogus.
                         ;; TODO fix this
                         ;; Refining results using source locations would be
-                        ;; tricky: blame struct and profiler don't store source
-                        ;; information in the same format (path with <collects>
-                        ;; vs full path, and pointing to defined identifier vs
-                        ;; pointing to the whole definition).
-                        ;; TODO check at least for inclusion of blame source in
-                        ;;  profiler source. not 100%, but can get us closer
-                        ;; The current matching also won't work for contracted
+                        ;; tricky: blame struct contains location of the *id*
+                        ;; of where the *contract* is applied, which doesn't
+                        ;; tell us anything about where the function actually
+                        ;; *is*. (For `define/contract', it's the id of the
+                        ;; definition, but that for `provide/contract', it's
+                        ;; a location inside the `provide/contract'.) So can't
+                        ;; really use source locations for correlation.
+                        ;; The current matching won't work for contracted
                         ;; anonymous functions. (Probably rare, though.)
                         #:when (equal? (blame-value b) (node-id n)))
               n)
