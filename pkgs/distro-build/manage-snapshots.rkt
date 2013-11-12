@@ -59,7 +59,8 @@
                           (build-path snapshots-dir s installers-dir "table.rktd")))
       (for/fold ([table table]) ([(k v) (in-hash past-table)])
         (if (or (hash-ref current-table k #f)
-                (hash-ref table k #f))
+                (hash-ref table k #f)
+                (not (file-exists? (build-path site-dir "log" k))))
             table
             (hash-set table k (past-success s
                                             (string-append s "/index.html")
@@ -82,11 +83,11 @@
     (when (link-exists? file-link)
       (delete-file file-link))
     (make-file-or-directory-link to-file file-link))
-  ;; Current successes:
+  ;; Link current successes:
   (for ([f (in-list (directory-list installer-dir))])
     (when (regexp-match? current-rx f)
       (make-link f f)))
-  ;; Past successes:
+  ;; Link past successes:
   (for ([v (in-hash-values past-successes)])
     (when (regexp-match? current-rx (past-success-file v))
       (make-link (string->path (past-success-file v))
