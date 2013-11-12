@@ -9,15 +9,12 @@
          (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
               lexical-env env-req mvar-env scoped-tvar-env)
-         (utils tc-utils)
+         (utils tc-utils syntax-classes)
          (typecheck provide-handling def-binding tc-structs typechecker)
 
-         ;; to appease syntax-parse in the tests
-         (typecheck internal-forms)
          syntax/location
 
          (for-template
-          "internal-forms.rkt"
           syntax/location
           racket/base
           (env env-req)))
@@ -29,55 +26,22 @@
 
 (define unann-defs (make-free-id-table))
 
-(define-splicing-syntax-class dtsi-fields
- #:attributes (mutable type-only maker)
- (pattern
-  (~seq
-    (~or (~optional (~and #:mutable (~bind (mutable #t))))
-         (~optional (~and #:type-only (~bind (type-only #t))))
-         (~optional (~seq #:maker maker))) ...)))
-
-(define-syntax-class struct-name
- (pattern nm:id)
- (pattern (nm:id parent:id)))
-
-
-(define-syntax-class define-typed-struct
-  #:attributes (name mutable type-only maker nm (tvars 1) (fld 1) (ty 1))
-  (pattern ((~optional (tvars:id ...) #:defaults (((tvars 1) null)))
-            nm:struct-name ([fld:id : ty:expr] ...) fields:dtsi-fields)
-           #:attr name #'nm.nm
-           #:attr mutable (attribute fields.mutable)
-           #:attr type-only (attribute fields.type-only)
-           #:attr maker (or (attribute fields.maker) #'nm.nm)))
-
-(define (parse-define-struct-internal form)
+(define (parse-typed-struct form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
-      #:literals (values define-typed-struct-internal
-                  define-typed-struct/exec-internal quote-syntax #%plain-app)
-
-      ;; define-typed-struct
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
-       (tc/struct (attribute dts.tvars) #'dts.nm (syntax->list #'(dts.fld ...)) (syntax->list #'(dts.ty ...))
-                  #:mutable (attribute dts.mutable)
-                  #:maker (attribute dts.maker)
-                  #:type-only (attribute dts.type-only))]
-
-      ;; executable structs - this is a big hack
-      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)])))
+      [t:typed-struct
+       (tc/struct (attribute t.tvars) #'t.nm (syntax->list #'(t.fields ...)) (syntax->list #'(t.types ...))
+                  #:mutable (attribute t.mutable)
+                  #:maker (attribute t.maker)
+                  #:type-only (attribute t.type-only))]
+      [t:typed-struct/exec
+       (tc/struct null #'t.nm (syntax->list #'(t.fields ...)) (syntax->list #'(t.types ...))
+                  #:proc-ty #'t.proc-type)])))
 
 (define (type-vars-of-struct form)
-  (parameterize ([current-orig-stx form])
-    (syntax-parse form
-      #:literals (values define-typed-struct-internal quote-syntax #%plain-app)
-      ;; define-typed-struct
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
-       (attribute dts.tvars)]
-      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
-       ;; Not polymorphic
-       null])))
+  (syntax-parse form
+    [t:typed-struct (attribute t.tvars)]
+    [t:typed-struct/exec null]))
 
 (define (add-constant-variance! name vars)
   (unless (null? vars)
@@ -90,10 +54,7 @@
 (define (tc-toplevel/pass1 form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
-      #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal
-                         define-typed-struct/exec-internal :-internal assert-predicate-internal
-                         require/typed-internal declare-refinement-internal
-                         define-values quote-syntax #%plain-app begin define-syntaxes)
+      #:literals (values define-values #%plain-app begin define-syntaxes)
       ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
@@ -108,51 +69,47 @@
        (list)]
 
       ;; type aliases have already been handled by an earlier pass
-      [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
+      [_:type-alias
        (list)]
 
       ;; declare-refinement
       ;; FIXME - this sucks and should die
-      [(define-values () (begin (quote-syntax (declare-refinement-internal pred)) (#%plain-app values)))
-       (match (lookup-type/lexical #'pred)
+      [t:type-refinement
+       (match (lookup-type/lexical #'t.predicate)
               [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
                (let ([new-t (make-pred-ty (list dom)
                                           rng
-                                          (make-Refinement dom #'pred))])
-                 (register-type #'pred new-t))
+                                          (make-Refinement dom #'t.predicate))])
+                 (register-type #'t.predicate new-t))
                (list)]
               [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
 
       ;; require/typed
-      [(define-values () (begin (quote-syntax (require/typed-internal nm ty)) (#%plain-app values)))
-       (let ([t (parse-type #'ty)])
-         (register-type #'nm t)
-         (list (make-def-binding #'nm t)))]
+      [r:typed-require
+       (let ([t (parse-type #'r.type)])
+         (register-type #'r.name t)
+         (list (make-def-binding #'r.name t)))]
 
-      [(define-values () (begin (quote-syntax (require/typed-internal nm ty #:struct-maker parent)) (#%plain-app values)))
-       (let* ([t (parse-type #'ty)]
+      [r:typed-require/struct
+       (let* ([t (parse-type #'r.type)]
               [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))]
               [mk-ty (flds #f . ->* . t)])
-         (register-type #'nm mk-ty)
-         (list (make-def-binding #'nm mk-ty)))]
+         (register-type #'r.name mk-ty)
+         (list (make-def-binding #'r.name mk-ty)))]
 
       ;; define-typed-struct (handled earlier)
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal . _)) (#%plain-app values)))
-       (list)]
-
-      ;; executable structs (handled earlier)
-      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal . _)) (#%plain-app values)))
+      [(~or _:typed-struct _:typed-struct/exec)
        (list)]
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
-      [(define-values () (begin (quote-syntax (assert-predicate-internal ty pred)) (#%plain-app values)))
-       (register-type #'pred (make-pred-ty (parse-type #'ty)))
+      [p:predicate-assertion
+       (register-type #'p.predicate (make-pred-ty (parse-type #'p.type)))
        (list)]
 
       ;; top-level type annotation
-      [(define-values () (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values)))
-       (register-type/undefined #'id (parse-type #'ty))
-       (register-scoped-tvars #'id (parse-literal-alls #'ty))
+      [t:type-declaration
+       (register-type/undefined #'t.id (parse-type #'t.type))
+       (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))
        (list)]
 
 
@@ -202,8 +159,6 @@
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literal-sets (kernel-literals)
-      #:literals (define-type-alias-internal define-typed-struct-internal
-                  define-type-internal require/typed-internal)
       ;; these forms we have been instructed to ignore
       [stx
        #:when (ignore-property form)
@@ -246,14 +201,6 @@
 
 
 ;; new implementation of type-check
-(define-syntax-rule (internal-syntax-pred nm)
-  (lambda (form)
-    (syntax-parse form
-      #:literals (nm values)
-      #:literal-sets (kernel-literals)
-      [(define-values () (begin (quote-syntax (nm . rest)) (#%plain-app values))) #t]
-      [_ #f])))
-
 (define (parse-def x)
   (syntax-parse x
     #:literal-sets (kernel-literals)
@@ -268,11 +215,7 @@
 
 (define (parse-type-alias form)
   (syntax-parse form
-    #:literals (define-type-alias-internal values)
-    #:literal-sets (kernel-literals)
-    [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
-     (values #'nm #'ty)]
-    [_ (int-err "not define-type-alias")]))
+    [t:type-alias (values #'t.name #'t.type)]))
 
 ;; actually do the work on a module
 ;; produces prelude and post-lude syntax objects
@@ -282,9 +225,8 @@
   (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
     (filter-multiple
      forms
-     (internal-syntax-pred define-type-alias-internal)
-     (lambda (e) (or ((internal-syntax-pred define-typed-struct-internal) e)
-                     ((internal-syntax-pred define-typed-struct/exec-internal) e)))
+     type-alias? 
+     (lambda (e) (or (typed-struct? e) (typed-struct/exec? e)))
      parse-syntax-def
      parse-def
      provide?
@@ -304,7 +246,7 @@
   ;; Parse and register the structure types
   (define parsed-structs
     (for/list ((def (in-list struct-defs)))
-      (define parsed (parse-define-struct-internal def))
+      (define parsed (parse-typed-struct def))
       (register-parsed-struct-sty! parsed)
       parsed))
 
@@ -430,15 +372,15 @@
              (report-all-errors))]
     [_
      ;; Handle type aliases
-     (when ((internal-syntax-pred define-type-alias-internal) form)
+     (when (type-alias? form)
        ((compose register-type-alias parse-type-alias) form))
      ;; Handle struct definitions
-     (when ((internal-syntax-pred define-typed-struct-internal) form)
+     (when (typed-struct? form)
        (define name (name-of-struct form))
        (define tvars (type-vars-of-struct form))
        (register-type-name name)
        (add-constant-variance! name tvars)
-       (define parsed (parse-define-struct-internal form))
+       (define parsed (parse-typed-struct form))
        (register-parsed-struct-sty! parsed)
        (refine-struct-variance! (list parsed))
        (register-parsed-struct-bindings! parsed))
