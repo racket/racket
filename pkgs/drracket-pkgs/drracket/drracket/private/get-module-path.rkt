@@ -136,7 +136,8 @@
     (define pth (send racket-path-tf get-value))
     (define bkg
       (cond
-        [(and (file-exists? pth) 
+        [(and (path-string? pth)
+              (file-exists? pth) 
               (member 'execute (file-or-directory-permissions pth)))
          "white"]
         [else "yellow"]))
