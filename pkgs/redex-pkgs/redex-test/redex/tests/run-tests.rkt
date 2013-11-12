@@ -22,6 +22,7 @@
      "matcher-test.rkt"
      "rewrite-side-condition-test.rkt"
      "unify-tests.rkt"
+     "dq-test.rkt"
      "tl-test.rkt"
      "term-test.rkt"
      "rg-test.rkt"
