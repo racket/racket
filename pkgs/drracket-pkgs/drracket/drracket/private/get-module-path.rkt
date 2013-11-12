@@ -206,7 +206,7 @@
   
   (define (get-item-to-act-on)
     (or (send lb get-selection)
-        (and (= 1 (send lb get-number))
+        (and (<= 1 (send lb get-number))
              0)))
     
   (update-list-of-paths)
