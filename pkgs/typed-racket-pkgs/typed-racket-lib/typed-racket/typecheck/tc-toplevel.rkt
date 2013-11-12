@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         syntax/kerncase racket/syntax syntax/parse syntax/stx syntax/id-table
+         racket/syntax syntax/parse syntax/stx syntax/id-table
          racket/list unstable/list racket/dict racket/match unstable/sequence
          (prefix-in c: (contract-req))
          (rep type-rep free-variance)
@@ -203,31 +203,27 @@
 ;; syntax? -> (or/c void? tc-results/c)
 (define (tc-toplevel/pass2 form)
   (parameterize ([current-orig-stx form])
-    (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal
-                                   require/typed-internal values module module*)
+    (syntax-parse form
+      #:literal-sets (kernel-literals)
+      #:literals (define-type-alias-internal define-typed-struct-internal
+                  define-type-internal require/typed-internal)
       ;; these forms we have been instructed to ignore
       [stx
-       (ignore-property form)
+       #:when (ignore-property form)
        (void)]
 
       ;; this is a form that we mostly ignore, but we check some interior parts
       [stx
-       (ignore-some-property form)
+       #:when (ignore-some-property form)
        (check-subforms/ignore form)]
 
       ;; these forms should always be ignored
-      [(#%require . _) (void)]
-      [(#%provide . _) (void)]
-      [(#%declare . _) (void)]
-      [(define-syntaxes . _) (void)]
-      [(begin-for-syntax . _) (void)]
+      [((~or define-syntaxes begin-for-syntax #%require #%provide #%declare) . _) (void)]
 
       ;; submodules take care of themselves:
-      [(module n spec (#%plain-module-begin body ...))
-       (void)]
+      [(module n spec (#%plain-module-begin body ...)) (void)]
       ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
-      [(module* n spec body ...)
-       (void)]
+      [(module* n spec body ...) (void)]
 
       ;; definitions just need to typecheck their bodies
       [(define-values () expr)
@@ -255,25 +251,28 @@
 ;; new implementation of type-check
 (define-syntax-rule (internal-syntax-pred nm)
   (lambda (form)
-    (kernel-syntax-case* form #f
-      (nm values)
-      [(define-values () (begin (quote-syntax (nm . rest)) (#%plain-app values)))
-       #t]
+    (syntax-parse form
+      #:literals (nm values)
+      #:literal-sets (kernel-literals)
+      [(define-values () (begin (quote-syntax (nm . rest)) (#%plain-app values))) #t]
       [_ #f])))
 
 (define (parse-def x)
-  (kernel-syntax-case x #f
+  (syntax-parse x
+    #:literal-sets (kernel-literals)
     [(define-values (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
 (define (parse-syntax-def x)
-  (kernel-syntax-case x #f
+  (syntax-parse x
+    #:literal-sets (kernel-literals)
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
 (define (parse-type-alias form)
-  (kernel-syntax-case* form #f
-    (define-type-alias-internal values)
+  (syntax-parse form
+    #:literals (define-type-alias-internal values)
+    #:literal-sets (kernel-literals)
     [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
      (values #'nm #'ty)]
     [_ (int-err "not define-type-alias")]))
@@ -319,7 +318,7 @@
   ;(printf "after resolving type aliases~n")
   ;(displayln "Starting pass1")
   ;; do pass 1, and collect the defintions
-  (define defs (apply append 
+  (define defs (apply append
                       (append
                        struct-bindings
                        (map tc-toplevel/pass1 forms))))
@@ -376,7 +375,7 @@
                [_ (int-err "unknown provide form")])))]
         [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
   ;; compute the new provides
-  (define-values (new-stx/pre new-stx/post) 
+  (define-values (new-stx/pre new-stx/post)
     (with-syntax*
      ([the-variable-reference (generate-temporary #'blame)])
      (define-values (code aliasess)
