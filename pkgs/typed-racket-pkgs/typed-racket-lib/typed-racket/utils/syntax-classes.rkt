@@ -2,11 +2,13 @@
 
 (require
   (only-in "utils.rkt" typecheck)
-  syntax/parse 
+  syntax/parse
+  (for-syntax racket/base racket/syntax
+              syntax/parse syntax/parse/experimental/template)
   (for-template (typecheck internal-forms))
   (for-template racket/base))
-(provide 
-  type-alias 
+(provide
+  type-alias
   type-refinement
   typed-struct
   typed-struct/exec
@@ -14,7 +16,7 @@
   typed-require/struct
   predicate-assertion
   type-declaration
-  
+
   type-alias?
   typed-struct?
   typed-struct/exec?
@@ -26,63 +28,44 @@
    #:literal-sets (kernel-literals)
    (pattern (define-values () (begin (quote-syntax value:expr) (#%plain-app values)))))
 
+(define-syntax (define-internal-classes stx)
+  (define-syntax-class clause
+    (pattern [name:id (~optional (~seq #:attributes attributes:expr))
+                      (lit:id . body:expr)]
+     #:with pred (format-id #'name "~a?" #'name)))
 
-(define-syntax-class type-alias
-  #:attributes (name type)
-  (pattern i:internal
-    #:with ((~literal define-type-alias-internal) name type) #'i.value))
+  (syntax-parse stx
+    [(_ :clause ...)
+     (template
+       (begin
+         (begin
+           (define-syntax-class name
+             (?? (?@ #:attributes attributes))
+             (pattern i:internal
+               #:with ((~literal lit) . body) #'i.value))
+           (define pred
+             (syntax-parser
+               [(~var _ name) #t]
+               [_ #f]))) ...))]))
 
-(define-syntax-class type-refinement
-  #:attributes (predicate)
-  (pattern i:internal
-    #:with ((~literal declare-refinement-internal) predicate) #'i.value))
-
-(define-syntax-class typed-struct
-  #:attributes (name mutable type-only maker nm (tvars 1) (fields 1) (types 1))
-  (pattern i:internal
-    #:with ((~literal define-typed-struct-internal) . :define-typed-struct-body) #'i.value))
-
-(define-syntax-class typed-struct/exec
-  #:attributes (nm proc-type (fields 1) (types 1))
-  (pattern i:internal
-    #:with ((~literal define-typed-struct/exec-internal)
-            nm ([fields:id : types] ...) proc-type) #'i.value))
-
-(define-syntax-class typed-require
-  #:attributes (name type)
-  (pattern i:internal
-    #:with ((~literal require/typed-internal) name type) #'i.value))
-
-(define-syntax-class typed-require/struct
-  #:attributes (name type)
-  (pattern i:internal
-    #:with ((~literal require/typed-internal) name type #:struct-maker parent) #'i.value))
-
-(define-syntax-class predicate-assertion
-  #:attributes (type predicate)
-  (pattern i:internal
-    #:with ((~literal assert-predicate-internal) type predicate) #'i.value))
-
-(define-syntax-class type-declaration
-  #:attributes (id type)
-  (pattern i:internal
-    #:with ((~literal :-internal) id:identifier type) #'i.value))
-
-
-(define type-alias?
-  (syntax-parser
-    [:type-alias #t]
-    [_ #f]))
-
-(define typed-struct?
-  (syntax-parser
-    [:typed-struct #t]
-    [_ #f]))
-
-(define typed-struct/exec?
-  (syntax-parser
-    [:typed-struct/exec #t]
-    [_ #f]))
+(define-internal-classes
+  [type-alias
+    (define-type-alias-internal name type)]
+  [type-refinement
+    (declare-refinement-internal predicate)]
+  [typed-struct
+    #:attributes (name mutable type-only maker nm (tvars 1) (fields 1) (types 1))
+    (define-typed-struct-internal . :define-typed-struct-body)]
+  [typed-struct/exec
+    (define-typed-struct/exec-internal nm ([fields:id : types] ...) proc-type)]
+  [typed-require
+    (require/typed-internal name type)]
+  [typed-require/struct
+    (require/typed-internal name type #:struct-maker parent)]
+  [predicate-assertion
+    (assert-predicate-internal type predicate)]
+  [type-declaration
+    (:-internal id:identifier type)])
 
 ;;; Helpers
 
