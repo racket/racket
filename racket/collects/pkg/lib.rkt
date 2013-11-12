@@ -275,6 +275,29 @@
                  'build-deps (lambda () empty)
                  #:checker (check-dependencies 'build-deps))))
 
+(define (get-all-implies metadata-ns pkg-dir deps)
+  (get-metadata metadata-ns pkg-dir 
+                'implies (lambda () empty)
+                #:checker (lambda (l)
+                            (unless (null? l)
+                              (define deps-set (list->set
+                                                (map dependency->name deps)))
+                              (unless (and (list? l)
+                                           (andmap (lambda (v)
+                                                     (or (string? v)
+                                                         (eq? v 'core)))
+                                                   l))
+                                (pkg-error (~a "invalid `implies' specification\n"
+                                               "  specification: ~e")
+                                           l))
+                              (unless (andmap (lambda (i)
+                                                (or (eq? i 'core)
+                                                    (set-member? deps-set i)))
+                                              l)
+                                (pkg-error (~a "`implies' is not a subset of dependencies\n"
+                                               "  specification: ~e")
+                                           l))))))
+
 (define (dependency->name dep)
   (package-source->name
    (dependency->source dep)))
@@ -1342,6 +1365,7 @@
          #:pre-succeed pre-succeed
          #:dep-behavior dep-behavior
          #:update-deps? update-deps?
+         #:update-implies? update-implies?
          #:update-cache update-cache
          #:updating? updating?
          #:ignore-checksums? ignore-checksums?
@@ -1369,6 +1393,9 @@
                                   (if name?
                                       'search-ask
                                       'fail)))
+    (define do-update-deps?
+      (and update-deps?
+           (member this-dep-behavior '(search-auto search-ask))))
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
@@ -1521,19 +1548,25 @@
                (clean!)
                (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
       [(and
-        update-deps?
-        (member this-dep-behavior '(search-auto search-ask))
+        (or do-update-deps?
+            update-implies?)
         (let ()
           (define deps (get-all-deps metadata-ns pkg-dir))
+          (define implies (list->set
+                           (get-all-implies metadata-ns pkg-dir deps)))
           (define update-pkgs
             (append-map (λ (dep)
                            (define name (dependency->name dep))
                            (define this-platform? (or all-platforms?
                                                       (dependency-this-platform? dep)))
                            (or (and this-platform?
+                                    (or do-update-deps?
+                                        (set-member? implies name))
                                     (not (hash-ref simultaneous-installs name #f))
                                     ((packages-to-update download-printf current-scope-db 
-                                                         #:must-update? #f #:deps? #t
+                                                         #:must-update? #f
+                                                         #:deps? do-update-deps?
+                                                         #:implies? update-implies?
                                                          #:update-cache update-cache
                                                          #:namespace metadata-ns
                                                          #:all-platforms? all-platforms?
@@ -1549,10 +1582,13 @@
                    (raise (vector #t infos pkg-name update-pkgs
                                   (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
                                   conversation)))
-                 (match this-dep-behavior
+                 (match (if (andmap (lambda (dep) (set-member? implies (pkg-desc-name dep)))
+                                    update-pkgs)
+                            'search-auto
+                            this-dep-behavior)
                    ['search-auto
                     (show-dependencies update-pkgs #t #t)
-                    (continue 'always-yes)]
+                    (continue conversation)]
                    ['search-ask
                     (show-dependencies update-pkgs #t #f)
                     (case (if (eq? conversation 'always-yes)
@@ -1632,6 +1668,7 @@
               (define db current-scope-db)
               (let ([to-update (append-map (packages-to-update download-printf db
                                                                #:deps? update-deps? 
+                                                               #:implies? update-implies?
                                                                #:update-cache update-cache
                                                                #:namespace metadata-ns
                                                                #:all-platforms? all-platforms?
@@ -1876,6 +1913,7 @@
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
                      #:update-deps? [update-deps? #f]
+                     #:update-implies? [update-implies? #t]
                      #:update-cache [update-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
@@ -1910,6 +1948,7 @@
                        #:use-cache? use-cache?
                        #:dep-behavior dep-behavior
                        #:update-deps? update-deps?
+                       #:update-implies? update-implies?
                        #:update-cache update-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
@@ -1930,6 +1969,7 @@
        #:skip-installed? skip-installed?
        #:dep-behavior dep-behavior
        #:update-deps? update-deps?
+       #:update-implies? update-implies?
        #:update-cache update-cache
        #:pre-succeed pre-succeed
        #:updating? updating?
@@ -1968,7 +2008,8 @@
 (define ((packages-to-update download-printf db
                              #:must-installed? [must-installed? #t]
                              #:must-update? [must-update? #t]
-                             #:deps? [deps? #f]
+                             #:deps? deps?
+                             #:implies? implies?
                              #:namespace metadata-ns 
                              #:update-cache update-cache
                              #:all-platforms? all-platforms?
@@ -2014,16 +2055,18 @@
                           (pkg-desc-checksum pkg-name)
                           (pkg-desc-auto? pkg-name))))
         ;; No update needed, but maybe check dependencies:
-        (if deps?
+        (if (or deps?
+                implies?)
             ((packages-to-update download-printf db
                                  #:must-update? #f
-                                 #:deps? #t
+                                 #:deps? deps?
+                                 #:implies? implies?
                                  #:update-cache update-cache
                                  #:namespace metadata-ns
                                  #:all-platforms? all-platforms?
                                  #:ignore-checksums? ignore-checksums?
                                  #:use-cache? use-cache?)
-             pkg-name)
+             name)
             null))]
    [(eq? #t (hash-ref update-cache pkg-name #f))
     ;; package is already being updated
@@ -2076,18 +2119,21 @@
                     ;; FIXME: the type shouldn't be #f here; it should be
                     ;; preseved from install time:
                     (list (pkg-desc orig-pkg-source #f pkg-name #f auto?))))
-             (if deps?
+             (if (or deps? implies?)
                  ;; Check dependencies
                  (append-map
                   (packages-to-update download-printf db
                                       #:must-update? #f
-                                      #:deps? #t
+                                      #:deps? deps?
+                                      #:implies? implies?
                                       #:update-cache update-cache
                                       #:namespace metadata-ns
                                       #:all-platforms? all-platforms?
                                       #:ignore-checksums? ignore-checksums?
                                       #:use-cache? use-cache?)
-                  ((package-dependencies metadata-ns db all-platforms?) pkg-name))
+                  ((package-dependencies metadata-ns db all-platforms? 
+                                         #:only-implies? (not deps?))
+                   pkg-name))
                  null))]))]
    [else null]))
 
@@ -2098,12 +2144,22 @@
   (for ([k (in-list l)]) (hash-remove! update-cache k)))
                   
 
-(define ((package-dependencies metadata-ns db all-platforms?) pkg-name)
-  (map dependency->name 
-       (let ([l (get-all-deps metadata-ns (pkg-directory* pkg-name #:db db))])
-         (if all-platforms?
-             l
-             (filter dependency-this-platform? l)))))
+(define ((package-dependencies metadata-ns db all-platforms?
+                               #:only-implies? [only-implies? #f]) 
+         pkg-name)
+  (define pkg-dir (pkg-directory* pkg-name #:db db))
+  (define deps
+    (map dependency->name 
+         (let ([l (get-all-deps metadata-ns pkg-dir)])
+           (if all-platforms?
+               l
+               (filter dependency-this-platform? l)))))
+  (if only-implies?
+      (let ([implies (list->set (get-all-implies metadata-ns pkg-dir deps))])
+        (filter (lambda (dep)
+                  (set-member? implies dep))
+                deps))
+      deps))
 
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
@@ -2113,6 +2169,7 @@
                     #:ignore-checksums? [ignore-checksums? #f]
                     #:use-cache? [use-cache? #t]
                     #:update-deps? [update-deps? #f]
+                    #:update-implies? [update-implies? #t]
                     #:quiet? [quiet? #f]
                     #:strip [strip-mode #f]
                     #:link-dirs? [link-dirs? #f])
@@ -2128,6 +2185,7 @@
                                                     #:must-update? (not all-mode?)
                                                     #:deps? (or update-deps? 
                                                                 all-mode?) ; avoid races
+                                                    #:implies? update-implies?
                                                     #:update-cache update-cache
                                                     #:namespace metadata-ns
                                                     #:all-platforms? all-platforms?
@@ -2154,6 +2212,7 @@
       #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
       #:update-deps? update-deps?
+      #:update-implies? update-implies?
       #:update-cache update-cache
       #:quiet? quiet?
       #:strip strip-mode
@@ -2978,6 +3037,7 @@
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
                         #:update-deps? boolean?
+                        #:update-implies? boolean?
                         #:quiet? boolean?
                         #:all-platforms? boolean?
                         #:force? boolean?
@@ -3002,6 +3062,7 @@
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:update-deps? boolean?
+                        #:update-implies? boolean?
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?

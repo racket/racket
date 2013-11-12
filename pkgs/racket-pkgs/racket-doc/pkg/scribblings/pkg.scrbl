@@ -363,7 +363,13 @@ sub-commands.
   @item{@DFlag{update-deps} --- With @exec{search-ask} or @exec{search-auto} dependency behavior, checks
         already-installed dependencies transitively for updates (even when
         not forced by version requirements), asking or automatically updating a
-        package when an update is available.}
+        package when an update is available. When a package is updated or installed,
+        unless @DFlag{skip-implies} is specified, any package that
+        it implies (see @secref["metadata"]) is automatically updated independent of the behavior
+        requested via @DFlag{update-deps} and @DFlag{deps}.}
+
+  @item{@DFlag{skip-implies} --- Disables special treatment of dependencies that are listed
+        in @racketidfont{implies} (see @secref["metadata"]) for an installed or updated package.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package, instead of copying the
@@ -457,6 +463,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
  @item{@DFlag{update-deps} --- Same as for @command-ref{install}, but
        implied by @DFlag{auto} only for @command-ref{update}.}
+ @item{@DFlag{skip-implies} --- Same as for @command-ref{install}.}
  @item{@DFlag{link} --- Same as for @command-ref{install}.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
@@ -778,11 +785,14 @@ The following @filepath{info.rkt} fields are used by the package manager:
  @item{@racketidfont{implies} --- a list of strings and
        @racket['core]. Each string refers to a package listed in the
        @racketidfont{deps} and indicates that a dependency on the
-       current package counts as a dependency on named package; for
-       example, the @pkgname{gui} package is defined to ensure access
-       to all of the libraries provided by @pkgname{gui-lib}, so the
-       @filepath{info.rkt} file of @pkgname{gui} lists
-       @racket["gui-lib"] in @racketidfont{implies}. The special value
+       current package counts as a dependency on the named package;
+       for example, the @pkgname{gui} package is defined to ensure
+       access to all of the libraries provided by @pkgname{gui-lib},
+       so the @filepath{info.rkt} file of @pkgname{gui} lists
+       @racket["gui-lib"] in @racketidfont{implies}. Packages listed
+       in @racketidfont{implies} list are treated specially by
+       updating: implied packages are automatically updated whenever
+       the implying package is updated. The special value
        @racket['core] is intended for use by an appropriate
        @pkgname{base} package to declare it as the representative of
        core Racket libraries.}

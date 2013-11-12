@@ -35,7 +35,7 @@
  "name"
  "basic" "create" "install" "permissions"
  "conflicts" "checksums"
- "deps" "update"
+ "deps" "update" "implies"
  "remove"
  "promote"
  "locking"

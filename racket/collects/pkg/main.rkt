@@ -185,6 +185,7 @@
                                   #:use-cache? (not no-cache)
                                   #:skip-installed? skip-installed
                                   #:update-deps? update-deps
+                                  #:update-implies? (not ignore-implies)
                                   #:strip (or (and source 'source) (and binary 'binary))
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list sources)])
@@ -240,6 +241,7 @@
                                  #:ignore-checksums? ignore-checksums
                                  #:use-cache? (not no-cache)
                                  #:update-deps? (or update-deps auto)
+                                 #:update-implies? (not ignore-implies)
                                  #:strip (or (and source 'source) (and binary 'binary))
                                  #:link-dirs? link-dirs?))))
                 (setup no-setup setup-collects jobs)))]
@@ -475,7 +477,8 @@
     [#:bool ignore-checksums () "Ignore checksums"]
     [#:bool no-cache () "Disable download cache"])
    #:update-deps-flags
-   ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"])
+   ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
+    [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])
    #:install-copy-flags
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]
