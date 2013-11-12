@@ -5,10 +5,10 @@
 
 A @racket[grow-box-spacer-pane%] object is intended for use as a
  lightweight spacer in the bottom-right corner of a frame, rather than
- as a container. On Mac OS X, a
+ as a container. On older version of Mac OS X, a
  @racket[grow-box-spacer-pane%] has the same width and height as the
  grow box that is inset into the bottom-right corner of a frame. On
- Windows and Unix, a @racket[grow-box-spacer-pane%] has zero width and
+ Windows, Unix, and recent Mac OS X, a @racket[grow-box-spacer-pane%] has zero width and
  height. Unlike all other container types, a
  @racket[grow-box-spacer-pane%] is unstretchable by default.
 

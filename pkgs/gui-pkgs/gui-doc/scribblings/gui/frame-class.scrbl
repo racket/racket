@@ -58,8 +58,8 @@ some platforms:
 @itemize[
 
  @item{@racket['no-resize-border] --- omits the resizeable border
-  around the window (Windows, Unix) or grow box in the bottom right
-  corner (Mac OS X)}
+  around the window (Windows, Unix), ability to resize the window (Mac
+  OS X), or grow box in the bottom right corner (older Mac OS X)}
 
  @item{@racket['no-caption] --- omits the title bar for the frame
  (Windows, Mac OS X, Unix)}

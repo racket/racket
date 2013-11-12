@@ -236,9 +236,13 @@
                                                               NSTitledWindowMask
                                                               (if is-sheet? NSUtilityWindowMask 0)
                                                               (if is-dialog?
-                                                                  (if (memq 'close-button style)
-                                                                      NSClosableWindowMask
-                                                                      0)
+                                                                  (bitwise-ior
+                                                                   (if (memq 'close-button style)
+                                                                       NSClosableWindowMask
+                                                                       0)
+                                                                   (if (memq 'resize-border style)
+                                                                       NSResizableWindowMask
+                                                                       0))
                                                                   (bitwise-ior 
                                                                    NSClosableWindowMask
                                                                    NSMiniaturizableWindowMask

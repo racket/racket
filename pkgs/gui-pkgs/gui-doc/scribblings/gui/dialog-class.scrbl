@@ -60,9 +60,9 @@ The @racket[style] flags adjust the appearance of the dialog on some
  @item{@racket['no-caption] --- omits the title bar for the dialog
  (Windows)}
 
- @item{@racket['resize-border] --- adds a resizeable border
-  around the window (Windows) or grow box in the bottom right corner
-  (Mac OS X)}
+ @item{@racket['resize-border] --- adds a resizeable border around the
+  window (Windows), ability to resize the window (Mac OS X), or grow
+  box in the bottom right corner (older Mac OS X)}
 
  @item{@racket['no-sheet] --- uses a movable window for the dialog,
  even if a parent window is provided (Mac OS X)}
