@@ -10,7 +10,7 @@
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst)
          racket/match (contract-req)
-         syntax/kerncase syntax/parse syntax/stx
+         syntax/parse syntax/stx
          (for-template racket/base (typecheck internal-forms)))
 
 
@@ -82,7 +82,7 @@
       expected-types ; types w/o undefined
       (append p1 p2)
       ;; typecheck the body
-      (run 
+      (run
         (if expected
           (tc-body/check body (erase-filter expected))
           (tc-body body)))))))
@@ -108,7 +108,9 @@
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     ;; collect the declarations, which are represented as definitions
     (for-each (lambda (names body)
-                (kernel-syntax-case* body #f (values :-internal define-type-alias-internal)
+                (syntax-parse body
+                  #:literals (values :-internal define-type-alias-internal)
+                  #:literal-sets (kernel-literals)
                   [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
                    (register-resolved-type-alias #'nm (parse-type #'ty))]
                   [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
