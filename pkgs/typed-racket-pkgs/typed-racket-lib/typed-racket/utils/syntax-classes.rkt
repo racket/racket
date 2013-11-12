@@ -16,6 +16,7 @@
   typed-require/struct
   predicate-assertion
   type-declaration
+  failed-typecheck
 
   type-alias?
   typed-struct?
@@ -65,7 +66,9 @@
   [predicate-assertion
     (assert-predicate-internal type predicate)]
   [type-declaration
-    (:-internal id:identifier type)])
+    (:-internal id:identifier type)]
+  [failed-typecheck
+    (typecheck-fail-internal stx message:str var:id)])
 
 ;;; Helpers
 
