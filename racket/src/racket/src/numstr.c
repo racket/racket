@@ -2712,12 +2712,21 @@ sch_random(int argc, Scheme_Object *argv[])
     Scheme_Object *o, *rand_state;
 
     o = argv[0];
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+    if (SCHEME_INTP(o)) {
+      i = (uintptr_t)SCHEME_INT_VAL(o);
+      if (i > 4294967087UL)
+        i = 0;
+    } else
+      i = 0;
+#else
     if (scheme_get_unsigned_int_val(o,  &i)) {
       if (i > 4294967087UL)
 	i = 0;
     } else
       i = 0;
-    
+#endif
+
     if (!i) {
       scheme_wrong_contract("random", 
                             ((argc == 1)
@@ -2739,7 +2748,11 @@ sch_random(int argc, Scheme_Object *argv[])
 
     v = sch_int_rand(i, (Scheme_Random_State *)rand_state);
     
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+    return scheme_make_integer(v);
+#else
     return scheme_make_integer_value_from_unsigned(v);
+#endif
   }
 }
 
