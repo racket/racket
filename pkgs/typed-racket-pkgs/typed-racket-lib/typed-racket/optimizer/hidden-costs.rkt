@@ -11,6 +11,8 @@
 ;; not an exhaustive list
 (define-literal-syntax-class hidden-port-parameter-function
   (display displayln newline write write-byte print printf))
+(define-literal-syntax-class hidden-random-parameter-function
+  (random))
 
 ;; This syntax class does not perform optimization.
 ;; It only logs operations with hidden costs, for use by Optimization Coach.
@@ -26,6 +28,12 @@
     #:when (for/and ([arg (in-syntax #'(args ...))])
              (not (subtypeof? arg -Output-Port)))
     #:do [(log-optimization-info "hidden parameter" #'op)]
+    #:with opt #'(op args.opt ...))
+  (pattern (#%plain-app op:hidden-random-parameter-function args:opt-expr ...)
+    ;; see above
+    #:when (for/and ([arg (in-syntax #'(args ...))])
+             (not (subtypeof? arg -Pseudo-Random-Generator)))
+    #:do [(log-optimization-info "hidden parameter (random)" #'op)]
     #:with opt #'(op args.opt ...))
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
