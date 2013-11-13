@@ -1,7 +1,6 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         syntax/kerncase
          syntax/parse
          racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
@@ -15,7 +14,7 @@
 (export check-subforms^)
 
 ;; FIXME -- samth 7/15/11
-;; This code is doing the wrong thing wrt the arguments of exception handlers.  
+;; This code is doing the wrong thing wrt the arguments of exception handlers.
 ;; In particular, it allows them to be anything at all, but they might
 ;; get called with the wrong kind of arguments by the exception
 ;; mechanism.  The right thing is to use the exception predicate.
@@ -78,23 +77,23 @@
         [_ (void)])))
   (apply combine-types body-ty handler-tys))
 
-;; syntax type -> any
+;; syntax tc-results -> tc-results
 (define (check-subforms/with-handlers/check form expected)
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
-      (kernel-syntax-case* form #f ()
+      (syntax-parse form
         [stx
          ;; if this needs to be checked
-         (with-type-property form)
+         #:when (with-type-property form)
          ;; the form should be already ascribed the relevant type
          (tc-expr form)]
         [stx
-         ;; this is a hander function
-         (exn-handler-property form)
+         ;; this is a handler function
+         #:when (exn-handler-property form)
          (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
         [stx
          ;; this is the body of the with-handlers
-         (exn-body-property form)
+         #:when (exn-body-property form)
          (tc-expr/check form expected)]
         [(a . b)
          (begin
@@ -107,10 +106,10 @@
 ;; syntax -> void
 (define (check-subforms/ignore form)
   (let loop ([form form])
-    (kernel-syntax-case* form #f ()
+    (syntax-parse form
       [stx
        ;; if this needs to be checked
-       (with-type-property form)
+       #:when (with-type-property form)
        ;; the form should be already ascribed the relevant type
        (void (tc-expr form))]
       [(a . b)
