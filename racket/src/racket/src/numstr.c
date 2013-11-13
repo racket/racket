@@ -2756,6 +2756,11 @@ sch_random(int argc, Scheme_Object *argv[])
   }
 }
 
+double scheme_double_random(Scheme_Object *rand_state)
+{
+  return sch_double_rand((Scheme_Random_State *)rand_state);
+}
+
 static Scheme_Object *
 do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
 {

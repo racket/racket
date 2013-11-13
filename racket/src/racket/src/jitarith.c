@@ -302,7 +302,8 @@ int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
             && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
           if (!extfl) {
             if (IS_NAMED_PRIM(app->rator, "->fl")
-                || IS_NAMED_PRIM(app->rator, "fx->fl"))
+                || IS_NAMED_PRIM(app->rator, "fx->fl")
+                || IS_NAMED_PRIM(app->rator, "unsafe-flrandom"))
               return 1;
           }
 #ifdef MZ_LONG_DOUBLE

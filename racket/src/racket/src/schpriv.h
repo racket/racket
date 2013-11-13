@@ -2177,6 +2177,8 @@ extern Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_scheme_pi;
 extern Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_object, *scheme_single_nan_object;
 #endif
 
+XFORM_NONGCING double scheme_double_random(Scheme_Object *rand_state);
+
 /****** General numeric ******/
 
 Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,

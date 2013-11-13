@@ -834,11 +834,11 @@ both in binary and as integers.
 @subsection{Random Numbers}
 
 @defproc*[([(random [k (integer-in 1 4294967087)]
-                    [generator pseudo-random-generator?
+                    [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
             exact-nonnegative-integer?]
-           [(random [generator pseudo-random-generator?
-                               (current-pseudo-random-generator)]) 
+           [(random [rand-gen pseudo-random-generator?
+                              (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
 When called with an integer argument @racket[k], returns a random
@@ -882,17 +882,17 @@ Returns @racket[#t] if @racket[v] is a pseudo-random number generator,
 @racket[#f] otherwise.}
 
 
-@defparam[current-pseudo-random-generator generator pseudo-random-generator?]{
+@defparam[current-pseudo-random-generator rand-gen pseudo-random-generator?]{
 
 A @tech{parameter} that determines the pseudo-random number generator
 used by @racket[random].}
 
 
-@defproc[(pseudo-random-generator->vector [generator pseudo-random-generator?])
+@defproc[(pseudo-random-generator->vector [rand-gen pseudo-random-generator?])
          pseudo-random-generator-vector?]{
 
 Produces a vector that represents the complete internal state of
-@racket[generator]. The vector is suitable as an argument to
+@racket[rand-gen]. The vector is suitable as an argument to
 @racket[vector->pseudo-random-generator] to recreate the generator in
 its current state (across runs and across platforms).}
 
@@ -903,12 +903,12 @@ its current state (across runs and across platforms).}
 Produces a pseudo-random number generator whose internal state
 corresponds to @racket[vec].}
 
-@defproc[(vector->pseudo-random-generator! [generator pseudo-random-generator?]
+@defproc[(vector->pseudo-random-generator! [rand-gen pseudo-random-generator?]
                                            [vec pseudo-random-generator-vector?])
          void?]{
 
 Like @racket[vector->pseudo-random-generator], but changes
-@racket[generator] to the given state, instead of creating a new
+@racket[rand-gen] to the given state, instead of creating a new
 generator.}
 
 

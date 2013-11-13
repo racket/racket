@@ -177,6 +177,11 @@ These are similar to the safe bindings @racket[->fl] and @racket[fl->exact-integ
 but further constrained to consume or produce a fixnum.
 }
 
+@defproc[(unsafe-flrandom [rand-gen pseudo-random-generator?]) (and flonum? (>/c 0) (</c 1))]{
+
+Unchecked version of @racket[flrandom].
+}
+
 
 @section{Unsafe Data Extraction}
 

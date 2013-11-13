@@ -204,6 +204,8 @@ static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[]
 static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[]);
+
 #ifdef MZ_USE_SINGLE_FLOATS
 static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
 #endif
@@ -1438,6 +1440,15 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("unsafe-flimag-part", p, env);
+
+  p = scheme_make_immed_prim(unsafe_flrandom, "unsafe-flrandom", 1, 1);
+  if (scheme_can_inline_fp_op())
+    flags = SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM);
+  scheme_add_global_constant("unsafe-flrandom", p, env);
 }
 
 void scheme_init_extfl_unsafe_number(Scheme_Env *env)
@@ -5395,6 +5406,11 @@ static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[])
 {
   return ((Scheme_Complex *)argv[0])->i;
+}
+
+static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[])
+{
+  return scheme_make_double(scheme_double_random(argv[0]));
 }
 
 static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])

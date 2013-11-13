@@ -49,6 +49,10 @@ static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv)
 # define ts_scheme_make_fsemaphore scheme_make_fsemaphore
 #endif
 
+static void call_flrandom(Scheme_Object *rs) {
+  scheme_jit_save_fp = scheme_double_random(rs);
+}
+
 static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *mark_set, 
                                                  Scheme_Object *key,
                                                  Scheme_Object *prompt_tag)
@@ -1662,6 +1666,36 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       if (jitter->unbox)
         scheme_generate_unboxing(jitter, dest);
+      
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-flrandom")) {
+      mz_jit_unbox_state ubs;
+
+      LOG_IT(("inlined %s\n", name));
+      
+      mz_runstack_skipped(jitter, 1);
+
+      scheme_mz_unbox_save(jitter, &ubs);
+
+      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+
+      scheme_mz_unbox_restore(jitter, &ubs);
+
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_prepare(1);
+      jit_pusharg_p(JIT_R0);
+      (void)mz_finish(call_flrandom);
+      (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
+      CHECK_LIMIT();
+      
+      if (jitter->unbox) {
+        jitter->unbox_depth++;
+      } else {
+        scheme_generate_alloc_double(jitter, 0, dest);
+        CHECK_LIMIT();
+      }
       
       return 1;
     } else if (IS_NAMED_PRIM(rator, "add1")) {

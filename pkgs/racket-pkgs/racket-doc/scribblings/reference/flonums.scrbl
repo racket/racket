@@ -131,6 +131,10 @@ Like @racket[make-rectangular], @racket[real-part], and
 @racket[imag-part], but both parts of the complex number must be
 inexact.}
 
+@defproc[(flrandom [rand-gen pseudo-random-generator?]) (and flonum? (>/c 0) (</c 1))]{
+
+Equivalent to @racket[(random rand-gen)].}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "flvectors"]{Flonum Vectors}

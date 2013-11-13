@@ -52,10 +52,15 @@
       (test result (compose post (eval `(lambda () (,proc ',x ',y))))))
     (pre)
     (test result (compose post (eval `(lambda (x) (,proc x ',y)))) x))
-  (define (test-un result proc x)
-    (test result (eval proc) x)
-    (test result (eval `(lambda (x) (,proc x))) x)
-    (test result (eval `(lambda () (,proc ',x)))))
+  (define (test-un result proc x
+                   #:pre [pre void] 
+                   #:post [post (lambda (x) x)])
+    (pre)
+    (test result (compose post (eval proc)) x)
+    (pre)
+    (test result (compose post (eval `(lambda (x) (,proc x)))) x)
+    (pre)
+    (test result (compose post (eval `(lambda () (,proc ',x))))))
 
   (test-bin 3 'unsafe-fx+ 1 2)
   (test-bin -1 'unsafe-fx+ 1 -2)
@@ -282,6 +287,16 @@
                                                       (lambda (exn) (unsafe-extfl+ x y))])
                                        (unsafe-extfl- (unsafe-extfl+ x y) NO-SUCH-VARIABLE)))
               1.1t0 3.3t0 5.2t0))
+  
+  (let ([r (make-pseudo-random-generator)]
+        [seed (random 100000)])
+    (define (reset)
+      (parameterize ([current-pseudo-random-generator r])
+        (random-seed seed)))
+    (reset)
+    (define val (random r))
+    (test-un val 'unsafe-flrandom r
+             #:pre reset))
 
   (test-un 5 'unsafe-car (cons 5 9))
   (test-un 9 'unsafe-cdr (cons 5 9))

@@ -42,7 +42,7 @@
 
 /* the actual generator */
 
-static double mrg32k3a(Scheme_Random_State *s) { /* (double), in {0..m1-1} */
+XFORM_NONGCING static double mrg32k3a(Scheme_Random_State *s) { /* (double), in {0..m1-1} */
   double x10, x20, y;
   intptr_t   k10, k20;
 
@@ -212,7 +212,7 @@ static uintptr_t sch_int_rand(uintptr_t n, Scheme_Random_State *rs)
   return (uintptr_t)xq;
 }
 
-static double sch_double_rand(Scheme_Random_State *rs)
+XFORM_NONGCING static double sch_double_rand(Scheme_Random_State *rs)
 {
   double  x;
   x = mrg32k3a(rs);

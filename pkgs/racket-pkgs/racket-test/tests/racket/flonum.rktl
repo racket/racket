@@ -165,6 +165,20 @@
 (err/rt-test (for/flvector #:length 10 #:fill 0 ([i 5]) 8.0))
 
 ;; ----------------------------------------
+;; flrandom
+
+(let ([r (make-pseudo-random-generator)]
+      [seed (random 100000)])
+  (define (reset)
+    (parameterize ([current-pseudo-random-generator r])
+      (random-seed seed)))
+  (test (begin (reset) (random r))
+        flrandom
+        (begin (reset) r)))
+
+(err/rt-test (flrandom 5.0))
+
+;; ----------------------------------------
 ;; Check corners of `flexpt':
 ;;  Tests by Neil T.:
 
