@@ -7,11 +7,12 @@
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
+         (utils syntax-classes)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst)
          racket/match (contract-req)
          syntax/parse syntax/stx
-         (for-template racket/base (typecheck internal-forms)))
+         (for-template racket/base))
 
 
 (import tc-expr^)
@@ -106,19 +107,16 @@
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
-    ;; collect the declarations, which are represented as definitions
-    (for-each (lambda (names body)
-                (syntax-parse body
-                  #:literals (values :-internal define-type-alias-internal)
-                  #:literal-sets (kernel-literals)
-                  [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
-                   (register-resolved-type-alias #'nm (parse-type #'ty))]
-                  [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
-                   (register-type-if-undefined #'nm (parse-type #'ty))
-                   (register-scoped-tvars #'nm (parse-literal-alls #'ty))]
-                  [_ (void)]))
-              names
-              exprs)
+    ;; Collect the declarations, which are represented as expression.
+    ;; We put them back into definitions to reuse the existing machinery
+    (for ([body (in-list exprs)])
+      (syntax-parse #`(define-values () #,body)
+        [t:type-alias
+         (register-resolved-type-alias #'t.name (parse-type #'t.type))]
+        [t:type-declaration
+         (register-type-if-undefined #'t.id (parse-type #'t.type))
+         (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))]
+        [_ (void)]))
     ;; add scoped type variables, before we get to typechecking
     ;; FIXME: can this pass be fused with the one immediately above?
     (for ([n (in-list names)] [b (in-list exprs)])
