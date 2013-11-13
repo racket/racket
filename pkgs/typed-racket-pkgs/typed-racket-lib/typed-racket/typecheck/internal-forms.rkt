@@ -7,6 +7,8 @@
   (for-template racket/base))
 
 (provide
+  (for-syntax internal)
+
   type-alias
   type-refinement
   typed-struct
@@ -68,7 +70,7 @@
 ;;; Internal form syntax matching
 
 
-(define-syntax-class internal
+(define-syntax-class internal^
    #:attributes (value)
    #:literals (values)
    #:literal-sets (kernel-literals)
@@ -87,7 +89,7 @@
            (define-syntax-class name
              #:auto-nested-attributes
              #:literal-sets ((internal-literals #:at name))
-             (pattern i:internal #:with (lit . body) #'i.value))
+             (pattern i:internal^ #:with (lit . body) #'i.value))
            (define pred
              (syntax-parser
                [(~var _ name) #t]
@@ -114,3 +116,11 @@
   [failed-typecheck
     (typecheck-fail-internal stx message:str var:id)])
 
+;;; Internal form creation
+(begin-for-syntax
+  (define (internal stx)
+    (quasisyntax/loc stx
+      (define-values ()
+        (begin
+          (quote-syntax #,stx)
+          (#%plain-app values))))))

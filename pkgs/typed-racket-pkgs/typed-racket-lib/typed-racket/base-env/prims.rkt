@@ -68,7 +68,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
           racket/struct-info
           syntax/struct
           "annotate-classes.rkt"
-          "internal.rkt"
           "../utils/tc-utils.rkt"
           "../private/syntax-properties.rkt"
           "../types/utils.rkt"
