@@ -189,7 +189,7 @@
        ;; We trust ignore to be only on syntax objects objects that are well typed
        expected]
       ;; explicit failure
-      [t:failed-typecheck
+      [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
       ;; data
       [(quote #f) (ret (-val #f) -false-filter)]
@@ -329,7 +329,7 @@
        (check-subforms/ignore form)
        (ret Univ)]
       ;; explicit failure
-      [t:failed-typecheck
+      [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
       ;; data
       [(quote #f) (ret (-val #f) -false-filter)]

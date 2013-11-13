@@ -17,7 +17,7 @@
   typed-require/struct
   predicate-assertion
   type-declaration
-  failed-typecheck
+  typecheck-failure
 
   type-alias?
   typed-struct?
@@ -113,7 +113,7 @@
     (assert-predicate-internal type predicate)]
   [type-declaration
     (:-internal id:identifier type)]
-  [failed-typecheck
+  [typecheck-failure
     (typecheck-fail-internal stx message:str var:id)])
 
 ;;; Internal form creation
