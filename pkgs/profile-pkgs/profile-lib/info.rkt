@@ -1,7 +1,7 @@
 #lang info
 
-(define collection 'multi)
-(define deps '("base"))
+(define collection "profile")
+(define deps '("base" "errortrace-lib"))
 (define build-deps '("at-exp-lib"
                      "rackunit-lib"))
 

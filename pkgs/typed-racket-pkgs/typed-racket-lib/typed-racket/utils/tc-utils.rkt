@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out) (all-from-out "disappeared-use.rkt"))
-(require "syntax-traversal.rkt" "disappeared-use.rkt" racket/promise
+(require syntax/source-syntax "disappeared-use.rkt" racket/promise
 	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being
@@ -58,15 +58,18 @@ don't depend on any other portion of the system
                            (locate-stx e))
                    e))))
 
-(define (locate-stx stx)
-  (define omodule (orig-module-stx))
-  (define emodule (expanded-module-stx))
-  ;(printf "orig: ~a\n" (syntax-object->datum omodule))
-  ;(printf "exp: ~a\n" (syntax-object->datum emodule))
-  ;(printf "stx (locate): ~a\n" (syntax-object->datum stx))
-  (if (and (not (print-syntax?)) omodule emodule stx)
-      (or (look-for-in-orig omodule emodule stx) stx)
-      stx))
+(define locate-stx
+  ;; this hash handles using `locate-stx` even when orig/expand change
+  (let ([recover-table (make-hash)])
+    (lambda (stx)
+      (define omodule (orig-module-stx))
+      (define emodule (expanded-module-stx))
+      (cond [(and (not (print-syntax?)) omodule emodule stx)
+	     (define recover
+	       (hash-ref! recover-table (cons omodule emodule)
+			  (lambda () (recover-source-syntax omodule emodule))))
+	     (or (recover stx) stx)]
+	    [else stx]))))
 
 (define (raise-typecheck-error msg stxs)
   (if (null? (cdr stxs))
@@ -93,7 +96,7 @@ don't depend on any other portion of the system
     [l
      (let ([stxs
             (for/list ([e (in-list l)])
-              (with-handlers ([exn:fail:syntax? 
+              (with-handlers ([exn:fail:syntax?
                                (λ (e) ((error-display-handler) (exn-message e) e))])
                 (raise-typecheck-error (err-msg e) (err-stx e)))
               (err-stx e))])
