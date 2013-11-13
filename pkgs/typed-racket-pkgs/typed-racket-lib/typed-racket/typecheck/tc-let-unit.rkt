@@ -7,9 +7,8 @@
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
-         (utils syntax-classes)
          syntax/free-vars
-         (typecheck signatures tc-metafunctions tc-subst)
+         (typecheck signatures tc-metafunctions tc-subst internal-forms)
          racket/match (contract-req)
          syntax/parse syntax/stx
          (for-template racket/base))

@@ -9,8 +9,8 @@
          (private parse-type syntax-properties)
          (types abbrev utils resolve substitute type-table struct-table)
          (env global-env type-name-env tvar-env)
-         (utils tc-utils syntax-classes)
-         (typecheck def-binding)
+         (utils tc-utils)
+         (typecheck def-binding internal-forms)
          (for-syntax syntax/parse racket/base)
          (for-template racket/base))
 
