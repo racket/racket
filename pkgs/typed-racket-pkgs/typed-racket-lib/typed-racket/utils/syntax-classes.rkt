@@ -23,54 +23,6 @@
   typed-struct/exec?
   )
 
-(define-syntax-class internal
-   #:attributes (value)
-   #:literals (values)
-   #:literal-sets (kernel-literals)
-   (pattern (define-values () (begin (quote-syntax value:expr) (#%plain-app values)))))
-
-(define-syntax (define-internal-classes stx)
-  (define-syntax-class clause
-    (pattern [name:id (~optional (~seq #:attributes attributes:expr))
-                      (lit:id . body:expr)]
-     #:with pred (format-id #'name "~a?" #'name)))
-
-  (syntax-parse stx
-    [(_ :clause ...)
-     (template
-       (begin
-         (begin
-           (define-syntax-class name
-             #:literal-sets ((internal-literals #:at name))
-             (?? (?@ #:attributes attributes))
-             (pattern i:internal
-               #:with (lit . body) #'i.value))
-           (define pred
-             (syntax-parser
-               [(~var _ name) #t]
-               [_ #f]))) ...))]))
-
-(define-internal-classes
-  [type-alias
-    (define-type-alias-internal name type)]
-  [type-refinement
-    (declare-refinement-internal predicate)]
-  [typed-struct
-    #:attributes (name mutable type-only maker nm (tvars 1) (fields 1) (types 1))
-    (define-typed-struct-internal . :define-typed-struct-body)]
-  [typed-struct/exec
-    (define-typed-struct/exec-internal nm ([fields:id : types] ...) proc-type)]
-  [typed-require
-    (require/typed-internal name type)]
-  [typed-require/struct
-    (require/typed-internal name type #:struct-maker parent)]
-  [predicate-assertion
-    (assert-predicate-internal type predicate)]
-  [type-declaration
-    (:-internal id:identifier type)]
-  [failed-typecheck
-    (typecheck-fail-internal stx message:str var:id)])
-
 ;;; Helpers
 
 (define-splicing-syntax-class dtsi-fields
@@ -95,4 +47,51 @@
            #:attr type-only (attribute options.type-only)
            #:attr maker (or (attribute options.maker) #'nm.nm)))
 
+;;; Internal form syntax matching
 
+
+(define-syntax-class internal
+   #:attributes (value)
+   #:literals (values)
+   #:literal-sets (kernel-literals)
+   (pattern (define-values () (begin (quote-syntax value:expr) (#%plain-app values)))))
+
+(define-syntax (define-internal-classes stx)
+  (define-syntax-class clause
+    (pattern [name:id (lit:id . body:expr)]
+     #:with pred (format-id #'name "~a?" #'name)))
+
+  (syntax-parse stx
+    [(_ :clause ...)
+     (template
+       (begin
+         (begin
+           (define-syntax-class name
+             #:auto-nested-attributes
+             #:literal-sets ((internal-literals #:at name))
+             (pattern i:internal #:with (lit . body) #'i.value))
+           (define pred
+             (syntax-parser
+               [(~var _ name) #t]
+               [_ #f]))) ...))]))
+
+
+(define-internal-classes
+  [type-alias
+    (define-type-alias-internal name type)]
+  [type-refinement
+    (declare-refinement-internal predicate)]
+  [typed-struct
+    (define-typed-struct-internal . :define-typed-struct-body)]
+  [typed-struct/exec
+    (define-typed-struct/exec-internal nm ([fields:id : types] ...) proc-type)]
+  [typed-require
+    (require/typed-internal name type)]
+  [typed-require/struct
+    (require/typed-internal name type #:struct-maker parent)]
+  [predicate-assertion
+    (assert-predicate-internal type predicate)]
+  [type-declaration
+    (:-internal id:identifier type)]
+  [failed-typecheck
+    (typecheck-fail-internal stx message:str var:id)])
