@@ -5,7 +5,7 @@
   syntax/parse
   (for-syntax racket/base racket/syntax
               syntax/parse syntax/parse/experimental/template)
-  (for-template (typecheck internal-forms))
+  (only-in (typecheck internal-forms) internal-literals)
   (for-template racket/base))
 (provide
   type-alias
@@ -41,9 +41,10 @@
        (begin
          (begin
            (define-syntax-class name
+             #:literal-sets ((internal-literals #:at name))
              (?? (?@ #:attributes attributes))
              (pattern i:internal
-               #:with ((~literal lit) . body) #'i.value))
+               #:with (lit . body) #'i.value))
            (define pred
              (syntax-parser
                [(~var _ name) #t]
