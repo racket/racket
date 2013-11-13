@@ -8,12 +8,13 @@
          (types utils abbrev union subtype type-table)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
-         (utils tc-utils syntax-classes)
+         (utils tc-utils)
          (env lexical-env tvar-env index-env)
          racket/private/class-internal
          syntax/parse syntax/stx
          unstable/syntax
          (only-in srfi/1 split-at)
+         (typecheck internal-forms)
          (for-template (only-in '#%paramz [parameterization-key pz:pk])))
 
 (require (for-template racket/base racket/private/class-internal))
