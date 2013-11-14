@@ -197,8 +197,7 @@
           (list (let ([target-maker (id-to-target-maker stx-id #t)]
                       [content (annote-exporting-library
                                 (to-element #:defn? #t stx-id))]
-                      [ref-content (annote-exporting-library
-                                    (to-element stx-id))])
+                      [ref-content (to-element stx-id)])
                   (if target-maker
                       (target-maker
                        content

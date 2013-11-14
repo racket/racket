@@ -93,7 +93,7 @@
     (define (gen defn?)
       (if sig
           (*sig-elem #:defn? defn? (sig-id sig) name)
-          (annote-exporting-library
+          ((if defn? annote-exporting-library values)
            (to-element #:defn? defn? (make-just-context name stx-id)))))
     (values (gen #t) (gen #f))))
 

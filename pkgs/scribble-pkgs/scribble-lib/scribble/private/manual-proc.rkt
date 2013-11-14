@@ -708,7 +708,7 @@
                            (if link?
                                (let ()
                                  (define (gen defn?)
-                                   (annote-exporting-library
+                                   ((if defn? annote-exporting-library values)
                                     (to-element #:defn? defn? name-id)))
                                  (define content (gen #t))
                                  (define ref-content (gen #f))
