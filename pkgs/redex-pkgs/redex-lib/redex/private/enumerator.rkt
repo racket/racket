@@ -8,6 +8,7 @@
          racket/promise
 
          data/gvector
+         math/flonum
 
          "error.rkt")
 
@@ -43,7 +44,17 @@
 
          nats/e
          range/e
-         nats+/e)
+         nats+/e
+
+         ;; Base type enumerators
+         any/e
+         var/e
+         var-prefix/e
+         num/e
+         integer/e
+         bool/e
+         real/e
+         string/e)
 
 ;; an enum a is a struct of < Nat or +Inf, Nat -> a, a -> Nat >
 (struct enum
@@ -817,3 +828,132 @@
              (map (λ (n)
                      (encode e (decode e n)))
                   nums)))))
+;; Base Type enumerators
+(define (between? x low high)
+  (and (>= x low)
+       (<= x high)))
+(define (range-with-pred/e-p low high)
+  (cons (range/e low high)
+        (λ (n) (between? n low high))))
+(define low/e-p
+  (range-with-pred/e-p #x61 #x7a))
+(define up/e-p
+  (range-with-pred/e-p #x41 #x5a))
+(define bottom/e-p
+  (range-with-pred/e-p #x0 #x40))
+(define mid/e-p
+  (range-with-pred/e-p #x5b #x60))
+(define above1/e-p
+  (range-with-pred/e-p #x7b #xd7FF))
+(define above2/e-p
+  (range-with-pred/e-p #xe000 #x10ffff))
+
+(define char/e
+  (map/e
+   integer->char
+   char->integer
+   (disj-sum/e #:append? #t
+               low/e-p
+               up/e-p
+               bottom/e-p
+               mid/e-p
+               above1/e-p
+               above2/e-p)))
+
+(define string/e
+  (map/e
+   list->string
+   string->list
+   (many/e char/e)))
+
+(define from-1/e
+  (map/e add1
+         sub1
+         nats/e))
+
+(define integer/e
+  (disj-sum/e #:alternate? #t
+              (cons (const/e 0) zero?)
+              (cons from-1/e (λ (n) (> n 0)))
+              (cons (map/e - - from-1/e)
+                    (λ (n) (< n 0)))))
+
+;; The last 3 here are -inf.0, +inf.0 and +nan.0
+;; Consider moving those to the beginning
+(define weird-flonums/e-p
+  (cons (from-list/e '(+inf.0 -inf.0 +nan.0))
+        (λ (n)
+           (and (flonum? n)
+                (or (infinite? n)
+                    (nan? n))))))
+(define normal-flonums/e-p
+  (cons (take/e (map/e
+                 ordinal->flonum
+                 flonum->ordinal
+                 integer/e)
+                (+ 1 (* 2 9218868437227405311)))
+        (λ (n)
+           (and (flonum? n)
+                (nor (infinite? n)
+                     (nan? n))))))
+(define float/e
+  (disj-sum/e #:append? #t
+              weird-flonums/e-p
+              normal-flonums/e-p))
+
+(define real/e
+  (disj-sum/e #:alternate? #t
+              (cons integer/e exact-integer?)
+              (cons float/e flonum?)))
+
+(define non-real/e
+  (map/e make-rectangular
+         (λ (z)
+            (values (real-part z)
+                    (imag-part z)))
+         real/e
+         (except/e real/e 0 0.0)))
+
+(define num/e
+  (disj-sum/e #:alternate? #t
+              (cons real/e real?)
+              (cons non-real/e complex?)))
+
+(define bool/e
+  (from-list/e '(#t #f)))
+
+(define var/e
+  (map/e
+   (compose string->symbol list->string)
+   (compose string->list symbol->string)
+   (many1/e char/e)))
+
+(define base/e
+  (disj-sum/e #:alternate? #t
+              (cons (const/e '()) null?)
+              (cons num/e number?)
+              (cons string/e string?)
+              (cons bool/e boolean?)
+              (cons var/e symbol?)))
+
+(define any/e
+  (fix/e +inf.f
+         (λ (any/e)
+            (disj-sum/e #:alternate? #t
+                        (cons base/e (negate pair?))
+                        (cons (cons/e any/e any/e) pair?)))))
+(define (var-prefix/e s)
+  (define as-str (symbol->string s))
+  (map/e (compose string->symbol
+                  (curry string-append as-str)
+                  symbol->string)
+         (compose string->symbol
+                  list->string
+                  (curry (flip drop) (string-length as-str))
+                  string->list
+                  symbol->string)
+         var/e))
+
+(define (flip f)
+  (λ (x y)
+     (f y x)))
