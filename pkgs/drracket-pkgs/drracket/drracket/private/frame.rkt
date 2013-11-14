@@ -93,7 +93,8 @@
          help/bug-report
          setup/unpack
          mrlib/terminal
-         (submod "." install-pkg))
+         (submod "." install-pkg)
+         "get-module-path.rkt")
 (provide frame@)
 (define-unit frame@  
   (import [prefix drracket:unit: drracket:unit/int^]
@@ -787,6 +788,18 @@
           (λ (x y)
             (handler:open-file)
             #t)))
+    (new menu-item%
+         [label (string-constant open-collection-path)]
+         [shortcut #\o]
+         [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+         [parent file-menu]
+         [callback
+          (λ (x y)
+            (define pth
+              (get-module-path-from-user
+               #:init (preferences:get 'drracket:open-module-path-last-used)
+               #:pref 'drracket:open-module-path-last-used))
+            (when pth (handler:edit-file pth)))])
     (new menu%
          (label (string-constant open-recent-menu-item))
          (parent file-menu)
