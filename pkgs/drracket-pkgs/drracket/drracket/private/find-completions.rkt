@@ -186,6 +186,8 @@
        (map string->path '("gui"))]
       ["/plt/pkgs/draw-pkgs/draw-lib/racket/gui"
        (map string->path '("draw.rkt"))]
+      ["plt/pkgs/gui-pkgs/gui-lib/rackunit"
+       (map string->path '("something.rkt"))]
       [_ '()]))
   
   (define (dir-exists? d)
@@ -193,7 +195,22 @@
   
   (check-equal?
    (find-completions/c "rack/" coll-table dir-list dir-exists?)
-   '())
+   `(("gui" ,(string->path "/plt/pkgs/draw-pkgs/draw-lib/racket/gui"))
+     ("gui" ,(string->path "/plt/racket/collects/racket/gui"))
+     ("include.rkt" ,(string->path "/plt/racket/collects/racket/include.rkt"))
+     ("info.rkt" ,(string->path "/plt/racket/collects/racket/info.rkt"))
+     ("init.rkt" ,(string->path "/plt/racket/collects/racket/init.rkt"))
+     ("list.rkt" ,(string->path "/plt/racket/collects/racket/list.rkt"))
+     ("something.rkt" ,(string->path "plt/pkgs/gui-pkgs/gui-lib/rackunit/something.rkt"))))
+  
+  (check-equal?
+   (find-completions/c "racke/" coll-table dir-list dir-exists?)
+   `(("gui" ,(string->path "/plt/pkgs/draw-pkgs/draw-lib/racket/gui"))
+     ("gui" ,(string->path "/plt/racket/collects/racket/gui"))
+     ("include.rkt" ,(string->path "/plt/racket/collects/racket/include.rkt"))
+     ("info.rkt" ,(string->path "/plt/racket/collects/racket/info.rkt"))
+     ("init.rkt" ,(string->path "/plt/racket/collects/racket/init.rkt"))
+     ("list.rkt" ,(string->path "/plt/racket/collects/racket/list.rkt"))))
   
   (check-equal?
    (find-completions/c "rack" coll-table dir-list dir-exists?)
