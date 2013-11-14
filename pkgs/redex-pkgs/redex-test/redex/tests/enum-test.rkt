@@ -95,15 +95,16 @@
 (try-it 100 λv E)
 (try-it 25 λv x)
 
-(define-language M
-  (m (x_!_1 x_!_1))
-  (p (number_!_1 number_!_1))
-  (n (p_!_1 p_!_1))
-  (x number))
+;; No longer supported
+;; (define-language M
+;;   (m (x_!_1 x_!_1))
+;;   (p (number_!_1 number_!_1))
+;;   (n (p_!_1 p_!_1))
+;;   (x number))
 
-(try-it 100 M m)
-(try-it 100 M n)
-(try-it 100 M p)
+;; (try-it 100 M m)
+;; (try-it 100 M n)
+;; (try-it 100 M p)
 
 ;; test variable filtering
 (define-language Vars
