@@ -1,7 +1,30 @@
-v5.3.4.11
+v6.0
 
+  * Added an enumerator for patterns. For example, here's how to get
+    the first 100 untyped LC terms (over 3 variables) and the 10^10000-th:
+
+        #lang racket
+        (require redex)
+        
+        (define-language L
+          (e (e e) x (λ (x) e))
+          (x a b c))
+        
+        (for/list ([i (in-range 100)])
+          (generate-term L e #:i-th i))
+
+        (generate-term L e #:i-th (expt 10 10000))
+
+    Thanks to Max New for the enumerator.
+
+  * More patterns that match no terms are now syntax errors, e.g.:
+    (any_1 ..._!_1 any_2 ..._!_1 (any_1 any_2) ...)
+ 
   * added where-make-prefix-pict and where-combine parameters.
 
+  * added #:keep-going to redex-check
+
+  * bug fixes
 
 v5.3.4
 
