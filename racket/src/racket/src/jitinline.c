@@ -49,9 +49,13 @@ static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv)
 # define ts_scheme_make_fsemaphore scheme_make_fsemaphore
 #endif
 
+#ifdef CAN_INLINE_ALLOC
+# ifdef JIT_USE_FP_OPS
 static void call_flrandom(Scheme_Object *rs) {
   scheme_jit_save_fp = scheme_double_random(rs);
 }
+# endif
+#endif
 
 static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *mark_set, 
                                                  Scheme_Object *key,
@@ -1668,6 +1672,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         scheme_generate_unboxing(jitter, dest);
       
       return 1;
+#ifdef CAN_INLINE_ALLOC
+# ifdef JIT_USE_FP_OPS
     } else if (IS_NAMED_PRIM(rator, "unsafe-flrandom")) {
       mz_jit_unbox_state ubs;
 
@@ -1698,6 +1704,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       }
       
       return 1;
+# endif
+#endif
     } else if (IS_NAMED_PRIM(rator, "add1")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_ADD, 0, 1, NULL, 1, 0, 0, NULL, dest);
       return 1;
