@@ -22,7 +22,9 @@
                                                    (list/c lcl/c lcp/c)))
                          (listof (list/c string? path?)))]))
 
-(define (ignore? x) (member x '("compiled")))
+(define (ignore? x) 
+  (or (member x '("compiled"))
+      (regexp-match #rx"~$" x)))
 
 (define (find-completions string #:alternate-racket [alternate-racket #f])
   (find-completions/internal string
@@ -36,12 +38,7 @@
     (cond
       [(null? segments) '()]
       [else
-       (define reg (regexp 
-                    (string-append "^" 
-                                   (regexp-quote (car segments))
-                                   (if (null? (cdr segments))
-                                       ""
-                                       "$"))))
+       (define reg (regexp (string-append "^" (regexp-quote (car segments)))))
        (filter (λ (line) (regexp-match reg (list-ref line 0)))
                collection-dirs)]))
   (define unsorted
@@ -50,12 +47,7 @@
       (cond
         [(null? segments) candidates]
         [else
-         (define reg (regexp (string-append 
-                              "^"
-                              (regexp-quote (car segments))
-                              (if (null? (cdr segments))
-                                  ""
-                                  "$"))))
+         (define reg (regexp (string-append "^" (regexp-quote (car segments)))))
          (define nexts
            (for*/list ([key+candidate (in-list candidates)]
                        [candidate (in-value (list-ref key+candidate 1))]
@@ -114,7 +106,7 @@
              (list (path->string dir) (build-path pth dir)))]
           [else '()])]))))
 
-(define (alternate-racket-clcl/clcp alternate-racket)
+(define (alternate-racket-clcl/clcp alternate-racket) 
   (define (use-current-racket n)
     (values (current-library-collection-links)
             (current-library-collection-paths)))

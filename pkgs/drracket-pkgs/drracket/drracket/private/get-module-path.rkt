@@ -35,6 +35,7 @@
   (define tf (new text-field% [parent dlg] [label #f]
                   [init-value init-value]
                   [callback (λ (tf evt) (tf-callback))]))
+  (send (send tf get-editor) set-position 0 (send (send tf get-editor) last-position))
   (define lb (new list-box% 
                   [parent dlg] [choices '()] [label #f]
                   [callback (λ (lb evt) (update-buttons))]))
