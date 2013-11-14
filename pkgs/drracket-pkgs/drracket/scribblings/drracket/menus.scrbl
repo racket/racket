@@ -458,11 +458,32 @@ brings the corresponding window to the front.
  
  @item{@defmenuitem{About DrRacket...} Shows the credits for DrRacket.}
 
+ @item{@defmenuitem{Check for Updates...} Checks to see if a new version
+        of DrRacket has been released.}
+ 
  @item{@defmenuitem{Related Web Sites} Provides links to related web sites.}
 
  @item{@defmenuitem{Tool Web Sites} Provides links to web sites for
    installed tools.}
 
+ @item{@defmenuitem{Submit Bug Report...} The preferred mechanism for sending
+        in bug reports to the Racket development team. It automatically collects 
+        information about your Racket installation that sometimes can help
+        diagnose problems.}
+ 
+ @item{@defmenuitem{Saved Bug Reports} A submenu that holds bug reports that
+        you've started editing but haven't yet sent in.}
+ 
+ @item{@defmenuitem{Saved Bug Reports} A submenu that holds bug reports that
+        you've started editing but haven't yet sent in.}
+
+ @item{@defmenuitem{Configure Command Line for Racket...} This menu item is
+        available only under Mac OS X. After prompting you for your password,
+        it adds a file named @filepath{racket} to @filepath{/etc/init.d/}
+        that contains the location of the @filepath{bin} directory. 
+        This has the effect of adding that path to the default PATH environment
+        variable (unless your shell explicitly changes teh default behavior).}
+  
  @item{@defmenuitem{Interact with DrRacket in English} Changes DrRacket's
    interface to use English; the menu item appears only when the
    current language is not English. Additional menu items switch
