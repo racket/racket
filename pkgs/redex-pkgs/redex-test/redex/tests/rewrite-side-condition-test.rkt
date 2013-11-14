@@ -27,7 +27,8 @@
 (check-equal? (rsc (1 ..._2) () #t) `((list (repeat 1 #f #f)) () ()))
 (check-equal? (rsc (1 ..._2 1 ..._2) () #t) `((list (repeat 1 ..._2 #f) (repeat 1 ..._2 #f)) () ()))
 (check-equal? (rsc (1 ..._!_3) () #t) `((list (repeat 1 #f #f)) () ()))
-(check-equal? (rsc (1 ..._!_3 1 ..._!_3) () #t) `((list (repeat 1 #f ..._!_3) (repeat 1 #f ..._!_3)) () ()))
+(check-equal? (rsc (1 ..._!_3 1 ..._!_3) () #t)
+              `((list (repeat 1 #f ..._!_3) (repeat 1 #f ..._!_3)) () ()))
 
 (check-equal? (rsc x (x) #t) `((name x (nt x)) (x) (x)))
 (check-equal? (rsc x (x) #f) `((nt x) () ()))
@@ -48,8 +49,17 @@
                 ()))
 
 (check-regexp-match
- #rx"any_1 appears under ..._!_1 in multiple places"
+ #rx"any_1 is overly"
  (rsc (any_1 ..._!_1 any_1 ..._!_1) () #f))
+(check-regexp-match
+ #rx"any_1 is overly constrained"
+ (rsc (any_1 ..._!_1 any_2 ..._!_1 (any_1 any_2) ...) () #f))
+(check-regexp-match
+ #rx"any_1 is overly constrained"
+(rsc (any_1 ..._!_1 any_2 ..._!_1 any_1 ..._1 any_2 ..._1) () #f))
+(check-regexp-match
+ #rx"any_1 is overly constrained"
+ (rsc (any_1 ..._!_1 any_2 ..._!_1 (any_1 any_3) ... (any_3 any_2) ...) () #f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -56,18 +56,13 @@
     (define last-stx (make-hasheq)) ;; used for syntax error reporting
     (define assignments #hasheq())
 
-    ;; hash[sym -o> (listof (list stx (listof id[mismatch-ellipsis-binders])))
-    (define vars-under-mismatch-table (make-hash))
+    ;; hash[sym -o> (listof stx)]
+    (define var-locs-table (make-hash))
     
     (define (record-binder pat-stx under under-mismatch-ellipsis)
       (define pat-sym (syntax->datum pat-stx))
-      (hash-set! vars-under-mismatch-table
-                 (syntax-e pat-stx)
-                 (cons
-                  (list pat-stx under-mismatch-ellipsis)
-                  (hash-ref vars-under-mismatch-table
-                            (syntax-e pat-stx)
-                            '())))
+      (hash-set! var-locs-table pat-sym (cons pat-stx (hash-ref var-locs-table pat-sym '())))
+      
       (set! assignments
             (if (null? under)
                 assignments
@@ -77,16 +72,17 @@
                     [last
                      (unless (equal? (length last) (length under))
                        (define stxs (hash-ref last-stx pat-sym))
-                       (raise-syntax-error what
-                                           (format "found ~a under ~a ellips~as in one place and ~a ellips~as in another"
-                                                   pat-sym
-                                                   (length last)
-                                                   (if (= 1 (length last)) "i" "e")
-                                                   (length under)
-                                                   (if (= 1 (length under)) "i" "e"))
-                                           orig-stx
-                                           (car stxs)
-                                           (cdr stxs)))
+                       (raise-syntax-error
+                        what
+                        (format "found ~a under ~a ellips~as in one place and ~a ellips~as in another"
+                                pat-sym
+                                (length last)
+                                (if (= 1 (length last)) "i" "e")
+                                (length under)
+                                (if (= 1 (length under)) "i" "e"))
+                        orig-stx
+                        (car stxs)
+                        (cdr stxs)))
                      (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)]
                     [else
                      (hash-set! last-contexts pat-sym under)
@@ -107,7 +103,8 @@
       (let loop ([term orig-stx]
                  [under '()]
                  [under-mismatch-ellipsis '()])
-        (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole cross unquote and)
+        (syntax-case term (side-condition variable-except variable-prefix
+                                          hole name in-hole hide-hole cross unquote and)
           [(side-condition pre-pat (and))
            ;; rewriting metafunctions (and possibly other things) that have no where, etc clauses
            ;; end up with side-conditions that are empty 'and' expressions, so we just toss them here.
@@ -237,7 +234,8 @@
                   [else
                    (raise-syntax-error
                     what
-                    (format "before underscore must be either a non-terminal or a built-in pattern, found ~a in ~s"
+                    (format (string-append "before underscore must be either a"
+                                           " non-terminal or a built-in pattern, found ~a in ~s")
                             prefix-sym (syntax-e term))
                     orig-stx 
                     term)])]
@@ -326,7 +324,8 @@
                                   rst-terms)
                             (append fst-vars rst-vars))]
                    [else
-                    (define-values (fst-term fst-vars) (loop (car terms) under under-mismatch-ellipsis))
+                    (define-values (fst-term fst-vars) 
+                      (loop (car terms) under under-mismatch-ellipsis))
                     (define-values (rst-terms rst-vars) (t-loop (cdr terms)))
                     (values (cons fst-term rst-terms)
                             (append fst-vars rst-vars))])))
@@ -368,10 +367,56 @@
                  (datum->syntax pat new pat)
                  new))]
           [_ pat])))
-
-    ;(printf "term ~s\n" (syntax->datum (datum->syntax #'here term)))
-    ;(printf "norm ~s\n" (syntax->datum (datum->syntax #'here ellipsis-normalized)))
-    ;(printf "repeat-id-counts ~s\n" repeat-id-counts)
+    
+    (define (raise-impossible-pattern-error pat1 pat2)
+      (define (find-pat-var pat)
+        (syntax-case pat (name)
+          [(name id pat)
+           (syntax-e #'id)]
+          [_ #f]))
+      (define pat-var1 (find-pat-var pat1))
+      (define pat-var2 (find-pat-var pat1))
+      (cond
+        [(and pat-var1 pat-var2
+              (not (equal? pat-var1 pat-var2)))
+         (define all-ids (append (hash-ref var-locs-table pat-var1 '())
+                                 (hash-ref var-locs-table pat-var2 '())))
+         (raise-syntax-error 
+          what 
+          (format 
+           (string-append "no terms match pattern;\n"
+                          " ~a and ~a are together overly constrained")
+           pat-var1 pat-var2)
+          orig-stx
+          (if (null? all-ids) #f (car all-ids))
+          (if (null? all-ids) '() (cdr all-ids)))]
+        [(or pat-var1 pat-var2)
+         =>
+         (λ (the-pat-var)
+           (define all-ids (hash-ref var-locs-table the-pat-var '()))
+           (raise-syntax-error 
+            what 
+            (format (string-append "no terms match pattern;\n"
+                                   " ~a is overly constrained")
+                    the-pat-var)
+            orig-stx
+            (if (null? all-ids) #f (car all-ids))
+            (if (null? all-ids) '() (cdr all-ids))))]
+        [else
+         (raise-syntax-error
+          what
+          "no terms match pattern"
+          orig-stx)]))
+#|
+    (printf "term\n") ((dynamic-require 'racket/pretty 'pretty-print)
+                       (syntax->datum (datum->syntax #'here term)))
+    (printf "norm\n") ((dynamic-require 'racket/pretty 'pretty-print)
+                       (syntax->datum (datum->syntax #'here ellipsis-normalized)))
+    (printf "repeat-id-counts ~s\n" repeat-id-counts)
+|#
+    
+    ;; hash[(list symbol[match-id] symbol[mismatch-id]) -o> syntax[repeat pattern]]
+    (define both-match-and-mismatch-id (make-hash))
     
     (define ellipsis-normalized/simplified 
       (let loop ([pat ellipsis-normalized])
@@ -387,6 +432,14 @@
                         (= 1 (hash-ref repeat-id-counts (syntax-e #'mismatch-name))))
                    #f
                    #'mismatch-name))
+             (when (and (identifier? final-mismatch-repeat-name)
+                        (identifier? final-match-repeat-name))
+               (define key (list (syntax-e final-mismatch-repeat-name) 
+                                 (syntax-e final-match-repeat-name)))
+               (define already-bound (hash-ref both-match-and-mismatch-id key #f))
+               (when already-bound
+                 (raise-impossible-pattern-error already-bound #'sub-pat))
+               (hash-set! both-match-and-mismatch-id key #'sub-pat))
              #`(repeat #,(loop #'sub-pat) 
                        #,final-match-repeat-name
                        #,final-mismatch-repeat-name))]
@@ -400,28 +453,6 @@
     
     (filter-duplicates what orig-stx names)
     
-    (for ([(id stx+mismatches) (in-hash vars-under-mismatch-table)])
-      (define all-ids (map car stx+mismatches))
-      (define all-mismatch-idss (map cadr stx+mismatches))
-      (let loop ([all-mismatch-idss all-mismatch-idss])
-        (cond
-          [(null? all-mismatch-idss) (void)]
-          [else
-           (define id-in-multiple-places/f
-             (for/or ([mismatch-id (in-list (car all-mismatch-idss))])
-               (for/or ([other-mismatch-ids (in-list (cdr all-mismatch-idss))])
-                 (and (member mismatch-id other-mismatch-ids)
-                      mismatch-id))))
-           (when id-in-multiple-places/f
-             (raise-syntax-error what 
-                                 (format "~a appears under ~a in multiple places (so this pattern would always fail)"
-                                         id
-                                         id-in-multiple-places/f)
-                                 orig-stx
-                                 (car all-ids)
-                                 (cdr all-ids)))
-           (loop (cdr all-mismatch-idss))])))
-    
     (let ([without-mismatch-names (filter (λ (x) (not (id/depth-mismatch? x))) names)])
       (with-syntax ([(name/ellipses ...) (map build-dots without-mismatch-names)]
                     [(name ...) (map id/depth-id without-mismatch-names)]
@@ -431,7 +462,9 @@
   
   (define-struct id/depth (id depth mismatch?))
   
-  ;; extract-names : syntax syntax -> (values (listof syntax) (listof syntax[x | (x ...) | ((x ...) ...) | ...]))
+  ;; extract-names : syntax syntax -> 
+  ;;   (values (listof syntax)
+  ;;           (listof syntax[x | (x ...) | ((x ...) ...) | ...]))
   ;; this function is obsolete and uses of it are suspect. Things should be using 
   ;; rewrite-side-conditions/check-errs instead
   (define (extract-names all-nts what bind-names? orig-stx [mode 'rhs-only])
@@ -500,7 +533,12 @@
            (and (not (regexp-match #rx"^\\.\\.\\._" str))
                 (not (regexp-match #rx"_!_" str))))))
   
-  (define (raise-ellipsis-depth-error what one-binder one-depth another-binder another-depth [orig-stx #f])
+  (define (raise-ellipsis-depth-error what 
+                                      one-binder 
+                                      one-depth 
+                                      another-binder 
+                                      another-depth
+                                      [orig-stx #f])
     (raise-syntax-error
      what
      (format "found the same binder, ~s, at different depths, ~a and ~a"
@@ -531,4 +569,3 @@
                            orig-stx)))
                       (not same-id?)))
                   (loop (cdr dups))))])))
-

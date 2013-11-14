@@ -316,7 +316,6 @@
     (b (number_1 ..._!_1 number_1 ..._1))
     (c (variable_1 ..._1 number_2 ..._1))
     (d (z_1 ... z_2 ..._!_1 (z_1 z_2) ...))
-    (e (n_1 ..._!_1 n_2 ..._!_1 (n_1 n_2) ..._3))
     (f (n_1 ..._1 n_2 ..._2 n_2 ..._1))
     (g (z_1 ..._!_1 z_2 ... (z_1 z_2) ...))
     (n number)
@@ -334,8 +333,6 @@
         null)
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
-  (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang e 5 #:retries 42)) 
-        #rx"generate-term: unable to generate pattern .* in 42")
   (test (raised-exn-msg 
          exn:fail:redex:generation-failure?
          (parameterize ([generation-decisions
