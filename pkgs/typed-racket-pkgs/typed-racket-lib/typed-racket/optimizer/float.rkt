@@ -5,7 +5,7 @@
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types numeric-tower union)
+         (types numeric-tower union abbrev)
          (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr int-expr)
@@ -36,6 +36,10 @@
 (define-literal-syntax-class sub1)
 (define-literal-syntax-class ->float^ (exact->inexact real->double-flonum))
 (define-literal-syntax-class ->single-float^ (exact->inexact real->single-flonum))
+
+(define-literal-syntax-class random)
+(define-literal-syntax-class flrandom)
+(define-merged-syntax-class random-op (random^ flrandom^))
 
 (define-syntax-class (float-op tbl)
   #:commit
@@ -228,6 +232,19 @@
   (pattern (#%plain-app op:sub1^ n:float-expr)
     #:do [(log-fl-opt "float sub1")]
     #:with opt #'(unsafe-fl- n.opt 1.0))
+
+  (pattern (#%plain-app op:random-op prng:opt-expr)
+    #:when (subtypeof? #'prng -Pseudo-Random-Generator)
+    #:do [(log-fl-opt "float random")]
+    #:with opt #'(unsafe-flrandom prng.opt))
+  (pattern (#%plain-app op:random^) ; random with no args
+    #:do [(log-fl-opt "float 0-arg random")
+          ;; We introduce a reference to `current-pseudo-random-generator',
+          ;; but, by optimizing, we're preventing the hidden cost reports
+          ;; from triggering down the line (see hidden-cost.rkt), so we need
+          ;; to do the logging ourselves.
+          (log-optimization-info "hidden parameter (random)" #'op)]
+    #:with opt #'(unsafe-flrandom (current-pseudo-random-generator)))
 
   ;; warn about (potentially) exact real arithmetic, in general
   ;; Note: These patterns don't perform optimization. They only produce logging

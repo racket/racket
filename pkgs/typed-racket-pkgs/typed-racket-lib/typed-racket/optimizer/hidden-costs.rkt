@@ -19,6 +19,7 @@
 (define-syntax-class hidden-cost-log-expr
   #:commit
   #:literal-sets (kernel-literals)
+
   ;; Log functions that access parameters implicitly (e.g. `display', which
   ;; accesses `current-output-port').
   (pattern (#%plain-app op:hidden-port-parameter-function args:opt-expr ...)
@@ -29,12 +30,15 @@
              (not (subtypeof? arg -Output-Port)))
     #:do [(log-optimization-info "hidden parameter" #'op)]
     #:with opt #'(op args.opt ...))
+  ;; This one only fires if the call to `random' didn't get optimized
+  ;; (which logs the hidden cost itself), i.e. (random <Integer>) .
   (pattern (#%plain-app op:hidden-random-parameter-function args:opt-expr ...)
     ;; see above
     #:when (for/and ([arg (in-syntax #'(args ...))])
              (not (subtypeof? arg -Pseudo-Random-Generator)))
     #:do [(log-optimization-info "hidden parameter (random)" #'op)]
     #:with opt #'(op args.opt ...))
+
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
   ;; Note: Sometimes constructors are wrapped in `#%expression', need to watch

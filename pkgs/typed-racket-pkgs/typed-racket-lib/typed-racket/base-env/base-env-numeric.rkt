@@ -604,6 +604,7 @@
   (define make-flrectangular-type (lambda () (-Flonum -Flonum . -> . -FloatComplex)))
   (define flreal-part-type (lambda () (-FloatComplex . -> . -Flonum)))
   (define flimag-part-type (lambda () (-FloatComplex . -> . -Flonum)))
+  (define flrandom-type (lambda () (-Pseudo-Random-Generator . -> . -Flonum)))
 
   ;; There's a repetitive pattern in the types of each comparison operator.
   ;; As explained below, this is because filters don't do intersections.
@@ -2056,6 +2057,7 @@
 [make-flrectangular (make-flrectangular-type)]
 [flreal-part (flreal-part-type)]
 [flimag-part (flimag-part-type)]
+[flrandom (flrandom-type)]
 
 [unsafe-flabs (flabs-type)]
 [unsafe-fl+ (fl+-type)]
@@ -2095,3 +2097,4 @@
 [unsafe-make-flrectangular (make-flrectangular-type)]
 [unsafe-flreal-part (flreal-part-type)]
 [unsafe-flimag-part (flimag-part-type)]
+[unsafe-flrandom (flrandom-type)]
