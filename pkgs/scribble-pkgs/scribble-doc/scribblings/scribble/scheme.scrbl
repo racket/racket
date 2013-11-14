@@ -102,11 +102,13 @@ it is added to the end on its own line.}
 
 @defproc[(to-element [v any/c]
                      [#:expr? expr? any/c #f]
-                     [#:escapes? escapes? any/c #t]) element?]{
+                     [#:escapes? escapes? any/c #t]
+                     [#:defn? defn? any/c #f]) element?]{
 
 Like @racket[to-paragraph], except that source-location information is
 mostly ignored, since the result is meant to be inlined into a
-paragraph.}
+paragraph. If @racket[defn?] is true, then an identifier is styled as
+a definition site.}
 
 @defproc[(to-element/no-color [v any/c]
                               [#:expr? expr? any/c #f]

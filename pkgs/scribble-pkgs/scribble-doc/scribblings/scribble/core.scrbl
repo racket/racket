@@ -894,6 +894,12 @@ Like @racket[target-element], the content is also a kind of section
 label to be shown in the ``on this page'' table for HTML output.}
 
 
+@defstruct[(toc-target2-element toc-target-element) ([toc-content content?])]{
+
+Extends @racket[target-element] with a separate field for the content
+to be shown in the ``on this page'' table for HTML output.}
+
+
 @defstruct[(page-target-element target-element) ()]{
 
 Like @racket[target-element], but a link to the element goes to the

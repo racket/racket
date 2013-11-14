@@ -4,6 +4,7 @@
            "search.rkt"
            "private/manual-sprop.rkt"
            "private/on-demand.rkt"
+           "html-properties.rkt"
            file/convertible
            racket/extflonum
            (for-syntax racket/base))
@@ -36,6 +37,8 @@
            error-color
            syntax-link-color
            value-link-color
+           syntax-def-color
+           value-def-color
            module-color
            module-link-color
            block-color
@@ -52,10 +55,15 @@
                        make-element-id-transformer
                        element-id-transformer?))
 
-  (define (make-racket-style s #:tt? [tt? #t])
+  (define (make-racket-style s 
+                             #:tt? [tt? #t]
+                             #:extras [extras null])
     (make-style s (if tt?
-                      (cons 'tt-chars scheme-properties)
-                      scheme-properties)))
+                      (cons 'tt-chars 
+                            (append extras
+                                    scheme-properties))
+                      (append extras
+                              scheme-properties))))
 
   (define-on-demand output-color (make-racket-style "RktOut"))
   (define-on-demand input-color (make-racket-style "RktIn"))
@@ -69,11 +77,17 @@
   (define-on-demand meta-color (make-racket-style "RktMeta"))
   (define-on-demand value-color (make-racket-style "RktVal"))
   (define-on-demand symbol-color (make-racket-style "RktSym"))
+  (define-on-demand symbol-def-color (make-racket-style "RktSymDef"
+                                                        #:extras (list (attributes '((class . "RktSym"))))))
   (define-on-demand variable-color (make-racket-style "RktVar"))
   (define-on-demand opt-color (make-racket-style "RktOpt"))
   (define-on-demand error-color (make-racket-style "RktErr" #:tt? #f))
   (define-on-demand syntax-link-color (make-racket-style "RktStxLink"))
   (define-on-demand value-link-color (make-racket-style "RktValLink"))
+  (define-on-demand syntax-def-color (make-racket-style "RktStxDef"
+                                                        #:extras (list (attributes '((class . "RktStxLink"))))))
+  (define-on-demand value-def-color (make-racket-style "RktValDef"
+                                                       #:extras (list (attributes '((class . "RktValLink"))))))
   (define-on-demand module-color (make-racket-style "RktMod"))
   (define-on-demand module-link-color (make-racket-style "RktModLink"))
   (define-on-demand block-color (make-racket-style "RktBlk"))
@@ -134,14 +148,15 @@
 
   (define qq-ellipses (string->uninterned-symbol "..."))
 
-  (define (make-id-element c s)
+  (define (make-id-element c s defn?)
     (let* ([key (and id-element-cache
                      (let ([b (identifier-label-binding c)])
                        (vector (syntax-e c)
                                (module-path-index->taglet (caddr b))
                                (cadddr b)
                                (list-ref b 5)
-                               (syntax-property c 'display-string))))])
+                               (syntax-property c 'display-string)
+                               defn?)))])
       (or (and key
                (let ([b (hash-ref id-element-cache key #f)])
                  (and b
@@ -154,9 +169,17 @@
                               (list
                                (case (car tag)
                                  [(form)
-                                  (make-link-element syntax-link-color (nonbreak-leading-hyphens s) tag)]
+                                  (make-link-element (if defn?
+                                                         syntax-def-color
+                                                         syntax-link-color)
+                                                     (nonbreak-leading-hyphens s) 
+                                                     tag)]
                                  [else
-                                  (make-link-element value-link-color (nonbreak-leading-hyphens s) tag)])))
+                                  (make-link-element (if defn?
+                                                         value-def-color
+                                                         value-link-color)
+                                                     (nonbreak-leading-hyphens s)
+                                                     tag)])))
                             (list 
                              (make-element "badlink"
                                            (make-element value-link-color s))))))
@@ -201,7 +224,7 @@
      [(str val) (datum-intern-literal (format str val))]
      [(str . vals) (datum-intern-literal (apply format str vals))]))
 
-  (define (typeset-atom c out color? quote-depth expr? escapes?)
+  (define (typeset-atom c out color? quote-depth expr? escapes? defn?)
     (if (and (var-id? (syntax-e c))
              (zero? quote-depth))
         (out (iformat "~s" (let ([v (var-id-sym (syntax-e c))])
@@ -252,8 +275,11 @@
                               (quote-depth . <= . 0)
                               (not (or it? is-var?)))
                          (if (pair? (identifier-label-binding c))
-                             (make-id-element c s)
-                             (nonbreak-leading-hyphens s))
+                             (make-id-element c s defn?)
+                             (let ([c (nonbreak-leading-hyphens s)])
+                               (if defn?
+                                   (make-element symbol-def-color c)
+                                   c)))
                          (literalize-spaces s #t))
                      (cond
                       [(positive? quote-depth) value-color]
@@ -284,7 +310,7 @@
 
   (define omitable (make-style #f '(omitable)))
 
-  (define (gen-typeset c multi-line? prefix1 prefix suffix color? expr? escapes? elem-wrap)
+  (define (gen-typeset c multi-line? prefix1 prefix suffix color? expr? escapes? defn? elem-wrap)
     (let* ([c (syntax-ize c 0 #:expr? expr?)]
            [content null]
            [docs null]
@@ -406,7 +432,7 @@
                                                      (if val? value-color #f)
                                                      (list
                                                       (make-element/cache (if val? value-color paren-color) '". ")
-                                                      (typeset a #f "" "" "" (not val?) expr? escapes? elem-wrap)
+                                                      (typeset a #f "" "" "" (not val?) expr? escapes? defn? elem-wrap)
                                                       (make-element/cache (if val? value-color paren-color) '" ."))
                                                      (+ (syntax-span a) 4)))
                                                   (list (syntax-source a)
@@ -818,11 +844,11 @@
            [(and (keyword? (syntax-e c)) expr?)
             (advance c init-line!)
             (let ([quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
-              (typeset-atom c out color? quote-depth expr? escapes?)
+              (typeset-atom c out color? quote-depth expr? escapes? defn?)
               (set! src-col (+ src-col (or (syntax-span c) 1))))]
            [else
             (advance c init-line!)
-            (typeset-atom c out color? quote-depth expr? escapes?)
+            (typeset-atom c out color? quote-depth expr? escapes? defn?)
             (set! src-col (+ src-col (or (syntax-span c) 1)))
             #;
             (hash-set! next-col-map src-col dest-col)])))
@@ -844,7 +870,7 @@
               (make-table block-color (map list (reverse docs))))
           (make-sized-element #f (reverse content) dest-col))))
 
-  (define (typeset c multi-line? prefix1 prefix suffix color? expr? escapes? elem-wrap)
+  (define (typeset c multi-line? prefix1 prefix suffix color? expr? escapes? defn? elem-wrap)
     (let* ([c (syntax-ize c 0 #:expr? expr?)]
            [s (syntax-e c)])
       (if (or multi-line?
@@ -861,7 +887,7 @@
               (struct-proxy? s)
               (and expr? (or (identifier? c)
                              (keyword? (syntax-e c)))))
-          (gen-typeset c multi-line? prefix1 prefix suffix color? expr? escapes? elem-wrap)
+          (gen-typeset c multi-line? prefix1 prefix suffix color? expr? escapes? defn? elem-wrap)
           (typeset-atom c 
                         (letrec ([mk
                                   (case-lambda 
@@ -874,31 +900,32 @@
                                          (make-element/cache (and color? color) elem)
                                          (make-sized-element (and color? color) elem len)))])])
                           mk)
-                        color? 0 expr? escapes?))))
+                        color? 0 expr? escapes? defn?))))
   
   (define (to-element c
                       #:expr? [expr? #f]
-                      #:escapes? [escapes? #t])
-    (typeset c #f "" "" "" #t expr? escapes? values))
+                      #:escapes? [escapes? #t]
+                      #:defn? [defn? #f])
+    (typeset c #f "" "" "" #t expr? escapes? defn? values))
 
   (define (to-element/no-color c
                                #:expr? [expr? #f]
                                #:escapes? [escapes? #t])
-    (typeset c #f "" "" "" #f expr? escapes? values))
+    (typeset c #f "" "" "" #f expr? escapes? #f values))
 
   (define (to-paragraph c 
                         #:expr? [expr? #f] 
                         #:escapes? [escapes? #t] 
                         #:color? [color? #t]
                         #:wrap-elem [elem-wrap (lambda (e) e)])
-    (typeset c #t "" "" "" color? expr? escapes? elem-wrap))
+    (typeset c #t "" "" "" color? expr? escapes? #f elem-wrap))
 
   (define ((to-paragraph/prefix pfx1 pfx sfx) c 
            #:expr? [expr? #f] 
            #:escapes? [escapes? #t] 
            #:color? [color? #t]
            #:wrap-elem [elem-wrap (lambda (e) e)])
-    (typeset c #t pfx1 pfx sfx color? expr? escapes? elem-wrap))
+    (typeset c #t pfx1 pfx sfx color? expr? escapes? #f elem-wrap))
 
   (begin-for-syntax 
    (define-struct variable-id (sym) 

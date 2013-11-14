@@ -20,14 +20,19 @@
 (define-syntax-rule (xmethod class/intf-id method-id)
   (elem (method class/intf-id method-id) " in " (racket class/intf-id)))
 
-(define (*method sym id)
-  (**method sym id))
+(define (*method sym id
+                 #:defn? [defn? #f])
+  (**method sym id #:defn? defn?))
 
-(define (**method sym id/tag)
+(define (**method sym id/tag
+                  #:defn? [defn? #f])
   (define content (list (symbol->string sym)))
   (define (mk tag)
     (make-element symbol-color
-                  (list (make-link-element value-link-color content
+                  (list (make-link-element (if defn?
+                                               value-def-color 
+                                               value-link-color)
+                                           content
                                            (method-tag tag sym)))))
   (if (identifier? id/tag)
       (make-delayed-element

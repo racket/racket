@@ -645,7 +645,11 @@
                (when (multiarg-element? i)
                  (collect-content (multiarg-element-contents i) ci))
                (when (list? i)
-                 (for ([e (in-list i)]) (collect-content e ci))))))
+                 (for ([e (in-list i)]) (collect-content e ci)))
+               (when (toc-element? i)
+                 (collect-content (toc-element-toc-content i) ci))
+               (when (toc-target2-element? i)
+                 (collect-content (toc-target2-element-toc-content i) ci)))))
 
     (define/public (collect-target-element i ci)
       (let ([t (generate-tag (target-element-tag i) ci)])
@@ -741,7 +745,10 @@
                   (hash-set! (resolve-info-delays ri) e v))))]
            [(link-element? i)
             (resolve-get d ri (link-element-tag i))])
-         (resolve-content (element-content i) d ri)]
+         (resolve-content (element-content i) d ri)
+         (cond
+          [(toc-target2-element? i) (resolve-content (toc-target2-element-toc-content i) d ri)]
+          [(toc-element? i) (resolve-content (toc-element-toc-content i) d ri)])]
         [(multiarg-element? i)
          (resolve-content (multiarg-element-contents i) d ri)]))
 

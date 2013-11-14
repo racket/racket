@@ -101,7 +101,8 @@
          (rename-out [toc-element-toc-content/compat toc-element-toc-content])
          (compat*-out [target-element (tag)]
                       [toc-target-element ()]
-                      [page-target-element ()]
+                      [toc-target2-element (toc-content)])
+         (compat*-out [page-target-element ()]
                       [redirect-target-element (alt-path alt-anchor)]
                       [link-element (tag)]
                       [index-element (tag plain-seq entry-seq desc)])
@@ -299,6 +300,8 @@
   (handle-image-style make-target-element style (list->content content) tag))
 (define (make-toc-target-element/compat style content tag)
   (handle-image-style make-toc-target-element style (list->content content) tag))
+(define (make-toc-target2-element/compat style content tag toc-content)
+  (handle-image-style make-toc-target2-element style (list->content content) tag toc-content))
 (define (make-page-target-element/compat style content tag)
   (handle-image-style make-page-target-element style (list->content content) tag))
 (define (make-redirect-target-element/compat style content tag alt-path alt-anchor)

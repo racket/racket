@@ -332,54 +332,57 @@
                 (if (and first? link?)
                   (let* ([mname (extract-id prototype stx-id)]
                          [target-maker (id-to-target-maker within-id #f)]
-                         [content (list (*method mname within-id))])
+                         [content (*method mname within-id #:defn? #t)]
+                         [ref-content (*method mname within-id)])
                     (if target-maker
                       (target-maker
                        content
                        (lambda (ctag)
                          (let ([tag (method-tag ctag mname)])
-                           (make-toc-target-element
+                           (make-toc-target2-element
                             #f
                             (list (make-index-element
                                    #f
                                    content
                                    tag
                                    (list (datum-intern-literal (symbol->string mname)))
-                                   content
+                                   (list ref-content)
                                    (with-exporting-libraries
                                     (lambda (libs)
                                       (make-method-index-desc
                                        (syntax-e within-id)
                                        libs mname ctag)))))
-                            tag))))
-                      (car content)))
-                  (*method (extract-id prototype stx-id) within-id))))]
+                            tag
+                            ref-content))))
+                      content))
+                  (*method (extract-id prototype stx-id) within-id #:defn? #t))))]
         [(and first? link?)
          (define the-id (extract-id prototype stx-id))
-         (let ([target-maker (id-to-target-maker stx-id #t)]
-               [content (list (definition-site the-id stx-id #f))])
+         (let ([target-maker (id-to-target-maker stx-id #t)])
+           (define-values (content ref-content) (definition-site the-id stx-id #f))
            (if target-maker
-             (target-maker
-              content
-              (lambda (tag)
-                (make-toc-target-element
-                 #f
-                 (list (make-index-element
-                        #f content tag
-                        (list (datum-intern-literal (symbol->string the-id)))
-                        content
-                        (with-exporting-libraries
-                         (lambda (libs)
-                           (make-procedure-index-desc the-id libs)))))
-                 tag)))
-             (car content)))]
+               (target-maker
+                content
+                (lambda (tag)
+                  (make-toc-target2-element
+                   #f
+                   (make-index-element
+                    #f content tag
+                    (list (datum-intern-literal (symbol->string the-id)))
+                    (list ref-content)
+                    (with-exporting-libraries
+                     (lambda (libs)
+                       (make-procedure-index-desc the-id libs))))
+                   tag
+                   ref-content)))
+               content))]
         [else
          (define the-id (extract-id prototype stx-id))
          ((if link? annote-exporting-library values)
           (let ([sig (current-signature)])
             (if sig
-              (*sig-elem (sig-id sig) the-id)
-              (to-element (make-just-context the-id stx-id)))))]))
+              (*sig-elem #:defn? #t (sig-id sig) the-id)
+              (to-element #:defn? #t (make-just-context the-id stx-id)))))]))
     (define p-depth (prototype-depth prototype))
     (define flat-size (+ (prototype-size args + + #f)
                          p-depth
@@ -698,45 +701,47 @@
          (list
           (let* ([the-name
                   (let ([just-name
-                         (if link?
-                             (make-target-element*
-                              make-toc-target-element
-                              (if (pair? name)
-                                  (car (syntax-e stx-id))
-                                  stx-id)
-                              (annote-exporting-library
-                               (to-element
-                                (if (pair? name)
-                                    (make-just-context (car name)
-                                                       (car (syntax-e stx-id)))
-                                    stx-id)))
-                              (let ([name (if (pair? name) (car name) name)])
-                                (list* (list 'info name)
-                                       (list 'type 'struct: name)
-                                       (list 'predicate name '?)
-                                       (append
-                                        (if cname-id
-                                            (list (list 'constructor (syntax-e cname-id)))
-                                            null)
-                                        (map (lambda (f)
-                                               (list 'accessor name '-
-                                                     (field-name f)))
-                                             fields)
-                                        (filter-map
-                                         (lambda (f)
-                                           (if (or (not immutable?)
-                                                   (and (pair? (car f))
-                                                        (memq '#:mutable
-                                                              (car f))))
-                                               (list 'mutator 'set- name '-
-                                                     (field-name f) '!)
-                                               #f))
-                                         fields)))))
-                             (to-element
-                              (if (pair? name)
-                                  (make-just-context (car name)
-                                                     (car (syntax-e stx-id)))
-                                  stx-id)))])
+                         (let ([name-id (if (pair? name)
+                                            (make-just-context (car name)
+                                                               (car (syntax-e stx-id)))
+                                            stx-id)])
+                           (if link?
+                               (let ()
+                                 (define (gen defn?)
+                                   (annote-exporting-library
+                                    (to-element #:defn? defn? name-id)))
+                                 (define content (gen #t))
+                                 (define ref-content (gen #f))
+                                 (make-target-element*
+                                  (lambda (s c t)
+                                    (make-toc-target2-element s c t ref-content))
+                                  (if (pair? name)
+                                      (car (syntax-e stx-id))
+                                      stx-id)
+                                  content
+                                  (let ([name (if (pair? name) (car name) name)])
+                                    (list* (list 'info name)
+                                           (list 'type 'struct: name)
+                                           (list 'predicate name '?)
+                                           (append
+                                            (if cname-id
+                                                (list (list 'constructor (syntax-e cname-id)))
+                                                null)
+                                            (map (lambda (f)
+                                                   (list 'accessor name '-
+                                                         (field-name f)))
+                                                 fields)
+                                            (filter-map
+                                             (lambda (f)
+                                               (if (or (not immutable?)
+                                                       (and (pair? (car f))
+                                                            (memq '#:mutable
+                                                                  (car f))))
+                                                   (list 'mutator 'set- name '-
+                                                         (field-name f) '!)
+                                                   #f))
+                                             fields))))))
+                               (to-element #:defn? #t name-id)))])
                     (if (pair? name)
                         (make-element
                          #f
@@ -1024,27 +1029,30 @@
                        (let ([target-maker
                               (and link?
                                    ((if form? id-to-form-target-maker id-to-target-maker)
-                                    stx-id #t))]
-                             [content (list (if link?
-                                                (definition-site name stx-id form?)
-                                                (to-element (make-just-context name stx-id))))])
+                                    stx-id #t))])
+                         (define-values (content ref-content) 
+                           (if link?
+                               (definition-site name stx-id form?)
+                               (let ([s (make-just-context name stx-id)])
+                                 (values (to-element #:defn? #t s)
+                                         (to-element s)))))
                          (if target-maker
                              (target-maker
                               content
                               (lambda (tag)
-                                (make-toc-target-element
+                                (make-toc-target2-element
                                  #f
-                                 (list
-                                  (make-index-element
-                                   #f
-                                   content
-                                   tag
-                                   (list (datum-intern-literal (symbol->string name)))
-                                   content
-                                   (with-exporting-libraries
-                                    (lambda (libs) (make-thing-index-desc name libs)))))
-                                 tag)))
-                             (car content)))))))
+                                 (make-index-element
+                                  #f
+                                  content
+                                  tag
+                                  (list (datum-intern-literal (symbol->string name)))
+                                  (list ref-content)
+                                  (with-exporting-libraries
+                                   (lambda (libs) (make-thing-index-desc name libs))))
+                                 tag
+                                 ref-content)))
+                             content))))))
                    (make-flow
                     (list
                      (make-omitable-paragraph
@@ -1087,24 +1095,23 @@
                                  #t)])
        (if target-maker
          (target-maker
-          (list content)
+          content
           (lambda (tag)
             (inner-make-target-element
              #f
-             (list
-              (make-index-element
-               #f
-               (list content)
-               tag
-               (list name)
-               (list (racketidfont (make-element value-link-color
-                                                 (list name))))
-               (with-exporting-libraries
-                (lambda (libs)
-                  (let ([name (string->symbol name)])
-                    (if (eq? 'info (caar wrappers))
-                      (make-struct-index-desc name libs)
-                      (make-procedure-index-desc name libs)))))))
+             (make-index-element
+              #f
+              content
+              tag
+              (list name)
+              (list (racketidfont (make-element value-link-color
+                                                (list name))))
+              (with-exporting-libraries
+               (lambda (libs)
+                 (let ([name (string->symbol name)])
+                   (if (eq? 'info (caar wrappers))
+                       (make-struct-index-desc name libs)
+                       (make-procedure-index-desc name libs))))))
              tag)))
          content))
      (cdr wrappers))))

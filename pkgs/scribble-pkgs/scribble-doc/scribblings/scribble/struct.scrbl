@@ -1,11 +1,11 @@
 #lang scribble/manual
 @(require (except-in "utils.rkt"
                      make-part make-paragraph make-table make-itemization make-compound-paragraph
-                     make-element make-toc-element make-target-element make-toc-target-element
+                     make-element make-toc-element make-target-element make-toc-target-element make-toc-target2-element
                      make-page-target-element make-redirect-target-element make-link-element
                      make-index-element
                      make-target-url target-url struct:target-url target-url? target-url-addr
-                     toc-element-toc-content part-title-content paragraph-content 
+                     toc-element-toc-content toc-target2-element-toc-content part-title-content paragraph-content 
                      element? element-content element-style)
           (for-label scribble/manual-struct
                      scribble/struct
@@ -38,7 +38,7 @@ The following structure types are re-exported, but the constructors and some sel
 are replaced as documented further below:
 
 @racketblock[part paragraph table itemization compound-paragraph
-             element toc-element target-element toc-target-element
+             element toc-element target-element toc-target-element toc-target2-element
              page-target-element redirect-target-element link-element
              index-element]
 
@@ -201,6 +201,7 @@ formats to the current one.}
 @defproc[(make-toc-element [style any/c] [content list?] [toc-content list?]) toc-element?]
 @defproc[(make-target-element [style any/c] [content list?] [tag tag?]) target-element?]
 @defproc[(make-toc-target-element [style any/c] [content list?] [tag tag?]) toc-target-element?]
+@defproc[(make-toc-target2-element [style any/c] [content list?] [tag tag?] [toc-content content?]) toc-target2-element?]
 @defproc[(make-page-target-element [style any/c] [content list?] [tag tag?]) page-target-element?]
 @defproc[(make-redirect-target-element [style any/c] [content list?] [tag tag?]
                                        [alt-path path-string?] [alt-anchor string?]) redirect-target-element?]

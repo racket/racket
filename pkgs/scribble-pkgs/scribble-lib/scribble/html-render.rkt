@@ -722,7 +722,9 @@
                                                 (if (part? p)
                                                     (or (part-title-content p)
                                                         "???")
-                                                    (element-content p))
+                                                    (if (toc-target2-element? p)
+                                                        (toc-target2-element-toc-content p)
+                                                        (element-content p)))
                                                 d ri)))))))))
                          ps)))))))
 

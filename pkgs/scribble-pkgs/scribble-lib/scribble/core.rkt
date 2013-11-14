@@ -180,6 +180,7 @@
  [(toc-element element) ([toc-content content?])]
  [(target-element element) ([tag tag?])]
  [(toc-target-element target-element) ()]
+ [(toc-target2-element toc-target-element) ([toc-content content?])]
  [(page-target-element target-element) ()]
  [(redirect-target-element target-element) ([alt-path path-string?]
                                             [alt-anchor string?])]

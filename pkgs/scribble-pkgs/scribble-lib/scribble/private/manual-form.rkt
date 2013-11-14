@@ -87,26 +87,26 @@
                     [defined-id-expr (if (syntax-e #'d.defined-id-expr)
                                          #'d.defined-id-expr
                                          #'(quote-syntax defined-id))]
-                    [new-spec
-                     (let loop ([spec #'spec])
-                       (if (and (identifier? spec)
-                                (free-identifier=? spec #'defined-id))
-                           (datum->syntax #'here '(unsyntax x) spec spec)
-                           (syntax-case spec ()
-                             [(a . b)
-                              (datum->syntax spec
-                                             (cons (loop #'a) (loop #'b))
-                                             spec
-                                             spec)]
-                             [_ spec])))])
-         #'(with-togetherable-racket-variables
+                    [(new-spec ...)
+                     (for/list ([spec (in-list (syntax->list #'(spec spec1 ...)))])
+                       (let loop ([spec spec])
+                         (if (and (identifier? spec)
+                                  (free-identifier=? spec #'defined-id))
+                             (datum->syntax #'here '(unsyntax x) spec spec)
+                             (syntax-case spec ()
+                               [(a . b)
+                                (datum->syntax spec
+                                               (cons (loop #'a) (loop #'b))
+                                               spec
+                                               spec)]
+                               [_ spec]))))])
+       #'(with-togetherable-racket-variables
             (l.lit ...)
             ([form [defined-id spec]] [form [defined-id spec1]] ...
              [non-term (g.non-term-id g.non-term-form ...)] ...)
             (*defforms k.kind lt.expr defined-id-expr
                        '(spec spec1 ...)
-                       (list (lambda (x) (racketblock0/form new-spec))
-                             (lambda (ignored) (racketblock0/form spec1)) ...)
+                       (list (lambda (x) (racketblock0/form new-spec)) ...)
                        '((g.non-term-id g.non-term-form ...) ...)
                        (list (list (lambda () (racket g.non-term-id))
                                    (lambda () (racketblock0/form g.non-term-form))
@@ -298,27 +298,27 @@
 (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
 (define (defform-site kw-id)
-  (let ([target-maker (id-to-form-target-maker kw-id #t)]
-        [content (list (definition-site (syntax-e kw-id)
-                         kw-id #t))])
+  (let ([target-maker (id-to-form-target-maker kw-id #t)])
+    (define-values (content ref-content) (definition-site (syntax-e kw-id) kw-id #t))
     (if target-maker
         (target-maker
          content
          (lambda (tag)
-           (make-toc-target-element
+           (make-toc-target2-element
             #f
             (if kw-id
-                (list (make-index-element
-                       #f content tag
-                       (list (datum-intern-literal (symbol->string (syntax-e kw-id))))
-                       content
-                       (with-exporting-libraries
-                        (lambda (libs)
-                          (make-form-index-desc (syntax-e kw-id)
-                                                libs)))))
+                (make-index-element
+                 #f content tag
+                 (list (datum-intern-literal (symbol->string (syntax-e kw-id))))
+                 (list ref-content)
+                 (with-exporting-libraries
+                  (lambda (libs)
+                    (make-form-index-desc (syntax-e kw-id)
+                                          libs))))
                 content)
-            tag)))
-        (car content))))
+            tag
+            ref-content)))
+        content)))
 
 (define (*defforms kind link? kw-id forms form-procs subs sub-procs contract-procs content-thunk)
   (parameterize ([current-meta-list '(... ...+)])
@@ -341,10 +341,11 @@
                       (make-omitable-paragraph
                        (list (to-element `(,x . ,(cdr form)))))))
                 (and kw-id
-                     (eq? form (car forms))
-                     (if link?
-                         (defform-site kw-id)
-                         (to-element kw-id))))))))
+                     (if (eq? form (car forms))
+                         (if link?
+                             (defform-site kw-id)
+                             (to-element #:defn? #t kw-id))
+                         (to-element #:defn? #t kw-id))))))))
           (if (null? sub-procs)
               null
               (list (list flow-empty-line)

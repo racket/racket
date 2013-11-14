@@ -91,9 +91,15 @@
   color: #262680;
 }
 
+.RktSymDef { /* used with RktSym at def site */
+}
+
 .RktValLink {
   text-decoration: none;
   color: blue;
+}
+
+.RktValDef { /* used with RktValLink at def site */
 }
 
 .RktModLink {
@@ -105,6 +111,9 @@
   text-decoration: none;
   color: black;
   /* font-weight: bold; */
+}
+
+.RktStxDef { /* used with RktStxLink at def site */
 }
 
 .RktRes {

@@ -36,7 +36,7 @@
 (define-syntax-rule (sigelem sig elem)
   (*sig-elem (quote-syntax sig) 'elem))
 
-(define (*sig-elem sig elem)
+(define (*sig-elem sig elem #:defn? [defn? #f])
   (let ([s (to-element/no-color elem)])
     (make-delayed-element
      (lambda (renderer sec ri)
@@ -48,8 +48,8 @@
          (make-element
           symbol-color
           (list
-           (cond [sd (make-link-element  syntax-link-color (list s) stag)]
-                 [vtag (make-link-element value-link-color (list s) vtag)]
+           (cond [sd (make-link-element (if defn? syntax-def-color syntax-link-color) (list s) stag)]
+                 [vtag (make-link-element (if defn? value-def-color value-link-color) (list s) vtag)]
                  [else s])))))
      (lambda () s)
      (lambda () s))))
@@ -90,10 +90,12 @@
 
 (define (definition-site name stx-id form?)
   (let ([sig (current-signature)])
-    (if sig
-      (*sig-elem (sig-id sig) name)
-      (annote-exporting-library
-       (to-element (make-just-context name stx-id))))))
+    (define (gen defn?)
+      (if sig
+          (*sig-elem #:defn? defn? (sig-id sig) name)
+          (annote-exporting-library
+           (to-element #:defn? defn? (make-just-context name stx-id)))))
+    (values (gen #t) (gen #f))))
 
 (define checkers (make-hash))
 
@@ -177,10 +179,12 @@
   (let ([dep? #t])
     (let ([maker (if form?
                      (id-to-form-target-maker id dep?)
-                     (id-to-target-maker id dep?))]
-          [elem (if show-libs?
-                    (definition-site (syntax-e id) id form?)
-                    (to-element id))])
+                     (id-to-target-maker id dep?))])
+      (define-values (elem elem-ref)
+        (if show-libs?
+            (definition-site (syntax-e id) id form?)
+            (values (to-element id #:defn? #t)
+                    (to-element id))))
       (if maker
           (maker elem
                  (lambda (tag)

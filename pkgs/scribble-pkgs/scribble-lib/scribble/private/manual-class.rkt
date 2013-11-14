@@ -195,27 +195,30 @@
         (list
          (make-omitable-paragraph
           (list (let ([target-maker (id-to-target-maker stx-id #t)]
-                      [content (list (annote-exporting-library
-                                      (to-element stx-id)))])
+                      [content (annote-exporting-library
+                                (to-element #:defn? #t stx-id))]
+                      [ref-content (annote-exporting-library
+                                    (to-element stx-id))])
                   (if target-maker
                       (target-maker
                        content
                        (lambda (tag)
                          ((if whole-page?
                               make-page-target-element
-                              make-toc-target-element)
+                              (lambda (s c t)
+                                (make-toc-target2-element s c t ref-content)))
                           #f
                           (list
                            (make-index-element
                             #f content tag
                             (list (datum-intern-literal
                                    (symbol->string (syntax-e stx-id))))
-                            content
+                            (list ref-content)
                             (with-exporting-libraries
                              (lambda (libs)
                                (make-index-desc (syntax-e stx-id) libs)))))
                           tag)))
-                      (car content)))
+                      content))
                 spacer ":" spacer
                 (case kind
                   [(class) (racket class?)]
