@@ -111,6 +111,10 @@
    "out of fixnum range"
    "This expression consists of all fixnum arguments but is not guaranteed to produce a fixnum. Therefore it cannot be safely optimized. Constraining the arguments to be of Byte or Index types may help."
    stx))
+(define (log-fixnum-hidden-cost stx)
+  (log-optimization-info
+   "non-optimized fixnum op" ; e.g. fx+ that couldn't be turned into unsafe-fx+
+   stx))
 
 ;; general-purpose safety check for fixnum opts
 ;; some operations have different definitions of safe and have their own checks
@@ -166,7 +170,10 @@
   ;; counterparts, since fx-specific ops rely on error behavior for typechecking
   ;; and thus their return type cannot be used directly for optimization
   ;; Note: We don't log near misses for those, too many false positives.
-  ;;  If someone is using `fx+' in the first place, they should know about `unsafe-fx+'.
+  ;;  If someone is using `fx+' in the first place, they should know about
+  ;;  `unsafe-fx+'. However, it makes sense to log it as a hidden cost, which
+  ;;  won't get shown except in hot code, where it may be worth reporting (see
+  ;;  below).
   (pattern (op:fx+^
              (~or (~seq n1:index-expr n2:index-expr)
                   (~seq n1:nonneg-fixnum-expr n2:nonpos-fixnum-expr)
@@ -206,4 +213,11 @@
   (pattern (op:sub1^ n:fixnum-expr)
     #:when (check-if-safe stx)
     #:do [(log-fx-opt "fixnum sub1")]
-    #:with opt #'(unsafe-fx- n.opt 1)))
+    #:with opt #'(unsafe-fx- n.opt 1))
+  ;; Report potentially bounded fixnum ops (fixnum versions only) that couldn't
+  ;; be proved bounded as hidden costs.
+  (pattern ((~or op:fx+^ op:fx-^ op:fx*^ op:fxquotient^
+                 op:fxmodulo^ op:fxremainder^)
+            n1:opt-expr n2:opt-expr)
+    #:do [(log-fixnum-hidden-cost this-syntax)]
+    #:with opt #'(op n1.opt n2.opt)))

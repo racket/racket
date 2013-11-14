@@ -1,5 +1,9 @@
 #;#;
 #<<END
+TR info: fixnum-bounded-expr.rkt 101:0 (fx- (ann 3 Fixnum) (ann 4 Fixnum)) -- non-optimized fixnum op
+TR info: fixnum-bounded-expr.rkt 104:0 (fx* 300 300) -- non-optimized fixnum op
+TR info: fixnum-bounded-expr.rkt 107:0 (fxquotient -4 -5) -- non-optimized fixnum op
+TR info: fixnum-bounded-expr.rkt 98:0 (fx+ (+ 300 301) (+ 301 302)) -- non-optimized fixnum op
 TR missed opt: fixnum-bounded-expr.rkt 89:2 (+ x y) -- out of fixnum range
 TR opt: fixnum-bounded-expr.rkt 100:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx-
 TR opt: fixnum-bounded-expr.rkt 100:17 (+ 301 302) -- fixnum bounded expr
@@ -58,10 +62,6 @@ END
 #:optimize
 
 (require racket/fixnum)
-
-
-
-
 
 
 

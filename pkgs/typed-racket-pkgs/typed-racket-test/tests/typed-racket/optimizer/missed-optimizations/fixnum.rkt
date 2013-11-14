@@ -1,5 +1,8 @@
 #;#;
 #<<END
+TR info: fixnum.rkt 37:0 (fx* (values (ann x Index)) (values (ann y Index))) -- non-optimized fixnum op
+TR info: fixnum.rkt 40:0 (fx+ (+ 300 301) (+ 301 302)) -- non-optimized fixnum op
+TR info: fixnum.rkt 41:0 (fxquotient -4 -5) -- non-optimized fixnum op
 TR missed opt: fixnum.rkt 35:0 (+ (ann z Fixnum) 234) -- out of fixnum range
 TR missed opt: fixnum.rkt 36:0 (* (ann x Index) (ann y Index)) -- out of fixnum range
 TR missed opt: fixnum.rkt 39:0 (+ (+ 300 301) (+ 301 302)) -- out of fixnum range
@@ -22,9 +25,6 @@ END
 #lang typed/racket
 
 (require racket/fixnum)
-
-
-
 
 
 (define x 3)
