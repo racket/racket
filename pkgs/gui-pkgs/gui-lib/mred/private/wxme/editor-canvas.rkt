@@ -1192,7 +1192,7 @@
                       (send canvas is-focus-on?))
                   (list (send canvas scroll-to localx localy w h refresh? bias))))))
 
-  (def/override (grab-caret [(symbol-in immediate display global) dist])
+  (def/override (grab-caret [(symbol-in immediate display global) [dist 'global]])
     (when canvas
       (when (eq? dist 'global)
         (send canvas set-focus))))
