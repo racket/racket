@@ -110,7 +110,7 @@
 [VectorTop -VectorTop]
 [HashTableTop -HashTop]
 [MPairTop -MPairTop]
-[ThreadCellTop -ThreadCellTop]
+[Thread-CellTop -Thread-CellTop]
 [Prompt-TagTop -Prompt-TagTop]
 [Continuation-Mark-KeyTop -Continuation-Mark-KeyTop]
 [Keyword -Keyword]

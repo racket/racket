@@ -159,7 +159,7 @@
 (define/decl -HashTop (make-HashtableTop))
 (define/decl -VectorTop (make-VectorTop))
 (define/decl -MPairTop (make-MPairTop))
-(define/decl -ThreadCellTop (make-ThreadCellTop))
+(define/decl -Thread-CellTop (make-ThreadCellTop))
 (define/decl -Prompt-TagTop (make-Prompt-TagTop))
 (define/decl -Continuation-Mark-KeyTop (make-Continuation-Mark-KeyTop))
 (define/decl -Port (Un -Output-Port -Input-Port))
