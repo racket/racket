@@ -180,7 +180,7 @@
     (syntax-parse form
       #:literal-sets (kernel-literals)
       #:literals (find-method/who)
-      [stx:with-handlers^
+      [stx:exn-handlers^
        (check-subforms/with-handlers/check form expected)]
       [stx:ignore-some^
        (check-subforms/ignore form)
@@ -314,11 +314,8 @@
       #:literal-sets (kernel-literals)
       #:literals (#%app lambda find-method/who)
       ;;
-      [stx:with-handlers^
-       (let ([ty (check-subforms/with-handlers form)])
-         (unless ty
-           (int-err "internal error: with-handlers"))
-         ty)]
+      [stx:exn-handlers^
+       (check-subforms/with-handlers form) ]
       [stx:ignore-some^
        (check-subforms/ignore form)
        (ret Univ)]
