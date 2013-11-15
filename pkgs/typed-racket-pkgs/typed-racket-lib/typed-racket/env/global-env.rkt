@@ -4,6 +4,7 @@
 ;; maps identifiers to their types, updated by mutation
 
 (require "../types/tc-error.rkt"
+         syntax/parse
          syntax/id-table
          racket/lazy-require) 
 (provide register-type register-type-if-undefined
@@ -11,6 +12,7 @@
          maybe-finish-register-type
          register-type/undefined
          lookup-type
+         typed-id^
          register-types
          unregister-type
          check-all-registered-types
@@ -63,6 +65,12 @@
   (cond [(box? v) (unbox v)] 
         [(procedure? v) (define t (v)) (register-type id t) t]
         [else v]))
+
+(define-syntax-class typed-id^
+  #:attributes (type)
+  (pattern i:id
+    #:attr type (lookup-type #'i #f)
+    #:when (attribute type)))
 
 (define (maybe-finish-register-type id)
   (let ([v (free-id-table-ref the-mapping id)])

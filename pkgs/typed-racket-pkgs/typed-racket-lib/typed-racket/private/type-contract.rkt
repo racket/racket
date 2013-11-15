@@ -19,6 +19,7 @@
  unstable/list
  unstable/sequence
  (contract-req)
+ (for-syntax racket/base syntax/parse racket/syntax)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
                (only-in unstable/contract sequence/c)
@@ -27,25 +28,27 @@
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
 ;; expression to the module level will put the property on the body.
-(define-values (typechecker:contract-def
-                typechecker:flat-contract-def
-                typechecker:contract-def/maker)
-  (let ()
-    (define ((get-contract-def property) stx)
-      (or (property stx)
-          (syntax-case stx (define-values)
-            ((define-values (name) body)
-             (property #'body))
-            (_ #f))))
-    (values
-      (get-contract-def contract-def-property)
-      (get-contract-def flat-contract-def-property)
-      (get-contract-def contract-def/maker-property))))
+(define-syntax (contract-finders stx)
+  (define-syntax-class clause
+    (pattern name:id
+      #:with external-name (format-id #'name "typechecker:~a" #'name)
+      #:with syntax-class-name (format-id #'name "~a^" #'name)))
+  (syntax-parse stx
+    [(_ #:union union-name:id :clause ... )
+     #'(begin
+         (define external-name
+           (syntax-parser
+              #:literal-sets (kernel-literals)
+              [(~or (~var v syntax-class-name)
+                    (define-values (_) (~var v syntax-class-name)))
+               (attribute v.value)]
+              [_ #f])) ...
+         (define (union-name stx)
+           (or (external-name stx) ...)))]))
 
-(define (define/fixup-contract? stx)
-  (or (typechecker:contract-def stx)
-      (typechecker:flat-contract-def stx)
-      (typechecker:contract-def/maker stx)))
+(contract-finders
+  #:union define/fixup-contract?
+  contract-def flat-contract-def contract-def/maker)
 
 ;; type->contract-fail : Syntax Type #:ctc-str String
 ;;                       -> #:reason (Option String) -> Void
@@ -144,7 +147,7 @@
 
 
 (define (type->contract ty fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
-  (define vars (make-parameter '()))  
+  (define vars (make-parameter '()))
   (define current-contract-kind (make-parameter flat-sym))
   (define (increase-current-contract-kind! kind)
     (current-contract-kind (contract-kind-max (current-contract-kind) kind)))
@@ -481,7 +484,7 @@
          #`(syntax/c #,(t->c t #:kind flat-sym))]
         [(Value: v) #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))]
         ;; TODO Is this sound?
-	[(Param: in out) 
+	[(Param: in out)
 	 (set-impersonator!)
 	 #`(parameter/c #,(t->c in) #,(t->c out))]
         [(Hashtable: k v)
