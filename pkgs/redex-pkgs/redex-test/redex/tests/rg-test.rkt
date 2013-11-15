@@ -888,7 +888,15 @@
       
       (test-gen-fail
        (--> (side-condition any #f) any impossible)
-       #rx"^redex-check: unable to generate LHS of impossible in 42"))))
+       #rx"^redex-check: unable to generate LHS of impossible in 42")))
+  
+  
+  (test (let ([checked 0])
+          (redex-check lang n #:enum 100 (set! checked (add1 checked)) 
+                       #:print? #f
+                       #:attempts 10)
+          checked)
+        10))
 
 ;; check-reduction-relation
 (let ()
