@@ -3,7 +3,7 @@
 (require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
                      "../utils/disappeared-use.rkt"
                      (only-in "../utils/tc-utils.rkt" tc-error/stx))
-         "../typecheck/internal-forms.rkt"
+         "../typecheck/internal-forms-base.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 
 (provide :)

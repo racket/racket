@@ -1,7 +1,13 @@
 #lang racket/base
 
 (require
+  "../utils/utils.rkt"
   syntax/parse
+  (private parse-type)
+  (typecheck internal-forms-base)
+  (rep type-rep)
+  (types abbrev)
+  (env type-name-env lexical-env)
   (for-syntax racket/base racket/syntax
               syntax/parse syntax/parse/experimental/template)
   (for-template racket/base))
@@ -14,7 +20,6 @@
   typed-struct
   typed-struct/exec
   typed-require
-  typed-require/struct
   predicate-assertion
   type-declaration
   typecheck-failure
@@ -22,25 +27,6 @@
   type-alias?
   typed-struct?
   typed-struct/exec?)
-
-;; Forms
-(define-syntax-rule (internal-forms set-name nms ...)
-  (begin
-    (provide nms ... set-name)
-    (define-literal-set set-name (nms ...))
-    (define-syntax (nms stx) (raise-syntax-error 'typecheck "Internal typechecker form used out of context" stx)) ...))
-
-(internal-forms internal-literals
- require/typed-internal
- define-type-alias-internal
- define-type-internal
- define-typed-struct-internal
- define-typed-struct/exec-internal
- assert-predicate-internal
- declare-refinement-internal
- :-internal
- typecheck-fail-internal)
-
 
 
 ;;; Helpers
@@ -66,6 +52,31 @@
            #:attr mutable (attribute options.mutable)
            #:attr type-only (attribute options.type-only)
            #:attr maker (or (attribute options.maker) #'nm.nm)))
+
+
+(define-syntax-class parsed-type
+  #:attributes (type literal-alls)
+  (pattern t:expr
+    #:attr type (parse-type #'t)
+    #:attr literal-alls (parse-literal-alls #'t)))
+
+(define-syntax-class predicate-type
+  #:attributes (type)
+  (pattern t:parsed-type
+    #:attr type (make-pred-ty (attribute t.type))))
+
+(define-splicing-syntax-class required-type
+  #:attributes (type)
+  (pattern (~seq :parsed-type))
+  (pattern (~seq ty:parsed-type #:struct-maker _)
+    #:attr type 
+      (let* ([t (attribute ty.type)]
+             [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))])
+        (flds #f . ->* . t))))
+
+(define-syntax-class refinement-type
+  #:attributes (predicate type)
+  (pattern (~and predicate :typed-id/lexical/fail^)))
 
 ;;; Internal form syntax matching
 
@@ -100,27 +111,17 @@
   [type-alias
     (define-type-alias-internal name type)]
   [type-refinement
-    (declare-refinement-internal predicate)]
+    (declare-refinement-internal :refinement-type)]
   [typed-struct
     (define-typed-struct-internal . :define-typed-struct-body)]
   [typed-struct/exec
     (define-typed-struct/exec-internal nm ([fields:id : types] ...) proc-type)]
   [typed-require
-    (require/typed-internal name type)]
-  [typed-require/struct
-    (require/typed-internal name type #:struct-maker parent)]
+    (require/typed-internal name :required-type)]
   [predicate-assertion
-    (assert-predicate-internal type predicate)]
+    (assert-predicate-internal :predicate-type predicate)]
   [type-declaration
-    (:-internal id:identifier type)]
+    (:-internal id:identifier :parsed-type)]
   [typecheck-failure
     (typecheck-fail-internal stx message:str var:id)])
 
-;;; Internal form creation
-(begin-for-syntax
-  (define (internal stx)
-    (quasisyntax/loc stx
-      (define-values ()
-        (begin
-          (quote-syntax #,stx)
-          (#%plain-app values))))))

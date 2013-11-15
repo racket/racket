@@ -106,8 +106,8 @@
         [t:type-alias
          (register-resolved-type-alias #'t.name (parse-type #'t.type))]
         [t:type-declaration
-         (register-type-if-undefined #'t.id (parse-type #'t.type))
-         (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))]
+         (register-type-if-undefined #'t.id (attribute t.type))
+         (register-scoped-tvars #'t.id (attribute t.literal-alls))]
         [_ (void)]))
     ;; add scoped type variables, before we get to typechecking
     ;; FIXME: can this pass be fused with the one immediately above?

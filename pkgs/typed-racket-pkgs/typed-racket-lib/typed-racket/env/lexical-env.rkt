@@ -9,6 +9,7 @@
 (require "../utils/utils.rkt"
          syntax/id-table
          racket/keyword-transform racket/list
+         syntax/parse
          (for-syntax syntax/parse racket/base)
          (contract-req)
          (env type-env-structs global-env mvar-env)
@@ -18,9 +19,10 @@
          (except-in (types utils abbrev kw-types) -> ->* one-of/c))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
-         with-lexical-env/extend/props update-type/lexical)
-(provide/cond-contract
- [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))])
+         with-lexical-env/extend/props update-type/lexical
+         
+         typed-id/lexical^
+         typed-id/lexical/fail^)
 
 ;; the current lexical environment
 (define lexical-env (make-parameter (make-empty-prop-env (make-immutable-free-id-table))))
@@ -66,6 +68,15 @@
                                                 (register-type i t)
                                                 t)]
                                           [else ((or fail lookup-fail) i)]))))))
+
+(define-syntax-class typed-id/lexical^
+  (pattern i:identifier
+    #:attr type (lookup-type/lexical #'i #:fail (lambda (_) #f))
+    #:when (attribute type)))
+
+(define-syntax-class typed-id/lexical/fail^
+  (pattern i:identifier
+    #:attr type (lookup-type/lexical #'i)))
 
 
 ;; refine the type of i in the lexical env
