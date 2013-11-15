@@ -87,18 +87,11 @@
           (tc-body/check body (erase-filter expected))
           (tc-body body)))))))
 
-(define (tc-expr/maybe-expected/t e name)
-  (define expecteds
-    (map (lambda (stx) (lookup-type stx (lambda () #f))) name))
-  (define mk (if (and (pair? expecteds) (null? (cdr expecteds)))
-                 car
-                 -values))
-  (define tcr
-    (if
-     (andmap values expecteds)
-     (tc-expr/check e (mk expecteds))
-     (tc-expr e)))
-  tcr)
+(define (tc-expr/maybe-expected/t e names)
+  (syntax-parse names
+    [(i:typed-id^ ...)
+     (tc-expr/check e (-values (attribute i.type)))]
+    [_ (tc-expr e)]))
 
 (define (tc/letrec-values namess exprs body form [expected #f])
   (let* ([names (stx-map syntax->list namess)]
@@ -206,11 +199,11 @@
 ;; say that this binding is only called in tail position
 (define ((tc-expr-t/maybe-expected expected) e)
   (syntax-parse e #:literals (#%plain-lambda)
-    [(#%plain-lambda () _)
-     #:fail-unless (and expected (tail-position-property e)) #f
+    [(~and (#%plain-lambda () _) _:tail-position^)
+     #:when expected
      (tc-expr/check e (ret (t:-> (tc-results->values expected))))]
-    [_
-     #:fail-unless (and expected (tail-position-property e)) #f
+    [_:tail-position^
+     #:when expected
      (tc-expr/check e expected)]
     [_ (tc-expr e)]))
 

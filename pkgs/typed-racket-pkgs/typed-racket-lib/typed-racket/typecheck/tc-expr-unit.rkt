@@ -180,11 +180,9 @@
     (syntax-parse form
       #:literal-sets (kernel-literals)
       #:literals (find-method/who)
-      [stx
-       #:when (with-handlers-property form)
+      [stx:with-handlers^
        (check-subforms/with-handlers/check form expected)]
-      [stx
-       #:when (ignore-some-property form)
+      [stx:ignore-some^
        (check-subforms/ignore form)
        ;; We trust ignore to be only on syntax objects objects that are well typed
        expected]
@@ -264,8 +262,7 @@
              (#%plain-app _ _ args ...))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
       ;; kw function def
-      [(let-values ([(_) fun]) . body)
-       #:when (syntax-property form 'kw-lambda)
+      [(~and (let-values ([(f) fun]) . body) _:kw-lambda^)
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
@@ -274,13 +271,12 @@
           (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
        expected]
       ;; opt function def
-      [(let-values ([(f) fun]) . body)
-       #:when (syntax-property form 'opt-lambda)
+      [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        (define conv-type
          (match expected
            [(tc-result1: fun-type)
             (match-define (list required-pos optional-pos)
-              (syntax-property form 'opt-lambda))
+                          (attribute opt.value))
             (opt-convert fun-type required-pos optional-pos)]
            [_ #f]))
        (match-define (tc-result1: returned-fun-type)
@@ -318,14 +314,12 @@
       #:literal-sets (kernel-literals)
       #:literals (#%app lambda find-method/who)
       ;;
-      [stx
-       #:when (with-handlers-property form)
+      [stx:with-handlers^
        (let ([ty (check-subforms/with-handlers form)])
          (unless ty
            (int-err "internal error: with-handlers"))
          ty)]
-      [stx
-       #:when (ignore-some-property form)
+      [stx:ignore-some^
        (check-subforms/ignore form)
        (ret Univ)]
       ;; explicit failure

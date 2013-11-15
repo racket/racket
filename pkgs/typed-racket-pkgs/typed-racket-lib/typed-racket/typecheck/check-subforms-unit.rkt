@@ -54,21 +54,18 @@
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
       (syntax-parse form
-        [stx
-         ;; if this needs to be checked
-         #:when (with-type-property form)
+        ;; if this needs to be checked
+        [stx:with-type^
          ;; the form should be already ascribed the relevant type
          (tc-expr form)]
-        [stx
-         ;; this is a handler function
-         #:when (exn-handler-property form)
+        ;; this is a handler function
+        [stx:exn-handler^
          (let ([t (single-value form)])
            (match t
              [(tc-result1: t)
               (set! handler-tys (cons (get-result-ty t) handler-tys))]))]
-        [stx
-         ;; this is the body of the with-handlers
-         #:when (exn-body-property form)
+        ;; this is the body of the with-handlers
+        [stx:exn-body^
          (set! body-stx form)
          (set! body-ty (tc-expr form))]
         [(a . b)
@@ -82,18 +79,15 @@
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
       (syntax-parse form
-        [stx
-         ;; if this needs to be checked
-         #:when (with-type-property form)
+        ;; if this needs to be checked
+        [stx:with-type^
          ;; the form should be already ascribed the relevant type
          (tc-expr form)]
-        [stx
-         ;; this is a handler function
-         #:when (exn-handler-property form)
+        ;; this is a handler function
+        [stx:exn-handler^
          (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
-        [stx
-         ;; this is the body of the with-handlers
-         #:when (exn-body-property form)
+        ;; this is the body of the with-handlers
+        [stx:exn-body^
          (tc-expr/check form expected)]
         [(a . b)
          (begin
@@ -107,9 +101,8 @@
 (define (check-subforms/ignore form)
   (let loop ([form form])
     (syntax-parse form
-      [stx
-       ;; if this needs to be checked
-       #:when (with-type-property form)
+      ;; if this needs to be checked
+      [stx:with-type^
        ;; the form should be already ascribed the relevant type
        (void (tc-expr form))]
       [(a . b)

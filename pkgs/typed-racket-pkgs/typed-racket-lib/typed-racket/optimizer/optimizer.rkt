@@ -18,15 +18,12 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   ;; Can't optimize this code because it isn't typechecked
-  (pattern opt:expr
-    #:when (or (ignore-property #'opt)
-               (ignore-some-property #'opt)
-               (with-handlers-property #'opt)))
+  (pattern (~or opt:ignore^ opt:ignore-some^ opt:with-handlers^))
 
   ;; Can't optimize the body of this code because it isn't typechecked
-  (pattern ((~and op let-values)
-            ([(i:id) e-rhs:opt-expr]) e-body:expr ...)
-           #:when (kw-lambda-property this-syntax)
+  (pattern (~and _:kw-lambda^
+             ((~and op let-values)
+              ([(i:id) e-rhs:opt-expr]) e-body:expr ...))
            #:with opt (quasisyntax/loc/origin this-syntax #'op
                         (op ([(i) e-rhs.opt]) e-body ...)))
 
