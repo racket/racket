@@ -89,9 +89,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 [typed-racket/private/type-contract (type->contract type->contract-fail)]
                 [typed-racket/env/type-name-env (register-type-name)]))
 
-(define-for-syntax (ignore stx) (ignore-property stx #t))
-(define-for-syntax (ignore-some stx) (ignore-some-property stx #t))
-
 (begin-for-syntax
   (define-syntax-class opt-parent
     #:attributes (nm parent)
@@ -281,7 +278,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #`(#%expression
            (ann
              #,(ignore-some
-                 #`(let-values (((val) #,(with-type-property #'(ann v Any) #t)))
+                 #`(let-values (((val) #,(with-type #'(ann v Any))))
                      (contract
                        #,ctc-expr
                        val
@@ -506,12 +503,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ ([pred? action] ...) . body)
      (with-syntax ([(pred?* ...)
                     (for/list ([s (in-syntax #'(pred? ...))])
-                      (with-type-property #`(ann #,s : (Any -> Any)) #t))]
+                      (with-type #`(ann #,s : (Any -> Any))))]
                    [(action* ...)
                     (for/list ([s (in-syntax #'(action ...))])
-                      (exn-handler-property s #t))]
-                   [body* (exn-body-property #'(let-values () . body) #t)])
-       (with-handlers-property #'(with-handlers ([pred?* action*] ...) body*) #t))]))
+                      (exn-handler s))]
+                   [body* (exn-body #'(let-values () . body))])
+       (exn-handlers #'(with-handlers ([pred?* action*] ...) body*)))]))
 
 (begin-for-syntax
   (define-syntax-class dtsi-struct-name
@@ -527,7 +524,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
      (with-syntax*
-      ([proc* (with-type-property #'(ann proc : proc-ty) #t)]
+      ([proc* (with-type #'(ann proc : proc-ty))]
        [d-s (ignore-some (syntax/loc stx (define-struct nm (fld.name ...)
                                       #:property prop:procedure proc*)))]
        [dtsi (quasisyntax/loc stx (dtsi/exec* () nm (fld ...) proc-ty))])

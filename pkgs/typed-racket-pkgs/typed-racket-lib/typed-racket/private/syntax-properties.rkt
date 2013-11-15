@@ -3,53 +3,67 @@
   syntax/parse
   (for-syntax racket/base syntax/parse racket/syntax))
 
+(define-syntax define-matcher
+  (syntax-parser
+    [(_ name:id prop:id)
+     #'(define-syntax-class name
+         #:attributes (value)
+         (pattern e
+          #:attr value (prop #'e)
+          #:when (attribute value)))]))
+
 (define-syntax (define-properties stx)
   (define-syntax-class clause
+    (pattern (name:id sym:id #:mark)
+      #:with syntax-class-name (format-id #'name "~a^" #'name)
+      #:with symbol (generate-temporary #'sym)
+      #:with function
+        #'(λ (stx) (syntax-property stx symbol #t)))
     (pattern (root:id sym:id)
       #:with name (format-id #'root "~a-property" #'root)
       #:with syntax-class-name (format-id #'root "~a^" #'root)
-      #:with symbol (generate-temporary #'sym)))
+      #:with symbol (generate-temporary #'sym)
+      #:with function
+        #'(case-lambda
+            ((stx) (syntax-property stx symbol))
+            ((stx value) (syntax-property stx symbol value)))))
 
   (syntax-parse stx
-    ((_ :clause ...)
+    [(_ :clause ...)
      #`(begin
          (begin
-           ;; TODO: make this an uninterned symbol once the phasing issue of the unit
-           ;; tests is fixed
-           (define symbol 'sym)
-           (provide name syntax-class-name)
-           (define name
-              (case-lambda
-                ((stx) (syntax-property stx symbol))
-                ((stx value) (syntax-property stx symbol value))))
+            ;; TODO: make this an uninterned symbol once the phasing issue of the unit
+            ;; tests is fixed
+            (define symbol 'sym)
+            (provide name syntax-class-name)
+            (define name function)
             (define-syntax-class syntax-class-name
               #:attributes (value)
               (pattern e
-               #:attr value (name #'e)
-               #:when (attribute value)))) ...))))
+               #:attr value (syntax-property #'e symbol)
+               #:when (attribute value)))) ...)]))
 
 ;;TODO add contracts on the properties
-;;TODO make better interface for properties with values of only #t
 
 (define-properties
   (plambda typechecker:plambda)
-  (ignore typechecker:ignore)
-  (ignore-some typechecker:ignore-some)
+  (ignore typechecker:ignore #:mark)
+  (ignore-some typechecker:ignore-some #:mark)
   (contract-def/maker typechecker:contract-def/maker)
   (contract-def typechecker:contract-def)
   (flat-contract-def typechecker:flat-contract-def)
   (external-check typechecker:external-check)
-  (with-type typechecker:with-type)
+  (with-type typechecker:with-type #:mark)
   (type-ascription type-ascription)
   (type-inst type-inst)
   (type-label type-label)
   (type-dotted type-dotted)
-  (exn-handler typechecker:exn-handler)
-  (exn-body typechecker:exn-body)
-  (with-handlers typechecker:with-handlers)
+  (exn-handler typechecker:exn-handler #:mark)
+  (exn-body typechecker:exn-body #:mark)
+  (exn-handlers typechecker:exn-handlers #:mark)
   (struct-info struct-info)
   (opt-lambda opt-lambda)
   (kw-lambda kw-lambda)
-  (tail-position typechecker:called-in-tail-position)
+  (tail-position typechecker:called-in-tail-position #:mark)
   )
 

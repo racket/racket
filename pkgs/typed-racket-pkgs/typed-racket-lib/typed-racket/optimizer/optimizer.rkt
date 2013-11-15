@@ -18,7 +18,7 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   ;; Can't optimize this code because it isn't typechecked
-  (pattern (~or opt:ignore^ opt:ignore-some^ opt:with-handlers^))
+  (pattern (~or opt:ignore^ opt:ignore-some^ opt:exn-handlers^))
 
   ;; Can't optimize the body of this code because it isn't typechecked
   (pattern (~and _:kw-lambda^
