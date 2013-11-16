@@ -12,11 +12,9 @@
          (env tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
          "parse-classes.rkt"
-         (for-template racket/base "../base-env/colon.rkt")
-         ;; needed at this phase for tests
-         "../base-env/colon.rkt"
-         (prefix-in t: "../base-env/base-types-extra.rkt")
-         (for-template (prefix-in t: "../base-env/base-types-extra.rkt")))
+         (for-label
+           racket/base "../base-env/colon.rkt"
+           (prefix-in t: "../base-env/base-types-extra.rkt")))
 
 (provide/cond-contract ;; Parse the given syntax as a type
                        [parse-type (syntax? . c:-> . Type/c)]
@@ -29,6 +27,12 @@
 
 (provide star ddd/bound)
 
+(define-literal-set parse-type-literals
+    #:for-label
+    (: cons quote case-lambda values car cdr
+     t:Class t:Refinement t:Instance t:List t:List* t:pred t:-> t:case->
+     t:Rec t:U t:All t:Opaque t:Parameter t:Vector t:Struct t:Struct-Type t:Values))
+
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.
 (define ((parse/id p) loc datum)
@@ -39,17 +43,12 @@
 ;; The body of a Forall type
 (define-syntax-class all-body
   #:attributes (type)
+  #:literal-sets (parse-type-literals)
   (pattern (type))
-  (pattern (x ...)
-     #:fail-unless (= 1 (length
-                         (for/list ([i (in-syntax #'(x ...))]
-                                    #:when (and (identifier? i)
-                                                (free-identifier=? i #'t:->)))
-                                   i))) #f
-     #:attr type #'(x ...)))
+  (pattern (~and type ((~or (~once t:->) x) ...))))
 
 (define (parse-literal-alls stx)
-  (syntax-parse stx #:literals (t:All)
+  (syntax-parse stx #:literal-sets (parse-type-literals)
     [(t:All (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
      (define vars-list (syntax->list #'(vars ...)))
      (cons (if (attribute v)
@@ -63,7 +62,7 @@
 ;; Parse a Forall type
 (define (parse-all-type stx)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
-  (syntax-parse stx #:literals (t:All)
+  (syntax-parse stx #:literal-sets (parse-type-literals)
     [((~and kw t:All) (vars:id ... v:id dd:ddd) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
@@ -98,7 +97,7 @@
 
 (define-syntax-class path-elem
   #:description "path element"
-  #:literals (car cdr)
+  #:literal-sets (parse-type-literals)
   (pattern car
            #:attr pe (make-CarPE))
   (pattern cdr
@@ -175,12 +174,18 @@
 (define (parse-types stx-list)
   (stx-map parse-type stx-list))
 
+(define (parse-quoted-type stx)
+  (syntax-parse stx
+    [(t1 . t2)
+     (-pair (parse-quoted-type #'t1) (parse-quoted-type #'t2))]
+    [t
+     (-val (syntax->datum #'t))]))
+
 (define (parse-type stx)
   (parameterize ([current-orig-stx stx])
     (syntax-parse
         stx
-      #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda t:case->
-                  t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote t:Struct t:Struct-Type)
+      #:literal-sets (parse-type-literals)
       [t
        #:declare t (3d Type/c?)
        (attribute t.datum)]
@@ -284,12 +289,9 @@
       [((~and kw t:U) ts ...)
        (add-disappeared-use #'kw)
        (apply Un (parse-types #'(ts ...)))]
-      [((~and kw quote) (t1 . t2))
-       (add-disappeared-use #'kw)
-       (-pair (parse-type #'(quote t1)) (parse-type #'(quote t2)))]
       [((~and kw quote) t)
        (add-disappeared-use #'kw)
-       (-val (syntax->datum #'t))]
+       (parse-quoted-type #'t)]
       [((~and kw t:All) . rest)
        (parse-all-type stx)]
       [((~and kw t:Opaque) p?:id)
@@ -449,7 +451,7 @@
 ;; Parse a (List ...) type
 (define (parse-list-type stx)
   (parameterize ([current-orig-stx stx])
-    (syntax-parse stx #:literals (t:List)
+    (syntax-parse stx #:literal-sets (parse-type-literals)
       [((~and kw t:List) tys ... dty :ddd/bound)
        (add-disappeared-use #'kw)
        (let ([var (syntax-e #'bound)])
@@ -478,7 +480,7 @@
 ;; Parse a (Values ...) type
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])
-    (syntax-parse stx #:literals (values t:Values t:All)
+    (syntax-parse stx #:literal-sets (parse-type-literals)
       [((~and kw (~or t:Values values)) tys ... dty :ddd/bound)
        (add-disappeared-use #'kw)
        (let ([var (syntax-e #'bound)])
@@ -504,7 +506,7 @@
        (-values (list (parse-type #'t)))])))
 
 (define (parse-tc-results stx)
-  (syntax-parse stx #:literals (values)
+  (syntax-parse stx #:literal-sets (parse-type-literals)
     [((~and kw values) t ...)
      (add-disappeared-use #'kw)
      (ret (parse-types #'(t ...))
