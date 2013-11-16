@@ -8,33 +8,38 @@
          (typecheck signatures find-annotation)
          (types abbrev utils generalize type-table)
          (private type-annotation)
-
-         (for-template racket/base))
+         ;; Needed to construct args to tc/let-values
+         (for-template racket/base)
+         (for-label racket/base))
 
 
 (import tc-expr^ tc-let^ tc-lambda^)
 (export tc-app-lambda^)
 
+(define-literal-set literals
+  #:for-label
+  (null? pair? null))
+
 (define-tc/app-syntax-class (tc/app-lambda expected)
-  #:literals (#%plain-app #%plain-lambda letrec-values)
+  #:literal-sets (kernel-literals)
   ;; let loop
   (pattern ((letrec-values ([(lp) (~and lam (#%plain-lambda (args ...) . body))]) lp*) . actuals)
-    #:fail-unless expected #f
-    #:fail-unless (not (andmap type-annotation (syntax->list #'(lp args ...)))) #f
-    #:fail-unless (free-identifier=? #'lp #'lp*) #f
+    #:when expected
+    #:when (not (andmap type-annotation (syntax->list #'(lp args ...))))
+    #:when (free-identifier=? #'lp #'lp*)
     (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
   (pattern ((#%plain-lambda (x ...) . body) args ...)
-   #:fail-unless (= (syntax-length #'(x ...))
-                    (syntax-length #'(args ...))) #f
+   #:when (= (syntax-length #'(x ...))
+             (syntax-length #'(args ...)))
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (tc/let-values #'((x) ...) #'(args ...) #'body
                   #'(let-values ([(x) args] ...) . body)
                   expected))
   ;; inference for ((lambda with dotted rest
   (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
-   #:fail-unless (<= (syntax-length #'(x ...))
-                     (syntax-length #'(args ...))) #f
+   #:when (<= (syntax-length #'(x ...))
+              (syntax-length #'(args ...)))
    ;; FIXME - remove this restriction - doesn't work because the annotation
    ;; on rst is not a normal annotation, may have * or ...
    #:fail-when (type-annotation #'rst) #f
@@ -50,7 +55,7 @@
 
 (define (let-loop-check lam lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals)
-    #:literals (#%plain-app if null? pair? null)
+    #:literal-sets (kernel-literals literals)
     [((val acc ...)
       ((~and inner-body (if (#%plain-app (~or pair? null?) val*) thn els)))
       (actual actuals ...))

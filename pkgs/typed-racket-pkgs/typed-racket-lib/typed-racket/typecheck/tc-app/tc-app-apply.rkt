@@ -8,10 +8,7 @@
          (types abbrev utils)
          (rep type-rep)
 
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         (only-in '#%kernel [apply k:apply])
-         ;; end fixme
-         (for-template
+         (for-label
           racket/base
           (only-in '#%kernel [apply k:apply])))
 
@@ -19,8 +16,12 @@
 (import tc-expr^ tc-apply^)
 (export tc-app-apply^)
 
+(define-literal-set literals
+  #:for-label
+  (k:apply apply values))
+
 (define-tc/app-syntax-class (tc/app-apply expected)
-  #:literals (k:apply apply values)
+  #:literal-sets (literals)
   (pattern ((~or apply k:apply) values e)
     (match (single-value #'e)
       [(tc-result1: (ListDots: dty dbound))
