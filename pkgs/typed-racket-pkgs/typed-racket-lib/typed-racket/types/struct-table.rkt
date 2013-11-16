@@ -6,13 +6,7 @@
          (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
-         (env init-envs)
-         (for-template 
-          racket/base          
-          (rep type-rep object-rep)
-          (types utils union)
-          (env init-envs)
-          (utils tc-utils)))
+         (env init-envs))
 
 (define struct-fn-table (make-free-id-table))
 (define struct-constructor-table (make-free-id-table))
