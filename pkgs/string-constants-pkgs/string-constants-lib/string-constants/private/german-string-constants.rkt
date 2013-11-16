@@ -1765,6 +1765,25 @@
   (open-collection-path "Collection-Pfad öffnen...")
   (enter-subcollection "Sub-Collection betreten") ; button in new dialog
   
+  (path-to-racket-binary "Pfad zur Programmdatei")
+  (use-a-different-racket "Anderes Racket benutzen")
   
+  ; first ~a is filled with either the empty string or an error message from elsewhere
+  ;  (bracketed by some newlines to separate it out)
+  ; second ~a is filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; third ~a is filled with the path to the bin directory of the current drracket
+  (adding-racket/bin-to-path-failed 
+   "Versuch fehlgeschlagen, Racket-Unterstützung zur Kommandozeile hinzufügen.~aGenauer:"
+   " konnte \"~a\" mit Inhalt \"~a\" nicht erzeugen.")
+  ; first and third ~a are filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; and the second one is filled with the path to the bin directory that was put into that file.
+  (added-racket/bin-to-path
+   "Sie sollten nun Racket mit all seinen Programme von der"
+   " Kommandozeile benutzen können.\n\nDer"
+   " Standardpfad in PATH wurde für alle Benutzer konfiguriert, indem die Datei"
+   " ~a hinzugefügt wurde und auf ~a zeigt. Sie können dies rückgängig machen, indem"
+   " Sie ~a löschen.")
+  (add-racket/bin-to-path "Kommandozeile für Racket konfigurieren...") ;; menu item label
+
   )
 
