@@ -4,7 +4,7 @@
   syntax/parse
   (for-syntax racket/base racket/syntax
               syntax/parse syntax/parse/experimental/template)
-  (for-template racket/base))
+  (for-label racket/base))
 
 (provide
   (for-syntax internal)
@@ -69,11 +69,12 @@
 
 ;;; Internal form syntax matching
 
+(define-literal-set internal-form-literals #:for-label
+  (values))
 
 (define-syntax-class internal^
    #:attributes (value)
-   #:literals (values)
-   #:literal-sets (kernel-literals)
+   #:literal-sets (kernel-literals internal-form-literals)
    (pattern (define-values () (begin (quote-syntax value:expr) (#%plain-app values)))))
 
 (define-syntax (define-internal-classes stx)

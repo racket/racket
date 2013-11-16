@@ -5,7 +5,7 @@
          (rep type-rep)
          (env lexical-env)
          (private type-annotation)
-         (for-template racket/base))
+         (for-label racket/base))
 
 (provide/cond-contract [find-annotation (syntax? identifier? . -> . (or/c #f Type/c))])
 
@@ -20,9 +20,7 @@
            #:with (vs ...) #'((cl.v ...) ...)))
 
 (define-syntax-class core-expr
-  #:literals (reverse letrec-syntaxes+values let-values #%plain-app
-                      if letrec-values begin #%plain-lambda set! case-lambda
-                      begin0 with-continuation-mark)
+  #:literal-sets (kernel-literals)
   #:transparent
   (pattern (let-values cls:lv-clauses body)
            #:with (expr ...) #'(cls.e ... body))
@@ -43,6 +41,9 @@
   (pattern _
            #:with (expr ...) #'()))
 
+(define-literal-set find-annotation-literals #:for-label
+    (reverse))
+
 ;; expr id -> type or #f
 ;; if there is a binding in stx of the form:
 ;; (let ([x (reverse name)]) e) or
@@ -52,7 +53,7 @@
   (define (find s) (find-annotation s name))
   (define (match? b)
     (syntax-parse b
-      #:literals (#%plain-app reverse)
+      #:literal-sets (kernel-literals find-annotation-literals)
       [c:lv-clause
        #:with n:id #'c.e
        #:with (v) #'(c.v ...)
@@ -65,7 +66,7 @@
        (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
       [_ #f]))
   (syntax-parse stx
-    #:literals (let-values)
+    #:literal-sets (kernel-literals)
     [(let-values cls:lv-clauses body)
      (or (ormap match? (syntax->list #'cls))
 	 (find #'body))]

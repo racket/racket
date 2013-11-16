@@ -7,13 +7,14 @@
          (typecheck renamer def-binding)
          (utils tc-utils)
          (for-syntax racket/base)
-         (for-template racket/base "def-export.rkt" racket/contract))
+         (for-template racket/base "def-export.rkt"
+                       (only-in racket/contract/base define-module-boundary-contract)))
 
 (provide remove-provides provide? generate-prov get-alternate)
 
 (define (provide? form)
   (syntax-parse form
-    #:literals (#%provide)
+    #:literal-sets (kernel-literals)
     [(#%provide . rest) form]
     [_ #f]))
 

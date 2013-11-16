@@ -11,8 +11,7 @@
          (env global-env type-name-env tvar-env)
          (utils tc-utils)
          (typecheck def-binding internal-forms)
-         (for-syntax syntax/parse racket/base)
-         (for-template racket/base))
+         (for-syntax syntax/parse racket/base))
 
 (provide tc/struct name-of-struct d-s
          refine-struct-variance!

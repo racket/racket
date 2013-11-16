@@ -10,7 +10,8 @@
          (typecheck signatures tc-metafunctions tc-subst internal-forms)
          racket/match (contract-req)
          syntax/parse syntax/stx
-         (for-template racket/base))
+         ;; For internal type forms
+         (for-template (only-in racket/base define-values)))
 
 
 (import tc-expr^)
@@ -197,7 +198,7 @@
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
 (define ((tc-expr-t/maybe-expected expected) e)
-  (syntax-parse e #:literals (#%plain-lambda)
+  (syntax-parse e #:literal-sets (kernel-literals)
     [(~and (#%plain-lambda () _) _:tail-position^)
      #:when expected
      (tc-expr/check e (ret (t:-> (tc-results->values expected))))]
