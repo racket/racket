@@ -262,11 +262,15 @@ Like @racket[write-xml/content], but with indentation and newlines
 like @racket[display-xml].}
                
 
-@defproc[(write-xexpr [xe xexpr/c] [out output-port? (current-output-port)])
+@defproc[(write-xexpr [xe xexpr/c] [out output-port? (current-output-port)]
+                      [#:insert-newlines? insert-newlines? any/c #f])
          void?]{
 
 Writes an X-expression to the given output port, without using an intermediate
-XML document.}
+XML document.
+
+If @racket[insert-newlines?] is true, the X-expression is written with newlines
+before the closing angle bracket of a tag.}
 
 
 @; ----------------------------------------------------------------------

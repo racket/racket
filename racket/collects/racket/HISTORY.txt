@@ -1,5 +1,6 @@
 Version 5.90.0.11
 Added flrandom and unsafe-flrandom
+xml: added a #:insert-newlines? argument to write-xexpr
 
 Version 5.90.0.10
 Changed serializable-struct, etc. to provide deserialized-info:...

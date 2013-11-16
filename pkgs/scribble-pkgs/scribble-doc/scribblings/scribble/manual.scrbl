@@ -11,18 +11,16 @@
 @defmodulelang[scribble/manual]{The @racketmodname[scribble/manual]
 language provides all of @racketmodname[scribble/base] plus many
 additional functions that are specific to writing Racket
-documentation.
+documentation. It also associates @tech{style properties} with the
+generated @racket[doc] export to select the default Racket manual
+style for rendering; see @secref["manual-render-style"] for more
+information.
 
 The @racketmodname[scribble/manual] name can also be used as a library
 with @racket[require], in which case it provides all of the same
 bindings, but without setting the reader or setting the default
 rendering format to the Racket manual format.}
 
-With @hash-lang[], @racketmodname[scribble/manual] associates a
-@racket[latex-defaults] @tech{style property} with its @racket[doc]
-export to select the default Racket manual style for Latex
-rendering---unless a style is supplied to @racket[title] that already
-includes a @racket[latex-defaults] @tech{style property}.
 
 @local-table-of-contents[]
 
@@ -1805,6 +1803,12 @@ abbreviation-ending period for use in the middle of a sentence.}
 @defthing[PLaneT element?]{@racket["PLaneT"] (to help make sure you get
 the letters in the right case).}
 
+@defthing[manual-doc-style style?]{
+
+A style to be used for a document's main @racket[part] to get the
+style configuration of @racket[@#,hash-lang[] @#,racketmodname[scribble/manual]].
+See @secref["manual-render-style"].}
+
 @defproc[(hash-lang) element?]{Returns an element for @hash-lang[]
 that is hyperlinked to an explanation.}
 
@@ -1935,3 +1939,43 @@ from @racket[exported-index-desc] names the class or interface that
 contains the method. 
 The @racket[class-tag] field provides a pointer to the start of the
 documentation for the method's class or interface.}
+
+@;----------------------------------------
+
+@section[#:tag "manual-render-style"]{Manual Rendering Style}
+
+Using @racket[@#,hash-lang[] @#,racketmodname[scribble/manual]] for the
+main @racket[part] of a document associates @tech{style properties} on
+the @racket[doc] export to select the Racket manual style for
+rendering.
+
+A @racket[html-defaults] @tech{style property} is added to
+@racket[doc], unless @racket[doc]'s style already has a
+@racket[html-defaults] @tech{style property} (e.g., supplied to
+@racket[title]). Similarly, a @racket[latex-default] @tech{style
+property} is added if one is not already present. Finally, an
+@racket[css-style-addition] property is always added.
+
+For HTML rendering:
+
+@itemlist[
+
+ @item{The document's @tech{prefix file} is set to
+       @filepath{scribble-prefix.html}, as usual, in @racket[html-defaults].}
+
+ @item{The document's @tech{style file} is set to
+       @filepath{manual-style.css} from the @filepath{scribble}
+       collection in @racket[html-defaults].}
+
+ @item{The file @filepath{manual-files.css} from the
+       @filepath{scribble} collection is designated as an additional
+       accompanying file in @racket[html-defaults].}
+
+ @item{The file @filepath{manual-racket.css} from the
+       @filepath{scribble} collection is added as a
+       @racket[css-style-addition].}
+
+]
+
+To obtain this configuration without using @racket[@#,hash-lang[]
+@#,racketmodname[scribble/manual]], use @racket[manual-doc-style].

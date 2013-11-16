@@ -1,11 +1,16 @@
 Version 1.1
-Change `verbatim' to support non-string arguments
-Add `--html-tree' option to for rendering to multi-page HTML
+Changed the HTML rendering style of `scribble/manual'
+Changed `verbatim' to support non-string arguments
+Added `--html-tree' option to for rendering to multi-page HTML
  with nested directories for nested parts
+Added `css-style-addition' and `js-style-addition' for adding
+ style files that override library-level defaults but can be
+ overridden externally
 For HTML rendering, merge generated `style' attributes within
  a single tag
-scribble/manual: changed `deprecated` to a function, and
- generalized it by adding an optional `#:what` argument
+scribble/manual: added `manual-doc-style'
+scribble/manual: changed `deprecated' to a function, and
+ generalized it by adding an optional `#:what' argument
 
 Older versions
 See the "Racket core" release notes for a history of changes before

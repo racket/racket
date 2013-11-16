@@ -275,6 +275,11 @@
 
     (define/override (auto-extra-files? v) (html-defaults? v))
     (define/override (auto-extra-files-paths v) (html-defaults-extra-files v))
+    (define/override (skip-extra-file? p)
+      (lookup-path (if (path? p)
+                       p
+                       (collects-relative->path p))
+                   alt-paths))
 
     ;; ----------------------------------------
 
@@ -741,8 +746,11 @@
 
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
-        (let* ([defaults (ormap (lambda (v) (and (html-defaults? v) v))
-                                (style-properties (part-style d)))]
+        (let* ([defaults (let loop ([d d])
+                           (or (ormap (lambda (v) (and (html-defaults? v) v))
+                                      (style-properties (part-style d)))
+                               (let ([p (part-parent d ri)])
+                                 (and p (loop p)))))]
                [prefix-file (or prefix-file 
                                 (and defaults
                                      (let ([v (html-defaults-prefix-path defaults)])
@@ -763,7 +771,13 @@
                                   `(title ,@(format-number number '(nbsp))
                                           ,(content->string (strip-aux c) this d ri)))]
                             [else `(title)])]
-               [dir-depth (part-nesting-depth d ri)])
+               [dir-depth (part-nesting-depth d ri)]
+               [extract (lambda (pred get) (extract-part-style-files 
+                                            d
+                                            ri
+                                            (lambda (p) (part-whole-page? p ri))
+                                            pred
+                                            get))])
           (unless (bytes? style-file)
             (unless (lookup-path style-file alt-paths) 
               (install-file style-file)))
@@ -793,13 +807,9 @@
                                 (let ([p (lookup-path style-file alt-paths)])
                                   (unless p (install-file style-file))
                                   (scribble-css-contents style-file p dir-depth))))
-                          (append (extract-part-style-files
-                                   d
-                                   ri
-                                   (lambda (p) (part-whole-page? p ri))
-                                   css-addition?
-                                   css-addition-path)
+                          (append (extract css-addition? css-addition-path)
                                   (list style-file)
+                                  (extract css-style-addition? css-style-addition-path)
                                   style-extra-files))
                    ,(scribble-js-contents script-file
                                           (lookup-path script-file alt-paths)
@@ -811,12 +821,8 @@
                                   (unless p (install-file script-file))
                                   (scribble-js-contents script-file p dir-depth))))
                           (append
-                           (extract-part-style-files
-                            d
-                            ri
-                            (lambda (p) (part-whole-page? p ri))
-                            js-addition?
-                            js-addition-path)
+                           (extract js-addition? js-addition-path)
+                           (extract js-style-addition? js-style-addition-path)
                            (reverse extra-script-files)))
                    ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]")
                    ,@(for/list ([p (style-properties (part-style d))]

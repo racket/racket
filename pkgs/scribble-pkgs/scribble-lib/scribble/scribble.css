@@ -1,20 +1,7 @@
-@import url("scribble-fonts.css");
 
-
-
-
-* {
-margin: 0;
-padding: 0;
-}
-
-
-
-@media all {html {font-size: 15px;}}
-@media all and (max-width:940px){html {font-size: 14px;}}
-@media all and (max-width:850px){html {font-size: 13px;}}
-@media all and (max-width:830px){html {font-size: 12px;}}
-@media all and (max-width:740px){html {font-size: 11px;}}
+/* This file is used by default by all Scribble documents.
+   See also "manual.css", which is added by default by the
+   `scribble/manual` language. */
 
 /* CSS seems backward: List all the classes for which we want a
    particular font, so that the font can be changed in one place.  (It
@@ -26,110 +13,38 @@ padding: 0;
 
 /* Monospace: */
 .maincolumn, .refpara, .refelem, .tocset, .stt, .hspace, .refparaleft, .refelemleft {
-  font-family: 'Source Code Pro', monospace;
-  white-space: inherit;
-    font-size: 1rem;
+  font-family: monospace;
 }
-
-.stt {
-    font-weight: 500;
-}
-
-h2 .stt {
-    font-size: 2.7rem;
-}
-
-.toptoclink .stt {
-    font-size: inherit;
-}
-.toclink .stt {
-    font-size: 90%;
-}
-
-.RpackageSpec .stt {
-   font-weight: 300;
-   font-family: 'Source Code Pro';
-   font-size: 0.9rem;
-}
-
-h3 .stt, h4 .stt, h5 .stt {
-    color: #333;
-    font-size: 1.65rem;
-    font-weight: 400;
-}
-
 
 /* Serif: */
 .main, .refcontent, .tocview, .tocsub, .sroman, i {
-  font-family: 'Charter', serif;
-  font-size: 1.18rem;
+  font-family: serif;
 }
-
 
 /* Sans-serif: */
 .version, .versionNoNav, .ssansserif {
-  font-family: 'Fira', sans-serif;
+  font-family: sans-serif;
 }
 .ssansserif {
-  font-family: 'Fira';
-  font-weight: 500;
-  font-size: 0.9em;
+  font-size: 80%;
+  font-weight: bold;
 }
-
-.tocset .ssansserif {
-    font-size: 100%; }
 
 /* ---------------------------------------- */
 
 p, .SIntrapara {
   display: block;
-  margin: 0 0 1em 0;
-  line-height: 140%;
+  margin: 1em 0;
 }
-
-
-li {
-    list-style-position: outside;
-    margin-left: 1.2em;
-}
-
-h1, h2, h3, h4, h5, h6, h7, h8 {
-    font-family: 'Fira';
-    font-weight: 300;
-    font-size: 1.6rem;
-    color: #333;
-    margin-bottom: 1rem;
-    line-height: 125%;
-    -moz-font-feature-settings: 'tnum=1';
--moz-font-feature-settings: 'tnum' 1;
--webkit-font-feature-settings: 'tnum' 1;
--o-font-feature-settings: 'tnum' 1;
--ms-font-feature-settings: 'tnum' 1;
-font-feature-settings: 'tnum' 1;
-
-}
-
-h3, h4, h5, h6, h7, h8 {
-    border-top: 1px solid black;
-}
-
-
 
 h2 { /* per-page main title */
-    font-family: 'Miso';
-    font-weight: bold;
-    margin-top: 4rem;
-    font-size: 3rem;
-    line-height: 110%;
-    width: 90%;
+  margin-top: 0;
 }
 
 h3, h4, h5, h6, h7, h8 {
-    margin-top: 2em;
-    padding-top: 0.1em;
-  margin-bottom: 0.75em;
-  }
-
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
 
 .SSubSubSubSection {
   font-weight: bold;
@@ -148,8 +63,8 @@ table p {
 /* Main */
 
 body {
-color: black;
-  background-color: white;
+  color: black;
+  background-color: #ffffff;
 }
 
 table td {
@@ -158,103 +73,63 @@ table td {
 }
 
 .maincolumn {
-  margin-top: 4rem;
-  margin-left: 17rem;
-  margin-right: 2rem;
-  margin-bottom: 10rem; /* to avoid fixed bottom nav bar */
-  max-width: 700px;
-  min-width: 370px; /* below this size, code samples don't fit */
+  width: 43em;
+  margin-right: -40em;
+  margin-left: 15em;
 }
 
-
-a {
-    color: #07A;
-    text-decoration: inherit;
+.main {
+  text-align: left;
 }
-
-
-a:hover {
-    text-decoration: underline;
-}
-
 
 /* ---------------------------------------- */
 /* Navigation */
 
 .navsettop, .navsetbottom {
-    left: 0;
-    width: 15rem;
-    height: 6rem;
-font-family: 'Fira';
-    font-size: 0.9rem;
-    border-bottom: 0px solid hsl(216, 15%, 70%);
+  background-color: #f0f0e0;
+  padding: 0.25em 0 0.25em 0;
 }
 
 .navsettop {
-    position: absolute;
-    top: 0;
-    left: 0;
+  margin-bottom: 1.5em;
+  border-bottom: 2px solid #e0e0c0;
 }
-
-.navsettop a, .navsetbottom a {
-    color: black;
-}
-
-.navsettop a:hover, .navsetbottom a:hover {
-    background: hsl(216, 78%, 95%);
-    text-decoration: none;
-}
-
-
-.navleft a {
-    display: inline-block;
-}
-
-
-.navright a {
-    display: inline-block;
-    text-align: center;
-}
-
-.navleft a, .navright a, .navright span {
-    display: inline-block;
-    padding: 0.5rem;
-    min-width: 1rem;
-}
-
-
-.navright {
-    height: 2rem;
-    white-space: nowrap;
-}
-
 
 .navsetbottom {
-    display: none;
+  margin-top: 2em;
+  border-top: 2px solid #e0e0c0;
 }
 
+.navleft {
+  margin-left: 1ex;
+  position: relative;
+  float: left;
+  white-space: nowrap;
+}
+.navright {
+  margin-right: 1ex;
+  position: relative;
+  float: right;
+  white-space: nowrap;
+}
 .nonavigation {
-  color: #889;
+  color: #e0e0e0;
 }
 
 .searchform {
-  display: fixed;
+  display: inline;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid #eee;
-  height: 4rem;
 }
 
 .searchbox {
-  font-size: 1rem;
-  width: 12rem;
-  margin: 1rem;
-  padding: 0.25rem;
+  width: 16em;
+  margin: 0px;
+  padding: 0px;
+  background-color: #eee;
+  border: 1px solid #ddd;
+  text-align: center;
   vertical-align: middle;
-}
-
-#search_box {
-  font-size: 0.8rem;
 }
 
 #contextindicator {
@@ -263,93 +138,68 @@ font-family: 'Fira';
   color: #000;
   font-family: monospace;
   font-weight: bold;
-  padding: 0.1rem 0.5rem;
+  padding: 2px 10px;
   display: none;
   right: 0;
   bottom: 0;
 }
 
-
 /* ---------------------------------------- */
 /* Version */
 
 .versionbox {
-  position: absolute;
-  top: 0.25rem;
-  left: 17rem;
-  z-index: 11000;
-  height: 2em;
-  font-size: 70%;
-  font-weight: lighter;
+  position: relative;
+  float: right;
+  left: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
 }
-.version:before, .versionNoNav:before {
-  content: "v.";
+.version {
+  font-size: small;
+}
+.versionNoNav {
+  font-size: xx-small; /* avoid overlap with author */
 }
 
+.version:before, .versionNoNav:before {
+  content: "Version ";
+}
 
 /* ---------------------------------------- */
 /* Margin notes */
 
-.refcolumn {
-  display: block;
-  margin: 2rem;
-  margin-left: 2rem;
-  padding: 0.5em;
-  padding-left: 0.75em;
-  padding-right: 1em;
-    background: hsl(60, 29%, 94%);
-  border: 1px solid #ccb;
-  border-left: 0.4rem solid #ccb;
-}
-
-
-.refcontent p {
-    line-height: 1.5rem;
-    margin: 0;
-}
-
-.refcontent p + p {
-    margin-top: 1em;
-}
-
-.refcontent a {
-    font-weight: 400;
-}
-
-.refcontent img {
-    width: 1.5em;
+.refpara, .refelem {
+  position: relative;
+  float: right;
+  left: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
 }
 
 .refpara, .refparaleft {
   top: -1em;
 }
 
-
-@media all and (max-width:600px) {
-    .refcolumn {
-        margin-left: 0;
-        margin-right: 0;
-    }
-}
-
-
-@media all and (min-width:1260px) {
-    .refcolumn {
-        position: absolute;
-        left: 66rem; right: 3em;
-        margin: 0;
-        float: right;
-        max-width: 18rem;
-    }
-}
-
-.refcontent {
-  font-family: 'Fira';
-  font-size: 1rem;
-  line-height: 160%;
+.refcolumn {
+  background-color: #F5F5DC;
+  display: block;
+  position: relative;
+  width: 13em;
+  font-size: 85%;
+  border: 0.5em solid #F5F5DC;
   margin: 0 0 0 0;
 }
 
+.refcontent {
+  margin: 0 0 0 0;
+}
+
+.refcontent p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
 
 .refparaleft, .refelemleft {
   position: relative;
@@ -361,76 +211,53 @@ font-family: 'Fira';
 }
 
 .refcolumnleft {
-  background-color: hsl(60, 29%, 94%);
+  background-color: #F5F5DC;
   display: block;
   position: relative;
   width: 13em;
   font-size: 85%;
-  border: 0.5em solid hsl(60, 29%, 94%);
+  border: 0.5em solid #F5F5DC;
   margin: 0 0 0 0;
 }
 
 
 /* ---------------------------------------- */
+/* Table of contents, inline */
+
+.toclink {
+  text-decoration: none;
+  color: blue;
+  font-size: 85%;
+}
+
+.toptoclink {
+  text-decoration: none;
+  color: blue;
+  font-weight: bold;
+}
+
+/* ---------------------------------------- */
 /* Table of contents, left margin */
 
 .tocset {
-    position: absolute;
-    left: 0;
-    top: 0rem;
-    width: 14rem;
-    padding: 7rem 0.5rem 0.5rem 0.5rem;
-background-color: hsl(216, 15%, 70%);
-
+  position: relative;
+  float: left;
+  width: 12.5em;
+  margin-right: 2em;
 }
-
-
-
 .tocset td {
-    vertical-align: text-top;
-    padding-bottom: 0.4rem;
-    padding-left: 0.2rem;
-    line-height: 110%;
-    font-family: 'Fira';
-    -moz-font-feature-settings: 'tnum=1';
--moz-font-feature-settings: 'tnum' 1;
--webkit-font-feature-settings: 'tnum' 1;
--o-font-feature-settings: 'tnum' 1;
--ms-font-feature-settings: 'tnum' 1;
-font-feature-settings: 'tnum' 1;
-
+  vertical-align: text-top;
 }
-
-.tocset td a {
-    color: black;
-  font-weight: 400;
-}
-
 
 .tocview {
   text-align: left;
+  background-color: #f0f0e0;
 }
-
-
-.tocview td, .tocsub td {
-    line-height: 1.3em;
-}
-
-
-.tocview table, .tocsub table {
-    width: 90%;
-}
-
-.tocset td a.tocviewselflink {
-    font-weight: lighter;
-    font-size: 110%; /* monospaced styles below don't need to enlarge */
-    color: white;
-}
-
 
 .tocsub {
   text-align: left;
   margin-top: 0.5em;
+  background-color: #f0f0e0;
 }
 
 .tocviewlist, .tocsublist {
@@ -449,7 +276,7 @@ font-feature-settings: 'tnum' 1;
 
 .tocviewsublist, .tocviewsublistonly, .tocviewsublisttop, .tocviewsublistbottom {
   margin-left: 0.4em;
-  border-left: 1px solid #99a;
+  border-left: 1px solid #bbf;
   padding-left: 0.8em;
 }
 .tocviewsublist {
@@ -458,28 +285,37 @@ font-feature-settings: 'tnum' 1;
 .tocviewsublist table,
 .tocviewsublistonly table,
 .tocviewsublisttop table,
-.tocviewsublistbottom table,
-table.tocsublist {
-  font-size: 1rem;
+.tocviewsublistbottom table {
+  font-size: 75%;
 }
 
-.tocviewsublist td, .tocviewsublistbottom td, .tocviewsublisttop td, .tocsub td,
-.tocviewsublistonly td {
-    font-size: 90%;
+.tocviewtitle * {
+  font-weight: bold;
 }
 
+.tocviewlink {
+  text-decoration: none;
+  color: blue;
+}
+
+.tocviewselflink {
+  text-decoration: underline;
+  color: blue;
+}
 
 .tocviewtoggle {
+  text-decoration: none;
+  color: blue;
   font-size: 75%; /* looks better, and avoids bounce when toggling sub-sections due to font alignments */
 }
 
 .tocsublist td {
-  padding-left: 0.5rem;
-  padding-top: 0.25rem;
+  padding-left: 1em;
+  text-indent: -1em;
 }
 
 .tocsublinknumber {
-  font-size: 100%;
+  font-size: 82%;
 }
 
 .tocsublink {
@@ -488,39 +324,21 @@ table.tocsublist {
 }
 
 .tocsubseclink {
-  font-size: 100%;
+  font-size: 82%;
   text-decoration: none;
 }
 
 .tocsubnonseclink {
   font-size: 82%;
   text-decoration: none;
-  margin-left: 1rem;
-  display: inline-block;
+  padding-left: 0.5em;
 }
 
-/* the label "on this page" */
 .tocsubtitle {
-  display: block;
-  font-size: 62%;
-  font-family: 'Fira';
-  font-weight: bolder;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin: 0.5em;
+  font-size: 82%;
+  font-style: italic;
+  margin: 0.2em;
 }
-
-.toptoclink {
-    font-weight: bold;
-    font-size: 110%
-}
-
-/* hack to add space around .toptoclink because markup is all td */
-.toptoclink:after {
-    content: " ";
-    font-size: 3rem;
-}
-
 
 /* ---------------------------------------- */
 /* Some inline styles */
@@ -533,12 +351,8 @@ table.tocsublist {
   white-space: nowrap;
 }
 
-pre {
-/*  margin-left: 2em; */
-}
-blockquote {
-/*  margin-left: 2em; */
- }
+pre { margin-left: 2em; }
+blockquote { margin-left: 2em; }
 
 ol          { list-style-type: decimal; }
 ol ol       { list-style-type: lower-alpha; }
@@ -546,51 +360,21 @@ ol ol ol    { list-style-type: lower-roman; }
 ol ol ol ol { list-style-type: upper-alpha; }
 
 .SCodeFlow {
-border-left: 1px dotted black;
-    padding-left: 1em;
-  padding-right: 1em;
-    margin-top: 1em;
-    margin-bottom: 1em;
-    margin-left: 0em;
-    margin-right: 2em;
-    white-space: nowrap;
-    line-height: 1.4em;
+  display: block;
+  margin-left: 1em;
+  margin-bottom: 0em;
+  margin-right: 1em;
+  margin-top: 0em;
+  white-space: nowrap;  
 }
 
-.SCodeFlow img {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
+.SVInsetFlow {
+  display: block;
+  margin-left: 0em;
+  margin-bottom: 0em;
+  margin-right: 0em;
+  margin-top: 0em;
 }
-
-
-
-.SVInsetFlow, .SIntrapara > table.RBoxed {
-    margin-top: 2em;
-    padding: 0.25em;
-    padding-bottom: 0.5em;
-    background: #f3f3f3;
-    box-sizing:border-box;
-    border-top: 1px solid #99b;
-background: hsl(216, 78%, 95%);
-background: -moz-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
-background: -webkit-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
-background: -o-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
-background: -ms-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
-background: linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
-
-}
-
-.leftindent .SVInsetFlow { /* see e.g. section 4.5 of Racket Guide */
-    margin-top: 1em;
-    margin-bottom: 1em;
-}
-
-.SVInsetFlow a, .SCodeFlow a {
-    color: #07A;
-    font-weight: 500;
-}
-
-
 
 .SubFlow {
   display: block;
@@ -599,6 +383,7 @@ background: linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95
 
 .boxed {
   width: 100%;
+  background-color: #E8E8FF;
 }
 
 .hspace {
@@ -614,8 +399,19 @@ background: linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95
 }
 
 .plainlink {
+  text-decoration: none;
+  color: blue;
 }
 
+.techoutside       { text-decoration: underline; color: #b0b0b0; }
+.techoutside:hover { text-decoration: underline; color: blue; }
+
+/* .techinside:hover doesn't work with FF, .techinside:hover>
+   .techinside doesn't work with IE, so use both (and IE doesn't
+   work with inherit in the second one, so use blue directly) */
+.techinside                    { color: black; }
+.techinside:hover              { color: blue; }
+.techoutside:hover>.techinside { color: inherit; }
 
 .SCentered {
   text-align: center;
@@ -636,12 +432,11 @@ background: linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95
 
 /* A hack, inserted to break some Scheme ids: */
 .mywbr {
-display: inline-block;
-height: 0;
-    width: 0;
-    font-size: 1px;
+  display: inline-block;
+  height: 0;
+  width: 0;
+  font-size: 1px;
 }
-
 
 .compact li p {
   margin: 0em;
@@ -653,18 +448,14 @@ height: 0;
 }
 
 .SAuthorListBox {
-    font-family: 'Fira';
-    font-weight: 300;
-    font-size: 110%;
-    margin-top: 1rem;
-    margin-bottom: 3rem;
+  position: relative;
+  float: right;
+  left: 2em;
+  top: -2.5em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
 }
-
-.author > a { /* email links within author block */
-    font-weight: inherit;
-    color: inherit;
-}
-
 .SAuthorList {
   font-size: 82%;
 }
@@ -675,82 +466,6 @@ height: 0;
   display: inline;
   white-space: nowrap;
 }
-
-/* phone + tablet styles */
-
-@media all and (max-width:720px){
-
-
-    @media all and (max-width:720px){
-
-    @media all {html {font-size: 15px;}}
-@media all and (max-width:700px){html {font-size: 14px;}}
-@media all and (max-width:630px){html {font-size: 13px;}}
-@media all and (max-width:610px){html {font-size: 12px;}}
-@media all and (max-width:550px){html {font-size: 11px;}}
-@media all and (max-width:520px){html {font-size: 10px;}}
-
-    .navsettop, .navsetbottom {
-        display: block;
-        position: absolute;
-        width: 100%;
-        height: 4rem;
-        border: 0;
-        background-color: hsl(216, 15%, 70%);
-    }
-
-    .searchform {
-        display: inline;
-        border: 0;
-    }
-
-    .navright {
-        position: absolute;
-        right: 1.5rem;
-        margin-top: 1rem;
-        border: 0px solid red;
-    }
-
-    .navsetbottom {
-        display: block;
-        margin-top: 8rem;
-    }
-
-    .tocset {
-        display: none;
-}
-
-    .tocset table, .tocset tbody, .tocset tr, .tocset td {
-        display: inline;
-    }
-
-    .tocview {
-        display: none;
-    }
-
-    .tocsub .tocsubtitle {
-        display: none;
-    }
-
-    .versionbox {
-        top: 4.5rem;
-        left: 1rem; /* same distance as main-column */
-        z-index: 11000;
-        height: 2em;
-        font-size: 70%;
-        font-weight: lighter;
-    }
-
-
-    .maincolumn {
-        margin-left: 1em;
-        margin-top: 7rem;
-        margin-bottom: 0rem;
-    }
-
-
-}
-
 
 /* print styles : hide the navigation elements */
 @media print {

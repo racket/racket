@@ -15,6 +15,7 @@
    "Eli Barzilay, "
    "Gann Bierner, "
    "Stephen Bloch, "
+   "Matthew Butterick, "
    "Filipe Cabecinhas, "
    "Richard Cleis, "
    "John Clements, "

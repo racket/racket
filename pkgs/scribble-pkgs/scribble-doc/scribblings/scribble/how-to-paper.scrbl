@@ -332,7 +332,7 @@ For example,
                     (list "moose"       "muffin"))]
    }|
 
-else
+renders as
 
    @result{
      @tabular[#:sep @hspace[1]

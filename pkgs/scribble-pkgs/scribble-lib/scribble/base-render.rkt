@@ -757,17 +757,21 @@
 
     (define/public (auto-extra-files? v) #f)
     (define/public (auto-extra-files-paths v) null)
+    (define/public (skip-extra-file? v) #f)
 
     (define/public (install-extra-files ds)
-      (for ([fn extra-files]) (install-file fn #:private-name? #f))
+      (for ([fn extra-files])
+        (unless (skip-extra-file? fn)
+          (install-file fn #:private-name? #f)))
       (unless prefix-file
         (for ([d (in-list ds)])
           (let ([extras (ormap (lambda (v) (and (auto-extra-files? v) v))
                                (style-properties (part-style d)))])
             (when extras
               (for ([fn (in-list (auto-extra-files-paths extras))])
-                (install-file (collects-relative->path fn)
-                              #:private-name? #f)))))))
+                (unless (skip-extra-file? fn)
+                  (install-file (collects-relative->path fn)
+                                #:private-name? #f))))))))
 
     (define/public (render ds fns ri)
       ;; maybe this should happen even if fns is empty or all #f?

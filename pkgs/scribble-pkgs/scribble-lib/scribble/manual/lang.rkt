@@ -1,17 +1,12 @@
 #lang scheme/base
 (require scribble/doclang 
          scribble/manual
-         "../private/defaults.rkt")
+         scribble/html-properties
+         "../private/manual-defaults.rkt")
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/manual)
-         (rename-out [module-begin #%module-begin]))
+         (rename-out [module-begin #%module-begin])
+         manual-doc-style)
 
 (define-syntax-rule (module-begin id . body)
   (#%module-begin id post-process () . body))
-
-(define (post-process doc)
-  (add-defaults doc
-                (scribble-file "manual-prefix.tex")
-                (scribble-file "manual-style.tex")
-                null
-                #t))

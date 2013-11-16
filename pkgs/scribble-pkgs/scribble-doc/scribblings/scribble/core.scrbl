@@ -1487,13 +1487,30 @@ to the top of the generated HTML page.
 The @racket[path] field can be a result of
 @racket[path->main-collects-relative].}
 
+@defstruct[css-style-addition ([path (or/c path-string? 
+                                           (cons/c 'collects (listof bytes?))
+                                           url?
+                                           bytes?)])]{
+
+Like @racket[css-addition], but added after any style files that are
+specified by a document and before any style files that are provided
+externally.}
+
 
 @defstruct[js-addition ([path (or/c path-string? 
                                     (cons/c 'collects (listof bytes?))
                                     url?
                                     bytes?)])]{
 
-Like @racket[css-addition], but for a Javascript file instead of a CSS file.}
+Like @racket[css-addition], but for a JavaScript file instead of a CSS file.}
+
+
+@defstruct[js-style-addition ([path (or/c path-string? 
+                                          (cons/c 'collects (listof bytes?))
+                                          url?
+                                          bytes?)])]{
+
+Like @racket[css-style-addition], but for a JavaScript file instead of a CSS file.}
 
 
 @defstruct[body-id ([value string?])]{

@@ -677,6 +677,9 @@
   (list "scribble.css"
         "scribble-style.css"
         "racket.css"
+        "manual-style.css"
+        "manual-racket.css"
+        "manual-fonts.css"
         "scribble-common.js"))
 (define shared-empty-style-files
   (list "doc-site.css"))
@@ -717,6 +720,10 @@
           (new (contract-override-mixin
                 ((if multi? html:render-multi-mixin values)
                  (html:render-mixin render%)))
+               ;; Use PLT manual style:
+               [style-file (collection-file-path "manual-style.css" "scribble")]
+               [extra-files  (list (collection-file-path "manual-fonts.css" "scribble"))]
+               ;; See also `style-extra-files`, below
                [dest-dir (if multi?
                              (let-values ([(base name dir?) (split-path ddir)]) base)
                              ddir)]
@@ -752,9 +759,11 @@
                ;; be moved into a binary package:
                [root-path (and allow-indirect? ddir)]
 
-               [style-extra-files (map (lambda (s)
-                                         (collection-file-path s "scribble"))
-                                       shared-empty-style-files)]
+               [style-extra-files (cons
+                                   (collection-file-path "manual-racket.css" "scribble")
+                                   (map (lambda (s)
+                                          (collection-file-path s "scribble"))
+                                        shared-empty-style-files))]
 
                [search-box? #t]))
         (for ([s (in-list shared-empty-script-files)])

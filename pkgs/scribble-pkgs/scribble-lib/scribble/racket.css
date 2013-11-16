@@ -1,64 +1,56 @@
+
 /* See the beginning of "scribble.css". */
 
 /* Monospace: */
-
 .RktIn, .RktRdr, .RktPn, .RktMeta,
 .RktMod, .RktKw, .RktVar, .RktSym,
 .RktRes, .RktOut, .RktCmt, .RktVal,
-.RktBlk, .RktErr {
-  font-family: 'Source Code Pro', monospace;
+.RktBlk {
+  font-family: monospace;
   white-space: inherit;
-    font-size: 1rem;
 }
 
-/* this selctor grabs the first linked Racket symbol
-in a definition box (i.e., the symbol being defined) */
-a.RktValDef, a.RktStxDef, a.RktSymDef,
-span.RktValDef, span.RktStxDef, span.RktSymDef
-{
-    font-size: 1.15rem;
-    color: black;
-    font-weight: 600;
-}
-
-
+/* Serif: */
 .inheritedlbl {
-  font-family: 'Fira', sans;
+  font-family: serif;
 }
 
+/* Sans-serif: */
+.RBackgroundLabelInner {
+  font-family: sans-serif;
+}
 
 /* ---------------------------------------- */
 /* Inherited methods, left margin */
 
 .inherited {
-  width: 95%;
+  width: 100%;
   margin-top: 0.5em;
   text-align: left;
+  background-color: #ECF5F5;
 }
 
 .inherited td {
   font-size: 82%;
-  padding-left: 0.5rem;
-  line-height: 1.3em;
+  padding-left: 1em;
+  text-indent: -0.8em;
+  padding-right: 0.2em;
 }
 
-
+.inheritedlbl {
+  font-style: italic;
+}
 
 /* ---------------------------------------- */
 /* Racket text styles */
 
 .RktIn {
   color: #cc6633;
-  background-color: #eee;
+  background-color: #eeeeee;
 }
 
 .RktInBG {
-  background-color: #eee;
-}
-
-
-.refcolumn .RktInBG {
-  background-color: white;
+  background-color: #eeeeee;
 }
 
 .RktRdr {
@@ -73,7 +65,7 @@ span.RktValDef, span.RktStxDef, span.RktSymDef
 }
 
 .RktMod {
-/*  color: black; */
+  color: black;
 }
 
 .RktOpt {
@@ -82,72 +74,45 @@ span.RktValDef, span.RktStxDef, span.RktSymDef
 
 .RktKw {
   color: black;
-  /* font-weight: bold; */
 }
 
 .RktErr {
   color: red;
   font-style: italic;
-  font-weight: 400;
 }
 
 .RktVar {
-position: relative;
-left: -1px; font-style: italic;
-    color: #444;
+  color: #262680;
+  font-style: italic;
 }
-
-.SVInsetFlow .RktVar {
-    font-weight: 400;
-    color: #444;
-}
-
 
 .RktSym {
-/*  color: #444; */
+  color: #262680;
 }
 
+.RktSymDef { /* used with RktSym at def site */
+}
 
-
-.RktValLink, .RktStxLink, .RktModLink {
+.RktValLink {
   text-decoration: none;
-    color: #07A;
-    font-weight: 500;
-    font-size: 1rem;
+  color: blue;
 }
 
-/* for syntax links within headings */
-h2 a.RktStxLink, h3 a.RktStxLink, h4 a.RktStxLink, h5 a.RktStxLink,
-h2 a.RktValLink, h3 a.RktValLink, h4 a.RktValLink, h5 a.RktValLink,
-h2 .RktSym, h3 .RktSym, h4 .RktSym, h5 .RktSym,
-h2 .RktMod, h3 .RktMod, h4 .RktMod, h5 .RktMod,
-h2 .RktVal, h3 .RktVal, h4 .RktVal, h5 .RktVal,
-h2 .RktPn, h3 .RktPn, h4 .RktPn, h5 .RktPn {
-    color: #333;
-    font-size: 1.65rem;
-    font-weight: 400;
+.RktValDef { /* used with RktValLink at def site */
 }
 
-.toptoclink .RktStxLink, .toclink .RktStxLink,
-.toptoclink .RktValLink, .toclink .RktValLink,
-.toptoclink .RktModLink, .toclink .RktModLink {
-    color: inherit;
+.RktModLink {
+  text-decoration: none;
+  color: blue;
 }
 
-.tocset .RktValLink, .tocset .RktStxLink, .tocset .RktModLink {
-    color: black;
-  font-weight: 400;
-    font-size: 0.9rem;
+.RktStxLink {
+  text-decoration: none;
+  color: black;
 }
 
-.tocset td a.tocviewselflink .RktValLink,
-.tocset td a.tocviewselflink .RktStxLink,
-.tocset td a.tocviewselflink .RktMod,
-.tocset td a.tocviewselflink .RktSym {
-    font-weight: lighter;
-    color: white;
+.RktStxDef { /* used with RktStxLink at def site */
 }
-
 
 .RktRes {
   color: #0000af;
@@ -168,13 +133,8 @@ h2 .RktPn, h3 .RktPn, h4 .RktPn, h5 .RktPn {
 /* ---------------------------------------- */
 /* Some inline styles */
 
-.together { /* for definitions grouped together in one box */
+.together {
   width: 100%;
-  border-top: 2px solid white;
-}
-
-tbody > tr:first-child > td > .together {
-  border-top: 0px; /* erase border on first instance of together */
 }
 
 .prototype, .argcontract, .RBoxed {
@@ -189,7 +149,7 @@ tbody > tr:first-child > td > .together {
 }
 
 .RktBlk {
-  white-space: normal;
+  white-space: inherit;
   text-align: left;
 }
 
@@ -207,39 +167,24 @@ tbody > tr:first-child > td > .together {
 }
 
 .highlighted {
-    font-size: 1rem;
-    background-color: #fee;
+  background-color: #ddddff;
 }
 
 .defmodule {
-font-family: 'Source Code Pro';
-    padding: 0.25rem 0.75rem 0.5rem 0.5rem;
-    margin-bottom: 1rem;
-    width: 100%;
-    background-color: hsl(60, 29%, 94%);
-}
-
-.defmodule a {
-    color: #444;
-}
-
-.defmodule td span.hspace:first-child {
-position: absolute;
-    width: 0;
+  width: 100%;
+  background-color: #F5F5DC;
 }
 
 .specgrammar {
-    padding-left: 1em;
+  float: right;
 }
-
 
 .RBibliography td {
   vertical-align: text-top;
-  padding-top: 1em;
 }
 
 .leftindent {
- margin-left: 2rem;
+ margin-left: 1em;
  margin-right: 0em;
 }
 
@@ -248,30 +193,29 @@ position: absolute;
  margin-right: 1em;
 }
 
-.SCodeFlow .Rfilebox {
-    margin-left: -1em; /* see 17.2 of guide, module languages */
+.Rfilebox {
 }
 
 .Rfiletitle {
   text-align: right;
-  background-color: #eee;
+  margin: 0em 0em 0em 0em;
 }
-
-.SCodeFlow .Rfiletitle {
-  border-top: 1px dotted gray;
-  border-right: 1px dotted gray;
-}
-
 
 .Rfilename {
+  border-top: 1px solid #6C8585;
+  border-right: 1px solid #6C8585;
   padding-left: 0.5em;
   padding-right: 0.5em;
+  background-color: #ECF5F5;
 }
 
 .Rfilecontent {
-  margin: 0.5em;
+  margin: 0em 0em 0em 0em;
 }
 
+.RpackageSpec {
+  padding-right: 0.5em;
+}
 
 /* ---------------------------------------- */
 /* For background labels */
@@ -286,20 +230,11 @@ position: absolute;
    position: relative;
    width: 25em;
    left: -25.5em;
-   top: 0.20rem; /* sensitive to monospaced font choice */
+   top: 0px;
    text-align: right;
+   color: white;
    z-index: 0;
-   font-weight: 300;
-   font-family: 'Source Code Pro';
-   font-size: 0.9rem;
-    color: gray;
-}
-
-
-.RpackageSpec .Smaller {
-   font-weight: 300;
-   font-family: 'Source Code Pro';
-   font-size: 0.9rem;
+   font-weight: bold;
 }
 
 .RForeground {

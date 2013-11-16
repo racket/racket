@@ -14,6 +14,8 @@
  [html-defaults ([prefix-path (or/c bytes? path-string? (cons/c 'collects (listof bytes?)))]
                  [style-path (or/c bytes? path-string? (cons/c 'collects (listof bytes?)))]
                  [extra-files (listof (or/c path-string? (cons/c 'collects (listof bytes?))))])]
+ [css-style-addition ([path (or/c path-string? (cons/c 'collects (listof bytes?)) url? bytes?)])]
+ [js-style-addition ([path (or/c path-string? (cons/c 'collects (listof bytes?)) url? bytes?)])]
 
  [url-anchor ([name string?])]
  [alt-tag ([name (and/c string? #rx"^[a-zA-Z0-9]+$")])]

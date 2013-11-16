@@ -12,12 +12,14 @@
          "private/manual-unit.rkt"
          "private/manual-vars.rkt"
          "private/manual-bind.rkt"
-         "private/manual-utils.rkt")
+         "private/manual-utils.rkt"
+         "private/manual-defaults.rkt")
 
 (provide unsyntax
          make-binding-redirect-elements
          defidentifier
          current-display-width
+         manual-doc-style
          (all-from-out "base.rkt"
                        "private/manual-style.rkt"
                        "private/manual-scheme.rkt"
