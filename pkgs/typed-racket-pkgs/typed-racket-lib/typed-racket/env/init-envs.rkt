@@ -8,12 +8,8 @@
          "type-name-env.rkt"
          "type-alias-env.rkt"
          "mvar-env.rkt"
-	 (rename-in racket/private/sort [sort raw-sort])
+         (rename-in racket/private/sort [sort raw-sort])
          (rep type-rep object-rep filter-rep rep-utils free-variance)
-         (for-template (rep type-rep object-rep filter-rep)
-                       (types union abbrev)
-                       racket/shared (except-in racket/base sort)
-		       (rename-in racket/private/sort [sort raw-sort]))
          (for-syntax syntax/parse racket/base)
          (types abbrev union)
          racket/syntax racket/dict racket/list
@@ -51,12 +47,12 @@
   (define (split-union ts)
     (define-values (nums others) (partition numeric? ts))
     (cond [(or (null? nums) (null? others))
-	   ;; nothing interesting to do in this case
-	   `(make-Union (,#'raw-sort (list ,@(map sub ts)) < Type-seq #f))]
-	  [else
-	   ;; we do a little more work to hopefully save a bunch in serialization space
-	   ;; if we get a hit in the predefined-type-table
-	   `(simple-Un ,(sub (apply Un nums)) ,(sub (apply Un others)))]))
+            ;; nothing interesting to do in this case
+            `(make-Union (,#'raw-sort (list ,@(map sub ts)) < Type-seq #f))]
+           [else
+            ;; we do a little more work to hopefully save a bunch in serialization space
+            ;; if we get a hit in the predefined-type-table
+            `(simple-Un ,(sub (apply Un nums)) ,(sub (apply Un others)))]))
 
   (define (gen-constructor sym)
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
@@ -69,14 +65,14 @@
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
      `(simple-> (list ,@(map sub dom)) ,(sub t))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft pth n)
-								      (NotTypeFilter: ft pth n))
-							(Empty:))))
-			    #f #f '())))
+                                                                      (NotTypeFilter: ft pth n))
+                                                        (Empty:))))
+                            #f #f '())))
      `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub n) ,(sub pth))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False) pth 0)
-								      (TypeFilter: (== -False) pth 0))
-							(Path: pth 0))))
-			    #f #f '())))
+                                                                      (TypeFilter: (== -False) pth 0))
+                                                        (Path: pth 0))))
+                            #f #f '())))
      `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
     [(Union: elems) (split-union elems)]
     [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
