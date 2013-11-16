@@ -117,7 +117,8 @@
         (define result-port (open-output-string))
         (define success?
           (parameterize ([current-output-port result-port]
-                         [current-error-port (open-output-nowhere)])
+                         [current-error-port (open-output-nowhere)]
+                         [current-input-port (open-input-string "")])
             (system* alternate-racket 
                      "-l" "racket/base"
                      "-e" 

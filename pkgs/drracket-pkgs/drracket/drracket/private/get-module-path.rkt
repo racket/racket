@@ -9,10 +9,18 @@
 (provide
  (contract-out
   [get-module-path-from-user
-   (->* () (#:init string? #:pref symbol?) (or/c path? #f))]))
+   (->i ()
+        (#:init [init string?] 
+         #:pref [pref symbol?]
+         #:dir? [dir? boolean?])
+        [res (dir?)
+             (if dir?
+                 (listof path?)
+                 (or/c path? #f))])]))
 
 (define (get-module-path-from-user #:init [init-value ""] 
-                                   #:pref [pref-sym #f])
+                                   #:pref [pref-sym #f]
+                                   #:dir? [dir? #f])
   
   (define dlg%
     (class dialog%
@@ -37,6 +45,7 @@
                   [callback (λ (tf evt) (tf-callback))]))
   (send (send tf get-editor) set-position 0 (send (send tf get-editor) last-position))
   (define lb (new list-box% 
+                  [style (if dir? '(extended) '(single))]
                   [parent dlg] [choices '()] [label #f]
                   [callback (λ (lb evt) (update-buttons))]))
                   
@@ -58,18 +67,18 @@
          [init-value (list-ref (preferences:get racket-binary-pref) 1)]
          [callback (λ (_1 _2) (racket-path-tf-callback))]))
 
-  
   (define bp (new horizontal-panel% 
                   [parent dlg]
                   [stretchable-height #f]
                   [alignment '(right center)]))
   
   (define enter-sub-button 
-    (new button% 
-         [parent bp]
-         [style '(border)]
-         [label (string-constant enter-subcollection)]
-         [callback (λ (_1 _2) (enter-sub))]))
+    (and (not dir?)
+         (new button% 
+              [parent bp]
+              [style '(border)]
+              [label (string-constant enter-subcollection)]
+              [callback (λ (_1 _2) (enter-sub))])))
   
   (define-values (ok-button cancel-button) 
     (gui-utils:ok/cancel-buttons 
@@ -127,14 +136,20 @@
       (define alt-racket-info 
         (and (send racket-path-cb get-value)
              (get-clcl/clcp)))
-      (for ([i (in-list (find-completions (send tf get-value) 
-                                          #:alternate-racket alt-racket-info))]
+      (define the-completions 
+        (find-completions (send tf get-value) 
+                          #:alternate-racket alt-racket-info))
+      (for ([i (in-list (if dir?
+                            (filter (λ (i) (directory-exists? (list-ref i 1)))
+                                    the-completions)
+                            the-completions))]
             [n (in-naturals)])
         (send lb append (path->string (list-ref i 1)))
         ;; data holds a path => open the file
         ;; data holds a string => add that past the last / in 'tf'
+        ;; when dir?=#t, then data always holds a path
         (cond
-          [(file-exists? (list-ref i 1))
+          [(or dir? (file-exists? (list-ref i 1)))
            (send lb set-data n (list-ref i 1))]
           [else
            (send lb set-data n (list-ref i 0))]))
@@ -190,20 +205,24 @@
     (update-list-of-paths))
   
   (define (update-buttons)
-    (define item-to-act-on (get-item-to-act-on))
     (cond
-      [item-to-act-on 
-       (define datum (send lb get-data item-to-act-on))
-       (cond
-         [(path? datum)
-          (send ok-button enable #t)
-          (send enter-sub-button enable #f)]
-         [(string? datum)
-          (send ok-button enable #f)
-          (send enter-sub-button enable #t)])]
+      [dir?
+       (send ok-button enable #t)]
       [else
-       (send ok-button enable #f)
-       (send enter-sub-button enable #f)]))
+       (define item-to-act-on (get-item-to-act-on))
+       (cond
+         [item-to-act-on 
+          (define datum (send lb get-data item-to-act-on))
+          (cond
+            [(path? datum)
+             (send ok-button enable #t)
+             (send enter-sub-button enable #f)]
+            [(string? datum)
+             (send ok-button enable #f)
+             (send enter-sub-button enable #t)])]
+         [else
+          (send ok-button enable #f)
+          (send enter-sub-button enable #f)])]))
   
   (define (get-item-to-act-on)
     (or (send lb get-selection)
@@ -217,6 +236,12 @@
   (send tf focus)
   (cond
     [cancelled? #f]
+    [dir?
+     (define selections (send lb get-selections))
+     (for/list ([i (if (null? selections)
+                       (in-range (send lb get-number))
+                       (in-list selections))])
+       (send lb get-data i))]
     [else (send lb get-data (get-item-to-act-on))]))
 
 (define racket-binary-pref 'drracket:different-racket-for-open-collection-path)
