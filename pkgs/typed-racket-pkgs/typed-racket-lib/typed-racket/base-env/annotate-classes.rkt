@@ -3,13 +3,15 @@
 (require syntax/parse
          "../private/parse-classes.rkt"
          "../private/syntax-properties.rkt"
-         (for-template "colon.rkt"))
+         (for-label "colon.rkt"))
 (provide (all-defined-out))
+
+(define-literal-set colon #:for-label (:))
 
 (define-splicing-syntax-class annotated-name
   #:attributes (name ty ann-name)
   #:description "type-annotated identifier"
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern [~seq name:id : ty]
            #:with ann-name (type-label-property #'name #'ty))
   (pattern name:id
@@ -20,7 +22,7 @@
 (define-splicing-syntax-class optionally-annotated-name
   #:attributes (name ann-name)
   #:description "optionally type-annotated identifier"
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern n:annotated-name
            #:with name #'n.name
            #:with ann-name #'n.ann-name)
@@ -31,7 +33,7 @@
 (define-splicing-syntax-class (param-annotated-name trans)
   #:attributes (name ty ann-name)
   #:description "type-annotated identifier"
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern [~seq name:id : ty]
            #:with ann-name (type-label-property #'name (trans #'ty))))
 
@@ -43,7 +45,7 @@
 (define-syntax-class optionally-annotated-binding
   #:attributes (name ann-name binding rhs)
   #:description "optionally type-annotated binding"
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern b:annotated-binding
            #:with name #'b.name
            #:with ann-name #'b.ann-name
@@ -73,14 +75,14 @@
 
 (define-splicing-syntax-class annotated-star-rest
   #:attributes (name ann-name ty formal-ty)
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern (~seq name:id : ty s:star)
            #:with formal-ty #'(ty s)
            #:with ann-name (type-label-property #'name #'ty)))
 
 (define-splicing-syntax-class annotated-dots-rest
   #:attributes (name ann-name bound ty formal-ty)
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern (~seq name:id : ty bnd:ddd/bound)
            #:with formal-ty #'(ty . bnd)
            #:attr bound (attribute bnd.bound)
@@ -107,7 +109,7 @@
 
 (define-syntax-class annotated-formals
   #:attributes (ann-formals (arg-ty 1))
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern (n:annotated-formal ...)
            #:with ann-formals #'(n.ann-name ...)
            #:with (arg-ty ...) #'(n.ty ...))
@@ -128,7 +130,7 @@
 
 (define-syntax-class opt-lambda-annotated-formals
   #:attributes (ann-formals (arg-ty 1))
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern (n:opt-lambda-annotated-formal ...)
            #:with ann-formals #'(n.ann-name ...)
            #:with (arg-ty ...) #'(n.ty ...))
@@ -139,7 +141,7 @@
            #:with (arg-ty ...) #'(n.ty ... . rest.formal-ty)))
 
 (define-splicing-syntax-class standalone-annotation
-  #:literals (:)
+  #:literal-sets (colon)
   (pattern (~seq : t)
            #:with ty #'t))
 (define-splicing-syntax-class optional-standalone-annotation
