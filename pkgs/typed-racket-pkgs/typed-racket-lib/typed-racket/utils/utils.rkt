@@ -139,7 +139,6 @@ at least theoretically.
       (make-rename-transformer #'provide/contract)
       (lambda (stx)
         (define-syntax-class clause
-          #:literals ()
           #:attributes (i)
           (pattern [(~datum struct) (~or nm:id (nm:id super:id)) (flds ...)]
                    #:with i #'(struct-out nm))
