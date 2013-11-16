@@ -15,12 +15,17 @@
          unstable/syntax
          (only-in racket/list split-at)
          (typecheck internal-forms)
-         (for-template (only-in '#%paramz [parameterization-key pz:pk])))
+         ;; Needed for current implementation of typechecking letrec-syntax+values
+         (for-template (only-in racket/base letrec-values))
 
-(require (for-template racket/base racket/private/class-internal))
+         (for-label (only-in '#%paramz [parameterization-key pz:pk])
+                    (only-in racket/private/class-internal find-method/who)))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^)
 (export tc-expr^)
+
+(define-literal-set literals #:for-label
+  (find-method/who))
 
 ;; do-inst : syntax type -> type
 (define (do-inst stx ty)
@@ -178,8 +183,7 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     (syntax-parse form
-      #:literal-sets (kernel-literals)
-      #:literals (find-method/who)
+      #:literal-sets (kernel-literals literals)
       [stx:exn-handlers^
        (check-subforms/with-handlers/check form expected)]
       [stx:ignore-some^
@@ -222,7 +226,7 @@
           (tc-expr/check #'e3 expected)]
          [(? (λ (result)
                (and (identifier? #'e1)
-                    (free-identifier=? #'pz:pk #'e1))))
+                    (free-identifier=? #'pz:pk #'e1 #f (syntax-local-phase-level)))))
           (tc-expr/check/type #'e2 Univ)
           (tc-expr/check #'e3 expected)]
          [(tc-result1: key-t)
@@ -314,8 +318,7 @@
   ;; internal-tc-expr : syntax -> Type
   (define (internal-tc-expr form)
     (syntax-parse form
-      #:literal-sets (kernel-literals)
-      #:literals (#%app lambda find-method/who)
+      #:literal-sets (kernel-literals literals)
       ;;
       [stx:exn-handlers^
        (check-subforms/with-handlers form) ]
@@ -341,7 +344,7 @@
           (tc-expr #'e3)]
          [(? (λ (result)
                (and (identifier? #'e1)
-                    (free-identifier=? #'pz:pk #'e1))))
+                    (free-identifier=? #'pz:pk #'e1 #f (syntax-local-phase-level)))))
           (tc-expr/check/type #'e2 Univ)
           (tc-expr #'e3)]
          [(tc-result1: key-t)

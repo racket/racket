@@ -11,8 +11,7 @@
          (types type-table)
          (typecheck signatures tc-metafunctions tc-subst)
          (env lexical-env tvar-env index-env scoped-tvar-env)
-         (utils tc-utils)
-         (for-template racket/base))
+         (utils tc-utils))
 
 (import tc-expr^)
 (export tc-lambda^)
@@ -39,13 +38,13 @@
         #:drest (and drest (second drest))))]))
 
 (define-syntax-class cl-rhs
-  #:literals (if)
+  #:literal-sets (kernel-literals)
   #:attributes (i cond)
   [pattern i:id #:attr cond #f]
   [pattern (if cond:id i:id e:expr)])
 
 (define-syntax-class rebuild-let*
-  #:literals (let-values)
+  #:literal-sets (kernel-literals)
   #:attributes (mapping flag-mapping)
   (pattern (let-values ([(new-id) e:cl-rhs]) body:rebuild-let*)
            #:attr mapping (dict-set (attribute body.mapping) #'e.i #'new-id)

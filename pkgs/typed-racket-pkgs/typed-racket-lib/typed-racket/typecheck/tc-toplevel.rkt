@@ -13,12 +13,10 @@
          (typecheck provide-handling def-binding tc-structs
                     typechecker internal-forms)
 
-         syntax/location
 
-         (for-template
-          syntax/location
-          racket/base
-          (env env-req)))
+         (for-template 
+           (only-in syntax/location quote-module-name)
+           racket/base))
 
 (provide/cond-contract
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
@@ -297,7 +295,7 @@
                     (~datum all-defined) (~datum all-defined-except)
                     (~datum prefix-all-defined) (~datum prefix-all-defined-except)
                     (~datum expand)))))
-      (syntax-parse p #:literals (#%provide)
+      (syntax-parse p #:literal-sets (kernel-literals)
         [(#%provide form ...)
          (for/fold ([h h]) ([f (in-syntax #'(form ...))])
            (parameterize ([current-orig-stx f])
