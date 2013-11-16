@@ -4,22 +4,26 @@
          syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
          "signatures.rkt"
          "utils.rkt"
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         racket/unsafe/ops
-         ;; end fixme
          (types utils abbrev numeric-tower union resolve type-table generalize)
          (typecheck signatures check-below)
          (rep type-rep rep-utils)
-         (for-template racket/unsafe/ops racket/base))
+         (for-label racket/unsafe/ops racket/base))
 
 (import tc-expr^ tc-app^ tc-literal^)
 (export tc-app-hetero^)
 
-
+(define-literal-set hetero-literals
+  #:for-label
+  (vector-ref unsafe-vector-ref unsafe-vector*-ref
+   vector-set! unsafe-vector-set! unsafe-vector*-set!
+   unsafe-struct-ref unsafe-struct*-ref
+   unsafe-struct-set! unsafe-struct*-set!
+   vector-immutable vector))
 
 (define (tc/index expr)
   (syntax-parse expr
-   [((~literal quote) i:number)
+   #:literal-sets (kernel-literals)
+   [(quote i:number)
     (let ((type (tc-literal #'i)))
       (add-typeof-expr expr (ret type))
       (syntax-e #'i))]
@@ -73,11 +77,7 @@
      (index-error i-val i-bound i-e vec-t expected name)]))
 
 (define-tc/app-syntax-class (tc/app-hetero expected)
-  #:literals (vector-ref unsafe-vector-ref unsafe-vector*-ref
-              vector-set! unsafe-vector-set! unsafe-vector*-set!
-              unsafe-struct-ref unsafe-struct*-ref
-              unsafe-struct-set! unsafe-struct*-set!
-              vector-immutable vector)
+  #:literal-sets (hetero-literals)
   (pattern (~and form ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr))
     (match (single-value #'struct)
       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _))))

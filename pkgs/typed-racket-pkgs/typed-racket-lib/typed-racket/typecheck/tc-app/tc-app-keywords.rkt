@@ -10,15 +10,16 @@
          (rep type-rep)
          (utils tc-utils)
          (r:infer infer)
-
-         (for-template racket/base))
+         (for-label racket/base))
 
 
 (import tc-expr^)
 (export tc-app-keywords^)
 
+(define-literal-set keyword-literals #:for-label (list))
+
 (define-tc/app-syntax-class (tc/app-keywords expected)
-  #:literals (#%plain-app list)
+  #:literal-sets (kernel-literals keyword-literals)
   (pattern (~and form
                  ((#%plain-app cpce s-kp fn kpe kws num)
                   kw-list

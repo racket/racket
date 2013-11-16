@@ -10,11 +10,7 @@
          (rep type-rep)
          (env tvar-env)
 
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         (only-in '#%kernel [reverse k:reverse])
-         ;; end fixme
-
-         (for-template
+         (for-label
           racket/base
           (only-in '#%kernel [reverse k:reverse])))
 
@@ -22,10 +18,12 @@
 (import tc-expr^ tc-app^)
 (export tc-app-list^)
 
+(define-literal-set list-literals
+  #:for-label
+  (reverse k:reverse list list* cons map andmap ormap))
 
 (define-tc/app-syntax-class (tc/app-list expected)
-  #:literals (reverse k:reverse list list*
-              cons map andmap ormap)
+  #:literal-sets (list-literals)
   (pattern (~and form (map f arg0 arg ...))
     (match* ((single-value #'arg0) (stx-map single-value #'(arg ...)))
       ;; if the argument is a ListDots
@@ -97,7 +95,7 @@
     (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
       (ret (foldr -pair last tys))))
   ;; special case for `reverse' to propagate expected type info
-  (pattern ((~or reverse k:reverse) arg)
+  (pattern ((~and fun (~or reverse k:reverse)) arg)
     (match expected
       [(tc-result1: (Listof: _))
        (tc-expr/check #'arg expected)]
@@ -109,4 +107,4 @@
          [(tc-result1: (List: ts))
           (ret (-Tuple (reverse ts)))]
          [arg-ty
-          (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list arg-ty) expected)])])))
+          (tc/funapp #'fun #'(arg) (single-value #'fun) (list arg-ty) expected)])])))

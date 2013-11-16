@@ -7,14 +7,16 @@
          (typecheck signatures tc-funapp)
          (types utils)
 
-         (for-template racket/base))
+         (for-label racket/base))
 
 
 (import tc-expr^ tc-app^)
 (export tc-app-values^)
 
+(define-literal-set values-literals #:for-label (values call-with-values))
+
 (define-tc/app-syntax-class (tc/app-values expected)
-  #:literals (values call-with-values)
+  #:literal-sets (values-literals)
   ;; call-with-values
   (pattern (call-with-values prod con)
     (match (tc/funapp #'prod #'() (single-value #'prod) null #f)

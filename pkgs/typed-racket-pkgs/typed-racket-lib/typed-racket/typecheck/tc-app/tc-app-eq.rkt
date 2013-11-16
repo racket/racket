@@ -8,21 +8,20 @@
          (types abbrev union utils)
          (rep type-rep)
 
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         racket/bool
-         ;; end fixme
-
-         (for-template racket/base racket/bool))
+         (for-label racket/base racket/bool))
 
 (import tc-expr^)
 (export tc-app-eq^)
 
+(define-literal-set eq-literals
+  #:for-label
+  (eq? equal? eqv? string=? symbol=? memq member memv))
+
 ;; comparators that inform the type system
 ;; `=' is not included. Its type is more useful than this typing rule.
 (define-syntax-class comparator
-  #:literals (eq? equal? eqv? string=? symbol=? memq member memv)
-  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern string=?) (pattern symbol=?)
-  (pattern member) (pattern memq) (pattern memv))
+  #:literal-sets (eq-literals)
+  (pattern (~or eq? equal? eqv? string=? symbol=? member memq memv)))
 
 
 (define-tc/app-syntax-class (tc/app-eq expected)
@@ -42,9 +41,12 @@
   (define (eq?-able e) (or (boolean? e) (keyword? e) (symbol? e) (eof-object? e)))
   (define (eqv?-able e) (or (eq?-able e) (number? e) (char? e)))
   (define (equal?-able e) #t)
+  (define (id=? a b)
+    (free-identifier=? a b #f (syntax-local-phase-level)))
   (define (ok? val)
     (define-syntax-rule (alt nm pred ...)
-      (and (free-identifier=? #'nm comparator) (or (pred val) ...)))
+      (and (id=? #'nm comparator)
+           (or (pred val) ...)))
     (or (alt symbol=? symbol?)
         (alt string=? string?)
         (alt eq? eq?-able)
@@ -60,11 +62,11 @@
           (-FS (-filter-at (-val val) o)
                (-not-filter-at (-val val) o)))]
     [((tc-result1: t _ o)
-      (or (and (? (lambda _ (free-identifier=? #'member comparator)))
+      (or (and (? (lambda _ (id=? #'member comparator)))
                (tc-result1: (app untuple (list (and ts (Value: _)) ...))))
-          (and (? (lambda _ (free-identifier=? #'memv comparator)))
+          (and (? (lambda _ (id=? #'memv comparator)))
                (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...))))
-          (and (? (lambda _ (free-identifier=? #'memq comparator)))
+          (and (? (lambda _ (id=? #'memq comparator)))
                (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...))))))
      (let ([ty (apply Un ts)])
        (ret (Un (-val #f) t)
