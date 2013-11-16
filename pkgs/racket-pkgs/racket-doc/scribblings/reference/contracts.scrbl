@@ -117,7 +117,7 @@ implement contracts~@cite{Strickland12}.
 @declare-exporting-ctc[racket/contract/base]
 
 @defproc[(flat-named-contract [type-name any/c]
-                              [predicate (or/c flat-contract? (any/c . -> . any))]
+                              [predicate flat-contract?]
                               [generator (or/c #f (-> contract (-> int? any))) #f])
          flat-contract?]{
 
@@ -189,8 +189,7 @@ since it cannot tell which of the two arrow contracts should be used
 with the function.
 }
 
-@defproc[(and/c [contract (or/c contract? (any/c . -> . any/c))] ...)
-         contract?]{
+@defproc[(and/c [contract contract?] ...) contract?]{
 
 Takes any number of contracts and returns a contract that
 accepts any value that satisfies all of the contracts simultaneously.
@@ -202,8 +201,7 @@ The contract produced by @racket[and/c] tests any value by applying
 the contracts in order, from left to right.}
 
 
-@defproc[(not/c [flat-contract (or/c flat-contract? (any/c . -> . any/c))])
-         flat-contract?]{
+@defproc[(not/c [flat-contract flat-contract?]) flat-contract?]{
 
 Accepts a flat contracts or a predicate and returns a flat contract
 that checks the inverse of the argument.}
@@ -371,14 +369,14 @@ Returns the same contract as @racket[(box/c c #:immutable #t)]. This form exists
 reasons of backwards compatibility.}
 
 
-@defproc[(listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
+@defproc[(listof [c contract?]) contract?]{
 
 Returns a contract that recognizes a list whose every element matches
 the contract @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.}
 
 
-@defproc[(non-empty-listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
+@defproc[(non-empty-listof [c contract?]) contract?]{
 
 Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
@@ -392,7 +390,7 @@ when this contract is applied to a value, the result is not
 necessarily @racket[eq?] to the input.}
 
 
-@defproc[(list/c [c (or/c contract? (any/c . -> . any/c))] ...) contract?]{
+@defproc[(list/c [c contract?] ...) contract?]{
 
 Produces a contract for a list. The number of elements in the list
 must match the number of arguments supplied to @racket[list/c], and
@@ -656,7 +654,7 @@ Constructs a contract on a promise. The contract does not force the
 promise, but when the promise is forced, the contract checks that the
 result value meets the contract @racket[c].}
 
-@defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
+@defproc[(flat-contract [predicate (-> any/c any/c)]) flat-contract?]{
 
 Constructs a @tech{flat contract} from @racket[predicate]. A value
 satisfies the contract if the predicate returns a true value.
@@ -667,7 +665,7 @@ directly as predicates. It exists today for backwards compatibilty.
 
 
 @defproc[(flat-contract-predicate [v flat-contract?])
-         (any/c . -> . any/c)]{
+         (-> any/c any/c)]{
 
 Extracts the predicate from a flat contract.
 
