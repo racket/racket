@@ -28,6 +28,7 @@
        (ann-pat (add-name subenv n subpat)
                 `(name ,n ,new-subpat))]
       [`(mismatch-name ,n ,subpat)
+       (unimplemented "mismatch")
        (match-define (ann-pat subenv new-subpat) (walk subpat))
        (define tag (get-and-inc!))
        (ann-pat (add-mismatch subenv n subpat tag)
