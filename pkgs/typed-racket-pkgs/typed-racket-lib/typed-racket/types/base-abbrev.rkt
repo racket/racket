@@ -10,6 +10,7 @@
          (env mvar-env)
          racket/match racket/list (prefix-in c: (contract-req))
          (for-syntax racket/base syntax/parse racket/list)
+         ;; For contract predicates
          (for-template racket/base))
 
 (provide (all-defined-out)
