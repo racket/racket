@@ -3,7 +3,6 @@
 ;; Maintain mapping of type variables introduced by literal Alls in type annotations.
 
 (require "../utils/utils.rkt"
-         (for-template racket/base)
          (private syntax-properties)
          syntax/parse
          syntax/id-table
@@ -28,7 +27,7 @@
         (hash-update! tvar-stx-mapping stx (lambda (old-vars) (cons vars old-vars)) null))
       (let loop ((stx stx))
         (syntax-parse stx
-          #:literals (#%expression #%plain-lambda let-values case-lambda)
+          #:literal-sets (kernel-literals)
           [(#%expression e) (loop #'e)]
           [(~or (case-lambda formals . body) (#%plain-lambda formals . body))
            (add-vars stx)]

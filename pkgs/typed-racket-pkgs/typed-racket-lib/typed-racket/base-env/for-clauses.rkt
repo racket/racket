@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require syntax/parse
-         "annotate-classes.rkt"
-         (for-template racket/base))
+         (for-template (only-in racket/base quote))
+         "annotate-classes.rkt")
 
 (provide (all-defined-out))
 
@@ -13,7 +13,7 @@
   (pattern (~and c (var:optionally-annotated-name seq-expr:expr))
            #:with (expand ...) #`(#,(syntax/loc #'c
                                       (var.ann-name seq-expr)))
-           #:with (expand* ...) #'(expand ... #:when #t))
+           #:with (expand* ...) #'(expand ... #:when '#t))
   ;; multi-valued seq-expr
   ;; currently disabled because it triggers an internal error in the typechecker
   ;; (pattern (~and c (((v:optionally-annotated-name) ...) seq-expr:expr))
