@@ -14,7 +14,7 @@
          #:pref [pref symbol?]
          #:dir? [dir? boolean?])
         [res (dir?)
-             (if dir?
+             (if (or dir? (not (equal? dir? the-unsupplied-arg)))
                  (listof path?)
                  (or/c path? #f))])]))
 
