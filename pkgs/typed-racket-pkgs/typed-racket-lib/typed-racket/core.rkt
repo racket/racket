@@ -11,7 +11,7 @@
          (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
-         (for-template (only-in (base-env prims) :type :print-type :query-type/result))
+         (for-template (only-in (base-env prims) :type :print-type :query-type/args :query-type/result))
          (utils utils tc-utils arm)
          "tc-setup.rkt")
 
@@ -72,8 +72,10 @@
                        (format "[can expand further: ~a]"
                                (string-join (map ~a unexpanded)))))
        #`(display #,(format "~a\n~a" type cue)))]
+    [(_ . (~and form ((~literal :type) . _)))
+     (raise-syntax-error #f "must be applied to exactly one argument" #'form)]
     ;; Prints the _entire_ type. May be quite large.
-    [(_ . ((~literal :print-type) e:expr))
+    [(_ . ((~literal :print-type) e))
      (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
                #`(display
                   #,(parameterize ([print-multi-line-case-> #t])
@@ -81,8 +83,10 @@
                                        [(tc-result1: t f o) t]
                                        [(tc-results: t) (cons 'Values t)]
                                        [(tc-any-results:) ManyUniv])))))]
+    [(_ . (~and form ((~literal :print-type) . _)))
+     (raise-syntax-error #f "must be applied to exactly one argument" #'form)]
     ;; given a function and input types, display the result type
-    [(_ . ((~literal :query-type/args) op:expr arg-type:expr ...))
+    [(_ . ((~literal :query-type/args) op arg-type ...))
      (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
        (tc-setup #'stx
                  ;; create a dummy function with the right argument types
@@ -94,8 +98,10 @@
                     #,(format "~a\n"
                               (match type
                                 [(tc-result1: (and t (Function: _)) f o) t])))))]
+    [(_ . (~and form ((~literal :query-type/args) . _)))
+     (raise-syntax-error #f "must be applied to at least one argument" #'form)]
     ;; given a function and a desired return type, fill in the blanks
-    [(_ . ((~literal :query-type/result) op:expr desired-type:expr))
+    [(_ . ((~literal :query-type/result) op desired-type))
      (let ([expected (parse-type #'desired-type)])
        (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
                  (match type
@@ -108,6 +114,8 @@
                              [(Function: arrs)
                               (format "~a\n" cleaned)])))]
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
+    [(_ . (~and form ((~literal :query-type/result) . _)))
+     (raise-syntax-error #f "must be applied to exactly two arguments" #'form)]
     [(_ . form)
      (init)
      (tc-setup
