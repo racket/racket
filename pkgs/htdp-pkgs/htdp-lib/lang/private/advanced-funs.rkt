@@ -54,7 +54,7 @@
        *bsl))
    
    ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
-    @defproc[(random [x integer]) integer]{
+    @defproc[(random [x natural]) natural]{
     Generates a random natural number less than some given integer
     In ASL: @racket[random] generate a random inexact number between 0.0
     and 1.0 exclusive when applied to no argument.
@@ -399,7 +399,7 @@
     })) 
 
 #|
-@defproc[(random (case-> (integer -> integer) (-> (and/c real inexact? (>/c 0) (</c 1)))]{
+@defproc[(random (case-> (natural -> natural) (-> (and/c real inexact? (>/c 0) (</c 1)))]{
  Generates a random natural number less than some given integer, or to
  generate a random inexact number between 0.0 and 1.0 exclusive.}
 

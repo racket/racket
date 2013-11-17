@@ -376,8 +376,8 @@
                                                     Lookups the character that corresponds to the given exact integer in the ASCII table (if any). 
                                                     @interaction[#:eval (bsl) (integer->char 42)]
                                                     }
-  @defproc[((beginner-random random) [x integer]) integer]{
-                                                           Generates a random natural number less than some given exact integer. 
+  @defproc[((beginner-random random) [x natural]) natural]{
+                                                           Generates a random natural number less than some given exact natural.
                                                            @interaction[#:eval (bsl) (random 42)]
                                                            }
   @defproc[(current-seconds) integer]{
