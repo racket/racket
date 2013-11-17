@@ -811,16 +811,20 @@ symbols, and that return a symbol.
                          (code:line keyword id+ctc)]
  [dependent-rest (code:line) (code:line #:rest id+ctc)]
  [pre-condition (code:line)
-                (code:line #:pre (id ...) boolean-expr pre-condition)
-                (code:line #:pre/name (id ...) string boolean-expr pre-condition)]
+                (code:line #:pre (id ...) 
+                           boolean-expr pre-condition)
+                (code:line #:pre/name (id ...)
+                           string boolean-expr pre-condition)]
  [dependent-range any
                   id+ctc
                   un+ctc
                   (values id+ctc ...)
                   (values un+ctc ...)]
  [post-condition (code:line)
-                 (code:line #:post (id ...) boolean-expr post-condition)
-                 (code:line #:post/name (id ...) string boolean-expr post-condition)]
+                 (code:line #:post (id ...)
+                            boolean-expr post-condition)
+                 (code:line #:post/name (id ...)
+                            string boolean-expr post-condition)]
  [id+ctc [id contract-expr]
          [id (id ...) contract-expr]]
  [un+ctc [_ contract-expr]
