@@ -211,10 +211,14 @@
     (raise-arguments-error name "thunk must be a procedure that accepts 0 arguments" "thunk" thunk)))
 
 (define-check (check-exn raw-pred thunk)
-  (raise-error-if-not-thunk 'check-exn thunk)
-  (let ([pred (if (regexp? raw-pred)
-                  (λ (x) (and (exn:fail? x) (regexp-match raw-pred (exn-message x))))
-                  raw-pred)])
+  (let ([pred
+         (cond [(regexp? raw-pred)
+                (λ (x) (and (exn:fail? x) (regexp-match raw-pred (exn-message x))))]
+               [(and (procedure? raw-pred) (procedure-arity-includes? raw-pred 1))
+                raw-pred]
+               [else
+                (raise-argument-error 'check-exn "(-> any/c any/c)" raw-pred)])])
+    (raise-error-if-not-thunk 'check-exn thunk)
     (let/ec succeed
       (with-handlers
           (;; catch the exception we are looking for and
