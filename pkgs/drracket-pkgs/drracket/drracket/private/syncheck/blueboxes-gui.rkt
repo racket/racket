@@ -24,9 +24,19 @@
 (preferences:set-default 'drracket:syncheck:show-blueboxes? #t boolean?)
 
 (define corner-radius 48)
-(define blue-box-color (make-object color% #xE8 #xE8 #xFF))
-(define var-color (make-object color% #x26 #x26 #x80))
+(define blue-box-color (make-object color% 232 240 252))
+(define blue-box-gradient-stop-color (make-object color% 252 252 252))
+(define var-color (send the-color-database find-color "black"))
 (define blue-box-margin 5)
+
+(define stops (list (list 0 blue-box-color)
+                    (list 1 blue-box-gradient-stop-color)))
+(define (make-blue-box-gradient-pen x y w h)
+  (make-object brush% "black" 'solid #f
+    (new linear-gradient%
+         [x0 x] [y0 (+ y h)]
+         [x1 (+ x w)] [y1 y]
+         [stops stops])))
 
 ;; files->tag->offset : (listof (list file-path int hash[tag -o> (cons int int)]))
 (define (fetch-files->tag->offset)
@@ -94,16 +104,11 @@
                 (read-line port))))))]
       [else #f])))
 
-;; get-label-font : style-list -> number
 ;; the multiplication by 1.5 is suspicious, but it makes things
 ;; look right under mac os x (with fairly standard font settings)
 (define (get-label-font sl)
-  (define style (send sl find-named-style "Standard"))
-  (define font-size (if style
-                        (round (* #e1.5 (send (send style get-font) get-point-size)))
-                        18))
-  (send the-font-list find-or-create-font
-        font-size 'swiss 'normal 'bold))
+  (and (send sl find-named-style "Standard")
+       (send (send sl find-named-style "Standard") get-font)))
 
 (define (get-read-more-font sl)
   (define style (send sl find-named-style "Standard"))
@@ -156,9 +161,11 @@
              (when std (send dc set-font (send std get-font)))
              (define-values (box-width box-height label-overlap?)
                (get-blue-box-size dc (send e get-style-list) the-strs))
-             (send dc set-brush blue-box-color 'solid)
              (send dc set-pen "black" 1 'transparent)
-             (send dc draw-rectangle (- cw box-width) 0 box-width box-height)
+             (let ([rect-x (- cw box-width)]
+                   [rect-y 0])
+               (send dc set-brush (make-blue-box-gradient-pen rect-x rect-y box-width box-height))
+               (send dc draw-rectangle rect-x rect-y box-width box-height))
              (send dc set-smoothing 'aligned)
              
              ;; most of the time (unless the user is
@@ -658,13 +665,11 @@
     (when std (send dc set-font (send std get-font)))
     
     (send dc set-smoothing 'aligned)
-    (send dc set-brush blue-box-color 'solid)
     (send dc set-pen "black" 1 'transparent)
-    (send dc draw-rectangle 
-          (+ dx (- br box-width))
-          (+ dy bt)
-          box-width
-          box-height)
+    (let ([rect-x (+ dx (- br box-width))]
+          [rect-y (+ dy bt)])
+      (send dc set-brush (make-blue-box-gradient-pen rect-x rect-y box-width box-height))
+      (send dc draw-rectangle rect-x rect-y box-width box-height))
     
     (send dc set-font (if mouse-in-read-more?
                           (get-read-more-underline-font sl)
@@ -712,7 +717,7 @@
     
     (draw-blue-box-shadow dc (- dx+br box-width) dy+bt box-width box-height)
     
-    (send dc set-text-foreground "white")
+    (send dc set-text-foreground "gray")
     (send dc set-font label-font)
     (send dc draw-text (list-ref strs 0) 
           (- dx+br blue-box-margin label-w)
