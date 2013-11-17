@@ -195,12 +195,13 @@
       #f)))
 
 (define (drag-ok? cards i)
-  (let ([c (car cards)]
-        [l (vector-ref stacks i)])
-    (and l
-         (or (null? l)
-             (= (send (car l) get-value)
-                (add1 (send c get-value)))))))
+  (and (pair? cards)
+       (let ([c (car cards)]
+             [l (vector-ref stacks i)])
+         (and l
+              (or (null? l)
+                  (= (send (car l) get-value)
+                     (add1 (send c get-value))))))))
 
 (let loop ([i 0])
   (unless (= i (vector-length stacks))
