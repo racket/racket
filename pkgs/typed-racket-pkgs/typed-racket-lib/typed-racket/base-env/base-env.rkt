@@ -719,8 +719,8 @@
 [hash-ref! (-poly (a b)
                   (cl-> [((-HT a b) a b) b]
                         [((-HT a b) a (-> b)) b]))]
-[hash-has-key? (-poly (a b) (cl-> [((-HT a b) a) b]
-                                  [(-HashTop a) b]))]
+[hash-has-key? (-poly (a b) (cl-> [((-HT a b) a) B]
+                                  [(-HashTop a) B]))]
 [hash-update! (-poly (a b)
                      (cl-> [((-HT a b) a (-> b b)) -Void]
                            [((-HT a b) a (-> b b) (-> b)) -Void]))]

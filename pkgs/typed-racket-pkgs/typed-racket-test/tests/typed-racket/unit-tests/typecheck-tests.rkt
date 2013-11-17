@@ -975,6 +975,7 @@
               (-HT -Number -Number)]
         [tc-e #{(make-immutable-hash) :: (HashTable String Symbol)}
               (-HT -String -Symbol)]
+        [tc-e (hash-has-key? (make-hash '((1 . 2))) 1) -Boolean]
 
         [tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
