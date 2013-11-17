@@ -55,7 +55,7 @@
    
    ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
     @defproc[(random [x natural]) natural]{
-    Generates a random natural number less than some given integer
+    Generates a random natural number less than some given natural number
     In ASL: @racket[random] generate a random inexact number between 0.0
     and 1.0 exclusive when applied to no argument.
     @interaction[#:eval (asl) (random)]
@@ -400,7 +400,7 @@
 
 #|
 @defproc[(random (case-> (natural -> natural) (-> (and/c real inexact? (>/c 0) (</c 1)))]{
- Generates a random natural number less than some given integer, or to
+ Generates a random natural number less than some given natural number, or to
  generate a random inexact number between 0.0 and 1.0 exclusive.}
 
 @defproc[((advanced-make-hash make-hash) (case-> (-> (hash X Y)) ((listof (list X Y)) -> (hash X Y))]{
