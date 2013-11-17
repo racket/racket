@@ -15,7 +15,7 @@
          #:dir? [dir? boolean?])
         [res (dir?)
              (if (or dir? (not (equal? dir? the-unsupplied-arg)))
-                 (listof path?)
+                 (or/c (listof path?) #f)
                  (or/c path? #f))])]))
 
 (define (get-module-path-from-user #:init [init-value ""] 
