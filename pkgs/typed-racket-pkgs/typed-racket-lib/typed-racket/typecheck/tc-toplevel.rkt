@@ -286,7 +286,6 @@
   (check-all-registered-types)
   ;; report delayed errors
   (report-all-errors)
-  (define syntax-provide? #f)
   (define provide-tbl
     (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
       (define-syntax-class unknown-provide-form
@@ -303,12 +302,8 @@
            (parameterize ([current-orig-stx f])
              (syntax-parse f
                [i:id
-                (when (def-stx-binding? (dict-ref def-tbl #'i #f))
-                  (set! syntax-provide? #t))
                 (dict-update h #'i (lambda (tail) (cons #'i tail)) '())]
                [((~datum rename) in out)
-                (when (def-stx-binding? (dict-ref def-tbl #'in #f))
-                  (set! syntax-provide? #t))
                 (dict-update h #'in (lambda (tail) (cons #'out tail)) '())]
                [(name:unknown-provide-form . _)
                 (tc-error "provide: ~a not supported by Typed Racket" (syntax-e #'name.name))]
@@ -331,7 +326,7 @@
 			typed-racket/env/global-env typed-racket/env/type-alias-env
 			typed-racket/types/struct-table typed-racket/types/abbrev
 			(rename-in racket/private/sort [sort raw-sort]))
-	       #,(env-init-code syntax-provide? provide-tbl def-tbl)
+	       #,(env-init-code)
 	       #,(talias-env-init-code)
 	       #,(tname-env-init-code)
 	       #,(tvariance-env-init-code)

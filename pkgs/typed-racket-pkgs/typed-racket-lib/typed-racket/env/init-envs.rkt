@@ -120,52 +120,38 @@
           (not mp))
         #f)))
 
-(define (tname-env-init-code)
-  (define (f id ty)
-    (if (bound-in-this-module id)
-        #`(register-type-name #'#,id #,(datum->syntax #'here (print-convert ty)))
-        #f))
+(define (make-init-code map f)
+  (define (bound-f id v)
+    (and (bound-in-this-module id) (f id v)))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))
-    #`(begin #,@(filter values (type-name-env-map f)))))
+    #`(begin #,@(filter values (map bound-f)))))
+
+(define (quote-type ty)
+  (datum->syntax #'here (print-convert ty)))
+
+(define (tname-env-init-code)
+  (make-init-code
+    type-name-env-map
+    (λ (id ty) #`(register-type-name #'#,id #,(quote-type ty)))))
 
 (define (tvariance-env-init-code)
-  (define (f id var)
-    (if (bound-in-this-module id)
-        #`(register-type-variance! #'#,id (list #,@(map variance->binding var)))
-        #f))
-  (parameterize ((current-print-convert-hook converter)
-                 (show-sharing #f)
-                 (booleans-as-true/false #f))
-    #`(begin #,@(filter values (type-variance-env-map f)))))
-
+  (make-init-code
+    type-variance-env-map
+    (λ (id var) #`(register-type-variance! #'#,id (list #,@(map variance->binding var))))))
 
 (define (talias-env-init-code)
-  (define (f id ty)
-    (if (bound-in-this-module id)
-        #`(register-resolved-type-alias #'#,id #,(datum->syntax #'here (print-convert ty)))
-        #f))
-  (parameterize ((current-print-convert-hook converter)
-                 (show-sharing #f)
-                 (booleans-as-true/false #f))
-    #`(begin #,@(filter values (type-alias-env-map f)))))
+  (make-init-code
+    type-alias-env-map
+    (λ (id ty) #`(register-resolved-type-alias #'#,id #,(quote-type ty)))))
 
-(define (env-init-code syntax-provide? provide-tbl def-tbl)
-  (define (f id ty)
-    (if (bound-in-this-module id)
-        #`(register-type #'#,id #,(datum->syntax #'here (print-convert ty)))
-        #f))
-  (parameterize ((current-print-convert-hook converter)
-                 (show-sharing #f)
-                 (booleans-as-true/false #f))
-    #`(begin #,@(filter values (type-env-map f)))))
+(define (env-init-code)
+  (make-init-code
+    type-env-map
+    (λ (id ty) #`(register-type #'#,id #,(quote-type ty)))))
 
 (define (mvar-env-init-code mvar-env)
-  (define (f id v)
-    (and v (bound-in-this-module id)
-         #`(register-mutated-var #'#,id)))
-  #`(begin #,@(filter values (dict-map mvar-env f))))
-
-
-
+  (make-init-code
+    (λ (f) (dict-map mvar-env f))
+    (lambda (id v) (and v #`(register-mutated-var #'#,id)))))
