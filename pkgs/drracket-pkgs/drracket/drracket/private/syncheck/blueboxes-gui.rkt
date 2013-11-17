@@ -26,7 +26,8 @@
 (define corner-radius 48)
 (define blue-box-color (make-object color% 232 240 252))
 (define blue-box-gradient-stop-color (make-object color% 252 252 252))
-(define var-color (send the-color-database find-color "black"))
+(define var-color (make-object color% 68 68 68))
+(define blue-box-label-text-color (make-object color% 128 128 128))
 (define blue-box-margin 5)
 
 (define stops (list (list 0 blue-box-color)
@@ -717,7 +718,7 @@
     
     (draw-blue-box-shadow dc (- dx+br box-width) dy+bt box-width box-height)
     
-    (send dc set-text-foreground "gray")
+    (send dc set-text-foreground blue-box-label-text-color)
     (send dc set-font label-font)
     (send dc draw-text (list-ref strs 0) 
           (- dx+br blue-box-margin label-w)
