@@ -16,8 +16,6 @@
   (delay
     (define ns (make-base-namespace))
     (eval '(require typed/racket) ns)
-    ;; Load TR code. TODO make this not needed (pr/13102)
-    (eval '(#%top-interaction void) ns)
     ns))
 
 (define-syntax (test-form-exn stx)

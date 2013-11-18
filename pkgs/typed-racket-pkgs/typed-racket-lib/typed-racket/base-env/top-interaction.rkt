@@ -47,6 +47,7 @@
                         [current-type-names
                          (if (attribute verbose-kw) '() (current-type-names))]
                         [current-print-unexpanded (box '())])
+           (init)
            (define type (format "~a" (parse-type #'ty)))
            (define unexpanded
              (remove-duplicates (unbox (current-print-unexpanded))))
@@ -100,6 +101,7 @@
     (λ (stx init)
       (syntax-parse stx
         [(_ op desired-type)
+         (init)
          (let ([expected (parse-type #'desired-type)])
            (tc-setup stx #'op 'top-level expanded init tc-toplevel-form before type
                      (match type
