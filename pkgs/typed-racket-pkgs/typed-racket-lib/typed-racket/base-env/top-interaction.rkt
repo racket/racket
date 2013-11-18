@@ -110,7 +110,7 @@
                           #`(display
                              #,(match cleaned
                                  [(Function: '())
-                                  "Desired return type not in the given function's range."]
+                                  "Desired return type not in the given function's range.\n"]
                                  [(Function: arrs)
                                   (format "~a\n" cleaned)])))]
                        [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
