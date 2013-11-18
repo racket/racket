@@ -65,40 +65,34 @@
                           _:unboxed-fun-definition)))
 
          (define-syntax-class unboxed-clause?
-            #:attributes (unboxed-let bindings)
+            #:attributes (bindings)
             (pattern v:unboxed-let-clause?
-              #:attr unboxed-let #t
               #:with (real-binding imag-binding) (binding-names)
               #:do [(add-unboxed-var! #'v.id #'real-binding #'imag-binding)]
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [((id:id) c:unboxed-float-complex-opt-expr)
+                     #:do [(log-opt "unboxed let bindings" arity-raising-opt-msg)]
                      #'(c.bindings ...
                         ((real-binding) c.real-binding)
                         ((imag-binding) c.imag-binding))])))
             (pattern v:unboxed-fun-clause?
-              #:attr unboxed-let #f
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [c:unboxed-fun-clause
                      #'(c.bindings ...)])))
             (pattern v
-              #:attr unboxed-let #f
               #:attr bindings
                 (delay
                   (syntax-parse #'v
                     [(vs rhs:opt-expr)
                      #'((vs rhs.opt))]))))
-         (define full-syntax this-syntax)
 
          (define-syntax-class unboxed-clauses
            #:attributes ([bindings 1])
            (pattern (clauses:unboxed-clause? ...)
-             ;; only log when we actually optimize
-             #:do [(when (member #t (attribute clauses.unboxed-let))
-                     (log-optimization "unboxed let bindings" arity-raising-opt-msg full-syntax))]
              #:with (bindings ...) (template ((?@ . clauses.bindings) ...))))]
 
    #:with opt
