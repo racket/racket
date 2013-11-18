@@ -49,7 +49,8 @@
 (define (ti-core stx init)
   (current-type-names (init-current-type-names))
   (syntax-parse stx
-    [(_ . ((~datum module) . rest))
+    #:literal-sets (kernel-literals)
+    [(_ . (module . rest))
      #'(module . rest)]
     [(_ . (~and form ((~var command (static interactive-command? #f)) . _)))
      ((interactive-command-procedure (attribute command.value)) #'form init)]

@@ -46,6 +46,14 @@
 ;; Add 'only at the toplevel tests'
 (define (interactive-tests)
   (test-suite "Interactive tests"
+
+    (test-form #rx""
+      (module test racket))
+    (test-form #rx""
+      (define module displayln))
+    (test-form #rx"racket"
+      (module 'racket))
+
     (test-form #rx"1"
       (:type 1))
     (test-form (regexp-quote "(U Positive-Byte Zero)")
