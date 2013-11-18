@@ -33,7 +33,9 @@
        (ret (map (lambda (ts) (apply Un ts)) ts*)))]
     [_ (int-err "Internal error: unsupported exception result type in: ~a" args)]))
 
-(define-syntax run-loop
+;; Does a depth first search of the syntax object. For each sub object it attempts to match it
+;; against the provide syntax-parse patterns.
+(define-syntax find-syntax
   (syntax-parser
     [(_ init-form [clause bodies ...+] ...)
      #'(let loop ([form init-form])
@@ -64,7 +66,7 @@
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
          (loop (instantiate-poly t (map (λ (n) Univ) ns)))]
         [_ (int-err "Unsupported function type in get-result-ty: \n~a" t)])))
-  (run-loop form
+  (find-syntax form
     ;; if this needs to be checked
     [stx:with-type^
      ;; the form should be already ascribed the relevant type
@@ -83,7 +85,7 @@
 
 ;; syntax tc-results -> tc-results
 (define (check-subforms/with-handlers/check form expected)
-  (run-loop form
+  (find-syntax form
     ;; if this needs to be checked
     [stx:with-type^
      ;; the form should be already ascribed the relevant type
@@ -99,7 +101,7 @@
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> void
 (define (check-subforms/ignore form)
-  (run-loop form
+  (find-syntax form
     ;; if this needs to be checked
     [stx:with-type^
      ;; the form should be already ascribed the relevant type
