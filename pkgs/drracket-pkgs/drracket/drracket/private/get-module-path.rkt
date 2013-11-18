@@ -14,9 +14,10 @@
          #:pref [pref symbol?]
          #:dir? [dir? boolean?])
         [res (dir?)
-             (if (or dir? (not (equal? dir? the-unsupplied-arg)))
-                 (or/c (listof path?) #f)
-                 (or/c path? #f))])]))
+             (if (or (not dir?)
+                     (unsupplied-arg? dir?))
+                 (or/c path? #f)
+                 (or/c (listof path?) #f))])]))
 
 (define (get-module-path-from-user #:init [init-value ""] 
                                    #:pref [pref-sym #f]
