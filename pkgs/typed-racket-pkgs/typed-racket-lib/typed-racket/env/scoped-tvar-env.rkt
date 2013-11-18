@@ -4,6 +4,7 @@
 
 (require "../utils/utils.rkt"
          (for-template racket/base)
+         (private syntax-properties)
          syntax/parse
          syntax/id-table
          racket/match
@@ -31,9 +32,8 @@
           [(#%expression e) (loop #'e)]
           [(~or (case-lambda formals . body) (#%plain-lambda formals . body))
            (add-vars stx)]
-          [(let-values ([(f) fun]) . body)
-           #:when (or (syntax-property stx 'kw-lambda)
-                      (syntax-property stx 'opt-lambda))
+          [(~and (let-values ([(f) fun]) . body)
+                 (~or _:kw-lambda^ :opt-lambda^))
            (add-vars #'fun)]
           [e (void)]))]))
 

@@ -17,9 +17,7 @@
 
 
 (define-syntax-class annotated-op
-  (pattern i:identifier
-           #:when (or (type-inst-property #'i) 
-                      (type-ascription-property #'i))))
+  (pattern (~and i:identifier (~or :type-inst^ :type-ascription^))))
 
 (define-tc/app-syntax-class (tc/app-annotated expected)
   ;; Just do regular typechecking if we have one of these.

@@ -7,6 +7,7 @@
          (except-in (types subtype union utils generalize))
          (private parse-type syntax-properties)
          (contract-req)
+         syntax/parse
          racket/match)
 
 (provide type-annotation
@@ -36,16 +37,12 @@
         (parse-type/id stx prop)))
   ;(unless let-binding (error 'ohno))
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
-  (cond
-    [(type-label-property stx) => pt]
-    [(type-ascription-property stx) => pt]
-    ;; this is so that : annotation works in internal def ctxts
-    [(and (identifier? stx) (lookup-type stx (lambda () #f)))
-     =>
-     (lambda (t)
-       (maybe-finish-register-type stx)
-       t)]
-    [else #f]))
+  (syntax-parse stx
+    [(~or v:type-label^ v:type-ascription^) (pt (attribute v.value))]
+    [i:typed-id^
+     (maybe-finish-register-type stx)
+     (attribute i.type)]
+    [_ #f]))
 
 ;(trace type-annotation)
 
@@ -55,30 +52,27 @@
     (if (syntax? prop)
         (parse-tc-results prop)
         (parse-tc-results/id stx prop)))
-  (cond
-    [(type-ascription-property stx)
-     =>
-     (lambda (prop)
-       (let loop ((prop prop))
-         (if (pair? prop)
-             (loop (cdr prop))
-             (pt prop))))]
-    [else #f]))
+  (syntax-parse stx
+    [s:type-ascription^
+     (let loop ((prop (attribute s.value)))
+       (if (pair? prop)
+           (loop (cdr prop))
+           (pt prop)))]
+    [_ #f]))
 
 (define (remove-ascription stx)
   (type-ascription-property
     stx 
-    (cond
-      [(type-ascription-property stx)
-       =>
-       (lambda (prop)
-         (if (pair? prop)
-             (let loop ((prop (cdr prop)) (last (car prop)))
-               (if (pair? prop)
-                   (cons last (loop (cdr prop) (car prop)))
-                   last))
-               #f))]
-      [else #f])))
+    (syntax-parse stx
+      [s:type-ascription^
+       (define prop (attribute s.value))
+       (if (pair? prop)
+           (let loop ((prop (cdr prop)) (last (car prop)))
+             (if (pair? prop)
+                 (cons last (loop (cdr prop) (car prop)))
+                 last))
+             #f)]
+      [_ #f])))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
@@ -143,5 +137,6 @@
       (tc-error "Body had type:\n~a\nVariable had type:\n~a\n" e-type ty))))
 
 (define (dotted? stx)
-  (cond [(type-dotted-property stx) => syntax-e]
-        [else #f]))
+  (syntax-parse stx
+    [v:type-dotted^ (syntax-e (attribute v.value))]
+    [_ #f]))

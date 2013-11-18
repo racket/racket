@@ -8,6 +8,7 @@
          (types utils abbrev union resolve)
          (private syntax-properties)
          (utils tc-utils)
+         (for-syntax racket/base syntax/parse)
          (rep type-rep))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
@@ -32,6 +33,20 @@
        (ret (map (lambda (ts) (apply Un ts)) ts*)))]
     [_ (int-err "Internal error: unsupported exception result type in: ~a" args)]))
 
+;; Does a depth first search of the syntax object. For each sub object it attempts to match it
+;; against the provide syntax-parse patterns.
+(define-syntax find-syntax
+  (syntax-parser
+    [(_ init-form [clause bodies ...+] ...)
+     #'(let loop ([form init-form])
+         (parameterize ([current-orig-stx form])
+           (syntax-parse form
+             [clause bodies ...] ...
+             [(a . b)
+              (loop #'a)
+              (loop #'b) ]
+             [_ (void)])))]))
+
 ;; find the subexpressions that need to be typechecked in an ignored form
 ;; syntax -> any
 (define (check-subforms/with-handlers form [expected #f])
@@ -51,68 +66,43 @@
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
          (loop (instantiate-poly t (map (λ (n) Univ) ns)))]
         [_ (int-err "Unsupported function type in get-result-ty: \n~a" t)])))
-  (let loop ([form form])
-    (parameterize ([current-orig-stx form])
-      (syntax-parse form
-        [stx
-         ;; if this needs to be checked
-         #:when (with-type-property form)
-         ;; the form should be already ascribed the relevant type
-         (tc-expr form)]
-        [stx
-         ;; this is a handler function
-         #:when (exn-handler-property form)
-         (let ([t (single-value form)])
-           (match t
-             [(tc-result1: t)
-              (set! handler-tys (cons (get-result-ty t) handler-tys))]))]
-        [stx
-         ;; this is the body of the with-handlers
-         #:when (exn-body-property form)
-         (set! body-stx form)
-         (set! body-ty (tc-expr form))]
-        [(a . b)
-         (loop #'a)
-         (loop #'b)]
-        [_ (void)])))
+  (find-syntax form
+    ;; if this needs to be checked
+    [stx:with-type^
+     ;; the form should be already ascribed the relevant type
+     (tc-expr #'stx)]
+    ;; this is a handler function
+    [stx:exn-handler^
+     (let ([t (single-value #'stx)])
+       (match t
+         [(tc-result1: t)
+          (set! handler-tys (cons (get-result-ty t) handler-tys))]))]
+    ;; this is the body of the with-handlers
+    [stx:exn-body^
+     (set! body-stx #'stx)
+     (set! body-ty (tc-expr #'stx))])
   (apply combine-types body-ty handler-tys))
 
 ;; syntax tc-results -> tc-results
 (define (check-subforms/with-handlers/check form expected)
-  (let loop ([form form])
-    (parameterize ([current-orig-stx form])
-      (syntax-parse form
-        [stx
-         ;; if this needs to be checked
-         #:when (with-type-property form)
-         ;; the form should be already ascribed the relevant type
-         (tc-expr form)]
-        [stx
-         ;; this is a handler function
-         #:when (exn-handler-property form)
-         (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
-        [stx
-         ;; this is the body of the with-handlers
-         #:when (exn-body-property form)
-         (tc-expr/check form expected)]
-        [(a . b)
-         (begin
-           (loop #'a)
-           (loop #'b))]
-        [_ (void)])))
+  (find-syntax form
+    ;; if this needs to be checked
+    [stx:with-type^
+     ;; the form should be already ascribed the relevant type
+     (tc-expr #'stx)]
+    ;; this is a handler function
+    [stx:exn-handler^
+     (tc-expr/check #'stx (ret (-> (Un) (tc-results->values expected))))]
+    ;; this is the body of the with-handlers
+    [stx:exn-body^
+     (tc-expr/check #'stx expected)])
   expected)
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> void
 (define (check-subforms/ignore form)
-  (let loop ([form form])
-    (syntax-parse form
-      [stx
-       ;; if this needs to be checked
-       #:when (with-type-property form)
-       ;; the form should be already ascribed the relevant type
-       (void (tc-expr form))]
-      [(a . b)
-       (loop #'a)
-       (loop #'b)]
-      [_ (void)])))
+  (find-syntax form
+    ;; if this needs to be checked
+    [stx:with-type^
+     ;; the form should be already ascribed the relevant type
+     (void (tc-expr #'stx))]))

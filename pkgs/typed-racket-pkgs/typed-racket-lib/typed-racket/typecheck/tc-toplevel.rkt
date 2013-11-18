@@ -59,8 +59,7 @@
       ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
-      [stx
-       #:when (or (ignore-property form) (ignore-some-property form))
+      [(~or _:ignore^ _:ignore-some^)
        (list)]
 
       [((~literal module) n:id spec ((~literal #%plain-module-begin) body ...))
@@ -116,29 +115,29 @@
 
       ;; values definitions
       [(define-values (var ...) expr)
-       (let* ([vars (syntax->list #'(var ...))])
-         (cond
-           ;; if all the variables have types, we stick them into the environment
-           [(andmap type-label-property vars)
-            (let ([ts (map (λ (x) (get-type x #:infer #f)) vars)])
-              (for-each register-type-if-undefined vars ts)
-              (map make-def-binding vars ts))]
-           ;; if this already had an annotation, we just construct the binding reps
-           [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
-            (define top-level? (eq? (syntax-local-context) 'top-level))
-            (for ([var (in-list vars)])
-              (when (dict-has-key? unann-defs var)
-                (free-id-table-remove! unann-defs var))
-              (finish-register-type var top-level?))
-            (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
-           ;; special case to infer types for top level defines
-           [else
-            (match (get-type/infer vars #'expr tc-expr tc-expr/check)
-              [(tc-results: ts)
-               (for/list ([i (in-list vars)] [t (in-list ts)])
-                 (register-type i t)
-                 (free-id-table-set! unann-defs i #t)
-                 (make-def-binding i t))])]))]
+       (define vars (syntax->list #'(var ...)))
+       (syntax-parse vars
+         ;; if all the variables have types, we stick them into the environment
+         [(v:type-label^ ...)
+          (let ([ts (map (λ (x) (get-type x #:infer #f)) vars)])
+            (for-each register-type-if-undefined vars ts)
+            (map make-def-binding vars ts))]
+         ;; if this already had an annotation, we just construct the binding reps
+         [(v:typed-id^ ...)
+          (define top-level? (eq? (syntax-local-context) 'top-level))
+          (for ([var (in-list vars)])
+            (when (dict-has-key? unann-defs var)
+              (free-id-table-remove! unann-defs var))
+            (finish-register-type var top-level?))
+          (stx-map make-def-binding #'(v ...) (attribute v.type))]
+         ;; special case to infer types for top level defines
+         [_
+          (match (get-type/infer vars #'expr tc-expr tc-expr/check)
+            [(tc-results: ts)
+             (for/list ([i (in-list vars)] [t (in-list ts)])
+               (register-type i t)
+               (free-id-table-set! unann-defs i #t)
+               (make-def-binding i t))])])]
 
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
@@ -164,13 +163,11 @@
     (syntax-parse form
       #:literal-sets (kernel-literals)
       ;; these forms we have been instructed to ignore
-      [stx
-       #:when (ignore-property form)
+      [stx:ignore^
        (void)]
 
       ;; this is a form that we mostly ignore, but we check some interior parts
-      [stx
-       #:when (ignore-some-property form)
+      [stx:ignore-some^
        (check-subforms/ignore form)]
 
       ;; these forms should always be ignored
@@ -185,13 +182,14 @@
       [(define-values () expr)
        (tc-expr/check #'expr (ret empty))]
       [(define-values (var ...) expr)
-       (unless (for/and ([v (in-syntax #'(var ...))])
-                 (free-id-table-ref unann-defs v (lambda _ #f)))
-         (let ([ts (stx-map lookup-type #'(var ...))])
-           (when (= 1 (length ts))
-             (add-scoped-tvars #'expr (lookup-scoped-tvars (stx-car #'(var ...)))))
-           (tc-expr/check #'expr (ret ts))))
+       #:when (for/and ([v (in-syntax #'(var ...))])
+                (free-id-table-ref unann-defs v (lambda _ #f)))
        (void)]
+      [(define-values (var:typed-id^ ...) expr)
+       (let ([ts (attribute var.type)])
+         (when (= 1 (length ts))
+           (add-scoped-tvars #'expr (lookup-scoped-tvars (stx-car #'(var ...)))))
+         (tc-expr/check #'expr (ret ts))) ]
 
       ;; to handle the top-level, we have to recur into begins
       [(begin) (void)]
@@ -365,9 +363,9 @@
 ;; syntax -> (values #f (or/c void? tc-results/c))
 (define (tc-toplevel-form form)
   (syntax-parse form
-    [((~literal begin) e ...)
-     ;; Don't open up `begin`s that are supposed to be ignored
-     #:when (not (or (ignore-property form) (ignore-some-property form)))
+    ;; Don't open up `begin`s that are supposed to be ignored
+    [(~and ((~literal begin) e ...)
+           (~not (~or _:ignore^ _:ignore-some^)))
      (define result
        (for/last ([form (in-syntax #'(e ...))])
          (define-values (_ result) (tc-toplevel-form form))
