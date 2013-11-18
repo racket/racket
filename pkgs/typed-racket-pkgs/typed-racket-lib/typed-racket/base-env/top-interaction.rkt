@@ -58,14 +58,13 @@
         [form
          (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))))
 
-;; TODO what should be done with stx
 ;; Prints the _entire_ type. May be quite large.
 (define-syntax :print-type
   (interactive-command
     (λ (stx init)
       (syntax-parse stx
         [(_ e)
-         (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
+         (tc-setup stx #'e 'top-level expanded init tc-toplevel-form before type
                    #`(display
                       #,(parameterize ([print-multi-line-case-> #t])
                           (format "~a\n" (match type
@@ -82,7 +81,7 @@
       (syntax-parse stx
         [(_ op arg-type ...)
          (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
-            (tc-setup #'stx
+            (tc-setup stx
                       ;; create a dummy function with the right argument types
                       #`(lambda #,(stx-map type-label-property
                                            #'(dummy-arg ...) #'(arg-type ...))
@@ -102,7 +101,7 @@
       (syntax-parse stx
         [(_ op desired-type)
          (let ([expected (parse-type #'desired-type)])
-           (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
+           (tc-setup stx #'op 'top-level expanded init tc-toplevel-form before type
                      (match type
                        [(tc-result1: (and t (Function: _)) f o)
                         (let ([cleaned (cleanup-type t expected)])
