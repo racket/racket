@@ -59,14 +59,17 @@
     [(weekend-date? date) 'weekend]
     [else 'normal]))
 
-(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween?)
+(define-values (texas-independence-day? 
+                prince-kuhio-day? kamehameha-day? halloween?
+                ada-lovelace-bday?)
   (let* ([month (date-month startup-date)]
          [day (date-day startup-date)]
          [dow (date-week-day startup-date)])
     (values (and (= 3 month) (= 2 day))
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
-            (and (= 10 month) (= 31 day)))))
+            (and (= 10 month) (= 31 day))
+            (and (= 12 month) (= 10 day)))))
 
 (define special-state #f)
 
@@ -145,6 +148,12 @@
      (set-splash-progress-bar?! #f)
      (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
        (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
+               size 
+               size))]
+    [ada-lovelace-bday?
+     (set-splash-progress-bar?! #f)
+     (let ([size (dynamic-require 'drracket/private/ada 'ada-size)])
+       (vector (dynamic-require 'drracket/private/ada 'draw-splash-ada) 
                size 
                size))]
     [texas-independence-day?

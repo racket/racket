@@ -12,6 +12,7 @@
   (start-up-on-day 10 29 "Matthias's birthday")
   (start-up-on-day 10 31 "Halloween")
   (start-up-on-day 11  1 "Matthew's birthday")
+  (start-up-on-day 12 10 "Ada Lovelace's birthday")
   (start-up-on-day 12 25 "Christmas")
   
   (define now (current-seconds))
