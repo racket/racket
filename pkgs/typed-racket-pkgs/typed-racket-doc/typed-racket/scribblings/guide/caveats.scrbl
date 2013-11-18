@@ -70,8 +70,9 @@ The following illustrates an example type that cannot be
 converted to a contract:
 
 @interaction[#:eval the-eval
-  (require/typed racket/base [object-name (case-> (Struct-Type-Property -> Symbol)
-                                                  (Regexp -> (U String Bytes)))])
+  (require/typed racket/base
+    [object-name (case-> (Struct-Type-Property -> Symbol)
+                         (Regexp -> (U String Bytes)))])
 ]
 
 This function type by cases is a valid type, but a corresponding
@@ -83,8 +84,9 @@ A more approximate type will work for this case, but with a loss
 of type precision at use sites:
 
 @interaction[#:eval the-eval
-  (require/typed racket/base [object-name ((U Struct-Type-Property Regexp)
-                                           -> (U String Bytes Symbol))])
+  (require/typed racket/base
+    [object-name ((U Struct-Type-Property Regexp)
+                  -> (U String Bytes Symbol))])
   (object-name #rx"a regexp")
 ]
 
