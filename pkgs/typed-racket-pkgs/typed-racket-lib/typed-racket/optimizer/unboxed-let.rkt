@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require syntax/parse syntax/stx unstable/syntax unstable/sequence
+         syntax/parse/experimental/template
          racket/list racket/dict racket/match racket/syntax
+         racket/promise
          "../utils/utils.rkt"
          (for-template racket/base)
          (types numeric-tower utils type-table)
@@ -34,9 +36,7 @@
              (~var call (float-complex-call-site-opt-expr #'loop-fun.unboxed-info)))
     #:do [(log-opt "unboxed call site" "Complex number unboxing")
           (log-optimization "unboxed let loop" arity-raising-opt-msg #'loop-fun)]
-    #:with opt #'(let*-values
-                   (((op) operator.opt) call.bindings ...)
-                   (op call.args ...))))
+    #:with opt #`(let*-values (((op) operator.opt)) #,((attribute call.opt-app) #'op))))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
@@ -48,83 +48,116 @@
   (pattern
    (letk:let-like-keyword ((~and clause (lhs rhs)) ...)
                           body:opt-expr ...)
-   ;; we look for bindings of complexes that are not mutated and only
-   ;; used in positions where we would unbox them
-   ;; these are candidates for unboxing
-   #:with ((candidates ...) (function-candidates ...) (others ...))
-   (let*-values
-       (((candidates rest)
-         ;; clauses of form ((v) rhs), currently only supports 1 lhs var
-         (partition
-          (lambda (p)
-            (and (subtypeof? (cadr p) -FloatComplex)
-                 (could-be-unboxed-in? (car (syntax-e (car p)))
-                                       #'(begin body ...))))
-          (stx-map syntax->list #'(clause ...))))
-        ((function-candidates others)
-         ;; extract function bindings that have float-complex arguments
-         ;; we may be able to pass arguments unboxed
-         ;; this covers loop variables
-         (partition
-          (lambda (p)
-            (and
-             ;; typed racket introduces let-values that bind no values
-             ;; we can't optimize these
-             (not (null? (syntax-e (car p))))
-             (let ((fun-name (car (syntax-e (car p)))))
-               (and
-                ;; if the function escapes, we can't change its interface
-                (not (is-var-mutated? fun-name))
-                (not (escapes? fun-name #'(begin rhs ...) #f))
-                (not (escapes? fun-name #'(begin body ...) let-loop?))
-                (match (type-of (cadr p)) ; rhs, we want a lambda
-                  [(tc-result1: (Function: (list (arr: doms rngs
-                                                       (and rests #f)
-                                                       (and drests #f)
-                                                       (and kws '())))))
-                   ;; at least 1 argument has to be of type float-complex
-                   ;; and can be unboxed
-                   (syntax-parse (cadr p)
-                     #:literal-sets (kernel-literals)
-                     [(#%plain-lambda params body ...)
-                      (define unboxed-args
-                        (for/list ([param (in-syntax #'params)]
-                                   [dom doms]
-                                   [i (in-naturals)])
-                          (cond
-                            [(and (equal? dom -FloatComplex)
-                                  (could-be-unboxed-in?
-                                    param
-                                    #'(begin body ...)))
-                             ;; we can unbox
-                             (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
-                             #t]
-                            [else #f])))
-                      ;; can we unbox anything?
-                      (and (member #t unboxed-args)
-                           ;; if so, add to the table of functions with
-                           ;; unboxed params, so we can modify its call
-                           ;; sites, its body and its header
-                           (add-unboxed-fun! fun-name unboxed-args))]
-                     [_ #f])]
-                  [_ #f])))))
-          rest)))
-     (list candidates function-candidates others))
-   #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
-   #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
-   #:with (opt-others:opt-let-clause ...) #'(others ...)
-   ;; only log when we actually optimize
-   #:do [(unless (zero? (syntax-length #'(opt-candidates.id ...)))
-           (log-opt "unboxed let bindings" arity-raising-opt-msg))]
-   ;; in the case where no bindings are unboxed, we create a let
-   ;; that is equivalent to the original, but with all parts optimized
-   #:with opt (quasisyntax/loc/origin
-                this-syntax #'letk.kw
-                (letk.key ...
-                          (opt-functions.res ...
-                           opt-others.res ...
-                           opt-candidates.bindings ... ...)
-                          body.opt ...))))
+   #:do [;; Ids that do not escape
+         (define-syntax-class non-escaping-function-id
+           (pattern fun-name:id
+              #:when (not (or (escapes? #'fun-name #'(begin rhs ...) #f)
+                              (escapes? #'fun-name #'(begin body ...) let-loop?)))))
+
+         ;; Syntax classes for detecting clauses which can be unboxed.
+         ;; This is split from actually unboxing so that variables defined in later clauses will be
+         ;; unboxed in expressions in earlier clauses.
+
+         ;; Clauses of form ((v) rhs), currently only supports 1 lhs var
+         (define-syntax-class unboxable-let-clause?
+           (pattern ((id:id) rhs:float-complex-expr)
+             #:when (could-be-unboxed-in? #'id #'(begin body ...))))
+
+         ;; Clauses that define functions that can be lifted
+         (define-syntax-class unboxable-fun-clause?
+           (pattern (~and ((_:non-escaping-function-id) body:expr)
+                          _:unboxable-fun-definition)))
+
+         ;; Bindings are delayed so that all clauses are matched before optimizations happen.
+         ;; This ensures that unboxable variables defined in later clauses are detected before
+         ;; optimization starts.
+         (define-syntax-class unboxed-clause
+            #:attributes (bindings)
+            (pattern v:unboxable-let-clause?
+              #:with (real-binding imag-binding) (binding-names)
+              #:do [(add-unboxed-var! #'v.id #'real-binding #'imag-binding)]
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [((id:id) c:unboxed-float-complex-opt-expr)
+                     #:do [(log-opt "unboxed let bindings" arity-raising-opt-msg)]
+                     #'(c.bindings ...
+                        ((real-binding) c.real-binding)
+                        ((imag-binding) c.imag-binding))])))
+            (pattern v:unboxable-fun-clause?
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [c:unbox-fun-clause
+                     #'(c.bindings ...)])))
+            (pattern v
+              #:attr bindings
+                (delay
+                  (syntax-parse #'v
+                    [(vs rhs:opt-expr)
+                     #'((vs rhs.opt))]))))
+
+         (define-syntax-class unboxed-clauses
+           #:attributes ([bindings 1])
+           (pattern (clauses:unboxed-clause ...)
+             #:with (bindings ...) (template ((?@ . clauses.bindings) ...))))]
+
+   #:with opt
+     (syntax-parse #'(clause ...)
+      [clauses:unboxed-clauses
+       (quasisyntax/loc/origin
+          this-syntax #'letk.kw
+          (letk.key ... (clauses.bindings ...) body.opt ...))])))
+
+
+
+(define-syntax-class constant-var
+  #:attributes ()
+  (pattern v:id
+    #:when (not (is-var-mutated? #'v))))
+
+;; A function definition is unboxable when the following are true:
+;; 1. Its binding is never mutated.
+;; 2. Its type has no keyword arguments or rest/drest arguments.
+;; 3. At least one of the arguments is of the type FloatComplex and used in a manner which benefits
+;; from unboxing.
+(define-syntax-class unboxable-fun-definition
+  #:attributes ()
+  #:literal-sets (kernel-literals)
+  (pattern ((fun-name:constant-var) (~and fun (#%plain-lambda params body ...)))
+    #:do [(define doms
+            (match (type-of #'fun)
+              [(tc-result1: (Function: (list (arr: doms rngs
+                                                   (and rests #f)
+                                                   (and drests #f)
+                                                   (and kws '())))))
+               doms]
+              [_ #f]))]
+    #:when doms
+    #:do [
+       ;; at least 1 argument has to be of type float-complex
+       ;; and can be unboxed
+       (define unboxed-args
+              (for/list ([param (in-syntax #'params)]
+                         [dom doms]
+                         [i (in-naturals)])
+                (cond
+                  [(and (equal? dom -FloatComplex)
+                        (could-be-unboxed-in?
+                          param
+                          #'(begin body ...)))
+                   ;; we can unbox
+                   (log-optimization "unboxed var -> table" arity-raising-opt-msg param)
+                   #t]
+                  [else #f])))]
+    #:when
+       ;; can we unbox anything?
+       (and (member #t unboxed-args)
+            ;; if so, add to the table of functions with
+            ;; unboxed params, so we can modify its call
+            ;; sites, its body and its header
+            (add-unboxed-fun! #'fun-name unboxed-args))))
+
 
 (define-splicing-syntax-class let-like-keyword
   #:commit
@@ -219,27 +252,20 @@
                    [_ #f])))
        (rec exp)))
 
-;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
-(define-syntax-class unboxed-let-clause
-  #:commit
-  #:attributes (id real-binding imag-binding (bindings 1))
-  (pattern ((id:id) :unboxed-float-complex-opt-expr)
-    #:do [(add-unboxed-var! #'id #'real-binding #'imag-binding)]))
-
 ;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
 ;; the new function will have all the unboxed arguments first, then all the
 ;; boxed
-(define-syntax-class unboxed-fun-clause
+(define-syntax-class unbox-fun-clause
   #:commit
-  #:attributes (res)
+  #:attributes ([bindings 1])
   (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
     #:with (real-params ...)
     (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(fun.unboxed ...))
     #:with (imag-params ...)
     (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(fun.unboxed ...))
     #:do [(log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'fun)]
-    #:with res
+    #:with (bindings ...)
     ;; add unboxed parameters to the unboxed vars table
     (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
       (for ([index (in-list to-unbox)]
@@ -254,12 +280,7 @@
       ;; real parts of unboxed parameters go first, then all
       ;; imag parts, then boxed occurrences of unboxed
       ;; parameters will be inserted when optimizing the body
-      #`((fun) (#%plain-lambda
-                 (real-params ... imag-params ... #,@(reverse boxed))
-                 body.opt ...)))))
+      #`(((fun) (#%plain-lambda
+                  (real-params ... imag-params ... #,@(reverse boxed))
+                  body.opt ...))))))
 
-(define-syntax-class opt-let-clause
-  #:commit
-  #:attributes (res)
-  (pattern (vs rhs:opt-expr)
-    #:with res #'(vs rhs.opt)))
