@@ -93,3 +93,36 @@ of type precision at use sites:
 Classes and units are not currently supported in Typed Racket. Support
 for classes is under development and will be in a future release.
 
+@section{Type generalization}
+
+Not so much a caveat as a feature that may have unexpected consequences.
+To make programming with invariant type constructors (such as @racket[Boxof])
+easier, Typed Racket generalizes types that are used as arguments to invariant
+type constructors. For example:
+
+@interaction[#:eval the-eval
+  0
+  (define b (box 0))
+  b
+]
+
+@racket[0] has type @racket[Zero], which means that @racket[b] ``should'' have
+type @racket[(Boxof Zero)]. On the other hand, that type is not especially
+useful, as it only allows @racket[0] to be stored in the box. Most likely, the
+intent was to have a box of a more general type (such as @racket[Integer]) and
+initialize it with @racket[0]. Type generalization does exactly that.
+
+In some cases, however, type generalization can lead to unexpected results:
+
+@interaction[#:eval the-eval
+  (box (ann 1 Fixnum))
+]
+
+The intent of this code may be to create of box of @racket[Fixnum], but Typed
+Racket will generalize it anyway. To create a box of @racket[Fixnum], the box
+itself should have a type annotation:
+
+@interaction[#:eval the-eval
+  (ann (box 1) (Boxof Fixnum))
+  ((inst box Fixnum) 1)
+]
