@@ -68,6 +68,9 @@
            (pattern (~and ((_:non-escaping-function-id) body:expr)
                           _:unboxable-fun-definition)))
 
+         ;; Bindings are delayed so that all clauses are matched before optimizations happen.
+         ;; This ensures that unboxable variables defined in later clauses are detected before
+         ;; optimization starts.
          (define-syntax-class unboxed-clause
             #:attributes (bindings)
             (pattern v:unboxable-let-clause?
