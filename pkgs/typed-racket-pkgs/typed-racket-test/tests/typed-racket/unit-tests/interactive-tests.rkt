@@ -93,6 +93,8 @@
 
     (test-form (regexp-quote "(case-> (One -> One) (-> One))")
       (:query-type/result * 1))
+    (test-form #rx"not in the given function's range.\n"
+      (:query-type/result + String))
     (test-form-exn #rx":query-type/result.*applied to arguments"
       :query-type/result)
     (test-form-exn #rx":query-type/result.*only valid at the top-level"
