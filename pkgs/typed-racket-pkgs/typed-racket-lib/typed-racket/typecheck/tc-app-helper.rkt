@@ -326,7 +326,7 @@
           msg-vars
           (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...))))
      (let ([fcn-string (if name
-                           (format "function ~a" (syntax->datum name))
+                           (format "function `~a'" (syntax->datum name))
                            "function")])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
