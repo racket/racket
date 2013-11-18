@@ -43,6 +43,7 @@
                (eval `(#%top-interaction .
                        ,(syntax->datum #'form)) (force promised-ns)))))))]))
 
+;; Add 'only at the toplevel tests'
 (define (interactive-tests)
   (test-suite "Interactive tests"
     (test-form #rx"1"
@@ -51,8 +52,10 @@
       (:type Byte))
     (test-form (regexp-quote "(U 0 1 Byte-Larger-Than-One")
       (:type #:verbose Byte))
-    (test-form-exn #rx"applied to arguments"
+    (test-form-exn #rx":type.*applied to arguments"
       :type)
+    (test-form-exn #rx":type.*only valid at the top-level"
+      (list (:type)))
     (test-form-exn #rx"exactly one argument"
       (:type))
     (test-form-exn #rx"exactly one argument"
@@ -60,20 +63,34 @@
     (test-form-exn #rx"exactly one argument"
       (:type #:verbose))
 
-    (test-form-exn #rx"applied to arguments"
+    (test-form #rx"Positive-Index"
+      (:print-type (+ 1 1)))
+    (test-form (regexp-quote "(values One One)")
+      (:print-type (values 1 1)))
+    (test-form-exn #rx":print-type.*applied to arguments"
       :print-type)
+    (test-form-exn #rx":print-type.*only valid at the top-level"
+      (list (:print-type)))
     (test-form-exn #rx"exactly one argument"
       (:print-type))
     (test-form-exn #rx"exactly one argument"
       (:print-type 1 2))
 
-    (test-form-exn #rx"applied to arguments"
+    (test-form (regexp-quote "(4 Zero -> Zero)")
+      (:query-type/args * 4 0))
+    (test-form-exn #rx":query-type/args.*applied to arguments"
       :query-type/args)
+    (test-form-exn #rx":query-type/args.*only valid at the top-level"
+      (list (:query-type/args)))
     (test-form-exn #rx"at least one argument"
       (:query-type/args))
 
-    (test-form-exn #rx"applied to arguments"
+    (test-form (regexp-quote "(case-> (One -> One) (-> One))")
+      (:query-type/result * 1))
+    (test-form-exn #rx":query-type/result.*applied to arguments"
       :query-type/result)
+    (test-form-exn #rx":query-type/result.*only valid at the top-level"
+      (list (:query-type/result)))
     (test-form-exn #rx"exactly two arguments"
       (:query-type/result))
     (test-form-exn #rx"exactly two arguments"

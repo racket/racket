@@ -27,6 +27,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      -lambda -define)
          ;; provide the contracted bindings as primitives
          (all-from-out "base-contracted.rkt")
+         (all-from-out "top-interaction.rkt")
          :
          (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
@@ -52,6 +53,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (rename-in racket/contract/base [-> c->] [case-> c:case->])
          ;; contracted bindings to replace built-in ones
          (except-in "base-contracted.rkt" initialize-contracted)
+         "top-interaction.rkt"
          "base-types.rkt"
          "base-types-extra.rkt"
          'struct-extraction
@@ -315,16 +317,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     ;; the value is not from the typed side
                     #:typed-side #f
                     (type->contract-fail typ #'ty)))))])]))
-
-(define-for-syntax (fail stx)
-  (syntax-parse stx
-    [_:id 
-     (raise-syntax-error #f "must be applied to arguments" stx)]
-    [_ (raise-syntax-error #f "only valid at the top-level of an interaction" stx)]))
-(define-syntax :type fail)
-(define-syntax :print-type fail)
-(define-syntax :query-type/args fail)
-(define-syntax :query-type/result fail)
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
