@@ -65,6 +65,8 @@
 
     (test-form #rx"Positive-Index"
       (:print-type (+ 1 1)))
+    (test-form (regexp-quote "(values One One)")
+      (:print-type (values 1 1)))
     (test-form-exn #rx":print-type.*applied to arguments"
       :print-type)
     (test-form-exn #rx":print-type.*only valid at the top-level"
@@ -74,7 +76,7 @@
     (test-form-exn #rx"exactly one argument"
       (:print-type 1 2))
 
-    (test-form #rx"(4 Zero -> Zero)"
+    (test-form (regexp-quote "(4 Zero -> Zero)")
       (:query-type/args * 4 0))
     (test-form-exn #rx":query-type/args.*applied to arguments"
       :query-type/args)

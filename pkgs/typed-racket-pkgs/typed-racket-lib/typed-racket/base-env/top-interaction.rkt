@@ -70,7 +70,7 @@
                       #,(parameterize ([print-multi-line-case-> #t])
                           (format "~a\n" (match type
                                            [(tc-result1: t f o) t]
-                                           [(tc-results: t) (cons 'Values t)]
+                                           [(tc-results: t) (-values t)]
                                            [(tc-any-results:) ManyUniv])))))]
         [form
          (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))))
