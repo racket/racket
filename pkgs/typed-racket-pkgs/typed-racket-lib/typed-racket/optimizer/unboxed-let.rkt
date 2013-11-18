@@ -59,18 +59,18 @@
          ;; unboxed in expressions in earlier clauses.
 
          ;; Clauses of form ((v) rhs), currently only supports 1 lhs var
-         (define-syntax-class unboxed-let-clause?
+         (define-syntax-class unboxable-let-clause?
            (pattern ((id:id) rhs:float-complex-expr)
              #:when (could-be-unboxed-in? #'id #'(begin body ...))))
 
          ;; Clauses that define functions that can be lifted
-         (define-syntax-class unboxed-fun-clause?
+         (define-syntax-class unboxable-fun-clause?
            (pattern (~and ((_:non-escaping-function-id) body:expr)
-                          _:unboxed-fun-definition)))
+                          _:unboxable-fun-definition)))
 
          (define-syntax-class unboxed-clause
             #:attributes (unboxed-let bindings)
-            (pattern v:unboxed-let-clause?
+            (pattern v:unboxable-let-clause?
               #:attr unboxed-let #t
               #:with (real-binding imag-binding) (binding-names)
               #:do [(add-unboxed-var! #'v.id #'real-binding #'imag-binding)]
@@ -81,12 +81,12 @@
                      #'(c.bindings ...
                         ((real-binding) c.real-binding)
                         ((imag-binding) c.imag-binding))])))
-            (pattern v:unboxed-fun-clause?
+            (pattern v:unboxable-fun-clause?
               #:attr unboxed-let #f
               #:attr bindings
                 (delay
                   (syntax-parse #'v
-                    [c:unboxed-fun-clause
+                    [c:unbox-fun-clause
                      #'(c.bindings ...)])))
             (pattern v
               #:attr unboxed-let #f
@@ -120,7 +120,12 @@
   (pattern v:id
     #:when (not (is-var-mutated? #'v))))
 
-(define-syntax-class unboxed-fun-definition
+;; A function definition is unboxable when the following are true:
+;; 1. Its binding is never mutated.
+;; 2. Its type has no keyword arguments or rest/drest arguments.
+;; 3. At least one of the arguments is of the type FloatComplex and used in a manner which benefits
+;; from unboxing.
+(define-syntax-class unboxable-fun-definition
   #:attributes ()
   #:literal-sets (kernel-literals)
   (pattern ((fun-name:constant-var) (~and fun (#%plain-lambda params body ...)))
@@ -253,7 +258,7 @@
 ;; these arguments may be unboxed
 ;; the new function will have all the unboxed arguments first, then all the
 ;; boxed
-(define-syntax-class unboxed-fun-clause
+(define-syntax-class unbox-fun-clause
   #:commit
   #:attributes ([bindings 1])
   (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
