@@ -186,7 +186,9 @@
 ;; it's worth unboxing
 (define (could-be-unboxed-in? v exp)
 
-  ;; Recur on the subforms
+  ;; if v is a direct child of exp, that means it's used in a boxed
+  ;; fashion, and is not safe to unboxed
+  ;; if not, recur on the subforms
   (define (look-at exp)
     (ormap rec (syntax->list exp)))
 
