@@ -208,6 +208,8 @@
         (eprintf "WARNING: unknown splash spec: ~s" splash-draw-spec)
         (no-splash)])
      
+     (send splash-tlw reflow-container)
+     
      (refresh-splash)
      
      (send splash-tlw center 'both)
