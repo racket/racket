@@ -11,7 +11,7 @@
          (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
-         (for-template (only-in (base-env prims) :type :print-type :query-type/args :query-type/result))
+         (for-template (base-env top-interaction))
          (utils utils tc-utils arm)
          "tc-setup.rkt")
 
@@ -53,69 +53,8 @@
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
-    [(_ . ((~literal :type)
-           (~optional (~and #:verbose verbose-kw))
-           ty:expr))
-     (parameterize ([current-print-type-fuel
-                     (if (attribute verbose-kw) +inf.0 1)]
-                    ;; This makes sure unions are totally flat for the
-                    ;; infinite fuel case. If fuel that's not 0, 1, or +inf.0
-                    ;; is ever used, more may need to be done.
-                    [current-type-names
-                     (if (attribute verbose-kw) '() (current-type-names))]
-                    [current-print-unexpanded (box '())])
-       (define type (format "~a" (parse-type #'ty)))
-       (define unexpanded
-         (remove-duplicates (unbox (current-print-unexpanded))))
-       (define cue (if (null? unexpanded)
-                       ""
-                       (format "[can expand further: ~a]"
-                               (string-join (map ~a unexpanded)))))
-       #`(display #,(format "~a\n~a" type cue)))]
-    [(_ . (~and form ((~literal :type) . _)))
-     (raise-syntax-error #f "must be applied to exactly one argument" #'form)]
-    ;; Prints the _entire_ type. May be quite large.
-    [(_ . ((~literal :print-type) e))
-     (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
-               #`(display
-                  #,(parameterize ([print-multi-line-case-> #t])
-                      (format "~a\n" (match type
-                                       [(tc-result1: t f o) t]
-                                       [(tc-results: t) (cons 'Values t)]
-                                       [(tc-any-results:) ManyUniv])))))]
-    [(_ . (~and form ((~literal :print-type) . _)))
-     (raise-syntax-error #f "must be applied to exactly one argument" #'form)]
-    ;; given a function and input types, display the result type
-    [(_ . ((~literal :query-type/args) op arg-type ...))
-     (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
-       (tc-setup #'stx
-                 ;; create a dummy function with the right argument types
-                 #`(lambda #,(stx-map type-label-property
-                                      #'(dummy-arg ...) #'(arg-type ...))
-                     (op dummy-arg ...))
-                 'top-level expanded init tc-toplevel-form before type
-                 #`(display
-                    #,(format "~a\n"
-                              (match type
-                                [(tc-result1: (and t (Function: _)) f o) t])))))]
-    [(_ . (~and form ((~literal :query-type/args) . _)))
-     (raise-syntax-error #f "must be applied to at least one argument" #'form)]
-    ;; given a function and a desired return type, fill in the blanks
-    [(_ . ((~literal :query-type/result) op desired-type))
-     (let ([expected (parse-type #'desired-type)])
-       (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
-                 (match type
-                   [(tc-result1: (and t (Function: _)) f o)
-                    (let ([cleaned (cleanup-type t expected)])
-                      #`(display
-                         #,(match cleaned
-                             [(Function: '())
-                              "Desired return type not in the given function's range."]
-                             [(Function: arrs)
-                              (format "~a\n" cleaned)])))]
-                   [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
-    [(_ . (~and form ((~literal :query-type/result) . _)))
-     (raise-syntax-error #f "must be applied to exactly two arguments" #'form)]
+    [(_ . (~and form ((~var command (static interactive-command? #f)) . _)))
+     ((interactive-command-procedure (attribute command.value)) #'form init)]
     [(_ . form)
      (init)
      (tc-setup
