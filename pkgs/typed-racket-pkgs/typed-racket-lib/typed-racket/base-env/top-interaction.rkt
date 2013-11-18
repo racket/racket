@@ -11,11 +11,11 @@
     syntax/stx
     syntax/parse
     "../tc-setup.rkt"
-    (private type-contract parse-type syntax-properties)
-    (types utils abbrev generalize printer)
-    (typecheck provide-handling tc-toplevel tc-app-helper)
+    (private parse-type syntax-properties)
+    (types utils abbrev printer)
+    (typecheck tc-toplevel tc-app-helper)
     (rep type-rep)
-    (utils utils tc-utils arm)))
+    (utils tc-utils)))
 (provide
   (for-syntax
     interactive-command?

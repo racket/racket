@@ -3,12 +3,10 @@
 (require (rename-in "utils/utils.rkt")
          (for-syntax racket/base)
          (for-template racket/base)
-         (private with-types type-contract parse-type syntax-properties)
+         (private with-types type-contract)
          (except-in syntax/parse id)
-         racket/match racket/syntax racket/list syntax/stx
-         racket/format
-         (only-in racket/string string-join)
-         (types utils abbrev generalize printer)
+         racket/match racket/syntax
+         (types utils abbrev generalize)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (for-template (base-env top-interaction))
