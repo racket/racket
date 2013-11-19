@@ -1,5 +1,5 @@
 #lang plai/gc2/mutator
-(allocator-setup "../good-collectors/trivial-moving-collector.rkt" 40)
+(allocator-setup "../good-collectors/trivial-moving-collector.rkt" 100)
 
 ;; just some random allocation here
 ;; this is really about testing 
@@ -16,4 +16,5 @@
   ((let ([x (cons 1 2)])
      (λ (y)
        ((first y) (first x))))
-   (λ (z) z)))
+   (cons (λ (z) z)
+         5)))

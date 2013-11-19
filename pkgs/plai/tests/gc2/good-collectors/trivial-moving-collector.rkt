@@ -32,7 +32,7 @@ allocation
         [(closure)
          (define size (heap-ref (+ addr 2)))
          (for ([i (in-range size)])
-           (inc-at-addr (+ addr 2 i)))
+           (inc-at-addr (+ addr 3 i)))
          (loop (+ addr size 3))]
         [(prim)
          (loop (+ addr 2))]
@@ -115,16 +115,3 @@ allocation
 ; function number -> boolean
 (define (gc:flat? a)
   (eq? 'prim (heap-ref a)))
-
-(module+ test
-  (require rackunit)
-  
-  (check-equal? (let ([h (make-vector 7)])
-                  (with-heap 
-                   h
-                   (init-allocator)
-                   (define one (gc:alloc-flat 1))
-                   (define clos (gc:closure 'something (list (make-root 'dummy (λ () one) void))))
-                   (gc:alloc-flat 2))
-                  h)
-                (vector 'prim 1 'closure 'something 0 'prim 2)))
