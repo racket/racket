@@ -1926,6 +1926,27 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
         /* Jump to ref3 to produce false */
         int rs_valid, rs_can_keep = 0;
 
+        switch (cmp) {
+        case -CMP_BIT:
+          if (rand2) {
+            if (!unsafe_fx || overflow_refslow) {
+              (void)jit_blti_l(refslow, JIT_R1, 0);
+              (void)jit_bgti_l(refslow, JIT_R1, (intptr_t)scheme_make_integer(MAX_TRY_SHIFT));
+            }
+          }
+          break;
+        case CMP_BIT:
+          if (rand2) {
+            if (!unsafe_fx || overflow_refslow) {
+              (void)jit_blti_l(refslow, JIT_R0, 0);
+              (void)jit_bgti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(MAX_TRY_SHIFT));
+            }
+          }
+          break;
+        }
+
+        /* Don't use refslow from here on */
+
         if (for_branch) {
           scheme_prepare_branch_jump(jitter, for_branch);
           CHECK_LIMIT();
@@ -1940,10 +1961,6 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
           break;
         case -CMP_BIT:
           if (rand2) {
-            if (!unsafe_fx || overflow_refslow) {
-              (void)jit_blti_l(refslow, JIT_R1, 0);
-              (void)jit_bgti_l(refslow, JIT_R1, (intptr_t)scheme_make_integer(MAX_TRY_SHIFT));
-            }
             jit_rshi_l(JIT_R1, JIT_R1, 1);
             jit_addi_l(JIT_V1, JIT_R1, 1);
             jit_movi_l(JIT_R2, 1);
@@ -1998,10 +2015,6 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
         default:
         case CMP_BIT:
           if (rand2) {
-            if (!unsafe_fx || overflow_refslow) {
-              (void)jit_blti_l(refslow, JIT_R0, 0);
-              (void)jit_bgti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(MAX_TRY_SHIFT));
-            }
             jit_rshi_l(JIT_R0, JIT_R0, 1);
             jit_addi_l(JIT_R0, JIT_R0, 1);
             jit_movi_l(JIT_V1, 1);
