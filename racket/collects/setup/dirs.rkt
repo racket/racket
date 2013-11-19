@@ -3,7 +3,8 @@
 (require racket/promise
          compiler/private/winutf16
          compiler/private/mach-o
-         '#%utils)
+         '#%utils
+         (for-syntax racket/base))
 
 ;; ----------------------------------------
 ;; "config"
@@ -127,9 +128,10 @@
 (define (get-false) #f)
 (define (chain-to f) f)
 
-(define-syntax define-finder
-  (syntax-rules (get-false chain-to)
+(define-syntax (define-finder stx)
+  (syntax-case stx (get-false chain-to)
     [(_ provide config:id id user-id #:default user-default default)
+     #'
      (begin
        (define-finder provide config:id id get-false default)
        (provide user-id)
@@ -138,6 +140,7 @@
        (define (user-id)
          (force user-dir)))]
     [(_ provide config:id id user-id config:search-id search-id default)
+     #'
      (begin
        (define-finder provide config:id id user-id default)
        (provide search-id)
@@ -146,6 +149,7 @@
                          (cons-user (user-id) (single (id))))))]
     [(_ provide config:id id user-id config:search-id search-id
         extra-search-dir default)
+     #'
      (begin
        (define-finder provide config:id id user-id default)
        (provide search-id)
@@ -154,25 +158,27 @@
                          (extra (extra-search-dir)
                                 (cons-user (user-id) (single (id)))))))]
     [(_ provide config:id id get-false (chain-to get-default))
-     (begin
-       (provide id)
-       (define dir
-         (delay
-           (or (force config:id) (get-default))))
-       (define (id)
-         (force dir)))]
+     (with-syntax ([dir (generate-temporaries #'(id))])
+       #'(begin
+           (provide id)
+           (define dir
+             (delay
+               (or (force config:id) (get-default))))
+           (define (id)
+             (force dir))))]
     [(_ provide config:id id get-false default)
-     (begin
-       (provide id)
-       (define dir
-         (delay
-           (or (force config:id)
-               (let ([p (find-collects-dir)])
-                 (and p (simplify-path (build-path p 'up default)))))))
-       (define (id)
-         (force dir)))]
+     (with-syntax ([dir (generate-temporaries #'(id))])
+       #'(begin
+           (provide id)
+           (define dir
+             (delay
+               (or (force config:id)
+                   (let ([p (find-collects-dir)])
+                     (and p (simplify-path (build-path p 'up default)))))))
+           (define (id)
+             (force dir))))]
     [(_ provide config:id id user-id default)
-     (define-finder provide config:id id user-id #:default default default)]))
+     #'(define-finder provide config:id id user-id #:default default default)]))
 
 (define-syntax no-provide (syntax-rules () [(_ . rest) (begin)]))
 
