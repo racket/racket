@@ -487,6 +487,9 @@
         [(Hashtable: k v)
          (when (equal? kind flat-sym) (exit (fail)))
          #`(hash/c #,(t->c k #:kind chaperone-sym) #,(t->c v) #:immutable 'dont-care)]
+        [(Channel: t)
+         (set-chaperone!)
+         #`(channel/c #,(t->c/both t))]
         [else
          (exit (fail #:reason "contract generation not supported for this type"))]))))
 
