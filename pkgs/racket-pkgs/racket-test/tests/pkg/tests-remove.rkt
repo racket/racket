@@ -61,7 +61,7 @@
      $ "raco pkg remove pkg-test1 pkg-test2"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1))
-   (with-fake-root
+   (with-fake-root 
     (shelly-case
      "autoremove"
      $ "raco pkg config --set catalogs http://localhost:9990"
@@ -78,7 +78,23 @@
      $ "raco pkg remove --auto"
      $ "raco pkg show -u -a" =stdout> " [none]\n"
      $ "racket -e '(require pkg-test1)'" =exit> 1
-     $ "racket -e '(require pkg-test2)'" =exit> 1))
+     $ "racket -e '(require pkg-test2)'" =exit> 1)
+    (shelly-case
+     "single-step autoremove"
+     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
+     $ "raco pkg remove --auto pkg-test2"
+     $ "raco pkg show -u -a" =stdout> " [none]\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1)
+    (shelly-case
+     "single-step autoremove with cycles"
+     $ "raco pkg install --deps search-auto --copy test-pkgs/pkg-cycle1" =exit> 0
+     $ "racket -e '(require pkg-cycle1)'" =exit> 0
+     $ "racket -e '(require pkg-cycle2)'" =exit> 0
+     $ "raco pkg remove --auto pkg-cycle1"
+     $ "raco pkg show -u -a" =stdout> " [none]\n"
+     $ "racket -e '(require pkg-cycle1)'" =exit> 1
+     $ "racket -e '(require pkg-cycle2)'" =exit> 1))
    (with-fake-root
     (shelly-case
      "different scope error"

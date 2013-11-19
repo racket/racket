@@ -850,7 +850,9 @@
     (define pkgs-set (list->set in-pkgs))
     (define remaining-pkg-db-set
       (set-subtract all-pkgs-set
-                    pkgs-set))
+                    (if auto?
+                        (list->set remove-pkgs)
+                        pkgs-set)))
     (define deps-to-be-removed
       (set-intersect
        pkgs-set
