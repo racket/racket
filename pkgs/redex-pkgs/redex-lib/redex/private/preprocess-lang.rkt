@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/math)
          racket/bool
          racket/contract
          racket/list
@@ -23,13 +24,10 @@
 ;; sorts rhs's so that recursive ones go last
 (define (sep-lang lang)
   (define (filter-edges edges lang)
-    (foldl
-     (λ (nt m)
-        (let ([name (nt-name nt)])
-          (hash-set m name
-                    (hash-ref edges name))))
-     (hash)
-     lang))
+    (for/fold ([ht (hash)])
+              ([nt (in-list lang)])
+      (define name (nt-name nt))
+      (hash-set ht name (hash-ref edges name))))
   (define edges (find-edges lang))
   (define cyclic-nts (find-cycles edges))
   (define-values (cyclic non-cyclic)
@@ -296,11 +294,18 @@
 
 ;; fold-map/set : (a -> setof b) (listof a) -> (setof b)
 (define (fold-map/set f l)
-  (foldl
-   (λ (x s)
-      (set-union (f x) s))
-   (set)
-   l))
+  (for/fold ([acc (set)])
+            ([x (in-list l)])
+    (set-union (f x) acc)))
+
+(define (pos-inf? n)
+  (and (infinite? n)
+       (positive? n)))
+
+(define (my-max default new)
+  (if (> new default)
+      new
+      default))
 
 ;; Short circuits for +inf
 (define-syntax (for/max stx)
@@ -310,11 +315,7 @@
        #'(for/fold/derived original
                            ([current-max -inf.0])
                            clauses
-           #:break (and (infinite? current-max)
-                        (positive? current-max))
-           (define maybe-new-max
-             (let () . defs+exprs))
-           (if (> maybe-new-max current-max)
-               maybe-new-max
-               current-max)))]))
+           #:break (pos-inf? current-max)
+           (my-max current-max
+                   (let () . defs+exprs))))]))
 
