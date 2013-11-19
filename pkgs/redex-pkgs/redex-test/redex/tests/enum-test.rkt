@@ -155,3 +155,20 @@
 (try-it 4 Holes ctx)
 (try-it 100 Holes i)
 (try-it 100 Holes i2)
+(try-it 1 Holes hole)
+(try-it 100 Holes (in-hole hole number))
+
+;; Cross test
+(define-language CrossLang
+  (e (e e)
+     (λ (x) e)
+     x)
+  (x variable-not-otherwise-mentioned))
+
+(try-it 100 CrossLang e)
+(try-it 100 CrossLang x)
+(try-it 100 CrossLang (cross e))
+(try-it 1 CrossLang (cross x))
+(try-it 100 CrossLang (in-hole (cross x) e))
+(try-it 100 CrossLang (in-hole (cross e) x))
+

@@ -1,10 +1,11 @@
 #lang unstable/2d racket/base
 
-(require racket/list
-         racket/contract
-         racket/set
-         racket/match
+(require racket/contract
          racket/function
+         racket/list
+         racket/match
+         racket/promise
+         racket/set
          "match-a-pattern.rkt"
          "matcher.rkt"
          "lang-struct.rkt"
@@ -849,7 +850,7 @@
 (define empty-lang
   (compiled-lang
    #f #f #f #f #f #f #f #f #f #f '() #f (hash)
-   (lang-enumerators '())))
+   (lang-enumerators '() (delay '()))))
 
 (define unique-name-nums (make-parameter 0))
 

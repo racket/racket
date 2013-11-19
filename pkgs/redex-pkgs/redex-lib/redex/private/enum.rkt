@@ -5,6 +5,7 @@
          racket/list
          racket/math
          racket/match
+         racket/promise
          racket/set
 
          "enumerator.rkt"
@@ -17,7 +18,7 @@
 
 (provide 
  (contract-out
-  [lang-enumerators (-> (listof nt?) lang-enum?)]
+  [lang-enumerators (-> (listof nt?) (promise/c (listof nt?)) lang-enum?)]
   [pat-enumerator (-> lang-enum?
                       any/c ;; pattern
                       enum?)]
@@ -25,7 +26,10 @@
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-(struct lang-enum (enums unused-var/e))
+;; nt-enums : hash[sym -o> enum]
+;; cc-enums : promise/c (hash[sym -o> enum])
+;; unused-var/e : enum
+(struct lang-enum (nt-enums delayed-cc-enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
 (struct misname-ref (name tag) #:transparent)
@@ -36,59 +40,64 @@
 ;; Top level exports
 (define enum-ith decode)
 
-(define (lang-enumerators lang)
-  (define l-enums (make-hash))
+(define (lang-enumerators lang cc-lang)
+  (define (make-lang-table! ht lang)
+    (define (enumerate-lang! cur-lang enum-f)
+      (for ([nt (in-list cur-lang)])
+        (hash-set! ht
+                   (nt-name nt)
+                   (with-handlers ([exn:fail:redex? fail/e])
+                     (enum-f (nt-rhs nt)
+                             nt-enums)))))
+    (define-values (fin-lang rec-lang) (sep-lang lang))
+    (enumerate-lang! fin-lang
+                     (λ (rhs enums)
+                        (enumerate-rhss rhs l-enum)))
+    (enumerate-lang! rec-lang
+                     (λ (rhs enums)
+                        (thunk/e +inf.f
+                                 (λ ()
+                                    (enumerate-rhss rhs l-enum)))))
+    ht)
+  (define nt-enums (make-hash))
+  (define cc-enums (delay (make-hash)))
   (define unused-var/e
     (apply except/e
            var/e
            (used-vars lang)))
-  (define (enumerate-lang! cur-lang enum-f)
-    (for ([nt (in-list cur-lang)])
-      (hash-set! l-enums
-                 (nt-name nt)
-                 (with-handlers ([exn:fail:redex? fail/e])
-                   (enum-f (nt-rhs nt)
-                           l-enums)))))
-  (define-values (fin-lang rec-lang) (sep-lang lang))
-  (enumerate-lang! fin-lang
-                   (λ (rhs enums)
-                      (enumerate-rhss rhs enums unused-var/e)))
-  (enumerate-lang! rec-lang
-                   (λ (rhs enums)
-                      (thunk/e +inf.f
-                               (λ ()
-                                  (enumerate-rhss rhs enums unused-var/e)))))
+  (define l-enum
+    (lang-enum nt-enums cc-enums unused-var/e))
+  
+  (make-lang-table! nt-enums lang)
+  (define filled-cc-enums
+    (delay (make-lang-table! (force cc-enums) (force cc-lang))))
 
-  (lang-enum l-enums unused-var/e))
+  (struct-copy lang-enum l-enum [delayed-cc-enums filled-cc-enums]))
 
 (define (pat-enumerator l-enum pat)
   (map/e
    to-term
    (λ (_)
       (redex-error 'pat-enum "Enumerator is not a  bijection"))
-   (pat/e pat
-          (lang-enum-enums l-enum)
-          (lang-enum-unused-var/e l-enum))))
+   (pat/e pat l-enum)))
 
-(define (enumerate-rhss rhss l-enums unused/e)
+(define (enumerate-rhss rhss l-enum)
   (apply sum/e
          (for/list ([production (in-list rhss)])
-           (pat/e (rhs-pattern production)
-                  l-enums
-                  unused/e))))
+           (pat/e (rhs-pattern production) l-enum))))
 
-(define (pat/e pat l-enums unused/e)
+(define (pat/e pat l-enum)
   (match-define (ann-pat nv pp-pat) (preprocess pat))
   (map/e
    ann-pat
    (λ (ap)
       (values (ann-pat-ann ap)
               (ann-pat-pat ap)))
-   (env/e nv l-enums unused/e)
-   (pat-refs/e pp-pat l-enums unused/e)))
+   (env/e nv l-enum)
+   (pat-refs/e pp-pat l-enum)))
 
 ;; (: pat-refs/e : Pat (HashTable Symbol (Enum Pat)) (Enum Symbol) -> Enum RefPat)
-(define (pat-refs/e pat nt-enums unused/e)
+(define (pat-refs/e pat l-enum)
   (define (loop pat)
     (match-a-pattern
      pat
@@ -105,10 +114,10 @@
      [`(variable-prefix ,s)
       (var-prefix/e s)]
      [`variable-not-otherwise-mentioned
-      unused/e]
+      (lang-enum-unused-var/e l-enum)]
      [`hole (const/e the-hole)]
      [`(nt ,id)
-      (hash-ref nt-enums id)]
+      (lang-enum-get-nt-enum l-enum id)]
      [`(name ,n ,pat)
       (const/e (name-ref n))]
      [`(mismatch-name ,n ,tag)
@@ -129,7 +138,7 @@
      [`(side-condition ,p ,g ,e)
       (unsupported pat)]
      [`(cross ,s)
-      (unsupported pat)]
+      (lang-enum-get-cross-enum l-enum s)]
      [`(list ,sub-pats ...)
       (list/e
        (for/list ([sub-pat (in-list sub-pats)])
@@ -151,10 +160,10 @@
       (const/e pat)]))
   (loop pat))
 
-(define/match (env/e nv l-enums unused/e)
-  [((env names misnames nreps) _ _)
+(define/match (env/e nv l-enum)
+  [((env names misnames nreps) _)
    (define (val/e p)
-     (pat-refs/e p l-enums unused/e))
+     (pat-refs/e p l-enum))
 
    (define/match (misvals/e p-ts)
      [((cons p ts))
@@ -171,7 +180,7 @@
       (define tpats/e
         (hash-traverse/e val/e tpats))
       (many/e
-       (cons/e (env/e nv l-enums unused/e)
+       (cons/e (env/e nv l-enum)
                tpats/e))])
    (define names-env
      (hash-traverse/e val/e names))
@@ -193,15 +202,14 @@
 ;; to-term : (ann-pat t-env pat-with-refs) -> redex term
 (define/match (to-term ap)
   [((ann-pat nv term))
-   ((refs-to-fn term) nv)])
+   (strip-hide-holes ((refs-to-fn term) nv))])
 
 ;; refs-to-fn : RefPat -> (TEnv -> Term)
 (define (refs-to-fn refpat)
   (match refpat
-    [(ann-pat _ _)
-     (define term
-       (to-term refpat))
-     (λ (_) term)]
+    [(ann-pat nv term)
+     (λ (_)
+      ((refs-to-fn term) nv))]
     [(decomp ctx-refs termpat-refs)
      (define ctx-fn (refs-to-fn ctx-refs))
      (define term-fn (refs-to-fn termpat-refs))
@@ -237,6 +245,12 @@
            [_ (sequence-fn (list (refs-to-fn subrefpat)))]))))]
     [else (λ (_) refpat)]))
 
+(define (strip-hide-holes term)
+  (match term
+    [(hide-hole t) (strip-hide-holes t)]
+    [(list ts ...) (map strip-hide-holes ts)]
+    [_ term]))
+
 (define (plug-hole ctx term)
   (define (plug ctx)
     (match ctx
@@ -255,3 +269,11 @@
   (λ (x)
      (for/list ([f (in-list fs)])
        (f x))))
+
+;; lang-enum-get-nt-enum : lang-enum Symbol -> Enum 
+(define (lang-enum-get-nt-enum l-enum s)
+  (hash-ref (lang-enum-nt-enums l-enum) s))
+
+;; lang-enum-get-cross-enum : lang-enum Symbol -> Enum
+(define (lang-enum-get-cross-enum l-enum s)
+  (hash-ref (force (lang-enum-delayed-cc-enums l-enum)) s))
