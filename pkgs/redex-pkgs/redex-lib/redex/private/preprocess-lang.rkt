@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/math)
          racket/bool
          racket/contract
          racket/list
@@ -23,13 +24,10 @@
 ;; sorts rhs's so that recursive ones go last
 (define (sep-lang lang)
   (define (filter-edges edges lang)
-    (foldl
-     (λ (nt m)
-        (let ([name (nt-name nt)])
-          (hash-set m name
-                    (hash-ref edges name))))
-     (hash)
-     lang))
+    (for/fold ([filtered (hash)])
+              ([nt (in-list lang)])
+      (define name (nt-name nt))
+      (hash-set filtered name (hash-ref edges name))))
   (define edges (find-edges lang))
   (define cyclic-nts (find-cycles edges))
   (define-values (cyclic non-cyclic)
@@ -57,10 +55,22 @@
         (λ (rhs)
            (let loop ([pat (rhs-pattern rhs)]
                       [s (set)])
-             (match-a-pattern/single-base-case
+             (match-a-pattern
                pat
-               
-               [`(name ,name ,pat)
+               [`any s]
+               [`number s]
+               [`string s]
+               [`natural s]
+               [`integer s]
+               [`real s]
+               [`boolean s]
+               [`variable s]
+               [`(variable-except ,var ...) s]
+               [`(variable-prefix ,var) s]
+               [`variable-not-otherwise-mentioned s]
+               [`hole s]
+               [`(nt ,id) (set-add s id)]
+               [`(name ,var ,pat)
                 (loop pat s)]
                [`(mismatch-name ,name ,pat)
                 (loop pat s)]
@@ -68,7 +78,8 @@
                 (set-union (loop p1 s)
                            (loop p2 s))]
                [`(hide-hole ,p) (loop p s)]
-               [`(side-condition ,p ,_ ,_) (loop p s)]
+               [`(side-condition ,p ,_1 ,_2) (loop p s)]
+               [`(cross ,id) (set-add s id)]
                [`(list ,sub-pats ...)
                 (fold-map/set
                  (λ (sub-pat)
@@ -77,11 +88,7 @@
                        (loop pat s)]
                       [else (loop sub-pat s)]))
                  sub-pats)]
-               [_ (match pat
-                    [`(nt ,id)
-                     (set-add s id)]
-                    [_ s])
-                  ])))
+               [(? (compose not pair?)) s])))
         (nt-rhs nt))))
    (hash)
    lang))
@@ -98,8 +105,7 @@
                     (λ (next)
                        (rec next
                             (set-add seen cur)))
-                    (set->list (hash-ref edges
-                                         cur)))]))
+                    (set->list (hash-ref edges cur (set))))]))
           (set-add s v)
           s))
    (set)
@@ -122,8 +128,7 @@
      [`(variable-prefix ,s) #f]
      [`variable-not-otherwise-mentioned #f]
      [`hole #f]
-     [`(nt ,id)
-      (set-member? recs id)]
+     [`(nt ,id) (set-member? recs id)]
      [`(name ,name ,pat)
       (rec pat)]
      [`(mismatch-name ,name ,pat)
@@ -132,9 +137,8 @@
       (or (rec p1)
           (rec p2))]
      [`(hide-hole ,p) (rec p)]
-     ;; not sure about these 2, but they are unsupported by enum anyway
-     [`(side-condition ,p ,g ,e) #f] 
-     [`(cross ,s) #f]
+     [`(side-condition ,p ,g ,e) #f]
+     [`(cross ,s) (set-member? recs s)]
      [`(list ,sub-pats ...)
       (ormap (λ (sub-pat)
                 (match sub-pat
@@ -222,7 +226,6 @@
 ;; directly-used-nts : pat -> (setof symbol)
 (define (directly-used-nts pat)
   (match-a-pattern/single-base-case pat
-                                    
     [`(name ,n ,p)
      (directly-used-nts p)]
     [`(mismatch-name ,n ,p)
@@ -245,6 +248,7 @@
       sub-pats)]
     [_ (match pat
          [`(nt ,id) (set id)]
+         [`(cross ,id) (set id)]
          [_ (set)])]))
 
 ;; used-vars : lang -> (listof symbol)
@@ -276,7 +280,6 @@
                (set-union (loop p1)
                           (loop p2))]
               [`(hide-hole ,p) (loop p)]
-              ;; not sure about these 2, but they are unsupported by enum anyway
               [`(side-condition ,p ,g ,e) (set)] 
               [`(cross ,s) (set)]
               [`(list ,sub-pats ...)
@@ -296,11 +299,18 @@
 
 ;; fold-map/set : (a -> setof b) (listof a) -> (setof b)
 (define (fold-map/set f l)
-  (foldl
-   (λ (x s)
-      (set-union (f x) s))
-   (set)
-   l))
+  (for/fold ([acc (set)])
+            ([x (in-list l)])
+    (set-union (f x) acc)))
+
+(define (pos-inf? n)
+  (and (infinite? n)
+       (positive? n)))
+
+(define (my-max default new)
+  (if (> new default)
+      new
+      default))
 
 ;; Short circuits for +inf
 (define-syntax (for/max stx)
@@ -310,11 +320,7 @@
        #'(for/fold/derived original
                            ([current-max -inf.0])
                            clauses
-           #:break (and (infinite? current-max)
-                        (positive? current-max))
-           (define maybe-new-max
-             (let () . defs+exprs))
-           (if (> maybe-new-max current-max)
-               maybe-new-max
-               current-max)))]))
+           #:break (pos-inf? current-max)
+           (my-max current-max
+                   (let () . defs+exprs))))]))
 

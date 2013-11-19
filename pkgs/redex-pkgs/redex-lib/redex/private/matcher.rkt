@@ -163,7 +163,7 @@ See match-a-pattern.rkt for more details
                                     literals
                                     nt-map
                                     collapsible-nts
-                                    (lang-enumerators lang))]
+                                    #f)]
          [non-list-nt-table (build-non-list-nt-label lang)]
          [list-nt-table (build-list-nt-label lang)]
          [do-compilation
@@ -209,7 +209,10 @@ See match-a-pattern.rkt for more details
           (do-compilation across-ht across-list-ht compatible-context-language)
           compatible-context-language)))
     (do-compilation clang-ht clang-list-ht lang)
-    (struct-copy compiled-lang clang [delayed-cclang compatible-context-language])))
+    (define enumerators
+      (lang-enumerators lang compatible-context-language))
+    (struct-copy compiled-lang clang [delayed-cclang compatible-context-language]
+                                     [enum-table enumerators])))
 
 ;; mk-uf-sets : (listof (listof sym)) -> (hash[symbol -o> uf-set?])
 ;; in the result hash, each nt maps to a uf-set that represents
