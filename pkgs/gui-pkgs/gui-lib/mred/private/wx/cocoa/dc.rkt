@@ -110,20 +110,22 @@
    (tellv ctx restoreGraphicsState)))
 
 (define (display-bitmap-resolution num fail)
-  (let ([r (atomically
-            (with-autorelease
-             (let ([s (if (zero? num)
-                          (tell NSScreen mainScreen)
-                          (let ([screens (tell NSScreen screens)])
-                            (if (num . < . (tell #:type _NSUInteger screens count))
-                                (tell screens objectAtIndex: #:type _NSUInteger num)
-                                #f)))])
-               (and s
-                    (tell #:type _CGFloat s backingScaleFactor)))))])
-    (cond
-     [(not r) (fail)]
-     [(zero? r) 1.0]
-     [else r])))
+  (if (version-10.7-or-later?)
+      (let ([r (atomically
+                (with-autorelease
+                 (let ([s (if (zero? num)
+                              (tell NSScreen mainScreen)
+                              (let ([screens (tell NSScreen screens)])
+                                (if (num . < . (tell #:type _NSUInteger screens count))
+                                    (tell screens objectAtIndex: #:type _NSUInteger num)
+                                    #f)))])
+                   (and s
+                        (tell #:type _CGFloat s backingScaleFactor)))))])
+        (cond
+         [(not r) (fail)]
+         [(zero? r) 1.0]
+         [else r]))
+      1.0))
 
 (define/top (make-screen-bitmap [exact-positive-integer? w]
                                 [exact-positive-integer? h])
