@@ -134,19 +134,21 @@
 
   (struct col (name path) #:transparent)
 
-  (define (get-linked user? version?)
+  (define (get-linked file user? version?)
     (define version-re
       (and version?
            (regexp-quote (version))))
     (append
      (for/list ([c+p
                  (in-list
-                  (links #:user? user? #:version-regexp version-re #:with-path? #t))])
+                  (links #:file file #:user? user? #:version-regexp version-re
+                         #:with-path? #t))])
        (col (car c+p)
             (cdr c+p)))
      (for/list ([cp
                  (in-list
-                  (links #:root? #t #:user? user? #:version-regexp version-re))]
+                  (links #:file file #:user? user? #:version-regexp version-re
+                         #:root? #t))]
                 #:when (directory-exists? cp)
                 [collection (directory-list cp)]
                 #:when (directory-exists? (build-path cp collection)))
@@ -164,9 +166,10 @@
                  #:when (directory-exists? (build-path cp collection)))
         (col (path->string collection)
              (build-path cp collection)))
-      (for*/list ([user? (in-list '(#t #f))]
+      (for*/list ([file (in-list (current-library-collection-links))]
+                  [user? (in-list '(#t #f))]
                   [version? (in-list '(#t #f))])
-        (get-linked user? version?)))))
+        (get-linked file user? version?)))))
 
   ;; This should be in Racket somewhere and return all the collection
   ;; paths, rather than just the first as collection-path does.
