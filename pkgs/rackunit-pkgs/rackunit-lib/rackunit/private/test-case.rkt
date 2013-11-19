@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
+         racket/contract/base
          "format.rkt"
          "check.rkt")
 
@@ -58,12 +59,16 @@
       "Correct form is (test-begin expr ...)"
       stx)]))
 
-(define-syntax test-case
-  (syntax-rules ()
-    [(test-case name expr ...)
-     (parameterize
-         ([current-test-name name])
-       (test-begin expr ...))]))
+(define-syntax (test-case stx)
+  (syntax-case stx ()
+    [(_ name expr ...)
+     (quasisyntax/loc stx
+       (parameterize
+           ([current-test-name 
+             (contract string? name 
+                       '#,(syntax-source-module #'name #t)
+                       '#,(syntax-source-module #'test-case #t))])
+         (test-begin expr ...)))]))
 
 (define-syntax before
   (syntax-rules ()

@@ -12,6 +12,8 @@
   (test-suite
    "test-case-tests"
 
+   (check-exn #rx"contract" (λ () (test-case 'foo)))
+
    (test-case
     "test-begin terminates when sub-expression fails"
     (let ([fail? #f])
@@ -52,6 +54,8 @@
             (test-case
              "dummy"
              (define yes #t)
-             (check-true yes)))))))
+             (check-true yes)))))))))
 
-   ))
+(module+ test
+  (require rackunit/text-ui)
+  (run-tests test-case-tests))
