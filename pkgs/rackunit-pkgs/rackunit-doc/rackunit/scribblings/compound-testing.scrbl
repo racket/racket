@@ -96,8 +96,8 @@ run.  Instead use one of the functions described in
                             (code:line #:after after-thunk)])
               #:contracts ([name-expr string?])]{
 
-Constructs a test suite with the given name and tests.  The
-tests may be test cases, constructed using @racket[test-begin] or
+Constructs a test suite with the given name and tests.  The tests may
+be checks, test cases, constructed using @racket[test-begin] or
 @racket[test-case], or other test suites.
 
 The @racket[before-thunk] and @racket[after-thunk] are
