@@ -25,7 +25,7 @@
 (tr-eval '(:type #:verbose Bar))
 
 (check-equal? (get-output-string out)
-              (string-append "(U Integer String)\n[can expand further: String Integer]"
+              (string-append "(U Integer String)\n[can expand further: Integer]"
                              "(Foo -> Foo)\n[can expand further: Foo]"
                              "(Number -> Integer)\n[can expand further: Integer Number]"
                              "((U String 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
