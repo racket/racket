@@ -157,6 +157,8 @@
 (try-it 100 Holes i2)
 (try-it 1 Holes hole)
 (try-it 100 Holes (in-hole hole number))
+(try-it 100 Holes (in-hole (cons hole boolean) (cons number string)))
+(try-it 100 Holes (in-hole (cons hole number_1) number_1))
 
 ;; Cross test
 (define-language CrossLang

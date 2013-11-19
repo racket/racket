@@ -215,7 +215,7 @@
      (define term-fn (refs-to-fn termpat-refs))
      (λ (nv)
         (define ctx (ctx-fn nv))
-        (define term (term-fn term))
+        (define term (term-fn nv))
         (plug-hole ctx term))]
     [(hide-hole p)
      (define p-fn (refs-to-fn p))
