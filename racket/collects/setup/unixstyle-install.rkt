@@ -272,7 +272,11 @@
       (define new-ls (for/list ([l (in-list ls)])
                        (cond
                         [(regexp-match? #rx"^Exec=" l)
-                         (format "Exec=~a" (fixup-path bindir (substring l 5)))]
+                         ;; Assume anything after a space is the argument spec:
+                         (let ([m (regexp-match #rx"Exec=([^ ]*)(.*)" l)])
+                           (format "Exec=~a~a" 
+                                   (fixup-path bindir (cadr m))
+                                   (caddr m)))]
                         [(regexp-match? #rx"^Icon=" l)
                          (format "Icon=~a" (fixup-path sharerktdir (substring l 5)))]
                         [else l])))
