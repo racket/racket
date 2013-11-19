@@ -460,18 +460,20 @@
                            "extreg.rktd"
                            (path-element->string
                             (file-name-from-path dest))
-                           (if (eq? (cdr im) 'main)
-                               ;; make icon paths relative, if possible:
-                               (for/list ([l (in-list (cdr m))])
-                                 (for/list ([e (in-list l)]
-                                            [i (in-naturals)])
-                                   (if (= i 3)
+                           ;; make icon paths relative, if possible:
+                           (for/list ([l (in-list (cdr m))])
+                             (for/list ([e (in-list l)]
+                                        [i (in-naturals)])
+                               (if (= i 3)
+                                   (if (eq? (cdr im) 'main)
                                        (let ([p (find-relative-path (find-lib-dir) e)])
                                          (if (member 'up (explode-path p))
                                              (path->bytes e)
                                              (path->bytes p)))
-                                       e)))
-                               (cdr m)))))
+                                       (if (path? e)
+                                           (path->bytes e)
+                                           e))
+                                   e))))))
       ;; record Windows start-menu requests, if any
       (let ([m (assoc 'start-menu aux)])
         (when (and m (cdr m))
