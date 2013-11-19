@@ -129,6 +129,7 @@
 
 (module paths racket/base
   (require setup/link
+           racket/match
            racket/list)
 
   (struct col (name path) #:transparent)
@@ -138,10 +139,14 @@
       (and version?
            (regexp-quote (version))))
     (append
-     (for/list ([c+p (in-list (links #:user? user? #:version-regexp version-re #:with-path? #t))])
+     (for/list ([c+p
+                 (in-list
+                  (links #:user? user? #:version-regexp version-re #:with-path? #t))])
        (col (car c+p)
             (cdr c+p)))
-     (for/list ([cp (in-list (links #:root? #t #:user? user? #:version-regexp version-re))]
+     (for/list ([cp
+                 (in-list
+                  (links #:root? #t #:user? user? #:version-regexp version-re))]
                 #:when (directory-exists? cp)
                 [collection (directory-list cp)]
                 #:when (directory-exists? (build-path cp collection)))
@@ -166,9 +171,15 @@
   ;; This should be in Racket somewhere and return all the collection
   ;; paths, rather than just the first as collection-path does.
   (define (collection-paths c)
-    (for/list ([col (all-collections)]
-               #:when (string=? c (col-name col)))
-      (col-path col)))
+    (match-define (list-rest sc more) (map path->string (explode-path c)))
+    (append*
+     (for/list ([col (all-collections)]
+                #:when (string=? sc (col-name col)))
+       (define p (col-path col))
+       (define cp (apply build-path p more))
+       (if (directory-exists? cp)
+         (list cp)
+         empty))))
 
   (provide collection-paths))
 
