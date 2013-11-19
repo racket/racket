@@ -15,7 +15,6 @@
         [i (in-naturals 1)])
     (heap-set! (+ 1 i heap-ptr) (read-root r)))
   (set! heap-ptr (+ len 2 heap-ptr))
-  ;; return the location of this flat data
   (- heap-ptr len 2))
 
 (define (gc:closure-code-ptr a)
