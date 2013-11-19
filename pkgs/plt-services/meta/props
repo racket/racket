@@ -1059,7 +1059,7 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta/web" drdr:command-line #f
 "pkgs/preprocessor" responsible (eli)
 "pkgs/profile-pkgs" responsible (eli samth stamourv)
-"pkgs/profile-pkgs/profile-lib/profile/analyzer.rkt" drdr:command-line (raco "test" *)
+"pkgs/profile-pkgs/profile-lib/analyzer.rkt" drdr:command-line (raco "test" *)
 "pkgs/r5rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs/r6rs-lib/r6rs/run.rkt" drdr:command-line (mzc *)
