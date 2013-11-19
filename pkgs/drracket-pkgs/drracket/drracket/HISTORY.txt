@@ -1,10 +1,33 @@
+------------------------------
+       Version 6.0
+------------------------------
 
-  . DrRacket now has better support for (user-defined) color schemes
+  . Added a GUI package manager
+
+  . Improved how Check Syntax handles variables bound by
+    define-struct, struct, and Redex's pattern variables
+
+  . Added <menukey>-shift-o to facilitate opening files that are in
+    collections.
+
+  . Improved support for (user-defined) color schemes
 
   . An "info.rkt" spec for `textbook-pls' is appended with the results
     for `get-textbook-pls' to allow access to `string-constants'. The
     same is true for `drscheme-language-positions' and
     `get-drscheme-language-positions'.
+
+  . Added a splash screen to commemorate Ada Lovelace's birthday
+
+  . Under Unix/X, the .desktop-based launcher now uses single-instance
+    mode
+
+  . Added the ability to move tabs around in a frame; change the
+    <menukey>-9 shortcut to always go to the last tab, not the 9th one
+
+  . Improved the usability of the teaching language teachpack dialog 
+
+  . Bug fixes, notably esc;y (paste previously copied text) now works properly
 
 ------------------------------
        Version 5.3.4
