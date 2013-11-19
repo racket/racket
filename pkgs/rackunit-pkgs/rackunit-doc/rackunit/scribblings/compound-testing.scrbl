@@ -29,10 +29,10 @@ destroyed as the preceding check fails:
   (destroy-the-world))
 ]
 
-@defform[(test-case name expr ...)]{
+@defform[(test-case name body ...+)]{
 
 Like a @racket[test-begin] except a name is associated with
-the group of @racket[expr]s.  The name will be reported if
+the @racket[body]s.  The name will be reported if
 the test fails.  }
 
 Here's the above example rewritten to use @racket[test-case]
