@@ -27,11 +27,9 @@
     (for ([variant (remove* '(script-3m script-cgc) (variants))])
       (parameterize ([current-launcher-variant variant])
         (mk-launcher '("-l-" "help/help")
-                     (mk-path (if mr? "Racket Documentation" "plt-help"))
+                     (mk-path (if mr? "Racket Documentation" "plt-help") #:user? user?)
                      `([exe-name . ,(if mr? "Racket Documentation" "plt-help")]
-                       [relative? . #t]
-                       [framework-root . #f]
-                       [dll-dir . #f]
+                       [relative? . ,(not user?)]
                        [install-mode . ,(if user? 'user 'main)]
                        [start-menu? . #t]
                        ,@extras))))))
