@@ -277,7 +277,7 @@
   (lambda (this)
     (let ([name (running-name this)])
       (if name
-        (error 'force "reentrant promise ~.s" name)
+        (error 'force "reentrant promise `~.s'" name)
         (error 'force "reentrant promise"))))
   #:property prop:custom-write
   (lambda (this port write?)
