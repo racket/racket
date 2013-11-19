@@ -148,9 +148,8 @@
     (cond [(null? to-cover) ; done
            (define coverage-names (map car coverage))
            ;; to allow :type to cue the user on unexpanded aliases
+           ;; only union types can flow here, and any of those could be expanded
            (set-box! (current-print-unexpanded)
-                     ;; FIXME: this could be pickier about the names to
-                     ;;        report since, e.g., "String" can't be expanded
                      (append coverage-names (unbox (current-print-unexpanded))))
            (append coverage-names uncoverable)] ; we want the names
           [else
@@ -270,8 +269,9 @@
               (print-type type port write? (append names ignored-names)))]
            [else
             ;; to allow :type to cue the user on unexpanded aliases
-            (set-box! (current-print-unexpanded)
-                      (cons (car names) (unbox (current-print-unexpanded))))
+            (when (Union? type) ; only unions can be expanded
+              (set-box! (current-print-unexpanded)
+                        (cons (car names) (unbox (current-print-unexpanded)))))
             (fp "~a" (car names))])]
     [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
     [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
