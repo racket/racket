@@ -56,6 +56,6 @@
              (define yes #t)
              (check-true yes)))))))))
 
-(module+ test
+(module+ not-test
   (require rackunit/text-ui)
   (run-tests test-case-tests))
