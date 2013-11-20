@@ -308,7 +308,10 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
     Scheme_Object **oldkeys = table->keys;
     Scheme_Object **oldvals = table->vals;
 
-    size = oldsize << 1;
+    if (table->count << 1 >= table->mcount)
+      size = oldsize << 1;
+    else
+      size = oldsize;
     table->size = size;
     
     {
