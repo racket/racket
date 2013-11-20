@@ -56,5 +56,9 @@
 
    (let/ec esc
      (parameterize ([exit-handler
-                     (lambda (v) (esc (void)))])
-       (setup-core)))))
+                     (lambda (v) (esc (if (and (integer? v)
+                                               (<= 1 v 255))
+                                          #f
+                                          #t)))])
+       (setup-core)
+       #t))))

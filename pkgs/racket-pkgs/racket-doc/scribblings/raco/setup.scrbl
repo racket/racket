@@ -670,7 +670,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                 [#:tidy? tidy? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
-          void?]{
+          boolean?]{
 Runs @exec{raco setup} with various options:
 
 @itemlist[
@@ -709,7 +709,11 @@ Runs @exec{raco setup} with various options:
  @item{@racket[get-target-dir] --- if not @racket[#f], treated as a
        value for @sigelem[setup-option^ current-target-directory-getter]}
 
-]}
+]
+
+The result is @racket[#t] if @exec{raco setup} completes without error,
+@racket[#f] otherwise.}
+
 
 @subsection{@exec{raco setup} Unit}
 
