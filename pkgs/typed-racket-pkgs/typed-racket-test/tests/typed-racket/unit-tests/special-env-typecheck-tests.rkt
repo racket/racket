@@ -115,7 +115,25 @@
    (tc-e (make-temporary-file "ee~a" 'directory) -Path)
    (tc-e (make-temporary-file "ee~a" "temp" "here") -Path)
 
-
+   ;; more sequences
+   [tc-e (sequence-ref (in-directory) 0) -Path]
+   [tc-e (in-mlist (ann (mcons 'a null) (MListof 'a))) (-seq (-val 'a))]
+   [tc-e (in-producer (λ () 'hi)) (-seq (-val 'hi))]
+   [tc-e (in-producer (λ: ([x : String]) 'hi) symbol? "foo")
+         (-seq (-val 'hi))]
+   [tc-e (in-value 'hi) (-seq (-val 'hi))]
+   [tc-e (in-indexed '(a b c)) (-seq (one-of/c 'a 'b 'c) -Nat)]
+   [tc-e (in-sequences '(a b) '(z y)) (-seq (one-of/c 'a 'b 'z 'y))]
+   [tc-e (in-cycle '(a b) '(z y)) (-seq (one-of/c 'a 'b 'z 'y))]
+   [tc-e (in-parallel '(a b) '(z y)) (-seq (one-of/c 'a 'b) (one-of/c 'z 'y))]
+   [tc-e (in-values-sequence (in-parallel '(a b) '(z y)))
+         (-seq (-pair (one-of/c 'a 'b) (-pair (one-of/c 'z 'y) (-val null))))]
+   [tc-e (in-values-sequence '(a b c))
+         (-seq (-pair (one-of/c 'a 'b 'c) (-val null)))]
+   [tc-e (in-values*-sequence (in-parallel '(a b) '(z y)))
+         (-seq (-pair (one-of/c 'a 'b) (-pair (one-of/c 'z 'y) (-val null))))]
+   [tc-e (in-values*-sequence '(a b c))
+         (-seq (one-of/c 'a 'b 'c))]
    ))
 
 

@@ -762,9 +762,26 @@
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
 ;; Section 4.14 (Sequences and Streams)
-[in-directory (-> (-seq -Path))]
-
 [sequence? (make-pred-ty (-seq Univ))]
+[in-sequences
+ (-poly (a) (->* (list) (-seq a) (-seq a)))]
+[in-cycle
+ (-poly (a) (->* (list) (-seq a) (-seq a)))]
+[in-parallel
+ (-poly (a b c)
+   (cl->* (-> (-seq a) (-seq a))
+          (-> (-seq a) (-seq b) (-seq a b))
+          (-> (-seq a) (-seq b) (-seq c) (-seq a b c))))]
+[in-values-sequence
+ (-poly (a b c)
+   (cl->* (-> (-seq a) (-seq (-pair a (-val null))))
+          (-> (-seq a b) (-seq (-pair a (-pair b (-val null)))))
+          (-> (-seq a b c) (-seq (-pair a (-pair b (-pair c (-val null))))))))]
+[in-values*-sequence
+ (-poly (a b c)
+   (cl->* (-> (-seq a) (-seq a))
+          (-> (-seq a b) (-seq (-pair a (-pair b (-val null)))))
+          (-> (-seq a b c) (-seq (-pair a (-pair b (-pair c (-val null))))))))]
 [stop-before (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [stop-after (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [make-do-sequence (-poly (a b) ((-> (-values (list (a . -> . b)
