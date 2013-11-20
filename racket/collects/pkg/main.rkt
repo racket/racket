@@ -138,8 +138,8 @@
             ;; ----------------------------------------
             [install
              "Install packages"
-             #:usage-help "Installs the packages specified by <pkg-source> ..."
-                          "If no sources are specified, installs the current directory."
+             #:usage-help "Installs the packages specified by <pkg-source> ..., and"
+                          "if no sources are specified, installs the current directory"
              #:once-each
              install-type-flags ...
              #:once-any
@@ -385,20 +385,27 @@
             ;; ----------------------------------------
             [config
              "View and modify the package manager's configuration"
-             #:once-each
-             [#:bool set () "Set <key> to <val> ..."]
+             #:usage-help "Shows value for <key>, shows values for all <key>s if"
+                          " none is given, or sets a single <key>"
+                          " if --set is specified"
+             #:once-any
+             [#:bool set () "Set <key> to <val>s"]
              #:once-any
              scope-flags ...
-             #:args (key . val)
-             (call-with-package-scope
-              'config
-              scope scope-dir installation user #f #f
-              (lambda ()
-                (if set
-                    (with-pkg-lock
-                     (pkg-config #t (cons key val)))
-                    (with-pkg-lock/read-only
-                     (pkg-config #f (cons key val))))))]
+             #:handlers
+             (lambda (accum . key+vals)
+               (call-with-package-scope
+                'config
+                scope scope-dir installation user #f #f
+                (lambda ()
+                  (if set
+                      (with-pkg-lock
+                       (pkg-config #t key+vals
+                                   #:from-command-line? #t))
+                      (with-pkg-lock/read-only
+                       (pkg-config #f key+vals
+                                   #:from-command-line? #t))))))
+             (list "key" "val")]
             ;; ----------------------------------------
             [catalog-show
              "Show package information as reported by a catalog"

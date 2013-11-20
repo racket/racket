@@ -599,8 +599,14 @@ the given @nonterm{pkg}s.
   ]
 }
 
-@subcommand{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
-View and modify configuration of the package manager itself, with the following @nonterm{option}s:
+@subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... --- 
+View and modify the configuration of the package manager. If @nonterm{key} is not provided,
+the values for all recognized keys are shown. The @nonterm{val} arguments are allowed
+only when @DFlag{set} is used, in which case the @nonterm{val}s are used as the new values
+for @nonterm{key}.
+
+ The @exec{config} sub-command accepts 
+ with the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
@@ -614,6 +620,8 @@ View and modify configuration of the package manager itself, with the following 
 
  The valid @nonterm{key}s are:
  @itemlist[
+  @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
+        @tech{package scope} and defaults to the Racket version.}
   @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
   @item{@exec{default-scope} --- Either @exec{installation} or @exec{user}.
         The value of this key at @exec{user} scope (possibly defaulting from
@@ -621,8 +629,6 @@ View and modify configuration of the package manager itself, with the following 
         the default @tech{package scope} for @exec{raco pkg} commands for which
         a scope is not inferred from a given set of package names
         (even for @command{config}, which is consistent but potentially confusing).}
-  @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
-        @tech{package scope} and defaults to the Racket version.}
   @item{@exec{download-cache-dir} --- A directory that holds copies of
         downloaded packages, used to avoid re-downloading if the
         same URL and checksum combination is requested again. The default cache directory is

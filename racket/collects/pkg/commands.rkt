@@ -6,7 +6,8 @@
          (for-syntax racket/base
                      racket/list
                      racket/syntax
-                     syntax/parse))
+                     syntax/parse
+                     syntax/stx))
 
 (define ((string->option what valid-options) str)
   (define s (string->symbol str))
@@ -104,15 +105,36 @@
              #:attr (command-line 1)
              (syntax->list #'(#:usage-help s ...))])
 
+  (define-splicing-syntax-class arguments
+    #:attributes (accum args (body 1) help-strs)
+    [pattern (~seq #:args args 
+                   body:expr ...)
+             #:with accum #'ignored
+             #:with help-strs (with-syntax ([strs 
+                                             (map symbol->string
+                                                  (map syntax->datum
+                                                       (let loop ([args #'args])
+                                                         (cond 
+                                                          [(stx-null? args) null]
+                                                          [(stx-pair? args)
+                                                           (cons (stx-car args)
+                                                                 (loop (stx-cdr args)))]
+                                                          [else
+                                                           (list args)]))))])
+                                #`(list . strs))]
+    [pattern (~seq #:handlers
+                   (lambda (accum . args) body:expr ...) 
+                   help-strs:expr)])
+
   (define-syntax-class command
     #:attributes (name function variables command-line)
-    [pattern (name:id doc:expr uh:usage-help ... og:option-group ... #:args args body:expr ...)
+    [pattern (name:id doc:expr uh:usage-help ... og:option-group ... arg:arguments)
              #:do
              [(define name-str (symbol->string (syntax->datum #'name)))]
              #:attr function
              (syntax/loc #'name
-               (define (name og.param ... ... . args)
-                 body ...))
+               (define (name og.param ... ... . arg.args)
+                 arg.body ...))
              #:attr variables
              (syntax/loc #'name
                (begin og.variable ...))
@@ -122,8 +144,10 @@
                 doc doc
                 uh.command-line ... ...
                 og.command-line ... ...
-                #:args args
-                (args-app args (name og.call ... ...))])]))
+                #:handlers
+                (lambda (accum . arg.args)
+                  (args-app arg.args (name og.call ... ...)))
+                arg.help-strs])]))
 
 (define-syntax (args-app stx)
   (syntax-parse stx
