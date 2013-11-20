@@ -262,18 +262,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (if (Error? typ)
              ;; This code should never get run, typechecking will have an error earlier
              #`(error 'make-predicate "Couldn't parse type")
-             #`(let ()
-                 (ann
-                  #,(ignore-some-property
-                     (type->contract
-                      typ
-                      ;; must be a flat contract
-                      #:kind 'flat
-                      ;; the value is not from the typed side
-                      #:typed-side #f
-                      (type->contract-fail typ #'ty #:ctc-str "predicate"))
-                     #t)
-                  (Any -> Boolean : ty))))))]))
+             #`(#%expression
+                (ann
+                 #,(ignore-some-property
+                    (type->contract
+                     typ
+                     ;; must be a flat contract
+                     #:kind 'flat
+                     ;; the value is not from the typed side
+                     #:typed-side #f
+                     (type->contract-fail typ #'ty #:ctc-str "predicate"))
+                    #t)
+                 (Any -> Boolean : ty))))))]))
 
 (define-syntax (cast stx)
   (syntax-parse stx
