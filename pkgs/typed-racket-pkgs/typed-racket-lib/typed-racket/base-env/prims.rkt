@@ -1097,9 +1097,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (provide: stx)
   (syntax-parse stx
     [(_ [i:id t] ...)
+     ;; indirection through i*s allows `provide: to come
+     ;; before the original definitions/type annotations
+     (define i*s (generate-temporaries #'(i ...)))
+     (for ([i* (in-list i*s)]
+           [i  (in-list (syntax->list #'(i ...)))])
+       ;; lift allows `provide:` to come before original definition
+       (syntax-local-lift-module-end-declaration #`(define #,i* #,i)))
+     (define/with-syntax (i* ...) i*s)
      (syntax/loc stx
-       (begin (: i t) ...
-              (provide i ...)))]))
+       (begin (: i* t) ...
+              (provide (rename-out [i* i] ...))))]))
 
 (define-syntax (declare-refinement stx)
   (syntax-parse stx
