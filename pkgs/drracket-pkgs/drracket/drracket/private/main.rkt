@@ -580,49 +580,6 @@
   
   (preferences:set-default 'drracket:show-killed-dialog #t boolean?)
   
-  (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
-  (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
-  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|scrbl|ss|scm)$" string?)
-  (drr:set-default 'drracket:multi-file-search:search-string "" string?)
-  (drr:set-default 'drracket:multi-file-search:search-type
-                           1
-                           (λ (x) 
-                             (and (number? x)
-                                  (exact? x)
-                                  (integer? x)
-                                  (<= 0 x)
-                                  (< x (length drracket:multi-file-search:search-types)))))
-  
-  ;; drracket:mult-file-search:search-check-boxes : (listof (listof boolean))
-  (drr:set-default 'drracket:multi-file-search:search-check-boxes 
-                           (map (λ (x) (map cdr (drracket:multi-file-search:search-type-params x)))
-                                drracket:multi-file-search:search-types)
-                           (λ (x) 
-                             (and (list? x)
-                                  (andmap (λ (x)
-                                            (and (list? x)
-                                                 (andmap boolean? x)))
-                                          x))))
-  
-  (drr:set-default 'drracket:multi-file-search:percentages
-                           '(1/3 2/3)
-                           (λ (x) (and (list? x)
-                                       (= 2 (length x))
-                                       (= 1 (apply + x)))))
-  
-  (drr:set-default 'drracket:multi-file-search:frame-size '(300 . 400) 
-                           (λ (x) (and (pair? x)
-                                       (number? (car x))
-                                       (number? (cdr x)))))
-  (drr:set-default 'drracket:multi-file-search:directories 
-                   '()
-                   (lambda (x) (and (list? x) (andmap string? x))))
-  (drr:set-default 'drracket:multi-file-search:directory 
-                           ;; The default is #f because
-                           ;; filesystem-root-list is expensive under Windows
-                           #f 
-                           (lambda (x) (or (not x) (string? x))))
-
   
   (drr:set-default 'drracket:large-letters-font #f (λ (x)
                                                        (or (and (pair? x)
