@@ -2360,10 +2360,35 @@
        (unless quiet?
          (printf "Packages migrated\n")))))
 
-(define (pkg-config config:set key+vals)
+(define (pkg-config config:set key+vals
+                    #:from-command-line? [from-command-line? #f])
   (cond
     [config:set
      (match key+vals
+       [(list)
+        (pkg-error "no config key given")]
+       [(list (and key
+                   (or "default-scope"
+                       "name"
+                       "download-cache-max-files"
+                       "download-cache-max-bytes"
+                       "download-cache-dir")))
+        (pkg-error (~a "missing value for config key\n"
+                       "  config key: ~a")
+                   key)]
+       [(list* (and key
+                    (or "default-scope"
+                        "name"
+                        "download-cache-max-files"
+                        "download-cache-max-bytes"
+                        "download-cache-dir"))
+               val
+               more-vals)
+        (pkg-error (~a "too many values provided for config key\n"
+                       "  config key: ~a\n"
+                       "  given values:~a")
+                   key
+                   (format-list (cons val more-vals)))]
        [(list* (and key "catalogs") val)
         (update-pkg-cfg! 'catalogs val)]
        [(list (and key "default-scope") val)
@@ -2381,6 +2406,16 @@
                          "  current package scope: ~a")
                      (current-pkg-scope)))
         (update-pkg-cfg! 'installation-name val)]
+       [(list (and key "download-cache-dir")
+              val)
+        (unless (complete-path? val)
+          (pkg-error (~a "invalid value for config key\n"
+                         " not an absolute path\n"
+                         "  config key: ~a\n"
+                         "  given value: ~a")
+                     key
+                     val))
+        (update-pkg-cfg! (string->symbol key) val)]
        [(list (and key (or "download-cache-max-files"
                            "download-cache-max-bytes"))
               val)
@@ -2391,32 +2426,45 @@
                          "  valid values: real numbers")
                      key
                      val))
-        (update-pkg-cfg! (string->symbol key) val)]
-       [(list key)
-        (pkg-error "unsupported config key\n  key: ~e" key)]
-       [(list)
-        (pkg-error "config key not provided")])]
+        (update-pkg-cfg! (string->symbol key) (string->number val))]
+       [(list* key args)
+        (pkg-error "unsupported config key\n  key: ~a" key)])]
     [else
+     (define (show key+vals indent)
+       (match key+vals
+         [(list key)
+          (match key
+            ["catalogs"
+             (for ([s (in-list (read-pkg-cfg/def 'catalogs))])
+               (printf "~a~a\n" indent s))]
+            ["default-scope"
+             (printf "~a~a\n" indent (read-pkg-cfg/def 'default-scope))]
+            ["name"
+             (printf "~a~a\n" indent (read-pkg-cfg/def 'installation-name))]
+            [(or "download-cache-dir"
+                 "download-cache-max-files"
+                 "download-cache-max-bytes")
+             (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
+            [_
+             (pkg-error "unsupported config key\n  key: ~e" key)])]
+         [(list)
+          (pkg-error "config key not provided")]
+         [_
+          (pkg-error (~a "multiple config keys provided"
+                         (if from-command-line?
+                             ";\n supply `--set' to set a config key's value"
+                             "")))]))
      (match key+vals
-       [(list key)
-        (match key
-          ["catalogs"
-           (for ([s (in-list (read-pkg-cfg/def 'catalogs))])
-             (printf "~a\n" s))]
-          ["default-scope"
-           (printf "~a\n" (read-pkg-cfg/def 'default-scope))]
-          ["name"
-           (printf "~a\n" (read-pkg-cfg/def 'installation-name))]
-          [(or "download-cache-dir"
-               "download-cache-max-files"
-               "download-cache-max-bytes")
-           (printf "~a\n" (read-pkg-cfg/def (string->symbol key)))]
-          [_
-           (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)
-        (pkg-error "config key not provided")]
-       [_
-        (pkg-error "multiple config keys provided (not in value-setting mode)")])]))
+        (for ([key (in-list '("name"
+                              "catalogs"
+                              "default-scope"
+                              "download-cache-dir"
+                              "download-cache-max-files"
+                              "download-cache-max-bytes"))])
+          (printf "~a:\n" key)
+          (show (list key) "  "))]
+       [_ (show key+vals "")])]))
 
 (define (create-as-is create:format pkg-name dir orig-dir
                       #:quiet? [quiet? #f]
@@ -3057,8 +3105,9 @@
        boolean?
        pkg-desc?)]
   [pkg-config
-   (-> boolean? list?
-       void?)]
+   (->* (boolean? (listof string?))
+        (#:from-command-line? boolean?)
+        void?)]
   [pkg-create
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)

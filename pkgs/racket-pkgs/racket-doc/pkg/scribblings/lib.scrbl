@@ -157,10 +157,14 @@ directory should be removed after the package content is no longer
 needed, and a list of module paths provided by the package.}
 
 
-@defproc[(pkg-config [set? boolean?] [keys/vals list?])
+@defproc[(pkg-config [set? boolean?] [keys/vals list?]
+                     [#:from-command-line? from-command-line? boolean? #f])
          void?]{
 
 Implements @racket[pkg-config-command].
+
+If @racket[from-command-line?]  is true, error messages may suggest
+specific command-line flags for @command-ref{config}.
 
 The package lock must be held (allowing writes if @racket[set?] is true); see
 @racket[with-pkg-lock].}

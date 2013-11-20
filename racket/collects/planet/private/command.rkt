@@ -39,38 +39,52 @@
     [(_ #:program prog 
         #:argv args
         general-description
-        [name description long-description body ... #:args formals final-expr] ...)
-     (with-syntax ([(n ...) (generate-temporaries #'(name ...))])
-       #'(let* ([p prog]
-                [a args]
-                [n name] ...
-                [argslist (cond 
-                            [(list? a) a]
-                            [(vector? a) (vector->list a)]
-                            [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
-                [help (λ () (display-help-message p general-description `((name description) ...)))])
-           (let-values ([(the-command remainder)
-                         (if (null? argslist)
-                             (values "help" '())
-                             (values (car argslist) (cdr argslist)))])
-             (prefix-case the-command
-                          [n 
-                           (parameterize ([current-svn-style-command n])
-                             (command-line 
-                              #:program (format "~a ~a" p n)
-                              #:argv remainder 
-                              body ...
-                              #:handlers
-                              (λ (_ . formals) final-expr)
-                              (pimap symbol->string 'formals)
-                              (λ (help-string)
-                                 (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
-                                 (newline)
-                                 (display "Usage:\n")
-                                 (display help-string)
-                                 (exit))))] ...
-                          ["help" (help)]
-                          [else (help)]))))]))
+        clause ...)
+     (with-syntax ([(((name description long-description body ...)
+                      accum formals arg-help-strs final-expr)
+                     ...)
+                    (map (lambda (clause)
+                           (syntax-case clause ()
+                             [[name description long-description body ...
+                                    #:args formals final-expr]
+                              #'((name description long-description body ...)
+                                 ignored formals (pimap symbol->string 'formals) final-expr)]
+                             [(name description long-description body ...
+                                    #:handlers (lambda (accum . formals) final-expr) arg-help-strs)
+                              #'((name description long-description body ...)
+                                 accum formals arg-help-strs final-expr)]))
+                         (syntax->list #'(clause ...)))])
+       (with-syntax ([(n ...) (generate-temporaries #'(name ...))])
+         #'(let* ([p prog]
+                  [a args]
+                  [n name] ...
+                  [argslist (cond 
+                             [(list? a) a]
+                             [(vector? a) (vector->list a)]
+                             [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
+                  [help (λ () (display-help-message p general-description `((name description) ...)))])
+             (let-values ([(the-command remainder)
+                           (if (null? argslist)
+                               (values "help" '())
+                               (values (car argslist) (cdr argslist)))])
+               (prefix-case the-command
+                            [n 
+                             (parameterize ([current-svn-style-command n])
+                               (command-line 
+                                #:program (format "~a ~a" p n)
+                                #:argv remainder 
+                                body ...
+                                #:handlers
+                                (λ (accum . formals) final-expr)
+                                arg-help-strs
+                                (λ (help-string)
+                                  (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
+                                  (newline)
+                                  (display "Usage:\n")
+                                  (display help-string)
+                                  (exit))))] ...
+                                  ["help" (help)]
+                                  [else (help)])))))]))
 
 
 ;; display-help-message : string string (listof (list string string)) -> void
