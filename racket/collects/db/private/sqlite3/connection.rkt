@@ -23,6 +23,13 @@
     (define -db db)
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
 
+    ;; Must finalize all stmts before closing db, but also want stmts to be
+    ;; independently finalizable. So db needs strong refs to stmts (but no
+    ;; strong refs to prepared-statement% wrappers). Actually, sqlite3 maintains
+    ;; stmt list internally, but sqlite3_next_stmt is not available on Mac OS X
+    ;; 10.5.* versions of libsqlite3.
+    (define stmt-table (make-hasheq)) ;; hasheq[_sqlite3_statement => #t]
+
     (inherit call-with-lock*
              add-delayed-call!
              get-tx-status
@@ -185,18 +192,22 @@
     (define/override (classify-stmt sql) (classify-sl-sql sql))
 
     (define/override (prepare1* fsym sql close-on-exec? stmt-type)
-      ;; no time between sqlite3_prepare and table entry
       (dprintf "  >> prepare ~e~a\n" sql (if close-on-exec? " close-on-exec" ""))
       (let*-values ([(db) (get-db fsym)]
                     [(prep-status stmt)
                      (HANDLE fsym
-                      (let-values ([(prep-status stmt tail?)
-                                    (sqlite3_prepare_v2 db sql)])
-                        (when tail?
-                          (when stmt (sqlite3_finalize stmt))
-                          (error* fsym "multiple statements given"
-                                  '("given" value) sql))
-                        (values prep-status stmt)))])
+                      (call-as-atomic
+                       ;; Do not allow break/kill between prepare and
+                       ;; entry of stmt in table.
+                       (lambda ()
+                         (let-values ([(prep-status stmt tail?)
+                                       (sqlite3_prepare_v2 db sql)])
+                           (when tail?
+                             (when stmt (sqlite3_finalize stmt))
+                             (error* fsym "multiple statements given"
+                                     '("given" value) sql))
+                           (when stmt (hash-set! stmt-table stmt #t))
+                           (values prep-status stmt)))))])
         (when DEBUG?
           (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
         (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
@@ -226,11 +237,9 @@
              ;; Free all of connection's prepared statements. This will leave
              ;; pst objects with dangling foreign objects, so don't try to free
              ;; them again---check that -db is not-#f.
-             (let loop ()
-               (let ([stmt (sqlite3_next_stmt db #f)])
-                 (when stmt
-                   (sqlite3_finalize stmt)
-                   (loop))))
+             (let ([stmts (hash-keys stmt-table)])
+               (hash-clear! stmt-table)
+               (for-each sqlite3_finalize stmts))
              (HANDLE 'disconnect (sqlite3_close db))
              (void))))))
 
@@ -248,6 +257,7 @@
          (let ([stmt (send pst get-handle)])
            (send pst set-handle #f)
            (when (and stmt -db)
+             (hash-remove! stmt-table stmt)
              (sqlite3_finalize stmt))
            (void)))))
 
