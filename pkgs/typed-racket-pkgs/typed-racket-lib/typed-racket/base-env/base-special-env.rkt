@@ -96,6 +96,9 @@
   ;; in-list
   [(make-template-identifier 'in-list 'racket/private/for)
    (-poly (a) (-> (-lst a) (-seq a)))]
+  ;; in-mlist
+  [(make-template-identifier 'in-mlist 'racket/private/for)
+   (-poly (a) (-> (-mlst a) (-seq a)))]
   ;; in-vector
   [(make-template-identifier 'in-vector 'racket/private/for)
    (-poly (a)
@@ -139,6 +142,23 @@
   ;; in-bytes-lines
   [(make-template-identifier 'in-bytes-lines 'racket/private/for)
    (->opt [-Input-Port -Symbol] (-seq -Bytes))]
+  ;; in-directory
+  [(make-template-identifier '*in-directory 'racket/private/for)
+   (->opt [(Un (-val #f) -Pathlike)] (-seq -Path))]
+  ;; in-producer
+  [(make-template-identifier 'in-producer 'racket/private/for)
+   (-polydots (a b)
+     (cl->* (-> (-> a) (-seq a))
+            (->... (list (->... '() [b b] a)
+                         (-> a -Boolean))
+                   [b b]
+                   (-seq a))))]
+  ;; in-value
+  [(make-template-identifier 'in-value 'racket/private/for)
+   (-poly (a) (-> a (-seq a)))]
+  ;; in-indexed
+  [(make-template-identifier 'in-indexed 'racket/private/for)
+   (-poly (a) (-> (-seq a) (-seq a -Nat)))]
   ;; in-set
   [(make-template-identifier 'in-set 'racket/private/set)
    (-poly (a) (-> (-set a) (-seq a)))]
