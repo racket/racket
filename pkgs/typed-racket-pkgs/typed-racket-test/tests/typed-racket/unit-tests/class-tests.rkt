@@ -1230,4 +1230,27 @@
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
            #:msg #rx"expected: Symbol.*given: String"]
+   ;; check that case-lambda methods work
+   [tc-e (let ()
+           (class object%
+             (super-new)
+             (field [y : Integer 0])
+             (: m (case-> (Any -> Integer)))
+             (public m)
+             (define m (case-lambda [(x) y])))
+           (define c%
+             (class object%
+               (super-new)
+               (: m (case-> (Any -> Void)))
+               (public m)
+               (define m (case-lambda [(x) (void)]))))
+           (send (new c%) m 'anything))
+         -Void]
+   ;; fails, test that case-lambda bodies are checked
+   [tc-err (class object%
+             (super-new)
+             (: m (case-> (Any -> Integer)))
+             (public m)
+             (define m (case-lambda [(x) "bad"])))
+           #:msg #rx"expected: Integer.*given: String"]
    ))
