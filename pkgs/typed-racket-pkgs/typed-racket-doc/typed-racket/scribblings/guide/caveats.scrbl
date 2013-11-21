@@ -128,3 +128,41 @@ itself should have a type annotation:
   (ann (box 1) (Boxof Fixnum))
   ((inst box Fixnum) 1)
 ]
+
+@section{Macros and compile-time computation}
+
+Typed Racket will type-check all expressions at the run-time phase of
+the given module and will prevent errors that would occur at run-time.
+However, expressions at compile-time---including computations that
+occur inside macros---are not checked.
+
+Concretely, this means that expressions inside, for example, a
+@racket[begin-for-syntax] block are not checked:
+
+@interaction[#:eval the-eval
+  (begin-for-syntax (+ 1 "foo"))
+]
+
+Similarly, expressions inside of macros defined in Typed Racket are
+not type-checked. On the other hand, the macro's expansion is always
+type-checked:
+
+@defs+int[#:eval the-eval
+  ((define-syntax (example-1 stx)
+     (+ 1 "foo")
+     #'1)
+   (define-syntax (example-2 stx)
+     #'(+ 1 "foo")))
+  (example-1)
+  (example-2)
+]
+
+Note that functions defined in Typed Racket that are used at
+compile-time in other typed modules or untyped modules will be
+type-checked and then protected with contracts as described in
+@secref["typed-untyped-interaction"].
+
+Additionally, macros that are defined in Typed Racket modules cannot
+be used in ordinary Racket modules because such uses can
+circumvent the protections of the type system.
+
