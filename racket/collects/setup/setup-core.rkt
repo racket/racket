@@ -1191,6 +1191,7 @@
     (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
+                       (set! exit-code 1)
                        (setup-printf #f "docs failure: ~a" (exn->string exn)))])
       (define auto-start-doc?
         (or (and (not (null? (archives)))
