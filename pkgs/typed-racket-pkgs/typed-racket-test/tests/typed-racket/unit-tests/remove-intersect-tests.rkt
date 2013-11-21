@@ -1,9 +1,11 @@
-#lang scheme/base
-(require "test-utils.rkt" (for-syntax scheme/base)
-         (rep type-rep)
+#lang racket/base
+(require "test-utils.rkt"
+         (for-syntax racket/base)
          (r:infer infer)
          (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
+(provide tests)
+(gen-test-main)
 
 (define-syntax (over-tests stx)
   (syntax-case stx ()
@@ -11,7 +13,7 @@
      #'(test-suite "Tests for intersect"
                    (test-check (format "Overlap test: ~a ~a" t1 t2) (lambda (a b) (eq? (not (not a)) b)) (overlap t1 t2) res) ...)]))
 
-(define (overlap-tests)
+(define overlap-tests
   (over-tests
    [-Number -Integer #t]))
 
@@ -22,7 +24,7 @@
                    (test-check (format "Restrict test: ~a ~a" t1 t2) type-compare? (restrict t1 t2) res) ...)]))
 
 
-(define (restrict-tests)
+(define restrict-tests
   (restr-tests
    [-Number (Un -Number -Symbol) -Number]
    [-Number -Number -Number]
@@ -50,7 +52,7 @@
        (test-suite "Tests for remove"
                    (test-check (format "Remove test: ~a ~a" t1 t2) type-compare? (remove t1 t2) res) ...))]))
 
-(define (remove-tests)
+(define remove-tests
   (remo-tests
    [(Un -Number -Symbol) -Number -Symbol]
    [-Number -Number (Un)]
@@ -66,20 +68,8 @@
    [(-pair -Number (-v a)) (-pair Univ Univ) (Un)]
    ))
 
-(define-go
-  restrict-tests
-  remove-tests
-  overlap-tests)
-
-(define x1
-  (-mu list-rec
-       (Un
-        (-val '())
-        (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
-               list-rec))))
-(define x2
-  (Un (-val '())
-      (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
-             (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x))))))
-(provide remove-tests restrict-tests overlap-tests)
-
+(define tests
+  (test-suite "Remove Intersect"
+     remove-tests
+     restrict-tests
+     overlap-tests))

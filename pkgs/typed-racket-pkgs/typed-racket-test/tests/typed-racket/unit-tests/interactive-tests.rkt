@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require
+  "test-utils.rkt"
   racket/base
   racket/port
   racket/promise
@@ -10,7 +11,8 @@
     racket/format
     syntax/parse))
 
-(provide interactive-tests)
+(provide tests)
+(gen-test-main)
 
 (define promised-ns
   (delay
@@ -42,7 +44,7 @@
                        ,(syntax->datum #'form)) (force promised-ns)))))))]))
 
 ;; Add 'only at the toplevel tests'
-(define (interactive-tests)
+(define tests
   (test-suite "Interactive tests"
 
     (test-form #rx""

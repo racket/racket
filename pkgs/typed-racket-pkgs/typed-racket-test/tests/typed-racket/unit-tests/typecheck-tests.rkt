@@ -1,44 +1,19 @@
 #lang racket/base
 
-;; Allow evaluation at phase1
-(module evaluator racket/base
-  (require
-    (for-syntax
-      racket/base
-      syntax/parse))
-  (provide phase1-eval)
-  (define-namespace-anchor anchor)
-  (define namespace (namespace-anchor->empty-namespace anchor))
-  (define-syntax phase1-eval
-    (syntax-parser
-      [(_ form:expr ...)
-       #'(eval-syntax (quote-syntax (begin-for-syntax form ...)) namespace)])))
-
 ;; Functions for testing correct behavior of typechecking
 (module tester racket/base
   (require
     typed-racket/utils/utils
     racket/base
     syntax/parse
-    (base-env
-      base-env-indexing
-      base-special-env
-      base-structs)
+    (for-template (only-in typed-racket/typed-racket do-standard-inits))
     (typecheck typechecker)
     (utils mutated-vars)
-    (env mvar-env)
-    (prefix-in b: (base-env base-env))
-    (prefix-in n: (base-env base-env-numeric))
-    (submod typed-racket/base-env/base-types initialize))
+    (env mvar-env))
   (provide test-literal test test/proc tc tc-literal tr-expand)
 
 
-  (b:init)
-  (n:init)
-  (initialize-structs)
-  (initialize-indexing)
-  (initialize-type-names)
-  (initialize-special)
+  (do-standard-inits)
   
   ;; tr-expand: syntax? -> syntax?
   ;; Expands out a form and annotates it with necesarry TR machinery.
@@ -79,11 +54,15 @@
 
 
 (require
-  (submod "." evaluator)
+  "evaluator.rkt"
+  "test-utils.rkt"
   (for-syntax
     racket/base
     syntax/parse
-    (submod "." tester)))
+    'tester))
+
+(provide tests)
+(gen-test-main)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,7 +181,7 @@
          (make-Path p var))))
 
 
-(define (typecheck-tests)
+(define tests
   (test-suite
     "Typechecker tests"
     #reader typed-racket/typed-reader
@@ -1873,6 +1852,3 @@
          #:expected (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))]
    [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))]
   ))
-
-
-(provide typecheck-tests)

@@ -1,6 +1,7 @@
 #lang racket
 
 (require "test-utils.rkt"
+         "evaluator.rkt"
          (for-syntax scheme/base)
          (for-template scheme/base)
          (rep type-rep filter-rep object-rep)
@@ -13,6 +14,7 @@
          rackunit rackunit/text-ui
          syntax/parse
          racket/file racket/port
+         syntax/location
          (for-syntax syntax/kerncase syntax/parse racket/syntax
                      (types abbrev numeric-tower utils)
                      (utils mutated-vars) (env mvar-env)
@@ -20,6 +22,8 @@
          typed-racket/base-env/prims
          typed-racket/base-env/base-types
          (only-in typed-racket/typed-racket do-standard-inits))
+(provide tests)
+(gen-test-main)
 
 (begin-for-syntax (do-standard-inits))
 
@@ -28,15 +32,20 @@
 (define-syntax (tc-e stx)
   (syntax-parse stx
     [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
-    [(_ a #:ret b)
-     (quasisyntax/loc stx
-       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'a)
-                               #,(let ([ex (local-expand #'a 'expression null)])
-                                   (find-mutated-vars ex mvar-env)
-                                   (tc-expr ex))
-                               #,(syntax-local-eval #'b)))]))
+    [(id a #:ret b)
+     (syntax/loc stx
+       (let-values
+         ([(res1 expanded)
+           (phase1-phase0-eval
+             (let ([ex (local-expand #'a 'expression null)])
+               (find-mutated-vars ex mvar-env)
+               #`(values '#,(tc-expr ex) '#,(syntax->datum ex))))]
+          [(res2) (phase1-phase0-eval #`'#,b)])
+         (with-check-info (['expanded expanded])
+           (check-tc-result-equal? (format "~a ~a" (quote-line-number id) 'a)
+                                   res1 res2))))]))
 
-(define (typecheck-special-tests)
+(define tests
   (test-suite
    "Special Typechecker tests"
    ;; should work but don't -- need expected type
@@ -135,7 +144,3 @@
    [tc-e (in-values*-sequence '(a b c))
          (-seq (one-of/c 'a 'b 'c))]
    ))
-
-
-(define-go typecheck-special-tests)
-(provide typecheck-special-tests)

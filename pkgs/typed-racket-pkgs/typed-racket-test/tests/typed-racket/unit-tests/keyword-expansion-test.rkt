@@ -5,7 +5,8 @@
          (types utils kw-types abbrev numeric-tower)
          racket/match racket/set
          rackunit)
-(provide keyword-tests)
+(provide tests)
+(gen-test-main)
 
 (define-syntax-rule (t arg expected)
   (begin
@@ -37,7 +38,7 @@
 (define three (-val 'three))
 (define four (-val 'four))
 
-(define (keyword-tests)
+(define tests
   (test-suite "Tests for keyword expansion"
 
     [t (-> result) (-> result)]
@@ -75,10 +76,4 @@
              (-> one two three true true result)
              (-> one two false true false  result)
              (-> one false false false false result))]
-
-
-
-
     ))
-
-(define-go keyword-tests)

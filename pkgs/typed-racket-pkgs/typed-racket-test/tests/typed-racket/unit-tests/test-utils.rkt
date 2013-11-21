@@ -1,44 +1,16 @@
 #lang scheme/base
-(provide (all-defined-out))
 
 (require scheme/require-syntax
          scheme/match
          scheme/gui/dynamic
-	 typed-racket/utils/utils
-         (for-syntax scheme/base)
+         typed-racket/utils/utils
+         (for-syntax scheme/base syntax/parse)
          (types utils)
          (rep type-rep)
          rackunit rackunit/text-ui)
 
-(provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env)
-
-(define (mk-suite ts)
-  (match (map (lambda (f) (f)) ts)
-	 [(list t) t]
-	 [ts (make-test-suite "Combined Test Suite" ts)]))
-
-(define (run . ts)
-  (run-tests (mk-suite ts)))
-
-(define (test/gui suite)
-  (((dynamic-require 'rackunit/private/gui/gui 'make-gui-runner))
-   suite))
-
-(define (run/gui . ts)
-  (test/gui (mk-suite ts)))
-
-
-(define-syntax (define-go stx)
-  (syntax-case stx ()
-    [(_ args ...)
-     (with-syntax
-      ([go (datum->syntax stx 'go)]
-       [go/gui (datum->syntax stx 'go/gui)]
-       [(tmps ...) (generate-temporaries #'(args ...))])
-      #'(define-values (go go/gui)
-	  (let ([tmps args] ...)
-	    (values (lambda () (run tmps ...))
-		    (lambda () (run/gui tmps ...))))))]))
+(provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env
+         (all-defined-out))
 
 ;; FIXME - do something more intelligent
 (define (tc-result-equal/test? a b)
@@ -54,3 +26,9 @@
     [(_ nm a b)
      (syntax/loc stx (test-case nm (check-tc-result-equal?* a b)))]))
 
+(define-syntax gen-test-main
+  (syntax-parser
+    [(stx:id)
+     #`(module* main #f
+         (require rackunit/text-ui)
+         (void (run-tests #,(datum->syntax #'stx 'tests))))]))

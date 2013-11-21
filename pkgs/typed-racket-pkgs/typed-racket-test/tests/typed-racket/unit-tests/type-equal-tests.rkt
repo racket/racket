@@ -5,7 +5,8 @@
          (types abbrev numeric-tower union)
          rackunit)
 
-(provide type-equal-tests)
+(provide tests)
+(gen-test-main)
 
 (define (-base x) (make-Base x #'dummy values #f))
 
@@ -26,7 +27,7 @@
 
 (define (fld* t) (make-fld t (datum->syntax #'here 'values) #f))
 
-(define (type-equal-tests)
+(define tests
   (te-tests
    [-Number -Number]
    [(Un -Number) -Number]
@@ -46,8 +47,3 @@
                   (-struct #'heap-node #f
                            (map fld* (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty))))))
              (-base 'heap-empty))]))
-
-(define-go
-  type-equal-tests)
-
-

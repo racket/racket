@@ -143,6 +143,11 @@
         (dr p))))))
 
 
+(define (test/gui suite)
+  (((dynamic-require 'rackunit/private/gui/gui 'make-gui-runner))
+   suite))
+
+
 (define (go tests) (test/gui tests))
 (define (go/text tests)
   (force (delay/thread (run-tests tests 'verbose))))

@@ -6,6 +6,8 @@
          (private type-contract)
          (types abbrev numeric-tower)
          rackunit)
+(provide tests)
+(gen-test-main)
 
 (define-syntax-rule (t e)
   (test-not-exn
@@ -24,7 +26,7 @@
        (type->contract e (λ (#:reason [reason #f]) (exit #t)))
        (error "type could be converted to contract")))))
 
-(define (contract-tests)
+(define tests
   (test-suite "Contract Tests"
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
@@ -35,7 +37,5 @@
               (t (-poly (a) (-poly (b) (-> a a))))
               (t (-poly (a) (-App (-poly (b) (-> a a)) (list -Number) #'#f)))
               (t/fail (-poly (a) -Flonum))
-              (t/fail (-poly (a) (-set -Number)))))
-
-(define-go contract-tests)
-(provide contract-tests)
+              (t/fail (-poly (a) (-set -Number)))
+              (t/fail ((-poly (a) (-vec a)) . -> . -Symbol))))
