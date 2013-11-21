@@ -154,7 +154,6 @@
   (call-with-database
    'doc-db-get-provides-timestamp
    db-file
-   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
