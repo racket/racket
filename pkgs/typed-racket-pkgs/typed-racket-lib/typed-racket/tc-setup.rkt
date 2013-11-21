@@ -12,8 +12,10 @@
 (provide tc-setup invis-kw maybe-optimize init-current-type-names)
 
 (define-syntax-class invis-kw
-  #:literals (define-values define-syntaxes #%require #%provide #%declare begin)
-  (pattern (~or define-values define-syntaxes #%require #%provide #%declare begin)))
+  #:literals (define-values define-syntaxes #%require
+              #%provide #%declare begin begin-for-syntax)
+  (pattern (~or define-values define-syntaxes #%require
+                #%provide #%declare begin begin-for-syntax)))
 
 (define (maybe-optimize body)
   ;; do we optimize?
