@@ -257,5 +257,10 @@ Maybe Oracle bug? See:
 
 @subsection{SQL Server ODBC Driver}
 
-Basic SQL Server support has been verified on Windows (32-bit only),
+Basic SQL Server support has been verified on Windows,
 but the automated test suite has not yet been adapted and run.
+
+The ``SQL Server'' driver refuses to accept @tt{NUMERIC} or
+@tt{DECIMAL} parameters, producing the error ``Invalid precision value
+(SQLSTATE: HY104).'' If possible, use the ``Native SQL Server''
+driver instead.

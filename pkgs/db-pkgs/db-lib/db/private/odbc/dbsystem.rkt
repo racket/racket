@@ -7,6 +7,8 @@
 (provide dbsystem
          field-dvec->field-info
          field-dvec->typeid
+         field-dvec->size
+         field-dvec->digits
          supported-typeid?
          classify-odbc-sql)
 
@@ -44,6 +46,10 @@
 
 (define (field-dvec->typeid dvec)
   (vector-ref dvec 1))
+(define (field-dvec->size dvec)
+  (vector-ref dvec 2))
+(define (field-dvec->digits dvec)
+  (vector-ref dvec 3))
 
 ;; ----
 

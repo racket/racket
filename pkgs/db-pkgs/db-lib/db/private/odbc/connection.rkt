@@ -101,20 +101,21 @@
                   (load-param fsym db stmt i param param-typeid))])
           (handle-status fsym (SQLExecute stmt) stmt)
           (strong-void param-bufs))
-        (let* ([result-dvecs (send pst get-result-dvecs)]
-               [rows
-                (and (not cursor?)
-                     (pair? result-dvecs)
-                     (fetch* fsym stmt (map field-dvec->typeid result-dvecs) #f +inf.0))])
-          (unless cursor? (send pst after-exec #f))
-          (cond [(and (pair? result-dvecs) (not cursor?))
-                 (rows-result (map field-dvec->field-info result-dvecs) rows)]
-                [(and (pair? result-dvecs) cursor?)
-                 (cursor-result (map field-dvec->field-info result-dvecs)
-                                pst
-                                (list (map field-dvec->typeid result-dvecs)
-                                      (box #f)))]
-                [else (simple-result '())]))))
+        (define result-dvecs (send pst get-result-dvecs))
+        (set-result-descriptors stmt result-dvecs)
+        (define rows
+          (and (not cursor?)
+               (pair? result-dvecs)
+               (fetch* fsym stmt (map field-dvec->typeid result-dvecs) #f +inf.0)))
+        (unless cursor? (send pst after-exec #f))
+        (cond [(and (pair? result-dvecs) (not cursor?))
+               (rows-result (map field-dvec->field-info result-dvecs) rows)]
+              [(and (pair? result-dvecs) cursor?)
+               (cursor-result (map field-dvec->field-info result-dvecs)
+                              pst
+                              (list (map field-dvec->typeid result-dvecs)
+                                    (box #f)))]
+              [else (simple-result '())])))
 
     (define/public (fetch/cursor fsym cursor fetch-size)
       (let ([pst (cursor-result-pst cursor)]
@@ -133,11 +134,11 @@
     (define/private (load-param fsym db stmt i param typeid)
       ;; NOTE: param buffers must not move between bind and execute
       ;; So use buffer utils from ffi.rkt (copy-buffer, etc)
-      (define (bind ctype sqltype buf)
+      (define (bind ctype sqltype buf [prec 0] [scale 0])
         (let* ([lenbuf
                 (int->buffer (if buf (bytes-length buf) SQL_NULL_DATA))]
                [status
-                (SQLBindParameter stmt i SQL_PARAM_INPUT ctype sqltype 0 0 buf lenbuf)])
+                (SQLBindParameter stmt i SQL_PARAM_INPUT ctype sqltype prec scale buf lenbuf)])
           (handle-status fsym status stmt)
           (if buf (cons buf lenbuf) lenbuf)))
       ;; If the typeid is UNKNOWN, then choose appropriate type based on data,
@@ -160,22 +161,29 @@
              (bind SQL_C_BINARY (if unknown-type? SQL_BINARY typeid)
                    (copy-buffer param))]
             [(pair? param) ;; Represents numeric/decimal decomposed as scaled integer
-             (bind SQL_C_NUMERIC typeid
-                   (copy-buffer
-                    (let ([ma (car param)]
-                          [ex (cdr param)])
-                      (apply bytes-append
-                             ;; ODBC docs claim max precision is 15 ...
-                             (bytes (if (zero? ma) 1 (+ 1 (order-of-magnitude (abs ma))))
-                                    ex
-                                    (if (negative? ma) 0 1))
-                             ;; 16 bytes of unsigned little-endian data (4 chunks of 4 bytes)
-                             (let loop ([i 0] [ma (abs ma)])
-                               (if (< i 4)
-                                   (let-values ([(q r) (quotient/remainder ma (expt 2 32))])
-                                     (cons (integer->integer-bytes r 4 #f #f)
-                                           (loop (add1 i) q)))
-                                   null))))))]
+             (let* ([ma (car param)]
+                    [ex (cdr param)]
+                    ;; ODBC docs claim max precision is 15 ...
+                    [prec-byte (if (zero? ma) 1 (+ 1 (order-of-magnitude (abs ma))))]
+                    [sign-byte (if (negative? ma) 0 1)] ;; FIXME: negative is 2 in ODBC 3.5 ???
+                    [digits-bytess
+                     ;; 16 bytes of unsigned little-endian data (4 chunks of 4 bytes)
+                     (let loop ([i 0] [ma (abs ma)])
+                       (if (< i 4)
+                           (let-values ([(q r) (quotient/remainder ma (expt 2 32))])
+                             (cons (integer->integer-bytes r 4 #f #f)
+                                   (loop (add1 i) q)))
+                           null))]
+                    [numeric-bytes
+                     (apply bytes-append (bytes prec-byte ex sign-byte) digits-bytess)]
+                    [numeric-buffer (copy-buffer numeric-bytes)])
+               ;; Example: http://support.microsoft.com/kb/181254
+               ;; and: http://msdn.microsoft.com/en-us/library/ms712567%28v=vs.85%29.aspx
+               ;; Call bind first.
+               (bind SQL_C_NUMERIC typeid numeric-buffer prec-byte ex)
+               ;; Then set descriptor attributes.
+               (set-numeric-descriptors (SQLGetStmtAttr/HDesc stmt SQL_ATTR_APP_PARAM_DESC)
+                                        i prec-byte ex numeric-buffer))]
             [(real? param)
              (cond [(or (= typeid SQL_NUMERIC) (= typeid SQL_DECIMAL))
                     (bind SQL_C_CHAR typeid
@@ -238,6 +246,24 @@
             [else (error/internal* fsym "cannot convert given value to SQL type"
                                    '("given" value) param
                                    "typeid" typeid)]))
+
+    (define/private (set-result-descriptors stmt dvecs)
+      (for ([i (in-naturals 1)]
+            [dvec (in-list dvecs)])
+        (define typeid (field-dvec->typeid dvec))
+        (cond [(or (= typeid SQL_DECIMAL)
+                   (= typeid SQL_NUMERIC))
+               (define hdesc (SQLGetStmtAttr/HDesc stmt SQL_ATTR_APP_ROW_DESC))
+               (define size (field-dvec->size dvec))
+               (define digits (field-dvec->digits dvec))
+               (set-numeric-descriptors hdesc i size digits #f)]
+              [else (void)])))
+
+    (define/private (set-numeric-descriptors hdesc i prec ex buf)
+      (SQLSetDescField/Int hdesc i SQL_DESC_TYPE SQL_C_NUMERIC)
+      (SQLSetDescField/Int hdesc i SQL_DESC_PRECISION prec)
+      (SQLSetDescField/Int hdesc i SQL_DESC_SCALE ex)
+      (when buf (SQLSetDescField/Ptr hdesc i SQL_DESC_DATA_PTR buf (bytes-length buf))))
 
     (define/private (fetch* fsym stmt result-typeids end-box limit)
       ;; scratchbuf: create a single buffer here to try to reduce garbage
@@ -381,7 +407,7 @@
              (get-string)]
             [(or (= typeid SQL_DECIMAL)
                  (= typeid SQL_NUMERIC))
-             (let ([fields (get-int-list '(1 1 1 4 4 4 4) SQL_C_NUMERIC)])
+             (let ([fields (get-int-list '(1 1 1 4 4 4 4) SQL_ARD_TYPE)])
                (cond [(list? fields)
                       (let* ([precision (first fields)]
                              [scale (second fields)]
