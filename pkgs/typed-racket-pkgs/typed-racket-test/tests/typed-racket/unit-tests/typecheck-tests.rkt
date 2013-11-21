@@ -311,6 +311,8 @@
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
         [tc-e/t #() (make-HeterogeneousVector (list))]
+        [tc-err #(3) #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
+        [tc-err #(3 4 5) #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
         [tc-e/t #(3 4 5) (make-HeterogeneousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e/t '(2 3 #t) (-lst* -PosByte -PosByte (-val #t))]

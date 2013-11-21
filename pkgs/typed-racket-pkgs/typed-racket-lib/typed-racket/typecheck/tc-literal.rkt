@@ -8,7 +8,8 @@
          (only-in (infer infer) restrict)
          (utils stxclass-util)
          syntax/parse
-         unstable/function)
+         unstable/function
+         unstable/sequence)
 
 (import)
 (export tc-literal^)
@@ -95,8 +96,8 @@
        [(HeterogeneousVector: ts)
         (make-HeterogeneousVector
          (for/list ([l (in-vector (syntax-e #'i))]
-                    [t (in-list ts)])
-           (check-below (tc-literal l t) t)))]
+                    [t (in-sequence-forever (in-list ts) #f)])
+           (cond-check-below (tc-literal l t) t)))]
        [_ (make-HeterogeneousVector (for/list ([l (in-vector (syntax-e #'i))])
                                       (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
