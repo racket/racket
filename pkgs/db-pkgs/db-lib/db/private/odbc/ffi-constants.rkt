@@ -129,6 +129,7 @@
 (define SQL_C_DOUBLE              SQL_DOUBLE)
 (define SQL_C_NUMERIC             SQL_NUMERIC)
 (define SQL_C_DEFAULT             99)
+(define SQL_ARD_TYPE              -99)
 
 (define SQL_C_DATE                SQL_DATE)
 (define SQL_C_TIME                SQL_TIME)
@@ -196,3 +197,10 @@
 (define SQL_TXN_SERIALIZABLE     #x8)
 
 (define SQL_DBMS_NAME 17)
+
+(define SQL_ATTR_APP_PARAM_DESC 10011)
+(define SQL_ATTR_APP_ROW_DESC 10010)
+(define SQL_DESC_TYPE 1002)
+(define SQL_DESC_PRECISION 1005)
+(define SQL_DESC_SCALE 1006)
+(define SQL_DESC_DATA_PTR 1010)

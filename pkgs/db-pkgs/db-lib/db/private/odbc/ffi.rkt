@@ -10,6 +10,7 @@
 (define-cpointer-type _sqlhenv)
 (define-cpointer-type _sqlhdbc)
 (define-cpointer-type _sqlhstmt)
+(define-cpointer-type _sqlhdesc)
 
 (define _sqllen _long)
 (define _sqlulen _ulong)
@@ -316,7 +317,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (handle : _sqlhstmt)
         (column : _sqlusmallint)
         (column-buf : _bytes)
-        ((bytes-length column-buf) : _sqlsmallint)
+        (_sqlsmallint = (if column-buf (bytes-length column-buf) 0))
         (column-len : (_ptr o _sqlsmallint))
         (data-type : (_ptr o _sqlsmallint))
         (size : (_ptr o _sqlulen))
@@ -325,6 +326,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         -> (status : _sqlreturn)
         -> (values status
                    (and (ok-status? status)
+                        column-buf
                         (bytes->string/utf-8 column-buf #f 0 column-len))
                    data-type size digits nullable)))
 
@@ -342,6 +344,37 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (len-or-ind : (_ptr o _sqllen))
         -> (status : _sqlreturn)
         -> (values status len-or-ind)))
+
+(define-odbc SQLGetStmtAttr/HDesc
+  (_fun (handle attr) ::
+        (handle : _sqlhstmt)
+        (attr :   _sqlinteger)
+        (valptr : (_ptr o _sqlhdesc))
+        (buflen : _sqlinteger = 0)
+        (strlen : _pointer = #f)
+        -> (status : _sqlreturn)
+        -> (and (ok-status? status) valptr))
+  #:c-id SQLGetStmtAttr)
+
+(define-odbc SQLSetDescField/Int
+  (_fun (handle recno fieldid intval) ::
+        (handle  : _sqlhdesc)
+        (recno   : _sqlsmallint)
+        (fieldid : _sqlsmallint)
+        (intval  : _intptr)  ;; declared SQLPOINTER; cast
+        (buflen : _sqlinteger = 0)
+        -> (status : _sqlreturn))
+  #:c-id SQLSetDescField)
+
+(define-odbc SQLSetDescField/Ptr
+  (_fun (handle recno fieldid ptrval buflen) ::
+        (handle  : _sqlhdesc)
+        (recno   : _sqlsmallint)
+        (fieldid : _sqlsmallint)
+        (ptrval  : _pointer)  ;; declared SQLPOINTER; cast
+        (buflen : _sqlinteger)
+        -> (status : _sqlreturn))
+  #:c-id SQLSetDescField)
 
 (define-odbc SQLFreeStmt
   (_fun (handle : _sqlhstmt)
