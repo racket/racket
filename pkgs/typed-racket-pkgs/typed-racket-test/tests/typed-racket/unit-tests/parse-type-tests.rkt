@@ -1,48 +1,27 @@
 #lang racket/base
-(require "test-utils.rkt" (for-syntax racket/base)
-         (utils tc-utils)
-         (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
-         (rep type-rep)
-         (rename-in (types subtype union utils abbrev numeric-tower)
-                    [Un t:Un] [-> t:->] [->* t:->*])
+(require "test-utils.rkt"
+         "evaluator.rkt"
+         (for-syntax
+           racket/base
+           racket/dict
+           (env tvar-env type-alias-env)
+           (utils tc-utils)
+           (private parse-type)
+           (rep type-rep)
+
+           (submod typed-racket/base-env/base-types initialize)
+           (rename-in (types union abbrev numeric-tower)
+                      [Un t:Un] [-> t:->] [->* t:->*]))
+         (only-in typed-racket/typed-racket do-standard-inits)
          (base-env base-types base-types-extra colon)
-         (submod typed-racket/base-env/base-types initialize)
-         (for-template (base-env base-types base-types-extra base-env colon))
-         (private parse-type)
-         rackunit
-         racket/dict)
+
+         rackunit)
 
 (provide tests)
 (gen-test-main)
 
-;; HORRIBLE HACK!
-;; We are solving the following problem:
-;; when we require "base-env.rkt" for template, it constructs the type-alias-env
-;; in phase 0 (relative to this module), but populates it with phase -1 identifiers
-;; The identifiers are also bound in this module at phase -1, but the comparison for
-;; the table is phase 0, so they don't compare correctly
-
-;; The solution is to add the identifiers to the table at phase 0.
-;; We do this by going through the table, constructing new identifiers based on the symbol
-;; of the old identifier.
-;; This relies on the identifiers being bound at phase 0 in this module (which they are,
-;; because we have a phase 0 require of "base-env.rkt").
-(initialize-type-names)
-(for ([pr (type-alias-env-map cons)])
-  (let ([nm (car pr)]
-        [ty (cdr pr)])
-    (register-resolved-type-alias (datum->syntax #'here (syntax->datum nm)) ty)))
-
-
-(define-syntax (run-one stx)
-  (syntax-case stx ()
-    [(_ ty) (syntax/loc stx
-              (parameterize ([current-tvars initial-tvar-env]
-                             [current-orig-stx #'ty]
-                             [orig-module-stx #'ty]
-                             [expanded-module-stx #'ty]
-                             [delay-errors? #f])
-                (parse-type (syntax ty))))]))
+(begin-for-syntax
+  (do-standard-inits))
 
 (define-syntax (pt-test stx)
   (syntax-case stx (FAIL)
@@ -50,19 +29,26 @@
      (syntax/loc stx (pt-test FAIL ty-stx initial-tvar-env))]
     [(_ FAIL ty-stx tvar-env)
      (quasisyntax/loc stx
-       (test-exn #,(format "~a" (syntax->datum #'ty-stx))
-                 exn:fail:syntax?
-                 (parameterize ([current-tvars tvar-env]
-                                [delay-errors? #f])
-                   (lambda () (parse-type (quote-syntax ty-stx))))))]
+       (test-case #,(format "~a" (syntax->datum #'ty-stx))
+         (unless
+           (phase1-phase0-eval
+             (with-handlers ([exn:fail:syntax? (lambda (exn) #'#t)])
+               (parameterize ([current-tvars tvar-env]
+                              [delay-errors? #f])
+                 (parse-type (quote-syntax ty-stx)))
+               #'#f))
+           (fail-check "No syntax error when parsing type."))))]
     [(_ ts tv) (syntax/loc stx (pt-test ts tv initial-tvar-env))]
     [(_ ty-stx ty-val tvar-env)
      (quasisyntax/loc
          stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
-                  (parameterize ([current-tvars tvar-env]
-                                 [delay-errors? #f])
-                    (check type-equal? (parse-type (quote-syntax ty-stx)) ty-val))))]))
+         (unless
+           (phase1-phase0-eval
+             (parameterize ([current-tvars tvar-env]
+                            [delay-errors? #f])
+                #`#,(type-equal? (parse-type (quote-syntax ty-stx)) ty-val)))
+           (fail-check "Unequal types"))))]))
 
 (define-syntax pt-tests
   (syntax-rules ()
@@ -70,9 +56,9 @@
      (test-suite nm
                  (pt-test elems ...) ...)]))
 
-(define N -Number)
-(define B -Boolean)
-(define Sym -Symbol)
+(define-for-syntax N -Number)
+(define-for-syntax B -Boolean)
+(define-for-syntax Sym -Symbol)
 
 (define tests
   (pt-tests
