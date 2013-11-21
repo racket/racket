@@ -4,6 +4,7 @@
 (define deps '("typed-racket" "typed-racket-more" "unstable"))
 (define build-deps '("scheme-lib"
                      "base"
+                     "racket-benchmarks"
                      "compatibility-lib"
                      "rackunit-lib"
                      "compiler-lib"
