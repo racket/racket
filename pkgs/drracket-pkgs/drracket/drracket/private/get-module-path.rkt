@@ -233,8 +233,8 @@
   (update-list-of-paths)
   (update-different-racket-gui)
   (maybe-turn-racket-path-pink)
-  (send dlg show #t)
   (send tf focus)
+  (send dlg show #t)
   (cond
     [cancelled? #f]
     [dir?
