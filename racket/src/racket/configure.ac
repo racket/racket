@@ -484,6 +484,10 @@ fi
 AC_PROG_RANLIB
 if test "$AR" = '' ; then 
   AR="${ac_tool_prefix}ar"
+  AC_CHECK_PROG(platform_ar_found, $AR, yes, no)
+  if test "$platform_ar_found" = 'no' ; then
+    AR="ar"
+  fi
 fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=ruv
