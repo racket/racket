@@ -194,7 +194,7 @@ Auto-wrapping is initially disabled.
 The @method[editor<%> begin-edit-sequence] and @method[editor<%>
  end-edit-sequence] methods are used to bracket a set of editor
  modifications so that the results are all displayed at once. The
- commands may be nested arbitrarily deep. Using these functions can
+ commands may be nested arbitrarily deeply. Using these functions can
  greatly speed up displaying the changes.
 
 When an editor contains other editors, using @method[editor<%>

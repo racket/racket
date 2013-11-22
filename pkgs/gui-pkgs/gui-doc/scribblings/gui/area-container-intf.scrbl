@@ -56,7 +56,7 @@ Suspends geometry management in the container's top-level window
  delays show and hide actions by
 @method[area-container<%> change-children], as well as the on-screen part of showing via
 @method[window<%> show] until the sequence is complete.  Sequence begin and end commands may
- be nested arbitrarily deep.
+ be nested arbitrarily deeply.
 
 }
 
