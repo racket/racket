@@ -417,13 +417,17 @@ distro-build-from-server:
 # Copy our local build into a "bundle/racket" build, dropping in the
 # process things that should not be in an installer (such as the "src"
 # directory). Then, replace the "collects" tree with the one from the
-# server. Finally, install pre-built packages from the server:
+# server. Install required packages next, because they may include
+# packages that are needed kto make core functionality work right
+# (which as the SQLite3 library). At last, install the selected packages
+# from the server, and the run a post-adjustment script.
 bundle-from-server:
 	rm -rf bundle
 	mkdir -p bundle/racket
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
-	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS) $(REQUIRED_PKGS)
+	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 bundle-config:
