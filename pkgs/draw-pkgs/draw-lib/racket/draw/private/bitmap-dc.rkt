@@ -40,7 +40,7 @@
         (set! c #f))
       (set! bm v)
       (when (and bm (send bm ok?))
-        (set! c (cairo_create (send bm get-cairo-surface)))
+        (set! c (cairo_create (send bm get-cairo-target-surface)))
         (set! b&w? (not (send bm is-color?)))))
 
     (define/public (internal-set-bitmap v [direct? #f])
