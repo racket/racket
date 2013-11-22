@@ -568,7 +568,7 @@ Uses @racket[expr] as both a compile-time (i.e., @tech{phase} 1)
 expression and a run-time (i.e., @tech{phase} 0) expression. In either
 context, @racket[expr] should produce a path, a string that represents
 a path, a list of the form @racket[(list 'lib _str ...+)], or a list
-of the form @racket[(list 'so _str)].
+of the form @racket[(list 'so _str)] or @racket[(list 'so _str _vers)].
 
 For run time, @racket[id] is bound to a path that is based on the
 result of @racket[expr]. The path is normally computed by taking a
@@ -588,18 +588,25 @@ If @racket[expr] produces a list of the form @racket[(list 'lib _str
 refers to a collection-based file similar to using the value as a
 @tech{module path}.
 
-If @racket[expr] produces a list of the form @racket[(list 'so _str)],
+If @racket[expr] produces a list of the form @racket[(list 'so _str)]
+or @racket[(list 'so _str _vers)],
 the value bound to @racket[id] can be either @racket[_str] or an
-absolute path; it is an absolute path when adding the
-platform-specific shared-library extension --- as produced by
-@racket[(system-type 'so-suffix)] --- and then searching in the
+absolute path; it is an absolute path when searching in the
 Racket-specific shared-object library directories (as determined by
 @racket[get-lib-search-dirs]) locates the path. In this way, shared-object
 libraries that are installed specifically for Racket get carried
-along in distributions.
+along in distributions. The search tries using @racket[_str] directly,
+then it tries adding each version specified by @racket[_vers]---which defaults
+to @racket['(#f)]---along with
+a platform-specific shared-library extension---as produced by
+@racket[(system-type 'so-suffix)]. A @racket[_vers]
+can be a string, or it can be a list of strings and @racket[#f]; in the
+latter case, the versions are tried in order, where @racket[#f] omits
+the addition of the version.
 
 If @racket[expr] produces a list of the form @racket[(list 'module
-_module-path _var-ref)], the value bound to @racket[id] is a
+_module-path _var-ref)] or @racket[(list 'so _str (list
+_str-or-false ...))], the value bound to @racket[id] is a
 @tech{module path index}, where @racket[_module-path] is treated as
 relative (if it is relative) to the module that is the home of the
 @tech{variable reference} @racket[_var-ref], where @racket[_var-ref]

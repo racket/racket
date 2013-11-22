@@ -1131,20 +1131,31 @@
                                                                          p)))
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]
-                                                                     [(and (list? p) (= 2 (length p)) 
+                                                                     [(and (list? p)
+                                                                           (or (= 2 (length p)) 
+                                                                               (= 3 (length p)))
                                                                            (eq? 'so (car p)))
-                                                                      (let ([fs (list
-                                                                                 (cadr p)
-                                                                                 (path-extra-suffix (cadr p) 
-                                                                                                    (system-type 'so-suffix)))])
-                                                                        (ormap (lambda (f)
+                                                                      (ormap (lambda (vers)
+                                                                               (let ([f (if (eq? vers 'no-suffix)
+                                                                                            (cadr p)
+                                                                                            (path-extra-suffix 
+                                                                                             (cadr p)
+                                                                                             (if (string? vers)
+                                                                                                 (bytes-append #"."
+                                                                                                               (string->bytes/utf-8 vers)
+                                                                                                               (system-type 'so-suffix))
+                                                                                                 (system-type 'so-suffix))))])
                                                                                  (ormap (lambda (p)
                                                                                           (let ([p (build-path p f)])
                                                                                             (and (or (file-exists? p)
                                                                                                      (directory-exists? p))
                                                                                                  p)))
-                                                                                        (get-lib-search-dirs)))
-                                                                               fs))]
+                                                                                        (get-lib-search-dirs))))
+                                                                             (cons 'no-suffix
+                                                                                   (if (= (length p) 3)
+                                                                                       (let ([s (caddr p)])
+                                                                                         (if (list? s) s (list s)))
+                                                                                       '(#f))))]
                                                                      [(and (list? p)
                                                                            (eq? 'lib (car p)))
                                                                       (let ([p (if (null? (cddr p))
