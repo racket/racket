@@ -2383,6 +2383,7 @@
                         "download-cache-max-bytes"
                         "download-cache-dir"))
                val
+               another-val
                more-vals)
         (pkg-error (~a "too many values provided for config key\n"
                        "  config key: ~a\n"
