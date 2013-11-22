@@ -21,6 +21,8 @@
   ;; Needed for browsing
   (define original-security-guard (current-security-guard))
   (define orig-err-string-handler (error-value->string-handler))
+
+  (define-logger slideshow)
       
   (define-unit viewer@
       (import (prefix config: cmdline^) core^)
@@ -872,6 +874,7 @@
 
 	  (define/public (redraw)
 	    (unless printing?
+              (define now (current-milliseconds))
 	      (reset-display-inset! (sliderec-inset (talk-list-ref current-page)) (get-dc))
 	      (send commentary lock #f)
 	      (send commentary begin-edit-sequence)
@@ -894,11 +897,13 @@
               (when (sliderec-timeout (talk-list-ref current-page))
                 (let ([key (gensym)])
                   (set! current-timeout-key key)
+                  (define interval
+                    (inexact->exact
+                     (floor 
+                      (* (sliderec-timeout (talk-list-ref current-page))
+                         1000))))
                   (new timer%
-                       [interval (inexact->exact
-                                  (floor 
-                                   (* (sliderec-timeout (talk-list-ref current-page))
-                                      1000)))]
+                       [interval interval]
                        [just-once? #t]
                        [notify-callback 
                         (lambda ()
@@ -907,6 +912,9 @@
 			    (queue-callback
 			     (lambda ()
                                (when (send f is-shown?)
+                                 (log-slideshow-debug "Timeout vs. requested: ~s vs. ~s"
+                                                      (- (current-milliseconds) now) 
+                                                      interval)
                                  (send c-frame next-one)))
 			     #f)))])))
 	      (cond
@@ -937,7 +945,9 @@
 		  (paint-slide this dc))])
               (show-spotlight (get-dc))
               (show-time (get-dc))
-              (swap-interactives! old-interactives interactives)))
+              (swap-interactives! old-interactives interactives)
+              (log-slideshow-debug "Redraw time: ~s"
+                                   (- (current-milliseconds) now))))
 
           (define interactive-state (make-hash))
           (define/private (swap-interactives! old new-i)
