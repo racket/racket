@@ -679,7 +679,6 @@ path/s is either such a string or a list of them.
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/main.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/other.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-2" drdr:command-line #f
-"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/test.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/regression.rkt" responsible (mflatt)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
