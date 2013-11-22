@@ -195,7 +195,8 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
 
 @defproc[(text/font [string string?] [font-size (and/c integer? (<=/c 1 255))] [color image-color?]
                     [face (or/c string? #f)]
-                    [family (or/c 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system)]
+                    [family (or/c 'default 'decorative 'roman 'script 
+                                  'swiss 'modern 'symbol 'system)]
                     [style (or/c 'normal 'italic 'slant)]
                     [weight (or/c 'normal 'bold 'light)]
                     [underline? any/c])
