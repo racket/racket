@@ -14,45 +14,61 @@
 (provide tests)
 (gen-test-main)
 
-(define promised-ns
+(define-namespace-anchor anchor)
+
+(define base-ns
   (delay
-    (define ns (make-base-namespace))
-    (eval '(require typed/racket) ns)
+    (define ns (namespace-anchor->empty-namespace anchor))
+    (parameterize ([current-namespace ns])
+      (namespace-require 'typed/racket/base))
     ns))
+
+(define (get-ns fresh)
+  (if fresh
+      (let ([ns (variable-reference->empty-namespace
+                  (eval '(#%variable-reference) (force base-ns)))])
+        (parameterize ([current-namespace ns])
+          (namespace-require 'typed/racket/base)
+          ns))
+      (force base-ns)))
+
+(begin-for-syntax
+  (define-splicing-syntax-class fresh-kw
+    (pattern (~seq) #:attr fresh #'#f)
+    (pattern #:fresh #:attr fresh #'#t)))
 
 (define-syntax (test-form-exn stx)
   (syntax-parse stx
-    [(_ regexp:expr form:expr)
+    [(_ f:fresh-kw regexp:expr form:expr)
      (quasisyntax/loc stx
        (test-case #,(~a (syntax->datum #'form))
          (check-exn
            regexp
            (lambda ()
              (eval `(#%top-interaction .
-                     ,(syntax->datum #'form)) (force promised-ns))))))]))
+                     ,(syntax->datum #'form)) (get-ns f.fresh))))))]))
 
 (define-syntax (test-form stx)
   (syntax-parse stx
-    [(_ regexp:expr form:expr)
+    [(_ f:fresh-kw (~seq regexp:expr form:expr) ...)
      (quasisyntax/loc stx
-       (test-case #,(~a (syntax->datum #'form))
+       (test-case #,(~a (syntax->datum #'(form ...)))
+         (define ns (get-ns f.fresh))
          (check-regexp-match
            regexp
            (with-output-to-string
              (lambda ()
                (eval `(#%top-interaction .
-                       ,(syntax->datum #'form)) (force promised-ns)))))))]))
+                       ,(syntax->datum #'form)) ns)))) ...))]))
 
 ;; Add 'only at the toplevel tests'
 (define tests
   (test-suite "Interactive tests"
 
-    (test-form #rx""
-      (module test racket))
-    (test-form #rx""
-      (define module displayln))
-    (test-form #rx"racket"
-      (module 'racket))
+    (test-form #:fresh
+      #rx"" (module test racket)
+      #rx"" (define module displayln)
+      #rx"racket" (module 'racket))
 
     (test-form #rx"1"
       (:type 1))
