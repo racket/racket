@@ -1,4 +1,5 @@
-Version 1.1
+Version 1.0
+Use `doc' submodule when available
 Changed the HTML rendering style of `scribble/manual'
 Changed `verbatim' to support non-string arguments
 Added `--html-tree' option to for rendering to multi-page HTML
@@ -8,9 +9,12 @@ Added `css-style-addition' and `js-style-addition' for adding
  overridden externally
 For HTML rendering, merge generated `style' attributes within
  a single tag
+scribble/base: same change as for racket/runtime-path related
+ to "collects"-relative paths
 scribble/manual: added `manual-doc-style'
 scribble/manual: changed `deprecated' to a function, and
  generalized it by adding an optional `#:what' argument
+scriblib/autobib: add #:note
 
 Older versions
 See the "Racket core" release notes for a history of changes before
