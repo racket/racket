@@ -9,11 +9,13 @@
 
   ;; bitmap%
   get-cairo-surface
+  get-cairo-target-surface
   get-cairo-alpha-surface
   get-cairo-device-scale
   release-bitmap-storage
   get-bitmap-gl-context
   drop-alpha-s
+  draw-bitmap-to
 
   ;; bitmap-dc%
   internal-get-bitmap

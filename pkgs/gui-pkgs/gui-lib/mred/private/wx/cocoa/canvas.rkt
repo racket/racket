@@ -432,7 +432,7 @@
      (define/public (get-dc) dc)
 
      (define/public (make-compatible-bitmap w h)
-       (make-screen-bitmap w h))
+       (make-window-bitmap w h (get-cocoa-window)))
 
      (define/override (fix-dc [refresh? #t])
        (when (dc . is-a? . dc%)

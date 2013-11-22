@@ -205,6 +205,8 @@
        [vp (make-object vertical-panel% f)]
        [hp0 (make-object horizontal-panel% vp)]
        [hp (make-object horizontal-panel% vp)]
+       [hp2.75 (new horizontal-panel% [parent vp]
+                    [stretchable-height #f])]
        [hp3 (make-object horizontal-panel% vp)]
        [hp2 hp]
        [hp2.5 hp0]
@@ -222,6 +224,7 @@
        [do-clock #f]
        [use-bitmap? #f]
        [platform-bitmap? #f]
+       [compat-bitmap? #f]
        [use-record? #f]
        [serialize-record? #f]
        [use-bad? #f]
@@ -253,7 +256,7 @@
 	    (define pixel-copy? #f)
 	    (define kern? #f)
 	    (define clip-pre-scale? #f)
-            (define c-clip? #f)
+            (define c-clip #f)
 	    (define mask-ex-mode 'mred)
 	    (define xscale 1)
 	    (define yscale 1)
@@ -261,18 +264,20 @@
 	    (define c-xscale 1)
 	    (define c-yscale 1)
 	    (define c-offset 0)
+            (define c-gray? #f)
 	    (public*
 	     [set-bitmaps (lambda (on?) (set! no-bitmaps? (not on?)) (refresh))]
 	     [set-stipples (lambda (on?) (set! no-stipples? (not on?)) (refresh))]
 	     [set-pixel-copy (lambda (on?) (set! pixel-copy? on?) (refresh))]
 	     [set-kern (lambda (on?) (set! kern? on?) (refresh))]
 	     [set-clip-pre-scale (lambda (on?) (set! clip-pre-scale? on?) (refresh))]
-	     [set-canvas-clip (lambda (on?) (set! c-clip? on?) (refresh))]
+	     [set-canvas-clip (lambda (mode) (set! c-clip mode) (refresh))]
 	     [set-mask-ex-mode (lambda (mode) (set! mask-ex-mode mode) (refresh))]
 	     [set-canvas-scale (lambda (xs ys) (set! c-xscale xs) (set! c-yscale ys) (refresh))]
 	     [set-scale (lambda (xs ys) (set! xscale xs) (set! yscale ys) (refresh))]
 	     [set-offset (lambda (o) (set! offset o) (refresh))]
-	     [set-canvas-offset (lambda (o) (set! c-offset o) (refresh))])
+	     [set-canvas-offset (lambda (o) (set! c-offset o) (refresh))]
+	     [set-canvas-gray (lambda (g?) (set! c-gray? g?) (refresh))])
 	    (override*
 	     [on-paint
 	      (case-lambda
@@ -299,9 +304,13 @@
 				   (make-object bitmap% "no such file")
                                    (let ([w (ceiling (* xscale DRAW-WIDTH))]
                                          [h (ceiling (* yscale DRAW-HEIGHT))])
-                                     (if platform-bitmap?
-                                         (make-platform-bitmap w h)
-                                         (make-object bitmap% w h depth-one?))))
+                                     (cond
+                                      [platform-bitmap?
+                                       (make-platform-bitmap w h)]
+                                      [compat-bitmap?
+                                       (send this make-bitmap w h)]
+                                      [else
+                                       (make-object bitmap% w h depth-one? c-gray?)])))
 			       #f)]
 		       [draw-series
 			(lambda (dc pens pent penx size x y flevel last?)
@@ -1022,12 +1031,27 @@
                                        (or (and (not (or kind (eq? dc can-dc)))
                                                 (send mem-dc get-bitmap))
                                            use-record?))
+                              (when c-gray?
+                                (let ([b (send can-dc get-brush)]
+                                      [p (send can-dc get-pen)])
+                                  (send can-dc set-brush "gray" 'solid)
+                                  (send can-dc set-pen "black" 1 'transparent)
+                                  (send can-dc draw-rectangle 0 0 1024 1024)
+                                  (send can-dc set-brush b)
+                                  (send can-dc set-pen p)))
                               (send can-dc set-origin c-offset c-offset)
                               (send can-dc set-scale c-xscale c-yscale)
                               (send can-dc set-alpha current-c-alpha)
-                              (when c-clip?
+                              (when c-clip
                                 (define r (new region%))
-                                (send r set-rectangle 0 0 200 200)
+                                (case c-clip
+                                  [(square) (send r set-rectangle 0 0 200 200)]
+                                  [(squares)
+                                   (define r2 (new region%))
+                                   (send r set-rectangle 0 0 200 200)
+                                   (send r2 set-rectangle 210 210 40 40)
+                                   (send r union r2)]
+                                  [(octagon) (send r set-polygon octagon)])
                                 (send can-dc set-clipping-region r))
                               (if use-record?
                                   (if serialize-record?
@@ -1084,7 +1108,7 @@
                       (send dc start-doc "Draw Test")
 		      (send dc start-page)
 
-                      (send dc clear)
+                      (send dc erase)
 
 		      (send dc set-alpha current-alpha)
                       (send dc set-rotation (- current-rotation))
@@ -1107,7 +1131,7 @@
 				(send the-color-database find-color "WHITE")))
 
 		      ;(send dc set-clipping-region #f)
-		      (send dc clear)
+		      (send dc erase)
 
                       (let ([clip-dc dc])
                         (if clock-clip?
@@ -1286,14 +1310,15 @@
 	    (super-new [parent parent][style '(hscroll vscroll)])
 	    (init-auto-scrollbars (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT) 0 0))
 	  vp)])
-    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Record" "Serialize" "Bad") hp0
+    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Compatible" "Record" "Serialize" "Bad") hp0
 		 (lambda (self event)
 		   (set! use-bitmap? (< 0 (send self get-selection)))
-		   (set! depth-one? (< 1 (send self get-selection)))
+		   (set! depth-one? (= 2 (send self get-selection)))
 		   (set! platform-bitmap? (= 3 (send self get-selection)))
-		   (set! use-record? (<= 4 (send self get-selection) 5))
-		   (set! serialize-record? (= 5 (send self get-selection)))
-		   (set! use-bad? (< 5 (send self get-selection)))
+		   (set! compat-bitmap? (= 4 (send self get-selection)))
+		   (set! use-record? (<= 5 (send self get-selection) 6))
+		   (set! serialize-record? (= 6 (send self get-selection)))
+		   (set! use-bad? (< 7 (send self get-selection)))
 		   (send canvas refresh)))
     (make-object button% "PS" hp
 		 (lambda (self event)
@@ -1359,12 +1384,29 @@
     (make-object check-box% "Kern" hp2.5
 		 (lambda (self event)
 		   (send canvas set-kern (send self get-value))))
-    (make-object choice% #f '("1" "*2" "/2" "1,*2" "*2,1") hp3
+    (make-object choice% "Clip" 
+		 '("None" "Rectangle" "Rectangle2" "Octagon" 
+		   "Circle" "Wedge" "Round Rectangle" "Lambda" "A"
+		   "Rectangle + Octagon" "Rectangle + Circle" 
+		   "Octagon - Rectangle" "Rectangle & Octagon" "Rectangle ^ Octagon" "Polka"
+		   "Empty")
+		 hp2.75
+		 (lambda (self event)
+		   (set! clip (list-ref
+		               '(none rect rect2 poly circle wedge roundrect lam A 
+				      rect+poly rect+circle poly-rect poly&rect poly^rect 
+				      polka empty)
+		               (send self get-selection)))
+		   (send canvas refresh)))
+    (make-object check-box% "Clip Pre-Scale" hp2.75
+		 (lambda (self event)
+		   (send canvas set-clip-pre-scale (send self get-value))))
+    (make-object choice% #f '("1" "*2" "/2" "1,*2" "*2,1") hp2.75
 		 (lambda (self event)
 		   (send canvas set-scale 
 			 (list-ref '(1 2 1/2 1 2) (send self get-selection))
 			 (list-ref '(1 2 1/2 2 1) (send self get-selection)))))
-    (make-object check-box% "+10" hp3
+    (make-object check-box% "+10" hp2.75
 		 (lambda (self event)
 		   (send canvas set-offset (if (send self get-value) 10 0))))
     (make-object choice% #f '("Cvs 1" "Cvs *2" "Cvs /2" "Cvs 1,*2" "Cvs *2,1") hp3
@@ -1375,26 +1417,17 @@
     (make-object check-box% "Cvs +10" hp3
 		 (lambda (self event)
 		   (send canvas set-canvas-offset (if (send self get-value) 10 0))))
-    (make-object choice% "Clip" 
-		 '("None" "Rectangle" "Rectangle2" "Octagon" 
-		   "Circle" "Wedge" "Round Rectangle" "Lambda" "A"
-		   "Rectangle + Octagon" "Rectangle + Circle" 
-		   "Octagon - Rectangle" "Rectangle & Octagon" "Rectangle ^ Octagon" "Polka"
-		   "Empty")
-		 hp3
+    (make-object choice% "Cvs Clip" '("None" "Empty" "Square" "Squares" "Octagon") hp3
 		 (lambda (self event)
-		   (set! clip (list-ref
-		               '(none rect rect2 poly circle wedge roundrect lam A 
-				      rect+poly rect+circle poly-rect poly&rect poly^rect 
-				      polka empty)
-		               (send self get-selection)))
-		   (send canvas refresh)))
-    (make-object check-box% "Clip Pre-Scale" hp3
+		   (send canvas set-canvas-clip (case (send self get-selection)
+                                                  [(0) #f]
+                                                  [(1) 'empty]
+                                                  [(2) 'square]
+                                                  [(3) 'squares]
+                                                  [(4) 'octagon]))))
+    (make-object check-box% "Cvs Gray" hp3
 		 (lambda (self event)
-		   (send canvas set-clip-pre-scale (send self get-value))))
-    (make-object check-box% "Cvs Clip" hp3
-		 (lambda (self event)
-		   (send canvas set-canvas-clip (send self get-value))))
+		   (send canvas set-canvas-gray (send self get-value))))
     (let ([clock (lambda (clip?)
 		   (thread (lambda ()
 			     (set! clock-clip? clip?)
@@ -1414,7 +1447,7 @@
 			     (set! clock-end #f)
 			     (send canvas refresh))))])
       (set! do-clock clock)
-      (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
+      (make-object button% "Clip Clock" hp2.75 (lambda (b e) (clock #t)))
       (make-object button% "Print" hp4 (lambda (self event) (send canvas on-paint 'print)))
       (make-object button% "Print Setup" hp4 (lambda (b e) (let ([c (get-page-setup-from-user)])
                                                              (when c

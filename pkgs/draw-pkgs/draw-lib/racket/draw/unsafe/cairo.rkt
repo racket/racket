@@ -96,6 +96,8 @@
 
 (define-cairo cairo_get_target (_cfun _cairo_t -> _cairo_surface_t)) ;; not an allocator
 
+(define-cairo cairo_surface_get_type (_cfun _cairo_surface_t -> _int))
+
 ;; Context
 (define-cairo cairo_paint (_cfun _cairo_t -> _void))
 (define-cairo cairo_paint_with_alpha (_cfun _cairo_t _double* -> _void))
@@ -125,6 +127,20 @@
                  (log-warning "cairo_clip_extents is unavailable; returning the empty rectangle")
                  (set! warned? #t))
                (values 0 0 0 0)))))
+
+(define-cstruct _cairo_rectangle_t ([x _double]
+                                    [y _double]
+                                    [width _double]
+                                    [height _double]))
+(define-cstruct _cairo_rectangle_list_t ([status _int]
+                                         [rectangles _cairo_rectangle_t-pointer]
+                                         [num_rectangles _int]))
+(provide (struct-out cairo_rectangle_t) _cairo_rectangle_t
+         (struct-out cairo_rectangle_list_t))
+(define-cairo cairo_rectangle_list_destroy (_cfun _cairo_rectangle_list_t-pointer -> _void)
+  #:wrap (deallocator))
+(define-cairo cairo_copy_clip_rectangle_list (_cfun _cairo_t -> _cairo_rectangle_list_t-pointer)
+  #:wrap (allocator cairo_rectangle_list_destroy))
 
 (define-cairo cairo_fill_extents (_cfun _cairo_t 
                                         (x1 : (_ptr o _double)) 
@@ -439,6 +455,10 @@
   CAIRO_FILTER_GAUSSIAN)
 
 (define/provide CAIRO_CONTENT_COLOR_ALPHA #x3000)
+
+(define-enum 
+  6
+  CAIRO_SURFACE_TYPE_QUARTZ)
 
 ;; ----------------------------------------
 

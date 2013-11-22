@@ -1763,6 +1763,13 @@
                    (cairo_restore cr)
                    (cairo_pattern_destroy p)))])
          (cond
+          [(send src draw-bitmap-to cr
+                 a-src-x a-src-y
+                 a-dest-x a-dest-y
+                 a-dest-w a-dest-h
+                 alpha
+                 clipping-region)
+           (void)]
           [(or (send src is-color?)
                (and (not (eq? style 'opaque))
                     (= alpha 1.0)

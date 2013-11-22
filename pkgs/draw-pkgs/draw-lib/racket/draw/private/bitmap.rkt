@@ -283,6 +283,9 @@
     (def/public (get-loaded-mask) loaded-mask)
     (def/public (set-loaded-mask [(make-or-false bitmap%) m]) (set! loaded-mask m))
 
+    (define/public (draw-bitmap-to cr sx sy dx dy w h alpha clipping)
+      #f)
+
     (define/public (release-bitmap-storage)
       (drop-alpha-s)
       (when s
@@ -632,6 +635,7 @@
     (def/public (ok?) (and s #t))
 
     (define/public (get-cairo-surface) (or s (get-empty-surface)))
+    (define/public (get-cairo-target-surface) (get-cairo-surface))
     (define/public (get-cairo-alpha-surface)
       (or (if (or b&w? alpha-channel?)
               s
@@ -923,7 +927,7 @@
 
 (define quartz-bitmap%
   (class bitmap%
-    (init w h [with-alpha? #t] [resolution 1.0])
+    (init w h [with-alpha? #t] [resolution 1.0] [dest-cg #f])
     (super-make-object (make-alternate-bitmap-kind w h))
     
     (define cocoa-resolution resolution)
@@ -932,15 +936,19 @@
       cocoa-resolution)
     
     (define s
-      (let ([s (cairo_quartz_surface_create (if with-alpha?
-                                                CAIRO_FORMAT_ARGB32
-                                                CAIRO_FORMAT_RGB24)
-                                            (inexact->exact
-                                             (ceiling
-                                              (* cocoa-resolution w)))
-                                            (inexact->exact
-                                             (ceiling
-                                              (* cocoa-resolution h))))])
+      (let* ([sw (inexact->exact
+                  (ceiling
+                   (* cocoa-resolution w)))]
+             [sh (inexact->exact
+                  (ceiling
+                   (* cocoa-resolution h)))]
+             [s (if dest-cg
+                    (cairo_quartz_surface_create_for_cg_context dest-cg sw sh)
+                    (cairo_quartz_surface_create (if with-alpha?
+                                                     CAIRO_FORMAT_ARGB32
+                                                     CAIRO_FORMAT_RGB24)
+                                                 sw
+                                                 sh))])
         ;; initialize bitmap to empty - needed?
         (let ([cr (cairo_create s)])
           (cairo_set_operator cr (if with-alpha?
