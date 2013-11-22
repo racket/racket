@@ -1,151 +1,107 @@
-Version 5.90.0.11
-Added flrandom and unsafe-flrandom
-xml: added a #:insert-newlines? argument to write-xexpr
-racket/contract: added channel/c
-setup/setup: changed setup to return a boolean
-
-Version 5.90.0.10
-Changed serializable-struct, etc. to provide deserialized-info:...
- through a derialized-info submodule
-Added chaperone-channel and impersonate-channel
-Change string->path-element and bytes->path-element to raise an
- exception for an empty [byte-]string argument
-Change path-replace-suffix to raise an excpetion when a path element
- would be made empty
-racket/runtime-path: added runtime-require
-
-Version 5.90.0.9
-Allow hash table chaperones and impersonators to support efficient
- hash-clear and hash-clear!
-setup/collection-name: added
-syntax/unsafe/for-transform: added
-raco pkg install with no arguments installs the current directory.
-
-Version 5.90.0.6
-Added path<?, symbol<?
-Added hash-copy-clear
-
-Version 5.90.0.4
-Add current-library-collection-links, find-library-collection-links
-Changed module search to use current-library-collection-paths
- before collection link files by default
-Changed use-user-specific-search-paths and use-collection-link-paths
- to affect only find-library-collection-paths and
- find-library-collection-links
-Removed restriction against handle-evt? arguments to wrap-evt,
- handle-evt. and chaperone-evt
-
-Version 5.90.0.3
-Base user directoy paths on an installation name instead
- of the Racket version string
-Remove "shared" links and package scope
-raco pkg install: --link is default for directory source; added
- --copy
-
-Version 5.90.0.2
-Added #%declare
-Cross-phase persistent modules must be declared with
- (#%declare #:cross-phase-persistent)
-Added hash-clear, hash-clear!, and hash-empty?
-
-Version 5.90.0.1
-Added "share" directory, moved "pkgs" there; moved "collects"
- back out of "lib"
-setup/dirs: added find-share-dir, find-user-share-dir
-ffi/unsafe: added array-type and in-array
-
-Version 5.3.900.7
-Changed equal? to work on module path index values
-Added 'fs-change mode to system-type
-
-Version 5.3.900.6
-Added identifier-binding-symbol
-Changed ".plt" file unpacking to require certain literal S-expression
- patterns, instead of evaluating S-expressions from the archive
-racket/file: make-directory* never fails on existing directories
-
-Version 5.3.900.5
-Added call-with-default-reading-parameterization
-racket/file: added call-with-atomic-output-file
-pkg/path: added, re-exported by pkg/lib
-setup/path-to-relative: added <pkg> results
-racket/runtime-path: special handling for paths that
- correspond to collection-file-path results, instead of
+Version 6.0
+Packages & collections: ----------
+ Reorganized collections into packages
+ Added 'config-dir mode for find-system-path
+ Added PLTCONFIGDIR environment variable and -G/--config flag
+ Removed -C/--links command-line flag
+ Added links-file and links-search-dirs to config, enabling
+  a search path of installation-wide link files, as well
+  as pkgs-dir and pkgs-search-dirs
+ Changed link-file handling to separate "user" and "shared" modes;
+  removed 'links-file mode for find-system-path, PLTLINKSFILE
+  environment variable, and -C command-line argument
+ Removed "shared" links and package scope
+ Add current-library-collection-links, find-library-collection-links
+ Changed module search to use current-library-collection-paths
+  before collection link files by default
+ Changed use-user-specific-search-paths and use-collection-link-paths
+  to affect only find-library-collection-paths and
+  find-library-collection-links
+ Added "share" directory, moved "pkgs" there
+ Base user directoy paths on an installation name instead
+  of the Racket version string
+Runtime: ----------
+ Added ARM support to JIT
+ Added #%declare
+ Cross-phase persistent modules must be declared with
+  (#%declare #:cross-phase-persistent)
+ Add configure-runtime submodule support
+Filesystem and environment variables: ----------
+ Changed initialization of current-directory to use PWD
+ Added current-environment-variables, environment-variables-ref,
+  environment-variables-set!, environment-variables-names,
+  environment-variables-copy, bytes-environment-variables-name?,
+  string-environment-variables-name?, environment-variables?,
+  and make-environment-variables
+ Added current-directory-for-user, srcloc->string
+ Added filesystem-change-evt, filesystem-change-evt?, and
+  filesystem-change-evt-cancel
+ Added 'fs-change mode to system-type
+ Move explode-path from racket/path to racket/base
+ Changed read-on-demand-source to support #t
+ Added current-module-path-for-load, exn:fail:syntax:missing-module, 
+   exn:fail:filesystem:missing-module, prop:exn:missing-module,
+   exn:missing-module?, and exn:missing-module-accessor
+ Changed string->path-element and bytes->path-element to raise an
+  exception for an empty [byte-]string argument
+ Changed path-replace-suffix to raise an excpetion when a path element
+  would be made empty
+Datatypes: ----------
+ Added hash-clear, hash-copy-clear, hash-clear!, and hash-empty?
+ Allow hash table chaperones and impersonators to support efficient
+  hash-clear and hash-clear!
+ Added path<?, symbol<?
+ Added flrandom and unsafe-flrandom
+ Added chaperone-channel and impersonate-channel
+ Removed restriction against handle-evt? arguments to wrap-evt,
+  handle-evt. and chaperone-evt
+ Added identifier-binding-symbol
+ Changed equal? to work on module path index values
+ Added call-with-default-reading-parameterization
+Commands: ----------
+ Changed ".plt" file unpacking to require certain literal S-expression
+  patterns, instead of evaluating S-expressions from the archive
+ raco link: -u/--user mode installs a version-specific link,
+  added -s/--shared for user-specific, all-version links
+ raco setup: added --no-pkg-deps and --fix-pkg-deps
+ raco pkg install: --link is default for directory source; added
+  --copy
+ raco pkg install: changed to install the current directory as a link
+  when no arguments are provided; added --pkgs
+Libraries: ----------
+ racket/file: make-directory* never fails on existing directories
+ racket/file: added call-with-atomic-output-file
+ racket/contract: added channel/c
+ racket/serialize: changed serializable-struct, etc. to provide
+  deserialized-info:... through a derialized-info submodule
+ racket/sandbox: added sandbox-make-environment-variables
+ racket/sandbox: added with-limits
+ racket/runtime-path: added runtime-require
+ racket/runtime-path: added version support to 'so form
+ racket/runtime-path: special handling for paths that
+  correspond to collection-file-path results, instead of
  paths that are relative to the main "collects"
-scribble: same change as for racket/runtime-path related
- to "collects"-relative paths
-
-Version 5.3.900.4
-Added filesystem-change-evt, filesystem-change-evt?, and
- filesystem-change-evt-cancel
-
-Version 5.3.900.2
-Changed link-file handling to separate "user" and "shared" modes;
- removed 'links-file mode for find-system-path, PLTLINKSFILE
- environment variable, and -C command-line argument
-raco link: -u/--user mode installs a version-specific link,
- added -s/--shared for user-specific, all-version links
-Added PLTCONFIGDIR
-Added links-file and links-search-dirs to config, enabling
- a search path of installation-wide link files, as well
- as pkgs-dir and pkgs-search-dirs
-Removed -C/--links command-line flag
-setup/infotab: removed string-constants require as an allowed form
-raco setup: added --no-pkg-deps and --fix-pkg-deps
-
-Version 5.3.900.1
-Reorganized collections into packages
-Added 'config-dir mode for find-system-path
-setup/dirs: added find-config-dir
-
-Version 5.3.4.11
-Added current-directory-for-user, srcloc->string
-Fixed is-a? so that it always signals an error when its second
- argument is not a class or interface (in the past (is-a? 1 2) 
- would return #f instead). This bug appears to have been 
- introduced in late Feb 2010.
-
-Version 5.3.4.10
-Move explode-path from racket/path to racket/base
-Changed read-on-demand-source to support #t
-slideshow/pict: added 'outline style for text
-scriblib/autobib: add #:note
-setup/collects: added
-
-Version 5.3.4.9
-racket/place: allow keywords as place messages
-
-Version 5.3.4.8
-Add `configure-runtime' submodule support
-racket/rerequire: added
-racket/require-syntax: added syntax-local-require-introduce
-racket/provide-syntax: added syntax-local-provide-introduce
-
-Version 5.3.4.7
-scribble: use `doc' submodule when available
-
-Version 5.3.4.4
-Added current-module-path-for-load, exn:fail:syntax:missing-module, 
-  exn:fail:filesystem:missing-module, prop:exn:missing-module,
-  exn:missing-module?, and exn:missing-module-accessor
-
-Version 5.3.4.3
-Added make-environment-variables
-Changed initialization of current-directory to use PWD
-racket/system: add a #:set-pwd? argument to system, etc., which
- makes them set PWD by default
-net/url: add support for HTTP/1.1 connections
-ffi/unsafe/objc: add -A and +A method modes
-
-Version 5.3.4.2
-Added current-environment-variables, environment-variables-ref,
- environment-variables-set!, environment-variables-names,
- environment-variables-copy, bytes-environment-variables-name?,
- string-environment-variables-name?, and environment-variables?
-racket/sadnox: added sandbox-make-environment-variables
-
-Version 5.3.4.1
-Changed JIT to support ARM
+ racket/class: fixed is-a? so that it always signals an error when
+  its second argument is not a class or interface
+ racket/rerequire: added
+ racket/require-syntax: added syntax-local-require-introduce
+ racket/provide-syntax: added syntax-local-provide-introduce
+ racket/place: allow keywords as place messages
+ racket/system: add a #:set-pwd? argument to system, etc., which
+  makes them set PWD by default
+ syntax/unsafe/for-transform: added
+ setup/setup: changed setup to return a boolean
+ setup/dirs: added find-config-dir
+ setup/path-to-relative: added <pkg> results
+ setup/dirs: added find-share-dir, find-user-share-dir, and more
+ setup/infotab: removed string-constants require as an allowed form
+ setup/collects: added
+ setup/collection-name: added
+ pkg/path: added, re-exported by pkg/lib
+ net/url: add support for HTTP/1.1 connections
+ xml: added a #:insert-newlines? argument to write-xexpr
+ ffi/unsafe: added array-type and in-array
+ ffi/unsafe/objc: add -A and +A method modes
 
 Version 5.3.4, April 2013
 Added extflonums
@@ -337,7 +293,8 @@ racket/sandbox: added sandbox-propagate-exceptions; added
 racket/cmdline: add #:ps for command-line
 slideshow/start: run a `slideshow' or `main' submodule, if any
 scribble/eval: added eval:result and eval:results
-racket/system: improved error messages by replacing memv expressions with string-no-nuls? and bytes-no-nuls?
+racket/system: improved error messages by replacing memv expressions
+ with string-no-nuls? and bytes-no-nuls?
 
 Version 5.2.1, January 2012
 Changed I/O scheduling to use epoll()/kqueue() when available
