@@ -873,8 +873,17 @@
 ;; Section 4.17.3 (racket/function)
 [identity (-poly (a) (->acc (list a) a null))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
-[negate (-polydots (b) (-> ((list) [b b] . ->... . Univ)
-                           ((list) [b b] . ->... . -Boolean)))]
+[negate (-polydots (a b c d)
+          (cl->* (-> (-> c Univ : (-FS (-filter a 0 null) (-not-filter b 0 null)))
+                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-filter a 0 null))))
+                 (-> (-> c Univ : (-FS (-filter a 0 null) (-filter b 0 null)))
+                     (-> c -Boolean : (-FS (-filter b 0 null) (-filter a 0 null))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-filter b 0 null)))
+                     (-> c -Boolean : (-FS (-filter b 0 null) (-not-filter a 0 null))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-not-filter b 0 null)))
+                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-not-filter a 0 null))))
+                 (-> ((list) [d d] . ->... . Univ)
+                     ((list) [d d] . ->... . -Boolean))))]
 ;; probably the most useful cases
 ;; doesn't cover cases where we pass multiple of the function's arguments to curry,
 ;; also doesn't express that the returned function is itself curried
