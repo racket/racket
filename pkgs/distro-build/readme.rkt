@@ -58,8 +58,8 @@
                  Multiple installations with this name share `user'-scoped packages,
                  which makes it easier to upgrade from such an installation to this one.
                  To avoid sharing (which is better for keeping multiple installations
-                 active) use `raco pkg config --set name' to choose a different name
-                 for this installation.@"\n"}))@;
+                 active) use `raco pkg config -i --set name ...' to choose a different
+                 name for this installation.@"\n"}))@;
      
       Visit
          http://racket-lang.org/ 
