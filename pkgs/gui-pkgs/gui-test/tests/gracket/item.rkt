@@ -192,7 +192,7 @@
   (let ([d (this-expression-source-directory)])
     (values
      (lambda (n)
-       (build-path (collection-path "icons") n))
+       (collection-file-path n "icons"))
      (lambda (n)
        (build-path d n)))))
 
