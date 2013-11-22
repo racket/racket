@@ -216,6 +216,25 @@
 (define-struct scroller (cocoa [range #:mutable] [page #:mutable]))
 (define scroll-width (tell #:type _CGFloat NSScroller scrollerWidth))
 
+;; Customizing by version is a terrible idea, but I can't figure
+;; out the right way to get the content area of an NSComboBox
+(define combo-dx (if (version-10.7-or-later?)
+                     2
+                     2))
+(define combo-dy (if (version-10.7-or-later?)
+                     4
+                     2))
+(define combo-dw (if (version-10.7-or-later?)
+                     24
+                     22))
+(define combo-dh (if (version-10.7-or-later?)
+                     6
+                     5))
+;; extra height shaved off drawing; we can't just increase
+;; combo-dh, because that just creates a request for an even taller
+;; combo box whose primitive drawing overlaps the focus ring
+(define combo-backing-dh 1)
+
 (define canvas%
   (canvas-mixin
    (class (canvas-autoscroll-mixin window%)
@@ -313,7 +332,7 @@
 
      (define/public (do-canvas-backing-flush ctx)
        (do-backing-flush this dc (tell NSGraphicsContext currentContext)
-                         (if is-combo? 2 0) (if is-combo? 2 0)))
+                         (if is-combo? combo-dx 0) (if is-combo? combo-dy 0)))
 
      ;; not used, because Cocoa canvas refreshes do not go through
      ;;  the eventspace queue:
@@ -426,8 +445,8 @@
      (define/override (get-client-size xb yb)
        (super get-client-size xb yb)
        (when is-combo?
-         (set-box! xb (max 0 (- (unbox xb) 22)))
-         (set-box! yb (max 0 (- (unbox yb) 5)))))
+         (set-box! xb (max 0 (- (unbox xb) combo-dw)))
+         (set-box! yb (max 0 (- (unbox yb) combo-dh)))))
 
      (define/override (maybe-register-as-child parent on?)
        (register-as-child parent on?))
@@ -835,7 +854,9 @@
        (void))
 
      (define/public (get-backing-size xb yb)
-       (get-client-size xb yb))
+       (get-client-size xb yb)
+       (when is-combo?
+         (set-box! yb (max 0 (- (unbox yb) combo-backing-dh)))))
 
      (define/override (get-cursor-width-delta)
        0)
