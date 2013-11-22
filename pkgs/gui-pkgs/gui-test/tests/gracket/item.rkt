@@ -1708,7 +1708,9 @@
 (define (combo-frame empty?)
   (define f (make-frame frame% "Combo Test"))
   (define p f)
-  (define actual-content '("Apple" "Banana"))
+  (define actual-content (if empty?
+                             null
+                             '("Apple" "Banana")))
   (define (callback c e) (void))
   (define c (make-object (class combo-field% 
                            (define/override (on-popup e)
@@ -2402,6 +2404,7 @@
 (make-object button% "Make Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #f)))
 (make-object button% "Make Empty Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #t)))
 (make-object button% "Make Combo Frame" cp (lambda (b e) (combo-frame #f)))
+(make-object button% "Make Empty Combo Frame" cp (lambda (b e) (combo-frame #t)))
 (define lcp (make-object horizontal-pane% ap))
 (send lcp stretchable-width #f)
 (define list-columns-choice (new choice% 

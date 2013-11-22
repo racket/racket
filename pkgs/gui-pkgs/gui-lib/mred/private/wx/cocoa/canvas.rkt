@@ -692,12 +692,13 @@
        #t)
      (define/public (on-combo-select i) (void))
      (define/public (popup-combo)
-       ;; Pending refresh events intefere with combo popups
+       ;; Pending refresh events interfere with combo popups
        ;; for some reason, so flush them:
        (yield-refresh)
        (flush)
        ;; Beware that the `popUp:' method is undocumented:
-       (tellv (tell content-cocoa cell) popUp: #f))
+       (atomically
+        (tellv (tell content-cocoa cell) popUp: #f)))
 
      (define clear-bg? (and (not (memq 'transparent canvas-style)) 
                             (not (memq 'no-autoclear canvas-style))))
