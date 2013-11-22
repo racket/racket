@@ -11,7 +11,7 @@
 (define-runtime-path sqlite-so
   (case (system-type)
     [(windows) '(so "sqlite3")]
-    [else '(so "libsqlite3")]))
+    [else '(so "libsqlite3" ("0" #f))]))
 
 (define sqlite-lib
   (case (system-type)
