@@ -161,6 +161,7 @@
   racket/file
   racket/fixnum
   racket/flonum
+  racket/function
   racket/list
   racket/math
   racket/path
@@ -1828,6 +1829,22 @@
           (define (f s) (if (set? s) s (set)))
           (void))
         -Void]
+
+       ;; negate
+       [tc-e
+        (let ()
+          (: x (U Symbol Void))
+          (define x 'foo)
+          (if ((negate void?) x) (symbol->string x) "foo"))
+        -String]
+       [tc-e
+        (let ()
+          (: pos? (Real -> Boolean : #:+ (Positive-Real @ 0) #:- (Nonpositive-Real @ 0)))
+          (define pos? (lambda: ([x : Real]) (positive? x)))
+          (: x Real)
+          (define x 3)
+          (if ((negate pos?) x) x -5))
+        #:ret (ret -NonPosReal (-FS -top -bot))]
         )
   (test-suite
    "tc-literal tests"
