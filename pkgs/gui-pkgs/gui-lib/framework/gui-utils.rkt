@@ -420,7 +420,7 @@
    (-> void?))
   (delay-time open close)
   @{Use this function to delay an action for some period of time. It also
-    supports cancelling the action before the time period elapses. For
+    supports canceling the action before the time period elapses. For
     example, if you want to display a watch cursor, but you only want it
     to appear after 2 seconds and the action may or may not take more than
     two seconds, use this pattern:

@@ -175,7 +175,7 @@ syntax object's parts are armed. If the property value is
 the sub-parts of the second part (as for @racket[define-values] and
 @racket[define-syntaxes]) are armed. The @racket['transparent] and
 @racket['transparent-binding] modes trigger recursive property
-checking at the parts, so that armings can be pushed arbitrarily deep
+checking at the parts, so that armings can be pushed arbitrarily deeply
 into a transformer's result.
 
 @;------------------------------------------------------------------------
