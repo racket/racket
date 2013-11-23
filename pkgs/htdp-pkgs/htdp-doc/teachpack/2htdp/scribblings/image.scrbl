@@ -191,6 +191,12 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                  
   @image-examples[(text "Hello" 24 "olive")
                   (text "Goodbye" 36 "indigo")]
+  
+  The text size is measured in pixels, not points, so passing @racket[24]
+  to @racket[text] should result in an image whose height is @racket[24]
+  (which might not be the case if the size were measured in points).
+  @image-examples[(image-height (text "Hello" 24 "olive"))]
+  
 }
 
 @defproc[(text/font [string string?] [font-size (and/c integer? (<=/c 1 255))] [color image-color?]
