@@ -530,22 +530,78 @@ Produces a contract for procedures that accept @racket[n] argument
 Produces a contract that recognizes @racket[hash] tables with keys and values
 as specified by the @racket[key] and @racket[val] arguments.
 
-If the @racket[flat?] argument is @racket[#t], then the resulting contract is
-a flat contract, and the @racket[key] and @racket[val] arguments must also be flat
-contracts.  Such flat contracts will be unsound if applied to mutable hash tables,
-as they will not check future operations on the hash table.
+@examples[#:eval 
+          (contract-eval)
+          (define/contract good-hash
+            (hash/c integer? boolean?)
+            (hash 1 #t
+                  2 #f
+                  3 #t))
+          (define/contract bad-hash
+            (hash/c integer? boolean?)
+            (hash 1 "elephant"
+                  2 "monkey"
+                  3 "manatee"))]
 
+There are a number of technicalities that control how @racket[hash/c] contracts
+behave.
+@itemlist[@item{
+ If the @racket[flat?] argument is @racket[#t], then the resulting contract is
+ a flat contract, and the @racket[key] and @racket[val] arguments must also be flat
+ contracts. 
+
+@examples[#:eval 
+          (contract-eval)
+          (flat-contract? (hash/c integer? boolean?))
+          (flat-contract? (hash/c integer? boolean? #:flat? #t))
+          (hash/c integer? (-> integer? integer?) #:flat? #t)]
+ 
+ Such flat contracts will be unsound if applied to mutable hash tables,
+ as they will not check future mutations to the hash table.
+
+@examples[#:eval 
+          (contract-eval)
+          (define original-h (make-hasheq))
+          (define/contract ctc-h 
+            (hash/c integer? boolean? #:flat? #t)
+            original-h)
+          (hash-set! original-h 1 "not a boolean")
+          (hash-ref ctc-h 1)]}
+           @item{
 If the @racket[immutable] argument is @racket[#t] and the @racket[key] and
-@racket[val] arguments are flat contracts, the result will be a flat contract.
-If either the domain or the range is a chaperone contract, then the result will
-be a chaperone contract.
+@racket[val] arguments are @racket[flat-contract?]s, the result will be a 
+@racket[flat-contract?].
 
-If the @racket[key] argument is a chaperone contract, then the resulting contract
-can only be applied to @racket[equal?]-based hash tables.  When a higher-order
-@racket[hash/c] contract is applied to a hash table, the result is not @racket[eq?]
-to the input.  The result will be a copy for immutable hash tables, and either a
-@tech{chaperone} or @tech{impersonator} of the input for mutable hash tables.
+@examples[#:eval 
+          (contract-eval)
+          (flat-contract? (hash/c integer? boolean? #:immutable #t))]
+          
+If either the domain or the range is a @racket[chaperone-contract?], then the result will
+be a @racket[chaperone-contract?].
+
+@examples[#:eval 
+          (contract-eval)
+          (flat-contract? (hash/c (-> integer? integer?) boolean?
+                                  #:immutable #t))
+          (chaperone-contract? (hash/c (-> integer? integer?) boolean?
+                                       #:immutable #t))]
 }
+
+           @item{
+If the @racket[key] argument is a @racket[chaperone-contract?] but not a
+@racket[flat-contract?], then the resulting contract
+can be applied only to @racket[equal?]-based hash tables.
+@examples[#:eval 
+          (contract-eval)
+          (define/contract h
+            (hash/c (-> integer? integer?) any/c)
+            (make-hasheq))]
+Also, when such a @racket[hash/c] contract is applied to a hash table, the result is not 
+@racket[eq?]
+to the input. The result of applying the contract will be a copy for immutable hash tables,
+and either a @tech{chaperone} or @tech{impersonator} of the original hash table
+for mutable hash tables.
+}]}
 
 
 @defproc[(channel/c [val contract?])
