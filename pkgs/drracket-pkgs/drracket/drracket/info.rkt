@@ -73,7 +73,6 @@
     (drracket:check-syntax:unused-require ,tol-wob-error)))
 
 (define framework:color-schemes 
-  '() #;
   (list 
    (hash 
     'name 'modern-color-scheme
