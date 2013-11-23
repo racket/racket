@@ -31,6 +31,7 @@
                       (viewer:enable-click-advance! enable-click-advance!)
                       (viewer:set-page-numbers-visible! set-page-numbers-visible!)
                       (viewer:set-spotlight-style! set-spotlight-style!)
+                      (viewer:pict->pre-render-pict pict->pre-render-pict)
                       (viewer:done-making-slides done-making-slides)))
               
       (define-accessor margin get-margin)
@@ -1237,6 +1238,18 @@
 
       (define c (make-object c% f))
       (define c-both (make-object two-c% f-both))
+
+      (define (viewer:pict->pre-render-pict p)
+        (case (system-type)
+          [(macosx)
+           (let ([bm (send c make-bitmap
+                           (inexact->exact (ceiling (pict-width p)))
+                           (inexact->exact (ceiling (pict-height p))))])
+             (define dc (send bm make-dc))
+             ((make-pict-drawer p) dc 0 0)
+             (send dc set-bitmap #f)
+             (refocus (lt-superimpose (ghost p) (bitmap bm)) p))]
+          [else (refocus (cc-superimpose (blank) p) p)]))
 
       (define time-update-thread #f)
       (define (start-time-update!)

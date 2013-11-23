@@ -168,6 +168,9 @@
       (define (set-spotlight-style! #:size [size #f] #:color [color #f])
         (viewer:set-spotlight-style! #:size size #:color color))
 
+      (define (pict->pre-render-pict p)
+        (viewer:pict->pre-render-pict p))
+
       (define current-page-number-font 
 	(make-parameter
 	 (make-object font% 10 'default 'normal 'normal)

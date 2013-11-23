@@ -31,7 +31,9 @@
      ;; Called when a clickback-containing slide is rendered:
      add-click-region!
      ;; Called when a interactive-containing slide is rendered:
-     add-interactive!))
+     add-interactive!
+     ;; To potentially speed up display:
+     pict->pre-render-pict))
 
   ;; The core unit's exports, which are the functions used by a 
   ;; Slideshow program:
@@ -82,6 +84,7 @@
      current-titlet current-para-width
      set-page-numbers-visible! done-making-slides
      set-spotlight-style!
+     pict->pre-render-pict
      clickback
      interactive
      make-slide-inset

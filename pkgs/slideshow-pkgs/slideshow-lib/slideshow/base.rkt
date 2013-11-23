@@ -46,4 +46,5 @@
            current-titlet current-para-width
 	   set-page-numbers-visible! done-making-slides
            set-spotlight-style!
+           pict->pre-render-pict
            clickback interactive make-slide-inset slide-inset? apply-slide-inset))

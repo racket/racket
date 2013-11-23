@@ -1,3 +1,6 @@
+Version 1.2
+slideshow/base: added pict->pre-render-pict
+
 Version 1.1
 slideshow/pict: added 'outline style for text
 

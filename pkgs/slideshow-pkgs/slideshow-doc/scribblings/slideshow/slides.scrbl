@@ -204,6 +204,13 @@ pixels tall. The result is @racket[pict] when using a 1024 by 768
 display.}
 
 
+@defproc[(pict->pre-render-pict [pict pict?]) pict?]{
+
+Produces a pict that is like @racket[pict], but optimized for drawing
+on some platforms (currently Mac OS X). This function may be useful
+to reduce drawing times for for large bitmaps or complex drawings.}
+
+
 @defproc[(make-outline [name (or/c symbol? (listof symbol?))]
                        [title (or/c string? pict?)]
                        [subitems (or/c #f null?
