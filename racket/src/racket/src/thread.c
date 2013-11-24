@@ -5947,6 +5947,7 @@ void scheme_clear_thread_sync(Scheme_Thread *p)
 /*========================================================================*/
 
 static void syncing_needs_wakeup(Scheme_Object *s, void *fds);
+static Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta, int flatten);
 
 typedef struct Evt {
   MZTAG_IF_REQUIRED
@@ -6168,7 +6169,15 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
 
   if (SCHEME_EVTSETP(target) && retry) {
     /* Flatten the set into this one */
-    Evt_Set *wts = (Evt_Set *)target;
+    Evt_Set *wts;
+
+    if (SCHEME_EVTSET_UNFLATTENEDP(target)) {
+      Scheme_Object *a[1];
+      a[0] = target;
+      wts = make_evt_set("sync", 1, a, 0, 1);
+    } else
+      wts = (Evt_Set *)target;
+
     if (wts->argc == 1) {
       /* 1 thing in set? Flattening is easy! */
       evt_set->argv[i] = wts->argv[0];
@@ -6486,7 +6495,7 @@ static int evt_set_flatten(Evt_Set *e, int pos, Scheme_Object **args, Evt **ws)
   return pos;
 }
 
-Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta, int flatten)
+static Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta, int flatten)
 {
   Evt *w, **iws, **ws;
   Evt_Set *evt_set, *subset;

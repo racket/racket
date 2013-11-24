@@ -241,6 +241,28 @@
   (test 0.15 sync/timeout 18 
 	(choice-evt (make-delay 0.2) (make-delay 0.15))))
 
+;;check flattening of choice evts returned by a guard:
+(let ()
+  (define s1 (make-semaphore))
+  (define s2 (make-semaphore))
+  (define s3 (make-semaphore))
+  (define s4 (make-semaphore))
+  
+  (define evt1 (choice-evt s1 s2))
+  (define evt2 (choice-evt s3 s4))
+
+  (thread (lambda () 
+            (sync (system-idle-evt))
+            (semaphore-post
+             (list-ref (list s1 s2 s3 s4)
+                       (random 4)))))
+
+  (test #t
+        semaphore?
+        (sync (guard-evt
+               (lambda ()
+                 (choice-evt evt1 evt2))))))
+
 ;; ----------------------------------------
 ;; Wrapped waitables
 
