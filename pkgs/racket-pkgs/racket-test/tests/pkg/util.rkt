@@ -9,6 +9,7 @@
          racket/runtime-path
          racket/path
          racket/list
+         racket/format
          setup/dirs
          pkg/util
          "shelly.rkt")
@@ -62,6 +63,9 @@
                          (environment-variables-copy
                           (current-environment-variables))])
            (putenv "PLTCONFIGDIR" tmp-dir-s)
+	   (putenv "PATH" (~a (find-console-bin-dir)
+			      ":"
+			      (getenv "PATH")))
            (t)))
       (λ ()
         (delete-directory/files tmp-dir))))
