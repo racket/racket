@@ -679,6 +679,7 @@ path/s is either such a string or a list of them.
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/main.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-1/other.rkt" drdr:command-line #f
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/embed-planet-2" drdr:command-line #f
+"pkgs/compiler-pkgs/compiler-test/tests/compiler/embed/test.rkt" drdr:timeout 600
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/regression.rkt" responsible (mflatt)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "pkgs/compiler-pkgs/compiler-test/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
@@ -1288,7 +1289,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/pkg" responsible (jay) drdr:command-line (mzc *)
 "pkgs/racket-pkgs/racket-test/tests/pkg/test-pkgs" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/pkg/test.rkt" drdr:command-line (raco "test" *)
+"pkgs/racket-pkgs/racket-test/tests/pkg/test.rkt" drdr:command-line (raco "test" *) drdr:timeout 600
 "pkgs/racket-pkgs/racket-test/tests/racket" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/racket/all.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/basic.rktl" drdr:command-line #f
