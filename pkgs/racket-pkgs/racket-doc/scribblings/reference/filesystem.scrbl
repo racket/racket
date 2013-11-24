@@ -519,6 +519,10 @@ synchronization} under other circumstances. For example, on
 Windows, an event for a file becomes ready when any file changes
 within in the same directory as the file.
 
+After a @tech{filesystem change event} becomes @tech{ready for
+synchronization}, it stays @tech{ready for synchronization}. The
+event's @tech{synchronization result} is the event itself.
+
 If the current platform does not support filesystem-change
 notifications, then the @exnraise[exn:fail:unsupported] if
 @racket[failure-thunk] is not provided, or @racket[failure-thunk] is
@@ -527,12 +531,16 @@ operating-system error when creating the event (such as a non-existent
 file), then the @exnraise[exn:fail:filesystem] or @racket[failure-thunk]
 is called.
 
+Creation of a @tech{filesystem change event} alloates resources at the
+operating-system level. The resources are released at latest when the
+event is sychronized and @tech{ready for synchronization} or when the
+event is canceled with @racket[filesystem-change-evt-cancel].
+See also @racket[system-type] in @racket['fs-change] mode.
+
 A @tech{filesystem change event} is placed under the management of the
 @tech{current custodian} when it is created. If the @tech{custodian}
 is shut down, @racket[filesystem-change-evt-cancel] is applied to the
-event.
-
-See also @racket[system-type] in @racket['fs-change] mode.}
+event.}
 
 
 @defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])
@@ -540,7 +548,7 @@ See also @racket[system-type] in @racket['fs-change] mode.}
 
 Causes @racket[evt] to become immediately @tech{ready for
 synchronization}, whether it was ready or before not, and releases and
-resources (at the operating system level) for tracking filesystem
+resources (at the operating-system level) for tracking filesystem
 changes.}
 
 
