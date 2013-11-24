@@ -29,7 +29,7 @@
 
 (define-literal-set parse-type-literals
     #:for-label
-    (: cons quote case-lambda values car cdr
+    (: cons quote case-lambda values car cdr and or
      t:Class t:Refinement t:Instance t:List t:List* t:pred t:-> t:case->
      t:Rec t:U t:All t:Opaque t:Parameter t:Vector t:Struct t:Struct-Type t:Values))
 
@@ -116,9 +116,17 @@
            #:attr pair (list (syntax-e #'depth-idx)
                              (syntax-e #'idx))))
 
+(define-syntax-class @
+  #:description "@"
+  (pattern (~datum @)))
+
+(define-syntax-class !
+  #:description "!"
+  (pattern (~datum !)))
+
 (define-splicing-syntax-class simple-latent-filter
   #:description "latent filter"
-  (pattern (~seq t:expr (~describe "@" (~datum @)) pe:path-elem ...)
+  (pattern (~seq t:expr :@ pe:path-elem ...)
            #:attr type (parse-type #'t)
            #:attr path (attribute pe.pe))
   (pattern t:expr
@@ -127,26 +135,27 @@
 
 (define-syntax-class (prop doms)
   #:description "filter proposition"
+  #:literal-sets (parse-type-literals)
   #:attributes (prop)
   (pattern (~literal Top) #:attr prop -top)
   (pattern (~literal Bot) #:attr prop -bot)
-  (pattern (t:expr (~describe "@" (~datum @)) pe:path-elem ... i:idx-obj)
+  (pattern (t:expr :@ pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
            #:attr prop (-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
-  (pattern (t:expr (~describe "@" (~datum @)) pe:path-elem ... i:id)
+  (pattern (t:expr :@ pe:path-elem ... i:id)
            #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern ((~datum !) t:expr (~describe "@" (~datum @)) pe:path-elem ... i:idx-obj)
+  (pattern (:! t:expr :@ pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
            #:attr prop (-not-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
-  (pattern ((~datum !) t:expr (~describe "@" (~datum @)) pe:path-elem ... i:id)
+  (pattern (:! t:expr :@ pe:path-elem ... i:id)
            #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern ((~literal and) (~var p (prop doms)) ...)
+  (pattern (and (~var p (prop doms)) ...)
            #:attr prop (apply -and (attribute p.prop)))
-  (pattern ((~literal or) (~var p (prop doms)) ...)
+  (pattern (or (~var p (prop doms)) ...)
            #:attr prop (apply -or (attribute p.prop)))
   (pattern ((~literal implies) (~var p1 (prop doms)) (~var p2 (prop doms)))
            #:attr prop (-imp (attribute p1.prop) (attribute p2.prop))))
@@ -158,18 +167,12 @@
 
 (define-splicing-syntax-class (full-latent doms)
   #:description "latent propositions and object"
-  (pattern (~seq (~optional (~seq #:+ (~var p+ (prop doms)) ...+))
-                 (~optional (~seq #:- (~var p- (prop doms)) ...+))
+  (pattern (~seq (~optional (~seq #:+ (~var p+ (prop doms)) ...+) #:defaults ([(p+.prop 1) null]))
+                 (~optional (~seq #:- (~var p- (prop doms)) ...+) #:defaults ([(p-.prop 1) null]))
                  (~optional (~seq #:object o:object)))
-           #:attr positive (if (attribute p+.prop)
-                               (apply -and (attribute p+.prop))
-                               -top)
-           #:attr negative (if (attribute p-.prop)
-                               (apply -and (attribute p-.prop))
-                               -top)
-           #:attr object (if (attribute o.object)
-                             (attribute o.object)
-                             -no-obj)))
+           #:attr positive (apply -and (attribute p+.prop))
+           #:attr negative (apply -and (attribute p-.prop))
+           #:attr object (or (attribute o.object) -no-obj)))
 
 (define (parse-types stx-list)
   (stx-map parse-type stx-list))
