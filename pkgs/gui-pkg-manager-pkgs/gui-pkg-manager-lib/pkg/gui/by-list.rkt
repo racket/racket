@@ -118,7 +118,7 @@
                  (cond
                   [(string<? (db:pkg-name a) (db:pkg-name b)) #t]
                   [(string=? (db:pkg-name a) (db:pkg-name b))
-                   (string<? (db:pkg-catalog a) (db:pkg-catalog))]
+                   (string<? (db:pkg-catalog a) (db:pkg-catalog b))]
                   [else #f])]
                 [else #f])))))
     (sort-by! 7)
