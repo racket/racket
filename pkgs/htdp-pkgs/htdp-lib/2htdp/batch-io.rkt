@@ -4,6 +4,7 @@
 ;; -- export tokenization?
 
 (require (rename-in lang/prim (first-order->higher-order f2h)))
+(require (only-in net/sendurl send-url/file))
 
 ;; I am trying to use these lists to automate the documentation of the functions
 ;; but my scribble skills are insufficient and my time is running out. 
@@ -75,49 +76,60 @@
  ;; read the specified file as a file of comma-separated values, apply the second
  ;; argument to each row, i.e., list of CSV on one line 
  read-csv-file/rows (_ row-processor))
-
 (provide 
- ;   Xexpr is one of: 
+ ;; String -> Nothing 
+ ;; send the specified file name as a URL to default browser 
+ (rename-out [send-url/file show])
+ 
+ ;; --------------------------------------------------------------------------------------------------
+ ;; data definition 
+ 
+ ;   Xexpr.v3 is one of: 
  ;   -- Symbol 
  ;   -- String 
  ;   -- Number 
- ;   -- (cons Symbol (cons [List-of Attribute] [List-of Xexpr]))
- ;   -- (cons Symbol [List-of Xexpr])
+ ;   -- (cons Symbol (cons [List-of Attribute] [List-of Xexpr.v3]))
+ ;   -- (cons Symbol [List-of Xexpr.v3])
  ;
  ;   Attribute is:
  ;      (list Symbol String)
  ;   (list 'a "some text") is called an a-Attribute and "some text" is a's value.
  
+ ;; --------------------------------------------------------------------------------------------------
+ ;; function names and purpose statements 
+ 
  ;; Any -> Boolean 
- ;; is the given value an Xexpr? 
- ;; effect: display bad piece if x is not an xexpr
+ ;; is the given value an Xexpr.v3? 
+ ;; effect: display bad piece if x is not an Xexpr.v3
  xexpr?
  
- ;; String -> Xexpr
- ;; given a file name, read an Xexpr from a file that contains at least one XML element
+ ;; String -> Xexpr.v3
+ ;; given a file name, retrieve the first X(HT)ML element
  
- ;; the XML element does not contain any strings as elements other than whitespace, 
+ ;; the X(HT)ML element does not contain any strings as elements other than whitespace, 
  ;; and all whitespace between embedded elements is eliminated 
  read-plain-xexpr
  
- ;; String -> Xexpr
- ;; given a file name, read an Xexpr from a file that contains at least one XML element 
+ ;; String -> Xexpr.v3
+ ;; given a file name, retrieve the first X(HT)ML element
  read-xexpr
  
  ;; String -> Boolean 
- ;; false, if this url returns a '404'; true otherwise
+ ;; true, if the url points to a legitimate web page; 
+ ;; false, if this url returns a '404'
+ ;; raises an exception if the url doesn't get caught by an active server 
  url-exists? 
  
- ;; String -> [Maybe Xexpr]
- ;; given a URL, find web site and retrieve the first XML element, false if the web page isn't found
+ ;; String -> [Maybe Xexpr.v3]
+ ;; given a URL, retrieve the first X(HT)ML element, false if the web page isn't found
  ;; read HTML as XML (if possible) 
- ;; effect: signals an error in case of network problems 
+ ;; effect: signals an error in case of network problems or if there is no element 
  read-xexpr/web
  
- ;; String -> [Maybe Xexpr]
+ ;; String -> [Maybe Xexpr.v3]
  ;; given a URL, find web site and retrieve the first XML element, false if the web page isn't found 
  ;; read HTML as XML (if possible) 
- ;; effect: signals an error in case of network problems 
+ ;; effect: signals an error in case of network problems or if there is no element 
  
  ;; the XML element does not contain any strings as elements other than whitespace, 
  ;; and all whitespace between embedded elements is eliminated 
@@ -127,7 +139,7 @@
  ;; produce the list of (fully resolve) .html references in a elements from url
  url-html-neighbors 
  
- ;; Xexpr -> String
+ ;; Xexpr.v3 -> String
  ;; turn the X-expression into a string 
  xexpr-as-string)
 
@@ -185,61 +197,6 @@
   (read-line (current-input-port) 'any))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define (xexpr? x0)
-  (define tag (gensym))
-  
-  ;; Any -> Boolean 
-  (define (xexpr-aux? x)
-    (cond
-      [(string? x) #t]
-      [(symbol? x) #t]
-      [(number? x) #t]
-      [(and (cons? x) (symbol? (first x)))
-       (define body (rest x))
-       (or (and (list-of-attributes? (first body)) (list-of-xexpr? (rest body))) 
-           (list-of-xexpr? body))]
-      [else (raise (cons tag x))]))
-  
-  ;; Any -> Boolean 
-  (define (list-of-attributes? xs)
-    (and (or (list? xs) (raise (cons tag xs)))
-         (for/and ((x xs))
-           (and (list? x) (= (length x) 2) (symbol? (first x)) (string? (second x))))))
-  
-  ;; Any -> Boolean 
-  (define (list-of-xexpr? xs)
-    (and (or (list? xs) (raise (cons tag xs)))
-         (andmap xexpr-aux? xs)))
-  
-  ;; -- IN -- 
-  (with-handlers (((lambda (x) (and (cons? x) (eq? (car x) tag)))
-                   (lambda (x) 
-                     (pretty-print `(,(cdr x) occurs in ,x0))
-                     #f)))
-    (xexpr-aux? x0)))
-
-(define (url-html-neighbors u)
-  (define x (read-xexpr/web u))
-  (if x (url-html-neighbors-aux u x) '()))
-
-(define (url-exists? url:string)
-  (retrieve url:string (lambda (_ h) (not (404? h)))))
-
-(def-reader (read-plain-xexpr f)
-  (read-xexpr-aux 'read-plain-xexpr f fix-up))
-
-(def-reader (read-xexpr f)
-  (read-xexpr-aux 'read-xexpr f values))
-
-(define (read-xexpr/web url:string)
-  (read-xexpr/web-aux 'read-xexpr/web url:string values))
-
-(define (read-plain-xexpr/web url:string)
-  (read-xexpr/web-aux 'read-xexpr/web url:string fix-up))
-
-(define (xexpr-as-string x)
-  (check-arg 'xexpr->string (and (pair? x) (xexpr? x)) 'xexpr "first" x)
-  (call-with-output-string (curry display-xml/content (xexpr->xml x))))
 
 ;; -----------------------------------------------------------------------------
 ;; writer 
@@ -326,34 +283,153 @@
   (map string-trim (split str "\r*\n")))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Symbol String [XML -> XML] -> Xexpr
-;; read an Xexpr from a file that contains one XML element 
-(define (read-xexpr-aux tag f fix-up)
-  (define raw (read-from-file-or-device f read-html-as-xml #;read-xml/element))
-  (check-result 'read-plain-xexpr xexpr? 'xexpr (xml->xexpr (fix-up (first raw)))))
+;; implementation 
 
+;; ---------------------------------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
+;; exported functions 
+
+(require htdp/error
+         (for-syntax racket/base syntax/parse)
+         ;; --- xml/html 
+         net/url
+         (except-in xml/xml xexpr?)
+         html
+         srfi/13)
+
+(module+ test
+  (require rackunit))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (xexpr? x0)
+  (define tag (gensym))
+  
+  ;; Any -> Boolean 
+  (define (xexpr-aux? x)
+    (cond
+      [(string? x) #t]
+      [(symbol? x) #t]
+      [(number? x) #t]
+      [(and (cons? x) (symbol? (first x)))
+       (define body (rest x))
+       (or (and (list-of-attributes? (first body)) (list-of-xexpr? (rest body))) 
+           (list-of-xexpr? body))]
+      [else (raise (cons tag x))]))
+  
+  ;; Any -> Boolean 
+  (define (list-of-attributes? xs)
+    (and (list? xs)
+         (for/and ((x xs))
+           (and (list? x) (= (length x) 2) (symbol? (first x)) (string? (second x))))))
+  
+  ;; Any -> Boolean 
+  (define (list-of-xexpr? xs)
+    (and (or (list? xs) (raise (cons tag xs)))
+         (andmap xexpr-aux? xs)))
+  
+  ;; -- IN -- 
+  (with-handlers (((lambda (x) (and (cons? x) (eq? (car x) tag)))
+                   (lambda (x) 
+                     (pretty-print `(,(cdr x) occurs in ,x0))
+                     #f)))
+    (xexpr-aux? x0)))
+
+(define (url-html-neighbors u)
+  (define x (read-xexpr/web u))
+  (if x (url-html-neighbors-aux u x) '()))
+
+(define (url-exists? url:string)
+  (retrieve 'url-exists? url:string (lambda (_ h) (not (404? h)))))
+
+(def-reader (read-plain-xexpr f)
+  (read-xexpr-aux 'read-plain-xexpr f fix-up))
+
+(def-reader (read-xexpr f)
+  (read-xexpr-aux 'read-xexpr f values))
+
+(define (read-xexpr/web url:string)
+  (read-xexpr/web-aux 'read-xexpr/web url:string values))
+
+(define (read-plain-xexpr/web url:string)
+  (read-xexpr/web-aux 'read-xexpr/web url:string fix-up))
+
+(define (xexpr-as-string x) 
+  (check-arg 'xexpr->string (and (pair? x) (xexpr? x)) 'xexpr "first" x)
+  (string-trim (call-with-output-string (curry display-xml/content (xexpr->xml x)))))
+
+;; ---------------------------------------------------------------------------------------------------
 ;; Symbol String [XML -> XML] -> Xexpr
+;; read an Xexpr from a file that contains at least one XHTML element 
+(define (read-xexpr-aux tag f fix-up)
+  (first-element tag fix-up (read-from-file-or-device f read-html-as-xml)))
+
+;; Symbol String [XML -> XML] -> Xexpr 
+;; read an Xexpr from a URL that contains 
 (define (read-xexpr/web-aux tag url:string fix-up)
   (retrieve 
+   tag
    url:string
    (lambda (url h)
-     (cond
-       [(404? h) #f]
-       [else 
-        (define e (filter element? (call/input-url url get-pure-port read-html-as-xml)))
-        (and (cons? e) (check-result tag xexpr? 'xexpr (xml->xexpr (fix-up (first e)))))]))))
+     (if (404? h)
+         #f
+         (first-element tag fix-up (call/input-url url get-impure-port read-html-as-xml))))))
+
+;; Symbol [XML -> XML] [List-of X] -> Xexpr 
+;; picks out the XML elements from raw, ensures there is one, and fixes up the first one as an Xexpr
+(define (first-element tag fix-up raw)
+  (define ele (filter element? raw))
+  (if (empty? ele)
+      #f ; (error tag "no XHTML element found")
+      (check-result tag xexpr? 'xexpr (xml->xexpr (fix-up (first ele))))))
 
 (define fix-up (eliminate-whitespace '() (lambda (x) #t)))
 
+(module+ test
+  (define test-file
+    #<< eos
+<?xml version='1.0' encoding='UTF-8'?>
+<osm>
+  <bound box="41.91100,-71.74800,42.16100,-71.61800" origin="0.40.1"/>
+  <node id="64028225" version="1" timestamp="2007-10-11T01:54:28Z" uid="8609" user="ewedistrict"
+    changeset="95861" lat="42.049639" lon="-71.734509">
+    <tag k="attribution" v="Office of Geographic and Environmental Information (MassGIS)"/>
+    <tag k="created_by" v="JOSM"/>
+    <tag k="source" v="massgis_import_v0.1_20071010205040"/>
+  </node>
+</osm>
+    
+ eos
+    )
+  
+  (check-equal? 
+   (with-input-from-string test-file (lambda () (read-xexpr-aux 'read-xexpr 'stdin fix-up)))
+   '(osm
+     ()
+     (bound ((box "41.91100,-71.74800,42.16100,-71.61800") (origin "0.40.1")))
+     (node
+      ((changeset "95861")
+       (id "64028225")
+       (lat "42.049639")
+       (lon "-71.734509")
+       (timestamp "2007-10-11T01:54:28Z")
+       (uid "8609")
+       (user "ewedistrict")
+       (version "1"))
+      (tag
+       ((k "attribution")
+        (v "Office of Geographic and Environmental Information (MassGIS)")))
+      (tag ((k "created_by") (v "JOSM")))
+      (tag ((k "source") (v "massgis_import_v0.1_20071010205040")))))))
+
 ;; ---------------------------------------------------------------------------------------------------
-;; String [URL String -> X] -> X 
+;; Symbol String [URL String -> X] -> X 
 ;; retrieve the first text line from the url represented by url:string, hand url and line to consumer
-(define (retrieve url:string consumer)
+(define (retrieve tag url:string consumer)
   (define URL (string->url url:string))
   (with-handlers ([exn:fail:network? 
                    (lambda (e) 
                      (define msg (format "working url, details:\n ~a" (exn-message e)))
-                     (check-arg 'read-xexpr/web #f msg "" url:string))])
+                     (check-arg tag #f msg "" url:string))])
     (consumer URL (call/input-url URL get-impure-port read-line))))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -463,6 +539,8 @@
 ;; is the given value a loa, possibly in front of some other Xexpr elements 
 (define (loa? x)
   (or (empty? x) (and (cons? x) (cons? (first x)))))
+
+
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; tester 
