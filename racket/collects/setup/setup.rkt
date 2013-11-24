@@ -35,7 +35,7 @@
     
     [make-user (if make-user? (make-user) #f)]
     
-    [make-docs (if make-docs? (make-docs) #f)]
+    [make-docs (if (and make-docs? (not clean?)) (make-docs) #f)]
     
     [make-doc-index (if make-doc-index? #t (make-doc-index))]
 
@@ -48,7 +48,6 @@
     [make-launchers (if clean? #f (make-launchers))] 
     [make-info-domain (if clean? #t (make-info-domain))]
     [call-install (if clean? #f (call-install))]
-    [make-docs (if clean? #f (make-docs))]
     
     [setup-program-name "raco setup"]
     
