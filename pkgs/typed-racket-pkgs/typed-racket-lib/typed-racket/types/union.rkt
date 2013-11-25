@@ -34,7 +34,7 @@
      (cons a b)]
     [((? (λ _ (subtype a b*))) _) b]
     [((? (λ _ (subtype b* a))) _) (list a)]
-    [(_ _) (cons a b)]))
+    [(_ _) (cons a (filter-not (λ (b-elem) (subtype b-elem a)) b))]))
 
 ;; Type -> List[Type]
 (define (flat t)
