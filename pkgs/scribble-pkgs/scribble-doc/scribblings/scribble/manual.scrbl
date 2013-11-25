@@ -416,6 +416,26 @@ because the @"@"-reader would drop comments within the
 @racket[racketblock] before giving
 @racketmodname[scribble/comment-reader] a chance to convert them.
 
+@racketmodname[scribble/comment-reader] uses @racket[unsyntax] to
+typeset comments. When using @racketmodname[scribble/comment-reader]
+with, for instance, @racket[RACKETBLOCK], which specifies
+@racket[UNSYNTAX] as @racket[escape-id], this causes problems. You can
+pass a new @racket[escape-id] for
+@racketmodname[scribble/comment-reader] by using @racket[#:escape-id]:
+
+@verbatim[#:indent 2]|{
+  @#reader scribble/comment-reader #:escape-id UNSYNTAX
+   (RACKETBLOCK
+     (define-syntax (m syn)
+       (syntax-case syn ()
+         [(_ x)
+          ;; Well this was silly
+          #`(#,x)]))
+   )
+}|
+
+
+
 @; ------------------------------------------------------------------------
 @subsection{Code Fonts and Styles}
 

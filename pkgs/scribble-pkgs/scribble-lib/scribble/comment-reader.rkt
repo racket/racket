@@ -18,7 +18,7 @@
   
   (define (read-unsyntaxer port)
     (let-values ([(l c p) (port-next-location port)])
-      (if (eq? (read port) '#:unsyntax)  
+      (if (eq? (read port) '#:escape-id)  
           (read port)
           (begin 
             (set-port-next-location! port l c p)
