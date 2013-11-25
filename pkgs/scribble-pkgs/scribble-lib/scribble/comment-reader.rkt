@@ -1,4 +1,5 @@
 (module comment-reader scheme/base
+  (require (only-in racket/port peeking-input-port))
 
   (provide (rename-out [*read read]
                        [*read-syntax read-syntax])
@@ -17,12 +18,10 @@
       (read-syntax/recursive src port)))
   
   (define (read-unsyntaxer port)
-    (let-values ([(l c p) (port-next-location port)])
-      (if (eq? (read port) '#:escape-id)  
-          (read port)
-          (begin 
-            (set-port-next-location! port l c p)
-            'unsyntax))))
+    (let ([p (peeking-input-port port)])
+      (if (eq? (read p) '#:escape-id)  
+          (begin (read port) (read port))
+          'unsyntax)))
 
   (define (make-comment-readtable #:readtable [rt (current-readtable)])
     (make-readtable rt
