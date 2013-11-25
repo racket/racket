@@ -80,7 +80,7 @@ directory}:
        scope}.}
 
  @item{@indexed-racket['bin-dir] --- a path, string, or byte string for the
-       installion's directory containing executables. It defaults to a
+       installation's directory containing executables. It defaults to a
        @filepath{bin} sibling directory of the @tech{main collection
        directory}.}
 
