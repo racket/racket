@@ -427,11 +427,14 @@
 
   @defmethod[(string-normalize [s string?]) string?]{
     Normalizes @racket[s]. Defaults to:
-    @racketblock[(regexp-replace* #rx"\u200b"
-                                  (string-normalize-nfkc s)
-                                  "")]
+    @racketblock[(regexp-replace* 
+                  #rx"\u200b" 
+                  (regexp-replace*
+                   #rx"\u2212" 
+                   (string-normalize-nfkc s)
+                   "-")
+                  "")]
   }
-
 }
 
 @defmixin[text:normalize-paste-mixin (text:basic<%>) (text:normalize-paste<%>)]{

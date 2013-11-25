@@ -1029,7 +1029,13 @@
         [else
          (preferences:get 'framework:do-paste-normalization)]))
     (define/public (string-normalize s) 
-      (regexp-replace* #rx"\u200b" (string-normalize-nfkc s) ""))
+      (regexp-replace* 
+       #rx"\u200b" 
+       (regexp-replace*
+        #rx"\u2212" 
+        (string-normalize-nfkc s)
+        "-")
+       ""))
     
     (define/override (do-paste start time)
       (dynamic-wind
