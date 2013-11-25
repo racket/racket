@@ -90,7 +90,7 @@
                         [(PATH) 'path]
                         [(TOKEN) $1])
                    (rhs [(TOKEN) $1] ; This is legal, but is subsumed by the illegal rule
-                        [(QUOTED-STRING) $1]
+                        [(QUOTED-STRING) (regexp-replace* (regexp-quote "\\\"") $1 "\"")]
                         ; This is not part of the spec. It is illegal
                         [(illegal) $1])
                    (illegal
