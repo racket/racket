@@ -65,7 +65,9 @@
     ;; Use a quartz bitmap so that text looks good:
     (define trans? transparent?)
     (define/override (make-backing-bitmap w h) 
-      (make-window-bitmap w h (send canvas get-cocoa-window) trans?))
+      (make-window-bitmap w h (send canvas get-cocoa-window) 
+                          trans?
+                          (send canvas is-flipped?)))
                    
     (define/override (can-combine-text? sz) #t)
 
@@ -106,7 +108,7 @@
                (cond
                 [(bm . is-a? . layer-bitmap%)
                  (define layer (send bm get-layer))
-                 (CGContextDrawLayerAtPoint cg (make-NSPoint 0 0) layer)]
+                 (CGContextDrawLayerAtPoint cg (make-NSPoint dx dy) layer)]
                 [else
                  (unless (send canvas is-flipped?)
                    (CGContextTranslateCTM cg 0 (unbox h))
@@ -142,19 +144,14 @@
   (make-object quartz-bitmap% w h #t
                (display-bitmap-resolution 0 void)))
 
-(define (make-window-bitmap w h win [trans? #t])
+(define (make-window-bitmap w h win [trans? #t] [flipped? #f])
   (if win
-      (make-object layer-bitmap% w h win
-                   ;; Force to non-transparent, because trying to
-                   ;; draw a layer into a transparent context
-                   ;; (when conversion to a bitmap is needed)
-                   ;; doesn't seem to work.
-                   trans?)
+      (make-object layer-bitmap% w h win trans? flipped?)
       (make-screen-bitmap w h)))
 
 (define layer-bitmap%
   (class quartz-bitmap%
-    (init w h win trans?)
+    (init w h win trans? flipped?)
 
     (define layer (make-layer win w h))
     (define layer-w w)
@@ -165,8 +162,9 @@
 
     (super-make-object w h trans? 1
                        (let ([cg (CGLayerGetContext layer)])
-                         (CGContextTranslateCTM cg 0 h)
-                         (CGContextScaleCTM cg 1 -1)
+                         (unless flipped?
+                           (CGContextTranslateCTM cg 0 h)
+                           (CGContextScaleCTM cg 1 -1))
                          cg))
 
     (define/override (draw-bitmap-to cr sx sy dx dy w h alpha clipping-region)
