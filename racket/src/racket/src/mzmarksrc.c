@@ -646,6 +646,9 @@ input_port {
   gcMARK2(ip->input_extras_ready, gc);
   gcMARK2(ip->unless, gc);
   gcMARK2(ip->unless_cache, gc);
+#ifdef WINDOWS_FILE_HANDLES
+  gcMARK2(ip->bufwidths, gc);
+#endif
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
