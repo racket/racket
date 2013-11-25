@@ -14,6 +14,7 @@
     "html-lib"
     "images-lib"
     "images-gui-lib"
+    "net-lib"
     "pconvert-lib"
     "r5rs-lib"
     "sandbox-lib"
