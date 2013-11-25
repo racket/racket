@@ -1484,6 +1484,9 @@ struct Scheme_Input_Port
   Scheme_Object *special, *ungotten_special;
   Scheme_Object *unless, *unless_cache;
   struct Scheme_Output_Port *output_half;
+#ifdef WINDOWS_FILE_HANDLES
+  char *bufwidths; /* to track CRLF => LF conversions in the buffer */
+#endif
 };
 
 struct Scheme_Output_Port

@@ -842,5 +842,47 @@
   (err/rt-test (file-position p2) exn:fail:filesystem?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Text mode, file positions, and buffers
+
+(let ()
+  (define path (build-path (find-system-path 'temp-dir) "test.txt"))
+
+  (define ofile (open-output-file path #:mode 'text #:exists 'replace))
+  (fprintf ofile "abc\ndef\nghi\n")
+  (close-output-port ofile)
+
+  (let ()
+    (define ifile (open-input-file path #:mode 'text))
+    (test "abc" read-line ifile)
+    (define pos (file-position ifile))
+    (test "def" read-line ifile)
+    (file-position ifile pos)
+    (test "def" read-line ifile))
+
+  (let ()
+    (define ifile (open-input-file path #:mode 'text))
+    (file-stream-buffer-mode ifile 'none)
+    (test "abc" read-line ifile)
+    (define pos (file-position ifile))
+    (test "def" read-line ifile)
+    (file-position ifile pos)
+    (test "def" read-line ifile))
+
+  (let* ([bs (call-with-input-file path
+	       #:mode 'text 
+	       (lambda (p) (read-bytes (file-size path) p)))])
+    ;; Check text-mode conversion at every boundary:
+    (for ([i (in-range (add1 (bytes-length bs)))])
+	 (define p (open-input-file path #:mode 'text))
+	 (file-stream-buffer-mode p 'none)
+	 (define a (read-bytes i p))
+	 (define b (read-bytes (- (bytes-length bs) i) p))
+	 (test #t eof-object? (read-byte p))
+	 (close-input-port p)
+	 (test bs bytes-append a b)))
+
+  (delete-file path))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

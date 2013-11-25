@@ -313,7 +313,7 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
     so->name = ((Scheme_Output_Port *)p)->name;
   }
   so->regfile = fds->regfile;
-  so->textmode = fds->textmode;
+  so->textmode = (fds->textmode ? 1 : 0);
   so->flush_mode = fds->flush;
   return 1;
 }
@@ -5463,6 +5463,22 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
           Scheme_Input_Port *ip;
           ip = scheme_input_port_record(argv[0]);
 	  pll -= ((Scheme_FD *)ip->port_data)->bufcount;
+# ifdef WINDOWS_FILE_HANDLES
+          if (((Scheme_FD *)ip->port_data)->textmode) {
+            int bp, bd;
+            bd = ((Scheme_FD *)ip->port_data)->buffpos;
+            for (bp = ((Scheme_FD *)ip->port_data)->bufcount; bp--; ) {
+              if (ip->bufwidths[bp + bd]) {
+                /* this is a LF converted from CRLF */
+                pll--;
+              }
+            }
+            if (((Scheme_FD *)ip->port_data)->textmode > 1) {
+              /* one more for leftover CR */
+              pll--;
+            }
+          }
+# endif
 	} else {
           Scheme_Output_Port *op;
           op = scheme_output_port_record(argv[0]);
@@ -6699,7 +6715,7 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
       rgot = target_size;
 
       /* Pending CR in text mode? */
-      if (fip->textmode == 2) {
+      if (fip->textmode > 1) {
         delta = 1;
         if (rgot > 1)
           rgot--;
@@ -6723,27 +6739,33 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
         int i, j;
         unsigned char *buf;
 
-        if (fip->textmode == 2) {
+        if (fip->textmode > 1) {
           /* we had added a CR */
           bc++;
           fip->textmode = 1;
         }
 
-        /* If bc is only 1, then we've reached the end, and
+        /* If bc is only 1 in buffer mode, then we've reached the end, and
            any leftover CR there should stay. */
-        if (bc > 1) {
+        if ((bc > 1) || (bc && (target_size == 1))) {
           /* Collapse CR-LF: */
+          char *bufwidths = port->bufwidths; /* for file-position */
           buf = fip->buffer;
           for (i = 0, j = 0; i < bc - 1; i++) {
             if ((buf[i] == '\r')
                 && (buf[i+1] == '\n')) {
+              bufwidths[j] = 1;
               buf[j++] = '\n';
               i++;
-            } else
+            } else {
+              bufwidths[j] = 0;
               buf[j++] = buf[i];
+            }
           }
-          if (i < bc) /* common case: didn't end with CRLF */
+          if (i < bc) { /* common case: didn't end with CRLF */
+            bufwidths[j] = 0;
             buf[j++] = buf[i];
+          }
           bc = j;
           /* Check for CR at end; if there, save it to maybe get a
              LF on the next read: */
@@ -6817,8 +6839,14 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
       }
 
       if (!fip->bufcount) {
-        fip->buffpos = 0;
-        return EOF;
+        if (fip->textmode > 1) {
+          /* have a CR pending, so maybe keep trying */
+          if (nonblock > 0)
+            return 0;
+        } else {
+          fip->buffpos = 0;
+          return EOF;
+        }
       } else {
         bc = ((size <= fip->bufcount)
               ? size
@@ -7023,7 +7051,7 @@ make_fd_input_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textmo
   if (regfile || isatty(fd))
     fip->textmode = 1;
 #else
-  fip->textmode = win_textmode;  
+  fip->textmode = (win_textmode ? 1 : 0);
 #endif
 
   if (refcount) {
@@ -7052,6 +7080,14 @@ make_fd_input_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textmo
   ip->p.buffer_mode_fun = fd_input_buffer_mode;
 
   ip->pending_eof = 1; /* means that pending EOFs should be tracked */
+
+#ifdef WINDOWS_FILE_HANDLES
+  if (fip->textmode) {
+    char *bw;
+    bw = (char *)scheme_malloc_atomic(MZPORT_FD_BUFFSIZE);
+    ip->bufwidths = bw;
+  }
+#endif
 
 #ifdef WINDOWS_FILE_HANDLES
   if (!regfile && !start_closed) {
