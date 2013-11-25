@@ -9,6 +9,7 @@
          racket/draw/private/gl-context
          "types.rkt"
          "utils.rkt"
+         "const.rkt"
          "window.rkt"
          "../../lock.rkt"
          "../common/queue.rkt"
@@ -22,7 +23,7 @@
  make-screen-bitmap
  make-window-bitmap)
 
-(import-class NSOpenGLContext NSScreen NSGraphicsContext)
+(import-class NSOpenGLContext NSScreen NSGraphicsContext NSWindow)
 
 (define NSOpenGLCPSwapInterval 222)
 
@@ -263,7 +264,24 @@
 (define (make-layer win w h)
   (atomically
    (with-autorelease
-    (let* ([ctx (tell NSGraphicsContext graphicsContextWithWindow: win)]
+    (let* ([ctx (if ((tell #:type _NSInteger win windowNumber) . <= . 0)
+                    ;; Window's device is gone, probably because it was hidden,
+                    ;; and we configure windows with setOneShot: YES.
+                    ;; Just make a new window...
+                    (let ([alt-win (make-temp-window)])
+                      (begin0
+                       (tell NSGraphicsContext graphicsContextWithWindow: alt-win)
+                       (tellv alt-win release)))
+                    ;; Use canvas's window:
+                    (tell NSGraphicsContext graphicsContextWithWindow: win))]
            [tmp-cg (tell #:type _CGContextRef ctx graphicsPort)]
            [layer (CGLayerCreateWithContext tmp-cg (make-NSSize w h) #f)])
       layer))))
+
+(define (make-temp-window)
+  (tell (tell NSWindow alloc)
+        initWithContentRect: #:type _NSRect (make-NSRect (make-NSPoint 0 0)
+                                                         (make-NSSize 10 10))
+        styleMask: #:type _int 0
+        backing: #:type _int NSBackingStoreBuffered
+        defer: #:type _BOOL NO))
