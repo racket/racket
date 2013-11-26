@@ -127,7 +127,7 @@
   ; *** Initializing a new `typed/racket' namespace with typed/racket ***
   ; *** Switching to the `typed/racket' namespace ***
   typed/racket::-> «^»                  ⇒ works in TR too
-  - : Integer [generalized from Positive-Byte]
+  - : Integer [more precisely: Positive-Byte]
   123
   typed/racket::-> «,switch *»
   ; *** Switching to the `*' namespace ***
@@ -143,29 +143,32 @@
   -> «,desc cons»
   ; `cons' is a bound identifier,
   ;   defined in #%kernel
-  ;   required through "racket/init.rkt"
+  ;   required through "<collects>/racket/init.rkt"
   -> «,desc lambda»
   ; `lambda' is a bound identifier,
-  ;   defined in racket/private/kw.rkt as `new-lambda'
-  ;   required through "racket/init.rkt"
+  ;   defined in <collects>/racket/private/kw.rkt as `new-lambda'
+  ;   required through "<collects>/racket/init.rkt"
   -> «,desc racket/runtime-path»
   ; `racket/runtime-path' is a module,
-  ;   located at racket/runtime-path.rkt
-  ;   imports: racket/base.rkt, racket/list.rkt,
-  ;     racket/private/runtime-path-table.rkt,
-  ;     racket/private/this-expression-source-directory.rkt, setup/dirs.rkt.
-  ;   imports-for-syntax: racket/base.rkt.
+  ;   located at <collects>/racket/runtime-path.rkt
+  ;   imports: <collects>/racket/base.rkt, <collects>/racket/list.rkt,
+  ;     <collects>/racket/private/runtime-path-table.rkt,
+  ;     <collects>/racket/private/this-expression-source-directory.rkt,
+  ;     <collects>/setup/dirs.rkt.
+  ;   imports-for-syntax: <collects>/racket/base.rkt.
   ;   direct syntax exports: define-runtime-module-path,
   ;     define-runtime-module-path-index, define-runtime-path,
-  ;     define-runtime-path-list, define-runtime-paths, runtime-paths.
+  ;     define-runtime-path-list, define-runtime-paths, runtime-paths,
+  ;     runtime-require.
   -> «(current-directory "/( none )")»  ⇒ racket allows this
   ; now in /( none )                    ⇒ reports without ,cd
   -> «,cd @|tmp|»
   ; now in @tmp
   -> «,desc scribble/html»
   ; `scribble/html' is a module,
-  ;   located at scribble/html.rkt
-  ;   imports: racket/base.rkt, scribble/html/main.rkt.
+  ;   located at <pkgs>/scribble-lib/scribble/html.rkt
+  ;   imports: <collects>/racket/base.rkt,
+  ;     <pkgs>/scribble-lib/scribble/html/main.rkt.
   ;   no direct exports.
   -> «(module broken racket/base (define foo 123) (error "bleh!"))»
   -> «,en broken»
@@ -185,9 +188,9 @@
   ;  cannot reference undefined identifier
   ; [,bt for context]
   -> «,en json»
-  json/main> «,sh echo $F»
+  <collects>/json/main> «,sh echo $F»
   @|collects|/json/main.rkt
-  json/main> «,top»
+  <collects>/json/main> «,top»
   -> «(display-to-file "#lang racket\n(provide x)\n(define x 1)\n"
                        "xrepl-test.rkt" #:exists 'truncate)»
   -> «,rr "xrepl-test.rkt"»             ⇒ first load
