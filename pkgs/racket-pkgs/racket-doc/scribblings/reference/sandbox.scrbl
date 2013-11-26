@@ -314,6 +314,20 @@ unrestricted configuration and add the desired restrictions.  This approach is m
 possible by the @racket[call-with-trusted-sandbox-configuration]
 function.
 
+The sandbox environment uses two notions of restricting the time that
+evaluations takes: @tech{shallow time} and @tech{deep
+time}. @deftech{Shallow time} refers to the immediate execution of an
+expression. For example, a @tech{shallow time} limit of five seconds
+would restrict @racket[(sleep 6)] and other computations that take
+longer than five seconds. @deftech{Deep time} refers to the total
+execution of the expression and all threads and sub-processes that the
+expression creates. For example, a @tech{deep time} limit of five
+seconds would restrict @racket[(thread (λ () (sleep 6)))], which
+@tech{shallow time} would not, @emph{as well as} all expressions that
+@tech{shallow time} would restrict. By default, most sandboxes only
+restrict @tech{shallow time} to facilitate expressions that use
+threads.
+
 @defproc[(call-with-trusted-sandbox-configuration [thunk (-> any)])
          any]{
 
@@ -645,15 +659,16 @@ than one block counts against the interaction limit).}
                         (or/c (>=/c 0) #f))
                 #f)]{
 
-A @tech{parameter} that determines the default limits on @italic{each} use of
-a @racket[make-evaluator] function, including the initial evaluation
-of the input program.  Its value should be a list of two numbers;
-where the first is a timeout value in seconds, and the second is a
-memory limit in megabytes (note that they don't have to be integers).
-Either one can be @racket[#f] for disabling the corresponding limit;
-alternately, the parameter can be set to @racket[#f] to disable all
-per-evaluation limits (useful in case more limit kinds are available
-in future versions). The default is @racket[(list 30 20)].
+A @tech{parameter} that determines the default limits on @italic{each}
+use of a @racket[make-evaluator] function, including the initial
+evaluation of the input program.  Its value should be a list of two
+numbers; where the first is a @tech{shallow time} value in seconds,
+and the second is a memory limit in megabytes (note that they don't
+have to be integers).  Either one can be @racket[#f] for disabling the
+corresponding limit; alternately, the parameter can be set to
+@racket[#f] to disable all per-evaluation limits (useful in case more
+limit kinds are available in future versions). The default is
+@racket[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @racket[(make-evaluator 'racket/base)] can
@@ -826,8 +841,8 @@ for the whole sandbox.)}
          void?]{
 
 Changes the per-expression limits that @racket[evaluator] uses to
-@racket[sec] seconds and @racket[mb] megabytes (either one can be
-@racket[#f], indicating no limit).
+@racket[secs] seconds of @tech{shallow time} and @racket[mb]
+megabytes (either one can be @racket[#f], indicating no limit).
 
 This procedure should be used to modify an existing evaluator limits,
 because changing the @racket[sandbox-eval-limits] parameter does not
@@ -989,12 +1004,12 @@ checked at the time that a sandbox evaluator is created.}
 
 Executes the given @racket[thunk] with memory and time restrictions:
 if execution consumes more than @racket[mb] megabytes or more than
-@racket[sec] seconds, then the computation is aborted and the
-@exnraise[exn:fail:resource].  Otherwise the result of the thunk is
-returned as usual (a value, multiple values, or an exception).  Each
-of the two limits can be @racket[#f] to indicate the absence of a
-limit. See also @racket[custodian-limit-memory] for information on
-memory limits.
+@racket[secs] @tech{shallow time} seconds, then the computation is
+aborted and the @exnraise[exn:fail:resource].  Otherwise the result of
+the thunk is returned as usual (a value, multiple values, or an
+exception).  Each of the two limits can be @racket[#f] to indicate the
+absence of a limit. See also @racket[custodian-limit-memory] for
+information on memory limits.
 
 Sandboxed evaluators use @racket[call-with-limits], according to the
 @racket[sandbox-eval-limits] setting and uses of
@@ -1002,19 +1017,29 @@ Sandboxed evaluators use @racket[call-with-limits], according to the
 timeouts and memory problems. Use @racket[call-with-limits] directly
 only to limit a whole testing session, instead of each expression.}
 
-
 @defform[(with-limits sec-expr mb-expr body ...)]{
 
 A macro version of @racket[call-with-limits].}
 
+@defproc[(call-with-deep-time-limit [secs exact-nonnegative-integer?]
+                                    [thunk (-> any)])
+         any]{
+ Executes the given @racket[thunk] with @tech{deep time} restrictions.
+}
+
+@defform[(with-deep-time-limit secs-expr body ...)]{
+
+A macro version of @racket[call-with-deep-time-limit].}
 
 @defproc*[([(exn:fail:resource? [v any/c]) boolean?]
            [(exn:fail:resource-resource [exn exn:fail:resource?])
-            (or/c 'time 'memory)])]{
+            (or/c 'time 'memory 'deep-time)])]{
 
 A predicate and accessor for exceptions that are raised by
-@racket[call-with-limits].  The @racket[resource] field holds a symbol,
-either @racket['time] or @racket['memory].}
+@racket[call-with-limits].  The @racket[resource] field holds a
+symbol, representing the resource that was expended. @racket['time] is
+used for @tech{shallow time} and @racket['deep-time] is used for
+@tech{deep time}.}
 
 @; ----------------------------------------------------------------------
 
