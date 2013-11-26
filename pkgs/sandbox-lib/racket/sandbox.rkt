@@ -52,7 +52,6 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
-         with-timeout
          call-with-custodian-shutdown
          call-with-killing-threads
          exn:fail:sandbox-terminated?
@@ -370,71 +369,39 @@
        (call-with-values thunk (lambda vs (list* values vs)))))
    (lambda () 'kill) (lambda () 'shut)))
 
-(define (custodian-managed-list* cust super)
-  (define ms (custodian-managed-list cust super))
-  (append-map
-   (λ (v)
-     (if (custodian? v)
-       (custodian-managed-list* v cust)
-       (list v)))
-   ms))
-
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
-  (define parent-cust
-    (if (and mb memory-accounting?)
-      (make-custodian (current-custodian))
-      (current-custodian)))
-  (define cust (make-custodian parent-cust))
-  (define cust-box
+  (define-values [cust cust-box]
     (if (and mb memory-accounting?)
       ;; memory limit, set on a new custodian so if there's an out-of-memory
       ;; error, the user's custodian is still alive
-      (begin
-        (custodian-limit-memory 
-         parent-cust 
-         (inexact->exact (round (* mb 1024 1024)))
-         parent-cust)
-        (make-custodian-box parent-cust #t))
-      #f))
+      (let ([c (make-custodian (current-custodian))])
+        (custodian-limit-memory c (inexact->exact (round (* mb 1024 1024))) c)
+        (values c (make-custodian-box c #t)))
+      (values (current-custodian) #f)))
   (define timeout? #f)
-  (define timeout-t
-    (and sec
-         (thread (lambda ()
-                   (define timeout-evt
-                     (handle-evt
-                      (alarm-evt (+ (current-inexact-milliseconds)
-                                    (* 1000 sec)))
-                      (λ (a)
-                        (set! timeout? #t))))
-                   (let loop ()
-                     (define ms (custodian-managed-list* cust parent-cust))
-                     (define ts (filter thread? ms))
-                     (sync
-                      (if (empty? ts)
-                        always-evt
-                        (handle-evt
-                         (apply choice-evt (map thread-dead-evt ts))
-                         (λ _
-                           (loop))))
-                      timeout-evt))
-                   (custodian-shutdown-all cust)))))
   (define r
     (parameterize ([current-custodian cust])
-      (nested thunk)))
-  (when timeout-t
-    (thread-wait timeout-t))
+      (if sec
+        (nested
+         (lambda ()
+           ;; time limit
+           (when sec
+             (define t (current-thread))
+             (thread (lambda ()
+                       (unless (sync/timeout sec t) (set! timeout? #t))
+                       (kill-thread t))))
+           (thunk)))
+        (nested thunk))))
   (cond [timeout? (set! r 'time)]
         [(and cust-box (not (custodian-box-value cust-box)))
          (if (memq r '(kill shut)) ; should always be 'shut
            (set! r 'memory)
            (format "cust died with: ~a" r))]) ; throw internal error below
   (case r
-    [(kill)
-     (kill-thread (current-thread))]
-    [(shut)
-     (custodian-shutdown-all (current-custodian))]
+    [(kill) (kill-thread (current-thread))]
+    [(shut) (custodian-shutdown-all (current-custodian))]
     [(memory time)
      (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
                                     (current-continuation-marks)
@@ -443,11 +410,10 @@
             (apply (car r) (cdr r))
             (error 'call-with-limits "internal error in nested: ~e" r))]))
 
-(define-syntax-rule (with-limits sec mb body ...)
-  (call-with-limits sec mb (lambda () body ...)))
-
-(define-syntax-rule (with-timeout sec body ...)
-  (with-limits sec #f body ...))
+(define-syntax with-limits
+  (syntax-rules ()
+    [(with-limits sec mb body ...)
+     (call-with-limits sec mb (lambda () body ...))]))
 
 ;; other resource utilities
 
@@ -1060,8 +1026,7 @@
     (define run-in-bg (mz/mr thread queue-callback))
     (define bg-run->thread (if (sandbox-gui-available)
                                (lambda (ignored)
-                                 ((mz/mr void eventspace-handler-thread)
-                                  (current-eventspace)))
+                                 ((mz/mr void eventspace-handler-thread) (current-eventspace)))
                                values))
     (define t (bg-run->thread (run-in-bg user-process)))
     (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
