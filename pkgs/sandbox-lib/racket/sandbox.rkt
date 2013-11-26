@@ -52,6 +52,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         call-with-deep-time-limit
+         with-deep-time-limit
          call-with-custodian-shutdown
          call-with-killing-threads
          exn:fail:sandbox-terminated?
@@ -414,6 +416,54 @@
   (syntax-rules ()
     [(with-limits sec mb body ...)
      (call-with-limits sec mb (lambda () body ...))]))
+
+(define (custodian-managed-list* cust super)
+  (define ms (custodian-managed-list cust super))
+  (append-map
+   (λ (v)
+     (if (custodian? v)
+       (custodian-managed-list* v cust)
+       (list v)))
+   ms))
+
+(define (call-with-deep-time-limit secs thunk)
+  (define me
+    (current-custodian))
+  (define cust
+    (make-custodian me))
+  (define timeout-evt
+    (handle-evt
+     (alarm-evt (+ (current-inexact-milliseconds)
+                   (* 1000 secs)))
+     (λ (a) #f)))
+
+  (parameterize ([current-custodian cust]
+                 [current-subprocess-custodian-mode 'kill])
+    (thread thunk))
+
+  (define r
+    (let loop ()
+      (define ms (custodian-managed-list* cust me))
+      (define (thread-or-subprocess? x)
+        (or (thread? x)
+            (subprocess? x)))
+      (define ts (filter thread-or-subprocess? ms))
+      (sync
+       (if (empty? ts)
+         always-evt
+         (handle-evt
+          (apply choice-evt ts)
+          (λ (_)
+            (loop))))
+       timeout-evt)))
+  (custodian-shutdown-all cust)
+  (unless r
+    (raise (make-exn:fail:resource (format "call-with-deep-time-limit: out of ~a" r)
+                                   (current-continuation-marks)
+                                   'deep-time))))
+
+(define-syntax-rule (with-deep-time-limit sec body ...)
+  (call-with-deep-time-limit sec (λ () body ...)))
 
 ;; other resource utilities
 
