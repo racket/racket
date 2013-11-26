@@ -1566,8 +1566,8 @@ path/s is either such a string or a list of them.
 "pkgs/wxme-pkgs" responsible (mflatt)
 "pkgs/wxme-pkgs/wxme-lib/wxme/xml.rkt" responsible (jay)
 "pkgs/xrepl-pkgs" responsible (eli)
-"pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/main.rkt" drdr:command-line #f
 "pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/known-module.rkt" drdr:command-line (racket *)
+"pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/main.rkt" drdr:command-line #f
 "pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/wrapped-output.rkt" drdr:command-line (racket *)
 "pkgs/xrepl-pkgs/xrepl-test/tests/xrepl/xrepl.rkt" drdr:command-line (racket *)
 "racket" responsible (mflatt)
