@@ -1647,7 +1647,7 @@ If the previous operation on the editor was not a paste, calling
 
 
 @defmethod[#:mode override
-           (paste-x-selection [time exact-integer?]
+           (paste-x-selection [time exact-integer? 0]
                               [start (or/c exact-nonnegative-integer? 'start 'end) 'start]
                               [end (or/c exact-nonnegative-integer? 'same) 'same])
            void?]{
@@ -1739,11 +1739,14 @@ Returns the paragraph number of the paragraph containing a given @techlink{posit
 }
 
 
-@defmethod[#:mode extend
-           (read-from-file [stream (is-a?/c editor-stream-in%)]
-                           [start (or/c exact-nonnegative-integer? 'start)]
-                           [overwrite-styles? any/c #f])
-           boolean?]{
+@defmethod*[#:mode extend
+            ([(read-from-file [stream (is-a?/c editor-stream-in%)]
+                              [start (or/c exact-nonnegative-integer? 'start)]
+                              [overwrite-styles? any/c #f])
+              boolean?]
+             [(read-from-file [stream (is-a?/c editor-stream-in%)]
+                              [overwrite-styles? any/c #f])
+              boolean?])]{
 
 New data is inserted at the @techlink{position} indicated by @racket[start], or at
  the current @techlink{position} if @racket[start] is @racket['start].
