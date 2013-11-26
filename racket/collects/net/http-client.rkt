@@ -107,6 +107,9 @@
              (if port-usual?
                host
                (format "~a:~a" host port))))
+  (unless (regexp-member #rx"^(?i:User-Agent:) +.+$" headers-bs)
+    (fprintf to "User-Agent: Racket/~a (net/http-client)\r\n" 
+             (version)))
   (unless (or (not (memq 'gzip decodes))
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
     (fprintf to "Accept-Encoding: gzip\r\n"))
