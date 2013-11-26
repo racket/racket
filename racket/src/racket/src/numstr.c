@@ -1264,7 +1264,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     if (is_long_double && is_float)  {
       if (report)
         scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
-                        "read: can convert extflonum to inexact: %u",
+                        "read: cannot convert extflonum to inexact: %u",
                         str, len);
       return scheme_false;
     }
@@ -1437,7 +1437,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (is_long_double && is_float)  {
         if (report)
           scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
-                          "read: can convert extflonum to inexact: %u",
+                          "read: cannot convert extflonum to inexact: %u",
                           str, len);
         return scheme_false;
       }
