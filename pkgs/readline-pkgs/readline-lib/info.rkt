@@ -1,9 +1,7 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("scheme-lib"
-               "base"
-               "compatibility-lib"))
+(define deps '("base"))
 
 (define pkg-desc "implementation (no documentation) part of \"readline\"")
 

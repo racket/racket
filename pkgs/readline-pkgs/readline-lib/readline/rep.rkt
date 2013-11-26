@@ -1,7 +1,7 @@
 ;; This is a wrapper around "rep-start.rkt" -- use it if we're using a terminal
-#lang scheme/base
+#lang racket/base
 
-(require scheme/runtime-path scheme/file)
+(require racket/runtime-path racket/file)
 
 (define-runtime-path rep-start "rep-start.rkt")
 

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign (only-in '#%foreign ffi-obj)) (unsafe!)
+(require ffi/unsafe (only-in '#%foreign ffi-obj))
 (provide readline readline-bytes
          add-history add-history-bytes
          history-length history-get history-delete

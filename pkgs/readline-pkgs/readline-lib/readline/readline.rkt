@@ -1,3 +1,3 @@
-(module readline mzscheme
+(module readline racket/base
   (require "mzrl.rkt")
-  (provide (all-from "mzrl.rkt")))
+  (provide (all-from-out "mzrl.rkt")))
