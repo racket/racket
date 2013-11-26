@@ -227,8 +227,8 @@
         (make-an-item 'file-menu 'revert
                       '(string-constant revert-info)
                       '(λ (item control) (void))
-                      #f
-                      '(get-default-shortcut-prefix)
+                      #\e
+                      '(cons 'shift (get-default-shortcut-prefix))
                       '(string-constant revert-menu-item)
                       on-demand-do-nothing
                       #f)
