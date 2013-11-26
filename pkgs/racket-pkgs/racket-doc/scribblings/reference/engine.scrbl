@@ -52,7 +52,7 @@ Returns @racket[#t] if @racket[v] is an engine produced by
          boolean?]{
 
 Allows the thread associated with @racket[engine] to execute for up
-as long as @racket[until] milliseconds (of @racket[until] is a real
+as long as @racket[until] milliseconds (if @racket[until] is a real
 number) or @racket[until] is ready (if @racket[until] is an event). If
 @racket[engine]'s procedure disables suspends, then the engine
 can run arbitrarily long until it re-enables suspends.
