@@ -1007,10 +1007,6 @@ only to limit a whole testing session, instead of each expression.}
 
 A macro version of @racket[call-with-limits].}
 
-@defform[(with-timeout sec-expr body ...)]{
-
-Expands to @racket[(with-limits sec-expr #f body ...)].}
-
 
 @defproc*[([(exn:fail:resource? [v any/c]) boolean?]
            [(exn:fail:resource-resource [exn exn:fail:resource?])

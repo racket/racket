@@ -64,39 +64,23 @@
           (or (regexp-match? re m) (list 'bad-exception-message: m)))
         x)))
   (define-syntax thunk (syntax-rules () [(thunk b ...) (lambda () b ...)]))
-  (define-syntax (t stx)
-    (syntax-case stx (--eval-- --top-- => <= =err> <err=)
-      [(t -?-) 
-       (syntax/loc stx (void))]
-      [(t -?- --eval-- more ...)
-       (syntax/loc #'--eval-- (t --eval-- more ...))]
-      [(t -?- --top--  more ...)
-       (syntax/loc #'--top-- (t --top--  more ...))]
-      [(t --eval-- E)
-       (syntax/loc #'E (test #t            run* (thunk (ev `E))))]
-      [(t --top--  E)         
-       (syntax/loc #'E (test #t            run* (thunk E)))]
-      [(t --eval-- E => R)
-       (syntax/loc #'E (test `(vals: ,R)   run  (thunk (ev `E))))]
-      [(t --top--  E => R)
-       (syntax/loc #'E (test `(vals: ,R)   run  (thunk E)))]
-      [(t --eval-- E =err> R)
-       (quasisyntax/loc #'E 
-         (test #t e-match? R run  #,(syntax/loc #'E (thunk (ev `E)))))]
-      [(t --top--  E =err> R)
-       (quasisyntax/loc #'E
-         (test #t e-match? R run  #,(syntax/loc #'E (thunk E))))]
-      [(t -?- E => R more ...)
-       (syntax/loc #'E (begin (t -?- E => R) (t -?- more ...)))]
-      [(t -?- E =err> R more ...)
-       (syntax/loc #'E (begin (t -?- E =err> R) (t -?- more ...)))]
-      [(t -?- R <= E more ...)
-       (syntax/loc #'R (t -?- E => R more ...))]
-      [(t -?- R <err= E more ...)
-       (syntax/loc #'R (t E =err> R more ...))]
+  (define-syntax t
+    (syntax-rules (--eval-- --top-- => <= =err> <err=)
+      [(t -?-) (void)]
+      [(t -?- --eval-- more ...) (t --eval-- more ...)]
+      [(t -?- --top--  more ...) (t --top--  more ...)]
+      [(t --eval-- E)         (test #t            run* (thunk (ev `E)))]
+      [(t --top--  E)         (test #t            run* (thunk E))]
+      [(t --eval-- E => R)    (test `(vals: ,R)   run  (thunk (ev `E)))]
+      [(t --top--  E => R)    (test `(vals: ,R)   run  (thunk E))]
+      [(t --eval-- E =err> R) (test #t e-match? R run  (thunk (ev `E)))]
+      [(t --top--  E =err> R) (test #t e-match? R run  (thunk E))]
+      [(t -?- E => R more ...)    (begin (t -?- E => R) (t -?- more ...))]
+      [(t -?- E =err> R more ...) (begin (t -?- E =err> R) (t -?- more ...))]
+      [(t -?- R <= E more ...)    (t -?- E => R more ...)]
+      [(t -?- R <err= E more ...) (t E =err> R more ...)]
       ;; last so it doesn't match the above
-      [(t -?- E more ...)
-       (syntax/loc #'E (begin (t -?- E) (t -?- more ...)))]))
+      [(t -?- E more ...) (begin (t -?- E) (t -?- more ...))]))
   (define (make-prog . lines)
     (apply string-append (map (lambda (l) (string-append l "\n")) lines)))
 
