@@ -208,8 +208,9 @@ flags:
         loop, using either @racket[read-eval-print-loop] (Racket) or
         @racket[graphical-read-eval-print-loop] (GRacket) after showing
         @racket[(banner)] and loading @racket[(find-system-path
-        'init-file)]. For GRacket, supply the @Flag{z}/@DFlag{text-repl}
-        configuration option to use @racket[read-eval-print-loop]
+        'init-file)]. In the case of Racket, @racket[(read-eval-print-loop)]
+        is followed by @racket[(newline)]. For GRacket, supply the @Flag{z}/@DFlag{text-repl}
+        configuration option to use @racket[read-eval-print-loop] (and @racket[newline])
         instead of @racket[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
