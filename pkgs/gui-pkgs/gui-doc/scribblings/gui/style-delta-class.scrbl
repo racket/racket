@@ -323,7 +323,7 @@ Gets the multiplicative color shift for the foreground (applied before
                                                'change-smoothing
                                                'change-toggle-smoothing
                                                'change-alignment)]
-                         [param symbol])
+                         [param symbol?])
               (is-a?/c style-delta%)]
              [(set-delta [change-command (or/c 'change-size
                                                'change-bigger
