@@ -196,7 +196,7 @@ tbody > tr:first-child > td > .together {
 
 .defmodule {
     font-family: 'Source Code Pro';
-    padding: 0.25rem 0.75rem 0.5rem 0.5rem;
+    padding: 0.25rem 0.75rem 0.25rem 0.5rem;
     margin-bottom: 1rem;
     width: 100%;
     background-color: hsl(60, 29%, 94%);
@@ -206,10 +206,17 @@ tbody > tr:first-child > td > .together {
     color: #444;
 }
 
+
 .defmodule td span.hspace:first-child {
-position: absolute;
+  position: absolute;
     width: 0;
 }
+
+.defmodule .RpackageSpec .Smaller,
+.defmodule .RpackageSpec .stt {
+    font-size: 1rem;
+}
+
 
 .specgrammar {
     float: none;
