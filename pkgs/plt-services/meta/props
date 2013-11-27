@@ -1289,7 +1289,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/pkg" responsible (jay) drdr:command-line (mzc *)
 "pkgs/racket-pkgs/racket-test/tests/pkg/test-pkgs" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/pkg/test.rkt" drdr:command-line (raco "test" *) drdr:timeout 600
+"pkgs/racket-pkgs/racket-test/tests/pkg/test.rkt" drdr:command-line (raco "test" *) drdr:timeout 2400
 "pkgs/racket-pkgs/racket-test/tests/racket" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/racket/all.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/basic.rktl" drdr:command-line #f
