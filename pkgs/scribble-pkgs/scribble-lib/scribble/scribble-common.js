@@ -53,28 +53,40 @@ function MergePageArgsIntoLink(a) {
 
 // Cookies --------------------------------------------------------------------
 
+// Actually, try localStorage (a la HTML 5), first.
+
 function GetCookie(key, def) {
-  var i, cookiestrs;
   try {
-    if (document.cookie.length <= 0) return def;
-    cookiestrs = document.cookie.split(/; */);
-  } catch (e) { return def; }
-  for (i = 0; i < cookiestrs.length; i++) {
-    var cur = cookiestrs[i];
-    var eql = cur.indexOf('=');
-    if (eql >= 0 && cur.substring(0,eql) == key)
-      return unescape(cur.substring(eql+1));
+    var v = localStorage[key];
+    if (!v) v = def;
+    return v;
+  } catch (e) {
+    var i, cookiestrs;
+    try {
+      if (document.cookie.length <= 0) return def;
+      cookiestrs = document.cookie.split(/; */);
+    } catch (e) { return def; }
+    for (i = 0; i < cookiestrs.length; i++) {
+      var cur = cookiestrs[i];
+      var eql = cur.indexOf('=');
+      if (eql >= 0 && cur.substring(0,eql) == key)
+        return unescape(cur.substring(eql+1));
+    }
+    return def;
   }
-  return def;
 }
 
 function SetCookie(key, val) {
-  var d = new Date();
-  d.setTime(d.getTime()+(365*24*60*60*1000));
   try {
-    document.cookie =
-      key + "=" + escape(val) + "; expires="+ d.toGMTString() + "; path=/";
-  } catch (e) {}
+    localStorage[key] = val;
+  } catch(e) {
+    var d = new Date();
+    d.setTime(d.getTime()+(365*24*60*60*1000));
+    try {
+      document.cookie =
+        key + "=" + escape(val) + "; expires="+ d.toGMTString() + "; path=/";
+    } catch (e) {}
+  }
 }
 
 // note that this always stores a directory name, ending with a "/"
