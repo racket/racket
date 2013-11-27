@@ -59,14 +59,16 @@ $( document ).ready(function() {
                                             it.val(initv).focus(); } ) ); } }
 
         $( "#pi_name" ).text( pkgi['name'] );
-        make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );
+        make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );        
         if ( mypkg_p ) {
-            $( "#pi_name" ).append( $('<button>')
-                                    .button({ icons: { primary: "ui-icon-trash" } })
-                                    .click( function (e) {
-                                        dynamic_pkgsend( "/jsonp/package/del", { } );
-                                        $(pkgi['dom_obj']).remove();
-                                        $("#package_info").dialog("close"); } ) ); }
+            $( "#pi_delete_button" ).click( function (e) {
+                dynamic_pkgsend( "/jsonp/package/del", { } );
+                $(pkgi['dom_obj']).remove();
+                $("#package_info").dialog("close"); } );
+            $( "#pi_delete_row" ).show(); }
+        else {
+            $( "#pi_delete_row" ).hide(); }
+
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
