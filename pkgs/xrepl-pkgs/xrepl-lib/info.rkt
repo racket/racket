@@ -4,9 +4,7 @@
 
 (define deps '("base"
                "readline-lib"
-               "scribble-lib"
-               "scribble-text-lib"
-               "macro-debugger-text-lib"))
+               "scribble-text-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"xrepl\"")
 
