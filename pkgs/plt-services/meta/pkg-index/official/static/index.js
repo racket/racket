@@ -8,6 +8,8 @@ function me () {
     return localStorage['email']; }
 
 $( document ).ready(function() {
+    var logged_in = false;
+
     function jslink ( texts, clickf) {
         return $('<a>', { href: "javascript:void(0)",
                           click: clickf } ).html(texts); }
@@ -43,7 +45,7 @@ $( document ).ready(function() {
         update_package_on_list ( pkgi );
         // console.log( pkgi );
         change_hash( "[" + pkgi['name'] + "]" );
-
+       
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
 
         function make_editbutton ( spot, initv, fun ) {
@@ -70,7 +72,6 @@ $( document ).ready(function() {
             $( "#pi_delete_row" ).show(); }
         else {
             $( "#pi_delete_row" ).hide(); }
-
 
         $( "#pi_name_inst" ).text( pkgi['name'] );
         $( "#pi_ring" ).text( pkgi['ring'] );
@@ -108,6 +109,10 @@ $( document ).ready(function() {
                          " "]; }
             else {
                 return [tag, " "]; } } ) ));
+        if ( logged_in ) {
+            $( "#pi_add_tag_row" ).show(); }
+        else {
+            $( "#pi_add_tag_row" ).hide(); }
 
         $( "#pi_versions" ).html("").append( $.map( Object.keys(pkgi['versions']).sort(), function ( v, vi ) {
             var vo = pkgi['versions'][v];
@@ -498,8 +503,10 @@ $( document ).ready(function() {
     $( "#login_code_row" ).hide();
 
     function menu_logout () {
+        logged_in = false;
         $("#logout").html( jslink( "login", function () { $( "#login" ).dialog( "open" ); } ) ); }
     function menu_loggedin ( curate_p ) {
+        logged_in = true;
         $("#logout").html("")
             .append( me(),
                      ( curate_p ? [ " (", jslink( "curator", function () {
