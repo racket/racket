@@ -32,6 +32,17 @@ access and update. Since @math{N} is limited by the address space so
 that @math{log N} is limited to less than 30 or 62 (depending on the
 platform), @math{log N} can be treated reasonably as a constant.}
 
+For @racket[equal?]-based hashing, the built-in hash functions on
+@tech{strings}, @tech{pairs}, @tech{lists}, @tech{vectors},
+@tech{prefab} or transparent @tech{structures}, @|etc|, take time
+proportional to the size of the value. The hash code for a compound
+data structure, such as a list or vector, depends on hashing each item
+of the container, but the depth of such recursive hashing is
+limited (to avoid potential problems with cyclic data). For a
+non-@tech{list} @tech{pair}, both @racket[car] and @racket[cdr]
+hashing is treated as a deeper hash, but the @racket[cdr] of a
+@tech{list} is treated as having the same hashing depth as the list.
+
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
 elements of the sequence (i.e., each element is a key and its
