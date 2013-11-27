@@ -304,7 +304,16 @@
   (cache "/pkgs" "pkgs")
   (cache "/pkgs-all" "pkgs-all")
   (for ([p (in-list pkg-list)])
-    (cache (format "/pkg/~a" p) (format "pkg/~a" p))))
+    (cache (format "/pkg/~a" p) (format "pkg/~a" p)))
+
+  (let ()
+    (define pkg-path (build-path static-path "pkg"))
+    (for ([f (in-list (directory-list pkg-path))]
+          #:unless (regexp-match #"json$" (path->string f))
+          #:unless (member (path->string f) pkg-list))
+      (with-handlers ([exn:fail:filesystem? void])
+        (delete-file (build-path pkg-path f))
+        (delete-file (build-path pkg-path (path-add-suffix f #".json")))))))
 
 (module+ main
   (require racket/cmdline)
