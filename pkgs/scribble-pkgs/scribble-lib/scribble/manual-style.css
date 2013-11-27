@@ -542,10 +542,13 @@ table.tocsublist {
 }
 
 pre {
-  margin-left: 0;
+  margin-left: 2em;
 }
+
 blockquote {
-  margin-left: 0;
+  margin-left: 2em;
+  margin-right: 2em;
+  margin-bottom: 1em;
 }
 
 .SCodeFlow {
@@ -579,7 +582,11 @@ blockquote {
     background: -o-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
     background: -ms-linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
     background: linear-gradient(to bottom left, hsl(0, 0%, 99%) 0%, hsl(216, 78%, 95%) 100%);
+}
 
+blockquote > blockquote.SVInsetFlow {
+/* resolves issue in e.g. /reference/notation.html */
+    margin-top: 0em;
 }
 
 .leftindent .SVInsetFlow { /* see e.g. section 4.5 of Racket Guide */
