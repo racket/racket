@@ -7,31 +7,35 @@
 
 (define timer-ch (make-async-channel))
 
+(define timer-manager #f)
+
 ; start-timer-manager : -> void
 ; The timer manager thread   
 (define (start-timer-manager)
-  (thread
-   (lambda ()
-     (let loop ([timers null])
-       ;; (printf "Timers: ~a\n" (length timers))
-       ;; Wait for either...
-       (apply sync
-              ;; ... a timer-request message ...
-              (handle-evt
-               timer-ch
-               (lambda (req)
-                 ;; represent a req as a (timer-list -> timer-list) function:
-                 ;; add/remove/change timer evet:
-                 (loop (req timers))))
-              ;; ... or a timer
-              (map (lambda (timer)
-                     (handle-evt
-                      (timer-evt timer)
-                      (lambda (_)
-                        ;; execute timer
-                        ((timer-action timer))
-                        (loop (remq timer timers)))))
-                   timers)))))
+  (unless timer-manager
+    (set! timer-manager
+	  (thread
+	   (lambda ()
+	     (let loop ([timers null])
+	       ;; (printf "Timers: ~a\n" (length timers))
+	       ;; Wait for either...
+	       (apply sync
+		      ;; ... a timer-request message ...
+		      (handle-evt
+		       timer-ch
+		       (lambda (req)
+			 ;; represent a req as a (timer-list -> timer-list) function:
+			 ;; add/remove/change timer evet:
+			 (loop (req timers))))
+		      ;; ... or a timer
+		      (map (lambda (timer)
+			     (handle-evt
+			      (timer-evt timer)
+			      (lambda (_)
+				;; execute timer
+				((timer-action timer))
+				(loop (remq timer timers)))))
+			   timers)))))))
   (void))
 
 ;; Limitation on this add-timer: thunk cannot make timer
