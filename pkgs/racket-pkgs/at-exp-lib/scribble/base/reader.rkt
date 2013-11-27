@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require (prefix-in scribble: scribble/reader)
          (rename-in syntax/module-reader
                     [#%module-begin #%reader-module-begin]))
 (provide (rename-out [module-begin #%module-begin])
-         (except-out (all-from-out scheme/base)
+         (except-out (all-from-out racket/base)
                      #%module-begin)
          scribble-base-info
          scribble-base-reader-info

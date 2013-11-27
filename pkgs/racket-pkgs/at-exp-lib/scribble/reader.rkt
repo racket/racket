@@ -1,7 +1,7 @@
 ;; ============================================================================
-;; Implements the @-reader macro for embedding text in Scheme code.
+;; Implements the @-reader macro for embedding text in Racket code.
 
-#lang scheme/base
+#lang racket/base
 
 (require syntax/readerr)
 
@@ -391,7 +391,7 @@
           (cond [(not xs) xs]
                 [(or (null? xs) (not (null? (cdr xs))))
                  (read-error line col pos
-                             "a ~a|...| form in Scheme mode must have ~a"
+                             "a ~a|...| form in Racket mode must have ~a"
                              ch:command
                              "exactly one escaped expression")]
                 [else (car xs)]))
@@ -478,7 +478,7 @@
                      stx  ; no cmd part => just a parenthesized expression
                      cmd  ; no datums/lines => simple expression (no parens)
                      ;; impossible: either we saw []s or {}s, or we read a
-                     ;; scheme expression
+                     ;; racket expression
                      (internal-error 'dispatcher))]
           [(stx) (let ([ds (and datums (length datums))]
                        [ls (and lines  (length lines))])
@@ -552,7 +552,7 @@
   (define at-rt
     (make-readtable readtable command-char 'non-terminating-macro dispatcher))
   (define cmd-rt
-    ;; similar to plain Scheme (scribble, actually), but with `@' as usual and
+    ;; similar to plain Racket (scribble, actually), but with `@' as usual and
     ;; and `|' as a terminating macro characters (otherwise it behaves the
     ;; same; the only difference is that `a|b|c' is three symbols)
     (make-readtable readtable

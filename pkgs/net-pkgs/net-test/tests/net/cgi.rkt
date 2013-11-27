@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/cgi (only-in net/uri-codec current-alist-separator-mode)
          tests/eli-tester)
 

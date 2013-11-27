@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require scheme/match scheme/list scheme/string rackunit/log
-         (for-syntax scheme/base scheme/match))
+(require racket/match racket/list racket/string rackunit/log
+         (for-syntax racket/base racket/match))
 
 (define-syntax (safe stx)
   (syntax-case stx ()

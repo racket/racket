@@ -1,12 +1,12 @@
 #readerscribble/reader
-(module blurbs scheme/base
+(module blurbs racket/base
   (require scribble/struct
            scribble/manual
            scribble/scheme
            scribble/decode
            (for-label racket/draw
-                      scheme/base)
-           (for-syntax scheme/base))
+                      racket/base)
+           (for-syntax racket/base))
 
   (provide (all-defined-out))
 

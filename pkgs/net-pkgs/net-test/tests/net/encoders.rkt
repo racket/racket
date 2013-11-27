@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/base64 net/qp tests/eli-tester)
 
 (define tricky-strings
@@ -83,7 +83,7 @@
 
 #|
 Use this to compare base64 encode/decode against the unix utilities
-(require net/base64 scheme/system)
+(require net/base64 racket/system)
 (define (base64-encode* bstr)
   (let ([o (open-output-bytes)])
      (parameterize ([current-output-port o]

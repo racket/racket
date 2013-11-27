@@ -1,4 +1,4 @@
-(module reader scheme/base
+(module reader racket/base
   (require syntax/module-reader
            (only-in scribble/reader make-at-readtable))
 

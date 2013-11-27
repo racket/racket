@@ -2,7 +2,7 @@
 
 @(require scribble/manual
           scribble/bnf
-          (for-label scheme
+          (for-label racket
                      errortrace
                      errortrace/errortrace-lib
                      errortrace/stacktrace))
