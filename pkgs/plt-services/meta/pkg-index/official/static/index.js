@@ -56,10 +56,12 @@ $( document ).ready(function() {
                                             var it = $( "#" + spot + "_text" );
                                             it.keypress( function (e) {
                                                 if (e.which == 13) { fun (it.val()); } } );
+                                            it.focusout( function (e) {
+                                                fun (it.val()); } );
                                             it.val(initv).focus(); } ) ); } }
 
         $( "#pi_name" ).text( pkgi['name'] );
-        make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );        
+        make_editbutton ( "pi_name", pkgi['name'], submit_mod_name );
         if ( mypkg_p ) {
             $( "#pi_delete_button" ).click( function (e) {
                 dynamic_pkgsend( "/jsonp/package/del", { } );
