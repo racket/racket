@@ -219,9 +219,9 @@ See the scribble documentation on the planet/resolver module.
          (struct-out exn:fail:planet))
 
 ;; if #f, will not install packages and instead raise a exn:fail:install? error
-(define install? (make-parameter #t))
+(define install? (make-parameter #f))
 ;; if #f, will not download packages and instead raise a exn:fail:install? error
-(define download? (make-parameter #t))
+(define download? (make-parameter #f))
 (define-struct (exn:fail:planet exn:fail) ())
 
 ;; update doc index only once for a set of installs:
@@ -541,7 +541,7 @@ See the scribble documentation on the planet/resolver module.
   (unless (download?)
     (raise (make-exn:fail:planet
             (format
-             "PLaneT error: cannot download package ~s since the download? parameter is set to #f"
+             "PLaneT error: cannot download package ~s without permission. Give permission with download? parameter or use 'raco planet install'"
              (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg)))
             (current-continuation-marks))))
   ((if (USE-HTTP-DOWNLOADS?) download-package/http download-package/planet)
@@ -577,7 +577,7 @@ See the scribble documentation on the planet/resolver module.
   (unless (install?)
     (raise (make-exn:fail:planet
             (format
-             "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+             "PLaneT error: cannot install package ~s without permission. Give permission with download? parameter or use 'raco planet install'"
              (list (car pkg-path) pkg-name maj min))
             (current-continuation-marks))))
   (define owner (car pkg-path))
