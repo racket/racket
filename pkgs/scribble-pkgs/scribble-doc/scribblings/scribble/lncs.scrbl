@@ -29,7 +29,8 @@ Similar to @racket[include-section], but incorporates the document in the
 specified module as an abstract. The document must have no title or
 sub-parts.}
 
-@defform/subs[(authors auth ...)
+@defform/subs[#:literals (author)
+              (authors auth ...)
               ([auth (author pre-content-expr ...)
                      (author #:inst str-expr pre-content-expr ...)])
               #:contracts ([pre-content-expr pre-content?]
@@ -40,6 +41,9 @@ A replacement for @base-author from @racketmodname[scribble/base].
 The @racket[#:inst] should be a number that matches up to one of the
 arguments to @racket[institutes].
 }
+
+
+@defidform[author]{For use only in @racket[authors].}
 
 
 @defform[#:literals (institute)
