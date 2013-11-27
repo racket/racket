@@ -3,7 +3,8 @@
                                                        racket/generic))
 
 @(define posn-eval (make-base-eval))
-@(interaction-eval #:eval posn-eval (require (for-syntax racket/base)))
+@(interaction-eval #:eval posn-eval
+  (require racket/match racket/stream (for-syntax racket/base)))
 
 @title[#:tag "define-struct"]{Defining Structure Types: @racket[struct]}
 
@@ -102,6 +103,12 @@ must produce a @tech{structure type descriptor}. See
 and supertypes. If both @racket[super-id] and @racket[#:super] are
 provided, a syntax error is reported.
 
+@examples[#:eval posn-eval
+  (struct document (author title content))
+  (struct book document (publisher))
+  (struct paper (journal) #:super struct:document)
+]
+
 If the @racket[#:mutable] option is specified for an individual
 field, then the field can be mutated in instances of the structure
 type, and a @tech{mutator} procedure is bound. Supplying
@@ -109,6 +116,12 @@ type, and a @tech{mutator} procedure is bound. Supplying
 supplying it for all @racket[field]s. If @racket[#:mutable] is
 specified as both a @racket[field-option] and @racket[struct-option],
 a syntax error is reported.
+
+@examples[#:eval posn-eval
+  (struct cell ([content #:mutable]) #:transparent)
+  (define a-cell (cell 0))
+  (set-cell-content! a-cell 1)
+]
 
 The @racket[#:inspector], @racket[#:auto-value], and @racket[#:guard]
 options specify an inspector, value for automatic fields, and guard
@@ -119,6 +132,17 @@ multiple times, attaches a property value to the structure type; see
 @secref["structprops"] for more information on properties. The
 @racket[#:transparent] option is a shorthand for @racket[#:inspector
 #f].
+
+@examples[#:eval posn-eval
+  (struct point (x y) #:inspector #f)
+  (point 3 5)
+  (struct celcius (temp)
+    #:guard (λ (temp name)
+              (unless (and (real? temp) (>= temp -273.15))
+                (error "not a valid temperature"))
+              temp))
+  (celcius -275)
+]
 
 @margin-note{Use the @racket[prop:procedure] property to implement an
 @as-index{applicable structure}, use @racket[prop:evt] to create a
@@ -132,6 +156,12 @@ cannot have a guard or properties, so using @racket[#:prefab] with
 @racket[#:transparent], @racket[#:inspector], @racket[#:guard], or
 @racket[#:property] is a syntax error. If a supertype is specified, it
 must also be a @tech{prefab} structure type.
+
+@examples[#:eval posn-eval
+  (struct prefab-point (x y) #:prefab)
+  (prefab-point 1 2)
+  (prefab-point? #s(prefab-point 1 2))
+]
 
 If @racket[constructor-id] is supplied, then the @tech{transformer
 binding} of @racket[id] records @racket[constructor-id] as the
@@ -148,12 +178,25 @@ the symbolic form of @racket[constructor-id]. Only one of
 @racket[#:extra-constructor-name] and @racket[#:constructor-name]
 can be provided within a @racket[struct] form.
 
+@examples[#:eval posn-eval
+  (struct color (r g b) #:constructor-name -color)
+  (struct rectangle (w h color) #:extra-constructor-name rect)
+  (rectangle 13 50 (-color 192 157 235))
+  (rect 50 37 (-color 35 183 252))
+]
+
 If @racket[#:reflection-name symbol-expr] is provided, then
 @racket[symbol-expr] must produce a symbol that is used to identify
 the structure type in reflective operations such as
 @racket[struct-type-info]. It corresponds to the first argument of
 @racket[make-struct-type]. Structure printing uses the reflective
 name, as do the various procedures that are bound by @racket[struct].
+
+@examples[#:eval posn-eval
+  (struct circle (radius) #:reflection-name '<circle>)
+  (circle 15)
+  (circle-radius "bad")
+]
 
 If @racket[#:methods gen:name method-defs] is provided, then
 @racket[gen:name] must be a transformer binding for the static
@@ -162,12 +205,32 @@ The @racket[method-defs] define the methods of the @racket[gen:name]
 interface. A @racket[define/generic] form or auxiliary definitions
 and expressions may also appear in @racket[method-defs].
 
+@examples[#:eval posn-eval
+  (struct constant-stream (val)
+    #:methods gen:stream
+    [(define (stream-empty? stream) #f)
+     (define (stream-first stream)
+       (constant-stream-val stream))
+     (define (stream-rest stream) stream)])
+  (stream-ref (constant-stream 'forever) 0)
+  (stream-ref (constant-stream 'forever) 50)
+]
+
 If the @racket[#:omit-define-syntaxes] option is supplied, then
 @racket[id] is not bound as a transformer. If the
 @racket[#:omit-define-values] option is supplied, then none of the
 usual variables are bound, but @racket[id] is bound. If both are
 supplied, then the @racket[struct] form is equivalent to
 @racket[(begin)].
+
+@examples[#:eval posn-eval
+  (struct square (side) #:omit-define-syntaxes)
+  (match (square 5)
+    (code:comment "fails to match because syntax is omitted")
+    [(struct square x) x])
+  (struct ellipse (width height) #:omit-define-values)
+  ellipse-width
+]
 
 If @racket[#:auto] is supplied as a @racket[field-option], then the
 @tech{constructor} procedure for the structure type does not accept an
@@ -183,8 +246,6 @@ fields after it must also include @racket[#:auto], otherwise a syntax
 error is reported. If any @racket[field-option] or
 @racket[struct-option] keyword is repeated, other than
 @racket[#:property], a syntax error is reported.
-
-For serialization, see @racket[define-serializable-struct].
 
 @defexamples[
 #:eval posn-eval
@@ -203,7 +264,10 @@ For serialization, see @racket[define-serializable-struct].
 (color-posn-hue cp)
 cp
 (set-posn-z! cp 3)
-]}
+]
+
+For serialization, see @racket[define-serializable-struct].
+}
 
 
 @defform[(struct-field-index field-id)]{
