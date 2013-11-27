@@ -150,3 +150,7 @@ a.possible {
     text-align: center;
     color: red;
 }
+
+tr#pi_delete_row td {
+    text-align: center;
+}
