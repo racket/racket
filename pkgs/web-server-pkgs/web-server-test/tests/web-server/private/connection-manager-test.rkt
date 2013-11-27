@@ -3,7 +3,11 @@
          web-server/private/connection-manager)
 (provide connection-manager-tests)
 
-(start-connection-manager)
+(define cm (start-connection-manager))
+
+(module+ test
+  (require rackunit/text-ui)
+  (run-tests connection-manager-tests))
 
 (define connection-manager-tests
   (test-suite
@@ -15,7 +19,7 @@
     (check-true
      (let ([ib (open-input-bytes #"")]
            [ob (open-output-bytes)])
-       (new-connection 1 ib ob (make-custodian) #t)
+       (new-connection cm 1 ib ob (make-custodian) #t)
        (sleep 2)
        (with-handlers ([exn? (lambda _ #t)])
          (read ib) #f))))
@@ -25,7 +29,7 @@
     (check-true
      (let ([ib (open-input-bytes #"")]
            [ob (open-output-bytes)])
-       (new-connection 1 ib ob (make-custodian) #t)
+       (new-connection cm 1 ib ob (make-custodian) #t)
        (sleep 2)
        (with-handlers ([exn? (lambda _ #t)])
          (write 1 ob) #f))))
@@ -35,7 +39,7 @@
     (check-true
      (let* ([ib (open-input-bytes #"")]
             [ob (open-output-bytes)]
-            [c (new-connection 1 ib ob (make-custodian) #t)])
+            [c (new-connection cm 1 ib ob (make-custodian) #t)])
        (kill-connection! c)
        (and (with-handlers ([exn? (lambda _ #t)])
               (read ib) #f)
@@ -47,9 +51,9 @@
     (check-true
      (let* ([ib (open-input-bytes #"")]
             [ob (open-output-bytes)]
-            [c (new-connection 1 ib ob (make-custodian) #t)])
+            [c (new-connection cm 2 ib ob (make-custodian) #t)])
        (adjust-connection-timeout! c 1)
-       (sleep 2)
+       (sleep 4)
        (and (with-handlers ([exn? (lambda _ #t)])
               (read ib) #f)
             (with-handlers ([exn? (lambda _ #t)])

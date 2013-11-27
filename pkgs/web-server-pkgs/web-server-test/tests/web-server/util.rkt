@@ -52,7 +52,8 @@
 (define (make-mock-connection ib)
   (define ip (open-input-bytes ib))
   (define op (open-output-bytes))
-  (values (make-connection 0 (make-timer never-evt +inf.0 (lambda () (void)))
+  (define tm (start-timer-manager))
+  (values (make-connection 0 (make-timer tm never-evt +inf.0 (lambda () (void)))
                            ip op (make-custodian) #t)
           ip
           op))

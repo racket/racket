@@ -9,7 +9,12 @@
 This module provides a functionality for running
 procedures after a given amount of time, that may be extended.
 
-@defstruct[timer ([evt evt?]
+@defproc[(timer-manager? [x any/c]) boolean?]{
+ Determines if @racket[x] is a timer manager.
+}
+
+@defstruct[timer ([tm timer-manager?]
+                  [evt evt?]
                   [expire-seconds number?]
                   [action (-> void)])]{
  @racket[evt] is an @racket[alarm-evt] that is ready at @racket[expire-seconds].
@@ -17,11 +22,12 @@ procedures after a given amount of time, that may be extended.
 }
 
 @defproc[(start-timer-manager)
-         void]{
+         timer-manager?]{
  Handles the execution and management of timers.
 }
 
-@defproc[(start-timer [s number?]
+@defproc[(start-timer [tm timer-manager?]
+                      [s number?]
                       [action (-> void)])
          timer?]{
  Registers a timer that runs @racket[action] after @racket[s] seconds.

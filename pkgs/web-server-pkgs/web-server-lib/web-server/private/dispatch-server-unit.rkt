@@ -23,28 +23,33 @@
   (parameterize ([current-custodian the-server-custodian]
                  [current-server-custodian the-server-custodian]
                  #;[current-thread-initial-stack-size 3])
-    (start-connection-manager)
+    (define cm (start-connection-manager))
     (thread
      (lambda ()
-       (run-server 1 ; This is the port argument, but because we specialize listen, it is ignored.
-                   handle-connection
-                   #f
-                   (lambda (exn)
-                     ((error-display-handler)
-                      (format "Connection error: ~a" (exn-message exn))
-                      exn))
-                   (lambda (_ mw re)
-                     (with-handlers ([exn?
-                                      (λ (x)
-                                        (async-channel-put* confirmation-channel x)
-                                        (raise x))])
-                       (define listener (tcp-listen config:port config:max-waiting #t config:listen-ip))
-                       (let-values ([(local-addr local-port end-addr end-port) (tcp-addresses listener #t)])
-                         (async-channel-put* confirmation-channel local-port))
-                       listener))
-                   tcp-close
-                   tcp-accept
-                   tcp-accept/enable-break))))
+       (run-server
+        ;; This is the port argument, but because we specialize listen, it is ignored.
+        1
+        (handle-connection/cm cm)
+        #f
+        (lambda (exn)
+          ((error-display-handler)
+           (format "Connection error: ~a" (exn-message exn))
+           exn))
+        (lambda (_ mw re)
+          (with-handlers ([exn?
+                           (λ (x)
+                             (async-channel-put* confirmation-channel x)
+                             (raise x))])
+            (define listener
+              (tcp-listen config:port config:max-waiting #t config:listen-ip))
+            (let-values
+                ([(local-addr local-port end-addr end-port)
+                  (tcp-addresses listener #t)])
+              (async-channel-put* confirmation-channel local-port))
+            listener))
+        tcp-close
+        tcp-accept
+        tcp-accept/enable-break))))
   (lambda ()
     (custodian-shutdown-all the-server-custodian)))
 
@@ -57,7 +62,8 @@
   (parameterize ([current-custodian server-cust]
                  [current-server-custodian server-cust])
     (define connection-cust (make-custodian))
-    (start-connection-manager)
+    (define cm (start-connection-manager))
+    (define handle-connection (handle-connection/cm cm))
     (parameterize ([current-custodian connection-cust])
       (thread
        (lambda ()
@@ -67,11 +73,12 @@
                               (values "127.0.0.1"
                                       "127.0.0.1"))))))))
 
-;; handle-connection : input-port output-port (input-port -> string string) -> void
-(define (handle-connection ip op
-                           #:port-addresses [port-addresses tcp-addresses])
+;; handle-connection : connection-manager input-port output-port (input-port -> string string) -> void
+(define ((handle-connection/cm cm)
+         ip op
+         #:port-addresses [port-addresses tcp-addresses])
   (define conn
-    (new-connection config:initial-connection-timeout
+    (new-connection cm config:initial-connection-timeout
                     ip op (current-custodian) #f))
   (with-handlers
       ([(λ (x)
@@ -93,7 +100,7 @@
     ;; the connection is closed, then peek will get the EOF and the
     ;; connection will be closed. This shouldn't change any other
     ;; behavior: read-request is already blocking, peeking doesn't
-    ;; consume a byte, etc.  
+    ;; consume a byte, etc.
     (define the-evt
       (choice-evt
        (handle-evt

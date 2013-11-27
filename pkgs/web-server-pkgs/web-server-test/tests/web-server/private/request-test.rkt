@@ -19,7 +19,7 @@
                           (number->string (bytes-length b)))))]
          [ip (open-input-bytes b)]
          [op (open-output-bytes)])
-    (values (make-connection 0 (make-timer ip +inf.0 (lambda () (void)))
+    (values (make-connection 0 (make-timer tm ip +inf.0 (lambda () (void)))
                              ip op (make-custodian) #f)
             headers)))
 
@@ -38,11 +38,13 @@
         (read-bindings&post-data/raw (connection-i-port conn) #"POST" (string->url "http://localhost") headers))
     (lambda (f s) s)))
 
+(define tm (start-timer-manager))
+
 (define (test-read-request b)
   (define ip (open-input-bytes b))
   (define op (open-output-bytes))
   (define c
-    (make-connection 0 (make-timer ip +inf.0 (lambda () (void)))
+    (make-connection 0 (make-timer tm ip +inf.0 (lambda () (void)))
                      ip op (make-custodian) #f))
   (define-values (req flag)
     (read-request c 80 (λ (_) (values "to" "from"))))
@@ -82,7 +84,7 @@
                    (lambda ()
                      (define ip (open-input-string "GET http://127.0.0.1:8080/servlets/examples/hello.rkt?a=1&b: HTTP/1.1"))
                      (read-request
-                      (make-connection 0 (make-timer ip +inf.0 (lambda () (void)))
+                      (make-connection 0 (make-timer tm ip +inf.0 (lambda () (void)))
                                        ip
                                        (open-output-bytes) (make-custodian) #f)
                       8081

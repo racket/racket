@@ -6,10 +6,11 @@
          web-server/http
          "../util.rkt")
 
+(define tm (start-timer-manager))
 (define (write-response r [redact? #t])
   (define-values (i-port o-port) (make-pipe))
   (define conn
-    (connection 0 (start-timer +inf.0 void)
+    (connection 0 (start-timer tm +inf.0 void)
                 i-port o-port (make-custodian) #t))
   (output-response conn r)
   (close-output-port o-port)

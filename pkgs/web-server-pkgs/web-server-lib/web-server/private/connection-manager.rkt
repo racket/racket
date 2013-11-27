@@ -1,7 +1,9 @@
 #lang racket/base
 (require racket/contract
+         racket/match
          "timer.rkt")
 
+(struct connection-manager (i tm))
 (define-struct connection (id timer i-port o-port custodian close?)
   #:mutable)
 
@@ -13,20 +15,25 @@
           [o-port output-port?]
           [custodian custodian?]
           [close? boolean?])]
- [start-connection-manager (-> void)]
- [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
- [kill-connection! (connection? . -> . void)]
- [adjust-connection-timeout! (connection? number? . -> . void)])
+ [start-connection-manager
+  (-> connection-manager?)]
+ [new-connection 
+  (-> connection-manager? number? input-port? output-port? custodian? boolean?
+      connection?)]
+ [kill-connection!
+  (connection? . -> . void)]
+ [adjust-connection-timeout!
+  (connection? number? . -> . void)])
 
-;; start-connection-manager: custodian -> void
+;; start-connection-manager: custodian -> connection-manager
 ;; calls the timer manager
 (define (start-connection-manager)
-  (start-timer-manager))
+  (connection-manager (box 0) (start-timer-manager)))
 
-;; new-connection: number i-port o-port custodian -> connection
+;; new-connection: connection-manager number i-port o-port custodian -> connection
 ;; ask the connection manager for a new connection
-(define i (box 0))
-(define (new-connection time-to-live i-port o-port cust close?)
+(define (new-connection cm time-to-live i-port o-port cust close?)
+  (match-define (connection-manager i tm) cm)
   (define conn
     (make-connection
      ;; The id is just for debugging and isn't normally useful
@@ -35,7 +42,8 @@
   (define conn-wb (make-weak-box conn))
   (set-connection-timer! 
    conn
-   (start-timer time-to-live
+   (start-timer tm
+                time-to-live
                 (lambda () 
                   (cond
                     [(weak-box-value conn-wb)

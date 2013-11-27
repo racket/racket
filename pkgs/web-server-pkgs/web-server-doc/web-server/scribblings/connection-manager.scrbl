@@ -21,12 +21,17 @@ for doing this.
  The connection will last until @racket[timer] triggers.
 }
 
+@defproc[(connection-manager? [x any/c]) boolean?]{
+ Determines if @racket[x] is a connection manager.
+}
+
 @defproc[(start-connection-manager)
-         void]{
+         connection-manager?]{
  Runs the connection manager (now just the timer manager).
 }
 
-@defproc[(new-connection [timeout number?]
+@defproc[(new-connection [cm connection-manager?]
+                         [timeout number?]
                          [i-port input-port?]
                          [o-port output-port?]
                          [cust custodian?]
