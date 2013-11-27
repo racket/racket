@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/head tests/eli-tester)
 
 ;; a few tests of head.rkt -- JBC, 2006-07-31

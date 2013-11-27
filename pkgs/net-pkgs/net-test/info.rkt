@@ -13,5 +13,4 @@
                      "net-lib"
                      "racket-test"
                      "rackunit-lib"
-                     "scheme-lib"
                      "web-server-lib"))

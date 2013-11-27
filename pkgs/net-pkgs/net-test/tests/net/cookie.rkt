@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/cookie tests/eli-tester)
 
 ;; cookie tests --- JBM, 2006-12-01

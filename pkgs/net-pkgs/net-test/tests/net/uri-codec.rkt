@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/uri-codec tests/eli-tester)
 
 (provide tests)
