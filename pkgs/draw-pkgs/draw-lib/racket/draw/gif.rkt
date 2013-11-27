@@ -162,8 +162,9 @@
                  (let ([t (read-byte p)]) ; transparent color
                    (read-byte p) ; 0-sized block
                    (loop parsed-blocks t))]
-                [(= ext #xFE)
-                 ;; comment block
+                [(or (= ext #xFE)
+                     (= ext #xFF))
+                 ;; comment block or app data
                  (let loop ()
                    (let ([size (read-byte p)])
                      (unless (zero? size)
