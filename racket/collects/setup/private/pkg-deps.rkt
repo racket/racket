@@ -346,7 +346,10 @@
            [check?
             (for ([dep (in-list (doc-db-get-dependencies (build-path dest-dir "in.sxref") 
                                                          db-file
-                                                         #:attach (if main? #f main-db-file)))])
+                                                         #:attach (if main? 
+                                                                      #f
+                                                                      (and (file-exists? main-db-file)
+                                                                           main-db-file))))])
               (check-doc! pkg dep dest-dir))]
            [else
             (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
