@@ -78,8 +78,15 @@
                     (thread
                      (λ ()
                        (with-handlers ([exn:input-port-closed? void])
-                         (copy-port stderr error-port
-                                    (current-error-port))))))
+                         (define cop (current-output-port))
+                         (let loop ()
+                           (define l (read-bytes-line stderr))
+                           (unless (eof-object? l)
+                             (displayln l error-port)
+                             (displayln (format "STDERR: ~a" l) cop)
+                             (flush-output error-port)
+                             (flush-output cop)
+                             (loop)))))))
                   (to-proc 'wait)
                   (define cmd-status (to-proc 'exit-code))
                   (when stdout (close-input-port stdout))
