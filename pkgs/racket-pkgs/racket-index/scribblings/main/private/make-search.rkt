@@ -107,11 +107,12 @@
             (car body)
             (string-append* `("[" ,@(add-between body ",") "]")))))))
   (define manual-refs (make-hash))
+  (define idx -1)
   (define l
     (for/list ([i (get-index-entries sec ri)] 
-               [idx (in-naturals)]
                ;; don't index constructors (the class itself is already indexed)
                #:unless (constructor-index-desc? (list-ref i 3)))
+      (set! idx (add1 idx))
       ;; i is (list tag (text ...) (element ...) index-desc)
       (define-values (tag texts elts desc) (apply values i))
       (define text (string-downcase (string-join texts)))
