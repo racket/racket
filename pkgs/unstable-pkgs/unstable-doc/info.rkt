@@ -31,11 +31,7 @@
                      "gui-doc"
                      "pict-doc"
                      "scribble-doc"
-                     "slideshow-doc"
-
-                     ;; because the 2d cond docs point
-                     ;; to the drracket keybindings docs
-                     "drracket"))
+                     "slideshow-doc"))
 
 (define pkg-desc "documentation part of \"unstable\"")
 
