@@ -12,6 +12,7 @@ PLANNED FEATURES:
            racket/match
            raco/command-name
            
+           (only-in planet/resolver download?)
            planet/config
            planet/private/planet-shared
            planet/util
@@ -160,17 +161,18 @@ This command does not unpack or install the named .plt file."
             (fail "Could not find matching package")))))
   
   (define (download/no-install owner pkg majstr minstr)
-    (let* ([maj (read-from-string majstr)]
-           [min (read-from-string minstr)]
-           [full-pkg-spec (get-package-spec owner pkg maj min)])
-      (when (file-exists? pkg)
-        (fail "Cannot download, there is a file named ~a in the way" pkg))
-      (match (download-package full-pkg-spec)
-        [(list #t path maj min) 
-         (copy-file path pkg)
-         (printf "Downloaded ~a package version ~a.~a\n" pkg maj min)]
-	[_ 
-        (fail "Could not find matching package")])))
+    (parameterize ([download? #t])
+      (let* ([maj (read-from-string majstr)]
+             [min (read-from-string minstr)]
+             [full-pkg-spec (get-package-spec owner pkg maj min)])
+        (when (file-exists? pkg)
+          (fail "Cannot download, there is a file named ~a in the way" pkg))
+        (match (download-package full-pkg-spec)
+          [(list #t path maj min) 
+           (copy-file path pkg)
+           (printf "Downloaded ~a package version ~a.~a\n" pkg maj min)]
+          [_ 
+           (fail "Could not find matching package")]))))
   
   ;; params->full-pkg-spec : string string string string -> pkg
   ;; gets a full package specifier for the given specification

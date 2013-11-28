@@ -90,12 +90,14 @@
 
 ;; download/install-pkg : string string nat nat -> pkg | #f
 (define (download/install-pkg owner name maj min)
-  (let* ([pspec (pkg-spec->full-pkg-spec (list owner name maj min) #f)]
-         [upkg (get-package-from-server pspec)])
-    (cond
-      [(uninstalled-pkg? upkg)
-       (pkg-promise->pkg upkg)]
-      [else #f])))
+  (parameterize ([install? #t]
+                 [download? #t])
+    (let* ([pspec (pkg-spec->full-pkg-spec (list owner name maj min) #f)]
+           [upkg (get-package-from-server pspec)])
+      (cond
+        [(uninstalled-pkg? upkg)
+         (pkg-promise->pkg upkg)]
+        [else #f]))))
 
 ;; current-cache-contents : -> ((string ((string ((nat (nat ...)) ...)) ...)) ...)
 ;; returns the packages installed in the local PLaneT cache
