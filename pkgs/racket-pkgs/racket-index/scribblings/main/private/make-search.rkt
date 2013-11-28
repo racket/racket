@@ -21,11 +21,13 @@
          "utils.rkt"
          (for-syntax racket/base)
          (for-syntax racket/runtime-path)
-         (for-syntax compiler/cm-accomplice))
+         (for-syntax compiler/cm-accomplice)
+         "index-scope.rkt")
 
 (provide make-search)
 
 (define-runtime-path search-script "search.js")
+(define-runtime-path search-merge-script "search-merge.js")
 
 ;; this file is used as a trampoline to set a context (a pre-filter cookie) and
 ;; then hop over to the search page (the search page can do it itself, but it's
@@ -38,8 +40,10 @@
 ;; installing, and they would just do that when appropriate.
 (begin-for-syntax
   (define-runtime-path search-script "search.js")
+  (define-runtime-path search-merge-script "search-merge.js")
   (define-runtime-path search-context-page "search-context.html")
   (register-external-file search-script)
+  (register-external-file search-merge-script)
   (register-external-file search-context-page))
 
 (define (quote-string val)
@@ -57,7 +61,7 @@
       ;; Quote unicode chars:
       (regexp-replace* #px"[^[:ascii:]]" str hex4)))
 
-(define (make-script user-dir? renderer sec ri)
+(define (make-script as-empty? user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
   (define span-classes null)
   ;; To make the index smaller, html contents is represented as one of these:
@@ -109,7 +113,9 @@
   (define manual-refs (make-hash))
   (define idx -1)
   (define l
-    (for/list ([i (get-index-entries sec ri)] 
+    (for/list ([i (if as-empty?
+                      null
+                      (get-index-entries sec ri))] 
                ;; don't index constructors (the class itself is already indexed)
                #:unless (constructor-index-desc? (list-ref i 3)))
       (set! idx (add1 idx))
@@ -166,6 +172,8 @@
                          (quote-string href) ","
                          html "," from-libs "]")))
 
+  (define user (if user-dir? "user_" ""))
+
   (with-output-to-file (build-path dest-dir "plt-index.js") #:exists 'truncate
     (lambda ()
       (for-each
@@ -179,7 +187,7 @@
           @||
           // classes to be used for compact representation of html strings in
           // plt_search_data below (see also the UncompactHtml function)
-          var plt_span_classes = [
+          var plt_@,|user|span_classes = [
             @,@(add-between (map (lambda (x) (quote-string (car x)))
                                  (reverse span-classes))
                             ",\n  ")
@@ -192,12 +200,12 @@
           //   index into plt_span_classes (note: this is recursive)
           // - from_lib is an array of module names for bound identifiers,
           //   or the string "module" for a module entry
-          var plt_search_data = [
+          var plt_@,|user|search_data = [
           @,@(add-between l ",\n")
           ];
           @||
           // array of pointers to the previous array, for items that are manuals
-          var plt_manual_ptrs = {
+          var plt_@,|user|manual_ptrs = {
             @,@(let* ([ms (hash-map manual-refs cons)]
                       [ms (sort ms < #:key cdr)]
                       [ms (map (lambda (x)
@@ -207,23 +215,42 @@
                  (add-between ms ",\n  "))};
           @||})))
 
-  (for ([src (list search-script search-context-page)])
+  (for ([src (append (list search-script search-context-page)
+                     (if user-dir? (list search-merge-script) null))])
     (define dest (build-path dest-dir (file-name-from-path src)))
     (when (file-exists? dest) (delete-file dest))
     (copy-file src dest)))
 
-(define (make-search user-dir?)
+(define (make-search in-user-dir?)
+  (define main-at-user? (index-at-user?))
+  (define user-dir? (and in-user-dir? (not main-at-user?)))
   (make-splice
    (list
     (make-paragraph
      plain
-     (list
-      (script-ref "plt-index.js"
-                  #:noscript
-                  @list{Sorry, you must have JavaScript to use this page.})
-      (script-ref "search.js")
-      (make-render-element #f null
-                           (lambda (r s i) (make-script user-dir? r s i)))))
+     (append
+      (if user-dir?
+          (list (script-ref (url->string
+                             (path->url
+                              (build-path (find-doc-dir) "search" "plt-index.js")))))
+          null)
+      (list
+       (script-ref "plt-index.js"
+                   #:noscript
+                   @list{Sorry, you must have JavaScript to use this page.})
+       (script-ref "search.js"))
+      (if user-dir?
+          (list (script-ref "search-merge.js"))
+          null)
+      (list
+       (make-render-element #f null
+                            (lambda (r s i) (make-script
+                                             ;; If there's no installaton-scope docs,
+                                             ;; don't both creating "main" search page:
+                                             (and main-at-user?
+                                                  (not in-user-dir?))
+                                             user-dir?
+                                             r s i))))))
     (make-paragraph (make-style #f
                                 (list 'div
                                       (make-attributes '([id . "plt_search_container"]))))

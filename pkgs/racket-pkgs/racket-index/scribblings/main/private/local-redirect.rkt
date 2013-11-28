@@ -5,41 +5,51 @@
          racket/match
          setup/dirs
          net/url
-         scribble/html-properties)
+         scribble/html-properties
+         "index-scope.rkt")
 
 (provide make-local-redirect)
 
-(define rewrite-code
+(define (rewrite-code user?)
+  (define prefix (if user? "user_" ""))
   @string-append|{
-    function bsearch(str, start, end) {
+    function |@|prefix|bsearch(str, start, end) {
        if (start >= end)
          return false;
        else {
          var mid = Math.floor((start + end) / 2);
-         if (link_targets[mid][0] == str)
+         if (|@|prefix|link_targets[mid][0] == str)
            return mid;
-         else if (link_targets[mid][0] < str)
-           return bsearch(str, mid+1, end);
+         else if (|@|prefix|link_targets[mid][0] < str)
+           return |@|prefix|bsearch(str, mid+1, end);
          else
-           return bsearch(str, start, mid);
+           return |@|prefix|bsearch(str, start, mid);
        }
     }
 
-    function convert_all_links() {
+    var |@|prefix|link_target_prefix = false;
+
+    function |@|prefix|convert_all_links() {
        var elements = document.getElementsByClassName("Sq");
        for (var i = 0; i < elements.length; i++) {
          var elem = elements[i];
          var n = elem.href.match(/tag=[^&]*/);
          if (n) {
-           var pos = bsearch(decodeURIComponent(n[0].substring(4)), 0, link_targets.length);
+           var pos = |@|prefix|bsearch(decodeURIComponent(n[0].substring(4)),
+                                       0,
+                                       |@|prefix|link_targets.length);
            if (pos) {
-             elem.href = link_targets[pos][1];
+             var p = |@|prefix|link_targets[pos][1];
+             if (|@|prefix|link_target_prefix) {
+               p = |@|prefix|link_target_prefix + p;
+             }
+             elem.href = p;
            }
          }
        }
     }
 
-    AddOnLoad(convert_all_links);
+    AddOnLoad(|@|prefix|convert_all_links);
   }|)
 
 (define search-code
@@ -66,15 +76,29 @@
  }|)
 
 (define (make-local-redirect user?)
+  (define main-at-user? (index-at-user?))
   (list
    (make-render-element
     #f
     null
     (lambda (renderer p ri)
-      (define keys (resolve-get-keys #f ri (lambda (v) #t)))
+      (define keys (if (and main-at-user? (not user?))
+                       ;; If there's no installation-scope "doc", then
+                       ;; the "main" redirection table is useless.
+                       null
+                       (resolve-get-keys #f ri (lambda (v) #t))))
       (define (target? v) (and (vector? v) (= 5 (vector-length v))))
-      (define dest (build-path (send renderer get-dest-directory #t) 
-                               "local-redirect.js"))
+      (define dest-dir (send renderer get-dest-directory #t))
+      (define (make-dest user?)
+        (build-path dest-dir
+                    (if user?
+                        "local-user-redirect.js"
+                        "local-redirect.js")))
+     (define dest (make-dest user?))
+     (define alt-dest (make-dest (not user?)))
+      ;; Whether references include user and/or main docs is determined
+      ;; by 'depends-all-main, 'depends-all-user, or 'depends-all flag
+      ;; in "info.rkt".
       (define db
         (sort (for/list ([k (in-list keys)]
                          #:when (tag? k)
@@ -91,16 +115,31 @@
          (fprintf o "//  This script is included by generated documentation to rewrite\n")
          (fprintf o "//  links expressed as tag queries into local-filesystem links.\n")
          (newline o)
-         (fprintf o "var link_targets = [")
+         (fprintf o "link_target_prefix = ~s;\n" (url->string
+                                                  (path->url
+                                                   (path->directory-path
+                                                    (build-path (find-doc-dir) "local-redirect")))))
+         (newline o)
+         (fprintf o "var ~alink_targets = [" (if user? "user_" ""))
          (for ([e (in-list db)]
                [i (in-naturals)])
            (fprintf o (if (zero? i) "\n" ",\n"))
            (fprintf o " [~s, ~s]" (car e) (cadr e)))
          (fprintf o "];\n\n")
-         (fprintf o rewrite-code)))))
+         (fprintf o (rewrite-code user?))))
+      (unless (file-exists? alt-dest)
+        ;; make empty alternate file; in `user?` mode, this
+        ;; file will get used only when "racket-index" is not
+        ;; in installation scope
+        (call-with-output-file* alt-dest void))))
    (element
     (style #f (list
-               (js-addition (string->url "local-redirect.js"))
+               (js-addition (if (and user? (not main-at-user?))
+                                (path->url (build-path (find-doc-dir)
+                                                       "local-redirect" 
+                                                       "local-redirect.js"))
+                                (string->url "local-redirect.js")))
+               (js-addition (string->url "local-user-redirect.js"))
                (js-addition
                 (string->bytes/utf-8 search-code))))
     null)))
