@@ -14,7 +14,7 @@
 
 (define cached-xref #f)
 
-(define (get-dests tag no-user?)
+(define (get-dests tag no-user? no-main?)
   (define main-dirs
     (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-user))])
       (values k #t)))
@@ -39,7 +39,8 @@
                            1)])
        (if (not (and (len . >= . 3) (memq 'omit (caddr d))))
            (let ([d (doc-path dir name flags (hash-ref main-dirs dir #f) 
-                              (if no-user? 'never 'false-if-missing))])
+                              (if no-user? 'never 'false-if-missing)
+                              #:main? (not no-main?))])
              (if d
                  (for*/list ([i (in-range (add1 out-count))]
                              [p (in-value (build-path d (format "out~a.sxref" i)))]
@@ -67,11 +68,12 @@
            ;; provide a root for deserialization:
            (path-only dest))))))
 
-(define (make-key->source db-path no-user? quiet-fail? register-shutdown!)
-  (define main-db (cons (or db-path
-                            (build-path (find-doc-dir) "docindex.sqlite"))
-                        ;; cache for a connection:
-                        (box #f)))
+(define (make-key->source db-path no-user? no-main? quiet-fail? register-shutdown!)
+  (define main-db (and (not no-main?)
+                       (cons (or db-path
+                                 (build-path (find-doc-dir) "docindex.sqlite"))
+                             ;; cache for a connection:
+                             (box #f))))
   (define user-db (and (not no-user?)
                        (cons (build-path (find-user-doc-dir) "docindex.sqlite")
                              ;; cache for a connection:
@@ -83,13 +85,13 @@
                             (if (box-cas! (cdr p) c #f)
                                 (doc-db-disconnect c)
                                 (close p))))
-                        (close main-db)
+                        (when main-db (close main-db))
                         (when user-db (close user-db))))
   (define done-ht (make-hash)) ; tracks already-loaded documents
   (define forced-all? #f)
   (define (force-all)
     ;; force all documents
-    (define thunks (get-reader-thunks no-user? quiet-fail? done-ht))
+    (define thunks (get-reader-thunks no-user? no-main? quiet-fail? done-ht))
     (set! forced-all? #t)
     (lambda () 
       ;; return a procedure so we can produce a list of results:
@@ -128,10 +130,10 @@
       (unless forced-all?
         (force-all))])))
 
-(define (get-reader-thunks no-user? quiet-fail? done-ht)
+(define (get-reader-thunks no-user? no-main? quiet-fail? done-ht)
   (map (dest->source done-ht quiet-fail?)
-       (filter values (append (get-dests 'scribblings no-user?)
-                              (get-dests 'rendered-scribblings no-user?)))))
+       (filter values (append (get-dests 'scribblings no-user? no-main?)
+                              (get-dests 'rendered-scribblings no-user? no-main?)))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
@@ -141,11 +143,12 @@
              cached-xref)))
 
 (define (make-collections-xref #:no-user? [no-user? #f]
+                               #:no-main? [no-main? #f]
                                #:doc-db [db-path #f]
                                #:quiet-fail? [quiet-fail? #f]
                                #:register-shutdown! [register-shutdown! void])
   (if (doc-db-available?)
       (load-xref null
-                 #:demand-source (make-key->source db-path no-user? quiet-fail?
+                 #:demand-source (make-key->source db-path no-user? no-main? quiet-fail?
                                                    register-shutdown!))
-      (load-xref (get-reader-thunks no-user? quiet-fail? (make-hash)))))
+      (load-xref (get-reader-thunks no-user? no-main? quiet-fail? (make-hash)))))

@@ -178,8 +178,7 @@
           (map (lambda (d)
                  (let* ([flags (cadr d)]
                         [under-main?
-                         (and (not (memq 'main-doc-root flags))
-                              (not (memq 'user-doc-root flags))
+                         (and (not (memq 'user-doc-root flags))
                               (not (memq 'user-doc flags))
                               (or (memq 'main-doc flags)
                                   (hash-ref main-dirs dir #f)))])
@@ -220,6 +219,8 @@
                          make-user?))
      doc<?))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
+  (define main-doc-exists? (ormap (lambda (d) (member 'main-doc-root (doc-flags d))) 
+                                  main-docs))
 
   (when (and (or (not only-dirs) tidy?)
              (not avoid-main?)
@@ -283,7 +284,8 @@
 
   (log-setup-info "getting document information")
   (define (make-sequential-get-info only-fast?)
-    (get-doc-info only-dirs latex-dest auto-main? auto-user? 
+    (get-doc-info only-dirs latex-dest
+                  auto-main? auto-user? main-doc-exists?
                   with-record-error setup-printf #f 
                   only-fast? force-out-of-date?
                   no-lock))
@@ -315,7 +317,8 @@
                  (min worker-count (length (list-tail docs num-sequential)))
                  (lambda (workerid)
                    (init-lock-ch!)
-                   (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?
+                   (list workerid program-name (verbose) only-dirs latex-dest
+                         auto-main? auto-user? main-doc-exists?
                          force-out-of-date? lock-ch))
                  (list-queue
                   (list-tail docs num-sequential)
@@ -327,8 +330,10 @@
                   (lambda (work errmsg outstr errstr) 
                     (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
                  (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
-                                                     auto-main? auto-user? force-out-of-date? lock-ch)
-                   (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
+                                                     auto-main? auto-user? main-doc-exists?
+                                                     force-out-of-date? lock-ch)
+                   (define ((get-doc-info-local program-name only-dirs latex-dest
+                                                auto-main? auto-user? main-doc-exists?
                                                 force-out-of-date? lock
                                                 send/report) 
                             doc)
@@ -345,7 +350,8 @@
                                           (raise exn))])
                          (go)))
                      (s-exp->fasl (serialize 
-                                   ((get-doc-info only-dirs latex-dest auto-main? auto-user?  
+                                   ((get-doc-info only-dirs latex-dest
+                                                  auto-main? auto-user? main-doc-exists?
                                                   with-record-error setup-printf workerid
                                                   #f force-out-of-date? lock)
                                     (deserialize (fasl->s-exp doc))))))
@@ -353,7 +359,8 @@
                    (verbose verbosev)
                    (match-message-loop
                     [doc (send/success 
-                          ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
+                          ((get-doc-info-local program-name only-dirs latex-dest
+                                               auto-main? auto-user? main-doc-exists?
                                                force-out-of-date? (lock-via-channel lock-ch)
                                                send/report) 
                            doc))])))))))))
@@ -391,8 +398,8 @@
         (get-files! #f)
         (doc-db-clean-files user-db files))))
 
-  (define main-db (find-doc-db-path latex-dest #f))
-  (define user-db (find-doc-db-path latex-dest #t))
+  (define main-db (find-doc-db-path latex-dest #f main-doc-exists?))
+  (define user-db (find-doc-db-path latex-dest #t main-doc-exists?))
 
   (define (make-loop first? iter)
     (let ([infos (filter-not info-failed? infos)]
@@ -577,7 +584,7 @@
       (for ([info (in-list infos)])
         (when (and (info-need-in-write? info)
                    (not (info-need-run? info)))
-          (write-in/info latex-dest info no-lock)
+          (write-in/info latex-dest info no-lock main-doc-exists?)
           (set-info-need-in-write?! info #f)))
       ;; Iterate, if any need to run:
       (when (and (ormap info-need-run? infos) (iter . < . 30))
@@ -613,12 +620,13 @@
               (for ([i (in-list need-rerun)])
                 (say-rendering i #f)
                 (prep-info! i)
-                (update-info! i (build-again! latex-dest i with-record-error no-lock)))
+                (update-info! i (build-again! latex-dest i with-record-error no-lock 
+                                              main-doc-exists?)))
               (parallel-do 
                (min worker-count (length need-rerun))
                (lambda (workerid)
                  (init-lock-ch!)
-                 (list workerid (verbose) latex-dest lock-ch))
+                 (list workerid (verbose) latex-dest lock-ch main-doc-exists?))
                (list-queue
                 need-rerun
                 (lambda (i workerid) 
@@ -639,7 +647,8 @@
                   (update-info! i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr) 
                   (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
-               (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch)
+               (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch
+                                                    main-doc-exists?)
                  (define (with-record-error cc go fail-k)
                    (with-handlers ([exn:fail?
                                     (lambda (x)
@@ -653,7 +662,8 @@
                     (s-exp->fasl (serialize (build-again! latex-dest
                                                           (deserialize (fasl->s-exp info))
                                                           with-record-error
-                                                          (lock-via-channel lock-ch)))))])))))
+                                                          (lock-via-channel lock-ch)
+                                                          main-doc-exists?))))])))))
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -671,7 +681,8 @@
   (when infos
     (make-loop #t 0)
     ;; cache info to disk
-    (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i no-lock))))
+    (for ([i infos] #:when (info-need-in-write? i))
+      (write-in/info latex-dest i no-lock main-doc-exists?))))
 
 (define shared-style-files
   (list "scribble.css"
@@ -801,12 +812,15 @@
            (build-path latex-dest (path-replace-suffix name (string-append "." file))))]
         [(not latex-dest) (build-path (doc-dest-dir doc) file)]))
 
-(define (find-doc-db-path latex-dest user?)
+(define (find-doc-db-path latex-dest user? main-doc-exists?)
   (cond
    [latex-dest
     (build-path latex-dest "docindex.sqlite")]
    [else
-    (build-path (if user? (find-user-doc-dir) (find-doc-dir)) "docindex.sqlite")]))
+    (build-path (if (or user? (not main-doc-exists?))
+                    (find-user-doc-dir)
+                    (find-doc-dir))
+                "docindex.sqlite")]))
 
 (define (can-build? only-dirs doc [auto-main? #f] [auto-user? #f])
   (or (not only-dirs)
@@ -874,21 +888,23 @@
       (for ([i skip]) (fasl->s-exp x))
       (fasl->s-exp x))))
 
-(define (find-db-file doc latex-dest)
-  (define p (find-doc-db-path latex-dest (not (main-doc? doc))))
+(define (find-db-file doc latex-dest main-doc-exists?)
+  (define p (find-doc-db-path latex-dest (not (main-doc? doc)) main-doc-exists?))
   (define-values (base name dir?) (split-path p))
   (unless (directory-exists? base)
     (make-directory* base))
   p)
 
 (define (xref-transfer-db renderer ci doc latex-dest
+                          main-doc-exists?
                           #:quiet-fail? [quiet-fail? #f])
   (define shutdown void)
   (define xref (make-collections-xref
                 #:quiet-fail? quiet-fail?
                 #:no-user? (main-doc? doc)
+                #:no-main? (not main-doc-exists?)
                 #:doc-db (and latex-dest
-                              (find-doc-db-path latex-dest #t))
+                              (find-doc-db-path latex-dest #t main-doc-exists?))
                 #:register-shutdown! (lambda (s)
                                        (set! shutdown s))))
   (xref-transfer-info renderer ci xref)
@@ -903,7 +919,8 @@
   (close-output-port o)
   (sha1 i))
 
-(define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
+(define ((get-doc-info only-dirs latex-dest
+                       auto-main? auto-user? main-doc-exists?
                        with-record-error setup-printf workerid 
                        only-fast? force-out-of-date? lock)
          doc)
@@ -917,12 +934,13 @@
                (or (not (directory-exists? (doc-dest-dir doc)))
                    force-out-of-date?
                    (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
-      (move-documentation-into-place doc rendered-dir setup-printf workerid lock)))
+      (move-documentation-into-place doc rendered-dir setup-printf workerid lock
+                                     main-doc-exists?)))
 
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
-         [db-file (find-db-file doc latex-dest)]
+         [db-file (find-db-file doc latex-dest main-doc-exists?)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
@@ -1021,9 +1039,10 @@
                                                          (exn-message exn)))
                                       (for-each delete-file info-out-files)
                                       (delete-file info-in-file)
-                                      ((get-doc-info only-dirs latex-dest auto-main?
-                                                     auto-user? with-record-error
-                                                     setup-printf workerid #f #f lock)
+                                      ((get-doc-info only-dirs latex-dest
+                                                     auto-main? auto-user? main-doc-exists?
+                                                     with-record-error setup-printf workerid 
+                                                     #f #f lock)
                                        doc))])
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
@@ -1066,7 +1085,9 @@
                         ;; It's ok if cross-reference information isn't available
                         ;; at this point, but we can sometimes save another iteration
                         ;; if the information is available at this pass.
-                        [db-shutdown (xref-transfer-db renderer ci doc latex-dest #:quiet-fail? #t)]
+                        [db-shutdown (xref-transfer-db renderer ci doc latex-dest
+                                                       main-doc-exists?
+                                                       #:quiet-fail? #t)]
                         [ri (send renderer resolve (list v) (list dest-dir) ci)]
                         [out-vs (and info-out-time
                                      (with-handlers ([exn:fail? (lambda (exn) #f)])
@@ -1116,7 +1137,7 @@
                        (set-info-need-out-write?! info #f)
                        (set-info-done-time! info (current-inexact-milliseconds)))
                      (when (info-need-in-write? info)
-                       (render-time "xref-in" (write-in/info latex-dest info lock))
+                       (render-time "xref-in" (write-in/info latex-dest info lock main-doc-exists?))
                        (set-info-need-in-write?! info #f))
 
                      (let ([data (cons src-sha1 aux-sha1s)])
@@ -1154,7 +1175,8 @@
         (call-with-output-file* dest void)))
     (hash-set! done dir #t)))
 
-(define (move-documentation-into-place doc src-dir setup-printf workerid lock)
+(define (move-documentation-into-place doc src-dir setup-printf workerid lock
+                                       main-doc-exists?)
   (with-handlers ([exn:fail? (lambda (exn)
                                ;; On any failure, log the error and give up.
                                ;; Maybe further actions are appropriate, but
@@ -1187,7 +1209,7 @@
         (define providess (call-with-input-file*
                            provides-path
                            (lambda (in) (fasl->s-exp in))))
-        (define db-file (find-db-file doc #f))
+        (define db-file (find-db-file doc #f main-doc-exists?))
         (for ([provides (in-list providess)]
               [n (in-naturals)])
           (define filename (sxref-path #f doc (format "out~a.sxref" n)))
@@ -1281,7 +1303,8 @@
                  searches
                  scis))])]))
 
-(define (build-again! latex-dest info-or-list with-record-error lock)
+(define (build-again! latex-dest info-or-list with-record-error lock
+                      main-doc-exists?)
   ;; If `info-or-list' is a list, then we're in a parallel build, and
   ;; it provides just enough of `info' from the main place to re-build
   ;; in this place along with the content of "in.sxref".
@@ -1322,7 +1345,7 @@
               [dest-dir (pick-dest latex-dest doc)]
               [fp (render-time "traverse" (send renderer traverse (list v) (list dest-dir)))]
               [ci (render-time "collect" (send renderer collect (list v) (list dest-dir) fp))]
-              [db-shutdown (xref-transfer-db renderer ci doc latex-dest)]
+              [db-shutdown (xref-transfer-db renderer ci doc latex-dest main-doc-exists?)]
               [ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
               [scis (render-time "serialize" (send renderer serialize-infos ri (add1 (doc-out-count doc)) v))]
               [defss (render-time "defined" (send renderer get-defineds ci (add1 (doc-out-count doc)) v))]
@@ -1333,7 +1356,7 @@
               [out-delta? (not (for/and ([sci scis]
                                          [ff-sci ff-scis])
                                  (serialized=? sci ff-sci)))]
-              [db-file (find-db-file doc latex-dest)])
+              [db-file (find-db-file doc latex-dest main-doc-exists?)])
          (verbose/log "~a~afor ~a"
                       (if in-delta? "New in " "")
                       (cond [out-delta? "New out "]
@@ -1471,7 +1494,7 @@
                (doc-db-add-searches db-file searches filename))))
           void))
 
-(define (write-in/info latex-dest info lock)
+(define (write-in/info latex-dest info lock main-doc-exists?)
   (when (eq? 'delayed (info-undef info))
     (read-delayed-in! info latex-dest))
   (write-in latex-dest
@@ -1480,7 +1503,7 @@
             (info-undef info)
             (info-deps->rel-doc-src-file info)
             (info-searches info)
-            (find-db-file (info-doc info) latex-dest)
+            (find-db-file (info-doc info) latex-dest main-doc-exists?)
             lock))
 
 (define (rel->path r)
