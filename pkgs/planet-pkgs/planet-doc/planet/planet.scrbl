@@ -8,6 +8,7 @@
      planet/util
      planet/version
      planet/syntax
+     planet/resolver
      planet/scribble)
    scribble/bnf)
 
@@ -159,6 +160,15 @@ Normally-installed packages:
 Once that is complete, PLaneT will use that version of the
 package for any subsequent @racket[require]s and won't try
 to use the network.
+
+If you wish to ensure that PLaneT won't use the network even if your
+operating system allows it, you can use the @racket[download?]
+parameter of the @racketmodname[planet/resolver] module to control
+whether it attempts to download files. Similarly, you can use the
+@racket[install?] parameter to prevent installation. Finally, you can
+block access at the operating system level to the path returned by
+@racket[(PLANET-BASE-DIR)] to control which operating system users can
+install PLaneT packages.
 
 @subsection{Fine-Grained Control Over Package Imports}
 
