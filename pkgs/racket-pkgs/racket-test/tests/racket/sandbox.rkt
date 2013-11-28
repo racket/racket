@@ -34,7 +34,7 @@
       (subprocess (current-output-port) 
                   (current-input-port)
                   (current-error-port)
-                  "/usr/bin/cat"))))
+                  (find-executable-path "cat")))))
   (check-exn
    exn:fail:resource:time?
    (λ ()
