@@ -3,9 +3,9 @@
 (define collection 'multi)
 
 (define deps
-  '("db-lib" "db-doc" "db-test" "base"))
+  '("db-lib" "db-doc" "base"))
 (define implies
-  '("db-lib" "db-doc" "db-test"))
+  '("db-lib" "db-doc"))
 
 (define pkg-desc "Database connectivity")
 
