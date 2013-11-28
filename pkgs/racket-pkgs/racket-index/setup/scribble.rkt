@@ -146,7 +146,8 @@
     (log-setup-info "latex working directory: ~a" latex-dest))
   (define (scribblings-flag? sym)
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
-                         depends-all depends-all-main no-depend-on always-run)))
+                         depends-all depends-all-main depends-all-user
+                         no-depend-on always-run)))
   (define (validate-scribblings-infos infos)
     (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1] [order-hint 0])
       (and (string? path) (relative-path? path)
@@ -435,7 +436,9 @@
               [added? #f]
               [deps (make-hasheq)]
               [known-deps (make-hasheq)]
-              [all-main? (memq 'depends-all-main (doc-flags (info-doc info)))])
+              [all-main? (memq 'depends-all-main (doc-flags (info-doc info)))]
+              [all-user? (memq 'depends-all-user (doc-flags (info-doc info)))]
+              [all? (memq 'depends-all (doc-flags (info-doc info)))])
           ;; Convert current deps from paths to infos, keeping paths that have no info
           (set-info-deps!
            info
@@ -458,10 +461,14 @@
                   (hash-set! deps i #t)
                   ;; Path has no info; normally keep it as expected, and it gets
                   ;; removed later.
-                  (unless (or (memq 'depends-all (doc-flags (info-doc info)))
+                  (unless (or all?
                               (and (info? d)
-                                   (doc-under-main? (info-doc d))
-                                   all-main?))
+                                   (cond
+                                    [all-main?
+                                     (doc-under-main? (info-doc d))]
+                                    [all-user?
+                                     (not (doc-under-main? (info-doc d)))]
+                                    [else #f])))
                     (set! added? #t)
                     (verbose/log "Removed Dependency for ~a: ~a"
                                  (doc-name (info-doc info))
@@ -489,23 +496,28 @@
               (set! added? #t)
               (hash-set! deps i #t)]))
           ;; Add expected dependencies for an "all dependencies" doc:
-          (when (or (memq 'depends-all (doc-flags (info-doc info))) all-main?)
+          (when (or all? all-main? all-user?)
             (verbose/log "Adding all~a as dependencies for ~a"
-                         (if all-main? " main" "")
+                         (cond
+                          [all-main? " main"]
+                          [all-user? " user"]
+                          [else ""])
                          (doc-name (info-doc info)))
             (for ([i infos])
               (hash-set! known-deps i #t)
               (when (and (not (eq? i info))
                          (not (hash-ref deps i #f))
-                         (or (not all-main?) (doc-under-main? (info-doc i)))
+                         (cond
+                          [all-main? (doc-under-main? (info-doc i))]
+                          [all-user? (not (doc-under-main? (info-doc i)))]
+                          [else #t])
                          (not (memq 'no-depend-on (doc-flags (info-doc i)))))
                 (add-dependency info i))))
           ;; Determine definite dependencies based on referenced keys, and also
           ;; report missing links.
           (let ([not-found
                  (lambda (k)
-                   (unless (or (memq 'depends-all (doc-flags (info-doc info)))
-                               (memq 'depends-all-main (doc-flags (info-doc info))))
+                   (unless (or all? all-main? all-user?)
                      (unless one?
                        (setup-printf
                         "WARNING" "undefined tag in ~a:"
@@ -697,7 +709,7 @@
 (define shared-empty-script-files
   (list "doc-site.js"))
 
-(define (make-renderer latex-dest doc)
+(define (make-renderer latex-dest doc main-doc-exists?)
   (if latex-dest
       (new (latex:render-mixin render%)
            [dest-dir latex-dest]
@@ -722,11 +734,16 @@
              [allow-indirect? (and (doc-pkg? doc)
                                    ;; (not main?)
                                    (not (memq 'no-depend-on (doc-flags doc))))]
-             [local-redirect-file (build-path (if main?
+             [local-redirect-file (build-path (if main-doc-exists?
                                                   (find-doc-dir)
                                                   (find-user-doc-dir))
                                               "local-redirect"
-                                              "local-redirect.js")])
+                                              "local-redirect.js")]
+             [local-user-redirect-file (build-path (if main?
+                                                       (find-doc-dir)
+                                                       (find-user-doc-dir))
+                                                   "local-redirect"
+                                                   "local-user-redirect.js")])
         (define r
           (new (contract-override-mixin
                 ((if multi? html:render-multi-mixin values)
@@ -743,14 +760,18 @@
                                                     (if root?
                                                         s
                                                         (format "../~a" s))))])
-                              (cons (cons local-redirect-file 
-                                          (if main?
-                                              "../local-redirect/local-redirect.js"
-                                              (u:url->string (u:path->url local-redirect-file))))
-                                    (map std-path (append
-                                                   shared-style-files
-                                                   shared-empty-style-files
-                                                   shared-empty-script-files))))]
+                              (list* (cons local-redirect-file 
+                                           (if main?
+                                               "../local-redirect/local-redirect.js"
+                                               (u:url->string (u:path->url local-redirect-file))))
+                                     (cons local-user-redirect-file
+                                           (if main?
+                                               "../local-redirect/local-user-redirect.js"
+                                               (u:url->string (u:path->url local-user-redirect-file))))
+                                     (map std-path (append
+                                                    shared-style-files
+                                                    shared-empty-style-files
+                                                    shared-empty-script-files))))]
                [up-path (cond
                          [root? #f] ; no up from root
                          [main?
@@ -783,7 +804,7 @@
           ;; For documentation that might be moved into a binary package
           ;; or that can contain an indirect reference, use a server indirection
           ;; for all links external to the document, but also install the
-          ;; "local-redirect.js" hook:
+          ;; "local-[user-]redirect.js" hooks:
           (send r set-external-tag-path 
                 (u:url->string
                  (let ([u (u:string->url (get-doc-search-url))])
@@ -793,7 +814,8 @@
                     [query
                      (cons (cons 'version (version))
                            (u:url-query u))]))))
-          (send r add-extra-script-file local-redirect-file))
+          (send r add-extra-script-file local-redirect-file)
+          (send r add-extra-script-file local-user-redirect-file))
         ;; Result is the renderer:
         r)))
 
@@ -827,7 +849,8 @@
       (and auto-main?
            (memq 'depends-all-main (doc-flags doc)))
       (and auto-user?
-           (memq 'depends-all (doc-flags doc)))
+           (or (memq 'depends-all (doc-flags doc))
+               (memq 'depends-all-user (doc-flags doc))))
       (ormap (lambda (d)
                (let ([d (path->directory-path d)])
                  (let loop ([dir (path->directory-path (doc-src-dir doc))])
@@ -902,7 +925,8 @@
   (define xref (make-collections-xref
                 #:quiet-fail? quiet-fail?
                 #:no-user? (main-doc? doc)
-                #:no-main? (not main-doc-exists?)
+                #:no-main? (or (not main-doc-exists?)
+                               (memq 'depends-all-user (doc-flags doc)))
                 #:doc-db (and latex-dest
                               (find-doc-db-path latex-dest #t main-doc-exists?))
                 #:register-shutdown! (lambda (s)
@@ -955,7 +979,7 @@
                            ;; need to render, so complain if no source is available:
                            path)))]
          [src-sha1 (and src-zo (get-compiled-file-sha1 src-zo))]
-         [renderer (make-renderer latex-dest doc)]
+         [renderer (make-renderer latex-dest doc main-doc-exists?)]
          [can-run? (can-build? only-dirs doc)]
          [stamp-data (with-handlers ([exn:fail:filesystem? (lambda (exn) (list "" "" ""))])
                        (let ([v (call-with-input-file* stamp-file read)])
@@ -1007,7 +1031,8 @@
                             (and auto-main?
                                  (memq 'depends-all-main (doc-flags doc)))
                             (and auto-user?
-                                 (memq 'depends-all (doc-flags doc)))))])
+                                 (or (memq 'depends-all (doc-flags doc))
+                                     (memq 'depends-all-user (doc-flags doc))))))])
 
     (when (or (and (not up-to-date?) (not only-fast?))
               (verbose))
@@ -1224,11 +1249,20 @@
     ;; and fix up the path if there is a reference:
     (define js-path (if (doc-under-main? doc)
                         "../local-redirect"
-                        (u:url->string (u:path->url (build-path (find-user-doc-dir)
-                                                                "local-redirect")))))
+                        (u:url->string 
+                         (u:path->url 
+                          (build-path (if main-doc-exists?
+                                          (find-doc-dir)
+                                          (find-user-doc-dir))
+                                      "local-redirect")))))
+    (define user-js-path (if (doc-under-main? doc)
+                             "../local-redirect"
+                             (u:url->string
+                              (u:path->url
+                               (build-path (find-user-doc-dir) "local-redirect")))))
     (for ([p (in-directory dest-dir)])
       (when (regexp-match? #rx#"[.]html$" (path->bytes p))
-        (fixup-local-redirect-reference p js-path)))
+        (fixup-local-redirect-reference p js-path #:user user-js-path)))
     ;; The existence of "synced.rktd" means that the db is in sync
     ;; with "provides.sxref" and ".html" files have been updated.
     (let ([provided-path (build-path dest-dir "synced.rktd")])
@@ -1324,7 +1358,7 @@
                 (load-sxref (sxref-path latex-dest doc (format "out~a.sxref" i))))))
   (define info (and (info? info-or-list) info-or-list))
   (define doc (if info (info-doc info) (car info-or-list)))
-  (define renderer (make-renderer latex-dest doc))
+  (define renderer (make-renderer latex-dest doc main-doc-exists?))
   (with-record-error
    (doc-src-file doc)
    (lambda ()
