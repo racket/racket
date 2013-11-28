@@ -1186,9 +1186,8 @@ v
 @defproc[(get-info/full [path path-string?]
                         [#:namespace namespace (or/c namespace? #f) #f]
                         [#:bootstrap? bootstrap? any/c #f])
-         (or/c
-          (symbol? [(-> any)] . -> . any)
-          #f)]{
+         (or/c (->* (symbol?) ((-> any)) any)
+               #f)]{
 
    Accepts a path to a directory. If it finds either a well-formed
    an @filepath{info.rkt} file or an @filepath{info.ss} file (with
