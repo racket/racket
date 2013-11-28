@@ -140,7 +140,7 @@ is always @racket[1], but that may change.)
 @section{Editing 2D}
 
 DrRacket provides a number of keybindings to help editing @litchar{#2d} expressions.
-See @secref["Keyboard Shortcuts" #:doc '(lib "scribblings/drracket/drracket.scrbl")].
+See @seclink["Keyboard Shortcuts" #:doc '(lib "scribblings/drracket/drracket.scrbl") #:indirect? #t]{DrRacket's keyboard shortcuts}.
 
 @section{2D Cond}
 
