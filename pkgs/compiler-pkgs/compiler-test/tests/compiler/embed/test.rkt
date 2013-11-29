@@ -363,46 +363,64 @@
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me1.rkt")))
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
 
-    ;; Check that etc.rkt isn't found if it's not included:
-    (printf ">>not included\n")
-    (system* mzc 
-	     (if mred? "--gui-exe" "--exe")
-	     (path->string (mk-dest mred?))
-	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me6.rkt")))
-    (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
+    (define (check-collection-path prog lib in-main?)
+      ;; Check that etc.rkt isn't found if it's not included:
+      (printf ">>not included\n")
+      (system* mzc 
+               (if mred? "--gui-exe" "--exe")
+               (path->string (mk-dest mred?))
+               (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
+      (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
 
-    ;; And it is found if it is included:
-    (printf ">>included\n")
-    (system* mzc 
-	     (if mred? "--gui-exe" "--exe")
-	     (path->string (mk-dest mred?))
-	     "++lib" "mzlib/etc.rkt"
-	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me6.rkt")))
-    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+      ;; And it is found if it is included:
+      (printf ">>included\n")
+      (system* mzc 
+               (if mred? "--gui-exe" "--exe")
+               (path->string (mk-dest mred?))
+               "++lib" lib
+               (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
+      (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
-    ;; Or, it's found if we set the collection path:
-    (printf ">>set coll path\n")
-    (system* mzc 
-	     (if mred? "--gui-exe" "--exe")
-	     (path->string (mk-dest mred?))
-	     "--collects-path"
-	     (path->string (find-collects-dir))
-	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me6.rkt")))
-    ;; Don't try a distribution for this one:
-    (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+      ;; Or, it's found if we set the collection path and the config path (where the latter
+      ;; finds links for packages):
+      (printf ">>set coll path\n")
+      (system* mzc 
+               (if mred? "--gui-exe" "--exe")
+               (path->string (mk-dest mred?))
+               "--collects-path"
+               (path->string (find-collects-dir))
+               (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
+      ;; Don't try a distribution for this one:
+      (try-one-exe (mk-dest mred?) (if in-main? "This is 6\n#t\n" "This is 6\nno etc.ss\n") mred?)
 
-    ;; Try --collects-dest mode
-    (printf ">>--collects-dest\n")
-    (system* mzc 
-	     (if mred? "--gui-exe" "--exe")
-	     (path->string (mk-dest mred?))
-	     "++lib" "mzlib/etc.rkt"
-	     "--collects-dest" "cts"
-	     "--collects-path" "cts"
-	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me6.rkt")))
-    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
-    (delete-directory/files "cts")
-    (test #f system* (mk-dest mred?))
+      ;; Or, it's found if we set the collection path and the config path (where the latter
+      ;; finds links for packages):
+      (printf ">>set coll path plus config\n")
+      (system* mzc 
+               (if mred? "--gui-exe" "--exe")
+               (path->string (mk-dest mred?))
+               "--collects-path"
+               (path->string (find-collects-dir))
+               "--config-path"
+               (path->string (find-config-dir))
+               (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
+      ;; Don't try a distribution for this one:
+      (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+
+      ;; Try --collects-dest mode
+      (printf ">>--collects-dest\n")
+      (system* mzc 
+               (if mred? "--gui-exe" "--exe")
+               (path->string (mk-dest mred?))
+               "++lib" lib
+               "--collects-dest" "cts"
+               "--collects-path" "cts"
+               (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
+      (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
+      (delete-directory/files "cts")
+      (test #f system* (mk-dest mred?)))
+    (check-collection-path "embed-me6b.rkt" "racket/fixnum.rkt" #t)
+    (check-collection-path "embed-me6.rkt" "mzlib/etc.rkt" #f)
   
     (void)))
 

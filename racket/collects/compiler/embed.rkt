@@ -1411,32 +1411,35 @@
                     (let-values ([(orig-dir name dir?) (split-path 
                                                         (path->complete-path orig-exe))])
                       (update-dll-dir dest (build-path orig-dir dir))))))))
-        (let ([m (or (assq 'config-dir aux)
-                     (and relative? '(config-dir . #f)))]
-              [dest->executable (lambda (dest)
-                                  (if osx?
-                                      (mac-dest->executable dest mred?)
-                                      dest))])
-          (if m
-              (if (cdr m)
-                  (update-config-dir (dest->executable dest) (cdr m))
-                  (when mred?
-                    (cond
-                     [osx?
-                      ;; adjust relative path (since GRacket is off by one):
-                      (update-config-dir (mac-dest->executable dest mred?)
-                                         "../../../etc/")]
-                     [(eq? 'windows (system-type))
-                      (unless keep-exe?
+        (define (adjust-config-dir)
+          (let ([m (or (assq 'config-dir aux)
+                       (and relative? '(config-dir . #f)))]
+                [dest->executable (lambda (dest)
+                                    (if osx?
+                                        (mac-dest->executable dest mred?)
+                                        dest))])
+            (if m
+                (if (cdr m)
+                    (update-config-dir (dest->executable dest) (cdr m))
+                    (when mred?
+                      (cond
+                       [osx?
                         ;; adjust relative path (since GRacket is off by one):
-                        (update-config-dir dest "etc/"))])))
-              ;; Check whether we need an absolute path to config:
-              (let ([dir (get-current-config-dir (dest->executable dest))])
-                (when (relative-path? dir)
-                  (let-values ([(orig-dir name dir?) (split-path 
-                                                      (path->complete-path orig-exe))])
-                    (update-config-dir (dest->executable dest)
-                                       (build-path orig-dir dir)))))))
+                        (update-config-dir (mac-dest->executable dest mred?)
+                                           "../../../etc/")]
+                       [(eq? 'windows (system-type))
+                        (unless keep-exe?
+                          ;; adjust relative path (since GRacket is off by one):
+                          (update-config-dir dest "etc/"))])))
+                ;; Check whether we need an absolute path to config:
+                (let ([dir (get-current-config-dir (dest->executable dest))])
+                  (when (relative-path? dir)
+                    (let-values ([(orig-dir name dir?) (split-path 
+                                                        (path->complete-path orig-exe))])
+                      (update-config-dir (dest->executable dest)
+                                         (build-path orig-dir dir))))))))
+        (unless unix-starter? ; need to delay adjustment for Unix starter; see below
+          (adjust-config-dir))
         (let ([write-module
                (lambda (s)
                  (define pos #f)
@@ -1525,24 +1528,24 @@
                             ;; Unix starter: Maybe ELF, in which case we 
                             ;; can add a proper section
                             (let-values ([(s e dl p)
-					      (if unix-starter?
-						  (add-racket-section 
-						   orig-exe 
-						   dest-exe
-						   (if launcher? #".rackcmdl" #".rackprog")
-						   (lambda (start)
-						     (let ([s (open-output-bytes)])
-						       (define decl-len (write-module s))
-						       (let ([p (file-position s)])
-							 (display (make-starter-cmdline
-								   (make-full-cmdline start 
+                                          (if unix-starter?
+                                              (add-racket-section 
+                                               orig-exe 
+                                               dest-exe
+                                               (if launcher? #".rackcmdl" #".rackprog")
+                                               (lambda (start)
+                                                 (let ([s (open-output-bytes)])
+                                                   (define decl-len (write-module s))
+                                                   (let ([p (file-position s)])
+                                                     (display (make-starter-cmdline
+                                                               (make-full-cmdline start 
                                                                                   (+ start decl-len)
                                                                                   (+ start p)))
-								  s)
-							 (values (get-output-bytes s) decl-len p)))))
-						  (values #f #f #f #f))])
+                                                              s)
+                                                     (values (get-output-bytes s) decl-len p)))))
+                                              (values #f #f #f #f))])
                               (if (and s e)
-				      ;; ELF succeeded:
+                                  ;; ELF succeeded:
                                   (values s (+ s dl) (+ s p) e)
                                   ;; Otherwise, just add to the end of the file:
                                   (let ([start (file-size dest-exe)])
@@ -1550,6 +1553,8 @@
                                       (call-with-output-file* dest-exe write-module 
                                                               #:exists 'append))
                                     (values start decl-end (file-size dest-exe) #f)))))])
+            (when unix-starter?
+              (adjust-config-dir))
             (when verbose?
               (eprintf "Setting command line\n"))
             (let ()
