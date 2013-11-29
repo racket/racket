@@ -531,6 +531,7 @@ please adhere to these guidelines:
  (print-to-ps "Print to PostScript File")
  (print-to-pdf "Print to PDF File")
  (command-as-meta "Treat command key as meta") ;; macos/macos x only
+ (alt-as-meta "Treat alt key as meta")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")
  (basic-gray-paren-match-color "Basic gray parenthesis highlight color") ; in prefs dialog

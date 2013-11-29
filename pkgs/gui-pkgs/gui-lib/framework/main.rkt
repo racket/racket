@@ -1187,9 +1187,12 @@
 
  (proc-doc/names
   keymap:send-map-function-meta
-  (->* ((is-a?/c keymap%) string? string?) (boolean?) void?)
+  (->* ((is-a?/c keymap%) string? string?) 
+       (boolean? #:alt-as-meta-keymap (or/c (is-a?/c keymap%) #f))
+       void?)
   ((keymap key func)
-   ((mask-control? #f)))
+   ((mask-control? #f)
+    (alt-as-meta-keymap #f)))
   @{@index{Meta} Most keyboard and mouse mappings are inserted into a keymap by
     calling the keymap's @method[keymap% map-function] method.  However,
     ``meta'' combinations require special attention.  The @racket["m:"] prefix
@@ -1199,6 +1202,13 @@
     
     This procedure binds all of the key-bindings obtained by prefixing
     @racket[key] with a meta-prefix to @racket[func] in @racket[keymap].
+    
+    If @racket[alt-as-meta-keymap] is a @racket[keymap%] object, then the
+    the key binding @racket[(string-append "?:a:" key)] is bound to
+    @racket[func] in @racket[alt-as-meta-keymap]. Additionally, if
+    @racket[func] has not been added (via @method[add-function keymap%])
+    to @racket[alt-as-meta-keymap], then @racket[keymap:send-map-function-meta]
+    signals an error.
     
     If @racket[mask-control?] is @racket[#t],
     then the result strings include @racket["~c:"] in them.

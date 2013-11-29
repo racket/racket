@@ -468,6 +468,9 @@ the state transitions / contracts are:
                               (string-constant enable-keybindings-in-menus))
                    (when (memq (system-type) '(macosx))
                      (add-check editor-panel 
+                                'framework:alt-as-meta
+                                (string-constant alt-as-meta))
+                     (add-check editor-panel 
                                 'framework:special-meta-key
                                 (string-constant command-as-meta)))
                    

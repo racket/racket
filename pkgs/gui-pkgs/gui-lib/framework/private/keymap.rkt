@@ -213,12 +213,12 @@
   ;; if two key bindings refer to the same key.
   ;; Assumes a well-formed keystring.
   (define (canonicalize-keybinding-string str)
-    (let* ([chars (map char-downcase (string->list str))]
-           [separated-keys
-            (map
-             canonicalize-single-keybinding-string
-             (split-out #\; chars))])
-      (join-strings ";" separated-keys)))
+    (define chars (map char-downcase (string->list str)))
+    (define separated-keys
+      (map
+       canonicalize-single-keybinding-string
+       (split-out #\; chars)))
+    (join-strings ";" separated-keys))
   
   ;; join-strings : string (listof string) -> string
   ;; concatenates strs with sep between each of them
@@ -334,9 +334,16 @@
               (string-append "~c:m:" key))
           (string-append "ESC;" key)))
   
-  (define (send-map-function-meta keymap key func [mask-control? #f])
+  (define (send-map-function-meta keymap key func [mask-control? #f] 
+                                  #:alt-as-meta-keymap [alt-as-meta-keymap #f])
     (for ([key (in-list (make-meta-prefix-list key mask-control?))])
-      (send keymap map-function key func)))
+      (send keymap map-function key func))
+    (when alt-as-meta-keymap
+      (unless (send alt-as-meta-keymap is-function-added? func)
+        (error 'send-map-function-meta
+               "expected to find ~s mapped in alt-as-meta-keymap"
+               func))
+      (send alt-as-meta-keymap map-function (string-append "?:a:" key) func)))
   
   (define has-control-regexp #rx"(?:^|:)c:")
   
@@ -1045,16 +1052,19 @@
               (when (= start (send txt get-end-position))
                 (center-in-unicode-ascii-art-box txt start)))])
       
-      (λ (kmap)
+      (λ (kmap #:alt-as-meta-keymap [alt-as-meta-keymap #f])
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func
-                                                   (regexp-match has-control-regexp key)))]
+                                                   (regexp-match has-control-regexp key)
+                                                   #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)
-                        (send kmap add-function name func))])
+                        (send kmap add-function name func)
+                        (when alt-as-meta-keymap
+                          (send alt-as-meta-keymap add-function name func)))])
           
           ; Map names to keyboard functions
           
@@ -1073,12 +1083,12 @@
           
           (add "TeX compress" TeX-compress)
           (add "newline" newline)
-          (add "down-into-embedded-editor" down-into-embedded-editor)
-          (add "up-out-of-embedded-editor" up-out-of-embedded-editor)
-          (add "forward-to-next-embedded-editor" forward-to-next-embedded-editor)
-          (add "back-to-prev-embedded-editor" back-to-prev-embedded-editor)
+          (add-m "down-into-embedded-editor" down-into-embedded-editor)
+          (add-m "up-out-of-embedded-editor" up-out-of-embedded-editor)
+          (add-m "forward-to-next-embedded-editor" forward-to-next-embedded-editor)
+          (add-m "back-to-prev-embedded-editor" back-to-prev-embedded-editor)
           
-          (add "toggle-overwrite (when enabled in prefs)" toggle-overwrite)
+          (add-m "toggle-overwrite (when enabled in prefs)" toggle-overwrite)
           
           (add "exit" (λ (edit event)
                         (let ([frame (send edit get-frame)])
@@ -1092,23 +1102,23 @@
                     
           (add "toggle-anchor" toggle-anchor)
           (add "center-view-on-line" center-view-on-line)
-          (add "collapse-space" collapse-space)
+          (add-m "collapse-space" collapse-space)
           (add "remove-space" remove-space)
           (add "collapse-newline" collapse-newline)
           (add "open-line" open-line)
           (add "transpose-chars" transpose-chars)
-          (add "transpose-words" transpose-words)
-          (add "capitalize-word" capitalize-word)
-          (add "upcase-word" upcase-word)
-          (add "downcase-word" downcase-word)
-          (add "kill-word" kill-word)
-          (add "backward-kill-word" backward-kill-word)
+          (add-m "transpose-words" transpose-words)
+          (add-m "capitalize-word" capitalize-word)
+          (add-m "upcase-word" upcase-word)
+          (add-m "downcase-word" downcase-word)
+          (add-m "kill-word" kill-word)
+          (add-m "backward-kill-word" backward-kill-word)
           
           (let loop ([n 9])
             (unless (negative? n)
               (let ([s (number->string n)])
-                (add (string-append "command-repeat-" s)
-                     (make-make-repeater n))
+                (add-m (string-append "command-repeat-" s)
+                       (make-make-repeater n))
                 (loop (sub1 n)))))
           
           (add "keyboard-macro-run-saved" do-macro)
@@ -1125,7 +1135,7 @@
           (add-m "select-click-word" select-click-word)
           (add-m "select-click-line" select-click-line)
           
-          (add "goto-line" goto-line)
+          (add-m "goto-line" goto-line)
           
           (add "delete-key" delete-key)
           
@@ -1353,16 +1363,19 @@
                       (invoke-method frame)
                       (bell)))
                 #t))])
-      (λ (kmap)
+      (λ (kmap #:alt-as-meta-keymap [alt-as-meta-keymap #f])
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func
-                                                   (regexp-match has-control-regexp key)))]
+                                                   (regexp-match has-control-regexp key)
+                                                   #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)
-                        (send kmap add-function name func))])
+                        (send kmap add-function name func)
+                        (when alt-as-meta-keymap
+                          (send alt-as-meta-keymap add-function name func)))])
           
           (add "search forward" 
                (send-frame (λ (f) (send f search 'forward))))
@@ -1420,16 +1433,19 @@
                       (let-values ([(base name dir) (split-path fn)])
                         base))))
               #t)])
-      (λ (kmap)
+      (λ (kmap #:alt-as-meta-keymap [alt-as-meta-keymap #f])
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func 
-                                                   (regexp-match has-control-regexp key)))]
+                                                   (regexp-match has-control-regexp key)
+                                                   #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)
-                        (send kmap add-function name func))])
+                        (send kmap add-function name func)
+                        (when alt-as-meta-keymap
+                          (send alt-as-meta-keymap add-function name func)))])
           
           (add "save-file" save-file)
           (add "save-file-as" save-file-as)
@@ -1457,7 +1473,7 @@
                    func))])
       (add/map "editor-undo" 'undo "z")
       (unless (eq? (system-type) 'macosx)
-	(add/map "editor-redo" 'redo "y"))
+        (add/map "editor-redo" 'redo "y"))
       (add/map "editor-cut" 'cut "x")
       (add/map "editor-copy" 'copy "c")
       (add/map "editor-paste" 'paste "v")
@@ -1473,24 +1489,41 @@
   
   (define global (make-object aug-keymap%))
   (define global-main (make-object aug-keymap%))
+  (define global-alt-as-meta (make-object aug-keymap%))
   (send global chain-to-keymap global-main #f)
   (generic-setup global-main)
-  (setup-global global-main)
+  (generic-setup global-alt-as-meta)
+  (setup-global global-main #:alt-as-meta-keymap global-alt-as-meta)
   (define (get-global) global)
   
   (define file (make-object aug-keymap%))
+  (define file-alt-as-meta (make-object aug-keymap%))
   (generic-setup file)
-  (setup-file file)
+  (setup-file file #:alt-as-meta-keymap file-alt-as-meta)
   (define (-get-file) file)
   
   (define search (make-object aug-keymap%))
+  (define search-alt-as-meta (make-object aug-keymap%))
   (generic-setup search)
-  (setup-search search)
+  (setup-search search #:alt-as-meta-keymap search-alt-as-meta)
   (define (get-search) search)
   
   (define editor (make-object aug-keymap%))
   (setup-editor editor)
   (define (get-editor) editor)
+  
+  (preferences:set-default 'framework:alt-as-meta #f boolean?)
+  (define (adjust-alt-as-meta on?)
+    (send global-main remove-chained-keymap global-alt-as-meta)
+    (send file remove-chained-keymap file-alt-as-meta)
+    (send search remove-chained-keymap search-alt-as-meta)
+    (when on?
+      (send global-main chain-to-keymap global-alt-as-meta #f)
+      (send file chain-to-keymap file-alt-as-meta #f)
+      (send search chain-to-keymap search-alt-as-meta #f)))
+  (preferences:add-callback 'framework:alt-as-meta
+                            (λ (p v) (adjust-alt-as-meta v)))
+  (adjust-alt-as-meta (preferences:get 'framework:alt-as-meta))
   
   (define (call/text-keymap-initializer thunk)
     (let ([ctki (current-text-keymap-initializer)])
