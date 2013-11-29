@@ -16,6 +16,7 @@
 (define exe-embedded-flags (make-parameter '("-U" "--")))
 (define exe-embedded-libraries (make-parameter null))
 (define exe-aux (make-parameter null))
+(define exe-embedded-config-path (make-parameter "etc"))
 (define exe-embedded-collects-path (make-parameter null))
 (define exe-embedded-collects-dest (make-parameter #f))
 
@@ -29,6 +30,8 @@
     (gui #t)]
    [("-l" "--launcher") "Generate a launcher"
     (launcher #t)]
+   [("--config-path") path "Set <path> as configuration directory for executable"
+    (exe-embedded-config-path path)]
    [("--collects-path") path "Set <path> as main collects for executable"
     (exe-embedded-collects-path path)]
    [("--collects-dest") dir "Write collection code to <dir>"
@@ -133,6 +136,7 @@
      #:cmdline (exe-embedded-flags)
      #:collects-path (exe-embedded-collects-path)
      #:collects-dest (exe-embedded-collects-dest)
-     #:aux (exe-aux))])
+     #:aux (cons `(config-dir . ,(exe-embedded-config-path))
+                 (exe-aux)))])
   (when (verbose)
     (printf " [output to \"~a\"]\n" dest)))
