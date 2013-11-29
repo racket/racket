@@ -50,6 +50,14 @@ When the function is called, it gets the arguments that were passed to
 
 }
 
+@defmethod[(is-function-added? [fname string?]) boolean?]{
+  Returns @racket[#t] if @racket[fname] has been added
+          via @method[add-function keymap%] to this keymap 
+          and @racket[#f] otherwise.
+
+  This method doesn't check chained keymaps to see if the function
+  has been added to one of those.
+}
 
 @defmethod[(break-sequence)
            void?]{
@@ -339,8 +347,7 @@ A function name does not have to be mapped to a handler before input
  function names.
 
 }
-
-
+                 
 @defmethod[(remove-chained-keymap [keymap (is-a?/c keymap%)])
            void?]{
 

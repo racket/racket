@@ -720,6 +720,9 @@
                chain-to)]
        [else
         (error 'keymap "no function ~e" name)])))
+  
+  (def/public (is-function-added? [string? name])
+    (and (hash-ref functions name #f) #t))
 
   (def/public (get-double-click-interval)
     double-interval)
