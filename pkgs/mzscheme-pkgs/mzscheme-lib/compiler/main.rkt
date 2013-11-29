@@ -56,6 +56,7 @@
 (define exe-embedded-flags (make-parameter '("-U" "--")))
 (define exe-embedded-libraries (make-parameter null))
 (define exe-aux (make-parameter null))
+(define exe-embedded-config-path (make-parameter "etc"))
 (define exe-embedded-collects-path (make-parameter #f))
 (define exe-embedded-collects-dest (make-parameter #f))
 (define exe-dir-add-collects-dirs (make-parameter null))
@@ -196,6 +197,10 @@
      [help-labels
       "--------------------- executable configuration flags ------------------------"]
      [once-each
+      [("--config-path")
+       ,(lambda (f i)
+          (exe-embedded-config-path i))
+       ("Set <path> configuration directory path in --[gui-]exe" "path")]
       [("--collects-path")
        ,(lambda (f i)
           (exe-embedded-collects-path i))
@@ -536,7 +541,8 @@
       #:cmdline (exe-embedded-flags)
       #:collects-path (exe-embedded-collects-path)
       #:collects-dest (exe-embedded-collects-dest)
-      #:aux (exe-aux))
+      #:aux (cons `(config-dir . ,(exe-embedded-config-path))
+                  (exe-aux)))
      (when (compiler:option:somewhat-verbose)
        (printf " [output to \"~a\"]\n" dest)))]
   [(c-mods)
