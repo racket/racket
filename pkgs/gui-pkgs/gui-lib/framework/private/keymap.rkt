@@ -1377,8 +1377,8 @@
                         (when alt-as-meta-keymap
                           (send alt-as-meta-keymap add-function name func)))])
           
-          (add "search forward" 
-               (send-frame (λ (f) (send f search 'forward))))
+          (add-m "search forward" 
+                 (send-frame (λ (f) (send f search 'forward))))
           (add "search backward" 
                (send-frame (λ (f) (send f search 'backward))))
           (add "replace & search forward" 
