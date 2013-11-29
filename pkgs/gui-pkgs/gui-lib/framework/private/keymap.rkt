@@ -259,6 +259,8 @@
            [alt (if neg? #f 'd/c)]
            [meta (if neg? #f 'd/c)]
            [command (if neg? #f 'd/c)]
+           [lock 'd/c]
+           [question-mark 'd/c]
            
            [do-key
             (λ (char val)
@@ -276,18 +278,22 @@
                       [(#\c) (set! control val)]
                       [(#\a) (set! alt val)]
                       [(#\d) (set! command val)]
-                      [(#\m) (set! meta val)])))
+                      [(#\m) (set! meta val)]
+                      [(#\l) (set! lock val)]
+                      [(#\?) (set! question-mark val)])))
                 mods)
       
       (join-strings ":"
                     (filter
                      values
                      (list
+                      (do-key #\? question-mark)
                       (do-key #\a alt)
                       (do-key #\c control)
                       (do-key #\d command)
                       (do-key #\m meta)
                       (do-key #\s shift)
+                      (do-key #\l lock)
                       canon-key)))))
   
   ;; split-out : char (listof char) -> (listof (listof char))

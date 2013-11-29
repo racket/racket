@@ -80,7 +80,7 @@
        (string=? x str2))
      (lambda ()
        (queue-sexp-to-mred
-        `(keymap:canonicalize-keybinding-string ,str2)))))
+        `(keymap:canonicalize-keybinding-string ,str1)))))
   
   (test-canonicalize 1 "c:a" "c:a")
   (test-canonicalize 2 "d:a" "d:a")
@@ -95,6 +95,10 @@
   (test-canonicalize 11 "esc;s:a" "esc;s:a")
   (test-canonicalize 12 "s:a;esc" "s:a;esc")
   (test-canonicalize 13 "ESC;p" "esc;p")
+  (test-canonicalize 14 "?:a:v" "?:a:v")
+  (test-canonicalize 15 "a:?:v" "?:a:v")
+  (test-canonicalize 16 "l:v" "l:v")
+  (test-canonicalize 17 "c:l:v" "c:l:v")
   
   
   ;; a key-spec is (make-key-spec buff-spec buff-spec (listof ?) (listof ?) (listof ?))
