@@ -361,7 +361,9 @@ evaluate the expression by typing Alt-Return or Command-Return
 To copy the @as-index{previous expression} to the current prompt, type
 ESC-p (i.e., type Escape and then type p). Type ESC-p multiple times
 to @as-index{cycle back through old expressions}. Type ESC-n to cycle
-forward through old expressions.
+forward through old expressions. There are other keys that have these
+same functions; see @seclink["Keyboard Shortcuts"] and the menu
+item @onscreen{Show Active Keybindings} menu item in the @onscreen{Edit} menu.
 
 Clicking the @onscreen{Run} button evaluates the program in the
 @tech{definitions window} and makes the program's definitions
