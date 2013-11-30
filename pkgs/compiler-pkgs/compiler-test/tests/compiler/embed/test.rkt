@@ -1,8 +1,9 @@
 #lang racket/base
 
 (require compiler/embed
-         mzlib/file
-	 mzlib/process
+         racket/file
+	 racket/system
+         racket/port
          launcher
          compiler/distribute)
 
@@ -418,7 +419,8 @@
                (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
       (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
       (delete-directory/files "cts")
-      (test #f system* (mk-dest mred?)))
+      (parameterize ([current-error-port (open-output-nowhere)])
+        (test #f system* (mk-dest mred?))))
     (check-collection-path "embed-me6b.rkt" "racket/fixnum.rkt" #t)
     (check-collection-path "embed-me6.rkt" "mzlib/etc.rkt" #f)
   
