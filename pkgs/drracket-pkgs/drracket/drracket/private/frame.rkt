@@ -77,6 +77,111 @@
                  [parent menu]
                  [callback (λ (x y) (add-racket/bin-to-path))])))))))
 
+(module key-bindings racket/base
+  
+  (require racket/class
+           racket/gui/base
+           racket/contract
+           framework)
+  
+  (provide
+   (contract-out
+    [get-sorted-keybindings
+     (-> (or/c #f (is-a?/c text%))
+         (is-a?/c frame%)
+         (listof (list/c symbol? string?)))]))
+  
+  (define (get-sorted-keybindings edit-object frame)
+    (define keymap (and edit-object (send edit-object get-keymap)))
+    (define menu-names (get-menu-bindings frame))
+    (define bindings (if (is-a? keymap keymap:aug-keymap<%>)
+                         (hash-map (send keymap get-map-function-table) list) 
+                         '()))
+    (define w/menus 
+      (append (hash-map menu-names list)
+              (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
+                      bindings)))
+    (sort
+     (sort
+      w/menus
+      symbol<?
+      #:key car)
+     string-ci<?
+     #:key cadr))
+
+  (define (bound-by-menu? binding menu-table)
+    (ormap (λ (constituent)
+             (hash-ref menu-table (string->symbol constituent) (λ () #f)))
+           (regexp-split #rx";" (symbol->string (car binding)))))
+  
+  (define (get-menu-bindings frame)
+    (define name-ht (make-hasheq))
+    (define mb (send frame get-menu-bar))
+    (when mb
+      (let loop ([menu-container mb])
+        (for ([item (in-list (send menu-container get-items))])
+          (when (is-a? item selectable-menu-item<%>)
+            (define short-cut (send item get-shortcut))
+            (when short-cut
+              (define keyname
+                (string->symbol
+                 (keymap:canonicalize-keybinding-string
+                  (string-append
+                   (menu-item->prefix-string item)
+                   (case short-cut
+                     [(#\;) "semicolon"]
+                     [(#\:) "colon"]
+                     [(#\space) "space"]
+                     [else 
+                      (cond
+                        [(symbol? short-cut) (symbol->string short-cut)]
+                        [(char? short-cut) (string short-cut)])])))))
+              (hash-set! name-ht keyname (send item get-plain-label))))
+          (when (is-a? item menu-item-container<%>)
+            (loop item))))
+      (when (member (system-type) '(unix windows))
+        (for ([top-level-menu (in-list (send mb get-items))])
+          (when (is-a? top-level-menu menu%)
+            (define amp-key
+              (let loop ([str (send top-level-menu get-label)])
+                (cond
+                  [(regexp-match #rx"[^&]*[&](.)(.*)" str)
+                   =>
+                   (λ (m)
+                     (define this-amp (list-ref m 1))
+                     (define rest (list-ref m 2))
+                     (cond
+                       [(equal? this-amp "&")
+                        (loop rest)]
+                       [else 
+                        (string-downcase this-amp)]))]
+                  [else #f])))
+            (when amp-key
+              (hash-set! name-ht 
+                         (string->symbol (format "m:~a" amp-key))
+                         (format "~a menu" (send top-level-menu get-plain-label)))
+              (when (equal? (system-type) 'windows)
+                (hash-set! name-ht 
+                           (string->symbol (format "m:s:~a" amp-key))
+                           (format "~a menu" (send top-level-menu get-plain-label)))))))))
+    name-ht)
+  
+  (define (menu-item->prefix-string item)
+    (apply
+     string-append
+     (map (λ (prefix)
+            (case prefix
+              [(alt) (if (eq? (system-type) 'windows)
+                         "m:"
+                         "a:")]
+              [(cmd) "d:"]
+              [(meta) "m:"]
+              [(ctl) "c:"]
+              [(shift) "s:"]
+              [(opt option) "a:"]
+              [else (error 'menu-item->prefix-string "unknown prefix ~s\n" prefix)]))
+          (send item get-shortcut-prefix)))))
+
 (require string-constants
          racket/match
          racket/class
@@ -132,77 +237,8 @@
             (super on-subwindow-char receiver event)))
       
       (inherit get-edit-target-window get-edit-target-object get-menu-bar)
-      (define/private (get-menu-bindings)
-        (define name-ht (make-hasheq))
-        (let loop ([menu-container (get-menu-bar)])
-          (for ([item (in-list (send menu-container get-items))])
-            (when (is-a? item selectable-menu-item<%>)
-              (define short-cut (send item get-shortcut))
-              (when short-cut
-                (define keyname
-                  (string->symbol
-                   (keymap:canonicalize-keybinding-string
-                    (string-append
-                     (menu-item->prefix-string item)
-                     (case short-cut
-                       [(#\;) "semicolon"]
-                       [(#\:) "colon"]
-                       [(#\space) "space"]
-                       [else 
-                        (cond
-                          [(symbol? short-cut) (symbol->string short-cut)]
-                          [(char? short-cut) (string short-cut)])])))))
-                (hash-set! name-ht keyname (send item get-plain-label))))
-            (when (is-a? item menu-item-container<%>)
-              (loop item))))
-        (when (eq? (system-type) 'windows)
-          (for ([top-level-menu (in-list (send (get-menu-bar) get-items))])
-            (when (is-a? top-level-menu menu%)
-              (define amp-key
-                (let loop ([str (send top-level-menu get-label)])
-                  (cond
-                    [(regexp-match #rx"[^&]*[&](.)(.*)" str)
-                     =>
-                     (λ (m)
-                       (define this-amp (list-ref m 1))
-                       (define rest (list-ref m 2))
-                       (cond
-                         [(equal? this-amp "&")
-                          (loop rest)]
-                         [else 
-                          (string-downcase this-amp)]))]
-                    [else #f])))
-              (when amp-key
-                (hash-set! name-ht 
-                           (format "m:~a" amp-key)
-                           (format "~a menu" (send top-level-menu get-plain-label)))
-                (hash-set! name-ht 
-                           (format "m:s:~a" amp-key)
-                           (format "~a menu" (send top-level-menu get-plain-label)))))))
-        name-ht)
       
-      (define/private (menu-item->prefix-string item)
-        (apply
-         string-append
-         (map (λ (prefix)
-                (case prefix
-                  [(alt) (if (eq? (system-type) 'windows)
-                             "m:"
-                             "a:")]
-                  [(cmd) "d:"]
-                  [(meta) "m:"]
-                  [(ctl) "c:"]
-                  [(shift) "s:"]
-                  [(opt option) "a:"]
-                  [else (error 'menu-item->prefix-string "unknown prefix ~s\n" prefix)]))
-              (send item get-shortcut-prefix))))
-      
-      (define/private (copy-hash-table ht)
-        (define res (make-hasheq))
-        (for ([(x y) (in-hash ht)])
-          (hash-set! res x y))
-        res)
-      
+            
       (define/private (can-show-keybindings?)
         (define edit-object (get-edit-target-object))
         (and edit-object
@@ -212,28 +248,12 @@
       
       ;; pre: (can-show-keybindings?) = #t
       (define/private (get-keybindings-to-show)
-        (define edit-object (get-edit-target-object))
-        (define keymap (send edit-object get-keymap))
-        (define menu-names (get-menu-bindings))
-        (define table (send keymap get-map-function-table))
-        (define bindings (hash-map table list))
-        (define w/menus 
-          (append (hash-map menu-names list)
-                  (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
-                          bindings)))
-        (sort
-         w/menus
-         (λ (x y) (string-ci<=? (cadr x) (cadr y)))))
+        (get-sorted-keybindings (get-edit-target-object) this))
       
       (define/private (show-keybindings)
         (if (can-show-keybindings?)
             (show-keybindings-to-user (get-keybindings-to-show) this)
             (bell)))
-      
-      (define/private (bound-by-menu? binding menu-table)
-        (ormap (λ (constituent)
-                 (hash-ref menu-table (string->symbol constituent) (λ () #f)))
-               (regexp-split #rx";" (symbol->string (car binding)))))
       
       (define/override (help-menu:before-about help-menu)
         (make-help-desk-menu-item help-menu))
@@ -911,6 +931,143 @@
     (drracket:app:add-language-items-to-help-menu menu)))
 
 
+(require (submod "." add-racket-to-macosx-path)
+         (submod "." key-bindings))
 
 
-(require (submod "." add-racket-to-macosx-path))
+(module test racket/base
+  (require rackunit
+           racket/class
+           racket/gui/base
+           framework
+           (submod ".." key-bindings))
+
+  (check-equal? (get-sorted-keybindings #f (new frame% [label ""]))
+                '())
+  (check-equal? (get-sorted-keybindings (new text%) (new frame% [label ""]))
+                '())
+  
+  (let ()
+    (define k (new keymap%))
+    (define t (new text%))
+    (send t set-keymap k)
+    
+    (check-equal? 
+     (get-sorted-keybindings t (new frame% [label ""]))
+     '()))
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "x" void)
+    (send k map-function "c:x" "x")
+    (define t (new text%))
+    (send t set-keymap k)
+  
+    (check-equal? 
+     (get-sorted-keybindings t (new frame% [label ""]))
+     '((c:x "x"))))
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "x" void)
+    (send k map-function "c:x" "x")
+    (define t (new text%))
+    (send t set-keymap k)
+    
+    (define f (new frame% [label ""]))
+    (define mb (new menu-bar% [parent f]))
+    (define m (new menu% [label "Edit"] [parent mb]))
+    (define mi (new menu-item% [label "Cut"] [shortcut #\x] [parent m] [callback void]))
+    
+    (check-equal? 
+     (get-sorted-keybindings t f)
+     (case (system-type)
+       [(macosx) 
+        '((d:x "Cut") (c:x "x"))]
+       [(windows unix)
+        '((c:x "Cut"))])))
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "x" void)
+    (send k map-function "c:x" "x")
+    (define t (new text%))
+    (send t set-keymap k)
+    
+    (define f (new frame% [label ""]))
+    (define mb (new menu-bar% [parent f]))
+    (define m (new menu% [label "&Edit"] [parent mb]))
+    (define mi (new menu-item% [label "Cu&t"] [shortcut #\x] [parent m] [callback void]))
+    
+    (check-equal? 
+     (get-sorted-keybindings t f)
+     (case (system-type)
+       [(macosx)
+        '((d:x "Cut")
+          (c:x "x"))]
+       [(windows)
+        '((c:x "Cut")
+          (m:e "Edit menu")
+          (m:s:e "Edit menu"))]
+       [(unix)
+        '((c:x "Cut")
+          (m:e "Edit menu"))])))
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "x" void)
+    (send k map-function "m:e" "x")
+    (define t (new text%))
+    (send t set-keymap k)
+    
+    (define f (new frame% [label ""]))
+    (define mb (new menu-bar% [parent f]))
+    (define m (new menu% [label "&Edit"] [parent mb]))
+    (define mi (new menu-item% [label "Cu&t"] [parent m] [callback void]))
+    
+    (check-equal? 
+     (get-sorted-keybindings t f)
+     (case (system-type)
+       [(macosx)
+        '()]
+       [(windows)
+        '((m:e "Edit menu")
+          (m:s:e "Edit menu"))]
+       [(unix)
+        '((m:e "Edit menu"))])))
+  
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "x" void)
+    (send k add-function "y" void)
+    (send k map-function "c:x" "x")
+    (send k map-function "m:x" "y")
+    (define t (new text%))
+    (send t set-keymap k)
+    
+    (define f (new frame% [label ""]))
+    (define mb (new menu-bar% [parent f]))
+    (define m (new menu% [label "Edit"] [parent mb]))
+    (define mi (new menu-item% [label "Cu&t"] [parent m] [callback void]))
+    
+    (check-equal? 
+     (get-sorted-keybindings t f)
+     (case (system-type)
+       [(macosx) '((c:x "x"))]
+       [(unix windows)
+        '((c:x "x")
+          (m:x "y"))])))
+  
+  (let ()
+    (define k (new keymap:aug-keymap%))
+    (send k add-function "y" void)
+    (send k map-function "~c:m:x" "y")
+    (define t (new text%))
+    (send t set-keymap k)
+  
+    (check-equal? 
+     (get-sorted-keybindings t (new frame% [label ""]))
+     (if (equal? (system-type) 'macosx)
+         '()
+         '((~c:m:x "y"))))))

@@ -172,8 +172,9 @@
         (cond
           [(eq? (system-type) 'windows)
            (cond
-             [(or (regexp-match #rx"a:c" cs)
-                  (regexp-match #rx"c:m" cs))
+             [(or (regexp-match? #rx"a:c" cs)
+                  (and (regexp-match? #rx"c:m" cs)
+                       (not (regexp-match? #rx"~c:m" cs))))
               #f]
              [(or (has-key? #\a) (has-key? #\d))
               #f]
@@ -1057,7 +1058,7 @@
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func
-                                                   (regexp-match has-control-regexp key)
+                                                   (regexp-match? has-control-regexp key)
                                                    #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
@@ -1368,7 +1369,7 @@
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func
-                                                   (regexp-match has-control-regexp key)
+                                                   (regexp-match? has-control-regexp key)
                                                    #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
@@ -1438,7 +1439,7 @@
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
                            (send-map-function-meta kmap key func 
-                                                   (regexp-match has-control-regexp key)
+                                                   (regexp-match? has-control-regexp key)
                                                    #:alt-as-meta-keymap alt-as-meta-keymap))]
                [add (λ (name func)
                       (send kmap add-function name func))]
