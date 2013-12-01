@@ -394,7 +394,8 @@
        (when vscroll?
          (atomically
           (set! v-scroll-visible? (and v? #t))
-          (ShowScrollBar canvas-hwnd SB_VERT v?))))
+          (ShowScrollBar canvas-hwnd SB_VERT v?)))
+       (reset-dc))
 
      (define/override (do-set-scrollbars h-step v-step
                                          h-len v-len
