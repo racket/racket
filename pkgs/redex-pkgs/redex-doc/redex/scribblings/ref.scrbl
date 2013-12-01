@@ -1758,7 +1758,102 @@ Generates terms in a number of different ways:
                              (generate-term L e 3))
                                                    
                            (for/list ([i (in-range 10)])
-                             (generate-term L e #:i-th i))]}
+                             (generate-term L e #:i-th i))]
+                 
+                 The @racket[#:i-th] option uses an automatically generated enumeration of the 
+                 non-terminals in a language. That is, a bijection from the natural numbers to the
+                 terms that match by a non-terminal by @racket[redex-match] with a few exceptions for
+                 ambiguous grammars. It will also construct enumerations for arbitrary patterns given
+                 to @racket[generate-term].
+                 
+                 Base type enumerations such as @racket[boolean], @racket[natural] and 
+                 @racket[integer] are what you might expect
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L)
+                           (for/list ([i (in-range 2)])
+                             (generate-term L boolean #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L natural #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L integer #:i-th i))]
+                 
+                 The @racket[real] base type enumeration consists of all integers and flonums, and the
+                 @racket[number] pattern consists of complex numbers with real and imaginary parts 
+                 taken from the @racket[real] enumeration.
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L)
+                           (for/list ([i (in-range 20)])
+                             (generate-term L real #:i-th i))
+                           (for/list ([i (in-range 20)])
+                             (generate-term L number #:i-th i))]
+                 
+                 The @racket[string], @racket[variable], @racket[variable-prefix],
+                 @racket[variable-except], and @racket[variable-not-otherwise-mentioned] are defined
+                 similarly, first enumerating single-character sequences which first enumerate 
+                 lowercase Latin characters, then upercase Latin, and then every remaining Unicode
+                 character.
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L
+                             (used ::= a b c)
+                             (except ::= (variable-except a))
+                             (unused ::= variable-not-otherwise-mentioned))
+                           (for/list ([i (in-range 60)])
+                             (generate-term L string #:i-th i))
+                           (for/list ([i (in-range 60)])
+                             (generate-term L variable #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L (variable-prefix a) #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L except #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L unused #:i-th i))]
+                 
+                 Finally, the @racket[any] pattern enumerates sexpressions of the above base-types.
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L)
+                           (for/list ([i (in-range 20)])
+                             (generate-term L any #:i-th i))]
+                 
+                 In addition, all other pattern types are supported except for mismatch @racket[_!_]
+                 patterns, mismatch repeat @racket[..._!_] patterns and @racket[side-condition] 
+                 patterns.  Of these three, @racket[side-condition] is the only one impossible to 
+                 support.
+                 
+                 The only caveat to enumerations is that while they do generate every term that 
+                 satisfies @racket[redex-check] (except for some base types), some redex patterns are
+                 ambiguous and result in certain terms being generated multiple times. The simplest
+                 example is the repeat pattern
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L
+                             (ambiguous ::= (boolean ... boolean ...)))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L ambiguous #:i-th i))]
+                 
+                 Other sources of ambiguity are @racket[in-hole] and overlapping non-terminals
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L
+                             (a-hole ::= (boolean hole)
+                                         (hole boolean))
+                             (hole-amb ::= (in-hole a-hole boolean))
+                             (overlap ::= natural
+                                          integer))
+                           (for/list ([i (in-range 8)])
+                             (generate-term L hole-amb #:i-th i))
+                           (for/list ([i (in-range 10)])
+                             (generate-term L overlap #:i-th i))]
+                 
+                 
+                 }
            @item{@racket[from-judgment-form]: Randomly picks a term that satisfies
                   the given use of the judgment form.
                   
