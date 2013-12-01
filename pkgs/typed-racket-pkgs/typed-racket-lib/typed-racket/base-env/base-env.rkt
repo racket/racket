@@ -713,12 +713,12 @@
 [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
 [hash-ref (-poly (a b c)
                  (cl-> [((-HT a b) a) b]
+                       [((-HT a b) a (-val #f)) (-opt b)]
                        [((-HT a b) a (-> c)) (Un b c)]
                        [(-HashTop a) Univ]
+                       [(-HashTop a (-val #f)) Univ]
                        [(-HashTop a (-> c)) Univ]))]
-[hash-ref! (-poly (a b)
-                  (cl-> [((-HT a b) a b) b]
-                        [((-HT a b) a (-> b)) b]))]
+[hash-ref! (-poly (a b) (-> (-HT a b) a (-> b) b))]
 [hash-has-key? (-HashTop Univ . -> . B)]
 [hash-update! (-poly (a b)
                      (cl-> [((-HT a b) a (-> b b)) -Void]
