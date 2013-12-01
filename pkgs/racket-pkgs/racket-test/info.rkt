@@ -27,7 +27,8 @@
                ;; for random testing:
                "redex-lib"))
 
-(define build-deps '("scheme-lib"
+(define build-deps '("racket-index"
+                     "scheme-lib"
                      "srfi-lite-lib"
                      "base"
                      "data-lib"))

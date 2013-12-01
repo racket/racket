@@ -3,7 +3,7 @@
 (require setup/getinfo
          setup/dirs
          setup/path-to-relative
-         setup/private/path-utils
+         "private/doc-path.rkt"
          setup/collects
          setup/main-doc
          setup/parallel-do

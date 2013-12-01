@@ -16,8 +16,7 @@
          "coroutine.rkt"
          data/queue)
 
-(require setup/xref
-         scribble/xref
+(require scribble/xref
          scribble/manual-struct)
 
 (import mred^
@@ -4030,8 +4029,15 @@ designates the character that triggers autocompletion
   (let* ([sym->mpi (λ (mp) (module-path-index-resolve (module-path-index-join mp #f)))]
          [manual-mpis (and manuals (map sym->mpi manuals))])
     
-    (unless xref 
-      (set! xref (load-collections-xref)))
+    (unless xref
+      (let ([load-collections-xref
+             ;; Make the dependency on `setup/xref' indirect, so that a
+             ;; GUI does not depend on having documentation installed:
+             (with-handlers ([exn:missing-module? (lambda (exn)
+                                                         (lambda ()
+                                                           (load-xref null)))])
+               (dynamic-require 'setup/xref 'load-collections-xref))])
+        (set! xref (load-collections-xref))))
     
     (let ([ht (make-hash)])
       (for-each
