@@ -1794,6 +1794,9 @@ The external contracts are as follows:
    checked in subclasses until the contracted class's implementation is
    no longer the entry point for dynamic dispatch.
    
+   If only the field name is present, this is equivalent to insisting only
+   that the method is present in the class.
+   
    @defexamples[#:eval 
                 class-eval
                 (define woody%
@@ -1816,6 +1819,9 @@ The external contracts are as follows:
    are checked on any external access (via @racket[get-field])
    and external mutations (via @racket[set-field!]) of the field.
 
+   If only the field name is present, this is equivalent to using the 
+   contract @racket[any/c] (but it is checked more efficiently).
+   
    @defexamples[#:eval
                 class-eval
                 (define woody/hat%
@@ -1846,6 +1852,9 @@ The external contracts are as follows:
    once, in which case the first such contract in the @racket[class/c]
    form is applied to the first value tagged with that name in the list
    of initialization arguments, and so on.
+   
+   If only the initialization argument name is present, this is equivalent to using the 
+   contract @racket[any/c] (but it is checked more efficiently).
    
    @defexamples[#:eval
                 class-eval
@@ -1878,7 +1887,12 @@ The external contracts are as follows:
 
 The internal contracts restrict the behavior of method calls
 made between classes and their subclasses; such calls are not
-controlled by the class contracts described above.
+controlled by the class contracts described above. 
+
+As with the external contracts, when a method or field name is specified
+ but no contract appears, the contract is satisfied merely with the
+ presence of the corresponding field or method.
+
 @itemize[
  @item{A method contract tagged with @racket[inherit] describes the
    behavior of the method when invoked directly (i.e., via
