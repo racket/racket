@@ -1845,6 +1845,12 @@
           (define x 3)
           (if ((negate pos?) x) x -5))
         #:ret (ret -NonPosReal (-FS -top -bot))]
+
+       [tc-err
+         (hash-ref! (ann (make-hash) (HashTable #f (-> #t))) #f (lambda () #t))]
+       [tc-e
+         (hash-ref (ann (make-hash) (HashTable #f #t)) #f #f)
+         -Boolean]
         )
   (test-suite
    "tc-literal tests"
