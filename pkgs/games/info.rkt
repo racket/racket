@@ -14,6 +14,7 @@
                "htdp-lib"
                "math-lib"
                "scribble-lib"
+               "racket-index"
                "sgl"
                "srfi-lib"
                "string-constants-lib"))

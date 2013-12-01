@@ -6,7 +6,8 @@
 
 (define collection 'multi)
 
-(define deps '(;; "Fake" dependencies to make them included
+(define deps '("racket-index"
+               ;; "Fake" dependencies to make them included
                ;; in a default build:
                "main-distribution-test"
                "distro-build"

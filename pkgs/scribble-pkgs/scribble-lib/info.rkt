@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("scheme-lib"
+(define deps '("racket-index"
+               "scheme-lib"
                "base"
                "compatibility-lib"
                "scribble-text-lib"

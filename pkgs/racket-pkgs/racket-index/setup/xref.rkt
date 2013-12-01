@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/xref
-         scheme/fasl
-         scheme/path
+         racket/fasl
+         racket/path
          racket/promise
          setup/dirs
          setup/getinfo
-         setup/private/path-utils
+         "private/doc-path.rkt"
          setup/doc-db)
 
 (provide load-collections-xref

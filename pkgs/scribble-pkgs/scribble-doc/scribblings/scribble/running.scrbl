@@ -126,6 +126,8 @@ information for all installed documentation, so
 
 renders @filepath{mine.scrbl} to @filepath{mine.html} with
 cross-reference links to the Racket installation's documentation.
+(The @filepath{racket-index} package must be installed to use
+@PFlag{m}/@DPFlag{main-xref-in}.)
 
 The @DPFlag{xref-in} flag loads cross-reference information by calling
 a specified module's function. The @racketmodname[setup/xref] module

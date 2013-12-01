@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("mzscheme-doc"
+(define build-deps '("racket-index"
+                     "mzscheme-doc"
                      "net-doc"
                      "scheme-lib"
                      "draw-doc"
