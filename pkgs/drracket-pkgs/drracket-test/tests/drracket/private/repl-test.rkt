@@ -1,7 +1,8 @@
-#lang scheme
+#lang racket
 
 ;; NOTES: 
-;;  - (expt 3 #f) is likely to never be optimized, making the stack traces produced from it predictable
+;;  - (expt 3 #f) is likely to never be optimized, 
+;;    making the stack traces produced from it predictable
 
 #|
 
@@ -23,30 +24,31 @@ This produces an ACK message
 ;; loc = (make-loc number number number)
 ;; all numbers in loc structs start at zero.
 
-(define-struct test (program
-                     ;; : (union 
-                     ;;    string 
-                     ;;    'fraction-sum
-                     ;;    (listof
-                     ;;      (union string?  // typed in
-                     ;;             'left    // left arrow key
-                     ;;             (list string? string?)))) // menu item select
-                     
-                     
-                     answer ;; : answer
-                     ;; the answers for the various modes of the test, specifically:
-                     ;;   with debugging enabled: execute, load with different filename, load with same filename
-                     ;;   as in ordinary racket: execute, load with different filename, load with same filename
-                     
-                     source-location ;; (or/c 'interactions 'definitions (cons number number))
-                     
-                     breaking-test? ;; : boolean
-                     
-                     ;; setup is called before the test case is run.
-                     setup ;; : -> void
-                     ;; teardown is called after the test case is complete.
-                     teardown ;; : -> void
-                     ))
+(define-struct test 
+  (program
+   ;; : (union 
+   ;;    string 
+   ;;    'fraction-sum
+   ;;    (listof
+   ;;      (union string?  // typed in
+   ;;             'left    // left arrow key
+   ;;             (list string? string?)))) // menu item select
+   
+   
+   answer ;; : answer
+   ;; the answers for the various modes of the test, specifically:
+   ;;   with debugging enabled: execute, load with different filename, load with same filename
+   ;;   as in ordinary racket: execute, load with different filename, load with same filename
+   
+   source-location ;; (or/c 'interactions 'definitions (cons number number))
+   
+   breaking-test? ;; : boolean
+   
+   ;; setup is called before the test case is run.
+   setup ;; : -> void
+   ;; teardown is called after the test case is complete.
+   teardown ;; : -> void
+   ))
 
 (define-struct answer (debug-execute debug-load-fn debug-load raw-execute raw-load-fn raw-load))
 
@@ -122,15 +124,16 @@ This produces an ACK message
            'interactions
            #f)
    
-   (mktest "("
-           ("{stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"
-            "{stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
-           'definitions
-           #f)
+   (mktest 
+    "("
+    ("{stop-22x22.png} read: expected a `)' to close `('"
+     "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"
+     "{stop-22x22.png} read: expected a `)' to close `('"
+     "{stop-22x22.png} read: expected a `)' to close `('"
+     "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
+    'definitions
+    #f)
    
    (mktest "."
            ("{stop-22x22.png} read: illegal use of `.'"
@@ -508,7 +511,13 @@ This produces an ACK message
 
    ;; error escape handler test
    (mktest
-    "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"
+    (string-append "(let ([old (error-escape-handler)])\n"
+                   "(+ (let/ec k\n"
+                   "(dynamic-wind\n"
+                   "(lambda () (error-escape-handler (lambda () (k 5))))\n"
+                   "(lambda () (expt 3 #f))\n"
+                   "(lambda () (error-escape-handler old))))\n"
+                   "10))")
     (#rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f\n15"
      #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f\n15"
      #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: contract violation.*given: #f\n15"
@@ -543,7 +552,10 @@ This produces an ACK message
            #f)
 
    ;; make sure syntax objects only go into good ports
-   (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
+   (mktest (string-append
+            "(define-syntax (foo stx)"
+            " (with-handlers ([exn:fail? (lambda (x) #'10)])"
+            " (syntax-local-value #'foot))) (foo)")
            ("10"
             "10"
             "10"
@@ -564,7 +576,9 @@ This produces an ACK message
            'interactions
            #f)
    
-   (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
+   (mktest (string-append
+            "(parameterize ([current-output-port (open-output-string)])"
+            " (fprintf (current-error-port) \"~e\" #'foot))")
            (#rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>"
@@ -588,7 +602,14 @@ This produces an ACK message
    (mktest
     ;; the begin/void combo is to make sure that no value printout
     ;; comes and messes up the source location for the error.
-    "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
+    (string-append
+     "(define s (make-semaphore 0))\n(queue-callback\n"
+     "(lambda ()\n"
+     "(dynamic-wind\n"
+     "void\n"
+     "(lambda () (expt 3 #f))\n"
+     "(lambda () (semaphore-post s)))))\n"
+     "(begin (yield s) (void))")
     (#rx"expt: contract violation.*given: #f"
      #rx"expt: contract violation.*given: #f"
      #rx"expt: contract violation.*given: #f"
@@ -607,7 +628,7 @@ This produces an ACK message
             #rx"user break"
             #rx"user break"
             #rx"user break")
-           'definitions
+           'dont-care
            #t)
    
    (mktest "(let l()(l))"
@@ -726,7 +747,9 @@ This produces an ACK message
    (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
            (#rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
             #rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: x:.*cannot reference undefined identifier"
+            (regexp
+             (string-append "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26:"
+                            " x:.*cannot reference undefined identifier"))
             #rx"x:.*cannot reference undefined identifier"
             #rx"x:.*cannot reference undefined identifier"
             #rx"x:.*cannot reference undefined identifier")
@@ -734,15 +757,17 @@ This produces an ACK message
            #f)
    
    ;; brought down from above for comparison
-   (mktest "xx"
-           (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
-            #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: xx:.*cannot reference undefined identifier"
-            #rx"xx:.*cannot reference undefined identifier"
-            #rx"xx:.*cannot reference undefined identifier"
-            #rx"xx:.*cannot reference undefined identifier")
-           'definitions
-           #f)
+   (mktest
+    "xx"
+    (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+     #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+     (regexp (string-append "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0:"
+                            " xx:.*cannot reference undefined identifier"))
+     #rx"xx:.*cannot reference undefined identifier"
+     #rx"xx:.*cannot reference undefined identifier"
+     #rx"xx:.*cannot reference undefined identifier")
+    'definitions
+    #f)
 
    ;; setup of the namespaces for pict printing (from slideshow)
 
@@ -989,14 +1014,14 @@ This produces an ACK message
     
   (define drscheme-frame (wait-for-drracket-frame))
   
-  (define interactions-text (queue-callback/res (λ () (send drscheme-frame get-interactions-text))))
-  (define interactions-canvas (queue-callback/res (λ () (send drscheme-frame get-interactions-canvas))))
-  (define definitions-text (queue-callback/res (λ () (send drscheme-frame get-definitions-text))))
-  (define definitions-canvas (queue-callback/res (λ () (send drscheme-frame get-definitions-canvas))))
+  (define ints-text (queue-callback/res (λ () (send drscheme-frame get-interactions-text))))
+  (define ints-canvas (queue-callback/res (λ () (send drscheme-frame get-interactions-canvas))))
+  (define defs-text (queue-callback/res (λ () (send drscheme-frame get-definitions-text))))
+  (define defs-canvas (queue-callback/res (λ () (send drscheme-frame get-definitions-canvas))))
   (define execute-button (queue-callback/res (λ () (send drscheme-frame get-execute-button))))
   
   (define wait-for-execute (lambda () (wait-for-button execute-button)))
-  (define get-int-pos (lambda () (queue-callback/res (λ () (get-text-pos interactions-text)))))
+  (define get-int-pos (lambda () (queue-callback/res (λ () (get-text-pos ints-text)))))
   
   
   (define short-tmp-load-filename
@@ -1014,12 +1039,12 @@ This produces an ACK message
     (do-execute drscheme-frame)
     (queue-callback/res
      (lambda ()
-       (let* ([start (send interactions-text paragraph-start-position 2)]
+       (let* ([start (send ints-text paragraph-start-position 2)]
               ;; since the fraction is supposed to be one char wide, we just
               ;; select one char, so that, if the regular number prints out,
               ;; this test will fail.
               [end (+ start 1)])
-         (send interactions-text set-position start end))))
+         (send ints-text set-position start end))))
     (test:menu-select "Edit" "Copy")
     (clear-definitions drscheme-frame)
     (type-in-definitions drscheme-frame "(+ ")
@@ -1066,15 +1091,19 @@ This produces an ACK message
               [(eq? item 'left)
                (queue-callback/res
                 (λ ()
-                  (send definitions-text 
+                  (send defs-text 
                         set-position
-                        (- (send definitions-text get-start-position) 1)
-                        (- (send definitions-text get-start-position) 1))))]
+                        (- (send defs-text get-start-position) 1)
+                        (- (send defs-text get-start-position) 1))))]
               [(pair? item) (apply test:menu-select item)]))
           program)])
       
       (do-execute drscheme-frame #f)
-      (queue-callback/res void) ;; make sure that the execute callback has really completed (is this necc w/ test:run-one below?)
+      
+      ;; make sure that the execute callback has really completed 
+      ;; (is this necc w/ test:run-one below?)
+      (queue-callback/res void)
+      
       (when breaking-test?
         (test:run-one (λ () (send (send drscheme-frame get-break-button) command))))
       (wait-for-execute)
@@ -1087,9 +1116,10 @@ This produces an ACK message
         (case language-cust
           [(raw) (void)]
           [else
-           (define edit-target (queue-callback/res (λ () (send drscheme-frame get-edit-target-window))))
-           (define defs-focus? (eq? edit-target definitions-canvas))
-           (define ints-focus? (eq? edit-target interactions-canvas))
+           (define edit-target 
+             (queue-callback/res (λ () (send drscheme-frame get-edit-target-window))))
+           (define defs-focus? (eq? edit-target defs-canvas))
+           (define ints-focus? (eq? edit-target ints-canvas))
            (cond
              [(eq? source-location 'dont-care)
               (void)]
@@ -1102,23 +1132,24 @@ This produces an ACK message
                 (eprintf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
                          program))]
              [defs-focus?
-              (let ([start (car source-location)]
-                    [finish (cdr source-location)])
-                (let* ([error-ranges (queue-callback/res (λ () (send interactions-text get-error-ranges)))]
-                       [error-range (and error-ranges
-                                         (not (null? error-ranges))
-                                         (car error-ranges))])
-                  (unless (and error-range
-                               (= (+ (srcloc-position error-range) -1) (loc-offset start))
-                               (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
-                                  (loc-offset finish)))
-                    (eprintf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
-                             program
-                             (and error-range
-                                  (list (+ (srcloc-position error-range) -1)
-                                        (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
-                             (list (loc-offset start)
-                                   (loc-offset finish))))))])])
+               (let ([start (car source-location)]
+                     [finish (cdr source-location)])
+                 (let* ([error-ranges (queue-callback/res (λ () (send ints-text get-error-ranges)))]
+                        [error-range (and error-ranges
+                                          (not (null? error-ranges))
+                                          (car error-ranges))])
+                   (unless (and error-range
+                                (= (+ (srcloc-position error-range) -1) (loc-offset start))
+                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
+                                   (loc-offset finish)))
+                     (eprintf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
+                              program
+                              (and error-range
+                                   (list (+ (srcloc-position error-range) -1)
+                                         (+ (srcloc-position error-range) -1 
+                                            (srcloc-span error-range))))
+                              (list (loc-offset start)
+                                    (loc-offset finish))))))])])
         
         ; check text for execute test
         (next-test)
@@ -1134,7 +1165,7 @@ This produces an ACK message
                    language-cust
                    execute-answer received-execute))
         
-        (test:new-window interactions-canvas)
+        (test:new-window ints-canvas)
         
         ; save the file so that load is in sync
         (test:menu-select "File" "Save Definitions")
@@ -1143,56 +1174,57 @@ This produces an ACK message
         (unless (queue-callback/res
                  (λ () 
                    (and (char=? #\>
-                                (send interactions-text get-character
-                                      (- (send interactions-text last-position) 2)))
+                                (send ints-text get-character
+                                      (- (send ints-text last-position) 2)))
                         (char=? #\space
-                                (send interactions-text get-character
-                                      (- (send interactions-text last-position) 1))))))
+                                (send ints-text get-character
+                                      (- (send ints-text last-position) 1))))))
           (test:keystroke #\return))
+        
+        (define (load-test short-filename load-answer)
+          ;; in order to erase the state in the namespace already, we clear (but don't save!)
+          ;; the definitions and click execute with the empty buffer
+          (test:new-window defs-canvas)
+          (test:menu-select "Edit" "Select All")
+          (test:menu-select "Edit" "Delete")
+          (do-execute drscheme-frame #f)
+          (wait-for-execute)
           
-        (let ([load-test
-               (lambda (short-filename load-answer)
-                 ;; in order to erase the state in the namespace already, we clear (but don't save!)
-                 ;; the definitions and click execute with the empty buffer
-                 (test:new-window definitions-canvas)
-                 (test:menu-select "Edit" "Select All")
-                 (test:menu-select "Edit" "Delete")
-                 (do-execute drscheme-frame #f)
-                 (wait-for-execute)
-                 
-                 ;; stuff the load command into the REPL 
-                 (insert-in-interactions drscheme-frame (format "(load ~s)" short-filename))
-                 
-                 ;; record current text position, then stuff a CR into the REPL
-                 (let ([load-text-start (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
-                   
-                   (test:keystroke #\return)
-                   
-                   (when breaking-test?
-                     (test:run-one (λ () (send (send drscheme-frame get-break-button) command))))
-                   (wait-for-execute)
-                   
-                   (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
-                          [received-load 
-                           (fetch-output drscheme-frame load-text-start load-text-end)])
-                     
-                     ;; check load text 
-                     (next-test)
-                     (unless (cond
-                               [(string? load-answer)
-                                (string=? load-answer received-load)]
-                               [(regexp? load-answer)
-                                (regexp-match load-answer received-load)]
-                               [else #f])
-                       (failure)
-                       (eprintf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
-                                short-filename
-                                program load-answer received-load)))))])
-          (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
-          (when (file-exists? tmp-load3-filename)
-            (delete-file tmp-load3-filename))
-          (copy-file tmp-load-filename tmp-load3-filename)
-          (load-test tmp-load3-short-filename (make-load-answer in-vector language-cust tmp-load3-short-filename)))
+          ;; stuff the load command into the REPL 
+          (insert-in-interactions drscheme-frame (format "(load ~s)" short-filename))
+          
+          ;; record current text position, then stuff a CR into the REPL
+          (define load-text-start 
+            (+ 1 (queue-callback/res (λ () (send ints-text last-position)))))
+          
+          (test:keystroke #\return)
+          
+          (when breaking-test?
+            (test:run-one (λ () (send (send drscheme-frame get-break-button) command))))
+          (wait-for-execute)
+          
+          (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
+                 [received-load 
+                  (fetch-output drscheme-frame load-text-start load-text-end)])
+            
+            ;; check load text 
+            (next-test)
+            (unless (cond
+                      [(string? load-answer)
+                       (string=? load-answer received-load)]
+                      [(regexp? load-answer)
+                       (regexp-match load-answer received-load)]
+                      [else #f])
+              (failure)
+              (eprintf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
+                       short-filename
+                       program load-answer received-load))))
+        (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
+        (when (file-exists? tmp-load3-filename)
+          (delete-file tmp-load3-filename))
+        (copy-file tmp-load-filename tmp-load3-filename)
+        (load-test tmp-load3-short-filename 
+                   (make-load-answer in-vector language-cust tmp-load3-short-filename))
         
         (teardown)
         
@@ -1214,7 +1246,7 @@ This produces an ACK message
   (define (run-main-tests language-cust)
     (random-seed-test)
     
-    (test:new-window definitions-canvas)
+    (test:new-window defs-canvas)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (let/ec escape 
@@ -1274,7 +1306,7 @@ This produces an ACK message
     (wait-for-execute)
     
     (for-each test:keystroke (string->list "x"))
-    (let ([start (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
+    (let ([start (+ 1 (queue-callback/res (λ () (send ints-text last-position))))])
       (test:keystroke #\return)
       (wait-for-execute)
       
@@ -1286,19 +1318,20 @@ This produces an ACK message
           (eprintf "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
   
   (define (random-seed-test)
-    (define expression (format "~s" '(pseudo-random-generator->vector (current-pseudo-random-generator))))
+    (define expression 
+      (format "~s" '(pseudo-random-generator->vector (current-pseudo-random-generator))))
     (next-test)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (wait-for-execute)
     
     (insert-in-interactions drscheme-frame expression)
-    (let ([start1 (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
+    (let ([start1 (+ 1 (queue-callback/res (λ () (send ints-text last-position))))])
       (test:keystroke #\return)
       (wait-for-execute)
       (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
         (insert-in-interactions drscheme-frame expression)
-        (let ([start2 (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
+        (let ([start2 (+ 1 (queue-callback/res (λ () (send ints-text last-position))))])
           (test:keystroke #\return)
           (wait-for-execute)
           (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
@@ -1312,9 +1345,11 @@ This produces an ACK message
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (wait-for-execute)
-    (let ([ints-just-after-welcome (queue-callback/res (λ () (+ 1 (send interactions-text last-position))))])
+    (let ([ints-just-after-welcome (queue-callback/res (λ () (+ 1 (send ints-text last-position))))])
       
-      (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
+      (type-in-definitions 
+       drscheme-frame
+       "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
       (test:menu-select "File" "Save Definitions")
       
       (clear-definitions drscheme-frame)
@@ -1322,7 +1357,7 @@ This produces an ACK message
       (wait-for-execute)
       
       (for-each test:keystroke (string->list (format "(load ~s)" tmp-load-short-filename)))
-      (let ([start (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
+      (let ([start (+ 1 (queue-callback/res (λ () (send ints-text last-position))))])
         (test:keystroke #\return)
         (wait-for-execute)
         (let* ([end (- (get-int-pos) 1)]
@@ -1333,7 +1368,7 @@ This produces an ACK message
           (next-test)))
       
       (for-each test:keystroke (string->list "(+ 4 5)"))
-      (let ([start (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
+      (let ([start (+ 1 (queue-callback/res (λ () (send ints-text last-position))))])
         (test:keystroke #\return)
         (wait-for-execute)
         (let* ([end (- (get-int-pos) 1)]
