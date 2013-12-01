@@ -147,7 +147,8 @@
 (define all-pkgs
   (let loop ([all-pkgs pkgs] [pkgs pkgs])
     (define new-pkgs
-      (for/fold ([new-pkgs (set)]) ([pkg-name (in-set pkgs)])
+      (for/fold ([new-pkgs (set)]) ([pkg-name (in-set pkgs)]
+                                    #:unless (equal? pkg-name "racket"))
         (define dir (hash-ref found pkg-name #f))
         (unless dir
           (error 'link-all "requested package not available: ~s" pkg-name))
@@ -162,7 +163,8 @@
          new-pkgs
          (for/set ([dep (in-list deps)]
                    #:unless (or (set-member? all-pkgs dep)
-                                (set-member? pkgs dep)))
+                                (set-member? pkgs dep)
+                                (equal? dep "racket")))
            dep))))
     (if (set-empty? new-pkgs)
         all-pkgs
