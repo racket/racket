@@ -52,7 +52,7 @@ They can also be called with @elem["@"] notation as
   @title[#:tag "how-to"]{How to Design @italic{Great} Programs}
 }|
 
-Although the procedures are mostly design to be used from @elem["@"]
+Although the procedures are mostly designed to be used from @elem["@"]
 mode, they are easier to document in Racket mode (partly because we
 have @racketmodname[scribble/manual]).
 
@@ -131,7 +131,7 @@ show the author(s) of a document, where each author is represented by
 @racket[title] for the beginning of a document. See also
 @racket[author+email].}
 
-@defproc[(author+email [author-name elem] 
+@defproc[(author+email [author-name content?]
                        [email string?] 
                        [#:obfuscate? obfuscate? any/c #f])
          element?]{
@@ -341,7 +341,7 @@ See also @racket[literal].}
 @section{Text Styles and Content}
 
 @defproc[(elem [pre-content pre-content?] ...
-               [#:style style (or style? string? symbol? #f) #f])
+               [#:style style (or/c style? string? symbol? #f) #f])
         element?]{
 
 Wraps the @tech{decode}d @racket[pre-content] as an element with style
