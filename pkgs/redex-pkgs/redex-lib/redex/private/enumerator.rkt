@@ -926,7 +926,7 @@
   (map/e
    (compose string->symbol list->string)
    (compose string->list symbol->string)
-   (many1/e char/e)))
+   (many/e char/e)))
 
 (define base/e
   (disj-sum/e #:alternate? #t
