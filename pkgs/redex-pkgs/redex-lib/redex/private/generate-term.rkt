@@ -265,9 +265,13 @@
                        property att ret (and print? show) fix (and fix term-match)
                        keep-going?)])])))))))
 
-(define (ith-generator lang pat bound)
+(define (ith-generator lang pat orig-bound)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
+  (define the-size (enum-size enum))
+  (define bound (if (equal? the-size +inf.0)
+                    orig-bound
+                    (min orig-bound the-size)))
   (λ (_size _attempt _retries)
     (values (enum-ith enum (random-natural bound))
             'ignored)))
@@ -578,12 +582,15 @@
 (define (generate-ith/proc lang pat)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
+  (define the-size (enum-size enum))
   (λ (i)
     (unless (exact-nonnegative-integer? i)
       (raise-argument-error 'generate-term
                             "exact-nonnegative-integer?"
                             i))
-    (enum-ith enum i)))
+    (enum-ith enum (if (equal? the-size +inf.0)
+                       i
+                       (modulo i the-size)))))
 
 (define-syntax (generate-term/mf stx)
   (syntax-case stx ()

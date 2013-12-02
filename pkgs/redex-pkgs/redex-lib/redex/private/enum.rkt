@@ -23,6 +23,7 @@
                       any/c ;; pattern
                       enum?)]
   [enum-ith (-> enum? exact-nonnegative-integer? any/c)]
+  [enum-size (-> enum? (or/c +inf.0 exact-nonnegative-integer?))]
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
@@ -39,6 +40,11 @@
 
 ;; Top level exports
 (define enum-ith decode)
+(define (enum-size e)
+  (define s (size e))
+  (if (equal? s +inf.f)
+      +inf.0
+      s))
 
 (define (lang-enumerators lang cc-lang)
   (define (make-lang-table! ht lang)

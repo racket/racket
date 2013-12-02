@@ -1,6 +1,6 @@
 #lang racket/base
 (require rackunit
-         redex)
+         redex/reduction-semantics)
 
 (define-language Base
   (x a b c)
