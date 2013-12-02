@@ -1111,7 +1111,7 @@
          (with-syntax ([(name ...) names]
                        [(lifted ...) lifts])
            (syntax/loc stx (define-syntaxes (name ...)
-                             (values (make-rename-transformer #'lifted) ...)))))]))
+                             (values (make-rename-transformer (quote-syntax lifted)) ...)))))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   )
