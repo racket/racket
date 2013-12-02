@@ -8,5 +8,5 @@
     "typed-racket/fail"
     "typed-racket/xfail"
     "typed-racket/optimizer" ;; FIXME: should be improved by stamourv
-    ;; this file is weird
-    "typed-racket/unit-tests/special-env-typecheck-tests.rkt"))
+    "typed-racket/tr-random-testing.rkt" ;; Requires recompiling all of redex when rebuilding TR tests
+    ))
