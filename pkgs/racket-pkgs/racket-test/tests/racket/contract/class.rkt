@@ -1710,6 +1710,55 @@
                         'pos
                         'neg)])
     (send (new cls%) m 3 #t)))
+  
+  
+  ;; test that unspecified inits and fields aren't internally conflating #f with the contract #f
+  (test/spec-passed
+   'false/no-contract-conflation1
+   '(new (contract (class/c (init x))
+                   (class object% (init x) (super-new))
+                   'pos 
+                   'neg)
+         [x 1]))
+
+  (test/neg-blame
+   'false/no-contract-conflation2
+   '(new (contract (class/c (init [x #f]))
+                   (class object% (init x) (super-new))
+                   'pos 
+                   'neg)
+         [x 1]))
+  
+  (test/spec-passed
+   'false/no-contract-conflation3
+   '(new (contract (class/c (field x))
+                   (class object% (field [x 1]) (super-new))
+                   'pos 
+                   'neg)))
+
+  (test/pos-blame
+   'false/no-contract-conflation4
+   '(get-field x
+               (new (contract (class/c (field [x #f]))
+                              (class object% (field [x 1]) (super-new))
+                              'pos 
+                              'neg))))
+
+  (test/spec-passed
+   'false/no-contract-conflation5
+   '(new (contract (class/c (init-field x))
+                   (class object% (init-field x) (super-new))
+                   'pos 
+                   'neg)
+         [x 1]))
+
+  (test/neg-blame
+   'false/no-contract-conflation6
+   '(new (contract (class/c (init-field [x #f]))
+                   (class object% (init-field x) (super-new))
+                   'pos 
+                   'neg)
+         [x 1]))
 
 (let ([expected-given?
        (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))

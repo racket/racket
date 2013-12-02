@@ -2915,7 +2915,9 @@ An example
     (define inits+contracts 
       (for/list ([init (in-list (class/c-inits ctc))]
                  [ctc (in-list (class/c-init-contracts ctc))])
-        (list init ((contract-projection ctc) bswap))))
+        (if ctc
+            (list init ((contract-projection ctc) bswap))
+            (list init #f))))
     
     (λ (cls)
       (class/c-check-first-order ctc cls (λ args (apply raise-blame-error blame cls args)))
@@ -3188,7 +3190,7 @@ An example
                     [else (values (reverse prefix) inits/c)]))))
           ;; run through the list of init-args and apply contracts for same-named
           ;; init args
-          (define (apply-contracts inits/c init-args)
+          (define (apply-init-contracts inits/c init-args)
             (let loop ([init-args init-args]
                        [inits/c inits/c]
                        [handled-args null])
@@ -3202,7 +3204,9 @@ An example
                        [p (list-ref (car inits/c) 1)])
                    (loop (cdr init-args)
                          (cdr inits/c)
-                         (cons (cons (car init-arg) (p (cdr init-arg)))
+                         (cons (cons (car init-arg) (if p
+                                                        (p (cdr init-arg))
+                                                        (cdr init-arg)))
                                handled-args)))]
                 [else (loop (cdr init-args)
                             inits/c
@@ -3217,7 +3221,7 @@ An example
                           handled-args
                           (let-values ([(prefix suffix) (grab-same-inits inits/c)])
                             (loop suffix
-                                  (apply-contracts prefix init-args)))))])
+                                  (apply-init-contracts prefix init-args)))))])
                ;; Since we never consume init args, we can ignore si_leftovers
                ;; since init-args is the same.
                (if never-wrapped?
