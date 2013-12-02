@@ -77,7 +77,6 @@
    [(pred Number) (make-pred-ty N)]
    [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
-   [(Number -> Number) (t:-> N N)]
    [(All (A) Number -> Number) (-poly (a) (t:-> N N))]
    [(All (A) (Number -> Number)) (-poly (a) (t:-> N N))]
    [(All (A) A -> A) (-poly (a) (t:-> a a))]
@@ -112,8 +111,6 @@
    [(Listof Number) (make-Listof  N)]
 
    [a (-v a) (dict-set initial-tvar-env 'a (-v a))]
-   [(All (a ...) (a ... -> Number))
-    (-polydots (a) ((list) [a a] . ->... . N))]
 
    [(Any -> Boolean : Number) (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (Number @ 0) #:- (! Number @ 0))

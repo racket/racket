@@ -56,6 +56,7 @@
 (require
   "evaluator.rkt"
   "test-utils.rkt"
+  syntax/location
   (for-syntax
     racket/base
     syntax/parse
@@ -80,14 +81,14 @@
     (pattern (~seq) #:attr v #'#f))
 
 
-  (define (check-no-error stx body)
+  (define (test-no-error stx name body)
     (quasisyntax/loc stx
-      (check-not-exn
+      (test-not-exn (format "~a ~a" (quote-line-number #,name) '#,name)
         (lambda () #,body))))
 
-  (define (check-syntax-error stx body)
+  (define (test-syntax-error stx name body)
     (quasisyntax/loc stx
-      (check-exn
+      (test-exn (format "~a ~a" (quote-line-number #,name) '#,name)
         exn:fail:syntax?
         (lambda () #,body)))))
 
@@ -96,10 +97,10 @@
 (define-syntax (tc-e stx)
   (syntax-parse stx
     [(_ code:expr #:proc p)
-     (check-no-error stx
+     (test-no-error stx #'code
        #'(phase1-eval (test/proc (quote-syntax code) p)))]
     [(_ code:expr return:return x:expected)
-     (check-no-error stx
+     (test-no-error stx #'code
        #'(phase1-eval (test (quote-syntax code) return.v x.v)))]))
 
 (define-syntax (tc-e/t stx)
@@ -110,7 +111,7 @@
 (define-syntax (tc-l stx)
   (syntax-parse stx
     [(_ lit ty exp:expected)
-     (check-no-error stx
+     (test-no-error stx (syntax/loc #'lit (LITERAL lit))
        #'(phase1-eval (test-literal #'lit ty exp.v)))]))
 
 
@@ -118,13 +119,13 @@
 (define-syntax (tc-err stx)
   (syntax-parse stx
     [(_ code:expr ex:expected)
-     (check-syntax-error stx
+     (test-syntax-error stx (syntax/loc #'code (FAIL code))
        #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
 
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
     [(_ lit:expr ex:expected)
-     (check-syntax-error stx
+     (test-syntax-error stx #'(syntax/loc #'lit (LITERAL/FAIL lit))
        #'(phase1-eval (tc-literal #'lit ex.v)))]))
 
 
