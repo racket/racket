@@ -306,9 +306,14 @@
     ;; function type, prune if possible.
     [(Function: (list (arr: doms rngs rests drests kws) ...))
      (match-let ([(list pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
-       (let ([res (make-Function (map make-arr
-                                      pdoms rngs rests drests (make-list (length pdoms) null)))])
-         res))]
+       (if (= (length pdoms) (length doms))
+           ;; pruning didn't improve things, return the original
+           ;; (Note: pruning may have reordered clauses, so may not be `equal?' to
+           ;;  the original, which may confuse `:print-type''s pruning detection)
+           t
+           ;; pruning helped, return pruned type
+           (make-Function (map make-arr
+                               pdoms rngs rests drests (make-list (length pdoms) null)))))]
     ;; not a function type. keep as is.
     [_ t]))
 
