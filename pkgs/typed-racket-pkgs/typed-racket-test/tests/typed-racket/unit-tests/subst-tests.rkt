@@ -8,10 +8,10 @@
 (gen-test-main)
 
 (define-syntax-rule (s img var tgt result)
-  (test-eq? "test" (substitute img 'var tgt) result))
+  (test-eq? (format "~a" '(img tgt)) (substitute img 'var tgt) result))
 
 (define-syntax-rule (s... imgs var tgt result)
-  (test-eq? "test" (substitute-dots (list . imgs) #f 'var tgt) result))
+  (test-eq? (format "~a" '(img tgt)) (substitute-dots (list . imgs) #f 'var tgt) result))
 
 (define tests
   (test-suite "Tests for substitution"

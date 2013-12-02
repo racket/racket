@@ -56,10 +56,6 @@
     [t-opt (() ()) (-> result)]
     [t-opt ((one) ())
            (-> one result)]
-    [t-opt (() (one))
-           (cl->*
-             (-> one true result)
-             (-> false false result))]
     [t-opt ((one two three four) ())
        (-> one two three four result)]
     [t-opt (() (one))

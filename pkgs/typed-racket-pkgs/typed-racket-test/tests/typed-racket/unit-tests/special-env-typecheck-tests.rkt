@@ -31,7 +31,7 @@
 
 (define-syntax (tc-e stx)
   (syntax-parse stx
-    [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
+    [(tc-e expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
     [(id a #:ret b)
      (syntax/loc stx
        (test-case (format "~a ~a" (quote-line-number id) 'a)
