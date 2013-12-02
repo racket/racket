@@ -9,7 +9,7 @@ from byte strings to bytes strings. A Racket process's initial
 environment variables: accesses or changes to the set read or change
 operating-system environment variables for the Racket process.
 
-Since Windows environment variables are case-insensitive, and
+Since Windows environment variables are case-insensitive,
 @tech{environment variable set}'s key byte strings on Windows are
 case-folded. More precisely, key byte strings are coerced to a UTF-8
 encoding of characters that are converted to lowercase via
