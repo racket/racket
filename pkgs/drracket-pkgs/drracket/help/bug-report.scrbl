@@ -13,7 +13,7 @@
                                 (make-mixin-contract frame%)
                                 values])
          void?]{
-  Opens a bug report window to edit the but report identified by @racket[this-bug-id].
+  Opens a bug report window to edit the bug report identified by @racket[this-bug-id].
   If @racket[this-bug-id] is @racket[#f], then creates a new bug ID and uses that one.
   
   The @racket[frame-mixin] argument is passed the frame class before creating the window.
@@ -26,6 +26,10 @@
 @defproc[(discard-all-saved-bug-reports) void?]{
   Deletes all of the saved bug reports, except those currently
   open in frames.
+}
+
+@defproc[(unsave-bug-report [bug-id exact-positive-integer?]) void?]{
+  Deletes the saved bug report identified by @racket[bug-id].
 }
 
 @defstruct[brinfo ([title label-string?]

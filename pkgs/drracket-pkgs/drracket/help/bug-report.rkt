@@ -15,6 +15,7 @@
 (provide help-desk:report-bug
          (struct-out brinfo)
          saved-bug-report-titles/ids
+         unsave-bug-report
          discard-all-saved-bug-reports)
 
 (define (bug-server-url path)
