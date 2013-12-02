@@ -973,7 +973,11 @@
                            (-> (-values null))
                            (->acc (list a) a null)
                            ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b))))]
-[call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
+[call-with-values
+  (-polydots (b a)
+    (cl->*
+     ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b)
+     ((-> ManyUniv) ((list) Univ . ->* . b) . -> . b)))]
 
 ;; Section 10.2
 [raise (cl->* (Univ . -> . (Un))

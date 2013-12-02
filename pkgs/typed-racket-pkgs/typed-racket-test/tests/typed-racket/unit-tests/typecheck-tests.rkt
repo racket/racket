@@ -1915,6 +1915,11 @@
                  (getter 'bad 0))]
        [tc-err (struct-type-make-constructor 'bad)]
        [tc-err (struct-type-make-predicate 'bad)]
+
+       [tc-e
+         (call-with-values (lambda () (eval #'(+ 1 2))) (inst list Any))
+         (-lst Univ)]
+
         )
   (test-suite
    "tc-literal tests"

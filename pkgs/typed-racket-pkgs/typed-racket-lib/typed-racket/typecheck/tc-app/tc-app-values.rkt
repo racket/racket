@@ -10,7 +10,7 @@
          (for-template racket/base))
 
 
-(import tc-expr^)
+(import tc-expr^ tc-app^)
 (export tc-app-values^)
 
 (define-tc/app-syntax-class (tc/app-values expected)
@@ -19,8 +19,9 @@
   (pattern (call-with-values prod con)
     (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
       [(tc-results: ts fs os)
-       (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)]))
-
+       (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)]
+      [(tc-any-results:)
+       (tc/app-regular this-syntax expected)]))
   ;; special case for `values' with single argument
   ;; we just ignore the values, except that it forces arg to return one value
   (pattern (values arg)

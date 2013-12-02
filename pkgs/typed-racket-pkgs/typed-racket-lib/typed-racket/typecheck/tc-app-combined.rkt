@@ -20,5 +20,7 @@
   (export tc-app^)
 
   (link tc-app-main@
-        tc-app-hetero@ tc-app-list@ tc-app-apply@ tc-app-values@ tc-app-keywords@
+        tc-app-hetero@ tc-app-list@ tc-app-apply@
+        (() tc-app-values@)
+        tc-app-keywords@
         tc-app-objects@ tc-app-eq@ tc-app-lambda@ tc-app-special@))
