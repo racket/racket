@@ -1,6 +1,6 @@
 #lang racket/base
 (require rackunit
-         redex
+         redex/reduction-semantics
          (for-syntax racket/base))
 
 (define-syntax (try-it stx)

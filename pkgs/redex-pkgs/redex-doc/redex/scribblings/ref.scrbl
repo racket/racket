@@ -1741,9 +1741,6 @@ Generates terms in a number of different ways:
                  that accepts a size bound and returns a random term. Calling this function 
                  (even with the same size bound) may be more efficient than using the first case.
                  
-                 In the third case, picks a term from an enumeration of the terms, returning the
-                 term whose index matches the value of @racket[index-expr]. The fourth case 
-                 returns a function that accepts an index and returns that term.
                  
                  @examples[#:eval
                            redex-eval
@@ -1755,24 +1752,23 @@ Generates terms in a number of different ways:
                              (x ::= a b c))
                            
                            (for/list ([i (in-range 10)])
-                             (generate-term L e 3))
-                                                   
-                           (for/list ([i (in-range 10)])
+                             (generate-term L e 3))]
+                 
+                 The @racket[#:i-th] option uses an enumeration of the non-terminals in a language. 
+                 If @racket[index-expr] is supplied, @racket[generate-term] returns the corresponding
+                 term and if it isn't, @racket[generate-term] returns a function from indicies
+                 to terms.
+                 @examples[#:eval
+                           redex-eval
+                           (for/list ([i (in-range 9)])
                              (generate-term L e #:i-th i))]
-                 
-                 The @racket[#:i-th] option uses an automatically generated enumeration of the 
-                 non-terminals in a language. That is, a bijection from the natural numbers to the
-                 terms that match by a non-terminal by @racket[redex-match] with a few exceptions for
-                 ambiguous grammars. It will also construct enumerations for arbitrary patterns given
-                 to @racket[generate-term].
-                 
-                 Base type enumerations such as @racket[boolean], @racket[natural] and 
-                 @racket[integer] are what you might expect
+
+                 Base type enumerations such as @racket[boolean], 
+                 @racket[natural] and @racket[integer] are what you might expect:
                  
                  @examples[#:eval
                            redex-eval
-                           (define-language L)
-                           (for/list ([i (in-range 2)])
+                           (for/list ([i (in-range 10)])
                              (generate-term L boolean #:i-th i))
                            (for/list ([i (in-range 10)])
                              (generate-term L natural #:i-th i))
@@ -1785,17 +1781,32 @@ Generates terms in a number of different ways:
                  
                  @examples[#:eval
                            redex-eval
-                           (define-language L)
                            (for/list ([i (in-range 20)])
                              (generate-term L real #:i-th i))
                            (for/list ([i (in-range 20)])
                              (generate-term L number #:i-th i))]
                  
-                 The @racket[string], @racket[variable], @racket[variable-prefix],
-                 @racket[variable-except], and @racket[variable-not-otherwise-mentioned] are defined
-                 similarly, first enumerating single-character sequences which first enumerate 
-                 lowercase Latin characters, then upercase Latin, and then every remaining Unicode
-                 character.
+                 The @racket[string] enumeration produces all single character strings before
+                 going on to strings with multiple characters. For each character it starts
+                 the lowercase Latin characters, then upercase Latin, and then every remaining Unicode
+                 character. The @racket[variable] enumeration is the same, except it produces
+                 symbols instead of strings.
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (generate-term L string #:i-th 0)
+                           (generate-term L string #:i-th 1)
+                           (generate-term L string #:i-th 26)
+                           (generate-term L string #:i-th 27)
+                           (generate-term L string #:i-th 52)
+                           (generate-term L string #:i-th 53)
+                           (generate-term L string #:i-th 956)
+                           (generate-term L variable #:i-th 1)
+                           (generate-term L variable #:i-th 27)]
+                 
+                 The @racket[variable-prefix], @racket[variable-except], and
+                 @racket[variable-not-otherwise-mentioned] are defined
+                 similarly, as you expect.
                  
                  @examples[#:eval
                            redex-eval
@@ -1803,52 +1814,46 @@ Generates terms in a number of different ways:
                              (used ::= a b c)
                              (except ::= (variable-except a))
                              (unused ::= variable-not-otherwise-mentioned))
-                           (for/list ([i (in-range 60)])
-                             (generate-term L string #:i-th i))
-                           (for/list ([i (in-range 60)])
-                             (generate-term L variable #:i-th i))
                            (for/list ([i (in-range 10)])
-                             (generate-term L (variable-prefix a) #:i-th i))
+                             (generate-term L (variable-prefix a:) #:i-th i))
                            (for/list ([i (in-range 10)])
                              (generate-term L except #:i-th i))
                            (for/list ([i (in-range 10)])
                              (generate-term L unused #:i-th i))]
-                 
+
                  Finally, the @racket[any] pattern enumerates sexpressions of the above base-types.
                  @examples[#:eval
                            redex-eval
-                           (define-language L)
                            (for/list ([i (in-range 20)])
                              (generate-term L any #:i-th i))]
                  
                  In addition, all other pattern types are supported except for mismatch @racket[_!_]
                  patterns, mismatch repeat @racket[..._!_] patterns and @racket[side-condition] 
-                 patterns.  Of these three, @racket[side-condition] is the only one impossible to 
-                 support.
+                 patterns.
                  
-                 The only caveat to enumerations is that while they do generate every term that 
-                 satisfies @racket[redex-check] (except for some base types), some redex patterns are
-                 ambiguous and result in certain terms being generated multiple times. The simplest
-                 example is the repeat pattern
+                 The enumerators do not repeat terms unless the given pattern is ambiguous.
+                 Roughly speaking, the enumerator generates all possible ways that a pattern
+                 might be parsed and since ambiguous patterns have multiple ways they might
+                 be parsed, those multiple parsings turn into repeated elements in the enumeration.
                  
                  @examples[#:eval
                            redex-eval
-                           (define-language L
-                             (ambiguous ::= (boolean ... boolean ...)))
-                           (for/list ([i (in-range 10)])
-                             (generate-term L ambiguous #:i-th i))]
+                           (for/list ([i (in-range 9)])
+                             (generate-term L (boolean_1 ... boolean_2 ...) #:i-th i))]
                  
-                 Other sources of ambiguity are @racket[in-hole] and overlapping non-terminals
+                 Other sources of ambiguity are @racket[in-hole] and overlapping non-terminals.
                  @examples[#:eval
                            redex-eval
                            (define-language L
-                             (a-hole ::= (boolean hole)
-                                         (hole boolean))
-                             (hole-amb ::= (in-hole a-hole boolean))
-                             (overlap ::= natural
-                                          integer))
-                           (for/list ([i (in-range 8)])
-                             (generate-term L hole-amb #:i-th i))
+                             (e ::= (e e) (λ (x) e) x)
+                             (E ::= hole (e E) (E e))
+                             (x ::= a b c))
+
+                           (for/list ([i (in-range 9)])
+                             (generate-term L (in-hole E e) #:i-th i))
+                           
+                           (define-language L
+                             (overlap ::= natural integer))
                            (for/list ([i (in-range 10)])
                              (generate-term L overlap #:i-th i))]
                  
@@ -1981,7 +1986,8 @@ how @math{t} is generated:
                   if the first is the argument to the metafunction, the
                   second will be the result.}]
 
-@racket[redex-check] generates at most @racket[attempts-expr] (default @racket[(default-check-attempts)])
+@racket[redex-check] generates at most @racket[attempts-expr] 
+(default @racket[(default-check-attempts)])
 random terms in its search. The size and complexity of these terms tend to increase 
 with each failed attempt. The @racket[#:attempt-size] keyword determines the rate at which
 terms grow by supplying a function that bounds term size based on the number of failed
@@ -2257,7 +2263,8 @@ exploring reduction sequences.
                  [expr (or/c any/c (listof any/c))]
                  [#:multiple? multiple? boolean? #f]
                  [#:reduce reduce (-> reduction-relation? any/c
-                                      (listof (list/c (union false/c string?) any/c))) apply-reduction-relation/tag-with-names]
+                                      (listof (list/c (union false/c string?) any/c)))
+                           apply-reduction-relation/tag-with-names]
                  [#:pred pred
                          (or/c (-> sexp any)
                                (-> sexp term-node? any))
@@ -2280,7 +2287,9 @@ exploring reduction sequences.
                  [#:layout layout (-> (listof term-node?) void?) void]
                  [#:edge-labels? edge-labels? boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
-                 [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
+                 [#:graph-pasteboard-mixin graph-pasteboard-mixin 
+                                           (make-mixin-contract graph-pasteboard<%>)
+                                           values])
          void?]{
 
 This function opens a new window and inserts each expression
