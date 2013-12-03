@@ -151,7 +151,7 @@ that even if you discover a package name from PLT's @tech{package
 catalog}, your installation may be configured to consult a different
 @tech{package catalog} to locate the package's implementation (to
 obtain a pre-built version of the package, for example), but you
-should expect the inatllation-configured @tech{package catalog} to
+should expect the installation-configured @tech{package catalog} to
 deliver the package that is described on the PLT @tech{package
 catalog}.
 
@@ -220,7 +220,7 @@ package is updated if the commit identifier doesn't match the
 @tech{checksum} of the current installation.
 
 In some cases, updating a package may require an update to one of the
-package's dependencies. That should only happen when the package
+package's dependencies. That should happen only when the package
 requires a new binding, feature, or bug fix from the dependent
 package, since packages are meant to evolve in an otherwise
 backward-compatible way. Package @tech{versions} provide a way for
@@ -379,18 +379,12 @@ Whenever you
 @commandline{git push}
 
 your changes will automatically be discovered by those who use
-@exec{raco pkg update} after installing from your @tech{package source}.
+@exec{raco pkg update} after installing from your
+github-based @tech{package source}.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
 @subsection[#:tag "manual-deploy"]{Manual Deployment}
-
-@margin-note{By default, @exec{raco pkg create} generates a
-@filepath{.zip} archive. For more options, refer to the
-@command-ref{create} documentation. If you want to generate an archive
-through some other means, simply archive what you made in the first
-part of this section. For more formal details, refer to the
-@tech{package} definition.}
 
 Alternatively, you can deploy your package by publishing it on a URL
 you control. If you do this, it is preferable to create an archive
@@ -410,6 +404,13 @@ Whenever you want to provide a new release of a package, recreate and reupload t
 package archive (and @tech{checksum}). Your changes will automatically be
 discovered by those who used your package source when they use
 @exec{raco pkg update}.
+
+@margin-note{By default, @exec{raco pkg create} generates a
+@filepath{.zip} archive. For more options, refer to the
+@command-ref{create} documentation. If you want to generate an archive
+through some other means, simply archive what you made in the first
+part of this section. For more formal details, refer to the
+@tech{package} definition.}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -467,10 +468,10 @@ present interfaces to external, versioned things, such as
 package implementors to effectively declare dependencies on provided
 features. Such declarations allow @exec{raco pkg install} and
 @exec{raco pkg update} to help check dependencies.  Declaring and
-changing a version is optional, and @tech{package catalog}
-ignore version declarations; in particular, a package is a candidate
+changing a version is optional, and the @tech{package catalog}
+ignores version declarations; in particular, a package is a candidate
 for updating when its @tech{checksum} changes, independent of whether
-the package's version changes or in which direction the version
+the package's version changes or even in which direction the version
 changes.}
 
 @item{Packages should not combine large sets of utilities libraries
@@ -493,7 +494,7 @@ documentation is not useful), define a package
 @secref["metadata"]). If you want to keep tests separate, put them a
 @pkgname{@nonterm{pkg-name}-test} package that is @emph{not} a
 dependency of @pkgname{@nonterm{pkg-name}}. Similarly, use
-@pkgname{@nonterm{package-exe}} for executables.}
+@pkgname{@nonterm{pkg-name}-exe} for executables.}
 
 @item{Packages should generally provide one collection with a name
 similar to the name of the package. For example, @pkgname{libgtk1}
