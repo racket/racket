@@ -619,7 +619,7 @@ blockquote > blockquote.SVInsetFlow {
     font-size: 110%;
     margin-top: 1rem;
     margin-bottom: 3rem;
-    width: auto;
+    width: 30rem;
     height: auto;
 }
 
