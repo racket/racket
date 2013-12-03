@@ -185,7 +185,7 @@ tbody > tr:first-child > td > .together {
 }
 
 .RktBlk {
-  white-space: normal;
+  white-space: pre;
   text-align: left;
 }
 
@@ -209,7 +209,8 @@ tbody > tr:first-child > td > .together {
 
 .defmodule td span.hspace:first-child {
   position: absolute;
-    width: 0;
+  width: 0;
+  display: inline-block;
 }
 
 .defmodule .RpackageSpec .Smaller,
