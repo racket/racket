@@ -1271,4 +1271,11 @@
              (public m)
              (define m (case-lambda [(x) "bad"])))
            #:msg #rx"expected: Integer.*given: String"]
+   ;; test that rest args work
+   [tc-e (let ()
+           (class object% (super-new)
+             (: m (-> Integer * Integer))
+             (define/public (m . xs) (apply + xs)))
+           (void))
+         -Void]
    ))
