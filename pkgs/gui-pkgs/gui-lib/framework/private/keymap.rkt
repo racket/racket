@@ -172,7 +172,8 @@
         (cond
           [(eq? (system-type) 'windows)
            (cond
-             [(or (regexp-match? #rx"a:c" cs)
+             [(or (and (regexp-match? #rx"a:c" cs)
+                       (not (regexp-match? #rx"~a:c" cs)))
                   (and (regexp-match? #rx"c:m" cs)
                        (not (regexp-match? #rx"~c:m" cs))))
               #f]
