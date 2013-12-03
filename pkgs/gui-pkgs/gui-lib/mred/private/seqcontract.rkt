@@ -268,7 +268,7 @@ Matthew
        (get-character [(start)] unlocked)
        (find-wordbreak [(start end reason)] unlocked)
        (save-file [() (filename) (filename format) (filename format show-errors?)] unlocked)
-       (write-to-file [(stream) (stream start end)]  unlocked)
+       (write-to-file [(stream) (stream start) (stream start end)]  unlocked)
        (find-position [(x y) (x y at-eol?) (x y at-eol? on-it?) (x y at-eol? on-it? edge-close?)] unlocked)
        (scroll-line-location [(pos)] unlocked)
        (num-scroll-lines [()] unlocked)
