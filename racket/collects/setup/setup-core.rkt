@@ -952,7 +952,6 @@
                        (member (cc-info-root cc)
                                (current-library-collection-paths)))
               (compile-cc cc 0))))
-        (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
           (lambda ()
             (define cct
