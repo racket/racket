@@ -1328,7 +1328,7 @@ The @racket[cache] argument is used with @racket[path->pkg], if needed.}
 
 @defproc[(collects-relative->path
           [rel (or/c path-string?
-                     (cons/c 'collects bytes? bytes? (listof bytes?)))])
+                     (list/c 'collects bytes? bytes? (listof bytes?)))])
          path-string?]{
 
 The inverse of @racket[path->collects-relative]: if @racket[rel]

@@ -87,5 +87,5 @@
           'collects-relative->path
           (format "~s"
                   '(or/c bytes? path-string?
-                         (cons/c 'collects bytes? bytes? (listof bytes?))))
+                         (list/c 'collects bytes? bytes? (listof bytes?))))
           p)]))
