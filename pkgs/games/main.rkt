@@ -1,6 +1,6 @@
 #lang racket/gui
-
-(require setup/getinfo "show-help.rkt")
+(require setup/getinfo
+         net/sendurl)
 
 (define-struct game (file name set icon))
 
@@ -87,7 +87,25 @@
     (sort buttons (lambda (x y) (< (send x min-width) (send y min-width)))))
   (send panel change-children (lambda (l) sorted)))
 
-(define show-games-help (show-help '("games") "About PLT Games"))
+(define (show-games-help)
+  (with-handlers ([exn:fail? (lambda (exn)
+                               (message-box
+                                "Error"
+                                (~a "Could not open help.\n"
+                                    (if (exn:missing-module? exn)
+                                        "Support for documentation may not be installed.\n"
+                                        "")
+                                    "\n"
+                                    (exn-message exn))
+                                #f
+                                '(ok stop)))])
+    (define-values (path anchor)
+      ((dynamic-require 'scribble/xref 'xref-tag->path+anchor)
+       ((dynamic-require 'setup/xref 'load-collections-xref))
+       ((dynamic-require 'scribble/tag 'make-section-tag)
+        "top"
+        #:doc '(lib "games/scribblings/games.scrbl"))))
+    (send-url/file path #:fragment anchor)))
 
 (application-about-handler show-games-help)
 (application-preferences-handler

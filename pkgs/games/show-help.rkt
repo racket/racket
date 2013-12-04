@@ -61,7 +61,7 @@
                                      16 32 0))
                              (send t insert #\space))])
                         (loop)))))
-                'text)
+                #:mode 'text)
               (when verbatim?
                 (send t change-style 
                       (make-object style-delta% 'change-family 'modern)
