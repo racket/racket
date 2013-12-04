@@ -172,6 +172,9 @@ If the namespace does not, they are colored the unbound color.
                                     #:style both-obligation-style-name
                                     (make-object color% 139 142 28)
                                     (send the-color-database find-color "khaki"))
+(color-prefs:add-color-scheme-entry 'drracket:syncheck:matching-identifiers 
+                                    "GreenYellow"
+                                    "DarkGreen")
 
 (define tool@ 
   (unit 
@@ -260,7 +263,9 @@ If the namespace does not, they are colored the unbound color.
     (define (get-tacked-tail-brush white-on-black?)
       (send the-brush-list find-or-create-brush "orchid" 'solid))
     (define (get-untacked-brush white-on-black?)
-      (send the-brush-list find-or-create-brush "WHITE" 'solid))
+      (send the-brush-list find-or-create-brush 
+            (if white-on-black? "black" "white")
+            'solid))
         
     (define-local-member-name
       reset-previous-check-syntax-information
@@ -1304,10 +1309,9 @@ If the namespace does not, they are colored the unbound color.
             (define current-matching-identifiers (make-hash))
             
             (define/private (update-matching-identifiers refreshing?)
-              
-              (define clr "GreenYellow")
+              (define clr (color-prefs:lookup-in-color-scheme  
+                           'drracket:syncheck:matching-identifiers))
               (define style 'ellipse) 
-              
               (define in-edit-sequence '())
               (define (un/highlight highlight?)
                 (for ([(lst _) (in-hash current-matching-identifiers)])
