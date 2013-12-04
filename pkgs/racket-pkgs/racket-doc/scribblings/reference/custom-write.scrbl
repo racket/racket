@@ -80,7 +80,7 @@ so that graph and cycle structure can be represented.
 @defthing[prop:custom-write struct-type-property?]{
 A deprecated @tech{structure type property} (see @secref["structprops"])
 that supplies a procedure that corresponds to @racket[gen:custom-write]'s
-@racket[write-proc]. @racket[gen:custom-write] should be used instead.
+@racket[write-proc]. Use @racket[gen:custom-write], instead.
 }
 
 @defproc[(custom-write? [v any/c]) boolean?]{
