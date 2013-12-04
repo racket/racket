@@ -1,12 +1,19 @@
 #lang racket/base
+(require setup/getinfo
+         racket/list)
 
-(require setup/getinfo)
 (provide all-tools)
+
+(define (get-info/full/skip dir)
+  (with-handlers ([exn:fail? (lambda (exn)
+                               (log-error (exn-message exn))
+                               #f)])
+    (get-info/full dir)))
 
 (define (all-tools)
   (let* ([dirs (find-relevant-directories '(raco-commands) 'all-available)]
          [tools (make-hash)])
-    (for ([i (in-list (map get-info/full dirs))]
+    (for ([i (in-list (filter-map get-info/full/skip dirs))]
           [d (in-list dirs)])
       (let ([entries (let ([l (if i
                                   (i 'raco-commands (lambda () null))
