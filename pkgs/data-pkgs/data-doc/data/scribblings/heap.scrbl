@@ -17,10 +17,11 @@ Binary heaps are a simple implementation of priority queues.
 
 Operations on binary heaps are not thread-safe.
 
-@defproc[(make-heap [<=? (-> any/c any/c any/c)])
+@defproc[(make-heap [<=? (-> any/c any/c any/c)]
+                    [=? (-> any/c any/c any/c) eq?])
          heap?]{
 
-Makes a new empty heap using @racket[<=?] to order elements.
+Makes a new empty heap using @racket[<=?] to order elements, and optionally @racket[=?] to compare elements in order to delete them via @racket[heap-remove!].
 
 @examples[#:eval the-eval
   (define a-heap-of-strings (make-heap string<=?))
@@ -109,7 +110,18 @@ empty, an exception is raised.
   (heap-min a-heap)]
 }
 
-@defproc[(vector->heap [<=? (-> any/c any/c any/c)] [items vector?]) heap?]{
+@defproc[(heap-remove-min! [h heap?] [v any/c]) void?]{
+
+Removes @racket[v] from the heap @racket[h] if it exists. 
+
+@examples[#:eval the-eval
+  (define a-heap (make-heap string<=? string=?))
+  (heap-add! a-heap "a" "b" "c")
+  (heap-remove! a-heap "b")
+  (for/list ([a (in-heap a-heap)]) a)]
+}
+
+@defproc[(vector->heap [<=? (-> any/c any/c any/c)] [items vector?] [#:=? (-> any/c any/c any/c) eq?]) heap?]{
 
 Builds a heap with the elements from @racket[items]. The vector is not
 modified.

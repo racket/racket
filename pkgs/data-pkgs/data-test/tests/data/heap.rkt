@@ -32,6 +32,12 @@
     (heap->vector h))
   '#(4 6 8 10))
 
+(test-equal? "heap-remove!"
+  (let ([h (mkheap)])
+    (heap-remove! h 4)
+    (heap->vector h))
+  '#(2 6 8 10))
+
 (define (rand-test range count1 count2 count3)
   (let ([h (make-heap <=)]
         [xs null]) ;; mutated

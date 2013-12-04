@@ -3,11 +3,11 @@
   (#%require "small-scheme.rkt" "stxcase-scheme.rkt"
              "member.rkt" "stx.rkt" "qqstx.rkt")
 
-  (#%provide normalize-definition)
+  (#%provide normalize-definition normalize-definition/mk-rhs)
 
-  (define-values (normalize-definition)
-    (case-lambda 
-     [(stx lambda-stx check-context? allow-key+opt?)
+  (define-values (normalize-definition/mk-rhs)
+    (lambda 
+        (stx lambda-stx check-context? allow-key+opt? err-no-body?)
       (when (and check-context?
 		 (memq (syntax-local-context) '(expression)))
 	(raise-syntax-error 
@@ -17,7 +17,7 @@
       (syntax-case stx ()
 	[(_ id expr)
 	 (identifier? #'id)
-	 (values #'id #'expr)]
+	 (values #'id values #'expr)]
 	[(_ id . rest)
 	 (identifier? #'id)
 	 (raise-syntax-error
@@ -155,11 +155,18 @@
 	      #f
 	      "bad syntax (illegal use of `.' for procedure body)"
 	      stx))
-	   (when (stx-null? #'body)
+	   (when (and err-no-body? (stx-null? #'body))
 	     (raise-syntax-error
 	      #f
 	      "bad syntax (no expressions for procedure body)"
 	      stx))
-	   (values id (mk-rhs #'body)))])]
+	   (values id mk-rhs #'body))])))
+
+  (define-values (normalize-definition)
+    (case-lambda 
+     [(stx lambda-stx check-context? allow-key+opt?)
+      (let-values ([(id mk-rhs body)
+                    (normalize-definition/mk-rhs stx lambda-stx check-context? allow-key+opt? #t)])
+        (values id (mk-rhs body)))]
      [(stx lambda-stx check-context?) (normalize-definition stx lambda-stx check-context? #f)]
      [(stx lambda-stx) (normalize-definition stx lambda-stx #t #f)])))
