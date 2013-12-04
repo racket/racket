@@ -1,3 +1,3 @@
 (module define racket/base
   (require racket/private/norm-define)
-  (provide normalize-definition))
+  (provide normalize-definition normalize-definition/mk-rhs))

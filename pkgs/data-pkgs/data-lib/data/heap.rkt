@@ -5,7 +5,7 @@
 
 (define MIN-SIZE 4)
 
-(struct heap ([vec #:mutable] [count #:mutable] <=?))
+(struct heap ([vec #:mutable] [count #:mutable] <=? =?))
 ;; length(vec)/4 <= size <= length(vec), except size >= MIN-SIZE
 ;; size = next available index
 
@@ -80,13 +80,10 @@
 
 ;; Heaps
 
-(define (make-heap <=?)
-  (heap (make-vector MIN-SIZE #f) 0 <=?))
+(define (make-heap <=? [=? eq?])
+  (heap (make-vector MIN-SIZE #f) 0 <=? =?))
 
-(define (list->heap <=? lst)
-  (vector->heap <=? (list->vector lst)))
-
-(define (vector->heap <=? vec0 [start 0] [end (vector-length vec0)])
+(define (vector->heap <=? vec0 [start 0] [end (vector-length vec0)] #:=? [=? eq?])
   (define size (- end start))
   (define len (let loop ([len MIN-SIZE]) (if (<= size len) len (loop (* 2 len)))))
   (define vec (make-vector len #f))
@@ -94,12 +91,12 @@
   (vector-copy! vec 0 vec0 start end)
   (for ([n (in-range (sub1 size) -1 -1)])
     (heapify-down <=? vec n size))
-  (heap vec size <=?))
+  (heap vec size <=? =?))
 
 (define (heap-copy h)
   (match h
-    [(heap vec count <=?)
-     (heap (vector-copy vec) count <=?)]))
+    [(heap vec count <=? =?)
+     (heap (vector-copy vec) count <=? =?)]))
 
 (define (heap-add! h . keys)
   (heap-add-all! h (list->vector keys)))
@@ -114,7 +111,7 @@
                       [(heap? keys)
                        (values (heap-vec keys) (heap-count keys))])])
     (match h
-      [(heap vec size <=?)
+      [(heap vec size <=? =?)
        (let* ([new-size (+ size keys-size)]
               [vec (if (> new-size (vector-length vec))
                        (let ([vec (grow-vector vec new-size)])
@@ -128,21 +125,21 @@
 
 (define (heap-min h)
   (match h
-    [(heap vec size <=?)
+    [(heap vec size <=? =?)
      (when (zero? size)
        (error 'heap-min "empty heap"))
      (vector-ref vec 0)]))
 
 (define (heap-remove-min! h)
   (match h
-    [(heap vec size <=?)
+    [(heap vec size <=? =?)
      (when (zero? size)
        (error 'heap-remove-min! "empty heap"))
      (heap-remove-index! h 0)]))
 
 (define (heap-remove-index! h index)
   (match h
-    [(heap vec size <=?)
+    [(heap vec size <=? =?)
      (unless (< index size)
        (if (zero? size)
            (error 'heap-remove-index!
@@ -155,6 +152,35 @@
      (when (< MIN-SIZE size (quotient (vector-length vec) 4))
        (set-heap-vec! h (shrink-vector vec)))
      (set-heap-count! h (sub1 size))]))
+
+(define (heap-get-index h v)
+  (match h
+    [(heap vec size <=? =?)
+     (and (not (eq? 0 size))
+          (let search ([n 0] [n-key (vector-ref vec 0)])
+            (cond
+             [(=? n-key v) n]
+             ;; The heap property ensures n-key <= all its children
+             [else
+              (define (search-right)
+                (define right (vt-rightchild n))
+                (and (< right size)
+                     (let ([right-key (vector-ref vec right)])
+                       (and (<=? right-key v)
+                            (search right right-key)))))
+              ;; Try going left if the left child is <= v
+              (define left (vt-leftchild n))
+              (and (< left size) ;; if no left, there can't be a right.
+                   (let ([left-key (vector-ref vec left)])
+                     ;; If left <= v, try left side.
+                     (if (<=? left-key v)
+                         (or (search left left-key) (search-right))
+                         (search-right))))])))]))
+
+(define (heap-remove! h v)
+  (match (heap-get-index h v)
+    [#f (void)]
+    [n (heap-remove-index! h n)]))
 
 (define (in-heap h)
   (in-heap/consume! (heap-copy h)))
@@ -196,7 +222,7 @@
 
 (define (heap->vector h)
   (match h
-    [(heap vec size <=?)
+    [(heap vec size <=? =?)
      (let ([v (vector-copy vec 0 size)])
        (heap-sort!* v <=?)
        v)]))
@@ -204,15 +230,16 @@
 ;; --------
 
 (provide/contract
- [make-heap (-> (-> any/c any/c any/c) heap?)]
+ [make-heap (->* ((-> any/c any/c any/c)) ((-> any/c any/c any/c)) heap?)]
  [heap? (-> any/c boolean?)]
  [heap-count (-> heap? exact-nonnegative-integer?)]
  [heap-add! (->* (heap?) () #:rest list? void?)]
  [heap-add-all! (-> heap? (or/c list? vector? heap?) void?)]
  [heap-min (-> heap? any/c)]
  [heap-remove-min! (-> heap? void?)]
+ [heap-remove! (-> heap? any/c void?)]
 
- [vector->heap (-> (-> any/c any/c any/c) vector? heap?)]
+ [vector->heap (->* ((-> any/c any/c any/c) vector?) [#:=? (-> any/c any/c any/c)] heap?)]
  [heap->vector (-> heap? vector?)]
  [heap-copy (-> heap? heap?)]
 
