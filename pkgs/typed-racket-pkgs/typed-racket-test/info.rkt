@@ -13,7 +13,8 @@
                      "htdp-lib"
                      "sandbox-lib"
                      "unstable-flonum-lib"
-                     "unstable"))
+                     "unstable"
+                     "scribble-lib"))
 
 (define pkg-desc "tests for \"typed-racket\"")
 

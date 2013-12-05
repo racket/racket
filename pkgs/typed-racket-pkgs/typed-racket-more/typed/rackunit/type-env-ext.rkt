@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 (require typed-racket/utils/utils
          (prefix-in ru: (combine-in rackunit rackunit/private/test-case rackunit/private/check))
          (for-syntax
-          scheme/base syntax/parse
+          racket/base syntax/parse
           (utils tc-utils)
           (env init-envs)
           (except-in (rep filter-rep object-rep type-rep) make-arr)
