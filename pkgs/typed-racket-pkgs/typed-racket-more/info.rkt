@@ -10,6 +10,7 @@
                "rackunit-lib"
                "rackunit-gui"
                "typed-racket-lib"
+               "typed-racket-compatibility"
                "gui-lib"))
 (define build-deps '("scribble-lib"))
 

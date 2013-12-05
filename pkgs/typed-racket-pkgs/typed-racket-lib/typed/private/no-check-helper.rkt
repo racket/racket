@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 
 (require
  (except-in typed-racket/base-env/prims
             require/typed require/opaque-type require-typed-struct)
  typed-racket/base-env/base-types-extra
- (for-syntax scheme/base syntax/parse syntax/struct))
-(provide (all-from-out scheme/base)
-	 (all-defined-out)
-	 (all-from-out typed-racket/base-env/prims 
+ (for-syntax racket/base syntax/parse syntax/struct))
+(provide (all-from-out racket/base)
+         (all-defined-out)
+         (all-from-out typed-racket/base-env/prims
                        typed-racket/base-env/base-types-extra))
 
 
@@ -17,8 +17,8 @@
     (pattern nm:id
              #:with spec #'nm)
     (pattern (orig-nm:id internal-nm:id)
-	     #:with spec #'(orig-nm internal-nm)
-	     #:with nm #'internal-nm))
+         #:with spec #'(orig-nm internal-nm)
+         #:with nm #'internal-nm))
   (define-syntax-class simple-clause
     #:attributes (nm ty)
     (pattern [nm:opt-rename ty]))
@@ -39,9 +39,9 @@
   (syntax-parse stx
     [(_ lib (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
      #'(begin
-	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
-	 (require/typed sc.nm sc.ty lib) ...
-	 (require-typed-struct strc.nm (strc.body ...) lib) ...)]
+         (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
+         (require/typed sc.nm sc.ty lib) ...
+         (require-typed-struct strc.nm (strc.body ...) lib) ...)]
     [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
      #'(require (only-in lib nm.spec))]))
 
