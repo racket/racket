@@ -1,8 +1,8 @@
 #lang racket/base
 (provide (rename-out (module-begin #%module-begin)))
-(require (prefix-in ts: typed/scheme/base)
+(require (prefix-in ts: typed/racket/base)
 	 (for-syntax racket/base (prefix-in r: typed-racket/typed-reader))
-	 racket/include typed/scheme/base)
+	 racket/include typed/racket/base)
 
 (define-syntax (module-begin stx)
   (let* ([name (symbol->string (syntax-property stx 'enclosing-module-name))]
