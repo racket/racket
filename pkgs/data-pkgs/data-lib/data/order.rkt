@@ -311,10 +311,6 @@ Other:
     ((=) c2)
     ((>) '>)))
 
-(define (symbol<? x y)
-  ;; FIXME: need prim symbol<? to avoid allocation!
-  (string<? (symbol->string x) (symbol->string y)))
-
 (define (vector-cmp x y i natural?)
   (cond [(< i (vector-length x))
          (if (< i (vector-length y))
