@@ -14,6 +14,7 @@
                      "at-exp-lib"
                      "scribble-lib"
                      "typed-racket-lib"
+                     "typed-racket-compatibility"
                      "racket-doc"))
 (define deps '("base"))
 

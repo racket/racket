@@ -8,7 +8,8 @@
                "scheme-lib"
                "srfi-lite-lib"
                "racket-test"
-               "typed-racket-lib"))
+               "typed-racket-lib"
+               "typed-racket-compatibility"))
 
 (define pkg-desc "Racket benchmarks")
 (define pkg-authors '(eli jay mflatt robby samth stamourv))

@@ -1,7 +1,8 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("typed-racket" "typed-racket-more" "unstable"))
+(define deps '("typed-racket" "typed-racket-more" "typed-racket-compatibility"
+               "unstable"))
 (define build-deps '("scheme-lib"
                      "base"
                      "racket-benchmarks"
