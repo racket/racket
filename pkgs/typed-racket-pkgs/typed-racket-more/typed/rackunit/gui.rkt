@@ -1,4 +1,4 @@
-#lang typed/scheme
+#lang typed/racket
 (require typed/rackunit
          typed/private/utils)
 
