@@ -146,6 +146,27 @@
  (->optkey (-lst -String) [-String]
            #:before-last -String #f #:before-first -String #f #:after-last -String #f
            -String)]
+[string-normalize-spaces
+ (->optkey -String [(Un -String -Regexp) -String]
+           #:trim? Univ #f
+           #:repeat? Univ #f
+           -String)]
+[string-replace
+ (->key -String (Un -String -Regexp) -String
+        #:all? Univ #f
+        -String)]
+[string-split
+ (->optkey -String
+           [(Un -String -Regexp)]
+           #:trim? Univ #f
+           #:repeat? Univ #f
+           (-lst -String))]
+[string-trim
+ (->optkey -String [(Un -String -Regexp)]
+           #:left? Univ #f
+           #:right? Univ #f
+           #:repeat? Univ #f
+           -String)]
 
 ;; Section 4.4 (Byte Strings)
 [bytes (->* (list) -Integer -Bytes)]
