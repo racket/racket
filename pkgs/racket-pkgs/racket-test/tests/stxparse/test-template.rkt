@@ -311,10 +311,37 @@
          (check-pred syntax? factors)
          (check-equal? (syntax->datum factors)
                        '(() () () (2) () (2 3) ())))
-       (check-exn #rx"attribute is bound to non-syntax value"
+       (check-exn #rx"attribute contains non-syntax value"
                   (lambda () (template (n.half ...))))
        (let ([halves (template ((?? n.half) ...))])
          (check-pred syntax? halves)
          (check-equal? (syntax->datum halves)
                        '(1 2 3)))
        (void)])))
+
+;; ----------------------------------------
+;; Testing raise/handlers-based ?? (used to be based on drivers check)
+
+(tc (syntax-parse #'()
+      [((~optional abs))
+       (template (?? (?? abs inner) outer))])
+    'inner)
+
+;; test from ianj, 11/18/2013
+(tc (syntax-parse #'(a)
+      [(a:expr (~optional b:expr))
+       (template (?? '(a (?? b 0)) 0))])
+    ''(a 0))
+
+(define/syntax-parse ((~and (~or i:id n:nat)) ...) '(a b 1 2 3 4))
+
+;; note: i,n both 6 elts long
+(tc (template ((?? i X) ...))
+    '(a b X X X X))
+(tc (template ((?? i n) ...))
+    '(a b 1 2 3 4))
+
+(tc (template ((?? i) ...)) '(a b))
+(tc (template ((?? n) ...)) '(1 2 3 4))
+(tc (template (?? (i ...) no)) 'no)
+(tc (template (?? (n ...) no)) 'no)

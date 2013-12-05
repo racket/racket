@@ -278,18 +278,10 @@ instead of integers and integer vectors.
         (vector 'app (loop head loop-env) (loop tail loop-env))]
        [(vector 'escaped g1)
         (vector 'escaped (loop g1 loop-env))]
-       [(vector 'orelse g1 drivers1 g2)
-        (vector 'orelse
-                (loop g1 loop-env)
-                (for/vector ([ee (in-set drivers1)])
-                  (get-index ee))
-                (loop g2 loop-env))]
-       [(vector 'orelse-h g1 drivers1 g2)
-        (vector 'orelse-h
-                (loop g1 loop-env)
-                (for/vector ([ee (in-set drivers1)])
-                  (get-index ee))
-                (loop g2 loop-env))]
+       [(vector 'orelse g1 g2)
+        (vector 'orelse (loop g1 loop-env) (loop g2 loop-env))]
+       [(vector 'orelse-h g1 g2)
+        (vector 'orelse-h (loop g1 loop-env) (loop g2 loop-env))]
        [(vector 'metafun mf g1)
         (vector 'metafun
                 (get-index mf)
@@ -304,11 +296,8 @@ instead of integers and integer vectors.
         (vector 'copy-props (loop g1 loop-env) keys)]
        [(vector 'set-props g1 props-alist)
         (vector 'set-props (loop g1 loop-env) props-alist)]
-       [(vector 'app-opt g1 drivers1)
-        (vector 'app-opt
-                (loop g1 loop-env)
-                (for/vector ([ee (in-set drivers1)])
-                  (get-index ee)))]
+       [(vector 'app-opt g1)
+        (vector 'app-opt (loop g1 loop-env))]
        [(vector 'splice g1)
         (vector 'splice (loop g1 loop-env))]
        [(vector 'unsyntax var)
@@ -361,13 +350,13 @@ instead of integers and integer vectors.
           [(vector 'unsyntax-splicing _) g]
           [_ (error/no-relocate)])]
        ;; ----
-       [(vector 'orelse g1 drivers1 g2)
+       [(vector 'orelse g1 g2)
         (error/no-relocate)]
-       [(vector 'orelse-h g1 drivers1 g2)
+       [(vector 'orelse-h g1 g2)
         (error/no-relocate)]
        [(vector 'metafun mf g1)
         (error/no-relocate)]
-       [(vector 'app-opt g1 drivers1)
+       [(vector 'app-opt g1)
         (error/no-relocate)]
        [(vector 'splice g1)
         (error/no-relocate)]
@@ -491,7 +480,7 @@ instead of integers and integer vectors.
       (let-values ([(drivers1 guide1 props-guide1) (parse-t #'t1 depth esc?)]
                    [(drivers2 guide2 props-guide2) (parse-t #'t2 depth esc?)])
         (values (set-union drivers1 drivers2)
-                (vector 'orelse guide1 (set-filter drivers1 pvar?) guide2)
+                (vector 'orelse guide1 guide2)
                 (list-guide '_ props-guide1 props-guide2)))]
      [(head DOTS . tail)
       (and (not esc?)
@@ -572,7 +561,7 @@ instead of integers and integer vectors.
       (let-values ([(drivers splice? guide props-guide)
                     (parse-h #'t depth esc?)])
         (values drivers #t
-                (vector 'app-opt guide (set-filter drivers pvar?))
+                (vector 'app-opt guide)
                 (list-guide '_ props-guide)))]
      [(?? t1 t2)
       (not esc?)
@@ -581,7 +570,7 @@ instead of integers and integer vectors.
         (values (set-union drivers1 drivers2)
                 (or splice?1 splice?2)
                 (vector (if (or splice?1 splice?2) 'orelse-h 'orelse)
-                        guide1 (set-filter drivers1 pvar?) guide2)
+                        guide1 guide2)
                 (list-guide '_ props-guide1 props-guide2)))]
      [(?@ . t)
       (not esc?)

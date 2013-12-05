@@ -1,6 +1,6 @@
 #lang racket/base
 (require syntax/parse/private/minimatch
-         (only-in syntax/parse/private/residual check/force-syntax-list^depth)
+         racket/private/promise
          racket/private/stx) ;; syntax/stx
 (provide translate)
 
@@ -27,7 +27,7 @@ A Guide (G) is one of:
   - (vector 'dots HG (listof (vector-of VarRef)) nat (listof nat) G)
   - (vector 'app HG G)
   - (vector 'escaped G)
-  - (vector 'orelse G (vector-of integer) G)
+  - (vector 'orelse G G)
   - (vector 'metafun integer G)
   - (vector 'copy-props G (listof symbol))
   - (vector 'set-props G (listof (cons symbol any)))
@@ -36,8 +36,8 @@ A Guide (G) is one of:
 
 A HeadGuide (HG) is one of:
   - G
-  - (vector 'app-opt H (vector-of integer))
-  - (vector 'orelse-h H (vector-of integer) H)
+  - (vector 'app-opt H)
+  - (vector 'orelse-h H H)
   - (vector 'splice G)
   - (vector 'unsyntax-splicing VarRef)
 
@@ -48,11 +48,17 @@ An VarRef is one of
 
 (define (head-guide? x)
   (match x
-    [(vector 'app-opt g vars) #t]
+    [(vector 'app-opt g) #t]
     [(vector 'splice g) #t]
-    [(vector 'orelse-h g1 vars g2) #t]
+    [(vector 'orelse-h g1 g2) #t]
     [(vector 'unsyntax-splicing var) #t]
     [_ #f]))
+
+;; ============================================================
+
+;; Used to indicate absent pvar in template; ?? catches
+;; Note: not an exn, don't need continuation marks
+(struct absent-pvar (ctx v wanted-list?))
 
 ;; ============================================================
 
@@ -65,7 +71,10 @@ An VarRef is one of
     (lambda (env lenv)
       (unless (>= (vector-length env) env-length)
         (error 'template "internal error: environment too short"))
-      (f env lenv))))
+      (with-handlers ([absent-pvar?
+                       (lambda (ap)
+                         (err/not-syntax (absent-pvar-ctx ap) (absent-pvar-v ap)))])
+        (f env lenv)))))
 
 ;; lenv-mode is one of
 ;;  - 'one ;; lenv is single value; address as -1
@@ -204,15 +213,14 @@ An VarRef is one of
     [(vector 'escaped g1)
      (loop (stx-cadr stx) g1)]
 
-    [(vector 'orelse g1 drivers1 g2)
+    [(vector 'orelse g1 g2)
      (let ([f1 (loop (stx-cadr stx) g1)]
            [f2 (loop (stx-caddr stx) g2)])
-       (for ([var (in-vector drivers1)])
-         (check-var var env-length lenv-mode))
        (lambda (env lenv)
-         (if (for/and ([index (in-vector drivers1)]) (get index env lenv))
-             (f1 env lenv)
-             (f2 env lenv))))]
+         (with-handlers ([absent-pvar?
+                          (lambda (_e)
+                            (f2 env lenv))])
+           (f1 env lenv))))]
 
     [(vector 'metafun index g1)
      (let ([f1 (loop (stx-cdr stx) g1)])
@@ -281,24 +289,20 @@ An VarRef is one of
 
   (match hg
 
-    [(vector 'app-opt hg1 drivers1)
+    [(vector 'app-opt hg1)
      (let ([f1 (loop-h (stx-cadr stx) hg1)])
-       (for ([var (in-vector drivers1)])
-         (check-var var env-length lenv-mode))
        (lambda (env lenv)
-         (if (for/and ([index (in-vector drivers1)]) (get index env lenv))
-             (f1 env lenv)
-             null)))]
+         (with-handlers ([absent-pvar? (lambda (_e) null)])
+           (f1 env lenv))))]
 
-    [(vector 'orelse-h hg1 drivers1 hg2)
+    [(vector 'orelse-h hg1 hg2)
      (let ([f1 (loop-h (stx-cadr stx) hg1)]
            [f2 (loop-h (stx-caddr stx) hg2)])
-       (for ([var (in-vector drivers1)])
-         (check-var var env-length lenv-mode))
        (lambda (env lenv)
-         (if (for/and ([index (in-vector drivers1)]) (get index env lenv))
-             (f1 env lenv)
-             (f2 env lenv))))]
+         (with-handlers ([absent-pvar?
+                          (lambda (_e)
+                            (f2 env lenv))])
+           (f1 env lenv))))]
 
     [(vector 'splice g1)
      (let ([f1 (loop (stx-cdr stx) g1)])
@@ -392,14 +396,39 @@ An VarRef is one of
                              (nested-append (cdr lst) nesting onto))]))
 
 (define (check-stx ctx v)
-  (if (syntax? v)
-      v
-      (check/force-syntax-list^depth 0 v ctx)))
+  (let loop ([v v])
+    (cond [(syntax? v)
+           v]
+          [(promise? v)
+           (loop (force v))]
+          [(eq? v #f)
+           (raise (absent-pvar ctx v #f))]
+          [else (err/not-syntax ctx v)])))
 
-(define (check-list ctx v)
-  (if (list? v)
-      v
-      (check/force-syntax-list^depth 1 v ctx)))
+(define (check-list ctx v0)
+  (if (list? v0)
+      v0
+      (let loop ([v v0])
+        (cond [(null? v)
+               null]
+              [(pair? v)
+               (let ([new-cdr (loop (cdr v))])
+                 ;; Don't copy unless necessary
+                 (if (eq? new-cdr (cdr v))
+                     v
+                     (cons (car v) new-cdr)))]
+              [(promise? v)
+               (loop (force v))]
+              [(eq? v #f)
+               (raise (absent-pvar ctx v0 #t))]
+              [else (err/not-syntax ctx v0)]))))
+
+;; Note: slightly different from error msg in syntax/parse/private/residual:
+;; here says "contains" instead of "is bound to", because might be within list
+(define (err/not-syntax ctx v)
+  (raise-syntax-error #f
+                      (format "attribute contains non-syntax value\n  value: ~e" v)
+                      ctx))
 
 (define (error/bad-index index)
   (error 'template "internal error: bad index: ~e" index))
