@@ -4,10 +4,10 @@
          (except-in syntax/parse id) syntax/stx
          racket/pretty racket/promise racket/lazy-require
          (env type-name-env type-alias-env mvar-env)
+         (optimizer optimizer)
          (utils tc-utils disarm mutated-vars)
          (for-syntax racket/base)
          (for-template racket/base))
-(lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
 
 (provide tc-setup invis-kw maybe-optimize init-current-type-names)
 
