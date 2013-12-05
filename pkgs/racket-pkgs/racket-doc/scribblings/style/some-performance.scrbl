@@ -25,7 +25,7 @@ Conversely, you should use @rkt[] (or even @rkt/gui[]) when you just want a
 @; -----------------------------------------------------------------------------
 @section{Macros: Space and Performance}
 
-Macro copy code. Also, Racket is really a tower of macro-implemented
+Macros copy code. Also, Racket is really a tower of macro-implemented
  languages. Hence, a single line of source code may expand into a rather
  large core expression. As you and others keep adding macros, even the
  smallest functions generate huge expressions and consume a lot of space.
