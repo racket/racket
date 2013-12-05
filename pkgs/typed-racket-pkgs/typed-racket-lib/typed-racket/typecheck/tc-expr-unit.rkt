@@ -13,7 +13,7 @@
          racket/private/class-internal
          syntax/parse syntax/stx
          unstable/syntax
-         (only-in srfi/1 split-at)
+         (only-in racket/list split-at)
          (typecheck internal-forms)
          (for-template (only-in '#%paramz [parameterization-key pz:pk])))
 
