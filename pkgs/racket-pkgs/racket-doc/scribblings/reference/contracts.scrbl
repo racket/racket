@@ -1259,8 +1259,7 @@ earlier fields.}}
   (code:line #:exists poly-variables)
   (code:line #:∀ poly-variables)
   (code:line #:forall poly-variables)]
- [poly-variables identifier
-                 (identifier ...)]
+ [poly-variables id (id ...)]
  [id/super id
            (id super-id)]
  [struct-option (code:line)
@@ -1320,6 +1319,41 @@ Specifically, the symbol @racket['provide/contract-original-contract]
 is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
+}
+
+@defform[(recontract-out id ...)]{
+   A @racket[_provide-spec] for use in @racket[provide] (currently,
+     just like @racket[contract-out], only for
+     the same @tech{phase level} as the @racket[provide] form).
+     
+   It re-exports @racket[id], but with positive blame associated
+   to the module containing @racket[recontract-out] instead of the
+   location of the original site of @racket[id].
+   
+   This can be useful when a public module wants to export an
+   identifier from a private module but where any contract violations
+   should be reported in terms of the public module instead of the
+   private one.
+   
+   @examples[#:eval 
+             (contract-eval)
+             (module private-implementation racket/base
+               (require racket/contract)
+               (define (recip x) (/ 1 x))
+               (define (non-zero? x) (not (= x 0)))
+               (provide/contract [recip (-> (and/c real? non-zero?)
+                                            (between/c -1 1))]))
+             (module public racket/base
+               (require racket/contract
+                        'private-implementation)
+               (provide (recontract-out recip)))
+             
+             (require 'public)
+             (recip +nan.0)]
+   
+   Replacing the use of @racket[contract-out] with just
+   @racket[recip] would result in a contract violation blaming
+   the private module.                              
 }
 
 @defform[(provide/contract p/c-item ...)]{
@@ -1424,6 +1458,52 @@ The @racket[define-struct/contract] form only allows a subset of the
 @subsection{Low-level Contract Boundaries}
 @declare-exporting-ctc[racket/contract/base]
 
+@defform[(define-module-boundary-contract id 
+           orig-id 
+           contract-expr
+           pos-blame-party
+           source-loc)
+         #:grammar ([pos-blame-party (code:line)
+                                     (code:line #:pos-source pos-source-expr)]
+                    [source-loc (code:line)
+                                (code:line #:srcloc srcloc-expr)])]{
+  Defines @racket[id] to be @racket[orig-id], but with the contract
+  @racket[contract-expr].
+  
+  The identifier @racket[id] is defined as a macro transformer that
+  consults the context of its use to determine the name for negative
+  blame assignment (using the entire module where a reference appears
+  as the negative party).
+  
+  The positive party defaults to the module containing the use of
+  @racket[define-module-boundary-contract], but can be specified explicitly
+  via the @racket[#:pos-source] keyword.
+  
+  The source location used in the blame error messages for the location
+  of the place where the contract was put on the value defaults to the
+  source location of the use of @racket[define-module-boundary-contract],
+  but can be specified via the @racket[#:srcloc] argument, in which case
+  it can be any of the things that the third argument to @racket[datum->syntax]
+  can be.
+  
+  @examples[#:eval 
+            (contract-eval)
+            (module server racket/base
+              (require racket/contract/base)
+              (define (f x) #f)
+              (define-module-boundary-contract g f (-> integer? integer?))
+              (provide g))
+            (module client racket/base
+              (require 'server)
+              (define (clients-fault) (g #f))
+              (define (servers-fault) (g 1))
+              (provide servers-fault clients-fault))
+            (require 'client)
+            (clients-fault)
+            (servers-fault)]
+
+}
+
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr
@@ -1449,7 +1529,13 @@ as by @racket[display] for purposes of contract violation error messages.
 If specified, @racket[value-name-expr] indicates a name for the protected value
 to be used in error messages.  If not supplied, or if @racket[value-name-expr]
 produces @racket[#f], no name is printed.  Otherwise, it is also formatted as by
-@racket[display].
+@racket[display]. More precisely, the @racket[value-name-expr] ends up in the
+@racket[blame-name] field of the blame record, which is used as the first portion
+of the error message.
+@examples[#:eval 
+          (contract-eval)
+          (contract integer? #f 'pos 'neg 'timothy #f)
+          (contract integer? #f 'pos 'neg #f #f)]
 
 If specified, @racket[source-location-expr] indicates the source location
 reported by contract violations.  The expression must produce a @racket[srcloc]
@@ -1477,7 +1563,7 @@ integer?)], and can be written like this:
 
 @racketblock[
 (define int-proj
-  (lambda (x)
+  (λ (x)
     (if (integer? x)
         x
         (signal-contract-violation))))
@@ -1488,17 +1574,16 @@ on integers looks like this:
 
 @racketblock[
 (define int->int-proj
-  (lambda (f)
+  (λ (f)
     (if (and (procedure? f)
              (procedure-arity-includes? f 1))
-        (lambda (x)
-          (int-proj (f (int-proj x))))
+        (λ (x) (int-proj (f (int-proj x))))
         (signal-contract-violation))))
 ]
 
 Although these projections have the right error behavior,
 they are not quite ready for use as contracts, because they
-do not accommodate blame, and do not provide good error
+do not accommodate blame and do not provide good error
 messages. In order to accommodate these, contracts do not
 just use simple projections, but use functions that accept a
 @deftech{blame object} encapsulating
@@ -1513,7 +1598,7 @@ Here is the first of those two projections, rewritten for
 use in the contract system:
 @racketblock[
 (define (int-proj blame)
-  (lambda (x)
+  (λ (x)
     (if (integer? x)
         x
         (raise-blame-error
@@ -1540,18 +1625,17 @@ Compare that to the projection for our function contract:
 
 @racketblock[
 (define (int->int-proj blame)
-  (let ([dom (int-proj (blame-swap blame))]
-        [rng (int-proj blame)])
-    (lambda (f)
-      (if (and (procedure? f)
-               (procedure-arity-includes? f 1))
-          (lambda (x)
-            (rng (f (dom x))))
-          (raise-blame-error
-           blame
-           val
-           '(expected "a procedure of one argument" given: "~e")
-           val)))))
+  (define dom (int-proj (blame-swap blame)))
+  (define rng (int-proj blame))
+  (λ (f)
+    (if (and (procedure? f)
+             (procedure-arity-includes? f 1))
+        (λ (x) (rng (f (dom x))))
+        (raise-blame-error
+         blame
+         val
+         '(expected "a procedure of one argument" given: "~e")
+         val))))
 ]
 
 In this case, the only explicit blame covers the situation
@@ -1597,20 +1681,65 @@ when a contract violation is detected.
 
 @racketblock[
 (define (make-simple-function-contract dom-proj range-proj)
-  (lambda (blame)
-    (let ([dom (dom-proj (blame-add-context blame "the argument of" #:swap? #t))]
-          [rng (range-proj (blame-add-context blame "the range of"))])
-      (lambda (f)
-        (if (and (procedure? f)
-                 (procedure-arity-includes? f 1))
-            (lambda (x)
-              (rng (f (dom x))))
-            (raise-blame-error
-             blame
-             val
-             '(expected "a procedure of one argument" given: "~e")
-             val))))))
+  (λ (blame)
+    (define dom (dom-proj (blame-add-context blame
+                                             "the argument of"
+                                             #:swap? #t)))
+    (define rng (range-proj (blame-add-context blame
+                                               "the range of")))
+    (λ (f)
+      (if (and (procedure? f)
+               (procedure-arity-includes? f 1))
+          (λ (x) (rng (f (dom x))))
+          (raise-blame-error
+           blame
+           val
+           '(expected "a procedure of one argument" given: "~e")
+           val)))))
 ]
+
+While these projections are supported by the contract library
+and can be used to build new contracts, the contract library
+also supports a different API for projections that can be more
+efficient. Specifically, a @deftech{val first projection} accepts
+a blame object without the negative blame information and then
+returns a function that accepts the value to be contracted, and
+then finally accepts the name of the negative party to the contract
+before returning the value with the contract. Rewriting @racket[int->int-proj]
+to use this API looks like this:
+@racketblock[
+(define (int->int-proj blame)
+  (define dom-blame (blame-add-context blame
+                                       "the argument of"
+                                       #:swap? #t))
+  (define rng-blame (blame-add-context blame "the range of"))
+  (define (check-int v to-blame neg-party)
+    (unless (integer? x)
+      (raise-blame-error
+       to-blame #:missing-party neg-party
+       val
+       '(expected "an integer" given: "~e")
+       val)))
+  (λ (f)
+    (if (and (procedure? f)
+             (procedure-arity-includes? f 1))
+        (λ (neg-party)
+          (λ (x)
+            (check-int x dom-blame neg-party)
+            (define ans (f x))
+            (check-int ans rng-blame neg-party)
+            ans))
+        (λ (neg-party)
+          (raise-blame-error
+           blame #:missing-party neg-party
+           val
+           '(expected "a procedure of one argument" given: "~e")
+           val)))))]
+The advantage of this style of contract is that the @racket[_blame]
+and @racket[_v] arguments can be supplied on the server side of the
+contract boundary and the result can be used for every different
+client. With the simpler situation, a new blame object has to be
+created for each client.
 
 Projections like the ones described above, but suited to
 other, new kinds of value you might make, can be used with
@@ -1620,6 +1749,10 @@ the contract library primitives below.
 @defproc[(make-contract
           [#:name name any/c 'anonymous-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
@@ -1636,6 +1769,10 @@ the contract library primitives below.
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
@@ -1652,6 +1789,10 @@ the contract library primitives below.
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
@@ -1667,6 +1808,12 @@ the contract library primitives below.
          flat-contract?]
 )]{
 
+   @italic{The precise details of the 
+           @racket[val-first-projection] argument
+           are subject to change. (Probably
+           also the default values of the @racket[project] 
+           arguments will change.}
+   
 These functions build simple higher-order contracts, chaperone contracts, and flat contracts,
 respectively.  They both take the same set of three optional arguments: a name,
 a first-order predicate, and a blame-tracking projection.
@@ -2018,6 +2165,10 @@ is expected to be the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection
            get-projection
            (-> contract? (-> blame? (-> any/c any/c)))
@@ -2025,17 +2176,19 @@ is expected to be the contract on the value).
              (λ (b)
                (λ (x)
                  (if ((get-first-order c) x)
-                   x
-                   (raise-blame-error
-                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
-         [#:stronger
-	  stronger
-	  (or/c (-> contract? contract? boolean?) #f)
-	  #f]
-         [#:generator
-	  generator
-	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
-	  #f])
+                     x
+                     (raise-blame-error
+                      b x '(expected: "~a" given: "~e") 
+                      (get-name c) x)))))]
+          [#:stronger
+           stronger
+           (or/c (-> contract? contract? boolean?) #f)
+           #f]
+          [#:generator
+           generator
+           (or/c (-> number? (listof (list any/c contract?)) any/c)
+                 #f)
+           #f])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
           [#:name
@@ -2046,6 +2199,10 @@ is expected to be the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection
            get-projection
            (-> contract? (-> blame? (-> any/c any/c)))
@@ -2053,17 +2210,19 @@ is expected to be the contract on the value).
              (λ (b)
                (λ (x)
                  (if ((get-first-order c) x)
-                   x
-                   (raise-blame-error
-                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
-         [#:stronger
-	  stronger
-	  (or/c (-> contract? contract? boolean?) #f)
-	  #f]
-         [#:generator
-	  generator
-	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
-	  #f])
+                     x
+                     (raise-blame-error
+                      b x '(expected: "~a" given: "~e") 
+                      (get-name c) x)))))]
+          [#:stronger
+           stronger
+           (or/c (-> contract? contract? boolean?) #f)
+           #f]
+          [#:generator
+           generator
+           (or/c (-> number? (listof (list any/c contract?)) any/c) 
+                 #f)
+           #f])
          chaperone-contract-property?]
 @defproc[(build-contract-property
           [#:name
@@ -2074,6 +2233,10 @@ is expected to be the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:val-first-projection 
+           val-first-proj
+           (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
+           #f]
           [#:projection
            get-projection
            (-> contract? (-> blame? (-> any/c any/c)))
@@ -2081,20 +2244,28 @@ is expected to be the contract on the value).
              (λ (b)
                (λ (x)
                  (if ((get-first-order c) x)
-                   x
-                   (raise-blame-error
-                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
-         [#:stronger
-	  stronger
-	  (or/c (-> contract? contract? boolean?) #f)
-	  #f]
-         [#:generator
-	  generator
-	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
-	  #f])
-         contract-property?]
-)]{
+                     x
+                     (raise-blame-error
+                      b x '(expected: "~a" given: "~e") 
+                      (get-name c) x)))))]
+          [#:stronger
+           stronger
+           (or/c (-> contract? contract? boolean?) #f)
+           #f]
+          [#:generator
+           generator
+           (or/c (-> number? (listof (list any/c contract?)) any/c) 
+                 #f)
+           #f])
+         contract-property?])]{
 
+      @italic{The precise details of the 
+           @racket[val-first-projection] argument
+           are subject to change. (Probably
+           also the default values of the @racket[project] 
+           arguments will change.}
+
+   
 These functions build the arguments for @racket[prop:contract],
 @racket[prop:chaperone-contract], and @racket[prop:flat-contract], respectively.
 
@@ -2492,7 +2663,10 @@ parts of the contract system.
 }
 @section{Random generation}
 
-@defproc[(contract-random-generate [ctc contract?] [fuel int?] [fail (-> any/c) (λ () (error ...))]) any/c]{
+@defproc[(contract-random-generate [ctc contract?]
+                                   [fuel int?]
+                                   [fail (-> any/c) (λ () (error ...))])
+         any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
 argument limits how hard the generator tries to generate a value matching the
 contract and is a rough limit of the size of the resulting value.

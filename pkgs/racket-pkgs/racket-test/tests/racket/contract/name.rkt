@@ -8,8 +8,10 @@
      #'(do-name-test 'name 'contract)]))
 
 (define (do-name-test name contract-exp)
-  (contract-eval `(,test ,name contract-name ,contract-exp))
-  (contract-eval `(,test ,name contract-name (opt/c ,contract-exp))))
+  (contract-eval #:test-case-name "test a name"
+                 `(,test ,name contract-name ,contract-exp))
+  (contract-eval #:test-case-name "test a name opt/c"
+                 `(,test ,name contract-name (opt/c ,contract-exp))))
 
 (parameterize ([current-contract-namespace (make-basic-contract-namespace
                                             'racket/contract

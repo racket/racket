@@ -2,6 +2,7 @@
 (require "prop.rkt"
          "blame.rkt"
          "misc.rkt"
+         "guts.rkt"
          (for-syntax racket/base))
 (provide parametric->/c)
 

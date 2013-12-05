@@ -41,33 +41,41 @@
           (handle-evt 
            done-chan
            (λ (c) (channel-put c (reverse chars))))))))
+    (define break #f)
     (let/ec k
       (parameterize ([current-output-port in-stdout]
                      [current-error-port in-stderr]
                      [error-escape-handler k])
-        (thunk)))
+        (with-handlers ([exn:break? (λ (x) (set! break x))])
+          (thunk))))
     (close-output-port in-stdout)
     (close-output-port in-stderr)
     (channel-get io-done-chan)
     (channel-get io-done-chan)
-    (let ([c (make-channel)])
-      (channel-put done-chan c)
-      (channel-get c))))
+    (define result
+      (let ([c (make-channel)])
+        (channel-put done-chan c)
+        (channel-get c)))
+    (when break (raise break))
+    result))
 (require (submod "." capturing-io))
 
 (module run-one racket/base
   (provide run-one)
-  (require racket/place (submod ".." capturing-io))
+  (require racket/place (submod ".." capturing-io) "test-util.rkt")
   (define (run-one chan)
     (let loop ()
       (define fn (place-channel-get chan))
-      (when fn
-        (define io
-          (capture-io
-           (λ ()
-             (dynamic-require (car fn) #f))))
-        (place-channel-put chan io)
-        (loop)))))
+      (cond
+        [(eq? fn 'get-counts-and-stop)
+         (place-channel-put chan (list test-cases failures))]
+        [else
+         (define io
+           (capture-io
+            (λ ()
+              (dynamic-require (car fn) #f))))
+         (place-channel-put chan io)
+         (loop)]))))
 
 (define places
   (and (not (= 1 parallel))
@@ -156,13 +164,17 @@
                 (cdr free) 
                 (cdr to-run))]
          [(null? runnings)
-          (void)]
+          (for ([pc (in-list free)])
+            (place-channel-put pc 'get-counts-and-stop)
+            (define-values (tests failures) (apply values (place-channel-get pc)))
+            (for ([i (in-range tests)]) (new-test-case))
+            (for ([i (in-range failures)]) (new-failure)))]
          [else
           (apply sync
                  (map (λ (a-running)
                         (handle-evt
                          (running-resp-chan a-running)
-                         (λ (io) 
+                         (λ (io)
                            (replay-io (running-to-run a-running) io)
                            (loop (remove a-running runnings)
                                  (cons (running-pc a-running) free)

@@ -5,7 +5,8 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 
                  'racket/contract
-                 'racket/promise)])
+                 'racket/promise
+                 'racket/class)])
 
   (contract-eval '(define-contract-struct couple (hd tl)))
   
@@ -171,4 +172,26 @@
   (ctest #t contract-first-order-passes? (or/c 'x "x" #rx"x") "x")
   (ctest #t contract-first-order-passes? (or/c 'x "x" #rx"x.") "xy")
   (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") "yx")
-  (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") 'y))
+  (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") 'y)
+  
+  (ctest #f contract-first-order-passes? (->m integer? integer?) (λ (x) 1))
+  (ctest #t contract-first-order-passes? (->m integer? integer?) (λ (this x) 1))
+  
+  (ctest #f contract-first-order-passes? (class/c) 1)
+  (ctest #f contract-first-order-passes? (class/c [m (-> any/c integer? integer?)]) object%)
+  (ctest #t contract-first-order-passes?
+         (class/c [m (-> any/c integer? integer?)]) 
+         (class object%
+           (define/public (m x) x)))
+  (ctest #t contract-first-order-passes?
+         (class/c [m (->m integer? integer?)]) 
+         (class object%
+           (define/public (m x) x)))
+  (ctest #f contract-first-order-passes?
+         (class/c [m (-> any/c integer? integer?)]) 
+         (class object%
+           (define/public (m x y) x)))
+  (ctest #f contract-first-order-passes?
+         (class/c [m (->m integer? integer?)]) 
+         (class object%
+           (define/public (m x y) x))))

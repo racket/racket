@@ -6,6 +6,7 @@
          "blame.rkt"
          "misc.rkt"
          "arrow.rkt"
+         "arrow-val-first.rkt"
          (for-syntax racket/base
                      syntax/stx
                      "opt-guts.rkt"))
@@ -468,7 +469,8 @@
 ;;
 ;; arrow opter
 ;;
-(define/opter (-> opt/i opt/info stx)
+
+(define-for-syntax (->-opter opt/i opt/info stx)
   (define (opt/arrow-ctc doms rngs)
     (let*-values ([(dom-vars rng-vars) (values (generate-temporaries doms)
                                                (generate-temporaries rngs))]
@@ -667,7 +669,7 @@
                'any))))
   
   (syntax-case* stx (-> values any any/c boolean?) module-or-top-identifier=?
-    [(-> any/c ... any)
+    [(_ any/c ... any)
      (with-syntax ([n (- (length (syntax->list stx)) 2)])
        (build-optres
         #:exp
@@ -686,9 +688,9 @@
         #:stronger-ribs null
         #:chaperone #t
         #:name #`'(-> #,@(build-list (syntax-e #'n) (λ (x) 'any/c)) any)))]
-    [(-> any/c boolean?)
+    [(_ any/c boolean?)
      (predicate/c-optres opt/info)]
-    [(-> dom ... (values rng ...))
+    [(_ dom ... (values rng ...))
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
          (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
@@ -699,7 +701,7 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]
-    [(-> dom ... any)
+    [(_ dom ... any)
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
          (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
@@ -709,7 +711,7 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]
-    [(-> dom ... rng)
+    [(_ dom ... rng)
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
          (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
@@ -720,6 +722,9 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]))
+
+(define/opter (-> opt/i opt/info stx) (->-opter opt/i opt/info stx))
+(define/opter (->2 opt/i opt/info stx) (->-opter opt/i opt/info stx))
 
 (define opt->/c-cm-key (gensym 'opt->/c-cm-key))
 

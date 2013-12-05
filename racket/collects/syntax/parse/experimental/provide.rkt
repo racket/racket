@@ -91,12 +91,8 @@
                        `(,(if 'splicing? 'splicing-syntax-class/c 'syntax-class/c)
                          [,(contract-name mpc-id) ... mkw-name-part ... ...]
                          [okw-name-part ... ...]))))
-                  (define-syntax contracted-parser
-                    (make-provide/contract-transformer
-                     (quote-syntax parser-contract)
-                     (quote-syntax parser)
-                     (quote-syntax scname)
-                     (quote-syntax #,pos-module-source)))
+                  (define-module-boundary-contract contracted-parser
+                    parser parser-contract #:pos-source #,pos-module-source)
                   (define-syntax contracted-scname
                     (make-stxclass 
                      (quote-syntax name)

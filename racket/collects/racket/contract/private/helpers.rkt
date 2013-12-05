@@ -38,10 +38,10 @@
      (syntax-property stx 'inferred-name name)]
     [else stx]))
 
-;; mangle-id : syntax string syntax ... -> syntax
+;; mangle-id : string syntax ... -> syntax
 ;; constructs a mangled name of an identifier from an identifier
 ;; the name isn't fresh, so `id' combined with `ids' must already be unique.
-(define (mangle-id main-stx prefix id . ids)
+(define (mangle-id prefix id . ids)
   (datum->syntax
    #f
    (string->symbol
@@ -57,7 +57,7 @@
           (format "-~a" (syntax->datum id)))
         ids)))))))
 
-(define (mangle-id-for-maker main-stx prefix id . ids)
+(define (mangle-id-for-maker prefix id . ids)
   (let ([id-w/out-make (regexp-replace #rx"^make-" (format "~a" (syntax->datum id)) "")])
     (datum->syntax
      #f

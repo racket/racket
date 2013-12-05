@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "private/arrow.rkt"
+         "private/case-arrow.rkt"
          "private/arr-i.rkt"
          "private/base.rkt"
          "private/box.rkt"
@@ -14,7 +15,8 @@
          "private/opters.rkt"       ;; required for effect to install the opters
          "private/basic-opters.rkt" ;; required for effect to install the opters
          "private/opt.rkt"
-         "private/out.rkt")
+         "private/out.rkt"
+         "private/arrow-val-first.rkt")
 
 (provide
  (except-out (all-from-out "private/arrow.rkt")
@@ -26,7 +28,15 @@
              contracted-function?
              contracted-function-proc
              contracted-function-ctc
-             make-contracted-function)
+             make-contracted-function 
+             contract-key
+             
+             ;; these two are provided for-syntax
+             ;check-tail-contract
+             ;make-this-parameters
+             
+             -> ->*)
+ (rename-out [->2 ->] [->*2 ->*])
  (all-from-out "private/arr-i.rkt"
                "private/box.rkt"
                "private/hash.rkt"
@@ -39,8 +49,10 @@
              check-between/c
              check-unary-between/c)
  provide/contract
- (for-syntax make-provide/contract-transformer) ;; not documented!
+ ;(for-syntax make-provide/contract-transformer) ;; not documented!
  contract-out
+ recontract-out
+ define-module-boundary-contract
  
  ;; from private/opt.rkt:
  opt/c define-opt/c
@@ -49,4 +61,6 @@
  has-contract?
  value-contract
  contract-continuation-mark-key
- )
+ 
+ ;; from private/case-arrow.rkt
+ case->)

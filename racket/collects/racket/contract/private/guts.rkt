@@ -44,7 +44,19 @@
          equal-contract?
          equal-contract-val
 
-         contract-continuation-mark-key)
+         contract-continuation-mark-key
+         
+         (struct-out wrapped-extra-arg-arrow)
+         custom-write-property-proc)
+
+(define (custom-write-property-proc stct port display?)
+  (write-string "#<" port)
+  (cond
+    [(flat-contract-struct? stct) (write-string "flat-" port)]
+    [(chaperone-contract-struct? stct) (write-string "chaperone-" port)])
+  (write-string "contract: " port)
+  (write-string (format "~.s" (contract-struct-name stct)) port)
+  (write-string ">" port))
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
@@ -168,6 +180,9 @@
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
     [else #f]))
 
+(struct wrapped-extra-arg-arrow (real-func extra-neg-party-argument)
+  #:property prop:procedure 0)
+
 (define-syntax (define/final-prop stx)
   (syntax-case stx ()
     [(_ header bodies ...)
@@ -269,6 +284,7 @@
 ;                                                                                                                 
 
 (define-struct eq-contract (val)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
@@ -286,6 +302,7 @@
            (eq? (eq-contract-val this) (eq-contract-val that))))))
 
 (define-struct equal-contract (val)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
@@ -298,6 +315,7 @@
    (λ (ctc) (λ (fuel) (equal-contract-val ctc)))))
 
 (define-struct =-contract (val)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
@@ -310,6 +328,7 @@
    (λ (ctc) (λ (fuel) (=-contract-val ctc)))))
 
 (define-struct regexp/c (reg)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order
@@ -325,6 +344,7 @@
 
 
 (define-struct predicate-contract (name pred generate)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:stronger
@@ -334,6 +354,20 @@
                                            (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
+   #:val-first-projection
+   (λ (ctc)
+     (define p? (predicate-contract-pred ctc))
+     (define name (predicate-contract-name ctc))
+     (λ (blame)
+       (λ (v)
+         (if (p? v)
+             (λ (neg-party)
+               v)
+             (λ (neg-party)
+               (raise-blame-error blame v #:missing-party neg-party
+                                  '(expected: "~s" given: "~e")
+                                  name 
+                                  v))))))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
                    (if (generate-ctc-fail? generate)

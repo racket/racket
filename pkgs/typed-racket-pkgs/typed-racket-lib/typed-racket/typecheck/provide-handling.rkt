@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
-         racket/struct-info racket/match syntax/parse syntax/location
+         racket/struct-info racket/match syntax/parse
          (only-in (private type-contract) type->contract)
          (typecheck renamer def-binding)
          (utils tc-utils)
@@ -141,22 +141,14 @@
         (if contract
             (with-syntax* ([module-source pos-blame-id]
                            [the-contract (generate-temporary 'generated-contract)])
-              #`(begin
-                  (define the-contract #,contract)
-                  (define-syntax untyped-id
-                    (make-provide/contract-transformer
-                     (quote-syntax the-contract)
-                     (datum->syntax ; preserve source location in expanded code
-                      (quote-syntax id)
-                      (syntax->datum (quote-syntax id))
-                      (list (quote-source-file id)
-                            (quote-line-number id)
-                            (quote-column-number id)
-                            (quote-character-position id)
-                            (quote-character-span id))
-                      (quote-syntax id))
-                     (quote-syntax export-id)
-                     (quote-syntax module-source)))))
+              #`(define-module-boundary-contract untyped-id 
+                  id #,contract 
+                  #:pos-source module-source
+                  #:srcloc (vector '#,(syntax-source #'id)
+                                   #,(syntax-line #'id)
+                                   #,(syntax-column #'id)
+                                   #,(syntax-position #'id)
+                                   #,(syntax-span #'id))))
             #'(define-syntax (untyped-id stx)
                 (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
       (values

@@ -50,11 +50,9 @@
     [(_ name contract-expr expr)
      (identifier? (syntax name))
      (with-syntax ([contract-id
-                    (a:mangle-id define-stx
-                                 "define/contract-contract-id"
+                    (a:mangle-id "define/contract-contract-id"
                                  (syntax name))]
-                   [id (a:mangle-id define-stx
-                                    "define/contract-id"
+                   [id (a:mangle-id "define/contract-id"
                                     (syntax name))])
        (syntax/loc define-stx
          (begin

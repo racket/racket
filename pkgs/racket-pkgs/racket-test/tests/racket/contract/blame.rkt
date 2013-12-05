@@ -2,46 +2,51 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace 'racket/contract
-                                               )])
+                (make-basic-contract-namespace 'racket/contract)])
   
   (contract-eval
-   '(begin
-      (module blame-ok/c racket/base
-        (require racket/contract)
-        (define (blame-proj name)
-          (lambda (b)
-            (unless (blame? b)
-              (raise-type-error name "a blame object" b))
-            (define src (blame-source b))
-            (unless (srcloc? src)
-              (raise-type-error name "a srcloc" src))
-            (lambda (x) x)))
-        (define impersonator-blame-ok/c
-          (make-contract
-           #:name 'impersonator-blame-ok/c
-           #:projection (blame-proj 'impersonator-blame-ok/c)))
-        (define chaperone-blame-ok/c
-          (make-chaperone-contract
-           #:name 'chaperone-blame-ok/c
-           #:projection (blame-proj 'chaperone-blame-ok/c)))
-        (define flat-blame-ok/c
-          (make-flat-contract
-           #:name 'flat-blame-ok/c
-           #:projection (blame-proj 'flat-blame-ok/c)))
-        (provide
-         impersonator-blame-ok/c
-         chaperone-blame-ok/c
-         flat-blame-ok/c))
-      (require 'blame-ok/c)
-      (module blame-ok-dynamic racket/base
-        (require racket/contract 'blame-ok/c)
-        (define five 5)
-        (provide
-         (contract-out
-          [rename five impersonator-five impersonator-blame-ok/c]
-          [rename five chaperone-five chaperone-blame-ok/c]
-          [rename five flat-five flat-blame-ok/c])))))
+   #:test-case-name "blame.rkt setup.1"
+   '(module blame-ok/c racket/base
+      (require racket/contract)
+      (define (blame-proj name)
+        (lambda (b)
+          (unless (blame? b)
+            (raise-type-error name "a blame object" b))
+          (define src (blame-source b))
+          (unless (srcloc? src)
+            (raise-type-error name "a srcloc" src))
+          (lambda (x) x)))
+      (define impersonator-blame-ok/c
+        (make-contract
+         #:name 'impersonator-blame-ok/c
+         #:projection (blame-proj 'impersonator-blame-ok/c)))
+      (define chaperone-blame-ok/c
+        (make-chaperone-contract
+         #:name 'chaperone-blame-ok/c
+         #:projection (blame-proj 'chaperone-blame-ok/c)))
+      (define flat-blame-ok/c
+        (make-flat-contract
+         #:name 'flat-blame-ok/c
+         #:projection (blame-proj 'flat-blame-ok/c)))
+      (provide
+       impersonator-blame-ok/c
+       chaperone-blame-ok/c
+       flat-blame-ok/c)))
+
+  (contract-eval
+   #:test-case-name "blame.rkt setup.2"
+   '(require 'blame-ok/c))
+  
+  (contract-eval
+   #:test-case-name "blame.rkt setup.3"
+   '(module blame-ok-dynamic racket/base
+      (require racket/contract 'blame-ok/c)
+      (define five 5)
+      (provide
+       (contract-out
+        [rename five impersonator-five impersonator-blame-ok/c]
+        [rename five chaperone-five chaperone-blame-ok/c]
+        [rename five flat-five flat-blame-ok/c]))))
   
   (begin
     (test/no-error

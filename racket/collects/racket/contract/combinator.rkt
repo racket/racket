@@ -8,6 +8,7 @@
              contract-struct-name  
              contract-struct-first-order
              contract-struct-projection
+             contract-struct-val-first-projection
              contract-struct-stronger?
              contract-struct?
              chaperone-contract-struct?

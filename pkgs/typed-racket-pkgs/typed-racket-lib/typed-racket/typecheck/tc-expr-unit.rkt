@@ -261,7 +261,10 @@
       [(let-values (((_) meth))
          (let-values (((_) rcvr))
            (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
-             (#%plain-app _ _ args ...))))
+             (let-values ([_arg-var args] ...)
+               (if wrapped-object-check
+                   ignore-this-case
+                   (#%plain-app _ _ _arg-var2 ...))))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
       ;; kw function def
       [(let-values ([(_) fun]) . body)
@@ -303,7 +306,7 @@
       [(letrec-values ([(name ...) expr] ...) . body)
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]
       ;; other
-      [_ (int-err "cannot typecheck unknown form : ~a" (syntax->datum form))]
+      [_ (int-err "cannot typecheck unknown form : ~s" (syntax->datum form))]
       )))
 
 ;; type check form in the current type environment
@@ -363,7 +366,10 @@
       [(let-values (((_) meth))
          (let-values (((_) rcvr))
            (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
-             (#%plain-app _ _ args ...))))
+             (let-values ([_arg-var args] ...)
+               (if wrapped-object-check
+                   ignore-this-case
+                   (#%plain-app _ _ _arg-var2 ...))))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
@@ -405,7 +411,7 @@
          (tc-expr #'e)
          (tc-body #'es))]
       ;; other
-      [_ (int-err "cannot typecheck unknown form : ~a" (syntax->datum form))]))
+      [_ (int-err "cannot typecheck unknown form : ~s" (syntax->datum form))]))
 
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax->datum form))

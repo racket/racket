@@ -28,39 +28,78 @@
 (define test-cases 0)
 (define failures 0)
 
-(define (test expected fun arg1 . args)
-  (set! test-cases (+ test-cases 1))
+(provide new-test-case new-failure)
+(define (new-test-case) (set! test-cases (+ test-cases 1)))
+(define (new-failure) (set! failures (+ failures 1)))
+
+(define (test #:test-case-name [name #f] expected fun arg1 . args)
+  (new-test-case)
   ;(printf "\n\nexpected ~s\n" arg1)
   (define result
     (cond
       [(procedure? fun) (apply fun arg1 args)]
       [else arg1]))
   (unless (equal? result expected)
-    (set! failures (+ failures 1))
-    (eprintf "FAILED ~s\n       got ~s\n  expected ~s\n"
-            fun
+    (eprintf "FAILED ~a\n       got ~s\n  expected ~s\n"
+            (cond
+              [name name]
+              [(procedure? fun) (format "~s" `(,fun ,arg1 ,@args))]
+              [else (format "~s" fun)])
             result
-            expected)))
+            expected)
+    (new-failure)))
 
 (define (test-an-error name thunk sexp predicate?)
-  (set! test-cases (+ test-cases 1))
+  (new-test-case)
   (define exn
     (with-handlers ((exn:fail? values))
       (thunk)
       'no-exn-raised))
   (unless (predicate? exn)
-    (set! failures (+ failures 1))
-    (eprintf "FAILED ~s\n" name)))
+    (eprintf "FAILED ~s\n" name)
+    (define msg (if (exn? exn)
+                    (apply 
+                     string-append
+                     (exn-message exn)
+                     (for/list ([x (in-list (continuation-mark-set->context 
+                                             (exn-continuation-marks exn)))])
+                       (format "\n  ~s" x)))
+                    (format "~s" exn)))
+    (display "  " (current-error-port))
+    (display (regexp-replace* #rx"\n" msg "\n  ") (current-error-port))
+    (newline (current-error-port))
+    (new-failure)))
 
 (define current-contract-namespace (make-parameter 'current-contract-namespace-not-initialized))
+
+(define namespace-to-copy-from (make-base-namespace))
+
 (define (make-basic-contract-namespace . addons)
   (define n (make-base-namespace))
+  
+  ;; set up just a single namespace to copy all of the 
+  ;; library modules from; the top-level of the namespace
+  ;; gets clobbered, but we can avoid reloading the contract
+  ;; system code over and over (which is useful when there
+  ;; are no .zo files compiled)
+  
+  (define modules-to-add (list* 'racket/contract/base
+                                'racket/contract/private/blame
+                                addons))
+  (parameterize ([current-namespace namespace-to-copy-from])
+    (for ([module-to-add (in-list modules-to-add)])
+      (namespace-require module-to-add)))
+  
+  (for ([module-to-add (in-list modules-to-add)])
+    (namespace-attach-module namespace-to-copy-from module-to-add n))
+  
   (parameterize ([current-namespace n])
     (namespace-require 'racket/contract/base)
     (namespace-require '(only racket/contract/private/blame exn:fail:contract:blame?))
     (for ([addon (in-list addons)])
       (namespace-require addon)))
   n)
+
 (define (make-full-contract-namespace . addons)
   (apply make-basic-contract-namespace 
          'racket/contract
@@ -72,7 +111,8 @@
   (with-handlers ((exn:fail? (λ (x)
                                (when test-case
                                  (eprintf "exception raised while running test case ~a\n"
-                                          test-case))
+                                          test-case)
+                                 (new-failure))
                                (raise x))))
   (parameterize ([current-namespace (current-contract-namespace)])
     (eval x))))
@@ -88,7 +128,16 @@
 (define-syntax (ctest stx)
   (syntax-case stx ()
     [(_ a ...)
-     (syntax (contract-eval `(,test a ...)))]))
+     (with-syntax ([line-name (format "~a:~a" 
+                                      (let ([p (syntax-source stx)])
+                                        (if (path? p)
+                                            (let-values ([(base name dir)
+                                                          (split-path p)])
+                                              name)
+                                            (format "~s" p)))
+                                      (syntax-line stx))])
+       (syntax (contract-eval #:test-case-name line-name
+                              `(,test #:test-case-name line-name a ...))))]))
 
 (define-syntax (ctest-no-error stx)
   (syntax-case stx ()
@@ -144,19 +193,23 @@
 
 (define (test/spec-passed/result name expression result)
   (parameterize ([compile-enforce-module-constants #f])
-    (contract-eval #:test-case-name name `(,test ',result eval ',expression))
+    (contract-eval #:test-case-name name `(,test #:test-case-name ',name ',result eval ',expression))
     (let/ec k
+      (define opt-rewrite-name (format "~a rewrite-to-add-opt/c" name))
       (contract-eval
-       #:test-case-name (format "~a rewrite-to-add-opt/c" name)
+       #:test-case-name opt-rewrite-name
        `(,test
+         #:test-case-name ,opt-rewrite-name
          ',result
          eval
          ',(rewrite-to-add-opt/c expression k))))
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
+        (define out-rewrite-name (format "~a rewrite-out" name))
         (contract-eval
-         #:test-case-name (format "~a rewrite-out" name)
+         #:test-case-name out-rewrite-name
          `(,test
+           #:test-case-name ,out-rewrite-name
            ',result
            eval
            ',new-expression))))))
@@ -285,14 +338,14 @@
 (define-syntax (ctest/rewrite stx)
   (syntax-case stx ()
     [(_ expected name expression)
-     #'(begin
-         (contract-eval #:test-case-name 'name `(,test expected 'name expression))
-         (let/ec k
-           (let ([new-name '#,(string->symbol (format "~a+opt/c" 'name))])
+     (with-syntax ([opt-name (string->symbol (format "~a+opt/c" (syntax-e #'name)))])
+       #'(begin
+           (contract-eval #:test-case-name 'name `(,test expected 'name expression))
+           (let/ec k
              (contract-eval
-              #:test-case-name new-name
+              #:test-case-name 'opt-name
               `(,test expected 
-                      ',new-name
+                      'opt-name
                       ,(rewrite-to-add-opt/c 'expression k))))))]))
 
 (define (test/well-formed stx)
@@ -301,13 +354,28 @@
            (let ([expand/ret-void (lambda (x) (expand x) (void))]) expand/ret-void)
            ,stx)))
 
-(define (test/no-error sexp)
+(define-syntax (test/no-error stx)
+  (syntax-case stx ()
+    [(_ arg)
+     (let ()
+       (define src (syntax-source stx))
+       (define fn (if (path? src)
+                      (let-values ([(base name dir) (split-path src)])
+                        (format "~a" name))
+                      (format "~s" src)))
+       #`(test/no-error/proc #,fn #,(syntax-source stx) arg))]))
+
+(define (test/no-error/proc fn line sexp)
   (contract-eval
+   #:test-case-name (format "~a:~a" fn line)
    `(,test (void)
            eval
            '(begin ,sexp (void))))
   (let/ec k
-    (contract-eval
-     `(,test (void)
-             eval
-             '(begin ,(rewrite-to-add-opt/c sexp k) (void))))))
+    (define rewritten (rewrite-to-add-opt/c sexp k))
+    (unless (equal? rewritten sexp)
+      (contract-eval
+       #:test-case-name (format "~a:~a opt/c" fn line)
+       `(,test (void)
+               eval
+               '(begin ,rewritten (void)))))))

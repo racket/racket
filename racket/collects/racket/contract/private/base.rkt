@@ -22,7 +22,8 @@
          (let* ([ctxt (syntax-local-lift-context)]
                 [id (hash-ref lifted-ccrs ctxt #f)])
            (with-syntax ([id (or id
-                                 (let ([id (syntax-local-lift-expression (syntax/loc stx (quote-module-name)))])
+                                 (let ([id (syntax-local-lift-expression 
+                                            (syntax/loc stx (quote-module-name)))])
                                    (hash-set! lifted-ccrs ctxt (syntax-local-introduce id))
                                    id))])
              #'id))
@@ -47,42 +48,52 @@
 (define (apply-contract c v pos neg name loc)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (let ([new-val
-           (((contract-projection c)
-             (make-blame (build-source-location loc) name (λ () (contract-name c)) pos neg #t))
-            v)])
-      (if (and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
-               (procedure? new-val)
-               (object-name v)
-               (not (eq? (object-name v) (object-name new-val))))
-          (let ([vs-name (object-name v)])
-            (cond
-              [(contracted-function? new-val)
-               ;; when PR11222 is fixed, change these things:
-               ;;   - eliminate this cond case
-               ;;   - remove the require of arrow.rkt above
-               ;;   - change (struct-out contracted-function) 
-               ;;     in arrow.rkt to make-contracted-function
-               (make-contracted-function 
-                (procedure-rename (contracted-function-proc new-val) vs-name)
-                (contracted-function-ctc new-val))]
-              [else
-               (procedure-rename new-val vs-name)]))
-          new-val))))
+    (define cvfp (contract-val-first-projection c))
+    (define blame
+      (make-blame (build-source-location loc)
+                  name
+                  (λ () (contract-name c))
+                  pos
+                  (if cvfp #f neg)
+                  #t))
+    (define new-val
+      (cond
+        [cvfp (((cvfp blame) v) neg)]
+        [else (((contract-projection c) blame) v)]))
+    (cond
+      [(and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
+            (procedure? new-val)
+            (object-name v)
+            (not (eq? (object-name v) (object-name new-val))))
+       (define vs-name (object-name v))
+       (cond
+         [(contracted-function? new-val)
+          ;; when PR11222 is fixed, change these things:
+          ;;   - eliminate this cond case
+          ;;   - remove the require of arrow.rkt above
+          ;;   - change (struct-out contracted-function) 
+          ;;     in arrow.rkt to make-contracted-function
+          (make-contracted-function 
+           (procedure-rename (contracted-function-proc new-val) vs-name)
+           (contracted-function-ctc new-val))]
+         [else
+          (procedure-rename new-val vs-name)])]
+      [else new-val])))
 
 (define-syntax (-recursive-contract stx)
   (define (do-recursive-contract arg type name)
     (define local-name (syntax-local-infer-name stx))
-    (with-syntax ([maker
-                   (case (syntax-e type)
-                     [(#:impersonator) #'impersonator-recursive-contract]
-                     [(#:chaperone) #'chaperone-recursive-contract]
-                     [(#:flat) #'flat-recursive-contract]
-                     [else (raise-syntax-error 'recursive-contract
-                                               "type must be one of #:impersonator, #:chaperone, or #:flat"
-                                               stx
-                                               type)])])
-      #`(maker '#,name (λ () #,arg) '#,local-name)))
+    (define maker
+      (case (syntax-e type)
+        [(#:impersonator) #'impersonator-recursive-contract]
+        [(#:chaperone) #'chaperone-recursive-contract]
+        [(#:flat) #'flat-recursive-contract]
+        [else (raise-syntax-error 
+               'recursive-contract
+               "type must be one of #:impersonator, #:chaperone, or #:flat"
+               stx
+               type)]))
+    #`(#,maker '#,name (λ () #,arg) '#,local-name))
   (syntax-case stx ()
     [(_ arg type)
      (keyword? (syntax-e #'type))

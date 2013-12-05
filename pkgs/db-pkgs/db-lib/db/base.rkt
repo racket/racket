@@ -89,22 +89,15 @@
 (define group-mode/c
   (listof (or/c 'list 'preserve-null)))
 
-(define in-query/c
+(define-module-boundary-contract contracted-in-query
+  in-query
   (->* (connection? statement?)
-       (#:fetch fetch-size/c
+       (#:fetch
+        fetch-size/c
         #:group grouping/c
         #:group-mode group-mode/c)
        #:rest list?
        sequence?))
-
-(define here-mod-path (quote-module-path))
-
-(define-syntax contracted-in-query
-  (make-provide/contract-transformer
-   (quote-syntax in-query/c)
-   (quote-syntax in-query)
-   (quote-syntax in-query)
-   (quote-syntax here-mod-path)))
 
 (define-sequence-syntax in-query*
   (lambda () #'contracted-in-query)

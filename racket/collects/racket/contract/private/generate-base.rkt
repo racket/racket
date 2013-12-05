@@ -2,7 +2,7 @@
 (require "rand.rkt")
 
 (provide
-  make-generate-ctc-fail
+  (rename-out [sngleton-maker make-generate-ctc-fail])
   generate-ctc-fail?
   find-generate
   
@@ -18,6 +18,11 @@
 
 ;; generate failure type
 (define-struct generate-ctc-fail ())
+(define a-generate-ctc-fail (make-generate-ctc-fail))
+(define sngleton-maker
+  (let ([make-generate-contract-fail
+         (λ () a-generate-ctc-fail)])
+    make-generate-contract-fail))
 
 (define (gen-char fuel)
   (let* ([gen (oneof (list (rand-range 0 55295)

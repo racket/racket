@@ -928,6 +928,16 @@
       (eval 'provide/contract47-x))
    'the-name-of-my-struct)
   
+  (test/spec-failed
+   'provide/contract48
+   '(let ()
+      (eval '(module provide/contract48-m1 racket/base
+               (require racket/contract/base)
+               (define (f x y z) x)
+               (provide (contract-out [f (-> any)]))))
+      (eval '(require 'provide/contract48-m1)))
+   "provide/contract48-m1")
+  
   (contract-error-test
    'contract-error-test8
    #'(begin
@@ -1217,4 +1227,73 @@
   (test 'contract-inferred-name-test2b object-name (contract-eval 'contract-inferred-name-test2b))
   (test 'contract-inferred-name-test3 object-name (contract-eval 'contract-inferred-name-test3))
   (test 'contract-inferred-name-test4 object-name (contract-eval 'contract-inferred-name-test4))
-  (test 'contract-inferred-name-test5 object-name (contract-eval 'contract-inferred-name-test5)))
+  (test 'contract-inferred-name-test5 object-name (contract-eval 'contract-inferred-name-test5))
+  
+  (test/spec-passed/result
+   'define-module-boundary-contract1
+   '(begin
+      (eval '(module define-module-boundary-contract1-m racket/base
+               (require racket/contract/base)
+               (define (f x) 11)
+               (define pos-module-source 'me!)
+               (define-module-boundary-contract g f (-> integer? integer?))
+               (provide g)))
+      (eval '(module define-module-boundary-contract1-n racket/base
+               (require 'define-module-boundary-contract1-m)
+               (provide define-module-boundary-contract1-x)
+               (define define-module-boundary-contract1-x (g 1))))
+      (eval '(require 'define-module-boundary-contract1-n))
+      (eval 'define-module-boundary-contract1-x))
+   11)
+  
+  (test/pos-blame
+   'define-module-boundary-contract2
+   '(begin
+      (eval '(module define-module-boundary-contract2-m racket/base
+               (require racket/contract/base)
+               (define (f x) #f)
+               (define-module-boundary-contract g f (-> integer? integer?) 
+                 #:pos-source 'pos)
+               (provide g)))
+      (eval '(module define-module-boundary-contract2-n racket/base
+               (require 'define-module-boundary-contract2-m)
+               (g 1)))
+      (eval '(require 'define-module-boundary-contract2-n))))
+  
+  (contract-error-test
+   'define-module-boundary-contract3
+   '(begin
+      (eval '(module define-module-boundary-contract3-m racket/base
+               (require racket/contract/base)
+               (define (f x) #f)
+               (define-module-boundary-contract g f (-> integer? integer?) 
+                 #:pos-source 'pos)
+               (provide g)))
+      (eval '(module define-module-boundary-contract3-n racket/base
+               (require 'define-module-boundary-contract3-m)
+               (g #f)))
+      (eval '(require 'define-module-boundary-contract3-n)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match? #rx"blaming: define-module-boundary-contract3-n"
+                         (exn-message x)))))
+  
+  (contract-error-test
+   'define-module-boundary-contract4
+   '(begin
+      (eval '(module define-module-boundary-contract4-m racket/base
+               (require racket/contract/base)
+               (define (internal-name x) #f)
+               (define-module-boundary-contract external-name
+                 internal-name (-> integer? integer?) 
+                 #:pos-source 'pos)
+               (provide external-name)))
+      (eval '(module define-module-boundary-contract4-n racket/base
+               (require 'define-module-boundary-contract4-m)
+               (external-name #f)))
+      (eval '(require 'define-module-boundary-contract4-n)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (printf "~a\n" (exn-message x))
+          (regexp-match? #rx"^external-name: " (exn-message x)))))
+  )

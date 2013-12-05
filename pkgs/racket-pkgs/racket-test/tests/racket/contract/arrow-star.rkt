@@ -196,6 +196,15 @@
                'neg)
      #f))
   
+  (test/spec-passed/result
+   'contract-arrow-star18
+   '((contract (->* (integer?) #:rest list? any)
+               (lambda (x . y) y)
+               'pos
+               'neg)
+     1 2 3)
+   '(2 3))
+  
   (test/pos-blame
    'contract-arrow-star-arity-check1
    '(contract (->* (integer?) () #:rest (listof integer?) (values integer? integer?))
@@ -299,6 +308,26 @@
                'pos
                'neg)
      2 #:y 1))
+  
+  (test #t
+        'arrow-star-right-keyword-complaint1
+        (with-handlers ((exn:fail?
+                         (λ (x)
+                           (regexp-match? #rx"#:c keyword" (exn-message x)))))
+          (contract-eval '(contract (->* (#:i integer? #:b boolean?) (#:c char? #:r regexp?) any)
+                                    (λ (#:i i #:b b #:r [r #rx"x"]) 1)
+                                    'pos
+                                    'neg))))
+  
+  (test #t
+        'arrow-star-right-keyword-complaint2
+        (with-handlers ((exn:fail?
+                         (λ (x)
+                           (regexp-match? #rx"#:b keyword" (exn-message x)))))
+          (contract-eval '(contract (->* (#:i integer? #:b boolean?) (#:c char? #:r regexp?) any)
+                                    (λ (#:i i #:r [r #rx"x"] #:c [c #\c]) 1)
+                                    'pos
+                                    'neg))))
   
   (test/spec-passed
    'contract-arrow-star-optional1

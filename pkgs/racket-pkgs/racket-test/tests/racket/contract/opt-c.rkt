@@ -11,6 +11,11 @@
       (define proj:blame/c
         (make-contract
          #:name 'proj:blame/c
+         #:val-first-projection
+         (λ (blame)
+           (λ (x)
+             (λ (neg-party)
+               (if (blame-swapped? blame) 'negative 'positive))))
          #:projection
          (lambda (blame)
            (lambda (x)

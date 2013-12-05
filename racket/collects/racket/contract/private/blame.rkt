@@ -17,6 +17,8 @@
          blame-add-unknown-context
          blame-context 
          
+         blame-add-missing-party
+         
          raise-blame-error
          current-blame-format
          (struct-out exn:fail:contract:blame)
@@ -47,36 +49,38 @@
   (let ([make-blame
          (lambda (source value build-name positive negative original?)
            (unless (srcloc? source)
-             (raise-type-error 'make-blame "source location (srcloc?)" 0
-               source value build-name positive negative original?))
-           (unless (procedure? build-name)
-             (raise-type-error 'make-blame "procedure" 2
-               source value build-name positive negative original?))
-           (unless (procedure-arity-includes? build-name 0)
-             (raise-type-error 'make-blame "procedure of 0 arguments" 2
-               source value build-name positive negative original?))
-           (make-blame 
-             source
-             value
-             build-name
-             (list positive)
-             (list negative)
-             original?
-             '()
-             #t 
-             #f))])
+             (raise-argument-error 'make-blame "srcloc?" 0
+                                   source value build-name positive negative original?))
+           (unless (and (procedure? build-name)
+                        (procedure-arity-includes? build-name 0))
+             (raise-argument-error 'make-blame "(-> any)" 2
+                                   source value build-name positive negative original?))
+           (unless positive
+             (raise-type-error 'make-blame "(not/c #f)" 3
+                               source value build-name positive negative original?))
+           (make-blame
+            source
+            value
+            build-name
+            (list positive)
+            (and negative (list negative))
+            original?
+            '()
+            #t 
+            #f))])
     make-blame))
 
 ;; s : (or/c string? #f)
 (define (blame-add-context b s #:important [name #f] #:swap? [swap? #f])
   (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
+  (define new-context (if s (cons s (blame-context b)) (blame-context b)))
   (struct-copy
    blame b
    [original? new-original?]
    [positive (if swap? (blame-negative b) (blame-positive b))]
    [negative (if swap? (blame-positive b) (blame-negative b))]
    [important (if name (important name new-original?) (blame-important b))]
-   [context (if s (cons s (blame-context b)) (blame-context b))]
+   [context new-context]
    [top-known? #t]))
 
 (struct important (name sense-swapped?))
@@ -108,23 +112,27 @@
 
 
 (define (blame-update blame-info extra-positive extra-negative)
-  (let ((pos (blame-positive blame-info))
-        (neg (blame-negative blame-info)))
-    (struct-copy 
-     blame 
-     blame-info
-     [positive (append (list extra-positive) pos)]
-     [negative (append (list extra-negative) neg)])))
+  (ensure-blame-known 'blame-update blame-info)
+  (struct-copy 
+   blame 
+   blame-info
+   [positive (cons extra-positive (blame-positive blame-info))]
+   [negative (cons extra-negative (blame-negative blame-info))]))
 
-(define (show-blame accessor)
-  (λ (blm)
-    (let ([info (accessor blm)])
-      (cond [(empty? (rest info)) (first info)]
-            [else info]))))
+(define (ensure-blame-known who blame)
+  (unless (and (blame-positive blame)
+               (blame-negative blame))
+    (error who "blame info is not known; positive ~s negative ~s"
+           (blame-positive blame)
+           (blame-negative blame))))
 
-(define show-blame-positive (show-blame blame-positive))
-
-(define show-blame-negative (show-blame blame-negative))
+(define (show-blame accessor blm)
+  (define info (accessor blm))
+  (cond [(not info) #f]
+        [(empty? (rest info)) (first info)]
+        [else info]))
+(define (show-blame-positive b) (show-blame blame-positive b))
+(define (show-blame-negative b) (show-blame blame-negative b))
 
 (define (blame-swapped? b)
   (not (blame-original? b)))
@@ -132,7 +140,34 @@
 (define-struct (exn:fail:contract:blame exn:fail:contract) [object]
   #:transparent)
 
-(define (raise-blame-error blame x fmt . args)
+(define (raise-blame-error raw-blame x #:missing-party [missing-party #f] fmt . args)
+  (unless (blame? raw-blame)
+    (apply
+     raise-argument-error
+     'raise-blame-error
+     "blame?" 0
+     raw-blame x fmt args))
+  (unless (or (string? fmt)
+              (and (list? fmt)
+                   (ormap (λ (x) (or (symbol? x) (string? x)))
+                          fmt)))
+    (apply
+     raise-argument-error
+     'raise-blame-error
+     (format "~s" '(or/c string? (list/c (or/c string? symbol?))))
+     2
+     raw-blame x fmt args))
+  
+  (define blame 
+    ;; if we're not going to blame the missing party,
+    ;; don't insist on it being there.
+    (cond
+      [(and (blame-original? raw-blame)
+            (not missing-party))
+       raw-blame]
+      [else
+       (blame-add-missing-party raw-blame missing-party)]))
+  
   (raise
    (make-exn:fail:contract:blame
     ((current-blame-format) 
@@ -140,6 +175,24 @@
      (apply format (blame-fmt->-string blame fmt) args))
     (current-continuation-marks)
     blame)))
+
+(define (blame-add-missing-party b missing-party)
+  (cond
+    [(not missing-party) b]
+    [(blame-swapped? b)
+     (when (blame-positive b)
+       (error 'add-missing-party "already have the party: ~s; trying to add ~s" 
+              (blame-positive b)
+              missing-party))
+     (struct-copy blame b
+                  [positive (list missing-party)])]
+    [else
+     (when (blame-negative b)
+       (error 'add-missing-party "already have the party: ~s; trying to add ~s" 
+              (blame-negative b)
+              missing-party))
+     (struct-copy blame b
+                  [negative (list missing-party)])]))
 
 (define (blame-fmt->-string blame fmt)
   (cond
@@ -190,6 +243,12 @@
     [else (blame-original? blme)]))
 
 (define (default-blame-format blme x custom-message)
+  
+  (unless (blame-positive blme)
+    (raise-argument-error 'default-blame-format
+                          "a blame object with a non-#f positive field"
+                          blme))
+  
   (define source-message (source-location->string (blame-source blme)))
   
   (define context (blame-context blme))

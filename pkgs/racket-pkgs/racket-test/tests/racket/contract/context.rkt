@@ -1,5 +1,5 @@
 #lang racket/base
-(require "test-util.rkt")
+(require "test-util.rkt" (for-syntax racket/base))
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 
@@ -40,12 +40,27 @@
                       [else
                        (string-append "did not find ``in:'', so no context in msg: "
                                       str)])))
+  (define-syntax (context-test stx)
+    (syntax-case stx ()
+      [(_ x ...)
+       (with-syntax ([line (syntax-line stx)])
+         #'(context-test/proc line x ...))]))
   
-  (define (context-test context expression)
-    (contract-eval `(,test ',context extract-context-lines (lambda () ,expression)))
+  (define (context-test/proc line context expression)
+    (define name (format "line ~a" line))
+    (contract-eval
+     #:test-case-name name
+     `(,test #:test-case-name ',name
+             ',context extract-context-lines
+             (lambda () ,expression)))
     (let/ec k
-      (contract-eval 
-       `(,test ',context extract-context-lines (lambda () ,(rewrite-to-add-opt/c expression k))))))
+      (define rewritten (rewrite-to-add-opt/c expression k))
+      (unless (equal? expression rewritten)
+        (define opt-name (string-append name "+opt/c"))
+        (contract-eval 
+         #:test-case-name opt-name
+         `(,test #:test-case-name ',opt-name
+                 ',context extract-context-lines (lambda () ,rewritten))))))
   
   (context-test '("the 1st argument of")
                 '((contract (-> boolean? integer? integer?)
