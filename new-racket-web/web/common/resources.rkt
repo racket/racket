@@ -56,7 +56,7 @@
     ;; There are still some clients that look for a favicon.ico file
     ,(copyfile "resources/plticon.ico" "favicon.ico")
     @,pagefile["page-not-found.html"]{
-      @h1[style: "text-align: center; margin: 3em 0 1em 0;"]{
+      @h3[style: "text-align: center; margin: 3em 0 1em 0;"]{
         Page not found}
       @(λ xs (table align: 'center (tr (td (pre xs))))){
         > (@a[href: "/"]{(uncaught-exception-handler)}
@@ -164,4 +164,11 @@
       margin-bottom: 0.5em;
       margin-left: 2em;
     }
+    
+    tt { 
+        font-family: Inconsolata;
+    }
+
+    i { font-style: italic; }
+
   })

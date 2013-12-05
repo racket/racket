@@ -2,21 +2,18 @@
 
 (require "resources.rkt")
 
-(define (name . a) (apply span class: 'italic a))
+(define name i)
 
 (define (url str) (tt (a href: str str)))
 
 (define styles
   @style/inline{
-    .italic { font-style: italic; }
-    tt { font-family: Inconsolata; }
     .nestedheading {
       text-align: center;
       font-weight: bold;
       font-size: large;
     }
     .nested {
-      width: 40%;
       margin-left: auto;
       margin-right: auto;
       margin-top: 1em;
@@ -26,7 +23,6 @@
       margin-left: auto;
       margin-right: auto;
       margin-top: 2em;
-      width: 45%;
     }
     .faqques {
       font-weight: bold;

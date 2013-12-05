@@ -44,11 +44,11 @@
           @(and note @div[style: "margin-top: 1ex; font-size: small;"]{
                        @note})})
   (define ((refblock . title) . body)
-    @list{@h2{@title}
+    @list{@h4{@title}
           @blockquote{@PRE{@body}}})
   (define cite-page
     @page[#:file (format "tr~a/" num) #:title tr-name #:part-of 'learning]{
-      @h1{@title-line[#f]}
+      @h3{@title-line[#f]}
       @p*{@blockquote{@big{@content}}
           @~ For citations of the @desc, please use @TT{\cite{plt-tr@num}} in
              LaTeX, or @TT|{@cite[plt-tr1]}| in Scribble, using the definitions
@@ -75,7 +75,7 @@
                     #:location (techrpt-location #:institution "PLT Inc."
                                                  #:number "|@tr-name")
                     #:url      "|@(url-of cite-page #t)"))}|
-      @h2{Specific Versions}
+      @h4{Specific Versions}
       @blockquote{
         @table[frame: 'box rules: 'rows cellpadding: 10]{
           @(for/list ([r (in-list all-releases)])
@@ -87,7 +87,7 @@
         @p{@small{Reminder: the release dates should not be included in the
                   entry or the citation.}}}})
   @list{@dt{@title-line[#t]}
-        @dd[style: "margin-bottom: 1.5ex;"]{
+        @dd[style: "margin-bottom: 1.5ex; margin-left: 40px;"]{
           @content}})
 
 (provide techreports)

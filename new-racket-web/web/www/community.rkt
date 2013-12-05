@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt" "people.rkt" "irc.rkt"
+(require "resources.rkt" "people.rkt" "irc.rkt" "gumby.rkt"
          "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
@@ -11,6 +11,7 @@
         #:description
         @'{Racket-related community resources: mailing lists, IRC channel, @;
            resources for developers, RacketCon, blog, and more.}]{
+    @columns[12 #:center? #t #:row? #t]{
     @mailing-lists-quick
     @irc-quick
     @parlist[@strong{RacketCon}
@@ -44,4 +45,4 @@
         @a[href: "http://microsoft.com"]{Microsoft},
         @a[href: "http://mozilla.org"]{Mozilla},
         and @a[href: "http://google.com"]{Google}
-        for their generous support over the years.}]})
+        for their generous support over the years.}]}})

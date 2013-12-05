@@ -203,7 +203,7 @@
     @;@link[rel: "stylesheet" href: (resources "style.css")]
     @; TODO: Modify `racket-style' definition (and what it depends on)
     @;   in "resources.rkt", possibly do something similar with the new files
-    @;@link[rel: "stylesheet" type: "text/css" href: style title: "default"]
+    @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
     @; TODO: Edit the `more.css' definition in www/index.rkt
     @; More ideas for your <head> here: h5bp.com/d/head-Tips
     @; All JavaScript at the bottom, except for Modernizr / Respond.

@@ -9,7 +9,7 @@
         '@{Racket-related learning resources.  Introductions to Racket, @;
            the Racket Guide, Computer Science textbooks that use Racket, @;
            outreach programs, and graduate studies.}]{
-    @columns[8 #:row? #t]{
+    @columns[10 #:row? #t]{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-htdp — a textbook for introductory programming, but also
@@ -52,7 +52,7 @@
           @a[href: (person-url person)]{
             @(regexp-replace #rx" .*$" (person-name person) "")})
         ", "))
-    @columns[8 #:row? #t]{
+    @columns[12 #:row? #t]{
     @h2{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#dddddd")]{
