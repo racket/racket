@@ -333,6 +333,13 @@
   (->opt (Un -String -Regexp) -String (Un -String (->* (list -String) -String -String)) [-Bytes] -String)
   (->opt (Un -Bytes -Byte-Regexp) (Un -Bytes -String) (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes)
   (->opt -Pattern -Bytes (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes))]
+[regexp-replaces
+ (-> (Un -String -Bytes)
+     (-lst (-lst* (Un -String -Bytes -Regexp -Byte-Regexp)
+                  (Un -String -Bytes
+                      (->* (list -String) -String -String)
+                      (->* (list -Bytes) -Bytes -Bytes))))
+     (Un -String -Bytes))]
 [regexp-replace-quote
  (cl->*
   [-> -String -String]
