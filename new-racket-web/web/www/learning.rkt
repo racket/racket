@@ -1,14 +1,15 @@
 #lang meta/web
 
-(require "resources.rkt" "people.rkt" "techreports.rkt" "old-techreports.rkt")
+(require "resources.rkt" "people.rkt" "techreports.rkt" "old-techreports.rkt" "gumby.rkt")
 
 (provide learning)
 (define learning
-  @page[#:window-title "Racket Learning" #:part-of 'learning
+  @page[#:window-title "Racket Learning" #:part-of 'learning #:width 'full
         #:description
         '@{Racket-related learning resources.  Introductions to Racket, @;
            the Racket Guide, Computer Science textbooks that use Racket, @;
            outreach programs, and graduate studies.}]{
+    @columns[8 #:row? #t]{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-htdp — a textbook for introductory programming, but also
@@ -30,7 +31,7 @@
                     @a[href: pubs]{@(place-name place)})))
     @parlist[@strong{Graduate Study}
              @text{We welcome applications from students interested in
-                   @|graduate-study|.}]})
+                   @|graduate-study|.}]}})
 
 (define graduate-study
   @page[#:file "common-plt-app.html" #:part-of 'learning]{
@@ -51,7 +52,8 @@
           @a[href: (person-url person)]{
             @(regexp-replace #rx" .*$" (person-name person) "")})
         ", "))
-    @h1{Graduate Study with PLT}
+    @columns[8 #:row? #t]{
+    @h2{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#dddddd")]{
     @p*{
@@ -90,7 +92,7 @@
        innovation, you should strongly consider graduate study with us.  We
        look forward to hearing from you.  All of us, no matter where we may
        live.}
-    @p[align: 'right]{—@responsible-people}})
+    @p[align: 'right]{—@responsible-people}}})
 
 ;; redirection page for the previous name of this page
 (define outreach+research

@@ -7,7 +7,7 @@
 ;; -- use links
 ;; -- indentation
 
-(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "gumby.rkt")
+(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "gumby.rkt" "people.rkt")
 
 (define (doc path . text)
   (apply a href: (list "http://docs.racket-lang.org/" path) text))
@@ -448,7 +448,7 @@ Chat in the @tt[style: "background-color: #d8d8e8;"]{@big{@strong{#racket}}} cha
 discussion channel for all things related to Racket.
 (@a[href: "https://botbot.me/freenode/racket/"]{Browse the logs}.)}
 
-@p{@a[href: "http://racket-lang.org/people.html"]{People}   —
+@p{@people   —
 The people behind Racket.}
 }
 

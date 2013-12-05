@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt")
+(require "resources.rkt" "gumby.rkt")
 
 (define (make-all place person)
   ;; The first person in a place is the one responsible for it
@@ -100,15 +100,19 @@
             people (make-finder 'people people person-nick))))
 
 (provide people)
+(define acks-url "https://github.com/plt/racket/blob/master/racket/collects/acks/acks.rkt")
 (define people
   @page[#:window-title "Racket People: The PLT Group" #:part-of 'community
-        #:description "PLT: the group that is the Racket development team."]{
+        #:description "PLT: the group that is the Racket development team."
+        #:width 'full]{
+    @columns[8 #:center? #t #:row? #t]{
     @p{“PLT” refers to the group that is the core of the Racket development
        team.  PLT consists of numerous people distributed across several
        different universities in the USA:
-       @(ul (map (λ (p) @li{@a[href: (place-url p)]{
-                              @(place-name p), @(place-location p)}})
+       @(ul style: "margin-left: 20px"
+            (map (λ (p) @li{@a[href: (place-url p)]{
+                             @(place-name p), @(place-location p)}})
                  all-places))}
-    @p{Also, Racket is supported by a band of volunteers who contribute not
+    @p{Also, Racket is supported by a band of volunteers who @a[href: acks-url]{contribute} not
        only code and documentation but also infectious enthusiasm—too many to
-       name but whose help and encouragement make this fun and worthwhile.}})
+       name but whose help and encouragement make this fun and worthwhile.}}})

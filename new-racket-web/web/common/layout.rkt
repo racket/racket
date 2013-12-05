@@ -131,21 +131,21 @@
   (define (icon name) @i[class: name]{})
   (define (row . content) (apply div class: "row" content))
   
-  (define download-promise (lazy (dict-ref (force (first (unbox navbar-info))) 'download)))
-  (define main-promise (lazy (second (unbox navbar-info))))
+  (define download-promise (dict-ref (force (first (unbox navbar-info))) 'download))
+  (define main-promise (force (second (unbox navbar-info))))
   
   @div[class: "navbar" gumby-fixed: "top" id: "nav1"]{
   @row{
    @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
      @icon{icon-menu}}
-   @a[class: "five columns logo" href: (url-of (force main-promise))]{
+   @a[class: "five columns logo" href: (url-of main-promise)]{
      @img[class: "logo" src: logo]}
    @ul[class: "five columns"]{
      @li{@a[href: "http://pkg.racket-lang.org"]{Packages}}
      @li{@a[href: "http://docs.racket-lang.org"]{Documentation}}
      @li{@a[href: "http://blog.racket-lang.org"]{Blog}}
      @li{@div[class: "medium metro info btn icon-left entypo icon-install"]{
-       @(force download-promise)}}}}})
+       @download-promise}}}}})
 
 (define html-preamble
   @list{
