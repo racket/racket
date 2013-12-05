@@ -20,10 +20,14 @@
 \newlength{\FigOrigskip}
 \FigOrigskip=\parskip
 
-\newenvironment{Figure}{\begin{figure}}{\end{figure}}
-\newenvironment{FigureMulti}{\begin{figure*}[t!p]}{\end{figure*}}
-\newenvironment{FigureMultiWide}{\begin{FigureMulti}}{\end{FigureMulti}}
-\newenvironment{Herefigure}{\begin{figure}[ht!]\centering}{\end{figure}}
+% Put this before the figure content, so that a hyperref goes to
+% the start of the content:
+\newcommand{\FigureSetRef}{\refstepcounter{figure}}
+
+\newenvironment{Figure}{\begin{figure}\FigureSetRef}{\end{figure}}
+\newenvironment{FigureMulti}{\begin{figure*}[t!p]\FigureSetRef}{\end{figure*}}
+\newenvironment{FigureMultiWide}{\begin{FigureMulti}\FigureSetRef}{\end{FigureMulti}}
+\newenvironment{Herefigure}{\begin{figure}[ht!]\FigureSetRef\centering}{\end{figure}}
 
 \newenvironment{Centerfigure}{\begin{Xfigure}\centering\item}{\end{Xfigure}}
 \newenvironment{Leftfigure}{\begin{Xfigure}\item}{\end{Xfigure}}
