@@ -214,7 +214,7 @@ all inexact numbers. Thus @racket[1] is considered distinct from
 @racket[1.0], for example.
 
 The following data types are currently supported: numbers, strings,
-bytes, keywords, symbols, booleans, characters, null, pairs, vectors,
+bytes, keywords, symbols, booleans, characters, paths, null, pairs, vectors,
 boxes, prefab structs, and fully-transparent structs.
 
 The following example comparisons are specified to return the results

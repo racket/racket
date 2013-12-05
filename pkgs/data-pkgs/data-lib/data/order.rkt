@@ -154,6 +154,7 @@ Other:
   < symbol
   < bool
   < char
+  < path
   < null
   < pair
   < vector
@@ -245,6 +246,12 @@ Other:
              '<)]
         [(char? y)
          '>]
+        [(path-for-some-system? x)
+         (if (path-for-some-system? y)
+             (cmp* bytes<? bytes=? (path->bytes x) (path->bytes y))
+             '<)]
+        [(path-for-some-system? y)
+         '>]
         [(null? x)
          (if (null? y)
              '=
@@ -289,7 +296,7 @@ Other:
          (raise-type-error
           (if natural? 'natural-cmp 'datum-cmp)
           (string-join '("number" "string" "bytes" "keyword" "symbol" "boolean" "character"
-                         "null" "pair" "vector" "box"
+                         "path" "null" "pair" "vector" "box"
                          "prefab struct" "or fully-transparent struct")
                        ", ")
           0 x y)]))
