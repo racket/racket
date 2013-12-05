@@ -1,7 +1,6 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         (only-in srfi/1/list s:member)
          (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
@@ -129,7 +128,7 @@
         [(null? names)
          (do-check void null null null form null body null expected #:abstract orig-flat-names)]
         ;; if none of the names bound in the letrec are free vars of this rhs
-        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
+        [(not (ormap (lambda (n) (member n flat-names bound-identifier=?))
                      (free-vars (car exprs))))
          ;; then check this expression separately
          (with-lexical-env/extend
@@ -159,7 +158,7 @@
                           [(unsafe)            (values safe-bindings transitively-safe-bindings)]))])
                     (map (λ (l) (let ([types-from-user (map get-type l)])
                                   (ret (if (andmap (λ (x) ; are all the lhs vars safe?
-                                                      (s:member x safe-bindings bound-identifier=?))
+                                                      (member x safe-bindings bound-identifier=?))
                                                    l)
                                            types-from-user
                                            (map (λ (x) (Un x -Undefined)) types-from-user)))))
@@ -193,8 +192,8 @@
     (syntax-parse clause
       [(bindings . rhs) #'rhs]))
   (cond [(andmap (lambda (fv)
-                   (or (not (s:member fv letrec-bound-ids bound-identifier=?)) ; from outside
-                       (s:member fv transitively-safe-bindings bound-identifier=?)))
+                   (or (not (member fv letrec-bound-ids bound-identifier=?)) ; from outside
+                       (member fv transitively-safe-bindings bound-identifier=?)))
                  (apply append (stx-map free-vars clause-rhs)))
          'transitively-safe]
         [else
