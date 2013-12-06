@@ -174,6 +174,17 @@ determined by @racket[=?].
 ]
 }
 
+@defproc[(cartesian-product [lst (listof A)] ...)
+         (listof (listof A))]{
+
+Computes the n-ary cartesian product of the given lists.
+
+@examples[#:eval the-eval
+(cartesian-product '(1 2 3) '(a b c))
+(cartesian-product '(4 5 6) '(d e f) '(#t #f))
+]
+}
+
 
 @addition{Eric Dobson}
 

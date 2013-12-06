@@ -179,9 +179,17 @@
              (loop (cdr classes)
                    (cons (car classes) rev-classes))]))))
 
+;; (listof x) ... -> (listof (listof x))
+(define (cartesian-product . ls)
+  (define (cp-2 as bs)
+    (for*/list ([i (in-list as)] [j (in-list bs)]) (cons i j)))
+  (foldr cp-2 (list (list)) ls))
+
+
 (provide/contract
  [group-by (->* (procedure? list?) (procedure?)
-                list?)])
+                list?)]
+ [cartesian-product (->* () #:rest any/c (listof (listof any/c)))])
 
 ;; endobson added:
 
