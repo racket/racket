@@ -40,7 +40,7 @@
 (define nats+1 (nats+/e 1))
 
 (test-begin
- (check-equal? (size nats+1) +inf.f)
+ (check-equal? (size nats+1) +inf.0)
  (check-equal? (decode nats+1 0) 1)
  (check-equal? (decode nats+1 1) 2)
  (check-bijection? nats+1))
@@ -63,7 +63,7 @@
 ;; sum tests
 
 (define evens/e
-  (enum +inf.f
+  (enum +inf.0
         (λ (n)
            (* 2 n))
         (λ (n)
@@ -73,7 +73,7 @@
                (error 'even)))))
 
 (define odds/e
-  (enum +inf.f
+  (enum +inf.0
         (λ (n)
            (+ (* 2 n) 1))
         (λ (n)
@@ -106,13 +106,13 @@
    (check-bijection? bool-or-num)
    
    (check-equal? (size bool-or-nat)
-                 +inf.f)
+                 +inf.0)
    (check-equal? (decode bool-or-nat 0) #t)
    (check-equal? (decode bool-or-nat 1) 0)
    (check-bijection? bool-or-nat)
    
    (check-equal? (size odd-or-even)
-                 +inf.f)
+                 +inf.0)
    (check-equal? (decode odd-or-even 0) 0)
    (check-equal? (decode odd-or-even 1) 1)
    (check-equal? (decode odd-or-even 2) 2)
@@ -160,13 +160,13 @@
  (check-bijection? bool-or-num)
    
  (check-equal? (size bool-or-nat)
-               +inf.f)
+               +inf.0)
  (check-equal? (decode bool-or-nat 0) #t)
  (check-equal? (decode bool-or-nat 1) 0)
  (check-bijection? bool-or-nat)
    
  (check-equal? (size odd-or-even)
-               +inf.f)
+               +inf.0)
  (check-equal? (decode odd-or-even 0) 0)
  (check-equal? (decode odd-or-even 1) 1)
  (check-equal? (decode odd-or-even 2) 2)
@@ -205,7 +205,7 @@
  (check-bijection? bool-or-num)
    
  (check-equal? (size bool-or-nat)
-               +inf.f)
+               +inf.0)
  (check-equal? (decode bool-or-nat 0) #t)
  (check-equal? (decode bool-or-nat 1) #f)
  (check-equal? (decode bool-or-nat 2) 0)
@@ -236,14 +236,14 @@
  (check-equal? (decode bool*bool 0)
                (cons #t #t))
  (check-equal? (decode bool*bool 1)
-               (cons #t #f))
- (check-equal? (decode bool*bool 2)
                (cons #f #t))
+ (check-equal? (decode bool*bool 2)
+               (cons #t #f))
  (check-equal? (decode bool*bool 3)
                (cons #f #f))
  (check-bijection? bool*bool)
 
- (check-equal? (size bool*nats) +inf.f)
+ (check-equal? (size bool*nats) +inf.0)
  (check-equal? (decode bool*nats 0)
                (cons #t 0))
  (check-equal? (decode bool*nats 1)
@@ -254,7 +254,7 @@
                (cons #f 1))
  (check-bijection? bool*nats)
 
- (check-equal? (size nats*bool) +inf.f)
+ (check-equal? (size nats*bool) +inf.0)
  (check-equal? (decode nats*bool 0)
                (cons 0 #t))
  (check-equal? (decode nats*bool 1)
@@ -265,7 +265,7 @@
                (cons 1 #f))
  (check-bijection? nats*bool)
 
- (check-equal? (size nats*nats) +inf.f)
+ (check-equal? (size nats*nats) +inf.0)
  (check ns-equal?
         (decode nats*nats 0)
         (cons 0 0))
@@ -325,7 +325,7 @@
  (check-equal? (decode 3-up 5) (cons 2 2))
  (check-bijection? 3-up)
 
- (check-equal? (size from-3) +inf.f)
+ (check-equal? (size from-3) +inf.0)
  (check-equal? (decode from-3 0) (cons 0 0))
  (check-equal? (decode from-3 1) (cons 1 1))
  (check-equal? (decode from-3 2) (cons 2 2))
@@ -335,7 +335,7 @@
  (check-equal? (decode from-3 6) (cons 0 2))
  (check-bijection? from-3)
 
- (check-equal? (size nats-to) +inf.f)
+ (check-equal? (size nats-to) +inf.0)
  (check-equal? (decode nats-to 0) (cons 0 0))
  (check-equal? (decode nats-to 1) (cons 1 0))
  (check-equal? (decode nats-to 2) (cons 1 1))
@@ -345,7 +345,7 @@
  (check-equal? (decode nats-to 6) (cons 3 0))
  (check-bijection? nats-to)
 
- (check-equal? (size nats-up) +inf.f)
+ (check-equal? (size nats-up) +inf.0)
  (check-equal? (decode nats-up 0) (cons 0 0))
  (check-equal? (decode nats-up 1) (cons 0 1))
  (check-equal? (decode nats-up 2) (cons 1 1))
@@ -391,7 +391,7 @@
  (check-equal? (encode 3-up-2 (cons 1 1)) 2)
  (check-equal? (encode 3-up-2 (cons 2 0)) 3)
 
- (check-equal? (size nats-to-2) +inf.f)
+ (check-equal? (size nats-to-2) +inf.0)
  (check-equal? (encode nats-to-2 (cons 0 0)) 0)
  (check-equal? (encode nats-to-2 (cons 1 0)) 1)
  (check-equal? (encode nats-to-2 (cons 1 1)) 2)
