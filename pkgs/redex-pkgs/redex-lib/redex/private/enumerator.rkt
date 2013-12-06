@@ -83,8 +83,10 @@
 (define (map/e f inv-f e . es)
   (cond [(empty? es)
          (enum (size e)
-               (compose f (enum-from e))
-               (compose (enum-to e) inv-f))]
+               (λ (x) 
+                  (f (decode e x)))
+               (λ (n)
+                  (encode e (inv-f n))))]
         [else
          (define es/e (list/e (cons e es)))
          (map/e
@@ -193,14 +195,14 @@
                (hash-ref rev-map x)))))
 
 (define nats/e
-  (enum +inf.f
+  (enum +inf.0
         identity
         (λ (n)
            (unless (>= n 0)
              (redex-error 'encode "Not a natural"))
            n)))
 (define ints/e
-  (enum +inf.f
+  (enum +inf.0
         (λ (n)
            (if (even? n)
                (* -1 (/ n 2))
@@ -353,84 +355,58 @@
           (cons empty/e (λ (_) #f))
           (cons e-p e-ps))))
 
-;; cons/e : enum a, enum b -> enum (cons a b)
-(define cons/e
-  (case-lambda
-    [(e) e]
-    [(e1 e2)
-     (cond [(or (= 0 (size e1))
-                (= 0 (size e2))) empty/e]
-           [(not (infinite? (enum-size e1)))
-            (cond [(not (infinite? (enum-size e2)))
-                   (define size (* (enum-size e1)
-                                   (enum-size e2)))
-                   (enum size
-                         (λ (n) ;; bijection from n -> axb
-                            (if (> n size)
-                                (redex-error 'decode "out of range")
-                                (call-with-values
-                                    (λ ()
-                                       (quotient/remainder n (enum-size e2)))
-                                  (λ (q r)
-                                     (cons ((enum-from e1) q)
-                                           ((enum-from e2) r))))))
-                         (λ (xs)
-                            (unless (pair? xs)
-                              (redex-error 'encode "not a pair"))
-                            (define q (encode e1 (car xs)))
-                            (define r (encode e2 (cdr xs)))
-                            (+ (* (enum-size e2) q) r)))]
-                  [else
-                   (enum +inf.f
-                         (λ (n)
-                            (call-with-values
-                                (λ ()
-                                   (quotient/remainder n (enum-size e1)))
-                              (λ (q r)
-                                 (cons ((enum-from e1) r)
-                                       ((enum-from e2) q)))))
-                         (λ (xs)
-                            (unless (pair? xs)
-                              (redex-error 'encode "not a pair"))
-                            (+ ((enum-to e1) (car xs))
-                               (* (enum-size e1)
-                                  ((enum-to e2) (cdr xs))))))])]
-           [(not (infinite? (enum-size e2)))
-            (enum +inf.f
-                  (λ (n)
-                     (call-with-values
-                         (λ ()
-                            (quotient/remainder n (enum-size e2)))
-                       (λ (q r)
-                          (cons ((enum-from e1) q)
-                                ((enum-from e2) r)))))
-                  (λ (xs)
-                     (unless (pair? xs)
-                       (redex-error 'encode "not a pair"))
-                     (+ (* (enum-size e2)
-                           ((enum-to e1) (car xs)))
-                        ((enum-to e2) (cdr xs)))))]
-           [else
-            (enum (* (enum-size e1)
-                     (enum-size e2))
-                  (λ (n)
-                     (let* ([k (floor-untri n)]
-                            [t (tri k)]
-                            [l (- n t)]
-                            [m (- k l)])
-                       (cons ((enum-from e1) l)
-                             ((enum-from e2) m))))
-                  (λ (xs) ;; bijection from nxn -> n, inverse of previous
-                     ;; (n,m) -> (n+m)(n+m+1)/2 + n
-                     (unless (pair? xs)
-                       (redex-error 'encode "not a pair"))
-                     (let ([l ((enum-to e1) (car xs))]
-                           [m ((enum-to e2) (cdr xs))])
-                       (+ (/ (* (+ l m) (+ l m 1))
-                             2)
-                          l))))])]
-    [(a b c . rest)
-     (cons/e a (apply cons/e b c rest))]))
+(define (foldr1 f l)
+  (match l
+    [(cons x '()) x]
+    [(cons x  xs) (f x (foldr1 f xs))]))
+
+;; cons/e : enum a, enum b ... -> enum (cons a b ...)
+(define (cons/e e . es)
+  (define (cons/e2 e1 e2)
+    (define s1 (enum-size e1))
+    (define s2 (enum-size e2))
+    (define size (* s1 s2))
+    (cond [(zero? size) empty/e]
+          [(or (not (infinite? s1))
+               (not (infinite? s2)))
+           (define fst-finite? (not (infinite? s1)))
+           (define fin-size
+             (cond [fst-finite? s1]
+                   [else        s2]))
+           (define (dec n)
+             (define-values (q r)
+               (quotient/remainder n fin-size))
+             (define x1 (decode e1 (if fst-finite? r q)))
+             (define x2 (decode e2 (if fst-finite? q r)))
+             (cons x1 x2))
+           (define/match (enc p)
+             [((cons x1 x2))
+              (define n1 (encode e1 x1))
+              (define n2 (encode e2 x2))
+              (define q (if fst-finite? n2 n1))
+              (define r (if fst-finite? n1 n2))
+              (+ (* fin-size q)
+                 r)])           
+           (enum size dec enc)]
+          [else
+           (define (dec n)
+             (define k (floor-untri n))
+             (define t (tri k))
+             (define l (- n t))
+             (define m (- k l))
+             (define x1 (decode e1 l))
+             (define x2 (decode e2 m))
+             (cons x1 x2))
+           (define/match (enc p)
+             [((cons x1 x2))
+              (define l (encode e1 x1))
+              (define m (encode e2 x2))
+              (+ (/ (* (+ l m)
+                       (+ l m 1))
+                    2)
+                 l)])
+           (enum size dec enc)]))
+  (foldr1 cons/e2 (cons e es)))
 
 ;; Traversal (maybe come up with a better name
 ;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
@@ -503,7 +479,7 @@
           ;; sizes : gvector int
           (let ([sizes (gvector first)])
             (enum (if (infinite? (size e))
-                      +inf.f
+                      +inf.0
                       (foldl
                        (λ (curSize acc)
                           (let ([sum (+ curSize acc)])
@@ -540,7 +516,7 @@
                        (+ sizeUpTo
                           (encode ei b))))))]
          [(not (infinite? (size e)))
-          (enum +inf.f
+          (enum +inf.0
                 (λ (n)
                    (call-with-values
                        (λ ()
@@ -552,7 +528,7 @@
                    (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                       (encode e (car ab)))))]
          [else ;; both infinite, same as cons/e
-          (enum +inf.f               
+          (enum +inf.0               
                 (λ (n)
                    (let* ([k (floor-untri n)]
                           [t (tri k)]
@@ -628,7 +604,7 @@
         (let* ([first (size (f (decode e 0)))]
                [sizes (gvector first)])
           (enum (if (infinite? (size e))
-                    +inf.f
+                    +inf.0
                     (foldl
                      (λ (curSize acc)
                         (let ([sum (+ curSize acc)])
@@ -665,7 +641,7 @@
                      (+ sizeUpTo
                         (encode ei b))))))]
        [(not (infinite? (size e)))
-        (enum +inf.f
+        (enum +inf.0
               (λ (n)
                  (call-with-values
                      (λ ()
@@ -677,7 +653,7 @@
                  (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                     (encode e (car ab)))))]
        [else ;; both infinite, same as cons/e
-        (enum +inf.f               
+        (enum +inf.0               
               (λ (n)
                  (let* ([k (floor-untri n)]
                         [t (tri k)]
@@ -774,7 +750,7 @@
      (define fix-size
        (if (= 0 (size e))
            0
-           +inf.f))
+           +inf.0))
      (fix/e fix-size
             (λ (self)
                (disj-sum/e #:alternate? #t
@@ -878,8 +854,6 @@
               (cons (map/e - - from-1/e)
                     (λ (n) (< n 0)))))
 
-;; The last 3 here are -inf.0, +inf.0 and +nan.0
-;; Consider moving those to the beginning
 (define weird-flonums/e-p
   (cons (from-list/e '(+inf.0 -inf.0 +nan.0))
         (λ (n)
@@ -937,7 +911,7 @@
               (cons var/e symbol?)))
 
 (define any/e
-  (fix/e +inf.f
+  (fix/e +inf.0
          (λ (any/e)
             (disj-sum/e #:alternate? #t
                         (cons base/e (negate pair?))
