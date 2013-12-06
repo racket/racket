@@ -505,4 +505,34 @@ Games, etc.}
 
 ]
 
+@; - - - - - - - - - - - - - - - - - - - - - - - -
 
+@subsection{Packages Compatible with Racket 5.3.5 and 5.3.6}
+
+A beta version of the package system was added to Racket starting in
+version 5.3.5. By the time version 6.0 was released, some features
+were added.
+
+By using only certain older features, it is possible to make a package
+that can be used with Racket versions 5.3.5, 5.3.6, 6.0, and newer.
+
+In your @racket[info.rkt], you should:
+
+@itemlist[
+
+  @item{Use @tt{#lang setup/infotab} (not @tt{#lang info)}.}
+
+  @item{Use @racket[(define collection 'multi)]. Even if your package
+  has a single collection, put it in a subdirectory and make a
+  multi-collection package.}
+
+  @item{If you depend on a specific version of another package, state
+  this using the @racket[("other-package-name" "required-version")]
+  form (not @racket[#:version]).}
+
+]
+
+Finally, when listing your package on pkg.racket-lang-org, you should
+supply a GitHub source using the URL format
+@tt{github://github.com/<user>/<repo>/<rev>[/<path>]} (not the
+@tt{git:} format).
