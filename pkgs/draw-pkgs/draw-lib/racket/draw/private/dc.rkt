@@ -1272,8 +1272,14 @@
            [(aligned) 0]
            [(unaligned) 4])))
 
-    (define/private (get-context cr smoothing-index font)
-      (or (vector-ref contexts smoothing-index)
+    (define/private (get-context cr smoothing-index font xform)
+      (or (let ([c (vector-ref contexts smoothing-index)])
+            (and c
+                 (begin
+                   (unless (equal? xform (vector-ref c 1))
+                     (pango_cairo_update_context cr (vector-ref c 0))
+                     (vector-set! c 1 xform)))
+                 (vector-ref c 0)))
 	  (let ([c (pango_font_map_create_context
 		    (let ([fm (vector-ref font-maps smoothing-index)])
 		      (or fm
@@ -1281,7 +1287,7 @@
 			    (vector-set! font-maps smoothing-index fm)
 			    fm))))])
 	    (pango_cairo_update_context cr c)
-	    (vector-set! contexts smoothing-index c)
+	    (vector-set! contexts smoothing-index (vector c xform))
 	    (set-font-antialias c 
                                 (dc-adjust-smoothing (send font get-smoothing)) 
                                 (send font get-hinting))
@@ -1302,7 +1308,7 @@
                     s)]
              [rotate? (and draw-mode (not (zero? angle)))]
              [smoothing-index (get-smoothing-index font)]
-             [context (get-context cr smoothing-index font)])
+             [context (get-context cr smoothing-index font current-xform)])
         (when draw-mode
           (when (eq? text-mode 'solid)
             (unless rotate?
@@ -1875,7 +1881,7 @@
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
               [context (or (for/or ([c (in-vector contexts)])
-                             c)
+                             (and c (vector-ref c 0)))
                            (pango_cairo_create_context cr))])
           (let ([layout (pango_layout_new context)])
             (pango_layout_set_font_description layout desc)
@@ -1910,7 +1916,7 @@
       (let* ([desc (get-pango font)]
 	     [attrs (send font get-pango-attrs)]
 	     [index (get-smoothing-index font)]
-	     [context (get-context cr index font)]
+	     [context (get-context cr index font current-xform)]
 	     [fontmap (vector-ref font-maps index)]
 	     [font (pango_font_map_load_font fontmap context desc)])
           (and font ;; else font match failed
