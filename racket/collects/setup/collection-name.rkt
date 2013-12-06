@@ -9,6 +9,6 @@
 
 (define (collection-name-element? name)
   (and (string? name)
-       (regexp-match #rx"^[a-zA-z0-9+_%-]+$" name)
+       (regexp-match #rx"^[a-zA-Z0-9+_%-]+$" name)
        ;; Using `module-path?' checks that "%" is used apprrpriately:
        (module-path? name)))
