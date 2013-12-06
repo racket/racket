@@ -1851,6 +1851,41 @@
        [tc-e
          (hash-ref (ann (make-hash) (HashTable #f #t)) #f #f)
          -Boolean]
+
+       ;; regexp-replaces
+       [tc-e
+        (regexp-replaces "zero-or-more?" '([#rx"-" "_"] [#rx"(.*)\\?$" "is_\\1"]))
+        (t:Un -String -Bytes)]
+       [tc-e
+        (regexp-replaces "zero-or-more?" '(["e" "o"] ["o" "oo"]))
+        (t:Un -String -Bytes)]
+
+       ;; racket/string
+       [tc-e
+        (string-append* "a" '("c" "d"))
+        -String]
+       [tc-e
+        (string-append* (cdr (append* (map (λ: ([x : String]) (list ", " x))
+                                           '("Alpha" "Beta" "Gamma")))))
+        -String]
+       [tc-e
+        (string-join '("x" "y" "z") ", "
+                     #:before-first "Todo: "
+                     #:before-last " and "
+                     #:after-last ".")
+        -String]
+       [tc-e
+        (string-normalize-spaces "  foo bar  baz \r\n\t")
+        -String]
+       [tc-e
+        (string-replace "foo bar baz" "bar" "blah")
+        -String]
+       [tc-e
+        (string-split "  " #:trim? #f)
+        (-lst -String)]
+       [tc-e
+        (string-trim "  foo bar  baz \r\n\t" " " #:repeat? #t)
+        -String]
         )
   (test-suite
    "tc-literal tests"
