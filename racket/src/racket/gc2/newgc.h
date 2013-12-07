@@ -120,7 +120,8 @@ typedef struct NewGCMasterInfo {
   uintptr_t ready;
   void **signal_fds;
   mzrt_rwlock *cangc;
-  mzrt_sema *wait_sema;
+  mzrt_sema *wait_go_sema;
+  mzrt_sema *wait_done_sema;
 } NewGCMasterInfo;
 #endif
 

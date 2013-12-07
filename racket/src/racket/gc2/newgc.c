@@ -164,7 +164,8 @@ intptr_t GC_is_place() {
   return postmaster_and_place_gc(gc);
 }
 
-static void master_collect_initiate(NewGC *gc);
+static void master_collect_request();
+
 struct Log_Master_Info {
   int ran, full;
   intptr_t pre_used, post_used, pre_admin, post_admin;
@@ -894,10 +895,15 @@ void GC_check_master_gc_request() {
   if (mgc) {
     /* check for GC needed due to GC_report_unsent_message_delta(): */
     if ((mgc->gen0.current_size + mgc->pending_msg_size) >= mgc->gen0.max_size) {
-      NewGC *saved_gc;
-      saved_gc = GC_switch_to_master_gc();    
-      master_collect_initiate(mgc);
-      GC_switch_back_from_master(saved_gc);
+      NewGC *gc = GC_get_GC();
+
+      if (!postmaster_and_master_gc(gc))
+        mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+
+      master_collect_request();
+
+      if (!postmaster_and_master_gc(gc))
+        mzrt_rwlock_unlock(MASTERGCINFO->cangc);
     }
   
     if (mgc->major_places_gc == 1) {
@@ -908,19 +914,47 @@ void GC_check_master_gc_request() {
 }
 
 #ifdef MZ_USE_PLACES 
-static int check_master_wants_to_collect() {
-  return (MASTERGC && MASTERGC->major_places_gc);
+static int master_wants_to_collect() {
+  if (MASTERGC) {
+    int v;
+    mzrt_rwlock_rdlock(MASTERGCINFO->cangc);
+    v = MASTERGC->major_places_gc;
+    mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+    return v;
+  } else
+    return 0;
 }
+#endif
+
+#ifdef MZ_USE_PLACES
+static void wait_until_master_in_progress(NewGC *gc);
 #endif
 
 static void collect_now(NewGC *gc, int major)
 {
 #ifdef MZ_USE_PLACES 
   if (postmaster_and_master_gc(gc))
-      master_collect_initiate(gc);
-  else
+    master_collect_request();
+  else {
+    int again;
+    do {
+      if (!gc->dont_master_gc_until_child_registers && master_wants_to_collect()) {
+        wait_until_master_in_progress(gc);
+        gc->major_places_gc = 1;
+        garbage_collect(gc, 1, 0, NULL); /* waits until all are done */
+        gc->major_places_gc = 0;
+      } else {
+        garbage_collect(gc, major, 0, NULL);
+      }
+      if (gc->dont_master_gc_until_child_registers)
+        again = 0;
+      else
+        again = master_wants_to_collect();
+    } while (again);
+  }
+#else
+  garbage_collect(gc, major, 0, NULL);
 #endif
-    garbage_collect(gc, major, 0, NULL);
 }
 
 
@@ -2587,7 +2621,8 @@ static void NewGCMasterInfo_initialize() {
     MASTERGCINFO->signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
   }
   mzrt_rwlock_create(&MASTERGCINFO->cangc);
-  mzrt_sema_create(&MASTERGCINFO->wait_sema, 0);
+  mzrt_sema_create(&MASTERGCINFO->wait_go_sema, 0);
+  mzrt_sema_create(&MASTERGCINFO->wait_done_sema, 0);
 }
 
 #if 0
@@ -2602,10 +2637,10 @@ static void NewGCMasterInfo_cleanup() {
 
 /* signals every place to do a full gc at then end of 
    garbage_collect the places will call 
-   wait_if_master_in_progress and
+   wait_while_master_in_progress and
    rendezvous for a master gc */
 /* this is only called from the master so the cangc lock should already be held */
-static void master_collect_initiate(NewGC *gc) {
+static void master_collect_request() {
   if (MASTERGC->major_places_gc == 0) {
     int i = 0;
     int size = MASTERGCINFO->size;
@@ -2613,7 +2648,7 @@ static void master_collect_initiate(NewGC *gc) {
     MASTERGC->major_places_gc = 1;
     MASTERGCINFO->ready = 0;
 
-    for (i=1; i < size; i++) {
+    for (i = 1; i < size; i++) {
       void *signal_fd = MASTERGCINFO->signal_fds[i];
       if (signal_fd < (void*) -2) { 
         scheme_signal_received_at(signal_fd);
@@ -2628,11 +2663,11 @@ static void master_collect_initiate(NewGC *gc) {
         MASTERGCINFO->signal_fds[i] = (void*) SIGNALED_BUT_NOT_REGISTERED;
         count++;
       }
-      if (count == (MASTERGCINFO->alive -1)) {
+      if (count == (MASTERGCINFO->alive - 1)) {
         break;
       }
     }
-    if (count != (MASTERGCINFO->alive -1)) {
+    if (count != (MASTERGCINFO->alive - 1)) {
       printf("GC2 count != MASTERGCINFO->alive %i %" PRIdPTR "\n", count, MASTERGCINFO->alive);
       abort();
     }
@@ -2663,61 +2698,81 @@ static void collect_master(Log_Master_Info *lmi) {
       int i = 0;
       int alive = MASTERGCINFO->alive;
       /* wake everyone back up, except MASTERGC and ourself */  
-      for (i=2; i < alive; i++) {
-        mzrt_sema_post(MASTERGCINFO->wait_sema);
+      for (i = 2; i < alive; i++) {
+        mzrt_sema_post(MASTERGCINFO->wait_done_sema);
       }
     }
   }
   GC_switch_back_from_master(saved_gc);
 }
 
-static void wait_if_master_in_progress(NewGC *gc, Log_Master_Info *lmi) {
+static void sync_master_progress(NewGC *gc, int done, Log_Master_Info *lmi) {
   int last_one_here = -1;
+
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
   GC_LOCK_DEBUG("MGCLOCK wait_if_master_in_progress\n");
-  {
-    if (MASTERGC->major_places_gc == 1) {
-      MASTERGCINFO->ready++;
+
+  if (MASTERGC->major_places_gc == 1) {
+    MASTERGCINFO->ready++;
 #if defined(GC_DEBUG_PAGES)
-      printf("%i READY\n", gc->place_id);
-      GCVERBOSEprintf(gc, "%i READY\n", gc->place_id);
-      GCVERBOSEprintf(gc, "START MASTER COLLECTION\n");
+    printf("%i READY\n", gc->place_id);
+    GCVERBOSEprintf(gc, "%i READY\n", gc->place_id);
+    GCVERBOSEprintf(gc, "START MASTER COLLECTION\n");
 #endif
-      /* don't count MASTERGC*/
-      if ((MASTERGCINFO->alive -1) == MASTERGCINFO->ready) {
-        last_one_here = 1;
-      }
-      else {
-        last_one_here = 0; 
-      }
+    /* don't count MASTERGC */
+    if ((MASTERGCINFO->alive - 1) == MASTERGCINFO->ready) {
+      last_one_here = 1;
+      MASTERGCINFO->ready = 0;
+    } else {
+      last_one_here = 0; 
     }
-    else {
-      last_one_here = -1;
-    }
+  } else {
+    last_one_here = -1;
   }
+
   GC_LOCK_DEBUG("UNMGCLOCK wait_if_master_in_progress\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 
   switch(last_one_here) {
-    case -1:
-      /* master doesn't want to collect */
+  case -1:
+    /* master doesn't want to collect */
     return;
     break;
-    case 0:
-      /* wait on semaphore */
-      mzrt_sema_wait(MASTERGCINFO->wait_sema);
+  case 0:
+    /* wait on semaphore */
+    if (done) {
+      mzrt_sema_wait(MASTERGCINFO->wait_done_sema);
       GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
+    } else
+      mzrt_sema_wait(MASTERGCINFO->wait_go_sema);
     break;
-    case 1:
-      /* You're the last one here. */
-      collect_master(lmi);
+  case 1:
+    /* You're the last one here. */
+    if (done) {
+      collect_master(lmi); /* notifies other places on completion */
       GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
+    } else {
+      int i = 0;
+      int alive = MASTERGCINFO->alive;
+      /* wake everyone back up, except MASTERGC and ourself */  
+      for (i = 2; i < alive; i++) {
+        mzrt_sema_post(MASTERGCINFO->wait_go_sema);
+      }
+    }
     break;
-    default:
-      printf("GC2 wait_if_master_in_progress invalid case, unreachable\n");
-      abort();
+  default:
+    printf("GC2 sync_master_in_progress invalid case, unreachable\n");
+    abort();
     break;
   }
+}
+
+static void wait_until_master_in_progress(NewGC *gc) {
+  sync_master_progress(gc, 0, NULL);
+}
+
+static void wait_while_master_in_progress(NewGC *gc, Log_Master_Info *lmi) {
+  sync_master_progress(gc, 1, lmi);
 }
 
 /* MUST CALL WITH cangc lock */
@@ -2912,7 +2967,7 @@ void GC_destruct_child_gc() {
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 
     if (waiting) {
-      garbage_collect(gc, 1, 0, NULL);
+      collect_now(gc, 1);
       waiting = 1;
     }
   } while (waiting == 1);
@@ -3124,7 +3179,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
 
   if(!(page = pagemap_find_page_for_marking(gc, p, 0))) {
 #ifdef MZ_USE_PLACES
-    if (MASTERGC && MASTERGC->major_places_gc && (page = pagemap_find_page(MASTERGC->page_maps, p))) {
+    if (gc->major_places_gc && (page = pagemap_find_page(MASTERGC->page_maps, p))) {
       is_a_master_page = 1;
     } else
 #endif
@@ -3343,7 +3398,7 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
     p = REMOVE_BIG_PAGE_PTR_TAG(pp);
     page = pagemap_find_page_for_marking(gc, p, 0);
 #ifdef MZ_USE_PLACES
-    if (!page && MASTERGC && MASTERGC->major_places_gc) {
+    if (!page && gc->major_places_gc) {
       page = pagemap_find_page(MASTERGC->page_maps, p);
     }
 #endif
@@ -4617,9 +4672,6 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
   uintptr_t old_mem_allocated;
 
   int next_gc_full;
-#ifdef MZ_USE_PLACES
-  int master_wants_to_collect = check_master_wants_to_collect();
-#endif
 
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
@@ -4908,10 +4960,10 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
-    if (gc->gc_full && master_wants_to_collect && !(gc->dont_master_gc_until_child_registers)) { 
+    if (gc->gc_full && gc->major_places_gc && !(gc->dont_master_gc_until_child_registers)) { 
       Log_Master_Info sub_lmi;
       sub_lmi.ran = 0;
-      wait_if_master_in_progress(gc, &sub_lmi);
+      wait_while_master_in_progress(gc, &sub_lmi);
       if (sub_lmi.ran) {
         if (gc->GC_collect_inform_callback) {
           park_for_inform_callback(gc);
