@@ -44,7 +44,8 @@
 
 (define (http-conn-live? hc)
   (and (http-conn-to hc)
-       (http-conn-from hc)))
+       (http-conn-from hc)
+       #t))
 
 (define (http-conn-open! hc host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)])
   (http-conn-close! hc)
