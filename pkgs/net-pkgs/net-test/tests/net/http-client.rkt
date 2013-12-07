@@ -80,6 +80,22 @@
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
+                       (let ([c (hc:http-conn-open "localhost"
+                                                   #:port the-port
+                                                   #:ssl? #f)])
+                         (check-equal? #t (hc:http-conn-live? c))
+                         (hc:http-conn-send! c
+                                             "/"
+                                             #:method "GET"
+                                             #:headers empty
+                                             #:data #f)
+                         (begin0
+                          (hc:http-conn-recv! c
+                                              #:close? #t)
+                          (check-equal? #f (hc:http-conn-live? c))))
+                       raw ereq estatus eheaders econtent))
+           #,(syntax/loc stx
+               (test-e the-port
                        (u:http-sendrecv/url
                         (u:make-url "http" #f "localhost" the-port #t
                                     (list (u:path/param "" empty)) empty #f)
