@@ -418,6 +418,7 @@
  (print-to-pdf "Drucken in PDF-Datei")
 
  (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
+ (alt-as-meta "Alt-Taste als Meta behandeln")
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")
  (basic-gray-paren-match-color "Farbe für Klammern-Hervorhebung \"Grau Standard\"") ; in prefs dialog
