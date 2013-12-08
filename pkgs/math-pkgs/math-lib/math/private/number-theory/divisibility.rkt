@@ -32,7 +32,6 @@
 ;    gcd(a,b) = au + bv
 ;  Note: u and v are not unique
 
-; (bezout-binary a b) = (list u v)   <=>   gcd(a,b) = au + bv
 (: bezout-binary : Integer Integer -> (List Integer Integer))
 (define (bezout-binary a b)
   (: loop : Integer Integer Integer Integer Integer Integer -> (List Integer Integer))
@@ -42,9 +41,30 @@
       (if (= r 0)
           (list ub vb)
           (loop b r ub vb (- ua (* q ub)) (- va (* q vb))))))
-  (if (> a b)
-      (loop a b 1 0 0 1)
-      (loop b a 0 1 1 0)))
+  (: start : Integer Integer -> (List Integer Integer))
+  (define (start a b)
+    (if (> a b)
+        (loop a b 1 0 0 1)
+        (loop b a 0 1 1 0)))
+  (cond [(and (positive? a) (positive? b))
+         (start a b)]
+        [(and (negative? a) (negative? b))
+         (define uv (start (- a) (- b)))
+         (list (- (car uv)) (- (cadr uv)))]
+        [(and (negative? a) (positive? b))
+         ; choose k s.t. a+kb>0
+         (define k (+ (quotient (- a) b) 1))
+         (displayln (list (+ a (* k b)) b))
+         (define uv (start (+ a (* k b)) b))
+         (define u (car uv)) (define v (cadr uv))
+         (list u (+ (* u k) v))]
+        [(and (positive? a) (negative? b))
+         ; choose k s.t. ak+b>0
+         (define k (+ (quotient (- b) a) 1))
+         (define uv (start a (+ (* k a) b)))
+         (define u (car uv)) (define v (cadr uv))
+         (list (+ u (* k v)) v)]
+        [else (error "Internal error in bezout-binary")]))
 
 ; (bezout a b c ...) -> (list u v w ...)    <=>  gcd(a,b,c,...) = au + bv + cw + ...
 (: bezout : Integer Integer * -> (Listof Integer))
