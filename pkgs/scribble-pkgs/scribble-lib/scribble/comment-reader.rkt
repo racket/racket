@@ -1,18 +1,28 @@
-
 (module comment-reader scheme/base
+  (require (only-in racket/port peeking-input-port))
 
   (provide (rename-out [*read read]
                        [*read-syntax read-syntax])
            make-comment-readtable)
 
+  (define unsyntaxer (make-parameter 'unsyntax))
+
   (define (*read [inp (current-input-port)])
-    (parameterize ([current-readtable (make-comment-readtable)])
+    (parameterize ([unsyntaxer (read-unsyntaxer inp)]
+                   [current-readtable (make-comment-readtable)])
       (read/recursive inp)))
 
   (define (*read-syntax src [port (current-input-port)])
-    (parameterize ([current-readtable (make-comment-readtable)])
+    (parameterize ([unsyntaxer (read-unsyntaxer port)]
+                   [current-readtable (make-comment-readtable)])
       (read-syntax/recursive src port)))
   
+  (define (read-unsyntaxer port)
+    (let ([p (peeking-input-port port)])
+      (if (eq? (read p) '#:escape-id)  
+          (begin (read port) (read port))
+          'unsyntax)))
+
   (define (make-comment-readtable #:readtable [rt (current-readtable)])
     (make-readtable rt
                     #\; 'terminating-macro
@@ -35,7 +45,7 @@
     (when (equal? #\space (peek-char port))
       (read-char port))
     `(code:comment
-      (unsyntax
+      (,(unsyntaxer)
        (t
         ,@(append-strings
            (let loop ()
@@ -71,5 +81,3 @@
                   (list `(hspace ,(- (cdar m) (caar m))))
                   (preserve-space (substring s (cdar m))))
           (list s)))))
-
-
