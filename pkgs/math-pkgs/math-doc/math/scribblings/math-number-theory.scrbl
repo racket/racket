@@ -77,7 +77,7 @@
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Pairwise_coprime"]{Pairwise Coprime}}
 @defproc[(pairwise-coprime? [a Integer] [b Integer] ...) Boolean]{
   Returns @racket[#t] if the integers @racket[a b ...] are @italic{pairwise} coprime, meaning
-  that each adjacent pair of integers is coprime.
+  that each pair of integers is coprime.
 
 The numbers 2, 6 and 15 are coprime, but not @italic{pairwise} coprime, because 2 and 6 share the
 factor 3:
@@ -521,7 +521,7 @@ square, otherwise @racket[#f].
 
 The functions in this section are @deftech{multiplicative}.
 In number theory, a multiplicative function is a function @racket[f] such that
-@racket[(f a b) = (* (f a) (f b))] for all coprime natural numbers @racket[a] and @racket[b].
+@racket[(f (* a b)) = (* (f a) (f b))] for all coprime natural numbers @racket[a] and @racket[b].
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Euler%27s_totient_function"]{Euler's Totient}}
 @defproc[(totient [n Natural]) Natural]{
@@ -538,8 +538,8 @@ This function is known as Eulers totient or phi function.
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/M%C3%B6bius_function"]{Moebius Function}}
 @defproc[(moebius-mu [n Natural]) (U -1 0 1)]{
 Returns:
-@itemlist[@item{@racket[1]  if @racket[n] is a product of an even number of primes}
-          @item{@racket[-1] if @racket[n] is a product of an odd number of primes}
+@itemlist[@item{@racket[1]  if @racket[n] is a square-free product of an even number of primes}
+          @item{@racket[-1] if @racket[n] is a square-free product of an odd number of primes}
           @item{@racket[0]  if @racket[n] has a multiple prime factor}]
 
 @interaction[#:eval untyped-eval
@@ -562,8 +562,6 @@ all divisors of @racket[n].
 @margin-note{OEIS: @hyperlink["http://oeis.org/A001222"]{Big Omega}}
 @defproc[(prime-omega [n Natural]) natural?]{
 Counting multiplicities the number of prime factors of @racket[n] is returned.
-
-Note: The function @racket[prime-omega] is multiplicative.
 
 @interaction[#:eval untyped-eval         
                     (prime-omega (* 2 2 2 3 3 5))]
@@ -815,9 +813,9 @@ modulo @racket[n] is called @math-style{Un}.
 The order of an element @math-style{x} in @math-style{Un} 
 is the least @math-style{k>0} such that @math-style{x^k=1 mod n}.
 
-A generator the group @math-style{Un} is called a @emph{primitive root} modolo @racket[n].
-Note that @math-style{g} is a primitive root if and only if @math-style{order(g)=phi(n)},
-where @math-style{phi} is Eulers totient. A group with a generator is called @emph{cyclic}.
+A generator the group @math-style{Un} is called a @emph{primitive root} modulo @racket[n].
+Note that @math-style{g} is a primitive root if and only if @math-style{order(g)=totient(n)}. 
+A group with a generator is called @emph{cyclic}.
 
 
 @defproc[(unit-group [n Integer]) (Listof Positive-Integer)]{
@@ -836,7 +834,7 @@ If @racket[x] and @racket[n] are not coprime, @racket[(unit-group-order x n)] ra
                       (unit-group-order 2 6)]  
 }
 
-@defproc[(unit-group-orders [n Integer]) (Listf Positive-Integer)]{
+@defproc[(unit-group-orders [n Integer]) (Listof Positive-Integer)]{
 Returns a list @racket[(list (unit-group-order x0 n) (unit-group-order x1 n) ...)] where
 @racket[x0], @racket[x1], ... are the elements of @math-style{Un}.
 The modulus @racket[n] must be positive.
