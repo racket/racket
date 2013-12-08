@@ -513,7 +513,21 @@ functions and continuation mark functions.
       (is-zero? 2 #:equality =)
       (is-zero? 2 #:equality eq? #:zero 2.0)]}
 
-@defidform[Procedure]{is the supertype of all function types.}
+@defidform[Procedure]{is the supertype of all function types. The @racket[Procedure]
+  type corresponds to values that satisfy the @racket[procedure?] predicate.
+  Because this type encodes @emph{only} the fact that the value is a procedure, and
+  @emph{not} its argument types or even arity, the type-checker cannot allow values
+  of this type to be applied.
+
+  For the types of functions with known arity and argument types, see the @racket[->]
+  type constructor.
+
+  @ex[
+    (: my-list Procedure)
+    (define my-list list)
+    (my-list "zwiebelkuchen" "socca")
+  ]
+}
 
 
 @defform[(U t ...)]{is the union of the types @racket[t ...].
