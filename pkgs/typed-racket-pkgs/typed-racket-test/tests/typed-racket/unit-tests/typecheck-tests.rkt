@@ -278,6 +278,8 @@
         (tc-e (expt 0.5 2) -PosFlonum)
         (tc-e (expt 0.5 0) -One)
         (tc-e (expt -1/2 -1/2) -Number)
+        (tc-e (expt (ann 0.5 Float) (ann 2 Integer)) (t:Un -Flonum -One))
+        (tc-e (expt (ann 0.5f0 Single-Flonum) (ann 2 Integer)) (t:Un -SingleFlonum -One))
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
