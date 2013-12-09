@@ -536,3 +536,19 @@ Finally, when listing your package on pkg.racket-lang-org, you should
 supply a GitHub source using the URL format
 @tt{github://github.com/@nonterm{user}/@nonterm{repo}/@nonterm{rev}@optional{/@nonterm{path}}} (not the
 @tt{git:} format).
+
+@subsubsection{Version Exceptions}
+
+To make supporting multiple versions of Racket easier, the @tech{package
+catalog} software supports @deftech{version exception}s. Version exceptions
+allow package authors to specify alternative @tech{package source}s to be used
+when installing a given package using a specific version of Racket.
+
+For example, a package that uses on Racket 6.0-specific features could provide
+a @tech{version exception} for Racket 5.3.6 using a different branch in the
+package's Github repository, or a different zip archive, as package source.
+Users installing the package from Racket 6.0 will use the default source for
+the package, while those using Racket 5.3.5 will use the alternative branch /
+archive.
+
+For more details, see @secref{catalog-protocol}.
