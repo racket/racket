@@ -563,12 +563,12 @@
                         ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
 [shuffle (-poly (a) (-> (-lst a) (-lst a)))]
 
-[remove  (-poly (a) (a (-lst a) . -> . (-lst a)))]
-[remq    (-poly (a) (a (-lst a) . -> . (-lst a)))]
-[remv    (-poly (a) (a (-lst a) . -> . (-lst a)))]
-[remove* (-poly (a b) ((-lst a) (-lst a) [(a b . -> . B)] . ->opt . (-lst b)))]
-[remq*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
-[remv*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
+[remove  (-poly (a) (Univ (-lst a) . -> . (-lst a)))]
+[remq    (-poly (a) (Univ (-lst a) . -> . (-lst a)))]
+[remv    (-poly (a) (Univ (-lst a) . -> . (-lst a)))]
+[remove* (-poly (a b) ((-lst a) (-lst b) [(a b . -> . B)] . ->opt . (-lst b)))]
+[remq*   (-poly (a) (-> (-lst Univ) (-lst a) (-lst a)))]
+[remv*   (-poly (a) (-> (-lst Univ) (-lst a) (-lst a)))]
 #|
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
                           #:cache-keys? B #f
