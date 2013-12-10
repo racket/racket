@@ -554,8 +554,11 @@
               (error-display-handler)))
             (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]
            
-           [(debug/profile test-coverage)
+           [(test-coverage)
             (drracket:debug:test-coverage-enabled #t)
+            (error-display-handler 
+             (drracket:debug:make-debug-error-display-handler
+              (error-display-handler)))
             (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]))
        
        (define my-setup-printing-parameters (make-setup-printing-parameters))
