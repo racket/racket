@@ -1886,6 +1886,14 @@
        [tc-e
         (string-trim "  foo bar  baz \r\n\t" " " #:repeat? #t)
         -String]
+
+       ;; remove and friends
+       [tc-e (remq #f '(1 2 3 4)) (-lst -PosByte)]
+       [tc-e (remv #f '(1 2 3 4)) (-lst -PosByte)]
+       [tc-e (remove #f '(1 2 3 4)) (-lst -PosByte)]
+       [tc-e (remove* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
+       [tc-e (remq* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
+       [tc-e (remv* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
         )
   (test-suite
    "tc-literal tests"
