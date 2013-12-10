@@ -55,7 +55,7 @@ bernoulli sequence
          (add-between
           (for/list ([x (in-range n)])
             (number->pict (bernoulli-number x)))
-          (tt ", "))))
+          (tt ",  "))))
 
 (define (tt str)
   (text str 'roman 24))
@@ -70,7 +70,7 @@ bernoulli sequence
      (define abs-frac (vc-append 2 n line d))
      (cond
        [(negative? num)
-        (hc-append (tt "-") abs-frac)]
+        (hc-append 4 (tt "-") abs-frac)]
        [else
         abs-frac])]))
        
