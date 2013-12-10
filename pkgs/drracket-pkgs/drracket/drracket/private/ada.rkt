@@ -79,18 +79,23 @@ bernoulli sequence
   (cond
     [(<= (string-length s) 3) s]
     [else
-     (reverse-string
-      (regexp-replace* #rx"[0-9][0-9][0-9]" 
-                       (reverse-string s)
-                       "\\0,"))]))
+     (remove-leading-comma
+      (reverse-string
+       (regexp-replace* #rx"[0-9][0-9][0-9]" 
+                        (reverse-string s)
+                        "\\0,")))]))
+
 (define (reverse-string s) (list->string (reverse (string->list s))))
+(define (remove-leading-comma s) (regexp-replace #rx"^," s ""))
+
 (module+ test
   (check-equal? (integer->string 0) "0")
   (check-equal? (integer->string 1) "1")
   (check-equal? (integer->string 100) "100")
   (check-equal? (integer->string 1000) "1,000")
   (check-equal? (integer->string 1234) "1,234")
-  (check-equal? (integer->string 1000000) "1,000,000"))
+  (check-equal? (integer->string 1000000) "1,000,000")
+  (check-equal? (integer->string 100000) "100,000"))
 
 #|
 
