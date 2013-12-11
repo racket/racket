@@ -492,12 +492,15 @@
                                       . new-rest)
                                ;; sort out the arguments into the user-supplied bindings,
                                ;; evaluating default-value expressions as needed:
-                               (let-maybe ([id opt-expr kind] ... . rest)
-                                          (kw-arg ...) (kw-arg? ...)
-                                          (opt-arg ...) (opt-arg? ...)
-                                          (new-plain-id ... . new-rest)
-                                          ;; the original body, finally:
-                                          body1 body ...)))))]
+                               #,(syntax-property
+                                  (quasisyntax/loc stx ; kw-opt profiler uses this srcloc
+                                    (let-maybe ([id opt-expr kind] ... . rest)
+                                               (kw-arg ...) (kw-arg? ...)
+                                               (opt-arg ...) (opt-arg? ...)
+                                               (new-plain-id ... . new-rest)
+                                               ;; the original body, finally:
+                                               body1 body ...))
+                                  'kw-opt-protocol #t)))))]
                        [mk-unpack
                         (lambda ()
                           ;; like core, but keywords must be unpacked:
@@ -510,10 +513,15 @@
                                       . new-rest)
                                ;; sort out the arguments into the user-supplied bindings,
                                ;; evaluating default-value expressions as needed:
-                               (let-kws given-kws given-args kws-sorted
-                                        (core #,@(flatten-keywords sorted-kws)
-                                              new-plain-id ... opt-arg ... opt-arg? ...
-                                              . new-rest))))))]
+                               #,(syntax-property
+                                  (quasisyntax/loc stx ; kw-opt profiler uses this srcloc
+                                    (let-kws given-kws given-args kws-sorted
+                                             #,(syntax-property
+                                                #`(core #,@(flatten-keywords sorted-kws)
+                                                        new-plain-id ... opt-arg ... opt-arg? ...
+                                                        . new-rest)
+                                                'kw-opt-protocol 'antimark)))
+                                  'kw-opt-protocol #f)))))]
                        [mk-no-kws
                         (lambda (kw-core?)
                           ;; entry point without keywords:
@@ -571,11 +579,14 @@
                                                   #`(let ([#,n #,p]) #,n)
                                                   p))]
                                     [with-kws (mk-with-kws)])
-                        (syntax/loc stx
+                        (quasisyntax/loc stx
                           (make-okp
                            (lambda (given-kws given-argc)
-                             (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
-                                  (subset?/static given-kws 'kws)))
+                             #,(syntax-property
+                                (syntax/loc stx ; kw-opt profiler uses this srcloc
+                                  (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
+                                       (subset?/static given-kws 'kws)))
+                                'kw-opt-protocol #t))
                            with-kws
                            null
                            'kws
@@ -595,11 +606,14 @@
                                                          [call-fail (mk-kw-arity-stub)])
                                              (syntax-local-lift-expression
                                               #'(make-required 'n call-fail method? #f)))])
-                        (syntax/loc stx
+                        (quasisyntax/loc stx
                           (mk-id
                            (lambda (given-kws given-argc)
-                             (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
-                                  (subsets?/static 'needed-kws given-kws 'kws)))
+                             #,(syntax-property
+                                (syntax/loc stx ; kw-opt profiler uses this srcloc
+                                  (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
+                                       (subsets?/static 'needed-kws given-kws 'kws)))
+                                'kw-opt-protocol #t))
                            with-kws
                            'needed-kws
                            'kws))))]))))))]))
@@ -740,28 +754,32 @@
   ;; (where, e.g., an optional keyword argument might
   ;; precede a required argument, so the required argument
   ;; cannot be used to compute the default).
-  (define-syntax let-maybe
-    (syntax-rules (required)
+  (define-syntax (let-maybe stx)
+    (syntax-case stx (required)
       [(_ () () () () () () . body)
-       (let () . body)]
+       (syntax-property
+        #'(let () . body)
+        'kw-opt-protocol 'antimark)]
       [(_ ([id ignore #:plain] . more) kw-args kw-arg?s opt-args opt-arg?s (req-id . req-ids) . body)
-       (let ([id req-id])
-         (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
+       #'(let ([id req-id])
+           (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
       [(_ ([id expr #:opt] . more)  kw-args kw-arg?s (opt-arg . opt-args) (opt-arg? . opt-arg?s) req-ids . body)
-       (let ([id (if opt-arg?
-                     opt-arg
-                     expr)])
-         (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
+       #'(let ([id (if opt-arg?
+                       opt-arg
+                       expr)])
+           (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
       [(_ ([id expr #:kw-req] . more)  (kw-arg . kw-args) kw-arg?s opt-args opt-arg?s req-ids . body)
-       (let ([id kw-arg])
-         (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
+       #'(let ([id kw-arg])
+           (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
       [(_ ([id expr #:kw-opt] . more)  (kw-arg . kw-args) (kw-arg? . kw-arg?s) opt-args opt-arg?s req-ids . body)
-       (let ([id (if kw-arg?
-                     kw-arg
-                     expr)])
-         (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
+       #'(let ([id (if kw-arg?
+                       kw-arg
+                       expr)])
+           (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]
       [(_ (id) () () () () (req-id) . body)
-       (let ([id req-id]) . body)]))
+       (syntax-property
+        #'(let ([id req-id]) . body)
+        'kw-opt-protocol 'antimark)]))
 
   ;; ----------------------------------------
   ;; Helper macros:
