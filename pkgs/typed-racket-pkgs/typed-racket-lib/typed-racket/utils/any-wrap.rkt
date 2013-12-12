@@ -13,7 +13,7 @@
 (define (val-first-projection b)
   (define (fail neg-party v)
     (raise-blame-error 
-     (blame-swap b) #:mising-party neg-party
+     (blame-swap b) #:missing-party neg-party
      v 
      "Attempted to use a higher-order value passed as `Any` in untyped code: ~v" v))
   
