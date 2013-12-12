@@ -8,21 +8,6 @@
   
   (reset-count)
 
-  (define-namespace-anchor this-namespace)
-  (parameterize ([current-namespace syn-err-test-namespace])
-    (eval (quote-syntax
-           (define-language syn-err-lang
-             (M (M M)
-                number)
-             (E hole
-                (E M)
-                (number E))
-             (X (number any)
-                (any number))
-             (Q (Q ...)
-                variable)
-             (UN (add1 UN)
-                 zero)))))
   
 ;                                                          
 ;                                                          
@@ -534,17 +519,6 @@
     (test (redex-match empty-language number 'a) #f)
     (test (redex-match empty-language (in-hole hole number) 'a) #f))
 
-  (parameterize ([current-namespace (make-base-namespace)])
-    (eval '(require redex/reduction-semantics redex/pict))
-    (eval '(define-language L
-             (s a b c)))
-    (exec-runtime-error-tests "run-err-tests/define-union-language.rktd"))
-  
-  (exec-syntax-error-tests "syn-err-tests/language-definition.rktd")
-  
-  ;; term with #:lang tests
-  (exec-syntax-error-tests "syn-err-tests/term-lang.rktd")
-  
   (let ()
     (define-language L
       (a number)
@@ -1194,22 +1168,19 @@
             "")
           #rx"returned different results"))
   
-  (parameterize ([current-namespace (make-base-namespace)])
-    (eval '(require redex/reduction-semantics))
-    (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
-  
   ;; errors for not-yet-defined metafunctions
-  (test (parameterize ([current-namespace (make-empty-namespace)])
-          (namespace-attach-module (namespace-anchor->namespace this-namespace) 'redex/reduction-semantics)
-          (namespace-require 'racket)
-          (eval '(module m racket
-                   (require redex/reduction-semantics)
-                   (term (q))
-                   (define-language L)
-                   (define-metafunction L [(q) ()])))
-          (with-handlers ([exn:fail:redex? exn-message])
-            (eval '(require 'm))
-            #f))
+  (test (let ([on (current-namespace)])
+          (parameterize ([current-namespace (make-base-namespace)])
+            (namespace-attach-module on 'redex/reduction-semantics)
+            (namespace-require 'racket/base)
+            (eval '(module m racket
+                     (require redex/reduction-semantics)
+                     (term (q))
+                     (define-language L)
+                     (define-metafunction L [(q) ()])))
+            (with-handlers ([exn:fail:redex? exn-message])
+              (eval '(require 'm))
+              #f)))
         "reference to metafunction q before its definition")
   (test (with-handlers ([exn:fail:redex? exn-message])
           (let ()
@@ -1219,7 +1190,6 @@
             #f))
         "reference to metafunction q before its definition")
   
-  (exec-syntax-error-tests "syn-err-tests/metafunction-definition.rktd")
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 
@@ -1418,8 +1388,6 @@
     (test (judgment-holds (J Z Z)) #f)
     )
 
-  
-  (exec-syntax-error-tests "syn-err-tests/relation-definition.rktd")
   
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
@@ -1829,8 +1797,6 @@
     (test (apply-reduction-relation R (term (0 2 3 4 5))) '())
     (test (apply-reduction-relation R (term (1 2 3 4 5 () (6) (7 8) (9 10 11)))) '(yes)))
   
-  (exec-syntax-error-tests "syn-err-tests/reduction-relation-definition.rktd")
-  
   ;; expect union with duplicate names to fail
   (test (with-handlers ((exn? (λ (x) 'passed)))
           (union-reduction-relations
@@ -2218,8 +2184,7 @@
             1)
       (test
        (redex-let* L ([(n_1) '(1)] [n_1 1]) (term n_1))
-       1)
-      (exec-syntax-error-tests "syn-err-tests/redex-let.rktd"))
+       1))
   
 
 ;                                                                                                                                              
@@ -2238,9 +2203,6 @@
 ;                                                      ;                  ;   ;                                                                
 ;                                                    ;;                    ;;;                                                                 
 
-    (exec-syntax-error-tests "syn-err-tests/judgment-form-definition.rktd")
-    (exec-syntax-error-tests "syn-err-tests/judgment-holds.rktd")
-    
     (let ()
       (define-language nats
         (n z (s n)))
@@ -2709,22 +2671,6 @@
                 (J b)]
                [(J b)]))
       (test (eval '(judgment-holds (J a))) #t))
-    
-    (parameterize ([current-namespace (make-base-namespace)])
-      (eval '(require redex/reduction-semantics))
-      (eval '(define-language L
-               (s a b c)))
-      (eval '(define-judgment-form L
-               #:mode (ctc-fail I O)
-               #:contract (ctc-fail s s)
-               [(ctc-fail a q)]
-               [(ctc-fail b s)
-                (ctc-fail q s)]
-               [(ctc-fail c s)
-                (ctc-fail a s)]))
-      (exec-runtime-error-tests "run-err-tests/judgment-form-contracts.rktd")
-      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
-      (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
     
   
 ;                                                                               

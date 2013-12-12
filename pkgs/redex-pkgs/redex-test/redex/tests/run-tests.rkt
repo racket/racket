@@ -24,6 +24,7 @@
      "unify-tests.rkt"
      "dq-test.rkt"
      "tl-test.rkt"
+     "err-loc-test.rkt"
      "term-test.rkt"
      "rg-test.rkt"
      "gen-test.rkt"
