@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
-                     "../utils/disappeared-use.rkt")
+                     "../utils/disappeared-use.rkt"
+                     (only-in "../utils/tc-utils.rkt" tc-error/stx))
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 
@@ -44,7 +45,10 @@
     [(_ top-level? i:id ty)
      (unless (or (syntax-e #'top-level?)
                  (identifier-binding #'i))
-       (raise-syntax-error #f "unbound identifier in module" #'i))
+       (tc-error/stx #'i
+                     "Declaration for ~a provided, but ~a has no definition"
+                     (syntax-e #'i)
+                     (syntax-e #'i)))
      (syntax-property (syntax/loc stx (begin (quote-syntax (:-internal i ty))
                                              (#%plain-app values)))
                       'disappeared-use #'i)]
