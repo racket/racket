@@ -65,7 +65,9 @@
                  [data-in-code-offset #f]
                  [code-signature-pos #f]
                  [code-signature-size 0]
-                 [code-signature-lc-sz 0])
+                 [code-signature-lc-sz 0]
+                 [code-sign-drs-pos #f]
+                 [code-sign-drs-offset 0])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
             (read-ulong p) ; flags
             (when (equal? exe-id #xFeedFacf)
@@ -168,6 +170,11 @@
                                  (set! code-signature-size (+ size extra)))
                                (log-warning "WARNING: code signature is not at end of file")))
                          (log-warning "WARNING: code signature is not last load command"))]
+                    [(#x2B)
+                     ;; LC_DYLIB_CODE_SIGN_DRS
+                     (set! code-sign-drs-pos pos)
+                     (let ([offset (read-ulong p)])
+                       (set! code-sign-drs-offset offset))]
                     [else
                      (void)])
                   (file-position p (+ pos sz))
@@ -229,6 +236,9 @@
               (when data-in-code-pos
                 (when (data-in-code-pos . > . link-edit-pos)
                   (set! data-in-code-pos (+ data-in-code-pos new-cmd-sz))))
+              (when code-sign-drs-pos
+                (when (code-sign-drs-pos . > . link-edit-pos)
+                  (set! code-sign-drs-pos (+ code-sign-drs-pos new-cmd-sz))))
               (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
               (when move-link-edit?
                 ;; Update link-edit segment entry:
@@ -275,6 +285,10 @@
                 (when data-in-code-pos
                   (file-position p (+ data-in-code-pos 8))
                   (write-ulong (+ data-in-code-offset outlen) out))
+                ;; Shift code-sign drs:
+                (when code-sign-drs-pos
+                  (file-position p (+ code-sign-drs-pos 8))
+                  (write-ulong (+ code-sign-drs-offset outlen) out))
                 ;; Shift dyld-info offs
                 (when dyld-info-pos
                   (let ([update (lambda (n)
