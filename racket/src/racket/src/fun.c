@@ -2336,12 +2336,17 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   }
 
   if ((a == -1) || (a == -3)) {
-    if (mina < drop)
-      return scheme_null;
-    else
+    if (mina < drop) {
+      if ((maxa >= 0) && (maxa < drop))
+        return scheme_null;
+      else
+        mina = 0;
+    } else
       mina -= drop;
-    if (maxa > 0)
+    if (maxa > 0) {
+      /* assert: maxa >= drop, or else would have returned in `mina < drop` test */
       maxa -= drop;
+    }
 
     return make_arity(mina, maxa, a);
   }
