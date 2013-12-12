@@ -83,6 +83,8 @@
                             #'(quote-module-name))))])
                 (when key (hash-set! saved-id-table key lifted-neg-party))
                 ;; Expand to a use of the lifted expression:
+                (define (adjust-location new-stx)
+                  (datum->syntax new-stx (syntax-e new-stx) stx new-stx))
                 (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
                   (syntax-case stx (set!)
                     [name 
@@ -94,7 +96,7 @@
                                  (syntax-local-lift-expression
                                   #'(partially-applied-id lifted-neg-party))))])
                        (when key (hash-set! saved-ho-id-table key lifted-ctc-val))
-                       (syntax-local-introduce lifted-ctc-val))]
+                       (adjust-location (syntax-local-introduce lifted-ctc-val)))]
                     [(set! id arg)
                      (raise-syntax-error
                       'contract/out
@@ -102,9 +104,10 @@
                       stx #'id)]
                     [(name more ...)
                      (with-syntax ([app (datum->syntax stx '#%app)])
-                       #'(app extra-neg-party-argument-fn 
-                              lifted-neg-party
-                              more ...))])))
+                       (adjust-location
+                        #'(app extra-neg-party-argument-fn 
+                               lifted-neg-party
+                               more ...)))])))
               ;; In case of partial expansion for module-level and internal-defn
               ;; contexts, delay expansion until it's a good time to lift
               ;; expressions:
@@ -128,12 +131,14 @@
                            (syntax-local-lift-expression
                             #'(partially-applied-id (quote-module-name)))))])
                 (when key (hash-set! saved-id-table key lifted-ctcd-val))
+                (define (adjust-location new-stx)
+                  (datum->syntax new-stx (syntax-e new-stx) stx new-stx))
                 ;; Expand to a use of the lifted expression:
                 (with-syntax ([lifted-ctcd-val (syntax-local-introduce lifted-ctcd-val)])
                   (syntax-case stx (set!)
                     [name 
                      (identifier? #'name)
-                     #'lifted-ctcd-val]
+                     (adjust-location #'lifted-ctcd-val)]
                     [(set! id arg)
                      (raise-syntax-error
                       'contract/out
@@ -141,7 +146,8 @@
                       stx #'id)]
                     [(name more ...)
                      (with-syntax ([app (datum->syntax stx '#%app)])
-                       #'(app lifted-ctcd-val more ...))])))
+                       (adjust-location 
+                        #'(app lifted-ctcd-val more ...)))])))
               ;; In case of partial expansion for module-level and internal-defn
               ;; contexts, delay expansion until it's a good time to lift
               ;; expressions:
