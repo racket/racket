@@ -85,7 +85,7 @@
      (when (box? e)
        (let ([bnd (identifier-binding id)])
          (tc-error/expr #:stx id
-                        "Declaration for ~a provided, but ~a ~a"
+                        "Declaration for `~a' provided, but `~a' ~a"
                         (syntax-e id) (syntax-e id)
                         (cond [(eq? bnd 'lexical) "is a lexical binding"] ;; should never happen
                               [(not bnd) "has no definition"]

@@ -46,7 +46,7 @@
      (unless (or (syntax-e #'top-level?)
                  (identifier-binding #'i))
        (tc-error/stx #'i
-                     "Declaration for ~a provided, but ~a has no definition"
+                     "Declaration for `~a' provided, but `~a' has no definition"
                      (syntax-e #'i)
                      (syntax-e #'i)))
      (syntax-property (syntax/loc stx (begin (quote-syntax (:-internal i ty))
