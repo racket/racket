@@ -30,13 +30,13 @@
               ;; field is immutable
               (values
                (list* (make-struct-field-accessor ref n)
-                      (lambda (s v) (t v))
+                      (lambda (s v) (any-wrap/traverse neg-party v))
                       res)
                (cdr imms))
               ;; field is mutable
               (values
                (list* (make-struct-field-accessor ref n)
-                      (lambda (s v) (t v))
+                      (lambda (s v) (any-wrap/traverse neg-party v))
                       (make-struct-field-mutator set! n)
                       (lambda (s v) (fail neg-party s))
                       res)
@@ -48,17 +48,17 @@
     (when skipped? (fail neg-party s));  "Opaque struct type!"
     (apply chaperone-struct s (extract-functions type)))
  
-  (define (t neg-party v)
+  (define (any-wrap/traverse neg-party v)
     (match v
       [(? base-val?)
        v]
-      [(cons x y) (cons (t neg-party x) (t neg-party y))]
+      [(cons x y) (cons (any-wrap/traverse neg-party x) (any-wrap/traverse neg-party y))]
       [(? vector? (? immutable?))
        ;; fixme -- should have an immutable for/vector
        (vector->immutable-vector
         (for/vector #:length (vector-length v)
-          ([i (in-vector v)]) (t neg-party i)))]
-      [(? box? (? immutable?)) (box-immutable (t neg-party (unbox v)))]
+          ([i (in-vector v)]) (any-wrap/traverse neg-party i)))]
+      [(? box? (? immutable?)) (box-immutable (any-wrap/traverse neg-party (unbox v)))]
       ;; fixme -- handling keys properly makes it not a chaperone
       ;; [(? hasheq? (? immutable?))
       ;;  (for/hasheq ([(k v) (in-hash v)]) (values k v))]
@@ -68,25 +68,26 @@
       [(? (λ (e) 
             (and (hash? e) (immutable? e) 
                  (not (hash-eqv? e)) (not (hash-eq? e)))))
-       (for/hash ([(k v) (in-hash v)]) (values (t neg-party k) (t neg-party v)))]
+       (for/hash ([(k v) (in-hash v)]) (values (any-wrap/traverse neg-party k)
+                                               (any-wrap/traverse neg-party v)))]
       [(? vector?) (chaperone-vector v
-                                     (lambda (v i e) (t neg-party e))
+                                     (lambda (v i e) (any-wrap/traverse neg-party e))
                                      (lambda (v i e) (fail neg-party v)))]
       [(? box?) (chaperone-box v
-                               (lambda (v e) (t neg-party e))
+                               (lambda (v e) (any-wrap/traverse neg-party e))
                                (lambda (v e) (fail neg-party v)))]
       [(? hash?) (chaperone-hash v
                                  (lambda (h k)
-                                   (values k (lambda (h k v) (t neg-party v)))) ;; ref
+                                   (values k (lambda (h k v) (any-wrap/traverse neg-party v)))) ;; ref
                                  (lambda (h k n)
                                    (if (immutable? v) 
                                        (values k n)
                                        (fail neg-party v))) ;; set
                                  (lambda (h v) v) ;; remove
-                                 (lambda (h k) (t neg-party k)))] ;; key
-      [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
+                                 (lambda (h k) (any-wrap/traverse neg-party k)))] ;; key
+      [(? evt?) (chaperone-evt v (lambda (e) (values e (λ (v) (any-wrap/traverse neg-party v)))))]
       [(? set?)
-       (for/set ([i (in-set v)]) (t neg-party i))]
+       (for/set ([i (in-set v)]) (any-wrap/traverse neg-party i))]
       ;; could do something with generic sets here if they had
       ;; chaperones, or if i could tell if they were immutable.
       [(? struct?) (wrap-struct neg-party v)]
@@ -100,7 +101,7 @@
        (contract (promise/c any-wrap/c) v
                  (blame-positive b) (blame-negative b))]
       [_ (fail neg-party v)]))
-  (λ (v) (λ (neg-party) (t neg-party v))))
+  (λ (v) (λ (neg-party) (any-wrap/traverse neg-party v))))
 
 (define any-wrap/c
   (make-chaperone-contract
