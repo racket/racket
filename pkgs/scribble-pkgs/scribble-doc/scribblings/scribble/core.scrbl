@@ -883,9 +883,9 @@ as-is.
 The @racket[scale] field scales the image in its rendered form.}
 
 
-@defstruct[(target-element element) ([tag tag?])]{
+@defstruct[(target-element element) ([_tag tag?])]{
 
-Declares the content as a hyperlink target for @racket[tag].}
+Declares the content as a hyperlink target for @racket[_tag].}
 
 
 @defstruct[(toc-target-element target-element) ()]{
@@ -922,9 +922,9 @@ field.}
 
 @defstruct[(link-element element) ([tag tag?])]{
 
-Hyperlinks the content to @racket[tag].
+Hyperlinks the content to @racket[_tag].
 
-When @racket[tag] is a part tag and the content of the element is
+When @racket[_tag] is a part tag and the content of the element is
 @racket[null], then the hyperlink uses the target part's number and/or
 title as the content. In that case, if the section number is preceded
 by a word, the word starts in uppercase if the element's style includes a
