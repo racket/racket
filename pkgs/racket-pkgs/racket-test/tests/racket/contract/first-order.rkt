@@ -194,4 +194,17 @@
   (ctest #f contract-first-order-passes?
          (class/c [m (->m integer? integer?)]) 
          (class object%
-           (define/public (m x y) x))))
+           (define/public (m x y) x)))
+  
+  (ctest #f contract-first-order-passes?
+         (class/c [m (->m integer? integer?)]) 
+         (class* object% ((interface () [m (-> any/c integer? integer? any/c)]))
+           (define/public (m x y) x)))
+  (ctest #t contract-first-order-passes?
+         (class/c [m (-> any/c integer? integer?)]) 
+         (class* object% ((interface () [m (-> any/c integer? integer?)]))
+           (define/public (m x) x)))
+  
+  
+  
+  )
