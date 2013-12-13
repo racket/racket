@@ -2810,11 +2810,17 @@ An example
   (unless (-class? cls)  ;; TODO: might be a wrapper class
     (fail '(expected: "a class" given: "~v") cls))
   (let ([method-ht (class-method-ht cls)]
+        [methods (class-methods cls)]
         [beta-methods (class-beta-methods cls)]
         [meth-flags (class-meth-flags cls)]) 
-    (for ([m (class/c-methods ctc)])
-      (unless (hash-ref method-ht m #f)
-        (fail "no public method ~a" m)))
+    (for ([m (in-list (class/c-methods ctc))]
+          [c (in-list (class/c-method-contracts ctc))])
+      (define mth (hash-ref method-ht m #f))
+      (unless mth (fail "no public method ~a" m))
+      (unless (contract-first-order-passes? 
+               c
+               (vector-ref methods mth))
+        (fail "public method ~a doesn't match contract" m)))
     (unless (class/c-opaque? ctc)
       (for ([m (class/c-absents ctc)])
         (when (hash-ref method-ht m #f)
