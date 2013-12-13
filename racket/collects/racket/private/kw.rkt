@@ -996,7 +996,7 @@
                   [else (loop (cdr l)
                               (cdr ids)
                               (cons (list (car ids) (car l)) bind-accum)
-                              (cons (car ids) arg-accum)
+                              (cons (copy-properties (car ids) (car l)) arg-accum)
                               kw-pairs)])))))))
 
   (define-syntax (new-app stx)
@@ -1743,4 +1743,12 @@
              req-kws
              allowed-kws
              proc)))]
-     [else proc])))
+     [else proc]))
+
+  ;; copy-properties : (or/c symbol? syntax?) syntax? -> syntax?
+  ;; Return the first arg as a stx obj with the properties of the second
+  (define-for-syntax (copy-properties from to)
+    (datum->syntax (and (syntax? from) from)
+                   (if (syntax? from) (syntax->datum from) from)
+                   (and (syntax? from) from)
+                   to)))
