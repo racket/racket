@@ -409,5 +409,53 @@
   (test #t procedure-arity-includes? (a) 2))
 
 ;; ----------------------------------------
+;; Make sure that keyword function application propagates syntax properties
+;; on the argument expressions
+;;
+;; This feature is needed for Typed Racket to cooperate with the contract
+;; system's addition of extra arguments for modular boundary contracts
+;;
+;; See typed-racket/typecheck/tc-app-keywords.rkt for its use.
+
+(let ()
+  (define (f x #:foo foo) x)
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ f a . es)
+       #`(f #,(syntax-property #'a 'test #t) . es)]))
+
+  (define-syntax (expander stx)
+    (syntax-case stx ()
+      [(_ e)
+       (let ([expansion (local-expand #'e 'expression null)])
+         (displayln (syntax->datum expansion))
+         (syntax-case expansion (let-values #%plain-app if)
+           [(let-values _
+              (if _
+                  _
+                  (#%plain-app (#%plain-app . _) _ _ a)))
+            (if (syntax-property #'a 'test)
+                #'#t
+                #'#f)]))]))
+
+  ;; the syntax for `1` should have the syntax property
+  ;; in which case this expands to (lambda () #t)
+  (test #t (lambda () (expander (m f 1 #:foo 3)))))
+
+;; ----------------------------------------
+;; Test that syntax property propagation in kw applications isn't
+;; buggy for symbolic inferred names.
+
+(let ()
+  (define (f #:x [x 10]) x)
+
+  (define-syntax (ba stx)
+    (syntax-property #'(#%app f #:x 8)
+                     'inferred-name
+                     'bind-accum))
+
+  (test 8 (lambda () (ba))))
+
+;; ----------------------------------------
 
 (report-errs)

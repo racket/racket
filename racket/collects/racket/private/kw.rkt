@@ -951,9 +951,11 @@
                                  (loop (cddr l)))])]
                        [else
                         (cons (car l) (loop (cdr l)))])))])
-            (let ([ids (cons (or (syntax-local-infer-name stx #f)
-                                 'procedure)
-                             (generate-temporaries exprs))])
+            (let* ([name (syntax-local-infer-name stx #f)]
+                   [ids (cons (if name
+                                  (if (syntax? name) name (datum->syntax #f name))
+                                  (datum->syntax #f 'procedure))
+                              (generate-temporaries exprs))])
               (let loop ([l (cdr l)]
                          [ids ids]
                          [bind-accum null]
@@ -996,7 +998,7 @@
                   [else (loop (cdr l)
                               (cdr ids)
                               (cons (list (car ids) (car l)) bind-accum)
-                              (cons (car ids) arg-accum)
+                              (cons (copy-properties (car ids) (car l)) arg-accum)
                               kw-pairs)])))))))
 
   (define-syntax (new-app stx)
@@ -1743,4 +1745,9 @@
              req-kws
              allowed-kws
              proc)))]
-     [else proc])))
+     [else proc]))
+
+  ;; copy-properties : (or/c symbol? syntax?) syntax? -> syntax?
+  ;; Return the first arg as a stx obj with the properties of the second
+  (define-for-syntax (copy-properties to from)
+    (datum->syntax to (syntax->datum to) to from)))

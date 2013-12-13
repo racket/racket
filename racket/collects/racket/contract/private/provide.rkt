@@ -7,7 +7,10 @@
                                   ;make-provide/contract-transformer
                                   provide/contract-info?
                                   provide/contract-info-contract-id
-                                  provide/contract-info-original-id)))
+                                  provide/contract-info-original-id
+                                  contract-rename-id-property
+                                  contract-lifted-property
+                                  contract-neg-party-property)))
 
 (require (for-syntax racket/base
                      racket/list
@@ -55,9 +58,39 @@
     make-))
 
 (begin-for-syntax
-  
-  (struct provide/contract-info (contract-id original-id))
-  
+
+  ;; rename-id : identifier? : the name the lifted expression is bound to
+  ;; contract-id : identifier? : the name of the contract expression
+  ;; original-id : identifier? : the identifier being contracted
+  (struct provide/contract-info (rename-id contract-id original-id))
+
+  ;; keys for syntax property used below
+  (define rename-id-key (gensym 'contract:rename-id))
+  (define lifted-key    (gensym 'contract:lifted))
+  (define neg-party-key (gensym 'contract:neg-party))
+
+  ;; identifier? identifier? -> identifier?
+  ;; add a property that tells clients what the exported id was
+  (define (add-rename-id rename-id partial-id)
+    (syntax-property partial-id rename-id-key rename-id))
+
+  ;; syntax? -> syntax?
+  ;; tells clients that the expression is a lifted application
+  (define (add-lifted-property stx)
+    (syntax-property stx lifted-key #t))
+
+  ;; identifier? -> identifier?
+  ;; tells clients that the application of this id has an extra inserted argument
+  (define (add-neg-party stx)
+    (syntax-property stx neg-party-key #t))
+
+  ;; getter functions for syntax properties keyed by symbols above
+  (define (contract-rename-id-property stx)
+    (syntax-property stx rename-id-key))
+  (define (contract-lifted-property stx)
+    (syntax-property stx lifted-key))
+  (define (contract-neg-party-property stx)
+    (syntax-property stx neg-party-key))
 
   (struct provide/contract-arrow-transformer provide/contract-info
     (saved-id-table 
@@ -73,7 +106,8 @@
             [saved-ho-id-table (provide/contract-arrow-transformer-saved-ho-id-table self)]
             [extra-neg-party-argument-fn 
              (provide/contract-arrow-transformer-extra-neg-party-argument-fn self)]
-            [valid-arg-lists (provide/contract-arrow-transformer-valid-argument-lists self)])
+            [valid-arg-lists (provide/contract-arrow-transformer-valid-argument-lists self)]
+            [rename-id (provide/contract-info-rename-id self)])
         (with-syntax ([partially-applied-id partially-applied-id]
                       [extra-neg-party-argument-fn extra-neg-party-argument-fn])
           (if (eq? 'expression (syntax-local-context))
@@ -96,8 +130,10 @@
                         ;; No: lift the neg name creation
                         (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
                           (syntax-local-introduce 
-                           (syntax-local-lift-expression
-                            #'(partially-applied-id lifted-neg-party))))))
+                           (add-rename-id rename-id
+                            (syntax-local-lift-expression
+                             (add-lifted-property
+                              #'(partially-applied-id lifted-neg-party))))))))
                   (when key (hash-set! saved-ho-id-table key lifted-ctc-val))
                   (adjust-location (syntax-local-introduce lifted-ctc-val)))
                 (syntax-case stx (set!)
@@ -114,7 +150,9 @@
                      (if (valid-argument-list? stx valid-arg-lists)
                          (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
                            (adjust-location
-                            #'(app extra-neg-party-argument-fn 
+                            #`(app #,(add-neg-party (add-rename-id
+                                                     rename-id
+                                                     #'extra-neg-party-argument-fn))
                                    lifted-neg-party
                                    more ...)))
                          #`(app #,(gen-slow-path-code) more ...)))]))
@@ -129,7 +167,8 @@
     prop:set!-transformer
     (λ (self stx)
       (let ([partially-applied-id (provide/contract-transformer-partially-applied-id self)]
-            [saved-id-table (provide/contract-transformer-saved-id-table self)])
+            [saved-id-table (provide/contract-transformer-saved-id-table self)]
+            [rename-id (provide/contract-info-rename-id self)])
         (with-syntax ([partially-applied-id partially-applied-id])
           (if (eq? 'expression (syntax-local-context))
               ;; In an expression context:
@@ -138,9 +177,11 @@
                      [lifted-ctcd-val
                       (or (hash-ref saved-id-table key #f)
                           ;; No: lift the neg name creation
-                          (syntax-local-introduce 
-                           (syntax-local-lift-expression
-                            #'(partially-applied-id (quote-module-name)))))])
+                          (add-rename-id rename-id
+                           (syntax-local-introduce
+                            (syntax-local-lift-expression
+                             (add-lifted-property
+                              #'(partially-applied-id (quote-module-name)))))))])
                 (when key (hash-set! saved-id-table key lifted-ctcd-val))
                 (define (adjust-location new-stx)
                   (datum->syntax new-stx (syntax-e new-stx) stx new-stx))
@@ -164,9 +205,9 @@
               ;; expressions:
               (quasisyntax/loc stx (#%expression #,stx)))))))
 
-  (define (make-provide/contract-transformer cid id eid pos [pid #f])
+  (define (make-provide/contract-transformer rename-id cid id eid pos [pid #f])
     (if pid
-        (provide/contract-transformer cid id (make-hasheq) pid)
+        (provide/contract-transformer rename-id cid id (make-hasheq) pid)
         (begin
           ;; TODO: this needs to change!
           ;; syntax/parse uses this
@@ -178,8 +219,9 @@
                  #`(app #,id args ...))]
               [x (identifier? #'x) id])))))
   
-  (define (make-provide/contract-arrow-transformer contract-id id pai enpfn val)
-    (provide/contract-arrow-transformer contract-id id
+  (define (make-provide/contract-arrow-transformer rename-id contract-id id pai enpfn val)
+    (provide/contract-arrow-transformer rename-id
+                                        contract-id id
                                         (make-hasheq) (make-hasheq)
                                         pai enpfn val)))
 
@@ -283,11 +325,13 @@
         (define-syntax #,id-rename
           #,(if arrow?
                 #`(make-provide/contract-arrow-transformer 
+                   (quote-syntax #,id-rename)
                    (quote-syntax contract-id) (quote-syntax id)
                    (quote-syntax partially-applied-id)
                    (quote-syntax extra-neg-party-argument-fn)
                    #,the-valid-app-shapes)
-                #'(make-provide/contract-transformer 
+                #`(make-provide/contract-transformer
+                   (quote-syntax #,id-rename)
                    (quote-syntax contract-id) (quote-syntax id)
                    #f #f
                    (quote-syntax partially-applied-id)))))))
