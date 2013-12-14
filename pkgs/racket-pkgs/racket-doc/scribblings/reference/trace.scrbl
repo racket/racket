@@ -3,7 +3,8 @@
           scribble/eval)
 
 @(begin (define ev (make-base-eval))
-        (ev '(require racket/trace)))
+        (ev '(require racket/trace))
+        (ev '(require (for-syntax racket/base))))
 
 @title{Tracing}
 
@@ -49,6 +50,79 @@ The result of a @racket[trace] expression is @|void-const|.
 
 }
 
+@defform*[((trace-define id expr)
+           (trace-define (head args) body ...+))]{
+
+The @racket[trace-define] form is short-hand for first defining a
+function then tracing it. This form supports all @racket[define] forms.
+
+@examples[#:eval ev
+(trace-define (f x) (if (zero? x) 0 (add1 (f (sub1 x)))))
+(f 5)
+]
+
+@examples[#:eval ev
+(trace-define ((+n n) x) (+ n x))
+(map (+n 5) (list 1 3 4))
+]}
+
+@defform*[((trace-define-syntax id expr)
+           (trace-define-syntax (head args) body ...+))]{
+
+The @racket[trace-define-syntax] form is short-hand for first defining a
+macro then tracing it. This form supports all @racket[define-syntax] forms.
+
+For example:
+
+@examples[#:eval ev
+(trace-define-syntax fact
+  (syntax-rules ()
+    [(_ x) 120]))
+(fact 5)
+]
+
+By default, @racket[trace] prints out syntax objects when tracing a
+macro. This can result in too much output if you do not need to see,
+e.g., source information. To get more readable output, try this:
+
+@examples[#:eval ev
+  (require (for-syntax racket/trace))
+  (begin-for-syntax
+    (current-trace-print-args
+      (let ([ctpa (current-trace-print-args)])
+        (lambda (s l kw l2 n)
+          (ctpa s (map syntax->datum l) kw l2 n))))
+    (current-trace-print-results
+      (let ([ctpr (current-trace-print-results)])
+        (lambda (s l n)
+         (ctpr s (map syntax->datum l) n)))))
+
+  (trace-define-syntax fact
+  (syntax-rules ()
+    [(_ x) #'120]))
+  (fact 5)]}
+
+@defform[(trace-lambda [#:name id] args expr)]{
+
+The @racket[trace-lambda] form enables tracing an anonymous function. This
+form will attempt to infer a name using
+@racket[syntax-local-infer-name], or a name can be specified using the
+optional @racket[#:name] argument.  A syntax error is raised if a name
+is not given and a name cannot be inferred.
+
+@examples[#:eval ev
+  ((trace-lambda (x) 120) 5)]}
+
+@defform[(trace-let id ([arg expr] ...+) body ...+)]{
+
+The @racket[trace-let] form enables tracing a named let.
+
+@examples[#:eval ev
+  (trace-let f ([x 5])
+    (if (zero? x)
+        1
+        (* x (f (sub1 x)))))]}
+
 @defform[(untrace id ...)]{
 
 Undoes the effects of the @racket[trace] form for each @racket[id],
@@ -79,7 +153,7 @@ trace information during the call, as described above in the docs for
 
 }
 
-@defparam[current-trace-print-args trace-print-args 
+@defparam[current-trace-print-args trace-print-args
           (-> symbol?
               list?
               (listof keyword?)
@@ -94,7 +168,7 @@ number indicating the depth of the call.
 
 }
 
-@defparam[current-trace-print-results trace-print-results 
+@defparam[current-trace-print-results trace-print-results
           (-> symbol?
               list?
               number?
@@ -110,7 +184,7 @@ results, and a number indicating the depth of the call.
   This string is used by the default value of @racket[current-trace-print-args]
   indicating that the current line is showing the a call to a
   traced function.
-  
+
   It defaults to @racket[">"].
 }
 
@@ -119,7 +193,7 @@ results, and a number indicating the depth of the call.
   This string is used by the default value of @racket[current-trace-print-results]
   indicating that the current line is showing the result
   of a traced call.
-  
+
   It defaults to @racket["<"].
 }
 
