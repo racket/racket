@@ -126,4 +126,5 @@
   ((box/sc (#:invariant)) box/c #:chaperone)
   ((parameter/sc (#:contravariant) (#:covariant)) parameter/c #:chaperone)
   ((sequence/sc . (#:covariant)) sequence/c #:impersonator)
+  ((channel/sc . (#:invariant)) channel/c #:chaperone)
   ((continuation-mark-key/sc (#:invariant)) continuation-mark-key/c #:chaperone))

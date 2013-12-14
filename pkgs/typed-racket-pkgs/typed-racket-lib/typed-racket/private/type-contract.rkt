@@ -306,11 +306,8 @@
          (parameter/sc (t->sc in) (t->sc out))]
         [(Hashtable: k v)
          (hash/sc (t->sc k) (t->sc v))]
-        ;; TODO add channel static contracts
-        #;
         [(Channel: t)
-         (set-chaperone!)
-         #`(channel/c #,(t->c/both t))]
+         (channel/sc (t->sc t))]
         [else
          (fail)]))))
 
