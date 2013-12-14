@@ -96,6 +96,7 @@
 (define (http-conn-send! hc url-bs
                          #:version [version-bs #"1.1"]
                          #:method [method-bss #"GET"]
+                         #:close? [close? #f]
                          #:headers [headers-bs empty]
                          #:content-decode [decodes '(gzip)]
                          ;; xxx maybe support other kinds of data (ports and writing functions)
@@ -120,6 +121,9 @@
   (when data
     (unless (regexp-member #rx"^(?i:Content-Length:) +.+$" headers-bs)
       (fprintf to "Content-Length: ~a\r\n" (bytes-length data))))
+  (when close?
+    (unless (regexp-member #rx"^(?i:Connection:) +.+$" headers-bs)
+      (fprintf to "Connection: close\r\n")))
   (for ([h (in-list headers-bs)])
     (fprintf to "~a\r\n" h))
   (fprintf to "\r\n")
@@ -137,13 +141,19 @@
     empty
     (cons top (http-conn-headers! hc))))
 
-;; xxx read more at a time
+(define BUFFER-SIZE 1024)
 (define (copy-bytes in out count)
-  (unless (zero? count)
-    (define b (read-byte in))
-    (unless (eof-object? b)
-      (write-byte b out)
-      (copy-bytes in out (sub1 count)))))
+  (define buffer (make-bytes BUFFER-SIZE))
+  (let loop ([count count])
+    (when (positive? count)
+      (define r 
+        (read-bytes-avail! buffer in 0
+                           (if (< count BUFFER-SIZE)
+                             count
+                             BUFFER-SIZE)))
+      (unless (eof-object? r)
+        (write-bytes buffer out 0 r)
+        (loop (- count r))))))
 
 (define (http-conn-response-port/rest! hc)
   (http-conn-response-port/length! hc +inf.0 #:close? #t))
@@ -247,6 +257,7 @@
   (http-conn-send! hc url-bs
                    #:version version-bs
                    #:method method-bss
+                   #:close? close?
                    #:headers headers-bs
                    #:content-decode decodes
                    #:data data-bsf)
@@ -296,6 +307,7 @@
     (http-conn-live? (or/c bytes? string?))
     (#:version (or/c bytes? string?)
                #:method (or/c bytes? string? symbol?)
+               #:close? boolean?
                #:headers (listof (or/c bytes? string?))
                #:content-decode (listof symbol?)                           
                #:data (or/c false/c bytes? string?))
