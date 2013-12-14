@@ -254,7 +254,7 @@
 
 (define (get-source-sha1 p)
   (with-handlers ([exn:fail:filesystem? (lambda (exn)
-                                          (and (regexp-match? #rx#"[.]rkt$" (path->bytes p))
+                                          (and (regexp-match? #rx#"[.]rkt$" p)
                                                (get-source-sha1 (path-replace-suffix p #".ss"))))])
     (call-with-input-file* p sha1)))
 
@@ -605,10 +605,9 @@
         "")))
 
 (define (rkt->ss p)
-  (let ([b (path->bytes p)])
-    (if (regexp-match? #rx#"[.]rkt$" b)
-        (path-replace-suffix p #".ss")
-        p)))
+  (if (regexp-match? #rx#"[.]rkt$" p)
+      (path-replace-suffix p #".ss")
+      p))
 
 (define (compile-root mode roots path0 up-to-date read-src-syntax sha1-only? seen)
   (define orig-path (simple-form-path path0))
@@ -687,7 +686,7 @@
               (unless (eq? main-path alt-path)
                 (hash-set! up-to-date alt-path stamp))
               stamp)]))])))
-  (or (and up-to-date (hash-ref up-to-date orig-path #f))
+  (or (hash-ref up-to-date orig-path #f)
       (let ([v ((manager-skip-file-handler) orig-path)])
         (and v
              (hash-set! up-to-date orig-path v)
