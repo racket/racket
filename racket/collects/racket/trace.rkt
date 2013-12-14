@@ -4,6 +4,7 @@
          (for-syntax racket/base))
 
 (provide trace untrace
+         trace-define trace-let trace-lambda
          current-trace-print-results
          current-trace-print-args
          trace-call
@@ -293,3 +294,25 @@
      #'(begin (when (traced-proc? id)
                 (set! id (traced-proc-ref id 1)))
               ...)]))
+
+(define-syntax trace-define
+  (syntax-rules ()
+    [(_ (name . args) body ...)
+     (begin
+       (define (name . args) body ...)
+       (trace name))]
+    [(_ name body)
+     (begin
+       (define name body)
+       (trace name))]))
+
+(define-syntax trace-let
+  (syntax-rules ()
+    [(_ name ([x* e*] ...) body ...)
+     ((letrec ([name (lambda (x* ...) body ...)]) (trace name) name)
+      e* ...)]))
+
+(define-syntax trace-lambda
+  (syntax-rules ()
+    [(_ name args body ...)
+     (let ([name (lambda args body ...)]) (trace name) name)]))
