@@ -1299,6 +1299,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/contract" responsible (robby)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt" drdr:command-line (raco "make" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-opt-tests.rkt" responsible (robby) drdr:command-line (racket "-r" *)
+"pkgs/racket-pkgs/racket-test/tests/racket/contract-rand-test.rkt" responsible (robby) drdr:command-line (racket *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-argmin.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-take-right.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/core-tests.rktl" drdr:command-line #f

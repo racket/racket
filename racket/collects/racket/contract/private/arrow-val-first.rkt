@@ -5,6 +5,7 @@
          "misc.rkt"
          "prop.rkt"
          "guts.rkt"
+         "generate.rkt"
          racket/stxparam
          (prefix-in arrow: "arrow.rkt"))
 
@@ -978,6 +979,52 @@
 (define-struct base-> (min-arity doms kwd-infos rest pre rngs post proc)
   #:property prop:custom-write custom-write-property-proc)
 
+(define (->-generate ctc)
+  (cond
+    [(and (equal? (length (base->-doms ctc))
+                  (base->-min-arity ctc))
+          (not (base->-rest ctc)))
+     ;; only handle the case with no optional args and no rest args
+     (define doms-l (length (base->-doms ctc)))
+     (λ (fuel)
+       (define rngs-gens (map (λ (c) (generate/choose c (/ fuel 2)))
+                              (base->-rngs ctc)))
+       (cond
+         [(for/or ([rng-gen (in-list rngs-gens)])
+            (generate-ctc-fail? rng-gen))
+          (make-generate-ctc-fail)]
+         [else
+          (procedure-reduce-arity
+           (λ args
+             ; Make sure that the args match the contract
+             (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
+                      (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
+                    ; Stash the valid value
+                    ;(env-stash (generate-env) ctc args)
+                    (apply values rngs-gens)))
+           doms-l)]))]
+    [else (λ (fuel) (make-generate-ctc-fail))]))
+
+(define (->-exercise ctc) 
+  (λ (args fuel)
+    (let* ([new-fuel (/ fuel 2)]
+           [gen-if-fun (λ (c v)
+                         ; If v is a function we need to gen the domain and call
+                         (if (procedure? v)
+                             (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
+                                                 (base->-doms c))])
+                               (let* ([result (call-with-values 
+                                               (λ () (apply v newargs))
+                                               list)]
+                                      [rngs (base->-rngs c)])
+                                 (andmap (λ (c v) 
+                                           ((contract-struct-exercise c) v new-fuel))
+                                         rngs 
+                                         result)))
+                             ; Delegate to check-ctc-val
+                             ((contract-struct-exercise c) v new-fuel)))])
+      (andmap gen-if-fun (base->-doms ctc) args))))
+
 (define (base->-name ctc)
   (define rngs (base->-rngs ctc))
   (define rng-sexp
@@ -1085,8 +1132,9 @@
             (not (base->-pre that))
             (not (base->-post this))
             (not (base->-post that))))
-     #:val-first-projection 
-     proj)))
+     #:generate ->-generate
+     #:exercise ->-exercise
+     #:val-first-projection proj)))
 
 (define-struct (-> base->) ()
   #:property
