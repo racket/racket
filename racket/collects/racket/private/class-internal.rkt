@@ -2817,13 +2817,14 @@ An example
           [c (in-list (class/c-method-contracts ctc))])
       (define mth (hash-ref method-ht m #f))
       (unless mth (fail "no public method ~a" m))
-      (define meth-proc
-        (let loop ([m/l (vector-ref methods mth)])
-          (cond
-            [(pair? m/l) (loop (car m/l))]
-            [else m/l])))
-      (unless (contract-first-order-passes? c meth-proc)
-        (fail "public method ~a doesn't match contract" m)))
+      (when c
+        (define meth-proc
+          (let loop ([m/l (vector-ref methods mth)])
+            (cond
+              [(pair? m/l) (loop (car m/l))]
+              [else m/l])))
+        (unless (contract-first-order-passes? c meth-proc)
+          (fail "public method ~a doesn't match contract" m))))
     (unless (class/c-opaque? ctc)
       (for ([m (class/c-absents ctc)])
         (when (hash-ref method-ht m #f)
