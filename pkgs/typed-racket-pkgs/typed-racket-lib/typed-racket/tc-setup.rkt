@@ -36,15 +36,9 @@
     (type-alias-env-map (lambda (id ty)
                           (cons (syntax-e id) ty))))))
 
-(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker pre-result post-result . body)
-  (tc-setup/proc orig-stx stx expand-ctxt init checker
-                 (λ (fully-expanded-stx pre-result post-result) 
-                   . 
-                   body)))
-
 (define-logger online-check-syntax)
 
-(define (tc-setup/proc orig-stx stx expand-ctxt init checker f)
+(define (tc-setup orig-stx stx expand-ctxt init checker f)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
   (with-handlers
