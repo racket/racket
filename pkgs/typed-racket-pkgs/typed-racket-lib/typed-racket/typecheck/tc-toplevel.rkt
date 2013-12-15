@@ -22,7 +22,7 @@
 
 (provide/cond-contract
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
- [tc-toplevel-form (syntax? . c:-> . (values #f c:any/c))])
+ [tc-toplevel-form (syntax? . c:-> . c:any/c)])
 
 (define unann-defs (make-free-id-table))
 
@@ -359,18 +359,16 @@
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
-;; syntax -> (values #f (or/c void? tc-results/c))
+;; syntax -> (or/c void? tc-results/c)
 (define (tc-toplevel-form form)
   (syntax-parse form
     ;; Don't open up `begin`s that are supposed to be ignored
     [(~and ((~literal begin) e ...)
            (~not (~or _:ignore^ _:ignore-some^)))
-     (define result
+     (begin0
        (for/last ([form (in-syntax #'(e ...))])
-         (define-values (_ result) (tc-toplevel-form form))
-         result))
-     (begin0 (values #f result)
-             (report-all-errors))]
+         (tc-toplevel-form form))
+       (report-all-errors))]
     [_
      ;; Handle type aliases
      (when (type-alias? form)
@@ -386,6 +384,6 @@
        (refine-struct-variance! (list parsed))
        (register-parsed-struct-bindings! parsed))
      (tc-toplevel/pass1 form)
-     (begin0 (values #f (tc-toplevel/pass2 form))
+     (begin0 (tc-toplevel/pass2 form)
              (report-all-errors))]))
 

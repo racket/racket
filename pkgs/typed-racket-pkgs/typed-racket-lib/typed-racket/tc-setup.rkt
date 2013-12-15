@@ -9,8 +9,11 @@
          (for-syntax racket/base)
          (for-template racket/base))
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
+(lazy-require [typed-racket/typecheck/tc-toplevel (tc-toplevel-form tc-module)])
 
-(provide tc-setup invis-kw maybe-optimize init-current-type-names)
+(provide invis-kw maybe-optimize init-current-type-names
+         tc-module/full
+         tc-toplevel/full)
 
 (define-syntax-class invis-kw
   #:literals (define-values define-syntaxes #%require
@@ -39,7 +42,7 @@
 
 (define-logger online-check-syntax)
 
-(define (tc-setup orig-stx stx expand-ctxt checker f)
+(define (tc-setup orig-stx stx expand-ctxt checker k)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
   (with-handlers
@@ -73,6 +76,13 @@
       (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
                      [expanded-module-stx fully-expanded-stx])
         (do-time "Starting `checker'")
-        (define-values (pre-result post-result) (checker fully-expanded-stx))
-        (do-time "Typechecking Done")
-        (f fully-expanded-stx pre-result post-result)))))
+        (call-with-values (λ () (checker fully-expanded-stx))
+          (λ results
+            (do-time "Typechecking Done")
+            (apply k fully-expanded-stx results)))))))
+
+(define (tc-toplevel/full orig-stx stx k)
+  (tc-setup orig-stx stx 'top-level tc-toplevel-form k))
+
+(define (tc-module/full orig-stx stx k)
+  (tc-setup orig-stx stx 'module-begin tc-module k))
