@@ -65,13 +65,14 @@
     (λ (stx init)
       (syntax-parse stx
         [(_ e)
-         (tc-setup stx #'e 'top-level expanded init tc-toplevel-form before type
-                   #`(display
-                      #,(parameterize ([print-multi-line-case-> #t])
-                          (format "~a\n" (match type
-                                           [(tc-result1: t f o) t]
-                                           [(tc-results: t) (-values t)]
-                                           [(tc-any-results:) ManyUniv])))))]
+         (tc-setup stx #'e 'top-level init tc-toplevel-form
+                   (lambda (expanded before type)
+                     #`(display
+                        #,(parameterize ([print-multi-line-case-> #t])
+                            (format "~a\n" (match type
+                                             [(tc-result1: t f o) t]
+                                             [(tc-results: t) (-values t)]
+                                             [(tc-any-results:) ManyUniv]))))))]
         [form
          (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))))
 
@@ -87,11 +88,12 @@
                       #`(lambda #,(stx-map type-label-property
                                            #'(dummy-arg ...) #'(arg-type ...))
                           (op dummy-arg ...))
-                      'top-level expanded init tc-toplevel-form before type
-                      #`(display
-                         #,(format "~a\n"
-                                   (match type
-                                     [(tc-result1: (and t (Function: _)) f o) t])))))]
+                      'top-level init tc-toplevel-form
+                      (lambda (expanded before type)
+                        #`(display
+                           #,(format "~a\n"
+                                     (match type
+                                       [(tc-result1: (and t (Function: _)) f o) t]))))))]
         [form
          (raise-syntax-error #f "must be applied to at least one argument" #'form)]))))
 
@@ -103,16 +105,17 @@
         [(_ op desired-type)
          (init)
          (let ([expected (parse-type #'desired-type)])
-           (tc-setup stx #'op 'top-level expanded init tc-toplevel-form before type
-                     (match type
-                       [(tc-result1: (and t (Function: _)) f o)
-                        (let ([cleaned (cleanup-type t expected)])
-                          #`(display
-                             #,(match cleaned
-                                 [(Function: '())
-                                  "Desired return type not in the given function's range.\n"]
-                                 [(Function: arrs)
-                                  (format "~a\n" cleaned)])))]
-                       [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
+           (tc-setup stx #'op 'top-level init tc-toplevel-form
+                     (lambda (expanded before type)
+                       (match type
+                         [(tc-result1: (and t (Function: _)) f o)
+                          (let ([cleaned (cleanup-type t expected)])
+                            #`(display
+                               #,(match cleaned
+                                   [(Function: '())
+                                    "Desired return type not in the given function's range.\n"]
+                                   [(Function: arrs)
+                                    (format "~a\n" cleaned)])))]
+                         [_ (error (format "~a: not a function" (syntax->datum #'op)))]))))]
         [form
          (raise-syntax-error #f "must be applied to exactly two arguments" #'form)]))))
