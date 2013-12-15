@@ -4933,11 +4933,16 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
       /* naya will be prefixed and returned... */
     }
   } else if (rec[drec].comp) {
-    Scheme_Object *name, *origname, *gval, *orig_rest_form, *rest_form;
+    Scheme_Object *name, *origname, *gval, *orig_rest_form, *rest_form, *vname;
     name = SCHEME_STX_CAR(form);
     origname = name;
     
+    vname = rec[drec].value_name;
+    rec[drec].value_name = scheme_false;
+    
     name = scheme_check_immediate_macro(name, env, rec, drec, 0, &gval, NULL, NULL);
+
+    rec[drec].value_name = vname;
 
     /* look for ((lambda (x ...) ....) ....) or ((lambda x ....) ....) */
     if (SAME_OBJ(gval, scheme_lambda_syntax)) {
