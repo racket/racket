@@ -1896,6 +1896,10 @@
        [tc-e (remove* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
        [tc-e (remq* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
        [tc-e (remv* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
+       [tc-e
+         (call-with-values (lambda () (eval #'(+ 1 2))) (inst list Any))
+         (-lst Univ)]
+
         )
   (test-suite
    "tc-literal tests"
