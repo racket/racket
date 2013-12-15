@@ -878,5 +878,12 @@
     (module m (submod ".." n))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check submodule and `for-label`
+
+(module requires-submodule-for-label racket/base
+  (module foo racket/base)
+  (require (for-label (submod "." foo))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
