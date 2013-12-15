@@ -24,8 +24,7 @@
      (let ([pmb-form (syntax/loc stx (#%plain-module-begin forms ...))])
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
-         (tc-setup
-          stx pmb-form 'module-begin tc-module
+         (tc-module/full stx pmb-form
           (λ (new-mod before-code after-code)
             (with-syntax*
              (;; pmb = #%plain-module-begin
@@ -61,50 +60,49 @@
      ;; TODO(endobson): Remove the call to do-standard-inits when it is no longer necessary
      ;; Cast at the top-level still needs this for some reason
      (do-standard-inits)
-     (tc-setup
-      stx #'form 'top-level tc-toplevel-form
-      (λ (body2 before type)
-        (with-syntax*
-         ([(optimized-body . _) (maybe-optimize #`(#,body2))])
-         (syntax-parse body2
-           ;; any of these do not produce an expression to be printed
-           [(head:invis-kw . _) (arm #'optimized-body)]
-           [_ (let ([ty-str (match type
-                              ;; don't print results of type void
-                              [(tc-result1: (== -Void type-equal?))
-                               #f]
-                              ;; don't print results of unknown type
-                              [(tc-any-results:)
-                               #f]
-                              [(tc-result1: t f o)
-                               ;; Don't display the whole types at the REPL. Some case-lambda types
-                               ;; are just too large to print.
-                               ;; Also, to avoid showing too precise types, we generalize types
-                               ;; before printing them.
-                               (define tc (cleanup-type t))
-                               (define tg (generalize tc))
-                               (format "- : ~a~a~a\n"
-                                       tg
-                                       (cond [(equal? tc tg) ""]
-                                             [else (format " [more precisely: ~a]" tc)])
-                                       (cond [(equal? tc t) ""]
-                                             [did-I-suggest-:print-type-already? " ..."]
-                                             [else (set! did-I-suggest-:print-type-already? #t)
-                                                   :print-type-message]))]
-                              [(tc-results: t)
-                               (define tcs (map cleanup-type t))
-                               (define tgs (map generalize tcs))
-                               (format "- : ~a~a~a\n"
-                                       (cons 'Values tgs)
-                                       (cond [(andmap equal? tgs tcs) ""]
-                                             [else (format " [more precisely: ~a]" (cons 'Values tcs))])
-                                       ;; did any get pruned?
-                                       (cond [(andmap equal? t tcs) ""]
-                                             [did-I-suggest-:print-type-already? " ..."]
-                                             [else (set! did-I-suggest-:print-type-already? #t)
-                                                   :print-type-message]))]
-                              [x (int-err "bad type result: ~a" x)])])
-                (if ty-str
-                    #`(let ([type '#,ty-str])
-                        (begin0 #,(arm #'optimized-body) (display type)))
-                    (arm #'optimized-body)))]))))]))
+     (tc-toplevel/full stx #'form
+       (λ (body2 type)
+         (with-syntax*
+          ([(optimized-body . _) (maybe-optimize #`(#,body2))])
+          (syntax-parse body2
+            ;; any of these do not produce an expression to be printed
+            [(head:invis-kw . _) (arm #'optimized-body)]
+            [_ (let ([ty-str (match type
+                               ;; don't print results of type void
+                               [(tc-result1: (== -Void type-equal?))
+                                #f]
+                               ;; don't print results of unknown type
+                               [(tc-any-results:)
+                                #f]
+                               [(tc-result1: t f o)
+                                ;; Don't display the whole types at the REPL. Some case-lambda types
+                                ;; are just too large to print.
+                                ;; Also, to avoid showing too precise types, we generalize types
+                                ;; before printing them.
+                                (define tc (cleanup-type t))
+                                (define tg (generalize tc))
+                                (format "- : ~a~a~a\n"
+                                        tg
+                                        (cond [(equal? tc tg) ""]
+                                              [else (format " [more precisely: ~a]" tc)])
+                                        (cond [(equal? tc t) ""]
+                                              [did-I-suggest-:print-type-already? " ..."]
+                                              [else (set! did-I-suggest-:print-type-already? #t)
+                                                    :print-type-message]))]
+                               [(tc-results: t)
+                                (define tcs (map cleanup-type t))
+                                (define tgs (map generalize tcs))
+                                (format "- : ~a~a~a\n"
+                                        (cons 'Values tgs)
+                                        (cond [(andmap equal? tgs tcs) ""]
+                                              [else (format " [more precisely: ~a]" (cons 'Values tcs))])
+                                        ;; did any get pruned?
+                                        (cond [(andmap equal? t tcs) ""]
+                                              [did-I-suggest-:print-type-already? " ..."]
+                                              [else (set! did-I-suggest-:print-type-already? #t)
+                                                    :print-type-message]))]
+                               [x (int-err "bad type result: ~a" x)])])
+                 (if ty-str
+                     #`(let ([type '#,ty-str])
+                         (begin0 #,(arm #'optimized-body) (display type)))
+                     (arm #'optimized-body)))]))))]))
