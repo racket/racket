@@ -104,4 +104,8 @@
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)")))))
 
+
+(err/rt-test (let ([unmentionable ((lambda (x #:a a) 1) 1 2)]) 5)
+             (lambda (exn) (not (regexp-match? #rx"unmentionable" (exn-message exn)))))
+
 (report-errs)
