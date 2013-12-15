@@ -728,13 +728,6 @@
 
 (define opt->/c-cm-key (gensym 'opt->/c-cm-key))
 
-(define (blame-add-nth-arg-context blame n)
-  (blame-add-context blame
-                     (format "the ~a argument of" (n->th n))))
-(define (blame-add-range-context blame)
-  (blame-add-context blame
-                     "the range of"))
-
 (define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info))
 
 (define (handle-non-exact-procedure val dom-len blame exact-proc)

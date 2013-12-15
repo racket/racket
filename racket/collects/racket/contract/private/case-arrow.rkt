@@ -178,8 +178,8 @@
 (define (case->-proj wrapper)
   (λ (ctc)
     (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
-    (define rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
-                       (and rngs (map contract-projection rngs))))
+    (define rng-ctcs (map contract-projection
+                          (get-case->-rng-ctcs ctc)))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
     (define specs (base-case->-specs ctc))
     (λ (blame)
@@ -300,12 +300,6 @@
       ([x (in-list (base-case->-rng-ctcs ctc))]
        #:when x)
     (append acc x)))
-
-;; this is to make the expanded versions a little easier to read
-(define-syntax (values/drop stx)
-  (syntax-case stx ()
-    [(_ arg) #'arg]
-    [(_ args ...) #'(values args ...)]))
 
 ;; Takes a list of (listof projection), and returns one of the
 ;; lists if all the lists contain the same projections. If the list is

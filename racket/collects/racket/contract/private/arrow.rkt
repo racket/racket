@@ -39,7 +39,12 @@
                      make-this-parameters
                      parse-leftover->*)
          contract-key
-         tail-marks-match?)
+         tail-marks-match?
+         values/drop
+         arity-checking-wrapper
+         unspecified-dom
+         blame-add-range-context
+         blame-add-nth-arg-context)
 
 (define-syntax-parameter making-a-method #f)
 (define-syntax-parameter method-contract? #f)
@@ -387,7 +392,9 @@
                                                      '(opt-kwd ...))))])))))))))))
 
 ;; should we pass both the basic-lambda and the kwd-lambda?
-(define (arity-checking-wrapper val blame basic-lambda kwd-lambda min-method-arity max-method-arity min-arity max-arity req-kwd opt-kwd)
+(define (arity-checking-wrapper val blame basic-lambda kwd-lambda
+                                min-method-arity max-method-arity min-arity max-arity 
+                                req-kwd opt-kwd)
   ;; should not build this unless we are in the 'else' case (and maybe not at all)
   (cond
     [(matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
@@ -1728,6 +1735,10 @@
 
 (define (blame-add-range-context blame)
   (blame-add-context blame "the range of"))
+
+(define (blame-add-nth-arg-context blame n)
+  (blame-add-context blame
+                     (format "the ~a argument of" (n->th n))))
 
 ;; timing & size tests
 

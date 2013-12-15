@@ -1,19 +1,20 @@
 #lang racket/base
 (require (for-syntax racket/base
                      "arr-util.rkt")
+         "kwd-info-struct.rkt"
+         "arity-checking.rkt"
          "blame.rkt"
          "misc.rkt"
          "prop.rkt"
          "guts.rkt"
          "generate.rkt"
+         "arrow-higher-order.rkt"
          racket/stxparam
          (prefix-in arrow: "arrow.rkt"))
 
 (provide ->2 ->*2
          (for-syntax ->2-handled?
-                     ->*2-handled?)
-         arity-as-string
-         raw-arity-as-string)
+                     ->*2-handled?))
 
 (define-for-syntax (->2-handled? stx)
   (syntax-case stx (any values any/c)
@@ -33,24 +34,34 @@
     [_ #t]))
 
 (define-for-syntax popular-keys
-  '((0 0 () () #t 1)
-    
-    (2 0 () () #f #f)
-    (1 0 () () #f #f)
-    
-    (3 0 () () #f 1) 
-    (2 0 () () #f 1)
-    (1 0 () () #f 1)
-    (0 0 () () #f 1)))
+  ;; of the 8417 contracts that get compiled during
+  ;; 'raco setup' of the current tree, these are all
+  ;; the ones that appear at least 50 times (the
+  ;; number indicate how many times each appeared)
+  `((0 0 () () #f 1)   ; 1260
+    (0 0 () () #t 1)   ;   58
+    (1 0 () () #f #f)  ;  116
+    (1 0 () () #f 1)   ; 4140
+    (1 0 () () #t 1)   ;   71
+    (1 1 () () #f 1)   ;  186
+    (1 2 () () #f 1)   ;  125
+    (2 0 () () #f #f)  ;   99
+    (2 0 () () #f 1)   ; 1345
+    (2 1 () () #f 1)   ;   68
+    (3 0 () () #f 1)   ;  423
+    (4 0 () () #f 1)   ;  149
+    (5 0 () () #f 1))) ;   74
 
 (define-syntax (generate-popular-key-ids stx)
   #`(define-for-syntax #,(datum->syntax stx 'popular-key-ids)
-      (list #,@(map (λ (x) #`(quote-syntax #,x))
+      (list #,@(map (λ (x y) #`(list (quote-syntax #,x) (quote-syntax #,y)))
                     (generate-temporaries (for/list ([e (in-list popular-keys)])
-                                            'popular-key-id))))))
+                                            'popular-plus-one-key-id))
+                    (generate-temporaries (for/list ([e (in-list popular-keys)])
+                                            'popular-chaperone-key-id))))))
 (generate-popular-key-ids)
 
-(define-for-syntax (build-plus-one-arity-function
+(define-for-syntax (build-plus-one-arity-function+chaperone-constructor
                     stx
                     regular-args
                     optional-args
@@ -60,6 +71,7 @@
                     rest
                     rngs
                     post)
+  (define-logger popular-keys)
   (define key (and (not pre)
                    (not post)
                    (list (length regular-args)
@@ -75,22 +87,35 @@
      =>
      (λ (l)
        (define index (- (length popular-keys) (length l)))
-       (list-ref popular-key-ids index))]
+       (define ids (list-ref popular-key-ids index))
+       (values (list-ref ids 0) (list-ref ids 1)))]
     [else
-     (build-plus-one-arity-function/real
-      regular-args
-      optional-args
-      mandatory-kwds
-      optional-kwds
-      pre
-      rest
-      rngs
-      post)]))
+     (values (build-plus-one-arity-function/real
+              regular-args
+              optional-args
+              mandatory-kwds
+              optional-kwds
+              pre
+              rest
+              rngs
+              post)
+             (build-chaperone-constructor/real
+              '() ;; this-args 
+              regular-args
+              optional-args
+              mandatory-kwds
+              optional-kwds
+              pre
+              rest
+              rngs
+              post))]))
 
 (define-syntax (build-populars stx)
   #`(begin
-      #,@(for/list ([id (in-list popular-key-ids)]
+      #,@(for/list ([ids (in-list popular-key-ids)]
                     [key (in-list popular-keys)])
+           (define plus-one-id (list-ref ids 0))
+           (define chaperone-id (list-ref ids 1))
            (define-values (regular-arg-count
                            optional-arg-count
                            mandatory-kwds
@@ -98,19 +123,32 @@
                            rest
                            rngs)
              (apply values key))
-           #`(define #,(syntax-local-introduce id)
-               #,(build-plus-one-arity-function/real
-                  (for/list ([x (in-range regular-arg-count)])
-                    (string->symbol (format "man~a" x)))
-                  (for/list ([x (in-range optional-arg-count)])
-                    (string->symbol (format "opt~a" x)))
-                  mandatory-kwds
-                  optional-kwds
-                  #f
-                  (and rest)
-                  (and rngs (for/list ([x (in-range rngs)])
-                              (string->symbol (format "rng~a" x))))
-                  #f)))))
+           (define mans (for/list ([x (in-range regular-arg-count)])
+                          (string->symbol (format "man~a" x))))
+           (define opts (for/list ([x (in-range optional-arg-count)])
+                          (string->symbol (format "opt~a" x))))
+           (define rng-vars (and rngs (for/list ([x (in-range rngs)])
+                                        (string->symbol (format "rng~a" x)))))
+           #`(begin
+               (define #,(syntax-local-introduce plus-one-id)
+                 #,(build-plus-one-arity-function/real
+                    mans opts
+                    mandatory-kwds
+                    optional-kwds
+                    #f
+                    rest
+                    rng-vars
+                    #f))
+               (define #,(syntax-local-introduce chaperone-id)
+                 #,(build-chaperone-constructor/real
+                    '() ;; this arg
+                    mans opts
+                    mandatory-kwds
+                    optional-kwds
+                    #f
+                    rest
+                    rng-vars
+                    #f))))))
 
 (define-for-syntax (build-plus-one-arity-function/real
                     regular-args
@@ -225,8 +263,6 @@
         #`(λ (blame f regb ... optb ... kb ... okb ... rb ... #,@(if rest (list #'restb) '()))
             #,body-proc)))))
 
-(build-populars)
-
 (define (make-checking-proc f blame  
                             original-mandatory-kwds kbs
                             original-optional-kwds okbs
@@ -284,6 +320,8 @@
           [else
            (cons (((car rbs) (car regular-args)) neg-party)
                  (loop (cdr regular-args) (cdr rbs)))]))))))
+
+(build-populars)
 
 (define (check-arg-count minimum-arg-count rbs regular-args val blame neg-party rest-ctc)
   (define actual-count (length regular-args))
@@ -425,21 +463,21 @@
            [any #f]
            [(values rng ...) (add-pos-obligations (syntax->list #'(rng ...)))]
            [rng (add-pos-obligations (list #'rng))]))
+       (define-values (plus-one-arity-function chaperone-constructor)
+         (build-plus-one-arity-function+chaperone-constructor 
+          stx regular-args '() kwds '() #f #f rngs #f))
        (syntax-property
         #`(let #,let-bindings
             #,(quasisyntax/loc stx
-                (build--> '->
-                      (list #,@regular-args) '()
-                      '(#,@kwds)
-                      (list #,@kwd-args)
-                      '() '()
-                      #f
-                      #f
-                      #,(if rngs
-                            #`(list #,@rngs)
-                            #'#f)
-                      #f
-                      #,(build-plus-one-arity-function stx regular-args '() kwds '() #f #f rngs #f))))
+                (build-simple-->
+                 (list #,@regular-args)
+                 '(#,@kwds)
+                 (list #,@kwd-args)
+                 #,(if rngs
+                       #`(list #,@rngs)
+                       #'#f)
+                 #,plus-one-arity-function
+                 #,chaperone-constructor)))
         'racket/contract:contract
         (vector this->
                 ;; the -> in the original input to this guy
@@ -509,6 +547,17 @@
                           [(post-let-binding ...) (if post
                                                       (list #`[post-x (λ () #,post)])
                                                       (list))])
+              (define-values (plus-one-arity-function chaperone-constructor)
+                (build-plus-one-arity-function+chaperone-constructor
+                 stx
+                 (syntax->list #'(mandatory-dom ...))
+                 (syntax->list #'(optional-dom ...))
+                 (syntax->list #'(mandatory-dom-kwd ...))
+                 (syntax->list #'(optional-dom-kwd ...))
+                 (and pre #'pre-x)
+                 rest-ctc
+                 rng-ctcs
+                 (and post #'post-x)))
               #`(let (mandatory-let-bindings ...
                       optional-let-bindings ... 
                       pre-let-binding ...
@@ -521,184 +570,17 @@
                             '(optional-dom-kwd ...)
                             (list optional-dom-kwd-ctc ...)
                             #,rest-ctc
-                            #,(and pre #'pre-x)
+                            #,(and pre #t)
                             #,(if rng-ctcs
                                   #`(list #,@rng-ctcs)
                                   #'#f)
-                            #,(and post #'post-x)
-                            #,(build-plus-one-arity-function
-                               stx
-                               (syntax->list #'(mandatory-dom ...))
-                               (syntax->list #'(optional-dom ...))
-                               (syntax->list #'(mandatory-dom-kwd ...))
-                               (syntax->list #'(optional-dom-kwd ...))
-                               (and pre #'pre-x)
-                               rest-ctc
-                               rng-ctcs
-                               (and post #'post-x)))))))])]
+                            #,(and post #t)
+                            #,plus-one-arity-function 
+                            #,chaperone-constructor)))))])]
     [else
      (syntax-case stx ()
        [(_ args ...)
         #'(arrow:->* args ...)])]))
-
-(define ((mk-val-first-proj chaperone-or-impersonate-procedure) ->stct)
-  (λ (blame)
-    (define dbs (for/list ([v (in-list (base->-doms ->stct))]
-                           [i (in-naturals 1)])
-                  (define dom-proj (get/build-val-first-projection v))
-                  (dom-proj
-                   (blame-add-context blame
-                                      (format "the ~a argument of"
-                                              (n->th i))
-                                      #:swap? #t))))
-    
-    (define kwd-dbs 
-      (for/list ([kwd-info (in-list (base->-kwd-infos ->stct))])
-        ((get/build-val-first-projection (kwd-info-ctc kwd-info))
-         (blame-add-context blame
-                            (format "the ~a argument of" (kwd-info-kwd kwd-info))
-                            #:swap? #t))))
-        
-    (define opt-kwd-dbs (for/list ([kwd-db (in-list kwd-dbs)]
-                                   [kwd-info (in-list (base->-kwd-infos ->stct))]
-                                   #:unless (kwd-info-mandatory? kwd-info))
-                          kwd-db))
-    (define mandatory-kwd-dbs (for/list ([kwd-db (in-list kwd-dbs)]
-                                         [kwd-info (in-list (base->-kwd-infos ->stct))]
-                                         #:when (kwd-info-mandatory? kwd-info))
-                                kwd-db))
-    
-    (define rst-b (and (base->-rest ->stct)
-                       ((get/build-val-first-projection (base->-rest ->stct))
-                        (blame-add-context blame 
-                                           "the rest argument of"
-                                           #:swap? #t))))
-    
-    (define just-one? (and (base->-rngs ->stct) (= 1 (length (base->-rngs ->stct)))))
-    (define range-blame (blame-add-context blame "the range of"))
-    (define rbs (for/list ([v (in-list (or (base->-rngs ->stct) '()))]
-                           [i (in-naturals 1)])
-                  ((get/build-val-first-projection v)
-                   range-blame)))
-    (define tail-mark-vals rbs)
-    (define max-arity (if (base->-rest ->stct)
-                          +inf.0
-                          (length dbs)))
-    (define min-arity (base->-min-arity ->stct))
-    
-    (define expected-values (length rbs))
-    (λ (val)
-      (define arity-checking (do-arity-checking blame val ->stct))
-      (cond
-        [arity-checking
-         arity-checking]
-        [else
-         (define ctc-f-with-extra-neg-party-arg
-           (apply (base->-proc ->stct) blame val 
-                  (append dbs mandatory-kwd-dbs opt-kwd-dbs rbs (if rst-b (list rst-b) '()))))
-         (wrapped-extra-arg-arrow
-          (λ (neg-party)
-            (chaperone-or-impersonate-procedure
-             val
-             (make-keyword-procedure
-              (λ (supplied-kwds kwd-vals . args)
-                (call-with-immediate-continuation-mark
-                 arrow:contract-key
-                 (λ (existing-tail-marks)
-                   (unless (<= min-arity (length args) max-arity)
-                     (raise-blame-error (blame-swap blame) #:missing-party neg-party val
-                                        '("received ~a argument~a" expected: "~a")
-                                        (length args)
-                                        (if (= 1 (length args)) "" "s")
-                                        (cond
-                                          [(= min-arity max-arity)
-                                           (format "~a argument~a"
-                                                   max-arity
-                                                   (if (= 1 max-arity) "" "s"))]
-                                          [else
-                                           (format "between ~a and ~a arguments"
-                                                   min-arity max-arity)])))
-                   (define chap-regular-args
-                     (let loop ([args args]
-                                [dbs dbs])
-                       (cond
-                         [(null? dbs)
-                          ;; out of contracts for individual args; switch to #:rest arg
-                          (if rst-b
-                              ((rst-b args) neg-party)
-                              '())]
-                         [(null? args)
-                          ;; out of arguments; remaining dbs must be optional
-                          '()]
-                         [else
-                          (cons (((car dbs) (car args)) neg-party)
-                                (loop (cdr args) (cdr dbs)))])))
-                   
-                   (define (signal-missing-keyword-error kwd)
-                     (raise-blame-error (blame-swap blame) #:missing-party neg-party val
-                                        '(expected: "keyword argument ~a")
-                                        kwd))
-                   (define (signal-extra-keyword-error kwd)
-                     (raise-blame-error (blame-swap blame) #:missing-party neg-party val
-                                        '(expected: "no keyword argument ~a")
-                                        kwd))
-                   (define chap-keyword-args
-                     (let loop ([supplied-kwds supplied-kwds]
-                                [kwd-vals kwd-vals]
-                                [kwd-dbs kwd-dbs]
-                                [kwd-infos (base->-kwd-infos ->stct)])
-                       (cond
-                         [(and (null? supplied-kwds) (null? kwd-infos)) '()]
-                         [(null? supplied-kwds)
-                          (for ([kwd-info (in-list kwd-infos)])
-                            (when (kwd-info-mandatory? kwd-info)
-                              (signal-missing-keyword-error (kwd-info-kwd kwd-info))))
-                          '()]
-                         [(null? kwd-infos)
-                          (signal-extra-keyword-error (car supplied-kwds))]
-                         [else
-                          (cond
-                            [(equal? (kwd-info-kwd (car kwd-infos)) (car supplied-kwds))
-                             (cons (((car kwd-dbs) (car kwd-vals)) neg-party)
-                                   (loop (cdr supplied-kwds)
-                                         (cdr kwd-vals)
-                                         (cdr kwd-dbs)
-                                         (cdr kwd-infos)))]
-                            [(kwd-info-mandatory? (car kwd-infos))
-                             (signal-missing-keyword-error (car supplied-kwds))]
-                            [else
-                             (loop supplied-kwds kwd-vals (cdr kwd-dbs) (cdr kwd-infos))])])))
-                   
-                   (when (base->-pre ->stct)
-                     (check-pre-condition blame neg-party val (base->-pre ->stct)))
-                   
-                   (define chap-args 
-                     (if (null? supplied-kwds)
-                         chap-regular-args
-                         (cons chap-keyword-args chap-regular-args)))
-                   
-                   (define chap-res
-                     (if (and (base->-rngs ->stct)
-                              (not (apply arrow:tail-marks-match? existing-tail-marks rbs)))
-                         (list* (λ reses
-                                  (define length-reses (length reses))
-                                  (unless (= length-reses expected-values)
-                                    (wrong-number-of-results-blame 
-                                     blame neg-party val 
-                                     reses expected-values))
-                                  (define results
-                                   (for/list ([res (in-list reses)]
-                                              [rng-b (in-list rbs)])
-                                     ((rng-b res) neg-party)))
-                                  (when (base->-post ->stct)
-                                    (check-post-condition blame neg-party val (base->-post ->stct)))
-                                  (apply values results))
-                                chap-args)
-                         chap-args))
-                   (apply values chap-res)))))
-             impersonator-prop:contracted ->stct
-             impersonator-prop:application-mark (cons arrow:contract-key tail-mark-vals)))
-          ctc-f-with-extra-neg-party-arg)]))))
 
 (define (wrong-number-of-results-blame blame neg-party val reses expected-values)
   (define length-reses (length reses))
@@ -710,222 +592,19 @@
    expected-values
    (if (= 1 expected-values) "" "s")))
 
-(define (do-arity-checking blame val ->stct)
-  (let/ec k
-    (unless (procedure? val)
-      (maybe-err 
-       k blame
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            '(expected: "a procedure" given: "~e")
-                            val))))
-     (define-values (actual-mandatory-kwds actual-optional-kwds) (procedure-keywords val))
-     (define arity (if (list? (procedure-arity val))
-                       (procedure-arity val)
-                       (list (procedure-arity val))))
-     (define expected-number-of-non-keyword-args (length (base->-doms ->stct)))
-     (define matching-arity?
-       (and (for/or ([a (in-list arity)])
-              (or (equal? expected-number-of-non-keyword-args a)
-                  (and (arity-at-least? a)
-                       (>= expected-number-of-non-keyword-args (arity-at-least-value a)))))
-            (if (base->-rest ->stct)
-                (let ([lst (car (reverse arity))])
-                  (and (arity-at-least? lst)
-                       (<= (arity-at-least-value lst) (base->-min-arity ->stct))))
-                #t)))
-     (unless matching-arity?
-       (maybe-err
-        k blame
-        (λ (neg-party)
-          (raise-blame-error blame #:missing-party neg-party val
-                             '(expected: 
-                               "a procedure that accepts ~a non-keyword argument~a~a"
-                               given: "~e"
-                               "\n  ~a")
-                             expected-number-of-non-keyword-args
-                             (if (= expected-number-of-non-keyword-args 1) "" "s")
-                             (if (base->-rest ->stct)
-                                 " and arbitrarily many more"
-                                 "")
-                             val
-                             (arity-as-string val)))))
-    
-    (define (should-have-supplied kwd)
-      (maybe-err
-       k blame
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            '(expected: 
-                              "a procedure that accepts the ~a keyword argument"
-                              given: "~e"
-                              "\n  ~a")
-                            kwd
-                            val
-                            (arity-as-string val)))))
-    
-    (define (should-not-have-supplied kwd)
-      (maybe-err
-       k blame
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            '(expected: 
-                              "a procedure that does not require the ~a keyword argument"
-                              given: "~e"
-                              "\n  ~a")
-                            kwd
-                            val
-                            (arity-as-string val)))))
-    
-    (when actual-optional-kwds ;; when all kwds are okay, no checking required
-      (let loop ([mandatory-kwds actual-mandatory-kwds]
-                 [all-kwds actual-optional-kwds]
-                 [kwd-infos (base->-kwd-infos ->stct)])
-        (cond
-          [(null? kwd-infos)
-           (unless (null? mandatory-kwds)
-             (should-not-have-supplied (car mandatory-kwds)))]
-          [else
-           (define kwd-info (car kwd-infos))
-           (define-values (mandatory? kwd new-mandatory-kwds new-all-kwds)
-             (cond
-               [(null? all-kwds)
-                (should-have-supplied (kwd-info-kwd kwd-info))]
-               [else
-                (define mandatory? 
-                  (and (pair? mandatory-kwds)
-                       (equal? (car mandatory-kwds) (car all-kwds))))
-                (values mandatory? 
-                        (car all-kwds)
-                        (if mandatory?
-                            (cdr mandatory-kwds)
-                            mandatory-kwds)
-                        (cdr all-kwds))]))
-           (cond
-             [(equal? kwd (kwd-info-kwd kwd-info))
-              (when (and (not (kwd-info-mandatory? kwd-info))
-                         mandatory?)
-                (maybe-err
-                 k blame
-                 (λ (neg-party)
-                   (raise-blame-error 
-                    blame #:missing-party neg-party val
-                    '(expected:
-                      "a procedure that optionally accepts the keyword ~a (this one is mandatory)"
-                      given: "~e"
-                      "\n  ~a")
-                    val
-                    kwd
-                    (arity-as-string val)))))
-              (loop new-mandatory-kwds new-all-kwds (cdr kwd-infos))]
-             [(keyword<? kwd (kwd-info-kwd kwd-info))
-              (when mandatory?
-                (should-not-have-supplied kwd))
-              (loop new-mandatory-kwds new-all-kwds kwd-infos)]
-             [else
-              (loop new-mandatory-kwds new-all-kwds kwd-infos)])])))
-    
-    #f))
-
-
-(define (arity-as-string v)
-  (define prefix (if (object-name v)
-                     (format "~a accepts: " (object-name v))
-                     (format "accepts: ")))
-  (string-append prefix (raw-arity-as-string v)))
-
-(define (raw-arity-as-string v)
-  (define ar (procedure-arity v))
-  (define (plural n) (if (= n 1) "" "s"))
-  (define-values (man-kwds all-kwds) (procedure-keywords v))
-  (define opt-kwds (if all-kwds (remove* man-kwds all-kwds) #f))
-  (define normal-str (if (null? all-kwds) "" "normal "))
-  (define normal-args
-    (cond
-      [(null? ar) "no arguments"]
-      [(number? ar) (format "~a ~aargument~a" ar normal-str (plural ar))]
-      [(arity-at-least? ar) (format "~a or arbitrarily many more ~aarguments"
-                                    (arity-at-least-value ar)
-                                    normal-str)]
-      [else
-       (define comma
-         (if (and (= (length ar) 2)
-                  (not (arity-at-least? (list-ref ar 1))))
-             ""
-             ","))
-       (apply
-        string-append
-        (let loop ([ar ar])
-          (cond
-            [(null? (cdr ar))
-             (define v (car ar))
-             (cond
-               [(arity-at-least? v)
-                (list
-                 (format "~a, or arbitrarily many more ~aarguments" 
-                         (arity-at-least-value v)
-                         normal-str))]
-               [else
-                (list (format "or ~a ~aarguments" v normal-str))])]
-            [else 
-             (cons (format "~a~a " (car ar) comma)
-                   (loop (cdr ar)))])))]))
-  (cond
-    [(and (null? man-kwds) (null? opt-kwds)) 
-     normal-args]
-    [(and (null? man-kwds) (not opt-kwds))
-     (string-append normal-args " and optionally any keyword")]
-    [(and (null? man-kwds) (pair? opt-kwds))
-     (string-append normal-args 
-                    " and the optional keyword" 
-                    (plural (length opt-kwds))
-                    " "
-                    (kwd-list-as-string opt-kwds))]
-    [(and (pair? man-kwds) (not opt-kwds))
-     (string-append normal-args
-                    ", the mandatory keyword"
-                    (plural (length man-kwds))
-                    " "
-                    (kwd-list-as-string man-kwds)
-                    ", and optionally any keyword")]
-    [(and (pair? man-kwds) (null? opt-kwds))
-     (string-append normal-args
-                    " and the mandatory keyword"
-                    (plural (length man-kwds))
-                    " "
-                    (kwd-list-as-string man-kwds))]
-    [(and (pair? man-kwds) (pair? opt-kwds))
-     (string-append normal-args
-                    ", the mandatory keyword"
-                    (plural (length man-kwds))
-                    " "
-                    (kwd-list-as-string man-kwds)
-                    ", and the optional keyword"
-                    (plural (length opt-kwds))
-                    " "
-                    (kwd-list-as-string opt-kwds))]))
-
-(define (kwd-list-as-string kwds)
-  (cond
-    [(null? (cdr kwds))
-     (format "~a" (list-ref kwds 0))]
-    [(null? (cddr kwds))
-     (format "~a and ~a" (list-ref kwds 0) (list-ref kwds 1))]
-    [else 
-     (apply
-      string-append
-      (let loop ([kwds kwds])
-        (cond
-          [(null? (cdr kwds))
-           (list (format "and ~a" (car kwds)))]
-          [else
-           (cons (format "~a, " (car kwds))
-                 (loop (cdr kwds)))])))]))
-
-(define (maybe-err k blame neg-accepter)
-  (if (blame-original? blame)
-      (neg-accepter #f)
-      (k neg-accepter)))
+(define (build-simple--> raw-regular-doms
+                         mandatory-kwds mandatory-raw-kwd-doms
+                         raw-rngs
+                         plus-one-arity-function
+                         chaperone-constructor)
+  (build--> '->
+            raw-regular-doms '() 
+            mandatory-kwds mandatory-raw-kwd-doms
+            '() '()
+            #f
+            #f raw-rngs #f
+            plus-one-arity-function
+            chaperone-constructor))
 
 (define (build--> who 
                   raw-regular-doms raw-optional-doms 
@@ -933,7 +612,8 @@
                   optional-kwds optional-raw-kwd-doms
                   raw-rest-ctc
                   pre-cond raw-rngs post-cond
-                  proc)
+                  plus-one-arity-function
+                  chaperone-constructor)
   (define regular-doms
     (for/list ([dom (in-list (append raw-regular-doms raw-optional-doms))])
       (coerce-contract who dom)))
@@ -958,25 +638,27 @@
            (andmap chaperone-contract? (or rngs '())))
       (make--> (length raw-regular-doms) 
                regular-doms kwd-infos rest-ctc pre-cond
-               rngs post-cond proc)
+               rngs post-cond 
+               plus-one-arity-function
+               chaperone-constructor)
       (make-impersonator-> (length raw-regular-doms)
                            regular-doms kwd-infos rest-ctc pre-cond
-                           rngs post-cond proc)))
-
-;; kwd : keyword?
-;; ctc : contract?
-;; mandatory? : boolean?
-(define-struct kwd-info (kwd ctc mandatory?) #:transparent)
+                           rngs post-cond 
+                           plus-one-arity-function
+                           chaperone-constructor)))
 
 ;; min-arity : nat
 ;; doms : (listof contract?)[len >= min-arity]
 ;;        includes optional arguments in list @ end
 ;; kwd-infos : (listof kwd-info)
-;; pre : (or/c #f (-> void))
+;; rest : (or/c #f contract?)
+;; pre? : boolean?
 ;; rngs : (listof contract?)
-;; post : (or/c #f (-> void))
-;; proc : procedure? -- special, +1 argument wrapper that accepts neg-party
-(define-struct base-> (min-arity doms kwd-infos rest pre rngs post proc)
+;; post? : boolean?
+;; plus-one-arity-function : procedure? -- special, +1 argument wrapper that accepts neg-party
+;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
+(define-struct base-> (min-arity doms kwd-infos rest pre? rngs post?
+                                 plus-one-arity-function chaperone-constructor)
   #:property prop:custom-write custom-write-property-proc)
 
 (define (->-generate ctc)
@@ -1039,8 +721,8 @@
           (= (base->-min-arity ctc)
              (length (base->-doms ctc)))
           (not (base->-rest ctc))
-          (not (base->-pre ctc))
-          (not (base->-post ctc)))
+          (not (base->-pre? ctc))
+          (not (base->-post? ctc)))
      `(-> ,@(map contract-name (base->-doms ctc))
           ,@(apply
              append
@@ -1075,11 +757,11 @@
            ,@(if (base->-rest ctc)
                  (list '#:rest (contract-name (base->-rest ctc)))
                  (list))
-           ,@(if (base->-pre ctc)
+           ,@(if (base->-pre? ctc)
                  (list '#:pre '...)
                  (list))
            ,rng-sexp
-           ,@(if (base->-post ctc)
+           ,@(if (base->-post? ctc)
                  (list '#:post '...)
                  (list)))]))
 
@@ -1099,16 +781,29 @@
        #t))
 
 (define (make-property build-X-property chaperone-or-impersonate-procedure)
-  (define proj (mk-val-first-proj chaperone-or-impersonate-procedure))
+  (define proj 
+    (λ (->stct)
+      (->-proj chaperone-or-impersonate-procedure ->stct
+               (base->-min-arity ->stct)
+               (base->-doms ->stct)
+               (base->-kwd-infos ->stct)
+               (base->-rest ->stct)
+               (base->-pre? ->stct)
+               (base->-rngs ->stct)
+               (base->-post? ->stct)
+               (base->-plus-one-arity-function ->stct)
+               (base->-chaperone-constructor ->stct))))
   (parameterize ([skip-projection-wrapper? #t])
     (build-X-property
      #:name base->-name 
      #:first-order ->-first-order
      #:projection
      (λ (this)
+       (define cthis (proj this))
        (λ (blame)
+         (define cblame (cthis blame))
          (λ (val)
-           ((((proj this) blame) val) #f))))
+           ((cblame val) #f))))
      #:stronger
      (λ (this that) 
        (and (base->? that)
@@ -1128,10 +823,10 @@
                 (and (base->-rngs that)
                      (andmap contract-stronger? (base->-rngs this) (base->-rngs that)))
                 (not (base->-rngs that)))
-            (not (base->-pre this))
-            (not (base->-pre that))
-            (not (base->-post this))
-            (not (base->-post that))))
+            (not (base->-pre? this))
+            (not (base->-pre? that))
+            (not (base->-post? this))
+            (not (base->-post? that))))
      #:generate ->-generate
      #:exercise ->-exercise
      #:val-first-projection proj)))
