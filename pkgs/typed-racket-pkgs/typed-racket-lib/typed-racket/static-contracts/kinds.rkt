@@ -1,5 +1,10 @@
 #lang racket/base
 
+;; Functions for the different kinds of contracts, which are represented by the symbols:
+;; 'flat, 'chaperone, and 'impersonator
+;;
+;; There is an ordering with 'flat < 'chaperone < 'impersonator.
+
 (require racket/match racket/contract)
 
 (provide
@@ -23,6 +28,7 @@
     [('impersonator (or 'flat 'chaperone)) #f]
     [('impersonator 'impersonator) #t]))
 
+;; Computes the maximum over the supplied kinds.
 (define combine-kinds
   (case-lambda
     ((v) v)

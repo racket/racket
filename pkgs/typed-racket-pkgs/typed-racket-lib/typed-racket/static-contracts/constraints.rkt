@@ -1,5 +1,40 @@
 #lang racket/base
 
+;; Manages the restrictions on what kind of contract is viable.
+;; Some combinators cannot support arbitrary contracts. Ex: hash/c needs a flat contract on the key.
+;; This module provides the functions for manipulating a set of such constraints.
+;;
+;; Constructors:
+;;   simple-contract-restrict: kind? -> contract-restrict?
+;;     This means that the generated contract will be contract of the supplied kind.
+;;
+;;   variable-contract-restrict: identifier? -> contract-restrict?
+;;     This means that the generated contract will be of the same kind as the recursive contract
+;;     referenced by the variable.
+;;
+;;   merge-restricts: kind? contract-restrict? ... -> contract-restrict?
+;;   merge-restricts*: kind? (listof contracct-restrict?) -> contract-restrict?
+;;     This means that the generated contract will be the max of kind and all of the other contract
+;;     restricts.
+;;
+;;   add-constraint: contract-restrict? kind? -> contract-restrict
+;;     This means the kind of the generated contract can not be greater than the supplied kind.
+;;
+;;   close-loop: (lisotf identifier?) (listof contract-restrict?) contract-restrict? -> contract-restrict?
+;;     This takes a bunch of recursive contract identifiers, their corresponding contract-restricts,
+;;     the contract restrict for a body and constructs the appropriate constract restrict.
+;;
+;; Other:
+;;   validate-constraints: contract-restrict? -> void?
+;;     This takes a contract-restrict and raises an exception if it has any violated constraints.
+;;
+;;   contract-restrict-recursive-values: contract-restrict? -> (dict/c identifier? kind?)
+;;     Provides the kinds of all of the internal recursive contracts that are a part of the
+;;     contract-restrict.
+;;
+;;
+;;
+
 (require
   racket/match
   racket/list

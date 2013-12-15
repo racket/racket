@@ -3,7 +3,7 @@ Static Contracts:
 
 Purpose:
 Static contracts are a data structure that correspond to a regular contract.
-The twe differences are that a static contract corresponds to a contract at a lower phase,
+The two differences are that a static contract corresponds to a contract at a lower phase,
 and that they are designed to support introspection and manipulation.
 
 Operations:

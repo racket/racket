@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Static contracts for control contracts.
+;; Currently only supports prompt tags.
+
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
          unstable/contract

@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Static contract for struct/c.
+
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
          unstable/contract

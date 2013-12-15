@@ -1,11 +1,16 @@
 #lang racket/base
 
+;; Functionalityt otoptimize a static contract to provide faster checking.
+;; Also supports droping one side's obligations.
+
 (require "combinators.rkt"
          "structures.rkt"
          racket/set
          racket/list
          (except-in racket/contract recursive-contract)
          racket/match)
+
+
 
 (provide 
   (contract-out
@@ -51,6 +56,9 @@
     [(contravariant) (invert-variance var2)]
     [(invariant) 'invariant]))
 
+;; If the variance is 'covariant, drops the parts ensuring that server behaves
+;; If the variance is 'contrvariant, drops the parts ensuring that client behaves
+;; If the variance is 'invariant, only optimizes the contract.
 (define (optimize sc variance)
   (define (single-step sc variance)
     (define ((maybe/co reduce) sc)

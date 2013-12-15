@@ -1,4 +1,8 @@
 #lang racket/base
+
+;; Static contracts for structural contracts.
+;; Ex: list/sc, vectorof/sc
+
 (require "../structures.rkt"
          "../constraints.rkt"
          racket/list racket/match

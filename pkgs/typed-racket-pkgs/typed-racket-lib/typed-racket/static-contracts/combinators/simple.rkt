@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Static contracts that are terminal and have no sub parts.
+;; Ex: (flat/sc #'number?)
+
 (require
   "../kinds.rkt"
   "../structures.rkt"

@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Provides functionality to take a static contract and turn it into a regular contract.
+
 (require
   racket/function
   racket/match
@@ -16,12 +18,14 @@
   (c:contract-out
     [instantiate ((static-contract? (c:-> c:none/c)) (contract-kind?) . c:->* . syntax?)]))
 
+;; Providing these so that tests can work directly with them.
 (module* internals #f
   (provide compute-constraints
            compute-recursive-kinds
            instantiate/inner))
 
-
+;; kind is the greatest kind of contract that is supported, if a greater kind would be produced the
+;; fail procedure is called.
 (define (instantiate sc fail [kind 'impersonator])
   (with-handlers [(exn:fail:constraint-failure? (lambda (exn) (fail)))]
     (instantiate/inner sc

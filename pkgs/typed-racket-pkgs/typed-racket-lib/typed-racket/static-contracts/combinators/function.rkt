@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Static contract for ->.
+;; Supports the whole range of possible options that -> does.
 
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
@@ -119,7 +121,7 @@
           (map (lambda (arg) (f arg 'covariant))
                range-args)
           empty)))
-        
+
 
   (function-combinator new-args indices mand-kws opt-kws))
 

@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Internal structures for representing a static contract.
+
 (require racket/match racket/list racket/generic 
          (except-in racket/contract recursive-contract)
          "kinds.rkt" "constraints.rkt")
@@ -85,16 +87,33 @@
           v))
       v)))
 
+;; Functionality that all static contracts should support
 (define-generics sc
+  ;; sc-map: static-contract? (static-contract? variance/c -> static-contract?) -> static-contract?
+  ;; Takes a static contract and returns a similar one.
+  ;; Each sub part should be replaced with the value of calling the supplied function on it. The
+  ;; variance argument should be how the sub part relates to the static contract.
   [sc-map sc f]
+  ;; sc->contract: static-contract? (static-contract? -> contract?) -> contract?
+  ;; Takes a static contract and returns the corresponding contract.
+  ;; The function argument should be used for sub parts of the static contract.
   [sc->contract sc f]
+  ;; sc->constraints: static-contract? (static-contract? -> constraint-set?) -> constraint-set?
+  ;; Takes a static contract and computes the constraint set for a static contract.
+  ;; The function argument should be used for sub parts of the static contract.
   [sc->constraints sc f])
 
-
+;; Super struct of static contracts
 (struct static-contract ()
         #:transparent
         #:property prop:custom-print-quotable 'never)
 
+;; Represents a recursive contract.
+;; In each value and the body, each name is bound to a the corresponding value contract.
+;; - names : (listof identifier?)
+;; - values : (listof static-contract?)
+;; - body : static-contract?
+;; names and value must have the same length.
 (struct recursive-contract static-contract (names values body)
         #:transparent
         #:methods gen:sc
@@ -104,6 +123,8 @@
                 (recursive-contract names (map (λ (v) (f v 'covariant)) values) (f body 'covariant))]))]
         #:methods gen:custom-write [(define write-proc recursive-contract-write-proc)])
 
+;; A use of a contract bound by recursive-contract
+;; - name : identifier?
 (struct recursive-contract-use static-contract (name)
         #:transparent
         #:methods gen:sc
@@ -112,6 +133,9 @@
            (define (sc->constraints v f) (variable-contract-restrict (recursive-contract-use-name v)))]
         #:methods gen:custom-write [(define write-proc recursive-contract-use-write-proc)])
 
+;; Super struct of static contract combinators.
+;; Provides printing functionality.
+;; - args : (listof static-contract?)
 (struct combinator static-contract (args)
         #:transparent
         #:property prop:combinator-name "combinator/sc"

@@ -1,4 +1,9 @@
 #lang racket/base
+
+;; Static contracts for common data types.
+;; These are used during optimizations as simplifications.
+;; Ex: (listof/sc any/sc) => list?/sc
+
 (require "simple.rkt"
          (for-template racket/base racket/set racket/promise))
 (provide (all-defined-out))
