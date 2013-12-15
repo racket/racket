@@ -928,6 +928,7 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
 
   scheme_prepare_label_env(env);
   menv->label_env = env->label_env;
+  menv->label_env->module_pre_registry = menv->module_pre_registry;
   menv->instance_env = env;
 
   if (new_exp_module_tree) {
