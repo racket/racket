@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Static contract for case->.
+;; Like case-> doesn't support keyword arguments.
+
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
          unstable/contract

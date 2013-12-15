@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Static contracts for class constructs.
+;; Currently supports object/c and class/c.
+
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
          unstable/contract

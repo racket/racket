@@ -1,5 +1,9 @@
 #lang racket/base
 
+;; Static contract for any/c.
+;; Allows optimizations as many combinators can be simplified if their arguments are any/sc
+;; Ex: (listof/sc any/sc) => list?/sc
+
 (require "../structures.rkt" "../constraints.rkt"
          racket/match
          (except-in racket/contract recursive-contract)
