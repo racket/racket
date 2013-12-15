@@ -50,7 +50,7 @@
   (provide
     :type-impl :print-type-impl :query-type/args-impl :query-type/result-impl)
 
-  (define (:type-impl stx init)
+  (define (:type-impl stx)
     (syntax-parse stx
       [(_ (~optional (~and #:verbose verbose-kw)) ty:expr)
        (parameterize ([current-print-type-fuel
@@ -61,7 +61,6 @@
                       [current-type-names
                        (if (attribute verbose-kw) '() (current-type-names))]
                       [current-print-unexpanded (box '())])
-         (init)
          (define type (format "~a" (parse-type #'ty)))
          (define unexpanded
            (remove-duplicates (unbox (current-print-unexpanded))))
@@ -75,10 +74,10 @@
 
   ;; TODO what should be done with stx
   ;; Prints the _entire_ type. May be quite large.
-  (define (:print-type-impl stx init)
+  (define (:print-type-impl stx)
     (syntax-parse stx
       [(_ e)
-       (tc-setup stx #'e 'top-level init tc-toplevel-form
+       (tc-setup stx #'e 'top-level tc-toplevel-form
                  (lambda (expanded before type)
                    #`(display
                       #,(parameterize ([print-multi-line-case-> #t])
@@ -90,7 +89,7 @@
        (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))
 
   ;; given a function and input types, display the result type
-  (define (:query-type/args-impl stx init)
+  (define (:query-type/args-impl stx)
     (syntax-parse stx
       [(_ op arg-type ...)
        (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
@@ -99,7 +98,7 @@
                     #`(lambda #,(stx-map type-label-property
                                          #'(dummy-arg ...) #'(arg-type ...))
                         (op dummy-arg ...))
-                    'top-level init tc-toplevel-form
+                    'top-level tc-toplevel-form
                     (lambda (expanded before type)
                       #`(display
                          #,(format "~a\n"
@@ -109,12 +108,11 @@
        (raise-syntax-error #f "must be applied to at least one argument" #'form)]))
 
   ;; given a function and a desired return type, fill in the blanks
-  (define (:query-type/result-impl stx init)
+  (define (:query-type/result-impl stx)
     (syntax-parse stx
       [(_ op desired-type)
-       (init)
        (let ([expected (parse-type #'desired-type)])
-         (tc-setup stx #'op 'top-level init tc-toplevel-form
+         (tc-setup stx #'op 'top-level tc-toplevel-form
                    (lambda (expanded before type)
                      (match type
                        [(tc-result1: (and t (Function: _)) f o)
