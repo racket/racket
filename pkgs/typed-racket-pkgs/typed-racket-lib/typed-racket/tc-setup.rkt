@@ -5,11 +5,15 @@
          racket/pretty racket/promise racket/lazy-require
          (env type-name-env type-alias-env mvar-env)
          (utils tc-utils disarm mutated-vars)
+         "standard-inits.rkt"
          (for-syntax racket/base)
          (for-template racket/base))
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
+(lazy-require [typed-racket/typecheck/tc-toplevel (tc-toplevel-form tc-module)])
 
-(provide tc-setup invis-kw maybe-optimize init-current-type-names)
+(provide invis-kw maybe-optimize init-current-type-names
+         tc-module/full
+         tc-toplevel/full)
 
 (define-syntax-class invis-kw
   #:literals (define-values define-syntaxes #%require
@@ -36,15 +40,9 @@
     (type-alias-env-map (lambda (id ty)
                           (cons (syntax-e id) ty))))))
 
-(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker pre-result post-result . body)
-  (tc-setup/proc orig-stx stx expand-ctxt init checker
-                 (λ (fully-expanded-stx pre-result post-result) 
-                   . 
-                   body)))
-
 (define-logger online-check-syntax)
 
-(define (tc-setup/proc orig-stx stx expand-ctxt init checker f)
+(define (tc-setup orig-stx stx expand-ctxt checker k)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
   (with-handlers
@@ -70,12 +68,21 @@
                        'info
                        "TR's expanded syntax objects; this message is ignored"
                        (cdr exprs))))
-      (init)
+      ;; We do standard inits here because it is costly (~250 msec), and we want
+      ;; expansion errors to happen with out paying that cost
+      (do-standard-inits)
       (do-time "Initialized Envs")
       (find-mutated-vars fully-expanded-stx mvar-env)
       (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
                      [expanded-module-stx fully-expanded-stx])
         (do-time "Starting `checker'")
-        (define-values (pre-result post-result) (checker fully-expanded-stx))
-        (do-time "Typechecking Done")
-        (f fully-expanded-stx pre-result post-result)))))
+        (call-with-values (λ () (checker fully-expanded-stx))
+          (λ results
+            (do-time "Typechecking Done")
+            (apply k fully-expanded-stx results)))))))
+
+(define (tc-toplevel/full orig-stx stx k)
+  (tc-setup orig-stx stx 'top-level tc-toplevel-form k))
+
+(define (tc-module/full orig-stx stx k)
+  (tc-setup orig-stx stx 'module-begin tc-module k))
