@@ -11,11 +11,12 @@
          (rep type-rep)
          (for-template (base-env top-interaction))
          (utils utils tc-utils arm)
+         "standard-inits.rkt"
          "tc-setup.rkt")
 
 (provide mb-core ti-core wt-core)
 
-(define (mb-core stx init)
+(define (mb-core stx)
   (syntax-parse stx
     [(mb (~optional (~or (~and #:optimize    (~bind [opt? #'#t])) ; kept for backward compatibility
                          (~and #:no-optimize (~bind [opt? #'#f]))))
@@ -24,7 +25,7 @@
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
          (tc-setup
-          stx pmb-form 'module-begin init tc-module
+          stx pmb-form 'module-begin tc-module
           (λ (new-mod before-code after-code)
             (with-syntax*
              (;; pmb = #%plain-module-begin
@@ -47,18 +48,21 @@
 
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
-(define (ti-core stx init)
+(define (ti-core stx )
   (current-type-names (init-current-type-names))
   (syntax-parse stx
     #:literal-sets (kernel-literals)
     [(_ . (module . rest))
      #'(module . rest)]
     [(_ . (~and form ((~var command (static interactive-command? #f)) . _)))
-     ((interactive-command-procedure (attribute command.value)) #'form init)]
+     (do-standard-inits)
+     ((interactive-command-procedure (attribute command.value)) #'form)]
     [(_ . form)
-     (init)
+     ;; TODO(endobson): Remove the call to do-standard-inits when it is no longer necessary
+     ;; Cast at the top-level still needs this for some reason
+     (do-standard-inits)
      (tc-setup
-      stx #'form 'top-level void tc-toplevel-form
+      stx #'form 'top-level tc-toplevel-form
       (λ (body2 before type)
         (with-syntax*
          ([(optimized-body . _) (maybe-optimize #`(#,body2))])

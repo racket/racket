@@ -19,7 +19,7 @@
                      (utils tc-utils) (typecheck typechecker))
          typed-racket/base-env/prims
          typed-racket/base-env/base-types
-         (only-in typed-racket/typed-racket do-standard-inits))
+         (for-syntax typed-racket/standard-inits))
 
 (begin-for-syntax (do-standard-inits))
 

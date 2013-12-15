@@ -25,7 +25,7 @@
     (define-syntax (name stx)
       (do-time (format "Calling ~a driver" 'name))      
       (do-time (format "Loaded core ~a" 'sym))
-      (begin0 (sym stx do-standard-inits)
+      (begin0 (sym stx)
               (do-time "Finished, returning to Racket")))
     ...))
 

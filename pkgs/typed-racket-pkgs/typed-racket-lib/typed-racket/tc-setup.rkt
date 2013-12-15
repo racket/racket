@@ -5,6 +5,7 @@
          racket/pretty racket/promise racket/lazy-require
          (env type-name-env type-alias-env mvar-env)
          (utils tc-utils disarm mutated-vars)
+         "standard-inits.rkt"
          (for-syntax racket/base)
          (for-template racket/base))
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
@@ -38,7 +39,7 @@
 
 (define-logger online-check-syntax)
 
-(define (tc-setup orig-stx stx expand-ctxt init checker f)
+(define (tc-setup orig-stx stx expand-ctxt checker f)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
   (with-handlers
@@ -64,7 +65,9 @@
                        'info
                        "TR's expanded syntax objects; this message is ignored"
                        (cdr exprs))))
-      (init)
+      ;; We do standard inits here because it is costly (~250 msec), and we want
+      ;; expansion errors to happen with out paying that cost
+      (do-standard-inits)
       (do-time "Initialized Envs")
       (find-mutated-vars fully-expanded-stx mvar-env)
       (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
