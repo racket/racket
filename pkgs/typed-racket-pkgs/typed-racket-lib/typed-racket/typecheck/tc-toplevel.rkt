@@ -21,7 +21,6 @@
           (env env-req)))
 
 (provide/cond-contract
- [type-check (syntax? . c:-> . (values syntax? syntax?))]
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
  [tc-toplevel-form (syntax? . c:-> . (values #f c:any/c))])
 
