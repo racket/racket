@@ -3,8 +3,9 @@
 (require
   (for-syntax racket/base racket/lazy-require syntax/parse))
 
-(begin-for-syntax 
-  (lazy-require ['implementantion (:type-impl :print-type-impl :query-type/args-impl :query-type/result-impl)]))
+(begin-for-syntax
+  (lazy-require [(submod "." implementation)
+                 (:type-impl :print-type-impl :query-type/args-impl :query-type/result-impl)]))
 
 (provide
   (for-syntax
@@ -44,7 +45,8 @@
     (types utils abbrev printer)
     (typecheck tc-toplevel tc-app-helper)
     (rep type-rep)
-    (utils tc-utils))
+    (utils tc-utils)
+    (for-template racket/base))
   (provide
     :type-impl :print-type-impl :query-type/args-impl :query-type/result-impl)
 
