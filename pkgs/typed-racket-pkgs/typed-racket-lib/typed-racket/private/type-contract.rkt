@@ -89,7 +89,7 @@
                  cnt
                  #,(contract-kind->keyword kind)))))))]
     [_ (int-err "should never happen - not a define-values: ~a"
-		(syntax->datum stx))]))
+                (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
   (for/list ((e (in-syntax forms)))
@@ -237,16 +237,16 @@
                               (map t->c rngs)
                               (and rst (t->c/neg rst))))]
                    ;; functions with filters or objects
-                   [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
+                   [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
                     (if (not (from-untyped? typed-side))
-                        (values (map t->c/neg dom)
-                                null
-                                (map t->c rngs)
-                                (and rst (t->c/neg rst)))
+                        (let-values ([(mand-kws opt-kws) (partition-kws kws)])
+                          (values (append (map t->c/neg dom) (append-map conv mand-kws))
+                                  (append-map conv opt-kws)
+                                  (map t->c rngs)
+                                  (and rst (t->c/neg rst))))
                         (exit (fail #:reason
                                     (~a "cannot generate contract for function type"
-                                        " with filters or objects."))))]
-                   [_ (exit (fail))]))
+                                        " with filters or objects."))))]))
                (with-syntax*
                 ([(dom* ...)     (process-dom dom*)]
                  [(opt-dom* ...) opt-dom*]
@@ -255,7 +255,9 @@
                  [(rst-spec ...) (if rst #'(#:rest (listof rst*)) #'())])
                 ;; Garr, I hate case->!
                 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
-                    (exit (fail))
+                    (exit (fail #:reason
+                                (~a "cannot generate contract for case function type"
+                                    " with optional keyword arguments")))
                     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
                         (if case->
                             #'(dom* ... rst-spec ... . -> . rng*)
@@ -483,16 +485,15 @@
          #`(syntax/c #,(t->c t #:kind flat-sym))]
         [(Value: v) #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))]
         ;; TODO Is this sound?
-	[(Param: in out)
-	 (set-impersonator!)
-	 #`(parameter/c #,(t->c in) #,(t->c out))]
+        [(Param: in out)
+         (set-impersonator!)
+         #`(parameter/c #,(t->c in) #,(t->c out))]
         [(Hashtable: k v)
-         (when (equal? kind flat-sym) (exit (fail)))
+         (when (equal? kind flat-sym)
+           (exit (fail #:reason (~a "expected a first-order contract, but got a hashtable."))))
          #`(hash/c #,(t->c k #:kind chaperone-sym) #,(t->c v) #:immutable 'dont-care)]
         [(Channel: t)
          (set-chaperone!)
          #`(channel/c #,(t->c/both t))]
         [else
          (exit (fail #:reason "contract generation not supported for this type"))]))))
-
-
