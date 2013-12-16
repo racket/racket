@@ -2770,7 +2770,7 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
     Scheme_Object *first, *val;
 
     first = SCHEME_STX_CAR(forms);
-    first = scheme_check_immediate_macro(first, env, rec, drec, 1, &val, NULL, NULL);
+    first = scheme_check_immediate_macro(first, env, rec, drec, 1, &val, NULL, NULL, 0);
 
     if (SAME_OBJ(val, scheme_begin_syntax) && SCHEME_STX_PAIRP(first)) {      
       /* Flatten begin: */
@@ -4270,7 +4270,8 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    int internel_def_pos,
 					    Scheme_Object **current_val,
 					    Scheme_Comp_Env **_xenv,
-					    Scheme_Object *ctx)
+					    Scheme_Object *ctx,
+                                            int keep_name)
 {
   Scheme_Object *name, *val;
   Scheme_Comp_Env *xenv = (_xenv ? *_xenv : NULL);
@@ -4337,7 +4338,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
           {
             scheme_init_expand_recs(rec, drec, &erec1, 1);
             erec1.depth = 1;
-            erec1.value_name = rec[drec].value_name;
+            erec1.value_name = (keep_name ? rec[drec].value_name : scheme_false);
             first = scheme_expand_expr(first, xenv, &erec1, 0);
           }
           break; /* break to outer loop */
@@ -4933,16 +4934,11 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
       /* naya will be prefixed and returned... */
     }
   } else if (rec[drec].comp) {
-    Scheme_Object *name, *origname, *gval, *orig_rest_form, *rest_form, *vname;
+    Scheme_Object *name, *origname, *gval, *orig_rest_form, *rest_form;
     name = SCHEME_STX_CAR(form);
     origname = name;
     
-    vname = rec[drec].value_name;
-    rec[drec].value_name = scheme_false;
-    
-    name = scheme_check_immediate_macro(name, env, rec, drec, 0, &gval, NULL, NULL);
-
-    rec[drec].value_name = vname;
+    name = scheme_check_immediate_macro(name, env, rec, drec, 0, &gval, NULL, NULL, 0);
 
     /* look for ((lambda (x ...) ....) ....) or ((lambda x ....) ....) */
     if (SAME_OBJ(gval, scheme_lambda_syntax)) {
@@ -5054,13 +5050,13 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
             if (scheme_stx_module_eq(name, cwv_stx, 0)) {
               Scheme_Object *first, *orig_first;
               orig_first = SCHEME_STX_CAR(at_first);
-              first = scheme_check_immediate_macro(orig_first, env, rec, drec, 0, &gval, NULL, NULL);
+              first = scheme_check_immediate_macro(orig_first, env, rec, drec, 0, &gval, NULL, NULL, 0);
               if (SAME_OBJ(gval, scheme_lambda_syntax) 
                   && SCHEME_STX_PAIRP(first)
                   && (arg_count(first, env) == 0)) {
                 Scheme_Object *second, *orig_second;
                 orig_second = SCHEME_STX_CAR(at_second);
-                second = scheme_check_immediate_macro(orig_second, env, rec, drec, 0, &gval, NULL, NULL);
+                second = scheme_check_immediate_macro(orig_second, env, rec, drec, 0, &gval, NULL, NULL, 0);
                 if (SAME_OBJ(gval, scheme_lambda_syntax) 
                     && SCHEME_STX_PAIRP(second)
                     && (arg_count(second, env) >= 0)) {
@@ -5577,13 +5573,15 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
   {
     Scheme_Object *gval, *result;
-    int more = 1;
+    int more = 1, is_last;
+
+    is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(forms));
 
     result = forms;
 
     /* Check for macro expansion, which could mask the real
        define-values, define-syntax, etc.: */
-    first = scheme_check_immediate_macro(first, env, rec, drec, 1, &gval, &xenv, ectx);
+    first = scheme_check_immediate_macro(first, env, rec, drec, 1, &gval, &xenv, ectx, is_last);
     
     if (SAME_OBJ(gval, scheme_begin_syntax)) {
       /* Inline content */
@@ -5808,7 +5806,8 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
             SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
             SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
           }
-	  first = scheme_check_immediate_macro(first, env, rec, drec, 1, &gval, &xenv, ectx);
+          is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(result));
+	  first = scheme_check_immediate_macro(first, env, rec, drec, 1, &gval, &xenv, ectx, is_last);
 	  more = 1;
 	  if (NOT_SAME_OBJ(gval, scheme_define_values_syntax)
 	      && NOT_SAME_OBJ(gval, scheme_define_syntaxes_syntax)) {

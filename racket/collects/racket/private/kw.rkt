@@ -918,7 +918,7 @@
                                  (loop (cddr l)))])]
                        [else
                         (cons (car l) (loop (cdr l)))])))])
-            (let ([ids (cons (or (syntax-local-infer-name stx)
+            (let ([ids (cons (or (syntax-local-infer-name stx #f)
                                  'procedure)
                              (generate-temporaries exprs))])
               (let loop ([l (cdr l)]

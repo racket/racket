@@ -7363,7 +7363,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (!check_mb) {
 
-    fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL, NULL);
+    fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL, NULL, 1);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {

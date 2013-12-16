@@ -107,5 +107,28 @@
 
 (err/rt-test (let ([unmentionable ((lambda (x #:a a) 1) 1 2)]) 5)
              (lambda (exn) (not (regexp-match? #rx"unmentionable" (exn-message exn)))))
+(err/rt-test (let ([unmentionable ((lambda (x #:a a) 1) #:q 1 2)]) 5)
+             (lambda (exn) (not (regexp-match? #rx"unmentionable" (exn-message exn)))))
+
+
+(err/rt-test (let ([mentionable (let ()
+                                  (define v 1)
+                                  (lambda (x #:a a) v))])
+               (mentionable 1 2))
+             (lambda (exn) (regexp-match? #rx"mentionable" (exn-message exn))))
+(err/rt-test (let ([mentionable (let ()
+                                  (define v 1)
+                                  (lambda (x #:a a) v))])
+               (mentionable #:q 1 2))
+             (lambda (exn) (regexp-match? #rx"mentionable" (exn-message exn))))
+
+(syntax-test #'(let-syntax ([fail (lambda (stx)
+                                    (raise-syntax-error 'fail 
+                                                        (format "~s" (syntax-local-name))))])
+                 (let ([unmentionable (let ()
+                                        (fail)
+                                        10)])
+                   5))
+             #rx"^(?!.*unmentionable)")
 
 (report-errs)

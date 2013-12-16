@@ -2707,7 +2707,8 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    int int_def_pos,
 					    Scheme_Object **current_val,
 					    Scheme_Comp_Env **_xenv,
-					    Scheme_Object *ctx);
+					    Scheme_Object *ctx,
+                                            int keep_name);
 
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Object *f, Scheme_Object *code,

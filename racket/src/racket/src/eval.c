@@ -3980,9 +3980,10 @@ static void *compile_k(void)
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
                                     scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false);
-	form = scheme_check_immediate_macro(form, 
+	form = scheme_check_immediate_macro(form,
 					    cenv, &rec, 0,
-					    0, &gval, NULL, NULL);
+					    0, &gval, NULL, NULL,
+                                            1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	  if (scheme_stx_proper_list_length(form) > 1){
 	    form = SCHEME_STX_CDR(form);
@@ -4467,7 +4468,7 @@ static void *expand_k(void)
 
     if (just_to_top) {
       Scheme_Object *gval;
-      obj = scheme_check_immediate_macro(obj, env, &erec1, 0, 0, &gval, NULL, NULL);
+      obj = scheme_check_immediate_macro(obj, env, &erec1, 0, 0, &gval, NULL, NULL, 1);
     } else
       obj = scheme_expand_expr(obj, env, &erec1, 0);
 
@@ -5036,7 +5037,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       drec[0].comp_flags = comp_flags;
     }
 
-    xl = scheme_check_immediate_macro(l, env, drec, 0, 0, &gval, NULL, NULL);
+    xl = scheme_check_immediate_macro(l, env, drec, 0, 0, &gval, NULL, NULL, 1);
 
     if (SAME_OBJ(xl, l) && !for_expr) {
       SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, xl);
