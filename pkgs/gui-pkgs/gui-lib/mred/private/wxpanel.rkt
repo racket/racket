@@ -830,8 +830,8 @@
       (inherit gets-focus?)
       (super-new)
       (define/override (tabbing-position x y w h)
-        ;; claim that the panel is short:
-        (list this x y w 16))
+        ;; claim that the panel is short and starts above its client area:
+        (list this x (- y 16) w 16))
       (define/override (focus-on-self?) (gets-focus?))))
 
   (define wx-panel% (wx-make-panel% wx:panel%))

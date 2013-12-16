@@ -196,7 +196,7 @@
 						(< (caar s) (cdr best)))))
 				   (loop (cdr s) (car s))]
 				  [else (loop (cdr s) best)])))]
-		[find (lambda (get-x get-w get-y get-h use-x? x w use-y? y h dests fail)
+		[find (lambda (v? get-x get-w get-y get-h use-x? x w use-y? y h dests fail)
 			;; find's variable names correspond to an h-stripe view, but everything is
 			;;  flipped to v-stripes if the args are flipped
 			(let ([h-stripes (mk-stripes get-y get-h 
@@ -223,7 +223,13 @@
 				  (next)
 				  
 				  ;; Non-empty h-stripe; now look for items in the same or later v-stripe
-				  (if (null? (cdr in-init-h-stripe))
+				  (if (or (null? (cdr in-init-h-stripe))
+                                          ;; If we're already in "v-stripe" mode, then flipping back
+                                          ;; to h-stripe mode is going to loop forever, so treat the
+                                          ;; current strip as having only one item. (This should
+                                          ;; happen only if the start positions overlap with the
+                                          ;; destination positions.)
+                                          v?)
 				      
 				      ;; one item in the stripe; take it unless we're using x and it's
 				      ;;  before x:
@@ -235,12 +241,12 @@
 					  (next))
 				      
 				      ;; Recur to work with v-stripes
-				      (find get-y get-h get-x get-w use-y? y h use-x? x w in-init-h-stripe next)))))))])
+				      (find #t get-y get-h get-x get-w use-y? y h use-x? x w in-init-h-stripe next)))))))])
 	 (if (null? dests)
 	     #f
-	     (car (find get-x get-w get-y get-h #t x w #t y h dests
+	     (car (find #f get-x get-w get-y get-h #t x w #t y h dests
 			(lambda ()
-			  (find get-x get-w get-y get-h 
+			  (find #f get-x get-w get-y get-h 
 				#f fail-start fail-start 
 				#f fail-start fail-start 
 				dests void))))))]
