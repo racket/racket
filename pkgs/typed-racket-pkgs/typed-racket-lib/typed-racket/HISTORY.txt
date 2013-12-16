@@ -1,3 +1,12 @@
+6.0
+- Support for `define-type', `struct:', `make-predicate', etc. at the REPL
+- Performance work: optimized subtyping
+- Make `struct:' have the correct bindings in struct info
+- Use pairs for objects on arrow types
+- Split off `recover-source-syntax' into a separate package and generalized it
+- Lots of doc improvements
+- Lots of error message improvements
+- Split into multiple packages
 5.3.4
 - Moved Optimization Coach to the package system
 - Multiple fixes to polydots
