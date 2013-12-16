@@ -11,7 +11,7 @@
                #:planet-specs [planet-specs #f]
                #:collections [collections #f]
                #:make-docs? [make-docs? #t]
-               #:make-doc-index? [make-doc-index? #t]
+               #:make-doc-index? [make-doc-index? #f]
                #:make-user? [make-user? #t]
                #:clean? [clean? #f]
                #:tidy? [tidy? #f]
