@@ -462,6 +462,9 @@ please adhere to these guidelines:
  (install-plt-file-tab "File")
  (install-plt-filename "Filename:")
  (install-plt-url "URL:")
+ ; an error message from a primitive operation is appended to the end of this message.
+ (install-plt-error-downloading "There was an error when downloading the"
+                                " .plt file.\n\nDetails:\n")
  (install-plt-error-header "There was an error when checking the validity of the downloaded .plt file. Please check the url and try again.")
  
  ;; install plt file when opened in drscheme strings

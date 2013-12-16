@@ -225,7 +225,7 @@
                       '())))))
       
       (define/override (on-subwindow-char receiver event)
-        (define user-key? (send (keymap:get-user) 
+        (define user-key? (send (keymap:get-user)
                                 handle-key-event
                                 (if (is-a? receiver editor-canvas%)
                                     (send receiver get-editor)
@@ -536,86 +536,97 @@
   ;; install-plt-from-url : string (union #f dialog%) -> void
   ;; downloads and installs a .plt file from the given url
   (define (install-plt-from-url s-url parent)
-    (define-values (port size)
-      (let-values ([(port header)
-                    (get-pure-port/headers (string->url s-url)
-                                           #:redirections 5)])
-        (define size
-          (let* ([content-header (extract-field "content-length" header)]
-                 [m (and content-header
-                         (regexp-match "[0-9]+" content-header))])
-            (and m (string->number (car m)))))
-        (values port size)))
-    (let* ([tmp-filename (make-temporary-file "tmp~a.plt")]
-           [header (purify-port port)]
-           [d (make-object dialog% (string-constant downloading) parent)] 
-           [message (make-object message% (string-constant downloading-file...) d)] 
-           [gauge (if size 
-                      (make-object gauge% #f 100 d) 
-                      #f)] 
-           [exn #f] 
-           ; Semaphores to avoid race conditions: 
-           [wait-to-start (make-semaphore 0)] 
-           [wait-to-break (make-semaphore 0)] 
-           ; Thread to perform the download: 
-           [t (thread 
-               (λ () 
-                 (semaphore-wait wait-to-start) 
-                 (with-handlers ([exn:fail?
-                                  (λ (x) 
-                                    (set! exn x))] 
-                                 [exn:break? ; throw away break exceptions 
-                                  void])
-                   (semaphore-post wait-to-break) 
-                   (with-output-to-file tmp-filename 
-                     (λ () 
-                       (let loop ([total 0]) 
-                         (when gauge 
-                           (send gauge set-value  
-                                 (inexact->exact 
-                                  (floor (* 100 (/ total size)))))) 
-                         (let ([s (read-string 1024 port)]) 
-                           (unless (eof-object? s) 
-                             (unless (eof-object? s) 
-                               (display s) 
-                               (loop (+ total (string-length s))))))))
-                     #:mode 'binary #:exists 'truncate))
-                 (send d show #f)))]) 
-      (send d center) 
-      (make-object button% (string-constant &stop)
-        d
-        (λ (b e) 
-          (semaphore-wait wait-to-break) 
-          (set! tmp-filename #f) 
-          (send d show #f) 
-          (break-thread t))) 
-      ; Let thread run only after the dialog is shown 
-      (queue-callback (λ () (semaphore-post wait-to-start))) 
-      (send d show #t) 
-      (when exn (raise exn))
-      (define unpack-err (open-output-string))
-      (cond
-        [(with-handlers ((exn:fail? values))
-           (parameterize ([error-display-handler drracket:init:original-error-display-handler]
-                          [current-error-port unpack-err])
-             (fold-plt-archive tmp-filename void void void void void))
-           #f)
-         =>
-         (λ (exn)
-           (delete-file tmp-filename)
-           (message-box (string-constant drscheme)
-                        (string-append 
-                         (string-constant install-plt-error-header)
-                         "\n\n"
-                         (exn-message exn)
-                         "\n\n"
-                         (get-output-string unpack-err))
-                        #:dialog-mixin frame:focus-table-mixin))]
-        [else
-         (parameterize ([error-display-handler drracket:init:original-error-display-handler])
-           (run-installer tmp-filename
-                          (λ ()
-                            (delete-file tmp-filename))))])))
+    (define url (string->url s-url))
+    (define-values (port header) 
+      (with-handlers ([exn:fail? (λ (x) (values #f x))])
+        (get-pure-port/headers url #:redirections 5)))
+    (cond
+      [port
+       (define size
+         (let* ([content-header (extract-field "content-length" header)]
+                [m (and content-header
+                        (regexp-match "[0-9]+" content-header))])
+           (and m (string->number (car m)))))
+       (define tmp-filename (make-temporary-file "tmp~a.plt"))
+       (define header (purify-port port))
+       (define d (make-object dialog% (string-constant downloading) parent))
+       (define message (make-object message% (string-constant downloading-file...) d))
+       (define gauge (if size 
+                         (make-object gauge% #f 100 d) 
+                         #f))
+       (define exn #f)
+       ; Semaphores to avoid race conditions: 
+       (define wait-to-start (make-semaphore 0))
+       (define wait-to-break (make-semaphore 0))
+       ; Thread to perform the download: 
+       (define t
+         (thread 
+          (λ () 
+            (semaphore-wait wait-to-start) 
+            (with-handlers ([exn:fail?
+                             (λ (x) 
+                               (set! exn x))] 
+                            [exn:break? ; throw away break exceptions 
+                             void])
+              (semaphore-post wait-to-break) 
+              (with-output-to-file tmp-filename 
+                (λ () 
+                  (let loop ([total 0]) 
+                    (when gauge 
+                      (send gauge set-value  
+                            (inexact->exact 
+                             (floor (* 100 (/ total size)))))) 
+                    (let ([s (read-string 1024 port)]) 
+                      (unless (eof-object? s) 
+                        (unless (eof-object? s) 
+                          (display s) 
+                          (loop (+ total (string-length s))))))))
+                #:mode 'binary #:exists 'truncate))
+            (send d show #f))))
+       (send d center) 
+       (make-object button% (string-constant &stop)
+         d
+         (λ (b e) 
+           (semaphore-wait wait-to-break) 
+           (set! tmp-filename #f) 
+           (send d show #f) 
+           (break-thread t))) 
+       ; Let thread run only after the dialog is shown 
+       (queue-callback (λ () (semaphore-post wait-to-start))) 
+       (send d show #t) 
+       (when exn (raise exn))
+       (define unpack-err (open-output-string))
+       (cond
+         [(with-handlers ((exn:fail? values))
+            (parameterize ([error-display-handler drracket:init:original-error-display-handler]
+                           [current-error-port unpack-err])
+              (fold-plt-archive tmp-filename void void void void void))
+            #f)
+          =>
+          (λ (exn)
+            (delete-file tmp-filename)
+            (message-box (string-constant drscheme)
+                         (string-append 
+                          (string-constant install-plt-error-header)
+                          "\n\n"
+                          (exn-message exn)
+                          "\n\n"
+                          (get-output-string unpack-err))
+                         #:dialog-mixin frame:focus-table-mixin))]
+         [else
+          (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+            (run-installer tmp-filename
+                           (λ ()
+                             (delete-file tmp-filename))))])]
+      [else
+       (define exn header)
+       (define sp (open-output-string))
+       (parameterize ([current-error-port sp])
+         (drracket:init:original-error-display-handler (exn-message exn) exn))
+       (message-box (string-constant drracket)
+                    (string-append
+                     (string-constant install-plt-error-downloading)
+                     (get-output-string sp)))]))
   
   (define keybindings-frame%
     (class frame%
