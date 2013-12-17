@@ -230,8 +230,11 @@
 
   ;; Ensure that databases are created:
   (define (touch-db db-file)
-    (doc-db-disconnect
-     (doc-db-file->connection db-file #t)))
+    (unless (file-exists? db-file)
+      (define-values (base name dir?) (split-path db-file))
+      (make-directory* base)
+      (doc-db-disconnect
+       (doc-db-file->connection db-file #t))))
   (when (ormap can-build*? main-docs)
     (touch-db main-db))
   (when (ormap can-build*? user-docs)
