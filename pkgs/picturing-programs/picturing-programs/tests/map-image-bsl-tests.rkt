@@ -215,7 +215,7 @@
 
 (define (return-minus-5 x y) -5)
 (check-error (build3-image 17 24 x-gradient-2 y-gradient-2 return-minus-5)
-             "make-color: expects an integer between 0 and 255 as third argument, given -5")
+             "build3-image: Expected fifth argument to return integer in range 0-255")
 
 "Test cases for build4-image:"
 "(build4-image 50 50 x-gradient-2 x-gradient-2 zero-2-args y-gradient-2) should be a square, increasingly yellow from left to right and increasingly alpha from top to bottom.  On a blue background."
