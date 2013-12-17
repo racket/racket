@@ -16,17 +16,32 @@
   (contract-out
     [optimize (static-contract? (or/c 'covariant 'contravariant 'invariant ) . -> . static-contract?)]))
 
+(define (none/sc-reduce sc)
+  (match sc
+    [(listof/sc: (none/sc:)) empty-list/sc]
+    [(list/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
+    [(vectorof/sc: (none/sc:)) empty-vector/sc]
+    [(vector/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
+    [(set/sc: (none/sc:)) empty-set/sc]
+    [(box/sc: (none/sc:)) none/sc]
+    [(syntax/sc: (none/sc:)) none/sc]
+    [(promise/sc: (none/sc:)) none/sc]
+    [(hash/sc: (none/sc:) value/sc) empty-hash/sc]
+    [(hash/sc: key/sc (none/sc:)) empty-hash/sc]
+    [else sc]))
+
 
 (define (any/sc-reduce sc)
   (match sc
     [(listof/sc: (any/sc:)) list?/sc]
+    [(list/sc: (and scs (any/sc:)) ...) (list-length/sc (length scs))]
     [(vectorof/sc: (any/sc:)) vector?/sc]
+    [(vector/sc: (and scs (any/sc:)) ...) (vector-length/sc (length scs))]
     [(set/sc: (any/sc:)) set?/sc]
     [(box/sc: (any/sc:)) box?/sc]
     [(syntax/sc: (any/sc:)) syntax?/sc]
     [(promise/sc: (any/sc:)) promise?/sc]
     [(hash/sc: (any/sc:) (any/sc:)) hash?/sc]
-    [(any/sc:) sc]
     [else sc]))
 
 
@@ -38,10 +53,37 @@
      (arr/sc args rest #f)]
     [else sc]))
 
-(define (flat-reduce sc)
+(define (covariant-none/sc-reduce sc)
   (match sc
-    [(? flat/sc?)
+    [(none/sc:) any/sc]
+    [else sc]))
+
+(define (or/sc-reduce sc)
+  (match sc
+    [(or/sc:) none/sc]
+    [(or/sc: sc) sc]
+    [(or/sc: sc1 ... (any/sc:) sc2 ...)
      any/sc]
+    [(or/sc: sc1 ... (none/sc:) sc2 ...)
+     (or/sc-reduce (apply or/sc (append sc1 sc2)))]
+    [else sc]))
+
+(define (and/sc-reduce sc)
+  (match sc
+    [(and/sc:) any/sc]
+    [(and/sc: sc) sc]
+    [(and/sc: sc1 ... (none/sc:) sc2 ...)
+     none/sc]
+    [(and/sc: sc1 ... (any/sc:) sc2 ...)
+     (and/sc-reduce (apply and/sc (append sc1 sc2)))]
+    [else sc]))
+
+
+
+(define (covariant-flat-reduce sc)
+  (match sc
+    [(? flat/sc?) any/sc]
+    [(none/sc:) any/sc]
     [sc sc]))
 
 (define (invert-variance v)
@@ -67,11 +109,23 @@
         [(contravariant invariant) sc]
         [else (error 'maybe/co "Bad variance ~a" variance)]))
 
-    ((maybe/co flat-reduce) ((maybe/co covariant-any/sc-reduce) (any/sc-reduce sc))))
+    ((compose
+       (maybe/co covariant-flat-reduce)
+       (maybe/co covariant-any/sc-reduce)
+       (maybe/co covariant-none/sc-reduce)
+       and/sc-reduce
+       or/sc-reduce
+       none/sc-reduce
+       any/sc-reduce)
+     sc))
 
-  (define ((recur current-variance) sc variance)
-    (define new-variance (combine-variance current-variance variance))
-    (single-step (sc-map sc (recur new-variance)) new-variance))
-  ((recur variance) sc 'covariant))
-
-
+  (define (full-pass sc)
+    (define ((recur current-variance) sc variance)
+      (define new-variance (combine-variance current-variance variance))
+      (single-step (sc-map sc (recur new-variance)) new-variance))
+    ((recur variance) sc 'covariant))
+  (let loop ((sc sc))
+    (define new-sc (full-pass sc))
+    (if (equal? sc new-sc)
+        new-sc
+        (loop new-sc))))

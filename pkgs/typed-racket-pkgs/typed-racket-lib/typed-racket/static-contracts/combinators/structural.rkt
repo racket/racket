@@ -78,7 +78,7 @@
                #'(define-match-expander matcher-name
                    (syntax-parser
                     [(_ ctc (... ...))
-                     #'(struct-name _ (list ctc (... ...)))]))
+                     #'(struct-name (list ctc (... ...)))]))
              #:with map
                #'(lambda (v f)
                    (struct-name
@@ -103,6 +103,19 @@
                         (map recur (combinator-args v))))
                     (define (sc->constraints v recur)
                       (merge-restricts* 'kind.category-stx (sc.->restricts v recur)))]
+                #:methods gen:equal+hash
+                  [(define (equal-proc a b recur)
+                     (for/and ([sub-a (in-list (combinator-args a))]
+                               [sub-b (in-list (combinator-args b))])
+                       (recur sub-a sub-b)))
+                   (define (hash-proc v recur)
+                     (+ (recur 'sc.name)
+                        (for/sum ((sub (in-list (combinator-args v))))
+                           (recur sub))))
+                   (define (hash2-proc v recur)
+                     (+ (recur 'sc.name)
+                        (for/sum ((sub (in-list (combinator-args v))))
+                           (recur sub))))]
                  #:property prop:combinator-name (symbol->string 'sc.name))
          sc.matcher
          sc.definition
