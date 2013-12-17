@@ -10,7 +10,7 @@
  (test-suite 
   "manager"
   (test-equal? "id lookup" "matthias" (name 'mf))
-  (test-equal? "count" 4 count)
+  (test-equal? "count" 4 (get-count))
   (test-true "active?" (active? 'mf))
   (test-false "active? 2" (active? 'kk))
   (test-true "set name" (void? (set-name 'mf "matt")))))

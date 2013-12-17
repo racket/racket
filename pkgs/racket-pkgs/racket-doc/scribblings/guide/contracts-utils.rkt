@@ -2,6 +2,7 @@
 
 (require scribble/basic
          (for-syntax racket/port)
+         (for-label racket rackunit rackunit/text-ui)
          racket/include
          scribble/eval
          (except-in scribble/manual link))
@@ -30,22 +31,6 @@
 
 (define (solution)
   (bold (format "Solution to exercise ~a" exercise-number)))
-
-#;
-(define-syntax (external-file stx)
-  (syntax-case stx ()
-    [(_ filename)
-     (call-with-input-file (build-path "contracts-examples" (format "~a.rkt" (syntax-e #'filename)))
-       (λ (port)
-         (define prefix "#reader scribble/comment-reader\n[racketmod\nracket\n")
-         (define suffix "]")
-         (with-syntax ([s (parameterize ([read-accept-reader #t])
-                            (read-syntax 'contract-examples
-                                         (input-port-append #f 
-                                                            (open-input-string prefix)
-                                                            port
-                                                            (open-input-string suffix))))])
-           #'s)))]))
 
 (require (for-syntax (only-in scribble/comment-reader [read-syntax comment-reader])))
 (define-for-syntax (comment-racketmod-reader path port)

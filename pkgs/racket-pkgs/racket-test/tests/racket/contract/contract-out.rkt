@@ -938,26 +938,6 @@
       (eval '(require 'provide/contract48-m1)))
    "provide/contract48-m1")
   
-  (test/spec-passed/result
-   'provide/contract49
-   '(let ()
-      (eval '(module provide/contract49-m1 racket/base
-               (require racket/contract/base)
-               (define count 0)
-               (define (add) (set! count (+ count 1)))
-               (provide
-                add
-                (contract-out
-                 [count natural-number/c]))))
-      (eval '(module provide/contract49-m2 racket/base
-               (require 'provide/contract49-m1)
-               (add)
-               (define (provide/contract49-x) count)
-               (provide provide/contract49-x)))
-      (eval '(require 'provide/contract49-m2))
-      (eval '(provide/contract49-x)))
-   1)
-  
   (contract-error-test
    'contract-error-test8
    #'(begin
