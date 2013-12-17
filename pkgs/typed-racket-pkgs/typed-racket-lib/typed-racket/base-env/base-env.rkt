@@ -514,18 +514,18 @@
 [kernel:reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
 [length (-poly (a) (-> (-lst a) -Index))]
-[memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
-[memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
+[memq (-poly (a) (-> Univ (-lst a) (-opt (-lst a))))]
+[memv (-poly (a) (-> Univ (-lst a) (-opt (-lst a))))]
 [memf (-poly (a) ((a . -> . Univ) (-lst a) . -> . (-opt (-lst a))))]
 [member (-poly (a)
-          (cl->* (a (-lst a) . -> . (-opt (-lst a)))
-                 (a (-lst a) (-> a a Univ)
-                    . -> . (-opt (-lst a)))))]
+          (cl->* (Univ (-lst a) . -> . (-opt (-lst a)))
+                 (Univ (-lst a) (-> a a Univ)
+                       . -> . (-opt (-lst a)))))]
 [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
 
-[assq  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
-[assv  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
-[assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assq  (-poly (a b) (Univ (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assv  (-poly (a b) (Univ (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assoc (-poly (a b) (Univ (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
 
@@ -661,9 +661,9 @@
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
 [vector-argmax (-poly (a) (-> (-> a -Real) (-vec a) a))]
 [vector-argmin (-poly (a) (-> (-> a -Real) (-vec a) a))]
-[vector-memq (-poly (a) (-> a (-vec a) (-opt -Index)))]
-[vector-memv (-poly (a) (-> a (-vec a) (-opt -Index)))]
-[vector-member (-poly (a) (a (-vec a) . -> . (-opt -Index)))]
+[vector-memq (-poly (a) (-> Univ (-vec a) (-opt -Index)))]
+[vector-memv (-poly (a) (-> Univ (-vec a) (-opt -Index)))]
+[vector-member (-poly (a) (Univ (-vec a) . -> . (-opt -Index)))]
 ;; [vector->values no good type here]
 
 ;; Section 4.11.1 (racket/vector)
@@ -756,8 +756,8 @@
 [hash-update (-poly (a b)
                     (cl-> [((-HT a b) a (-> b b)) (-HT a b)]
                           [((-HT a b) a (-> b b) (-> b)) (-HT a b)]))]
-[hash-remove (-poly (a b) (cl-> [((-HT a b) a) (-HT a b)]
-                                [(-HashTop a) -HashTop]))]
+[hash-remove (-poly (a b) (cl-> [((-HT a b) Univ) (-HT a b)]
+                                [(-HashTop Univ) -HashTop]))]
 [hash-remove! (-poly (a b) (cl-> [((-HT a b) a) -Void]
                                  [(-HashTop a) -Void]))]
 [hash-map (-poly (a b c) (cl-> [((-HT a b) (a b . -> . c)) (-lst c)]
@@ -855,7 +855,7 @@
 [set-first (-poly (e) (-> (-set e) e))]
 [set-rest (-poly (e) (-> (-set e) (-set e)))]
 [set-add (-poly (e) (-> (-set e) e (-set e)))]
-[set-remove (-poly (e) (-> (-set e) e (-set e)))]
+[set-remove (-poly (e) (-> (-set e) Univ (-set e)))]
 
 [set-union (-poly (e) (->* (list (-set e)) (-set e) (-set e)))]
 [set-intersect (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]

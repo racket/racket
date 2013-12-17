@@ -1896,6 +1896,24 @@
        [tc-e (remove* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
        [tc-e (remq* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
        [tc-e (remv* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
+
+       ;; test functions which do lookup with the "wrong type", where the
+       ;; result type shouldn't be widened to include that type
+       [tc-e (memq 3 '(a b c)) (t:Un (-val #f) (-lst (one-of/c 'a 'b 'c)))]
+       [tc-e (memv 3 '(a b c)) (t:Un (-val #f) (-lst (one-of/c 'a 'b 'c)))]
+       [tc-e (member 3 '(a b c)) (t:Un (-val #f) (-lst (one-of/c 'a 'b 'c)))]
+       [tc-e (member 3 '(a b c) equal?) (t:Un (-val #f) (-lst (one-of/c 'a 'b 'c)))]
+       [tc-e (assq 3 '((a . 5) (b . 7))) (t:Un (-val #f) (-pair (one-of/c 'a 'b) -PosByte))]
+       [tc-e (assv 3 '((a . 5) (b . 7))) (t:Un (-val #f) (-pair (one-of/c 'a 'b) -PosByte))]
+       [tc-e (assoc 3 '((a . 5) (b . 7))) (t:Un (-val #f) (-pair (one-of/c 'a 'b) -PosByte))]
+       [tc-e (set-remove (set 1 2 3) 'a) (-set -PosByte)]
+       ;; don't return HashTableTop
+       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-HT -Symbol -Integer)]
+       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-HT -Symbol -Integer)]
+       ;; these should actually work
+       [tc-e (vector-memq 3 #(a b c)) (t:Un (-val #f) -Index)]
+       [tc-e (vector-memv 3 #(a b c)) (t:Un (-val #f) -Index)]
+       [tc-e (vector-member 3 #(a b c)) (t:Un (-val #f) -Index)]
         )
   (test-suite
    "tc-literal tests"
