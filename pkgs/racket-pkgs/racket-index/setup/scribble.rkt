@@ -223,6 +223,20 @@
   (define main-doc-exists? (ormap (lambda (d) (member 'main-doc-root (doc-flags d))) 
                                   main-docs))
 
+  (define (can-build*? docs) (can-build? only-dirs docs))
+  
+  (define main-db (find-doc-db-path latex-dest #f main-doc-exists?))
+  (define user-db (find-doc-db-path latex-dest #t main-doc-exists?))
+
+  ;; Ensure that databases are created:
+  (define (touch-db db-file)
+    (doc-db-disconnect
+     (doc-db-file->connection db-file #t)))
+  (when (ormap can-build*? main-docs)
+    (touch-db main-db))
+  (when (ormap can-build*? user-docs)
+    (touch-db user-db))
+
   (when (and (or (not only-dirs) tidy?)
              (not avoid-main?)
              (not latex-dest))
@@ -256,7 +270,6 @@
                               ht
                               setup-printf)))))
 
-  (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? 
                           (or (ormap can-build*? main-docs)
                               (and tidy? (not avoid-main?)))))
@@ -398,9 +411,6 @@
                  (not (equal? main-db user-db)))
         (get-files! #f)
         (doc-db-clean-files user-db files))))
-
-  (define main-db (find-doc-db-path latex-dest #f main-doc-exists?))
-  (define user-db (find-doc-db-path latex-dest #t main-doc-exists?))
 
   (define (make-loop first? iter)
     (let ([infos (filter-not info-failed? infos)]
