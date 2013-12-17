@@ -141,12 +141,12 @@
 (define (color=? c1 c2)
   (let [[rc1 (colorize c1)]
         [rc2 (colorize c2)]]
-;    (unless (color? rc1)
-;      (error 'color=?
-;             (format "Expected a color or color name as first argument, but received ~v" c1)))
-;    (unless (color? rc2)
-;      (error 'color=?
-;             (format "Expected a color or color name as second argument, but received ~v" c2)))
+    (unless (color? rc1)
+      (error 'color=?
+             (format "Expected a color or color name as first argument, but received ~v" c1)))
+    (unless (color? rc2)
+      (error 'color=?
+             (format "Expected a color or color name as second argument, but received ~v" c2)))
     (and (= (color-alpha rc1) (color-alpha rc2)) ; Both alphas MUST be equal.
          (or (= (color-alpha rc1) 0)             ; If both are transparent, ignore rgb.
              (and (= (color-red rc1) (color-red rc2))
