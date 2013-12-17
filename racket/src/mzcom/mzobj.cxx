@@ -156,7 +156,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
 
   scheme_add_global("mzcom-exe",scheme_make_utf8_string(exeBuff),env);
   scheme_set_exec_cmd(exeBuff);
-  scheme_set_collects_path(scheme_make_path("collects"));
+  scheme_set_collects_path(scheme_make_path("../collects"));
   scheme_init_collection_paths(env, scheme_make_null());
 
   // initialize namespace

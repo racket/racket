@@ -30,6 +30,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -113,6 +114,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -198,6 +200,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -285,6 +288,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -374,6 +378,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -462,6 +467,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="..\..\..\racket mzobj_rgs.rkt"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
