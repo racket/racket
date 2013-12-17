@@ -5,9 +5,35 @@ This file is for utilities that are only useful for Typed Racket, but
 don't depend on any other portion of the system
 |#
 
-(provide (all-defined-out) (all-from-out "disappeared-use.rkt"))
 (require syntax/source-syntax "disappeared-use.rkt" racket/promise
 	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
+
+(provide ;; parameters
+         current-orig-stx
+         orig-module-stx
+         expanded-module-stx
+         print-syntax?
+         check-unreachable-code?
+         warn-unreachable?
+         delay-errors?
+         current-type-names
+
+         stringify
+         locate-stx
+         warn-unreachable
+
+         report-all-errors
+         tc-error/delayed
+         tc-error
+         tc-error/stx
+         int-err
+
+         typed-context?
+         make-env
+         id-from?
+         id-from
+
+         (all-from-out "disappeared-use.rkt"))
 
 ;; a parameter representing the original location of the syntax being
 ;; currently checked
@@ -23,20 +49,8 @@ don't depend on any other portion of the system
   (apply string-append
          (intersperse between (map (lambda (s) (format "~a" s)) l))))
 
-;; helper function, not currently used
-(define (find-origin stx)
-  (cond [(syntax-property stx 'origin)
-         => (lambda (orig)
-              (let ([r (reverse orig)])
-                (let loop ([r (reverse orig)])
-                  (if (null? r) #f
-                      (if (syntax-source (car r)) (car r)
-                          (loop (cdr r)))))))]
-        [else #f]))
-
 ;; do we print the fully-expanded syntax in error messages?
 (define print-syntax? (make-parameter #f))
-
 
 (define check-unreachable-code? (make-parameter #f))
 
@@ -142,10 +156,6 @@ don't depend on any other portion of the system
   (parameterize ([current-orig-stx stx])
     (apply tc-error msg rest)))
 
-;; check two identifiers to see if they have the same name
-(define (symbolic-identifier=? a b)
-  (eq? (syntax-e a) (syntax-e b)))
-
 ;; parameter for currently-defined type aliases
 ;; this is used only for printing type names
 (define current-type-names (make-parameter (lazy '())))
@@ -163,16 +173,6 @@ don't depend on any other portion of the system
                    (syntax->datum (current-orig-stx))
                    (syntax->datum (locate-stx (current-orig-stx)))))
           (current-continuation-marks))))
-
-(define-syntax (nyi stx)
-  (syntax-case stx ()
-    [(_ str)
-     (quasisyntax/loc stx
-       (int-err "~a: not yet implemented: ~a"
-                str
-                #,(syntax/loc stx (this-expression-file-name))))]
-    [(_) (syntax/loc stx (nyi ""))]))
-
 
 ;; are we currently expanding in a typed module (or top-level form)?
 (define typed-context? (box #f))
