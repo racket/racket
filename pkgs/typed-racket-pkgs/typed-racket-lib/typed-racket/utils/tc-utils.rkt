@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (require syntax/source-syntax "disappeared-use.rkt"
-         racket/list racket/match racket/promise
+         racket/list racket/match racket/promise racket/string
 	 syntax/parse (for-syntax racket/base syntax/parse)
          (only-in unstable/sequence in-slice))
 
@@ -147,16 +147,16 @@ don't depend on any other portion of the system
      'raise-type-error
      "alternating fields and values"
      rst))
-  (define-values (formatted vals)
-    (for/fold ([field-strs ""] [vals null] )
+  (define-values (field-strs vals)
+    (for/fold ([field-strs null] [vals null])
               ([field+value (in-slice 2 rst)])
       (match-define (list field value) field+value)
       (define field-strs*
-        (string-append field-strs (format "  ~a: ~~a~n" field)))
+        (cons (format "  ~a: ~~a" field) field-strs))
       (values field-strs* (cons value vals))))
   (define more-msg (if more (string-append " " more "\n") ""))
-  (define final-msg
-    (string-append msg "\n" more-msg formatted))
+  (define all-fields (string-join (reverse field-strs) "\n"))
+  (define final-msg (string-append msg "\n" more-msg all-fields))
   (if delayed?
       (apply tc-error/delayed #:stx stx final-msg (reverse vals))
       (apply tc-error/stx stx final-msg (reverse vals))))
