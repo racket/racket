@@ -1194,10 +1194,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
         v = (Scheme_Object *)name;
         if (SCHEME_CHAPERONEP(v))
           v = SCHEME_CHAPERONE_VAL(v);
-        if (scheme_is_struct_instance(scheme_reduced_procedure_struct, v))
-          v = NULL; /* hide any wider type that a nested structure might report */
-        else
-          v = scheme_extract_struct_procedure(v, -1, NULL, &is_method);
+        v = scheme_extract_struct_procedure(v, -1, NULL, &is_method);
         if (!v || is_method || !SCHEME_CHAPERONE_PROC_STRUCTP(v))
           break;
         name = (const char *)v;

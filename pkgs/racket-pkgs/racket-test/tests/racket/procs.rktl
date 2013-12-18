@@ -6,24 +6,14 @@
 ;; ----------------------------------------
 
 (define (f0) null)
-(define (f0+ . x) x)
-(define (f0+/drop1 . x) (cdr x))
 (define (f1 x) (list x))
 (define (f1+ x . rest) (cons x rest))
-(define (f1+/drop1 x . rest) rest)
 (define (f0:a #:a a) (list a))
 (define (f0:a? #:a [a 0]) (list a))
 (define (f1:a x #:a a) (list x a))
 (define (f1:a? x #:a [a 0]) (list x a))
 (define (f1+:a x #:a a . args) (list* x a args))
 (define (f1+:a? x #:a [a 0] . args) (list* x a args))
-(define (f1+:a/drop x #:a a . args) (if (null? args)
-                                        (list a)
-                                        (list* (car args) a (cdr args))))
-(define (f1+:a?/drop x #:a [a 0] . args) (if (null? args)
-                                             (list a)
-                                             (list* (car args) a (cdr args))))
-(define (f2+:a?/drop x y #:a [a 0] . args) (list* y a args))
 (define (f0:a:b #:a a #:b b) (list a b))
 (define (f0:a?:b #:a [a 0] #:b b) (list a b))
 (define (f1:a:b x #:a a #:b b) (list x a b))
@@ -47,29 +37,10 @@
               (lambda (kws kw-args x)
                 (cons x kw-args))
               (lambda (x) (list x))))
-(define f1:+/drop (make-keyword-procedure
-                   (lambda (kws kw-args x)
-                     kw-args)
-                   (lambda (x) null)))
 
-(struct wrap (v)
-  #:property prop:procedure 0)
-(define (wrap-m f)
-  (struct wrap-m ()
-    #:property prop:procedure f)
-  (wrap-m))
-                       
 (define procs
   `((,f0 0 () ())
-    (,(wrap f0) 0 () ())
-    (,f0+ ,(make-arity-at-least 0) () ())
-    (,(wrap f0+) ,(make-arity-at-least 0) () ())
-    (,(wrap-m f0+/drop1) ,(make-arity-at-least 0) () ())
-    (,(wrap-m f1+/drop1) ,(make-arity-at-least 0) () ())
     (,f1 1 () ())
-    (,(procedure->method f1) 1 () () #t)
-    (,(procedure->method (wrap f1)) 1 () () #t)
-    (,(procedure->method (wrap f0+)) ,(make-arity-at-least 0) () () #t)
     (,f1+ ,(make-arity-at-least 1) () ())
     (,f0:a 0 (#:a) (#:a))
     (,f0:a? 0 () (#:a))
@@ -77,11 +48,6 @@
     (,f1:a? 1 () (#:a))
     (,f1+:a ,(make-arity-at-least 1) (#:a) (#:a))
     (,f1+:a? ,(make-arity-at-least 1) () (#:a))
-    (,(wrap f1+:a) ,(make-arity-at-least 1) (#:a) (#:a))
-    (,(wrap f1+:a?) ,(make-arity-at-least 1) () (#:a))
-    (,(wrap-m f1+:a/drop) ,(make-arity-at-least 0) (#:a) (#:a))
-    (,(wrap-m f1+:a?/drop) ,(make-arity-at-least 0) () (#:a))
-    (,(procedure->method (wrap f1+:a?)) ,(make-arity-at-least 1) () (#:a) #t)
     (,f0:a:b 0 (#:a #:b) (#:a #:b))
     (,f0:a?:b 0 (#:b) (#:a #:b))
     (,f1:a:b 1 (#:a #:b) (#:a #:b))
@@ -97,20 +63,8 @@
     (,f_ () () ())
     (,f_1_2 (1 2) () ())
     (,f_0_2+ ,(list 0 (make-arity-at-least 2)) () ())
-    (,f1:+ 1 () #f)
-    (,(wrap f1:+) 1 () #f)
-    (,(wrap-m f1:+/drop) 0 () #f)))
+    (,f1:+ 1 () #f)))
 
-((chaperone-procedure
-  (wrap f1+:a)
-  (make-keyword-procedure
-   (lambda (kws kw-args . rest)
-     (if (null? kws)
-         (apply values rest)
-         (apply values kw-args rest)))))
- 1
- #:a 2)
- 
 (define (check-arity-error p n err-n)
   (cond
    [(procedure-arity-includes? p n #t)
@@ -126,20 +80,13 @@
                                   (exn-message exn))))]))
 
 (let ()
-  (define (get-maybe p n)
-    (and ((length p) . > . n) (list-ref p n)))
   (define (try-combos procs add-chaperone) 
     (for-each (lambda (p)
-                (let ([a (cadr p)]
-                      [method? (get-maybe p 4)]
-                      [p (list* (car p) (cadr p) (caddr p) (cadddr p)
-                                (if ((length p) . >= . 5)
-                                    (list-tail p 5)
-                                    null))])
+                (let ([a (cadr p)])
                   (test a procedure-arity (car p))
                   (when (number? a)
-                    (let ([rx (regexp (format " mismatch;.*(expected number(?!.*expected:)|expected: ~a)"
-                                              (if (zero? a) "(0|no)" (if method? (sub1 a) a))))]
+                    (let ([rx (regexp (format " mismatch;.*expected: (|at least )~a" 
+                                              (if (zero? a) "(0|no)" a)))]
                           [bad-args (cons 'extra (for/list ([i (in-range a)]) 'a))])
                       (test #t regexp-match? rx
                             (with-handlers ([exn:fail? (lambda (exn)
@@ -151,16 +98,6 @@
                                                            (exn-message exn))])
                                 (for-each (car p) (list bad-args))
                                 "done!")))))
-                  (when (and (arity-at-least? a)
-                             (positive? (arity-at-least-value a)))
-                    (let ([a (arity-at-least-value a)])
-                      (let ([rx (regexp (format " mismatch;.*(expected number(?!.*expected:)|expected: at least ~a)"
-                                                (if (zero? a) "(0|no)" (if method? (sub1 a) a))))]
-                            [bad-args (for/list ([i (in-range (sub1 a))]) 'a)])
-                        (test #t regexp-match? rx
-                              (with-handlers ([exn:fail? (lambda (exn)
-                                                           (exn-message exn))])
-                                (apply (car p) bad-args))))))
                   (test-values (list (caddr p) (cadddr p))
                                (lambda ()
                                  (procedure-keywords (car p))))
@@ -179,7 +116,7 @@
                     (test 'other object-name (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure->method (car p)))
-                    (check-arity-error (car p) 10 (if method? 9 10))
+                    (check-arity-error (car p) 10 10)
                     (check-arity-error (procedure->method (car p)) 10 9)
                     (unless (null? (list-tail p 4))
                       (test (object-name (list-ref p 4)) object-name (car p)))
@@ -241,59 +178,50 @@
                              [(equal? allowed #f)
                               (err/rt-test ((car p) 1 #:a 1 #:b 1))])))))))
               (map
-               values ; add-chaperone
-               procs
-               #;
+               add-chaperone
                (append procs
                        ;; reduce to arity 1 or nothing:
                        (map (lambda (p)
-                              (let ([p (car p)]
-                                    [method? (get-maybe p 4)])
+                              (let ([p (car p)])
                                 (let-values ([(req allowed) (procedure-keywords p)])
                                   (if (null? allowed)
                                       (if (procedure-arity-includes? p 1 #t)
-                                          (list (procedure-reduce-arity p 1) 1 req allowed method? p)
-                                          (list (procedure-reduce-arity p '()) '() req allowed method? p))
+                                          (list (procedure-reduce-arity p 1) 1 req allowed p)
+                                          (list (procedure-reduce-arity p '()) '() req allowed p))
                                       (if (procedure-arity-includes? p 1 #t)
-                                          (list (procedure-reduce-keyword-arity p 1 req allowed) 1 req allowed method? p)
-                                          (list (procedure-reduce-keyword-arity p '() req allowed) '() req allowed method? p))))))
+                                          (list (procedure-reduce-keyword-arity p 1 req allowed) 1 req allowed p)
+                                          (list (procedure-reduce-keyword-arity p '() req allowed) '() req allowed p))))))
                             procs)
                        ;; reduce to arity 0 or nothing:
                        (map (lambda (p)
-                              (let ([p (car p)]
-                                    [method? (get-maybe p 4)])
+                              (let ([p (car p)])
                                 (let-values ([(req allowed) (procedure-keywords p)])
                                   (if (null? allowed)
                                       (if (procedure-arity-includes? p 0 #t)
-                                          (list (procedure-reduce-arity p 0) 0 req allowed method? p)
-                                          (list (procedure-reduce-arity p '()) '() req allowed method? p))
+                                          (list (procedure-reduce-arity p 0) 0 req allowed p)
+                                          (list (procedure-reduce-arity p '()) '() req allowed p))
                                       (if (procedure-arity-includes? p 0 #t)
-                                          (list (procedure-reduce-keyword-arity p 0 req allowed) 0 req allowed method? p)
-                                          (list (procedure-reduce-keyword-arity p '() req allowed) '() req allowed method? p))))))
+                                          (list (procedure-reduce-keyword-arity p 0 req allowed) 0 req allowed p)
+                                          (list (procedure-reduce-keyword-arity p '() req allowed) '() req allowed p))))))
                             procs)
                        ;; reduce to arity 1 or nothing --- no keywords:
                        (map (lambda (p)
-                              (let ([p (car p)]
-                                    [method? (get-maybe p 4)])
+                              (let ([p (car p)])
                                 (let-values ([(req allowed) (procedure-keywords p)])
                                   (if (procedure-arity-includes? p 1)
-                                      (list* (procedure-reduce-arity p 1) 1 '() '() method? p
+                                      (list* (procedure-reduce-arity p 1) 1 '() '() p
                                              (if (null? allowed)
                                                  null
                                                  (list allowed)))
-                                      (begin
-                                        (when (procedure-arity-includes? p 1 #t)
-                                          (err/rt-test (procedure-reduce-arity p 1) #rx"has required keyword arguments"))
-                                        (list (procedure-reduce-arity p '()) '() '() '() method? p))))))
+                                      (list (procedure-reduce-arity p '()) '() '() '() p)))))
                             procs)
                        ;; reduce to arity 0 or nothing --- no keywords:
                        (map (lambda (p)
-                              (let ([p (car p)]
-                                    [method? (get-maybe p 4)])
+                              (let ([p (car p)])
                                 (let-values ([(req allowed) (procedure-keywords p)])
                                   (if (procedure-arity-includes? p 0)
-                                      (list (procedure-reduce-arity p 0) 0 '() '() method? p)
-                                      (list (procedure-reduce-arity p '()) '() '() '() method? p)))))
+                                      (list (procedure-reduce-arity p 0) 0 '() '() p)
+                                      (list (procedure-reduce-arity p '()) '() '() '() p)))))
                             procs)
                        ;; make #:a required, if possible:
                        (map (lambda (p)
@@ -309,7 +237,6 @@
                                         (cadr p)
                                         new-req
                                         allowed
-                                        (get-maybe p 4)
                                         (car p)))))
                             (filter (lambda (p)
                                       (let-values ([(req allowed) (procedure-keywords (car p))])
@@ -330,7 +257,6 @@
                                          (cadr p)
                                          req
                                          new-allowed
-                                         (get-maybe p 4)
                                          (car p)
                                          (if allowed
                                              (list allowed)
