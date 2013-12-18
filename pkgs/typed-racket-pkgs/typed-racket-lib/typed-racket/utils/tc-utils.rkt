@@ -144,7 +144,7 @@ don't depend on any other portion of the system
                          . rst)
   (unless (even? (length rst))
     (raise-argument-error
-     'raise-type-error
+     'tc-error/fields
      "alternating fields and values"
      rst))
   (define-values (field-strs vals)
