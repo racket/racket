@@ -5,8 +5,10 @@ This file is for utilities that are only useful for Typed Racket, but
 don't depend on any other portion of the system
 |#
 
-(require syntax/source-syntax "disappeared-use.rkt" racket/promise
-	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
+(require syntax/source-syntax "disappeared-use.rkt"
+         racket/list racket/match racket/promise racket/string
+         syntax/parse (for-syntax racket/base syntax/parse)
+         (only-in unstable/sequence in-slice))
 
 (provide ;; parameters
          current-orig-stx
@@ -23,6 +25,7 @@ don't depend on any other portion of the system
          warn-unreachable
 
          report-all-errors
+         tc-error/fields
          tc-error/delayed
          tc-error
          tc-error/stx
@@ -132,6 +135,40 @@ don't depend on any other portion of the system
                                              (list stx))
                                    delayed-errors))
         (raise-typecheck-error (apply format msg rest) (list stx)))))
+
+;; Produce a type error using modern Racket error syntax.
+;; Avoid using format directives in the `msg`, `more`, and `field`
+;; strings in the rest argument (may cause unexpected errors)
+(define (tc-error/fields msg
+                         #:more [more #f]
+                         #:stx [stx (current-orig-stx)]
+                         #:delayed? [delayed? #f]
+                         . rst)
+  (unless (even? (length rst))
+    (raise-argument-error
+     'tc-error/fields
+     "alternating fields and values"
+     rst))
+  (define-values (field-strs vals)
+    (for/fold ([field-strs null] [vals null])
+              ([field+value (in-slice 2 rst)])
+      (match-define (list field value) field+value)
+      (define field-strs*
+        (cons (format "  ~a: ~~a" field) field-strs))
+      (values field-strs* (cons value vals))))
+  (define more-msg (if more (string-append ";\n " more "\n") "\n"))
+  (define all-fields (string-join (reverse field-strs) "\n"))
+  (define final-msg (chomp (string-append msg more-msg all-fields)))
+  (if delayed?
+      (apply tc-error/delayed #:stx stx final-msg (reverse vals))
+      (apply tc-error/stx stx final-msg (reverse vals))))
+
+;; helper for above, remove \n at end if any
+(define (chomp str)
+  (define len (string-length str))
+  (if (eq? #\newline (string-ref str (sub1 len)))
+      (substring str 0 (sub1 len))
+      str))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)
