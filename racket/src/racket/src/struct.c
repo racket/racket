@@ -2019,9 +2019,16 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
         a[0] = px->prev;
         a[1] = orig;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i];
-        if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type))
+        if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type)) {
           o = _scheme_apply_native(red, 2, a);
-        else
+          if (o == SCHEME_MULTIPLE_VALUES) {
+            GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+            scheme_wrong_return_arity(NULL, 1, p->ku.multiple.count, 
+                                      p->ku.multiple.array,
+                                      NULL);
+            return NULL;
+          }
+        } else
           o = _scheme_apply(red, 2, a);
         
         if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
@@ -2064,11 +2071,17 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
         if (SCHEME_TRUEP(red)) {
           a[0] = o;
           a[1] = v;
-          if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type))
+          if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type)) {
             v = _scheme_apply_native(red, 2, a);
-          else
+            if (v == SCHEME_MULTIPLE_VALUES) {
+              GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+              scheme_wrong_return_arity(NULL, 1, p->ku.multiple.count, 
+                                        p->ku.multiple.array,
+                                        NULL);
+            }
+          } else
             v = _scheme_apply(red, 2, a);
-
+          
           if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
             if (!SAME_OBJ(v, a[1]) && !scheme_chaperone_of(v, a[1]))
               scheme_wrong_chaperoned(who, "value", a[1], v);

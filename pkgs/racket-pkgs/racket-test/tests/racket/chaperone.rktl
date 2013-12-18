@@ -1461,28 +1461,39 @@
 ;; ----------------------------------------
 
 (let ()
-  (define f (lambda (x y #:z [z 1]) y))
+  (define (go chaperone-procedure impersonate-procedure)
+    (define f (lambda (x y #:z [z 1]) y))
 
-  (define same 
-    (make-keyword-procedure
-     (lambda (kws kw-args . args)
-       (if (null? kws)
-           (apply values args)
-           (apply values kw-args args)))))
+    (define same 
+      (make-keyword-procedure
+       (lambda (kws kw-args . args)
+         (if (null? kws)
+             (apply values args)
+             (apply values kw-args args)))))
 
-  (struct s2 (v) #:property prop:procedure 0)
-  (define f2 (s2 f))
-  (test #t chaperone-of? (chaperone-procedure f2 same) f2)
-  (test #t impersonator-of? (impersonate-procedure f2 same) f2)
-  (test 2 (lambda () ((chaperone-procedure f2 same) 1 2 #:z 3)))
-  (test 2 (chaperone-procedure f2 same) 1 2)
+    (struct s2 (v) #:property prop:procedure 0)
+    (define f2 (s2 f))
+    (test #t chaperone-of? (chaperone-procedure f2 same) f2)
+    (test #t impersonator-of? (impersonate-procedure f2 same) f2)
+    (test 2 (lambda () ((chaperone-procedure f2 same) 1 2 #:z 3)))
+    (test 2 (chaperone-procedure f2 same) 1 2)
 
-  (struct s3 () #:property prop:procedure f)
-  (define f3 (s3))
-  (test #t chaperone-of? (chaperone-procedure f3 same) f3)
-  (test #t impersonator-of? (impersonate-procedure f3 same) f3)
-  (test 2 (lambda () ((chaperone-procedure f3 same) 2 #:z 3)))
-  (test 2 (chaperone-procedure f3 same) 2))
+    (struct s3 () #:property prop:procedure f)
+    (define f3 (s3))
+    (test #t chaperone-of? (chaperone-procedure f3 same) f3)
+    (test #t impersonator-of? (impersonate-procedure f3 same) f3)
+    (test 2 (lambda () ((chaperone-procedure f3 same) 2 #:z 3)))
+    (test 2 (chaperone-procedure f3 same) 2))
+  (define (add-prop mk)
+    (lambda (f wrap)
+      (define-values (prop: ? -ref) (make-impersonator-property 'x))
+      (define v (mk f wrap prop: 'ex))
+      (test #t ? v)
+      (test 'ex -ref v)
+      v))
+  (go chaperone-procedure impersonate-procedure)
+  (go (add-prop chaperone-procedure)
+      (add-prop impersonate-procedure)))
 
 ;; ----------------------------------------
 

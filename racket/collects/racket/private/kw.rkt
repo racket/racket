@@ -1564,134 +1564,144 @@
                "wrapper procedure does not accept all keywords of original procedure"
                "wrapper procedure" wrap-proc
                "original procedure" proc))
-            (let* ([kw-chaperone
-                    (let ([p (keyword-procedure-proc n-wrap-proc)])
-                      (case-lambda 
-                       [(kws args . rest)
-                        (call-with-values (lambda () (apply p kws args rest))
-                          (lambda results
-                            (let* ([len (length results)]
-                                   [alen (length rest)])
-                              (unless (<= (+ alen 1) len (+ alen 2))
-                                (raise-arguments-error
-                                 '|keyword procedure chaperone|
-                                 "wrong number of results from wrapper procedure"
-                                 "expected minimum number of results" (+ alen 1)
-                                 "expected maximum number of results" (+ alen 2)
-                                 "received number of results" len
-                                 "wrapper procedure" wrap-proc))
-                              (let ([extra? (= len (+ alen 2))])
-                                (let ([new-args ((if extra? cadr car) results)])
-                                  (unless (and (list? new-args)
-                                               (= (length new-args) (length args)))
-                                    (raise-arguments-error
-                                     '|keyword procedure chaperone|
-                                     (format
-                                      "expected a list of keyword-argument values as first result~a from wrapper procedure"
-                                      (if (= len alen)
-                                          ""
-                                          " (after the result-wrapper procedure)"))
-                                     "first result" new-args
-                                     "wrapper procedure" wrap-proc))
-                                  (for-each
-                                   (lambda (kw new-arg arg)
-                                     (unless is-impersonator?
-                                       (unless (chaperone-of? new-arg arg)
-                                         (raise-arguments-error
-                                          '|keyword procedure chaperone|
-                                          (format
-                                           "~a keyword result is not a chaperone of original argument from chaperoning procedure"
-                                           kw)
-                                          "result" new-arg
-                                          "wrapper procedure" wrap-proc))))
-                                   kws
-                                   new-args
-                                   args))
-                                (if extra?
-                                    (apply values (car results) kws (cdr results))
-                                    (apply values kws results))))))]
-                       ;; The following case exists only to make sure that the arity of
-                       ;; any procedure passed to `make-keyword-args' is covered
-                       ;; bu this procedure's arity.
-                       [other (error "shouldn't get here")]))]
-                   [new-proc
-                    (let wrap ([proc proc] [n-proc n-proc])
-                      (cond
-                       [(and (not (eq? n-proc proc))
-                             (new-procedure? proc))
-                        (define v (new-procedure-ref proc))
-                        (cond
-                         [(exact-integer? v)
-                          ;; we have to chaperone the access to the field that
-                          ;; contains a procedure; the `new-procedure-accessor`
-                          ;; property gives us that accessor
-                          (chaperone-struct
-                           proc
-                           (procedure-accessor-ref proc)
-                           (lambda (self sub-proc)
-                             (wrap sub-proc (normalize-proc sub-proc))))]
-                         [else
-                          (chaperone-struct
-                           proc
-                           new-procedure-ref
-                           (lambda (self proc)
-                             ;; This `proc` takes an extra argument, which is `self`:
-                             (chaperone-procedure
-                              proc
-                              (make-keyword-procedure 
-                               (lambda (kws kw-args self . args)
-                                 ;; Chain to `kw-chaperone', pulling out the self
-                                 ;; argument, and then putting it back:
-                                 (define len (length args))
-                                 (call-with-values
-                                     (lambda () (apply kw-chaperone kws kw-args args))
-                                   (lambda results
-                                     (if (= (length results) (add1 len))
-                                         (apply values (car results) self (cdr results))
-                                         (apply values (car results) (cadr results) self (cddr results))))))))))])]
-                       [(okp? n-proc)
-                        (if is-impersonator?
-                            ((if (okm? n-proc)
-                                 make-optional-keyword-method-impersonator
-                                 make-optional-keyword-procedure-impersonator)
-                             (keyword-procedure-checker n-proc)
-                             (chaperone-procedure (keyword-procedure-proc n-proc)
-                                                  kw-chaperone)
-                             (keyword-procedure-required n-proc)
-                             (keyword-procedure-allowed n-proc)
-                             (chaperone-procedure (okp-ref n-proc 0)
-                                                  (okp-ref n-wrap-proc 0))
-                             n-proc)
-                            (chaperone-struct
-                             proc
-                             keyword-procedure-proc
-                             (lambda (self proc)
-                               (chaperone-procedure proc kw-chaperone))
-                             (make-struct-field-accessor okp-ref 0)
-                             (lambda (self proc)
-                               (chaperone-procedure proc
-                                                    (okp-ref n-wrap-proc 0)))))]
-                       [else
-                        (if is-impersonator?
-                            ;; Constructor must be from `make-required':
-                            (let* ([name+fail (keyword-procedure-name+fail n-proc)]
-                                   [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? n-proc) #t)])
-                              (mk
-                               (keyword-procedure-checker n-proc)
-                               (chaperone-procedure (keyword-procedure-proc n-proc) kw-chaperone)
-                               (keyword-procedure-required n-proc)
-                               (keyword-procedure-allowed n-proc)
-                               n-proc))
-                            (chaperone-struct
-                             n-proc
-                             keyword-procedure-proc
-                             (lambda (self proc)
-                               (chaperone-procedure proc kw-chaperone))))]))])
+            (let*-values ([(kw-chaperone)
+                           (let ([p (keyword-procedure-proc n-wrap-proc)])
+                             (case-lambda 
+                              [(kws args . rest)
+                               (call-with-values (lambda () (apply p kws args rest))
+                                 (lambda results
+                                   (let* ([len (length results)]
+                                          [alen (length rest)])
+                                     (unless (<= (+ alen 1) len (+ alen 2))
+                                       (raise-arguments-error
+                                        '|keyword procedure chaperone|
+                                        "wrong number of results from wrapper procedure"
+                                        "expected minimum number of results" (+ alen 1)
+                                        "expected maximum number of results" (+ alen 2)
+                                        "received number of results" len
+                                        "wrapper procedure" wrap-proc))
+                                     (let ([extra? (= len (+ alen 2))])
+                                       (let ([new-args ((if extra? cadr car) results)])
+                                         (unless (and (list? new-args)
+                                                      (= (length new-args) (length args)))
+                                           (raise-arguments-error
+                                            '|keyword procedure chaperone|
+                                            (format
+                                             "expected a list of keyword-argument values as first result~a from wrapper procedure"
+                                             (if (= len alen)
+                                                 ""
+                                                 " (after the result-wrapper procedure)"))
+                                            "first result" new-args
+                                            "wrapper procedure" wrap-proc))
+                                         (for-each
+                                          (lambda (kw new-arg arg)
+                                            (unless is-impersonator?
+                                              (unless (chaperone-of? new-arg arg)
+                                                (raise-arguments-error
+                                                 '|keyword procedure chaperone|
+                                                 (format
+                                                  "~a keyword result is not a chaperone of original argument from chaperoning procedure"
+                                                  kw)
+                                                 "result" new-arg
+                                                 "wrapper procedure" wrap-proc))))
+                                          kws
+                                          new-args
+                                          args))
+                                       (if extra?
+                                           (apply values (car results) kws (cdr results))
+                                           (apply values kws results))))))]
+                              ;; The following case exists only to make sure that the arity of
+                              ;; any procedure passed to `make-keyword-args' is covered
+                              ;; bu this procedure's arity.
+                              [other (error "shouldn't get here")]))]
+                          [(new-proc chap-accessor)
+                           (let wrap ([proc proc] [n-proc n-proc])
+                             (cond
+                              [(and (not (eq? n-proc proc))
+                                    (new-procedure? proc))
+                               (define v (new-procedure-ref proc))
+                               (cond
+                                [(exact-integer? v)
+                                 ;; we have to chaperone the access to the field that
+                                 ;; contains a procedure; the `new-procedure-accessor`
+                                 ;; property gives us that accessor
+                                 (define acc (procedure-accessor-ref proc))
+                                 (values
+                                  (chaperone-struct
+                                   proc
+                                   acc
+                                   (lambda (self sub-proc)
+                                     (define-values (f acc) (wrap sub-proc (normalize-proc sub-proc)))
+                                     f))
+                                  acc)]
+                                [else
+                                 (values
+                                  (chaperone-struct
+                                   proc
+                                   new-procedure-ref
+                                   (lambda (self proc)
+                                     ;; This `proc` takes an extra argument, which is `self`:
+                                     (chaperone-procedure
+                                      proc
+                                      (make-keyword-procedure 
+                                       (lambda (kws kw-args self . args)
+                                         ;; Chain to `kw-chaperone', pulling out the self
+                                         ;; argument, and then putting it back:
+                                         (define len (length args))
+                                         (call-with-values
+                                             (lambda () (apply kw-chaperone kws kw-args args))
+                                           (lambda results
+                                             (if (= (length results) (add1 len))
+                                                 (apply values (car results) self (cdr results))
+                                                 (apply values (car results) (cadr results) self (cddr results))))))))))
+                                  new-procedure-ref)])]
+                              [(okp? n-proc)
+                               (values
+                                (if is-impersonator?
+                                    ((if (okm? n-proc)
+                                         make-optional-keyword-method-impersonator
+                                         make-optional-keyword-procedure-impersonator)
+                                     (keyword-procedure-checker n-proc)
+                                     (chaperone-procedure (keyword-procedure-proc n-proc)
+                                                          kw-chaperone)
+                                     (keyword-procedure-required n-proc)
+                                     (keyword-procedure-allowed n-proc)
+                                     (chaperone-procedure (okp-ref n-proc 0)
+                                                          (okp-ref n-wrap-proc 0))
+                                     n-proc)
+                                    (chaperone-struct
+                                     proc
+                                     keyword-procedure-proc
+                                     (lambda (self proc)
+                                       (chaperone-procedure proc kw-chaperone))
+                                     (make-struct-field-accessor okp-ref 0)
+                                     (lambda (self proc)
+                                       (chaperone-procedure proc
+                                                            (okp-ref n-wrap-proc 0)))))
+                                keyword-procedure-proc)]
+                              [else
+                               (values
+                                (if is-impersonator?
+                                    ;; Constructor must be from `make-required':
+                                    (let* ([name+fail (keyword-procedure-name+fail n-proc)]
+                                           [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? n-proc) #t)])
+                                      (mk
+                                       (keyword-procedure-checker n-proc)
+                                       (chaperone-procedure (keyword-procedure-proc n-proc) kw-chaperone)
+                                       (keyword-procedure-required n-proc)
+                                       (keyword-procedure-allowed n-proc)
+                                       n-proc))
+                                    (chaperone-struct
+                                     n-proc
+                                     keyword-procedure-proc
+                                     (lambda (self proc)
+                                       (chaperone-procedure proc kw-chaperone))))
+                                keyword-procedure-proc)]))])
               (if (null? props)
                   new-proc
                   (apply chaperone-struct new-proc 
                          ;; chaperone-struct insists on having at least one selector:
-                         keyword-procedure-allowed (lambda (s v) v)
+                         chap-accessor (lambda (s v) v)
                          props)))))))
   
   (define (normalize-proc proc)
