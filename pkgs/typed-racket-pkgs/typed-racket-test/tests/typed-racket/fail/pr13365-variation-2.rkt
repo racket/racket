@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"Expected String, but got")
+(exn-pred #rx"expected: String\n  given:")
 #lang typed/racket
 
 (: f (All (a ...) (a ... a -> (Values String a ... a))))

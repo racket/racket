@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"Expected Number, but got \\(U Integer String\\)")
+(exn-pred #rx"expected: Number\n  given: \\(U Integer String\\)")
 #lang racket/load
 
 ;; Test for PR 14121
