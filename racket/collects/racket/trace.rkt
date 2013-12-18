@@ -177,7 +177,9 @@
 ;; A traced-proc struct instance acts like a procedure,
 ;;  but preserves the original, too.
 (define-values (struct:traced-proc make-traced-proc traced-proc? traced-proc-ref traced-proc-set!)
-  (make-struct-type 'traced-proc #f 2 0 #f null (current-inspector) 0))
+  (make-struct-type 'traced-proc #f 2 0 #f
+                    (list (cons prop:procedure 0))
+                    (current-inspector) #f (list 0 1)))
 
 ;; Install traced versions of a given set of procedures.  The traced
 ;;  versions are also given, so that they can be constructed to have

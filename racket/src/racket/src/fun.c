@@ -3067,9 +3067,43 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
   return 1;
 }
 
+static int proc_is_method(Scheme_Object *proc)
+{
+  if (SCHEME_CHAPERONEP(proc))
+    proc = SCHEME_CHAPERONE_VAL(proc);
+
+  if (SCHEME_STRUCTP(proc)
+      && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc))
+    return SCHEME_TRUEP(((Scheme_Structure *)proc)->slots[3]);
+
+  if (SAME_TYPE(SCHEME_TYPE(proc), scheme_case_closure_type)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)proc;
+    if (cl->count)
+      proc = cl->array[0];
+    else
+      return 0;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(proc), scheme_closure_type)) {
+    return ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(proc)) & CLOS_IS_METHOD)
+            ? 1
+            : 0);
+  }
+
+#ifdef MZ_USE_JIT
+  if (SAME_TYPE(SCHEME_TYPE(proc), scheme_native_closure_type)) {
+    Scheme_Object *pa;
+    pa = scheme_get_native_arity(proc, -1);
+    return SCHEME_BOXP(pa);
+  }
+#endif
+
+  return 0;
+}
+
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *orig, *aty;
+  Scheme_Object *orig, *aty, *is_meth = NULL;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_contract("procedure-reduce-arity", "procedure?", 0, argc, argv);
@@ -3096,8 +3130,11 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
+  if (proc_is_method(argv[0]))
+    is_meth = scheme_true;
+
   /* Construct a procedure that has the given arity. */
-  return make_reduced_proc(argv[0], aty, NULL, NULL);
+  return make_reduced_proc(argv[0], aty, NULL, is_meth);
 }
 
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])

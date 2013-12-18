@@ -4382,6 +4382,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 
       /* Add new props: */
       for (l = props; SCHEME_PAIRP(l); ) {
+        int skip_supers = 0;
+
 	a = SCHEME_CAR(l);
 	prop = SCHEME_CAR(a);
 
@@ -4400,6 +4402,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
             if (!scheme_hash_get(can_override, prop)) {
               if (!SAME_OBJ(oldv, propv))
                 break;
+              skip_supers = 1;
             }
             /* otherwise we override */
             scheme_hash_set(can_override, prop, NULL);
@@ -4407,7 +4410,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
         }
         
         l = SCHEME_CDR(l);
-        l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
+        if (!skip_supers)
+          l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
         
         if (SAME_OBJ(prop, proc_property))
           proc_prop_set = propv;
@@ -4434,6 +4438,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
       num_props = i;
 
       for (l = props; SCHEME_PAIRP(l); ) {
+        int skip_supers = 0;
+
 	a = SCHEME_CAR(l);
 
 	prop = SCHEME_CAR(a);
@@ -4457,7 +4463,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
             /* already there */
             if (!scheme_hash_get(can_override, prop)) {
               if (!SAME_OBJ(propv, SCHEME_CDR(pa[j])))
-                break; 
+                break;
+              skip_supers = 1;
             }
             /* overriding it: */
             scheme_hash_set(can_override, prop, NULL);
@@ -4466,7 +4473,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
         }
         
         l = SCHEME_CDR(l);
-        l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
+        if (!skip_supers)
+          l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
         
         if (SAME_OBJ(prop, proc_property))
           proc_prop_set = propv;

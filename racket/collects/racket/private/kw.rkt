@@ -159,10 +159,25 @@
                                     (current-inspector) fail-proc)])
       mk))
 
+  ;; Allows support for new-prop:procedure to extract a field (i.e., this property
+  ;; makes it possible to extract a field for an integer `new-prop:procedure` value):
+  (define-values (prop:procedure-accessor procedure-accessor? procedure-accessor-ref)
+    (make-struct-type-property 'procedure (lambda (v info-l)
+                                            (if (exact-integer? v)
+                                                (make-struct-field-accessor
+                                                 (list-ref info-l 3)
+                                                 v)
+                                                #f))))
+
   ;; Allows keyword application to see into a "method"-style procedure attribute:
   (define-values (new-prop:procedure new-procedure? new-procedure-ref)
     (make-struct-type-property 'procedure #f
-                               (list (cons prop:procedure values))))
+                               (list
+                                ;; Imply normal `prop:procedure`:
+                                (cons prop:procedure values)
+                                ;; Also imply `prop:procedure-accessor`, in case property
+                                ;; value is an integer:
+                                (cons prop:procedure-accessor values))))
 
   
   ;; Proxies
@@ -264,15 +279,15 @@
       (values (keyword-procedure-required p)
               (keyword-procedure-allowed p))]
      [(procedure? p)
-      (let ([p2 (procedure-extract-target p)])
-        (if p2
-            (procedure-keywords p2)
-            (if (new-procedure? p)
-                (let ([v (new-procedure-ref p)])
-                  (if (procedure? v)
-                      (procedure-keywords v)
-                      (values null null)))
-                (values null null))))]
+      (if (new-procedure? p)
+          (let ([v (new-procedure-ref p)])
+            (if (procedure? v)
+                (procedure-keywords v)
+                (let ([a (procedure-accessor-ref p)])
+                  (if a
+                      (procedure-keywords (a p))
+                      (values null null)))))
+          (values null null))]
      [else (raise-argument-error 'procedure-keywords
                                  "procedure?"
                                  p)]))
@@ -1239,7 +1254,11 @@
         ;; Not ok, so far:
         (let ([p2 (and (not (keyword-procedure? p))
                        (procedure? p)
-                       (or (procedure-extract-target p)
+                       (or (and (new-procedure? p)
+                                (let ([a (procedure-accessor-ref p)])
+                                  (and a
+                                       (a p))))
+                           (procedure-extract-target p) ; integer supplied to `make-struct-type`
                            (and (new-procedure? p) 'method)))])
           (if p2
               ;; Maybe the target is ok:
@@ -1420,7 +1439,10 @@
                  (raise-arguments-error 'procedure-reduce-arity
                                         "procedure has required keyword arguments"
                                         "procedure" proc)
-                 (procedure-reduce-arity proc arity)))])
+                 (procedure-reduce-arity (if (okm? proc)
+                                             (procedure->method proc)
+                                             proc)
+                                         arity)))])
       procedure-reduce-arity))
     
   (define new:procedure->method
@@ -1548,8 +1570,8 @@
                        [(kws args . rest)
                         (call-with-values (lambda () (apply p kws args rest))
                           (lambda results
-                            (let ([len (length results)]
-                                  [alen (length rest)])
+                            (let* ([len (length results)]
+                                   [alen (length rest)])
                               (unless (<= (+ alen 1) len (+ alen 2))
                                 (raise-arguments-error
                                  '|keyword procedure chaperone|
@@ -1593,45 +1615,78 @@
                        ;; bu this procedure's arity.
                        [other (error "shouldn't get here")]))]
                    [new-proc
-                    (cond
-                     [(okp? n-proc)
-                      (if is-impersonator?
-                          ((if (okm? n-proc)
-                               make-optional-keyword-method-impersonator
-                               make-optional-keyword-procedure-impersonator)
-                           (keyword-procedure-checker n-proc)
-                           (chaperone-procedure (keyword-procedure-proc n-proc)
-                                                kw-chaperone)
-                           (keyword-procedure-required n-proc)
-                           (keyword-procedure-allowed n-proc)
-                           (chaperone-procedure (okp-ref n-proc 0)
-                                                (okp-ref n-wrap-proc 0))
-                           n-proc)
+                    (let wrap ([proc proc] [n-proc n-proc])
+                      (cond
+                       [(and (not (eq? n-proc proc))
+                             (new-procedure? proc))
+                        (define v (new-procedure-ref proc))
+                        (cond
+                         [(exact-integer? v)
+                          ;; we have to chaperone the access to the field that
+                          ;; contains a procedure; the `new-procedure-accessor`
+                          ;; property gives us that accessor
                           (chaperone-struct
-                           n-proc
-                           keyword-procedure-proc
+                           proc
+                           (procedure-accessor-ref proc)
+                           (lambda (self sub-proc)
+                             (wrap sub-proc (normalize-proc sub-proc))))]
+                         [else
+                          (chaperone-struct
+                           proc
+                           new-procedure-ref
                            (lambda (self proc)
-                             (chaperone-procedure proc kw-chaperone))
-                           (make-struct-field-accessor okp-ref 0)
-                           (lambda (self proc)
-                             (chaperone-procedure proc
-                                                  (okp-ref n-wrap-proc 0)))))]
-                     [else
-                      (if is-impersonator?
-                          ;; Constructor must be from `make-required':
-                          (let* ([name+fail (keyword-procedure-name+fail n-proc)]
-                                 [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? n-proc) #t)])
-                            (mk
+                             ;; This `proc` takes an extra argument, which is `self`:
+                             (chaperone-procedure
+                              proc
+                              (make-keyword-procedure 
+                               (lambda (kws kw-args self . args)
+                                 ;; Chain to `kw-chaperone', pulling out the self
+                                 ;; argument, and then putting it back:
+                                 (define len (length args))
+                                 (call-with-values
+                                     (lambda () (apply kw-chaperone kws kw-args args))
+                                   (lambda results
+                                     (if (= (length results) (add1 len))
+                                         (apply values (car results) self (cdr results))
+                                         (apply values (car results) (cadr results) self (cddr results))))))))))])]
+                       [(okp? n-proc)
+                        (if is-impersonator?
+                            ((if (okm? n-proc)
+                                 make-optional-keyword-method-impersonator
+                                 make-optional-keyword-procedure-impersonator)
                              (keyword-procedure-checker n-proc)
-                             (chaperone-procedure (keyword-procedure-proc n-proc) kw-chaperone)
+                             (chaperone-procedure (keyword-procedure-proc n-proc)
+                                                  kw-chaperone)
                              (keyword-procedure-required n-proc)
                              (keyword-procedure-allowed n-proc)
-                             n-proc))
-                          (chaperone-struct
-                           n-proc
-                           keyword-procedure-proc
-                           (lambda (self proc)
-                             (chaperone-procedure proc kw-chaperone))))])])
+                             (chaperone-procedure (okp-ref n-proc 0)
+                                                  (okp-ref n-wrap-proc 0))
+                             n-proc)
+                            (chaperone-struct
+                             proc
+                             keyword-procedure-proc
+                             (lambda (self proc)
+                               (chaperone-procedure proc kw-chaperone))
+                             (make-struct-field-accessor okp-ref 0)
+                             (lambda (self proc)
+                               (chaperone-procedure proc
+                                                    (okp-ref n-wrap-proc 0)))))]
+                       [else
+                        (if is-impersonator?
+                            ;; Constructor must be from `make-required':
+                            (let* ([name+fail (keyword-procedure-name+fail n-proc)]
+                                   [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? n-proc) #t)])
+                              (mk
+                               (keyword-procedure-checker n-proc)
+                               (chaperone-procedure (keyword-procedure-proc n-proc) kw-chaperone)
+                               (keyword-procedure-required n-proc)
+                               (keyword-procedure-allowed n-proc)
+                               n-proc))
+                            (chaperone-struct
+                             n-proc
+                             keyword-procedure-proc
+                             (lambda (self proc)
+                               (chaperone-procedure proc kw-chaperone))))]))])
               (if (null? props)
                   new-proc
                   (apply chaperone-struct new-proc 

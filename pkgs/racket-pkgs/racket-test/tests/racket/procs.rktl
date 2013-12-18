@@ -9,6 +9,12 @@
 (define (f0+ . x) x)
 (define (f0+/drop1 . x) (cdr x))
 (define (f1 x) (list x))
+(define f1-m
+  (let-syntax ([m (lambda (stx)
+                    (syntax-property #'(lambda (x) (list x))
+                                     'method-arity-error
+                                     #t))])
+    m))
 (define (f1+ x . rest) (cons x rest))
 (define (f1+/drop1 x . rest) rest)
 (define (f0:a #:a a) (list a))
@@ -58,7 +64,7 @@
   (struct wrap-m ()
     #:property prop:procedure f)
   (wrap-m))
-                       
+
 (define procs
   `((,f0 0 () ())
     (,(wrap f0) 0 () ())
@@ -67,6 +73,7 @@
     (,(wrap-m f0+/drop1) ,(make-arity-at-least 0) () ())
     (,(wrap-m f1+/drop1) ,(make-arity-at-least 0) () ())
     (,f1 1 () ())
+    (,f1-m 1 () () #t)
     (,(procedure->method f1) 1 () () #t)
     (,(procedure->method (wrap f1)) 1 () () #t)
     (,(procedure->method (wrap f0+)) ,(make-arity-at-least 0) () () #t)
@@ -241,9 +248,7 @@
                              [(equal? allowed #f)
                               (err/rt-test ((car p) 1 #:a 1 #:b 1))])))))))
               (map
-               values ; add-chaperone
-               procs
-               #;
+               add-chaperone
                (append procs
                        ;; reduce to arity 1 or nothing:
                        (map (lambda (p)
