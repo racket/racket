@@ -7,7 +7,7 @@ don't depend on any other portion of the system
 
 (require syntax/source-syntax "disappeared-use.rkt"
          racket/list racket/match racket/promise racket/string
-	 syntax/parse (for-syntax racket/base syntax/parse)
+         syntax/parse (for-syntax racket/base syntax/parse)
          (only-in unstable/sequence in-slice))
 
 (provide ;; parameters
