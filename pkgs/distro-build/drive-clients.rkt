@@ -22,6 +22,7 @@
 
 (define default-release? #f)
 (define default-clean? #f)
+(define dry-run #f)
 
 (define snapshot-install-name "snapshot")
 
@@ -35,6 +36,12 @@
     (set! default-release? #t)]
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
+   [("--dry-run") mode
+    ("Don't actually use the clients;"
+     " <mode> can be `ok', `fail', `error', `stuck', or `frozen'")
+    (unless (member mode '("ok" "fail" "error" "stuck" "frozen"))
+      (raise-user-error 'drive-clients "bad dry-run mode: ~a" mode))
+    (set! dry-run (string->symbol mode))]
    #:args (config-file config-mode 
                        server server-port server-hosts pkgs doc-search
                        dist-name dist-base dist-dir)
@@ -105,7 +112,14 @@
                     (map (lambda (p) (if (path? p) (path->string p) p)) 
                          (cons exe args))))
   (flush-output)
-  (apply system* exe args))
+  (case dry-run
+    [(ok) #t]
+    [(fail) #f]
+    [(error) (error "error")]
+    [(stuck) (semaphore-wait (make-semaphore))]
+    [(frozen) (break-enabled #f) (semaphore-wait (make-semaphore))]
+    [else
+     (apply system* exe args)]))
 
 (define (system*/string . args)
   (define s (open-output-string))
@@ -168,26 +182,28 @@
   (when vbox
     (printf "Starting VirtualBox machine ~s\n" vbox)
     (flush-output)
-    (case (vbox-state vbox)
-      [(running) (void)]
-      [(paused) (vbox-control vbox "resume")]
-      [(off saved) (call-with-vbox-lock
-                    (lambda ()
-                      (check-count)
-                      (vbox-start vbox)))])
-    (unless (eq? (vbox-state vbox) 'running)
-      (error 'start-client "could not get virtual machine started: ~s" (client-name c))))
-  ;; pause a little to let the VM get networkign ready, etc.
-  (sleep 3))
+    (unless dry-run
+      (case (vbox-state vbox)
+        [(running) (void)]
+        [(paused) (vbox-control vbox "resume")]
+        [(off saved) (call-with-vbox-lock
+                      (lambda ()
+                        (check-count)
+                        (vbox-start vbox)))])
+      (unless (eq? (vbox-state vbox) 'running)
+        (error 'start-client "could not get virtual machine started: ~s" (client-name c)))
+      ;; pause a little to let the VM get networking ready, etc.
+      (sleep 3))))
 
 (define (stop-client c)
   (define vbox (get-opt c '#:vbox))
   (when vbox
     (printf "Stopping VirtualBox machine ~s\n" vbox)
     (flush-output)
-    (vbox-control vbox "savestate")
-    (unless (eq? (vbox-state vbox) 'saved)
-      (error 'start-client "virtual machine isn't in the expected saved state: ~s" c))))
+    (unless dry-run
+      (vbox-control vbox "savestate")
+      (unless (eq? (vbox-state vbox) 'saved)
+        (error 'start-client "virtual machine isn't in the expected saved state: ~s" c)))))
 
 ;; ----------------------------------------
 
@@ -410,59 +426,76 @@
 ;; ----------------------------------------
 
 (define stop? #f)
-(define failures null)
-(define failures-sema (make-semaphore 1))
 
-(define (limit-and-report-failure c timeout-factor thunk)
-  (unless stop?
-    (define cust (make-custodian))
-    (define timeout (or (get-opt c '#:timeout)
-                        (* 30 60)))
-    (define orig-thread (current-thread))
-    (define timeout? #f)
-    (begin0
-     (parameterize ([current-custodian cust])
-       (thread (lambda ()
-                 (sleep (* timeout-factor timeout))
-                 (eprintf "timeout for ~s\n" (client-name c))
-                 ;; try nice interrupt, first:
-                 (set! timeout? #t)
-                 (break-thread orig-thread)
-                 (sleep 1)
-                 ;; force quit:
-                 (custodian-shutdown-all cust)))
-       (with-handlers ([exn? (lambda (exn)
-                               (when (exn:break? exn) 
-                                 (unless timeout?
-                                   (set! stop? #t)))
-                               (log-error "~a failed..." (client-name c))
-                               (log-error (exn-message exn))
-                               #f)])
-         (thunk)))
-     (custodian-shutdown-all cust))))
+(define failures (make-hasheq))
+(define (record-failure name)
+  ;; relies on atomicity of `eq?'-based hash table:
+  (hash-set! failures (string->symbol name) #t))
 
-(define (client-thread c sequential? thunk)
+(define (limit-and-report-failure c timeout-factor
+                                  shutdown report-fail
+                                  thunk)
+  (define cust (make-custodian))
+  (define timeout (or (get-opt c '#:timeout)
+                      (* 30 60)))
+  (define orig-thread (current-thread))
+  (define timeout? #f)
+  (begin0
+   (parameterize ([current-custodian cust])
+     (thread (lambda ()
+               (sleep (* timeout-factor timeout))
+               (eprintf "timeout for ~s\n" (client-name c))
+               ;; try nice interrupt, first:
+               (set! timeout? #t)
+               (break-thread orig-thread)
+               (sleep 1)
+               ;; force quit:
+               (report-fail)
+               (shutdown)))
+     (with-handlers ([exn? (lambda (exn)
+                             (when (exn:break? exn)
+                               ;; This is useful only when everything is
+                               ;; sequential, which is the only time that
+                               ;; we'll get break events that aren't timeouts:
+                               (unless timeout?
+                                 (set! stop? #t)))
+                             (log-error "~a failed..." (client-name c))
+                             (log-error (exn-message exn))
+                             (report-fail)
+                             #f)])
+       (thunk)))
+   (custodian-shutdown-all cust)))
+
+(define (client-thread c all-seq? proc)
   (unless stop?
     (define log-dir (build-path "build" "log"))
     (define log-file (build-path log-dir (client-name c)))
     (make-directory* log-dir)
     (printf "Logging build: ~a\n" log-file)
     (flush-output)
-    (define (go)
+    (define cust (make-custodian))
+    (define (go shutdown)
       (define p (open-output-file log-file
                                   #:exists 'truncate/replace))
       (file-stream-buffer-mode p 'line)
+      (define (report-fail)
+        (record-failure (client-name c))
+        (printf "Build FAILED for ~s\n" (client-name c)))
       (unless (parameterize ([current-output-port p]
                              [current-error-port p])
-                (thunk))
-        (call-with-semaphore
-         failures-sema
-         (lambda ()
-           (set! failures (cons (client-name c) failures))))
-        (printf "Build FAILED for ~s\n" (client-name c))))
+                (proc shutdown report-fail))
+        (report-fail))
+      (display-time))
     (cond
-     [sequential? (go) (thread void)]
-     [else (thread go)])))
+     [all-seq? 
+      (go (lambda () (exit 1)))
+      (thread void)]
+     [else
+      (parameterize ([current-custodian cust])
+        (thread
+         (lambda ()
+           (go (lambda ()
+                 (custodian-shutdown-all cust))))))])))
 
 ;; ----------------------------------------
 
@@ -470,56 +503,64 @@
 (display-time)
 
 (void
- (let loop ([config config]
-            [mode 'sequential]
-            [opts (hasheq)])
-   (unless stop?
-     (case (site-config-tag config)
-       [(parallel sequential)
-        (define new-opts (merge-options opts config))
-        (define ts
-          (map (lambda (c) (loop c
-                                 (site-config-tag config)
-                                 new-opts))
-               (get-content config)))
-        (define (wait)
-          (for ([t (in-list ts)])
-            (sync t)))
-        (cond
-         [(eq? mode 'sequential) (wait) (thread void)]
-         [else (thread wait)])]
-       [else 
-        (define c (merge-options opts config))
-        (client-thread
-         c
-         (eq? mode 'sequential)
-         (lambda ()
-           (limit-and-report-failure
-            c 2
-            (lambda ()
-              (sleep (get-opt c '#:pause-before 0))
-              ;; start client, if a VM:
-              (start-client c (or (get-opt c '#:max-vm) 1))
-              ;; catch failure in build step proper, so we
-              ;; can more likely stop the client:
-              (begin0
-               (limit-and-report-failure
-                c 1
-                (lambda () (client-build c)))
-               ;; stop client, if a VM:
-               (stop-client c)
-               (sleep (get-opt c '#:pause-after 0)))))))]))))
+ (sync
+  (let loop ([config config]
+             [all-seq? #t] ; Ctl-C handling is better if nothing is in parallel
+             [opts (hasheq)])
+    (cond
+     [stop? (thread void)]
+     [else
+      (case (site-config-tag config)
+        [(parallel)
+         (define new-opts (merge-options opts config))
+         (define ts
+           (map (lambda (c) (loop c #f new-opts))
+                (get-content config)))
+         (thread
+          (lambda ()
+            (for ([t (in-list ts)])
+              (sync t))))]
+        [(sequential)
+         (define new-opts (merge-options opts config))
+         (define (go)
+           (for-each (lambda (c) (sync (loop c all-seq? new-opts)))
+                     (get-content config)))
+         (if all-seq?
+             (begin (go) (thread void))
+             (thread go))]
+        [else 
+         (define c (merge-options opts config))
+         (client-thread
+          c
+          all-seq?
+          (lambda (shutdown report-fail)
+            (limit-and-report-failure
+             c 2 shutdown report-fail
+             (lambda ()
+               (sleep (get-opt c '#:pause-before 0))
+               ;; start client, if a VM:
+               (start-client c (or (get-opt c '#:max-vm) 1))
+               ;; catch failure in build step proper, so we
+               ;; can more likely stop the client:
+               (begin0
+                (limit-and-report-failure
+                 c 1 shutdown report-fail
+                 (lambda () (client-build c)))
+                ;; stop client, if a VM:
+                (stop-client c)
+                (sleep (get-opt c '#:pause-after 0)))))))])]))))
 
 (display-time)
 (define end-seconds (current-seconds))
 
-(let ([opts (merge-options (hasheq) config)])
-  (let ([to-email (get-opt opts '#:email-to null)])
-    (unless (null? to-email)
-      (printf "Sending report to ~a\n" (apply ~a to-email #:separator ", "))
-      (send-email to-email (lambda (key def)
-                             (get-opt opts key def))
-                  (get-opt opts '#:build-stamp (current-stamp))
-                  start-seconds end-seconds
-                  failures)
-      (display-time))))
+(unless stop?
+  (let ([opts (merge-options (hasheq) config)])
+    (let ([to-email (get-opt opts '#:email-to null)])
+      (unless (null? to-email)
+        (printf "Sending report to ~a\n" (apply ~a to-email #:separator ", "))
+        (send-email to-email (lambda (key def)
+                               (get-opt opts key def))
+                    (get-opt opts '#:build-stamp (current-stamp))
+                    start-seconds end-seconds
+                    (hash-map failures (lambda (k v) (symbol->string k))))
+        (display-time)))))
