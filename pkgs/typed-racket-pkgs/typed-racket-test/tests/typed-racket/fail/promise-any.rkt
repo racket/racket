@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:contract?)
+(exn-pred #rx"Attempted to use a higher-order value passed as `Any`")
 #lang racket
 
 (module typed typed/racket
