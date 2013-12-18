@@ -136,7 +136,9 @@ don't depend on any other portion of the system
                                    delayed-errors))
         (raise-typecheck-error (apply format msg rest) (list stx)))))
 
-;; produce a type error using modern Racket error syntax
+;; Produce a type error using modern Racket error syntax.
+;; Avoid using format directives in the `msg`, `more`, and `field`
+;; strings in the rest argument (may cause unexpected errors)
 (define (tc-error/fields msg
                          #:more [more #f]
                          #:stx [stx (current-orig-stx)]
@@ -154,12 +156,19 @@ don't depend on any other portion of the system
       (define field-strs*
         (cons (format "  ~a: ~~a" field) field-strs))
       (values field-strs* (cons value vals))))
-  (define more-msg (if more (string-append " " more "\n") ""))
+  (define more-msg (if more (string-append ";\n " more "\n") "\n"))
   (define all-fields (string-join (reverse field-strs) "\n"))
-  (define final-msg (string-append msg "\n" more-msg all-fields))
+  (define final-msg (chomp (string-append msg more-msg all-fields)))
   (if delayed?
       (apply tc-error/delayed #:stx stx final-msg (reverse vals))
       (apply tc-error/stx stx final-msg (reverse vals))))
+
+;; helper for above, remove \n at end if any
+(define (chomp str)
+  (define len (string-length str))
+  (if (eq? #\newline (string-ref str (sub1 len)))
+      (substring str 0 (sub1 len))
+      str))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)
