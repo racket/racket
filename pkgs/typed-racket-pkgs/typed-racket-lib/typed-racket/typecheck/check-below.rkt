@@ -41,7 +41,10 @@
      (=> fail)
      (unless (string=? (symbol->string s1) (symbol->string s2))
        (fail))
-     (type-mismatch t1 t2 "type variables bound in different scopes")]
+     ;; FIXME: this case could have a better error message that, say,
+     ;;        prints the binding locations of each type variable.
+     (type-mismatch (format "`~a'" t1) (format "a different `~a'" t2)
+                    "type variables bound in different scopes")]
     [(_ _)
      (type-mismatch t1 t2)]))
 
@@ -132,7 +135,7 @@
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
-     (type-mismatch "one value" "unknown number")
+     (type-mismatch "1 value" "unknown number")
      expected]
     [((tc-any-results:) (tc-results: t2 fs os))
      (type-mismatch (format "~a values" (length t2)) "unknown number")
@@ -156,7 +159,7 @@
          (expected-but-got t2 t1))
      t1]
     [((? Type/c? t1) (tc-results: ts2 fs os))
-     (type-mismatch "one value" (length ts2) "mismatch in number of values")
+     (type-mismatch "1 value" (length ts2) "mismatch in number of values")
      t1]
     [((? Type/c? t1) (? Type/c? t2))
      (unless (subtype t1 t2)
