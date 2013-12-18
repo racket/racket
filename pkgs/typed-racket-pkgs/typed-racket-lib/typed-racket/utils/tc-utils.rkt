@@ -5,8 +5,10 @@ This file is for utilities that are only useful for Typed Racket, but
 don't depend on any other portion of the system
 |#
 
-(require syntax/source-syntax "disappeared-use.rkt" racket/promise
-	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
+(require syntax/source-syntax "disappeared-use.rkt"
+         racket/list racket/match racket/promise
+	 syntax/parse (for-syntax racket/base syntax/parse)
+         (only-in unstable/sequence in-slice))
 
 (provide ;; parameters
          current-orig-stx
@@ -23,6 +25,7 @@ don't depend on any other portion of the system
          warn-unreachable
 
          report-all-errors
+         tc-error/fields
          tc-error/delayed
          tc-error
          tc-error/stx
@@ -132,6 +135,31 @@ don't depend on any other portion of the system
                                              (list stx))
                                    delayed-errors))
         (raise-typecheck-error (apply format msg rest) (list stx)))))
+
+;; produce a type error using modern Racket error syntax
+(define (tc-error/fields msg
+                         #:more [more #f]
+                         #:stx [stx (current-orig-stx)]
+                         #:delayed? [delayed? #f]
+                         . rst)
+  (unless (even? (length rst))
+    (raise-argument-error
+     'raise-type-error
+     "alternating fields and values"
+     rst))
+  (define-values (formatted vals)
+    (for/fold ([field-strs ""] [vals null] )
+              ([field+value (in-slice 2 rst)])
+      (match-define (list field value) field+value)
+      (define field-strs*
+        (string-append field-strs (format "  ~a: ~~a~n" field)))
+      (values field-strs* (cons value vals))))
+  (define more-msg (if more (string-append " " more "\n") ""))
+  (define final-msg
+    (string-append msg "\n" more-msg formatted))
+  (if delayed?
+      (apply tc-error/delayed #:stx stx final-msg (reverse vals))
+      (apply tc-error/stx stx final-msg (reverse vals))))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)

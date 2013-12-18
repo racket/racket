@@ -10,15 +10,27 @@
 (provide/cond-contract
  [tc-error/expr ((string?) (#:return c:any/c #:stx syntax?) #:rest (c:listof c:any/c)
                  . c:->* . c:any/c)]
+ [tc-error/expr/fields ((string?) (#:return c:any/c #:stx syntax?) #:rest (c:listof c:any/c)
+                        . c:->* . c:any/c)]
 
  [lookup-fail (identifier? . c:-> . Type/c)]
  [lookup-type-fail (identifier? . c:-> . Type/c)])
 
+;; produce a type-checking error, and also return a type
 (define (tc-error/expr msg
                        #:return [return -Bottom]
                        #:stx [stx (current-orig-stx)]
                        . rest)
   (apply tc-error/delayed #:stx stx msg rest)
+  return)
+
+;; like `tc-error/expr`, but with modern error syntax
+(define (tc-error/expr/fields msg
+                              #:more [more #f]
+                              #:stx [stx (current-orig-stx)]
+                              #:return [return -Bottom]
+                              . rst)
+  (apply tc-error/fields #:more more #:stx stx #:delayed? #t msg rst)
   return)
 
 ;; error for unbound variables
