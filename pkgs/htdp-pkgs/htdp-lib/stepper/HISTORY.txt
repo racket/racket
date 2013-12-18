@@ -1,6 +1,6 @@
 Stepper
 -------
-Changes for 5.6:
+Changes for 6.0:
 
 Minor bug fixes.
 
