@@ -156,7 +156,8 @@
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
-        (if typed-side 'covariant 'contravariant))
+        #:trusted-positive typed-side
+        #:trusted-negative (not typed-side))
       fail
       kind)))
 

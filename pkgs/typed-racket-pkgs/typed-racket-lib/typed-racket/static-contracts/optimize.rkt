@@ -1,7 +1,7 @@
 #lang racket/base
 
-;; Functionalityt otoptimize a static contract to provide faster checking.
-;; Also supports droping one side's obligations.
+;; Functionality to optimize a static contract to provide faster checking.
+;; Also supports droping checks on either side.
 
 (require "combinators.rkt"
          "structures.rkt"
@@ -12,12 +12,15 @@
 
 
 
-(provide 
+(provide
   (contract-out
-    [optimize (static-contract? (or/c 'covariant 'contravariant 'invariant ) . -> . static-contract?)]))
+    [optimize ((static-contract?) (#:trusted-positive boolean? #:trusted-negative boolean?)
+               . ->* . static-contract?)]))
 
-(define (none/sc-reduce sc)
+;; Reduce a static contract to a smaller simpler one that protects in the same way
+(define (reduce sc)
   (match sc
+    ;; none/sc cases
     [(listof/sc: (none/sc:)) empty-list/sc]
     [(list/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
     [(vectorof/sc: (none/sc:)) empty-vector/sc]
@@ -28,11 +31,8 @@
     [(promise/sc: (none/sc:)) none/sc]
     [(hash/sc: (none/sc:) value/sc) empty-hash/sc]
     [(hash/sc: key/sc (none/sc:)) empty-hash/sc]
-    [else sc]))
 
-
-(define (any/sc-reduce sc)
-  (match sc
+    ;; any/sc cases
     [(listof/sc: (any/sc:)) list?/sc]
     [(list/sc: (and scs (any/sc:)) ...) (list-length/sc (length scs))]
     [(vectorof/sc: (any/sc:)) vector?/sc]
@@ -42,88 +42,80 @@
     [(syntax/sc: (any/sc:)) syntax?/sc]
     [(promise/sc: (any/sc:)) promise?/sc]
     [(hash/sc: (any/sc:) (any/sc:)) hash?/sc]
+
+    ;; or/sc cases
+    [(or/sc: scs ...)
+     (match scs
+      [(list) none/sc]
+      [(list sc) sc]
+      [(? (λ (l) (member any/sc l))) any/sc]
+      [(? (λ (l) (member none/sc l)))
+       (apply or/sc (remove* (list none/sc) scs))]
+      [else sc])]
+
+    ;; and/sc cases
+    [(and/sc: scs ...)
+     (match scs
+      [(list) any/sc]
+      [(list sc) sc]
+      [(? (λ (l) (member none/sc l))) none/sc]
+      [(? (λ (l) (member any/sc l)))
+       (apply and/sc (remove* (list any/sc) scs))]
+      [else sc])]
+
+
+
     [else sc]))
 
 
-(define (covariant-any/sc-reduce sc)
+;; Reduce a static contract assuming that we trusted the current positive side
+(define (trusted-side-reduce sc)
   (match sc
     [(->/sc: mand-args opt-args mand-kw-args opt-kw-args rest-arg (list (any/sc:) ...))
      (function/sc mand-args opt-args mand-kw-args opt-kw-args rest-arg #f)]
     [(arr/sc: args rest (list (any/sc:) ...))
      (arr/sc args rest #f)]
-    [else sc]))
-
-(define (covariant-none/sc-reduce sc)
-  (match sc
     [(none/sc:) any/sc]
-    [else sc]))
-
-(define (or/sc-reduce sc)
-  (match sc
-    [(or/sc:) none/sc]
-    [(or/sc: sc) sc]
-    [(or/sc: sc1 ... (any/sc:) sc2 ...)
-     any/sc]
-    [(or/sc: sc1 ... (none/sc:) sc2 ...)
-     (or/sc-reduce (apply or/sc (append sc1 sc2)))]
-    [else sc]))
-
-(define (and/sc-reduce sc)
-  (match sc
-    [(and/sc:) any/sc]
-    [(and/sc: sc) sc]
-    [(and/sc: sc1 ... (none/sc:) sc2 ...)
-     none/sc]
-    [(and/sc: sc1 ... (any/sc:) sc2 ...)
-     (and/sc-reduce (apply and/sc (append sc1 sc2)))]
-    [else sc]))
-
-
-
-(define (covariant-flat-reduce sc)
-  (match sc
     [(? flat/sc?) any/sc]
-    [(none/sc:) any/sc]
-    [sc sc]))
+    [else sc]))
 
-(define (invert-variance v)
+
+
+(define (invert-side v)
   (case v
-    [(covariant) 'contravariant]
-    [(contravariant) 'covariant]
-    [(invariant) 'invariant]))
+    [(positive) 'negative]
+    [(negative) 'positive]
+    [(both) 'both]))
 
-(define (combine-variance var1 var2)
-  (case var1
-    [(covariant) var2]
-    [(contravariant) (invert-variance var2)]
-    [(invariant) 'invariant]))
+(define (combine-variance side var)
+  (case var
+    [(covariant) side]
+    [(contravariant) (invert-side side)]
+    [(invariant) 'both]))
 
-;; If the variance is 'covariant, drops the parts ensuring that server behaves
-;; If the variance is 'contrvariant, drops the parts ensuring that client behaves
-;; If the variance is 'invariant, only optimizes the contract.
-(define (optimize sc variance)
-  (define (single-step sc variance)
-    (define ((maybe/co reduce) sc)
-      (case variance
-        [(covariant) (reduce sc)]
-        [(contravariant invariant) sc]
-        [else (error 'maybe/co "Bad variance ~a" variance)]))
+;; If we trust a specific side then we drop all contracts protecting that side.
+(define (optimize sc #:trusted-positive [trusted-positive #f] #:trusted-negative [trusted-negative #f])
+  ;; single-step: reduce and trusted-side-reduce if appropriate
+  (define (single-step sc side)
+    (define trusted
+      (case side
+        [(positive) trusted-positive]
+        [(negative) trusted-negative]
+        [(both) (and trusted-positive trusted-negative)]))
 
-    ((compose
-       (maybe/co covariant-flat-reduce)
-       (maybe/co covariant-any/sc-reduce)
-       (maybe/co covariant-none/sc-reduce)
-       and/sc-reduce
-       or/sc-reduce
-       none/sc-reduce
-       any/sc-reduce)
-     sc))
+    (reduce
+      (if trusted
+          (trusted-side-reduce sc)
+          sc)))
 
+  ;; full-pass: single-step at every static contract subpart
   (define (full-pass sc)
-    (define ((recur current-variance) sc variance)
-      (define new-variance (combine-variance current-variance variance))
-      (single-step (sc-map sc (recur new-variance)) new-variance))
-    ((recur variance) sc 'covariant))
+    (define ((recur side) sc variance)
+      (define new-side (combine-variance side variance))
+      (single-step (sc-map sc (recur new-side)) new-side))
+    ((recur 'positive) sc 'covariant))
+
+  ;; Do full passes until we reach a fix point
   (let loop ((sc sc))
     (define new-sc (full-pass sc))
     (if (equal? sc new-sc)
