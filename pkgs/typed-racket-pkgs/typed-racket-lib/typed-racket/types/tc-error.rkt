@@ -10,13 +10,13 @@
 (provide/cond-contract
  [tc-error/expr ((string?) (#:return c:any/c #:stx syntax?) #:rest (c:listof c:any/c)
                  . c:->* . c:any/c)]
- [tc-error/expr/fields ((string?) (#:return c:any/c #:stx syntax?) #:rest (c:listof c:any/c)
-                        . c:->* . c:any/c)]
+ [tc-error/expr/fields ((string?) (#:more string? #:return c:any/c #:stx syntax?)
+                        #:rest (c:listof c:any/c) . c:->* . c:any/c)]
 
  [lookup-fail (identifier? . c:-> . Type/c)]
  [lookup-type-fail (identifier? . c:-> . Type/c)])
 
-;; produce a type-checking error, and also return a type
+;; produce a type-checking error, and also return a result (e.g., a type)
 (define (tc-error/expr msg
                        #:return [return -Bottom]
                        #:stx [stx (current-orig-stx)]
