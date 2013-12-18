@@ -1,7 +1,10 @@
 #lang racket/base
 
 (require racket/match racket/contract/base racket/contract/combinator
-         racket/promise racket/set)
+         racket/set
+         (only-in (combine-in racket/private/promise)
+                  promise?
+                  prop:force promise-forcer))
 
 (define undef (letrec ([x x]) x))
 
@@ -97,9 +100,15 @@
                                                [_ (fail neg-party v)]))
            (chaperone-procedure v (lambda args (fail neg-party v))))]
       [(? promise?)
-       ;; for promises, just apply Any in the promise
-       (contract (promise/c any-wrap/c) v
-                 (blame-positive b) (blame-negative b))]
+       (chaperone-struct
+        v
+        promise-forcer
+        (λ (_ proc) 
+          (chaperone-procedure
+           proc
+           (λ (promise)
+             (values (λ (val) (any-wrap/traverse neg-party val))
+                     promise)))))]
       [_ (fail neg-party v)]))
   (λ (v) (λ (neg-party) (any-wrap/traverse neg-party v))))
 
