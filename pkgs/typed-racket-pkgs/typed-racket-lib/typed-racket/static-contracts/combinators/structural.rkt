@@ -105,9 +105,11 @@
                       (merge-restricts* 'kind.category-stx (sc.->restricts v recur)))]
                 #:methods gen:equal+hash
                   [(define (equal-proc a b recur)
-                     (for/and ([sub-a (in-list (combinator-args a))]
-                               [sub-b (in-list (combinator-args b))])
-                       (recur sub-a sub-b)))
+                     (and (recur (length (combinator-args a))
+                                 (length (combinator-args b)))
+                          (for/and ([sub-a (in-list (combinator-args a))]
+                                    [sub-b (in-list (combinator-args b))])
+                            (recur sub-a sub-b))))
                    (define (hash-proc v recur)
                      (+ (recur 'sc.name)
                         (for/sum ((sub (in-list (combinator-args v))))

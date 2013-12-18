@@ -16,7 +16,11 @@
       (list (make-check-info 'original argument)
             (make-check-expected expected))
       (lambda ()
-        (let ([opt (optimize argument variance)])
+        (define trusted-positive (equal? variance 'covariant))
+        (define trusted-negative (equal? variance 'contravariant))
+        (let ([opt (optimize argument
+                     #:trusted-positive trusted-positive
+                     #:trusted-negative trusted-negative)])
           (with-check-info* (list (make-check-actual opt))
             (lambda ()
               (unless (equal? opt expected)
