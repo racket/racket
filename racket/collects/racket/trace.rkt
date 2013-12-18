@@ -295,16 +295,13 @@
                 (set! id (traced-proc-ref id 1)))
               ...)]))
 
-(define-syntax trace-define
-  (syntax-rules ()
-    [(_ (name . args) body ...)
-     (begin
-       (define (name . args) body ...)
-       (trace name))]
-    [(_ name body)
-     (begin
-       (define name body)
-       (trace name))]))
+(require (for-syntax syntax/define))
+
+(define-syntax (trace-define stx)
+  (syntax-case stx ()
+    [(_ e ...)
+     (let-values ([(name def) (normalize-definition stx #'lambda)])
+       #`(begin (define #,name #,def) (trace #,name)))]))
 
 (define-syntax trace-let
   (syntax-rules ()
