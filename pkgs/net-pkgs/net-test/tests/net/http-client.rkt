@@ -98,6 +98,7 @@
                                              "/"
                                              #:method "GET"
                                              #:headers empty
+                                             #:close? #t
                                              #:data #f)
                          (begin0
                           (hc:http-conn-recv! c
