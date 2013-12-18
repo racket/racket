@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"Expected 2 values, but got 1")
+(exn-pred #rx"expected: 2\n  given: 1")
 #lang typed/racket
 
 ;; This test ensures that the following snippet doesn't

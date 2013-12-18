@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"but got a different a \\(bound in another scope\\)")
+(exn-pred #rx"type variables bound in different scopes")
 #lang typed/racket
 
 ;; Test that the error message in this case mentions

@@ -22,6 +22,12 @@
 (define (cond-check-below tr1 expected)
   (if expected (check-below tr1 expected) tr1))
 
+;; type-mismatch : Any Any [String] -> Void
+;; Type errors with "type mismatch", arguments may be types or other things
+;; like the length of a list of types
+(define (type-mismatch t1 t2 [more #f])
+  (tc-error/expr/fields "type mismatch" #:more more "expected" t1 "given" t2))
+
 ;; expected-but-got : (U Type String) (U Type String) -> Void
 ;;
 ;; Helper to print messages of the form
@@ -35,10 +41,12 @@
      (=> fail)
      (unless (string=? (symbol->string s1) (symbol->string s2))
        (fail))
-     (tc-error/expr "Expected ~a, but got a different ~a (bound in another scope)"
-                    t1 t2)]
+     ;; FIXME: this case could have a better error message that, say,
+     ;;        prints the binding locations of each type variable.
+     (type-mismatch (format "`~a'" t1) (format "a different `~a'" t2)
+                    "type variables bound in different scopes")]
     [(_ _)
-     (tc-error/expr "Expected ~a, but got ~a" t1 t2)]))
+     (type-mismatch t1 t2)]))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
@@ -67,7 +75,7 @@
 
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
+       (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
      (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
        (expected-but-got (stringify ts2) (stringify ts)))
      (if (= (length ts) (length ts2))
@@ -84,49 +92,53 @@
         (expected-but-got t2 t1)]
        [(and (not (filter-better? f1 f2))
              (object-better? o1 o2))
-        (tc-error/expr "Expected result with filter ~a, got filter ~a" f2 f1)]
+        (type-mismatch f2 f1 "mismatch in filter")]
        [(and (filter-better? f1 f2)
              (not (object-better? o1 o2)))
-        (tc-error/expr "Expected result with object ~a, got object ~a" o2 o1)]
+        (type-mismatch o2 o1 "mismatch in object")]
        [(and (not (filter-better? f1 f2))
              (not (object-better? o1 o2)))
-        (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
+        (type-mismatch (format "`~a' and `~a'" f2 (print-object o2))
+                       (format "`~a' and `~a'" f1 (print-object o1))
+                       "mismatch in filter and object")])
      expected]
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
      (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a values and ~a ..., but got ~a values"
-                      (length t2) dty (length t1)))
+       (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
+                      (format "~a values" (length t1))
+                      "mismatch in number of values"))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
      (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a values, but got ~a values and ~a ..."
-                      (length t2) (length t1) dty))
+       (type-mismatch (format "~a values" (length t2))
+                      (format "~a values and `~a'" (length t1) dty)
+                      "mismatch in number of values"))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
      (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a non dotted values, but got ~a" (length t2) (length t1)))
+       (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
      (unless (andmap subtype t1 t2)
        (expected-but-got (stringify t2) (stringify t1)))
      (unless (subtype dty1 dty2)
-       (tc-error/expr "Expected ~a in ..., but got ~a" dty2 dty1))
+       (type-mismatch dty2 dty1 "mismatch in ... argument"))
      expected]
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
      (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
+       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
-     (tc-error/expr "Expected 1 value, but got unknown number")
+     (type-mismatch "1 value" "unknown number")
      expected]
     [((tc-any-results:) (tc-results: t2 fs os))
-     (tc-error/expr "Expected ~a values, but got unknown number" (length t2))
+     (type-mismatch (format "~a values" (length t2)) "unknown number")
      expected]
 
     [((tc-result1: t1 f o) (? Type/c? t2))
@@ -142,12 +154,13 @@
      t1]
     [((? Type/c? t1) (tc-result1: t2 f o))
      (if (subtype t1 t2)
-         (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
+         (type-mismatch (format "`~a' and `~a'" f (print-object o)) t1
+                        "mismatch in filter")
          (expected-but-got t2 t1))
      t1]
     [((? Type/c? t1) (tc-results: ts2 fs os))
-       (tc-error/expr "Expected one value, but got ~a" (length ts2))
-       t1]
+     (type-mismatch "1 value" (length ts2) "mismatch in number of values")
+     t1]
     [((? Type/c? t1) (? Type/c? t2))
      (unless (subtype t1 t2)
        (expected-but-got t2 t1))

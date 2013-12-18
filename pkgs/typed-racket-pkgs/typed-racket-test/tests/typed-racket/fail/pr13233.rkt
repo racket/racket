@@ -1,5 +1,5 @@
 #;
-(exn-pred "Expected Zero, but got")
+(exn-pred "expected: Zero\n  given:")
 #lang typed/racket
 
 ;; test odd? filter

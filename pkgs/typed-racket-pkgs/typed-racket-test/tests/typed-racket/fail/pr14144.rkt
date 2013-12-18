@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"Expected 'foo, but got 'bar")
+(exn-pred #rx"expected: 'foo\n  given: 'bar")
 #lang racket/load
 
 ;; Test for PR 14144
