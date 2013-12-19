@@ -2015,8 +2015,16 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     /* (lambda args E) where args is not in E => drop the argument */
     new_info = resolve_info_extend(info, 0, 1, cl->base_closure_size);
     num_params = 0;
-    if (!just_compute_lift)
+    if (!just_compute_lift) {
       data->num_params = 0;
+      if (expanded_already) {
+        /* shift type map down: */
+        for (i = 0; i < closure_size; i++) {
+          scheme_boxmap_set(closure_map, i, scheme_boxmap_get(closure_map, i + 1, closure_size), closure_size);
+        }
+        SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_HAS_TYPED_ARGS;
+      }
+    }
   } else {
     new_info = resolve_info_extend(info, data->num_params, data->num_params,
                                    cl->base_closure_size + data->num_params);

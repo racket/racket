@@ -3165,6 +3165,23 @@
   (void (dynamic-require ''uses-too-much-memory-for-shift #f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that closure fields are correctly type-tagged
+;; when a function has an unused rest arg:
+
+(parameterize ([current-namespace (make-base-namespace)]
+               [read-on-demand-source #f]
+               [read-accept-compiled #t])
+  (let ([o (open-output-bytes)])
+    (write (compile '(module m racket/base
+                       (require racket/fixnum)
+                       (define (test l)
+                         (define n (fxmax (length l) 1))
+                         (lambda _ n))))
+           o)
+    ;; Should succeed, as opposed to a validation error:
+    (eval (read (open-input-bytes (get-output-bytes o))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
