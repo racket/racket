@@ -1172,6 +1172,12 @@
   (test 17t0 readstr "#x11.0t0"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; srcloc->string
+
+(test "x.rkt:10:11" srcloc->string (make-srcloc "x.rkt" 10 11 100 8))
+(test "x.rkt::100" srcloc->string (make-srcloc "x.rkt" #f #f 100 8))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

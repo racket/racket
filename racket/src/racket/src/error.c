@@ -2028,7 +2028,7 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
   }
 
   if (col < 0)
-    col = pos;
+    col = pos + 1;
 
   if (src && SCHEME_PATHP(src)) {
     /* Strip off prefix matching the current directory: */
@@ -2097,7 +2097,7 @@ Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv)
   col = struct_number_ref(argv[0], 2);
   pos = struct_number_ref(argv[0], 3);
   
-  s = make_srcloc_string(src, line, col, pos, &len);
+  s = make_srcloc_string(src, line, (col >= 0 ? col+1 : -1), pos, &len);
 
   if (s)
     return scheme_make_sized_utf8_string(s, len);
