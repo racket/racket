@@ -281,10 +281,10 @@ binding, constructor, etc.}
              [flags (listof (or/c 'preserves-marks 'is-method 'single-result 
                                   'only-rest-arg-not-used 'sfs-clear-rest-args))]
              [num-params exact-nonnegative-integer?]
-             [param-types (listof (or/c 'val 'ref 'flonum 'fixnum))]
+             [param-types (listof (or/c 'val 'ref 'flonum 'fixnum 'extflonum))]
              [rest? boolean?]
              [closure-map (vectorof exact-nonnegative-integer?)]
-             [closure-types (listof (or/c 'val/ref 'flonum))]
+             [closure-types (listof (or/c 'val/ref 'flonum 'fixnum 'extflonum))]
              [toplevel-map (or/c #f (set/c exact-nonnegative-integer?))]
              [max-let-depth exact-nonnegative-integer?]
              [body (or/c expr? seq? any/c)])]{
@@ -296,7 +296,8 @@ binding, constructor, etc.}
   @racket[param-types] list contains @racket[num-params] symbols
   indicating the type of each argumet, either @racket['val] for a normal
   argument, @racket['ref] for a boxed argument (representing a mutable
-  local variable), or @racket['flonum] for a flonum argument. 
+  local variable), @racket['flonum] for a flonum argument,
+  or @racket['extflonum] for an extflonum argument. 
 
   The
   @racket[closure-map] field is a vector of stack positions that are
@@ -350,7 +351,7 @@ binding, constructor, etc.}
 @defstruct+[(let-one expr)
             ([rhs (or/c expr? seq? any/c)]
              [body (or/c expr? seq? any/c)]
-             [type (or/c #f 'flonum 'fixnum)]
+             [type (or/c #f 'flonum 'fixnum 'extflonum)]
              [unused? boolean?])]{
   Pushes an uninitialized slot onto the stack, evaluates @racket[rhs]
   and puts its value into the slot, and then runs @racket[body].  If
@@ -413,7 +414,7 @@ binding, constructor, etc.}
              [pos exact-nonnegative-integer?]
              [clear? boolean?]
              [other-clears? boolean?]
-             [type (or/c #f 'flonum 'fixnum)])]{
+             [type (or/c #f 'flonum 'fixnum 'extflonum)])]{
   Represents a local-variable reference; it accesses the value in the
   stack slot after the first @racket[pos] slots.  If @racket[unbox?]  is
   @racket[#t], the stack slot contains a box, and a value is extracted
