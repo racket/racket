@@ -1004,6 +1004,51 @@
    (begin-for-syntax
      (begin-for-syntax
        (define y 2))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `dynamic-require` re-export fast path
+
+(for ([specs (list (list '(provide)
+                         'x)
+                   (list '(provide x)
+                         'x)
+                   (list '(provide (rename-out [x xx]))
+                         'x)
+                   (list '(provide (rename-out [y x]))
+                         'x)
+                   (list '(provide)
+                         '(rename-out [y x])
+                         "y")
+                   (list '(provide)
+                         '(rename-out [z x])
+                         "x"
+                         ;; slow:
+                         "exp\nexp\nrun\nexp\nexp\n"))])
+  (define ns (make-base-namespace))
+  (define o (open-output-string))
+  (parameterize ([current-output-port o])
+    (eval `(module m racket/base
+             (require (for-syntax racket/base))
+             (begin-for-syntax (displayln "exp"))
+             (define x "x")
+             (define y "y")
+             (define-syntax (z stx) #'x)
+             ,(car specs)
+             (module* sub #f
+               (displayln "run")
+               (provide ,(cadr specs))))
+          ns))
+  (define expected (if (null? (cddr specs)) "x" (caddr specs)))
+  (define expected-out (if ((length specs) . < . 4)
+                           "exp\nexp\nrun\n"
+                           (list-ref specs 3)))
+  (define (dynamic-require/o m x)
+    (parameterize ([current-output-port o])
+      (dynamic-require m x)))
+  (parameterize ([current-namespace ns])
+    (test expected dynamic-require/o '(submod 'm sub) 'x)
+    (test expected dynamic-require/o '(submod 'm sub) 'x))
+  (test expected-out get-output-string o))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

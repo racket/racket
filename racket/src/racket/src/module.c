@@ -1205,8 +1205,57 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	      break;
 	    } else {
 	      if (fail_with_error) {
-                if (!phase) {
-                  /* Evaluate id in a fresh namespace */
+                if (!phase 
+                    && srcm->me->rt->provide_srcs
+                    && SCHEME_TRUEP(srcm->me->rt->provide_srcs[i])) {
+                  /* Handle simple re-exporting */
+                  int j;
+                  Scheme_Module *srcm2;
+
+                  srcmname = srcm->me->rt->provide_srcs[i];
+                  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
+                  srcmname = scheme_module_resolve(srcmname, 1);
+                  srcname = srcm->me->rt->provide_src_names[i];
+
+                  srcm2 = module_load(srcmname, env, errname);
+
+                  for (j = srcm2->me->rt->num_var_provides; j--; ) {
+                    if (SCHEME_FALSEP(srcm2->me->rt->provide_srcs[j])
+                        && SAME_OBJ(srcname, srcm2->me->rt->provide_src_names[j])) {
+                      /* simple re-export applies: */
+                      srcm = srcm2;
+                      count = srcm->me->rt->num_provides;
+                      name = srcm2->me->rt->provides[j];
+                      i = j;
+                      break;
+                    }
+                  }
+                  if (j < 0) {
+                    /* Try indirect: */
+                    Scheme_Module_Export_Info *exp_info = srcm2->exp_infos[0];
+                    for (j = exp_info->num_indirect_provides; j--; ) {
+                      if (SAME_OBJ(srcname, exp_info->indirect_provides[j])) {
+                        srcm = srcm2;
+                        name = srcname;
+                        count = srcm->me->rt->num_provides;
+                        i = count;
+                        position = j;
+                        indirect_ok = 1;
+                        break;
+                      }
+                    }
+                    if (j < 0) {
+                      /* simple re-exporting doesn't work */
+                      srcmname = NULL;
+                    }
+                  }
+                }
+
+                if (srcmname) {
+                  /* Simple re-exporting shortcut worked */
+                  break;
+                } else if (!phase) {
+                  /* The long way: evaluate id in a fresh namespace */
                   Scheme_Object *a[3], *ns;
                   Scheme_Config *config;
                   Scheme_Cont_Frame_Data cframe;
@@ -1243,7 +1292,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                                         NULL);
                 }
               }
-	      return NULL;
+              return NULL;
 	    }
 	  }
 	}
@@ -1265,8 +1314,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
       if (i == count) {
 	if (indirect_ok) {
 	  /* Try indirect provides: */
-          Scheme_Module_Export_Info *exp_info = m->exp_infos[0];
-	  srcm = m;
+          Scheme_Module_Export_Info *exp_info = srcm->exp_infos[0];
 	  count = exp_info->num_indirect_provides;
 	  if (position >= 0) {
 	    i = position;
