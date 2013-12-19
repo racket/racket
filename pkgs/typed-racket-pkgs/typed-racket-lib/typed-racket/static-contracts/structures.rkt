@@ -13,10 +13,10 @@
                                 [body static-contract?]))
     (struct recursive-contract-use ([name identifier?]))
     (struct combinator ([args sequence?]))
+    (struct static-contract ())
     [sc-map (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
     [sc->contract (static-contract? (static-contract? . -> . syntax?) . -> . syntax?)]
     [sc->constraints (static-contract? (static-contract? . -> . contract-restrict?) . -> . contract-restrict?)]
-    [static-contract? predicate/c]
     [sc? predicate/c]
     )
 
@@ -135,7 +135,7 @@
 
 ;; Super struct of static contract combinators.
 ;; Provides printing functionality.
-;; - args : (listof static-contract?)
+;; - args : (sequenceof static-contract?)
 (struct combinator static-contract (args)
         #:transparent
         #:property prop:combinator-name "combinator/sc"
