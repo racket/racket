@@ -1450,7 +1450,6 @@ path/s is either such a string or a list of them.
 "pkgs/scribble-pkgs/scribble-lib/scribble/jfp/lang.rkt" drdr:command-line (mzc *)
 "pkgs/scribble-pkgs/scribble-lib/scribble/lncs/lang.rkt" drdr:command-line (mzc *)
 "pkgs/scribble-pkgs/scribble-lib/scribble/run.rkt" drdr:command-line (mzc *)
-"pkgs/scribble-pkgs/scribble-test/tests/scribble/main.rkt" drdr:command-line #f
 "pkgs/scribble-pkgs/scribble-test/tests/scriblib" responsible (mflatt)
 "pkgs/scribble-pkgs/scribble-text-lib/scribble/text.rkt" responsible (eli)
 "pkgs/serialize-cstruct-lib" responsible (mflatt)
