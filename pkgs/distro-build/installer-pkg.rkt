@@ -71,18 +71,13 @@
   (copy-file (build-path dest-dir "README.txt")
              (build-path resources-dir "README.txt"))
 
-  (apply system*/show 
-         pkgbuild
-         (append 
-          (list "--root" dest-dir
+  (system*/show pkgbuild
+                "--root" dest-dir
                 "--install-location" install-dest
                 "--scripts" scripts-dir
                 "--identifier" id
-                "--version" (version))
-          (if (string=? sign-identity "")
-              null
-              (list "--sign" sign-identity))
-          (list (make-rel "racket.pkg"))))
+                "--version" (version)
+                (make-rel "racket.pkg"))
   (define pkg-xml (make-rel "racket.xml"))
   (system*/show productbuild
                 "--synthesize" 
@@ -117,13 +112,18 @@
    #:exists 'truncate
    (lambda (o)
      (write-xml updated o)))
-  (system*/show productbuild
-                "--distribution" pkg-xml
+  (apply system*/show
+         productbuild
+         (append
+          (list "--distribution" pkg-xml
                 "--package-path" (make-rel 'same)
                 "--resources" resources-dir
                 "--identifier" id
-                "--version" (version)
-                pkg-name))
+                "--version" (version))
+          (if (string=? sign-identity "")
+              null
+              (list "--sign" sign-identity))
+          (list pkg-name))))
 
 (define (installer-pkg human-name base-name dist-suffix readme sign-identity)
   (define pkg-name (format "bundle/~a-~a~a.pkg"
