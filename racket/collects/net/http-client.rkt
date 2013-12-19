@@ -128,8 +128,7 @@
     (fprintf to "~a\r\n" h))
   (fprintf to "\r\n")
   (when data
-    (display data to)
-    (fprintf to "\r\n"))
+    (display data to))
   (flush-output to))
 
 (define (http-conn-status! hc)
