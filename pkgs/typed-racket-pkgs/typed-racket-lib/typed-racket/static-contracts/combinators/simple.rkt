@@ -19,7 +19,7 @@
     [flat/sc? predicate/c]))
 
 (define (simple-contract-write-proc v port mode)
-  (match-define (simple-contract _ syntax kind) v)
+  (match-define (simple-contract syntax kind) v)
   (define-values (open close)
     (if (equal? mode 0)
         (values "(" ")")
@@ -32,16 +32,16 @@
 
 
 
-(struct simple-contract combinator (syntax kind)
+(struct simple-contract static-contract (syntax kind)
         #:methods gen:sc
          [(define (sc-map v f) v)
           (define (sc->contract v f) (simple-contract-syntax v))
           (define (sc->constraints v f) (simple-contract-restrict (simple-contract-kind v)))]
         #:methods gen:custom-write [(define write-proc simple-contract-write-proc)])
 
-(define (flat/sc ctc) (simple-contract null ctc 'flat))
-(define (chaperone/sc ctc) (simple-contract null ctc 'chaperone))
-(define (impersonator/sc ctc) (simple-contract null ctc 'impersonator))
+(define (flat/sc ctc) (simple-contract ctc 'flat))
+(define (chaperone/sc ctc) (simple-contract ctc 'chaperone))
+(define (impersonator/sc ctc) (simple-contract ctc 'impersonator))
 
 (define (flat/sc? sc)
   (and (simple-contract? sc)
