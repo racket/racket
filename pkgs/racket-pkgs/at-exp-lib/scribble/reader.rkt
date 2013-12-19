@@ -169,7 +169,7 @@
     (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
            [msg  (apply format (if eof? xs (cons msg xs)))])
       ((if eof? raise-read-error raise-read-eof-error)
-       msg source-name line col pos (span-from pos))))
+       msg (or source-name (object-name inp)) line col pos (span-from pos))))
   (define (read-error* . xs)
     (apply read-error line-num col-num position xs))
 
