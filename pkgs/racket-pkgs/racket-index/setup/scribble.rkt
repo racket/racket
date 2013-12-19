@@ -235,9 +235,11 @@
       (make-directory* base)
       (doc-db-disconnect
        (doc-db-file->connection db-file #t))))
-  (when (ormap can-build*? main-docs)
+  (when (or (ormap can-build*? main-docs)
+            (and tidy? (not avoid-main?)))
     (touch-db main-db))
-  (when (ormap can-build*? user-docs)
+  (when (or (ormap can-build*? user-docs)
+            (and tidy? make-user?))
     (touch-db user-db))
 
   (when (and (or (not only-dirs) tidy?)
@@ -424,11 +426,15 @@
       (when first?
         (log-setup-info "checking for duplicates")
         (let ([dups (append
-                     (doc-db-check-duplicates main-db #:main-doc-relative-ok? #t)
+                     (if (file-exists? main-db)
+                         (doc-db-check-duplicates main-db #:main-doc-relative-ok? #t)
+                         null)
                      (if (and make-user?
                               (file-exists? user-db)
                               (not (equal? main-db user-db)))
-                         (doc-db-check-duplicates user-db #:attach main-db #:main-doc-relative-ok? #t)
+                         (doc-db-check-duplicates user-db
+                                                  #:attach (and (file-exists? main-db) main-db)
+                                                  #:main-doc-relative-ok? #t)
                          null))])
           (for ([dup dups])
             (let ([k (car dup)]
@@ -1018,7 +1024,8 @@
                                  (and t2 (min t t2)))))]
          [provides-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
                           (and t
-                               (let ([t2 (doc-db-get-provides-timestamp db-file info-out-file)])
+                               (let ([t2 (and (file-exists? db-file)
+                                              (doc-db-get-provides-timestamp db-file info-out-file))])
                                  (and t2 (min t t2)))))]
          [info-in-exists? (file-exists? info-in-file)]
          [vers (send renderer get-serialize-version)]
