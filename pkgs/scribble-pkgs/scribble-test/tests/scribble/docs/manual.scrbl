@@ -2,7 +2,7 @@
 @(require (for-label racket/base
                      "manual-ex.rkt"))
 
-@defmodule["manual-ex.rkt"]
+@defmodule["manual-ex.rkt" #:packages ("manual-test")]
 
 @defproc[(f) integer?]{A function.}
 
@@ -68,45 +68,45 @@
 @defstruct[#:link-target? #f pt ([x real?] [y real?]) #:mutable]{A mutable structure type with extra name, again.}
 
 
-@defmodule["manual-ex0.rkt" #:no-declare #:link-target? #f]
-@defmodule["manual-ex0.rkt" #:lang #:no-declare #:link-target? #f]
-@defmodule["manual-ex0.rkt" #:reader #:no-declare #:link-target? #f]
+@defmodule["manual-ex0.rkt" #:no-declare #:link-target? #f #:packages ()]
+@defmodule["manual-ex0.rkt" #:lang #:no-declare #:link-target? #f #:packages ()]
+@defmodule["manual-ex0.rkt" #:reader #:no-declare #:link-target? #f #:packages ()]
 
 @section{Sub2}
-@defmodule["manual-ex2.rkt" #:no-declare]
+@defmodule["manual-ex2.rkt" #:no-declare #:packages ()]
 
 @section{Sub2a}
-@defmodule*/no-declare[("manual-ex2a.rkt")]
+@defmodule*/no-declare[("manual-ex2a.rkt") #:packages ()]
 
 @section{Sub3}
-@defmodule["manual-ex3.rkt" #:lang #:no-declare]
+@defmodule["manual-ex3.rkt" #:lang #:no-declare #:packages ()]
 
 @section{Sub3a}
-@defmodulelang*/no-declare[("manual-ex3a.rkt")]
+@defmodulelang*/no-declare[("manual-ex3a.rkt") #:packages ()]
 
 @section{Sub4-5}
-@defmodule[#:multi ("manual-ex4.rkt" "manual-ex5.rkt")]
+@defmodule[#:multi ("manual-ex4.rkt" "manual-ex5.rkt") #:packages ()]
 
 @section{Sub4a-5a}
-@defmodule*[("manual-ex4a.rkt" "manual-ex5a.rkt")]
+@defmodule*[("manual-ex4a.rkt" "manual-ex5a.rkt") #:packages ()]
 
 @section{Sub6}
-@defmodule[#:require-form (racket load) "manual-ex6.rkt"]
+@defmodule[#:require-form (racket load) "manual-ex6.rkt" #:packages ()]
 
 @section{Sub6a}
-@defmodule*[#:require-form (racket load) ("manual-ex6a.rkt")]
+@defmodule*[#:require-form (racket load) ("manual-ex6a.rkt") #:packages ()]
 
 @section{Sub7}
-@defmodule["manual-ex7.rkt" #:use-sources (racket/base)]
+@defmodule["manual-ex7.rkt" #:use-sources (racket/base) #:packages ()]
 
 @section{Sub7a}
-@defmodule*[("manual-ex7a.rkt") #:use-sources (racket/base)]
+@defmodule*[("manual-ex7a.rkt") #:use-sources (racket/base) #:packages ()]
 
 @section{Sub8}
-@defmodule["manual-ex8.rkt" #:reader]
+@defmodule["manual-ex8.rkt" #:reader #:packages ()]
 
 @section{Sub8a}
-@defmodulereader["manual-ex8a.rkt"]
+@defmodulereader["manual-ex8a.rkt" #:packages ()]
 
 @section{Sub8b}
-@defmodulereader*[("manual-ex8b.rkt")]
+@defmodulereader*[("manual-ex8b.rkt") #:packages ()]
