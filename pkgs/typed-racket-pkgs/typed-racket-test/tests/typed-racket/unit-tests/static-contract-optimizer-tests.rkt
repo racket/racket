@@ -19,8 +19,15 @@
            (check-optimize-helper argument negative-expected #f #t)))]))
 
 (define (check-optimize-helper argument expected trusted-positive trusted-negative)
+  (define trusted-side
+    (cond
+      [(and trusted-positive trusted-negative) 'both]
+      [trusted-positive 'positive]
+      [trusted-negative 'negative]
+      [else 'neither]))
   (with-check-info*
     (list (make-check-info 'original argument)
+          (make-check-info 'trusted trusted-side)
           (make-check-expected expected))
     (λ ()
       (let ([opt (optimize argument
@@ -140,10 +147,41 @@
       #:pos any/sc
       #:neg none/sc)
 
-    ;; TODO add these test cases
     ;; Boxes
-    ;; Syntax
-    ;; Promise
+    (check-optimize (box/sc any/sc)
+      #:pos any/sc
+      #:neg box?/sc)
+    (check-optimize (box/sc none/sc)
+      #:pos any/sc
+      #:neg none/sc)
+    (check-optimize (box/sc set?/sc)
+      #:pos (box/sc set?/sc)
+      #:neg (box/sc set?/sc))
+
+    ;; Syntax Objects
+    (check-optimize (syntax/sc any/sc)
+      #:pos any/sc
+      #:neg syntax?/sc)
+    (check-optimize (syntax/sc none/sc)
+      #:pos any/sc
+      #:neg none/sc)
+    (check-optimize (syntax/sc set?/sc)
+      #:pos any/sc
+      #:neg (syntax/sc set?/sc))
+
+    ;; Promises
+    (check-optimize (promise/sc any/sc)
+      #:pos any/sc
+      #:neg promise?/sc)
+    (check-optimize (promise/sc none/sc)
+      #:pos any/sc
+      #:neg none/sc)
+    (check-optimize (promise/sc set?/sc)
+      #:pos any/sc
+      #:neg (promise/sc set?/sc))
+    (check-optimize (promise/sc (box/sc set?/sc))
+      #:pos (promise/sc (box/sc set?/sc))
+      #:neg (promise/sc (box/sc set?/sc)))
 
     (check-optimize
       (function/sc (list (listof/sc any/sc))
