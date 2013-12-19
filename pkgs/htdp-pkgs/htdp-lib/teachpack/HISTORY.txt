@@ -1,5 +1,10 @@
 ------------------------------------------------------------------------
-Version 6.0
+Version 6.0				  [Wed Dec 18 22:02:03 EST 2013]
+
+* 2htdp/batch-io: added some web/html reading functions for part IV 
+  in HtDP/2e. Fixed some minor bugs in the other functions. 
+
+* 2htdp/universe: bug fixes
 
 * 2htdp/image: changed scene+curve and add-curve to more accurately
   compute the bounding box of the curve (previously the argument
