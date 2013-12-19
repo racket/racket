@@ -11,12 +11,11 @@
 (define-syntax (check-optimize stx)
   (syntax-parse stx
     [(_ argument* #:pos positive-expected* #:neg negative-expected*)
-     #'(test-case (~a 'argument*)
-         (let ([argument argument*]
-               [positive-expected positive-expected*]
-               [negative-expected negative-expected*])
-           (check-optimize-helper argument positive-expected #t #f)
-           (check-optimize-helper argument negative-expected #f #t)))]))
+     #'(test-suite (~a 'argument*)
+         (test-case "Trusted Positive"
+           (check-optimize-helper argument* positive-expected* #t #f))
+         (test-case "Trusted Negative"
+           (check-optimize-helper argument* negative-expected* #f #t)))]))
 
 (define (check-optimize-helper argument expected trusted-positive trusted-negative)
   (define trusted-side
@@ -75,8 +74,8 @@
       #:pos any/sc
       #:neg vector?/sc)
     (check-optimize (vectorof/sc none/sc)
-      #:pos any/sc
-      #:neg empty-vector/sc)
+      #:pos (vectorof/sc none/sc)
+      #:neg (vectorof/sc none/sc))
 
     ;; Heterogeneous Vectors
     ;; TODO fix ability to test equality here
@@ -85,8 +84,8 @@
       #:pos any/sc
       #:neg (vector-length/sc 1))
     (check-optimize (vector/sc none/sc)
-      #:pos any/sc
-      #:neg none/sc)
+      #:pos (vector/sc none/sc)
+      #:neg (vector/sc none/sc))
     ;; TODO fix ability to test equality here
     #;
     (check-optimize (vector/sc)
@@ -101,11 +100,11 @@
       #:pos any/sc
       #:neg hash?/sc)
     (check-optimize (hash/sc none/sc any/sc)
-      #:pos any/sc
-      #:neg empty-hash/sc)
+      #:pos (hash/sc none/sc any/sc)
+      #:neg (hash/sc none/sc any/sc))
     (check-optimize (hash/sc any/sc none/sc)
-      #:pos any/sc
-      #:neg empty-hash/sc)
+      #:pos (hash/sc any/sc none/sc)
+      #:neg (hash/sc any/sc none/sc))
 
     ;; And
     (check-optimize (and/sc set?/sc)
@@ -152,8 +151,8 @@
       #:pos any/sc
       #:neg box?/sc)
     (check-optimize (box/sc none/sc)
-      #:pos any/sc
-      #:neg none/sc)
+      #:pos (box/sc none/sc)
+      #:neg (box/sc none/sc))
     (check-optimize (box/sc set?/sc)
       #:pos (box/sc set?/sc)
       #:neg (box/sc set?/sc))
@@ -175,7 +174,7 @@
       #:neg promise?/sc)
     (check-optimize (promise/sc none/sc)
       #:pos any/sc
-      #:neg none/sc)
+      #:neg (promise/sc none/sc))
     (check-optimize (promise/sc set?/sc)
       #:pos any/sc
       #:neg (promise/sc set?/sc))
