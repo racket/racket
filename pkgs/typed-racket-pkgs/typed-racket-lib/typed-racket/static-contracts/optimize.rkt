@@ -23,14 +23,16 @@
     ;; none/sc cases
     [(listof/sc: (none/sc:)) empty-list/sc]
     [(list/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
-    [(vectorof/sc: (none/sc:)) empty-vector/sc]
-    [(vector/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
     [(set/sc: (none/sc:)) empty-set/sc]
-    [(box/sc: (none/sc:)) none/sc]
     [(syntax/sc: (none/sc:)) none/sc]
-    [(promise/sc: (none/sc:)) none/sc]
-    [(hash/sc: (none/sc:) value/sc) empty-hash/sc]
-    [(hash/sc: key/sc (none/sc:)) empty-hash/sc]
+    ;; The following are unsound because chaperones allow operations on these data structures to 
+    ;; can call continuations and thus be useful even if they cannot return values.
+    ;[(vectorof/sc: (none/sc:)) empty-vector/sc]
+    ;[(vector/sc: sc1 ... (none/sc:) sc2 ...) none/sc]
+    ;[(box/sc: (none/sc:)) none/sc]
+    ;[(promise/sc: (none/sc:)) none/sc]
+    ;[(hash/sc: (none/sc:) value/sc) empty-hash/sc]
+    ;[(hash/sc: key/sc (none/sc:)) empty-hash/sc]
 
     ;; any/sc cases
     [(listof/sc: (any/sc:)) list?/sc]
