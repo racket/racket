@@ -69,9 +69,14 @@ Commands: ----------
  raco pkg install: changed to install the current directory as a link
   when no arguments are provided; added --pkgs
 Libraries: ----------
+ racket/class: fixed a bug in is-a? that changes its behavior 
+  slightly: in the past it could return #f when the second argument
+  was invalid; now it signals an error
  racket/file: make-directory* never fails on existing directories
  racket/file: added call-with-atomic-output-file
- racket/contract: added channel/c
+ racket/contract: added channel/c, added #:chaperone specification
+  in struct/dc, added immutable hashes to printable/c, added 
+  #:omit-constructor to contract-out, misc improvements to opt/c
  racket/serialize: changed serializable-struct, etc. to provide
   deserialized-info:... through a derialized-info submodule
  racket/sandbox: added sandbox-make-environment-variables
@@ -85,6 +90,7 @@ Libraries: ----------
   its second argument is not a class or interface
  racket/rerequire: added
  racket/require-syntax: added syntax-local-require-introduce
+ racket/path: added shrink-path-wrt
  racket/provide-syntax: added syntax-local-provide-introduce
  racket/place: allow keywords as place messages
  racket/system: add a #:set-pwd? argument to system, etc., which
@@ -102,6 +108,7 @@ Libraries: ----------
  xml: added a #:insert-newlines? argument to write-xexpr
  ffi/unsafe: added array-type and in-array
  ffi/unsafe/objc: add -A and +A method modes
+ mrlib/terminal: new library
 
 Version 5.3.4, April 2013
 Added extflonums
@@ -135,7 +142,8 @@ slideshow/pict: added color% objects to text-style/c
 scribble: 'toc-hidden style on a part no longer hides ToC
  entries for sub-parts when rendering as HTML
 scribble/manual: added #:id option to defthing
-scribble/srcdoc: added begin-for-doc
+scribble/srcdoc: added begin-for-doc, struct-doc, and struct*-doc
+ added #:omit-constructor argument to defstruct and defstruct*
 scribble/eval: extended make-base-eval to be more like
  make-evaluator
 scribble/latex-properties: added command-extras

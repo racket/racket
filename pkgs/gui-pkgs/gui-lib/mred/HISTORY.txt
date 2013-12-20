@@ -1,3 +1,9 @@
+Version 6.0
+Framework: changed backward-containing-sexp so it returns #f in
+ more situations
+Framework: syntax colorer now usees 'text' for stuff between {}s
+ in scribble mode (not string)
+
 Version 5.90.0.9
 Added get-display-backing-scale
 Added get-backing-scale to bitmap%
