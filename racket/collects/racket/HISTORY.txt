@@ -1,4 +1,4 @@
-Version 6.0
+Version 6.0, January 2014
 Packages & collections: ----------
  Reorganized collections into packages
  Added 'config-dir mode for find-system-path
@@ -25,7 +25,8 @@ Runtime: ----------
  Added #%declare
  Cross-phase persistent modules must be declared with
   (#%declare #:cross-phase-persistent)
- Add configure-runtime submodule support
+ Add configure-runtime submodule support, and changed
+  racket/base to introduce a configure-runtime submodule
 Filesystem and environment variables: ----------
  Changed initialization of current-directory to use PWD
  Added current-environment-variables, environment-variables-ref,
@@ -46,6 +47,7 @@ Filesystem and environment variables: ----------
   exception for an empty [byte-]string argument
  Changed path-replace-suffix to raise an excpetion when a path element
   would be made empty
+ Changed syntax-local-lift-context to distinguish top-level environments
 Datatypes: ----------
  Added hash-clear, hash-copy-clear, hash-clear!, and hash-empty?
  Allow hash table chaperones and impersonators to support efficient
@@ -74,9 +76,12 @@ Libraries: ----------
   was invalid; now it signals an error
  racket/file: make-directory* never fails on existing directories
  racket/file: added call-with-atomic-output-file
+ racket/file: changed {copy/delete}-directory/files to raise
+  "not dir or file" as exn:fail:filesystem
  racket/contract: added channel/c, added #:chaperone specification
   in struct/dc, added immutable hashes to printable/c, added 
   #:omit-constructor to contract-out, misc improvements to opt/c
+ racket/contract: added channel/c
  racket/serialize: changed serializable-struct, etc. to provide
   deserialized-info:... through a derialized-info submodule
  racket/sandbox: added sandbox-make-environment-variables

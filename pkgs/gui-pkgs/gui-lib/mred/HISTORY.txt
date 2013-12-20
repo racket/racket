@@ -1,17 +1,16 @@
-Version 6.0
+Version 6.0, January 2014
+
+Added get-display-backing-scale
+Added get-backing-scale to bitmap%
+Fixed key-event% get-key-release-code to return 'press instead of 'down
+ for a key-down event
+Changed GUI size limit to 1000000
+Add dimension-integer?, position-integer?, spacing-integer?, and
+ positive-dimension-integer?
 Framework: changed backward-containing-sexp so it returns #f in
  more situations
 Framework: syntax colorer now usees 'text' for stuff between {}s
  in scribble mode (not string)
-
-Version 5.90.0.9
-Added get-display-backing-scale
-Added get-backing-scale to bitmap%
-
-Version 5.90.0.5
-
-Fixed key-event% get-key-release-code to return 'press instead of 'down
- for a key-down event
 
 ----------------------------------------
 

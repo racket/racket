@@ -2,5 +2,7 @@ Version 1.2
 slideshow/base: added pict->pre-render-pict
 
 Version 1.1
+Added "spotlight" support in viewer
+slideshow/base: added set-spotlight-style!
 slideshow/pict: added 'outline style for text
 
