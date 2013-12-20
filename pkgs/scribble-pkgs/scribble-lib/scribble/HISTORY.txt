@@ -11,6 +11,8 @@ For HTML rendering, merge generated `style' attributes within
  a single tag
 scribble/base: same change as for racket/runtime-path related
  to "collects"-relative paths
+scribble/base: added `#:indirect' option to `defmodule` and
+ `seclink`
 scribble/manual: added `manual-doc-style'
 scribble/manual: changed `deprecated' to a function, and
  generalized it by adding an optional `#:what' argument

@@ -20,6 +20,6 @@ fails, the name without the version is tried.
  @item{@filepath{libpango-1.0[.0]}}
  @item{@filepath{libpangocairo-1.0[.0]}}
  @item{@filepath{libcairo[.2]}}
- @item{@filepath{libjpeg[.62]}}
- @item{@filepath{libpng12[.0]} or @filepath{libpng}}
+ @item{@filepath{libjpeg[.{62,8,9}]}}
+ @item{@filepath{libpng[{16[.16],15[.15],12[.0]]}}}
 ]
