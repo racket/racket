@@ -2095,7 +2095,7 @@
     (lambda (m)
       (match-define (pkg-info orig-pkg checksum auto?) m)
       (match orig-pkg
-        [`(,(or 'link 'static-link) ,_)
+        [`(,(or 'link 'static-link) ,orig-pkg-dir)
          (if must-update?
              (pkg-error (~a "cannot update linked packages~a\n"
                             "  package name: ~a\n"
@@ -2104,7 +2104,8 @@
                             " without `--link'"
                             " without new link")
                         pkg-name
-                        orig-pkg)
+                        (normalize-path
+                         (path->complete-path orig-pkg-dir (pkg-installed-dir))))
              null)]
         [`(dir ,_)
          (if must-update?
