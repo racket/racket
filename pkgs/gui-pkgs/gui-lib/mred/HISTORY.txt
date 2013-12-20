@@ -11,6 +11,8 @@ Framework: changed backward-containing-sexp so it returns #f in
  more situations
 Framework: syntax colorer now usees 'text' for stuff between {}s
  in scribble mode (not string)
+bitmap-dc% get-pixel and set-pixel now transmit alpha values to/from
+ their arguments
 
 ----------------------------------------
 

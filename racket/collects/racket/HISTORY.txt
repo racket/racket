@@ -112,6 +112,8 @@ Libraries: ----------
  setup/collection-name: added
  pkg/path: added, re-exported by pkg/lib
  net/url: add support for HTTP/1.1 connections
+ net/url: add Host: and Content-Length: headers to HTTP requests 
+  (if they are not already included)
  xml: added a #:insert-newlines? argument to write-xexpr
  ffi/unsafe: added array-type and in-array
  ffi/unsafe/objc: add -A and +A method modes
