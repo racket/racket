@@ -423,7 +423,7 @@ by a simple name until it is listed on a @tech{package catalog}.
 
 If you'd like to use the PLT @tech{package catalog}, browse
 to
-@link["http://pkgs.racket-lang.org/manage/upload"]{http://pkgs.racket-lang.org/manage/upload}
+@link["http://pkgs.racket-lang.org/"]{http://pkgs.racket-lang.org/}
 and upload a new package. You will need to create an account and log
 in first.
 
@@ -532,10 +532,11 @@ In your @racket[info.rkt], you should:
 
 ]
 
-Finally, when listing your package on pkg.racket-lang-org, you should
-supply a GitHub source using the URL format
-@tt{github://github.com/@nonterm{user}/@nonterm{repo}/@nonterm{rev}@optional{/@nonterm{path}}} (not the
-@tt{git:} format).
+Finally, when listing your package on
+@url{http://pkgs.racket-lang-org}, you should supply a GitHub source
+using the URL format
+@tt{github://github.com/@nonterm{user}/@nonterm{repo}/@nonterm{rev}@optional{/@nonterm{path}}} (not
+the @tt{git:} format).
 
 @subsubsection{Version Exceptions}
 
