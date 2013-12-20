@@ -98,7 +98,9 @@
         (unless api-bs
           (error 'package-url->checksum
                  "could not connect to GitHub\n URL: ~a"
-                 (url->string api-u)))
+                 (url->string 
+                  (struct-copy url api-u
+                               [query query]))))
         (define branches
           (read-json (open-input-bytes api-bs)))
         (unless (and (list? branches)
