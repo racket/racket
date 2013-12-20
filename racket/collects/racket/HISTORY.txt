@@ -27,6 +27,7 @@ Runtime: ----------
   (#%declare #:cross-phase-persistent)
  Add configure-runtime submodule support, and changed
   racket/base to introduce a configure-runtime submodule
+ Removed memq, memv, and member from #%kernel
 Filesystem and environment variables: ----------
  Changed initialization of current-directory to use PWD
  Added current-environment-variables, environment-variables-ref,
@@ -71,6 +72,7 @@ Commands: ----------
  raco pkg install: changed to install the current directory as a link
   when no arguments are provided; added --pkgs
 Libraries: ----------
+ racket/base: added an equality checking argument to member
  racket/class: fixed a bug in is-a? that changes its behavior 
   slightly: in the past it could return #f when the second argument
   was invalid; now it signals an error
