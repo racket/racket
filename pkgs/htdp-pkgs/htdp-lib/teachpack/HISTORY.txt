@@ -12,6 +12,12 @@ Version 6.0				  [Wed Dec 18 22:02:03 EST 2013]
   bounding box is calculated properly in the case that the curve goes
   outside that rectangle)
 
+* allow (almost) any real number as angles in 2htdp/image
+
+* added place-images, place-images/align to 2htdp/image
+
+* add transparent color to 2htdp/image 
+
 ------------------------------------------------------------------------
 Version 5.3.4				  [Wed Apr 24 16:20:03 EDT 2013]
 

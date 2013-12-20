@@ -24,6 +24,14 @@ v6.0
 
   * added #:keep-going to redex-check
 
+  * added #:satisfying to redex-check
+
+  * added #:reduce argument to traces
+
+  * DrRacket's Check Syntax now works better with Redex pattern variables
+
+  * The pattern _ now matches anything but does not bind a variable
+
   * bug fixes
 
 v5.3.4

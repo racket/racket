@@ -9,22 +9,38 @@
        Version 6.0
 ------------------------------
 
+  . Internal errors are now stashed away and included in future bug
+    reports (even unrelated bug reports).
+
   . Added a GUI package manager
+
+  . Added keybindings for the items in the Check Synax popup menu,
+    notably c:x;m to rename a variable, c:x;d to just to the
+    definition of an imported variable, c:x;n to go to the next
+    occurence of a variable, and c:x;b to go to the binding occurrence
+    of a variable.
 
   . Improved how Check Syntax handles variables bound by
     define-struct, struct, and Redex's pattern variables
+
+  . Check Syntax now allows macros to declare certain identifiers as
+    original via the 'original-for-syntax syntax property.
+
+  . Online expansion no longer puts status messages in the place where
+    errors go (just watch the colored bubble in the bottom right to
+    see what it is doing)
+
+  . Online check syntax now works even in the presence of type errors
+    in typed racket; and the results may come back in parallel to type
+    checking
 
   . Added <menukey>-shift-o to facilitate opening files that are in
     collections.
 
   . Improved support for (user-defined) color schemes
 
-  . An "info.rkt" spec for `textbook-pls' is appended with the results
-    for `get-textbook-pls' to allow access to `string-constants'. The
-    same is true for `drscheme-language-positions' and
-    `get-drscheme-language-positions'.
-
   . Added a splash screen to commemorate Ada Lovelace's birthday
+    (December 10th)
 
   . Under Unix/X, the .desktop-based launcher now uses single-instance
     mode
@@ -34,7 +50,39 @@
 
   . Improved the usability of the teaching language teachpack dialog 
 
-  . Bug fixes, notably esc;y (paste previously copied text) now works properly
+  . Packages can now add teachpacks to the teachpack dialog via
+    info.rkt declarations.
+
+  . DrRacket allows the language (via the #lang line-specified
+    read-language) to provide a mode specification which, in turn,
+    lets the language make arbitrary adjustments to the editor editing
+    the definitions window. (No languages are using this yet, tho.)
+
+  . Improved auto-parens mode behavior, e.g. typing a double quote in
+    a string now works better. Thanks to Nadeem Abdul Hamid.
+
+  . DrRacket now saves the font size and window position preferences
+    on a per-monitor-configuration basis (so when you plugin your
+    laptop to an external display, the font size will change to the
+    size it last was on that display)
+
+  . DrRacket now saves tabbing and square brack preferences is a
+    defaults-sensitive manner, so that if the defaults get more
+    entries, your DrRacket will pick up the new entries
+
+  . An "info.rkt" spec for `textbook-pls' is appended with the results
+    for `get-textbook-pls' to allow access to `string-constants'. The
+    same is true for `drscheme-language-positions' and
+    `get-drscheme-language-positions'.
+
+  . The compile-enforce-module-constants parameter's initial value in
+    The Racket Language is now configurable via the language dialog.
+
+  . The autosave delay defaults to 30 seconds now (instead of 5
+    minutes, as before)
+
+  . Bug fixes, notably esc;y (paste previously copied text) now works
+    properly
 
 ------------------------------
        Version 5.3.4
