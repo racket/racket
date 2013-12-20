@@ -472,7 +472,10 @@ changing a version is optional, and the @tech{package catalog}
 ignores version declarations; in particular, a package is a candidate
 for updating when its @tech{checksum} changes, independent of whether
 the package's version changes or even in which direction the version
-changes.}
+changes. We suggest using a version smaller than @racket["1.0"] to 
+indicate that a package's interface is unstable and changing it to
+@racket["1.0"] when you are ready to commit to backwards compatibility
+going forward.}
 
 @item{Packages should not combine large sets of utilities libraries
 with other functionality. For example, 
