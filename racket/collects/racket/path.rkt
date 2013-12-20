@@ -184,7 +184,8 @@
 (define (path-element? path)
   (and (path-for-some-system? path)
        (let-values ([(base name d?) (split-path path)])
-         (eq? base 'relative))))
+         (and (eq? base 'relative)
+              (path-for-some-system? name)))))
 
 
 

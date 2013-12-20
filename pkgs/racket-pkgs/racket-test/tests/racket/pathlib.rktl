@@ -3,10 +3,28 @@
 
 (Section 'path)
 
-(require scheme/path)
+(require racket/path)
 
 (define (rtest f args result)
   (test result f args))
+
+;; ----------------------------------------
+
+(test #t path-element? (build-path "filename"))
+(test #t path-element? (bytes->path #"filename" 'unix))
+(test #t path-element? (bytes->path #"filename" 'windows))
+(test #f path-element? (build-path "file" "next"))
+(test #f path-element? (build-path (bytes->path #"file" 'unix)
+                                   (bytes->path #"next" 'unix)))
+(test #f path-element? (build-path (bytes->path #"file" 'windows)
+                                   (bytes->path #"next" 'windows)))
+(test #f path-element? (build-path 'up))
+(test #f path-element? (build-path 'same))
+(test #f path-element? (build-path/convention-type 'unix 'up))
+(test #f path-element? (build-path/convention-type 'unix 'same))
+(test #f path-element? (build-path/convention-type 'windows 'up))
+(test #f path-element? (build-path/convention-type 'windows 'same))
+(test #f ormap path-element? (filesystem-root-list))
 
 ;; ----------------------------------------
 
