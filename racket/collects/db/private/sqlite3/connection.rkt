@@ -302,10 +302,15 @@
                 (internal-query1 fsym "COMMIT TRANSACTION")]))
         ((rollback)
          (cond [savepoint
+                ;; FIXME: if nested tx is invalid, enclosing tx might be invalid too
+                ;; (eg, IOERR). Add way to communicate back enclosing tx validity.
                 (internal-query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint))
                 (internal-query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint))]
+               [(read-tx-status)
+                (internal-query1 fsym "ROLLBACK TRANSACTION")]
                [else
-                (internal-query1 fsym "ROLLBACK TRANSACTION")])
+                ;; underlying tx already closed due to auto-rollback error
+                (void)])
          ;; remove 'invalid status, if necessary
          (set-tx-status! fsym (read-tx-status))))
       (void))
