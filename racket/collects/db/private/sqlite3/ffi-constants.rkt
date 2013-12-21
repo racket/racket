@@ -32,6 +32,10 @@
 (define SQLITE_ROW         100  ) ; sqlite3_step() has another row ready */
 (define SQLITE_DONE        101  ) ; sqlite3_step() has finished executing */
 
+;; Extended error codes:
+(define SQLITE_IOERR_BLOCKED (bitwise-ior SQLITE_IOERR (arithmetic-shift 11 8)))
+(define SQLITE_IOERR_LOCK    (bitwise-ior SQLITE_IOERR (arithmetic-shift 15 8)))
+
 (define SQLITE_INTEGER  1)
 (define SQLITE_FLOAT    2)
 (define SQLITE3_TEXT    3)
