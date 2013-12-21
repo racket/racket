@@ -43,7 +43,7 @@ span.RktValDef, span.RktStxDef, span.RktSymDef
 .inherited td {
   font-size: 82%;
   padding-left: 0.5rem;
-  line-height: 1.3em;
+  line-height: 1.3;
   text-indent: 0;
   padding-right: 0;
 }
