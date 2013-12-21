@@ -121,6 +121,11 @@
 (define-sqlite sqlite3_errmsg
   (_fun _sqlite3_database -> _string))
 
+(define-sqlite sqlite3_extended_result_codes
+  (_fun _sqlite3_database _bool -> _int)
+  ;; Ok if it's unavailable:
+  #:fail (lambda () (lambda (db on?) 0)))
+
 ;; ----------------------------------------
 
 (define-sqlite sqlite3_bind_int

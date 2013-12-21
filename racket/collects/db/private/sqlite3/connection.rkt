@@ -23,6 +23,8 @@
     (define -db db)
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
 
+    (sqlite3_extended_result_codes db #t)
+
     ;; Must finalize all stmts before closing db, but also want stmts to be
     ;; independently finalizable. So db needs strong refs to stmts (but no
     ;; strong refs to prepared-statement% wrappers). Actually, sqlite3 maintains
@@ -342,7 +344,8 @@
 
     (define/private (handle* who thunk iteration)
       (call-with-values thunk
-        (lambda (s . rest)
+        (lambda (full-s . rest)
+          (define s (simplify-status full-s))
           (cond [(and (= s SQLITE_BUSY) (< iteration busy-retry-limit))
                  (sleep busy-retry-delay)
                  (handle* who thunk (add1 iteration))]
@@ -352,17 +355,17 @@
                                  who
                                  (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
                                  iteration))
-                 (apply values (handle-status who s) rest)]))))
+                 (apply values (handle-status who full-s) rest)]))))
 
     ;; Some errors can cause whole transaction to rollback;
     ;; (see http://www.sqlite.org/lang_transaction.html)
     ;; So when those errors occur, compare current tx-status w/ saved.
     ;; Can't figure out how to test...
-    (define/private (handle-status who s)
-      (when (memv s maybe-rollback-status-list)
+    (define/private (handle-status who full-s)
+      (when (memv (simplify-status full-s) maybe-rollback-status-list)
         (when (and saved-tx-status -db (not (read-tx-status))) ;; was in trans, now not
           (set-tx-status! who 'invalid)))
-      (handle-status* who s -db))
+      (handle-status* who full-s -db))
 
     ;; ----
 
@@ -381,7 +384,8 @@
 ;; handle-status : symbol integer -> integer
 ;; Returns the status code if no error occurred, otherwise
 ;; raises an exception with an appropriate message.
-(define (handle-status* who s db)
+(define (handle-status* who full-s db)
+  (define s (simplify-status full-s))
   (cond [(or (= s SQLITE_OK)
              (= s SQLITE_ROW)
              (= s SQLITE_DONE))
@@ -403,6 +407,15 @@
                                        (message . ,message)
                                        (errcode . ,s)))))]))
 
+(define (simplify-status s)
+  (cond
+   [(or (= SQLITE_IOERR_BLOCKED s)
+        (= SQLITE_IOERR_LOCK s))
+    ;; Kept in extended form, because these indicate
+    ;; cases where retry is appropriate
+    s]
+   [else (bitwise-and s 255)]))
+
 (define error-table
   `([,SQLITE_ERROR       error      "unknown error"]
     [,SQLITE_INTERNAL    internal   "an internal logic error in SQLite"]
@@ -414,6 +427,8 @@
     [,SQLITE_READONLY    readonly   "attempt to write a readonly database"]
     [,SQLITE_INTERRUPT   interrupt  "operation terminated by sqlite3_interrupt()"]
     [,SQLITE_IOERR       ioerr      "some kind of disk I/O error occurred"]
+    [,SQLITE_IOERR_BLOCKED ioerr-blocked "some kind of disk I/O error occurred (blocked)"]
+    [,SQLITE_IOERR_LOCK  ioerr-lock "some kind of disk I/O error occurred (lock)"]
     [,SQLITE_CORRUPT     corrupt    "the database disk image is malformed"]
     [,SQLITE_NOTFOUND    notfound   "(internal only) table or record not found"]
     [,SQLITE_FULL        full       "insertion failed because database is full"]
@@ -433,4 +448,5 @@
 
 ;; http://www.sqlite.org/lang_transaction.html
 (define maybe-rollback-status-list
-  (list SQLITE_FULL SQLITE_IOERR SQLITE_BUSY SQLITE_NOMEM SQLITE_INTERRUPT))
+  (list SQLITE_FULL SQLITE_IOERR SQLITE_BUSY SQLITE_NOMEM SQLITE_INTERRUPT
+        SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK))

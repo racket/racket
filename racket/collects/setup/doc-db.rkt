@@ -486,7 +486,8 @@
   (and (exn:fail:sql? v)
        (let ([s (exn:fail:sql-sqlstate v)])
          (or (eq? s 'busy)
-             (and (string? s) (regexp-match? s #rx"^40...$"))))))
+             (eq? s 'ioerr-blocked)
+             (eq? s 'ioerr-lock)))))
 
 (define (call-with-lock-handler handler thunk)
   (with-handlers* ([exn:fail:retry?
