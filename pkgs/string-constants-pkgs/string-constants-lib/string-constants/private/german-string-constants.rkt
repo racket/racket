@@ -353,6 +353,9 @@
  (install-plt-file-tab "Datei")
  (install-plt-filename "Dateiname:")
  (install-plt-url "URL:")
+ ; an error message from a primitive operation is appended to the end of this message.
+ (install-plt-error-downloading "Beim Herunterladen der"
+                                " .plt-Datei ist ein Fehler aufgetreten.\n\nDetails:\n")
  (install-plt-error-header "Beim Überprüfen der heruntergeladenen .plt-Datei ist ein Fehler aufgetreten. Bitte überprüfen Sie die URL und versuchen Sie es noch einmal.")
   
  (install-plt-file "~a installieren oder editieren?")
