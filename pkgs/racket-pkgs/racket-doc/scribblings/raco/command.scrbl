@@ -83,7 +83,8 @@ Returns a string that identifies the current command. When
 short name of the @exec{raco} executable followed by a space and the
 command name. Otherwise, it is the short name of the current
 executable, as determined by stripping the path from the result of
-@racket[(find-system-path 'run-file)].
+@racket[(find-system-path 'run-file)]. In either case, on Windows, an
+@filepath{.exe} extension is removed from the executable name.
 
 The result of this function is suitable for use with
 @racket[command-line]. For example, the @exec{decompile} tool parses

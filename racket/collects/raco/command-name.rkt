@@ -21,7 +21,13 @@
       (let-values ([(p) (find-system-path 'run-file)]
                    [(n) (current-command-name)])
         (let-values ([(base name dir?) (split-path p)])
-          (if n
-              (format "~a ~a" name n)
-              (path->string name)))))))
+          (let-values ([(name) (if (eq? (system-type) 'windows)
+                                   (string->path-element
+                                    (regexp-replace #rx"(?i:[.]exe)$"
+                                                    (path-element->string name)
+                                                    ""))
+                                   name)])
+            (if n
+                (format "~a ~a" name n)
+                (path->string name))))))))
 
