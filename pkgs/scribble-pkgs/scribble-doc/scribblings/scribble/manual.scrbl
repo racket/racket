@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual "utils.rkt"
           (for-syntax racket/base)
-          (for-label scribble/manual-struct))
+          (for-label scribble/manual-struct
+                     version/utils))
 
 @(define lit-ellipses (racket ...))
 @(define lit-ellipses+ (racket ...+))
@@ -630,7 +631,9 @@ is determined automatically, but a set of providing packages can be
 specified explicitly with @racket[#:packages]. Each @racket[pkg-expr]
 result is passed on to a function like @racket[tt] for
 typesetting. Provide an empty sequence after @racket[#:packages] to
-suppress any package name in the output.
+suppress any package name in the output. Each @racket[pkg-expr]
+expression is are duplicated for a  @racket[declare-exporting] form,
+unless @racket[#:no-declare] is specified.
 
 Each @racket[option] form can appear at most once, and @racket[#:lang]
 and @racket[#:reader] are mutually exclusive.
@@ -639,8 +642,10 @@ The @tech{decode}d @racket[pre-flow]s introduce the module, but need
 not include all of the module content.}
 
 
-@defform/subs[(declare-exporting module-path ... maybe-sources)
-              ([maybe-sources code:blank
+@defform/subs[(declare-exporting module-path ... maybe-pkgs maybe-sources)
+              ([maybe-pkgs code:blank
+                           (code:line #:packages (pkg-expr ...))]
+               [maybe-sources code:blank
                               (code:line #:use-sources (module-path ...))])]{
 
 Associates the @racket[module-path]s to all bindings defined within the
@@ -711,10 +716,17 @@ identifiers that are documented within the section, but the
 @racket[module-path]s in @racket[#:use-sources] provide a binding context
 for connecting (via hyperlinks) definitions and uses of identifiers.
 
+Supply @racket[#:packages] to specify the package that provides the
+declared modules, which is otherwise inferred automatically from the
+first @racket[module-path]. The package names are used, for example,
+by @racket[history].
+
 The @racket[declare-exporting] form should be used no more than once
 per section, since the declaration applies to the entire section,
 although overriding @racket[declare-exporting] forms can appear in
-sub-sections.}
+sub-sections.
+
+@history[#:changed "1.1" @elem{Added @racket[#:packages] clause.}]}
 
 @defform*[[(defmodulelang one-or-multi maybe-sources option ... pre-flow ...)
            (defmodulelang one-or-multi #:module-path module-path
@@ -1819,6 +1831,29 @@ the entry:
 Returns @racket[#t] if @racket[v] is a bibliography entry created by
 @racket[bib-entry], @racket[#f] otherwise.}
 
+
+@; ------------------------------------------------------------------------
+@section{Version History}
+
+@defform[(history clause ...)
+         #:grammar ([clause (code:line #:added version-expr)
+                            (code:line #:changed version-expr content-expr)])
+         #:contracts ([version-expr valid-version?]
+                      [content-expr content?])]{
+
+Generates a @tech{block} for version-history notes. The version
+refers to a package as determined by a @racket[defmodule] or
+@racket[declare-exporting] declaration within an enclosing section.
+
+Normally, @racket[history] should be used at the end of a
+@racket[defform], @racket[defproc], @|etc|, entry, although it may
+also appear in a section that introduces a module (that has been added
+to a package). In the case of a @racket[changed] entry, the content
+produced by @racket[content-expr] should normally start with a capital
+letter and end with a period, but it can be a sentence fragment such
+as ``Added a @racket[#:changed] form.''
+
+@history[#:added "1.1"]}
 
 @; ------------------------------------------------------------------------
 @section{Miscellaneous}

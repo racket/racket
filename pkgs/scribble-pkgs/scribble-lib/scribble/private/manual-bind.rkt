@@ -1,5 +1,7 @@
 #lang scheme/base
-(require "../struct.rkt"
+(require racket/string
+         racket/format
+         "../struct.rkt"
          "../scheme.rkt"
          "../search.rkt"
          "../basic.rkt"
@@ -71,10 +73,13 @@
             (intern-hover-style
              (string-append
               "Provided from: "
-              (let loop ([from from])
-                (if (null? (cdr from))
-                    (format "~s" (car from))
-                    (format "~s, ~a" (car from) (loop (cdr from)))))))
+              (string-join (map ~s from) ", ")
+              (let ([from-pkgs (resolve-get/tentative p ri '(exporting-packages #f))])
+                (if (and from-pkgs (pair? from-pkgs))
+                    (string-append
+                     " | Package: "
+                     (string-join (map ~a from-pkgs) ", "))
+                    ""))))
             e)
            e)))
    (lambda () e)

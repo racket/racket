@@ -18,3 +18,5 @@
 (define pkg-desc "implementation (no documentation) part of \"scribble\"")
 
 (define pkg-authors '(mflatt eli))
+
+(define version "1.1")

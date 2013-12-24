@@ -73,9 +73,15 @@
        (with-syntax ([(decl-exp ...)
                       (if (attribute no-declare)
                           #'()
-                          (if (attribute modpath)
-                              #'((declare-exporting modpath ... #:use-sources (pname ...)))
-                              #'((declare-exporting name2 ... #:use-sources (pname ...)))))]
+                          (with-syntax ([(mod ...)
+                                         (if (attribute modpath)
+                                             #'(modpath ...)
+                                             #'(name2 ...))]
+                                        [(pkg-decl ...)
+                                         (if (attribute pkg)
+                                             #'(#:packages (pkg ...))
+                                             #'())])
+                            #'((declare-exporting mod ... pkg-decl ... #:use-sources (pname ...)))))]
                      [kind (cond
                             [(attribute language) #'#t]
                             [(attribute readr) #''reader]
@@ -180,23 +186,26 @@
 
 ;; ----------------------------------------
 
+(define (compute-packages module-path)
+  (let* ([path (with-handlers ([exn:missing-module? (lambda (exn) #f)])
+                 (and module-path
+                      (resolved-module-path-name
+                       (module-path-index-resolve (module-path-index-join module-path #f)))))]
+         [pkg (and path
+                   (path? path)
+                   (or (path->pkg path)
+                       (let ([c (path->main-collects-relative path)])
+                         (and c
+                              "base"))))])
+    (if pkg
+        (list pkg)
+        null)))
+
 (define (*defmodule names modpaths module-path packages link-target? lang content req)
   (let ([modpaths (or modpaths names)])
     (define pkg-spec
-      (let ([pkgs
-             (or packages
-                 (let* ([path (with-handlers ([exn:missing-module? (lambda (exn) #f)])
-                                (and module-path
-                                     (resolved-module-path-name
-                                      (module-path-index-resolve (module-path-index-join module-path #f)))))]
-                        [pkg (and path 
-                                  (or (path->pkg path)
-                                      (let ([c (path->main-collects-relative path)])
-                                        (and c
-                                             "base"))))])
-                   (if pkg
-                       (list pkg)
-                       null)))])
+      (let ([pkgs (or packages
+                      (compute-packages module-path))])
         (and pkgs
              (pair? pkgs)
              (make-flow
@@ -281,23 +290,36 @@
                         the-module-path-index-desc)))
 
 (define-syntax (declare-exporting stx)
-  (syntax-case stx ()
-    [(_ lib ... #:use-sources (plib ...))
-     (let ([libs (syntax->list #'(lib ... plib ...))])
-       (for ([l libs])
-         (unless (module-path? (syntax->datum l))
-           (raise-syntax-error #f "not a module path" stx l)))
-       (when (null? libs)
-         (raise-syntax-error #f "need at least one module path" stx))
-       #'(*declare-exporting '(lib ...) '(plib ...)))]
-    [(_ lib ...) #'(*declare-exporting '(lib ...) '())]))
+  (syntax-parse stx
+    [(_ lib:expr ... 
+        (~optional (~seq #:packages (pkg ...)))
+        (~optional (~seq #:use-sources (plib ...))))
+     (with-syntax ([(plib ...) (if (attribute plib)
+                                   #'(plib ...)
+                                   #'())]
+                   [packages (if (attribute pkg)
+                                 #'(list pkg ...)
+                                 #'#f)])
+       (let ([libs (syntax->list #'(lib ... plib ...))])
+         (for ([l libs])
+           (unless (module-path? (syntax->datum l))
+             (raise-syntax-error #f "not a module path" stx l)))
+         (when (null? libs)
+           (raise-syntax-error #f "need at least one module path" stx))
+         #'(*declare-exporting '(lib ...) '(plib ...) packages)))]))
 
-(define (*declare-exporting libs source-libs)
+(define (*declare-exporting libs source-libs in-pkgs)
+  (define pkgs (or in-pkgs
+                   (if (null? libs)
+                       null
+                       (compute-packages (car libs)))))
   (make-splice
    (list
     (make-part-collect-decl
      (make-collect-element
       #f null
-      (lambda (ri) (collect-put! ri '(exporting-libraries #f) libs))))
+      (lambda (ri)
+        (collect-put! ri '(exporting-libraries #f) libs)
+        (collect-put! ri '(exporting-packages #f) pkgs))))
     (make-part-collect-decl
-     (make-exporting-libraries #f null (and (pair? libs) libs) source-libs)))))
+     (make-exporting-libraries #f null (and (pair? libs) libs) source-libs pkgs)))))

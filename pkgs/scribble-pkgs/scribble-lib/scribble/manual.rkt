@@ -13,7 +13,8 @@
          "private/manual-vars.rkt"
          "private/manual-bind.rkt"
          "private/manual-utils.rkt"
-         "private/manual-defaults.rkt")
+         "private/manual-defaults.rkt"
+         "private/manual-history.rkt")
 
 (provide unsyntax
          make-binding-redirect-elements
@@ -29,7 +30,8 @@
                        "private/manual-bib.rkt"
                        "private/manual-form.rkt"
                        "private/manual-class.rkt"
-                       "private/manual-unit.rkt")
+                       "private/manual-unit.rkt"
+                       "private/manual-history.rkt")
          (except-out (all-from-out "private/manual-vars.rkt")
                      *deftogether)
          (except-out (all-from-out "private/manual-proc.rkt")
