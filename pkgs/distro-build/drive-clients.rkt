@@ -231,7 +231,7 @@
                          (~a "'" 
                              (regexp-replace* #rx"'" arg "'\"'\"'")
                              "'"))
-                       ;; windows quiting built into `cmd' aready
+                       ;; windows quoting built into `cmd' aready
                        cmd))))))
 
 (define (q s)
@@ -262,14 +262,31 @@
 (define (shell-protect s kind)
   (case kind
     [(windows/bash)
-     ;; protect Windows arguments to go through bash, where
-     ;; backslashes must be escaped, but quotes are effectively
-     ;; preserved by the shell; also, "&&" must be quoted to
-     ;; parsing by bash
+     ;; Protect Windows arguments to go through bash, where
+     ;; unquoted backslashes must be escaped, but quotes are effectively
+     ;; preserved by the shell, and quoted backslashes should be left
+     ;; alone; also, "&&" must be quoted to avoid parsing by bash
      (regexp-replace* "&&"
-                      (regexp-replace* #rx"[\\]"
-                                       s
-                                       "\\\\\\0")
+                      (list->string
+                       ;; In practice, the following loop is likely to
+                       ;; do nothing, because constructed command lines
+                       ;; tend to have only quoted backslashes.
+                       (let loop ([l (string->list s)] [in-quote? #f])
+                         (cond
+                          [(null? l) null]
+                          [(and (equal? #\\ (car l))
+                                (not in-quote?))
+                           (list* #\\ #\\ (loop (cdr l) #f))]
+                          [(and in-quote?
+                                (equal? #\\ (car l))
+                                (pair? (cdr l))
+                                (or (equal? #\" (cadr l))
+                                    (equal? #\\ (cadr l))))
+                           (list* #\\ (cadr l) (loop (cddr l) #t))]
+                          [(equal? #\" (car l))
+                           (cons #\" (loop (cdr l) (not in-quote?)))]
+                          [else
+                           (cons (car l) (loop (cdr l) in-quote?))])))
                       "\"\\&\\&\"")]
     [else s]))
 
