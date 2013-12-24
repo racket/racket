@@ -40,6 +40,9 @@
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
 
+  (hash-set! pkg-internal-deps "racket" null)
+  (hash-set! pkg-reps "racket" "racket")
+  
   ;; ----------------------------------------
   ;; printinf helpers:
   (define (setup-printf* task s . args)
