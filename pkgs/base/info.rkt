@@ -6,16 +6,19 @@
 ;; moved out of the core, while a new "base2" package can represent
 ;; the new, smaller core.
 
-;; The "base" package also depends on "raclet-lib", which ensures that
+;; The "base" package also depends on "racket-lib", which ensures that
 ;; any native libraries needed for a platform are installed along with
 ;; practically any package installation.
 
 (define collection 'multi)
 
-(define deps '("racket-lib"))
+(define deps '("racket-lib"
+               ["racket" #:version "6.0.0.1"]))
 
 (define implies '(core))
 
 (define pkg-desc "Racket libraries that are currently always available")
 
 (define pkg-authors '(mflatt))
+
+(define version "6.0.0.1")

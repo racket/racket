@@ -1,3 +1,6 @@
+Version 6.0.0.1
+Moved detailed-change recording to documentation
+
 Version 6.0, January 2014
 Packages & collections: ----------
  Reorganized collections into packages

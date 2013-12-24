@@ -361,18 +361,26 @@ each element in the sequence.
       (printf "key and value: ~a\n" key+value))]
 }
 
-@defproc[(in-directory [dir (or/c #f path-string?) #f]) sequence?]{
+@defproc[(in-directory [dir (or/c #f path-string?) #f]
+                       [use-dir? ((and/c path? complete-path?) . -> . any/c)
+                                 (lambda (dir-path) #t)])
+         sequence?]{
   Returns a sequence that produces all of the paths for files,
-  directories, and links within @racket[dir].  If @racket[dir] is not
+  directories, and links within @racket[dir], except for the
+  contents of any directory for which @racket[use-dir?] returns
+  @racket[#f]. If @racket[dir] is not
   @racket[#f], then every produced path starts with @racket[dir] as
   its prefix.  If @racket[dir] is @racket[#f], then paths in and
   relative to the current directory are produced.
 
   An @racket[in-directory] sequence traverses nested subdirectories
-  recursively. To generate a sequence that includes only the immediate
+  recursively (filtered by @racket[use-dir?]).
+  To generate a sequence that includes only the immediate
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
-}
+
+@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
+
 
 @defproc*[([(in-producer [producer procedure?])
             sequence?]

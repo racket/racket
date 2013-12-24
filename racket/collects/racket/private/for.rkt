@@ -1946,9 +1946,10 @@
     (for/fold ([acc acc]) ([f (in-list (directory-list full-d))])
 	      (cons (build-path d f) acc)))
 
-  (define (next-body l d init-dir)
+  (define (next-body l d init-dir use-dir?)
     (let ([full-d (path->complete-path d init-dir)])
-      (if (directory-exists? full-d)
+      (if (and (directory-exists? full-d)
+               (use-dir? full-d))
 	  (dir-list full-d d (cdr l))
 	  (cdr l))))
 
@@ -1960,15 +1961,16 @@
 
   (define *in-directory
     (case-lambda 
-     [() (*in-directory #f)]
-     [(orig-dir)
+     [() (*in-directory #f (lambda (d) #t))]
+     [(orig-dir) (*in-directory #f (lambda (d) #t))]
+     [(orig-dir use-dir?)
       (define init-dir (current-directory))
       ;; current state of the sequence is a list of paths to produce; when
       ;; incrementing past a directory, add the directory's immediate
       ;; content to the front of the list:
       (define (next l)
 	(define d (car l))
-	(next-body l d init-dir))
+	(next-body l d init-dir use-dir?))
       (make-do-sequence
        (lambda ()
 	 (values
@@ -1984,16 +1986,19 @@
     (λ (stx)
        (syntax-case stx ()
 	 [((d) (_)) #'[(d) (*in-directory #f)]]
-	 [((d) (_ dir))
+	 [((d) (_ dir)) #'[(d) (*in-directory dir (lambda (d) #t))]]
+	 [((d) (_ dir use-dir?-expr))
 	  #'[(d) 
 	     (:do-in
-	      ([(orig-dir) (or dir #f)] [(init-dir) (current-directory)])
+	      ([(orig-dir) (or dir #f)]
+               [(init-dir) (current-directory)]
+               [(use-dir?) use-dir?-expr])
 	      #true
 	      ([l (initial-state orig-dir init-dir)])
 	      (pair? l)
 	      ([(d) (car l)])
 	      #true
 	      #true
-	      [(next-body l d init-dir)])]])))
+	      [(next-body l d init-dir use-dir?)])]])))
 
   )
