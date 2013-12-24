@@ -602,7 +602,11 @@
     (begin
       (install-template dest kind "mzstart.exe" "mrstart.exe")
       (let ([bstr (bytes->utf-16-bytes
-                   (string->bytes/utf-8 (str-list->dos-str flags)))]
+                   (string->bytes/utf-8 (str-list->dos-str
+                                         (list* "-N"
+                                                (let-values ([(base name dir?) (split-path dest)])
+                                                  (path-element->string name))
+                                                flags))))]
             [p (open-input-file dest)]
             [m (utf-16-regexp #"<Command Line: Replace This")]
             [x (utf-16-regexp #"<Executable Directory: Replace This")]
