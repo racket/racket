@@ -1,3 +1,6 @@
+Version 1.1
+Moved detailed-change recording to documentation
+
 Version 1.0
 Use `doc' submodule when available
 Changed the HTML rendering style of `scribble/manual'

@@ -12,3 +12,5 @@
 (define pkg-desc "implementation (no documentation) part of \"slideshow\"")
 
 (define pkg-authors '(mflatt robby))
+
+(define version "1.1")

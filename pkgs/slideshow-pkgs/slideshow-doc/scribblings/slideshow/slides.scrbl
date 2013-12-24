@@ -208,7 +208,9 @@ display.}
 
 Produces a pict that is like @racket[pict], but optimized for drawing
 on some platforms (currently Mac OS X). This function may be useful
-to reduce drawing times for for large bitmaps or complex drawings.}
+to reduce drawing times for for large bitmaps or complex drawings.
+
+@history[#:added "1.1"]}
 
 
 @defproc[(make-outline [name (or/c symbol? (listof symbol?))]
