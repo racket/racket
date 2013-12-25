@@ -1,0 +1,3 @@
+6.0
+- Improvements/Bugfixes to the Text UI.
+- Added an optional message argument to fail-check.
