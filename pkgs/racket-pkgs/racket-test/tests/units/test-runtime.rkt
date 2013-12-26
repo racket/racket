@@ -1,3 +1,5 @@
+#lang racket/load
+
 (require "test-harness.rkt"
          racket/private/unit-runtime)
 
@@ -49,3 +51,5 @@
 
 ;; check-deps
 ;;UNTESTED
+
+(displayln "tests passed")

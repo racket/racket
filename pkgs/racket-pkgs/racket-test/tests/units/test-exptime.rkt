@@ -1,6 +1,7 @@
+#lang racket/load
+
 (require (for-syntax mzlib/unit-exptime))
 (require "test-harness.rkt"
-         ;unit
          mzlib/unit)
 
 (define-signature one^ (one-a one-b))
@@ -41,3 +42,4 @@
 (test '(((#f . one^) (#f . three^)) ((#f . two^))) (unit-info one@ quote))
 (test '(((Four . four^)) ((One . one^))) (unit-info two@ quote))
 
+(displayln "tests passed")

@@ -1,3 +1,5 @@
+#lang racket/load
+
 (module test mzscheme
   (require mzlib/unit)
   

@@ -1,3 +1,5 @@
+#lang racket/load
+
 (require "test-harness.rkt"
          scheme/unit
          scheme/contract)
@@ -45,7 +47,7 @@
                                     "object \"~a\" not found in:\n\"~a\""
                                     obj msg)]
                             [else 
-                             (printf "contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
+                             (printf "got expected contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
                                      err obj blame (get-ctc-err msg))])))))
        expr
        (error 'test-contract-error 
@@ -890,3 +892,5 @@
                                   [((S : s^)) s@ T])))
   (define-values/invoke-unit c@ (import) (export s^))
   (new-make-t))
+
+(displayln "tests passed")

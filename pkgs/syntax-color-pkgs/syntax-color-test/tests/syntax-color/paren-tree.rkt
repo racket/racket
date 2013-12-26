@@ -1,3 +1,5 @@
+#lang racket/load
+
 (load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
 (require mzlib/class
          syntax-color/paren-tree)

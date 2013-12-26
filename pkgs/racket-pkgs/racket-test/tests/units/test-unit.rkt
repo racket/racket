@@ -1,3 +1,5 @@
+#lang racket/load
+
 (require (for-syntax racket/private/unit-compiletime
                      racket/private/unit-syntax))
 (require "test-harness.rkt"
@@ -1785,4 +1787,4 @@
         (define-values/invoke-unit u@ (import) (export s^))
         x))
 
-
+(displayln "tests passed")

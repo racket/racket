@@ -20,6 +20,7 @@
 (load-relative "thread.rktl")
 (load-relative "logger.rktl")
 (load-relative "sync.rktl")
+(load-relative "place.rktl")
 (load-relative "deep.rktl")
 (load-relative "contmark.rktl")
 (load-relative "prompt.rktl")

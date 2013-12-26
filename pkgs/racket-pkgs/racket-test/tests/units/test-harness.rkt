@@ -28,7 +28,7 @@
     (syntax-rules ()
       ((_ err expr)
        (with-handlers ((exn:fail:syntax? (lambda (exn)
-                                           (printf "syntax error \"~a\"\n  got message \"~a\"\n\n"
+                                           (printf "get expected syntax error \"~a\"\n  got message \"~a\"\n\n"
                                                    err
                                                    (exn-message exn)))))
          (expand #'expr)
@@ -38,7 +38,7 @@
     (syntax-rules ()
       ((_ err-pred err expr)
        (with-handlers ((err-pred (lambda (exn)
-                                   (printf "runtime error \"~a\"\n  got message \"~a\"\n\n"
+                                   (printf "got expected runtime error \"~a\"\n  got message \"~a\"\n\n"
                                            err
                                            (exn-message exn)))))
          expr

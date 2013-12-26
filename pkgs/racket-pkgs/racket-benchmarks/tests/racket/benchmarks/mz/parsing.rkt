@@ -1,4 +1,7 @@
-(require syntax-color/scheme-lexer scheme/gui/base)
+#lang racket/base
+(require syntax-color/scheme-lexer
+         racket/class
+         racket/gui/base)
 
 (define path (build-path (collection-path "framework" "private") "frame.rkt"))
 
@@ -35,7 +38,8 @@
        (port-count-lines! p)
        (time
 	(let loop () 
-	  (let ([v (read p)])
+	  (let ([v (parameterize ([read-accept-reader #t])
+                     (read p))])
 	    (unless (eof-object? v)
 	      (loop)))))))
     (printf "done\n")

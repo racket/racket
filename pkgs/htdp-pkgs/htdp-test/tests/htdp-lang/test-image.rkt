@@ -1,7 +1,9 @@
-;; Load this one with GRacket
+#lang racket/load
 
 (load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
-(require racket/gui/base
+
+(require racket/draw
+         racket/snip
          teachpack/htdp/image
          htdp/error
          lang/posn

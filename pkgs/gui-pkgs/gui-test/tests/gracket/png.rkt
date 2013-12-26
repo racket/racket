@@ -1,4 +1,7 @@
-(require mzlib/list)
+#lang racket/gui
+(require racket/list)
+
+(module test racket/base) ; no test
 
 (define png-suite (build-path (or (current-load-relative-directory)
 				  (current-directory))
@@ -10,10 +13,10 @@
 	  "The png-suite subdirectory appears to be missing. "
 	  "It should contain the PNG test files (including GIFs for comparisons).")))
 
-(define l (map (lambda (f) (build-path png-suite f))
+(define l (map (lambda (f) (path->string (build-path png-suite f)))
 	       (sort (filter (lambda (x) (regexp-match #rx"^[^x].*[.]png$" x))
                              (directory-list png-suite))
-                     string<?)))
+                     path<?)))
 
 (define (png->gif f)
   (regexp-replace #rx"[.]png$" f ".gif"))

@@ -1,7 +1,8 @@
+#lang racket/load
+
 ;;; This file simply tests that all the SRFIs load.  Just
 ;;; load it into Racket to perform this test.  Remember it
 ;;; might not be up-to-date, so check before you run it!
-
 
 (require srfi/1)
 (require srfi/2)
@@ -84,3 +85,5 @@
 (require srfi/78/check)
 (require srfi/86/86)
 (require srfi/87/case)
+
+(displayln "all loaded")

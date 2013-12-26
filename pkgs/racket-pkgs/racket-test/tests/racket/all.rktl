@@ -12,6 +12,7 @@
 (load-in-sandbox "dict.rktl")
 (load-in-sandbox "fixnum.rktl")
 (load-in-sandbox "flonum.rktl")
+(load-in-sandbox "string.rktl")
 
 (load-in-sandbox "mpair.rktl")
 (load-in-sandbox "async-channel.rktl")

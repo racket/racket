@@ -1,5 +1,7 @@
+#lang racket/load
+
 (load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
-(require mzlib/class
+(require racket/class
          syntax-color/token-tree)
 
 (define t (new token-tree% (length 1) (data 'a)))

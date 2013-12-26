@@ -3,7 +3,7 @@
 
 (Section 'string)
 
-(require scheme/string)
+(require racket/string)
 
 ;; ---------- real->decimal-string ----------
 (test "0." real->decimal-string 0 0)

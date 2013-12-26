@@ -1,3 +1,5 @@
+#lang racket/load
+
 #|
 
 Time the cache-less version of the pattern matcher
