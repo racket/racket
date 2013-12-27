@@ -15,8 +15,9 @@ A @racket[menu-item%] is a plain string-labelled menu item. Its
                  [help-string (or/c label-string? #f) #f]
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]
-                 [shortcut-prefix (listof (or/c 'alt 'cmd 'meta 'ctl 
-                                                'shift 'option)) 
+                 [shortcut-prefix (and/c (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                                       'shift 'option))
+                                         (λ (x) (equal? x (remove-duplicates x))))
                                   (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @racket[parent]. The item is initially

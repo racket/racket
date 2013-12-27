@@ -96,9 +96,11 @@ The result depends on @racket[what], and a @racket[#f] result is only
 
 }
 
-
 @defproc[(get-default-shortcut-prefix)
-         (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
+         (case (system-type)
+           [(windows) (list/c 'ctl)]
+           [(macosx)  (list/c 'cmd)]
+           [(unix)    (list/c (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))])]{
 Returns an immutable list specifying the default prefix for menu
 shortcuts. See also
 @xmethod[selectable-menu-item<%> get-shortcut-prefix].
