@@ -3370,8 +3370,12 @@
                      (λ (mi) (send mi set-label (if (send resizable-panel get-vertical?)
                                                     (string-constant use-horizontal-layout)
                                                     (string-constant use-vertical-layout))))]
-                    [shortcut #\l]
-                    [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))])])
+                    [shortcut (if (member 'shift (get-default-shortcut-prefix))
+                                  #f
+                                  #\l)]
+                    [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
+                                         (get-default-shortcut-prefix)
+                                         (cons 'shift (get-default-shortcut-prefix)))])])
           (set-show-menu-sort-key layout-item 103))
         
         (let ([overview-menu-item 
@@ -3514,10 +3518,16 @@
                     (demand-callback (λ (item) (split-demand item))))]
               [collapse
                (new menu:can-restore-menu-item% 
-                    (shortcut (if (eq? (system-type) 'macosx) #f #\m))
-                    (shortcut-prefix (if (eq? (system-type) 'macosx) 
-                                         (get-default-shortcut-prefix)
-                                         (cons 'shift (get-default-shortcut-prefix))))
+                    (shortcut (if (or (equal? (system-type) 'macosx)
+                                      (member 'shift (get-default-shortcut-prefix)))
+                                  #f
+                                  #\m))
+                    (shortcut-prefix (cond
+                                       [(or (equal? (system-type) 'macosx)
+                                            (member 'shift (get-default-shortcut-prefix)))
+                                        (get-default-shortcut-prefix)]
+                                       [else
+                                        (cons 'shift (get-default-shortcut-prefix))]))
                     (label (string-constant collapse-menu-item-label))
                     (parent (get-show-menu))
                     (callback (λ (x y) (collapse)))
@@ -3758,8 +3768,10 @@
         (lambda (file-menu)
           (new menu:can-restore-menu-item%
                [label (string-constant open-collection-path)]
-               [shortcut #\o]
-               [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+               [shortcut (if (member 'shift (get-default-shortcut-prefix)) #f #\o)]
+               [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
+                                    (get-default-shortcut-prefix)
+                                    (cons 'shift (get-default-shortcut-prefix)))]
                [parent file-menu]
                [callback
                 (λ (x y)
@@ -3862,8 +3874,12 @@
                               label)
           (new menu:can-restore-checkable-menu-item%
                [label label]
-               [shortcut shortcut]
-               [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+               [shortcut (if (member 'shift (get-default-shortcut-prefix))
+                             #f
+                             shortcut)]
+               [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
+                                    (get-default-shortcut-prefix)
+                                    (cons 'shift (get-default-shortcut-prefix)))]
                [parent edit-menu]
                [demand-callback
                 (λ (item)
