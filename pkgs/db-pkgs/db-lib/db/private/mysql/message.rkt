@@ -749,7 +749,7 @@ computed string on the server can be. See also:
          ;; big integer
          => (lambda (m)
               (string->number s))]
-        [(regexp-match #rx"^-?([0-9]*)\\.([0-9]*)$" s)
+        [(regexp-match #rx"^(-?[0-9]*)\\.([0-9]*)$" s)
          => (lambda (m)
               (+ (string->number (cadr m))
                  (parse-exact-fraction (caddr m))))]
