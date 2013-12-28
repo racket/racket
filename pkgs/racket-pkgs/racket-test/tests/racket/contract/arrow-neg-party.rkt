@@ -16,7 +16,7 @@
                                 #f #t))
       (wrapped-extra-arg-arrow-extra-neg-party-argument
        (((contract-struct-val-first-projection c) blame) val))))
-#|
+
   (test/spec-passed/result 
    'arity-as-string1
    '(arity-as-string (let ([f (λ (x) x)]) f))
@@ -160,7 +160,7 @@
       (->* () (boolean? char? integer?) any)
       (λ args 1))
      'neg #f #\f #xf))
-  |#
+  
   (test/spec-passed
    '->*neg-party10
    '((neg-party-fn
@@ -226,4 +226,21 @@
            (and/c hash? immutable?))
       (λ (h #:combine [x void] #:combine/key [y void] . rest)
         (hash)))
-     'neg (hash) 11 12)))
+     'neg (hash) 11 12))
+  
+  (test/spec-passed/result
+   '->*neg-party18
+   '((neg-party-fn 
+      (->* (#:user string?)
+           (#:database (or/c string? #f)
+                       #:password (or/c string? (list/c 'hash string?) #f)
+                       #:port (or/c exact-positive-integer? #f))
+           any/c)
+      (λ (#:user user
+                 #:database [db #f]
+                 #:password [password #f]
+                 #:port [port #f])
+        (list user db password port)))
+     'neg #:database "db" #:password "password" #:user "user")
+   (list "user" "db" "password" #f)))
+

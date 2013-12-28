@@ -526,6 +526,23 @@
                 new-statement
                 'pos 'neg)))
   
+  (test/spec-passed/result
+   'contract-arrow-star-optional25
+   '((contract 
+      (->* (#:user string?)
+           (#:database (or/c string? #f)
+                       #:password (or/c string? (list/c 'hash string?) #f)
+                       #:port (or/c exact-positive-integer? #f))
+           any/c)
+      (λ (#:user user
+                 #:database [db #f]
+                 #:password [password #f]
+                 #:port [port #f])
+        (list user db password port))
+      'pos 'neg)
+     #:database "db" #:password "password" #:user "user")
+   (list "user" "db" "password" #f))
+  
   (test/spec-passed
    'contract-arrow-star-keyword-ordering
    '((contract (->* (integer? #:x boolean?) (string? #:y char?) any)

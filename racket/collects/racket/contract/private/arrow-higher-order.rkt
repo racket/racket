@@ -32,8 +32,8 @@
                 [(rest-proj ...) (if rest (generate-temporaries '(rest-proj)) '())])
     #`(λ (blame f neg-party
                 mandatory-dom-proj ...  
-                rest-proj ...
                 optional-dom-proj ... 
+                rest-proj ...
                 mandatory-dom-kwd-proj ... 
                 optional-dom-kwd-proj ... 
                 rng-proj ...)
@@ -321,21 +321,24 @@
         (kwd-proj (blame-add-context orig-blame
                                      (format "the ~a argument of" (kwd-info-kwd kwd))
                                      #:swap? #t))))
-    (define the-args (append partial-doms 
-                             (if partial-rest (list partial-rest) '())
-                             partial-kwds
-                             partial-ranges))
-    (define plus-one-constructor-args
-      (append partial-doms 
-              (for/list ([partial-kwd (in-list partial-kwds)]
+    (define man-then-opt-partial-kwds
+      (append (for/list ([partial-kwd (in-list partial-kwds)]
                          [kwd-info (in-list kwd-infos)]
                          #:when (kwd-info-mandatory? kwd-info))
                 partial-kwd)
               (for/list ([partial-kwd (in-list partial-kwds)]
                          [kwd-info (in-list kwd-infos)]
                          #:unless (kwd-info-mandatory? kwd-info))
-                partial-kwd)
-              partial-ranges 
+                partial-kwd)))
+    
+    (define the-args (append partial-doms
+                             (if partial-rest (list partial-rest) '())
+                             man-then-opt-partial-kwds
+                             partial-ranges))
+    (define plus-one-constructor-args
+      (append partial-doms
+              man-then-opt-partial-kwds
+              partial-ranges
               (if partial-rest (list partial-rest) '())))
     (λ (val)
       (wrapped-extra-arg-arrow 
