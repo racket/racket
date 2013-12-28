@@ -3487,10 +3487,7 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
 
     return 1;
   }
-
-  if (no_writers)
-    return 1; /* wake up to discover that we can give up */
-
+  
   return 0;
 }
 
