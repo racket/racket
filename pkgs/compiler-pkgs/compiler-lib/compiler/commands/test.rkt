@@ -6,40 +6,199 @@
          racket/function
          racket/port
          racket/path
+         racket/place
+         racket/future
+         compiler/find-exe
          raco/command-name
+         racket/system
          rackunit/log
          pkg/lib)
 
 (define submodules '())
+(define first-avail? #f)
 (define run-anyways? #t)
 (define quiet? #f)
 (define quiet-program? #f)
 (define table? #f)
 
-(define (dynamic-require* p d)
-  (parameterize
-      ([current-output-port
-        (if quiet-program?
-          (open-output-nowhere)
-          (current-output-port))]
-       [current-error-port
-        (if quiet-program?
-          (open-output-nowhere)
-          (current-error-port))])
-    (dynamic-require p d)))
+(define jobs 0)
+(define task-sema (make-semaphore 1))
 
+(define default-timeout +inf.0)
+(define default-mode 'process)
+
+;; Stub for running a test in a place:
+(module start racket/base
+  (require racket/place
+           rackunit/log)
+  (provide go)
+  (define (go pch)
+    (define l (place-channel-get pch))
+    ;; Run the test:
+    (parameterize ([current-command-line-arguments '#()]
+                   [current-directory (caddr l)])
+      (dynamic-require (car l) (cadr l)))
+    ;; If the tests use `rackunit`, collect result stats:
+    (define test-results 
+      (test-log #:display? #f #:exit? #f))
+    ;; Return test results. If we don't get this far, the result
+    ;; code of the place determines whether it the test counts as
+    ;; successful.
+    (place-channel-put pch
+                       ;; If the test did not use `rackunit`, claim
+                       ;; success:
+                       (if (zero? (car test-results))
+                           (cons 0 1)
+                           test-results))))
+
+;; Run each test in its own place or process, and collect both test
+;; results and whether any output went to stderr.
+(define (dynamic-require-elsewhere p d
+                                   #:mode [mode default-mode]
+                                   #:timeout [timeout default-timeout])
+  (define c (make-custodian))
+  (with-handlers ([exn:fail? (lambda (exn)
+                               (custodian-shutdown-all c)
+                               (unless quiet?
+                                 (eprintf "~a: ~a\n" 
+                                          (extract-file-name p)
+                                          (exn-message exn)))
+                               (summary 1 1 (current-label) #f))])
+    (define e (open-output-bytes))
+
+    (define stdout (if quiet-program?
+                       (open-output-nowhere)
+                       (current-output-port)))
+    (define stderr (if quiet-program?
+                       e
+                       (tee-output-port (current-error-port) e)))
+
+    (define-values (result-code test-results)
+      (case mode
+        [(place)
+         ;; Start the test place:
+         (define-values (pl in out/f err/f)
+           (parameterize ([current-custodian c])
+             (dynamic-place* '(submod compiler/commands/test start)
+                             'go
+                             #:in (current-input-port)
+                             #:out stdout
+                             #:err stderr)))
+         
+         ;; Send the module path to test:
+         (place-channel-put pl (list p d (current-directory)))
+
+         ;; Wait for the place to finish:
+         (unless (sync/timeout timeout (place-dead-evt pl))
+           (error 'test "timeout after ~a seconds" timeout))
+
+         ;; Get result code and test results:
+         (values (place-wait pl)
+                 (sync/timeout 0 pl))]
+        [(process)
+         (define ps
+           (parameterize ([current-output-port stdout]
+                          [current-error-port stderr]
+                          [current-subprocess-custodian-mode 'kill]
+                          [current-custodian c])
+             (process*/ports stdout
+                             (current-input-port)
+                             stderr
+                             (find-exe)
+                             "-l"
+                             "racket/base"
+                             "-e"
+                             (format "(dynamic-require '~s ~s)"
+                                     (normalize-module-path p)
+                                     d))))
+         (define proc (list-ref ps 4))
+         
+         (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
+           (error 'test "timeout after ~a seconds" timeout))
+         
+         (values (proc 'exit-code)
+                 #f)]))
+    
+    ;; Shut down the place/process (usually a no-op unless it timed out):
+    (custodian-shutdown-all c)
+
+    ;; Check results:
+    (unless (equal? #"" (get-output-bytes e))
+      (error 'test "non-empty stderr: ~e" (get-output-bytes e)))
+    (unless (zero? result-code)
+      (error 'test "non-zero exit: ~e" result-code))
+    (cond
+     [test-results
+      (summary (car test-results) (cdr test-results) (current-label) #f)]
+     [else
+      (summary 0 1 (current-label) #f)])))
+
+;; For recording stderr while also propagating to the original stderr:
+(define (tee-output-port p1 p2)
+  (make-output-port
+   (object-name p1)
+   p1
+   (lambda (bstr start end non-block? enable-break?)
+     (cond
+      [(= start end)
+       (flush-output p1)
+       0]
+      [else
+       (define n (write-bytes-avail* bstr p1 start end))
+       (cond
+        [(or (not n)
+             (zero? n))
+         (wrap-evt p1 (lambda (v) 0))]
+        [else
+         (write-bytes bstr p2 start (+ start n))
+         n])]))
+   (lambda () 
+     (close-output-port p1)
+     (close-output-port p2))))
+
+(define (extract-file-name p)
+  (cond
+   [(and (pair? p) (eq? 'submod (car p)))
+    (cadr p)]
+   [else p]))
+
+(define (add-submod mod sm)
+  (if (and (pair? mod) (eq? 'submod (car mod)))
+      (append mod '(config))
+      (error 'test "cannot add test-config submodule to path: ~s" mod)))
+
+(define (dynamic-require* p d try-config?)
+  (define lookup
+    (or (cond
+         [(not try-config?) #f]
+         [(module-declared? (add-submod p 'config) #t)
+          (dynamic-require (add-submod p 'config) '#%info-lookup)]
+         [else #f])
+        (lambda (what get-default) (get-default))))
+  (dynamic-require-elsewhere
+   p d
+   #:timeout (lookup 'timeout
+                     (lambda () default-timeout))))
+
+(define current-label (make-parameter "???"))
 (struct summary (failed total label body-res))
+
 (define-syntax-rule (with-summary label . body)
-  (let ()
-    (match-define (cons before-failed before-total)
-                  (test-log #:display? #f #:exit? #f))
-    (define res (begin . body))
-    (match-define (cons after-failed after-total)
-                  (test-log #:display? #f #:exit? #f))
-    (summary (- after-failed before-failed)
-             (- after-total before-total)
-             label
-             res)))
+  (call-with-summary label (lambda () . body)))
+
+(define (call-with-summary label thunk)
+  (define res
+    ;; Produces either a summary or a list of summary:
+    (parameterize ([current-label label])
+      (thunk)))
+  (if (summary? res)
+      res
+      (summary
+       (apply + (map summary-failed res))
+       (apply + (map summary-total res))
+       (current-label)
+       res)))
+
 
 (define (iprintf i fmt . more)
   (for ([j (in-range i)])
@@ -68,7 +227,7 @@
   (define (max-width f)
     (string-length
      (number->string
-      (apply max (map f sfiles)))))
+      (apply max 0 (map f sfiles)))))
   (define failed-wid (max-width summary-failed))
   (define total-wid (max-width summary-total))
   (for ([f (in-list sfiles)])
@@ -84,48 +243,133 @@
                        total)
                    " " p))))
 
-(define (do-test e [check-suffix? #f])
+;; Like `map`, but allows `run-one-test`s in parallel while starting
+;; tasks in the order that a plain `map` would run them. The #:sema
+;; argument everywhere makes tests start in a deterministic order
+;; and keeps a filesystem traversal from getting far ahead of the
+;; test runs.
+(define (map/parallel f l #:sema continue-sema)
+  (cond
+   [(jobs . <= . 1) (map (lambda (v) (f v #:sema continue-sema)) l)]
+   [else
+    (struct task (th result-box))
+    (define ts
+      (for/list ([i (in-list l)])
+        (define b (box #f))
+        (define c-sema (make-semaphore))
+        (define t (thread
+                   (lambda ()
+                     (set-box! b (with-handlers ([exn? values])
+                                   (f i #:sema c-sema)))
+                     ;; If no parallel task was ever created,
+                     ;; count that as progress to the parent
+                     ;; thread:
+                     (semaphore-post c-sema))))
+        (sync c-sema)
+        (task t b)))
+    (semaphore-post continue-sema)
+    (map sync (map task-th ts))
+    (for/list ([t (in-list ts)])
+      (define v (unbox (task-result-box t)))
+      (if (exn? v)
+          (raise v)
+          v))]))
+
+(define (normalize-module-path p)
+  (cond
+   [(path? p) (path->string p)]
+   [(and (pair? p) (eq? 'submod (car p)))
+    (list* 'submod (normalize-module-path (cadr p)) (cddr p))]
+   [else p]))
+
+(define ids '(1))
+(define ids-lock (make-semaphore 1))
+
+(define (set-jobs! n)
+  (set! jobs n)
+  (set! task-sema (make-semaphore jobs))
+  (set! ids (for/list ([i (in-range jobs)]) i)))
+
+;; Perform test of one module (in parallel, as allowed by
+;; `task-sema`):
+(define (test-module p mod try-config? #:sema continue-sema)
+  (call-with-semaphore
+   task-sema ; limits parallelism
+   (lambda ()
+     (semaphore-post continue-sema) ; allow next to try to start
+     (define id
+       (call-with-semaphore
+        ids-lock
+        (lambda ()
+          (define id (car ids))
+          (set! ids (cdr ids))
+          (unless quiet?
+            ;; in lock, so printouts are not interleaved
+            (printf "raco test: ~a~s\n"
+                    (if (jobs . <= . 1)
+                        ""
+                        (format "~a " id))
+                    (let ([m (normalize-module-path p)])
+                      (if (and (pair? mod) (eq? 'submod (car mod)))
+                          (list* 'submod m (cddr mod))
+                          m))))
+          id)))
+     (begin0
+      (dynamic-require* mod 0 try-config?)
+      (call-with-semaphore
+       ids-lock
+       (lambda ()
+         (set! ids (cons id ids))))))))
+
+;; Perform all tests in path `e`:
+(define (test-files e [check-suffix? #f] #:sema continue-sema)
   (match e
     [(? string? s)
-     (do-test (string->path s))]
+     (test-files (string->path s) check-suffix? #:sema continue-sema)]
     [(? path? p)
      (cond
        [(directory-exists? p)
         (with-summary
          `(directory ,p)
-         (map
-          (λ (dp)
-            (do-test (build-path p dp) #t))
-          (directory-list p)))]
+         (map/parallel
+          (λ (dp #:sema s)
+            (test-files (build-path p dp) #t #:sema s))
+          (directory-list p)
+          #:sema continue-sema))]
        [(and (file-exists? p)
              (or (not check-suffix?)
                  (regexp-match #rx#"\\.rkt$" (path->bytes p))))
-        (with-summary
-         `(file ,p)
-         (parameterize ([current-command-line-arguments '#()])
-           (define something-wasnt-declared? #f)
-           (for ([submodule (in-list (if (null? submodules)
-                                       '(test)
-                                       (reverse submodules)))])
-             (define mod `(submod ,p ,submodule))
-             (cond
-               [(module-declared? mod #t)
-                (unless quiet?
-                  (printf "raco test: ~s\n" `(submod ,(if (absolute-path? p)
-                                                        `(file ,(path->string p))
-                                                        (path->string p))
-                                                     ,submodule)))
-                (dynamic-require* mod 0)]
-               [else
-                (set! something-wasnt-declared? #t)]))
-           (when (and run-anyways? something-wasnt-declared?)
-             (unless quiet?
-               (printf "raco test: ~s\n" (if (absolute-path? p)
-                                           `(file ,(path->string p))
-                                           (path->string p))))
-             (dynamic-require* p 0))))]
+        (parameterize ([current-directory (let-values ([(base name dir?) (split-path p)])
+                                            (if (path? base)
+                                                base
+                                                (current-directory)))])
+          (define file-name (file-name-from-path p))
+          (with-summary
+           `(file ,p)
+           (let ([something-wasnt-declared? #f]
+                 [did-one? #f])
+             (filter
+              values
+              (append
+               (for/list ([submodule (in-list (if (null? submodules)
+                                                  '(test)
+                                                  (reverse submodules)))])
+                 (define mod `(submod ,file-name ,submodule))
+                 (cond
+                  [(and did-one? first-avail?)
+                   #f]
+                  [(module-declared? mod #t)
+                   (set! did-one? #t)
+                   (test-module p mod #t #:sema continue-sema)]
+                  [else
+                   (set! something-wasnt-declared? #t)
+                   #f]))
+               (list
+                (and (and run-anyways? something-wasnt-declared?)
+                     (test-module p file-name #f #:sema continue-sema))))))))]
        [(not (file-exists? p))
-        (error 'test "given path ~e does not exist" p)])]))
+        (error 'test "given path ~e does not exist" p)]
+       [else (summary 0 0 #f null)])]))
 
 (module paths racket/base
   (require setup/link
@@ -191,7 +435,7 @@
 (define collections? #f)
 (define packages? #f)
 
-(define (do-test-wrap e)
+(define (test-top e #:sema continue-sema)
   (cond
     [collections?
      (match (collection-paths e)
@@ -200,19 +444,40 @@
        [l
         (with-summary
          `(collection ,e)
-         (map do-test l))])]
+         (map/parallel test-files l #:sema continue-sema))])]
     [packages?
      (define pd (pkg-directory e))
      (if pd
        (with-summary
         `(package ,e)
-        (do-test pd))
+        (test-files pd #:sema continue-sema))
        (error 'test "Package ~e is not installed" e))]
     [else
-     (do-test e)]))
+     (test-files e #:sema continue-sema)]))
+
+(define (string->number* what s check)
+  (define n (string->number s))
+  (unless (check n)
+    (raise-user-error (string->symbol (short-program+command-name))
+                      "invalid ~a: ~s"
+                      what
+                      s))
+  n)
 
 (command-line
  #:program (short-program+command-name)
+ #:once-each
+ [("--drdr")
+  "Configure defaults to imitate DrDr"
+  (when (null? submodules)
+    (set! submodules '(drdr test)))
+  (set! first-avail? #t)
+  (when (zero? jobs)
+    (set-jobs! (processor-count)))
+  (when (equal? default-timeout +inf.0)
+    (set! default-timeout 600))
+  (set! quiet-program? #t)
+  (set! table? #t)]
  #:multi
  [("--submodule" "-s") name
   "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
@@ -226,6 +491,9 @@
   "Require nothing if submodule is absent"
   (set! run-anyways? #f)]
  #:once-each
+ [("--first-avail")
+  "Run only the first available submodule"
+  (set! first-avail? #f)]
  [("--quiet" "-q")
   "Suppress `raco test: ...' message"
   (set! quiet? #t)]
@@ -235,6 +503,15 @@
  [("--quiet-program" "-Q")
   "Quiet the program"
   (set! quiet-program? #t)]
+ [("--place")
+  "Run tests in places instead of processes"
+  (set! default-mode 'place)]
+ [("--jobs" "-j") n
+  "Run up to <n> tests in parallel"
+  (set-jobs! (string->number* "jobs" n exact-positive-integer?))]
+ [("--timeout") seconds
+  "Set default timeout to <seconds>"
+  (set-jobs! (string->number* "timeout" seconds real?))]
  #:once-any
  [("--collection" "-c")
   "Interpret arguments as collections"
@@ -243,7 +520,19 @@
   "Interpret arguments as packages"
   (set! packages? #t)]
  #:args file-or-directory
- (begin (define sum (map do-test-wrap file-or-directory))
+ (begin (define sum
+          ;; The #:sema argument everywhre makes tests start
+          ;; in a deterministic order:
+          (map/parallel test-top file-or-directory
+                        #:sema (make-semaphore)))
         (when table?
           (display-summary sum))
+        ;; Re-log failures and successes, and then report using `test-log`.
+        ;; (This is awkward; is it better to not try to use `test-log`?)
+        (for ([s (in-list sum)])
+          (for ([i (in-range (summary-failed s))])
+            (test-log! #f))
+          (for ([i (in-range (- (summary-total s)
+                                (summary-failed s)))])
+            (test-log! #t)))
         (void (test-log #:display? #t #:exit? #t))))
