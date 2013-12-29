@@ -3,9 +3,9 @@
          (utils tc-utils)
          (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
          (rep type-rep)
-         (rename-in (types subtype union utils abbrev numeric-tower)
+         (rename-in (types subtype union utils abbrev numeric-tower resolve)
                     [Un t:Un] [-> t:->] [->* t:->*])
-         (base-env base-types base-types-extra colon)
+         (base-env base-structs base-types base-types-extra colon)
          (submod typed-racket/base-env/base-types initialize)
          (for-template (base-env base-types base-types-extra base-env colon))
          (private parse-type)
@@ -27,6 +27,7 @@
 ;; This relies on the identifiers being bound at phase 0 in this module (which they are,
 ;; because we have a phase 0 require of "base-env.rkt").
 (initialize-type-names)
+(initialize-structs)
 (for ([pr (type-alias-env-map cons)])
   (let ([nm (car pr)]
         [ty (cdr pr)])
@@ -140,6 +141,12 @@
    [(Opaque foo?) (make-Opaque #'foo?)]
    ;; PR 14122
    [FAIL (Opaque 3)]
+
+   ;; struct types
+   [(Struct-Type arity-at-least) (make-StructType (resolve -Arity-At-Least))]
+   [FAIL (Struct-Type Integer)]
+   [FAIL (Struct-Type foo)]
+   [Struct-TypeTop (make-StructTypeTop)]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results
