@@ -180,7 +180,7 @@
     (syntax-parse
         stx
       #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda t:case->
-                  t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote t:Struct)
+                  t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote t:Struct t:Struct-Type)
       [t
        #:declare t (3d Type/c?)
        (attribute t.datum)]
@@ -214,6 +214,13 @@
            [(and s (? Struct?)) (make-StructTop s)]
            [_ (tc-error/delayed "Argument to Struct must be a structure type, got ~a" v)
               (Un)]))]
+      [((~and kw t:Struct-Type) t)
+       (add-disappeared-use #'kw)
+       (define v (parse-type #'t))
+       (match (resolve v)
+         [(? Struct? s) (make-StructType s)]
+         [_ (tc-error/delayed "Argument to Struct-Type must be a structure type, got ~a" v)
+            (Un)])]
       [((~and kw t:Instance) t)
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])

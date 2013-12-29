@@ -360,8 +360,8 @@
   [#:key '(struct procedure)])
 
 ;; A structure type descriptor
-;; s : struct
-(def-type StructType ([s Struct?]) [#:key 'struct-type])
+(def-type StructTypeTop () [#:fold-rhs #:base] [#:key 'struct-type])
+(def-type StructType ([s (or/c F? B? Struct?)]) [#:key 'struct-type])
 
 ;; the supertype of all of these values
 (def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
