@@ -38,7 +38,7 @@ The @exec{raco test} command accepts several flags:
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
        system: use as many jobs as available processors, set the
-       default timeout to 600 seconds, count stderr output as a test failure,
+       default timeout to 90 seconds, count stderr output as a test failure,
        quiet program output, and print a table of results.}
 
  @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
@@ -129,5 +129,11 @@ recognized:
  to the enclosing directory) or @racket['all] to omit all files within
  the enclosing directory.  When a path string refers to a directory,
  all files within the directory are omitted.}
+
+ @item{@racket[test-command-line-arguments] --- a list of
+ @racket[(list _module-path-string (list _argument-path-string ...))],
+ where @racket[current-command-line-arguments] is set to a vector that
+ contains the @racket[_argument-path-string] when running
+ @racket[_module-path-string].}
 
 ]
