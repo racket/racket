@@ -34,6 +34,7 @@
           make-Continuation-Mark-KeyTop
           make-Prompt-Tagof
           make-Prompt-TagTop
+          make-StructType make-StructTypeTop
           make-ListDots))
 
 ;; Racket Reference
@@ -927,6 +928,22 @@
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 
+;; Section 5.2 (Structure Types)
+[make-struct-type
+ (->opt -Symbol
+        (-opt (make-StructTypeTop))
+        -Nat -Nat
+        [Univ
+         (-lst (-pair -Struct-Type-Property Univ))
+         (Un -Inspector (-val #f) (-val 'prefab))
+         (Un top-func (-val #f) -Nat)
+         (-lst -Nat)
+         (-opt top-func)
+         (-opt -Symbol)]
+        (-values (list (make-StructTypeTop) top-func top-func top-func top-func)))]
+; make-struct-field-accessor
+; make-struct-field-mutator
+
 ;; Section 5.3 (Structure Type Properties)
 [make-struct-type-property
  (->opt Sym
@@ -940,6 +957,8 @@
 
 ;; Section 5.6 (Structure Utilities)
 [struct->vector (Univ . -> . (-vec Univ))]
+; struct?
+[struct-type? (make-pred-ty (make-StructTypeTop))]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]
@@ -2099,10 +2118,23 @@
 [make-sibling-inspector (->opt [-Inspector] -Inspector)]
 [current-inspector (-Param -Inspector -Inspector)]
 
-[struct-info (-> Univ (-values (list Univ B)))]
-[struct-type-info (-> Univ (-values (list Sym -Nat -Nat (-> Univ -Nat Univ) (-> Univ -Nat Univ Univ) (-lst -Nat) Univ B)))]
-[struct-type-make-constructor (-> Univ Univ)]
-[struct-type-make-predicate (-> Univ (-> Univ B))]
+[struct-info (-> Univ (-values (list (-opt (make-StructTypeTop)) B)))]
+[struct-type-info
+ (-poly (a)
+   (cl->*
+    (-> (make-StructType a)
+        (-values (list Sym -Nat -Nat (-> a -Nat Univ)
+                       (-> a -Nat (Un) -Void) (-lst -Nat)
+                       (-opt (make-StructTypeTop)) B)))
+    (-> (make-StructTypeTop)
+        (-values (list Sym -Nat -Nat top-func top-func (-lst -Nat)
+                       (-opt (make-StructTypeTop)) B)))))]
+[struct-type-make-constructor (-> (make-StructTypeTop) top-func)]
+[struct-type-make-predicate
+ (-poly (a)
+   (cl->*
+    (-> (make-StructType a) (make-pred-ty a))
+    (-> (make-StructTypeTop) (-> Univ B))))]
 [object-name (-> Univ Univ)]
 
 ;; Section 14.9 (Code Inspectors)

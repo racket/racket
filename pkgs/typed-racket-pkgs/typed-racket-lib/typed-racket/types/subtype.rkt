@@ -460,6 +460,8 @@
          [((Struct: nm _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _)))
           #:when (free-identifier=? nm nm*)
           A0]
+         ;; All struct-type types are subtypes of the struct type top type
+         [((StructType: _) (StructTypeTop:)) A0]
          ;; Promises are covariant
          [((Promise: s) (Promise: t))
           (subtype* A0 s t)]

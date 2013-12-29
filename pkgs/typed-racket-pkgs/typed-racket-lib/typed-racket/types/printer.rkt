@@ -273,7 +273,10 @@
               (set-box! (current-print-unexpanded)
                         (cons (car names) (unbox (current-print-unexpanded)))))
             (fp "~a" (car names))])]
-    [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
+    [(StructType: (Struct: nm _ _ _ _ _)) (fp "(Struct-Type ~a)" (syntax-e nm))]
+    ;; this case occurs if the contained type is a type variable
+    [(StructType: ty) (fp "(Struct-Type ~a)" ty)]
+    [(StructTypeTop:) (fp "Struct-TypeTop")]
     [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "BoxTop")]
     [(ChannelTop:) (fp "ChannelTop")]
