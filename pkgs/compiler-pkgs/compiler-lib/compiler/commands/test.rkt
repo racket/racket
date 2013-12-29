@@ -13,7 +13,9 @@
          raco/command-name
          racket/system
          rackunit/log
-         pkg/lib)
+         pkg/lib
+         setup/collects
+         setup/getinfo)
 
 (define submodules '()) ; '() means "default"
 (define first-avail? #f)
@@ -379,24 +381,33 @@
          (set! ids (cons id ids))))))))
 
 ;; Perform all tests in path `e`:
-(define (test-files e [check-suffix? #f] #:sema continue-sema)
+(define (test-files e
+                    #:check-suffix? [check-suffix? #f]
+                    #:sema continue-sema)
   (match e
     [(? string? s)
-     (test-files (string->path s) check-suffix? #:sema continue-sema)]
+     (test-files (string->path s)
+                 #:check-suffix? check-suffix?
+                 #:sema continue-sema)]
     [(? path? p)
      (cond
        [(directory-exists? p)
         (set! single-file? #f)
-        (with-summary
-         `(directory ,p)
-         (map/parallel
-          (λ (dp #:sema s)
-            (test-files (build-path p dp) #t #:sema s))
-          (directory-list p)
-          #:sema continue-sema))]
+        (if (omit-path? (path->directory-path p))
+            (summary 0 0 #f 0)
+            (with-summary
+             `(directory ,p)
+             (map/parallel
+              (λ (dp #:sema s)
+                (test-files (build-path p dp)
+                            #:check-suffix? #t
+                            #:sema s))
+              (directory-list p)
+              #:sema continue-sema)))]
        [(and (file-exists? p)
              (or (not check-suffix?)
-                 (regexp-match #rx#"\\.rkt$" (path->bytes p))))
+                 (regexp-match #rx#"\\.rkt$" (path->bytes p)))
+             (not (omit-path? p)))
         (parameterize ([current-directory (let-values ([(base name dir?) (split-path p)])
                                             (if (path? base)
                                                 base
@@ -512,6 +523,72 @@
        (error 'test "Package ~e is not installed" e))]
     [else
      (test-files e #:sema continue-sema)]))
+
+;; --------------------------------------------------
+;; Reading "info.rkt" files
+
+(define omit-paths (make-hash))
+
+(define collects-cache (make-hash))
+(define info-done (make-hash))
+
+(define (check-info p check-up?)
+  (define-values (base name dir?) (split-path p))
+  (define dir (normalize-info-path
+               (if dir?
+                   p
+                   (if (path? base)
+                       (path->complete-path base)
+                       (current-directory)))))
+
+  (when (and check-up? (not dir?))
+    ;; Check enclosing collection
+    (define c (path->collects-relative p #:cache collects-cache))
+    (when (list? c)
+      (check-info/parents dir
+                          (apply build-path (map bytes->path (reverse (cdr (reverse (cdr c)))))))))
+
+  (unless (hash-ref info-done dir #f)
+    (hash-set! info-done dir #t)
+    (define info (get-info/full dir))
+    (when info
+      (define v (info 'test-omit-paths (lambda () '())))
+      (define (bad)
+        (log-error "bad `test-omit-paths` in \"info.rkt\": ~e" v))
+      (cond
+       [(eq? v 'all)
+        (hash-set! omit-paths dir #t)]
+       [(list? v)
+        (for ([i (in-list v)])
+          (unless (path-string? i) (bad))
+          (define p (normalize-info-path (path->complete-path i dir)))
+          (define dp (if (directory-exists? p)
+                         (path->directory-path p)
+                         p))
+          (hash-set! omit-paths dp #t))]
+       [else (bad)]))))
+
+(define (check-info/parents dir subpath)
+  (let loop ([dir dir] [subpath subpath])
+    (unless (hash-ref info-done dir #f)
+      (check-info dir #f)
+      (define-values (next-subpath subpath-name subpath-dir?) (split-path subpath))
+      (define-values (next-dir dir-name dir-dir?) (split-path dir))
+      (when (path? next-subpath)
+        (loop next-dir next-subpath)))))
+
+(define (normalize-info-path p)
+  (simplify-path (path->complete-path p) #f))
+
+(define (omit-path? p)
+  (check-info p #t)
+  (let ([p (normalize-info-path p)])
+    (or (hash-ref omit-paths p #f)
+        (let-values ([(base name dir?) (split-path p)])
+          (and (path? base)
+               (omit-path? base))))))
+
+;; --------------------------------------------------
 
 (define (string->number* what s check)
   (define n (string->number s))

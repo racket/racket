@@ -110,3 +110,22 @@ identifiers:
  @item{@racket[timeout] --- override the default timeout for the test}
 
 ]
+
+To prevent @exec{raco test} from running a particular file, normally
+the file should contain a submodule that takes no action. In some
+cases, however, adding a submodule is inconvenient or impossible
+(e.g., because the file will not always compile). Thus, @exec{raco
+test} also consults any @filepath{info.rkt} file in the candidate test
+file's directory; in the case of a file within a collection,
+@filepath{info.rkt} files from any enclosing collection directories
+are also consulted. The following @filepath{info.rkt} fields are
+recognized:
+
+@itemlist[
+
+ @item{@racket[test-omit-paths] --- a list of path strings (relative
+ to the enclosing directory) or @racket['all] to omit all files within
+ the enclosing directory.  When a path string refers to a directory,
+ all files within the directory are omitted.}
+
+]
