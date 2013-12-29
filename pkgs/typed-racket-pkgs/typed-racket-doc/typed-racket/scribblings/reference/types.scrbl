@@ -574,6 +574,21 @@ potentially-polymorphic structure type @racket[_st].  Note that structure
 accessors for @racket[_st] will @emph{not} accept @racket[(Struct st)] as an
 argument.}
 
+@defform[(Struct-Type st)]{is a type for the structure type descriptor value
+for the structure type @racket[st]. Values of this type are used with
+reflective operations such as @racket[struct-type-info].
+
+@ex[struct:arity-at-least
+    (struct-type-info struct:arity-at-least)]
+}
+
+@defidform[Struct-TypeTop]{is the supertype of all types for structure type
+descriptor values. The corresponding structure type is unknown for values of
+this top type.
+
+@ex[(struct-info (arity-at-least 0))]
+}
+
 @defalias[→ ->]
 @defalias[case→ case->]
 @defalias[∀ All]
