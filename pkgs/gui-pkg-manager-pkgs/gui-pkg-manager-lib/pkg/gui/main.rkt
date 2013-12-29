@@ -57,21 +57,26 @@
 
   (define terminal #f)
   (define (in-terminal-panel abort-label thunk)
-    (send dlg begin-container-sequence)
-    (when terminal (send terminal close))
-    (define t (in-terminal 
-               #:abort-label abort-label
-               #:canvas-min-height 200
-               #:container dlg
-               #:close-button? #f
-               (λ (cust parent) (wrap-terminal-action thunk))))
-    (move-close-button (send t get-button-panel))
-    (send dlg reflow-container)
-    (set! terminal t)
-    (disallow-close)
-    (send dlg end-container-sequence)
-    (yield (send t can-close-evt))
-    (allow-close))
+    (cond
+      [(or (not terminal) (send terminal can-close?))
+       (send dlg begin-container-sequence)
+       (when terminal (send terminal close))
+       (define t (in-terminal 
+                  #:abort-label abort-label
+                  #:canvas-min-height 200
+                  #:container dlg
+                  #:close-button? #f
+                  (λ (cust parent) (wrap-terminal-action thunk))))
+       (move-close-button (send t get-button-panel))
+       (send dlg reflow-container)
+       (set! terminal t)
+       (disallow-close)
+       (send dlg end-container-sequence)
+       (yield (send t can-close-evt))
+       (allow-close)]
+      [else 
+       (message-box (string-constant install-pkg-dialog-title)
+                    (string-constant install-pkg-not-rentrant))]))
   
   (define (disallow-close)
     (set! allow-close? #f)
