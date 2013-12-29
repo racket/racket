@@ -19,20 +19,27 @@ discovers all files that end in @filepath{.rkt} within the directory
 and runs them.
 
 A test is counted as failing if it causes Racket to exit with a
-non-zero exit code or if it produces output on the error port.  The
-current directory is set to a file's directory before running the
-file.
+non-zero exit code or (when @Flag{e} or @DFlag{check-stderr} is
+specified) if it produces output on the error port.  The current
+directory is set to a test file's directory before running the file.
 
 The @exec{raco test} command accepts several flags:
 
 @itemize[
+
+ @item{@Flag{c} or @DFlag{collection}
+       --- Intreprets the arguments as collections where whose files should be tested.}
+
+ @item{@Flag{p} or @DFlag{package}
+       --- Intreprets the arguments as packages whose files should
+       be tested. (All package scopes are searched for the first, most
+       specific package.)}
+
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
-       system: using as many jobs as available processors, setting the
-       default timeout to 600 seconds, trying the @racket[drdr] and
-       the @racket[test] submodules in that order, running a module
-       directly if neither submodule is available, quieting program
-       output, and printing a table of results.}
+       system: use as many jobs as available processors, set the
+       default timeout to 600 seconds, count stderr output as a test failure,
+       quiet program output, and print a table of results.}
 
  @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
        --- Requires the submodule @nonterm{name} rather than @racket[test].
@@ -51,11 +58,16 @@ The @exec{raco test} command accepts several flags:
        --- When multiple submodule names are provided with @Flag{s} or
        @DFlag{submodule}, runs only the first available submodule.}
 
- @item{@Flag{q} or @DFlag{quiet}
-       --- suppresses output of progress information.}
+ @item{@DFlag{direct}
+      --- Runs each test in a thread. This mode is the default if
+      a single file is specified. Multiple tests can interfere with
+      each other and the overall test run by exiting, unsafe operations
+      that block (and thus prevent timeout), and so on.}
 
- @item{@Flag{Q} or @DFlag{quiet-program}
-       --- suppresses output from each test program.}
+ @item{@DFlag{process}
+      --- Runs each test in a separate operating-system process. This
+          mode is the default if multiple files are specified or if a
+          directory, collection, or package is specified.}
 
  @item{@DFlag{place}
       --- Runs each test in a @tech[#:doc '(lib
@@ -69,13 +81,21 @@ The @exec{raco test} command accepts several flags:
       --- Sets the default timeout (after which a test counts as failed)
       to @nonterm{seconds}.}
 
- @item{@Flag{c} or @DFlag{collection}
-       --- Intreprets the arguments as collections where whose files should be tested.}
+ @item{@Flag{Q} or @DFlag{quiet-program}
+       --- suppresses output from each test program.}
 
- @item{@Flag{p} or @DFlag{package}
-       --- Intreprets the arguments as packages whose files should
-       be tested. (All package scopes are searched for the first, most
-       specific package.)}
+ @item{@Flag{e} or @DFlag{check-stderr}
+       --- count any stderr output as a test failure.}
+
+ @item{@Flag{q} or @DFlag{quiet}
+       --- suppresses output of progress information.}
+
+ @item{@DFlag{table} or @Flag{t}
+       --- Print a summary table after all tests. If a test uses
+       @racketmodname[rackunit], or if a test at least uses
+       @racketmodname[rackunit/log] to log successes and failures,
+       the table reports test and failure counts based
+       on the log.}
 
 ]
 

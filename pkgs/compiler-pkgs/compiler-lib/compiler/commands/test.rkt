@@ -8,27 +8,49 @@
          racket/path
          racket/place
          racket/future
+         racket/file
          compiler/find-exe
          raco/command-name
          racket/system
          rackunit/log
          pkg/lib)
 
-(define submodules '())
+(define submodules '()) ; '() means "default"
 (define first-avail? #f)
 (define run-anyways? #t)
 (define quiet? #f)
 (define quiet-program? #f)
+(define check-stderr? #f)
 (define table? #f)
 
-(define jobs 0)
+(define jobs 0) ; 0 mean "default"
 (define task-sema (make-semaphore 1))
 
-(define default-timeout +inf.0)
-(define default-mode 'process)
+(define default-timeout #f) ; #f means "none"
+(define default-mode #f) ; #f => depends on how many files are provided
 
-;; Stub for running a test in a place:
-(module start racket/base
+(define single-file? #t)
+
+;; Stub for running a test in a process:
+(module process racket/base
+  (require rackunit/log)
+  ;; Arguments are a temp file to hold test results, the module
+  ;; path to run, and the `dynamic-require` second argument:
+  (define argv (current-command-line-arguments))
+  (define result-file (vector-ref argv 0))
+  (define test-module (read (open-input-string (vector-ref argv 1))))
+  (define d (read (open-input-string (vector-ref argv 2))))
+
+  (dynamic-require test-module d)
+
+  (call-with-output-file*
+   result-file
+   #:exists 'truncate
+   (lambda (o)
+     (write (test-log #:display? #f #:exit? #f) o))))
+
+;; Driver for running a test in a place:
+(module place racket/base
   (require racket/place
            rackunit/log)
   (provide go)
@@ -54,7 +76,10 @@
 ;; Run each test in its own place or process, and collect both test
 ;; results and whether any output went to stderr.
 (define (dynamic-require-elsewhere p d
-                                   #:mode [mode default-mode]
+                                   #:mode [mode (or default-mode
+                                                    (if single-file?
+                                                        'direct
+                                                        'process))]
                                    #:timeout [timeout default-timeout])
   (define c (make-custodian))
   (with-handlers ([exn:fail? (lambda (exn)
@@ -71,15 +96,36 @@
                        (current-output-port)))
     (define stderr (if quiet-program?
                        e
-                       (tee-output-port (current-error-port) e)))
+                       (if check-stderr?
+                           (tee-output-port (current-error-port) e)
+                           (current-error-port))))
 
     (define-values (result-code test-results)
       (case mode
+        [(direct)
+         (define pre (test-log #:display? #f #:exit? #f))
+         (define done? #f)
+         (define t
+           (parameterize ([current-output-port stdout]
+                          [current-error-port stderr]
+                          [current-command-line-arguments '#()])
+             (thread
+              (lambda ()
+                (dynamic-require p d)
+                (set! done? #t)))))
+         (unless (thread? (sync/timeout timeout t))
+           (error 'test "timeout after ~a seconds" timeout))
+         (unless done?
+           (error 'test "test raised an exception"))
+         (define post (test-log #:display? #f #:exit? #f))
+         (values 0
+                 (cons (- (car post) (car pre))
+                       (- (cdr post) (cdr pre))))]
         [(place)
          ;; Start the test place:
          (define-values (pl in out/f err/f)
            (parameterize ([current-custodian c])
-             (dynamic-place* '(submod compiler/commands/test start)
+             (dynamic-place* '(submod compiler/commands/test place)
                              'go
                              #:in (current-input-port)
                              #:out stdout
@@ -96,6 +142,7 @@
          (values (place-wait pl)
                  (sync/timeout 0 pl))]
         [(process)
+         (define tmp-file (make-temporary-file))
          (define ps
            (parameterize ([current-output-port stdout]
                           [current-error-port stderr]
@@ -108,23 +155,32 @@
                              "-l"
                              "racket/base"
                              "-e"
-                             (format "(dynamic-require '~s ~s)"
-                                     (normalize-module-path p)
-                                     d))))
+                             "(dynamic-require '(submod compiler/commands/test process) #f)"
+                             tmp-file
+                             (format "~s" (normalize-module-path p))
+                             (format "~s" d))))
          (define proc (list-ref ps 4))
          
          (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
            (error 'test "timeout after ~a seconds" timeout))
+
+         (define results
+           (with-handlers ([exn:fail:read? (lambda () #f)])
+             (call-with-input-file* tmp-file read)))
          
          (values (proc 'exit-code)
-                 #f)]))
+                 (and (pair? results)
+                      (exact-positive-integer? (car results))
+                      (exact-positive-integer? (cdr results))
+                      results))]))
     
     ;; Shut down the place/process (usually a no-op unless it timed out):
     (custodian-shutdown-all c)
 
     ;; Check results:
-    (unless (equal? #"" (get-output-bytes e))
-      (error 'test "non-empty stderr: ~e" (get-output-bytes e)))
+    (when check-stderr?
+      (unless (equal? #"" (get-output-bytes e))
+        (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
     (unless (zero? result-code)
       (error 'test "non-zero exit: ~e" result-code))
     (cond
@@ -177,8 +233,9 @@
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
    p d
-   #:timeout (lookup 'timeout
-                     (lambda () default-timeout))))
+   #:timeout (or (lookup 'timeout
+                         (lambda () default-timeout))
+                 +inf.0)))
 
 (define current-label (make-parameter "???"))
 (struct summary (failed total label body-res))
@@ -329,6 +386,7 @@
     [(? path? p)
      (cond
        [(directory-exists? p)
+        (set! single-file? #f)
         (with-summary
          `(directory ,p)
          (map/parallel
@@ -466,18 +524,26 @@
 
 (command-line
  #:program (short-program+command-name)
+ #:once-any
+ [("--collection" "-c")
+  "Interpret arguments as collections"
+  (set! collections? #t)]
+ [("--package" "-p")
+  "Interpret arguments as packages"
+  (set! packages? #t)]
  #:once-each
  [("--drdr")
   "Configure defaults to imitate DrDr"
-  (when (null? submodules)
-    (set! submodules '(drdr test)))
   (set! first-avail? #t)
   (when (zero? jobs)
     (set-jobs! (processor-count)))
-  (when (equal? default-timeout +inf.0)
+  (unless default-timeout
     (set! default-timeout 600))
+  (set! check-stderr? #t)
   (set! quiet-program? #t)
-  (set! table? #t)]
+  (set! table? #t)
+  (unless default-mode
+    (set! default-mode 'process))]
  #:multi
  [("--submodule" "-s") name
   "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
@@ -494,33 +560,39 @@
  [("--first-avail")
   "Run only the first available submodule"
   (set! first-avail? #f)]
- [("--quiet" "-q")
-  "Suppress `raco test: ...' message"
-  (set! quiet? #t)]
- [("--table" "-t")
-  "Print a summary table"
-  (set! table? #t)]
- [("--quiet-program" "-Q")
-  "Quiet the program"
-  (set! quiet-program? #t)]
+ #:once-any
+ [("--direct")
+  "Run tests directly (default for a single file)"
+  (set! default-mode 'direct)]
+ [("--process")
+  "Run tests in separate processes (default for multiple files)"
+  (set! default-mode 'process)]
  [("--place")
-  "Run tests in places instead of processes"
+  "Run tests in places"
   (set! default-mode 'place)]
+ #:once-each
  [("--jobs" "-j") n
   "Run up to <n> tests in parallel"
   (set-jobs! (string->number* "jobs" n exact-positive-integer?))]
  [("--timeout") seconds
   "Set default timeout to <seconds>"
   (set-jobs! (string->number* "timeout" seconds real?))]
- #:once-any
- [("--collection" "-c")
-  "Interpret arguments as collections"
-  (set! collections? #t)]
- [("--package" "-p")
-  "Interpret arguments as packages"
-  (set! packages? #t)]
+ [("--quiet-program" "-Q")
+  "Quiet the program"
+  (set! quiet-program? #t)]
+ [("--check-stderr" "-e")
+  "Treat stderr output as a test failure"
+  (set! check-stderr? #t)]
+ [("--quiet" "-q")
+  "Suppress `raco test: ...' message"
+  (set! quiet? #t)]
+ [("--table" "-t")
+  "Print a summary table"
+  (set! table? #t)]
  #:args file-or-directory
- (begin (define sum
+ (begin (unless (= 1 (length file-or-directory))
+          (set! single-file? #f))
+        (define sum
           ;; The #:sema argument everywhre makes tests start
           ;; in a deterministic order:
           (map/parallel test-top file-or-directory
@@ -535,4 +607,5 @@
           (for ([i (in-range (- (summary-total s)
                                 (summary-failed s)))])
             (test-log! #t)))
-        (void (test-log #:display? #t #:exit? #t))))
+        (define r (test-log #:display? #t #:exit? #t))
+        (exit (if (zero? (car r)) 0 1))))
