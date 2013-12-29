@@ -96,3 +96,4 @@
       (when (verbose)
         (printf " [output to \"~a\"]\n" plt-output))))
 
+(module test racket/base)
