@@ -79,7 +79,8 @@ The @exec{raco test} command accepts several flags:
 
  @item{@DFlag{timeout} @nonterm{seconds}
       --- Sets the default timeout (after which a test counts as failed)
-      to @nonterm{seconds}.}
+      to @nonterm{seconds}. Use @exec{+inf.0} to allow tests to run without
+      limit but allow @racket[timeout] sub-submodule configuration.}
 
  @item{@Flag{Q} or @DFlag{quiet-program}
        --- suppresses output from each test program.}
@@ -107,7 +108,8 @@ identifiers:
 
 @itemlist[
 
- @item{@racket[timeout] --- override the default timeout for the test}
+ @item{@racket[timeout] --- override the default timeout for the test,
+       when timeouts are enabled.}
 
 ]
 

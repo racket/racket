@@ -43,7 +43,8 @@
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define d (read (open-input-string (vector-ref argv 2))))
 
-  (dynamic-require test-module d)
+  (parameterize ([current-command-line-arguments '#()])
+    (dynamic-require test-module d))
 
   (call-with-output-file*
    result-file
@@ -235,7 +236,8 @@
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
    p d
-   #:timeout (or (lookup 'timeout
+   #:timeout (if default-timeout
+                 (lookup 'timeout
                          (lambda () default-timeout))
                  +inf.0)))
 
@@ -653,7 +655,7 @@
   (set-jobs! (string->number* "jobs" n exact-positive-integer?))]
  [("--timeout") seconds
   "Set default timeout to <seconds>"
-  (set-jobs! (string->number* "timeout" seconds real?))]
+  (set! default-timeout (string->number* "timeout" seconds real?))]
  [("--quiet-program" "-Q")
   "Quiet the program"
   (set! quiet-program? #t)]
