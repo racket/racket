@@ -3,6 +3,10 @@
          racket/place
          "test-util.rkt")
 
+(module drdr racket/base
+  ;; Run individual files for DrDr
+  (void))
+
 (define parallel 1)
 (let ([argv (current-command-line-arguments)])
   (unless (= (vector-length argv) 0)

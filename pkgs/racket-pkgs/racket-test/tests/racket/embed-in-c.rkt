@@ -12,7 +12,9 @@
     (unless (equal? expected val)
       (error 'test "failed at ~s: ~e; expected: ~e" 'expr val expected))))
 
-(define dir (collection-path "tests" "racket"))
+(define dir (let-values ([(base name dir?) 
+                          (split-path (collection-file-path "embed-in-c.c" "tests" "racket"))])
+              base))
 (define lib-dir (find-lib-dir))
 
 (define (buildinfo def)
@@ -38,16 +40,23 @@
                "racket/place"
                "++lib"
                "tests/racket/embed-place"))
-    (unless (system (format "cc -c -o embed-in-c.o ~a-DMZ_COLLECTION_PATH='\"~a\"' -I\"~a\" -DMZ_PRECISE_GC ~a embed-in-c.c"
+    (unless (system (format (string-append "cc -c -o embed-in-c.o ~a"
+                                           "-DMZ_COLLECTION_PATH='\"~a\"'"
+                                           " -DMZ_CONFIG_PATH='\"~a\"'"
+                                           " -I\"~a\" -DMZ_PRECISE_GC ~a embed-in-c.c")
                             (if use-declare? 
                                 (format "-DUSE_DECLARED_MODULE -I\"~a\" " (find-system-path 'temp-dir))
                                 "")
                             (find-collects-dir)
+                            (find-config-dir)
                             (find-include-dir)
                             (buildinfo "CFLAGS")))
       (error "compile failed"))
     
-    (unless (system (format "cc -o embed-in-c embed-in-c.o -lm -ldl -pthread ~a"
+    (unless (system (format "cc -o embed-in-c embed-in-c.o -lm -ldl ~a ~a"
+                            (case (system-type)
+                              [(macosx) ""]
+                              [else "-pthread"])
                             (case (system-type 'link)
                               [(framework)
                                (format "-F\"~a\" -framework Racket" lib-dir)]

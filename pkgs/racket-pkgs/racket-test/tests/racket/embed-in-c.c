@@ -26,6 +26,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   declare_modules(e);
 #else
   scheme_set_collects_path(scheme_make_path(MZ_COLLECTION_PATH));
+  scheme_set_config_path(scheme_make_path(MZ_CONFIG_PATH));
   scheme_init_collection_paths(e, scheme_null);
 #endif
 

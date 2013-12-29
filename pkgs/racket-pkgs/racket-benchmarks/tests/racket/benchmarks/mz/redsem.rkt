@@ -19,17 +19,10 @@ Robby
 (require redex/examples/beginner)
 (collect-garbage)
 (printf "Now\n")
-;; Check for the command line flag --skip-struct-test
-;; If it's set, don't run the (currently-failing) test
-;; for define-struct in beginner
-;; This flag is so that DrDr can avoid raising an error here. 
-;; -- samth
-(define run-struct-test?
-  (let ([run? #t])
-    (command-line
-     #:once-each
-     ["--skip-struct-test" "skip failing struct test" (set! run? #f)])
-    run?))
+
+;; At one point, the struct test was failing,
+;; and this flag could turn it off:
+(define run-struct-test? #t)
 
 (time (begin (run-tests run-struct-test?)
 	     (run-tests run-struct-test?)

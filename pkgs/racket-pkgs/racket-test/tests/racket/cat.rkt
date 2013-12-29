@@ -23,3 +23,6 @@
 	       (call-with-input-file* f (lambda (in) (copy-port in (current-output-port))))
 	       (raise-user-error 'cat "bad file ~a" f)))))
 (flush-output)
+
+;; No test:
+(module test racket/base)

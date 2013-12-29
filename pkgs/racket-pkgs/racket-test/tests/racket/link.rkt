@@ -1,5 +1,6 @@
 #lang racket
 (require setup/link
+         setup/dirs
          compiler/find-exe
          racket/sandbox)
 
@@ -19,7 +20,9 @@
   (delete-directory/files work-dir))
 (make-directory work-dir)
 
-(define link-file (build-path work-dir "links"))
+(make-directory (build-path work-dir (get-installation-name)))
+
+(define link-file (build-path work-dir (get-installation-name) "links.rktd"))
 
 ;; ----------------------------------------
 ;; running Racket
@@ -34,8 +37,8 @@
                      [current-error-port eo])
         (apply system* 
                racket-exe
-               (list* "-C"
-                      link-file
+               (list* "-A"
+                      work-dir
                       args))))
     (values (get-output-string o)
             (get-output-string eo))))
@@ -72,6 +75,8 @@
 ;; ----------------------------------------
 ;; check setup errs
 
+;; This checking has gotten lost. Consider restoring it...
+#;
 (run-setup "Racket"
            #:err "collection not found|not in canonical form")
 
@@ -258,4 +263,4 @@
 ;; ----------------------------------------
 ;; clean up
 
-;(delete-directory/files work-dir)
+(delete-directory/files work-dir)

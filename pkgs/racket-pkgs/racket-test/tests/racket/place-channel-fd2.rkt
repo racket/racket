@@ -13,11 +13,13 @@
 (module+ test
   (main))
 
+(define fdt (build-path (find-system-path 'temp-dir) "fdt.rkt"))
+
 (define (main)
   (test-case
     "test file descriptors copied across place channesl"
-;; write out "fdt.rkt"
-    (with-output-to-file "fdt.rkt" #:exists 'replace (lambda ()
+    ;; write out "fdt.rkt"
+    (with-output-to-file fdt #:exists 'replace (lambda ()
       (display
 #<<END
 #lang racket/base
@@ -56,7 +58,7 @@ END
              (close-output-port out)])))
 
     (let ()
-      (define-values (s o i e) (racket-subprocess #f #f (current-error-port) "fdt.rkt"))
+      (define-values (s o i e) (racket-subprocess #f #f (current-error-port) fdt))
       (place-channel-put p (list o i))
       ;(close-output-port i)
       ;(close-input-port o)
