@@ -42,8 +42,9 @@
   (define result-file (vector-ref argv 0))
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define d (read (open-input-string (vector-ref argv 2))))
+  (define args (list-tail (vector->list argv) 3))
 
-  (parameterize ([current-command-line-arguments '#()])
+  (parameterize ([current-command-line-arguments (list->vector args)])
     (dynamic-require test-module d))
 
   (call-with-output-file*
@@ -60,7 +61,8 @@
   (define (go pch)
     (define l (place-channel-get pch))
     ;; Run the test:
-    (parameterize ([current-command-line-arguments '#()]
+    (parameterize ([current-command-line-arguments (list->vector
+                                                    (cadddr l))]
                    [current-directory (caddr l)])
       (dynamic-require (car l) (cadr l)))
     ;; If the tests use `rackunit`, collect result stats:
@@ -78,7 +80,7 @@
 
 ;; Run each test in its own place or process, and collect both test
 ;; results and whether any output went to stderr.
-(define (dynamic-require-elsewhere p d
+(define (dynamic-require-elsewhere p d args
                                    #:mode [mode (or default-mode
                                                     (if single-file?
                                                         'direct
@@ -111,7 +113,7 @@
          (define t
            (parameterize ([current-output-port stdout]
                           [current-error-port stderr]
-                          [current-command-line-arguments '#()])
+                          [current-command-line-arguments (list->vector args)])
              (thread
               (lambda ()
                 (dynamic-require p d)
@@ -135,7 +137,7 @@
                              #:err stderr)))
          
          ;; Send the module path to test:
-         (place-channel-put pl (list p d (current-directory)))
+         (place-channel-put pl (list p d (current-directory) args))
 
          ;; Wait for the place to finish:
          (unless (sync/timeout timeout (place-dead-evt pl))
@@ -151,17 +153,19 @@
                           [current-error-port stderr]
                           [current-subprocess-custodian-mode 'kill]
                           [current-custodian c])
-             (process*/ports stdout
-                             (current-input-port)
-                             stderr
-                             (find-exe)
-                             "-l"
-                             "racket/base"
-                             "-e"
-                             "(dynamic-require '(submod compiler/commands/test process) #f)"
-                             tmp-file
-                             (format "~s" (normalize-module-path p))
-                             (format "~s" d))))
+             (apply process*/ports
+                    stdout
+                    (current-input-port)
+                    stderr
+                    (find-exe)
+                    "-l"
+                    "racket/base"
+                    "-e"
+                    "(dynamic-require '(submod compiler/commands/test process) #f)"
+                    tmp-file
+                    (format "~s" (normalize-module-path p))
+                    (format "~s" d)
+                    args)))
          (define proc (list-ref ps 4))
          
          (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
@@ -226,7 +230,7 @@
       (append mod '(config))
       (error 'test "cannot add test-config submodule to path: ~s" mod)))
 
-(define (dynamic-require* p d try-config?)
+(define (dynamic-require* p d args try-config?)
   (define lookup
     (or (cond
          [(not try-config?) #f]
@@ -235,7 +239,7 @@
          [else #f])
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
-   p d
+   p d args
    #:timeout (if default-timeout
                  (lookup 'timeout
                          (lambda () default-timeout))
@@ -353,7 +357,7 @@
 
 ;; Perform test of one module (in parallel, as allowed by
 ;; `task-sema`):
-(define (test-module p mod try-config? #:sema continue-sema)
+(define (test-module p mod args try-config? #:sema continue-sema)
   (call-with-semaphore
    task-sema ; limits parallelism
    (lambda ()
@@ -366,17 +370,20 @@
           (set! ids (cdr ids))
           (unless quiet?
             ;; in lock, so printouts are not interleaved
-            (printf "raco test: ~a~s\n"
+            (printf "raco test: ~a~s~a\n"
                     (if (jobs . <= . 1)
                         ""
                         (format "~a " id))
                     (let ([m (normalize-module-path p)])
                       (if (and (pair? mod) (eq? 'submod (car mod)))
                           (list* 'submod m (cddr mod))
-                          m))))
+                          m))
+                    (apply string-append
+                           (for/list ([a (in-list args)])
+                             (format " ~s" (format "~a" a))))))
           id)))
      (begin0
-      (dynamic-require* mod 0 try-config?)
+      (dynamic-require* mod 0 args try-config?)
       (call-with-semaphore
        ids-lock
        (lambda ()
@@ -410,6 +417,7 @@
              (or (not check-suffix?)
                  (regexp-match #rx#"\\.rkt$" (path->bytes p)))
              (not (omit-path? p)))
+        (define args (get-cmdline p))
         (parameterize ([current-directory (let-values ([(base name dir?) (split-path p)])
                                             (if (path? base)
                                                 base
@@ -431,13 +439,13 @@
                    #f]
                   [(module-declared? mod #t)
                    (set! did-one? #t)
-                   (test-module p mod #t #:sema continue-sema)]
+                   (test-module p mod args #t #:sema continue-sema)]
                   [else
                    (set! something-wasnt-declared? #t)
                    #f]))
                (list
                 (and (and run-anyways? something-wasnt-declared?)
-                     (test-module p file-name #f #:sema continue-sema))))))))]
+                     (test-module p file-name args #f #:sema continue-sema))))))))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)]
        [else (summary 0 0 #f null)])]))
@@ -530,6 +538,7 @@
 ;; Reading "info.rkt" files
 
 (define omit-paths (make-hash))
+(define command-line-arguments (make-hash))
 
 (define collects-cache (make-hash))
 (define info-done (make-hash))
@@ -555,20 +564,33 @@
     (define info (get-info/full dir))
     (when info
       (define v (info 'test-omit-paths (lambda () '())))
-      (define (bad)
-        (log-error "bad `test-omit-paths` in \"info.rkt\": ~e" v))
+      (define (bad what v)
+        (log-error "bad `~a' in \"info.rkt\": ~e" what v))
       (cond
        [(eq? v 'all)
         (hash-set! omit-paths dir #t)]
        [(list? v)
         (for ([i (in-list v)])
-          (unless (path-string? i) (bad))
+          (unless (path-string? i) (bad 'test-omit-paths v))
           (define p (normalize-info-path (path->complete-path i dir)))
           (define dp (if (directory-exists? p)
                          (path->directory-path p)
                          p))
           (hash-set! omit-paths dp #t))]
-       [else (bad)]))))
+       [else (bad 'test-omit-paths v)])
+      
+      (define a (info 'test-command-line-arguments (lambda () '())))
+      (unless (list? a) (bad 'test-command-line-arguments a))
+      (for ([arg (in-list a)])
+        (unless (and (list? arg)
+                     (= 2 (length arg))
+                     (path-string? (car arg))
+                     (list? (cadr arg))
+                     (andmap path-string? (cadr arg)))
+          (bad 'test-command-line-arguments a))
+        (hash-set! command-line-arguments
+                   (normalize-info-path (path->complete-path (car arg) dir))
+                   (cadr arg))))))
 
 (define (check-info/parents dir subpath)
   (let loop ([dir dir] [subpath subpath])
@@ -589,6 +611,10 @@
         (let-values ([(base name dir?) (split-path p)])
           (and (path? base)
                (omit-path? base))))))
+
+(define (get-cmdline p)
+  (let ([p (normalize-info-path p)])
+    (hash-ref command-line-arguments p null)))
 
 ;; --------------------------------------------------
 
@@ -617,7 +643,7 @@
   (when (zero? jobs)
     (set-jobs! (processor-count)))
   (unless default-timeout
-    (set! default-timeout 600))
+    (set! default-timeout 90))
   (set! check-stderr? #t)
   (set! quiet-program? #t)
   (set! table? #t)
