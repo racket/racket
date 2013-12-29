@@ -57,3 +57,5 @@ Here's the idea:
                  (garbage-collect-toplevels-enabled #t)]                         
                 #:args (filename) 
                 (demodularize filename (output-file))))
+
+(module test racket/base)

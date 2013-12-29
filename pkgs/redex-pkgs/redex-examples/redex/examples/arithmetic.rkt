@@ -57,3 +57,9 @@
 
 (when print-name?
   (printf "Traces are in ~a\n" traces-file))
+
+;; Test mode: no printing:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "--no-print")])
+    (dynamic-require (quote-module-path "..") #f)))

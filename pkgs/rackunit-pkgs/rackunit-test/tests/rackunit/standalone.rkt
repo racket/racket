@@ -3,6 +3,13 @@
          rackunit
          racket/path)
 
+(module test racket/base
+  (require syntax/location)
+  ;; Use a separate namespace to avoid logging results
+  ;; in this namespace (where `raco test` would see errors).
+  (parameterize ([current-namespace (make-base-namespace)])
+    (dynamic-require (quote-module-path "..") #f)))
+
 (define-runtime-path here ".")
 (define collects 
   (normalize-path (build-path here ".." "..")))

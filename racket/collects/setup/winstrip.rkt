@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/cmdline)
 
+(module test racket/base)
+
 ;; Remove debugging and CGC files
 
 (define keep-cgc? #f)

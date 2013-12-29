@@ -20,3 +20,10 @@
                  (regexp-quote "pr10950.rkt:14:51")
                  (regexp-quote "0 success(es) 1 failure(s) 0 error(s) 1 test(s) run\n")))
   output))
+
+(module test racket/base
+  (require syntax/location)
+  ;; Use a separate namespace to avoid logging results
+  ;; in this namespace (where `raco test` would see errors).
+  (parameterize ([current-namespace (make-base-namespace)])
+    (dynamic-require (quote-module-path "..") #f)))

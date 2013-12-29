@@ -5,6 +5,8 @@
          racket/gui/base
          "debug.rkt")
 
+(module test racket/base)
+
 (define errs null)
 (define sema (make-semaphore 1))
 (define (protect f)

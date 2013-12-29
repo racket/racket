@@ -4,6 +4,8 @@
   ;; happen. These tests are really only last resorts
   ;; for testing functions that aren't easily extraced
   ;; from the pict.rkt library
+
+(module test racket/base)
   
   (require redex/reduction-semantics
            redex/pict)

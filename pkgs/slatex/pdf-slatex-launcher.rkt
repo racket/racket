@@ -2,6 +2,8 @@
   (require "slatex-wrapper.rkt"
            scheme/cmdline)
 
+  (module test racket/base)
+
   (define argv (current-command-line-arguments))
   
   (define no-latex (make-parameter #f))

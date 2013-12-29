@@ -10,6 +10,8 @@
 
 (provide drracket-buttons)
 
+(module test racket/base)
+
 (define-runtime-path pdf-png-path "pdf.png")
 (define-runtime-path html-png-path "html.png")
 (define pdf.png (make-object bitmap% pdf-png-path 'png/mask))

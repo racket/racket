@@ -4,6 +4,8 @@
          xml
          racket/runtime-path)
 
+(module test racket/base)
+
 (define (validate-xml? xml)
   (error 'validate-xml? "Not implemented"))
 (define (well-formed-xml? xml)

@@ -5,6 +5,7 @@
 (define name "FrTime")
 
 (define compile-omit-paths '("demos" "tests"))
+(define test-omit-paths '("demos"))
 
 (define scribblings '(("scribblings/frtime.scrbl" () (experimental 50))))
 (define deps '("srfi-lite-lib"

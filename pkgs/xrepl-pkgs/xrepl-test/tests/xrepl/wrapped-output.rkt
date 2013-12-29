@@ -16,6 +16,7 @@
 
 (provide test-wrapped-output)
 (module+ main (test-wrapped-output))
+(module+ test (test-wrapped-output))
 (define (test-wrapped-output)
   (define n "\n")
   (define s string-append)

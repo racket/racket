@@ -5,6 +5,8 @@
          images/flomap
          images/logos)
 
+(module test racket/base)
+
 (define frame-delay 1/30)
 
 (define size 256)

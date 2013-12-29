@@ -3,6 +3,8 @@
 (require racket/file
          "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (define dummy-frame-title "dummy to avoid quitting")
 (queue-sexp-to-mred `(send (make-object frame:basic% ,dummy-frame-title) show #t))
 

@@ -5,6 +5,8 @@
          (only-in "config.rkt" extract-options)
          "url-options.rkt")
 
+(module test racket/base)
+
 (define-values (dest-config-file config-file config-mode 
                                  install-name build-stamp 
                                  default-doc-search default-catalogs)

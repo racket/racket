@@ -14,6 +14,8 @@
  graph-line
  )
 
+(module test racket/base)
+
 (define-higher-order-primitive graph-line graph-line/proc (f _))
 (define-higher-order-primitive graph-fun graph-fun/proc (f _))
 

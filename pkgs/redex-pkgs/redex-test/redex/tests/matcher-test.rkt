@@ -6,6 +6,8 @@
          (for-syntax racket/base)
          racket/list)
 
+(module test racket/base)
+
 (error-print-width 500)
   
 (define (make-test-mtch a b c) (make-mtch a (build-flat-context b) c))

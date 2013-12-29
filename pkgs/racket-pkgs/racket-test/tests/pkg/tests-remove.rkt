@@ -13,6 +13,8 @@
          "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (pkg-tests
  (shelly-begin
   (initialize-catalogs)

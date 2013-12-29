@@ -83,3 +83,12 @@
 
 (printf "\nWARNING: didn't run color-test.rkt\n")
 (flush)
+
+
+;; Test mode:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments
+                  (vector "--examples" "--no-bitmap-gui")])
+    (dynamic-require (quote-module-path "..") #f)))
+

@@ -7,6 +7,8 @@
          redex/private/stepper
          redex/private/size-snip)
 
+(module test racket/base)
+
 (reset-count)
 
 ;; diff : term term -> (cons range range)

@@ -2,6 +2,8 @@
 (require (for-syntax racket/base)
          "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (define-syntax (test-search stx)
   (syntax-case stx ()
     [(_ args ...)

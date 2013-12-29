@@ -5,6 +5,8 @@
          web-server/templates
          web-server/servlet-env)
 
+(module test racket/base)
+
 (framing-mode 'old)
 
 (define stop-ws!

@@ -1517,3 +1517,7 @@ the settings above should match r5rs
   )
 
 (fire-up-drracket-and-run-tests run-test)
+
+(module+ test
+  (module config info
+    (define timeout 1500)))

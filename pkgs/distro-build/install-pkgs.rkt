@@ -3,6 +3,8 @@
          racket/string
          (only-in "config.rkt" extract-options))
 
+(module test racket/base)
+
 (define-values (config-file config-mode default-pkgs flags)
   (command-line
    #:args

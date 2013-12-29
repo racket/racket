@@ -5,7 +5,9 @@
            racket/match
            racket/trace
            redex/private/struct)
-  
+
+  (module test racket/base)
+
   (reset-count)
 
   

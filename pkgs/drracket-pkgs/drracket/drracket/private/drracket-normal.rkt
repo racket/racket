@@ -12,6 +12,8 @@
          "frame-icon.rkt"
          "eb.rkt")
 
+(module test racket/base)
+
 (define-runtime-path doc-icon.rkt "dock-icon.rkt")
 
 (define files-to-open (command-line #:args filenames filenames))

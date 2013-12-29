@@ -7,6 +7,8 @@
          racket/port
          db)
 
+(module test racket/base)
+
 #|
 This program tests the combination of virtual connections and
 connection pools in the context of web servlets, where servlet threads

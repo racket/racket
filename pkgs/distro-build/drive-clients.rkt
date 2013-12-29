@@ -18,6 +18,8 @@
 
 ;; See "config.rkt" for an overview.
 
+(module test racket/base)
+
 ;; ----------------------------------------
 
 (define default-release? #f)

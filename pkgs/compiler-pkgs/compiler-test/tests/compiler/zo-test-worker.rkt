@@ -268,3 +268,5 @@
 (command-line #:program "zo-test-worker" 
               #:args (file)
               (run-test file))
+
+(module test racket/base)

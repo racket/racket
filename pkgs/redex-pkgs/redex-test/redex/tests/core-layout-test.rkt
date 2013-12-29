@@ -5,6 +5,8 @@
          "lw-test-util.rkt"
          "test-util.rkt")
 
+(module test racket/base)
+
 (require texpict/mrpict mred/mred mzlib/class)
 (dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
 

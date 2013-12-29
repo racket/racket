@@ -3,6 +3,8 @@
          file/gzip
          racket/file)
 
+(module test racket/base)
+
 (define origin-dir (build-path "build" "origin"))
 
 (make-directory* origin-dir)

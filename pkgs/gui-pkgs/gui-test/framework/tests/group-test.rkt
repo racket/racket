@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (define windows-menu-prefix 
   (let ([basics (list "Bring Frame to Front..." "Most Recent Window" 
                       #f)])

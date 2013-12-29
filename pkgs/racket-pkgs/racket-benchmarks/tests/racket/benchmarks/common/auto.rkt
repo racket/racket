@@ -635,4 +635,12 @@ exec racket -qu "$0" ${1+"$@"}
                 (map (lambda (bm)
                        (run-benchmark impl bm))
                      actual-benchmarks-to-run))
-              actual-implementations-to-run)))
+              actual-implementations-to-run))
+  
+  ;; Test mode:
+  (module test racket/base
+    (require syntax/location)
+    (parameterize ([current-command-line-arguments
+                    (vector "--" "racket" "earley")])
+      (dynamic-require (quote-module-path "..") #f))))
+

@@ -13,6 +13,8 @@
          "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (pkg-tests
  (shelly-case
   "Each command has an associated help"

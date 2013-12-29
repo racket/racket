@@ -3,4 +3,7 @@
   (with-output-to-file "stdout"
     (lambda () 
       (printf "~a\n" (ex)))
-    'append))
+    'append)
+  
+  (module test racket/base))
+

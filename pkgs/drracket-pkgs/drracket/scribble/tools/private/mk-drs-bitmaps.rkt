@@ -69,3 +69,10 @@
 (match (current-command-line-arguments)
  [(vector "skip") (void)]
  [_ (send f show #t)])
+
+
+;; Test mode:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "skip")])
+    (dynamic-require (quote-module-path "..") #f)))

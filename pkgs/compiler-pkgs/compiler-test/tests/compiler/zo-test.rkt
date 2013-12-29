@@ -227,3 +227,9 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
              (printf "~a:\n~a\n\n" (car p) (cdr p)))))))))
 
 (thread-wait final-thread)
+
+;; Test mode:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "-I" "-S" "-t" "60" "-v" "-R")])
+    (dynamic-require (quote-module-path "..") #f)))

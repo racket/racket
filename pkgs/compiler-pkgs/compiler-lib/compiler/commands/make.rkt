@@ -7,6 +7,8 @@
          setup/parallel-build
          racket/match)
 
+(module test racket/base)
+
 (define verbose (make-parameter #f))
 (define very-verbose (make-parameter #f))
 (define disable-inlining (make-parameter #f))

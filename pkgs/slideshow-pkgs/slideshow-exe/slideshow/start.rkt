@@ -4,6 +4,8 @@
            mred
            mzlib/class)
 
+  (module test racket/base)
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Path utilities
 

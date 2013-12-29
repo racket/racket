@@ -67,3 +67,9 @@
       (let ([test/gui (dynamic-require 'rackunit/gui 'test/gui)])
         (with-namespace
          (apply test/gui #:wait? #t tests)))))))
+
+;; Test mode:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "--text")])
+    (dynamic-require (quote-module-path "..") #f)))

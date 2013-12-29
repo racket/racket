@@ -2,6 +2,8 @@
 (require "command-name.rkt"
          "all-tools.rkt")
 
+(module test racket/base)
+
 (define (find-by-prefix hash str)
   (let ([trie (make-hash)])
     (for ([key (in-hash-keys hash)])

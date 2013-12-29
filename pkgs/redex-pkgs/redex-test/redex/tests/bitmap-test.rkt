@@ -3,6 +3,8 @@
          redex/pict redex/reduction-semantics
          pict)
 
+(module test racket/base) ; run by run-tests
+
 ;; tests: 
 ;;  - language,
 ;;  - multi-line non-terminals, single-line non-terminals

@@ -106,3 +106,6 @@
   (check-equal? (get-docs-build-count)
                 6))
 
+(module+ test
+  (module config info
+    (define timeout 1000)))

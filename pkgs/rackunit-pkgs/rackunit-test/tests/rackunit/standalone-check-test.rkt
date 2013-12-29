@@ -33,6 +33,10 @@
 
 (require rackunit/private/check)
 
+;; Don't run this test automatically:
+(module test racket/base
+  (displayln "run as program for tests"))
+
 ;; This check should succeed
 (check = 1 1 0.0)
 

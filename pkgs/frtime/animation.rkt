@@ -11,6 +11,8 @@
            (as-is:unchecked frtime/lang-ext lift)
            frtime/frlibs/list
            frtime/frlibs/math)
+
+  (module test racket/base)
   
   (open-graphics)
   

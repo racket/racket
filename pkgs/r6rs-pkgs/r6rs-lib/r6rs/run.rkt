@@ -9,6 +9,8 @@
          "private/readtable.rkt"
          "private/encode-name.rkt")
 
+(module test racket/base)
+
 (define install-mode (make-parameter #f))
 (define compile-mode (make-parameter #f))
 (define install-all-users (make-parameter #f))

@@ -5,6 +5,8 @@
          racket/function
          "test-util.rkt")
 
+(module test racket/base)
+
 (reset-count)
 (test (term 1) 1)
 (test (term (1 2)) (list 1 2))

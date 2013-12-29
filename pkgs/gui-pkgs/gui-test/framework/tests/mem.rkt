@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 ; mem-boxes : (list-of (list string (list-of (weak-box TST))))
 (send-sexp-to-mred '(define mem-boxes null))
 

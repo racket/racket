@@ -17,6 +17,8 @@
              ;; Need to make sure they're here:
              '#%builtin)
 
+  (module test '#%kernel)
+
   (when (file-stream-port? (current-output-port))
     (file-stream-buffer-mode (current-output-port) 'line))
 

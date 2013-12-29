@@ -324,3 +324,6 @@ using 'system' to call out to the tool and then reading its results, etc.
 
 (delete-file (list-ref test-connection-spec 1))
 (printf "Finished tests\n")
+
+(module test racket/base
+  (displayln "run as program for tests"))

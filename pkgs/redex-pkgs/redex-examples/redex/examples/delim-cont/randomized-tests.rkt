@@ -8,6 +8,11 @@
 (provide (all-defined-out))
 
 (module+ main (apply main (vector->list (current-command-line-arguments))))
+(module+ test
+  (main "--rules" "2250" "--size" "3")
+  (module config info
+    (define timeout 240)))
+
 (define (main . args)
   (define from-grammar-tests #f)
   (define from-rules-tests #f)

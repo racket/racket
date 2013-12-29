@@ -3,6 +3,8 @@
            "value-turtles.rkt"
            mred
            mzlib/class)
+
+  (module test racket/base)
   
   (define-syntax (test stx)
     (syntax-case stx ()

@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (define (test-creation frame class name)
   (test
    name

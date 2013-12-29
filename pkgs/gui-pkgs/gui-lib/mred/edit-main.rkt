@@ -5,6 +5,8 @@
   (require "edit.rkt"
            mzlib/cmdline)
 
+  (module test racket/base)
+
   (command-line
    "Edit"
    (current-command-line-arguments)

@@ -7,6 +7,9 @@
 ;; sometimes there's very little help, and it might also fail by just getting
 ;; stuck.
 
+(module test racket/base
+  (displayln "run as program for tests"))
+
 (define verbose? (make-parameter #f))
 
 (define global-ns (current-namespace))

@@ -7,6 +7,8 @@
          (only-in "config.rkt" extract-options)
          "display-time.rkt")
 
+(module test racket/base)
+
 (define-values (dir config-file config-mode default-pkgs catalogs)
   (command-line
    #:args

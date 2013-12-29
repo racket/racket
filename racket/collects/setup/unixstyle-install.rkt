@@ -29,6 +29,8 @@
 
 #lang racket/base
 
+(module test racket/base)
+
 (define args (vector->list (current-command-line-arguments)))
 
 (define (get-arg)

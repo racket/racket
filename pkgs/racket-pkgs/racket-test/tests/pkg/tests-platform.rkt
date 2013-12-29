@@ -7,6 +7,8 @@
          "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (pkg-tests
  (shelly-begin
   (define pkgs-dir (make-temporary-file "~a-pkgs" 'directory))

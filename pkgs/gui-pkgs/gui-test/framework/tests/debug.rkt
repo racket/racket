@@ -2,6 +2,8 @@
 (require (for-syntax racket/base))
 (provide debug-printf debug-when)
 
+(module test racket/base)
+
 ;; all of the steps in the tcp connection
 (define mz-tcp? #f)
 (define mr-tcp? mz-tcp?)

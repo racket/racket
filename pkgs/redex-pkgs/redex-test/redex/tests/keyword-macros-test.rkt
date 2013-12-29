@@ -3,6 +3,8 @@
 (require redex/private/keyword-macros
          "test-util.rkt")
 
+(module test racket/base)
+
 (reset-count)
 
 (let* ([formals `((#:b ,#'1) (#:c ,#'2))]

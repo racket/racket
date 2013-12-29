@@ -16,6 +16,9 @@
 
 (define-runtime-path test-directory ".")
 
+(define-syntax-rule (this-test-is-run-by-the-main-test)
+  (module test racket/base))
+
 (define (get-info-domain-cache-path)
   (define c (first (current-library-collection-paths)))
   (define p (build-path c "info-domain" "compiled" "cache.rktd"))

@@ -5,6 +5,8 @@
          "download-page.rkt"
          (only-in "config.rkt" extract-options))
 
+(module test racket/base)
+
 (define build-dir (build-path "build"))
 
 (define built-dir (build-path build-dir "built"))

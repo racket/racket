@@ -8,6 +8,8 @@
          openssl/sha1
          racket/cmdline)
 
+(module test racket/base)
+
 (define create-mode 'built)
 
 (command-line

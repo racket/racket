@@ -3,6 +3,8 @@
          racket/class)
 (define argv (current-command-line-arguments))
 
+(module test racket/base)
+
 (when (equal? (vector) argv)
   (error 'build-rows-cols.rkt
          "expected an image file on the command-line"))

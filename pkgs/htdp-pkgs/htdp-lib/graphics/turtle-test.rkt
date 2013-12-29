@@ -5,6 +5,8 @@
            "turtle-examples.rkt"
            "turtles.rkt")
 
+  (module test racket/base)
+
   (define frame (make-object frame% "Turtle Examples"))
   
   (define options

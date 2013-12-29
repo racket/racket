@@ -1,6 +1,7 @@
 (module gui frtime
-  (require
-   frtime/gui/fred)
+  (require frtime/gui/fred)
+
+  (module test racket/base)
   
   (define frame (new ft-frame% [label "GUI"] [min-height 150] [min-width 200] [shown #t]))
   

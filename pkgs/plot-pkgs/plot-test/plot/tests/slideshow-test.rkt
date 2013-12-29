@@ -2,6 +2,8 @@
 
 (require plot plot/utils)
 
+(module test racket/base)
+
 (plot-font-size (current-font-size))
 (plot-title "Untitled")
 (plot-width 600)

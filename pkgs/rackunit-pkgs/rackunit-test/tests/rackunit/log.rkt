@@ -2,6 +2,13 @@
 (require rackunit
          rackunit/log)
 
+(module test racket/base
+  (require syntax/location)
+  ;; Use a separate namespace to avoid logging results
+  ;; in this namespace (where `raco test` would see errors).
+  (parameterize ([current-namespace (make-base-namespace)])
+    (dynamic-require (quote-module-path "..") #f)))
+
 (define-syntax-rule (&& label stdout-e stdout-p)
   (let ()
     (define stdout-ev stdout-e)

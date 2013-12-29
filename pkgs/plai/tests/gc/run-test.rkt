@@ -3,6 +3,11 @@
          racket/runtime-path
          "../util.rkt")
 
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "-g")])
+    (dynamic-require (quote-module-path "..") #f)))
+
 (define-runtime-path here ".")
 
 (define (in-directory pth rx)

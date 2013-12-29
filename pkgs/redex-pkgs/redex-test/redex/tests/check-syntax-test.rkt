@@ -7,6 +7,8 @@
          (for-syntax setup/path-to-relative)
          setup/path-to-relative)
 
+(module test racket/base)
+
 (reset-count)
 
 (define-syntax (identifier stx)

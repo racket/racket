@@ -4,6 +4,8 @@
          pkg/lib
          net/url)
 
+(module test racket/base)
+
 (define (add-catalog! url)
   (define s (url->string url))
   (define l (pkg-config-catalogs))

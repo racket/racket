@@ -5,6 +5,8 @@
            texpict/mrpict
            texpict/face)
 
+  (module test racket/base)
+
   (define f (new frame% (label "frame")))
 
   (define canvas-scale 1)

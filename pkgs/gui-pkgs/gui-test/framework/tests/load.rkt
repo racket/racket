@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
   (load-framework-automatically #f)
 
   (define (test/load file exp)

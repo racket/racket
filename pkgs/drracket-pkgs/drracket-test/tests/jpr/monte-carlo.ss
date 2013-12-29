@@ -49,3 +49,5 @@
                    (send CANVAS on-paint)))))
 
 (send FRAME show #t)
+
+(module test racket/base)

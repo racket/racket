@@ -117,3 +117,8 @@
     '(ok))))
 
 (send f show #t)
+
+;; For test mode, check that we can at least start,
+;; but exit right away:
+(module+ test 
+  (queue-callback (lambda () (exit )) #f))

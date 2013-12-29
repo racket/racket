@@ -322,4 +322,13 @@ exec racket -qu "$0" ${1+"$@"}
               (for-each (lambda (bm)
                           (run i bm))
                         actual-benchmarks-to-run))
-            actual-implementations-to-run))
+            actual-implementations-to-run)
+  
+  ;; Test mode:
+  (module test racket/base
+    (require syntax/location)
+    (parameterize ([current-command-line-arguments
+                    (vector "racket" "simple")])
+      (dynamic-require (quote-module-path "..") #f))
+    (module config info
+      (define timeout 600))))

@@ -51,4 +51,4 @@
   (run-dmda-file
    (vector-ref (current-command-line-arguments) 0))
 
-  )
+  (module test racket/base))

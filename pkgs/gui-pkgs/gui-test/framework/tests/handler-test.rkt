@@ -1,6 +1,8 @@
 (module handler-test mzscheme
   (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (let* ([filename "framework-group-test.rkt"]
        [tmp-filename (build-path (find-system-path 'temp-dir) filename)])
 

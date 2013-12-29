@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Is this obsolete? It has been disabled in DrDr for a while.
+(module test racket/base)
+
 ;; To include a test, add an appropriate entry in `tests' below.
 ;; Notes:
 ;; - Each test is run in its own namespace, but there is very little

@@ -55,3 +55,8 @@
 	   (for ([p files]) (run p seed0))]
           [else (printf "Nothing to do.\n")])
     (when forever? (loop))))
+
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "-c")])
+    (dynamic-require (quote-module-path "..") #f)))

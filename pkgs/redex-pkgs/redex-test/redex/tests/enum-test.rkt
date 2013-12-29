@@ -3,6 +3,8 @@
          redex/reduction-semantics
          (for-syntax racket/base))
 
+(module test racket/base)
+
 (define-syntax (try-it stx)
   (syntax-case stx ()
     [(_ N l p)

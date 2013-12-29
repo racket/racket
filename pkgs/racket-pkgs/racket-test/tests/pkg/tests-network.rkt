@@ -13,6 +13,8 @@
          "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 ;; todo: to move the test packages to the "plt" account on GitHub
 
 (pkg-tests

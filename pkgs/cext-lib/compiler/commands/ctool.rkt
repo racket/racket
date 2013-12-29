@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(module test racket/base)
+
 ;; On error, exit with 1 status code
 (error-escape-handler (lambda () (exit 1)))
 

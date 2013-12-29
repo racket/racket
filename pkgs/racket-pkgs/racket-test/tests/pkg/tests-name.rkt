@@ -3,6 +3,8 @@
          pkg/name
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (define-syntax check-equal-values?
   (syntax-rules (values)
     [(_ expr (values a ...))

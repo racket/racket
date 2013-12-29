@@ -420,3 +420,12 @@
       "0")
 
 (fire-up-drracket-and-run-tests run-test)
+
+;; Test mode:
+(module test racket/base
+  (require syntax/location)
+  (putenv "PLTDRTEST" "yes")
+  (eval-jit-enabled #f)
+  (dynamic-require (quote-module-path "..") #f)
+  (module config info
+    (define timeout 800)))

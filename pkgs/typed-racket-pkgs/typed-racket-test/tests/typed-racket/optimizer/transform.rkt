@@ -2,6 +2,9 @@
 
 (require "run.rkt" "../send-places.rkt")
 
+(module test racket/base
+  (displayln "run as program for tests"))
+
 ;; Assuming that only the log format changed, update test files to the
 ;; new format.
 ;; Running this after changes to the behavior of the optimizer is a

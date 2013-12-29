@@ -3,6 +3,8 @@
          "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (define (init-update-deps-test)
   (shelly-begin
    (hash-set! *index-ht-1* "pkg-b"

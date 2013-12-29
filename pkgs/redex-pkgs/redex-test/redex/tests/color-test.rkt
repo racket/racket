@@ -15,6 +15,8 @@ In the other window, you expect to see the currently unreducted terms in green a
          racket/gui/base
          racket/class)
 
+(module test racket/base)
+
 (reduction-steps-cutoff 1)
 
 (let ()

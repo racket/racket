@@ -13,6 +13,8 @@
          (all-from-out scribble/base)
          (rename-out [module-begin #%module-begin]))
 
+(module test racket/base)
+
 ;; No options, currently, but keep in case we want to support some:
 (define-syntax (module-begin stx)
   (syntax-case* stx () (lambda (a b) (eq? (syntax-e a) (syntax-e b)))

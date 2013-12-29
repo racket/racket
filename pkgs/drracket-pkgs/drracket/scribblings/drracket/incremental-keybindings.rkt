@@ -2,6 +2,8 @@
 
 (require drracket/tool-lib)
 
+(module test racket/base)
+
 (keybinding "c:c;c:e" (lambda (ed evt) (send-toplevel-form ed #f)))
 (keybinding "c:c;c:r" (lambda (ed evt) (send-selection ed #f)))
 (keybinding "c:c;~c:m:e" (lambda (ed evt) (send-toplevel-form ed #t)))

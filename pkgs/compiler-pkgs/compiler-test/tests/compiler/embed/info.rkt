@@ -12,3 +12,7 @@
                              "embed-isl.rkt"
                              "embed-isll.rkt"
                              "embed-asl.rkt"))
+
+(define test-omit-paths '("embed-me9.rkt"
+                          "embed-planet-1"
+                          "embed-planet-2"))

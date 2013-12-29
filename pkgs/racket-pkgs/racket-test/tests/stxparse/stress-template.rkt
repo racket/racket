@@ -2,6 +2,8 @@
 (require syntax/parse/experimental/template)
 (provide (all-defined-out))
 
+(module test racket/base)
+
 (define (f1-stx stx)
   (syntax-case stx ()
     [(_ body)

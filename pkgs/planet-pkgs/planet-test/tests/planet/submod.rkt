@@ -1,6 +1,8 @@
 #lang racket
 (require setup/dirs)
 
+(module test racket/base)
+
 (define raco (build-path (find-console-bin-dir)
                          (if (eq? 'windows (system-type))
                              "raco.exe"

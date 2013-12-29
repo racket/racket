@@ -3,9 +3,8 @@
          racket/place
          "test-util.rkt")
 
-(module drdr racket/base
-  ;; Run individual files for DrDr
-  (void))
+(module test racket/base
+  (displayln "run as program for tests"))
 
 (define parallel 1)
 (let ([argv (current-command-line-arguments)])

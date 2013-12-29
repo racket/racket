@@ -519,3 +519,7 @@
   (go test-disabling-tests))
 
 (fire-up-drracket-and-run-tests run-test)
+
+(module+ test
+  (module config info
+    (define timeout 480)))

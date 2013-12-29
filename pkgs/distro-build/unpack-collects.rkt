@@ -6,6 +6,8 @@
          file/untgz
          "display-time.rkt")
 
+(module test racket/base)
+
 (define dest-dir "bundle/racket")
 
 (define server

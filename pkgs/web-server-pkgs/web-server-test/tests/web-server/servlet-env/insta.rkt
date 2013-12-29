@@ -20,3 +20,5 @@
          (body ([bgcolor "white"])
                (p "The sum is "
                   ,(number->string (+ (request-number "first") (request-number "second")))))))
+
+(module test racket/base)

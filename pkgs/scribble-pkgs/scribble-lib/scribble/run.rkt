@@ -1,5 +1,4 @@
 #lang racket/base
-
 (require "xref.rkt"
          "render.rkt"
          scheme/cmdline
@@ -9,6 +8,8 @@
          (prefix-in html:     "html-render.rkt")
          (prefix-in latex:    "latex-render.rkt")
          (prefix-in pdf:      "pdf-render.rkt"))
+
+(module test racket/base)
 
 (define multi-html:render-mixin
   (lambda (%) (html:render-multi-mixin (html:render-mixin %))))

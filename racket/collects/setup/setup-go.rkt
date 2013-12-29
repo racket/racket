@@ -4,6 +4,8 @@
            "setup-core.rkt"
            compiler/cm)
 
+  (module test racket/base)
+
   (define-values (short-name x-flags x-specific-collections x-specific-planet-packages x-archives)
     (parse-cmdline (current-command-line-arguments)))
 

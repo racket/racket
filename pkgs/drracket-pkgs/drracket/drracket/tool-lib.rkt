@@ -6,6 +6,8 @@ the main unit, starting up DrRacket. After that, it just provides
 all of the names in the tools library, for use defining keybindings
 |#
 
+(module test racket/base)
+
 (require racket/class
          racket/gui/base
          racket/unit 

@@ -4,6 +4,8 @@
          racket/file
          file/unzip)
 
+(this-test-is-run-by-the-main-test)
+
 (pkg-tests
 
  $ "raco pkg install --deps fail test-pkgs/pkg-x/" =exit> 1

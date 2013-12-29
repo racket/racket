@@ -4,6 +4,8 @@
          compiler/find-exe
          pkg/lib)
 
+(module test racket/base) ; disable for DrDr
+
 (unless (eq? 'user (default-pkg-scope))
   (error "Run this test with `user' default package scope"))
 

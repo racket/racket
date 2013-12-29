@@ -209,3 +209,6 @@ add this test:
    ;;(long-io/execute-test)
    (reading-test)))
 
+(module+ test
+  (module config info
+    (define timeout 500)))

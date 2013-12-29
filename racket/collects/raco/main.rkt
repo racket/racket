@@ -10,6 +10,8 @@
              ;; Need to make sure they're here:
              '#%builtin)
 
+  (module test '#%kernel)
+
   (let-values ([(cmdline) (current-command-line-arguments)])
     (if (and (positive? (vector-length cmdline))
              (equal? "setup" (vector-ref cmdline 0)))

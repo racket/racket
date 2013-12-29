@@ -2594,3 +2594,8 @@
 (make-selector-and-runner mp1 mp2 #f #f "Medium" med-frame)
 
 (send selector show #t)
+
+;; For test mode, check that we can at least start,
+;; but exit right away:
+(module+ test 
+  (queue-callback (lambda () (exit)) #f))

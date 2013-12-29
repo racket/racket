@@ -7,6 +7,10 @@
 (require rackunit/private/check
          rackunit/private/test-case)
 
+;; Don't run this test automatically:
+(module test racket/base
+  (displayln "run as program for tests"))
+
 ;; These tests should succeeds
 (test-begin (check-eq? 1 1))
 (test-case "succeed" (check-eq? 1 1))

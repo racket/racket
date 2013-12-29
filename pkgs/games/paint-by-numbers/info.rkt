@@ -3,7 +3,6 @@
 (define game "paint-by-numbers.rkt")
 (define game-set "Puzzle Games")
 (define compile-omit-paths
-  '("main.rkt"
-    "hattori"
+  '("hattori"
     "problems"
     "solution-sets"))

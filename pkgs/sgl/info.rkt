@@ -3,6 +3,7 @@
 (define collection "sgl")
 
 (define compile-omit-paths '("examples"))
+(define test-omit-paths '("examples"))
 
 (define scribblings '(("scribblings/sgl.scrbl" (multi-page) (gui-library))))
 (define deps '("scheme-lib"

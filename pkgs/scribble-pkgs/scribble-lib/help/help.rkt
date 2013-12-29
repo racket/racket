@@ -17,3 +17,5 @@
    (display help-str)
    (display " See the search page for the syntax of queries\n")
    (exit 0)))
+
+(module test racket/base)

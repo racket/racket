@@ -10,6 +10,8 @@
          redex/private/keyword-macros
          redex/private/error)
 
+(module test racket/base)
+
 (define-namespace-anchor nsa)
 (define ns (namespace-anchor->namespace nsa))
 

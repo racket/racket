@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define deps '("racket-test"
+               "rackunit-test"
                "gui-test"
                "db-test"
                "htdp-test"

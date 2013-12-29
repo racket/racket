@@ -29,3 +29,5 @@
  #:copy-collects (exe-dir-add-collects-dirs))
 (when (verbose)
   (printf " [output to \"~a\"]\n" dest-dir))
+
+(module test racket/base)

@@ -3,6 +3,8 @@
            racket/gui
            racket/class)
 
+  (module test racket/base)
+
   (provide show-board
            board-canvas%
            draw-board
@@ -547,7 +549,7 @@
           (resize-bitmap))
         ;(send (get-dc) draw-bitmap buffer 0 0)
         (let ([dc (get-dc)])
-          (send dc set-anti-alias #t)
+          (send dc set-smoothing 'smoothed)
           (draw-board board dc 32 32 0 0 #t)))
       
       (define/override (on-size w h)

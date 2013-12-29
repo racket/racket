@@ -1,6 +1,8 @@
 #lang scheme
 (require redex)
 
+(module test racket/base)
+
 (define-language tl-grammar
   [v (cont (hide-hole E))]
   [E hole

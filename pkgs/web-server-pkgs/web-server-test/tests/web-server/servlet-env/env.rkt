@@ -26,3 +26,5 @@
 
 (serve/servlet start
                #:servlet-path "/")
+
+(module test racket/base)

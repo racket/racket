@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (test
  'dragable-min-size1
  (λ (min-w/min-h) (equal? min-w/min-h '(10 20)))

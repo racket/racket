@@ -15,6 +15,8 @@
          (only-in "config.rkt" extract-options)
          "readme.rkt")
 
+(module test racket/base)
+
 (define from-dir "built")
 
 (define-values (config-file config-mode 

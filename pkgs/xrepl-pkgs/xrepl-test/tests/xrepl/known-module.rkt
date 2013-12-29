@@ -18,6 +18,7 @@
 
 (provide test-known-module)
 (module+ main (test-known-module))
+(module+ test (test-known-module))
 (define (test-known-module)
   (parameterize ([current-directory (find-collects-dir)])
     (test

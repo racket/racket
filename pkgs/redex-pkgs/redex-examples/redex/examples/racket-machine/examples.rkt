@@ -91,3 +91,9 @@
 ;; model. Try the version bundled with Redex (see the README).
 (match-let ([(cons expr cycles) (racket->bytecode a-racket-program)])
   (check-equal? (eval expr cycles) '(1)))
+
+;; Test mode: no windows:
+(module test racket/base
+  (require syntax/location)
+  (parameterize ([current-command-line-arguments (vector "--no-pop-ups")])
+    (dynamic-require (quote-module-path "..") #f)))

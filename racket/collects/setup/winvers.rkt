@@ -5,6 +5,8 @@
 
 (require racket/file "main-collects.rkt" "dirs.rkt")
 
+(module test racket/base)
+
 (define (make-copy)
   (let* ([tmpdir (find-system-path 'temp-dir)]
          [vers (build-path tmpdir "setvers")])

@@ -1,6 +1,6 @@
 #lang racket
 
-(module+ test
+(module test racket/base
   (displayln "run as program for tests"))
 
 ;; Runs 3 places perfoming the test suite simultaneously. Each

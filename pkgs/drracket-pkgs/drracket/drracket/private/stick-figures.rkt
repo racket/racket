@@ -2,6 +2,8 @@
   (require racket/class
            racket/pretty
            racket/gui/base)
+
+  (module test racket/base)
   
   (define head-size 40)
   (define small-bitmap-factor 1/2)

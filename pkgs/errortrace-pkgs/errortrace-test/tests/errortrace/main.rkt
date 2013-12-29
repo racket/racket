@@ -7,6 +7,9 @@
          "phase-1-eval.rkt"
          "begin.rkt")
 
+(module test racket/base
+  (displayln "run as program for tests"))
+
 (wrap-tests)
 
 (test do (alert-tests))

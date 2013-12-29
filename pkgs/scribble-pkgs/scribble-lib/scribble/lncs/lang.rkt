@@ -17,6 +17,8 @@
                      racket/list
                      racket/stxparam-exptime))
 
+(module test racket/base)
+
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/base)
          (rename-out [module-begin #%module-begin])

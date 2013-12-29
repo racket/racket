@@ -2,6 +2,8 @@
 (require "shelly.rkt"
          "util.rkt")
 
+(this-test-is-run-by-the-main-test)
+
 (pkg-tests
  (define dir (getenv "PLTADDONDIR"))
  (define pkg-dir (build-path dir "pkgs"))

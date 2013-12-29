@@ -2,6 +2,10 @@
 
 (require plot plot/utils unstable/flonum)
 
+(module+ test
+  (module config info
+    (define timeout 150)))
+
 (plot (points '(#(0 0)))
       #:x-min +min.0 #:x-max (flstep +min.0 1000)
       #:y-min 0 #:y-max 1)

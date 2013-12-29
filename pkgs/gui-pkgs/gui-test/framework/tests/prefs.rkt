@@ -1,5 +1,7 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
+
+(module test racket/base)
   
   (define ((check-equal? x) y) (equal? x y))
   (define pref-sym 'plt:not-a-real-preference)

@@ -56,3 +56,7 @@
  "binary"
  "catalogs"
  "failure")
+
+(module+ test
+  (module config info
+    (define timeout 2400)))

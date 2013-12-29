@@ -10,6 +10,8 @@ in ...
 
 |#
 
+(module test racket/base)
+
 ;; shrink-file : string -> string
 (define (shrink-file filename)
   (printf "shrinking ~a..." filename)

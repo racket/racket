@@ -11,6 +11,8 @@
          pkg/lib
          setup/getinfo)
 
+(module test racket/base)
+
 (define pack-dest-dir #f)
 (define catalog-dirs null)
 (define native? #f)

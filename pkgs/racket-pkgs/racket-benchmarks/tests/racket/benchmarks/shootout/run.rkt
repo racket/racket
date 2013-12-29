@@ -2,6 +2,7 @@
   (require (only scheme/runtime-path define-runtime-path)
            racket/port
            mzlib/kw)
+  (module test racket/base)
   (define input-map
     `(
       ("ackermann" "12")

@@ -11,6 +11,8 @@
          racket/port
          "display-time.rkt")
 
+(module test racket/base)
+
 (define release? #f)
 (define source? #f)
 (define mac-pkg? #f)

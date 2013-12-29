@@ -1665,3 +1665,7 @@
     (test:run-one (lambda () (send (send drs syncheck:get-button) command))))
 
   (main)
+
+(module+ test
+  (module config info
+    (define timeout 200)))

@@ -118,3 +118,7 @@
                               (car failed-test) (cdr failed-test)))
                    failed-tests)
          1]))
+
+(module+ test
+  (module config info
+    (define timeout 360)))

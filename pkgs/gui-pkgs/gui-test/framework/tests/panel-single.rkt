@@ -1,6 +1,8 @@
 #lang racket/base
 (require "test-suite-utils.rkt")
 
+(module test racket/base)
+
 (test 
  'single-panel
  (lambda (x) (eq? x 'passed))

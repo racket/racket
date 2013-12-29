@@ -140,3 +140,5 @@
                  (exe-aux)))])
   (when (verbose)
     (printf " [output to \"~a\"]\n" dest)))
+
+(module test racket/base)
