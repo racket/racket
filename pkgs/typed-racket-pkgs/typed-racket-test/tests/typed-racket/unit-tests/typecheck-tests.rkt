@@ -1893,6 +1893,27 @@
        [tc-e (vector-memq 3 #(a b c)) (t:Un (-val #f) -Index)]
        [tc-e (vector-memv 3 #(a b c)) (t:Un (-val #f) -Index)]
        [tc-e (vector-member 3 #(a b c)) (t:Un (-val #f) -Index)]
+
+       ;; tests for struct type types
+       [tc-e (let-values ([(_1 _2 _3 _4 _5 _6 parent _7)
+                           (struct-type-info
+                            (let-values ([(type _1 _2 _3 _4)
+                                          (make-struct-type 'foo #f 3 0)])
+                              type))])
+               parent)
+             (-opt (make-StructTypeTop))]
+       [tc-e (let-values ([(name _1 _2 getter setter _3 _4 _5)
+                           (struct-type-info struct:arity-at-least)])
+               (getter (arity-at-least 3) 0))
+             Univ]
+       [tc-e (assert (let-values ([(type _) (struct-info (arity-at-least 3))])
+                       type))
+             (make-StructTypeTop)]
+       [tc-err (let-values ([(name _1 _2 getter setter _3 _4 _5)
+                             (struct-type-info struct:arity-at-least)])
+                 (getter 'bad 0))]
+       [tc-err (struct-type-make-constructor 'bad)]
+       [tc-err (struct-type-make-predicate 'bad)]
         )
   (test-suite
    "tc-literal tests"

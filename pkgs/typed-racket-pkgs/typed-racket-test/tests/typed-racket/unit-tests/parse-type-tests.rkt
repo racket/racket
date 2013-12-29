@@ -127,6 +127,12 @@
    [(Opaque foo?) (make-Opaque #'foo?)]
    ;; PR 14122
    [FAIL (Opaque 3)]
+
+   ;; struct types
+   [(Struct-Type arity-at-least) (make-StructType (resolve -Arity-At-Least))]
+   [FAIL (Struct-Type Integer)]
+   [FAIL (Struct-Type foo)]
+   [Struct-TypeTop (make-StructTypeTop)]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results
