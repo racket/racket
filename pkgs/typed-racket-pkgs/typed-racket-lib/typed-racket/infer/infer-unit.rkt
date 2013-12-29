@@ -583,6 +583,11 @@
           [((Struct: nm (? Type? parent) _ _ _ _) other)
            (cg parent other)]
 
+          ;; Invariant here because struct types aren't subtypes just because the
+          ;; structs are (since you can make a constructor from the type).
+          [((StructType: s) (StructType: t))
+           (cset-meet (cg s t) (cg t s))]
+
           ;; vectors are invariant - generate constraints *both* ways
           [((Vector: e) (Vector: e*))
            (cset-meet (cg e e*) (cg e* e))]
