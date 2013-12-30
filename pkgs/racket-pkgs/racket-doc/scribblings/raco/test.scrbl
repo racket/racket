@@ -3,7 +3,8 @@
           scribble/bnf
           "common.rkt" 
           (for-label racket/runtime-path
-                     launcher/launcher))
+                     launcher/launcher
+                     rackunit/log))
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
@@ -15,13 +16,16 @@ to run the main module if no submodule is found, and whether to run
 tests as processes or places.
 
 When an argument path refers to a directory, the tool recursively
-discovers all files that end in @filepath{.rkt} within the directory
-and runs them.
+discovers and runs all files within the directory that end in
+@filepath{.rkt}, end in @filepath{.scrbl}, or have a
+(possibly empty) list of arguments-line provided by
+@racket[test-command-line-arguments] in an @filepath{info.rkt} file.
 
-A test is counted as failing if it causes Racket to exit with a
-non-zero exit code or (when @Flag{e} or @DFlag{check-stderr} is
-specified) if it produces output on the error port.  The current
-directory is set to a test file's directory before running the file.
+A test is counted as failing if it logs a failing test code via
+@racket[test-log], causes Racket to exit with a non-zero exit code, or
+(when @Flag{e} or @DFlag{check-stderr} is specified) if it produces
+output on the error port.  The current directory is set to a test
+file's directory before running the file.
 
 The @exec{raco test} command accepts several flags:
 
@@ -94,9 +98,9 @@ The @exec{raco test} command accepts several flags:
  @item{@DFlag{table} or @Flag{t}
        --- Print a summary table after all tests. If a test uses
        @racketmodname[rackunit], or if a test at least uses
-       @racketmodname[rackunit/log] to log successes and failures,
-       the table reports test and failure counts based
-       on the log.}
+       @racket[test-log] from @racketmodname[rackunit/log] to log
+       successes and failures, the table reports test and failure
+       counts based on the log.}
 
 ]
 

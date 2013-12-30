@@ -17,6 +17,10 @@
          setup/collects
          setup/getinfo)
 
+(define rx:default-suffixes #rx#"\\.(?:rkt|scrbl)$")
+;; For any other file suffix, a `test-command-line-arguments`
+;; entry is required in "info.rkt".
+
 (define submodules '()) ; '() means "default"
 (define first-avail? #f)
 (define run-anyways? #t)
@@ -384,7 +388,8 @@
                           m))
                     (apply string-append
                            (for/list ([a (in-list args)])
-                             (format " ~s" (format "~a" a))))))
+                             (format " ~s" (format "~a" a)))))
+            (flush-output))
           id)))
      (begin0
       (dynamic-require* mod 0 args try-config?)
@@ -419,7 +424,8 @@
               #:sema continue-sema)))]
        [(and (file-exists? p)
              (or (not check-suffix?)
-                 (regexp-match #rx#"\\.rkt$" (path->bytes p)))
+                 (regexp-match rx:default-suffixes p)
+                 (get-cmdline p #f))
              (not (omit-path? p)))
         (define args (get-cmdline p))
         (parameterize ([current-directory (let-values ([(base name dir?) (split-path p)])
@@ -616,9 +622,9 @@
           (and (path? base)
                (omit-path? base))))))
 
-(define (get-cmdline p)
+(define (get-cmdline p [default null])
   (let ([p (normalize-info-path p)])
-    (hash-ref command-line-arguments p null)))
+    (hash-ref command-line-arguments p default)))
 
 ;; --------------------------------------------------
 
