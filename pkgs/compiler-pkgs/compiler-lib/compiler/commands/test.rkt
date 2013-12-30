@@ -45,13 +45,15 @@
   (define args (list-tail (vector->list argv) 3))
 
   (parameterize ([current-command-line-arguments (list->vector args)])
-    (dynamic-require test-module d))
+    (dynamic-require test-module d)
+    ((executable-yield-handler) 0))
 
   (call-with-output-file*
    result-file
    #:exists 'truncate
    (lambda (o)
-     (write (test-log #:display? #f #:exit? #f) o))))
+     (write (test-log #:display? #f #:exit? #f) o)))
+  (exit 0))
 
 ;; Driver for running a test in a place:
 (module place racket/base
@@ -64,7 +66,8 @@
     (parameterize ([current-command-line-arguments (list->vector
                                                     (cadddr l))]
                    [current-directory (caddr l)])
-      (dynamic-require (car l) (cadr l)))
+      (dynamic-require (car l) (cadr l))
+      ((executable-yield-handler) 0))
     ;; If the tests use `rackunit`, collect result stats:
     (define test-results 
       (test-log #:display? #f #:exit? #f))
@@ -117,6 +120,7 @@
              (thread
               (lambda ()
                 (dynamic-require p d)
+                ((executable-yield-handler) 0)
                 (set! done? #t)))))
          (unless (thread? (sync/timeout timeout t))
            (error 'test "timeout after ~a seconds" timeout))
