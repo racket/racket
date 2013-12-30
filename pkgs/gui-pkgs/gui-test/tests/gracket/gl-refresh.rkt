@@ -19,3 +19,5 @@
 (new message% [parent f] [label "so check that it's not too often."])
 (new button% [parent f] [label "Refresh"] [callback (lambda (b e) (send c refresh))])
 (send f show #t)
+
+(module test racket/base)

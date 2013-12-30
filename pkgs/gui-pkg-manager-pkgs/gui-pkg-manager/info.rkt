@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define deps '("gui-pkg-manager-lib"
+               "gui-lib"
                "base"))
 
 (define implies '("gui-pkg-manager-lib"))
