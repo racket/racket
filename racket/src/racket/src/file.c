@@ -157,6 +157,12 @@ static int check_dos_slashslash_qm(const char *next, int len, int *drive_end,
 
 #define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
+#ifdef __GNUC__
+# ifdef MZ_PRECISE_GC
+#  pragma clang diagnostic ignored "-Wtautological-compare"
+# endif
+#endif
+
 /* local */
 static Scheme_Object *path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *general_path_p(int argc, Scheme_Object **argv);
@@ -6311,13 +6317,16 @@ find_system_path(int argc, Scheme_Object **argv)
 
     ends_in_slash = (SCHEME_PATH_VAL(home))[SCHEME_PATH_LEN(home) - 1] == '/';
     
+    /* cast here avoids a clang warning: */
+# define mz_STR_OFFSET(s, d) ((const char *)s + d)
+
     if (which == id_init_file)
-      return append_path(home, scheme_make_path("/.racketrc" + ends_in_slash));
+      return append_path(home, scheme_make_path(mz_STR_OFFSET("/.racketrc", ends_in_slash)));
     if (which == id_pref_file) {
 #if defined(OS_X) && !defined(XONX)
-      return append_path(home, scheme_make_path("/org.racket-lang.prefs.rktd" + ends_in_slash));
+      return append_path(home, scheme_make_path(mz_STR_OFFSET("/org.racket-lang.prefs.rktd", ends_in_slash)));
 #else      
-      return append_path(home, scheme_make_path("/racket-prefs.rktd" + ends_in_slash));
+      return append_path(home, scheme_make_path(mz_STR_OFFSET("/racket-prefs.rktd", ends_in_slash)));
 #endif
     }
   }

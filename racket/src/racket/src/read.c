@@ -47,6 +47,12 @@
 # include <malloc.h>
 #endif
 
+#ifdef __GNUC__
+# ifdef MZ_PRECISE_GC
+#  pragma clang diagnostic ignored "-Wself-assign"
+# endif
+#endif
+
 #define MAX_QUICK_SYMBOL_SIZE 64
 
 /* Init options for embedding: */

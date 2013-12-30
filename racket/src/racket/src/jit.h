@@ -31,6 +31,11 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Waddress"
+# ifdef MZ_PRECISE_GC
+#  pragma clang diagnostic ignored "-Wtautological-compare"
+#  pragma clang diagnostic ignored "-Wself-assign"
+#  pragma clang diagnostic ignored "-Wconstant-logical-operand"
+# endif
 #endif
 
 /* Separate JIT_PRECISE_GC lets us test some 3m support in non-3m mode: */
