@@ -1761,6 +1761,8 @@
   (install-pkg-package-catalogs "Paket-Kataloge") ; label for a list box
   (install-pkg-add-package-catalog "Paket-Katalog hinzufügen")
 
+  (install-pkg-not-rentrant "Installation und Aktualisierung können nicht gleichzeitig laufen."
+                            " Brechen Sie entweder den laufenden Prozess ab oder warten, bis er fertig ist.")
 
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
   (open-collection-path "Collection-Pfad öffnen...")
