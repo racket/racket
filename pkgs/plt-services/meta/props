@@ -1176,6 +1176,7 @@ path/s is either such a string or a list of them.
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/automata" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/list.rkt" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/logging.rkt" responsible (stamourv)
+"pkgs/unstable-pkgs/unstable-test/tests/unstable/options.rkt" responsible (robby chrdimo)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c/bench-affine.rkt" drdr:random #t
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c/bench.rkt" drdr:random #t
