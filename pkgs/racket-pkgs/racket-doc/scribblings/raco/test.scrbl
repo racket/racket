@@ -22,7 +22,7 @@ discovers and runs all files within the directory that end in
 @racket[test-command-line-arguments] in an @filepath{info.rkt} file.
 
 A test is counted as failing if it logs a failing test code via
-@racket[test-log], causes Racket to exit with a non-zero exit code, or
+@racket[test-log!], causes Racket to exit with a non-zero exit code, or
 (when @Flag{e} or @DFlag{check-stderr} is specified) if it produces
 output on the error port.  The current directory is set to a test
 file's directory before running the file.
@@ -98,7 +98,7 @@ The @exec{raco test} command accepts several flags:
  @item{@DFlag{table} or @Flag{t}
        --- Print a summary table after all tests. If a test uses
        @racketmodname[rackunit], or if a test at least uses
-       @racket[test-log] from @racketmodname[rackunit/log] to log
+       @racket[test-log!] from @racketmodname[rackunit/log] to log
        successes and failures, the table reports test and failure
        counts based on the log.}
 
