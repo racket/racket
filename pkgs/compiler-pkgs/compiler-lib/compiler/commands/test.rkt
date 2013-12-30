@@ -714,13 +714,15 @@
                         #:sema (make-semaphore)))
         (when table?
           (display-summary sum))
-        ;; Re-log failures and successes, and then report using `test-log`.
-        ;; (This is awkward; is it better to not try to use `test-log`?)
-        (for ([s (in-list sum)])
-          (for ([i (in-range (summary-failed s))])
-            (test-log! #f))
-          (for ([i (in-range (- (summary-total s)
-                                (summary-failed s)))])
-            (test-log! #t)))
+        (unless (or (eq? default-mode 'direct)
+                    (and (not default-mode) single-file?))
+          ;; Re-log failures and successes, and then report using `test-log`.
+          ;; (This is awkward; is it better to not try to use `test-log`?)
+          (for ([s (in-list sum)])
+            (for ([i (in-range (summary-failed s))])
+              (test-log! #f))
+            (for ([i (in-range (- (summary-total s)
+                                  (summary-failed s)))])
+              (test-log! #t))))
         (define r (test-log #:display? #t #:exit? #t))
         (exit (if (zero? (car r)) 0 1))))
