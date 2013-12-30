@@ -81,9 +81,9 @@
 (preferences:set-default 'drracket:logger-scroll-to-bottom? #t boolean?)
 
 (preferences:set-default 'drracket:submodules-to-choose-from 
-                         '((main) (test)) 
-                         (cons/c (list/c 'main)
-                                 (cons/c (list/c 'test)
+                         '((test) (main)) 
+                         (cons/c (list/c 'test)
+                                 (cons/c (list/c 'main)
                                          (listof (listof symbol?)))))
 (preferences:set-default 'drracket:defs/ints-labels #t boolean?)
 

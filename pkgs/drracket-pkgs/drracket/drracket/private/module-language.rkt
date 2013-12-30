@@ -129,7 +129,7 @@
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
-  (define default-submodules-to-run (list '(main) '(test)))
+  (define default-submodules-to-run (list '(test) '(main)))
   (define default-enforce-module-constants #t)
   (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
   
@@ -647,14 +647,18 @@
     (define right-debugging-radio-box #f)
     (define submodules-to-run #f)
     
-    (define (sort-submodules-to-run!)
+    (define (set-submodules-to-run l)
       (define ht (make-hash))
       (for ([submod (in-list (preferences:get 'drracket:submodules-to-choose-from))]
             [x (in-naturals)])
         (hash-set! ht submod x))
-      (set! submodules-to-run (sort submodules-to-run
-                                    < 
-                                    #:key (λ (x) (hash-ref ht x)))))
+      
+      ;; there may be a submodule in this list that is no longer choosable from
+      ;; the preferences (if the user edits their prefs or the defaults change)
+      ;; make sure the sort below doesn't crash by putting in an +inf.0
+      ;; (also, rely on sort's stability)
+      (set! submodules-to-run (sort l < 
+                                    #:key (λ (x) (hash-ref ht x +inf.0)))))
     
     (define simple-case-lambda
       (drracket:language:simple-module-based-language-config-panel
@@ -697,10 +701,8 @@
                                [callback 
                                 (λ (a b)
                                   (if (member item submodules-to-run)
-                                      (set! submodules-to-run (remove item submodules-to-run))
-                                      (begin
-                                        (set! submodules-to-run (cons item submodules-to-run))
-                                        (sort-submodules-to-run!))))]
+                                      (set-submodules-to-run (remove item submodules-to-run))
+                                      (set-submodules-to-run (cons item submodules-to-run))))]
                                [parent menu]))
                         (new separator-menu-item% [parent menu])
                         (new menu-item% 
@@ -709,8 +711,7 @@
                               (λ (a b)
                                 (define new-submod (add-another-possible-submodule parent))
                                 (when new-submod
-                                  (set! submodules-to-run (cons new-submod submodules-to-run))
-                                  (sort-submodules-to-run!)))]
+                                  (set-submodules-to-run (cons new-submod submodules-to-run))))]
                              [label (string-constant add-submodule)]))
                       (super-new
                        [font normal-control-font]
@@ -902,7 +903,7 @@
        (send compilation-on-check-box set-value (module-language-settings-compilation-on? settings))
        (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
-       (set! submodules-to-run (module-language-settings-submodules-to-run settings))
+       (set-submodules-to-run (module-language-settings-submodules-to-run settings))
        (send enforce-module-constants-checkbox set-value
              (module-language-settings-enforce-module-constants settings))
        (update-buttons)]))
