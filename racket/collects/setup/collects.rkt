@@ -21,7 +21,7 @@
     (define-values (pkg subpath pkg-collect) 
       (path->pkg+subpath+collect simple-p #:cache cache))
     (cond
-     [pkg
+     [(and pkg (not (eq? 'same subpath)))
       (define p-l (map path-element->string (reverse (explode-path subpath))))
       (define new-c-l (let ([l (reverse (cdr p-l))])
                         (if pkg-collect

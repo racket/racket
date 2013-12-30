@@ -111,13 +111,15 @@
       ;; name followed by "+<n>")
       (define len (length d))
       (define pkg-name (path-element->string (list-ref p len)))
-      (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
-                  (regexp-replace #rx"[+].*$" pkg-name "")
-                  pkg-name)
-              (build-path* (list-tail p (add1 len)))
-              (and want-collect?
-                   (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
-                     (and i (sc-pkg-info? i) (sc-pkg-info-collect i)))))]
+      (if (regexp-match? #rx"pkgs[.]rktd" pkg-name)
+          (values #f #f #f) ; don't count the database as a package
+          (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
+                      (regexp-replace #rx"[+].*$" pkg-name "")
+                      pkg-name)
+                  (build-path* (list-tail p (add1 len)))
+                  (and want-collect?
+                       (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
+                         (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))))]
      [else
       ;; Maybe it's a linked package
       (define pkgs-dir (get-pkgs-dir scope))

@@ -1,5 +1,6 @@
 #lang racket/base
-(require pkg/path)
+(require pkg/path
+         setup/dirs)
 
 (module+ test
   (require rackunit)
@@ -16,6 +17,9 @@
                 (list "racket-test" (build-path "tests" "pkg" "path.rkt") #f))
 
   (check-equal? (path->pkg (find-system-path 'temp-dir))
+                #f)
+
+  (check-equal? (path->pkg (build-path (find-pkgs-dir) "pkgs.rktd"))
                 #f)
 
   (check-equal? (call-with-values
