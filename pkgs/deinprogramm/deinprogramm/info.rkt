@@ -8,7 +8,7 @@
 (define tool-names '("DeinProgramm"))
 (define tool-urls '("http://www.deinprogramm.de/dmda/"))
 
-(define compile-omit-files
+(define compile-omit-paths
   '("define-record-procedures.scm"
     "convert-explicit.scm"
     "line3d.scm"))

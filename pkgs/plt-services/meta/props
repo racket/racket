@@ -685,11 +685,6 @@ path/s is either such a string or a list of them.
 "pkgs/datalog" responsible (jay)
 "pkgs/db-pkgs" responsible (ryanc)
 "pkgs/deinprogramm" responsible (sperber)
-"pkgs/deinprogramm/deinprogramm/convert-explicit.scm" drdr:command-line #f
-"pkgs/deinprogramm/deinprogramm/define-record-procedures.scm" drdr:command-line #f
-"pkgs/deinprogramm/deinprogramm/line3d.scm" drdr:command-line #f
-"pkgs/deinprogramm/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
-"pkgs/deinprogramm/deinprogramm/quickcheck/random.scm" drdr:command-line #f
 "pkgs/distributed-places-pkgs" responsible (tewk)
 "pkgs/distro-build" responsible (mflatt)
 "pkgs/draw-pkgs" responsible (mflatt)
@@ -715,14 +710,6 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teachpack.rkt" responsible (robby matthias)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:timeout 480
 "pkgs/drracket-pkgs/drracket-test/tests/jpr" responsible (mflatt)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/balle-grav-frot.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/dessine-arbre.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/foo.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/jeu-du-chaos.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/mon-script.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/monte-carlo.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/streams.ss" drdr:command-line (mzc "-k" *)
-"pkgs/drracket-pkgs/drracket-test/tests/jpr/valrose.ss" drdr:command-line (mzc "-k" *)
 "pkgs/ds-store-pkgs" responsible (mflatt)
 "pkgs/eli-tester" responsible (eli)
 "pkgs/eopl" responsible (dvanhorn)
@@ -762,7 +749,6 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/graphics/tests/sixlib.rktl" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-lib/stepper" responsible (clements)
 "pkgs/htdp-pkgs/htdp-lib/teachpack" responsible (matthias)
-"pkgs/htdp-pkgs/htdp-lib/teachpack/balls.ss" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/test-engine" responsible (kathyg)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance.rkt" responsible (robby)
@@ -858,7 +844,6 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta" responsible (eli)
 "pkgs/plt-services/meta/drdr" responsible (jay)
 "pkgs/plt-services/meta/drdr2" responsible (jay)
-"pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "pkgs/preprocessor" responsible (eli)
@@ -1138,16 +1123,8 @@ path/s is either such a string or a list of them.
 "pkgs/shell-completion/racket-completion.zsh" responsible (eli)
 "pkgs/slatex" responsible (sstrickl)
 "pkgs/slideshow-pkgs" responsible (mflatt robby)
-"pkgs/slideshow-pkgs/slideshow-exe/slideshow/examples/interlocking-components.scm" drdr:command-line (mzc *)
 "pkgs/snip-pkgs" responsible (mflatt)
 "pkgs/srfi-pkgs" responsible (mflatt noel chongkai jay)
-"pkgs/srfi-pkgs/srfi-lib/srfi/25/arlib.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/25/ix-ctor.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/25/op-ctor.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/67/compare-reference.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/74/blob.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/78/check-reference.scm" drdr:command-line #f
-"pkgs/srfi-pkgs/srfi-lib/srfi/78/examples-78.scm" drdr:command-line #f
 "pkgs/string-constants-pkgs" responsible (robby)
 "pkgs/swindle" responsible (eli)
 "pkgs/syntax-color-pkgs" responsible (mflatt)

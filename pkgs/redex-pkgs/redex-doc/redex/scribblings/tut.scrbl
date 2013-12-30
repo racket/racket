@@ -1125,3 +1125,10 @@ is rendered as @racketblock[Γ ⊢ e : t]
 
 
 @close-eval[amb-eval]
+
+
+@; Needs a timeout for testing:
+@(module* test racket/base
+   (require (submod ".."))
+   (module config info
+     (define timeout 300)))

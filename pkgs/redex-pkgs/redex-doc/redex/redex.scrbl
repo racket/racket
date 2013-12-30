@@ -24,3 +24,9 @@ and the @tt{examples} subdirectory in the @tt{redex} collection.
 
 @index-section[]
 
+
+@; Needs a timeout for testing:
+@(module* test racket/base
+   (require (submod ".."))
+   (module config info
+     (define timeout 300)))

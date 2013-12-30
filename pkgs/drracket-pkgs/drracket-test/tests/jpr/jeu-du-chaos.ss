@@ -34,7 +34,13 @@
 
 (jeu-du-chaos)
 
-
-
-
+;; For automatic testing, check that we can at least start,
+;; but exit soon after:
+(module+ test
+  (require racket/gui/base)
+  (void
+   (thread
+    (lambda ()
+      (sleep 1)
+      (queue-callback (lambda () (exit)) #f)))))
 

@@ -1,3 +1,11 @@
 #lang info
 
-(define test-skip-paths '("balle-grav-frot.ss"))
+(define test-command-line-arguments
+  '(("dessine-arbre.ss" ())
+    ("foo.ss" ())
+    ("jeu-du-chaos.ss" ())
+    ("mon-script.ss" ())
+    ("streams.ss" ())
+    ("valrose.ss" ())))
+
+

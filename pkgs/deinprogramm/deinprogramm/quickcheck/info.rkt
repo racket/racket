@@ -1,7 +1,7 @@
 (module info info
   (define name "DeinProgramm - QuickCheck")
 
-  (define compile-omit-files
+  (define compile-omit-paths
     '("examples.scm"
       "packages.scm"
       "quickcheck-test.scm"

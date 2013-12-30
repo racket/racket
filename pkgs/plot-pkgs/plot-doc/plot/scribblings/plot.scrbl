@@ -53,3 +53,9 @@ If you have code written for @(plot-name) 5.1.3 or earlier, please see @secref["
 @include-section["compat.scrbl"]
 
 @close-plot-eval[]
+
+@; Needs a timeout for testing:
+@(module* test racket/base
+   (require (submod ".."))
+   (module config info
+     (define timeout 180)))
