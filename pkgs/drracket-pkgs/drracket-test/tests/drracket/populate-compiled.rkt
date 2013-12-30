@@ -17,11 +17,23 @@
 (make-directory* coll2-dir)
 
 (call-with-output-file*
+ (build-path pkg-dir "info.rkt")
+ (λ (o)
+   (fprintf o "#lang info\n")
+   (write '(define collection 'multi) o)))
+
+(call-with-output-file*
  (build-path coll-dir "main.rkt")
  (lambda (o)
    (fprintf o "#lang racket/base\n")
    (write '(provide popcomp) o)
    (write '(define popcomp (gensym 'popcomp)) o)))
+
+(call-with-output-file*
+ (build-path pkg2-dir "info.rkt")
+ (λ (o)
+   (fprintf o "#lang info\n")
+   (write '(define collection 'multi) o)))
 
 (call-with-output-file*
  (build-path coll2-dir "main.rkt")
