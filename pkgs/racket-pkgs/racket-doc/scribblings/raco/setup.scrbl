@@ -347,17 +347,17 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
      @item{@racket['depends-all] : Indicates that the document should
            be re-built if any other document is rebuilt---except for
-           documents that have the @racket['no-depend-on] mode.}
+           documents that have the @racket['no-depend-on] flag.}
 
      @item{@racket['depends-all-main] : Indicates that the document
            should be re-built if any other document is rebuilt that is
            installed into the main installation---except for documents
-           that have the @racket['no-depend-on] mode.}
+           that have the @racket['no-depend-on] flag.}
 
      @item{@racket['depends-all-user] : Indicates that the document
            should be re-built if any other document is rebuilt that is
            installed into the user's space---except for documents
-           that have the @racket['no-depend-on] mode.}
+           that have the @racket['no-depend-on] flag.}
 
      @item{@racket['always-run] : Build the document every time that
            @exec{raco setup} is run, even if none of its dependencies
