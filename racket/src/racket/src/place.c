@@ -2557,7 +2557,11 @@ static void terminate_current_place(Scheme_Object *result)
 
   place_obj = place_object;
   place_object = NULL;
-  
+
+  mzrt_mutex_lock(place_obj->lock);
+  place_obj_die = place_obj->die;
+  mzrt_mutex_unlock(place_obj->lock);
+
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
 
   /* Beware that the destroy operation might trigger a GC to cooperate
@@ -2568,7 +2572,6 @@ static void terminate_current_place(Scheme_Object *result)
   
   mzrt_mutex_lock(place_obj->lock);
   
-  place_obj_die = place_obj->die;
   place_obj->refcount--;
   refcount = place_obj->refcount;
   
