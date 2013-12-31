@@ -115,25 +115,26 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
   (case (system-type)
     ((windows)
      ;; Windows ODBC defines wchar_t (thus WCHAR, thus SQLWCHAR) as 16-bit
-     (values (ffi-lib "odbc32.dll")
+     (values (ffi-lib "odbc32.dll" #:fail (lambda () #f))
              2))
     ((macosx)
      ;; Mac OS X uses iodbc, which defines SQLWCHAR as wchar_t, as 32-bit
-     (values (ffi-lib "libiodbc" '("2" #f))
+     (values (ffi-lib "libiodbc" '("2" #f) #:fail (lambda () #f))
              4))
     ((unix)
      (cond [(member (path->string (system-library-subpath #f))
                     '("i386-openbsd" "x86_64-openbsd"))
             ;; OpenBSD uses iodbc
-            (values (ffi-lib "libiodbc" '("3.16" #f))
+            (values (ffi-lib "libiodbc" '("3.16" #f) #:fail (lambda () #f))
                     4)]
            [else
             ;; Other unixes use unixodbc, which defines WCHAR as 16-bit
             ;; for compat w/ Windows (even though Linux wchar_t is 32-bit)
-            (values (ffi-lib "libodbc" '("1" #f))
+            (values (ffi-lib "libodbc" '("1" #f) #:fail (lambda () #f))
                     2)]))))
 
-(define-ffi-definer define-odbc odbc-lib)
+(define-ffi-definer define-odbc odbc-lib
+  #:default-make-fail make-not-available)
 
 (define (ok-status? n)
   (or (= n SQL_SUCCESS)
@@ -174,18 +175,19 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         -> (status : _sqlreturn)
         -> (values status value)))
 
-(define SQLGetInfo-string
-  (get-ffi-obj "SQLGetInfo" odbc-lib
-               (_fun (handle info) ::
-                     (handle : _sqlhdbc)
-                     (info : _sqlusmallint)
-                     (value : _bytes = (make-bytes 250))
-                     (250 : _sqlsmallint)
-                     (len : (_ptr o _sqlsmallint))
-                     -> (status : _sqlreturn)
-                     -> (values status
-                                (and (ok-status? status)
-                                     (bytes->string/utf-8 value #f 0 len))))))
+(define-odbc SQLGetInfo-string
+  (_fun (handle info) ::
+        (handle : _sqlhdbc)
+        (info : _sqlusmallint)
+        (value : _bytes = (make-bytes 250))
+        (250 : _sqlsmallint)
+        (len : (_ptr o _sqlsmallint))
+        -> (status : _sqlreturn)
+        -> (values status
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 value #f 0 len))))
+  #:c-id SQLGetInfo)
+
 
 (define-odbc SQLGetFunctions
   (_fun (handle : _sqlhdbc)
