@@ -39,9 +39,18 @@ The @exec{raco test} command accepts several flags:
        be tested. (All package scopes are searched for the first, most
        specific package.)}
 
+ @item{@Flag{m} or @DFlag{modules}
+       --- Not only interprets the arguments as paths (which is the
+       default mode), but treats them the same as a path found in a
+       directory, which means ignoring a file argument that does not
+       have the extension @filepath{.rkt}, have the extension
+       @filepath{.scrbl}, or is enabled explicitly via
+       @racket[test-command-line-arguments] in an @filepath{info.rkt}
+       file.}
+
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
-       system: use as many jobs as available processors, set the
+       system: ignore non-modules, use as many jobs as available processors, set the
        default timeout to 90 seconds, count stderr output as a test failure,
        quiet program output, and print a table of results.}
 
@@ -84,7 +93,9 @@ The @exec{raco test} command accepts several flags:
  @item{@DFlag{timeout} @nonterm{seconds}
       --- Sets the default timeout (after which a test counts as failed)
       to @nonterm{seconds}. Use @exec{+inf.0} to allow tests to run without
-      limit but allow @racket[timeout] sub-submodule configuration.}
+      limit but allow @racket[timeout] sub-submodule configuration.
+      If any test fails due to a timeout, the exit status of @exec{raco test}
+      is 2 (as opposed to 1 for only non-timeout failures or 0 for success).}
 
  @item{@Flag{Q} or @DFlag{quiet-program}
        --- suppresses output from each test program.}

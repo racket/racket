@@ -94,13 +94,14 @@
                                                         'process))]
                                    #:timeout [timeout default-timeout])
   (define c (make-custodian))
+  (define timeout? #f)
   (with-handlers ([exn:fail? (lambda (exn)
                                (custodian-shutdown-all c)
                                (unless quiet?
                                  (eprintf "~a: ~a\n" 
                                           (extract-file-name p)
                                           (exn-message exn)))
-                               (summary 1 1 (current-label) #f))])
+                               (summary 1 1 (current-label) #f (if timeout? 1 0)))])
     (define e (open-output-bytes))
 
     (define stdout (if quiet-program?
@@ -127,6 +128,7 @@
                 ((executable-yield-handler) 0)
                 (set! done? #t)))))
          (unless (thread? (sync/timeout timeout t))
+           (set! timeout? #t)
            (error 'test "timeout after ~a seconds" timeout))
          (unless done?
            (error 'test "test raised an exception"))
@@ -149,6 +151,7 @@
 
          ;; Wait for the place to finish:
          (unless (sync/timeout timeout (place-dead-evt pl))
+           (set! timeout? #t)
            (error 'test "timeout after ~a seconds" timeout))
 
          ;; Get result code and test results:
@@ -177,6 +180,7 @@
          (define proc (list-ref ps 4))
          
          (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
+           (set! timeout? #t)
            (error 'test "timeout after ~a seconds" timeout))
 
          (define results
@@ -200,9 +204,9 @@
       (error 'test "non-zero exit: ~e" result-code))
     (cond
      [test-results
-      (summary (car test-results) (cdr test-results) (current-label) #f)]
+      (summary (car test-results) (cdr test-results) (current-label) #f 0)]
      [else
-      (summary 0 1 (current-label) #f)])))
+      (summary 0 1 (current-label) #f 0)])))
 
 ;; For recording stderr while also propagating to the original stderr:
 (define (tee-output-port p1 p2)
@@ -254,7 +258,7 @@
                  +inf.0)))
 
 (define current-label (make-parameter "???"))
-(struct summary (failed total label body-res))
+(struct summary (failed total label body-res timeout))
 
 (define-syntax-rule (with-summary label . body)
   (call-with-summary label (lambda () . body)))
@@ -270,7 +274,8 @@
        (apply + (map summary-failed res))
        (apply + (map summary-total res))
        (current-label)
-       res)))
+       res
+       (apply + (map summary-timeout res)))))
 
 
 (define (iprintf i fmt . more)
@@ -283,9 +288,9 @@
       (match sum
         [(list sum ...)
          (append-map flatten sum)]
-        [(summary failed total `(file ,p) body)
+        [(summary failed total `(file ,p) body timeout)
          (list sum)]
-        [(summary failed total label body)
+        [(summary failed total label body timeout)
          (flatten body)]
         [(? void?)
          empty])))
@@ -304,7 +309,7 @@
   (define failed-wid (max-width summary-failed))
   (define total-wid (max-width summary-total))
   (for ([f (in-list sfiles)])
-    (match-define (summary failed total `(file ,p) _) f)
+    (match-define (summary failed total `(file ,p) _ _) f)
     (displayln (~a (~a #:min-width failed-wid
                        #:align 'right
                        (if (zero? failed)
@@ -412,7 +417,7 @@
        [(directory-exists? p)
         (set! single-file? #f)
         (if (omit-path? (path->directory-path p))
-            (summary 0 0 #f 0)
+            (summary 0 0 #f null 0)
             (with-summary
              `(directory ,p)
              (map/parallel
@@ -458,7 +463,7 @@
                      (test-module p file-name args #f #:sema continue-sema))))))))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)]
-       [else (summary 0 0 #f null)])]))
+       [else (summary 0 0 #f null 0)])]))
 
 (module paths racket/base
   (require setup/link
@@ -523,8 +528,11 @@
 
 (define collections? #f)
 (define packages? #f)
+(define check-top-suffix? #f)
 
-(define (test-top e #:sema continue-sema)
+(define (test-top e 
+                  #:check-suffix? check-suffix?
+                  #:sema continue-sema)
   (cond
     [collections?
      (match (collection-paths e)
@@ -542,7 +550,9 @@
         (test-files pd #:sema continue-sema))
        (error 'test "Package ~e is not installed" e))]
     [else
-     (test-files e #:sema continue-sema)]))
+     (test-files e
+                 #:check-suffix? check-suffix? 
+                 #:sema continue-sema)]))
 
 ;; --------------------------------------------------
 ;; Reading "info.rkt" files
@@ -646,9 +656,14 @@
  [("--package" "-p")
   "Interpret arguments as packages"
   (set! packages? #t)]
+ [("--modules" "-m")
+  ("Interpret arguments as modules"
+   "  (ignore argument unless \".rkt\", \".scrbl\", or enabled by \"info.rkt\")")
+  (set! check-top-suffix? #t)]
  #:once-each
  [("--drdr")
   "Configure defaults to imitate DrDr"
+  (set! check-top-suffix? #t)
   (set! first-avail? #t)
   (when (zero? jobs)
     (set-jobs! (processor-count)))
@@ -710,7 +725,11 @@
         (define sum
           ;; The #:sema argument everywhre makes tests start
           ;; in a deterministic order:
-          (map/parallel test-top file-or-directory
+          (map/parallel (lambda (f #:sema s)
+                          (test-top f
+                                    #:check-suffix? check-top-suffix?
+                                    #:sema s))
+                        file-or-directory
                         #:sema (make-semaphore)))
         (when table?
           (display-summary sum))
@@ -724,5 +743,9 @@
             (for ([i (in-range (- (summary-total s)
                                   (summary-failed s)))])
               (test-log! #t))))
-        (define r (test-log #:display? #t #:exit? #t))
-        (exit (if (zero? (car r)) 0 1))))
+        (test-log #:display? #t #:exit? #f)
+        (define sum1 (call-with-summary #f (lambda () sum)))
+        (exit (cond
+               [(positive? (summary-timeout sum1)) 2]
+               [(positive? (summary-failed sum1)) 1]
+               [else 0]))))
