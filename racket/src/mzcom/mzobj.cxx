@@ -157,6 +157,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
   scheme_add_global("mzcom-exe",scheme_make_utf8_string(exeBuff),env);
   scheme_set_exec_cmd(exeBuff);
   scheme_set_collects_path(scheme_make_path("../collects"));
+  scheme_set_config_path(scheme_make_path("../etc"));
   scheme_init_collection_paths(env, scheme_make_null());
 
   // initialize namespace
@@ -309,6 +310,7 @@ static unsigned WINAPI evalLoop(void *args) XFORM_SKIP_PROC {
   scheme_register_tls_space(&tls_space, 0);
 #endif
   scheme_set_atexit(record_at_exit);
+
   return scheme_main_setup(1, do_evalLoop, 0, (char **)args);
 }
 
