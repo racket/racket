@@ -14,6 +14,7 @@
          racket/system
          rackunit/log
          pkg/lib
+         pkg/path
          setup/collects
          setup/getinfo)
 
@@ -36,6 +37,13 @@
 (define default-mode #f) ; #f => depends on how many files are provided
 
 (define single-file? #t)
+
+(define lock-file-dir (or (getenv "PLTLOCKDIR")
+                          (find-system-path 'temp-dir)))
+(define max-lock-delay (or (let ([n (string->number (or (getenv "PLTLOCKTIME") ""))])
+                             (and (real? n)
+                                  n))
+                           (* 4 60 60))) ; default: wait at most 4 hours
 
 ;; Stub for running a test in a process:
 (module process racket/base
@@ -88,11 +96,15 @@
 ;; Run each test in its own place or process, and collect both test
 ;; results and whether any output went to stderr.
 (define (dynamic-require-elsewhere p d args
+                                   #:id id
                                    #:mode [mode (or default-mode
                                                     (if single-file?
                                                         'direct
                                                         'process))]
-                                   #:timeout [timeout default-timeout])
+                                   #:timeout timeout
+                                   #:responsible responsible
+                                   #:lock-name lock-name
+                                   #:random? random?)
   (define c (make-custodian))
   (define timeout? #f)
   (with-handlers ([exn:fail? (lambda (exn)
@@ -102,111 +114,131 @@
                                           (extract-file-name p)
                                           (exn-message exn)))
                                (summary 1 1 (current-label) #f (if timeout? 1 0)))])
-    (define e (open-output-bytes))
+    (define (go)
+      (define e (open-output-bytes))
 
-    (define stdout (if quiet-program?
-                       (open-output-nowhere)
-                       (current-output-port)))
-    (define stderr (if quiet-program?
-                       e
-                       (if check-stderr?
-                           (tee-output-port (current-error-port) e)
-                           (current-error-port))))
+      (define stdout (if quiet-program?
+                         (open-output-nowhere)
+                         (current-output-port)))
+      (define stderr (if quiet-program?
+                         e
+                         (if check-stderr?
+                             (tee-output-port (current-error-port) e)
+                             (current-error-port))))
 
-    (define-values (result-code test-results)
-      (case mode
-        [(direct)
-         (define pre (test-log #:display? #f #:exit? #f))
-         (define done? #f)
-         (define t
-           (parameterize ([current-output-port stdout]
-                          [current-error-port stderr]
-                          [current-command-line-arguments (list->vector args)])
-             (thread
-              (lambda ()
-                (dynamic-require p d)
-                ((executable-yield-handler) 0)
-                (set! done? #t)))))
-         (unless (thread? (sync/timeout timeout t))
-           (set! timeout? #t)
-           (error 'test "timeout after ~a seconds" timeout))
-         (unless done?
-           (error 'test "test raised an exception"))
-         (define post (test-log #:display? #f #:exit? #f))
-         (values 0
-                 (cons (- (car post) (car pre))
-                       (- (cdr post) (cdr pre))))]
-        [(place)
-         ;; Start the test place:
-         (define-values (pl in out/f err/f)
-           (parameterize ([current-custodian c])
-             (dynamic-place* '(submod compiler/commands/test place)
-                             'go
-                             #:in (current-input-port)
-                             #:out stdout
-                             #:err stderr)))
-         
-         ;; Send the module path to test:
-         (place-channel-put pl (list p d (current-directory) args))
+      (unless quiet?
+        (when responsible
+          (fprintf stdout "raco test:~a @(test-responsible '~s)\n"
+                   id
+                   responsible))
+        (when random?
+          (fprintf stdout "raco test:~a @(test-random #t)\n"
+                   id)))
+      
+      (define-values (result-code test-results)
+        (case mode
+          [(direct)
+           (define pre (test-log #:display? #f #:exit? #f))
+           (define done? #f)
+           (define t
+             (parameterize ([current-output-port stdout]
+                            [current-error-port stderr]
+                            [current-command-line-arguments (list->vector args)])
+               (thread
+                (lambda ()
+                  (dynamic-require p d)
+                  ((executable-yield-handler) 0)
+                  (set! done? #t)))))
+           (unless (thread? (sync/timeout timeout t))
+             (set! timeout? #t)
+             (error 'test "timeout after ~a seconds" timeout))
+           (unless done?
+             (error 'test "test raised an exception"))
+           (define post (test-log #:display? #f #:exit? #f))
+           (values 0
+                   (cons (- (car post) (car pre))
+                         (- (cdr post) (cdr pre))))]
+          [(place)
+           ;; Start the test place:
+           (define-values (pl in out/f err/f)
+             (parameterize ([current-custodian c])
+               (dynamic-place* '(submod compiler/commands/test place)
+                               'go
+                               #:in (current-input-port)
+                               #:out stdout
+                               #:err stderr)))
+           
+           ;; Send the module path to test:
+           (place-channel-put pl (list p d (current-directory) args))
 
-         ;; Wait for the place to finish:
-         (unless (sync/timeout timeout (place-dead-evt pl))
-           (set! timeout? #t)
-           (error 'test "timeout after ~a seconds" timeout))
+           ;; Wait for the place to finish:
+           (unless (sync/timeout timeout (place-dead-evt pl))
+             (set! timeout? #t)
+             (error 'test "timeout after ~a seconds" timeout))
 
-         ;; Get result code and test results:
-         (values (place-wait pl)
-                 (sync/timeout 0 pl))]
-        [(process)
-         (define tmp-file (make-temporary-file))
-         (define ps
-           (parameterize ([current-output-port stdout]
-                          [current-error-port stderr]
-                          [current-subprocess-custodian-mode 'kill]
-                          [current-custodian c])
-             (apply process*/ports
-                    stdout
-                    (current-input-port)
-                    stderr
-                    (find-exe)
-                    "-l"
-                    "racket/base"
-                    "-e"
-                    "(dynamic-require '(submod compiler/commands/test process) #f)"
-                    tmp-file
-                    (format "~s" (normalize-module-path p))
-                    (format "~s" d)
-                    args)))
-         (define proc (list-ref ps 4))
-         
-         (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
-           (set! timeout? #t)
-           (error 'test "timeout after ~a seconds" timeout))
+           ;; Get result code and test results:
+           (values (place-wait pl)
+                   (sync/timeout 0 pl))]
+          [(process)
+           (define tmp-file (make-temporary-file))
+           (define ps
+             (parameterize ([current-output-port stdout]
+                            [current-error-port stderr]
+                            [current-subprocess-custodian-mode 'kill]
+                            [current-custodian c])
+               (apply process*/ports
+                      stdout
+                      (current-input-port)
+                      stderr
+                      (find-exe)
+                      "-l"
+                      "racket/base"
+                      "-e"
+                      "(dynamic-require '(submod compiler/commands/test process) #f)"
+                      tmp-file
+                      (format "~s" (normalize-module-path p))
+                      (format "~s" d)
+                      args)))
+           (define proc (list-ref ps 4))
+           
+           (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
+             (set! timeout? #t)
+             (error 'test "timeout after ~a seconds" timeout))
 
-         (define results
-           (with-handlers ([exn:fail:read? (lambda () #f)])
-             (call-with-input-file* tmp-file read)))
-         
-         (values (proc 'exit-code)
-                 (and (pair? results)
-                      (exact-positive-integer? (car results))
-                      (exact-positive-integer? (cdr results))
-                      results))]))
-    
-    ;; Shut down the place/process (usually a no-op unless it timed out):
-    (custodian-shutdown-all c)
+           (define results
+             (with-handlers ([exn:fail:read? (lambda () #f)])
+               (call-with-input-file* tmp-file read)))
+           
+           (values (proc 'exit-code)
+                   (and (pair? results)
+                        (exact-positive-integer? (car results))
+                        (exact-positive-integer? (cdr results))
+                        results))]))
+      
+      ;; Shut down the place/process (usually a no-op unless it timed out):
+      (custodian-shutdown-all c)
 
-    ;; Check results:
-    (when check-stderr?
-      (unless (equal? #"" (get-output-bytes e))
-        (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
-    (unless (zero? result-code)
-      (error 'test "non-zero exit: ~e" result-code))
-    (cond
-     [test-results
-      (summary (car test-results) (cdr test-results) (current-label) #f 0)]
-     [else
-      (summary 0 1 (current-label) #f 0)])))
+      ;; Check results:
+      (when check-stderr?
+        (unless (equal? #"" (get-output-bytes e))
+          (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
+      (unless (zero? result-code)
+        (error 'test "non-zero exit: ~e" result-code))
+      (cond
+       [test-results
+        (summary (car test-results) (cdr test-results) (current-label) #f 0)]
+       [else
+        (summary 0 1 (current-label) #f 0)]))
+
+    ;; Serialize the above with a lock, if any:
+    (if lock-name
+        (call-with-file-lock/timeout
+         #:max-delay max-lock-delay 
+         (build-path lock-file-dir lock-name)
+         'exclusive
+         go
+         (lambda () (error 'test "could not obtain lock: ~s" lock-name)))
+        (go))))
 
 ;; For recording stderr while also propagating to the original stderr:
 (define (tee-output-port p1 p2)
@@ -242,7 +274,14 @@
       (append mod '(config))
       (error 'test "cannot add test-config submodule to path: ~s" mod)))
 
-(define (dynamic-require* p d args try-config?)
+(define (dynamic-require* p d
+                          #:id id
+                          #:try-config? try-config?
+                          #:args args
+                          #:timeout timeout
+                          #:responsible responsible
+                          #:lock-name lock-name
+                          #:random? random?)
   (define lookup
     (or (cond
          [(not try-config?) #f]
@@ -252,10 +291,17 @@
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
    p d args
+   #:id id
+   #:responsible (lookup 'responsible
+                         (lambda () responsible))
    #:timeout (if default-timeout
                  (lookup 'timeout
-                         (lambda () default-timeout))
-                 +inf.0)))
+                         (lambda () timeout))
+                 +inf.0)
+   #:lock-name (lookup 'lock-name
+                       (lambda () lock-name))
+   #:random? (lookup 'random?
+                     (lambda () random?))))
 
 (define current-label (make-parameter "???"))
 (struct summary (failed total label body-res timeout))
@@ -370,7 +416,14 @@
 
 ;; Perform test of one module (in parallel, as allowed by
 ;; `task-sema`):
-(define (test-module p mod args try-config? #:sema continue-sema)
+(define (test-module p mod
+                     #:sema continue-sema
+                     #:try-config? try-config?
+                     #:args [args '()]
+                     #:timeout [timeout +inf.0]
+                     #:responsible [responsible #f]
+                     #:lock-name [lock-name #f]
+                     #:random? [random? #f])
   (call-with-semaphore
    task-sema ; limits parallelism
    (lambda ()
@@ -397,7 +450,16 @@
             (flush-output))
           id)))
      (begin0
-      (dynamic-require* mod 0 args try-config?)
+      (dynamic-require* mod 0
+                        #:id (if (jobs . <= . 1)
+                                 ""
+                                 (format " ~a" id))
+                        #:try-config? try-config?
+                        #:args args
+                        #:timeout timeout
+                        #:responsible responsible
+                        #:lock-name lock-name
+                        #:random? random?)
       (call-with-semaphore
        ids-lock
        (lambda ()
@@ -416,7 +478,9 @@
      (cond
        [(directory-exists? p)
         (set! single-file? #f)
-        (if (omit-path? (path->directory-path p))
+        (define dir-p (path->directory-path p))
+        (check-info dir-p)
+        (if (omit-path? dir-p)
             (summary 0 0 #f null 0)
             (with-summary
              `(directory ,p)
@@ -431,13 +495,29 @@
              (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
                  (get-cmdline p #f))
-             (not (omit-path? p)))
-        (define args (get-cmdline p))
+             (begin (check-info p)
+                    (not (omit-path? p))))
+        ;; The above `omit-path?` loads "info.rkt" files
+        (define norm-p (normalize-info-path p))
+        (define args (get-cmdline norm-p))
+        (define timeout (get-timeout norm-p))
+        (define lock-name (get-lock-name norm-p))
+        (define responsible (get-responsible norm-p))
+        (define random? (get-random norm-p))
         (parameterize ([current-directory (let-values ([(base name dir?) (split-path p)])
                                             (if (path? base)
                                                 base
                                                 (current-directory)))])
           (define file-name (file-name-from-path p))
+          (define (test-this-module mod try-config?)
+            (test-module p mod
+                         #:try-config? try-config?
+                         #:sema continue-sema
+                         #:args args
+                         #:timeout timeout
+                         #:responsible responsible
+                         #:lock-name lock-name
+                         #:random? random?))
           (with-summary
            `(file ,p)
            (let ([something-wasnt-declared? #f]
@@ -454,13 +534,13 @@
                    #f]
                   [(module-declared? mod #t)
                    (set! did-one? #t)
-                   (test-module p mod args #t #:sema continue-sema)]
+                   (test-this-module mod #t)]
                   [else
                    (set! something-wasnt-declared? #t)
                    #f]))
                (list
                 (and (and run-anyways? something-wasnt-declared?)
-                     (test-module p file-name args #f #:sema continue-sema))))))))]
+                     (test-this-module file-name #f))))))))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)]
        [else (summary 0 0 #f null 0)])]))
@@ -559,11 +639,16 @@
 
 (define omit-paths (make-hash))
 (define command-line-arguments (make-hash))
+(define timeouts (make-hash))
+(define lock-names (make-hash))
+(define responsibles (make-hash))
+(define randoms (make-hash))
 
+(define pkg-cache (make-hash))
 (define collects-cache (make-hash))
 (define info-done (make-hash))
 
-(define (check-info p check-up?)
+(define (check-dir-info p)
   (define-values (base name dir?) (split-path p))
   (define dir (normalize-info-path
                (if dir?
@@ -572,60 +657,91 @@
                        (path->complete-path base)
                        (current-directory)))))
 
-  (when (and check-up? (not dir?))
-    ;; Check enclosing collection
-    (define c (path->collects-relative p #:cache collects-cache))
-    (when (list? c)
-      (check-info/parents dir
-                          (apply build-path (map bytes->path (reverse (cdr (reverse (cdr c)))))))))
-
   (unless (hash-ref info-done dir #f)
     (hash-set! info-done dir #t)
     (define info (get-info/full dir))
     (when info
-      (define v (info 'test-omit-paths (lambda () '())))
       (define (bad what v)
         (log-error "bad `~a' in \"info.rkt\": ~e" what v))
-      (cond
-       [(eq? v 'all)
-        (hash-set! omit-paths dir #t)]
-       [(list? v)
-        (for ([i (in-list v)])
-          (unless (path-string? i) (bad 'test-omit-paths v))
-          (define p (normalize-info-path (path->complete-path i dir)))
-          (define dp (if (directory-exists? p)
-                         (path->directory-path p)
-                         p))
-          (hash-set! omit-paths dp #t))]
-       [else (bad 'test-omit-paths v)])
       
-      (define a (info 'test-command-line-arguments (lambda () '())))
-      (unless (list? a) (bad 'test-command-line-arguments a))
-      (for ([arg (in-list a)])
-        (unless (and (list? arg)
-                     (= 2 (length arg))
-                     (path-string? (car arg))
-                     (list? (cadr arg))
-                     (andmap path-string? (cadr arg)))
-          (bad 'test-command-line-arguments a))
-        (hash-set! command-line-arguments
-                   (normalize-info-path (path->complete-path (car arg) dir))
-                   (cadr arg))))))
+      (define (get-members table what all-ok?)
+        (define v (info what (lambda () '())))
+        (cond
+         [(and all-ok? (eq? v 'all))
+          (hash-set! table dir #t)]
+         [(list? v)
+          (for ([i (in-list v)])
+            (unless (path-string? i) (bad what v))
+            (define p (normalize-info-path (path->complete-path i dir)))
+            (define dp (if (directory-exists? p)
+                           (path->directory-path p)
+                           p))
+            (hash-set! table dp #t))]
+         [else (bad what v)]))
+      (get-members omit-paths 'test-omit-paths #t)
+      (get-members randoms 'test-randoms #t)
+      
+      (define (get-keyed table what check? #:ok-all? [ok-all? #f])
+        (define a (info what (lambda () '())))
+        (if (list? a)
+            (for ([arg (in-list a)])
+              (unless (and (list? arg)
+                           (= 2 (length arg))
+                           (or (path-string? (car arg))
+                               (and ok-all?
+                                    (eq? (car arg) 'all)))
+                           (check? (cadr arg)))
+                (bad what a))
+              (hash-set! table
+                         (normalize-info-path (if (eq? (car arg) 'all)
+                                                  dir
+                                                  (path->complete-path (car arg) dir)))
+                         (cadr arg)))
+            (bad what a)))
+
+      (get-keyed command-line-arguments
+                 'test-command-line-arguments 
+                 (lambda (v) (and (list? v)
+                                  (andmap path-string? v))))
+      (get-keyed timeouts
+                 'test-timeouts
+                 (lambda (v) (real? v)))
+      (get-keyed lock-names
+                 'test-lock-names
+                 (lambda (v) (or (not v)
+                                 (and (string? v)
+                                      (path-string? v)))))
+      (get-keyed responsibles
+                 'test-responsibles
+                 ok-responsible?
+                 #:ok-all? #t)
+      (get-keyed randoms
+                 'test-random
+                 (lambda (v) (string? v))))))
 
 (define (check-info/parents dir subpath)
   (let loop ([dir dir] [subpath subpath])
-    (unless (hash-ref info-done dir #f)
-      (check-info dir #f)
-      (define-values (next-subpath subpath-name subpath-dir?) (split-path subpath))
-      (define-values (next-dir dir-name dir-dir?) (split-path dir))
-      (when (path? next-subpath)
-        (loop next-dir next-subpath)))))
+    (check-dir-info dir)
+    (define-values (next-subpath subpath-name subpath-dir?) (split-path subpath))
+    (define-values (next-dir dir-name dir-dir?) (split-path dir))
+    (when (path? next-subpath)
+      (loop next-dir next-subpath))))
+
+(define (check-info p)
+  (check-dir-info p)
+  ;; Check enclosing collection
+  (define-values (base name dir?) (split-path p))
+  (define c (if dir?
+                #f
+                (path->collects-relative p #:cache collects-cache)))
+  (when (list? c)
+    (check-info/parents base
+                        (apply build-path (map bytes->path (reverse (cdr (reverse (cdr c)))))))))
 
 (define (normalize-info-path p)
   (simplify-path (path->complete-path p) #f))
 
 (define (omit-path? p)
-  (check-info p #t)
   (let ([p (normalize-info-path p)])
     (or (hash-ref omit-paths p #f)
         (let-values ([(base name dir?) (split-path p)])
@@ -633,8 +749,40 @@
                (omit-path? base))))))
 
 (define (get-cmdline p [default null])
-  (let ([p (normalize-info-path p)])
-    (hash-ref command-line-arguments p default)))
+  (hash-ref command-line-arguments p default))
+
+(define (get-timeout p) (hash-ref timeouts p +inf.0))
+
+(define (get-lock-name p) (hash-ref lock-names p #f))
+
+(define (get-responsible p)
+  (or (let loop ([p p])
+        (or (hash-ref responsibles p #f)
+            (let-values ([(base name dir?) (split-path p)])
+              (and (path? base)
+                   (loop base)))))
+      ;; Check package authors:
+      (let-values ([(pkg subpath) (path->pkg+subpath p #:cache pkg-cache)])
+        (and pkg
+             (let ([pkg-dir (if (path? subpath)
+                                (apply build-path
+                                       (drop-right (explode-path p)
+                                                   (length (explode-path subpath))))
+                                pkg)])
+               (define info (get-info/full pkg-dir))
+               (and info
+                    (let ([v (info 'pkg-authors (lambda () #f))])
+                      (and (ok-responsible? v)
+                           v))))))))
+
+(define (get-random p) (hash-ref randoms p #f))
+
+(define (ok-responsible? v)
+  (or (string? v)
+      (symbol? v)
+      (and (list? v)
+           (andmap (lambda (v) (or (symbol? v) (string? v)))
+                   v))))
 
 ;; --------------------------------------------------
 
