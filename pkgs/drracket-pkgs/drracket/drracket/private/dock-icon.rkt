@@ -5,6 +5,8 @@
          mred/private/wx/cocoa/image
          mred/private/wx/cocoa/utils)
 
+(module test racket/base)
+
 (import-class NSApplication
               NSImageView)
 
