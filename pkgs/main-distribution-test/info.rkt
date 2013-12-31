@@ -7,6 +7,7 @@
                "gui-test"
                "db-test"
                "htdp-test"
+               "html-test"
                "redex-test"
                "drracket-test"
                "profile-test"
