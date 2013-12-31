@@ -6,16 +6,13 @@
 (define PROP:command-line "drdr:command-line")
 (define PROP:timeout "drdr:timeout")
 
-(define (path-command-line a-path)
+(define (path-command-line a-path a-timeout)
   (define suffix (filename-extension a-path))
   (define default-cmd
     (and suffix
          (case (string->symbol (bytes->string/utf-8 suffix))
            [(ss scm scrbl rkt sls)
-            '(raco "test" "-q" "-s" "main" "-s" "test" *)
-            '(racket *)
-            '(raco "test" *)]
-           [(rktl)                 '(racket "-f" *)]
+            `(raco "test" "-m" "--timeout" ,(number->string a-timeout) *)]
            [else                   #f])))
   (define (replace-* s)
     (cond
@@ -43,8 +40,11 @@
 (provide/contract
  [PROP:command-line string?]
  [PROP:timeout string?]
- [path-responsible (path-string? . -> . (or/c string? false/c))]
- [path-command-line (path-string? . -> . (or/c (cons/c symbol? (listof string?)) false/c))]
+ [path-responsible 
+  (path-string? . -> . (or/c string? false/c))]
+ [path-command-line 
+  (-> path-string? exact-nonnegative-integer? 
+      (or/c (cons/c symbol? (listof string?)) false/c))]
  [path-random? (path-string? . -> . boolean?)]
  [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])
 

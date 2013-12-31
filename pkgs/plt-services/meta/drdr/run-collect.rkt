@@ -68,7 +68,9 @@
          (define output-done? (zero? open-ports))
          (if (and output-done? process-done?)
              (if status
-                 (make-exit start-time end-time command-line (reverse log) status)
+                 (if (= status 2)
+                   (make-timeout start-time end-time command-line (reverse log))
+                   (make-exit start-time end-time command-line (reverse log) status))
                  (make-timeout start-time end-time command-line (reverse log)))
              (sync (if process-done?
                        never-evt

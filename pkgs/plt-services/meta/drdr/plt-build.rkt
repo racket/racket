@@ -216,7 +216,7 @@
                  (or (path-timeout pth)
                      (current-subprocess-timeout-seconds)))
                (define pth-cmd/general
-                 (path-command-line pth))
+                 (path-command-line pth pth-timeout))
                (define-values
                  (pth-cmd the-queue)
                  (match pth-cmd/general
