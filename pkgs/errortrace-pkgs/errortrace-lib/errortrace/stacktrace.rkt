@@ -68,7 +68,7 @@
       [(syntax? v) (short-version (syntax-e v) depth)]
       [else v]))
   
-  (define recover-table (make-hash))
+  (define current-recover-table (make-parameter #f))
 
   (define (make-st-mark stx phase)
     (unless (syntax? stx)
@@ -80,10 +80,15 @@
        ;; unit is invoked only once but annotate-top might be called
        ;; many times with diferent values for original-stx and
        ;; expanded-stx
-       (define recover (hash-ref! recover-table (cons (original-stx) (expanded-stx))
-				  (lambda ()
-				    (recover-source-syntax (original-stx) (expanded-stx)
-                                                           #:traverse-now? #t))))
+       (define recover-table (current-recover-table))
+       (define (make-new-recover)
+         (recover-source-syntax (original-stx) (expanded-stx)
+                                #:traverse-now? #t))
+       (define recover (if recover-table
+                           (hash-ref! recover-table 
+                                      (cons (original-stx) (expanded-stx))
+                                      make-new-recover)
+                           (make-new-recover)))
        (define better-stx (and stx (recover stx)))
        (with-syntax ([quote (syntax-shift-phase-level #'quote phase)])
          #`(quote (#,(short-version better-stx 10)
@@ -241,7 +246,7 @@
   
   (define (profile-annotate-lambda name expr clause bodys-stx phase)
     (let* ([bodys (stx->list bodys-stx)]
-           [bodyl (map (lambda (e) (annotate e phase))
+           [bodyl (map (lambda (e) (no-cache-annotate e phase))
                        bodys)])
       (rebuild clause
                (if (profiling-enabled)
@@ -274,13 +279,13 @@
           [bodys (syntax->list bodys-stx)])
       (let ([rhsl (map
                    (lambda (vars rhs)
-                     (annotate-named
+                     (no-cache-annotate-named
                       (syntax-case vars () [(id) (syntax id)] [_else #f])
                       rhs
                       phase))
                    varss
                    rhss)]
-            [bodyl (map (lambda (body) (annotate body phase))
+            [bodyl (map (lambda (body) (no-cache-annotate body phase))
                         bodys)])
         (rebuild expr (append (map cons bodys bodyl)
                               (map cons rhss rhsl))))))
@@ -379,7 +384,7 @@
           ;; Can't put annotation on the outside
           (let* ([marked 
                   (with-mrk* expr
-                             (annotate-named
+                             (no-cache-annotate-named
                               (one-name #'names)
                               (syntax rhs)
                               phase))]
@@ -406,11 +411,11 @@
            expr
            (annotate-seq disarmed-expr
                          (syntax exprs)
-                         annotate-top phase))]
+                         no-cache-annotate-top phase))]
          [(define-syntaxes (name ...) rhs)
           top?
           (let ([marked (with-mark expr
-                                   (annotate-named
+                                   (no-cache-annotate-named
                                     (one-name #'(name ...))
                                     (syntax rhs)
                                     (add1 phase))
@@ -425,7 +430,7 @@
            expr
            (annotate-seq disarmed-expr
                          (syntax exprs)
-                         annotate-top 
+                         no-cache-annotate-top 
                          (add1 phase)))]
 
          [(module name init-import mb)
@@ -434,7 +439,7 @@
           (annotate-module expr disarmed-expr)]
          
          [(#%expression e)
-          (rearm expr #`(#%expression #,(annotate (syntax e) phase)))]
+          (rearm expr #`(#%expression #,(no-cache-annotate (syntax e) phase)))]
          
          ;; No way to wrap
          [(#%require i ...) expr]
@@ -508,7 +513,7 @@
 
          ;; Wrap RHS
          [(set! var rhs)
-          (let ([new-rhs (annotate-named
+          (let ([new-rhs (no-cache-annotate-named
                           (syntax var)
                           (syntax rhs)
                           phase)])
@@ -523,21 +528,21 @@
           ;; Single expression: no mark
           (rearm
            expr
-           #`(begin #,(annotate (syntax e) phase)))]
+           #`(begin #,(no-cache-annotate (syntax e) phase)))]
          [(begin . body)
           (with-mrk* expr
                      (rearm
                       expr
-                      (annotate-seq disarmed-expr #'body annotate phase)))]
+                      (annotate-seq disarmed-expr #'body no-cache-annotate phase)))]
          [(begin0 . body)
           (with-mrk* expr
                      (rearm
                       expr
-                      (annotate-seq disarmed-expr #'body annotate phase)))]
+                      (annotate-seq disarmed-expr #'body no-cache-annotate phase)))]
          [(if tst thn els)
-          (let ([w-tst (annotate (syntax tst) phase)]
-                [w-thn (annotate (syntax thn) phase)]
-                [w-els (annotate (syntax els) phase)])
+          (let ([w-tst (no-cache-annotate (syntax tst) phase)]
+                [w-thn (no-cache-annotate (syntax thn) phase)]
+                [w-els (no-cache-annotate (syntax els) phase)])
             (with-mrk* expr
                        (rearm
                         expr
@@ -549,7 +554,7 @@
                      (rearm
                       expr
                       (annotate-seq disarmed-expr (syntax body)
-                                    annotate phase)))]
+                                    no-cache-annotate phase)))]
          
          ;; Wrap whole application, plus subexpressions
          [(#%plain-app . body)
@@ -575,13 +580,13 @@
             (rearm
              expr
              (annotate-seq disarmed-expr (syntax body)
-                           annotate phase))]
+                           no-cache-annotate phase))]
            ;; general case:
            [else
             (with-mrk* expr (rearm
                              expr
                              (annotate-seq disarmed-expr (syntax body)
-                                           annotate phase)))])]
+                                           no-cache-annotate phase)))])]
          
          [_else
           (error 'errortrace "unrecognized expression form~a: ~.s"
@@ -598,7 +603,7 @@
           ;; Just wrap body expressions
           (let ([bodys (syntax->list (syntax (body ...)))])
             (let ([bodyl (map (lambda (b)
-                                (annotate-top b 0))
+                                (no-cache-annotate-top b 0))
                               bodys)]
                   [mb #'mb])
               (rearm
@@ -611,7 +616,16 @@
                         mb
                         (rebuild mb (map cons bodys bodyl)))))))))])]))
   
-  (define annotate (make-annotate #f #f))
-  (define annotate-top (make-annotate #t #f))
+  (define no-cache-annotate (make-annotate #f #f))
+  (define (annotate expr phase)
+    (parameterize ([current-recover-table (make-hash)])
+      (no-cache-annotate expr phase)))
+  (define no-cache-annotate-top (make-annotate #t #f))
+  (define (annotate-top expr phase)
+    (parameterize ([current-recover-table (make-hash)])
+      (no-cache-annotate-top expr phase)))
+  (define (no-cache-annotate-named name expr phase)
+    ((make-annotate #t name) expr phase))
   (define (annotate-named name expr phase)
-    ((make-annotate #t name) expr phase)))
+    (parameterize ([current-recover-table (make-hash)])
+      (no-cache-annotate-named name expr phase))))
