@@ -161,8 +161,8 @@
                [(id ps) (in-hash ht)])
        (and 
         (for/or ([p (in-list ps)])
-          ; XXX This squelch should be disabled if the committer changed this file
-          ; XXX But even then it can lead to problems
+          ;; XXX This squelch should be disabled if the committer changed this file
+          ;; XXX But even then it can lead to problems
           (not (path-random? (build-path (revision-trunk-dir cur-rev)
                                          (substring (path->string* p) 1)))))
         (not (symbol=? id 'changes))))))
@@ -272,6 +272,11 @@
   (parameterize ([current-rev rev])
     (dir-rendering log-dir #:committer? #t)))
 
+(define (drdr-random-notification? l)
+  (and (stdout? l)
+       (regexp-match #rx"DrDr: This file has random output." 
+                     (stdout-bytes l))))
+
 (define (log-rendering log-pth)
   ; XXX
   (if (or #t (file-exists? log-pth))
@@ -287,9 +292,11 @@
             (define any-stderr? (ormap stderr? output-log))
             (define changed?
               (if (and (previous-rev)
-                       (not (path-random? (trunk-path log-pth))))
+                       (not (path-random? (trunk-path log-pth)))
+                       (not (ormap drdr-random-notification? output-log)))
                   (with-handlers ([exn:fail? 
-                                   ; This #f means that new files are NOT considered changed
+                                   ;; This #f means that new files are
+                                   ;; NOT considered changed
                                    (lambda (x) #f)])
                     (define prev-log-pth
                       ((rebase-path (revision-log-dir (current-rev)) 
