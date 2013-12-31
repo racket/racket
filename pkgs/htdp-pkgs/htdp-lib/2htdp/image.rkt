@@ -95,8 +95,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          right-triangle
          line
          add-line
+         add-polygon
          add-curve
          scene+line
+         scene+polygon
          scene+curve
          text
          text/font

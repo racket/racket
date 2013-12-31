@@ -1220,6 +1220,127 @@
       =>
       100)
 
+(test (add-polygon (rectangle 60 50 'solid 'black)
+                (list (make-posn -10 0)
+                      (make-posn 60 -10)
+                      (make-posn 70 50)
+                      (make-posn 0 60))
+                'outline 'red)
+      =>
+      (overlay/xy 
+       (polygon (list (make-posn 0 10)
+                      (make-posn 70 0)
+                      (make-posn 80 60)
+                      (make-posn 10 70))
+                'outline 'red)
+       10 10
+       (rectangle 60 50 'solid 'black)))
+
+(test (scene+polygon (rectangle 60 50 'solid 'black)
+                  (list (make-posn -10 0)
+                        (make-posn 60 -10)
+                        (make-posn 70 50)
+                        (make-posn 0 60))
+                  'outline 'red)
+      =>
+      (rectangle 60 50 'solid 'black))
+
+(test (add-polygon (rectangle 60 60 'solid 'black)
+                (list (make-posn -10 0)
+                      (make-posn 60 -10)
+                      (make-posn 70 60)
+                      (make-posn 0 70))
+                'solid 'red)
+      =>
+             (polygon (list (make-posn 0 10)
+                      (make-posn 70 0)
+                      (make-posn 80 70)
+                      (make-posn 10 80))
+                'solid 'red)
+             )
+
+(test (add-polygon (rectangle 100 60 'solid 'green)
+                (list (make-posn 70 20)
+                      (make-posn 40 40)
+                      (make-posn 60 60)
+                      (make-posn 5 70)
+                      (make-posn 2 40))
+                'outline 'red)
+      =>
+      (overlay/xy (polygon (list (make-posn 100 50)
+                                 (make-posn 70 70)
+                                 (make-posn 90 90)
+                                 (make-posn 35 100)
+                                 (make-posn 32 70))
+                           'outline 'red)
+                  -2 -20
+                  (rectangle 100 60 'solid 'green)))
+
+(test (scene+polygon (rectangle 60 50 'solid 'black)
+                  (list (make-posn -10 0)
+                        (make-posn 60 -10)
+                        (make-posn 70 60)
+                        (make-posn 0 70))
+                  'solid 'red)
+      =>
+      (rectangle 60 50 'solid 'red))
+
+(test (scene+polygon (rectangle 120 100 'solid 'black)
+                  (list (make-posn 50 40)
+                        (make-posn 70 40)
+                        (make-posn 70 60)
+                        (make-posn 50 60))
+                  'outline 'red)
+      =>
+               (overlay (square 20 'outline 'red) (rectangle 120 100 'solid 'black)))
+
+(test (scene+polygon (rectangle 90 100 'solid 'black)
+                  (list (make-posn 30 10)
+                        (make-posn 100 20)
+                        (make-posn 50 30)
+                        (make-posn 100 40)
+                        (make-posn 30 50))
+                  'solid 'red)
+      =>
+      (place-image/align (polygon (list (make-posn 30 50)
+                                        (make-posn 100 40)
+                                        (make-posn 50 30)
+                                        (make-posn 100 20)
+                                        (make-posn 30 10))
+                                  'solid 'red)
+                         30 10 'left 'top (rectangle 90 100 'solid 'black)))
+
+(test (image-width (scene+polygon (rectangle 90 100 'solid 'black)
+                               (list (make-posn 30 10)
+                                     (make-posn 100 20)
+                                     (make-posn 50 30)
+                                     (make-posn 100 40)
+                                     (make-posn 30 50))
+                               'outline 'orange))
+      => 90)
+(test (image-height (scene+polygon (rectangle 90 100 'solid 'black)
+                               (list (make-posn 30 10)
+                                     (make-posn 100 20)
+                                     (make-posn 50 30)
+                                     (make-posn 100 40)
+                                     (make-posn 30 50))
+                               'outline 'orange))
+      => 100)
+(test (scene+polygon (rectangle 100 100 'solid 'blue)
+                  (list (make-posn 20 10)
+                        (make-posn -10 -20)
+                        (make-posn -20 -10)
+                        (make-posn 10 20))
+                  'outline 'orange)
+      =>
+      (place-image/align (polygon (list (make-posn -20 -10)
+                                        (make-posn 10 20)
+                                        (make-posn 20 10)
+                                        (make-posn -10 -20))
+                                  'outline 'orange)
+                         -20 -20 'left 'top
+                         (rectangle 100 100 'solid 'blue)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  curves

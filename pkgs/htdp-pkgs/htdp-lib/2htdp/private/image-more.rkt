@@ -472,6 +472,19 @@
                 #f
                 (send image get-pinhole))))
 
+(define/chk (scene+polygon image posns mode color)
+  (check-mode/color-combination 'scene+polygon 4 mode color)
+  (when (null? posns) (error 'scene+polygon "must have at least one posn"))
+  (make-image (make-overlay
+               (make-crop (rectangle-points (get-right image) (get-bottom image))
+                          (make-polygon (map (lambda (p) (make-point (posn-x p) (posn-y p))) posns)
+                                        mode color))
+               (image-shape image))
+              (image-bb image)
+              #f
+              (send image get-pinhole)))
+    
+
 (define/chk (scene+curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
   (let* ([dx (abs (min 0 x1 x2))]
          [dy (abs (min 0 y1 y2))])
@@ -994,6 +1007,15 @@
                 (make-bb right bottom baseline)
                 #f
                 (send image get-pinhole))))
+
+(define/chk (add-polygon image posns mode color)
+  (if (null? posns)
+      (error 'add-polygon "must have at least one posn")
+      (let ((left (apply min (map posn-x posns)))
+            (top (apply min (map posn-y posns)))
+            (poly (polygon posns mode color)))
+        (overlay/xy poly (- left) (- top) image)
+        )))
 
 (define/chk (add-curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
   (define cs (make-curve-segment (make-point x1 y1) angle1 pull1
@@ -1533,8 +1555,10 @@
          
          line
          add-line
+         add-polygon
          add-curve
          scene+line
+         scene+polygon
          scene+curve
          text
          text/font
