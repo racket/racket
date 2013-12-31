@@ -372,6 +372,8 @@
     (build-path test-dir "home"))
   (define tmp-dir
     (build-path test-dir "tmp"))
+  (define lock-dir
+    (build-path test-dir "locks"))
   (define trunk-dir
     (revision-trunk-dir rev))
   (cache/file/timestamp
@@ -381,6 +383,7 @@
      (make-directory* planet-dir)
      (make-directory* home-dir)
      (make-directory* tmp-dir)
+     (make-directory* lock-dir)
      ;; We are running inside of a test directory so that random files are stored there
      (parameterize ([current-directory test-dir]
                     [current-temporary-directory tmp-dir]
@@ -394,6 +397,7 @@
                            (path->string
                             (build-path trunk-dir "bin"))
                            (getenv "PATH"))]
+                  ["PLTLOCKDIR" (path->string lock-dir)]
                   ["PLTPLANETDIR" (path->string planet-dir)]
                   ["HOME" (path->string home-dir)])
                  (unless (read-cache* (revision-commit-msg rev))
