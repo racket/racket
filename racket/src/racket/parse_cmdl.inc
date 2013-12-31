@@ -1,5 +1,6 @@
 /* Windows command-line parsing */
 
+#ifndef ASSUME_ASCII_COMMAND_LINE
 static char *wchar_to_char(wchar_t *wa, int len)
 {
   char *a;
@@ -16,6 +17,7 @@ static char *wchar_to_char(wchar_t *wa, int len)
 
   return a;
 }
+#endif
 
 static int parse_command_line(char ***_command, char *buf)
 {
@@ -80,18 +82,25 @@ static int parse_command_line(char ***_command, char *buf)
 
 static char **cmdline_to_argv(int *_argc, char **_normalized_path)
 {
+#ifndef ASSUME_ASCII_COMMAND_LINE
   LPWSTR m_lpCmdLine;
-  int j, argc, l;
+  int j, l;
+#endif
+  int argc;
   char *a, **argv, *normalized_path;
 
-
+#ifdef ASSUME_ASCII_COMMAND_LINE
+  a = GetCommandLine();
+#else
   m_lpCmdLine = GetCommandLineW();
   for (j = 0; m_lpCmdLine[j]; j++) {
   }
   a = wchar_to_char(m_lpCmdLine, j);
+#endif
 
   argc = parse_command_line(&argv, a);
 
+#ifndef ASSUME_ASCII_COMMAND_LINE
   /* argv[0] should be the name of the executable, but Windows doesn't
      specify really where this name comes from, so we get it from
      GetModuleFileName, just in case */
@@ -119,6 +128,9 @@ static char **cmdline_to_argv(int *_argc, char **_normalized_path)
       }
     }
   }
+#else
+  normalized_path = "?";
+#endif
 
   *_argc = argc;
   if (_normalized_path)

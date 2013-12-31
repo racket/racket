@@ -97,6 +97,11 @@ LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
 
 int IsFlag(LPCTSTR cmd, LPCTSTR flag)
 {
+  if ((*cmd == '-') || (*cmd == '/'))
+    cmd++;
+  else
+    return 0;
+
   while (*flag) {
     if (toupper(*cmd) != toupper(*flag))
       return 0;
@@ -110,6 +115,10 @@ int IsFlag(LPCTSTR cmd, LPCTSTR flag)
 
 #define DLL_RELATIVE_PATH L"."
 #include "../racket/delayed.inc"
+
+#define ASSUME_ASCII_COMMAND_LINE
+#define GC_CAN_IGNORE
+#include "../racket/parse_cmdl.inc"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -135,13 +144,18 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
   _ASSERTE(SUCCEEDED(hRes));
   _Module.Init(ObjectMap, hInstance, &LIBID_MZCOMLib);
   _Module.dwThreadID = GetCurrentThreadId();
-  TCHAR szTokens[] = _T("-/");
+
+  int argc, i;
+  char **argv, *normalized_path;
+
+  argv = cmdline_to_argv(&argc, &normalized_path);
 
   int nRet = 0, verbose = 0;
   BOOL bRun = TRUE;
-  LPCTSTR lpszToken = FindOneOf(lpCmdLine, szTokens);
-  while (lpszToken != NULL)
+  LPCTSTR lpszToken;
+  for (i = 1; i < argc; i++)
     {
+      lpszToken = argv[i];
       if (IsFlag(lpszToken, _T("UnregServer")))
         {
 	  if (!nRet) {
@@ -185,7 +199,6 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
 	  bRun = FALSE;
 	  break;
 	}
-      lpszToken = FindOneOf(lpszToken, szTokens);
     }
   
   if (bRun)
