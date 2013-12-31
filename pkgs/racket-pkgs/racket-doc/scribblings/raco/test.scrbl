@@ -3,17 +3,19 @@
           scribble/bnf
           "common.rkt" 
           (for-label racket/runtime-path
+                     racket/base
                      launcher/launcher
                      rackunit/log))
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
-The @exec{raco test} command requires and (by default) runs the
-@racket[test] submodule (if any) associated with each path given on
-the command line. By default, each test is run in a separate Racket
-process. Command-line flag can control which submodule is run, whether
-to run the main module if no submodule is found, and whether to run
-tests as processes or places.
+The @exec{raco test} command requires and runs the (by default)
+@racket[test] submodule associated with each path given on the command
+line. Command-line flag can control which submodule is run, whether to
+run the main module if no submodule is found, and whether to run tests
+directly, in separate processes (the default), or in separate places.
+The current directory is set to a test file's directory before running
+the file.
 
 When an argument path refers to a directory, the tool recursively
 discovers and runs all files within the directory that end in
@@ -24,8 +26,7 @@ discovers and runs all files within the directory that end in
 A test is counted as failing if it logs a failing test code via
 @racket[test-log!], causes Racket to exit with a non-zero exit code, or
 (when @Flag{e} or @DFlag{check-stderr} is specified) if it produces
-output on the error port.  The current directory is set to a test
-file's directory before running the file.
+output on the error port.
 
 The @exec{raco test} command accepts several flags:
 
@@ -104,7 +105,8 @@ The @exec{raco test} command accepts several flags:
        --- count any stderr output as a test failure.}
 
  @item{@Flag{q} or @DFlag{quiet}
-       --- suppresses output of progress information.}
+       --- suppresses output of progress information, responsible
+       parties, and varying output (see @secref["test-responsible"]).}
 
  @item{@DFlag{table} or @Flag{t}
        --- Print a summary table after all tests. If a test uses
@@ -115,6 +117,8 @@ The @exec{raco test} command accepts several flags:
 
 ]
 
+@section[#:tag "test-config"]{Test Configuration by Submodule}
+
 When @exec{raco test} runs a test in a submodule, a @racket[config]
 sub-submodule can provide additional configuration for running the
 test. The @racket[config] sub-submodule should use the
@@ -123,32 +127,104 @@ identifiers:
 
 @itemlist[
 
- @item{@racket[timeout] --- override the default timeout for the test,
-       when timeouts are enabled.}
+ @item{@racket[timeout] --- a real number to override the default
+       timeout for the test, which applies only when timeouts are
+       enabled.}
+
+ @item{@racket[responsible] --- a string, symbol, or list of symbols
+       and strings identifying a responsible party that should be
+       notified when the test fails. See @secref["test-responsible"].}
+
+ @item{@racket[lock-name] --- a string that names a lock file that is
+       used to serialize tests (i.e., tests that have the same lock
+       name do not run concurrently). The lock file's location is
+       determined by the @envvar{PLTLOCKDIR} enviornment varible or
+       defaults to @racket[(find-system-path 'temp-dir)]. The maximum
+       time to wait on the lock file is determined by the
+       @envvar{PLTLOCKTIME} environment variable or defaults to 4
+       hours.}
+
+ @item{@racket[random?] --- if true, indicates that the test's output
+       is expected to vary. See @secref["test-responsible"].}
 
 ]
 
-To prevent @exec{raco test} from running a particular file, normally
-the file should contain a submodule that takes no action. In some
-cases, however, adding a submodule is inconvenient or impossible
-(e.g., because the file will not always compile). Thus, @exec{raco
-test} also consults any @filepath{info.rkt} file in the candidate test
-file's directory; in the case of a file within a collection,
-@filepath{info.rkt} files from any enclosing collection directories
-are also consulted. The following @filepath{info.rkt} fields are
-recognized:
+
+@section[#:tag "test-config-info"]{Test Configuration by @filepath{info.rkt}}
+
+Submodule-based test configuration is preferred (see
+@secref["test-config"]). In particular, to prevent @exec{raco test}
+from running a particular file, normally the file should contain a
+submodule that takes no action.
+
+In some cases, however, adding a submodule is inconvenient or
+impossible (e.g., because the file will not always compile). Thus,
+@exec{raco test} also consults any @filepath{info.rkt} file in the
+candidate test file's directory. In the case of a file within a
+collection, @filepath{info.rkt} files from any enclosing collection
+directories are also consulted for @racket[test-omit-paths]. Finally,
+for a file within a package, the package's @filepath{info.rkt} is
+consulted for @racket[pkg-authors] to set the default responsible
+parties (see @secref["test-responsible"]) for all files in the
+package.
+
+The following @filepath{info.rkt} fields are recognized:
 
 @itemlist[
 
  @item{@racket[test-omit-paths] --- a list of path strings (relative
- to the enclosing directory) or @racket['all] to omit all files within
- the enclosing directory.  When a path string refers to a directory,
- all files within the directory are omitted.}
+       to the enclosing directory) or @racket['all] to omit all files
+       within the enclosing directory.  When a path string refers to a
+       directory, all files within the directory are omitted.}
 
  @item{@racket[test-command-line-arguments] --- a list of
- @racket[(list _module-path-string (list _argument-path-string ...))],
- where @racket[current-command-line-arguments] is set to a vector that
- contains the @racket[_argument-path-string] when running
- @racket[_module-path-string].}
+       @racket[(list _module-path-string (list _argument-path-string
+       ...))], where @racket[current-command-line-arguments] is set to
+       a vector that contains the @racket[_argument-path-string] when
+       running @racket[_module-path-string].}
+
+ @item{@racket[test-timeouts] --- a list of @racket[(list
+       _module-path-string _real-number)] to override the default
+       timeout for @racket[_module-path-string].}
+
+ @item{@racket[test-responsibles] --- a list of @racket[(list
+       _module-path-string _party)] or @racket[(list 'all _party)] to
+       override the default responsible party for
+       @racket[_module-path-string] or all files within the directory
+       (except as overridden), respectively. Each @racket[_party] is a
+       string, symbol, or list of symbols and strings. See
+       @secref["test-responsible"].}
+
+ @item{@racket[test-lock-names] --- a list of @racket[(list
+       _module-path-string _lock-string)] to declare a lock file name
+       for @racket[_module-path-string]. See @racket[lock-name] in
+       @secref["test-config"].}
+
+ @item{@racket[test-randoms] --- a list of path strings (relative to
+       the enclosing directory) for modules whose output varies.
+       See @secref["test-responsible"].}
 
 ]
+
+@section[#:tag "test-responsible"]{Responsible-Party and Varying-Output Logging}
+
+When a test has a declared responsible party, then the test's output
+is prefixed with a
+
+@verbatim[#:indent 2]{raco test:@nonterm{which} @"@"(test-responsible '@nonterm{responsible})}
+
+line, where @nonterm{which} is a space followed by an exact
+non-negative number indicating a parallel task when parallelism is
+enabled (or empty otherwise), and @nonterm{responsible} is a string,
+symbol, or list datum.
+
+When a test's output (as written to stdout) is expected to vary across
+runs---aside from varying output that has the same form as produced by
+@racket[time]---then it should be declared as varying. In that case,
+the test's output is prefixed with a
+
+@verbatim[#:indent 2]{raco test:@nonterm{which} @"@"(test-random #t)}
+
+line.
+
+
