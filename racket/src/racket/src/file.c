@@ -157,7 +157,7 @@ static int check_dos_slashslash_qm(const char *next, int len, int *drive_end,
 
 #define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
-#ifdef __GNUC__
+#ifdef __clang__
 # ifdef MZ_PRECISE_GC
 #  pragma clang diagnostic ignored "-Wtautological-compare"
 # endif

@@ -31,10 +31,12 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Waddress"
-# ifdef MZ_PRECISE_GC
-#  pragma clang diagnostic ignored "-Wtautological-compare"
-#  pragma clang diagnostic ignored "-Wself-assign"
-#  pragma clang diagnostic ignored "-Wconstant-logical-operand"
+#ifdef __clang__
+#  ifdef MZ_PRECISE_GC
+#   pragma clang diagnostic ignored "-Wtautological-compare"
+#   pragma clang diagnostic ignored "-Wself-assign"
+#   pragma clang diagnostic ignored "-Wconstant-logical-operand"
+#  endif
 # endif
 #endif
 

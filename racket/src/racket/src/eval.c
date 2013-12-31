@@ -172,7 +172,7 @@
 # define INIT_JIT_ON 0
 #endif
 
-#ifdef __GNUC__
+#ifdef __clang__
 # ifdef MZ_PRECISE_GC
 #  pragma clang diagnostic ignored "-Wself-assign"
 # endif
