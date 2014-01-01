@@ -28,3 +28,7 @@
                               1
                               n)))))
 (main 1)
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

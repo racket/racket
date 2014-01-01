@@ -26,3 +26,6 @@
 
 (test (big-bang 0 (on-draw (draw 0)) (stop-when zero? (draw 1))) 0 "1")
 
+(module+ test
+  (module config info
+    (define lock-name "gui")))

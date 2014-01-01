@@ -19,3 +19,7 @@
           (stop-when zero?))
 
 (printf "done\n")
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

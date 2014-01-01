@@ -33,3 +33,7 @@
 (>= (send vpb1 get-aligned-min-height)
     (send vpb2 get-aligned-min-height)
     (snip-height es))
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

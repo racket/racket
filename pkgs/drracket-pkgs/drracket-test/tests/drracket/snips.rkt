@@ -25,5 +25,6 @@
    
    (delete-directory/files tmpdir)))
 
-
-
+(module+ test
+  (module config info
+    (define lock-name "gui")))

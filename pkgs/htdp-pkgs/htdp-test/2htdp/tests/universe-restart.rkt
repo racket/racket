@@ -45,3 +45,7 @@
   (launch-many-worlds (u) (w "one") (w "two") (w "three")))
 
 ; (require (submod "." drop-bad))
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

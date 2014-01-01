@@ -13,3 +13,7 @@
               (uni:on-tick add1)
 	      (uni:stop-when (lambda (y) (>= y 100)))
               (uni:on-draw create-UFO-scene))
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

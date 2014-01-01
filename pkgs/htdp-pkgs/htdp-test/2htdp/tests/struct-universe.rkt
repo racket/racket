@@ -51,3 +51,7 @@
   (launch-many-worlds (client 'blue) (client 'red) (server)))
 
 (require (submod "." run))
+
+(module+ test
+  (module config info
+    (define lock-name "gui")))

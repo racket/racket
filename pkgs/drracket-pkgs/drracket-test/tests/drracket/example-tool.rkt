@@ -32,3 +32,6 @@
   (namespace-require 'tests/drracket/private/run-example-tool)
   (eval '(go)))
 
+(module+ test
+  (module config info
+    (define lock-name "gui")))
