@@ -1,8 +1,11 @@
 #lang scheme/base
-
 (require planet/util
          scheme/runtime-path
          tests/eli-tester)
+
+;; do nothing via 'raco test' because run-all.rkt runs this test
+;; and that way we can guarantee they run sequentially in drdr
+(module test racket/base)
 
 (define-runtime-path here ".")
 (define (in-here path) (path->string (build-path here path)))

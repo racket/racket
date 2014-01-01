@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 #|
 
@@ -8,28 +8,32 @@ in parallel
 
 |#
 
-(require racket/runtime-path)
-(define-runtime-path me "run-all.rkt")
-
-(define ran-tests '())
-
-(dynamic-wind
- void
- (λ ()
-   (for ([test (in-list (sort (directory-list (path-only me))
-                              string<=?
-                              #:key (λ (x) (format "~s" x))))])
-     (when (file-exists? (build-path (path-only me) test))
-       (when (regexp-match #rx"rkt$" (path->string test))
-         (unless (equal? (file-name-from-path me)
-                         test)
-           (flush-output)
-           (printf "============================================================\nrunning ~a\n"
-                   test)
-           (dynamic-require (build-path (path-only me) test) #f)
-           (printf "finished ~a\n\n"
-                   test)
-           (set! ran-tests (cons test ran-tests)))))))
- (λ ()
-   (printf "\nran: ~a\n" ran-tests)))
-
+(module test racket/base
+  (require racket/path)
+  (module config info
+    (define timeout 500))
+  
+  (require racket/runtime-path)
+  (define-runtime-path me "run-all.rkt")
+  
+  (define ran-tests '())
+  
+  (dynamic-wind
+   void
+   (λ ()
+     (for ([test (in-list (sort (directory-list (path-only me))
+                                string<=?
+                                #:key (λ (x) (format "~s" x))))])
+       (when (file-exists? (build-path (path-only me) test))
+         (when (regexp-match #rx"rkt$" (path->string test))
+           (unless (equal? (file-name-from-path me)
+                           test)
+             (flush-output)
+             (printf "============================================================\nrunning ~a\n"
+                     test)
+             (dynamic-require (build-path (path-only me) test) #f)
+             (printf "finished ~a\n\n"
+                     test)
+             (set! ran-tests (cons test ran-tests)))))))
+   (λ ()
+     (printf "\nran: ~a\n" ran-tests))))

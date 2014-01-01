@@ -3,6 +3,10 @@
          rackunit
          racket/port)
 
+;; do nothing via 'raco test' because run-all.rkt runs this test
+;; and that way we can guarantee they run sequentially in drdr
+(module test racket/base)
+
 (define debug? #t)
 
 (define (install-one package-spec key)
@@ -73,7 +77,8 @@
         (λ (return)
           (channel-put return num))))))))
 
-(let ([package-spec '(planet "test-connection-mzscheme.scm" ("planet" "test-connection.plt" 1 (= 0)))])
+(let ([package-spec '(planet "test-connection-mzscheme.scm" 
+                             ("planet" "test-connection.plt" 1 (= 0)))])
   (printf "installing for the first time\n")
   (install-one package-spec 'seq1)
   (define test-connection-dir (find-test-connection-dir package-spec))
@@ -106,6 +111,3 @@
   (check-equal? (get-docs-build-count)
                 6))
 
-(module+ test
-  (module config info
-    (define timeout 1000)))

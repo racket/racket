@@ -7,6 +7,10 @@ using 'system' to call out to the tool and then reading its results, etc.
 
 |#
 
+;; do nothing via 'raco test' because run-all.rkt runs this test
+;; and that way we can guarantee they run sequentially in drdr
+(module test racket/base)
+
 (require racket/system
          planet/config
          net/url)
