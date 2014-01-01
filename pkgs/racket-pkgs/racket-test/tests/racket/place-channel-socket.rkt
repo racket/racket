@@ -5,7 +5,9 @@
          rackunit)
 
 (module+ test
-  (main))
+  (main)
+  (module config info
+    (define random? #t)))
 
 (define (main)
   (test-case

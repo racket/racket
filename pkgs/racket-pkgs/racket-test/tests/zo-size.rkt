@@ -37,4 +37,6 @@
   (printf "\n\nThe following \"time\" line is to trick drdr into graphing\n")
   (printf "the size of all of the .zo files, in bytes\n")
   (printf "cpu time: ~a real time: ~a gc time: ~a\n"
-          (cdar tree) (cdar tree) (cdar tree)))
+          (cdar tree) (cdar tree) (cdar tree))
+  (module config info
+    (define random? #t)))

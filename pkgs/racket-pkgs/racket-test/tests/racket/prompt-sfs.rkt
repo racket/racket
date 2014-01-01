@@ -75,3 +75,7 @@ process.
                    a)
                   (show-big-thing say x)))])
           (loop (sub1 n) (cons ak accums))))))
+
+(module+ test
+  (module config info
+    (define random? #t)))

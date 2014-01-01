@@ -111,3 +111,8 @@
     ([i (in-range 2000)]
      #:when (even? i))
     (add1 num))])
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

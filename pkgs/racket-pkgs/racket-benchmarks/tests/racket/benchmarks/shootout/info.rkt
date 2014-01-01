@@ -37,3 +37,5 @@
     ("spectralnorm.rkt" ("25"))
     ("strcat.rkt" ("25"))
     ("thread-ring.rkt" ("25"))))
+
+(define test-randoms '("chameneos.rkt"))

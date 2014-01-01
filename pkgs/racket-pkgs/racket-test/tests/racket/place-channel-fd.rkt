@@ -10,7 +10,9 @@
          (for-syntax racket/base))
 
 (module+ test
-  (main))
+  (main)
+  (module config info
+    (define random? #t)))
 
 (define test1 (build-path (find-system-path 'temp-dir) "pcfd-test1"))
 (define test2 (build-path (find-system-path 'temp-dir) "pcfd-test2"))

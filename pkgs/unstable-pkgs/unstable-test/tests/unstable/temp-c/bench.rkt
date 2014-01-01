@@ -1,4 +1,4 @@
-#lang racket/load
+#lang racket/base
 
 (module raw-sort racket
   (define (insert <= e l)
@@ -18,14 +18,14 @@
   (provide sort))
 
 (module ctc-sort racket
-  (require 'raw-sort)
+  (require (submod ".." raw-sort))
   (provide/contract
    [sort (-> (-> any/c any/c boolean?)
              (listof any/c)
              (listof any/c))]))
 
 (module qdsl-sort racket
-  (require unstable/temp-c/dsl 'raw-sort unstable/match)
+  (require unstable/temp-c/dsl (submod ".." raw-sort) unstable/match)
   (provide make-sort)
   (define (make-sort)
     (contract
@@ -42,7 +42,7 @@
      sort 'pos 'neg)))
 
 (module dsl-sort racket
-  (require unstable/temp-c/dsl 'raw-sort)
+  (require unstable/temp-c/dsl (submod ".." raw-sort))
   (provide make-sort)
   (define (make-sort)
     (contract (with-monitor (label 'sort (-> (label 'order (-> any/c any/c boolean?))
@@ -57,7 +57,7 @@
               'pos 'neg)))
 
 (module smart-sort racket
-  (require unstable/temp-c/monitor 'raw-sort)
+  (require unstable/temp-c/monitor (submod ".." raw-sort))
   (define returned? #f)
   (define (sort-monitor evt)
     (match evt
@@ -75,11 +75,11 @@
                         (listof any/c)))]))
 
 (module sort-timer racket
-  (require (prefix-in dsl: 'dsl-sort)
-           (prefix-in qdsl: 'qdsl-sort)
-           (prefix-in smart: 'smart-sort)
-           (prefix-in raw: 'raw-sort)
-           (prefix-in ctc: 'ctc-sort)
+  (require (prefix-in dsl: (submod ".." dsl-sort))
+           (prefix-in qdsl: (submod ".." qdsl-sort))
+           (prefix-in smart: (submod ".." smart-sort))
+           (prefix-in raw: (submod ".." raw-sort))
+           (prefix-in ctc: (submod ".." ctc-sort))
            tests/stress)
   
   (define l (build-list 200 (compose random add1)))
@@ -91,3 +91,7 @@
           ["smart" (smart:sort <= l)]))
 
 (require 'sort-timer)
+
+(module+ test
+  (module config info
+    (define random? #t)))

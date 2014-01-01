@@ -83,3 +83,8 @@
 (when errs?
   (error "There were test failures"))
 (printf "All tests passed.\n")
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

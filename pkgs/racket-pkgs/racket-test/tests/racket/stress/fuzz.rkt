@@ -59,4 +59,6 @@
 (module test racket/base
   (require syntax/location)
   (parameterize ([current-command-line-arguments (vector "-c")])
-    (dynamic-require (quote-module-path "..") #f)))
+    (dynamic-require (quote-module-path "..") #f))
+  (module config info
+    (define random? #t)))

@@ -905,3 +905,7 @@ We should also test deep continuations.
 (run-tests would-be-future)
 
 ;; ----------------------------------------
+
+(module+ test
+  (module config info
+    (define random? #t)))

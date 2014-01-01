@@ -27,3 +27,8 @@ racket-pth
 (stress-it 
  ttt:raw
  ttt:ctc)
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

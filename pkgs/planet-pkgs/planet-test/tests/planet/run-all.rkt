@@ -11,7 +11,8 @@ in parallel
 (module test racket/base
   (require racket/path)
   (module config info
-    (define timeout 500))
+    (define timeout 500)
+    (define random? #t))
   
   (require racket/runtime-path)
   (define-runtime-path me "run-all.rkt")

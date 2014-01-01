@@ -69,3 +69,8 @@
  =error> "monitor disallowed"
  (tic-tac-toe (random-player 'O) (cheater-2 'X))
  =error> "monitor disallowed")
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

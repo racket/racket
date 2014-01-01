@@ -17,3 +17,7 @@
           (parameterize ([current-namespace (make-base-namespace)])
             (dynamic-require `math/bigfloat #f)))
         (loop (add1 i) (cons c l))))))
+
+(module+ test
+  (module config info
+    (define random? #t)))

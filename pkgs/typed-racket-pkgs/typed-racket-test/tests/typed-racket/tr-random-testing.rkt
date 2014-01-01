@@ -274,3 +274,8 @@
                 #:keep-going? #t)))
 
 (printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)
+
+(module+ test
+  (module config info
+    (define timeout 300)
+    (define random? #t)))

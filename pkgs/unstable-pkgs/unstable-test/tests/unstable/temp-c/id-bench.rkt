@@ -61,3 +61,8 @@
  monitor-ctc+atomic
  dsl-ctc
  dsl-ctc+atomic)
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

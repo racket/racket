@@ -446,3 +446,7 @@
 )
   
 ;(report-errs)
+
+(module+ test
+  (module config info
+    (define random? #t)))

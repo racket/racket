@@ -73,4 +73,6 @@
    ["hash-set*!"
     (fun-hash-set*! ht 4000)]))
  
-
+(module+ test
+  (module config info
+    (define random? #t)))

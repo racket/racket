@@ -40,3 +40,8 @@
               (for/fold ([l empty])
                 ([i (in-range n)])
                 (list* i #f l)))))
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

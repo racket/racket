@@ -5,3 +5,7 @@
      23
      (lambda (n)
        (apply void (build-list (expt 2 n) (λ (x) x)))))
+
+(module+ test
+  (module config info
+    (define random? #t)))

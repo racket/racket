@@ -24,3 +24,6 @@
 (unless (incs . < . (/ N 3))
   (error "multiple `racket/draw' instantiations seem to accumulate memory"))
 
+(module+ test
+  (module config info
+    (define random? #t)))

@@ -642,5 +642,6 @@ exec racket -qu "$0" ${1+"$@"}
     (require syntax/location)
     (parameterize ([current-command-line-arguments
                     (vector "--" "racket" "earley")])
-      (dynamic-require (quote-module-path "..") #f))))
-
+      (dynamic-require (quote-module-path "..") #f))
+    (module config info
+      (define random? #t))))

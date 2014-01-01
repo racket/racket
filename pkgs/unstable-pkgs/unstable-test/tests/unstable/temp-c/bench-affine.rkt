@@ -80,3 +80,6 @@
 (STRESS raw ctc ad-hoc (rgx))
 
 
+(module+ test
+  (module config info
+    (define random? #t)))

@@ -30,3 +30,7 @@
 
 (delete-files tmp1)
 (delete-files tmp2)
+
+(module+ test
+  (module config info
+    (define random? #t)))

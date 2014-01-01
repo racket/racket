@@ -373,3 +373,8 @@
 
 (for ([i (in-range 1000)])
   (random-exponential-check))
+
+
+(module+ test
+  (module config info
+    (define random? #t)))

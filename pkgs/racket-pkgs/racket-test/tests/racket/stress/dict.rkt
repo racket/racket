@@ -112,3 +112,7 @@
    ["dict-has-key? (not present)"
     (dict-has-key? ht 2)]))
 
+
+(module+ test
+  (module config info
+    (define random? #t)))

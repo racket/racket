@@ -331,4 +331,5 @@ exec racket -qu "$0" ${1+"$@"}
                     (vector "racket" "simple")])
       (dynamic-require (quote-module-path "..") #f))
     (module config info
-      (define timeout 600))))
+      (define timeout 600)
+      (define random? #t))))

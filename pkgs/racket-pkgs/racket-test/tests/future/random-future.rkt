@@ -196,3 +196,7 @@ Errors/exceptions and other kinds of control?
         (eval p (namespace-anchor->namespace ns-here)))
       (loop (- n 1)))))
 (newline)
+
+(module+ test
+  (module config info
+    (define random? #t)))

@@ -11,7 +11,8 @@
 (module+ test
   (main "--rules" "2250" "--size" "3")
   (module config info
-    (define timeout 240)))
+    (define timeout 240)
+    (define random? #t)))
 
 (define (main . args)
   (define from-grammar-tests #f)

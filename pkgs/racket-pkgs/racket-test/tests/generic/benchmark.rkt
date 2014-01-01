@@ -152,3 +152,9 @@
 ;; lists
 (timing (in-set-bench big imm-list))
 (timing (slow-in-set-bench big imm-list))
+
+;; ----------------------------------------
+
+(module+ test
+  (module config info
+    (define random? #t)))

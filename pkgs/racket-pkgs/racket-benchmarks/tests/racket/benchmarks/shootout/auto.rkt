@@ -207,4 +207,8 @@ exec racket -qu "$0" ${1+"$@"}
                 (map (lambda (bm)
                        (run-benchmark impl bm))
                      actual-benchmarks-to-run))
-              actual-implementations-to-run)))
+              actual-implementations-to-run))
+
+  (module+ test
+    (module config info
+      (define random? #t))))

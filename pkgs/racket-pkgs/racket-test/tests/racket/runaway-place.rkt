@@ -2,7 +2,9 @@
 (require racket/place)
 
 (module+ test
-  (main))
+  (main)
+  (module config info
+    (define random? #t)))
 
 (define (main)
   (parameterize ([current-custodian (make-custodian)])

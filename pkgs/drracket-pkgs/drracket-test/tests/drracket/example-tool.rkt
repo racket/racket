@@ -34,4 +34,5 @@
 
 (module+ test
   (module config info
-    (define lock-name "gui")))
+    (define lock-name "gui")
+    (define random? #t)))

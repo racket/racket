@@ -37,3 +37,8 @@
   (flush-output))
 
 (delete-directory/files tmp-dir)
+
+(module+ test
+  (module config info
+    (define timeout 200)
+    (define random? #t)))
