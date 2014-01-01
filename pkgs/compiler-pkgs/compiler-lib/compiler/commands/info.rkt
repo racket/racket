@@ -10,3 +10,5 @@
     ("expand" compiler/commands/expand "macro-expand source" #f)
     ("distribute" compiler/commands/exe-dir "prepare executable(s) in a directory for distribution" #f)
     ("demodularize" compiler/demodularizer/batch "produce a whole program from a single module" #f)))
+
+(define test-responsibles '(("test.rkt" jay)))
