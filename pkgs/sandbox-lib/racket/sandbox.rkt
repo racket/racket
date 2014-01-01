@@ -4,6 +4,7 @@
          racket/path
          racket/list
          racket/string
+         racket/file
          syntax/moddep
          racket/gui/dynamic
          planet/config
@@ -1002,8 +1003,9 @@
        ,@(for/list ([l (current-library-collection-links)]
                     #:when (path? l))
            `(read ,l))
-       ,@(for/list ([l (get-pkgs-search-dirs)])
-           `(read ,(build-path l "pkgs.rktd")))
+       ,@(for*/list ([l (get-pkgs-search-dirs)]
+                     [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
+           `(read ,(build-path l f)))
        (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
