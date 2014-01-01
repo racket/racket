@@ -32,3 +32,7 @@
                         (ws-recv conn))))))
        
        (shutdown!)))
+
+(module+ test
+  (module config info
+    (define random? #t)))
