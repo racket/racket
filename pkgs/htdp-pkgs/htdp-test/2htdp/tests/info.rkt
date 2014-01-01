@@ -14,3 +14,7 @@
     "pad1.rkt"
     "universe-receive.rkt"
     "batch-io-xexpr.rkt"))
+
+(define test-responsibles '(("test-image.rkt" robby)
+                            ("image-equality-performance.rkt" robby)
+                            ("image-equality-performance-htdp.rkt" robby)))

@@ -7,3 +7,5 @@
 (define drracket-tool-icons (list '("stepper-32x32.png" "icons")))
 
 (define release-note-files (list (list "Stepper" "HISTORY.txt")))
+
+(define test-responsibles '((all clements)))

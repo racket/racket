@@ -6,3 +6,5 @@
 (define scribblings '(("help.scrbl")))
 
 (define copy-man-pages '("plt-help.1"))
+
+(define test-responsibles '((all robby)))

@@ -10,3 +10,5 @@
     "world-mouse.rkt"
     "matrix-client.rkt"
     "matrix-example.rkt"))
+
+(define test-responsibles '(("gui.rkt" robby)))

@@ -12,3 +12,6 @@
                           "use-tcl.rkt"
                           "use-xosd.rkt"
                           "xosd.rkt"))
+
+(define test-responsibles '(("sndfile.rkt" clements)
+                            (all eli)))

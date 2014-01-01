@@ -13,3 +13,6 @@
     "pkg-push"
     "web"))
 
+
+(define test-responsibles '(("props" (eli jay))
+                            (all eli)))

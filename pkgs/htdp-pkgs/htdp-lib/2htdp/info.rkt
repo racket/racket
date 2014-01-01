@@ -5,3 +5,6 @@
 (define test-omit-paths '("uchat/chatter.rkt"
                           "uchat/server.rkt"))
 
+
+(define test-responsibles '(("image.rkt" robby)
+                            (all matthias)))

@@ -13,3 +13,5 @@
 (define release-note-files '(("Scribble" "HISTORY.txt")))
 
 (define version "1.1")
+
+(define test-responsibles '(("html.rkt" eli)))

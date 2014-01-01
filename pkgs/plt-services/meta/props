@@ -690,7 +690,7 @@ path/s is either such a string or a list of them.
 "pkgs/deinprogramm/deinprogramm/line3d.scm" drdr:command-line #f
 "pkgs/deinprogramm/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
 "pkgs/deinprogramm/deinprogramm/quickcheck/random.scm" drdr:command-line #f
-"pkgs/distributed-places-pkgs" responsible (tewk)
+"pkgs/distributed-places-pkgs" responsible (mflatt)
 "pkgs/distro-build" responsible (mflatt)
 "pkgs/draw-pkgs" responsible (mflatt)
 "pkgs/drracket-pkgs" responsible (robby)
@@ -1048,15 +1048,10 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/param.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/path.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/pathlib.rktl" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
-"pkgs/racket-pkgs/racket-test/tests/racket/place-chan-rand.rkt" responsible (tewk)
-"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-fd.rkt" responsible (tewk) drdr:random #t
-"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-fd2.rkt" responsible (tewk)
-"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-ffi.rkt" responsible (tewk)
-"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-socket.rkt" responsible (tewk) drdr:random #t
-"pkgs/racket-pkgs/racket-test/tests/racket/place-channel.rkt" responsible (tewk) drdr:timeout 300 drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-fd.rkt" drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/racket/place-channel-socket.rkt" drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/racket/place-channel.rkt" drdr:timeout 300 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/place.rktl" drdr:command-line #f
-"pkgs/racket-pkgs/racket-test/tests/racket/places.rkt" responsible (tewk)
 "pkgs/racket-pkgs/racket-test/tests/racket/port.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/portlib.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/pretty.rktl" drdr:command-line #f
@@ -1215,7 +1210,6 @@ path/s is either such a string or a list of them.
 "racket/collects/racket/match" responsible (samth)
 "racket/collects/racket/match.rkt" responsible (samth)
 "racket/collects/racket/performance-hint.rkt" responsible (stamourv)
-"racket/collects/racket/place" responsible (tewk)
 "racket/collects/racket/private/generic-interfaces.rkt" responsible (asumu stamourv cce)
 "racket/collects/racket/private/generic-methods.rkt" responsible (asumu stamourv cce)
 "racket/collects/racket/private/generic.rkt" responsible (asumu stamourv cce)

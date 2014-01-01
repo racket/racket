@@ -64,3 +64,5 @@
     ("strcat-optimizing.rkt" ("25"))
     ("thread-ring-non-optimizing.rkt" ("25"))
     ("thread-ring-optimizing.rkt" ("25"))))
+
+(define test-responsibles '((all (stamourv samth))))
