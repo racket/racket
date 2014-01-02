@@ -65,9 +65,23 @@
   (free info))
 
 (define (bitmap->image bm)
-  (let* ([w (send bm get-width)]
-         [h (send bm get-height)]
-         [str (make-bytes (* w h 4) 255)])
+  (define w (send bm get-width))
+  (define h (send bm get-height))
+  (define s (send bm get-backing-scale))
+  (cond
+   [(= s 1) (bitmap->image* bm w h w h)]
+   [else 
+    (define (scale v) (inexact->exact (ceiling (* s v))))
+    (define sw (scale w))
+    (define sh (scale h))
+    (define bm2 (make-bitmap sw sh))
+    (define dc (send bm2 make-dc))
+    (send dc set-scale s s)
+    (send dc draw-bitmap bm 0 0)
+    (bitmap->image* bm2 sw sh w h)]))
+
+(define (bitmap->image* bm w h iw ih)
+  (let ([str (make-bytes (* w h 4) 255)])
     (send bm get-argb-pixels 0 0 w h str #f)
     (let ([mask (send bm get-loaded-mask)])
       (when mask
@@ -108,6 +122,7 @@
             (make-NSRect (make-NSPoint 0 0) size)
             image)
            (tellv i unlockFocus)
+           (tellv i setSize: #:type _NSSize (make-NSSize iw ih))
            i))))))
 
 (define (image->bitmap i)
