@@ -17,12 +17,14 @@
     [sc-map (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
     [sc->contract (static-contract? (static-contract? . -> . syntax?) . -> . syntax?)]
     [sc->constraints (static-contract? (static-contract? . -> . contract-restrict?) . -> . contract-restrict?)]
+    [terminal-sc-kind (static-contract? . -> . (or/c #f contract-kind?))]
     [sc? predicate/c]
     )
 
 
   prop:combinator-name
-  gen:sc)
+  gen:sc
+  gen:terminal-sc)
 
 (define variance/c (or/c 'covariant 'contravariant 'invariant))
 
@@ -102,6 +104,16 @@
   ;; Takes a static contract and computes the constraint set for a static contract.
   ;; The function argument should be used for sub parts of the static contract.
   [sc->constraints sc f])
+
+;; Functionality that terminal static contracts should support
+;; Terminal static contracts are ones without any sub static contracts
+(define-generics terminal-sc
+  ;; terminal-sc-kind: terminal-static-contract? -> (or/c #f contract-kind?)
+  ;; Returns the kind of contract that this represents
+  ;; Returns #f if it is not a terminal contract
+  [terminal-sc-kind terminal-sc]
+  #:defaults ([(λ (v) #t)
+               (define (terminal-sc-kind v)  #f)]))
 
 ;; Super struct of static contracts
 (struct static-contract ()

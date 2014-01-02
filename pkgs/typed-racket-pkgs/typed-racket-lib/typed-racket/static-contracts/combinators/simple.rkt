@@ -37,6 +37,8 @@
          [(define (sc-map v f) v)
           (define (sc->contract v f) (simple-contract-syntax v))
           (define (sc->constraints v f) (simple-contract-restrict (simple-contract-kind v)))]
+        #:methods gen:terminal-sc
+         [(define (terminal-sc-kind v) (simple-contract-kind v))]
         #:methods gen:custom-write [(define write-proc simple-contract-write-proc)])
 
 (define (flat/sc ctc) (simple-contract ctc 'flat))
