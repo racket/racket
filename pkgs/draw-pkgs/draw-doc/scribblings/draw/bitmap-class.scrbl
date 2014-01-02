@@ -10,6 +10,14 @@ A @racket[bitmap%] object is a pixel-based image, either monochrome,
  @racketmodname[racket/gui/base]), @xmethod[canvas% make-bitmap] (from
  @racketmodname[racket/gui/base]), and @secref["Portability"].
 
+A bitmap has a @deftech{backing scale}, which is the number of pixels
+ that correspond to a drawing unit for the bitmap, either when the
+ bitmap is used as a target for drawing or when the bitmap is drawn
+ into another context.  For example, on Mac OS X when the main monitor
+ is in Retina mode, @racket[make-screen-bitmap] returns a bitmap whose
+ backing scale is @racket[2.0]. A monochrome bitmap always has a
+ backing scale of @racket[1.0].
+
 A bitmap is convertible to @racket['png-bytes] through the
 @racketmodname[file/convertible] protocol.
 
@@ -17,7 +25,8 @@ A bitmap is convertible to @racket['png-bytes] through the
 @defconstructor*/make[(([width exact-positive-integer?]
                         [height exact-positive-integer?]
                         [monochrome? any/c #f]
-                        [alpha? any/c #f])
+                        [alpha? any/c #f]
+                        [backing-scale (>/c 0.0) 1.0])
                        ([in (or/c path-string? input-port?)]
                         [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
                                     'gif 'gif/mask 'gif/alpha 
@@ -27,7 +36,8 @@ A bitmap is convertible to @racket['png-bytes] through the
                                     'bmp 'bmp/alpha)
                               'unknown]
                         [bg-color (or/c (is-a?/c color%) #f) #f]
-                        [complain-on-failure? any/c #f])
+                        [complain-on-failure? any/c #f]
+                        [backing-scale (>/c 0.0) 1.0])
                        ([bits bytes?]
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
@@ -43,12 +53,20 @@ When @racket[width] and @racket[height] are provided: Creates a new
  bitmap. If @racket[monochrome?] is true, the bitmap is monochrome; if
  @racket[monochrome?] is @racket[#f] and @racket[alpha?] is true, the
  bitmap has an alpha channel; otherwise, the bitmap is color without
- an alpha channel. The initial content of the bitmap is ``empty'': all white, and with
+ an alpha channel. The @racket[backing-scale] argument sets the
+ bitmap's @tech{backing scale}, and it must be @racket[1.0] if
+ @racket[monochrome] is true.
+ The initial content of the bitmap is ``empty'': all white, and with
  zero alpha in the case of a bitmap with an alpha channel.
 
 When @racket[in] is provided: Creates a bitmap from a file format,
  where @racket[kind] specifies the format. See @method[bitmap%
- load-file] for details.
+ load-file] for details. The @racket[backing-scale] argument sets the
+ bitmap's @tech{backing scale}, so that the bitmap's size (as reported
+ by @method[bitmap% get-width] and @method[bitmap% get-height]) is the
+ @racket[ceiling] of the bitmap's size from @racket[in] divided by
+ @racket[backing-scale]; the backing scale must be @racket[1.0] if the
+ bitmap is monocrhome or loaded with a mask.
 
 When a @racket[bits] byte string is provided: Creates a monochrome
  bitmap from an array of bit values, where each byte in @racket[bits]
@@ -58,7 +76,6 @@ When a @racket[bits] byte string is provided: Creates a monochrome
  @racket[height] is larger than 8 times the length of @racket[bits],
  @|MismatchExn|.
 
-
 }
 
 @defmethod[(get-argb-pixels [x real?]
@@ -67,25 +84,26 @@ When a @racket[bits] byte string is provided: Creates a monochrome
                             [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? (not/c immutable?))]
                             [just-alpha? any/c #f]
-                            [pre-multiplied? any/c #f])
+                            [pre-multiplied? any/c #f]
+                            [#:unscaled? unscaled? any/c #f])
            void?]{
 
-Produces the same result as @xmethod[bitmap-dc% get-argb-pixels], but the
-bitmap does not have to be selected into the DC (and this method works even if
-the bitmap is selected into another DC, attached as a button label, etc.).
+Produces the same result as @xmethod[bitmap-dc% get-argb-pixels] when
+@racket[unscaled?] is @racket[#f], but the bitmap does not have to be
+selected into the DC (and this method works even if the bitmap is
+selected into another DC, attached as a button label, etc.).
 
-}
+If the bitmap has a @tech{backing scale} other than @racket[1.0] and
+@racket[unscaled?] is true, then the result corresponds to the
+bitmap's pixels ignoring the @tech{backing scale}. In that case,
+@racket[x], @racket[y], @racket[width], and @racket[height] are
+effectively in pixels instead of drawing units.}
+
 
 @defmethod[(get-backing-scale)
            (>/c 0.0)]{
 
-Gets the number of pixels that correspond to a drawing unit for the
-bitmap, either when the bitmap is used as a target for drawing or when
-the bitmap is drawn into another context.
-
-For example, on Mac OS X when the main monitor is in Retina mode,
-@racket[make-screen-bitmap] returns a bitmap whose backing scale is
-@racket[2.0].}
+Returns the bitmap's @tech{backing scale}.}
 
 
 @defmethod[(get-depth)
@@ -109,9 +127,9 @@ image surface.}
 @defmethod[(get-height)
            exact-positive-integer?]{
 
-Gets the height of the bitmap in pixels.
+Gets the height of the bitmap in drawing units (which is the same as
+pixels if the @tech{backing scale} is 1.0).}
 
-}
 
 @defmethod[(get-loaded-mask)
            (or/c (is-a?/c bitmap%) #f)]{
@@ -152,9 +170,9 @@ Unlike an alpha channel, the mask bitmap is @italic{not} used
 @defmethod[(get-width)
            exact-positive-integer?]{
 
-Gets the width of the bitmap in pixels.
+Gets the width of the bitmap in drawing units (which is the same as
+pixels of the @tech{backing scale} is 1.0).}
 
-}
 
 @defmethod[(has-alpha-channel?)
            boolean?]{
@@ -251,7 +269,9 @@ For PNG loading, if @racket[bg-color] is not @racket[#f], then it is
  variable if it is defined. If the preference and environment variable
  are both undefined, a platform-specific default is used.
 
-}
+After a bitmap is created, @method[bitmap% load-file] can be used
+ only if the bitmap's @tech{backing scale} is @racket[1.0].}
+
 
 @defmethod[(make-dc)
            (is-a?/c bitmap-dc%)]{
@@ -271,7 +291,8 @@ Returns @racket[#t] if the bitmap is valid in the sense that an image
 
 @defmethod[(save-file [name (or/c path-string? output-port?)]
                       [kind (or/c 'png 'jpeg 'xbm 'xpm 'bmp)]
-                      [quality (integer-in 0 100) 75])
+                      [quality (integer-in 0 100) 75]
+                      [#:unscaled? unscaled? any/c #f])
            boolean?]{
 
 Writes a bitmap to the named file or output stream.
@@ -307,7 +328,10 @@ A monochrome bitmap saved as @racket['png] without a mask bitmap
  @method[bitmap% load-file], creates a monochrome @racket[bitmap%]
  object.)
 
-}
+If the bitmap has a @tech{backing scale} other than 1.0, then it is
+ effectively converted to a single pixel per drawing unit before
+ saving unless @racket[unscaled?] is true.}
+
 
 @defmethod[(set-argb-pixels [x real?]
                             [y real?]
@@ -315,13 +339,20 @@ A monochrome bitmap saved as @racket['png] without a mask bitmap
                             [height exact-nonnegative-integer?]
                             [pixels bytes?]
                             [just-alpha? any/c #f]
-                            [pre-multiplied? any/c #f])
+                            [pre-multiplied? any/c #f]
+                            [#:unscaled? unscaled? any/c #f])
            void?]{
 
-The same as @xmethod[bitmap-dc% set-argb-pixels], but the
-bitmap does not have to be selected into the DC.
+The same as @xmethod[bitmap-dc% set-argb-pixels] when
+@racket[unscaled?] is @racket[#f], but the bitmap does not have to be
+selected into the DC.
 
-}
+If the bitmap has a @tech{backing scale} other than @racket[1.0] and
+@racket[unscaled?] is true, then pixel values are installed ignoring
+the @tech{backing scale}. In that case, @racket[x], @racket[y],
+@racket[width], and @racket[height] are effectively in pixels instead
+of drawing units.}
+
 
 @defmethod[(set-loaded-mask [mask (is-a?/c bitmap%)])
            void?]{

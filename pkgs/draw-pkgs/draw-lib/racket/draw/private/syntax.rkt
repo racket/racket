@@ -6,7 +6,7 @@
 (provide defclass defclass*
          def/public def/pubment def/public-final def/override def/override-final define/top case-args
          def/public-unimplemented define-unimplemented
-         maybe-box? any? bool? nonnegative-real? make-or-false make-box make-list make-alts 
+         maybe-box? any? bool? nonnegative-real? positive-real? make-or-false make-box make-list make-alts 
          make-literal symbol-in integer-in real-in make-procedure
          method-name init-name
          let-boxes
@@ -125,7 +125,9 @@
   (if (apply-pred pred val)
       #f
       (cons (predicate-name pred)
-            pos)))
+            (if (keyword? pos)
+                (list val)
+                pos))))
 
 (define (predicate-name pred)
   (cond
@@ -141,6 +143,7 @@
 (define (any? v) #t)
 (define (bool? v) #t)
 (define (nonnegative-real? v) (and (real? v) (v . >= . 0)))
+(define (positive-real? v) (and (real? v) (v . > . 0)))
 
 (define (method-of cls nam)
   (if cls
@@ -149,21 +152,51 @@
 
 (define-syntax (def/thing stx)
   (syntax-case stx ()
-    [(_ define/orig (_ (id [arg-type arg] ...)))
+    [(_ define/orig (_ (id arg ...)))
      (raise-syntax-error #f "missing body" stx)]
-    [(_ define/orig (_ (id [arg-type arg] ...) . body))
-     (with-syntax ([(_ _ orig-stx) stx]
-                   [(pos ...) (for/list ([i (in-range (length (syntax->list #'(arg ...))))])
-                                i)]
-                   [cname (syntax-parameter-value #'class-name)])
-       (syntax/loc #'orig-stx
-         (define/orig (id arg ...)
-           (let ([bad (or (check-arg (just-id arg) arg-type pos)
-                          ...)])
-             (when bad
-               (raise-type-error (method-of 'cname 'id) (car bad) (cdr bad) (just-id arg) ...)))
-           (let ()
-             . body))))]))
+    [(_ define/orig (_ (id orig-arg ...) . body))
+     (let ([extract (lambda (keep-kw? mode)
+                      (let loop ([args (syntax->list #'(orig-arg ...))]
+                                 [pos 0]
+                                 [prev-kw #f])
+                        (cond
+                         [(null? args) null]
+                         [(keyword? (syntax-e (car args)))
+                          (if keep-kw?
+                              (cons (car args) (loop (cdr args) pos (car args)))
+                              (loop (cdr args) pos (car args)))]
+                         [else (cons (syntax-case (car args) ()
+                                       [[arg-type arg] (case mode
+                                                         [(type) #'arg-type]
+                                                         [(arg) #'arg]
+                                                         [(id) (syntax-case #'arg ()
+                                                                 [[id val] #'id]
+                                                                 [_ #'arg])]
+                                                         [(pos) (or prev-kw pos)])])
+                                     (loop (cdr args) (if prev-kw pos (add1 pos)) #f))])))])
+       (with-syntax ([(arg-id ...) (extract #f 'id)]
+                     [(arg-rep ...) (extract #t 'id)]
+                     [(arg ...) (extract #t 'arg)]
+                     [(arg-type ...) (extract #f 'type)]
+                     [(pos ...) (extract #f 'pos)])
+         (with-syntax ([(_ _ orig-stx) stx]
+                       [cname (syntax-parameter-value #'class-name)])
+           (syntax/loc #'orig-stx
+             (define/orig (id arg ...)
+               (let ([bad (or (check-arg arg-id arg-type 'pos)
+                              ...)])
+                 (when bad
+                   (type-error (method-of 'cname 'id) (car bad) (cdr bad) arg-rep ...)))
+               (let ()
+                 . body))))))]))
+
+(define type-error
+  (make-keyword-procedure
+   (lambda (kws kw-args name expected pos . args)
+     (if (number? pos)
+         (raise-type-error name expected pos args)
+         (raise-type-error name expected (car pos))))))
+     
 
 (define-for-syntax lifted (make-hash))
 (define-syntax (lift-predicate stx)

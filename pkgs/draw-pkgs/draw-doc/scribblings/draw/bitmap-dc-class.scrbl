@@ -90,11 +90,10 @@ If @racket[pre-multiplied?] is true, @racket[just-alpha?] is false,
  are scaled by the corresponding alpha value (i.e., multiplied by the
  alpha value and then divided by 255).
 
-If the bitmap has a backing scale (see @xmethod[bitmap%
- get-backing-scale]) other than @racket[1.0], the the result of
- @method[bitmap-dc% get-argb-pixels] is as if the bitmap is drawn to a
- bitmap with a backing scale of @racket[1.0] and the pixels of the
- target bitmap are returned.}
+If the bitmap has a @tech{backing scale} other than @racket[1.0], the
+ result of @method[bitmap-dc% get-argb-pixels] is as if the bitmap is
+ drawn to a bitmap with a backing scale of @racket[1.0] and the pixels
+ of the target bitmap are returned.}
 
 
 @defmethod[(get-bitmap)
@@ -127,7 +126,6 @@ result is @racket[#f].
                             [pre-multiplied? any/c #f])
            void?]{
 
-
 Sets a rectangle of pixels in the bitmap, unless
  the DC's current bitmap was produced by @racket[make-screen-bitmap] or 
  @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
@@ -158,7 +156,10 @@ If @racket[pre-multiplied?] is true, @racket[just-alpha?] is false,
  is not possible if the value is properly scaled), then it is effectively 
  reduced to the alpha value.
 
-}
+If the bitmap has a @tech{backing scale} other than @racket[1.0], then
+ @racket[pixels] are effectively scaled by the backing scale to obtain
+ pixel values that are installed into the bitmap.}
+
 
 @defmethod[(set-bitmap [bitmap (or/c (is-a?/c bitmap%) #f)])
            void?]{

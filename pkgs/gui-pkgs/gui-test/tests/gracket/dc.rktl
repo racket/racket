@@ -751,6 +751,66 @@
 
 (test #t 'get-path-bounding-box (test-square-bounding-boxes))
 
+;; -----------------------------------------------------------
+;; Check pixel operations on a bitmap with a x2 backing scale
+
+(let ([bm (make-bitmap 10 11 #:backing-scale 2)])
+  (test 2.0 'scale (send bm get-backing-scale))
+  (test 10 'width (send bm get-width))
+  (test 11 'height (send bm get-height))
+
+  (define dc (send bm make-dc))
+  (send dc set-pen "black" 0 'transparent)
+  (send dc set-brush (make-color 100 100 200) 'solid)
+  (send dc draw-rectangle 0 0 3 3)
+
+  (let ([s (make-bytes 4)])
+    (send bm get-argb-pixels 2 2 1 1 s)
+    (test (list 255 100 100 200) 'scaled (bytes->list s))
+    (send bm get-argb-pixels 4 4 1 1 s)
+    (test 0 'scaled (bytes-ref s 0))
+    (send bm get-argb-pixels 2 2 1 1 s #:unscaled? #t)
+    (test (list 255 100 100 200) 'unscaled (bytes->list s))
+
+    (send bm set-argb-pixels 0 0 2 1 #"\xff\x0\x0\x0\xff\x0\x0\x0" 
+          #:unscaled? #t)
+    (send bm get-argb-pixels 0 0 1 1 s #:unscaled? #t)
+    (test (list 255 0 0 0) 'unscaled (bytes->list s))
+    ;; scaled is average of black and blue:
+    (send bm get-argb-pixels 0 0 1 1 s)
+    (test (list 255 50 50 100) 'scaled (bytes->list s))
+
+    (send bm set-argb-pixels 0 0 2 1 #"\xff\x0\x0\x0\xff\x0\x0\x0")
+    (send bm get-argb-pixels 0 0 1 1 s)
+    (test (list 255 0 0 0) 'scaled (bytes->list s))))
+
+(let ([p (collection-file-path "sk.jpg" "icons")])
+  (let ([bm1 (read-bitmap p)]
+        [bm2 (read-bitmap p #:backing-scale 2)])
+    (test 2.0 'scale (send bm2 get-backing-scale))
+    (test (ceiling (* 1/2 (send bm1 get-width))) 'read-width (send bm2 get-width))
+    (test (ceiling (* 1/2 (send bm1 get-height))) 'read-height (send bm2 get-height))))
+
+(let ([p (collection-file-path "very-small-planet.png" "icons")])
+  (define-syntax-rule (test-fail rx body)
+    (test #t 
+          'error
+          (with-handlers ([exn? (lambda (e)
+                                  (regexp-match? rx (exn-message e)))])
+            body
+            #f)))
+  (test-fail "mask.*backing scale" (read-bitmap p 
+                                                'png/mask
+                                                #:backing-scale 2))
+  (test-fail "can only install a mask.*backing scale"
+             (send (read-bitmap p #:backing-scale 2)
+                   set-loaded-mask
+                   (read-bitmap p)))
+  (test-fail "can only load a file.*backing scale"
+             (send (read-bitmap p #:backing-scale 2)
+                   load-file
+                   p)))
+
 ;; ----------------------------------------
 
 (report-errs)

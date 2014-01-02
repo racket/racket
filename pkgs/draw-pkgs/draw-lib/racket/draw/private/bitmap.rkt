@@ -35,7 +35,7 @@
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
 
-(define-struct alternate-bitmap-kind (width height))
+(define-struct alternate-bitmap-kind (width height scale))
 
 (define-local-member-name
   get-alphas-as-mask
@@ -141,6 +141,9 @@
 (define (get-empty-surface)
   (cairo_image_surface_create CAIRO_FORMAT_ARGB32 1 1))
 
+(define (*i x y) (inexact->exact (ceiling (* x y))))
+(define (/i x y) (inexact->exact (ceiling (/ x y))))
+
 (define bitmap%
   (class* object% (png-convertible<%>)
 
@@ -162,25 +165,29 @@
     (init-rest args)
     (super-new)
 
-    (define-values (alt? width height b&w? alpha-channel? s loaded-mask)
+    (define-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale)
       (case-args
        args
        [([alternate-bitmap-kind? a])
         (values #t
                 (alternate-bitmap-kind-width a)
                 (alternate-bitmap-kind-height a)
-                #f #t #f #f)]
+                #f #t #f #f
+                (alternate-bitmap-kind-scale a))]
        [([exact-positive-integer? w]
          [exact-positive-integer? h]
          [any? [b&w? #f]]
-         [any? [alpha? #f]])
+         [any? [alpha? #f]]
+         [positive-real? [scale 1.0]])
         (values
          #f
          w
          h
          (and b&w? #t)
          (and alpha? (not b&w?))
-         (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 (max w 1) (max h 1))])
+         (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32
+                                              (max (*i scale w) 1)
+                                              (max (*i scale h) 1))])
            (cairo_surface_flush s)
            (cond
             [b&w?
@@ -194,11 +201,13 @@
              (bytes-fill! (cairo_image_surface_get_data s) 255)])
            (cairo_surface_mark_dirty s)
            s)
-         #f)]
+         #f
+         (* 1.0 scale))]
        [([(make-alts path-string? input-port?) filename]
          [bitmap-file-kind-symbol? [kind 'unknown]]
          [(make-or-false color%) [bg-color #f]]
-         [any? [complain-on-failure? #f]])
+         [any? [complain-on-failure? #f]]
+         [positive-real? [scale 1.0]])
         (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color complain-on-failure?)]
                      [(alpha?) (memq kind '(unknown/alpha gif/alpha jpeg/alpha
                                                           png/alpha xbm/alpha xpm/alpha
@@ -230,13 +239,14 @@
                          (cairo_surface_mark_dirty s))))])
             (if s
                 (values #f
-                        (cairo_image_surface_get_width s)
-                        (cairo_image_surface_get_height s)
+                        (/i (cairo_image_surface_get_width s) scale)
+                        (/i (cairo_image_surface_get_height s) scale)
                         b&w?
                         (and alpha? (not b&w?))
                         s
-                        mask-bm)
-                (values #f 0 0 #f #f #f #f))))]
+                        mask-bm
+                        (* 1.0 scale))
+                (values #f 0 0 #f #f #f #f (* 1.0 scale)))))]
        [([bytes? bstr]
          [exact-positive-integer? w]
          [exact-positive-integer? h])
@@ -251,8 +261,19 @@
                            (let ([s (* i bw)])
                              (subbytes bstr s (+ s bw)))))])
               (install-bytes-rows s w h rows #t #f #f #t))
-            (values #f w h #t #f s #f)))]
+            (values #f w h #t #f s #f 1.0)))]
        (init-name 'bitmap%)))
+
+    (when (not (= backing-scale 1.0))
+      (when (or b&w? loaded-mask)
+        (error (init-name 'bitmap%)
+               (string-append
+                "~a must have a backing scale of 1.0\n"
+                "  given scale: ~a")
+               (if b&w?
+                   "black-and-white bitmap"
+                   "bitmap with mask")
+               backing-scale)))
 
     ;; Use for non-alpha color bitmaps when they are used as a mask:
     (define alpha-s #f)
@@ -281,7 +302,14 @@
                               this)))
 
     (def/public (get-loaded-mask) loaded-mask)
-    (def/public (set-loaded-mask [(make-or-false bitmap%) m]) (set! loaded-mask m))
+    (def/public (set-loaded-mask [(make-or-false bitmap%) m])
+      (unless (= backing-scale 1)
+        (error (method-name 'bitmap% 'set-loaded-mask)
+               (string-append
+                "can only install a mask for a bitmap with backing scale of 1.0\n"
+                "  backing scale: ~a")
+               backing-scale))
+      (set! loaded-mask m))
 
     (define/public (draw-bitmap-to cr sx sy dx dy w h alpha clipping)
       #f)
@@ -304,6 +332,12 @@
                               [bg #f]
                               [complain-on-failure? #f])
       (check-alternate 'load-file)
+      (unless (= 1 backing-scale)
+        (error (method-name 'bitmap% 'load-file)
+               (string-append
+                "can only load a file in a bitmap with backing scale of 1.0\n"
+                "  backing scale: ~a")
+               backing-scale))
       (release-bitmap-storage)
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
@@ -501,19 +535,18 @@
                       (unsafe-bytes-set! dest (fx+ pos B) (premult al (unsafe-bytes-ref r (fx+ spos 2))))))))))
         (cairo_surface_mark_dirty s)))
 
-    (define/private (call-with-alt-bitmap x y w h proc)
+    (define/private (call-with-alt-bitmap x y w h sc proc)
       (let* ([bm (make-object bitmap% w h #f #t)]
              [cr (cairo_create (send bm get-cairo-surface))])
         (let ([p (cairo_get_source cr)])
           (cairo_pattern_reference p)
           (cairo_set_source_surface cr (get-cairo-surface) (- x) (- y))
-          (let ([sc (get-cairo-device-scale)])
-            (unless (= sc 1)
-              (let ([m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
-                (cairo_matrix_init_translate m 0 0)
-                (cairo_matrix_scale m sc sc)
-                (cairo_matrix_translate m x y)
-                (cairo_pattern_set_matrix (cairo_get_source cr) m))))
+          (unless (= sc 1)
+            (let ([m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
+              (cairo_matrix_init_translate m 0 0)
+              (cairo_matrix_scale m sc sc)
+              (cairo_matrix_translate m x y)
+              (cairo_pattern_set_matrix (cairo_get_source cr) m)))
           (cairo_new_path cr)
           (cairo_rectangle cr 0 0 w h)
           (cairo_fill cr)
@@ -523,12 +556,15 @@
         (proc bm)
         (send bm release-bitmap-storage)))
 
-    (define/public (save-file out [kind 'unknown] [quality 75])
+    (define/public (save-file out [kind 'unknown] [quality 75]
+                              #:unscaled? [unscaled? #f])
       (and (ok?)
            (begin
-             (if alt?
+             (if (or alt?
+                     (and (not unscaled?)
+                          (not (= backing-scale 1))))
                  (call-with-alt-bitmap
-                  0 0 width height
+                  0 0 width height (if unscaled? 1 backing-scale)
                   (lambda (bm)
                     (send bm save-file out kind quality)))
                  (do-save-file out kind quality))
@@ -570,8 +606,10 @@
                            loaded-mask
                            (= width (send loaded-mask get-width))
                            (= height (send loaded-mask get-height)))
-               (let ([bstr (make-bytes (* width height 4))])
-                 (get-argb-pixels 0 0 width height bstr)
+               (let* ([width (*i width backing-scale)]
+                      [height (*i height backing-scale)]
+                      [bstr (make-bytes (* width height 4))])
+                 (get-argb-pixels 0 0 width height bstr #:unscaled? #t)
                  (when loaded-mask
                    (send loaded-mask get-argb-pixels 0 0 width height bstr #t))
                  ;; PNG wants RGBA instead of ARGB...
@@ -599,7 +637,9 @@
                   proc
                   (cairo_surface_write_to_png_stream s proc)))])]
             [(jpeg)
-             (let ([c (create-compress out)])
+             (let ([c (create-compress out)]
+                   [width (*i width backing-scale)]
+                   [height (*i height backing-scale)])
                (dynamic-wind
                    void
                    (lambda ()
@@ -644,7 +684,7 @@
                 alpha-s))
           (get-empty-surface)))
 
-    (define/public (get-cairo-device-scale) 1.0)
+    (define/public (get-cairo-device-scale) backing-scale)
 
     (define/public (get-backing-scale) (get-cairo-device-scale))
 
@@ -652,19 +692,24 @@
 
     (define/public (get-argb-pixels x y w h bstr
                                     [get-alpha? #f]
-                                    [pre-mult? #f])
+                                    [pre-mult? #f]
+                                    #:unscaled? [unscaled? #f])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
                               bstr))
       (when (ok?)
-        (if alt?
-            (call-with-alt-bitmap
-             x y w h
-             (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha? pre-mult?)))
-            (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?))))
+        (unless (or (zero? w) (zero? h))
+          (if (or alt?
+                  (and (not unscaled?)
+                       (not (= backing-scale 1))))
+              (call-with-alt-bitmap
+               x y w h (if unscaled? 1 backing-scale)
+               (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha? pre-mult?)))
+              (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?
+                                  (*i width backing-scale) (*i height backing-scale))))))
 
-    (define/private (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?)
+    (define/private (do-get-argb-pixels x y w h bstr get-alpha? pre-mult? width height)
       ;; Fill range that is beyond edge of picture:
       (if get-alpha?
           (for* ([i (in-range width (+ x w))]
@@ -724,15 +769,40 @@
 
     (define/public (set-argb-pixels x y w h bstr
                                     [set-alpha? #f]
-                                    [pre-mult? #f])
+                                    [pre-mult? #f]
+                                    #:unscaled? [unscaled? #f])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'set-argb-pixels)
                               "byte string is too short: "
                               bstr))
       (check-alternate 'set-argb-pixels)
-      (when (ok?)
+      (cond
+       [(and (not unscaled?)
+             (not (= backing-scale 1)))
+        ;; scale input to match backing:
+        (define s backing-scale)
+        (define kw (max (*i 1 s) 1))
+        (define sw (+ kw (*i (sub1 w) s)))
+        (define sh (+ kw (*i (sub1 h) s)))
+        (define bstr2 (make-bytes (* sw sh 4)))
+        (for ([j (in-range h)])
+          (define sj (*i j s))
+          (for ([i (in-range w)])
+            (define si (*i i s))
+            (define p (+ (* j 4 w) (* i 4)))
+            (for* ([ik (in-range kw)]
+                   [jk (in-range kw)])
+              (define p2 (+ (* (+ sj jk) 4 sw) (* (+ si ik) 4)))
+              (bytes-set! bstr2 p2 (bytes-ref bstr p))
+              (bytes-set! bstr2 (+ p2 1) (bytes-ref bstr (+ p 1)))
+              (bytes-set! bstr2 (+ p2 2) (bytes-ref bstr (+ p 2)))
+              (bytes-set! bstr2 (+ p2 3) (bytes-ref bstr (+ p 3))))))
+        (set-argb-pixels (*i x s) (*i y s) sw sh bstr2 set-alpha? pre-mult? #:unscaled? 1)]
+       [(ok?)
         ;; Set pixels:
-        (let-values ([(A R G B) (argb-indices)])
+        (let-values ([(A R G B) (argb-indices)]
+                     [(width) (if unscaled? (*i width backing-scale) width)]
+                     [(height) (if unscaled? (*i height backing-scale) height)])
           (when (not set-alpha?)
             (cairo_surface_flush s)
             (let ([data (cairo_image_surface_get_data s)]
@@ -793,7 +863,7 @@
                (not alpha-channel?))
           ;; Set alphas:
           (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
-        (drop-alpha-s)))
+        (drop-alpha-s)]))
 
     (define/public (get-alphas-as-mask x y w h bstr)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
@@ -869,20 +939,20 @@
                     (bytes-set! data (+ q 1) vv)
                     (bytes-set! data (+ q 2) vv)
                     (bytes-set! data (+ q A) (if b&w? v 255)))))))
-          (cairo_surface_mark_dirty s))))
-
-    ))
+          (cairo_surface_mark_dirty s))))))
 
 (define/top (make-bitmap [exact-positive-integer? w]
                          [exact-positive-integer? h]
-                         [any? [alpha? #t]])
-  (make-object bitmap% w h #f alpha?))
+                         [any? [alpha? #t]]
+                         #:backing-scale [nonnegative-real? [backing-scale 1.0]])
+  (make-object bitmap% w h #f alpha? backing-scale))
 
 (define/top (read-bitmap [(make-alts path-string? input-port?) filename]
                          [bitmap-file-kind-symbol? [kind 'unknown/alpha]]
                          [(make-or-false color%) [bg-color #f]]
-                         [any? [complain-on-failure? #t]])
-  (make-object bitmap% filename kind bg-color complain-on-failure?))
+                         [any? [complain-on-failure? #t]]
+                         #:backing-scale [nonnegative-real? [backing-scale 1.0]])
+  (make-object bitmap% filename kind bg-color complain-on-failure? backing-scale))
 
 (define/top (make-monochrome-bitmap [exact-positive-integer? w]
                                     [exact-positive-integer? h]
@@ -892,17 +962,18 @@
       (make-object bitmap% w h #t)))
 
 (define/top (make-platform-bitmap [exact-positive-integer? w]
-                                  [exact-positive-integer? h])
+                                  [exact-positive-integer? h]
+                                  #:backing-scale [nonnegative-real? [backing-scale 1.0]])
   (case (system-type)
-    [(macosx) (make-object quartz-bitmap% w h)]
-    [(windows) (make-object win32-no-hwnd-bitmap% w h)]
-    [(unix) (make-bitmap w h)]))
+    [(macosx) (make-object quartz-bitmap% w h #t backing-scale)]
+    [(windows) (make-object win32-no-hwnd-bitmap% w h backing-scale)]
+    [(unix) (make-bitmap w h #:backing-scale backing-scale)]))
 
 (define-local-member-name build-cairo-surface)
 (define win32-no-hwnd-bitmap%
   (class bitmap%
-    (init w h)
-    (super-make-object (make-alternate-bitmap-kind w h))
+    (init w h backing-scale)
+    (super-make-object (make-alternate-bitmap-kind w h backing-scale))
 
     (define s (build-cairo-surface w h))
     ;; erase the bitmap
@@ -928,20 +999,11 @@
 (define quartz-bitmap%
   (class bitmap%
     (init w h [with-alpha? #t] [resolution 1.0] [dest-cg #f])
-    (super-make-object (make-alternate-bitmap-kind w h))
-    
-    (define cocoa-resolution resolution)
-    
-    (define/override (get-cairo-device-scale)
-      cocoa-resolution)
+    (super-make-object (make-alternate-bitmap-kind w h resolution))
     
     (define s
-      (let* ([sw (inexact->exact
-                  (ceiling
-                   (* cocoa-resolution w)))]
-             [sh (inexact->exact
-                  (ceiling
-                   (* cocoa-resolution h)))]
+      (let* ([sw (*i resolution w)]
+             [sh (*i resolution h)]
              [s (if dest-cg
                     (cairo_quartz_surface_create_for_cg_context dest-cg sw sh)
                     (cairo_quartz_surface_create (if with-alpha?

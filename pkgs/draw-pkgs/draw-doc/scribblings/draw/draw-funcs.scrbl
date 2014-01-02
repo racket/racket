@@ -38,12 +38,13 @@ See @racket[font%] for information about @racket[family].}
 
 @defproc[(make-bitmap [width exact-positive-integer?]
                       [height exact-positive-integer?]
-                      [alpha? any/c #t])
+                      [alpha? any/c #t]
+                      [#:backing-scale backing-scale (>/c 0.0) 1.0])
          (is-a?/c bitmap%)]{
 
-Returns @racket[(make-object bitmap% width height #f alpha?)], but
-this procedure is preferred because it defaults @racket[alpha?] in a
-more useful way.
+Returns @racket[(make-object bitmap% width height #f alpha?
+backing-scale)], but this procedure is preferred because it defaults
+@racket[alpha?] in a more useful way.
 
 See also @racket[make-platform-bitmap] and @secref["Portability"].
 }
@@ -159,7 +160,8 @@ When @racket[stipple] is @racket[#f], @racket[immutable?] is true, and
 
 
 @defproc[(make-platform-bitmap [width exact-positive-integer?]
-                               [height exact-positive-integer?])
+                               [height exact-positive-integer?]
+                               [#:backing-scale backing-scale (>/c 0.0) 1.0])
          (is-a?/c bitmap%)]{
 
 Creates a bitmap that uses platform-specific drawing operations
@@ -176,13 +178,14 @@ on Windows and Mac OS X. See @secref["Portability"] for more information.}
                                   'bmp 'bmp/alpha)
                             'unknown/alpha]
                       [bg-color (or/c (is-a?/c color%) #f) #f]
-                      [complain-on-failure? any/c #t])
+                      [complain-on-failure? any/c #t]
+                      [#:backing-scale backing-scale (>/c 0.0) 1.0])
          (is-a?/c bitmap%)]{
 
 Returns @racket[(make-object bitmap% in kind bg-color
-complain-on-failure?)], but this procedure is preferred because it
-defaults @racket[kind] and @racket[complain-on-failure?] in a more
-useful way.}
+complain-on-failure? backing-scale)], but this procedure is preferred
+because it defaults @racket[kind] and @racket[complain-on-failure?] in
+a more useful way.}
 
 
 @defproc[(recorded-datum->procedure [datum any/c]) ((is-a?/c dc<%>) . -> . void?)]{

@@ -292,7 +292,8 @@
                                   (send b get-width) 
                                   (send b get-height)
                                   (not (send b is-color?))
-                                  (send b has-alpha-channel?))]
+                                  (send b has-alpha-channel?)
+                                  (send b get-backing-scale))]
               [dc (make-object bitmap-dc% new-b)])
          (send dc draw-bitmap b 0 0)
          (send dc set-bitmap #f)
@@ -303,20 +304,30 @@
        (let ()
          (define w (send b get-width))
          (define h (send b get-height))
-         (define bstr (make-bytes (* 4 w h)))
-         (send b get-argb-pixels 0 0 w h bstr)
-         (list w h 
-               (send b is-color?)
-               (send b has-alpha-channel?)
-               (bytes->immutable-bytes bstr)))))
+         (define s (send b get-backing-scale))
+         (define (scale v) (inexact->exact (ceiling (* s v))))
+         (define sw (scale w))
+         (define sh (scale h))
+         (define bstr (make-bytes (* 4 sw sh)))
+         (send b get-argb-pixels 0 0 sw sh bstr #:unscaled? #t)
+         (define l (list w h
+                         (send b is-color?)
+                         (send b has-alpha-channel?)
+                         (bytes->immutable-bytes bstr)))
+         (if (= s 1)
+             l
+             (list* 'scale s l)))))
 
 (define (unconvert-bitmap l)
   (and l
        (let ()
-         (define-values (w h color? alpha? bstr)
-           (apply values l))
-         (define bm (make-object bitmap% w h (not color?) alpha?))
-         (send bm set-argb-pixels 0 0 w h bstr)
+         (define-values (s w h color? alpha? bstr)
+           (apply values (if (eq? (car l) 'scale)
+                             (cdr l)
+                             (cons 1.0 l))))
+         (define bm (make-object bitmap% w h (not color?) alpha? #:backing-scale s))
+         (define (scale v) (inexact->exact (ceiling (* s v))))
+         (send bm set-argb-pixels 0 0 (scale w) (scale h) bstr #:unscaled? #t)
          bm)))
 
 (define (convert-font f)

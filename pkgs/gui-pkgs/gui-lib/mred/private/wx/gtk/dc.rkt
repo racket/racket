@@ -45,7 +45,7 @@
 (define x11-bitmap%
   (class bitmap%
     (init w h gdk-win)
-    (super-make-object (make-alternate-bitmap-kind w h))
+    (super-make-object (make-alternate-bitmap-kind w h 1.0))
 
     (define pixmap (gdk_pixmap_new gdk-win 
 				   (min (max 1 w) 32000)

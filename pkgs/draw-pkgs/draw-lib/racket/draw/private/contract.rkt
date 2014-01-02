@@ -403,7 +403,7 @@
                         exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         (and/c bytes? (not/c immutable?)))
-                       (any/c any/c)
+                       (any/c any/c #:unscaled? any/c)
                        void?))
     (get-depth (->m exact-nonnegative-integer?))
     (get-height (->m exact-nonnegative-integer?))
@@ -424,7 +424,8 @@
     (ok? (->m boolean?))
     (save-file (->*m ((or/c path-string? output-port?)
                       (or/c 'png 'jpeg 'xbm 'xpm 'bmp))
-                     ((integer-in 0 100))
+                     ((integer-in 0 100)
+                      #:unscaled? any/c)
                      boolean?))
     (set-argb-pixels (->*m
                        (exact-nonnegative-integer?
@@ -432,6 +433,6 @@
                         exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         bytes?)
-                       (any/c any/c)
+                       (any/c any/c #:unscaled? any/c)
                        void?))
     (set-loaded-mask (->m (is-a?/c bitmap%) void?))))

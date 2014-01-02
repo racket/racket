@@ -225,6 +225,7 @@
        [use-bitmap? #f]
        [platform-bitmap? #f]
        [compat-bitmap? #f]
+       [scaled-bitmap? #f]
        [use-record? #f]
        [serialize-record? #f]
        [use-bad? #f]
@@ -309,6 +310,8 @@
                                        (make-platform-bitmap w h)]
                                       [compat-bitmap?
                                        (send this make-bitmap w h)]
+                                      [scaled-bitmap?
+                                       (make-bitmap w h #:backing-scale 3.0)]
                                       [else
                                        (make-object bitmap% w h depth-one? c-gray?)])))
 			       #f)]
@@ -1310,15 +1313,16 @@
 	    (super-new [parent parent][style '(hscroll vscroll)])
 	    (init-auto-scrollbars (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT) 0 0))
 	  vp)])
-    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Compatible" "Record" "Serialize" "Bad") hp0
+    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Compatible" "Backing x3" "Record" "Serialize" "Bad") hp0
 		 (lambda (self event)
 		   (set! use-bitmap? (< 0 (send self get-selection)))
 		   (set! depth-one? (= 2 (send self get-selection)))
 		   (set! platform-bitmap? (= 3 (send self get-selection)))
 		   (set! compat-bitmap? (= 4 (send self get-selection)))
-		   (set! use-record? (<= 5 (send self get-selection) 6))
-		   (set! serialize-record? (= 6 (send self get-selection)))
-		   (set! use-bad? (< 7 (send self get-selection)))
+		   (set! scaled-bitmap? (= 5 (send self get-selection)))
+		   (set! use-record? (<= 6 (send self get-selection) 6))
+		   (set! serialize-record? (= 7 (send self get-selection)))
+		   (set! use-bad? (< 8 (send self get-selection)))
 		   (send canvas refresh)))
     (make-object button% "PS" hp
 		 (lambda (self event)
