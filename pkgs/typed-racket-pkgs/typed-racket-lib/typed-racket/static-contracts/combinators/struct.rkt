@@ -34,7 +34,7 @@
          (merge-restricts*
            (if mut? 'chaperone 'flat)
            (map (lambda (a) (if mut?
-                                (add-constraint (f a) 'chaperone)
+                                (add-constraint (f a) 'chaperone "reason3")
                                 (f a)))
                 args))]))])
 

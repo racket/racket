@@ -26,7 +26,8 @@
 (provide
   (c:contract-out
     [type->static-contract
-      (c:parametric->/c (a) ((Type/c (c:-> a)) (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
+      (c:parametric->/c (a) ((Type/c (c:-> #:reason (c:or/c #f string?) a))
+                             (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
 (provide type->contract define/fixup-contract? change-contract-fixups
          type->contract-fail)
@@ -152,7 +153,7 @@
 
 (define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
   (let/ec escape
-    (define (fail) (escape (init-fail)))
+    (define (fail #:reason [reason #f]) (escape (init-fail #:reason reason)))
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
@@ -181,7 +182,7 @@
 
 (define (type->static-contract type init-fail #:typed-side [typed-side #t])
   (let/ec return
-    (define (fail) (return (init-fail)))
+    (define (fail #:reason reason) (return (init-fail #:reason reason)))
     (let loop ([type type] [typed-side (if typed-side 'typed 'untyped)] [recursive-values (hash)])
       (define (t->sc t #:recursive-values (recursive-values recursive-values))
         (loop t typed-side recursive-values))
@@ -244,7 +245,7 @@
                      [(PolyDots: _ body) (loop body)]
                      [_ #f])))
                (unless function-type?
-                 (fail))
+                 (fail #:reason "cannot generate contract for non-function polymorphic type"))
                (let ((temporaries (generate-temporaries vs-nm)))
                  (define rv (for/fold ((rv recursive-values)) ((temp temporaries)
                                                                (v-nm vs-nm))
@@ -287,7 +288,7 @@
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
            [(dict-ref recursive-values nm #f)]
-           [proc (fail)]
+           [proc (fail #:reason "t->sc2")]
            [poly?
             (define nm* (generate-temporary #'n*))
             (define fields
@@ -310,7 +311,7 @@
         [(Channel: t)
          (channel/sc (t->sc t))]
         [else
-         (fail)]))))
+         (fail #:reason "t->sc3")]))))
 
 (define (t->sc/function f fail typed-side recursive-values loop method?)
   (define (t->sc t #:recursive-values (recursive-values recursive-values))
@@ -378,7 +379,7 @@
               (let-values ([(mand-kws opt-kws) (partition-kws kws)])
                 ;; Garr, I hate case->!
                 (when (and (not (empty? kws)) case->)
-                  (fail))
+                  (fail #:reason "t->sc4"))
                 (if case->
                   (arr/sc (map t->sc/neg dom) (and rst (t->sc/neg rst)) (map t->sc rngs))
                   (function/sc
@@ -395,15 +396,15 @@
            ;; functions with filters or objects
            [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
             (if (from-untyped? typed-side)
-                (fail)
+                (fail #:reason "t->sc5")
                 (convert-arr a))]
-           [_ (fail)]))
+           [_ (fail #:reason "t->sc6")]))
        (unless (no-duplicates (for/list ([t arrs])
                                 (match t
                                   [(arr: dom _ _ _ _) (length dom)]
                                   ;; is there something more sensible here?
                                   [(top-arr:) (int-err "got top-arr")])))
-         (fail))
+         (fail #:reason "t->sc7"))
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
            (case->/sc (map (f #t) arrs)))])]
