@@ -35,6 +35,8 @@
          [(define (sc-map v f) v)
           (define (sc->contract v f) (length-contract-syntax v))
           (define (sc->constraints v f) 'flat)]
+        #:methods gen:terminal-sc
+         [(define (terminal-sc-kind v) 'flat)]
         #:methods gen:custom-write [(define write-proc length-contract-write-proc)])
 
 (define (list-length/sc n)
