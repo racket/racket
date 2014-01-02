@@ -72,10 +72,9 @@
               (t (-poly (a) (-lst a)))
               (t (-poly (a) (-vec a)))
 
-              #|
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
-                      "some error")
-
+                      "cannot generate contract for non-function")
+              #|
               (t/fail
                 (make-Function
                   (list (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #f)))

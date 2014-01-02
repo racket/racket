@@ -48,7 +48,7 @@
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))]
                               [kind (in-list (list 'pos.category-stx ...))])
-                     (add-constraint (recur arg) kind)))
+                     (add-constraint (recur arg) kind "reason1")))
              #:attr combinator2
                #'(λ (constructor) (λ (pos.name ...) (constructor (list pos.name ...))))
              #:with matcher
@@ -73,7 +73,7 @@
              #:with ->restricts
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))])
-                     (add-constraint (recur arg) 'rest.category-stx)))
+                     (add-constraint (recur arg) 'rest.category-stx "reason2")))
              #:with matcher
                #'(define-match-expander matcher-name
                    (syntax-parser

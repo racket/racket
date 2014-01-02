@@ -16,7 +16,9 @@
 
 (provide
   (c:contract-out
-    [instantiate ((static-contract? (c:-> c:none/c)) (contract-kind?) . c:->* . syntax?)]))
+    [instantiate
+      (c:parametric->/c (a) ((static-contract? (c:-> #:reason (c:or/c #f string?) a))
+                             (contract-kind?) . c:->* . (c:or/c a syntax?)))]))
 
 ;; Providing these so that tests can work directly with them.
 (module* internals #f
@@ -27,7 +29,8 @@
 ;; kind is the greatest kind of contract that is supported, if a greater kind would be produced the
 ;; fail procedure is called.
 (define (instantiate sc fail [kind 'impersonator])
-  (with-handlers [(exn:fail:constraint-failure? (lambda (exn) (fail)))]
+  (with-handlers [(exn:fail:constraint-failure?
+                    (lambda (exn) (fail #:reason (exn:fail:constraint-failure-reason exn))))]
     (instantiate/inner sc
       (compute-recursive-kinds
         (contract-restrict-recursive-values (compute-constraints sc kind))))))
@@ -40,7 +43,7 @@
       [(? sc?)
        (sc->constraints sc recur)]))
   (define constraints (recur sc))
-  (validate-constraints (add-constraint constraints max-kind))
+  (validate-constraints (add-constraint constraints max-kind "reason4"))
   constraints)
 
 
@@ -64,7 +67,7 @@
   (for/hash (((name var) vars))
     (values name (hash-ref var-values var))))
 
-    
+
 (define (instantiate/inner sc recursive-kinds)
   (define (recur sc)
     (match sc
