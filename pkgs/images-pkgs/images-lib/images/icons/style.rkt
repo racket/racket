@@ -18,6 +18,7 @@
          metal-icon-material
          bitmap-render-icon
          (activate-contract-out
+          default-icon-backing-scale
           default-icon-height
           toolbar-icon-height
           default-icon-material
@@ -42,6 +43,7 @@
 (defthing run-icon-color (or/c string? (is-a?/c color%)) #:document-value
   "lawngreen")
 
+(defparam default-icon-backing-scale (and/c rational? (>/c 0)) 2)
 (defparam default-icon-height (and/c rational? (>=/c 0)) 24)
 (defparam toolbar-icon-height (and/c rational? (>=/c 0)) 16)
 
@@ -175,10 +177,13 @@
 
 (define-syntax (define-icon-wrappers stx)
   (syntax-case stx ()
-    [(_ (arg ...) [icon-fun flomap-fun] ...)
-     (with-syntax ([(actual-args ...)  (apply append (map arg-actual (syntax->list #'(arg ...))))])
+    [(_ (arg ...) (scale-arg ...) [icon-fun flomap-fun] ...)
+     (with-syntax ([(actual-args ...)  (apply append (map arg-actual (syntax->list #'(arg ...))))]
+                   [backing-arg #'[#:backing-scale backing-scale (and/c rational? (>/c 0.0))
+                                                   (default-icon-backing-scale)]])
        (syntax/loc stx
          (begin
-           (defproc (icon-fun arg ...) (is-a?/c bitmap%)
-             (flomap->bitmap (flomap-fun actual-args ...)))
+           (defproc (icon-fun arg ... backing-arg) (is-a?/c bitmap%)
+             (let ([scale-arg (* scale-arg backing-scale)] ...)
+               (flomap->bitmap (flomap-fun actual-args ...) #:backing-scale backing-scale)))
            ...)))]))

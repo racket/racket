@@ -9,17 +9,19 @@
 (begin-for-syntax
   (define (save-png bm)
     (define p (open-output-bytes))
-    (send bm save-file p 'png)
+    (send bm save-file p 'png #:unscaled? #t)
     (define bs (get-output-bytes p))
     ;(printf "Wrote PNG: ~v bytes~n" (bytes-length bs))
     bs)
   
   (define (save-jpeg bm quality)
-    (define w (send bm get-width))
-    (define h (send bm get-height))
+    (define s (send bm get-backing-scale))
+    (define (scale v) (inexact->exact (ceiling (* s v))))
+    (define w (scale (send bm get-width)))
+    (define h (scale (send bm get-height)))
     (define bs (make-bytes (* 4 w h)))
     
-    (send bm get-argb-pixels 0 0 w h bs #t)
+    (send bm get-argb-pixels 0 0 w h bs #t #:unscaled? #t)
     (for ([i  (in-range 0 (* 4 w h) 4)])
       (define a (bytes-ref bs i))
       (bytes-set! bs i 255)
@@ -50,19 +52,21 @@
     (unless (and (exact-integer? quality) (<= 0 quality 100))
       (raise-type-error 'make-3d-bitmap "(integer-in 0 100)" 1 bm quality))
     (cond [(= quality 100)
-           (with-syntax ([bs  (datum->syntax ctxt (save-png bm))])
-             (syntax/loc ctxt (load-png bs)))]
+           (with-syntax ([bs  (datum->syntax ctxt (save-png bm))]
+                         [scale (send bm get-backing-scale)])
+             (syntax/loc ctxt (load-png bs scale)))]
           [else
            (define-values (alpha-bs rgb-bs) (save-jpeg bm quality))
            (with-syntax ([alpha-bs  (datum->syntax ctxt alpha-bs)]
-                         [rgb-bs    (datum->syntax ctxt rgb-bs)])
-             (syntax/loc ctxt (load-jpeg alpha-bs rgb-bs)))]))
+                         [rgb-bs    (datum->syntax ctxt rgb-bs)]
+                         [scale (send bm get-backing-scale)])
+             (syntax/loc ctxt (load-jpeg alpha-bs rgb-bs scale)))]))
   )
 
-(define (load-png bs)
-  (read-bitmap (open-input-bytes bs) 'png/alpha))
+(define (load-png bs scale)
+  (read-bitmap (open-input-bytes bs) 'png/alpha #:backing-scale scale))
 
-(define (load-jpeg alpha-bs rgb-bs)
+(define (load-jpeg alpha-bs rgb-bs scale)
   (define alpha-bm (read-bitmap (open-input-bytes alpha-bs) 'jpeg))
   (define rgb-bm (read-bitmap (open-input-bytes rgb-bs) 'jpeg))
   (define w (send rgb-bm get-width))
@@ -77,8 +81,9 @@
     (define a (bytes-ref bs (+ i 2)))
     (bytes-set! new-bs i a))
   
-  (define new-bm (make-bitmap w h))
-  (send new-bm set-argb-pixels 0 0 w h new-bs #f)
+  (define (/* n d) (inexact->exact (ceiling (/ n d))))
+  (define new-bm (make-bitmap (/* w scale) (/* h scale) #:backing-scale scale))
+  (send new-bm set-argb-pixels 0 0 w h new-bs #f #:unscaled? #t)
   new-bm)
 
 (define-syntax (compiled-bitmap stx)

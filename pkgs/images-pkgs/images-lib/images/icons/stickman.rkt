@@ -319,6 +319,7 @@
    [#:head-color head-color (or/c string? (is-a?/c color%)) run-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [standing-stickman-icon standing-stickman-flomap])
 
 (define-icon-wrappers
@@ -328,6 +329,7 @@
    [#:head-color head-color (or/c string? (is-a?/c color%)) run-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [running-stickman-icon running-stickman-flomap])
 
 #;; FOR TESTING ONLY: Do not let this find its way into the repo uncommented!

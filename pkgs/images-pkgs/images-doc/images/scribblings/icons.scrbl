@@ -143,6 +143,14 @@ Use @racket[(toolbar-icon-height)] as the @racket[height] argument for common ic
 If you cannot, as with the Macro Stepper, send a thinner icon as the @racket[alternate-bitmap] argument to a @racket[switchable-button%].)
 }
 
+@doc-apply[default-icon-backing-scale]{
+The backing scale of DrRacket icons.
+
+A backing scale of 2 means that the icon bitmap internally has two
+pixels per drawing unit, so it it renders well a double resolution,
+such as Retina display mode for Mac OS X.
+}
+
 @doc-apply[plastic-icon-material]
 @doc-apply[rubber-icon-material]
 @doc-apply[glass-icon-material]

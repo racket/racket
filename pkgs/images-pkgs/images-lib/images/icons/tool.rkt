@@ -93,6 +93,7 @@
 (define-icon-wrappers
   ([#:height height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [check-syntax-icon check-syntax-flomap]
   [small-check-syntax-icon small-check-syntax-flomap]
   [macro-stepper-icon macro-stepper-flomap]

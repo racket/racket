@@ -327,7 +327,7 @@ Like @racket[unsafe-flomap-ref], but returns an flvector containing all the comp
                                                                                           
 @section{Conversion and Construction}
 
-@defproc[(flomap->bitmap [fm flomap]) Any]{
+@defproc[(flomap->bitmap [fm flomap] [#:backing-scale backing-scale (>/c 0.0)]) Any]{
 Converts a flomap to a @racket[bitmap%].
 
 The return type is imprecise because Typed Racket does not support the object system well yet.

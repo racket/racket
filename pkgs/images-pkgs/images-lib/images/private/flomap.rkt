@@ -20,17 +20,17 @@
           [get-height (-> Integer)]
           [get-argb-pixels
            (case-> 
-            (Integer Integer Integer Integer Bytes
+            (Integer Integer Integer Integer Bytes [#:unscaled? Boolean]
                      -> Void)
-            (Integer Integer Integer Integer Bytes Boolean
+            (Integer Integer Integer Integer Bytes Boolean [#:unscaled? Boolean]
                      -> Void)
-            (Integer Integer Integer Integer Bytes Boolean Boolean
+            (Integer Integer Integer Integer Bytes Boolean Boolean [#:unscaled? Boolean]
                      -> Void))])))
 
 (require/typed
  "flomap-convert.rkt"
  [bitmap->flomap  ((Instance Bitmap%) -> flomap)]
- [flomap->bitmap  (flomap -> (Instance Bitmap%))]
+ [flomap->bitmap  (flomap [#:backing-scale Positive-Real] -> (Instance Bitmap%))]
  [draw-flomap     ((Any -> Any) Integer Integer -> flomap)])
 
 (provide (all-from-out "flomap-struct.rkt"

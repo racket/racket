@@ -181,6 +181,7 @@
   ([#:color color (or/c string? (is-a?/c color%))]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [play-icon play-flomap]
   [back-icon back-flomap]
   [fast-forward-icon fast-forward-flomap]

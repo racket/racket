@@ -152,6 +152,7 @@
   ([#:color color (or/c string? (is-a?/c color%)) "slategray"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [floppy-disk-icon floppy-disk-flomap])
 
 (define-icon-wrappers
@@ -159,6 +160,7 @@
    [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [save-icon save-flomap]
   [load-icon load-flomap]
   [small-save-icon small-save-flomap]

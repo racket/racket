@@ -39,7 +39,7 @@
    (unsafe-flround
     (unsafe-flmax 0.0 (unsafe-flmin 255.0 (unsafe-fl* x 255.0))))))
 
-(define (flomap->bitmap fm)
+(define (flomap->bitmap fm #:backing-scale [backing-scale 1.0])
   (match-define (flomap vs c w h) fm)
   (let* ([fm  (case c
                 [(0)  (make-flomap 4 w h)]
@@ -68,9 +68,10 @@
       (unsafe-bytes-set! bs i2 (unsafe-fl->byte g))
       (unsafe-bytes-set! bs i3 (unsafe-fl->byte b)))
     
-    (define bm (make-bitmap w h))
-    (send bm set-argb-pixels 0 0 w h bs #t #t)
-    (send bm set-argb-pixels 0 0 w h bs #f #t)
+    (define (scale d) (inexact->exact (ceiling (/ d backing-scale))))
+    (define bm (make-bitmap (scale w) (scale h) #:backing-scale backing-scale))
+    (send bm set-argb-pixels 0 0 w h bs #t #t #:unscaled? #t)
+    (send bm set-argb-pixels 0 0 w h bs #f #t #:unscaled? #t)
     bm))
 
 (define (draw-flomap draw-proc w h)

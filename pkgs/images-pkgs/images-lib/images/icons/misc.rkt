@@ -576,6 +576,7 @@
    [#:color color (or/c string? (is-a?/c color%))]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [regular-polygon-icon regular-polygon-flomap])
 
 (define-icon-wrappers
@@ -584,6 +585,7 @@
    [#:face-color face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
    [#:hand-color hand-color (or/c string? (is-a?/c color%)) "firebrick"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)])
+  (height)
   [clock-icon clock-flomap]
   [stopwatch-icon stopwatch-flomap])
 
@@ -591,6 +593,7 @@
   ([#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [stop-sign-icon stop-sign-flomap]
   [stop-signs-icon stop-signs-flomap])
 
@@ -598,6 +601,7 @@
   ([#:color color (or/c string? (is-a?/c color%))]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [foot-icon foot-flomap])
 
 (define-icon-wrappers
@@ -605,6 +609,7 @@
    [#:handle-color handle-color (or/c string? (is-a?/c color%)) "brown"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [magnifying-glass-icon magnifying-glass-flomap]
   [left-magnifying-glass-icon  left-magnifying-glass-flomap])
 
@@ -613,6 +618,7 @@
    [#:bomb-color bomb-color (or/c string? (is-a?/c color%)) dark-metal-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [bomb-icon bomb-flomap]
   [left-bomb-icon left-bomb-flomap])
 
@@ -622,10 +628,12 @@
    [#:shackle-color shackle-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [lock-icon lock-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) "black"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)])
+  (height)
   [stethoscope-icon stethoscope-flomap]
   [short-stethoscope-icon short-stethoscope-flomap])

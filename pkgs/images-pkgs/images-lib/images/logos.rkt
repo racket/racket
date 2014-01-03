@@ -408,11 +408,13 @@
 
 (define-icon-wrappers
   ([#:height height (and/c rational? (>=/c 0)) 256])
+  (height)
   [plt-logo plt-flomap]
   [racket-logo racket-flomap])
 
 (define-icon-wrappers
   ([#:height height (and/c rational? (>=/c 0)) 96])
+  (height)
   [planet-logo planet-flomap]
   [stepper-logo stepper-flomap]
   [macro-stepper-logo macro-stepper-logo-flomap])

@@ -285,34 +285,40 @@
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)]
    [#:outline outline (and/c rational? (>=/c 0)) (/ height 32)])
+  (height outline)
   [text-icon text-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) "forestgreen"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [recycle-icon recycle-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [x-icon x-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) run-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [check-icon check-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) light-metal-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [lambda-icon lambda-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) "mediumseagreen"]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
    [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
   [hash-quote-icon hash-quote-flomap])
