@@ -730,15 +730,14 @@
             (send item enable (and frame (> (length (send frame get-tabs)) 1)))))])
   (group:add-to-windows-menu
    (λ (windows-menu)
-     (define shortcut? (not (equal? 'shift (get-default-shortcut-prefix))))
      (define sprefix (if (eq? (system-type) 'windows)
                          (cons 'shift (get-default-shortcut-prefix))
                          (get-default-shortcut-prefix)))
      (new menu-item%
           [parent windows-menu]
           [label (string-constant prev-tab)]
-          [shortcut (and shortcut? #\[)]
-          [shortcut-prefix (if shortcut? sprefix (get-default-shortcut-prefix))]
+          [shortcut #\[]
+          [shortcut-prefix sprefix]
           [demand-callback dc]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
@@ -755,21 +754,18 @@
                         (when frame
                           (send frame next-tab))))])
      
-     (define-values (mprefix use-shortcut?)
-       (case (system-type)
-         [(windows unix)
-          (if (equal? (get-default-shortcut-prefix) 'ctl)
-              (values (list* 'alt 'shift (get-default-shortcut-prefix)) #f)
-              (values (get-default-shortcut-prefix) #t))]
-         [(macosx)
-          (values (cons 'option (get-default-shortcut-prefix)) #t)]))
+     (define mprefix (case (system-type)
+                       [(windows unix)
+                        (list* 'alt 'shift (get-default-shortcut-prefix))]
+                       [(macosx)
+                        (list* 'option (get-default-shortcut-prefix))]))
 
      (new menu-item% 
           [parent windows-menu]
           [label (string-constant move-current-tab-right)]
           [demand-callback dc]
-          [shortcut-prefix mprefix]
-          [shortcut (and use-shortcut? #\])]
+	  [shortcut-prefix mprefix]
+	  [shortcut #\]]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
@@ -779,8 +775,8 @@
           [parent windows-menu]
           [label (string-constant move-current-tab-left)]
           [demand-callback dc]
-          [shortcut-prefix mprefix]
-          [shortcut (and shortcut? #\[)]
+	  [shortcut-prefix mprefix]
+	  [shortcut #\[]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
