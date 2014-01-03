@@ -55,7 +55,8 @@
     [exn:fail:constraint-failure? predicate/c]
     [exn:fail:constraint-failure-reason (exn:fail:constraint-failure? . -> . string?)]
     [validate-constraints (contract-restrict? . -> . void?)]
-    [add-constraint (contract-restrict? contract-kind? string? . -> . contract-restrict?)])
+    [add-constraint
+      (contract-restrict? contract-kind? (contract-kind? . -> . string?) . -> . contract-restrict?)])
   contract-restrict-recursive-values
 
   contract-restrict?
@@ -68,7 +69,9 @@
            "kinds.rkt")
   (provide
     (contract-out
-      [struct constraint ([value kind-max?] [max contract-kind?] [reason string?])]
+      [struct constraint ([value kind-max?]
+                          [max contract-kind?]
+                          [reason (contract-kind? . -> . string?)])]
       [struct kind-max ([variables free-id-table?] [max contract-kind?])]
       [struct contract-restrict ([value kind-max?]
                                  [recursive-values free-id-table?]
@@ -186,5 +189,5 @@
            (raise (exn:fail:constraint-failure
                     (format "Violated constraint: ~a" reason)
                     (current-continuation-marks)
-                    reason)))]))]))
+                    (reason kind))))]))]))
 

@@ -36,11 +36,11 @@
            (fail-check "Reason didn't match expected.")))))))
 
 
+;; These will fail when the bug is fixed.
 (define known-bugs
   (test-suite "Known Bugs"
 
     ;; Polydotted functions should work
-    #;
     (t/fail (-polydots (a) (->... (list) (a a) -Symbol))
             "not supported for this type")
 
@@ -74,7 +74,6 @@
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
                       "cannot generate contract for non-function")
-              #|
               (t/fail
                 (make-Function
                   (list (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #f)))
@@ -86,23 +85,20 @@
                         (-> -Boolean -Boolean)
                         (-> -Symbol -Symbol))
                       "two cases of arity 1")
-              (t/fail (-Syntax (-HT -Symbol -Symbol))
-                      "first-order contract, but got a hashtable.")
               (t/fail (-struct #'struct-name #f (list (make-fld -Symbol #'acc #f)) (-> -Symbol))
                       "procedural structs are not supported")
               (t/fail (-Syntax (-> -Boolean -Boolean))
-                      #rx"required a first-order .* generate a higher-order")
+                      #rx"required a flat contract but could only generate a chaperone contract")
+              (t/fail (-Syntax (-seq -Boolean))
+                      #rx"required a flat contract but could only generate a impersonator contract")
               (t/fail (-set (-seq -Boolean))
-                      #rx"required a chaperone or flat contract .* generate an impersonator")
+                      #rx"required a chaperone contract but could only generate a impersonator contract")
 
               (t/fail
                 (make-Function
                   (list
                     (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #t)))
                     (make-arr* (list Univ Univ) -Boolean #:kws (list (make-Keyword '#:key2 Univ #t)))))
-                "some error")
+                "case function type with optional keyword arguments")
 
-              (t/fail (-Syntax (-struct #'struct-name #f (list (make-fld -Symbol #'acc #t)) #f #t))
-                      "some error")
-              |#
               ))

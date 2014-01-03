@@ -8,6 +8,7 @@
          racket/list racket/match
          (for-syntax racket/base racket/syntax syntax/stx syntax/parse)
          racket/set
+         racket/format
          unstable/contract
          (for-template racket/base
                        racket/contract/base
@@ -48,7 +49,11 @@
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))]
                               [kind (in-list (list 'pos.category-stx ...))])
-                     (add-constraint (recur arg) kind "reason1")))
+                     (add-constraint (recur arg) kind
+                       (λ (actual-kind)
+                          ;;TODO add code for a vs an
+                         (~a "required a " kind " contract but could only generate a "
+                             actual-kind " contract")))))
              #:attr combinator2
                #'(λ (constructor) (λ (pos.name ...) (constructor (list pos.name ...))))
              #:with matcher
@@ -73,7 +78,11 @@
              #:with ->restricts
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))])
-                     (add-constraint (recur arg) 'rest.category-stx "reason2")))
+                     (add-constraint (recur arg) 'rest.category-stx 
+                       (λ (actual-kind)
+                          ;;TODO add code for a vs an
+                         (~a "required a " 'rest.category-stx " contract but could only generate a "
+                             actual-kind " contract")))))
              #:with matcher
                #'(define-match-expander matcher-name
                    (syntax-parser

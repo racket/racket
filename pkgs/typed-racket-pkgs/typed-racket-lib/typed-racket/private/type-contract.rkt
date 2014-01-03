@@ -14,6 +14,7 @@
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ unstable/list
  unstable/sequence
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
@@ -288,7 +289,7 @@
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
            [(dict-ref recursive-values nm #f)]
-           [proc (fail #:reason "t->sc2")]
+           [proc (fail #:reason "procedural structs are not supported")]
            [poly?
             (define nm* (generate-temporary #'n*))
             (define fields
@@ -311,7 +312,7 @@
         [(Channel: t)
          (channel/sc (t->sc t))]
         [else
-         (fail #:reason "t->sc3")]))))
+         (fail #:reason "contract generation not supported for this type")]))))
 
 (define (t->sc/function f fail typed-side recursive-values loop method?)
   (define (t->sc t #:recursive-values (recursive-values recursive-values))
@@ -372,14 +373,15 @@
           (define rest (and rst (listof/sc (t->sc/neg rst))))
           (function/sc (process-dom mand-args) opt-args mand-kws opt-kws rest range)])]
       [else
-       (define ((f [case-> #f]) a)
+       (define ((f case->) a)
          (define (convert-arr arr)
            (match arr
              [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
               (let-values ([(mand-kws opt-kws) (partition-kws kws)])
                 ;; Garr, I hate case->!
                 (when (and (not (empty? kws)) case->)
-                  (fail #:reason "t->sc4"))
+                  (fail #:reason (~a "cannot generate contract for case function type"
+                                     " with optional keyword arguments")))
                 (if case->
                   (arr/sc (map t->sc/neg dom) (and rst (t->sc/neg rst)) (map t->sc rngs))
                   (function/sc
@@ -396,15 +398,18 @@
            ;; functions with filters or objects
            [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
             (if (from-untyped? typed-side)
-                (fail #:reason "t->sc5")
-                (convert-arr a))]
-           [_ (fail #:reason "t->sc6")]))
-       (unless (no-duplicates (for/list ([t arrs])
-                                (match t
-                                  [(arr: dom _ _ _ _) (length dom)]
-                                  ;; is there something more sensible here?
-                                  [(top-arr:) (int-err "got top-arr")])))
-         (fail #:reason "t->sc7"))
+                (fail #:reason (~a "cannot generate contract for function type"
+                                   " with filters or objects."))
+                (convert-arr a))]))
+       (define arities
+         (for/list ([t arrs])
+           (match t
+             [(arr: dom _ _ _ _) (length dom)]
+             ;; is there something more sensible here?
+             [(top-arr:) (int-err "got top-arr")])))
+       (define maybe-dup (check-duplicate arities))
+       (when maybe-dup
+         (fail #:reason (~a "function type has two cases of arity " maybe-dup)))
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
            (case->/sc (map (f #t) arrs)))])]
