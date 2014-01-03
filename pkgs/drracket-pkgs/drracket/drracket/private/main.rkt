@@ -755,8 +755,10 @@
                           (send frame next-tab))))])
      
      (define mprefix (case (system-type)
-                       [(windows unix)
+                       [(windows)
                         (list* 'alt 'shift (get-default-shortcut-prefix))]
+                       [(unix)
+                        (remove-duplicates (list* 'alt 'shift (get-default-shortcut-prefix)))]
                        [(macosx)
                         (list* 'option (get-default-shortcut-prefix))]))
 
