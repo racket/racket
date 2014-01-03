@@ -180,7 +180,7 @@
              (eprintf "WARNING: bitmap path ~s not found\n" splash-draw-spec)
              (no-splash))
            
-           (set! splash-bitmap (make-object bitmap% splash-draw-spec))]
+           (set! splash-bitmap (read-bitmap splash-draw-spec #:try-@2x? #t))]
           [else
            (set! splash-bitmap splash-draw-spec)])
         

@@ -168,7 +168,7 @@
 
 (define (read-bitmap/no-crash fn)
   (with-handlers ((exn:fail? (λ (x) (make-object bitmap% "dne.png"))))
-    (read-bitmap fn)))
+    (read-bitmap fn #:try-@2x? #t)))
 
 (define the-splash-bitmap (and (path? the-bitmap-spec)
                                (read-bitmap/no-crash the-bitmap-spec)))

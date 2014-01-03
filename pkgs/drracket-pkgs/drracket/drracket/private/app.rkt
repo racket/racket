@@ -76,12 +76,13 @@
     (super-new)))
 
 (define (get-plt-bitmap)
-  (make-object bitmap%
-    (build-path (collection-file-path
-                 (if (< (get-display-depth) 8)
-                     "pltbw.gif"
-                     "plt-logo-red-shiny.png")
-                 "icons"))))
+  (read-bitmap
+   (build-path (collection-file-path
+                (if (< (get-display-depth) 8)
+                    "pltbw.gif"
+                    "plt-logo-red-shiny.png")
+                "icons"))
+   #:try-@2x? #t))
 
 
 
