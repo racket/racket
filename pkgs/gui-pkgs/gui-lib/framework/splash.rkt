@@ -189,7 +189,7 @@
         
         (send splash-canvas min-width (send splash-bitmap get-width))
         (send splash-canvas min-height (send splash-bitmap get-height))
-        (set! splash-cache-bitmap (make-object bitmap% 
+        (set! splash-cache-bitmap (make-screen-bitmap
                                     (send splash-bitmap get-width)
                                     (send splash-bitmap get-height)))]
        [(and (vector? splash-draw-spec)
@@ -199,7 +199,7 @@
         (set! splash-paint-callback (vector-ref splash-draw-spec 0))
         (send splash-canvas min-width (vector-ref splash-draw-spec 1))
         (send splash-canvas min-height (vector-ref splash-draw-spec 2))
-        (set! splash-cache-bitmap (make-object bitmap% 
+        (set! splash-cache-bitmap (make-screen-bitmap
                                     (vector-ref splash-draw-spec 1)
                                     (vector-ref splash-draw-spec 2)))]
        [(not splash-draw-spec)

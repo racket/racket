@@ -354,7 +354,7 @@
   (let/ec k
     (let ([bitmap
            (with-handlers ([exn:fail:filesystem? (lambda (x) (k (void)))])
-             (make-object bitmap% bitmap-path 'unknown/mask))])
+             (read-bitmap bitmap-path #:try-@2x? #t))])
       (unless (and (is-a? bitmap bitmap%)
                    (send bitmap ok?))
         (k #f))
