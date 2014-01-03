@@ -36,7 +36,6 @@
            (fail-check "Reason didn't match expected.")))))))
 
 
-;; These will fail when the bug is fixed.
 (define known-bugs
   (test-suite "Known Bugs"
 
@@ -73,7 +72,7 @@
               (t (-poly (a) (-vec a)))
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
-                      "cannot generate contract for non-function")
+                      "cannot generate contract for non-function polymorphic type")
               (t/fail
                 (make-Function
                   (list (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #f)))
@@ -88,11 +87,11 @@
               (t/fail (-struct #'struct-name #f (list (make-fld -Symbol #'acc #f)) (-> -Symbol))
                       "procedural structs are not supported")
               (t/fail (-Syntax (-> -Boolean -Boolean))
-                      #rx"required a flat contract but could only generate a chaperone contract")
+                      "required a flat contract but generated a chaperone contract")
               (t/fail (-Syntax (-seq -Boolean))
-                      #rx"required a flat contract but could only generate a impersonator contract")
+                      "required a flat contract but generated an impersonator contract")
               (t/fail (-set (-seq -Boolean))
-                      #rx"required a chaperone contract but could only generate a impersonator contract")
+                      "required a chaperone contract but generated an impersonator contract")
 
               (t/fail
                 (make-Function
@@ -100,5 +99,7 @@
                     (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #t)))
                     (make-arr* (list Univ Univ) -Boolean #:kws (list (make-Keyword '#:key2 Univ #t)))))
                 "case function type with optional keyword arguments")
+              (t/fail (-vec (-struct #'struct-name #f (list (make-fld (-seq -Symbol) #'acc #f)) #f #t))
+                      "required a chaperone contract but generated an impersonator contract")
 
               ))

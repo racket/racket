@@ -43,13 +43,7 @@
       [(? sc?)
        (sc->constraints sc recur)]))
   (define constraints (recur sc))
-  (validate-constraints
-    (add-constraint
-      constraints
-      max-kind
-      (λ (actual-kind)
-         ;;TODO add code for a vs an
-         (format "required a ~a contract but could only generate a ~a contract" max-kind actual-kind))))
+  (validate-constraints (add-constraint constraints max-kind))
   constraints)
 
 

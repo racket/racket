@@ -24,12 +24,12 @@
                            ['location (build-source-location-list (quote-srcloc e))])
            (phase1-phase0-eval
              (define sc
-                (type->static-contract e (lambda _ #f)))
+                (type->static-contract e (lambda (#:reason _) #f)))
              (if sc
                  #`(with-check-info (['static '#,sc])
                      (phase1-phase0-eval
                        (define ctc (instantiate '#,sc
-                                     (lambda _ (error "static-contract could not be converted to a contract"))))
+                                     (lambda (#:reason _) (error "static-contract could not be converted to a contract"))))
                        #,#'#`(with-check-info (['contract '#,ctc])
                           (define runtime-contract #,ctc)
                           (check-pred contract? runtime-contract))))
@@ -42,7 +42,7 @@
          (define sc
            (phase1-phase0-eval
              (let/ec exit
-               #`'#,(type->static-contract e (lambda _ (exit #'#f)) #:typed-side typed-side))))
+               #`'#,(type->static-contract e (lambda (#:reason _) (exit #'#f)) #:typed-side typed-side))))
          (when sc
            (with-check-info (['static sc])
              (fail-check "Type was incorrectly converted to contract"))))]))
