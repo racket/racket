@@ -947,11 +947,25 @@
                          #:backing-scale [nonnegative-real? [backing-scale 1.0]])
   (make-object bitmap% w h #f alpha? backing-scale))
 
-(define/top (read-bitmap [(make-alts path-string? input-port?) filename]
+(define/top (read-bitmap [(make-alts path-string? input-port?) given-filename]
                          [bitmap-file-kind-symbol? [kind 'unknown/alpha]]
                          [(make-or-false color%) [bg-color #f]]
                          [any? [complain-on-failure? #t]]
-                         #:backing-scale [nonnegative-real? [backing-scale 1.0]])
+                         #:try-@2x? [any? [try-@2x? #f]]
+                         #:backing-scale [nonnegative-real? [given-backing-scale 1.0]])
+  (define-values (filename backing-scale)
+    (cond
+     [(and try-@2x?
+           (path? given-filename)
+           (not (memq kind '(unknown/mask gif/mask png/mask))))
+      (define new-filename (bytes->path
+                            (regexp-replace #rx"([.][^.]*|)$"
+                                            (path->bytes given-filename)
+                                            #"@2x\\1")))
+      (if (file-exists? new-filename)
+          (values new-filename (* 2 given-backing-scale))
+          (values given-filename given-backing-scale))]
+     [else (values given-filename given-backing-scale)]))
   (make-object bitmap% filename kind bg-color complain-on-failure? backing-scale))
 
 (define/top (make-monochrome-bitmap [exact-positive-integer? w]

@@ -179,13 +179,21 @@ on Windows and Mac OS X. See @secref["Portability"] for more information.}
                             'unknown/alpha]
                       [bg-color (or/c (is-a?/c color%) #f) #f]
                       [complain-on-failure? any/c #t]
-                      [#:backing-scale backing-scale (>/c 0.0) 1.0])
+                      [#:backing-scale backing-scale (>/c 0.0) 1.0]
+                      [#:try-@2x? try-@2x? any/c #f])
          (is-a?/c bitmap%)]{
 
 Returns @racket[(make-object bitmap% in kind bg-color
 complain-on-failure? backing-scale)], but this procedure is preferred
 because it defaults @racket[kind] and @racket[complain-on-failure?] in
-a more useful way.}
+a more useful way.
+
+If @racket[try-@2x?] is true, @racket[in] is a path, and @racket[kind]
+is not one of the @racketidfont{/mask} symbols, then
+@racket[read-bitmap] checks whether a file exists matching @racket[in]
+but with @filepath{@"@"2x} added to the name (before the file suffix,
+if any). If the @filepath{@"@"2x} path exists, it is used instead of
+@racket[in], and @racket[backing-store] is multiplied by @racket[2].}
 
 
 @defproc[(recorded-datum->procedure [datum any/c]) ((is-a?/c dc<%>) . -> . void?)]{
