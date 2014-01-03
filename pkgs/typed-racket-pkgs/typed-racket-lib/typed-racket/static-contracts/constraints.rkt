@@ -17,7 +17,7 @@
 ;;     This means that the generated contract will be the max of kind and all of the other contract
 ;;     restricts.
 ;;
-;;   add-constraint: contract-restrict? kind? string? -> contract-restrict
+;;   add-constraint: contract-restrict? kind? -> contract-restrict
 ;;     This means the kind of the generated contract can not be greater than the supplied kind.
 ;;
 ;;   close-loop: (lisotf identifier?) (listof contract-restrict?) contract-restrict? -> contract-restrict?
@@ -38,6 +38,7 @@
 (require
   racket/match
   racket/list
+  racket/format
   racket/contract
   racket/dict
   racket/set
@@ -55,8 +56,7 @@
     [exn:fail:constraint-failure? predicate/c]
     [exn:fail:constraint-failure-reason (exn:fail:constraint-failure? . -> . string?)]
     [validate-constraints (contract-restrict? . -> . void?)]
-    [add-constraint
-      (contract-restrict? contract-kind? (contract-kind? . -> . string?) . -> . contract-restrict?)])
+    [add-constraint (contract-restrict? contract-kind? . -> . contract-restrict?)])
   contract-restrict-recursive-values
 
   contract-restrict?
@@ -69,15 +69,13 @@
            "kinds.rkt")
   (provide
     (contract-out
-      [struct constraint ([value kind-max?]
-                          [max contract-kind?]
-                          [reason (contract-kind? . -> . string?)])]
+      [struct constraint ([value kind-max?] [max contract-kind?])]
       [struct kind-max ([variables free-id-table?] [max contract-kind?])]
       [struct contract-restrict ([value kind-max?]
                                  [recursive-values free-id-table?]
                                  [constraints (set/c constraint?)])]))
 
-  (struct constraint (value max reason) #:transparent)
+  (struct constraint (value max) #:transparent)
   (struct kind-max (variables max) #:transparent)
   (struct contract-restrict (value recursive-values constraints) #:transparent))
 (require 'structs)
@@ -107,13 +105,20 @@
 (define (variable-contract-restrict var)
   (contract-restrict (kind-max (free-id-set var) 'flat) (make-immutable-free-id-table) (set)))
 
+(define (reason-string actual bound)
+  (define (name k)
+    (case k
+      [(flat chaperone) (~a "a " k " contract")]
+      [(impersonator) "an impersonator contract"]))
+  (~a "required " (name bound) " but generated " (name actual)))
 
-(define (add-constraint cr max reason)
+
+(define (add-constraint cr max)
   (if (equal? 'impersonator max)
       cr
       (match cr
         [(contract-restrict v rec constraints)
-         (contract-restrict v rec (set-add constraints (constraint v max reason)))])))
+         (contract-restrict v rec (set-add constraints (constraint v max)))])))
 
 (define (add-recursive-values cr dict) 
   (match cr
@@ -184,10 +189,11 @@
     [(contract-restrict (kind-max (app dict-count 0) _) rec constraints)
      (for ([const (in-set constraints)])
        (match const
-        [(constraint (kind-max (app dict-count 0) kind) bound reason)
+        [(constraint (kind-max (app dict-count 0) kind) bound)
          (unless (contract-kind<= kind bound)
+           (define reason (reason-string kind bound))
            (raise (exn:fail:constraint-failure
                     (format "Violated constraint: ~a" reason)
                     (current-continuation-marks)
-                    (reason kind))))]))]))
+                    reason)))]))]))
 

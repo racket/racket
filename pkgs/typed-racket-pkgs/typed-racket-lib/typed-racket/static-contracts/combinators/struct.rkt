@@ -33,11 +33,7 @@
         [(struct-combinator args _ mut?)
          (merge-restricts*
            (if mut? 'chaperone 'flat)
-           (map (lambda (a) (if mut?
-                                (add-constraint (f a) 'chaperone
-                                                (λ (actual-kind) (error "How is this triggered")))
-                                (f a)))
-                args))]))])
+           (map (lambda (a) (if (not mut?) (add-constraint (f a) 'chaperone) (f a))) args))]))])
 
 (define (struct/sc name mut? fields)
   (struct-combinator fields name mut?))

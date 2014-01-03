@@ -49,11 +49,7 @@
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))]
                               [kind (in-list (list 'pos.category-stx ...))])
-                     (add-constraint (recur arg) kind
-                       (λ (actual-kind)
-                          ;;TODO add code for a vs an
-                         (~a "required a " kind " contract but could only generate a "
-                             actual-kind " contract")))))
+                     (add-constraint (recur arg) kind)))
              #:attr combinator2
                #'(λ (constructor) (λ (pos.name ...) (constructor (list pos.name ...))))
              #:with matcher
@@ -78,11 +74,7 @@
              #:with ->restricts
                #'(lambda (v recur)
                    (for/list ([arg (in-list (combinator-args v))])
-                     (add-constraint (recur arg) 'rest.category-stx 
-                       (λ (actual-kind)
-                          ;;TODO add code for a vs an
-                         (~a "required a " 'rest.category-stx " contract but could only generate a "
-                             actual-kind " contract")))))
+                     (add-constraint (recur arg) 'rest.category-stx)))
              #:with matcher
                #'(define-match-expander matcher-name
                    (syntax-parser
