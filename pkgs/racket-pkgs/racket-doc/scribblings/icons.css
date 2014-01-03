@@ -2,3 +2,7 @@
   float: left;
   margin-right: 0.3em;
 }
+
+.imageleft img {
+  width: 1.5em;
+}

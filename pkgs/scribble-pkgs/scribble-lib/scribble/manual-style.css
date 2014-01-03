@@ -317,10 +317,6 @@ a:hover {
     font-weight: 400;
 }
 
-.refcontent img {
-    width: 1.5em;
-}
-
 .refpara, .refparaleft {
     top: -1em;
 }
