@@ -318,11 +318,20 @@ Equivalent to @racket[(define name (make-predicate t))].
 
 @section{Type Annotation and Instantiation}
 
-@defform[(: v t)]{This declares that @racket[v] has type @racket[t].
+@defform*[((: v t)
+           (: v : t))]{
+This declares that @racket[v] has type @racket[t].
 The definition of @racket[v] must appear after this declaration.  This
 can be used anywhere a definition form may be used.
 @ex[(: var1 Integer)
-    (: var2 String)]}
+    (: var2 String)]
+
+The second form allows type annotations to elide one level of parentheses
+for function types.
+
+@ex[(: var3 : -> Integer)
+    (: var4 : String -> Integer)]
+}
 
 @defform[(provide: [v t] ...)]{This declares that the @racket[v]s have
 the types @racket[t], and also provides all of the @racket[v]s.}
