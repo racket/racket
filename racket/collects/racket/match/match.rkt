@@ -10,13 +10,15 @@
          (for-syntax racket/lazy-require
                      (only-in "stxtime.rkt"
                               match-...-nesting
+                              match-expander?
+                              legacy-match-expander?
                               prop:match-expander
                               prop:legacy-match-expander)))
 
 (begin-for-syntax
   (lazy-require [racket/match/parse (parse)]))
 
-(provide (for-syntax match-...-nesting
+(provide (for-syntax match-...-nesting match-expander? legacy-match-expander?
                      prop:match-expander prop:legacy-match-expander)
          match-equality-test
          define-match-expander

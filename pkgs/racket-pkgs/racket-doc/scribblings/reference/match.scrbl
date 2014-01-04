@@ -630,6 +630,13 @@ Like @racket[prop:match-expander], but for the legacy match syntax.
 This binding is provided @racket[for-syntax].
 }
 
+@deftogether[[
+@defproc[(match-expander? [v any/c]) boolean?]
+@defproc[(legacy-match-expander? [v any/c]) boolean?]]]{
+Predicates for values which implement the appropriate match expander
+properties.
+}
+
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 
