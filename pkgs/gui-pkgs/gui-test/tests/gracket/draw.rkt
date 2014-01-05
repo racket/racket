@@ -224,6 +224,7 @@
        [do-clock #f]
        [use-bitmap? #f]
        [platform-bitmap? #f]
+       [screen-bitmap? #f]
        [compat-bitmap? #f]
        [scaled-bitmap? #f]
        [use-record? #f]
@@ -308,6 +309,8 @@
                                      (cond
                                       [platform-bitmap?
                                        (make-platform-bitmap w h)]
+                                      [screen-bitmap?
+                                       (make-screen-bitmap w h)]
                                       [compat-bitmap?
                                        (send this make-bitmap w h)]
                                       [scaled-bitmap?
@@ -1313,16 +1316,17 @@
 	    (super-new [parent parent][style '(hscroll vscroll)])
 	    (init-auto-scrollbars (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT) 0 0))
 	  vp)])
-    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Compatible" "Backing x3" "Record" "Serialize" "Bad") hp0
+    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Screen" "Compatible" "Backing x3" "Record" "Serialize" "Bad") hp0
 		 (lambda (self event)
 		   (set! use-bitmap? (< 0 (send self get-selection)))
 		   (set! depth-one? (= 2 (send self get-selection)))
 		   (set! platform-bitmap? (= 3 (send self get-selection)))
-		   (set! compat-bitmap? (= 4 (send self get-selection)))
-		   (set! scaled-bitmap? (= 5 (send self get-selection)))
-		   (set! use-record? (<= 6 (send self get-selection) 6))
-		   (set! serialize-record? (= 7 (send self get-selection)))
-		   (set! use-bad? (< 8 (send self get-selection)))
+		   (set! screen-bitmap? (= 4 (send self get-selection)))
+		   (set! compat-bitmap? (= 5 (send self get-selection)))
+		   (set! scaled-bitmap? (= 6 (send self get-selection)))
+		   (set! use-record? (<= 7 (send self get-selection) 6))
+		   (set! serialize-record? (= 8 (send self get-selection)))
+		   (set! use-bad? (< 9 (send self get-selection)))
 		   (send canvas refresh)))
     (make-object button% "PS" hp
 		 (lambda (self event)

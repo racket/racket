@@ -81,6 +81,16 @@
     ;; Initializes/resets the transformation matrix
     init-cr-matrix
 
+    ;; method set-effective-backing-scale : real -> void
+    ;;
+    ;; Sets the backing scale for use in alignment, etc.
+    set-effective-backing-scale
+
+    ;; init-effective-backing-scale : -> real
+    ;;
+    ;; Sets the initial effective backing scale
+    get-init-effective-backing-scale
+
     ;; method reset-clip : cr -> void
     ;;
     ;; Resets the clipping region
@@ -170,6 +180,8 @@
     (define/public (flush-cr) (void))
 
     (define/public (init-cr-matrix cr) (void))
+    (define/public (set-effective-backing-scale v) (void))
+    (define/public (get-init-effective-backing-scale) 1.0)
 
     (define/public (reset-clip cr)
       (cairo_reset_clip cr))
@@ -242,7 +254,7 @@
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
-             reset-clip
+             reset-clip get-init-effective-backing-scale
              collapse-bitmap-b&w?
              ok? can-mask-bitmap? get-clear-operator)
 
@@ -296,6 +308,14 @@
     (define pen-stipple-s #f)
     (define brush-stipple-s #f)
 
+    (define effective-backing-scale (get-init-effective-backing-scale))
+    (define/override (set-effective-backing-scale v)
+      (unless (= v effective-backing-scale)
+        (set! effective-backing-scale v)
+        (reset-font-cache!)
+        (reset-effective!)
+        (reset-align!)))
+
     (define x-align-delta 0.5)
     (define y-align-delta 0.5)
     (define/private (reset-align!)
@@ -332,8 +352,8 @@
     (define scroll-dx 0.0)
     (define scroll-dy 0.0)
 
-    (define effective-scale-x 1.0)
-    (define effective-scale-y 1.0)
+    (define effective-scale-x effective-backing-scale)
+    (define effective-scale-y effective-backing-scale)
     (define effective-origin-x 0.0)
     (define effective-origin-y 0.0)
 
@@ -347,8 +367,9 @@
       (set! scale-x 1.0)
       (set! scale-y 1.0)
       (set! rotation 0.0)
-      (set! effective-scale-x 1.0)
-      (set! effective-scale-y 1.0)
+      (set! effective-scale-x effective-backing-scale)
+      (set! effective-scale-y effective-backing-scale)
+      (set-effective-scale-font-cached?!)
       (set! effective-origin-x 0.0)
       (set! effective-origin-y 0.0)
       (set! current-xform (vector 1.0 0.0 0.0 1.0 0.0 0.0))
@@ -361,8 +382,8 @@
       (set! bg (send the-color-database find-color "white"))
       (set! pen-stipple-s #f)
       (set! brush-stipple-s #f)
-      (set! x-align-delta 0.5)
-      (set! y-align-delta 0.5)
+      (set! x-align-delta (/ effective-backing-scale 2.0))
+      (set! y-align-delta (/ effective-backing-scale 2.0))
       (set! smoothing 'unsmoothed)
       (set! current-smoothing #f)
       (set! alpha 1.0)
@@ -376,10 +397,13 @@
         (cairo_matrix_scale mx scale-x scale-y)
         (cairo_matrix_rotate mx (- rotation))
         (let ([ssq (lambda (a b) (sqrt (+ (* a a) (* b b))))])
-          (set! effective-scale-x (ssq (cairo_matrix_t-xx mx)
-                                       (cairo_matrix_t-xy mx)))
-          (set! effective-scale-y (ssq (cairo_matrix_t-yy mx)
-                                       (cairo_matrix_t-yx mx))))
+          (set! effective-scale-x (* effective-backing-scale
+                                     (ssq (cairo_matrix_t-xx mx)
+                                          (cairo_matrix_t-xy mx))))
+          (set! effective-scale-y (* effective-backing-scale
+                                     (ssq (cairo_matrix_t-yy mx)
+                                          (cairo_matrix_t-yx mx)))))
+        (set-effective-scale-font-cached?!)
         (set! effective-origin-x (cairo_matrix_t-x0 mx))
         (set! effective-origin-y (cairo_matrix_t-y0 mx))
         (let ([v (vector (cairo_matrix_t-xx mx)
@@ -1216,12 +1240,22 @@
        (cairo_copy_path cr)))
 
     (define size-cache (make-weak-hasheq))
+    (define effective-scale-font-cached? #t)
 
     (define/private (get-size-cache desc)
       (or (hash-ref size-cache desc #f)
           (let ([h (make-hasheq)])
             (hash-set! size-cache desc h)
             h)))
+
+    (define/private (reset-font-cache!)
+      (when (positive? (hash-count size-cache))
+        (set! size-cache (make-weak-hasheq))))
+
+    (define/private (set-effective-scale-font-cached?!)
+      (set! effective-scale-font-cached?
+            (and (= effective-scale-x effective-backing-scale)
+                 (= effective-scale-y effective-backing-scale))))
 
     (def/public (get-text-extent [string? s] 
                                  [(make-or-false font%) [use-font font]]
@@ -1232,8 +1266,7 @@
         ;; Try to used cached size info, first:
         (let-values ([(w h d a)
                       (if (or combine?
-                              (not (= 1.0 effective-scale-x))
-                              (not (= 1.0 effective-scale-y)))
+                              (not effective-scale-font-cached?))
                           (values #f #f #f #f)
                           (let ([cache (get-size-cache (get-pango use-font))])
                             (if (= offset (string-length s))
@@ -1415,8 +1448,7 @@
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
               (let ([cache (if (or combine?
-                                   (not (fl= 1.0 effective-scale-x))
-                                   (not (fl= 1.0 effective-scale-y)))
+                                   (not effective-scale-font-cached?))
                                #f
                                (get-size-cache desc))]
                     [layouts (let ([attr-layouts (or (hash-ref (let ([t (vector-ref desc-layoutss smoothing-index)])

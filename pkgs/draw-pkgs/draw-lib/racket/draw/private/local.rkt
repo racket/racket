@@ -55,4 +55,6 @@
   can-combine-text?
   can-mask-bitmap?
   reset-clip
-  get-clear-operator)
+  get-clear-operator
+  get-init-effective-backing-scale
+  set-effective-backing-scale)
