@@ -35,6 +35,7 @@ READ_ONLY Scheme_Object *scheme_mcons_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
+READ_ONLY Scheme_Object *scheme_box_immutable_proc;
 READ_ONLY Scheme_Object *scheme_box_p_proc;
 READ_ONLY Scheme_Object *scheme_hash_ref_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cons_list_proc;
@@ -432,7 +433,9 @@ scheme_init_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant(BOX, p, env);
 
+  REGISTER_SO(scheme_box_immutable_proc);
   p = scheme_make_immed_prim(immutable_box, "box-immutable", 1, 1);
+  scheme_box_immutable_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("box-immutable", p, env);
   

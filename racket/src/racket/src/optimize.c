@@ -954,11 +954,13 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
          return values that contain all arguments: */
       && (SAME_OBJ(scheme_list_proc, rator)
           || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
+          || (SAME_OBJ(scheme_mcons_proc, rator) && (n == 2))
           || (SAME_OBJ(scheme_unsafe_cons_list_proc, rator) && (n == 2))
           || SAME_OBJ(scheme_list_star_proc, rator)
           || SAME_OBJ(scheme_vector_proc, rator)
           || SAME_OBJ(scheme_vector_immutable_proc, rator)
-          || (SAME_OBJ(scheme_box_proc, rator) && (n == 1))))
+          || (SAME_OBJ(scheme_box_proc, rator) && (n == 1))
+          || (SAME_OBJ(scheme_box_immutable_proc, rator) && (n == 1))))
     return 1;
 
   return 0;

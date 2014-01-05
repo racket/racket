@@ -1586,6 +1586,32 @@
   (test-bin 'eq?)
   (test-bin 'eqv?))
 
+(let ([test-move
+       (lambda (expr [same? #t])
+         (test-comp `(lambda (z)
+                       (let ([x ,expr])
+                         (let ([y (read)])
+                           (list y x))))
+                    `(lambda (z)
+                       (list (read) ,expr))
+                    same?))])
+  (test-move '(cons 1 2))
+  (test-move '(mcons 1 2))
+  (test-move '(list 1))
+  (test-move '(list 1 2))
+  (test-move '(list 1 2 3))
+  (test-move '(list* 1 2))
+  (test-move '(list* 1 2 3))
+  (test-move '(vector 1))
+  (test-move '(vector 1 2))
+  (test-move '(vector 1 2 3))
+  (test-move '(box 2))
+  (test-move '(box-immutable 2))
+  (test-move '(cons 1 2 3) #f)
+  (test-move '(mcons 1 2 3) #f)
+  (test-move '(box 1 2) #f)
+  (test-move '(box-immutable 1 2) #f))
+
 (let ([test-use-unsafe
        (lambda (pred op unsafe-op)
          (test-comp `(module m racket/base
