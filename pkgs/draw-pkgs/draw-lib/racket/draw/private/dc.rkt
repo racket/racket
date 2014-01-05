@@ -81,16 +81,6 @@
     ;; Initializes/resets the transformation matrix
     init-cr-matrix
 
-    ;; method set-effective-backing-scale : real -> void
-    ;;
-    ;; Sets the backing scale for use in alignment, etc.
-    set-effective-backing-scale
-
-    ;; init-effective-backing-scale : -> real
-    ;;
-    ;; Sets the initial effective backing scale
-    get-init-effective-backing-scale
-
     ;; method reset-clip : cr -> void
     ;;
     ;; Resets the clipping region
@@ -180,8 +170,6 @@
     (define/public (flush-cr) (void))
 
     (define/public (init-cr-matrix cr) (void))
-    (define/public (set-effective-backing-scale v) (void))
-    (define/public (get-init-effective-backing-scale) 1.0)
 
     (define/public (reset-clip cr)
       (cairo_reset_clip cr))
@@ -254,7 +242,7 @@
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
-             reset-clip get-init-effective-backing-scale
+             reset-clip
              collapse-bitmap-b&w?
              ok? can-mask-bitmap? get-clear-operator)
 
@@ -308,10 +296,10 @@
     (define pen-stipple-s #f)
     (define brush-stipple-s #f)
 
-    (define effective-backing-scale (get-init-effective-backing-scale))
-    (define/override (set-effective-backing-scale v)
-      (unless (= v effective-backing-scale)
-        (set! effective-backing-scale v)
+    (define alignment-scale 1.0)
+    (def/public (set-alignment-scale [positive-real? v])
+      (unless (= v alignment-scale)
+        (set! alignment-scale v)
         (reset-font-cache!)
         (reset-effective!)
         (reset-align!)))
@@ -352,8 +340,8 @@
     (define scroll-dx 0.0)
     (define scroll-dy 0.0)
 
-    (define effective-scale-x effective-backing-scale)
-    (define effective-scale-y effective-backing-scale)
+    (define effective-scale-x alignment-scale)
+    (define effective-scale-y alignment-scale)
     (define effective-origin-x 0.0)
     (define effective-origin-y 0.0)
 
@@ -367,8 +355,8 @@
       (set! scale-x 1.0)
       (set! scale-y 1.0)
       (set! rotation 0.0)
-      (set! effective-scale-x effective-backing-scale)
-      (set! effective-scale-y effective-backing-scale)
+      (set! effective-scale-x alignment-scale)
+      (set! effective-scale-y alignment-scale)
       (set-effective-scale-font-cached?!)
       (set! effective-origin-x 0.0)
       (set! effective-origin-y 0.0)
@@ -382,8 +370,8 @@
       (set! bg (send the-color-database find-color "white"))
       (set! pen-stipple-s #f)
       (set! brush-stipple-s #f)
-      (set! x-align-delta (/ effective-backing-scale 2.0))
-      (set! y-align-delta (/ effective-backing-scale 2.0))
+      (set! x-align-delta (/ alignment-scale 2.0))
+      (set! y-align-delta (/ alignment-scale 2.0))
       (set! smoothing 'unsmoothed)
       (set! current-smoothing #f)
       (set! alpha 1.0)
@@ -397,10 +385,10 @@
         (cairo_matrix_scale mx scale-x scale-y)
         (cairo_matrix_rotate mx (- rotation))
         (let ([ssq (lambda (a b) (sqrt (+ (* a a) (* b b))))])
-          (set! effective-scale-x (* effective-backing-scale
+          (set! effective-scale-x (* alignment-scale
                                      (ssq (cairo_matrix_t-xx mx)
                                           (cairo_matrix_t-xy mx))))
-          (set! effective-scale-y (* effective-backing-scale
+          (set! effective-scale-y (* alignment-scale
                                      (ssq (cairo_matrix_t-yy mx)
                                           (cairo_matrix_t-yx mx)))))
         (set-effective-scale-font-cached?!)
@@ -1254,8 +1242,8 @@
 
     (define/private (set-effective-scale-font-cached?!)
       (set! effective-scale-font-cached?
-            (and (= effective-scale-x effective-backing-scale)
-                 (= effective-scale-y effective-backing-scale))))
+            (and (= effective-scale-x alignment-scale)
+                 (= effective-scale-y alignment-scale))))
 
     (def/public (get-text-extent [string? s] 
                                  [(make-or-false font%) [use-font font]]

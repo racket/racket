@@ -138,6 +138,7 @@
     [resume-flush (->m void?)]
     [rotate (->m real? void?)]
     [scale (->m real? real? void?)]
+    [set-alignment-scale (->m (>/c 0.0) void?)]
     [set-alpha (->m real? void?)]
     [set-background (->m (or/c (is-a?/c color%) string?) void?)]
     [set-brush (case->m (-> (is-a?/c brush%) void?)

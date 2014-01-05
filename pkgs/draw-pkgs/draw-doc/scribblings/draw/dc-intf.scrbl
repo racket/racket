@@ -73,8 +73,8 @@ The wedge and arc meet so that no space is left between them, but the
  precise overlap between the wedge and arc is platform- and
  size-specific.  Typically, the regions drawn by the brush and pen
  overlap.  In unsmoothed or aligned mode, the path for the outline is
- adjusted by shrinking the bounding ellipse width and height by one
- drawing unit after scaling.
+ adjusted by shrinking the bounding ellipse width and height by, after scaling, one
+ drawing unit divided by the alignment scale.
 
 
 @|DrawSizeNote|
@@ -189,8 +189,9 @@ Brush filling and pen outline meet so that no space is left between
  them, but the precise overlap between the filling and outline is
  platform- and size-specific.  Thus, the regions drawn by the brush
  and pen may partially overlap. In unsmoothed or aligned mode, the
- path for the outline is adjusted by shrinking the ellipse width and
- height by one drawing unit after scaling.
+ path for the outline is adjusted by, after scaling, shrinking the
+ ellipse width and height by one drawing unit divided by the
+ @tech{alignment scale}.
 
 @|DrawSizeNote|
 
@@ -334,8 +335,8 @@ Draws a rectangle with the given top-left corner and size.  The
 In unsmoothed or aligned mode, when the pen is size 0 or 1, the
  filling precisely overlaps the entire outline. More generally, in
  unsmoothed or aligned mode, the path for the outline is adjusted by
- shrinking the rectangle width and height by one drawing unit after
- scaling.
+ shrinking the rectangle width and height by, after scaling, one
+ drawing unit divided by the @tech{alignment scale}.
 
 See also @method[dc<%> set-smoothing] for information on the
 @racket['aligned] smoothing mode.
@@ -370,8 +371,9 @@ Brush filling and pen outline meet so that no space is left between
  them, but the precise overlap between the filling and outline is
  platform- and size-specific.  Thus, the regions drawn by the brush
  and pen may partially overlap. In unsmoothed or aligned mode, the
- path for the outline is adjusted by shrinking the rectangle width and
- height by one drawing unit after scaling.
+ path for the outline is adjusted by, after scaling, shrinking the
+ rectangle width and height by one drawing unit divided by the
+ @tech{alignment scale}.
 
 See also @method[dc<%> set-smoothing] for information on the
 @racket['aligned] smoothing mode.
@@ -853,6 +855,28 @@ rotation settings have their identity values.
 
 }
 
+@defmethod[(set-alignment-scale [scale (>/c 0.0)])
+           void?]{
+
+Sets the drawing context's @deftech{alignment scale}, which determines
+ how drawing coordinates and pen widths are adjusted for unsmoothed or
+ aligned drawing (see @method[dc<%> set-smoothing]).
+
+The default @tech{alignment scale} is @racket[1.0], which means that
+ drawing coorinates and pen sizes are aligned to integer values.
+
+An @tech{alignment scale} of @racket[2.0] aligns drawing coordinates
+ to half-integer values. A value of @racket[2.0] could be suitable for
+ a @racket[bitmap-dc%] whose destination is a bitmap with a
+ @tech{backing scale} of @racket[2.0], since half-integer values
+ coorespond to pixel boundaries. Even when a destinate context has a
+ backing scale of @racket[2.0], however, an alignment scale of
+ @racket[1.0] may be desirable to maintain consistency with drawing
+ contexts that have a backing scale and alignment scale of
+ @racket[1.0].
+
+@history[#:added "1.1"]}
+
 
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
@@ -1040,28 +1064,32 @@ Enables or disables anti-aliased smoothing for drawing. (Text
 
 The smoothing mode is either @racket['unsmoothed], @racket['smoothed],
  or @racket['aligned]. Both @racket['aligned] and @racket['smoothed]
- are smoothing modes.
+ are smoothing modes that enable anti-aliasing, while both
+ @racket['unsmoothed] and @racket['aligned] adjust drawing coordinates
+ to match pixel boundaries. For most applications that draw to the
+ screen or bitmaps, @racket['aligned] mode is the best choice.
 
-In @racket['smoothed] mode for a canvas or bitmap drawing context,
- integer drawing coordinates correspond to the boundary between
- pixels, and pen-based drawing is centered over a given line or
- curve. Thus, drawing with pen width @racket[1] from @math{(0, 10)} to
- @math{(10, 10)} draws a 2-pixel wide line with @math{50%} opacity.
+Conceptually, integer drawing coordinates correspond to the boundary
+ between pixels, and pen-based drawing is centered over a given line
+ or curve. Thus, drawing with pen width @racket[1] from @math{(0, 10)}
+ to @math{(10, 10)} in @racket['smoothed] mode draws a 2-pixel wide
+ line with @math{50%} opacity.
 
-The @racket['aligned] smoothing mode is like @racket['smoothed], but
- it paints pixels more like @racket['unsmoothed] mode. Since it aligns
- shapes to pixel boundaries, @racket['aligned] mode often produces
- better results than @racket['smoothed], but the results depend on the
- application. The @racket['aligned] mode is defined in terms of
- @racket['smoothed] mode, except that drawing coordinates are rounded
- down (via @racket[floor], after scaling and origin translation). For
- line drawing, coordinates are then shifted right and down by the
- @racket[floor] of half a pen width.  In addition, for pen drawing
- through @method[dc<%> draw-rectangle], @method[dc<%> draw-ellipse],
- @method[dc<%> draw-rounded-rectangle], and @method[dc<%> draw-arc],
- the given width and height are each decreased by @math{1.0}.
+In @racket['unsmoothed] and @racket['aligned] modes, drawing
+ coordinates are truncated based on the @tech{alignment scale} of the
+ drawing context. Specifically, when the alignment scale is 1.0,
+ drawing coordinates are truncated to integer coordinates. More
+ generally, drawing coordinates are shifted toward zero so that the
+ result multipled by the @tech{alignment scale} is integral. For line
+ drawing, coordinates are further shifted based on the pen width and
+ the alignment scale, where the shift corrsponds to half of the pen
+ width (reduced to a value such that its multiplication times the
+ alignment scale times two produces an integer). In addition, for pen
+ drawing through @method[dc<%> draw-rectangle], @method[dc<%>
+ draw-ellipse], @method[dc<%> draw-rounded-rectangle], and
+ @method[dc<%> draw-arc], the given width and height are each
+ decreased by @math{1.0} divided by the @tech{alignment scale}.}
 
-}
 
 @defmethod*[([(set-text-background [color (is-a?/c color%)])
               void?]

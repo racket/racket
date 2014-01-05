@@ -364,6 +364,7 @@
       set-pen
       set-alpha
       set-background
+      set-alignment-scale
       draw-text
       draw-spline
       draw-line

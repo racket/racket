@@ -14,8 +14,7 @@
 (define bitmap-dc-backend%
   (class default-dc-backend%
     (init [(_bm bitmap) #f])
-    (inherit reset-cr
-             set-effective-backing-scale)
+    (inherit reset-cr)
 
     (define c #f)
     (define bm #f)
@@ -41,8 +40,6 @@
         (set! c #f))
       (set! bm v)
       (when (and bm (send bm ok?))
-        (when reset?
-          (set-effective-backing-scale (send bm get-cairo-device-scale)))
         (set! c (cairo_create (send bm get-cairo-target-surface)))
         (set! b&w? (not (send bm is-color?)))))
 
@@ -99,11 +96,6 @@
       (if (or b&w? (send bm has-alpha-channel?))
           CAIRO_OPERATOR_CLEAR
           CAIRO_OPERATOR_OVER))
-
-    (define/override (get-init-effective-backing-scale)
-      (if bm
-          (send bm get-cairo-device-scale)
-          1.0))
 
     (super-new)))
 

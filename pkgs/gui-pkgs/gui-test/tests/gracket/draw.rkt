@@ -14,11 +14,6 @@
   (lambda (f)
     (collection-file-path f "icons")))
 
-(define local-path 
-  (let ([d (current-load-relative-directory)])
-    (lambda (f)
-      (build-path d f))))
-
 (define (get-icon)
   (make-object bitmap% (sys-path "mred.xbm") 'xbm))
 
@@ -234,6 +229,7 @@
        [cyan? #f]
        [multi-page? #f]
        [smoothing 'unsmoothed]
+       [align-scale 1.0]
        [save-filename #f]
        [save-file-format #f]
        [clip 'none]
@@ -247,7 +243,7 @@
   (send hp3 stretchable-height #f)
   (make-object button% "What Should I See?" hp0
 	       (lambda (b e)
-		 (show-instructions (local-path "draw-info.txt"))))
+		 (show-instructions (collection-file-path "draw-info.txt" "tests/gracket"))))
   (let ([canvas
 	 (make-object
 	  (class canvas%
@@ -1130,6 +1126,7 @@
 			    (send dc set-scale xscale yscale)
 			    (send dc set-origin offset offset)))
 		      (send dc set-smoothing smoothing)
+		      (send dc set-alignment-scale align-scale)
 		      
 		      (send dc set-background
 			    (if cyan?
@@ -1328,18 +1325,36 @@
 		   (set! serialize-record? (= 8 (send self get-selection)))
 		   (set! use-bad? (< 9 (send self get-selection)))
 		   (send canvas refresh)))
-    (make-object button% "PS" hp
+    (make-object choice% #f
+		 '("MrEd XOR" "PLT Middle" "PLT ^ MrEd" "MrEd ^ PLT" "MrEd ^ MrEd" 
+		   "MrEd~ Opaque" "MrEd ^ MrEd~" "M^M~ Opaque" "M^M~ Red" "M^M~ Rd Opq"
+		   "PLT^PLT")
+		 hp
 		 (lambda (self event)
-		   (send canvas on-paint 'ps)))
-    (make-object button% "PDF" hp
+		   (send canvas set-mask-ex-mode 
+			 (list-ref '(mred plt plt-mask mred^plt mred^mred 
+					  mred~ mred^mred~ opaque-mred^mred~ 
+                                          red-mred^mred~ opaque-red-mred^mred~
+					  plt^plt)
+				   (send self get-selection)))))
+    (make-object check-box% "Kern" hp
 		 (lambda (self event)
-		   (send canvas on-paint 'pdf)))
-    (make-object button% "SVG" hp
+		   (send canvas set-kern (send self get-value))))
+    (make-object check-box% "Cyan" hp
 		 (lambda (self event)
-		   (send canvas on-paint 'svg)))
-    (make-object check-box% "Multiple Pages" hp
-                 (lambda (self event)
-                   (set! multi-page? (send self get-value))))
+		   (set! cyan? (send self get-value))
+		   (send canvas refresh)))
+    (send (make-object check-box% "Icons" hp2
+		       (lambda (self event)
+			 (send canvas set-bitmaps (send self get-value))))
+	  set-value #t)
+    (send (make-object check-box% "Stipples" hp2
+		       (lambda (self event)
+			 (send canvas set-stipples (send self get-value))))
+	  set-value #t)
+    (make-object check-box% "Pixset" hp2
+		 (lambda (self event)
+		   (send canvas set-pixel-copy (send self get-value))))
     (make-object button% "Save" hp
 		 (lambda (b e)
 		   (unless use-bitmap?
@@ -1356,42 +1371,17 @@
 			 (set! save-filename f)
 			 (set! save-file-format format)
 			 (send canvas refresh))))))
-    (make-object check-box% "Cyan" hp
-		 (lambda (self event)
-		   (set! cyan? (send self get-value))
-		   (send canvas refresh)))
-    (send (make-object check-box% "Icons" hp2
-		       (lambda (self event)
-			 (send canvas set-bitmaps (send self get-value))))
-	  set-value #t)
-    (send (make-object check-box% "Stipples" hp2
-		       (lambda (self event)
-			 (send canvas set-stipples (send self get-value))))
-	  set-value #t)
-    (make-object check-box% "Pixset" hp2
-		 (lambda (self event)
-		   (send canvas set-pixel-copy (send self get-value))))
     (make-object choice% #f '("Unsmoothed" "Smoothed" "Aligned") hp2.5
 		 (lambda (self event)
 		   (set! smoothing (list-ref '(unsmoothed smoothed aligned)
 					     (send self get-selection)))
 		   (send canvas refresh)))
+    (make-object choice% #f '("Align 1.0" "Align 2.0" "Align 3.0" "Align 0.5") hp2.5
+		 (lambda (self event)
+		   (set! align-scale (list-ref '(1.0 2.0 3.0 0.5)
+                                               (send self get-selection)))
+		   (send canvas refresh)))
     (make-object button% "Clock" hp2.5 (lambda (b e) (do-clock #f)))
-    (make-object choice% #f
-		 '("MrEd XOR" "PLT Middle" "PLT ^ MrEd" "MrEd ^ PLT" "MrEd ^ MrEd" 
-		   "MrEd~ Opaque" "MrEd ^ MrEd~" "M^M~ Opaque" "M^M~ Red" "M^M~ Rd Opq"
-		   "PLT^PLT")
-		 hp2.5
-		 (lambda (self event)
-		   (send canvas set-mask-ex-mode 
-			 (list-ref '(mred plt plt-mask mred^plt mred^mred 
-					  mred~ mred^mred~ opaque-mred^mred~ 
-                                          red-mred^mred~ opaque-red-mred^mred~
-					  plt^plt)
-				   (send self get-selection)))))
-    (make-object check-box% "Kern" hp2.5
-		 (lambda (self event)
-		   (send canvas set-kern (send self get-value))))
     (make-object choice% "Clip" 
 		 '("None" "Rectangle" "Rectangle2" "Octagon" 
 		   "Circle" "Wedge" "Round Rectangle" "Lambda" "A"
@@ -1436,6 +1426,15 @@
     (make-object check-box% "Cvs Gray" hp3
 		 (lambda (self event)
 		   (send canvas set-canvas-gray (send self get-value))))
+    (make-object button% "PS" hp3
+		 (lambda (self event)
+		   (send canvas on-paint 'ps)))
+    (make-object button% "PDF" hp3
+		 (lambda (self event)
+		   (send canvas on-paint 'pdf)))
+    (make-object button% "SVG" hp3
+		 (lambda (self event)
+		   (send canvas on-paint 'svg)))
     (let ([clock (lambda (clip?)
 		   (thread (lambda ()
 			     (set! clock-clip? clip?)
@@ -1456,6 +1455,9 @@
 			     (send canvas refresh))))])
       (set! do-clock clock)
       (make-object button% "Clip Clock" hp2.75 (lambda (b e) (clock #t)))
+      (make-object check-box% "Multiple Pages" hp2.75
+                   (lambda (self event)
+                     (set! multi-page? (send self get-value))))
       (make-object button% "Print" hp4 (lambda (self event) (send canvas on-paint 'print)))
       (make-object button% "Print Setup" hp4 (lambda (b e) (let ([c (get-page-setup-from-user)])
                                                              (when c
