@@ -155,7 +155,8 @@
                                             [else (redex-error 'redex-check "~s does not match ~s" generated 'res-term-stx)]))])
                     syncheck-exp
                     (let ([default-attempt-size (λ (s) (add1 (default-attempt-size s)))])
-                      (parameterize ([attempt->size #,size-stx])
+                      (parameterize ([attempt->size #,size-stx]
+                                     [unsupported-pat-err-name 'redex-check])
                         (check-one
                          (λ (size _1 _2)
                            (values

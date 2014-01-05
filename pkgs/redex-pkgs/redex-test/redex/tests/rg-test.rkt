@@ -1391,6 +1391,22 @@
                   #:keep-going? #t)))
   (test tries 10))
 
+(let ()
+  (define-language L)
+  
+  (define-judgment-form L 
+    #:mode (wf I)
+    [--------------
+     (wf (any ...))])
+
+  (test (regexp-match?
+         #rx"^redex-check: generation failed at unsupported pattern"
+         (with-handlers ([exn:fail? exn-message])
+           (redex-check L #:satisfying (wf any) #t)
+           "no exn raised"))
+        #t))
+
+
 ;; redex-test-seed
 (let ([seed 0])
   (define-language L)
