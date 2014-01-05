@@ -160,12 +160,16 @@
 
     (define is-trans? trans?)
 
-    (super-make-object w h trans? 1
-                       (let ([cg (CGLayerGetContext layer)])
-                         (unless flipped?
-                           (CGContextTranslateCTM cg 0 h)
-                           (CGContextScaleCTM cg 1 -1))
-                         cg))
+    (let ([bs (inexact->exact 
+               (display-bitmap-resolution 0 (lambda () 1)))])
+      (super-make-object w h trans? bs
+                         (let ([cg (CGLayerGetContext layer)])
+                           (unless flipped?
+                             (CGContextTranslateCTM cg 0 h)
+                             (CGContextScaleCTM cg 1 -1))
+                           (unless (= bs 1)
+                             (CGContextScaleCTM cg (/ 1 bs) (/ 1 bs)))
+                           cg)))
 
     (define/override (draw-bitmap-to cr sx sy dx dy w h alpha clipping-region)
       ;; Called when the destination rectangle is inside the clipping region

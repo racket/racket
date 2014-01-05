@@ -55,15 +55,15 @@ To avoid creating multiple pens with the same characteristics, use the
  global @racket[pen-list%] object @indexed-racket[the-pen-list], or
  provide a color, width, and style to @xmethod[dc<%> set-pen].
 
-When drawing in @racket['smoothed] or @racket['aligned] mode, a pen's
+When drawing in @racket['unsmoothed] or @racket['aligned] mode, a pen's
  size is truncated after scaling to an integral size. A pen of size
  @racket[0] (after truncation, if applicable) uses a non-zero,
  scale-insensitive line size for the destination drawing context:
  @racket[1/4] unit (after scaling) for @racket[post-script-dc%] or
  @racket[pdf-dc%] contexts in @racket['smoothed] mode, or @racket[1]
  unit (after scaling) for any other context.  For example, in unscaled 
- canvas and bitmap contexts, a zero-width pen behaves the same as a
- pen of size @racket[1].
+ canvas and bitmap contexts with a @tech{backing scale} of 1.0,
+ a zero-width pen behaves the same as a pen of size @racket[1].
 
 See also @racket[make-pen].
 
