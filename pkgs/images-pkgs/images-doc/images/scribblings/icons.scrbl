@@ -131,8 +131,7 @@ For new users and for accessibility reasons, do not try to differentiate icons f
 }
 
 @doc-apply[default-icon-height]{
-The height of DrRacket's standard icons.
-}
+The height of DrRacket's standard icons.}
 
 @doc-apply[toolbar-icon-height]{
 The height of DrRacket toolbar icons.
@@ -149,7 +148,8 @@ The backing scale of DrRacket icons.
 A backing scale of 2 means that the icon bitmap internally has two
 pixels per drawing unit, so it it renders well a double resolution,
 such as Retina display mode for Mac OS X.
-}
+
+@history[#:added "1.1"]}
 
 @doc-apply[plastic-icon-material]
 @doc-apply[rubber-icon-material]
@@ -226,6 +226,8 @@ The outline width is usually @racket[(/ height 32)] (in this case, @racket[2]), 
 @defmodule[images/icons/arrow]
 @interaction-eval[#:eval icons-eval (require images/icons/arrow)]
 
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
+
 @doc-apply[right-arrow-icon]
 @doc-apply[left-arrow-icon]
 @doc-apply[up-arrow-icon]
@@ -237,8 +239,7 @@ Standard directional arrows.
                        (left-arrow-icon #:color run-icon-color)
                        (up-arrow-icon #:color halt-icon-color #:height 37)
                        (down-arrow-icon #:color "lightblue" #:height 44
-                                        #:material glass-icon-material))]
-}
+                                        #:material glass-icon-material))]}
 
 @doc-apply[right-over-arrow-icon]
 @doc-apply[left-over-arrow-icon]
@@ -260,6 +261,8 @@ Standard bent arrows.
 
 @defmodule[images/icons/control]
 @interaction-eval[#:eval icons-eval (require images/icons/control)]
+
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
 
 @doc-apply[bar-icon]{
 @examples[#:eval icons-eval (bar-icon #:color run-icon-color #:height 32)]
@@ -286,6 +289,8 @@ This is not a ``control'' icon @italic{per se}, but is used to make many others.
 @defmodule[images/icons/file]
 @interaction-eval[#:eval icons-eval (require images/icons/file)]
 
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
+
 @doc-apply[floppy-disk-icon]{ @examples[#:eval icons-eval (floppy-disk-icon #:height 32 #:material glass-icon-material)] }
 @doc-apply[save-icon]{ @examples[#:eval icons-eval (save-icon #:height 32)] }
 @doc-apply[load-icon]{ @examples[#:eval icons-eval (load-icon #:height 32)] }
@@ -298,6 +303,8 @@ This is not a ``control'' icon @italic{per se}, but is used to make many others.
 
 @defmodule[images/icons/symbol]
 @interaction-eval[#:eval icons-eval (require images/icons/symbol)]
+
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
 
 @doc-apply[text-icon]{
 Renders a text string as an icon. For example,
@@ -349,6 +356,8 @@ Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 
 @defmodule[images/icons/misc]
 @interaction-eval[#:eval icons-eval (require images/icons/misc)]
+
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
 
 @doc-apply[regular-polygon-icon]{
 Renders the largest regular polygon with @racket[sides] sides, with the first vertex at angle @racket[start], that can be centered in a @racket[height] × @racket[height] box.
@@ -432,6 +441,8 @@ The default @racket[start] angle is chosen so that the polygon has a horizontal 
 @defmodule[images/icons/stickman]
 @interaction-eval[#:eval icons-eval (require images/icons/stickman)]
 
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
+
 @doc-apply[standing-stickman-icon]{
 Returns the icon displayed in DrRacket's lower-right corner when no program is running.
 @examples[#:eval icons-eval (standing-stickman-icon #:height 64)]
@@ -456,6 +467,8 @@ The cycle is modeled after the run cycle of the player's avatar in the Commodore
 
 @defmodule[images/icons/tool]
 @interaction-eval[#:eval icons-eval (require images/icons/tool)]
+
+@history[#:changed "1.1" @elem{Added optional @racket[#:backing-scale] arguments.}]
 
 @doc-apply[check-syntax-icon]
 @doc-apply[small-check-syntax-icon]{
