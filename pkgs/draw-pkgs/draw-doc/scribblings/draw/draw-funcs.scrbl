@@ -47,7 +47,9 @@ backing-scale)], but this procedure is preferred because it defaults
 @racket[alpha?] in a more useful way.
 
 See also @racket[make-platform-bitmap] and @secref["Portability"].
-}
+
+@history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
+optional argument.}]}
 
 
 @defproc[(make-brush
@@ -166,7 +168,10 @@ When @racket[stipple] is @racket[#f], @racket[immutable?] is true, and
 
 Creates a bitmap that uses platform-specific drawing operations
 as much as possible, which is different than a @racket[make-bitmap] result
-on Windows and Mac OS X. See @secref["Portability"] for more information.}
+on Windows and Mac OS X. See @secref["Portability"] for more information.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
+optional argument.}]}
                  
 
 @defproc[(read-bitmap [in (or path-string? input-port?)]
@@ -193,7 +198,10 @@ is not one of the @racketidfont{/mask} symbols, then
 @racket[read-bitmap] checks whether a file exists matching @racket[in]
 but with @filepath{@"@"2x} added to the name (before the file suffix,
 if any). If the @filepath{@"@"2x} path exists, it is used instead of
-@racket[in], and @racket[backing-store] is multiplied by @racket[2].}
+@racket[in], and @racket[backing-store] is multiplied by @racket[2].
+
+@history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
+and @racket[#:try-@2x?] optional arguments.}]}
 
 
 @defproc[(recorded-datum->procedure [datum any/c]) ((is-a?/c dc<%>) . -> . void?)]{

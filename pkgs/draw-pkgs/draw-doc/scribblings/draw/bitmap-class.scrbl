@@ -76,7 +76,8 @@ When a @racket[bits] byte string is provided: Creates a monochrome
  @racket[height] is larger than 8 times the length of @racket[bits],
  @|MismatchExn|.
 
-}
+@history[#:changed "1.1" @elem{Added the @racket[backing-scale]
+optional arguments.}]}
 
 @defmethod[(get-argb-pixels [x real?]
                             [y real?]
@@ -97,13 +98,18 @@ If the bitmap has a @tech{backing scale} other than @racket[1.0] and
 @racket[unscaled?] is true, then the result corresponds to the
 bitmap's pixels ignoring the @tech{backing scale}. In that case,
 @racket[x], @racket[y], @racket[width], and @racket[height] are
-effectively in pixels instead of drawing units.}
+effectively in pixels instead of drawing units.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:unscaled?]
+optional argument.}]}
 
 
 @defmethod[(get-backing-scale)
            (>/c 0.0)]{
 
-Returns the bitmap's @tech{backing scale}.}
+Returns the bitmap's @tech{backing scale}.
+
+@history[#:added "1.1"]}
 
 
 @defmethod[(get-depth)
@@ -330,7 +336,10 @@ A monochrome bitmap saved as @racket['png] without a mask bitmap
 
 If the bitmap has a @tech{backing scale} other than 1.0, then it is
  effectively converted to a single pixel per drawing unit before
- saving unless @racket[unscaled?] is true.}
+ saving unless @racket[unscaled?] is true.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:unscaled?]
+optional argument.}]}
 
 
 @defmethod[(set-argb-pixels [x real?]
@@ -351,7 +360,10 @@ If the bitmap has a @tech{backing scale} other than @racket[1.0] and
 @racket[unscaled?] is true, then pixel values are installed ignoring
 the @tech{backing scale}. In that case, @racket[x], @racket[y],
 @racket[width], and @racket[height] are effectively in pixels instead
-of drawing units.}
+of drawing units.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:unscaled?]
+optional argument.}]}
 
 
 @defmethod[(set-loaded-mask [mask (is-a?/c bitmap%)])
