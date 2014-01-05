@@ -333,7 +333,8 @@ Returns the universal recycling symbol, rendered as an icon.
 Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 (Anything similar that would be constructed by @racket[text-icon] would differ at least slightly across platforms.)
 @examples[#:eval icons-eval (x-icon #:height 32)]
-}
+
+@history[#:changed "1.1" @elem{Added optional @racket[#:thickness] argument.}]}
 
 @doc-apply[check-icon]{
 @examples[#:eval icons-eval (check-icon #:height 32)]
@@ -433,6 +434,11 @@ The default @racket[start] angle is chosen so that the polygon has a horizontal 
                             #:shackle-color "lemonchiffon"
                             #:material glass-icon-material)]
 }
+
+@doc-apply[close-icon]{
+@examples[#:eval icons-eval
+                 (close-icon #:height 32 #:material glass-icon-material)]
+@history[#:added "1.1"]}
 
 @;====================================================================================================
 

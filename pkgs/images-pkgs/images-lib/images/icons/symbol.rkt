@@ -17,16 +17,16 @@
           hash-quote-icon hash-quote-flomap)
          (only-doc-out (all-defined-out)))
 
-(define (flat-x-flomap color height)
+(define (flat-x-flomap color height #:thickness [thickness 10])
   (define mn 7.5)
   (define mx 23.5)
   (draw-icon-flomap
    (λ (dc)
      (send dc set-pen (make-object pen% (icon-color->outline-color color) 
-                        12 'solid 'projecting 'miter))
+                        (+ thickness 2) 'solid 'projecting 'miter))
      (send dc draw-line mn mn mx mx)
      (send dc draw-line mn mx mx mn)
-     (send dc set-pen (make-object pen% color 10 'solid 'projecting  'miter))
+     (send dc set-pen (make-object pen% color thickness 'solid 'projecting  'miter))
      (send dc draw-line mn mn mx mx)
      (send dc draw-line mn mx mx mn))
    32 32 (/ height 32)))
@@ -149,11 +149,12 @@
 (defproc (x-flomap [#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
                    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
                    [#:material material deep-flomap-material-value? (default-icon-material)]
+                   [#:thickness thickness (and/c rational? (>=/c 0)) 10]
                    ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
-   (let* ([fm   (flat-x-flomap color height)]
+   (let* ([fm   (flat-x-flomap color height #:thickness thickness)]
           [dfm  (flomap->deep-flomap fm)]
           [dfm  (deep-flomap-icon-style dfm)]
           [dfm  (deep-flomap-raise dfm (* -8 scale))])
@@ -298,7 +299,8 @@
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
    [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [#:material material deep-flomap-material-value? (default-icon-material)])
+   [#:material material deep-flomap-material-value? (default-icon-material)]
+   [#:thickness thickness (and/c rational? (>=/c 0)) 10])
   (height)
   [x-icon x-flomap])
 

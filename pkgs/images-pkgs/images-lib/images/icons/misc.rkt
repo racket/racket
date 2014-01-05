@@ -12,6 +12,7 @@
           regular-polygon-icon regular-polygon-flomap
           stop-sign-icon stop-sign-flomap
           stop-signs-icon stop-signs-flomap
+          close-icon close-flomap
           foot-icon foot-flomap
           magnifying-glass-icon magnifying-glass-flomap
           left-magnifying-glass-icon left-magnifying-glass-flomap
@@ -76,6 +77,31 @@
           ) flomap?
   (define fm (stop-sign-flomap #:color color #:height (* height 2/3) #:material material))
   (flomap-pin* 3/16 1/4 0 0 fm fm fm))
+
+(defproc (close-flomap
+          [#:color color (or/c string? (is-a?/c color%)) "black"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
+  (make-cached-flomap
+   [height color material]
+   (define scale (/ height 32))
+   (let* ([indent-fm  (fm* 0.5 (flat-x-flomap "black" (* 22 scale) #:thickness 6))]
+          [indent-dfm  (deep-flomap-raise (flomap->deep-flomap indent-fm) (* -1 scale))]
+          [fm   (draw-rendered-icon-flomap
+                 (λ (dc)
+                   (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+                   (send dc set-brush color 'solid)
+                   (send dc draw-ellipse 0 0 31 31))
+                 32 32 (/ height 32) material)]
+          [dfm  (flomap->deep-flomap fm)]
+          [dfm  (deep-flomap-icon-style dfm)]
+          [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
+          [fm  (deep-flomap-render-icon dfm material)])
+     (flomap-cc-superimpose fm (x-flomap #:color light-metal-icon-color
+                                         #:height (* 22 scale)
+                                         #:material metal-icon-material
+                                         #:thickness 6)))))
 
 (defproc (foot-flomap
           [#:color color (or/c string? (is-a?/c color%))]
@@ -596,6 +622,13 @@
   (height)
   [stop-sign-icon stop-sign-flomap]
   [stop-signs-icon stop-signs-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) "black"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  (height)
+  [close-icon close-flomap])
 
 (define-icon-wrappers
   ([#:color color (or/c string? (is-a?/c color%))]
