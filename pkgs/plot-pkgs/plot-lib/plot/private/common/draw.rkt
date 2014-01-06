@@ -562,16 +562,10 @@
 ;; Drawing a bitmap using 2x supersampling
 
 (define (draw-bitmap/supersampling draw width height)
-  (define bm2 (make-bitmap (* 2 width) (* 2 height)))
-  (define dc2 (make-object bitmap-dc% bm2))
-  (send dc2 set-scale 2 2)
-  (draw dc2)
-  
-  (define bm (make-bitmap width height))
+  (define bm (make-bitmap width height #:backing-scale 2))
   (define dc (make-object bitmap-dc% bm))
-  (send dc set-scale 1/2 1/2)
-  (send dc set-smoothing 'smoothed)
-  (send dc draw-bitmap bm2 0 0)
+  (send dc set-alignment-scale 2)
+  (draw dc)
   bm)
 
 (define (draw-bitmap draw width height)
