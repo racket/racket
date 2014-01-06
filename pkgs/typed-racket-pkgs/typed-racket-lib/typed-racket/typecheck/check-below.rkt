@@ -4,7 +4,8 @@
          racket/match (prefix-in - (contract-req))
          (types utils union subtype filter-ops)
          (utils tc-utils)
-         (rep type-rep object-rep filter-rep))
+         (rep type-rep object-rep filter-rep)
+         (only-in (types printer) pretty-format-type))
 
 (provide/cond-contract
  [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()
@@ -46,7 +47,9 @@
      (type-mismatch (format "`~a'" t1) (format "a different `~a'" t2)
                     "type variables bound in different scopes")]
     [(_ _)
-     (type-mismatch t1 t2)]))
+     (type-mismatch
+      (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1)
+      (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))]))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
