@@ -14,16 +14,13 @@
 (define-syntax (te-tests stx)
   (define (single-test stx)
     (syntax-case stx (FAIL)
-      [(FAIL t s) #'((test-check (format "FAIL ~a" '(t s)) (lambda (a b) (not (type-equal? a b))) t s)
-                     (test-check (format "FAIL ~a" '(s t)) (lambda (a b) (not (type-equal? a b))) s t))]
-      [(t s) (syntax/loc stx
-               ((test-check (format "~a" '(t s)) type-equal? t s)
-                (test-check (format "~a" '(s t)) type-equal? s t)))]))
+      [(FAIL t s) (syntax/loc stx (test-check (format "FAIL ~a" '(t s))
+                                    (lambda (a b) (not (type-equal? a b))) t s))]
+      [(t s) (syntax/loc stx (test-check (format "~a" '(t s)) type-equal? t s))]))
   (syntax-case stx ()
     [(_ cl ...)
-     (with-syntax ([((cl1 cl2) ...) (map single-test (syntax->list #'(cl ...)))])
-       #'(test-suite "Tests for type equality"
-                     cl1 ... cl2 ...))]))
+     #`(test-suite "Tests for type equality"
+         #,@(map single-test (syntax->list #'(cl ...))))]))
 
 (define (fld* t) (make-fld t (datum->syntax #'here 'values) #f))
 

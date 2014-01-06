@@ -31,19 +31,20 @@
 
 (define-syntax (tc-e stx)
   (syntax-parse stx
-    [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
+    [(tc-e expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
     [(id a #:ret b)
      (syntax/loc stx
-       (let-values
-         ([(res1 expanded)
-           (phase1-phase0-eval
-             (let ([ex (local-expand #'a 'expression null)])
-               (find-mutated-vars ex mvar-env)
-               #`(values '#,(tc-expr ex) '#,(syntax->datum ex))))]
-          [(res2) (phase1-phase0-eval #`'#,b)])
-         (with-check-info (['expanded expanded])
-           (check-tc-result-equal? (format "~a ~a" (quote-line-number id) 'a)
-                                   res1 res2))))]))
+       (test-case (format "~a ~a" (quote-line-number id) 'a)
+         (let-values
+           ([(res1 expanded)
+             (phase1-phase0-eval
+               (let ([ex (local-expand #'a 'expression null)])
+                 (find-mutated-vars ex mvar-env)
+                 #`(values '#,(tc-expr ex) '#,(syntax->datum ex))))]
+            [(res2) (phase1-phase0-eval #`'#,b)])
+           (with-check-info (['expanded expanded])
+             (unless (tc-result-equal/test? res1 res2)
+               (fail-check "Expression didn't have expected type."))))))]))
 
 (define tests
   (test-suite
