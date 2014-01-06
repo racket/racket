@@ -86,20 +86,23 @@
         .version-row a:hover {
           background-color: #eeee22;
         }})
+    (define-values (main-package alt-packages)
+      (cond [(null? all-packages)
+             (eprintf "Warning: all-packages is empty\n")
+             (values 'racket null)]
+            [else
+             (values (car all-packages) (cdr all-packages))]))
     @page[#:id 'all-versions #:title "All Versions" #:part-of 'download
           #:extra-headers style]{
       @table[align: 'center cellspacing: 0 cellpadding: 4 frame: 'box
              rules: 'groups]{
         @thead{
           @tr{@td{@nbsp @strong{Version & Release Notes}}
-              @(map (λ (p) @th[align: 'center]{@(package->name p)})
-                    all-packages)
+              @th[align: 'center]{@(package->name main-package)}
+              @th[align: 'center]{Alternative Distributions}
               @td{@strong{Documentation}}}}
         @(let ([sep (tr style: "height: 4px; margin: 0; padding: 0;"
                         (td) (map (λ (_) (td)) all-packages))])
-           (define (cell rel pkg)
-             @td[align: 'center]{
-               @nbsp @(make-page rel pkg){[download]} @nbsp})
            ;; release=>packages : hash[release => (listof package)]
            ;; Indicates what packages actually exist (have installers) for a given release.
            (define release=>packages (make-hash))
@@ -108,6 +111,9 @@
              (define prev-packages (hash-ref release=>packages r null))
              (unless (member (installer-package i) prev-packages)
                (hash-set! release=>packages r (cons (installer-package i) prev-packages))))
+           (define (cell rel pkg)
+             @td[align: 'center
+                 @nbsp @(make-page rel pkg){[download]} @nbsp])
            @tbody{
              @sep
              @(for/list ([r (in-list all-releases)])
@@ -115,12 +121,21 @@
                   @list{
                     @tr[class: 'version-row]{
                       @td{@|nbsp nbsp| @strong{Version @ver},
-                          @(release-page r){@release-date-string[r]} @nbsp}
-                      @(for/list ([p (in-list all-packages)])
-                         (if (member p (hash-ref release=>packages r))
-                             (cell r p)
-                             @td[]))
-                      @td{@nbsp @a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
+                          @(release-page r){@release-date-string[r]}@;
+                          @nbsp}
+                      @(if (member main-package (hash-ref release=>packages r))
+                           (cell r main-package)
+                           @td[])
+                      @td[align: 'center]{
+                        @nbsp
+                        @(add-between
+                          (for/list ([p (in-list alt-packages)]
+                                     #:when (member p (hash-ref release=>packages r)))
+                            ((make-page r p) (format "[download ~a]" (package->name p))))
+                          @nbsp)
+                        @nbsp}
+                      @td[align: 'center]{
+                          @nbsp @a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
                           @nbsp @a[href: @list{@|docs|/@|ver|/pdf}]{[PDF]} @;
                           @nbsp}}
                     @sep})})
