@@ -735,7 +735,9 @@
                 #f
                 (path->collects-relative p #:cache collects-cache)))
   (when (list? c)
-    (check-info/parents base
+    (check-info/parents (if (path? base)
+                            (path->complete-path base)
+                            (current-directory)) ; got 'relative
                         (apply build-path (map bytes->path (reverse (cdr (reverse (cdr c)))))))))
 
 (define (normalize-info-path p)
