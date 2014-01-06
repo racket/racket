@@ -100,6 +100,14 @@
            (define (cell rel pkg)
              @td[align: 'center]{
                @nbsp @(make-page rel pkg){[download]} @nbsp})
+           ;; release=>packages : hash[release => (listof package)]
+           ;; Indicates what packages actually exist (have installers) for a given release.
+           (define release=>packages (make-hash))
+           (for ([i (in-list all-installers)])
+             (define r (installer-release i))
+             (define prev-packages (hash-ref release=>packages r null))
+             (unless (member (installer-package i) prev-packages)
+               (hash-set! release=>packages r (cons (installer-package i) prev-packages))))
            @tbody{
              @sep
              @(for/list ([r (in-list all-releases)])
@@ -108,7 +116,10 @@
                     @tr[class: 'version-row]{
                       @td{@|nbsp nbsp| @strong{Version @ver},
                           @(release-page r){@release-date-string[r]} @nbsp}
-                      @(map (λ (p) (cell r p)) all-packages)
+                      @(for/list ([p (in-list all-packages)])
+                         (if (member p (hash-ref release=>packages r))
+                             (cell r p)
+                             @td[]))
                       @td{@nbsp @a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
                           @nbsp @a[href: @list{@|docs|/@|ver|/pdf}]{[PDF]} @;
                           @nbsp}}
