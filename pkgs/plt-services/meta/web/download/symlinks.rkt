@@ -11,3 +11,5 @@
 (define installers (symlink (in-ftp "installers")))
 (define libs       (symlink (in-ftp "libs/tags") "libs"))
 (define stubs      (symlink "/www/stubs"))
+
+(define releases-dir (symlink (in-ftp "releases")))
