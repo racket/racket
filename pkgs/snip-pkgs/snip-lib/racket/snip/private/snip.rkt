@@ -829,7 +829,8 @@
 
           (let-values ([(loadfile
                          type
-                         inlined?)
+                         inlined?
+                         backing-scale)
                         (if (and (equal? filename #"")
                                  can-inline?
                                  (positive? type))
@@ -838,19 +839,26 @@
                                 (send f get-fixed len)
                               (if (and (len . > . 0)
                                        (send f ok?))
-                                  (let-values ([(in out) (make-pipe)])
+                                  (let-values ([(in out) (make-pipe)]
+                                               [(backing-scale)
+                                                (if (= type 4)
+                                                    (send f get-inexact)
+                                                    1.0)])
                                     (for ([i (in-range len)])
                                       (display (send f get-unterminated-bytes) out))
                                     (close-output-port out)
                                     (values in
                                             'unknown/alpha
-                                            #t))
+                                            #t
+                                            backing-scale))
                                   (values filename
                                           (int->img-type type)
-                                          #f)))
+                                          #f
+                                          1.0)))
                             (values filename
                                     (int->img-type type)
-                                    #f))])
+                                    #f
+                                    1.0))])
             ;; the call to create an image-snip% object
             ;; here should match the way that super-make-object
             ;; is called in wxme/image.rkt
@@ -862,7 +870,8 @@
                                              loadfile))
                                      type
                                      (positive? relative) 
-                                     inlined?)])
+                                     inlined?
+                                     backing-scale)])
               (send snip resize w h)
               (send snip set-offset dx dy)
 
@@ -927,8 +936,9 @@
    [([(make-or-false (make-alts path-string? input-port?)) [name #f]]
      [image-type? [kind 'unknown]]
      [bool? [relative-path? #f]]
-     [bool? [inline? #t]])
-    (load-file name kind relative-path? inline?)]
+     [bool? [inline? #t]]
+     [positive-real? [backing-scale 1.0]])
+    (load-file name kind relative-path? inline? backing-scale)]
    (init-name 'bitmap%))
 
   (define (size-cache-invalid)
@@ -1015,9 +1025,12 @@
                 [(= (send bm get-depth) 1)
                  (send f put 1)
                  'bm]
-                [else
+                [(= 1 (send bm get-backing-scale))
                  (send f put 2)
-                 'pm]))])
+                 'pm]
+                [else
+                 (send f put 4)
+                 'scaled-pm]))])
       (send f put vieww)
       (send f put viewh)
       (send f put viewdx)
@@ -1029,9 +1042,12 @@
         (let ([lenpos (send f tell)])
           (send f put-fixed 0)
 
+          (when (eq? write-mode 'scaled-pm)
+            (send f put (send bm get-backing-scale)))
+
           (let ([num-lines
                  (let-values ([(in out) (make-pipe)])
-                   (send bm save-file out 'png)
+                   (send bm save-file out 'png #:unscaled? #t)
                    (close-output-port out)
                    (let loop ([numlines 0])
                      (let ([s (read-bytes IMG-MOVE-BUF-SIZE in)])
@@ -1049,7 +1065,8 @@
   (def/public (load-file [(make-or-false (make-alts path-string? input-port?)) [name #f]]
                          [image-type? [kind 'unknown]]
                          [bool? [rel-path? #f]]
-                         [bool? [inline? #t]])
+                         [bool? [inline? #t]]
+                         [positive-real? [backing-scale 1.0]])
     (do-set-bitmap #f #f #f)
     
     (let* ([rel-path? (and rel-path?
@@ -1096,7 +1113,7 @@
                            (send s-admin call-with-busy-cursor
                                  (lambda ()
                                    (make-object bitmap% fullpath kind)))
-                           (make-object bitmap% fullpath kind))])
+                           (make-object bitmap% fullpath kind #f #f backing-scale))])
               (when (send nbm ok?)
                 (do-set-bitmap nbm #f #f))))))
       ;; for refresh:

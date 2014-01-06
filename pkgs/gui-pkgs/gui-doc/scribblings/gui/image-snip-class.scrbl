@@ -14,7 +14,8 @@ An @racket[image-snip%] is a snip that can display bitmap images
                                     'jpeg 'png 'png/mask 'png/alpha
                                     'xbm 'xpm 'bmp 'pict) 'unknown]
                         [relative-path? any/c #f]
-                        [inline? any/c #t])
+                        [inline? any/c #t]
+                        [backing-scale (>/c 0.0) 1.0])
                        ([bitmap (is-a?/c bitmap%)]
                         [mask (or/c (is-a?/c bitmap%) #f) #f]))]{
 
@@ -22,7 +23,7 @@ Creates an image snip, loading the image @racket[file] if
  specified (see also @method[image-snip% load-file]), or using the
  given @racket[bitmap].
 
-}
+@history[#:changed "1.1" @elem{Added the @racket[backing-scale] argument.}]}
 
 
 @defmethod[(equal-hash-code-of [hash-code (any/c . -> . exact-integer?)])
@@ -91,7 +92,8 @@ Returns the kind used to load the currently loaded, non-inlined file,
                                   'jpeg 'png 'png/mask 'png/alpha
                                   'xbm 'xpm 'bmp 'pict) 'unknown]
                       [relative-path? any/c #f]
-                      [inline? any/c #t])
+                      [inline? any/c #t]
+                      [backing-scale (>/c 0.0) 1.0])
            void?]{
 
 Loads the file by passing @racket[file] and @racket[kind] to
@@ -117,7 +119,7 @@ If @racket[inline?] is not @racket[#f], the image data will be saved
  (preserving the bitmap's mask, if any).  The source filename and kind
  is no longer relevant.
 
-}
+@history[#:changed "1.1" @elem{Added the @racket[backing-scale] argument.}]}
 
 @defmethod[(other-equal-to? [snip (is-a?/c image-snip%)]
                             [equal? (any/c any/c . -> . boolean?)])
