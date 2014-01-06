@@ -322,7 +322,7 @@ fresh-user:
 	rm -rf build/user
 
 set-config:
-	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
+	$(RACKET) -l distro-build/set-config build/user/config/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
