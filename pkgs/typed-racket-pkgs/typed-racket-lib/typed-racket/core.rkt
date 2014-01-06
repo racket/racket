@@ -11,6 +11,7 @@
          (rep type-rep)
          (for-template (base-env top-interaction))
          (utils utils tc-utils arm)
+         (only-in (types printer) pretty-format-type)
          "standard-inits.rkt"
          "tc-setup.rkt")
 
@@ -82,7 +83,7 @@
                                 (define tc (cleanup-type t))
                                 (define tg (generalize tc))
                                 (format "- : ~a~a~a\n"
-                                        tg
+                                        (pretty-format-type tg #:indent 4)
                                         (cond [(equal? tc tg) ""]
                                               [else (format " [more precisely: ~a]" tc)])
                                         (cond [(equal? tc t) ""]
