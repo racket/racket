@@ -123,7 +123,7 @@
   @page[#:title "Software License" #:part-of 'download]{
     @p*{
     @~ Racket is distributed under the
-       @a[href: "http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html#SEC1"]{
+       @a[href: "http://www.gnu.org/licenses/lgpl-3.0.html"]{
          GNU Lesser General Public License (LGPL)}.
     @~ Our primary goal is to help as many people as possible use and
        contribute to Racket.  We encourage anyone to develop any kind of
