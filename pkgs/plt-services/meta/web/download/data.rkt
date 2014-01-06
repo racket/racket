@@ -2,13 +2,15 @@
 
 (define -platform-names-
   `(;; source platforms
+    ["src-builtpkgs" "Source + built packages"]
+    ["src"  "Source"]
     ["win"  "Windows"]
     ["mac"  "Mac OS X"]
     ["unix" "Unix"]
     ;; binary platforms
     ["i386-win32" "Windows (x86, 32-bit)"]
     ["x86_64-win32" "Windows (x64, 64-bit)"]
-    ["(ppc|i386|x86_64)-osx-mac"
+    ["(ppc|i386|x86_64)-(?:osx-mac|macosx)"
      ,(λ (_ cpu)
         (format "Mac OS X (~a)"
                 (cond
@@ -29,6 +31,7 @@
     ["(i386|x86_64)-linux-ubuntu([0-9]+)"  "Linux \\1 (Ubuntu \\2)"]
     ["(i386|x86_64)-linux-ubuntu-([a-z]+)" "Linux \\1 (Ubuntu \\2)"]
     ["(i386|x86_64)-linux-ubuntu.*"        "Linux \\1 (Ubuntu)"]
+    ["(i386|x86_64)-linux"                 "Linux \\1"]
     ["(i386|x86_64)-freebsd"               "FreeBSD \\1"]
     ["sparc-solaris"                       "Sparc Solaris (SunOS)"]
     ["i386-kernel"                         "x86 Standalone Kernel"]
@@ -40,6 +43,7 @@
     ["tgz" "Gzipped TAR Archive"]
     ["zip" "Zipped Archive"]
     ["dmg" "Disk Image"]
+    ["pkg" "Installer Package"]
     ["plt" "Racket Package"]
     ["sit" "StuffIt Archive"]))
 
@@ -95,7 +99,7 @@
 
 ;; Used to sort packages when more then one is rendered on a page (delayed)
 (define (-installer-orders-)
-  `((,installer-package ,eq? (racket racket-textual))
+  `((,installer-package ,eq? (racket racket-minimal racket-textual))
     (,installer-binary? ,eq? (#t #f))
     (,installer-platform ,regexp-match?
      (#px"\\bwin(32)?\\b" #px"\\bmac\\b" #px"\\blinux\\b" #px""))
@@ -126,7 +130,7 @@
 ;; ----------------------------------------------------------------------------
 ;; Release information
 
-(struct release (version date date-string announcement))
+(struct release (version date date-string announcement) #:transparent)
 
 (define announcements #f)
 (define (set-announcements-file! file)
@@ -162,9 +166,15 @@
    package  ; package kind symbol 'racket or 'racket-textual
    binary?  ; #t = binary distribution, #f = source distribution
    platform ; platform name string (generic for srcs, cpu-os for bins)
-   suffix)) ; string
+   suffix)  ; string
+  #:transparent)
 
-(define installer-rx
+;; Two kinds of installer lines
+
+;; Old-style installer line (before 5.92)
+;; eg: "12295243\t5.3.6/racket-textual/racket-textual-5.3.6-bin-i386-linux-f12.sh"
+;; eg: "7452375\t5.3.6/racket-textual/racket-textual-5.3.6-src-win.zip"
+(define installer-rx1
   (pregexp (string-append
             "^"
             "([0-9.]+)"             ; size
@@ -181,17 +191,44 @@
             "([a-z]+)"              ; suffix
             "))$")))
 
-(define (make-installer size path version package file type platform suffix)
+(define (make-installer1 size path version package file type platform suffix)
+  (define binary? (equal? "bin" type))
   (installer path file (version->release version) (string->number size)
-             (string->symbol package) (equal? "bin" type) platform suffix))
+             (string->symbol package) binary? platform suffix))
+
+;; New-style installer line (since 5.92)
+;; Differences: no "package" dir, implicit "bin", "src" is platform
+;; eg: "87206462\t5.92/racket-5.92-i386-linux-ubuntu-precise.sh"
+;; eg: "5708736\t5.92/racket-minimal-5.92-src.tgz"
+(define installer-rx2
+  (pregexp (string-append
+            "^"
+            "([0-9.]+)"             ; size
+            "\t"
+            "("                     ; path
+            "([0-9p.]+)"            ; version
+            "/("                    ; file
+            "(racket(?:-textual|-minimal)?)" ; package
+            "-\\3-"                 ; -<version>-
+            "([^.]+)"               ; platform
+            "\\."
+            "([a-z]+)"              ; suffix
+            "))$")))
+
+(define (make-installer2 size path version file package platform suffix)
+  (define binary? (not (regexp-match #rx"^src" platform)))
+  (installer path file (version->release version) (string->number size)
+             (string->symbol package) binary? platform suffix))
 
 (define (parse-installers in)
   (port-count-lines! in)
   (for/list ([line (in-lines in)] [num (in-naturals 1)])
-    (apply make-installer
-           (cdr (or (regexp-match installer-rx line)
-                    (error 'installers "bad installer data line#~a: ~s"
-                           num line))))))
+    (cond [(regexp-match installer-rx1 line)
+           => (lambda (m) (apply make-installer1 (cdr m)))]
+          [(regexp-match installer-rx2 line)
+           => (lambda (m) (apply make-installer2 (cdr m)))]
+          [else (error 'installers "bad installer data line#~a: ~s"
+                       num line)])))
 
 (define (order->precedes order)
   (define =? (car order))
