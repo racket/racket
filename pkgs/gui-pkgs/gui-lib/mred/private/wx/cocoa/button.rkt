@@ -59,7 +59,7 @@
                                                     NSRoundedBezelStyle)))
       (cond
        [(string? label)
-        (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
+        (tellv cocoa setTitle: #:type _NSString (strip-mnemonic label))]
        [else
         (if button-type
             (tellv cocoa setTitle: #:type _NSString "")
@@ -182,7 +182,7 @@
   (define/override (set-label label)
     (cond
      [(string? label)
-      (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
+      (tellv cocoa setTitle: #:type _NSString (strip-mnemonic label))]
      [else
       (tellv (or image-cocoa cocoa) setImage: (bitmap->image label))]))
   

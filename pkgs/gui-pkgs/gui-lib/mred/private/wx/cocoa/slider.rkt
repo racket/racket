@@ -77,13 +77,13 @@
           (tellv cocoa setEditable: #:type _BOOL #f)
           (tellv cocoa setBordered: #:type _BOOL #f)
           (tellv cocoa setDrawsBackground: #:type _BOOL #f)
-          (tellv cocoa setTitleWithMnemonic: #:type _NSString (format "~a" hi))
+          (tellv cocoa setStringValue: #:type _NSString (format "~a" hi))
           (tellv cocoa sizeToFit)
           (let ([r1 (tell #:type _NSRect cocoa frame)])
-            (tellv cocoa setTitleWithMnemonic: #:type _NSString (format "~a" lo))
+            (tellv cocoa setStringValue: #:type _NSString (format "~a" lo))
             (tellv cocoa sizeToFit)
             (let ([r2 (tell #:type _NSRect cocoa frame)])
-              (tellv cocoa setTitleWithMnemonic: #:type _NSString (format "~a" val))
+              (tellv cocoa setStringValue: #:type _NSString (format "~a" val))
               (values cocoa
                       (max (NSSize-width (NSRect-size r1))
                            (NSSize-width (NSRect-size r2)))
@@ -164,7 +164,7 @@
     (flip (inexact->exact (floor (tell #:type _double slider-cocoa doubleValue)))))
 
   (define/public (update-message [val (get-value)])
-    (tellv message-cocoa setTitleWithMnemonic: #:type _NSString (format "~a" val)))
+    (tellv message-cocoa setStringValue: #:type _NSString (format "~a" val)))
 
   (inherit get-cocoa-window)
   (define/override (post-mouse-down)

@@ -94,7 +94,7 @@
                         (tellv cocoa setEditable: #:type _BOOL #f)
                         (tellv cocoa setBordered: #:type _BOOL #f)
                         (tellv cocoa setDrawsBackground: #:type _BOOL #f)
-                        (tellv cocoa setTitleWithMnemonic: #:type _NSString label)
+                        (tellv cocoa setStringValue: #:type _NSString (strip-mnemonic label))
                         (tellv cocoa sizeToFit)]
                        [else
                         (tellv cocoa setImage: (if (label . is-a? . bitmap%)
@@ -113,7 +113,7 @@
   (define/override (set-label label)
     (cond
      [(string? label)
-      (tellv (get-cocoa) setTitleWithMnemonic: #:type _NSString label)]
+      (tellv (get-cocoa) setStringValue: #:type _NSString (strip-mnemonic label))]
      [else
       (tellv (get-cocoa) setImage: (bitmap->image label))]))
 

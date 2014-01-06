@@ -12,7 +12,8 @@
 (provide 
  (protect-out item%
               install-control-font
-              sys-font-size))
+              sys-font-size
+              strip-mnemonic))
 
 (import-class NSFont)
 
@@ -27,6 +28,9 @@
   (if font
       (tellv cocoa setFont: (font->NSFont font))
       (tellv cocoa setFont: sys-font)))
+
+(define (strip-mnemonic s)
+  (regexp-replace #rx"[&](.)" s "\\1"))
 
 (defclass item% window%
   (inherit get-cocoa
