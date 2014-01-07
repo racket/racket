@@ -754,20 +754,24 @@
                         (when frame
                           (send frame next-tab))))])
      
-     (define mprefix (case (system-type)
-                       [(windows)
-                        (list* 'alt 'shift (get-default-shortcut-prefix))]
-                       [(unix)
-                        (remove-duplicates (list* 'alt 'shift (get-default-shortcut-prefix)))]
-                       [(macosx)
-                        (list* 'option (get-default-shortcut-prefix))]))
+     (define-values (mprefix shortcut?)
+       (case (system-type)
+         [(windows)
+          (values (list* 'alt 'shift (get-default-shortcut-prefix)) #t)]
+         [(unix)
+          (if (or (member 'alt (get-default-shortcut-prefix))
+                  (member 'meta (get-default-shortcut-prefix)))
+              (values (get-default-shortcut-prefix) #f)
+              (values (remove-duplicates (list* 'alt 'shift (get-default-shortcut-prefix))) #t))]
+         [(macosx)
+          (values (list* 'option (get-default-shortcut-prefix)) #t)]))
 
      (new menu-item% 
           [parent windows-menu]
           [label (string-constant move-current-tab-right)]
           [demand-callback dc]
-	  [shortcut-prefix mprefix]
-	  [shortcut #\]]
+          [shortcut-prefix mprefix]
+          [shortcut (and shortcut? #\])]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
@@ -777,8 +781,8 @@
           [parent windows-menu]
           [label (string-constant move-current-tab-left)]
           [demand-callback dc]
-	  [shortcut-prefix mprefix]
-	  [shortcut #\[]
+          [shortcut-prefix mprefix]
+          [shortcut (and shortcut? #\[)]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
