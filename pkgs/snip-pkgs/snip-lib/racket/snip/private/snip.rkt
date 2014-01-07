@@ -897,10 +897,13 @@
   (interface* ()
               ([prop:convertible
                 (lambda (img format default)
-                  (case format
-                    [(png-bytes)
+                  (cond
+                    [(or (eq? format 'png-bytes)
+                         (and (eq? format 'png@2x-bytes)
+                              (= 2 (send (send img get-bitmap) get-backing-scale))))
                      (let ([s (open-output-bytes)])
-                       (send (send img get-bitmap) save-file s 'png)
+                       (send (send img get-bitmap) save-file s 'png
+                             #:unscaled? (eq? format 'png@2x-bytes))
                        (get-output-bytes s))]
                     [else default]))])))
 
