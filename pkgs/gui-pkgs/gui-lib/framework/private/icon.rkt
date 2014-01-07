@@ -73,7 +73,7 @@
   (make-get-cursor get-left/right-cursor left-right-mask-path left-right-csr-path 'size-e/w)
   
   (define mrf-on-bitmap (delay/sync (make-object bitmap% mrf-bitmap-path)))
-  (define gc-on-bitmap (delay/sync (make-object bitmap% gc-on-bitmap-path)))
+  (define gc-on-bitmap (delay/sync (read-bitmap gc-on-bitmap-path #:try-@2x? #t)))
   
   (define (make-off-bitmap onb)
     (let* ([bitmap (make-object bitmap%
