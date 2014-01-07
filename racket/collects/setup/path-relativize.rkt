@@ -30,8 +30,9 @@
     (define path1
       (cond [(bytes? path0) (bytes->path path0)]
             [(path-string? path0) path0]
-            [else (raise-type-error to-rel-name "path, string, or bytes"
-                                    path0)]))
+            [else (raise-argument-error to-rel-name
+                                        "(or/c path-string? bytes?)"
+                                        path0)]))
     (let loop ([path (explode-path* path1)] [root (force exploded-root)])
       (cond [(not root) path0]
             [(null? root) (cons tag (map (lambda (pe)
@@ -61,9 +62,9 @@
           [(path?   path) path]
           [(bytes?  path) (bytes->path path)]
           [(string? path) (string->path path)]
-          [else (raise-type-error
+          [else (raise-argument-error
                  from-rel-name
-                 (format "path, string, bytes, or a list beginning with ~a" tag)
+                 (format "(or/c path? bytes? (cons '~a (non-empty-listof bytes?)))" tag)
                  path)]))
 
   (values path->relative relative->path))

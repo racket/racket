@@ -1315,7 +1315,9 @@ display such paths (e.g., in error messages).
 
 @defproc[(path->collects-relative [path path-string?]
                                   [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
-         (or/c path-string? (cons/c 'collects (listof bytes?)))]{
+         (or/c path-string?
+               (cons/c 'collects
+                       (cons/c bytes? (non-empty-listof bytes?))))]{
 
 Checks whether @racket[path] (normalized by
 @racket[path->complete-path] and @racket[simplify-path] with
@@ -1328,7 +1330,8 @@ The @racket[cache] argument is used with @racket[path->pkg], if needed.}
 
 @defproc[(collects-relative->path
           [rel (or/c path-string?
-                     (list/c 'collects bytes? bytes? (listof bytes?)))])
+                     (cons/c 'collects
+                             (cons/c bytes? (non-empty-listof bytes?))))])
          path-string?]{
 
 The inverse of @racket[path->collects-relative]: if @racket[rel]
@@ -1348,7 +1351,7 @@ Like @racket[path->collects-relative], but the result is either
 @defmodule[setup/main-collects]
 
 @defproc[(path->main-collects-relative [path (or/c bytes? path-string?)])
-         (or/c path? (cons/c 'collects (listof bytes?)))]{
+         (or/c path? (cons/c 'collects (non-empty-listof bytes?)))]{
 
 Checks whether @racket[path] has a prefix that matches the prefix to
 the main @filepath{collects} directory as determined by
@@ -1366,16 +1369,14 @@ converted to a path using @racket[bytes->path].
 See also @racket[collects-relative->path].}
 
 @defproc[(main-collects-relative->path
-          [rel (or/c bytes? path-string?
-                     (cons/c 'collects (listof bytes?)))])
-         path?]{
+          [rel (or/c bytes?
+                     path-string?
+                     (cons/c 'collects (non-empty-listof bytes?)))])
+         path>]{
 
 The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
-back to a path relative to @racket[(find-collects-dir)].
-
-For historical reasons, if @racket[rel] is any kind of value other
-than specified in the contract above, it is returned as-is.}
+back to a path relative to @racket[(find-collects-dir)].}
 
 @subsection{Displaying Paths Relative to a Common Root}
 

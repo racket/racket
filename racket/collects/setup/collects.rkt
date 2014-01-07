@@ -86,6 +86,9 @@
    [else (raise-argument-error
           'collects-relative->path
           (format "~s"
-                  '(or/c bytes? path-string?
-                         (list/c 'collects bytes? bytes? (listof bytes?))))
+                  '(or/c bytes?
+                         path-string?
+                         (cons/c 'collects
+                                 (cons/c bytes?
+                                         (non-empty-listof bytes?)))))
           p)]))
