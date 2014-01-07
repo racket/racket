@@ -40,3 +40,16 @@ Additional @racket[flag]s can customize aspects of @racket[enter!]:
   that uses @racket[racket/enter]); use the
   @racket[#:dont-re-require-enter] flag to disable the require.}]
 }
+
+@defproc[(dynamic-enter! [mod (or/c module-path? #f)]
+                         [#:verbosity verbosity (or/c 'all 'reload 'none) 'reload]
+                         [#:re-require-enter? re-require-enter? any/c #t])
+         void?]{
+
+Procedure variant of @racket[enter!], where @racket[verbosity] is
+passed along to @racket[dynamic-rerequire] and
+@racket[re-require-enter?]  determines whether @racket[dynamic-enter!]
+requires @racket[racket/enter] in a newly entered namespace.
+
+@history[#:added "6.0.0.1"]}
+

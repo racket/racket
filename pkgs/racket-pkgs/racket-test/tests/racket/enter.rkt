@@ -11,3 +11,6 @@
 
 ;; Make sure that `enter!' can work on lots of modules:
 (enter! pict)
+(enter! #f)
+(dynamic-enter! 'pict)
+(dynamic-enter! #f)

@@ -4,11 +4,19 @@
          racket/list
          (for-syntax racket/base))
 
-(provide enter!)
+(provide enter!
+         dynamic-enter!)
 
 (define-syntax (enter! stx)
   (syntax-protect
    (syntax-case stx ()
+     [(enter! mod . _)
+      (and (syntax-e #'mod)
+           (not (module-path? (syntax->datum #'mod))))
+      (raise-syntax-error #f
+                          "not a module path or #f"
+                          stx
+                          #'mod)]
      [(enter! mod flag ...) (andmap keyword? (syntax->datum #'(flag ...)))
       #'(do-enter! 'mod '(flag ...))]
      [_ (raise-syntax-error
@@ -36,18 +44,28 @@
 
 (define (do-enter! mod flags)
   (let ([flags (check-flags flags)])
+    (dynamic-enter! mod
+                    #:verbosity (cond
+                                 [(memq '#:verbose flags) 'all]
+                                 [(memq '#:verbose-reload flags) 'reload]
+                                 [else 'none])
+                    #:re-require-enter? (not (memq '#:dont-re-require-enter flags)))))
+
+(define (dynamic-enter! mod
+                        #:verbosity [verbosity 'reload]
+                        #:re-require-enter? [re-require-enter? #t])
+  (unless (or (not mod) (module-path? mod))
+    (raise-argument-error 'dynamic-enter! "(or/c module-path? #f)" mod))
+  (unless (memq verbosity '(all reload none))
+    (raise-argument-error 'dynamic-enter! "(or/c 'all 'reload 'none)" verbosity))
     (if mod
       (let* ([none (gensym)]
              [exn (with-handlers ([void (lambda (exn) exn)])
                     (if (module-path? mod)
                         (dynamic-rerequire
                          mod
-                         #:verbosity
-                         (cond
-                          [(memq '#:verbose flags) 'all]
-                          [(memq '#:verbose-reload flags) 'reload]
-                          [else 'none]))
-                        (raise-argument-error 'enter! "module-path?" mod))
+                         #:verbosity verbosity)
+                        (raise-argument-error 'dynamic-enter! "module-path?" mod))
                     none)])
         ;; Try to switch to the module namespace,
         ;; even if there was an exception, because the
@@ -63,7 +81,7 @@
                      (module-declared? mod #f))
             (let ([ns (module->namespace mod)])
               (current-namespace ns)
-              (unless (memq '#:dont-re-require-enter flags)
+              (when re-require-enter?
                 (namespace-require 'racket/enter)))))
         (unless (eq? none exn) (raise exn)))
-      (current-namespace orig-namespace))))
+      (current-namespace orig-namespace)))
