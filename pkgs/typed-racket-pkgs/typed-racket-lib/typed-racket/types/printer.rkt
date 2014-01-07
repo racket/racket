@@ -5,10 +5,13 @@
 
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          racket/pretty
+         racket/list
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
                   "types/match-expanders.rkt"
+                  "types/kw-types.rkt"
+                  "types/utils.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
@@ -257,6 +260,59 @@
         [_ (list (type->sexp rng))]))]
     [else `(Unknown Function Type: ,(struct->vector arr))]))
 
+;; format->* : (Listof arr) -> S-Expression
+;; Format arrs that correspond to a ->* type
+(define (format->* arrs)
+  (define out (open-output-string))
+  (define (fp . args) (apply fprintf out args))
+  ;; see type-contract.rkt, which does something similar and this code
+  ;; was stolen from/inspired by/etc.
+  (match* ((first arrs) (last arrs))
+    [((arr: first-dom rng rst _ kws)
+      (arr: last-dom _ _ _ _))
+     (define-values (mand-kws opt-kws) (partition-kws kws))
+     (define opt-doms (drop last-dom (length first-dom)))
+     `(->*
+       ,(append* (for/list ([dom (in-list first-dom)])
+                   (type->sexp dom))
+                 (for/list ([mand-kw (in-list mand-kws)])
+                   (match-define (Keyword: k t _) mand-kw)
+                   (list k (type->sexp t))))
+       ,(append* (for/list ([opt-dom (in-list opt-doms)])
+                   (type->sexp opt-dom))
+                 (for/list ([opt-kw (in-list opt-kws)])
+                   (match-define (Keyword: k t _) opt-kw)
+                   (list k (type->sexp t))))
+       ,@(if rst (list '#:rest (type->sexp rst)) null)
+       ,(type->sexp rng))]))
+
+;; cover-case-lambda : (Listof arr) -> (Listof s-expression)
+;; Try to cover a case-> type with ->* types
+(define (cover-case-lambda arrs)
+  ;; sublists : (Listof X) -> (Listof (List (Listof X) (Listof X) (Listof X)))
+  ;; produce sublists of a list in decreasing order, also
+  ;; returning the rest of the list before and after the
+  ;; sublist for each.
+  (define (sublists lst)
+    (define (sublist-n n lst)
+      (for/list ([to-drop (range (- (length lst) (- n 1)))])
+        (define-values (pre mid) (split-at lst to-drop))
+        (define-values (sub post) (split-at mid n))
+        (list pre sub post)))
+    (apply append (for/list ([i (range (length lst) 0 -1)])
+                    (sublist-n i lst))))
+  (let loop ([left-to-cover arrs])
+    ;; try to match the largest sublists possible that correspond to
+    ;; ->* types and then the remainder are formatted normally
+    (define a-match
+      (for/first ([sub (in-list (sublists left-to-cover))]
+                  #:when (has-optional-args? (second sub)))
+        sub))
+    (cond [a-match
+           (match-define (list pre sub post) a-match)
+           (append (loop pre) (list (format->* sub)) (loop post))]
+          [else (map arr->sexp left-to-cover)])))
+
 ;; case-lambda->sexp : Type -> S-expression
 ;; Convert a case-> type to an s-expression
 (define (case-lambda->sexp type)
@@ -265,8 +321,11 @@
      (match arities
        [(list) '(case->)]
        [(list a) (arr->sexp a)]
-       [(list a b ...)
-        `(case-> ,(arr->sexp a) ,@(map arr->sexp b))])]))
+       [(and arrs (list a b ...))
+        (define cover (cover-case-lambda arrs))
+        (if (> (length cover) 1)
+            `(case-> ,@cover)
+            (car cover))])]))
 
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed

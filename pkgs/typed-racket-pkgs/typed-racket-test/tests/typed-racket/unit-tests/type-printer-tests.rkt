@@ -86,7 +86,24 @@
                       (string-append "(Any Path-String [#:exists (U 'error"
                                      " 'append 'update 'replace 'truncate"
                                      " 'truncate/replace)] [#:mode (U"
-                                     " 'binary 'text)] -> Void)")))
+                                     " 'binary 'text)] -> Void)"))
+    (check-prints-as? (->opt Univ [] -Void) "(Any -> Void)")
+    (check-prints-as? (->opt [-String] -Void) "(->* () (String) Void)")
+    (check-prints-as? (->opt Univ [-String] -Void) "(->* (Any) (String) Void)")
+    (check-prints-as? (->opt Univ -Symbol [-String] -Void)
+                      "(->* (Any Symbol) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #f -Void)
+                      "(->* (Any) (String #:x String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:rest -String #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) #:rest String Void)")
+    (check-prints-as? (cl->* (->opt -Pathlike [-String] -Void)
+                             (->optkey Univ [-String] #:rest -String #:x -String #t -Void))
+                      (string-append "(case-> (->* (Path-String) (String) Void) "
+                                     "(->* (Any #:x String) (String) #:rest String Void))")))
    (test-suite
     "Pretty printing tests"
     (check-pretty-prints-as? (-val 3) "3")

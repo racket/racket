@@ -100,12 +100,16 @@
     [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(:All^ . rest) (tc-error "All: bad syntax")]))
 
-(define-splicing-syntax-class mandatory-kw-tys
+;; syntax class for standard keyword syntax (same as contracts), may be
+;; optional or mandatory depending on where it's used
+(define-splicing-syntax-class plain-kw-tys
   (pattern (~seq k:keyword t:expr)
-           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t)))
+           #:attr mand-kw (make-Keyword (syntax-e #'k) (parse-type #'t) #t)
+           #:attr opt-kw  (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
 (define-splicing-syntax-class keyword-tys
-  (pattern kw:mandatory-kw-tys #:attr Keyword (attribute kw.Keyword))
+  (pattern kw:plain-kw-tys #:attr Keyword (attribute kw.mand-kw))
+  ;; custom optional keyword syntax for TR
   (pattern (~seq [k:keyword t:expr])
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
@@ -376,11 +380,8 @@
                  (parse-values-type #'rng)
                  #:kws (attribute kws.Keyword)))))]
       [(:->*^
-        (dom:non-keyword-ty ... mand-kws:mandatory-kw-tys ...)
-        ;; this clause uses the syntax of mandatory keyword types to
-        ;; match the ->* contract, but they are optional
-        ;; (the code below swaps the boolean appropriately)
-        (~optional (opt-dom:non-keyword-ty ... opt-kws:mandatory-kw-tys ...))
+        (dom:non-keyword-ty ... mand-kws:plain-kw-tys ...)
+        (~optional (opt-dom:non-keyword-ty ... opt-kws:plain-kw-tys ...))
         (~optional (~seq #:rest rest-type:non-keyword-ty))
         rng)
        (define doms (for/list ([d (in-syntax #'(dom ...))])
@@ -392,11 +393,10 @@
        (opt-fn doms opt-doms (parse-values-type #'rng)
                #:rest (and (attribute rest-type)
                            (parse-type #'rest-type))
-               #:kws (append (attribute mand-kws.Keyword)
-                             (map (match-lambda [(Keyword: k t _) (make-Keyword k t #f)])
-                                  (if (attribute opt-kws)
-                                      (attribute opt-kws.Keyword)
-                                      null))))]
+               #:kws (append (attribute mand-kws.mand-kw)
+                             (if (attribute opt-kws)
+                                 (attribute opt-kws.opt-kw)
+                                 null)))]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
