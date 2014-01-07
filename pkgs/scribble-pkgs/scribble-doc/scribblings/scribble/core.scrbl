@@ -1264,7 +1264,7 @@ Returns the width in characters of the given @tech{content}.
 Returns the width in characters of the given @tech{block}.}
 
 
-@defstruct[collect-info ([ht any/c] [ext-ht any/c] 
+@defstruct[collect-info ([fp any/c] [ht any/c] [ext-ht any/c] 
                          [ext-demand (tag? collect-info? . -> . any/c)]
                          [parts any/c] 
                          [tags any/c] [gen-prefix any/c] 
@@ -1278,7 +1278,7 @@ is intended for external use.
 
 }
 
-@defstruct[resolve-info ([ci any/c] [delays any/c] [undef any/c])]{
+@defstruct[resolve-info ([ci any/c] [delays any/c] [undef any/c] [searches any/c])]{
 
 Encapsulates information accumulated (or being accumulated) from the
 @techlink{resolve pass}. The fields are exposed, but not currently
