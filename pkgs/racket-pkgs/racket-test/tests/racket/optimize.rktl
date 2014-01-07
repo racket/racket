@@ -3207,6 +3207,27 @@
     ;; Should succeed, as opposed to a validation error:
     (eval (read (open-input-bytes (get-output-bytes o))))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interaciton of 3-D macros, non-empty closures, JIT, and bytecode:
+
+(let ([o (open-output-bytes)])
+  (write (compile
+          #'(module 3D-eval-macro racket/base
+              (require (for-syntax racket/base syntax/parse))
+              (provide phase1-eval)
+              
+              (define-syntax (phase1-eval stx)
+                #'((let-syntax ([go (lambda (stx) #`#,(lambda () #'(void)))])
+                     (go))))))
+         o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o))))))
+
+(require '3D-eval-macro)
+(define f (lambda ()
+            (phase1-eval)))
+(test #t syntax? (f))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

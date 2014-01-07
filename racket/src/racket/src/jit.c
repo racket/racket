@@ -3099,10 +3099,20 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       /* Avoid compiling closures multiple times: */
       if (jitter->retain_start) {
 	if (type == scheme_closure_type) {
-	  /* Empty closure? If so, compile the code and get a native closure: */
+	  /* Compile the code and get a native closure: */
 	  Scheme_Closure *c = (Scheme_Closure *)obj;
 	  if (ZERO_SIZED_CLOSUREP(c))
 	    obj = scheme_jit_closure((Scheme_Object *)c->code, NULL);
+          else {
+            /* Strange case that can happen if a 3-D macro injects a closure
+               into an expression: */
+            int i;
+            obj = scheme_jit_closure((Scheme_Object *)c->code, NULL);
+            obj = scheme_make_native_closure(((Scheme_Closure_Data *)obj)->u.native_code);
+            for (i = c->code->closure_size; i--; ) {
+              ((Scheme_Native_Closure *)obj)->vals[i] = c->vals[i];
+            }
+          }
 	} else if (type == scheme_case_closure_type) {
 	  /* Empty case closure? Turn in into a JITted empty case closure. */
 	  obj = scheme_unclose_case_lambda(obj, 1);
