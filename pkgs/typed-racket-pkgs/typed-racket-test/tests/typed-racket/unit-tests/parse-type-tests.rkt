@@ -4,13 +4,14 @@
          (for-syntax
            racket/base
            racket/dict
+           (base-env base-structs)
            (env tvar-env type-alias-env)
            (utils tc-utils)
            (private parse-type)
            (rep type-rep)
 
            (submod typed-racket/base-env/base-types initialize)
-           (rename-in (types union abbrev numeric-tower)
+           (rename-in (types union abbrev numeric-tower resolve)
                       [Un t:Un] [-> t:->] [->* t:->*]))
          (only-in typed-racket/typed-racket do-standard-inits)
          (base-env base-types base-types-extra colon)
