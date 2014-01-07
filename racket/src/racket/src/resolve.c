@@ -1690,9 +1690,19 @@ static mzshort *allocate_boxmap(int n)
 }
 
 void scheme_boxmap_set(mzshort *boxmap, int j, int bit, int delta)
+/* assumes that existing bits are cleared */
 {
   j *= CLOS_TYPE_BITS_PER_ARG;
   boxmap[delta + (j / BITS_PER_MZSHORT)] |= ((mzshort)bit << (j & (BITS_PER_MZSHORT - 1)));
+}
+
+static void boxmap_clear(mzshort *boxmap, int j, int delta)
+{
+  mzshort v;
+  j *= CLOS_TYPE_BITS_PER_ARG;
+  v = boxmap[delta + (j / BITS_PER_MZSHORT)];
+  v ^= (v & ((mzshort)(((1 << CLOS_TYPE_BITS_PER_ARG) - 1) << (j & (BITS_PER_MZSHORT - 1)))));
+  boxmap[delta + (j / BITS_PER_MZSHORT)] = v;
 }
 
 int scheme_boxmap_get(mzshort *boxmap, int j, int delta)
@@ -2020,6 +2030,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       if (expanded_already) {
         /* shift type map down: */
         for (i = 0; i < closure_size; i++) {
+          boxmap_clear(closure_map, i, closure_size);
           scheme_boxmap_set(closure_map, i, scheme_boxmap_get(closure_map, i + 1, closure_size), closure_size);
         }
         SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_HAS_TYPED_ARGS;

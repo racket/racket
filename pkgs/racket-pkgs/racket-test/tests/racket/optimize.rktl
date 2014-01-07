@@ -3207,6 +3207,22 @@
     ;; Should succeed, as opposed to a validation error:
     (eval (read (open-input-bytes (get-output-bytes o))))))
 
+(parameterize ([current-namespace (make-base-namespace)]
+               [read-on-demand-source #f]
+               [read-accept-compiled #t])
+  (let ([o (open-output-bytes)])
+    (write (compile '(module m racket/base
+                       (require racket/fixnum)
+                       (define ident (lambda (x) x))
+                       (set! ident ident)
+                       (define app (lambda (f) (f)))
+                       (set! app app)
+                       (let ([n (fxmax (length '()) 1)])
+                         (app (lambda _ (ident n))))))
+           o)
+    ;; Should succeed, as opposed to a validation error:
+    (eval (read (open-input-bytes (get-output-bytes o))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check interaciton of 3-D macros, non-empty closures, JIT, and bytecode:
 
