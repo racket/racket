@@ -75,6 +75,36 @@
 
 (provide to-be-abstr)
 
+;; has-optional-args? : (Listof arr) -> Boolean
+;; Check if the given arrs meet the necessary conditions to be printed
+;; with a ->* constructor or for generating a ->* contract
+(define (has-optional-args? arrs)
+ (and (> (length arrs) 1)
+      ;; No polydots
+      (for/and ([arr (in-list arrs)])
+        (match arr [(arr: _ _ _ drest _) (not drest)]))
+      ;; Keyword args, range and rest specs all the same.
+      (let* ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
+                                (list rng rest-spec kws)])
+                      arrs)]
+             [first-x (first xs)])
+        (for/and ([x (in-list (rest xs))])
+          (equal? x first-x)))
+      ;; Positionals are monotonically increasing by at most one.
+      (let-values ([(_ ok?)
+                    (for/fold ([positionals (arr-dom (first arrs))]
+                               [ok-so-far?  #t])
+                              ([arr (in-list (rest arrs))])
+                      (match arr
+                        [(arr: dom _ _ _ _)
+                         (define ldom         (length dom))
+                         (define lpositionals (length positionals))
+                         (values dom
+                                 (and ok-so-far?
+                                      (or (= ldom lpositionals)
+                                          (= ldom (add1 lpositionals)))
+                                      (equal? positionals (take dom lpositionals))))]))])
+        ok?)))
 
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
@@ -85,5 +115,6 @@
  [fi (Rep? . -> . (listof symbol?))]
  [fv/list ((listof Type/c) . -> . (set/c symbol?))]
  [current-poly-struct (parameter/c (or/c #f poly?))]
+ [has-optional-args? (-> (listof arr?) any)]
  )
 

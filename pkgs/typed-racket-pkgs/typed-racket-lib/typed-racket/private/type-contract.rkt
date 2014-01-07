@@ -9,7 +9,7 @@
  (utils tc-utils)
  (env type-name-env)
  (rep rep-utils)
- (types resolve union)
+ (types resolve union utils)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
@@ -348,30 +348,7 @@
       ;;  since this code would generate contracts that accept any number of arguments between
       ;;  2 and 6, which is wrong.
       ;; TODO sufficient condition, but may not be necessary
-      [(and
-        (> (length arrs) 1)
-        ;; Keyword args, range and rest specs all the same.
-        (let* ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
-                                       (list rng rest-spec kws)])
-                        arrs)]
-               [first-x (first xs)])
-          (for/and ([x (in-list (rest xs))])
-            (equal? x first-x)))
-        ;; Positionals are monotonically increasing by at most one.
-        (let-values ([(_ ok?)
-                      (for/fold ([positionals (arr-dom (first arrs))]
-                                 [ok-so-far?  #t])
-                          ([arr (in-list (rest arrs))])
-                        (match arr
-                          [(arr: dom _ _ _ _)
-                           (define ldom         (length dom))
-                           (define lpositionals (length positionals))
-                           (values dom
-                                   (and ok-so-far?
-                                        (or (= ldom lpositionals)
-                                            (= ldom (add1 lpositionals)))
-                                        (equal? positionals (take dom lpositionals))))]))])
-          ok?))
+      [(has-optional-args? arrs)
        (match* ((first arrs) (last arrs))
          [((arr: first-dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
            (arr: last-dom _ _ _ _)) ; all but dom is the same for all
