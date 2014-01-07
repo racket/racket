@@ -22,6 +22,7 @@ should be considered standard:
  @item{@racket['text] --- a string for human-readable text}
  @item{@racket['gif-bytes] --- a byte string containing a GIF image encoding}
  @item{@racket['png-bytes] --- a byte string containing a PNG image encoding}
+ @item{@racket['png@2x-bytes] --- like @racket['png-bytes], but intended drawing at @racket[1/2] scale}
  @item{@racket['svg-bytes] --- a byte string containing a SVG image encoding}
  @item{@racket['ps-bytes] --- a byte string containing a PostScript document}
  @item{@racket['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
@@ -49,7 +50,8 @@ Returns @racket[#t] if @racket[v] supports the conversion protocol,
 @defproc[(convert [v convertible?] [request symbol?] [default any/c #f])
          (case request
            [(text) (or/c string? (λ (x) (eq? x default)))]
-           [(gif-bytes png-bytes ps-bytes eps-bytes pdf-bytes svg-bytes)
+           [(gif-bytes png-bytes png@2x-bytes
+                       ps-bytes eps-bytes pdf-bytes svg-bytes)
             (or/c bytes? (λ (x) (eq? x default)))]
            [(pdf-bytes+bounds) (or/c (list/c bytes?
                                              (and/c real? (not/c negative?))

@@ -105,7 +105,7 @@
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
 (define current-part-files (make-parameter #f))
-(define current-render-convertible-requests (make-parameter '(png-bytes svg-bytes)))
+(define current-render-convertible-requests (make-parameter '(png@2x-bytes png-bytes svg-bytes)))
 
 (define (url->string* u)
   (parameterize ([current-url-encode-mode 'unreserved])
@@ -1295,16 +1295,21 @@
     (define/private (render-as-convertible e requests)
       (for/or ([request (in-list requests)])
         (cond
-          [(and (equal? request 'png-bytes)
-                (convert e 'png-bytes))
+          [(and (or (equal? request 'png-bytes)
+                    (equal? request 'png@2x-bytes))
+                (convert e request))
            => 
            (lambda (bstr)
              (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
-                   [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
+                   [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)]
+                   [scale (lambda (v)
+                            (if (equal? request 'png@2x-bytes)
+                                (/ v 2.0)
+                                v))])
                `((img ([src ,(install-file "pict.png" bstr)]
                        [alt "image"]
-                       [width ,(number->string w)]
-                       [height ,(number->string h)])))))]
+                       [width ,(number->string (scale w))]
+                       [height ,(number->string (scale h))])))))]
           [(and (equal? request 'svg-bytes)
                 (convert e 'svg-bytes))
            => (lambda (bstr)

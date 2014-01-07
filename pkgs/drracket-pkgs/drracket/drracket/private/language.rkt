@@ -445,10 +445,16 @@
                                ;; avoid building the png bytes more than once
                                1]
                               [(and (file:convertible? value)
+                                    (file:convert value 'png@2x-bytes #f))
+                               =>
+                               (λ (converted)
+                                 (hash-set! convert-table value (list 2 converted))
+                                 1)]
+                              [(and (file:convertible? value)
                                     (file:convert value 'png-bytes #f))
                                =>
                                (λ (converted)
-                                 (hash-set! convert-table value converted)
+                                 (hash-set! convert-table value (list 1 converted))
                                  1)]
                               [else (oh value display? port)])))]
                        [pretty-print-print-hook
@@ -489,10 +495,11 @@
                                (write-special (value->snip value) port)]
                               [(hash-ref convert-table value #f)
                                =>
-                               (λ (bytes)
+                               (λ (backing-scale+bytes)
                                  (write-special
                                   (make-object image-snip%
-                                    (read-bitmap (open-input-bytes bytes)))
+                                    (read-bitmap (open-input-bytes (cadr backing-scale+bytes))
+                                                 #:backing-scale (car backing-scale+bytes)))
                                   port))]
                               [else (oh value display? port)])))]
                        [print-graph

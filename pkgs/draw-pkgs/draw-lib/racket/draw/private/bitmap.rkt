@@ -136,6 +136,12 @@
                      (let ([s (open-output-bytes)])
                        (send bm save-file s 'png)
                        (get-output-bytes s))]
+                    [(png@2x-bytes)
+                     (if (= 2 (send bm get-backing-scale))
+                         (let ([s (open-output-bytes)])
+                           (send bm save-file s 'png #:unscaled? #t)
+                           (get-output-bytes s))
+                         default)]
                     [else default]))])))
 
 (define (get-empty-surface)

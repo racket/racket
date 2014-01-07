@@ -1,5 +1,5 @@
 #lang scribble/manual
-
+ 
 @(require scribble/eval
           unstable/latent-contract/defthing
           (for-label racket racket/draw

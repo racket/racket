@@ -553,16 +553,17 @@
       
       (define (convert-pict/bytes p format default)
         (case format
-          [(png-bytes)
+          [(png-bytes png@2x-bytes)
            (let* ([bm (make-bitmap
                        (max 1 (inexact->exact (ceiling (pict-width p))))
-                       (max 1 (inexact->exact (ceiling (pict-height p)))))]
+                       (max 1 (inexact->exact (ceiling (pict-height p))))
+                       #:backing-scale (if (eq? format 'png@2x-bytes) 2 1))]
                   [dc (make-object bitmap-dc% bm)])
              (send dc set-smoothing 'aligned)
              (draw-pict p dc 0 0)
              (send dc set-bitmap #f)
              (let ([s (open-output-bytes)])
-               (send bm save-file s 'png)
+               (send bm save-file s 'png #:unscaled? #t)
                (get-output-bytes s)))]
           [(eps-bytes pdf-bytes)
            (let ([s (open-output-bytes)]
