@@ -94,7 +94,7 @@
                                 (define tcs (map cleanup-type t))
                                 (define tgs (map generalize tcs))
                                 (format "- : ~a~a~a\n"
-                                        (cons 'Values tgs)
+                                        (pretty-format-type (make-Values tgs) #:indent 4)
                                         (cond [(andmap equal? tgs tcs) ""]
                                               [else (format " [more precisely: ~a]" (cons 'Values tcs))])
                                         ;; did any get pruned?
