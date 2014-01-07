@@ -82,29 +82,41 @@
    [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
    [(All (A) Number -> Number) (-poly (a) (t:-> N N))]
+   [(All (A) -> Number Number) (-poly (a) (t:-> N N))]
    [(All (A) (Number -> Number)) (-poly (a) (t:-> N N))]
+   [(All (A) (-> Number Number)) (-poly (a) (t:-> N N))]
    [(All (A) A -> A) (-poly (a) (t:-> a a))]
    [(All (A) A → A) (-poly (a) (t:-> a a))]
+   [(All (A) → A A) (-poly (a) (t:-> a a))]
    [(All (A) (A -> A)) (-poly (a) (t:-> a a))]
+   [(All (A) (-> A A)) (-poly (a) (t:-> a a))]
    ;; requires transformer time stuff that doesn't work
    #;[(Refinement even?) (make-Refinement #'even?)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
+   [(-> Number Number Number Boolean Number) (N N N B . t:-> . N)]
    [(Number Number Number * -> Boolean) ((list N N) N . t:->* . B)]
+   [(-> Number Number Number * Boolean) ((list N N) N . t:->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax
    [(U Number Boolean) (t:Un N B)]
    [(U Number Boolean Number) (t:Un N B)]
    [(U Number Boolean 1) (t:Un N B)]
    [(All (a) (Listof a)) (-poly (a) (make-Listof  a))]
    [(All (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
+   [(All (a ...) (-> a ... a Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
    [(∀ (a) (Listof a)) (-poly (a) (make-Listof  a))]
    [(∀ (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
+   [(∀ (a ...) (-> a ... a Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
    [(All (a ...) (a ... -> Number))
+    (-polydots (a) ((list) [a a] . ->... . N))]
+   [(All (a ...) (-> a ... Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
    [(All (a ...) (-> (values a ...)))
     (-polydots (a) (t:-> (make-ValuesDots (list) a 'a)))]
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [(case-> (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
+                                                                 [(N N) N])]
+   [(case-> (Number -> Boolean) (-> Number Number Number)) (cl-> [(N) B]
                                                                  [(N N) N])]
    [1 (-val 1)]
    [#t (-val #t)]
@@ -117,13 +129,22 @@
    [a (-v a) (dict-set initial-tvar-env 'a (-v a))]
 
    [(Any -> Boolean : Number) (make-pred-ty -Number)]
+   [(-> Any Boolean : Number) (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
+    (make-pred-ty -Number)]
+   [(-> Any Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
     (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
     (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+   [(-> Any Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
    [(Number -> Number -> Number)
     (t:-> -Number (t:-> -Number -Number))]
+   [(-> Number (-> Number Number))
+    (t:-> -Number (t:-> -Number -Number))]
    [(Integer -> (All (X) (X -> X)))
+    (t:-> -Integer (-poly (x) (t:-> x x)))]
+   [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
 
    [(Opaque foo?) (make-Opaque #'foo?)]

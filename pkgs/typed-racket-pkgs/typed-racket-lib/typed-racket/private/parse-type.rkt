@@ -313,24 +313,29 @@
           (list (make-arr
                  doms
                  (parse-type (syntax/loc stx (rest-dom ...)))))))]
-      [(dom :->^ rng : latent:simple-latent-filter)
+      [(~or (:->^ dom rng :colon^ latent:simple-latent-filter)
+            (dom :->^ rng :colon^ latent:simple-latent-filter))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
-      [(dom ... :->^ rng
-        : ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
+      [(~or (:->^ dom ... rng
+             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
+            (dom ... :->^ rng
+             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...))))))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (->* (parse-types #'(dom ...))
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
        (make-Function
         (list (make-arr
                (parse-types #'(dom ...))
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
+            (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
            (tc-error/stx #'bound
@@ -343,7 +348,8 @@
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
                           bnd))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty _:ddd rng)
+            (dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng))
        (let ([var (infer-index stx)])
          (make-Function
           (list
@@ -356,7 +362,8 @@
       (->* (parse-types #'(dom ...))
            (parse-values-type #'rng))]     |#
       ;; use expr to rule out keywords
-      [(dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng))
       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
                     (parse-type d))])
          (make-Function
