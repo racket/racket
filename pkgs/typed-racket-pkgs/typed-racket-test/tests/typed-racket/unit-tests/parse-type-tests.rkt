@@ -147,6 +147,25 @@
    [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
 
+   ;; ->* types
+   [(->* (String Symbol) Void) (t:-> -String -Symbol -Void)]
+   [(->* (String Symbol) (String) Void)
+    (->opt -String -Symbol [-String] -Void)]
+   [(->* (String Symbol) (String Symbol) Void)
+    (->opt -String -Symbol [-String -Symbol] -Void)]
+   [(->* (String Symbol) (String) (values Void String))
+    (->opt -String -Symbol [-String] (-values (list -Void -String)))]
+   [(->* (String Symbol) (String) #:rest Symbol Void)
+    (->optkey -String -Symbol [-String] #:rest -Symbol -Void)]
+   [(All (a) (->* (a Symbol) (String) #:rest Symbol Void))
+    (-poly (a) (->optkey a -Symbol [-String] #:rest -Symbol -Void))]
+   [(->* (Integer) (String #:foo Integer) Void)
+    (->optkey -Integer [-String] #:foo -Integer #f -Void)]
+   [(->* (Integer #:bar Integer) (String) Void)
+    (->optkey -Integer [-String] #:bar -Integer #t -Void)]
+   [(->* (Integer #:bar Integer) (String #:foo Integer) Void)
+    (->optkey -Integer [-String] #:bar -Integer #t #:foo -Integer #f -Void)]
+
    [(Opaque foo?) (make-Opaque #'foo?)]
    ;; PR 14122
    [FAIL (Opaque 3)]

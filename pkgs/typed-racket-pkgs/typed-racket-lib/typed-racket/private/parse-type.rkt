@@ -39,6 +39,7 @@
 (define-literal-syntax-class #:for-label List*)
 (define-literal-syntax-class #:for-label pred)
 (define-literal-syntax-class #:for-label ->)
+(define-literal-syntax-class #:for-label ->*)
 (define-literal-syntax-class #:for-label case->^ (case-> case-lambda))
 (define-literal-syntax-class #:for-label Rec)
 (define-literal-syntax-class #:for-label U)
@@ -99,9 +100,12 @@
     [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(:All^ . rest) (tc-error "All: bad syntax")]))
 
-(define-splicing-syntax-class keyword-tys
+(define-splicing-syntax-class mandatory-kw-tys
   (pattern (~seq k:keyword t:expr)
-           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
+           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t)))
+
+(define-splicing-syntax-class keyword-tys
+  (pattern kw:mandatory-kw-tys #:attr Keyword (attribute kw.Keyword))
   (pattern (~seq [k:keyword t:expr])
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
@@ -371,7 +375,28 @@
                  doms
                  (parse-values-type #'rng)
                  #:kws (attribute kws.Keyword)))))]
-
+      [(:->*^
+        (dom:non-keyword-ty ... mand-kws:mandatory-kw-tys ...)
+        ;; this clause uses the syntax of mandatory keyword types to
+        ;; match the ->* contract, but they are optional
+        ;; (the code below swaps the boolean appropriately)
+        (~optional (opt-dom:non-keyword-ty ... opt-kws:mandatory-kw-tys ...))
+        (~optional (~seq #:rest rest-type:non-keyword-ty))
+        rng)
+       (define doms (for/list ([d (in-syntax #'(dom ...))])
+                      (parse-type d)))
+       (define opt-doms (if (attribute opt-dom)
+                            (for/list ([d (in-syntax #'(opt-dom ...))])
+                              (parse-type d))
+                            null))
+       (opt-fn doms opt-doms (parse-values-type #'rng)
+               #:rest (and (attribute rest-type)
+                           (parse-type #'rest-type))
+               #:kws (append (attribute mand-kws.Keyword)
+                             (map (match-lambda [(Keyword: k t _) (make-Keyword k t #f)])
+                                  (if (attribute opt-kws)
+                                      (attribute opt-kws.Keyword)
+                                      null))))]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)

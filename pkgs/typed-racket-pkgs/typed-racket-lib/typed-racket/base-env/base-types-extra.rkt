@@ -15,7 +15,7 @@
 
 ;; special type names that are not bound to particular types
 (define-other-types
-  -> case-> U Rec All Opaque Vector
+  -> ->* case-> U Rec All Opaque Vector
   Parameterof List List* Class Values Instance Refinement
   pred Struct Struct-Type Top Bot)
 
