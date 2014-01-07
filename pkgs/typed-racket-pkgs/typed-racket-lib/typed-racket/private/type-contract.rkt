@@ -9,7 +9,7 @@
  (utils tc-utils)
  (env type-name-env)
  (rep rep-utils)
- (types resolve union utils)
+ (types resolve union utils kw-types)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
