@@ -2,7 +2,8 @@
 @(require scribble/manual "utils.rkt"
           (for-syntax racket/base)
           (for-label scribble/manual-struct
-                     version/utils))
+                     version/utils
+                     syntax/quote))
 
 @(define lit-ellipses (racket ...))
 @(define lit-ellipses+ (racket ...+))
@@ -208,7 +209,14 @@ Source-location span information is used to preserve @racket[#true]
 versus @racket[#t] and @racket[#false] versus @racket[#f], and
 syntax-object properties are used to preserve square brackets and
 curly braces versus parentheses; otherwise, using syntax objects tends
-to normalize the form of S-expression elements.
+to normalize the form of S-expression elements, such as rendering
+@code{2/4} as @racket[2/4]. When source-location information is not
+available, such as when it is lost by bytecode-compiled macros,
+spacing is inserted in the same style (within a single line) as the
+@racket[racket] form.
+
+@margin-note{See also @racket[quote-syntax/keep-srcloc] for use in a
+macro to preserve source-location information in a template.}
 
 In the above example, @racket[define] is typeset as a keyword (in black)
 and as a hyperlink to @racket[define]'s definition in the reference

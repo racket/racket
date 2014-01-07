@@ -380,8 +380,11 @@
               (set! dest-col (+ dest-col len))]))]))
       (define advance
         (case-lambda
-         [(c init-line! delta)
-          (let ([c (+ delta (or (syntax-column c) 0))]
+         [(c init-line! srcless-step delta)
+          (let ([c (+ delta (or (syntax-column c)
+                                (if srcless-step
+                                    (+ src-col srcless-step)
+                                    0)))]
                 [l (syntax-line c)])
             (let ([new-line? (and l (l . > . line))])
               (when new-line?
@@ -405,7 +408,12 @@
                       (set! dest-col (+ old-dest-col amt))))))
               (set! src-col c)
               (hash-set! next-col-map src-col dest-col)))]
-         [(c init-line!) (advance c init-line! 0)]))
+         [(c init-line! srcless-step) (advance c init-line! srcless-step 0)]
+         [(c init-line!) (advance c init-line! #f 0)]))
+      (define (for-each/i f l v)
+        (unless (null? l)
+          (f (car l) v)
+          (for-each/i f (cdr l) 1)))
       (define (convert-infix c quote-depth expr?)
         (let ([l (syntax->list c)])
           (and l
@@ -451,10 +459,10 @@
          [(eq? s 'rsquo) "'"]
          [else s]))
       (define (loop init-line! quote-depth expr? no-cons?)
-        (lambda (c)
+        (lambda (c srcless-step)
           (cond
            [(and escapes? (eq? 'code:blank (syntax-e c)))
-            (advance c init-line!)]
+            (advance c init-line! srcless-step)]
            [(and escapes?
                  (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:comment))
@@ -464,7 +472,7 @@
                  #f
                  "does not have a single sub-form"
                  c)))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (out ";" comment-color)
             (out 'nbsp comment-color)
             (let ([v (syntax->datum (cadr (syntax->list c)))])
@@ -479,25 +487,27 @@
            [(and escapes?
                  (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:contract))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (out "; " comment-color)
             (let* ([l (cdr (syntax->list c))]
                    [s-col (or (syntax-column (car l)) src-col)])
               (set! src-col s-col)
-              (for-each (loop (lambda ()
-                                (set! src-col s-col)
-                                (set! dest-col 0)
-                                (out "; " comment-color))
-                              0
-                              expr?
-                              #f)
-                        l))]
+              (for-each/i (loop (lambda ()
+                                  (set! src-col s-col)
+                                  (set! dest-col 0)
+                                  (out "; " comment-color))
+                                0
+                                expr?
+                                #f)
+                          l
+                          #f))]
            [(and escapes?
                  (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:line))
             (let ([l (cdr (syntax->list c))])
-              (for-each (loop init-line! quote-depth expr? #f) 
-                        l))]
+              (for-each/i (loop init-line! quote-depth expr? #f) 
+                          l
+                          #f))]
            [(and escapes?
                  (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:hilite))
@@ -505,25 +515,27 @@
                   [h? highlight?])
               (unless (and l (= 2 (length l)))
                 (error "bad code:redex: ~.s" (syntax->datum c)))
-              (advance c init-line!)
+              (advance c init-line! srcless-step)
               (set! src-col (syntax-column (cadr l)))
               (hash-set! next-col-map src-col dest-col)
               (set! highlight? #t)
-              ((loop init-line! quote-depth expr? #f) (cadr l))
+              ((loop init-line! quote-depth expr? #f) (cadr l) #f)
               (set! highlight? h?)
               (set! src-col (add1 src-col)))]
            [(and escapes?
                  (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:quote))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
               (out "(" (if (positive? quote-depth) value-color paren-color))
               (set! src-col (+ src-col 1))
               (hash-set! next-col-map src-col dest-col)
               ((loop init-line! quote-depth expr? #f) 
-               (datum->syntax #'here 'quote (car (syntax-e c))))
-              (for-each (loop init-line! (add1 quote-depth) expr? #f)
-                        (cdr (syntax->list c)))
+               (datum->syntax #'here 'quote (car (syntax-e c)))
+               #f)
+              (for-each/i (loop init-line! (add1 quote-depth) expr? #f)
+                          (cdr (syntax->list c))
+                          1)
               (out ")" (if (positive? quote-depth) value-color paren-color))
               (set! src-col (+ src-col 1))
               #;
@@ -537,7 +549,7 @@
                  (or (not expr?)
                      (positive? quote-depth)
                      (quotable? c)))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
               (let-values ([(str quote-delta)
                             (case (syntax-e (car (syntax-e c)))
@@ -555,14 +567,14 @@
                 (let ([i (cadr (syntax->list c))])
                   (set! src-col (or (syntax-column i) src-col))
                   (hash-set! next-col-map src-col dest-col)
-                  ((loop init-line! (max 0 (+ quote-depth quote-delta)) expr? #f) i))))]
+                  ((loop init-line! (max 0 (+ quote-depth quote-delta)) expr? #f) i #f))))]
            [(and (pair? (syntax-e c))
                  (or (not expr?) 
                      (positive? quote-depth)
                      (quotable? c))
                  (convert-infix c quote-depth expr?))
             => (lambda (converted)
-                 ((loop init-line! quote-depth expr? #f) converted))]
+                 ((loop init-line! quote-depth expr? #f) converted srcless-step))]
            [(or (pair? (syntax-e c))
                 (mpair? (syntax-e c))
                 (forced-pair? (syntax-e c))
@@ -587,7 +599,7 @@
                                 (if (eq? sh #\?)
                                     opt-color
                                     paren-color))])
-              (advance c init-line!)
+              (advance c init-line! srcless-step)
               (let ([quote-depth (if (struct-proxy? (syntax-e c))
                                      quote-depth
                                      (to-quoted c expr? quote-depth out color? inc-src-col))])
@@ -676,7 +688,8 @@
                                               (or (zero? quote-depth)
                                                   (not (struct-proxy? (syntax-e c))))
                                               (not no-cons?))]
-                            [dotted? #f])
+                            [dotted? #f]
+                            [srcless-step #f])
                   (cond
                    [(and (syntax? l)
                          (pair? (syntax-e l))
@@ -689,27 +702,29 @@
                                        (quote-depth . > . 1)
                                        (not (memq (syntax-e (car (syntax-e l))) 
                                                   '(unquote unquote-splicing)))))))
-                    (lloop (syntax-e l) first-expr? #f)]
+                    (lloop (syntax-e l) first-expr? #f srcless-step)]
                    [(and (or (null? l)
                              (and (syntax? l)
                                   (null? (syntax-e l)))))
                     (void)]
                    [(and (pair? l) (not dotted?))
-                    ((loop init-line! quote-depth first-expr? #f) (car l))
-                    (lloop (cdr l) expr? #f)]
+                    ((loop init-line! quote-depth first-expr? #f) (car l) srcless-step)
+                    (lloop (cdr l) expr? #f 1)]
                    [(forced-pair? l)
-                    ((loop init-line! quote-depth first-expr? #f) (forced-pair-car l))
-                    (lloop (forced-pair-cdr l) expr? #t)]
+                    ((loop init-line! quote-depth first-expr? #f) (forced-pair-car l) srcless-step)
+                    (lloop (forced-pair-cdr l) expr? #t 1)]
                    [(mpair? l)
-                    ((loop init-line! quote-depth first-expr? #f) (mcar l))
-                    (lloop (mcdr l) expr? #t)]
+                    ((loop init-line! quote-depth first-expr? #f) (mcar l) srcless-step)
+                    (lloop (mcdr l) expr? #t 1)]
                    [else
                     (unless (and expr? (zero? quote-depth))
-                      (advance l init-line! -2)
+                      (advance l init-line! (and srcless-step (+ srcless-step 3)) -2)
                       (out ". " (if (positive? quote-depth) value-color paren-color))
                       (set! src-col (+ src-col 3)))
                     (hash-set! next-col-map src-col dest-col)
-                    ((loop init-line! quote-depth first-expr? #f) l)]))
+                    ((loop init-line! quote-depth first-expr? #f) l (if (and expr? (zero? quote-depth))
+                                                                        srcless-step
+                                                                        #f))]))
                 (out (case sh
                        [(#\[ #\?) "]"]
                        [(#\{) "}"]
@@ -717,7 +732,7 @@
                      p-color)
                 (set! src-col (+ src-col 1))))]
            [(box? (syntax-e c))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
               (if (and expr? (zero? quote-depth))
                   (begin
@@ -729,11 +744,11 @@
                     (out "#&" value-color)
                     (set! src-col (+ src-col 2))))
               (hash-set! next-col-map src-col dest-col)
-              ((loop init-line! (if expr? quote-depth +inf.0) expr? #f) (unbox (syntax-e c)))
+              ((loop init-line! (if expr? quote-depth +inf.0) expr? #f) (unbox (syntax-e c)) #f)
               (when (and expr? (zero? quote-depth))
                 (out ")" paren-color)))]
            [(hash? (syntax-e c))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([equal-table? (hash-equal? (syntax-e c))]
                   [eqv-table? (hash-eqv? (syntax-e c))]
                   [quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
@@ -823,31 +838,32 @@
                                                               (syntax-line c)
                                                               (+ (syntax-column c) delta)
                                                               (+ (syntax-position c) delta)
-                                                              (max 1 (- (syntax-span c) delta)))))))
+                                                              (max 1 (- (syntax-span c) delta))))))
+                 #f)
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [(graph-reference? (syntax-e c))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (out (iformat "#~a#" (unbox (graph-reference-bx (syntax-e c)))) 
                  (if (positive? quote-depth) 
                      value-color
                      paren-color))
             (set! src-col (+ src-col (syntax-span c)))]
            [(graph-defn? (syntax-e c))
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([bx (graph-defn-bx (syntax-e c))])
               (out (iformat "#~a=" (unbox bx))
                    (if (positive? quote-depth) 
                        value-color
                        paren-color))
               (set! src-col (+ src-col 3))
-              ((loop init-line! quote-depth expr? #f) (graph-defn-r (syntax-e c))))]
+              ((loop init-line! quote-depth expr? #f) (graph-defn-r (syntax-e c)) #f))]
            [(and (keyword? (syntax-e c)) expr?)
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (let ([quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
               (typeset-atom c out color? quote-depth expr? escapes? defn?)
               (set! src-col (+ src-col (or (syntax-span c) 1))))]
            [else
-            (advance c init-line!)
+            (advance c init-line! srcless-step)
             (typeset-atom c out color? quote-depth expr? escapes? defn?)
             (set! src-col (+ src-col (or (syntax-span c) 1)))
             #;
@@ -855,7 +871,7 @@
       (out prefix1 #f)
       (set! dest-col 0)
       (hash-set! next-col-map init-col dest-col)
-      ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0 expr? #f) c)
+      ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0 expr? #f) c #f)
       (if (list? suffix)
           (map (lambda (sfx)
                  (finish-line!)

@@ -53,7 +53,9 @@ The @racket[stx-prop-expr] should produce a procedure for recording a
 
 Typesets an S-expression that is represented by a syntax object, where
 source-location information in the syntax object controls the
-generated layout.
+generated layout. When source-location information is not available,
+default spacing is used (in the same single-line style as
+@racket[to-element]).
 
 Identifiers that have @racket[for-label] bindings are typeset and
 hyperlinked based on definitions declared elsewhere (via
