@@ -13,13 +13,12 @@
 
 (provide
   (contract-out
-    [flat/sc (syntax? . -> . static-contract?)]
-    [chaperone/sc (syntax? . -> . static-contract?)]
-    [impersonator/sc (syntax? . -> . static-contract?)]
-    [flat/sc? predicate/c]))
+    [flat/sc ((syntax?) ((or/c #f any/c)) . ->* . static-contract?)]
+    [chaperone/sc ((syntax?) ((or/c #f any/c)) . ->* . static-contract?)]
+    [impersonator/sc ((syntax?) ((or/c #f any/c)) . ->* . static-contract?)]))
 
 (define (simple-contract-write-proc v port mode)
-  (match-define (simple-contract syntax kind) v)
+  (match-define (simple-contract syntax kind name) v)
   (define-values (open close)
     (if (equal? mode 0)
         (values "(" ")")
@@ -27,12 +26,12 @@
   (display open port)
   (fprintf port "~a/sc" kind)
   (display " " port)
-  (write (syntax->datum syntax) port)
+  (write (or name (syntax->datum syntax)) port)
   (display close port))
 
 
 
-(struct simple-contract static-contract (syntax kind)
+(struct simple-contract static-contract (syntax kind name)
         #:methods gen:sc
          [(define (sc-map v f) v)
           (define (sc-traverse v f) (void))
@@ -42,10 +41,9 @@
          [(define (terminal-sc-kind v) (simple-contract-kind v))]
         #:methods gen:custom-write [(define write-proc simple-contract-write-proc)])
 
-(define (flat/sc ctc) (simple-contract ctc 'flat))
-(define (chaperone/sc ctc) (simple-contract ctc 'chaperone))
-(define (impersonator/sc ctc) (simple-contract ctc 'impersonator))
-
-(define (flat/sc? sc)
-  (and (simple-contract? sc)
-       (equal? 'flat (simple-contract-kind sc))))
+(define (flat/sc ctc [name #f])
+  (simple-contract ctc 'flat name))
+(define (chaperone/sc ctc [name #f])
+  (simple-contract ctc 'chaperone name))
+(define (impersonator/sc ctc [name #f])
+  (simple-contract ctc 'impersonator name))

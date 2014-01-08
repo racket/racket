@@ -200,7 +200,7 @@
          (listof/sc (t->sc elem-ty))]
         [t (=> fail) (or (numeric-type->static-contract t) (fail))]
         [(Base: sym cnt _ _)
-         (flat/sc #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)))]
+         (flat/sc #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)) sym)]
         [(Refinement: par p?)
          (and/sc (t->sc par) (flat/sc p?))]
         [(Union: elems)
@@ -313,7 +313,7 @@
         [(Syntax: t)
          (syntax/sc (t->sc t))]
         [(Value: v)
-         (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))))]
+         (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))) v)]
         [(Param: in out) 
          (parameter/sc (t->sc in) (t->sc out))]
         [(Hashtable: k v)
@@ -429,7 +429,7 @@
     [_ (int-err "not a function" f)]))
 
 (define-syntax-rule (numeric/sc name body)
- (flat/sc #'(flat-named-contract 'name body)))
+ (flat/sc #'(flat-named-contract 'name body) 'name))
 (module predicates racket/base
   (provide nonnegative? nonpositive?)
   (define nonnegative? (lambda (x) (>= x 0)))
