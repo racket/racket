@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/port)
+(require racket/port racket/contract)
 
 (provide (all-defined-out))
 
@@ -33,3 +33,13 @@
       (with-output-to-file file
         #:exists 'replace
         (lambda () body ...))))
+
+;; for debugging
+(define (print-blame b)
+  (printf (string-append "#<blame positive=~a\n"
+                         "        negative=~a\n"
+                         "        contract=~a\n"
+                         "        value=~a\n"
+                         "        source=~a>\n")
+          (blame-positive b) (blame-negative b)
+          (blame-contract b) (blame-value b) (blame-source b)))

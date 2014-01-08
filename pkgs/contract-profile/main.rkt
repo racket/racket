@@ -191,7 +191,7 @@
      (printf "~a[label=\"~a\"][color=\"~a\"]\n"
              (hash-ref nodes->names n)
              n
-             (if (hash-ref nodes->typed? n) "green" "red")))
+             (if (hash-ref nodes->typed? n #f) "green" "red")))
    (for ([(k v) (in-hash edge-samples)])
      (match-define (cons pos neg) k)
      (printf "~a -> ~a[label=\"~ams\"]\n"
