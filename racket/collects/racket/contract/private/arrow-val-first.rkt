@@ -71,7 +71,6 @@
                     rest
                     rngs
                     post)
-  (define-logger popular-keys)
   (define key (and (not pre)
                    (not post)
                    (list (length regular-args)
