@@ -2,17 +2,23 @@
 
 ;; Static contract for parametric->/c.
 
-(require "../structures.rkt" "../constraints.rkt"
-         racket/list racket/match
-         unstable/contract
-         (except-in racket/contract recursive-contract)
-         (for-template racket/base racket/contract/parametric)
-         (for-syntax racket/base syntax/parse))
+(require
+  "../structures.rkt"
+  "../constraints.rkt"
+  "../terminal.rkt"
+  racket/list racket/match
+  unstable/contract
+  (except-in racket/contract recursive-contract)
+  (for-template racket/base racket/contract/parametric)
+  (for-syntax racket/base syntax/parse))
 
 (provide
   (contract-out
-    [parametric->/sc ((listof identifier?) static-contract? . -> . static-contract?)])
-  parametric->/sc:)
+    [parametric->/sc ((listof identifier?) static-contract? . -> . static-contract?)]
+    [parametric-var/sc (identifier? . -> . static-contract?)])
+  parametric->/sc:
+  (rename-out
+    [parametric-var/sc parametric-var/sc:]))
 
 
 (struct parametric-combinator combinator (vars)
@@ -44,3 +50,6 @@
   (syntax-parser
     [(_ vars body)
      #'(parametric-combinator (list body) vars)]))
+
+(define-terminal-sc parametric-var/sc (id) #:impersonator
+   id)
