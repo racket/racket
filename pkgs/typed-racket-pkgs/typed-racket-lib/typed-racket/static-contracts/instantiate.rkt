@@ -9,6 +9,7 @@
   racket/sequence
   (for-template racket/base (prefix-in c: racket/contract))
   "kinds.rkt"
+  "parametric-check.rkt"
   "structures.rkt"
   "constraints.rkt"
   "equations.rkt")
@@ -29,11 +30,13 @@
 ;; kind is the greatest kind of contract that is supported, if a greater kind would be produced the
 ;; fail procedure is called.
 (define (instantiate sc fail [kind 'impersonator])
-  (with-handlers [(exn:fail:constraint-failure?
-                    (lambda (exn) (fail #:reason (exn:fail:constraint-failure-reason exn))))]
-    (instantiate/inner sc
-      (compute-recursive-kinds
-        (contract-restrict-recursive-values (compute-constraints sc kind))))))
+  (if (parametric-check sc)
+      (fail #:reason "multiple parametric contracts are not supported")
+      (with-handlers [(exn:fail:constraint-failure?
+                        (lambda (exn) (fail #:reason (exn:fail:constraint-failure-reason exn))))]
+        (instantiate/inner sc
+          (compute-recursive-kinds
+            (contract-restrict-recursive-values (compute-constraints sc kind)))))))
 
 (define (compute-constraints sc max-kind)
   (define (recur sc)

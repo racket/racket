@@ -41,10 +41,8 @@
 
     ;; Polydotted functions should work
     (t/fail (-polydots (a) (->... (list) (a a) -Symbol))
-            "not supported for this type")
+            "not supported for this type")))
 
-    ;; These should fail
-    (t (-> (-poly (a b) (-> (Un a b) (Un a b))) Univ))))
 
 
 
@@ -73,6 +71,10 @@
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
                       "cannot generate contract for non-function polymorphic type")
+              (t/fail (-> (-poly (a b) (-> (Un a b) (Un a b))) Univ)
+                      "multiple parametric contracts are not supported")
+
+
               (t/fail
                 (make-Function
                   (list (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #f)))
