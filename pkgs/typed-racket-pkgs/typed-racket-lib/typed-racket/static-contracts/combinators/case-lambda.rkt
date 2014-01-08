@@ -33,6 +33,9 @@
   #:methods gen:sc
     [(define (sc-map v f)
        (case-combinator (map (λ (a) (f a 'covariant)) (combinator-args v))))
+     (define (sc-traverse v f)
+       (for-each (λ (a) (f a 'covariant)) (combinator-args v))
+       (void))
      (define (sc->contract v f)
        #`(case-> #,@(map f (combinator-args v))))
      (define (sc->constraints v f)
@@ -43,6 +46,9 @@
   #:methods gen:sc
     [(define (sc-map v f)
        (arr-combinator (arr-seq-sc-map f (combinator-args v))))
+     (define (sc-traverse v f)
+       (arr-seq-sc-map f (combinator-args v))
+       (void))
      (define (sc->contract v f)
        (match v
         [(arr-combinator (arr-seq args rest range))

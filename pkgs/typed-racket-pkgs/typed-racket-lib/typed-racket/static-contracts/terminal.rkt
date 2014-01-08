@@ -28,6 +28,7 @@
          #:transparent
          #:methods gen:sc
           [(define (sc-map v f) v)
+           (define (sc-traverse v f) (void))
            (define (sc->contract v unused-f)
              (match-define (name args ...) v)
              body)

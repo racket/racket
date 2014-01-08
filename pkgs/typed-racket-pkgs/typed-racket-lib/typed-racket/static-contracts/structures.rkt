@@ -15,6 +15,7 @@
     (struct combinator ([args sequence?]))
     (struct static-contract ())
     [sc-map (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
+    [sc-traverse (static-contract? (static-contract? variance/c . -> . any/c) . -> . void?)]
     [sc->contract (static-contract? (static-contract? . -> . syntax?) . -> . syntax?)]
     [sc->constraints (static-contract? (static-contract? . -> . contract-restrict?) . -> . contract-restrict?)]
     [terminal-sc-kind (static-contract? . -> . (or/c #f contract-kind?))]
@@ -96,6 +97,10 @@
   ;; Each sub part should be replaced with the value of calling the supplied function on it. The
   ;; variance argument should be how the sub part relates to the static contract.
   [sc-map sc f]
+  ;; sc-traverse: static-contract? (static-contract? variance/c -> any/c) -> void?
+  ;; Takes a static contract and traverses it.  Each sub part should be called with supplied function.
+  ;; The variance argument should be how the sub part relates to the static contract.
+  [sc-traverse sc f]
   ;; sc->contract: static-contract? (static-contract? -> contract?) -> contract?
   ;; Takes a static contract and returns the corresponding contract.
   ;; The function argument should be used for sub parts of the static contract.
@@ -132,7 +137,13 @@
           [(define (sc-map v f)
              (match v
                [(recursive-contract names values body)
-                (recursive-contract names (map (λ (v) (f v 'covariant)) values) (f body 'covariant))]))]
+                (recursive-contract names (map (λ (v) (f v 'covariant)) values) (f body 'covariant))]))
+           (define (sc-traverse v f)
+             (match v
+               [(recursive-contract names values body)
+                (for-each (λ (v) (f v 'covariant)) values)
+                (f body 'covariant)
+                (void)]))]
         #:methods gen:custom-write [(define write-proc recursive-contract-write-proc)])
 
 ;; A use of a contract bound by recursive-contract
@@ -141,6 +152,7 @@
         #:transparent
         #:methods gen:sc
           [(define (sc-map v f) v)
+           (define (sc-traverse v f) (void))
            (define (sc->contract v f) (recursive-contract-use-name v))
            (define (sc->constraints v f) (variable-contract-restrict (recursive-contract-use-name v)))]
         #:methods gen:custom-write [(define write-proc recursive-contract-use-write-proc)])

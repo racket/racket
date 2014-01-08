@@ -29,6 +29,9 @@
   #:methods gen:sc
     [(define (sc-map v f)
        (object-combinator (member-seq-sc-map f (combinator-args v))))
+     (define (sc-traverse v f)
+       (member-seq-sc-map f (combinator-args v))
+       (void))
      (define (sc->contract v f)
        (object/sc->contract v f))
      (define (sc->constraints v f)

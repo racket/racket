@@ -21,6 +21,9 @@
   #:methods gen:sc
     [(define (sc-map v f)
        (prompt-tag-combinator (pt-seq-map f (combinator-args v))))
+     (define (sc-traverse v f)
+       (pt-seq-map f (combinator-args v))
+       (void))
      (define (sc->contract v f)
        (match v
         [(prompt-tag-combinator (pt-seq vals call-cc))

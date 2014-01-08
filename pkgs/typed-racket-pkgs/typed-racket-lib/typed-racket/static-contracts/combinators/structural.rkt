@@ -39,7 +39,7 @@
              #:with category-stx (attribute category)])
 
   (define-syntax-class static-combinator-form
-    #:attributes (name struct-name definition combinator2 ->restricts matcher provides map)
+    #:attributes (name struct-name definition combinator2 ->restricts matcher provides map traverse)
     [pattern (name:id pos:argument-description ... )
              #:with struct-name (generate-temporary #'name)
              #:with matcher-name (format-id #'name "~a:" #'name)
@@ -63,6 +63,11 @@
                      (for/list ([a (in-list (combinator-args v))]
                                 [kind (in-list (list 'pos.variance ...))])
                        (f a kind))))
+             #:with traverse
+               #'(lambda (v f)
+                   (for ([a (in-list (combinator-args v))]
+                         [kind (in-list (list 'pos.variance ...))])
+                     (f a kind)))
              #:with ctc
                  #`(-> #,@(stx-map (lambda (_) #'static-contract?) #'(pos ...)) static-contract?)
              #:with provides #'(provide (contract-out [name ctc]) matcher-name)]
@@ -85,6 +90,10 @@
                    (struct-name
                      (for/list ([a (in-list (combinator-args v))])
                        (f a 'rest.variance))))
+             #:with traverse
+               #'(lambda (v f)
+                   (for ([a (in-list (combinator-args v))])
+                     (f a 'rest.variance)))
              #:with ctc
                  #'(->* () #:rest (listof static-contract?) static-contract?)
              #:with provides #'(provide (contract-out [name ctc]) matcher-name)]))
@@ -98,6 +107,7 @@
                  #:transparent
                  #:methods gen:sc
                    [(define sc-map sc.map)
+                    (define sc-traverse sc.traverse)
                     (define (sc->contract v recur)
                       (apply
                         (sc.combinator2 (lambda (args) #`(c #,@args)))

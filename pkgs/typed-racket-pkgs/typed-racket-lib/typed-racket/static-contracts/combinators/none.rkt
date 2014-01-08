@@ -25,6 +25,7 @@
 (struct none-combinator combinator ()
         #:methods gen:sc
           [(define (sc-map v f) v)
+           (define (sc-traverse v f) (void))
            (define (sc->contract v f) #'none/c)
            (define (sc->constraints v f) (simple-contract-restrict 'flat))]
         #:methods gen:custom-write [(define write-proc none-write-proc)])
