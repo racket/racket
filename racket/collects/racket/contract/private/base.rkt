@@ -141,6 +141,7 @@
 (struct recursive-contract ([name #:mutable] thunk [ctc #:mutable]))
 
 (struct flat-recursive-contract recursive-contract ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name recursive-contract-name
@@ -148,6 +149,7 @@
    #:projection recursive-contract-projection
    #:stronger recursive-contract-stronger))
 (struct chaperone-recursive-contract recursive-contract ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name recursive-contract-name
@@ -155,6 +157,7 @@
    #:projection recursive-contract-projection
    #:stronger recursive-contract-stronger))
 (struct impersonator-recursive-contract recursive-contract ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name recursive-contract-name
