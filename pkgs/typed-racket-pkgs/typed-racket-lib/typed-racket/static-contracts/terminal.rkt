@@ -18,14 +18,23 @@
   (define-syntax-class kind-keyword
     [pattern #:flat #:with sym 'flat]
     [pattern #:chaperone #:with sym 'chaperone]
-    [pattern #:impersonator #:with sym 'impersonator]))
+    [pattern #:impersonator #:with sym 'impersonator])
+
+  (define-splicing-syntax-class printer
+    [pattern (~seq #:printer (v p mode) body)
+      #:with (methods ...) #'(#:methods gen:custom-write [(define (write-proc v p mode) body)])]
+    [pattern (~seq)
+      #:with (methods ...) #'()])
+
+  )
 
 
 (define-syntax (define-terminal-sc stx)
   (syntax-parse stx
-    [(_ name:id (args:id ...) kind:kind-keyword body:expr)
+    [(_ name:id (args:id ...) kind:kind-keyword p:printer body:expr)
      #'(struct name static-contract (args ...)
          #:transparent
+         p.methods ...
          #:methods gen:sc
           [(define (sc-map v f) v)
            (define (sc-traverse v f) (void))
