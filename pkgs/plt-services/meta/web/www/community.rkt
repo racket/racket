@@ -3,6 +3,7 @@
 (require "resources.rkt" "people.rkt" "irc.rkt"
          "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
+         "../stubs/packages.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide community)
@@ -16,6 +17,11 @@
     @parlist[@strong{RacketCon}
              @text{@-rcon[] is our annual conference:
                    @-rcon[2012] and @-rcon[2011].}]
+    @parlist[@strong{PLaneT}
+             @text{@a[href: "http://planet.racket-lang.org/"]{PLaneT} is
+                   Racket's previous system for user-contributed Racket
+                   packages. PLaneT is still supported, but new development
+                   should use the @packages{package system} instead.}] 
     @parlist[@strong{PLT Design Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
