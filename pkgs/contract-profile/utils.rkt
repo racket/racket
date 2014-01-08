@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require racket/port)
+
 (provide (all-defined-out))
 
 (struct contract-profile
@@ -25,7 +27,9 @@
 (define dry-run? (make-parameter #f))
 
 (define-syntax-rule (with-output-to-report-file file body ...)
-  (unless (dry-run?)
-    (with-output-to-file file
-      #:exists 'replace
-      (lambda () body ...))))
+  (if (dry-run?)
+      (parameterize ([current-output-port (open-output-nowhere)])
+        body ...)
+      (with-output-to-file file
+        #:exists 'replace
+        (lambda () body ...))))
