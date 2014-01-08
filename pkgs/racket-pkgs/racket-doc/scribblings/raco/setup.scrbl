@@ -379,6 +379,12 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            that currently has this mode should be the only one with
            the mode.}
 
+     @item{@racket['keep-style] : Leave the document's style as-is,
+           instead of imposing the document style for manuals.}
+
+     @item{@racket['no-search] : Build the document without a search
+           box.}
+
     ]
 
     The @racket[_category] list specifies how to show the document in
@@ -425,7 +431,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      @item{@racket['other] : Other documentation.}
 
      @item{@racket['omit] : Documentation that should not be listed on
-           the root page.}
+           the root page or indexed for searching.}
+
+     @item{@racket['omit-start] : Documentation that should not be
+           listed on the root page but should be indexed for
+           searching.}
 
    ]
 

@@ -147,7 +147,7 @@
   (define (scribblings-flag? sym)
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                          depends-all depends-all-main depends-all-user
-                         no-depend-on always-run)))
+                         no-depend-on always-run keep-style no-search)))
   (define (validate-scribblings-infos infos)
     (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1] [order-hint 0])
       (and (string? path) (relative-path? path)
@@ -768,8 +768,12 @@
                 ((if multi? html:render-multi-mixin values)
                  (html:render-mixin render%)))
                ;; Use PLT manual style:
-               [style-file (collection-file-path "manual-style.css" "scribble")]
-               [extra-files  (list (collection-file-path "manual-fonts.css" "scribble"))]
+               [style-file (if (memq 'keep-style flags)
+                               #f
+                               (collection-file-path "manual-style.css" "scribble"))]
+               [extra-files (if (memq 'keep-style flags)
+                                null
+                                (list (collection-file-path "manual-fonts.css" "scribble")))]
                ;; See also `style-extra-files`, below
                [dest-dir (if multi?
                              (let-values ([(base name dir?) (split-path ddir)]) base)
@@ -810,13 +814,15 @@
                ;; be moved into a binary package:
                [root-path (and allow-indirect? ddir)]
 
-               [style-extra-files (cons
-                                   (collection-file-path "manual-racket.css" "scribble")
-                                   (map (lambda (s)
-                                          (collection-file-path s "scribble"))
-                                        shared-empty-style-files))]
+               [style-extra-files (if (memq 'keep-style flags)
+                                      null
+                                      (cons
+                                       (collection-file-path "manual-racket.css" "scribble")
+                                       (map (lambda (s)
+                                              (collection-file-path s "scribble"))
+                                            shared-empty-style-files)))]
 
-               [search-box? #t]))
+               [search-box? (not (memq 'no-search flags))]))
         (for ([s (in-list shared-empty-script-files)])
           (send r add-extra-script-file (collection-file-path s "scribble")))
         (when allow-indirect?

@@ -583,7 +583,11 @@
         [(index-entry)
          (let ([v (convert-key prefix (cadr k))])
            (if (eq? v (cadr k)) k (list 'index-entry v)))]
-        [else k]))
+        [else
+         (if (and (pair? (cadr k))
+                  (eq? 'prefixable (caadr k)))
+             (list (car k) (list* 'prefixable prefix (cdadr k)))
+             k)]))
 
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])

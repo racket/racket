@@ -243,17 +243,32 @@ of the second half of the tag.
 
 A part can have a @deftech{tag prefix}, which is effectively added
 onto the second item within each tag whose first item is
-@racket['part] or @racket['tech]. The prefix is added to a string
-value by creating a list containing the prefix and string, and it is
-added to a list value using @racket[cons]; a prefix is not added to a
-@racket[generated-tag] instance. The prefix is used for reference
-outside the part, including the use of tags in the part's
-@racket[tags] field. Typically, a document's main part has a tag
-prefix that applies to the whole document; references to sections and
-defined terms within the document from other documents must include the prefix,
-while references within the same document omit the prefix. Part
-prefixes can be used within a document as well, to help disambiguate
-references within the document.
+@racket['part], @racket['tech], or @racket['cite], or whose second
+item is a list that starts with @racket['prefixable]:
+
+@itemlist[
+
+ @item{The prefix is added to a string second item by creating a list
+       containing the prefix and string.}
+
+ @item{The prefix is added to a list second item after @racket['part],
+       @racket['tech], or @racket['cite] using @racket[cons].}
+
+ @item{The prefix is added to a second item that starts
+       @racket['prefixable] by adding it to the list after
+       @racket['prefixable].}
+
+ @item{A prefix is not added to a  @racket[generated-tag] item.}
+
+]
+
+The prefix is used for reference outside the part, including the use
+of tags in the part's @racket[tags] field. Typically, a document's
+main part has a tag prefix that applies to the whole document;
+references to sections and defined terms within the document from
+other documents must include the prefix, while references within the
+same document omit the prefix. Part prefixes can be used within a
+document as well, to help disambiguate references within the document.
 
 Some procedures accept a ``tag'' that is just the string part of the
 full tag, where the symbol part is supplied automatically. For

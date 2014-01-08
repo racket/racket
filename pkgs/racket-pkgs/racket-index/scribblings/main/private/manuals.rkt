@@ -55,7 +55,9 @@
                             ;; Category
                             (let ([the-cat
                                    (if (pair? new-cat) (car new-cat) 'unknown)])
-                              (or (and (eq? the-cat 'omit) the-cat)
+                              (or (and (or (eq? the-cat 'omit) 
+                                           (eq? the-cat 'omit-start))
+                                       the-cat)
                                   (ormap (lambda (sec)
                                            (and (eq? the-cat (sec-cat sec))
                                                 the-cat))
