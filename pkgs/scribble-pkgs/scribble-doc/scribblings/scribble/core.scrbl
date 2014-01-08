@@ -570,7 +570,10 @@ recognized:
 
 @itemize[
 
- @item{@racket['boxed] --- Renders as a definition.}
+ @item{@racket['boxed] --- Renders as a definition.
+       This style name is not intended for use on a table that is
+       nested within a @racket['boxed] table; nested uses may look
+       right for some renders of the style but not others.}
 
  @item{@racket['centered] --- Centers HTML output horizontally.}
 

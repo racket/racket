@@ -7,7 +7,7 @@
 
 @(define (fake-title . str) (apply bold str))
 
-@title[#:tag "config"]{Extending and Configuring Scribble Output}
+@title[#:tag "config" #:style 'toc]{Extending and Configuring Scribble Output}
 
 Sometimes, Scribble's primitives and built-in styles are insufficient
 to produce the output that you need. The cases in which you need to
@@ -32,6 +32,8 @@ extend or configure Scribble fall into two groups:
        @secref["config-style"].}
 
 ]
+
+@local-table-of-contents[]
 
 @; ------------------------------------------------------------
 
@@ -240,7 +242,161 @@ it does not already have such a property added through the
 
 @; ------------------------------------------------------------
 
-@section[#:tag "builtin-latex"]{Predefined Latex Macros}
+@section[#:tag "builtin-css"]{Base CSS Style Classes}
+
+The following renderings of @elem[#:style (style #f (list
+(link-resource "demo.scrbl")))]{@filepath{demo.scrbl}} demonstrate all
+of the CSS style classes used by @racketmodname[scribble/base] forms and
+functions:
+
+@itemlist[
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-s1.scrbl")] shows
+       the default style in a single-page rendering without a search
+       box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-m1.scrbl")] shows
+       the default style in a multi-page rendering without a search
+       box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-s2.scrbl")] shows
+       the current manual style's adjustments in a single-page
+       rendering with a search box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-m2.scrbl")] shows
+       the current manual style's adjustments in a multi-page
+       rendering with a search box.}
+
+]
+
+@(define (css s) (tt s))
+@(define spacer @hspace[1])
+@(define-syntax-rule (css-table [name desc] ...)
+   (tabular (list (list spacer name spacer @smaller[desc]) ...)))
+
+The style classes:
+
+@(css-table
+  [@css{maincolumn} @elem{Outer wrapper for all content in the main column.}]
+  [@css{main} @elem{Inner wrapper for all content in the main column, including navigation bars.}]
+
+  [@spacer @spacer]
+
+  [@css{refpara} @elem{Outer wrapper for right-hand @racket[margin-note] notes.}]
+  [@css{refparaleft} @elem{Outer wrapper for left-hand @racket[margin-note] notes.}]
+  [@css{refelem} @elem{Outer wrapper for right @racket[margin-note*] notes.}]
+  [@css{refelemleft} @elem{Outer wrapper for left-hand @racket[margin-note*] notes.}]
+  [@css{refcolumn} @elem{Middle wrapper for right-hand @racket[margin-note] and @racket[margin-note*] notes.}]
+  [@css{refcolumnleft} @elem{Middle wrapper for left-hand @racket[margin-note] and @racket[margin-note*] notes.}]
+  [@css{refcontent} @elem{Inner wrapper for @racket[margin-note] and @racket[margin-note*] notes.}]
+
+  [@spacer @spacer]
+
+  [@css{tocset} @elem{Groups table-of-contents panels: main and ``on this page.''}]
+
+  [@spacer @spacer]
+
+  [@css{tocview} @elem{Wraps the main (multi-page mode) or only (single-page mode) table-of-contents panel.}]
+  [@css{tocviewlist} @elem{A hierarchical layer of content in a main table-of-contents panel.}]
+  [@css{tocviewlisttopspace} @elem{With @css{tocviewlist} for the first layer.}]
+  [@css{tocviewtoggle} @elem{The always-visible name of a layer.}]
+  [@css{tocviewtitle} @elem{With @css{tocviewtoggle} for the first layer.}]
+  [@css{tocviewsublist} @elem{An item in a layer that has multiple items and more items before and after.}]
+  [@css{tocviewsublistonly} @elem{An item in a single-item layer.}]
+  [@css{tocviewsublisttop} @elem{The first item in a multi-item layer.}]
+  [@css{tocviewsublistbottom} @elem{The last item in a multi-item layer.}]
+  [@css{tocviewlink} @elem{Inner wrapper for an item in a layer when linked to a different page.}]
+  [@css{tocviewselflink} @elem{Inner wrapper for every item in a layer when linked to the same page.}]
+
+  [@spacer @spacer]
+
+  [@css{tocsub} @elem{Wraps the ``on this page'' (multi-page mode only) table-of-contents panel.}]
+  [@css{tocsubtitle} @elem{Wraps the words ``on this page''.}]
+  [@css{tocsublist} @elem{Inner table for the ``on this page'' panel.}]
+  [@css{tocsublinknumber} @elem{Number for an entry in an ``on this page'' panel.}]
+  [@css{tocsubseclink} @elem{Title for a @emph{section} entry in an ``on this page'' panel.}]
+  [@css{tocsubnonseclink} @elem{Title for a @emph{non-section} entry in an ``on this page'' panel
+                                 that has some section links.}]
+  [@css{tocsublink} @elem{Title for a @emph{non-section} entry in an ``on this page'' panel
+                                 that has no section links.}]
+
+  [@css{toctoplink} @elem{Top-level entry in an inline (not the panel) table of contents.}]
+  [@css{toclink} @elem{Nested entry in an inline (not the panel) table of contents.}]
+
+  [@spacer @spacer]
+
+  [@css{versionbox} @elem{Outer wrapper for version}]
+  [@css{version} @elem{Inner wrapper for version in the case of search box and/or navigation.}]
+  [@css{versionNoNav} @elem{Inner wrapper for version in the acse of no search box and navigation.}]
+
+  [@spacer @spacer]
+
+  [@css{SAuthorListBox} @elem{Outer wrapper for the author list.}]
+  [@css{SAuthorList} @elem{Inner wrapper for the author list.}]
+  [@css{author} @elem{Wrapper for an individual author.}]
+
+  [@spacer @spacer]
+
+  [@css{navsettop} @elem{Wraps the top navigation bar (in multi-page mode or when a search bar is present).}]
+  [@css{navsetbottom} @elem{Wraps the bottom navigation bar (in multi-page mode or when a search bar is present).}]
+  [@css{navleft} @elem{Wraps left-side elements within a navigation bar.}]
+  [@css{navright} @elem{Wraps right-side elements within a navigation bar.}]
+  [@css{nonavigation} @elem{Disabled lins within a navigation bar.}]
+  [@css{searchform} @elem{Outer wrapper for a search box within the top navigation bar.}]
+  [@css{searchbox} @elem{Inner wrapper for a search box within the top navigation bar.}]
+
+  [@spacer @spacer]
+
+  [@css{SSubSubSubSection} @elem{Deeply nested subsection (below @tt{<h5>}).}]
+
+  [@spacer @spacer]
+
+  [@css{SIntrapara} @elem{Used with @tt{<div>} instead of @tt{<p>} for a paragraph
+                       within a @racket[compound-paragraph].}]
+
+  [@spacer @spacer]
+
+  [@css{SubFlow} @elem{For a @racket[nested-flow] with no style name: no inset.}]
+  [@css{SCodeFlow} @elem{For a @racket[nested-flow] with the @racket['code-inset] style name:
+                          inset suitable for code.}]
+  [@css{SVInsetFlow} @elem{For a @racket[nested-flow] with the @racket['vertical-inset] style name:
+                          add space before and after suitable for code.}]
+  [@css{SCentered} @elem{For a @racket[nested-flow] created by @racket[centered]: horizontally
+                          centered.}]
+
+  [@spacer @spacer]
+
+  [@css{boxed} @elem{For a @racket[table] with the @racket['boxed] style name: as a definition box.}]
+
+  [@spacer @spacer]
+
+  [@css{compact} @elem{For an @racket[itemlist] with the @racket['compact] style name.}]
+
+  [@spacer @spacer]
+
+  [@css{techoutside} @elem{Outer wrapper for a technical-term reference.}]
+  [@css{techinside} @elem{Inner wrapper for a technical-term reference.}]
+
+  [@spacer @spacer]
+
+  [@css{indexlink} @elem{For an entry in the index.}]
+
+  [@spacer @spacer]
+
+  [@css{stt} @elem{Fixed-width text.}]
+  [@css{sroman} @elem{Serif text.}]
+  [@css{ssanserif} @elem{Sans serif text.}]
+  [@css{slant} @elem{Oblique (as opposed to italic) text.}]
+  [@css{Smaller} @elem{Smaller text (as created by @racket[smaller]).}]
+  [@css{Larger} @elem{Smaller text (as created by @racket[larger]).}]
+  [@css{hspace} @elem{For whitespace produced by @racket[hspace].}]
+  [@css{nobreak} @elem{Disable link breaks.}]
+  [@css{badlink} @elem{Broken cross-reference.}]
+  [@css{plainlink} @elem{Hyperlink without an underline.}])
+
+@; ------------------------------------------------------------
+
+@section[#:tag "builtin-latex"]{Base Latex Macros}
 
 The @filepath{scribble.tex} Latex configuration includes several
 macros and environments that you can redefine to adjust the output
