@@ -43,7 +43,12 @@ For a list of allowed key symbols, see @xmethod[key-event%
 }
 
 @defmethod[(get-shortcut-prefix)
-           (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
+           (and/c (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                'shift 'option))
+                  (λ (x) (implies (equal? 'unix (system-type))
+                                  (not (and (member 'alt x)
+                                            (member 'meta x)))))
+                  (λ (x) (equal? x (remove-duplicates x))))]{
 
 Returns a list of symbols that indicates the keyboard prefix used for the menu
  item's keyboard shortcut. The allowed symbols for the list are the following:
@@ -99,7 +104,12 @@ keyboard shortcut.
 
 }
 
-@defmethod[(set-shortcut-prefix [prefix (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))])
+@defmethod[(set-shortcut-prefix [prefix (and/c (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                                             'shift 'option))
+                                               (λ (x) (implies (equal? 'unix (system-type))
+                                                               (not (and (member 'alt x)
+                                                                         (member 'meta x)))))
+                                               (λ (x) (equal? x (remove-duplicates x))))])
            void?]{
 
 Sets a list of symbols to indicates the keyboard prefix used for the

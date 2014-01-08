@@ -19,8 +19,12 @@ A @racket[checkable-menu-item%] is a string-labelled menu item that
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]
                  [checked any/c #f]
-                 [shortcut-prefix (listof (or/c 'alt 'cmd 'meta 'ctl 
-                                                'shift 'option)) 
+                 [shortcut-prefix (and/c (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                                       'shift 'option))
+                                         (λ (x) (implies (equal? 'unix (system-type))
+                                                         (not (and (member 'alt x)
+                                                                   (member 'meta x)))))
+                                         (λ (x) (equal? x (remove-duplicates x)))) 
                                   (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @racket[parent]. The item is initially

@@ -17,6 +17,9 @@ A @racket[menu-item%] is a plain string-labelled menu item. Its
                            (lambda (i) (void))]
                  [shortcut-prefix (and/c (listof (or/c 'alt 'cmd 'meta 'ctl 
                                                        'shift 'option))
+                                         (λ (x) (implies (equal? 'unix (system-type))
+                                                         (not (and (member 'alt x)
+                                                                   (member 'meta x)))))
                                          (λ (x) (equal? x (remove-duplicates x))))
                                   (get-default-shortcut-prefix)])]{
 

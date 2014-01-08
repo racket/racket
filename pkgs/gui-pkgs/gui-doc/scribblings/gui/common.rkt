@@ -15,9 +15,12 @@
   (require (for-label racket/gui/base
                       racket/class
                       racket/contract
-                      racket/base))
-  (provide (for-label (all-from-out racket/gui/base)
-                      (all-from-out racket/class)
-                      (all-from-out racket/contract)
-                      (all-from-out racket/base))))
-
+                      racket/base
+                      racket/list
+                      racket/bool))
+  (provide (for-label (all-from-out racket/gui/base
+                                    racket/class
+                                    racket/contract
+                                    racket/base
+                                    racket/list
+                                    racket/bool))))
