@@ -29,6 +29,7 @@
         #:methods gen:sc
           [(define (sc->contract v f) (function-sc->contract v f))
            (define (sc-map v f) (function-sc-map v f))
+           (define (sc-traverse v f) (function-sc-map v f) (void))
            (define (sc->constraints v f) (function-sc-constraints v f))])
 
 (define (split-function-args ctcs mand-args-end opt-args-end

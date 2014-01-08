@@ -23,6 +23,11 @@
        (match v
         [(parametric-combinator (list arg) vars)
          (parametric-combinator (list (f arg 'covariant)) vars)]))
+     (define (sc-traverse v f)
+       (match v
+        [(parametric-combinator (list arg) vars)
+         (f arg 'covariant)
+         (void)]))
      (define (sc->contract v f)
        (match v
         [(parametric-combinator (list arg) vars)

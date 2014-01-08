@@ -24,6 +24,11 @@
         [(struct-combinator args name mut?)
          (struct-combinator (map (λ (a) (f a (if mut? 'invariant 'covariant))) args)
                             name mut?)]))
+     (define (sc-traverse v f)
+       (match v
+        [(struct-combinator args name mut?)
+         (for-each (λ (a) (f a (if mut? 'invariant 'covariant))) args)
+         (void)]))
      (define (sc->contract v f)
        (match v
         [(struct-combinator args name _)
