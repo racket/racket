@@ -90,7 +90,7 @@
 (define (http-conn-abandon! hc)
   (match-define (http-conn host port port-usual? to from abandon) hc)
   (when to
-    (close-output-port to)
+    (abandon to)
     (set-http-conn-to! hc #f)))
 
 (define (http-conn-send! hc url-bs
