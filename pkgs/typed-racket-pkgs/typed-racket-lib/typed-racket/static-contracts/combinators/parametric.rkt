@@ -52,4 +52,5 @@
      #'(parametric-combinator (list body) vars)]))
 
 (define-terminal-sc parametric-var/sc (id) #:impersonator
+  #:printer (v p mode) (display (syntax-e (parametric-var/sc-id v)) p)
    id)
