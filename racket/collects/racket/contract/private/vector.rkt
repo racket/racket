@@ -106,12 +106,16 @@
       (define elem-neg-proj ((get/build-val-first-projection elem-ctc) neg-blame))
       (define checked-ref (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark contract-continuation-mark-key pos-blame
-                                ((elem-pos-proj val) neg-party)))))
+                              (with-continuation-mark
+                               contract-continuation-mark-key
+                               (cons pos-blame neg-party)
+                               ((elem-pos-proj val) neg-party)))))
       (define checked-set (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark contract-continuation-mark-key neg-blame
-                                ((elem-neg-proj val) neg-party)))))
+                              (with-continuation-mark
+                               contract-continuation-mark-key
+                               (cons neg-blame neg-party)
+                               ((elem-neg-proj val) neg-party)))))
       
       (λ (val)
         (let/ec k

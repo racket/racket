@@ -111,7 +111,8 @@
                                 #'(case-lambda
                                     [(rng-x ...)
                                      (with-continuation-mark
-                                      contract-continuation-mark-key blame
+                                      contract-continuation-mark-key
+                                      (cons blame neg-party)
                                       (let ()
                                         post ...
                                         rng-results))]
@@ -232,13 +233,15 @@
                                                 ;; noticeable in my measurements so far.
                                                 ;;  - stamourv
                                                 (with-continuation-mark
-                                                 contract-continuation-mark-key blame
+                                                 contract-continuation-mark-key
+                                                 (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
                               [kwd-lambda-name (gensym 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-continuation-mark
-                                               contract-continuation-mark-key blame
+                                               contract-continuation-mark-key
+                                               (cons blame neg-party)
                                                (let ()
                                                  pre ... kwd-return)))])
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])

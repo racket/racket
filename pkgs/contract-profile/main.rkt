@@ -1,18 +1,26 @@
 #lang racket/base
 
 (require racket/list unstable/list racket/match racket/set racket/format
-         racket/contract
+         racket/contract racket/contract/private/blame
          profile/sampler profile/utils profile/analyzer
          "dot.rkt" "utils.rkt" "boundary-view.rkt")
 
 ;; (listof (U blame? #f)) profile-samples -> contract-profile struct
-(define (correlate-contract-samples contract-samples samples*)
+(define (correlate-contract-samples contract-samples* samples*)
   ;; car of samples* is total time, car of each sample is thread id
   ;; for now, we just assume a single thread. fix this eventually.
   (define total-time (car samples*))
   ;; reverse is there to sort samples in forward time, which get-times
   ;; needs.
   (define samples    (get-times (map cdr (reverse (cdr samples*)))))
+  (define contract-samples
+    (for/list ([c-s (in-list contract-samples*)])
+      ;; In some cases, blame information is missing a party, in which.
+      ;; case the contract system provides a pair of the incomplete blame
+      ;; and the missing party. We combine the two here.
+      (if (pair? c-s)
+          (blame-add-missing-party (car c-s) (cdr c-s))
+          c-s)))
   ;; combine blame info and stack trace info. samples should line up
   (define aug-contract-samples
     ;; If the sampler was stopped after recording a contract sample, but
