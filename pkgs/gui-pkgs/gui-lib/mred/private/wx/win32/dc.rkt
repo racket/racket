@@ -36,7 +36,7 @@
     (init w h hwnd [gl-config #f])
     (inherit get-cairo-surface)
     (parameterize ([hwnd-param hwnd])
-      (super-new [w w] [h h]))
+      (super-new [w w] [h h] [backing-scale 1.0]))
     
     (define/override (build-cairo-surface w h) 
       (define hwnd (hwnd-param))
