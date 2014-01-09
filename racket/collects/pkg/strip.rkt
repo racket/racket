@@ -245,14 +245,19 @@
           (with-module-reading-parameterization
            (lambda () (read in)))))))
     ;; convert:
+    (define (convert-mod info-lib defns)
+      `(module info ,info-lib
+         (#%module-begin
+          (define assume-virtual-sources #t)
+          . ,(filter values
+                     (map (fixup-info-definition get-info) defns)))))
     (define new-content
       (match content
         [`(module info ,info-lib (#%module-begin . ,defns))
-         `(module info ,info-lib
-            (#%module-begin
-             (define assume-virtual-sources #t)
-             . ,(filter values
-                        (map (fixup-info-definition get-info) defns))))]))
+         (convert-mod info-lib defns)]
+        ;; In case of `(module ...)` instead of `#lang ...`:
+        [`(module info ,info-lib . ,defns)
+         (convert-mod info-lib defns)]))
     ;; write updated:
     (call-with-output-file* 
      new-p
