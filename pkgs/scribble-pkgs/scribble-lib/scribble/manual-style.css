@@ -556,7 +556,7 @@ blockquote {
     margin-left: 0em;
     margin-right: 2em;
     white-space: nowrap;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .SCodeFlow img {
@@ -564,7 +564,7 @@ blockquote {
     margin-bottom: 0.5em;
 }
 
-.SVInsetFlow, .SIntrapara > table.RBoxed {
+.boxed {
     margin: 0;
     margin-top: 2em;
     padding: 0.25em;
