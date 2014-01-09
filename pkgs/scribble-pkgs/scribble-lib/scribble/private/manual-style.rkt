@@ -5,7 +5,7 @@
          (only-in "../basic.rkt" aux-elem itemize)
          "../scheme.rkt"
          (only-in "../core.rkt" make-style plain
-                  make-nested-flow box-mode box-mode*
+                  make-nested-flow nested-flow? box-mode box-mode*
                   [element? core:element?])
          "manual-utils.rkt"
          "on-demand.rkt"
@@ -56,7 +56,7 @@
  [PLaneT element?]
  [hash-lang (-> element?)]
  [etc element?]
- [inset-flow (() () #:rest (listof pre-content?) . ->* . any/c)] ; XXX no docs and bad return contract
+ [inset-flow (() () #:rest (listof pre-content?) . ->* . nested-flow?)]
  [litchar (() () #:rest (listof string?) . ->* . element?)]
  [t (() () #:rest (listof pre-content?) . ->* . paragraph?)]
  [commandline (() () #:rest (listof pre-content?) . ->* . paragraph?)]

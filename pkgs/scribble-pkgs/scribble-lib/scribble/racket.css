@@ -144,9 +144,6 @@
 .prototype td {
   vertical-align: text-top;
 }
-.longprototype td {
-  vertical-align: bottom;
-}
 
 .RktBlk {
   white-space: inherit;

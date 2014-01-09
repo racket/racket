@@ -1120,6 +1120,19 @@ Like @racket[defidform], but @racket[id] (or the result of
 inline element. Use this form sparingly, because the typeset form does
 not stand out to the reader as a specification of @racket[id].}
 
+@deftogether[(
+@defform[(defsubform options form-datum
+            maybe-grammar maybe-contracts
+            pre-flow ...)]
+@defform[(defsubform* options [form-datum ...+]
+           maybe-grammar maybe-contracts
+           pre-flow ...)]
+)]{
+
+Like @racket[defform] and @racket[defform*], but with
+indenting on the left for both the specification and the
+@racket[pre-flow]s.}
+
 
 @defform[(specform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
@@ -1411,8 +1424,10 @@ Specifies the target maximum width in characters for the output of
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-classes"]{Documenting Classes and Interfaces}
 
-@defform/subs[(defclass id super (intf-id ...) pre-flow ...)
-              ([super super-id
+@defform/subs[(defclass maybe-link id super (intf-id ...) pre-flow ...)
+              ([maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
+               [super super-id
                       (mixin-id super)])]{
 
 Creates documentation for a class @racket[id] that is a subclass of
@@ -1428,7 +1443,7 @@ definitions (see @racket[defmethod]). In rendered form, the
 constructor and method specification are indented to visually group
 them under the class definition.}
 
-@defform[(defclass/title id super (intf-id ...) pre-flow ...)]{
+@defform[(defclass/title maybe-link id super (intf-id ...) pre-flow ...)]{
 
 Like @racket[defclass], also includes a @racket[title] declaration
 with the style @racket['hidden]. In addition, the constructor and
@@ -1489,10 +1504,12 @@ accepted and propagated to the superclass.}
 
 @defform/subs[#:literals (override override-final public-final 
                           augment augment-final pubment extend extend-final)
-              (defmethod maybe-mode (id arg-spec ...)
+              (defmethod maybe-mode maybe-link (id arg-spec ...)
                          result-contract-expr-datum
                          pre-flow ...)
-              ([maybe-mode code:blank
+              ([maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
+               [maybe-mode code:blank
                            (code:line #:mode override)
                            (code:line #:mode override-final)
                            (code:line #:mode public-final)
@@ -1512,7 +1529,7 @@ interface.) The @racket[extend] mode is like @racket[override], but
 the description of the method should describe only extensions to the
 superclass implementation.}
 
-@defform[(defmethod* maybe-mode
+@defform[(defmethod* maybe-mode maybe-link
                      ([(id arg-spec ...)
                        result-contract-expr-datum] ...)
                      pre-flow ...)]{
@@ -1891,6 +1908,13 @@ that is hyperlinked to an explanation.}
 @defproc[(commandline [pre-content pre-content?] ...) paragraph?]{Produces
 an inset command-line example (e.g., in typewriter font).}
 
+@defproc[(inset-flow [pre-flow pre-flow?] ...) nested-flow?]{
+
+Creates a @racket[nested-flow] with indenting on the left and right.
+
+Using @racket[nested] with the @racket['inset] style is a prefered
+alternative.}
+
 @defproc[(centerline [pre-flow pre-flow?] ...) nested-flow?]{
 
 An alias for @racket[centered] for backward compatibility.}
@@ -1920,7 +1944,7 @@ An alias for @racket[centered] for backward compatibility.}
 Typesets the @racket[pre-flow]s as the content of
 @racket[filename]. For example, the content may be inset on the page
 with @racket[filename] above it. If @racket[filename] is a string, it
-is passed to @racket{filepath} to obtain an @racket[element].}
+is passed to @racket[filepath] to obtain an @racket[element].}
 
 @defproc[(deprecated [#:what what content? "library"]
                      [replacement content?]

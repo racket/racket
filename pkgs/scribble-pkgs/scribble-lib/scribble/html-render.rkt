@@ -141,19 +141,29 @@
                 (if (< v 16) (string-append "0" s) s)))
             c))))
 
-(define (merge-styles s l)
-  ;; merge multiple 'style attributes into one
+(define (merge-styles s cls l)
+  ;; merge multiple 'style and 'class attributes into one
   (cond
-   [(null? l) (if s
-                  (list (list 'style s))
-                  null)]
+   [(null? l) (append
+               (if s
+                   (list (list 'style s))
+                   null)
+               (if cls
+                   (list (list 'class cls))
+                   null))]
    [(eq? 'style (caar l))
     (merge-styles (if s (string-append s "; " (cadar l)) (cadar l))
+                  cls
                   (cdr l))]
-   [else (cons (car l) (merge-styles s (cdr l)))]))
+   [(eq? 'class (caar l))
+    (merge-styles s
+                  (if cls (string-append cls " " (cadar l)) (cadar l))
+                  (cdr l))]
+   [else (cons (car l) (merge-styles s cls (cdr l)))]))
 
 (define (style->attribs style [extras null])
   (let ([a (merge-styles
+            #f
             #f
             (apply
              append
@@ -197,7 +207,8 @@
            (for/list ([i (in-list al)]
                       #:unless (eq? 'class (car i)))
              i))))]
-   [else (append cl al)]))
+   [else
+    (append cl al)]))
 
 (define (style->tag style)
   (for/or ([s (in-list (style-properties style))])

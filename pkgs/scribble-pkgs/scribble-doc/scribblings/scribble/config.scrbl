@@ -7,6 +7,16 @@
 
 @(define (fake-title . str) (apply bold str))
 
+@(define (css s) (tt s))
+@(define spacer @hspace[1])
+@(define baseline (style #f '(baseline)))
+@(define-syntax-rule (css-table [name desc] ...)
+   (tabular 
+    #:style (style #f (list (table-columns (list baseline baseline baseline baseline))))
+    (list (list spacer name spacer @smaller[desc]) ...)))
+
+@; ------------------------------------------------------------
+
 @title[#:tag "config" #:style 'toc]{Extending and Configuring Scribble Output}
 
 Sometimes, Scribble's primitives and built-in styles are insufficient
@@ -269,11 +279,6 @@ functions:
 
 ]
 
-@(define (css s) (tt s))
-@(define spacer @hspace[1])
-@(define-syntax-rule (css-table [name desc] ...)
-   (tabular (list (list spacer name spacer @smaller[desc]) ...)))
-
 The style classes:
 
 @(css-table
@@ -393,6 +398,107 @@ The style classes:
   [@css{nobreak} @elem{Disable link breaks.}]
   [@css{badlink} @elem{Broken cross-reference.}]
   [@css{plainlink} @elem{Hyperlink without an underline.}])
+
+In addition, the @css{SIEHidden} style class is built in to all
+Scribble HTML output to hide an element on Internet Explorer 6.
+
+@; ------------------------------------------------------------
+
+@section[#:tag "manual-css"]{Manual CSS Style Classes}
+
+The following renderings of @elem[#:style (style #f (list
+(link-resource "demo-manual.scrbl")))]{@filepath{demo-manual.scrbl}}
+demonstrate all of the CSS style classes used by
+@racketmodname[scribble/manual] forms and functions in addition to the
+@seclink["builtin-css"]{base style classes}.
+
+@itemlist[
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-manual-s1.scrbl")] shows
+       the original style in a single-page rendering without a search
+       box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-manual-m1.scrbl")] shows
+       the original style in a multi-page rendering without a search
+       box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-manual-s2.scrbl")] shows
+       the current manual style's adjustments in a single-page
+       rendering with a search box.}
+
+ @item{@other-doc['(lib "scribblings/scribble/demo-manual-m2.scrbl")] shows
+       the current manual style's adjustments in a multi-page
+       rendering with a search box.}
+
+]
+
+The style classes:
+
+@(css-table
+  [@css{RktSym} @elem{Identifiers with no @racket[for-label] binding.}]
+  [@css{RktValLink} @elem{Identifier with @racket[for-label] binding to a variable definition.}]
+  [@css{RktValDef} @elem{Definition site of a variable, normally combined with @css{RktValLink}.}]
+  [@css{RktStxLink} @elem{Identifier with @racket[for-label] binding to a syntactic-form definition.}]
+  [@css{RktStxDef} @elem{Definition site of a syntactic form, normally combined with @css{RktStxLink}.}]
+  [@css{RktSymDef} @elem{Definition site of an identifier without binding (normally a mistake), combined with @css{RktSym}.}]
+  [@css{RktVar} @elem{Local variable or meta-variable.}]
+  [@css{RktRes} @elem{REPL result.}]
+  [@css{RktOut} @elem{Output written to the current output port.}]
+  [@css{RktErr} @elem{Output written to the current error port.}]
+  [@css{RktCmt} @elem{A comment in Racket code.}]
+  [@css{RktVal} @elem{A literal value in Racket code.}]
+  [@css{RktPn} @elem{Parentheses, keywords, and similar delimiters in Racket code.}]
+  [@css{RktRdr} @elem{Reader shorthands in Racket code, except for commas.}]
+  [@css{RktMeta} @elem{An unquoting comma in Racket code.}]
+  [@css{highlighted} @elem{Hilighlted code (via @racket[code:highlight] in @racket[racketblock], for example).}]
+  [@css{RktIn} @elem{Foreground for literal characters written with @racket[litchar].}]
+  [@css{RktInBG} @elem{Background for literal characters written with @racket[litchar].}]
+  [@css{RktModLink} @elem{A module name linked to the module's definition.}]
+  [@css{RktMod} @elem{A module name (normally @css{RktModLink}, instead).}]
+  [@css{RktKw} @elem{A ``keyword;'' not normally used.}]
+  [@css{RktOpt} @elem{Brackets for optional arguments (in function definitions).}]
+
+  [@spacer @spacer]
+
+  [@css{RktBlk} @elem{Wrapper for multi-linke Racket code blocks.}]
+
+  [@spacer @spacer]
+
+  [@css{defmodule} @elem{Module definition block.}]
+  [@css{RpackageSpec} @elem{Package specification within a module-definition block.}]
+
+  [@spacer @spacer]
+
+  [@css{RBoxed} @elem{Definition block; always combined with @css{boxed}.}]
+  [@css{together} @elem{Table within a @racket[together] grouping.}]
+  [@css{RBackgroundLabel} @elem{Wrapper for ``procedure,'' ``syntax,'' etc., backing in a definition box.}]
+  [@css{RBackgroundLabelInner} @elem{Wrapper within @css{RBackgroundLabel}.}]
+  [@css{RForeground} @elem{Wrapper for element to appear over a @css{RBackgroundLabel}.}]
+  [@css{prototype} @elem{Wrapper for a multi-line procedure-definition prototype.}]
+  [@css{argcontract} @elem{Wrapper for a multi-line argument contract and default value.}]
+  [@css{specgrammar} @elem{Wrapper for a grammar with a syntactic-form definition box.}]
+  [@css{inherited} @elem{Wrapper for a margin ``inherited methods'' table.}]
+  [@css{inheritedlbl} @elem{Wrapper for ``Inherited methods:'' and ``from'' labels.}]
+
+  [@spacer @spacer]
+
+  [@css{leftindent} @elem{Left-indented block, such as form @racket[specsubform].}]
+  [@css{insetpara} @elem{Inset block.}]
+
+  [@spacer @spacer]
+
+  [@css{Rfilebox} @elem{Wrapper for a file box (via @racket[filebox]),}]
+  [@css{Rfiletitle} @elem{Outer wrapper for a file box title.}]
+  [@css{Rfilename} @elem{Inner wrapper for a file box title.}]
+  [@css{Rfilecontent} @elem{Wrapper for file box content.}]
+
+  [@spacer @spacer]
+
+  [@css{SHistory} @elem{Wrapper for @racket[history] paragraphs.}]
+
+  [@spacer @spacer]
+
+  [@css{RBibliography} @elem{Wrapper for a @racket[bibliography] section.}])
 
 @; ------------------------------------------------------------
 

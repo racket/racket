@@ -116,37 +116,39 @@
      (map (lambda (i) (list (to-flow i)))
           (cons (make-element "inheritedlbl" '("Inherited methods:")) inh)))))
 
-(define (make-decl-collect decl)
-  (make-part-collect-decl
-   ((id-to-target-maker (decl-name decl) #f)
-    (list "ignored")
-    (lambda (tag)
-      (make-collect-element
-       #f null
-       (lambda (ci)
-         (collect-put!
-          ci
-          `(cls/intf ,(cadr tag))
-          (make-cls/intf
-           (make-element
-            symbol-color
-            (list (make-link-element
-                   value-link-color
-                   (list (datum-intern-literal
-                          (symbol->string (syntax-e (decl-name decl)))))
-                   tag)))
-           (map id-info (decl-app-mixins decl))
-           (and (decl-super decl)
-                (not (free-label-identifier=? (quote-syntax object%)
-                                              (decl-super decl)))
-                (id-info (decl-super decl)))
-           (map id-info (decl-intfs decl))
-           (append-map (lambda (m)
-                         (let loop ([l (meth-names m)])
-                           (cond [(null? l) null]
-                                 [(memq (car l) (cdr l)) (loop (cdr l))]
-                                 [else (cons (car l) (loop (cdr l)))])))
-                       (filter meth? (decl-body decl)))))))))))
+(define (make-decl-collect decl link?)
+  (if link?
+      (make-part-collect-decl
+       ((id-to-target-maker (decl-name decl) #f)
+        (list "ignored")
+        (lambda (tag)
+          (make-collect-element
+           #f null
+           (lambda (ci)
+             (collect-put!
+              ci
+              `(cls/intf ,(cadr tag))
+              (make-cls/intf
+               (make-element
+                symbol-color
+                (list (make-link-element
+                       value-link-color
+                       (list (datum-intern-literal
+                              (symbol->string (syntax-e (decl-name decl)))))
+                       tag)))
+               (map id-info (decl-app-mixins decl))
+               (and (decl-super decl)
+                    (not (free-label-identifier=? (quote-syntax object%)
+                                                  (decl-super decl)))
+                    (id-info (decl-super decl)))
+               (map id-info (decl-intfs decl))
+               (append-map (lambda (m)
+                             (let loop ([l (meth-names m)])
+                               (cond [(null? l) null]
+                                     [(memq (car l) (cdr l)) (loop (cdr l))]
+                                     [else (cons (car l) (loop (cdr l)))])))
+                           (filter meth? (decl-body decl))))))))))
+      null))
 
 (define (build-body decl body)
   `(,@(map (lambda (i)
@@ -156,17 +158,17 @@
            body)
     ,(make-delayed-block (lambda (r d ri) (make-inherited-table r d ri decl)))))
 
-(define (*include-class/title decl)
+(define (*include-class/title decl link?)
   (make-splice
    (list* (title #:style 'hidden (to-element (decl-name decl)))
-          (make-decl-collect decl)
+          (make-decl-collect decl link?)
           (build-body decl (append ((decl-mk-head decl) #t)
                                    (decl-body decl))))))
 
-(define (*include-class decl)
+(define (*include-class decl link?)
   (make-splice
    (cons
-    (make-decl-collect decl)
+    (make-decl-collect decl link?)
     (append
      ((decl-mk-head decl) #f)
      (let-values ([(pre post)
@@ -184,7 +186,7 @@
           (flow-paragraphs
            (decode-flow (build-body decl post)))))))))))
 
-(define (*class-doc kind stx-id super intfs ranges whole-page? make-index-desc)
+(define (*class-doc kind stx-id super intfs ranges whole-page? make-index-desc link?)
   (make-table
    boxed-style
    (append
@@ -194,30 +196,32 @@
        (make-flow
         (list
          (make-omitable-paragraph
-          (list (let ([target-maker (id-to-target-maker stx-id #t)]
-                      [content (annote-exporting-library
-                                (to-element #:defn? #t stx-id))]
-                      [ref-content (to-element stx-id)])
-                  (if target-maker
-                      (target-maker
-                       content
-                       (lambda (tag)
-                         ((if whole-page?
-                              make-page-target-element
-                              (lambda (s c t)
-                                (make-toc-target2-element s c t ref-content)))
-                          #f
-                          (list
-                           (make-index-element
-                            #f content tag
-                            (list (datum-intern-literal
-                                   (symbol->string (syntax-e stx-id))))
-                            (list ref-content)
-                            (with-exporting-libraries
-                             (lambda (libs)
-                               (make-index-desc (syntax-e stx-id) libs)))))
-                          tag)))
-                      content))
+          (list (if link?
+                    (let ([target-maker (id-to-target-maker stx-id #t)]
+                          [content (annote-exporting-library
+                                    (to-element #:defn? #t stx-id))]
+                          [ref-content (to-element stx-id)])
+                      (if target-maker
+                          (target-maker
+                           content
+                           (lambda (tag)
+                             ((if whole-page?
+                                  make-page-target-element
+                                  (lambda (s c t)
+                                    (make-toc-target2-element s c t ref-content)))
+                              #f
+                              (list
+                               (make-index-element
+                                #f content tag
+                                (list (datum-intern-literal
+                                       (symbol->string (syntax-e stx-id))))
+                                (list ref-content)
+                                (with-exporting-libraries
+                                 (lambda (libs)
+                                   (make-index-desc (syntax-e stx-id) libs)))))
+                              tag)))
+                          content))
+                    (to-element stx-id))
                 spacer ":" spacer
                 (case kind
                   [(class) (racket class?)]
@@ -272,48 +276,62 @@
           [(splice? (car l)) (append (splice-run (car l)) (loop (cdr l)))]
           [else (cons (car l) (loop (cdr l)))])))
 
-(define-syntax-rule (*defclass *include-class name super (intf ...) body ...)
-  (*include-class
-   (syntax-parameterize ([current-class (quote-syntax name)])
-     (make-decl (quote-syntax/loc name)
-                (extract-super super)
-                (extract-app-mixins super)
-                (list (quote-syntax/loc intf) ...)
-                null
-                (lambda (whole-page?)
-                  (list (*class-doc 'class
-                                    (quote-syntax/loc name)
-                                    (quote-syntax/loc super)
-                                    (list (quote-syntax intf) ...)
-                                    null
-                                    whole-page?
-                                    make-class-index-desc)))
-                (flatten-splices (list body ...))))))
+(define-syntax-rule (*defclass *include-class link-target? name super (intf ...) body ...)
+  (let ([link? link-target?])
+    (*include-class
+     (syntax-parameterize ([current-class (quote-syntax name)])
+       (make-decl (quote-syntax/loc name)
+                  (extract-super super)
+                  (extract-app-mixins super)
+                  (list (quote-syntax/loc intf) ...)
+                  null
+                  (lambda (whole-page?)
+                    (list (*class-doc 'class
+                                      (quote-syntax/loc name)
+                                      (quote-syntax/loc super)
+                                      (list (quote-syntax intf) ...)
+                                      null
+                                      whole-page?
+                                      make-class-index-desc
+                                      link?)))
+                  (flatten-splices (list body ...))))
+     link?)))
 
-(define-syntax-rule (defclass name super (intf ...) body ...)
-  (*defclass *include-class name super (intf ...) body ...))
+(define-syntax defclass
+  (syntax-rules ()
+    [(_ #:link-target? link-target? name super (intf ...) body ...)
+     (*defclass *include-class link-target? name super (intf ...) body ...)]
+    [(_ name super (intf ...) body ...)
+     (defclass #:link-target? #t name super (intf ...) body ...)]))
 
-(define-syntax-rule (defclass/title name super (intf ...) body ...)
-  (*defclass *include-class/title name super (intf ...) body ...))
+(define-syntax defclass/title
+  (syntax-rules ()
+    [(_ #:link-target? link-target? name super (intf ...) body ...)
+     (*defclass *include-class/title link-target? name super (intf ...) body ...)]
+    [(_ name super (intf ...) body ...)
+     (defclass/title #:link-target? #t name super (intf ...) body ...)]))
 
 (define-syntax-rule (*definterface *include-class name (intf ...) body ...)
-  (*include-class
-   (syntax-parameterize ([current-class (quote-syntax name)])
-     (make-decl (quote-syntax/loc name)
-                #f
-                null
-                (list (quote-syntax/loc intf) ...)
-                null
-                (lambda (whole-page?)
-                  (list
-                   (*class-doc 'interface
-                               (quote-syntax/loc name)
-                               #f
-                               (list (quote-syntax intf) ...)
-                               null
-                               whole-page?
-                               make-interface-index-desc)))
-                (list body ...)))))
+  (let ([link? #t])
+    (*include-class
+     (syntax-parameterize ([current-class (quote-syntax name)])
+       (make-decl (quote-syntax/loc name)
+                  #f
+                  null
+                  (list (quote-syntax/loc intf) ...)
+                  null
+                  (lambda (whole-page?)
+                    (list
+                     (*class-doc 'interface
+                                 (quote-syntax/loc name)
+                                 #f
+                                 (list (quote-syntax intf) ...)
+                                 null
+                                 whole-page?
+                                 make-interface-index-desc
+                                 link?)))
+                  (list body ...)))
+     link?)))
 
 (define-syntax-rule (definterface name (intf ...) body ...)
   (*definterface *include-class name (intf ...) body ...))
@@ -323,23 +341,26 @@
 
 (define-syntax-rule (*defmixin *include-class name (domain ...) (range ...)
                                body ...)
-  (*include-class
-   (syntax-parameterize ([current-class (quote-syntax name)])
-     (make-decl (quote-syntax/loc name)
-                #f
-                null
-                (list (quote-syntax/loc domain) ...)
-                (list (quote-syntax/loc range) ...)
-                (lambda (whole-page?)
-                  (list
-                   (*class-doc 'mixin
-                               (quote-syntax/loc name)
-                               #f
-                               (list (quote-syntax domain) ...)
-                               (list (quote-syntax range) ...)
-                               whole-page?
-                               make-mixin-index-desc)))
-                (list body ...)))))
+  (let ([link? #t])
+    (*include-class
+     (syntax-parameterize ([current-class (quote-syntax name)])
+       (make-decl (quote-syntax/loc name)
+                  #f
+                  null
+                  (list (quote-syntax/loc domain) ...)
+                  (list (quote-syntax/loc range) ...)
+                  (lambda (whole-page?)
+                    (list
+                     (*class-doc 'mixin
+                                 (quote-syntax/loc name)
+                                 #f
+                                 (list (quote-syntax domain) ...)
+                                 (list (quote-syntax range) ...)
+                                 whole-page?
+                                 make-mixin-index-desc
+                                 link?)))
+                  (list body ...)))
+     link?)))
 
 (define-syntax-rule (defmixin name (domain ...) (range ...) body ...)
   (*defmixin *include-class name (domain ...) (range ...) body ...))
@@ -399,7 +420,7 @@
 
 (define-syntax (defmethod* stx)
   (syntax-case stx ()
-    [(_ #:mode mode ([(name arg ...) result-type] ...) desc ...)
+    [(_ #:mode mode #:link-target? link-target? ([(name arg ...) result-type] ...) desc ...)
      (with-syntax ([cname (syntax-parameter-value #'current-class)]
                    [name1 (car (syntax->list #'(name ...)))])
        (with-syntax ([(extra ...)
@@ -427,7 +448,7 @@
          #'(make-meth '(name ...)
                       'mode
                       (lambda ()
-                        (defproc* #:mode send #:within cname
+                        (defproc* #:link-target? link-target? #:mode send #:within cname
                           ([(name arg ...) result-type] ...)
                           (make-splice
                            (append-map (lambda (f)
@@ -435,15 +456,23 @@
                                                [(spec? f) ((spec-def f))]
                                                [else (list f)]))
                                        (list extra ... desc ...))))))))]
+    [(_ #:mode mode ([(name arg ...) result-type] ...) desc ...)
+     #'(defmethod* #:mode mode #:link-target? #t ([(name arg ...) result-type] ...) desc ...)]
+    [(_ #:link-target? link-target? ([(name arg ...) result-type] ...) desc ...)
+     #'(defmethod* #:mode public #:link-target? link-target? ([(name arg ...) result-type] ...) desc ...)]
     [(_ ([(name arg ...) result-type] ...) desc ...)
      #'(defmethod* #:mode public ([(name arg ...) result-type] ...) desc ...)]))
 
 (define-syntax defmethod
   (syntax-rules ()
+    [(_ #:mode mode #:link-target? link-target? (name arg ...) result-type desc ...)
+     (defmethod* #:mode mode #:link-target? link-target? ([(name arg ...) result-type]) desc ...)]
     [(_ #:mode mode (name arg ...) result-type desc ...)
-     (defmethod* #:mode mode ([(name arg ...) result-type]) desc ...)]
+     (defmethod #:mode mode #:link-target? #t (name arg ...) result-type desc ...)]
+    [(_ #:link-target? link-target? (name arg ...) result-type desc ...)
+     (defmethod #:mode public #:link-target? link-target? (name arg ...) result-type desc ...)]
     [(_ (name arg ...) result-type desc ...)
-     (defmethod #:mode public (name arg ...) result-type desc ...)]))
+     (defmethod #:mode public #:link-target? #t (name arg ...) result-type desc ...)]))
 
 (define-syntax-rule (methimpl body ...)
   (make-impl (lambda () (list (italic "Default implementation:") " " body ...))))

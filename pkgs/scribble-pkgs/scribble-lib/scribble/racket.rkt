@@ -389,7 +389,7 @@
             (let ([new-line? (and l (l . > . line))])
               (when new-line?
                 (for ([i (in-range (- l line))])
-                  (out "\n" no-color))
+                  (out "\n" #f))
                 (set! line l)
                 (set! col-map next-col-map)
                 (set! next-col-map (make-hash))
@@ -629,7 +629,7 @@
                          symbol-color)
                     (unless (and (struct-proxy? (syntax-e c))
                                  (null? (struct-proxy-content (syntax-e c))))
-                      (out " " no-color))))
+                      (out " " #f))))
                 (when (vector? (syntax-e c))
                   (unless (and expr? (zero? quote-depth))
                     (let ([vec (syntax-e c)])
@@ -738,7 +738,7 @@
                   (begin
                     (out "(" paren-color)
                     (out "box" symbol-color)
-                    (out " " no-color)
+                    (out " " #f)
                     (set! src-col (+ src-col 5)))
                   (begin
                     (out "#&" value-color)
