@@ -178,7 +178,7 @@
   (error-sending-bug-report-expln
    "Une erreur s'est produite pendant la soumission de votre rapport de bogue."
    " Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.racket-lang.org/\n\n"
-   " et soumettre votre bogue en utilisant notre formulaire web en ligne. Nous sommes désolé pour vos difficultés.\n\nLe message d'erreur est :\n~a")
+   " et soumettre votre bogue en utilisant notre formulaire web en ligne. Nous sommes désolés pour vos difficultés.\n\nLe message d'erreur est :\n~a")
   (illegal-bug-report "Formulaire de soumission de bogue incomplet.")
   (pls-fill-in-field "Merci de compléter le champ « ~a ».")
   (malformed-email-address "Adresse email malformée.")
@@ -267,7 +267,7 @@
   (online-expansion-error-margin "dans la marge")
   ; the label of a preference in the (string-constant online-expansion) section
   (show-arrows-on-mouseover "Montrer dynamiquement les flèches pour les liens entre variables et pour les appels de fonctions en position terminale") ; mouse over -> dynamiquement
-  (show-blueboxes "Montrer les boites bleues et le quart de cercle bleue")
+  (show-blueboxes "Montrer les boites bleues et le quart de cercle bleu")
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
   (read-only "Lecture seulement")
@@ -564,7 +564,7 @@
   (modern-color-scheme "Moderne")   ;; an attempt to be more color-blind friendly
   (white-on-black-color-scheme "Blanc sur noir") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
   ; drracket additions to the color scheme dialog; two buttons
-  (design-your-own-color-schemes "Concevoir vos propre régimes de couleurs") ; pointer to (english-only) docs
+  (design-your-own-color-schemes "Concevoir vos propres régimes de couleurs") ; pointer to (english-only) docs
   (style-and-color-names "Noms de styles et de couleurs")
 
   (add-spacing-between-lines "Ajouter un pixel d'espace supplémentaire entre les lignes")
@@ -1826,7 +1826,7 @@
   (install-pkg-link-dirs "Lien vers un répertoire local")
   (install-pkg-file-or-dir? "Sélectionner un fichier ou un répertoire?")
   (install-pkg-force? "Ignorer les conflits")
-  (install-pkg-replace? "Les mises à jours peuvent remplaced les installations existantes")
+  (install-pkg-replace? "Les mises à jour peuvent remplacer les installations existantes")
   (install-pkg-command-line "Ligne de commande équivalente :")
   (install-pkg-error-installing-title "Erreur durant l'installation du paquetage")
   (install-pkg-action-label "Action à prendre")
