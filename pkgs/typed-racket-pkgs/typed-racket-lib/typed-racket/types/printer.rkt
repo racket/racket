@@ -142,12 +142,12 @@
     [(Path: pes i) (append (map pathelem->sexp pes) (list i))]
     [else `(Unknown Object: ,(struct->vector object))]))
 
-;; print-union : Type LSet<Type> -> Void
+;; cover-union : Type LSet<Type> -> Listof<Symbol> Listof<Type>
 ;; Unions are represented as a flat list of branches. In some cases, it would
 ;; be nicer to print them using higher-level descriptions instead.
 ;; We do set coverage, with the elements of the union being what we want to
 ;; cover, and all the names types we know about being the sets.
-(define (print-union t ignored-names)
+(define (cover-union t ignored-names)
   (match-define (Union: elems) t)
   (define valid-names
     ;; We keep only unions, and only those that are subtypes of t.
@@ -178,7 +178,7 @@
            ;; only union types can flow here, and any of those could be expanded
            (set-box! (current-print-unexpanded)
                      (append coverage-names (unbox (current-print-unexpanded))))
-           (append coverage-names uncoverable)] ; we want the names
+           (values coverage-names uncoverable)] ; we want the names
           [else
            ;; pick the candidate that covers the most uncovered types
            (define (covers-how-many? c)
@@ -337,8 +337,8 @@
     [(Opaque: pred) `(Opaque ,(syntax->datum pred))]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _)
      `#(,(string->symbol (format "struct:~a" nm))
-        ,(type->sexp t)
-        ,@(if proc (list (type->sexp proc)) null))]
+        ,(map t->s t)
+        ,@(if proc (list (t->s proc)) null))]
     [(Function: arities)
      (parameterize ([current-print-type-fuel
                      (sub1 (current-print-type-fuel))])
@@ -355,7 +355,9 @@
     [(CustodianBox: e) `(CustodianBoxof ,(t->s e))]
     [(Set: e) `(Setof ,(t->s e))]
     [(Evt: r) `(Evtof ,(t->s r))]
-    [(Union: elems) (cons 'U (print-union type ignored-names))]
+    [(Union: elems)
+     (define-values (covered remaining) (cover-union type ignored-names))
+     (cons 'U (append covered (map t->s remaining)))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
     [(ListDots: dty dbound)
      (define dbound*
