@@ -1838,7 +1838,7 @@ please adhere to these guidelines:
   (install-pkg-action-inferred-to-be-install "Action inferred to be Install")
   (install-pkg-default "Default")
   (install-pkg-scope-label "Package Scope")
-  (install-pkg-default-scope-label "Deafult Package Scope") ; for picking the scope to be default
+  (install-pkg-default-scope-label "Default Package Scope") ; for picking the scope to be default
   (install-pkg-installation "Specific Racket Installation")
   (install-pkg-user "Specific User and Racket Version")
   (install-pkg-set-as-default "Set as Default")
@@ -1911,7 +1911,7 @@ please adhere to these guidelines:
   (added-racket/bin-to-path
    "You should now be able to use racket and its tools at the"
    " command-line.\n\nThe"
-   " default PATH has has been configured for all users by adding the file"
+   " default PATH has been configured for all users by adding the file"
    " ~a to point to ~a. You can undo this"
    " configuration by deleting ~a.")
   (add-racket/bin-to-path "Configure Command Line for Racket...") ;; menu item label

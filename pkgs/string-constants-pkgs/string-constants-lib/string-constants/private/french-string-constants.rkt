@@ -1,4 +1,3 @@
-
 ; Do not remove all these blank lines, I use them to make sure a translation
 ; in this file appears on the same line as in english-string-constants.rkt
 
@@ -9,6 +8,7 @@
 ;                              http://translate.google.com/
 ; http://atilf.atilf.fr/academie9.htm est le dico de l'academie (A-Q seulement pour l'instant)
 ; http://www.lexilogos.com/francais_langue_dictionnaires.htm a plus de liens
+
 
 
 
@@ -175,9 +175,10 @@
   (saved-unsubmitted-bug-reports "Rapports de bogues sauvegardés mais non-soumis :")
   ;; the above string constant is next to previous line in same dialog, followed by list of bug report subjects (as buttons)
   (error-sending-bug-report "Erreur durant la soumission du rapport de bogue.")
-  (error-sending-bug-report-expln "Une erreur s'est produite pendant la soumission de votre rapport de bogue."
-  " Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.racket-lang.org/\n\n"
-  " et soumettre votre bogue en utilisant notre formulaire web en ligne. Nous sommes désolé pour vos difficultés.\n\nLe message d'erreur est :\n~a")
+  (error-sending-bug-report-expln
+   "Une erreur s'est produite pendant la soumission de votre rapport de bogue."
+   " Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.racket-lang.org/\n\n"
+   " et soumettre votre bogue en utilisant notre formulaire web en ligne. Nous sommes désolé pour vos difficultés.\n\nLe message d'erreur est :\n~a")
   (illegal-bug-report "Formulaire de soumission de bogue incomplet.")
   (pls-fill-in-field "Merci de compléter le champ « ~a ».")
   (malformed-email-address "Adresse email malformée.")
@@ -193,8 +194,10 @@
   (cs-background-color "Couleur d'arrière-plan")
   (cs-tack/untack-arrow "Coller/décoller les flèches")
   (cs-jump-to-next-bound-occurrence "Aller à l'occurence suivante")
+  (cs-jump-to-previous-bound-occurrence "Aller à l'occurence précédente")
   (cs-jump-to-binding "Aller à l'occurence liant celle-ci")
-  (cs-jump-to-definition "Aller à la définition")
+  (cs-jump-to-definition "Aller à la définition (dans un autre fichier)")
+  (cs-open-defining-file "Ouvrir le fichier contenant la définition")
   (cs-error-message "Message d'erreur")
   (cs-open-file "Ouvrir ~a")
   (cs-rename-var "Renommer ~a")
@@ -264,6 +267,7 @@
   (online-expansion-error-margin "dans la marge")
   ; the label of a preference in the (string-constant online-expansion) section
   (show-arrows-on-mouseover "Montrer dynamiquement les flèches pour les liens entre variables et pour les appels de fonctions en position terminale") ; mouse over -> dynamiquement
+  (show-blueboxes "Montrer les boites bleues et le quart de cercle bleue")
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
   (read-only "Lecture seulement")
@@ -272,6 +276,7 @@
   (running "en cours")
   (not-running "en attente") ; "en attente" ; pause ?
 
+  (install-package-button "Installer ~a") ;; button label: ~a is filled with the name of a pkg
 
   ;;; misc
   (welcome-to-something "Bienvenue dans ~a.")
@@ -330,8 +335,10 @@
   (scheme-mode-color-keyword "mots réservés")
   (scheme-mode-color-comment "commentaires")
   (scheme-mode-color-string "chaînes de caractères")
+  (scheme-mode-color-text "texte")
   (scheme-mode-color-constant "constantes")
   (scheme-mode-color-parenthesis "parenthèses")
+  (scheme-mode-color-hash-colon-keyword "#:mot-réservé")
   (scheme-mode-color-error "erreurs")
   (scheme-mode-color-other "autre")
   ;; the ~a is filled in with one of the above (scheme-mode-*)
@@ -455,6 +462,9 @@
   (install-plt-file-tab "Fichier")
   (install-plt-filename "Nom de fichier :")
   (install-plt-url "URL :")
+  ; an error message from a primitive operation is appended to the end of this message.
+  (install-plt-error-downloading "Une erreur est survenue pendant le téléchargement du"
+                                 " fichier .plt.\n\nDétails :\n")
   (install-plt-error-header "Une erreur est survenue pendant la vérification de la validité du ficher .plt que vous avez téléchargé.  Vérifiez l'URL et essayez à nouveau.")
 
   ;; install plt file when opened in drscheme strings
@@ -523,7 +533,8 @@
   (print-using-platform-specific-mode "Impression dépendante de la plateforme")
   (print-to-ps "Imprimer vers un fichier PostScript")
   (print-to-pdf "Imprimer vers un fichier PDF")
-  (command-as-meta "Utiliser la touche de commande comme touche meta") ;; macos/macos x only
+  (command-as-meta "Utiliser la touche « commande » comme touche « meta »") ;; macos/macos x only
+  (alt-as-meta "Utiliser la touche « alt » comme touche « meta »")
   (reuse-existing-frames "Réutiliser les fenêtres existantes lors de l'ouverture de nouveaux fichiers")
   (default-fonts "Polices par défaut")
   (basic-gray-paren-match-color "Couleur grise simple de surlignage des parenthèses") ; in prefs dialog
@@ -538,15 +549,23 @@
   (show-line-numbers-in-definitions "Numéros de ligne dans la fenêtre de définition")
   ;; the constant above shows up in the popup menu item in the bottom of
   ;; the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
+  (maximum-char-width-guide-pref-check-box "Guide pour la largeur maximum de texte")
+  (hide-column-width-guide "Cacher le guide de largeur de texte pour les fichiers avec ~a colonnes")
+  (show-column-width-guide "Montrer le guide de largeur de texte à partir de ~a colonnes") ;; filled with a number > 2
   (limit-interactions-size "Limiter la taille de la fenêtre d'interaction")
-  (background-color "Couleur d'arrière-plan")
+  (background-color "Arrière-plan") ;; this is in the color section already, so shorten the name a little
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "Sélectionnez une couleur d'arrière-plan")
   (revert-to-defaults "Retour aux valeurs par défaut")
   (undo-changes "Fermer sans rien changer") ;; used in the preferences dialog to undo preference changes
 
-  (black-on-white-color-scheme "Noir sur blanc") ;; these two appear in the color preferences dialog on butttons
+  (color-schemes "Régime de couleurs") ;; the label in the preferences dialog for the color scheme panel
+  (classic-color-scheme "Classique") ;; formerly called 'black on white'
+  (modern-color-scheme "Moderne")   ;; an attempt to be more color-blind friendly
   (white-on-black-color-scheme "Blanc sur noir") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
+  ; drracket additions to the color scheme dialog; two buttons
+  (design-your-own-color-schemes "Concevoir vos propre régimes de couleurs") ; pointer to (english-only) docs
+  (style-and-color-names "Noms de styles et de couleurs")
 
   (add-spacing-between-lines "Ajouter un pixel d'espace supplémentaire entre les lignes")
 
@@ -578,6 +597,10 @@
   (example-text "Example de texte :")
   (only-warn-once "Prévenir une fois seulement quand exécutions et interactions n'ont pas été synchronisées.")
 
+  ; font size menu items in the 'view' menu; the ~a is filled with a number (font size)
+  (increase-font-size "Augmenter la taille de la police (à ~a)")
+  (decrease-font-size "Diminuer la taille de la police (à ~a)")
+  
   ; warning message when lockfile is around
   (waiting-for-pref-lock "Attente sur le fichier de verrouillage des préférences...")
   (pref-lock-not-gone
@@ -839,7 +862,7 @@
   (move-current-tab-right "Déplacer à &droite")
   (move-current-tab-left "Déplacer à &gauche")
   ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
-  (tab-i "Onglet ~a: ~a")
+  (tab-i "Onglet ~a : ~a")
   (tab-i/no-name "Onglet ~a")
 
   (view-menu-label "&Montrer")
@@ -1118,6 +1141,11 @@
   (teachpack-pre-installed/2htdp "Teachpacks HtDP/2e préinstallés")
   (teachpack-user-installed "Teachpacks installés par l'utilisateur")
   (add-teachpack-to-list... "Ajouter un teachpack à la liste...")
+  ; first and second ~a are teachpack names, third is a symbol identifing an export
+  (teachpack-conflict
+   "Avertissement : le teachpack ~a déjà installé est en conflit avec ~a (le nom ~a est exporté par les deux)")
+   ;; a button label; the two ~a are filled with teachpack names
+  (remove-and-add-teachpack "Supprimer ~a et ajouter ~a")
   (teachpack-already-installed "Un teachpack nommé '~a' a déjà été installé.  Voulez-vous l'écraser ?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
   (teachpacks-only-in-languages "Le menu pour les teachpacks n'est disponible que pour les langages suivants : ~a\n\nPour les autres langages, utilisez 'require' à la place.")
@@ -1153,9 +1181,10 @@
   (use-repeating-decimals "Décimales répétitives")
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
   (enforce-primitives-group-box-label "Définitions initiales")
-  (enforce-primitives-check-box-label "Interdire la redéfinition des définition initiales")
+  (enforce-primitives-check-box-label "Interdire la redéfinition des définitions initiales")
   (automatically-compile "Peupler les répertoires « compiled » (pour un chargement plus rapide)")
   (preserve-stacktrace-information "Préserver la trace de la pile (ceci invalide certaines optimisations)")
+  (enforce-module-constants-checkbox-label "Imposer les définitions constantes (permet certaines optimisations)")
   (expression-level-stacktrace "Traçage de la pile au niveau des expressions")
   (function-level-stacktrace "Traçage de la pile au niveau des fonctions")
   (submodules-to-run "Sous-modules à exécuter")
@@ -1460,6 +1489,7 @@
 
   (stepper-no-earlier-application-step "Pas de pas d'application précédent.")
   (stepper-no-later-application-step "Pas de pas d'application suivant.")
+  (stepper-complete "Toutes les définitions ont été correctement évaluées.")
 
   (stepper-no-earlier-step "Pas de pas précédent.")
   (stepper-no-later-step "Pas de pas suivant.")
@@ -1502,6 +1532,7 @@
   (ml-cp-collection-paths "Chemins de répertoires pour les collections")
 
   ;; button labels
+  ;;  The package manager uses these, too
   (ml-cp-add "Ajouter")
   (ml-cp-add-default "Ajouter les chemins par défaut")
   (ml-cp-remove "Enlever")
@@ -1762,6 +1793,7 @@
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "Vérification orthographique des chaînes de caractères constantes")
+  (spell-check-scribble-text "Vérification orthographique du texte (entre {} dans Scribble)")
   (spelling-dictionaries "Dictionnaires orthographiques") ; (sub)menu whose items are the different possible dictionaries
   (default-spelling-dictionary "Dictionnaire par défaut") ; first item in menu from previous line
   (misspelled-text-color "Couleur de texte pour les erreurs orthographiques") ;; in the preferences dialog
@@ -1769,4 +1801,118 @@
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "Le programme de vérification orthographique (~a) à émit un message d'erreur :")
+
+  ;; GUI for installing a pkg package; available via File|Install Package...
+  (install-pkg-install-by-source "Faire ce que je pense")         ; tab label
+  (install-pkg-install-from-list "Disponible dans le catalogue") ; tab label
+  (install-pkg-install-installed "Actuellement installé")    ; tab label
+  (install-pkg-migrate-from "Copier de la version")           ; tab label
+  (install-pkg-settings "Configuration")                        ; tab label
+  (install-pkg-menu-item... "Installer un paquetage...")
+  (install-pkg-dialog-title "Installation de paquetage")
+  (install-pkg-source-label "Source du paquetage")
+  (install-pkg-package-name "Nom du paquetage")
+  (install-pkg-package-source-desc "Une source de paquetage est un nom de paquetage, un fichier, un répertoire, un URL, ou une référence vers Github")
+  (install-pkg-infer "Inférer")
+  (install-pkg-use "Utiliser") ; as opposed to "Infer", label for text box
+  (install-pkg-type-label "Type de source de paquetage")
+  (install-pkg-file "Fichier")
+  (install-pkg-dir "Répertoire")
+  (install-pkg-dir-url "Répertoire distant")
+  (install-pkg-file-url "Fichier distant")
+  (install-pkg-github "Github")
+  (install-pkg-name "Nom (consultation du résolveur)")
+  (install-pkg-inferred-as "Le type inféré est ~a") ; ~a gets install-pkg-{file,dir,...}
+  (install-pkg-link-dirs "Lien vers un répertoire local")
+  (install-pkg-file-or-dir? "Sélectionner un fichier ou un répertoire?")
+  (install-pkg-force? "Ignorer les conflits")
+  (install-pkg-replace? "Les mises à jours peuvent remplaced les installations existantes")
+  (install-pkg-command-line "Ligne de commande équivalente :")
+  (install-pkg-error-installing-title "Erreur durant l'installation du paquetage")
+  (install-pkg-action-label "Action à prendre")
+  (install-pkg-install "Installer")
+  (install-pkg-update "Mettre à jour")
+  (install-pkg-remove "Supprimer")
+  (install-pkg-do-not-remove "Ne pas supprimer")
+  (install-pkg-action-inferred-to-be-update "L'action inférée est une mise à jour")
+  (install-pkg-action-inferred-to-be-install "L'action inférée est une installation")
+  (install-pkg-default "Par défaut")
+  (install-pkg-scope-label "Champ d'application du paquetage")
+  (install-pkg-default-scope-label "Champ d'application par défaut pour le paquetage") ; for picking the scope to be default
+  (install-pkg-installation "Une installation Racket spécifique")
+  (install-pkg-user "Un utilisateur et une version de Racket spécifiques")
+  (install-pkg-set-as-default "Fixer comme défaut")
+  (install-pkg-scope-is "Le champ d'application du paquetage est ~a") ; ~a gets install-pkg-{installation,user,shared}
+  (install-pkg-select-package-directory "Sélectionner le répertoire pour le paquetage")
+  (install-pkg-select-package-file "Sélectionner le fichier du paquetage")
+  (install-pkg-update-package-list "Mettre à jour la liste des paquetages")
+  (install-pkg-stop-update "Arrêter la mise à jour")
+  (install-pkg-filter "Filtre")
+  (install-pkg-update-catalogs? "Mettre à jour la base de données pour refléter l'ensemble des catalogues configurés ?")
+  (install-pkg-currently-configured-are "Les catalogues actuellement configurés sont")
+  (install-pkg-database-recorded-are "Les catalogues enregistrés dans la base de données sont")
+  (install-pkg-update-catalogs "Mettre à jour")
+  (install-pkg-do-not-update-catalogs "Ne pas mettre à jour")
+  (install-pkg-really-remove? "Êtes-vous sûr de vouloir supprimer les paquetages suivants que vous avez sélectionné ?")
+  (install-pkg-promote "Promouvoir depuis « auto-installé »")
+  (install-pkg-demote "Rétrograder vers « auto-installé »")
+  (install-pkg-abort-install "Abandonner l'installation")
+  (install-pkg-abort-update "Abandonner la mise à jour")
+  (install-pkg-abort-remove "Abandonner la suppression")
+  (install-pkg-abort-demote "Abandonner la rétrogradation")
+  (install-pkg-abort-promote "Abandonner la promotion")
+  (install-pkg-abort-migrate "Abandonner la migration")
+  (install-pkg-abort-generic-action "Abandonner l'action")
+  (install-pkg-close-terminal-output "Fermer la sortie de données")
+  (install-pkg-show-all-options "Montrer toutes les options")
+  (install-pkg-migrate-available-installations "Installations disponibles")
+  (pkg-manager-menu-item "Gestionnaire de paquetages...")  
+  ;; where ~a gets an installation name:
+  (install-pkg-packages-for "Paquetages pour ~a")
+  (install-pkg-really-remove-installation "Êtes-vous sûr de vouloir supprimer tous les paquetages installés et toutes les informations pour ~a ?")
+  
+  (install-pkg-abort-set-scope "Abandonner le changement de champ d'application")
+
+  (install-pkg-dependencies-fail "Échec : annule l'installation ou la mise à jour si des dépendances manquent")
+  (install-pkg-dependencies-force "Force : installe même si des dépendances manquent ou ont la mauvaise version")
+  (install-pkg-dependencies-search-ask "Demande : demande à propos de chaque dépendance manquante (non-supporté par l'interface graphique)")
+  (install-pkg-dependencies-search-auto "Auto : installe automatiquement les dépendances qui manquent ou qui ont la mauvaise version")
+  (install-pkg-dependencies-search-auto+update "Auto + Mise à jour : automatiquement met à jour toutes les dépendances possibles")
+
+  (install-pkg-dependencies-mode "Mode pour les dépendances")
+
+  (install-pkg-dependencies-search-ask-not-supported-in-gui
+   "Le mode «demande» pour les dépendances n'est pas supporté dans cet installeur graphique.")
+  ;; "~a" is pre-":" part of `install-pkg-dependencies-fail' or `install-pkg-dependencies-search-auto':
+  (install-pkg-deps-is "Le mode par défaut pour les dépendances est ~a")
+
+  (install-pkg-package-catalogs "Catalogues pour les paquetages") ; label for a list box
+  (install-pkg-add-package-catalog "Ajouter un catalogue de paquetages")
+
+  (install-pkg-not-rentrant "Installation et mise à jour ne peuvent avoir lieu en même temps;"
+                            " abandonnez l'installation ou la mise à jour actuelle, ou attendez-en la fin.")
+  
+  ;; open a file via a collection path (new "Open" menu item in DrRacket)
+  (open-collection-path "Ouvrir un chemin de répertoires pour une collection...")
+  (enter-subcollection "Spécifier une sous-collection") ; button in new dialog
+  (path-to-racket-binary "Chemin de répertoires vers le fichier binaire")
+  (use-a-different-racket "Utiliser une version de racket différente")
+
+  ;; adding racket/bin to the path; only under mac os x
+  ; first ~a is filled with either the empty string or an error message from elsewhere
+  ;  (bracketed by some newlines to separate it out)
+  ; second ~a is filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; third ~a is filled with the path to the bin directory of the current drracket
+  (adding-racket/bin-to-path-failed 
+   "La tentative d'ajouter le support pour racket à la ligne de commande a échoué.~aSpécifiquement,"
+   " il est impossible de créer « ~a » avec le contenu de « ~a ».")
+  ; first and third ~a are filled with /etc/paths.d/racket (or some other path like it in the future)
+  ; and the second one is filled with the path to the bin directory that was put into that file.
+  (added-racket/bin-to-path
+   "Vous pouvez maintenant utiliser racket et ses outils à la"
+   " ligne de commande.\n\nLe"
+   " PATH par défaut a été configuré pour tous les utilisateurs en ajoutant le fichier"
+   " ~a, pour pointer vers ~a. Voud pouvez annuler ce"
+   " changement en supprimant ~a.")
+  (add-racket/bin-to-path "Configurer la ligne de commande pour racket...") ;; menu item label
   ); aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ “” «  »
