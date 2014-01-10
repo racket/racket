@@ -63,7 +63,7 @@ Returns @racket[#t] if @racket[v] is a namespace-anchor value,
 @defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
 
 Returns an empty namespace that shares a @tech{module registry} with
-the source of the anchor, and whose @tech{base phase} the
+the source of the anchor, and whose @tech{base phase} is the
 @tech{phase} in which the anchor was created.
 
 If the anchor is from a @racket[define-namespace-anchor] form in a
@@ -140,7 +140,7 @@ Returns a value for @racket[sym] in @racket[namespace], using
    syntax or imported syntax, then @racket[failure-thunk] is called or
    the @exnraise[exn:fail:syntax]. If @racket[sym] is mapped to an
    undefined variable or an uninitialized module variable, then
-   @racket[failure-thunk] is called of the
+   @racket[failure-thunk] is called or the
    @exnraise[exn:fail:contract:variable].}
 
    @item{If @racket[use-mapping?] is @racket[#f], the namespace's
@@ -313,7 +313,7 @@ is useful only for identification via @racket[eq?].}
 
 Returns a namespace that corresponds to the body of an instantiated
 module in the current namespace's @tech{module registry} and in the
-current namespace's @tech{base phase}, making the module at the
+current namespace's @tech{base phase}, making the module
 @tech{available} for on-demand @tech{visits} at the namespace's
 @tech{base phase}. The returned namespace has the same @tech{module
 registry} as the current namespace. Modifying a binding in the

@@ -208,7 +208,7 @@ this parameter is consulted.
 
 @section{Line-Output Hook}
 
-@defproc[(pretty-print-newline [port out-port?] [width exact-nonnegative-integer?]) void?]{
+@defproc[(pretty-print-newline [port output-port?] [width exact-nonnegative-integer?]) void?]{
 
 Calls the procedure associated with the
 @racket[pretty-print-print-line] parameter to print a newline to
