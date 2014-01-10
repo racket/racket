@@ -82,7 +82,7 @@
     [(arr/sc: args rest (list (any/sc:) ...))
      (arr/sc args rest #f)]
     [(none/sc:) any/sc]
-    [(app terminal-sc-kind 'flat) any/sc]
+    [(app sc-terminal-kind 'flat) any/sc]
     [else sc]))
 
 
