@@ -26,9 +26,7 @@
 (define-binary-check (check-prints-as? prints-as? actual expected))
 (define-binary-check (check-pretty-prints-as? pretty-prints-as? actual expected))
 
-;; initialize to get type aliases
-(initialize-type-names)
-(current-type-names (init-current-type-names))
+(do-standard-inits)
 
 (define tests
   (test-suite
