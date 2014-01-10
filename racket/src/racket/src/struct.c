@@ -4581,7 +4581,7 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *guard,
 						   int immutable)
 {
-  Scheme_Object *basesym;
+  Scheme_Object *basesym, *r;
   char *immutable_array = NULL;
 
   if (immutable) {
@@ -4591,12 +4591,18 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 
   basesym = scheme_intern_exact_symbol(base, strlen(base));
 
-  return _make_struct_type(basesym,
-			   parent, scheme_false, 
-			   num_fields, 0, 
-			   NULL, props,
-			   NULL, immutable_array,
-			   guard);
+  r = _make_struct_type(basesym,
+                        parent, scheme_false, 
+                        num_fields, 0, 
+                        NULL, props,
+                        NULL, immutable_array,
+                        guard);
+
+  if (scheme_starting_up)
+    /* Force allocation for a strcuture type that may be in the master GC: */
+    scheme_force_struct_type_info((Scheme_Struct_Type *)r);
+
+  return r;
 }
 
 static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {

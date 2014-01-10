@@ -1097,5 +1097,15 @@
     (err/rt-test (f))))
 
 ;; ----------------------------------------
+;; Check interaction of `struct-type-info` and GC:
+
+(struct-type-info struct:arity-at-least)
+(collect-garbage)
+(let-values ([(name init-cnt auto-cnt acc mut immut super skipped?)
+              (struct-type-info struct:arity-at-least)])
+  (test #t procedure? acc)
+  (test #t procedure? mut))
+
+;; ----------------------------------------
 
 (report-errs)
