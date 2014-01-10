@@ -253,6 +253,15 @@
                               (hash-set rv v-nm (same (parametric-var/sc temp)))))
                  (parametric->/sc temporaries
                     (t->sc b #:recursive-values rv)))))]
+        [(PolyDots: (list vs ... dotted-v) b)
+         (if (not (from-untyped? typed-side))
+             ;; in positive position, no checking needed for the variables
+             (let ((recursive-values (for/fold ([rv recursive-values]) ([v vs])
+                                       (hash-set rv v (same any/sc)))))
+               (t->sc b #:recursive-values recursive-values))
+             ;; in negative position, use parameteric contracts.
+             (fail #:reason "cannot generate contract for variable arity polymorphic type"))]
+
         [(Mu: n b)
          (match-define (and n*s (list untyped-n* typed-n* both-n*)) (generate-temporaries (list n n n)))
          (define rv
@@ -376,7 +385,7 @@
        (define ((f case->) a)
          (define (convert-arr arr)
            (match arr
-             [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
+             [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst drst kws)
               (let-values ([(mand-kws opt-kws) (partition-kws kws)])
                 ;; Garr, I hate case->!
                 (when (and (not (empty? kws)) case->)
@@ -389,14 +398,18 @@
                     null
                     (map conv mand-kws)
                     (map conv opt-kws)
-                    (and rst (listof/sc (t->sc/neg rst)))
+                    (or
+                      (and rst (listof/sc (t->sc/neg rst)))
+                      (and drst (listof/sc (t->sc/neg (car drst)
+                                                      #:recursive-values
+                                                        (hash-set recursive-values (cdr drst) (same any/sc))))))
                     (map t->sc rngs))))]))
          (match a
            ;; functions with no filters or objects
-           [(arr: dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
+           [(arr: dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst drst kws)
             (convert-arr a)]
            ;; functions with filters or objects
-           [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f kws)
+           [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst drst kws)
             (if (from-untyped? typed-side)
                 (fail #:reason (~a "cannot generate contract for function type"
                                    " with filters or objects."))

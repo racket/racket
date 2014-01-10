@@ -35,20 +35,8 @@
          (with-check-info (('reason reason))
            (fail-check "Reason didn't match expected.")))))))
 
-
-(define known-bugs
-  (test-suite "Known Bugs"
-
-    ;; Polydotted functions should work
-    (t/fail (-polydots (a) (->... (list) (a a) -Symbol))
-            "not supported for this type")))
-
-
-
-
 (define tests
   (test-suite "Contract Tests"
-              known-bugs
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
               (t (-set Univ)) 
@@ -71,6 +59,9 @@
               (t (-> (-poly (A B) (-> (Un A (-mu X (Un A (-lst X)))) (Un A (-mu X (Un A (-lst X))))))
                      (-> -Symbol (-mu X (Un -Symbol (-lst X))))))
 
+              (t (-polydots (a) -Symbol))
+              (t (-polydots (a) (->... (list) (a a) -Symbol)))
+
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
                       "cannot generate contract for non-function polymorphic type")
               (t/fail (-> (-poly (a b) (-> (Un a b) (Un a b))) Univ)
@@ -79,7 +70,8 @@
                 (-> (-poly (A B) (-> (Un B (-mu X (Un A (-lst X)))) (Un B (-mu X (Un A (-lst X))))))
                     (-> -Symbol (-mu X (Un -Symbol (-lst X)))))
                 "multiple parametric contracts are not supported")
-
+              (t/fail (-> (-polydots (a) (->... (list) (a a) -Symbol)) Univ)
+                      "cannot generate contract for variable arity polymorphic type")
 
               (t/fail
                 (make-Function
