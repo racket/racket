@@ -55,4 +55,4 @@
     values))
 
 (define (variable-ref v)
-  (hash-ref (current-variable-values) v))
+  (hash-ref (current-variable-values) v (lambda () (error 'variable-ref "No value available."))))

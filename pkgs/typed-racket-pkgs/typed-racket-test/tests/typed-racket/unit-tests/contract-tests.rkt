@@ -68,11 +68,17 @@
               (t (-poly (a) (-set -Number)))
               (t (-poly (a) (-lst a)))
               (t (-poly (a) (-vec a)))
+              (t (-> (-poly (A B) (-> (Un A (-mu X (Un A (-lst X)))) (Un A (-mu X (Un A (-lst X))))))
+                     (-> -Symbol (-mu X (Un -Symbol (-lst X))))))
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
                       "cannot generate contract for non-function polymorphic type")
               (t/fail (-> (-poly (a b) (-> (Un a b) (Un a b))) Univ)
                       "multiple parametric contracts are not supported")
+              (t/fail
+                (-> (-poly (A B) (-> (Un B (-mu X (Un A (-lst X)))) (Un B (-mu X (Un A (-lst X))))))
+                    (-> -Symbol (-mu X (Un -Symbol (-lst X)))))
+                "multiple parametric contracts are not supported")
 
 
               (t/fail
