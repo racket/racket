@@ -41,6 +41,5 @@
            (define (sc->contract v unused-f)
              (match-define (name args ...) v)
              body)
-           (define (sc->constraints v f) (simple-contract-restrict 'kind.sym))]
-         #:methods gen:terminal-sc
-           [(define (terminal-sc-kind v) 'kind.sym)])]))
+           (define (sc->constraints v f) (simple-contract-restrict 'kind.sym))
+           (define (sc-terminal-kind v) 'kind.sym)])]))
