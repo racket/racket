@@ -548,7 +548,6 @@
                         (regexp-match "[0-9]+" content-header))])
            (and m (string->number (car m)))))
        (define tmp-filename (make-temporary-file "tmp~a.plt"))
-       (define header (purify-port port))
        (define d (make-object dialog% (string-constant downloading) parent))
        (define message (make-object message% (string-constant downloading-file...) d))
        (define gauge (if size 
