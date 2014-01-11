@@ -237,4 +237,15 @@
       #:pos (case->/sc (list (arr/sc (list list?/sc) (listof/sc set?/sc) #f)))
       #:neg (case->/sc (list (arr/sc (list any/sc) any/sc (list list?/sc)))))
 
+    (check-optimize
+      (object/sc (list (member-spec 'field 'x (listof/sc any/sc))))
+      #:pos (object/sc (list (member-spec 'field 'x list?/sc)))
+      #:neg (object/sc (list (member-spec 'field 'x list?/sc))))
+
+    (check-optimize
+      (class/sc (list (member-spec 'field 'x (listof/sc any/sc))) #f empty empty)
+      #:pos (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty)
+      #:neg (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty))
+
+
     ))
