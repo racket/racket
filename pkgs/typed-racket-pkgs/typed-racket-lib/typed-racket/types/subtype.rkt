@@ -86,13 +86,13 @@
 	       (and ;; if t is optional, s must be as well
 		(or rt (not rs))
 		(loop (subtype* A tt ts) rest-t rest-s))]
-	      ;; extra keywords in s are ok
+	      ;; optional extra keywords in s are ok
 	      ;; we just ignore them
-	      [(keyword<? ks kt) (loop A t rest-s)]
+	      [(and (not rs) (keyword<? ks kt)) (loop A t rest-s)]
 	      ;; extra keywords in t are a problem
 	      [else #f])]
-       ;; no more keywords to satisfy
-       [('() _) A]
+       ;; no more keywords to satisfy, the rest in t must be optional
+       [('() _) (and (andmap (match-lambda [(Keyword: _ _ rs) (not rs)]) s) A)]
        ;; we failed to satisfy all the keyword
        [(_ _) #f]))))
 
