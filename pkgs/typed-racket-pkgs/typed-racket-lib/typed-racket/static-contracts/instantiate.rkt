@@ -67,7 +67,7 @@
           (lambda ()
             (apply combine-kinds max (map lookup (dict-keys others)))))]))
   (define var-values (resolve-equations eqs))
-  (for/hash (((name var) vars))
+  (for/hash (((name var) (in-hash vars)))
     (values name (hash-ref var-values var))))
 
 
@@ -77,10 +77,12 @@
       [(recursive-contract names values body)
        (define raw-names (generate-temporaries names))
        (define raw-bindings
-          (for/list ([raw-name raw-names] [value values])
+          (for/list ([raw-name (in-list raw-names)]
+                     [value (in-list values)])
             #`[#,raw-name #,(recur value)]))
        (define bindings
-         (for/list ([name names] [raw-name raw-names])
+         (for/list ([name (in-list names)]
+                    [raw-name (in-list raw-names)])
             #`[#,name (c:recursive-contract #,raw-name
                                             #,(kind->keyword
                                                 (hash-ref recursive-kinds name)))]))
