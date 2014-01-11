@@ -7,19 +7,19 @@
   racket/match
   racket/dict
   racket/sequence
-  (for-template racket/base (prefix-in c: racket/contract))
+  racket/contract
+  (for-template racket/base racket/contract)
   "kinds.rkt"
   "parametric-check.rkt"
   "structures.rkt"
   "constraints.rkt"
   "equations.rkt")
-(require (prefix-in c: racket/contract))
 
 (provide
-  (c:contract-out
+  (contract-out
     [instantiate
-      (c:parametric->/c (a) ((static-contract? (c:-> #:reason (c:or/c #f string?) a))
-                             (contract-kind?) . c:->* . (c:or/c a syntax?)))]))
+      (parametric->/c (a) ((static-contract? (-> #:reason (or/c #f string?) a))
+                             (contract-kind?) . ->* . (or/c a syntax?)))]))
 
 ;; Providing these so that tests can work directly with them.
 (module* internals #f
@@ -41,7 +41,7 @@
 (define (compute-constraints sc max-kind)
   (define (recur sc)
     (match sc
-      [(recursive-contract names values body)
+      [(recursive-sc names values body)
        (close-loop names (map recur values) (recur body))]
       [(? sc?)
        (sc->constraints sc recur)]))
@@ -74,7 +74,7 @@
 (define (instantiate/inner sc recursive-kinds)
   (define (recur sc)
     (match sc
-      [(recursive-contract names values body)
+      [(recursive-sc names values body)
        (define raw-names (generate-temporaries names))
        (define raw-bindings
           (for/list ([raw-name (in-list raw-names)]
@@ -83,7 +83,7 @@
        (define bindings
          (for/list ([name (in-list names)]
                     [raw-name (in-list raw-names)])
-            #`[#,name (c:recursive-contract #,raw-name
+            #`[#,name (recursive-contract #,raw-name
                                             #,(kind->keyword
                                                 (hash-ref recursive-kinds name)))]))
        #`(letrec (#,@bindings #,@raw-bindings) #,(recur body))]

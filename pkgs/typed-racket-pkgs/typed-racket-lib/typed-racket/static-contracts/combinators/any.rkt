@@ -6,7 +6,7 @@
 
 (require "../structures.rkt" "../constraints.rkt"
          racket/match
-         (except-in racket/contract recursive-contract)
+         racket/contract
          (for-template racket/base racket/contract/base)
          (for-syntax racket/base racket/syntax syntax/parse))
 

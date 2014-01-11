@@ -11,7 +11,7 @@
   "../constraints.rkt"
   racket/list
   racket/match
-  (except-in racket/contract recursive-contract))
+  racket/contract)
 
 (provide
   (contract-out

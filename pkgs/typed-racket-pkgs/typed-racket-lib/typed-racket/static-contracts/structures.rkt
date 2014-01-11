@@ -3,15 +3,15 @@
 ;; Internal structures for representing a static contract.
 
 (require racket/match racket/list racket/generic 
-         (except-in racket/contract recursive-contract)
+         racket/contract
          "kinds.rkt" "constraints.rkt")
 
 (provide
   (contract-out
-    (struct recursive-contract ([names (listof identifier?)]
-                                [values (listof static-contract?)]
-                                [body static-contract?]))
-    (struct recursive-contract-use ([name identifier?]))
+    (struct recursive-sc ([names (listof identifier?)]
+                          [values (listof static-contract?)]
+                          [body static-contract?]))
+    (struct recursive-sc-use ([name identifier?]))
     (struct combinator ([args sequence?]))
     (struct static-contract ())
     [sc-map (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
@@ -28,8 +28,8 @@
 
 (define variance/c (or/c 'covariant 'contravariant 'invariant))
 
-(define (recursive-contract-write-proc v port mode)
-  (match-define (recursive-contract names vals body) v)
+(define (recursive-sc-write-proc v port mode)
+  (match-define (recursive-sc names vals body) v)
   (define recur
     (case mode
       [(#t) write]
@@ -56,8 +56,8 @@
   (recur body port)
   (display close port))
 
-(define (recursive-contract-use-write-proc v port mode)
-  (display (syntax->datum (recursive-contract-use-name v)) port))
+(define (recursive-sc-use-write-proc v port mode)
+  (display (syntax->datum (recursive-sc-use-name v)) port))
 
 (define (combinator-write-proc v port mode)
   (match-define (combinator args) v)
@@ -127,31 +127,31 @@
 ;; - values : (listof static-contract?)
 ;; - body : static-contract?
 ;; names and value must have the same length.
-(struct recursive-contract static-contract (names values body)
+(struct recursive-sc static-contract (names values body)
         #:transparent
         #:methods gen:sc
           [(define (sc-map v f)
              (match v
-               [(recursive-contract names values body)
-                (recursive-contract names (map (λ (v) (f v 'covariant)) values) (f body 'covariant))]))
+               [(recursive-sc names values body)
+                (recursive-sc names (map (λ (v) (f v 'covariant)) values) (f body 'covariant))]))
            (define (sc-traverse v f)
              (match v
-               [(recursive-contract names values body)
+               [(recursive-sc names values body)
                 (for-each (λ (v) (f v 'covariant)) values)
                 (f body 'covariant)
                 (void)]))]
-        #:methods gen:custom-write [(define write-proc recursive-contract-write-proc)])
+        #:methods gen:custom-write [(define write-proc recursive-sc-write-proc)])
 
-;; A use of a contract bound by recursive-contract
+;; A use of a contract bound by recursive-sc
 ;; - name : identifier?
-(struct recursive-contract-use static-contract (name)
+(struct recursive-sc-use static-contract (name)
         #:transparent
         #:methods gen:sc
           [(define (sc-map v f) v)
            (define (sc-traverse v f) (void))
-           (define (sc->contract v f) (recursive-contract-use-name v))
-           (define (sc->constraints v f) (variable-contract-restrict (recursive-contract-use-name v)))]
-        #:methods gen:custom-write [(define write-proc recursive-contract-use-write-proc)])
+           (define (sc->contract v f) (recursive-sc-use-name v))
+           (define (sc->constraints v f) (variable-contract-restrict (recursive-sc-use-name v)))]
+        #:methods gen:custom-write [(define write-proc recursive-sc-use-write-proc)])
 
 ;; Super struct of static contract combinators.
 ;; Provides printing functionality.
