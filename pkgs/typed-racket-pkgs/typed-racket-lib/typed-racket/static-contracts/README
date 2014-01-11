@@ -11,11 +11,11 @@ Operations:
 various constructors : * -> static-contract?
 Construct a static contract corresponding to a regular contract.
 
-optimize : static-contract? variance/c -> static-contract?
-Changes a static contract into another one that is cheaper to check. It also removes all covariant
-checks, where the input variance describes the initial position of the static contract.
+optimize : static-contract? [#:trusted-positive boolean? #:trusted-negative boolean?] -> static-contract?
+Changes a static contract into another one that is cheaper to check. It also removes contracts
+protecting a trusted side.
 
-instantiate : static-contract? (-> none/c) [kind/c] -> syntax?
+instantiate : static-contract? (-> A) [kind/c] -> (or/c syntax? A)
 Turns a static contract into syntax that when evaluated is the corresponding contract.
 The failure continuation is invoked if the translation fails to produce a contract of the right kind.
 
@@ -27,12 +27,14 @@ recursive-sc:
   This introduces bindings for recursive contracts.
 recursive-sc-use:
   This is a reference to a previously introduced recursive contract.
-combinator:
-  This is a combinator or leaf contract.
+other:
+  This is a combinator or terminal contract.
 
 These support a couple of different operations:
 
-sc-map: Calls a function on each sub static contract
+sc-map: Calls a function on each sub static contract, and builds up a new static contract
+sc-traverse: Calls a function on each sub static contract
+sc-terminal-kind: Tells whether a static contract has no subparts and has a known contract kind
 
 These are not applicable to recursive contract; instantaite uses them in its implementation, and
 directly deals with the recursive casses.
