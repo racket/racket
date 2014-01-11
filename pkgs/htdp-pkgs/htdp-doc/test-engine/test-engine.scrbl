@@ -24,39 +24,44 @@ and reported by the test function.  Note that the check forms only
 register checks to be performed.  The checks are actually run by the
 @racket[test] function.
 
-@defform[(check-expect (test any/c) (expected any/c))]{
-Checks whether the value of the @racket[test] expression is structurally
-equal to the value produced by the @racket[expected] expression.
+@defform[(check-expect expr expected-expr)]{
+Checks whether the value of the @racket[expr] expression is
+@racket[equal?] to the value produced by the @racket[expected-expr].
 
-It is an error for @racket[test] or @racket[expected] to produce a function
+It is an error for @racket[expr] or @racket[expected-expr] to produce a function
 value or an inexact number.} 
 
-@defform[(check-within (test any/c) (expected any/c) (delta number?))]{
+@defform[(check-within expr expected-expr delta-expr)
+          #:contracts ([delta-expr number?])]{
 Checks whether the value of the @racket[test] expression is structurally
 equal to the value produced by the @racket[expected] expression; every
 number in the first expression must be within @racket[delta] of the
 corresponding number in the second expression.
 
-It is an error for @racket[test] or @racket[expected] to produce a function
+It is an error for @racket[expr] or @racket[expected] to produce a function
 value.} 
 
-@defform*[ [(check-error (test any/c))
-            (check-error (test any/c) (msg string?))] ]{
-Checks that evaluating @racket[test] signals an error, where
+@defform*[ [(check-error expr)
+            (check-error expr msg-expr)]
+            #:contracts ([msg-expr string?]) ]{
+Checks that evaluating @racket[expr] signals an error, where
 the error message matches the string (if any).}
 
-@defform[(check-member-of (test any/c) (expected any/c) ...)]{
-Checks whether the value of the @racket[test] expression is structurally
-equal to any of the values produced by the @racket[expected] expressions.
+@defform[(check-member-of expr expected-expr ...)]{
+Checks whether the value of the @racket[expr] expression is @racket[equal?]
+to any of the values produced by the @racket[expected-expr]s.
 
-It is an error for @racket[test] or any of the @racket[expected] expression
+It is an error for @racket[expr] or any of the @racket[expected-expr]s
 to produce a function value or an inexact number.}
 
-@defform[(check-range (test number/c) (min number/c) (max number/c))]{
-Checks whether value of @racket[test] is between the values of the
-@racket[min] and @racket[max] expressions [inclusive].}
+@defform[(check-range expr min-expr max-expr)
+         #:contracts ([expr number?]
+                      [min-expr number?]
+                      [max-expr number?])]{
+Checks whether value of @racket[expr] is between the values of
+@racket[min-expr] and @racket[max-expr] inclusive.}
 
-@defproc[(test) void?]{
+@defform[(test)]{
 
 Runs all of the tests specified by check forms in the current module
 and reports the results.  When using the gui module, the results are
@@ -88,10 +93,6 @@ suppress evaluation of test expressions.
 @; FIXME: need to actually list the bindings here, so they're found in
 @; the index
 
-This module requires GRacket and produces an independent window when
+This module requires produces an independent window when
 displaying test results.  It provides the same bindings as
 @racket[test-engine/racket-tests].
-
-@section{Integrating languages with Test Engine}
-
-@italic{(To be written.)}
