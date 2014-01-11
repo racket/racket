@@ -62,6 +62,9 @@
               (t (-polydots (a) -Symbol))
               (t (-polydots (a) (->... (list) (a a) -Symbol)))
 
+              (t (-mu x (-Syntax x)))
+
+
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
                       "cannot generate contract for non-function polymorphic type")
               (t/fail (-> (-poly (a b) (-> (Un a b) (Un a b))) Univ)
