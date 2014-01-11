@@ -5,8 +5,7 @@
 
 (require
   racket/match
-
-  [except-in racket/contract recursive-contract]
+  racket/contract
   racket/dict
   syntax/id-table
   "structures.rkt"
@@ -38,11 +37,11 @@
                                    (variable-ref (get-var e)))))]
       [(parametric-var/sc: id)
        (add-equation! eqs (get-var sc) (lambda () 1))]
-      [(recursive-contract names values body)
+      [(recursive-sc names values body)
        (for ([name names] [value values])
          (add-equation! eqs (get-rec-var name) (lambda () (variable-ref (get-var value)))))
        (add-equation! eqs (get-var sc) (lambda () (variable-ref (get-var body))))]
-      [(recursive-contract-use id)
+      [(recursive-sc-use id)
        (add-equation! eqs (get-var sc) (lambda () (variable-ref (get-rec-var id))))]
       [else
        (get-var sc)])

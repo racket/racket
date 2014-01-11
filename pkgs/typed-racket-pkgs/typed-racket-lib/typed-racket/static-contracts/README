@@ -23,9 +23,9 @@ Internal Implementation Details:
 
 A static contract is one of three things:
 
-recursive-contract:
+recursive-sc:
   This introduces bindings for recursive contracts.
-recursive-contract-use:
+recursive-sc-use:
   This is a reference to a previously introduced recursive contract.
 combinator:
   This is a combinator or leaf contract.

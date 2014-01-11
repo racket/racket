@@ -11,7 +11,7 @@
   racket/dict
   syntax/id-table
   racket/list
-  (except-in racket/contract recursive-contract)
+  racket/contract
   racket/match)
 
 
@@ -106,9 +106,9 @@
     (define table (make-free-id-table))
     (define (recur sc variance)
       (match sc
-        [(recursive-contract-use id)
+        [(recursive-sc-use id)
          (dict-set! table id #t)]
-        [(recursive-contract names values body)
+        [(recursive-sc names values body)
          (recur body 'covariant)
          (for ([name (in-list names)]
                [value (in-list values)])
@@ -132,7 +132,7 @@
 
   (define (trim sc variance)
     (match sc
-      [(recursive-contract names values body)
+      [(recursive-sc names values body)
        (define new-body (trim body 'covariant))
 
        (define new-name-values
@@ -145,7 +145,7 @@
                                (map second new-name-values)))
        (if (empty? new-names)
            new-body
-           (recursive-contract new-names new-values new-body))]
+           (recursive-sc new-names new-values new-body))]
       [else
         (sc-map sc trim)]))
   (trim sc 'covariant))

@@ -9,7 +9,7 @@
   "../terminal.rkt"
   "simple.rkt"
   racket/match
-  (except-in racket/contract recursive-contract)
+  racket/contract
   (for-template racket/base))
 
 (provide

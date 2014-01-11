@@ -266,24 +266,24 @@
          (match-define (and n*s (list untyped-n* typed-n* both-n*)) (generate-temporaries (list n n n)))
          (define rv
            (hash-set recursive-values n
-                     (triple (recursive-contract-use untyped-n*)
-                             (recursive-contract-use typed-n*)
-                             (recursive-contract-use both-n*))))
+                     (triple (recursive-sc-use untyped-n*)
+                             (recursive-sc-use typed-n*)
+                             (recursive-sc-use both-n*))))
          (case typed-side
-           [(both) (recursive-contract
+           [(both) (recursive-sc
                      (list both-n*)
                      (list (loop b 'both rv))
-                     (recursive-contract-use both-n*))]
+                     (recursive-sc-use both-n*))]
            [(typed untyped)
             ;; TODO not fail in cases that don't get used
             (define untyped (loop b 'untyped rv))
             (define typed (loop b 'typed rv))
             (define both (loop b 'both rv))
   
-            (recursive-contract
+            (recursive-sc
                      n*s
                      (list untyped typed both)
-                     (recursive-contract-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
+                     (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
         [(Instance: (Class: _ _ (list (list names functions) ...)))
@@ -305,9 +305,9 @@
               (for/list ([fty flds] [mut? mut?])
                 (t->sc fty #:recursive-values (hash-set
                                                 recursive-values
-                                                nm (recursive-contract-use nm*)))))
-            (recursive-contract (list nm*) (list (struct/sc nm (ormap values mut?) fields))
-                                (recursive-contract-use nm*))]
+                                                nm (recursive-sc-use nm*)))))
+            (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
+                                (recursive-sc-use nm*))]
            [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)

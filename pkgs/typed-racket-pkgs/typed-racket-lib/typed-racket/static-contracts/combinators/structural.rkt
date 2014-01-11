@@ -14,7 +14,7 @@
                        racket/contract/base
                        racket/set
                        unstable/contract)
-         (except-in racket/contract recursive-contract))
+         racket/contract)
 
 
 (begin-for-syntax
