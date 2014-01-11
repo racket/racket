@@ -66,23 +66,33 @@
         (syntax/loc stx (let*/and (clauses ...)
 			   A-last))))]))
 
+;; kw-subtypes : (Listof (Pairof Num Num)) (Listof Keyword) (Listof Keyword)
+;;               -> (Option (Listof (Pairof Num Num)))
+;;
+;; Given function types F_s and F_t, this procedure is called to check that the
+;; keyword types t-kws for F_t are subtypes of the keyword types s-kws for F_s
+;; when checking that F_s <: F_t (but *not* F_t <: F_s).
+;;
+;; Note that in terms of width, s-kws may have more keywords (i.e., F_s accepts
+;; all keywords that F_t does) but the types in s-kws must be supertypes of those
+;; in t-kws (i.e., F_s domain types are at least as permissive as those of F_t).
 (define (kw-subtypes* A0 t-kws s-kws)
   (let loop ([A A0] [t t-kws] [s s-kws])
     (and
      A
      (match* (t s)
-       [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
+       [((cons (Keyword: kt tt rt) rest-t) (cons (Keyword: ks ts rs) rest-s))
 	(cond [(eq? kt ks)
-	       (and ;; if s is optional, t must be as well
-		(or rs (not rt))
+	       (and ;; if t is optional, s must be as well
+		(or rt (not rs))
 		(loop (subtype* A tt ts) rest-t rest-s))]
-	      ;; extra keywords in t are ok
+	      ;; optional extra keywords in s are ok
 	      ;; we just ignore them
-	      [(keyword<? kt ks) (loop A rest-t s)]
-	      ;; extra keywords in s are a problem
+	      [(and (not rs) (keyword<? ks kt)) (loop A t rest-s)]
+	      ;; extra keywords in t are a problem
 	      [else #f])]
-       ;; no more keywords to satisfy
-       [(_ '()) A]
+       ;; no more keywords to satisfy, the rest in t must be optional
+       [('() _) (and (andmap (match-lambda [(Keyword: _ _ rs) (not rs)]) s) A)]
        ;; we failed to satisfy all the keyword
        [(_ _) #f]))))
 
