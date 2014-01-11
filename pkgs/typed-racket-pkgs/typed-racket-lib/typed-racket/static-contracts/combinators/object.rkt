@@ -45,6 +45,11 @@
        (match v
          [(class-combinator args opaque absent-fields absent-methods)
           (class-combinator (member-seq-sc-map f args) opaque absent-fields absent-methods)]))
+     (define (sc-traverse v f)
+       (match v
+         [(class-combinator args opaque absent-fields absent-methods)
+          (member-seq-sc-map f args)
+          (void)]))
      (define (sc->contract v f)
        (class/sc->contract v f))
      (define (sc->constraints v f)
@@ -57,6 +62,7 @@
      (filter-map member-spec-sc vals)]))
 
 (struct member-seq (vals)
+   #:transparent
    #:property prop:sequence member-seq->list)
 
 (define (member-seq-sc-map f seq)
