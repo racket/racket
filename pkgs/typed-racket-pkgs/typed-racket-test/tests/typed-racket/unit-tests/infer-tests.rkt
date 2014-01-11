@@ -8,7 +8,7 @@
 
 (define-syntax-rule (fv-t ty elems ...)
   (let ([ty* ty])
-    (test-check (format "~a" ty*)
+    (test-check (format "~a" 'ty)
                 equal?
                 (fv ty*)
                 (list (quote elems) ...))))

@@ -11,7 +11,7 @@
   (syntax-case stx ()
     [(_ [t1 t2 res] ...)
      #'(test-suite "Tests for intersect"
-                   (test-check (format "Overlap test: ~a ~a" t1 t2) (lambda (a b) (eq? (not (not a)) b)) (overlap t1 t2) res) ...)]))
+                   (test-check (format "Overlap test: ~a ~a" 't1 't2) (lambda (a b) (eq? (not (not a)) b)) (overlap t1 t2) res) ...)]))
 
 (define overlap-tests
   (over-tests
@@ -21,7 +21,7 @@
   (syntax-case stx ()
     [(_ [t1 t2 res] ...)
      #'(test-suite "Tests for intersect"
-                   (test-check (format "Restrict test: ~a ~a" t1 t2) type-compare? (restrict t1 t2) res) ...)]))
+                   (test-check (format "Restrict test: ~a ~a" 't1 't2) type-compare? (restrict t1 t2) res) ...)]))
 
 
 (define restrict-tests
@@ -50,7 +50,7 @@
     [(_ [t1 t2 res] ...)
      (syntax/loc stx
        (test-suite "Tests for remove"
-                   (test-check (format "Remove test: ~a ~a" t1 t2) type-compare? (remove t1 t2) res) ...))]))
+                   (test-check (format "Remove test: ~a ~a" 't1 't2) type-compare? (remove t1 t2) res) ...))]))
 
 (define remove-tests
   (remo-tests
