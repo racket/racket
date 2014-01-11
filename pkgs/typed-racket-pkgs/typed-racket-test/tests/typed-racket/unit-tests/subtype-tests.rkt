@@ -253,4 +253,34 @@
    [FAIL (make-ListDots (-box (make-F 'a)) 'a) (-lst (-box Univ))]
    [(make-ListDots (-> -Symbol (make-F 'a)) 'a) (-lst (-> -Symbol Univ))]
 
+   ;; keyword function types
+   [(->key #:x -Symbol #t Univ) (->key Univ)]
+   [FAIL (->key Univ) (->key #:x -Symbol #t Univ)]
+   [(->key #:x -Symbol #t #:y -Symbol #t Univ) (->key Univ)]
+   [(->key #:x -Symbol #f #:y -Symbol #f Univ) (->key Univ)]
+   [(->key #:x -Symbol #f #:y -Symbol #f Univ) (->key #:x -Symbol #t Univ)]
+   [FAIL (->key #:x -Symbol #f Univ) (->key #:x -Symbol #f #:y -Symbol #f Univ)]
+   [(->key #:x -Symbol #f #:y -Symbol #f Univ)
+    (->key #:x -Symbol #t #:y -Symbol #t Univ)]
+   [FAIL
+    (->key #:x -Symbol #t #:y -Symbol #f Univ)
+    (->key #:x -Symbol #f #:y -Symbol #t Univ)]
+   [(->key #:x -Number #f #:y -Symbol #f Univ) (->key #:x -Integer #t Univ)]
+   [FAIL
+    (->key #:x -Integer #f #:y -Symbol #f Univ) (->key #:x -Number #t Univ)]
+   [(->key -Integer #:x -Symbol #f #:y -Symbol #f Univ)
+    (->key -Integer #:x -Symbol #t Univ)]
+   [FAIL
+    (->key -String #:x -Symbol #f #:y -Symbol #f Univ)
+    (->key -Integer #:x -Symbol #t Univ)]
+   [(->optkey -Integer [-Integer] #:x -Symbol #f #:y -Symbol #f Univ)
+    (->key -Integer #:x -Symbol #t Univ)]
+   [(->optkey -Integer [-Integer] #:x -Symbol #f #:y -Symbol #f Univ)
+    (->optkey -Integer [-Integer] #:x -Symbol #t Univ)]
+   [FAIL
+    (->optkey -Integer [-String] #:x -Symbol #f #:y -Symbol #f Univ)
+    (->optkey -Integer [-Integer] #:x -Symbol #t Univ)]
+   [FAIL
+    (->key -Integer #:x -Symbol #f #:y -Symbol #f Univ)
+    (->optkey -Integer [-Integer] #:x -Symbol #t Univ)]
    ))
