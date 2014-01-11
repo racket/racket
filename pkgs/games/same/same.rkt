@@ -74,7 +74,7 @@
     
     (define same-canvas%
       (class canvas%
-        (inherit get-dc get-client-size)
+        (inherit get-dc get-client-size make-bitmap)
         (define/private (get-width) (let-values ([(w h) (get-client-size)]) w))
         (define/private (get-height) (let-values ([(w h) (get-client-size)]) h))
         (define/private (get-x-step) (/ (get-width) board-width))
