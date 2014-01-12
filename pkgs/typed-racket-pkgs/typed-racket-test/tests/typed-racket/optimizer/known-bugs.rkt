@@ -63,6 +63,7 @@
     (good-opt (- (* (/ 6 11) (/ 1.2345678f0 123456.7f0)) (make-rectangular 0.0 0.3)))
     (bad-opt (/ 1.0 0.0+0.0i))
     (good-opt (+ 0.0+0.0i (* 1 1 +inf.0)))
+    (bad-opt (* 1.0f-30 1.0f-30 1.0e60+1.0e60i))
 
     ;; Unary division has bad underflow
     (bad-opt (/ (make-rectangular 1e+100 1e-300)))
