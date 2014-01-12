@@ -86,11 +86,12 @@
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
   (--> identifier? tc-results/c)
-  (let* ([ty (lookup-type/lexical id)])
-    (ret ty
-         (make-FilterSet (-not-filter (-val #f) id)
-                         (-filter (-val #f) id))
-         (make-Path null id))))
+  (syntax-parse id
+    [:typed-id/lexical/fail^
+     (ret (attribute type)
+          (make-FilterSet (-not-filter (-val #f) id)
+                          (-filter (-val #f) id))
+          (make-Path null id))]))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
@@ -152,13 +153,12 @@
              (check-below t expected)]))))
 
 (define (explicit-fail stx msg var)
-  (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
-         =>
-         (λ (t)
-           (tc-error/expr #:return (ret (Un)) #:stx stx
-                          (string-append (syntax-e msg) "; missing coverage of ~a")
-                          t))]
-         [else (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
+  (syntax-parse var
+    [v:typed-id/lexical^
+     (tc-error/expr #:return (ret (Un)) #:stx stx
+                    (string-append (syntax-e msg) "; missing coverage of ~a")
+                    (attribute v.type))]
+    [_ (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
 
 ;; check that `expr` doesn't evaluate any references 
 ;; to `name` that aren't under `lambda`

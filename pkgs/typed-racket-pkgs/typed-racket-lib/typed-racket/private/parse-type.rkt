@@ -201,11 +201,11 @@
         (map list
              (stx-map syntax-e #'(mname ...))
              (parse-types #'(mty ...))))]
-      [((~and kw t:Refinement) p?:id)
+      [((~and kw t:Refinement) pred:typed-id/lexical/fail^)
        (add-disappeared-use #'kw)
-       (match (lookup-type/lexical #'p?)
-         [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
-          (make-Refinement dom #'p?)]
+       (match (attribute pred.type)
+         [(Function: (list (arr: (list dom) _ #f #f '())))
+          (make-Refinement dom #'pred)]
          [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       [((~and kw t:Struct) t)
        (add-disappeared-use #'kw)

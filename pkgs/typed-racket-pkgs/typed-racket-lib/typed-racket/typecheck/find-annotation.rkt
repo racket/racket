@@ -50,24 +50,25 @@
 ;; where x has a type annotation, return that annotation, otherwise #f
 (define (find-annotation stx name)
   (define (find s) (find-annotation s name))
-  (define (match? b)
-    (syntax-parse b
-      #:literals (#%plain-app reverse)
-      [c:lv-clause
-       #:with n:id #'c.e
-       #:with (v) #'(c.v ...)
-       #:fail-unless (free-identifier=? name #'n) #f
-       (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
-      [c:lv-clause
-       #:with (#%plain-app reverse n:id) #'c.e
-       #:with (v) #'(c.v ...)
-       #:fail-unless (free-identifier=? name #'n) #f
-       (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
-      [_ #f]))
+  (define-syntax-class annotated
+    #:attributes (type)
+    (pattern i:id
+      #:attr type (type-annotation #'i)
+      #:when (attribute type))
+    (pattern :typed-id/lexical^)
+    (pattern _
+      #:attr type #f))
+  (define-syntax-class annotated-lv-clause
+    #:attributes (type)
+    #:literals (#%plain-app reverse)
+    (pattern [(:annotated) (~or (#%plain-app reverse n:id) n:id)]
+     #:when (free-identifier=? name #'n))
+    (pattern _
+     #:attr type #f))
   (syntax-parse stx
     #:literals (let-values)
-    [(let-values cls:lv-clauses body)
-     (or (ormap match? (syntax->list #'cls))
-	 (find #'body))]
+    [(let-values (cls:annotated-lv-clause ...) body)
+     (or (ormap values (attribute cls.type))
+         (find #'body))]
     [e:core-expr
      (ormap find (syntax->list #'(e.expr ...)))]))

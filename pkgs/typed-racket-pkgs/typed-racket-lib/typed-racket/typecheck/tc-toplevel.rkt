@@ -74,27 +74,19 @@
       ;; declare-refinement
       ;; FIXME - this sucks and should die
       [t:type-refinement
-       (match (lookup-type/lexical #'t.predicate)
-              [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
-               (let ([new-t (make-pred-ty (list dom)
-                                          rng
-                                          (make-Refinement dom #'t.predicate))])
-                 (register-type #'t.predicate new-t))
-               (list)]
-              [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
+       (match (attribute t.type)
+         [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
+          (let ([new-t (make-pred-ty (list dom)
+                                     rng
+                                     (make-Refinement dom #'t.predicate))])
+            (register-type #'t.predicate new-t))
+          (list)]
+         [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
 
       ;; require/typed
       [r:typed-require
-       (let ([t (parse-type #'r.type)])
-         (register-type #'r.name t)
-         (list (make-def-binding #'r.name t)))]
-
-      [r:typed-require/struct
-       (let* ([t (parse-type #'r.type)]
-              [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))]
-              [mk-ty (flds #f . ->* . t)])
-         (register-type #'r.name mk-ty)
-         (list (make-def-binding #'r.name mk-ty)))]
+       (register-type #'r.name (attribute r.type))
+       (list (make-def-binding #'r.name (attribute r.type)))]
 
       ;; define-typed-struct (handled earlier)
       [(~or _:typed-struct _:typed-struct/exec)
@@ -102,13 +94,13 @@
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
       [p:predicate-assertion
-       (register-type #'p.predicate (make-pred-ty (parse-type #'p.type)))
+       (register-type #'p.predicate (attribute p.type))
        (list)]
 
       ;; top-level type annotation
       [t:type-declaration
-       (register-type/undefined #'t.id (parse-type #'t.type))
-       (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))
+       (register-type/undefined #'t.id (attribute t.type))
+       (register-scoped-tvars #'t.id (attribute t.literal-alls))
        (list)]
 
 
