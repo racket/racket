@@ -76,7 +76,7 @@
     (bad-opt (/ (make-rectangular +inf.0 1.0)))
 
     ;; Exp of large real should have 0 imaginary component
-    (bad-opt (+ (exp 1.7976931348623151e+308) 0.0+0.0i))
+    (good-opt (+ (exp 1.7976931348623151e+308) 0.0+0.0i))
 
     ;; Multiplication of multiple args should keep exact semantics for exact args
     (bad-opt (* (expt 10 500) (expt 10 -500) 1.0+1.0i))
