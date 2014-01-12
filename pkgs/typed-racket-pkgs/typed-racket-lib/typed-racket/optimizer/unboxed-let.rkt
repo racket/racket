@@ -267,19 +267,28 @@
     #:with (bindings ...)
     ;; add unboxed parameters to the unboxed vars table
     (let ((to-unbox (syntax->datum #'(fun.unboxed ...))))
-      (for ([index (in-list to-unbox)]
-            [real-part (in-syntax #'(real-params ...))]
-            [imag-part (in-syntax #'(imag-params ...))])
-        (add-unboxed-var! (list-ref (syntax->list #'params) index) real-part imag-part))
-      (define boxed
+      (define/with-syntax (unboxed ...)
+        (for/list ([param (in-syntax #'params)]
+                   [i (in-naturals)]
+                   #:when (memq i to-unbox))
+          param))
+      (define/with-syntax (boxed ...)
         (for/list ([param (in-syntax #'params)]
                    [i (in-naturals)]
                    #:unless (memq i to-unbox))
           param))
+      (for ([orig-param (in-syntax #'(unboxed ...))]
+            [real-part (in-syntax #'(real-params ...))]
+            [imag-part (in-syntax #'(imag-params ...))])
+        (add-unboxed-var! orig-param real-part imag-part))
+
       ;; real parts of unboxed parameters go first, then all
       ;; imag parts, then boxed occurrences of unboxed
       ;; parameters will be inserted when optimizing the body
+      ;; We add the original bindings so that dead code in the body,
+      ;; (which will not be optimized), will have correct bindings
       #`(((fun) (#%plain-lambda
-                  (real-params ... imag-params ... #,@(reverse boxed))
-                  body.opt ...))))))
+                  (real-params ... imag-params ... boxed ...)
+                  (let ([unboxed 'check-syntax-binding] ...)
+                    body.opt ...)))))))
 
