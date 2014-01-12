@@ -14,6 +14,14 @@
 
 @defproc[#:link-target? #f (f) integer?]{A function, again, not a link target.}
 
+@defproc[#:link-target? #f (f) integer? #:value 10]{A function, again, not a link target, documented to return @racket[10].}
+
+@defproc[#:link-target? #f (f) integer? #:value (let ()
+                                                  (define x 10)
+                                                  x)]{
+A function, again, not a link target, documented to return @racket[10] using a definition.
+}
+
 @defproc[#:kind "function" #:link-target? #f (g [x void?]) integer?]{A ``function,'' again, not a link target.}
 
 @defproc[#:id [i #'j] (i) void?]{Source is @racket[i], documents @racket[j].}
@@ -42,11 +50,26 @@
 
 @defparam[#:link-target? #f p k integer?]{A parameter, again.}
 
+@defparam[#:link-target? #f p k integer? #:value 10]{A parameter, again, with a documented default value.}
+
 @defparam*[#:link-target? #f p k real? integer?]{A parameter, yet again.}
+
+@defparam*[#:link-target? #f p k real? integer? #:value 10]{A parameter, yet again, with a documented default value.}
 
 @defboolparam[q on?]{A boolean parameter.}
 
 @defboolparam[#:link-target? #f q still-on?]{A boolean parameter, again.}
+
+@defboolparam[#:link-target? #f q still-on? #:value #f]{A boolean parameter, again, with a documented default value.}
+
+
+@defthing[v integer?]{A thing.}
+
+@defthing[#:link-target? #f v integer?]{A thing, again.}
+
+@defthing[#:link-target? #f v integer? #:value 10]{A thing, again, with a documented value.}
+
+@defthing[#:link-target? #f v integer? #:value 12345678901234567890123456789012345678901234567890]{A thing, again, with a documented value that's too wide to fit on one line.}
 
 
 @defstruct[pt ([x real?] [y real?])]{A structure type with extra name.}

@@ -117,12 +117,25 @@
                            "expected a result contract, found a string" #'c)
        #'(racketblock0 c))]))
 
+(define no-value #f)
+
+(define-syntax (result-value stx)
+  (syntax-case stx (no-value let)
+    [(_ no-value)  #'#f]
+    [(_ (let () e ...))  #'(racketblock0 e ...)]
+    [(_ v)  #'(racketblock0 v)]))
+
 (begin-for-syntax
  (define-splicing-syntax-class kind-kw
    #:description "#:kind keyword"
    (pattern (~optional (~seq #:kind kind)
                        #:defaults ([kind #'#f]))))
 
+ (define-splicing-syntax-class value-kw
+   #:description "#:value keyword"
+   (pattern (~optional (~seq #:value value)
+                       #:defaults ([value #'no-value]))))
+ 
  (define-splicing-syntax-class link-target?-kw
    #:description "#:link-target? keyword"
    (pattern (~seq #:link-target? expr))
@@ -152,13 +165,30 @@
 
 (define-syntax (defproc stx)
   (syntax-parse stx
-    [(_ kind:kind-kw lt:link-target?-kw i:id-kw (id arg ...) result desc ...)
+    [(_ kind:kind-kw
+        lt:link-target?-kw
+        i:id-kw
+        (id arg ...)
+        result
+        value:value-kw
+        desc ...)
      (syntax/loc stx
-       (defproc* #:kind kind.kind #:link-target? lt.expr #:id [i.key i.expr] [[(id arg ...) result]] desc ...))]))
+       (defproc*
+         #:kind kind.kind
+         #:link-target? lt.expr
+         #:id [i.key i.expr]
+         [[(id arg ...) result #:value value.value]]
+         desc ...))]))
 
 (define-syntax (defproc* stx)
   (syntax-parse stx
-    [(_ kind:kind-kw lt:link-target?-kw d:id-kw mode:mode-kw within:within-kw [[proto result] ...] desc ...)
+    [(_ kind:kind-kw
+        lt:link-target?-kw
+        d:id-kw
+        mode:mode-kw
+        within:within-kw
+        [[proto result value:value-kw] ...]
+        desc ...)
      (syntax/loc stx
        (with-togetherable-racket-variables
         ()
@@ -173,14 +203,15 @@
                     (list (arg-contracts proto) ...)
                     (list (arg-defaults proto) ...)
                     (list (lambda () (result-contract result)) ...)
-                    (lambda () (list desc ...))))))]))
+                    (lambda () (list desc ...))
+                    (list (result-value value.value) ...)))))]))
 
 (define-struct arg
   (special? kw id optional? starts-optional? ends-optional? num-closers))
 
 (define (*defproc kind link? mode within-id
-                  stx-ids sym prototypes arg-contractss arg-valss result-contracts
-                  content-thunk)
+                  stx-ids sym prototypes arg-contractss arg-valss result-contracts content-thunk
+                  [result-values (map (lambda (x) #f) result-contracts)])
   (define max-proto-width (current-display-width))
   (define ((arg->elem show-opt-start?) arg)
     (let* ([e (cond [(not (arg-special? arg))
@@ -282,7 +313,7 @@
                 (syntax-e stx-id)
                 (car p)))
           (loop (car p)))))
-  (define (do-one stx-id prototype args arg-contracts arg-vals result-contract
+  (define (do-one stx-id prototype args arg-contracts arg-vals result-contract result-value
                   first? add-background-label?)
     (let ([names (remq* '(... ...+) (map arg-id args))])
       (unless (= (length names) (length (remove-duplicates names eq?)))
@@ -550,7 +581,17 @@
           [else null]))
       args
       arg-contracts
-      arg-vals)))
+      arg-vals)
+     (if result-value
+         (let ([result-block  (if (block? result-value)
+                                  result-value
+                                  (make-omitable-paragraph (list result-value)))])
+           (list (list (list (make-table
+                              "argcontract"
+                              (list (list
+                                     (to-flow (make-element #f (list spacer "=" spacer)))
+                                     (make-flow (list result-block)))))))))
+         null)))
   (define all-args (map prototype-args prototypes))
   (define var-list
     (filter-map (lambda (a) (and (not (arg-special? a)) (arg-id a)))
@@ -564,7 +605,7 @@
        boxed-style
        (append-map
         do-one
-        stx-ids prototypes all-args arg-contractss arg-valss result-contracts
+        stx-ids prototypes all-args arg-contractss arg-valss result-contracts result-values
         (let loop ([ps prototypes] [stx-ids stx-ids] [accum null])
           (cond [(null? ps) null]
                 [(ormap (lambda (a) (eq? (extract-id (car ps) (car stx-ids)) a)) accum)
@@ -579,21 +620,21 @@
 
 (define-syntax (defparam stx)
   (syntax-parse stx
-    [(_ lt:link-target?-kw id arg contract desc ...)
+    [(_ lt:link-target?-kw id arg contract value:value-kw desc ...)
      #'(defproc* #:kind "parameter" #:link-target? lt.expr
-         ([(id) contract] [(id [arg contract]) void?]) 
+         ([(id) contract] [(id [arg contract]) void? #:value value.value]) 
          desc ...)]))
 (define-syntax (defparam* stx)
   (syntax-parse stx
-    [(_ lt:link-target?-kw id arg in-contract out-contract desc ...)
+    [(_ lt:link-target?-kw id arg in-contract out-contract value:value-kw desc ...)
      #'(defproc* #:kind "parameter" #:link-target? lt.expr
-         ([(id) out-contract] [(id [arg in-contract]) void?]) 
+         ([(id) out-contract] [(id [arg in-contract]) void? #:value value.value])
          desc ...)]))
 (define-syntax (defboolparam stx)
   (syntax-parse stx
-    [(_ lt:link-target?-kw id arg desc ...)
+    [(_ lt:link-target?-kw id arg value:value-kw desc ...)
      #'(defproc* #:kind "parameter" #:link-target? lt.expr
-         ([(id) boolean?] [(id [arg any/c]) void?]) 
+         ([(id) boolean?] [(id [arg any/c]) void? #:value value.value])
          desc ...)]))
 
 ;; ----------------------------------------
@@ -962,6 +1003,7 @@
                    #:defaults ([id-expr #'#f]))
         id 
         result 
+        value:value-kw
         desc ...)
      #'(with-togetherable-racket-variables
         ()
@@ -970,11 +1012,12 @@
                    lt.expr
                    (list (or id-expr (quote-syntax/loc id))) (list 'id) #f
                    (list (racketblock0 result))
-                   (lambda () (list desc ...))))]))
+                   (lambda () (list desc ...))
+                   (list (result-value value.value))))]))
 
 (define-syntax (defthing* stx)
   (syntax-parse stx
-    [(_ kind:kind-kw lt:link-target?-kw ([id result] ...) desc ...)
+    [(_ kind:kind-kw lt:link-target?-kw ([id result value:value-kw] ...) desc ...)
      #'(with-togetherable-racket-variables
         ()
         ()
@@ -982,7 +1025,8 @@
                    lt.expr
                    (list (quote-syntax/loc id) ...) (list 'id ...) #f
                    (list (racketblock0 result) ...)
-                   (lambda () (list desc ...))))]))
+                   (lambda () (list desc ...))
+                   (list (result-value value.value) ...)))]))
 
 (define (*defthing kind link? stx-ids names form? result-contracts content-thunk
                    [result-values (map (lambda (x) #f) result-contracts)])
@@ -993,90 +1037,91 @@
      (list
       (make-table
        boxed-style
-       (for/list ([stx-id (in-list stx-ids)]
-                  [name (in-list names)]
-                  [result-contract (in-list result-contracts)]
-                  [result-value (in-list result-values)]
-                  [i (in-naturals)])
-         (list
-          ((if (zero? i) (add-background-label (or kind "value")) values)
-           (make-flow
-            (make-table-if-necessary
-             "argcontract"
-             (let* ([result-block
-                     (and result-value
-                          (if (block? result-value)
-                              result-value
-                              (make-omitable-paragraph (list result-value))))]
-                    [contract-block
-                     (if (block? result-contract)
-                         result-contract
-                         (make-omitable-paragraph (list result-contract)))]
-                    [total-width (+ (string-length (format "~a" name))
-                                    3
-                                    (block-width contract-block)
-                                    (if result-block
-                                        (+ (block-width result-block) 3)
-                                        0))])
-               (append
-                (list
-                 (append
-                  (list
-                   (make-flow
-                    (list
-                     (make-omitable-paragraph
-                      (list
-                       (let ([target-maker
-                              (and link?
-                                   ((if form? id-to-form-target-maker id-to-target-maker)
-                                    stx-id #t))])
-                         (define-values (content ref-content) 
-                           (if link?
-                               (definition-site name stx-id form?)
-                               (let ([s (make-just-context name stx-id)])
-                                 (values (to-element #:defn? #t s)
-                                         (to-element s)))))
-                         (if target-maker
-                             (target-maker
-                              content
-                              (lambda (tag)
-                                (make-toc-target2-element
-                                 #f
-                                 (make-index-element
-                                  #f
-                                  content
-                                  tag
-                                  (list (datum-intern-literal (symbol->string name)))
-                                  (list ref-content)
-                                  (with-exporting-libraries
-                                   (lambda (libs) (make-thing-index-desc name libs))))
-                                 tag
-                                 ref-content)))
-                             content))))))
-                   (make-flow
-                    (list
-                     (make-omitable-paragraph
-                      (list
-                       spacer ":" spacer))))
-                   (make-flow (list contract-block)))
-                  (if (and result-value
-                           (total-width . < . 60))
-                      (list
-                       (to-flow (make-element #f (list spacer "=" spacer)))
-                       (make-flow (list result-block)))
-                      null)))
-                (if (and result-value
-                         (total-width . >= . 60))
-                    (list
+       (append*
+        (for/list ([stx-id (in-list stx-ids)]
+                   [name (in-list names)]
+                   [result-contract (in-list result-contracts)]
+                   [result-value (in-list result-values)]
+                   [i (in-naturals)])
+          (let* ([result-block
+                  (and result-value
+                       (if (block? result-value)
+                           result-value
+                           (make-omitable-paragraph (list result-value))))]
+                 [contract-block
+                  (if (block? result-contract)
+                      result-contract
+                      (make-omitable-paragraph (list result-contract)))]
+                 [total-width (+ (string-length (format "~a" name))
+                                 3
+                                 (block-width contract-block)
+                                 (if result-block
+                                     (+ (block-width result-block) 3)
+                                     0))])
+            (append
+             (list
+              (list
+               ((if (zero? i) (add-background-label (or kind "value")) values)
+                (make-flow
+                 (make-table-if-necessary
+                  "argcontract"
+                  (append
+                   (list
+                    (append
                      (list
-                      (make-table-if-necessary
-                       "argcontract"
+                      (make-flow
                        (list
-                        (list flow-spacer 
-                              (to-flow (make-element #f (list spacer "=" spacer)))
-                              (make-flow (list result-block)))))
-                      'cont))
-                    null)))))))))))
+                        (make-omitable-paragraph
+                         (list
+                          (let ([target-maker
+                                 (and link?
+                                      ((if form? id-to-form-target-maker id-to-target-maker)
+                                       stx-id #t))])
+                            (define-values (content ref-content) 
+                              (if link?
+                                  (definition-site name stx-id form?)
+                                  (let ([s (make-just-context name stx-id)])
+                                    (values (to-element #:defn? #t s)
+                                            (to-element s)))))
+                            (if target-maker
+                                (target-maker
+                                 content
+                                 (lambda (tag)
+                                   (make-toc-target2-element
+                                    #f
+                                    (make-index-element
+                                     #f
+                                     content
+                                     tag
+                                     (list (datum-intern-literal (symbol->string name)))
+                                     (list ref-content)
+                                     (with-exporting-libraries
+                                      (lambda (libs) (make-thing-index-desc name libs))))
+                                    tag
+                                    ref-content)))
+                                content))))))
+                      (make-flow
+                       (list
+                        (make-omitable-paragraph
+                         (list
+                          spacer ":" spacer))))
+                      (make-flow (list contract-block)))
+                     (if (and result-value
+                              (and (total-width . < . 60)
+                                   (not (table? result-value))))
+                         (list
+                          (to-flow (make-element #f (list spacer "=" spacer)))
+                          (make-flow (list result-block)))
+                         null)))))))))
+             (if (and result-value
+                      (or (total-width . >= . 60)
+                          (table? result-value)))
+                 (list (list (list (make-table
+                                    "argcontract"
+                                    (list (list
+                                           (to-flow (make-element #f (list spacer "=" spacer)))
+                                           (make-flow (list result-block))))))))
+                 null))))))))
     (content-thunk))))
 
 (define (defthing/proc kind id contract descs)

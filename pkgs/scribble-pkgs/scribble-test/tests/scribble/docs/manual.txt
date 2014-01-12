@@ -26,6 +26,18 @@ A function with an optional keyword argument.
 
 A function, again, not a link target.
 
+(f) -> integer?
+ = 10          
+
+A function, again, not a link target, documented to return 10.
+
+(f) -> integer? 
+ = (define x 10)
+   x            
+
+A function, again, not a link target, documented to return 10 using a
+definition.
+
 (g x) -> integer?
   x : void?      
 
@@ -88,9 +100,23 @@ A parameter, again.
 
 (p) -> integer?
 (p k) -> void? 
+  k : integer? 
+ = 10          
+
+A parameter, again, with a documented default value.
+
+(p) -> integer?
+(p k) -> void? 
   k : real?    
 
 A parameter, yet again.
+
+(p) -> integer?
+(p k) -> void? 
+  k : real?    
+ = 10          
+
+A parameter, yet again, with a documented default value.
 
 (q) -> boolean? 
 (q on?) -> void?
@@ -103,6 +129,31 @@ A boolean parameter.
   still-on? : any/c   
 
 A boolean parameter, again.
+
+(q) -> boolean?       
+(q still-on?) -> void?
+  still-on? : any/c   
+ = #f                 
+
+A boolean parameter, again, with a documented default value.
+
+v : integer?
+
+A thing.
+
+v : integer?
+
+A thing, again.
+
+v : integer? = 10
+
+A thing, again, with a documented value.
+
+v : integer?                                         
+ = 12345678901234567890123456789012345678901234567890
+
+A thing, again, with a documented value that’s too wide to fit on one
+line.
 
 (struct pt (x y)                         
         #:extra-constructor-name make-pt)

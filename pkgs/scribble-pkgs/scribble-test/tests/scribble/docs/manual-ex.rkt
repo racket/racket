@@ -18,3 +18,5 @@
 
 (define-struct pt (x y))
 (struct pn (x y))
+
+(define v 10)

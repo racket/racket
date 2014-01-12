@@ -766,6 +766,7 @@ Equivalent to @racket[defmodule] variants @racket[#:no-declare].}
 
 @defform/subs[(defproc options prototype
                        result-contract-expr-datum
+                       maybe-value
                        pre-flow ...)
               ([prototype (id arg-spec ...)
                           (prototype arg-spec ...)]
@@ -782,6 +783,8 @@ Equivalent to @racket[defmodule] variants @racket[#:no-declare].}
                            (code:line #:link-target? link-target?-expr)]
                [maybe-id code:blank
                          (code:line #:id [src-id dest-id-expr])]
+               [maybe-value code:blank
+                            (code:line #:value value-expr-datum)]
                [ellipses @#,lit-ellipses]
                [ellipses+ @#,lit-ellipses+])]{
 
@@ -895,11 +898,17 @@ If @racket[#:id [src-id dest-id-expr]] is supplied, then
 place of @racket[src-id]. This split between @racket[src-id] and
 @racket[dest-id-expr] roles is useful for functional abstraction of
 @racket[defproc].
+
+If @racket[#:value value-expr-datum] is given, @racket[value-expr-datum]
+is typeset using @racket[racketblock0] and included in the documentation.
+As a service to readers, please use @racket[#:value] to document only
+simple, short functions.
 }
 
 @defform[(defproc* options
                    ([prototype
-                     result-contract-expr-datum] ...)
+                     result-contract-expr-datum
+                     maybe-value] ...)
                    pre-flow ...)]{
 
 Like @racket[defproc], but for multiple cases with the same
@@ -916,9 +925,8 @@ should use @racket[#:link-target? #f].
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
 #lang scribble/manual
-@defproc[((make-pb&j)
-          (make-pb&j [jelly jelly?]))
-         sandwich?]{
+@defproc*[([(make-pb&j) sandwich?]
+           [(make-pb&j [jelly jelly?]) sandwich?])]{
   Returns a peanut butter and jelly sandwich. If @racket[jelly]
   is provided, then it is used instead of the standard (grape)
   jelly.
@@ -926,10 +934,9 @@ Examples:
 }|
 
 @doc-render-examples[
-  @defproc[#:link-target? #f
-           ((make-pb&j)
-            (make-pb&j [jelly jelly?]))
-           sandwich?]{
+  @defproc*[#:link-target? #f
+            ([(make-pb&j) sandwich?]
+             [(make-pb&j [jelly jelly?]) sandwich?])]{
     Returns a peanut butter and jelly sandwich. If @racket[jelly]
     is provided, then it is used instead of the standard (grape)
     jelly.
@@ -1221,7 +1228,10 @@ Examples:
 }
 
 
-@defform[(defparam maybe-link id arg-id contract-expr-datum pre-flow ...)]{
+@defform[(defparam maybe-link id arg-id
+           contract-expr-datum
+           maybe-value
+           pre-flow ...)]{
 
 Like @racket[defproc], but for a parameter. The
 @racket[contract-expr-datum] serves as both the result contract on the
@@ -1231,22 +1241,24 @@ parameter and the contract on values supplied for the parameter. The
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
 #lang scribble/manual
-@defparam[current-sandwich sandwich sandwich?]{
+@defparam[current-sandwich sandwich sandwich?
+          #:value empty-sandwich]{
   A parameter that defines the current sandwich for operations that
-  involve eating a sandwich.
+  involve eating a sandwich. Default value is the empty sandwich.
 }
 }|
 @doc-render-examples[
   @defparam[#:link-target? #f
-            current-sandwich sandwich sandwich?]{
+            current-sandwich sandwich sandwich? #:value empty-sandwich]{
     A parameter that defines the current sandwich for operations that
-    involve eating a sandwich.
+    involve eating a sandwich. Default value is the empty sandwich.
   }]
 }
 
 
 @defform[(defparam* maybe-link id arg-id 
            in-contract-expr-datum out-contract-expr-datum
+           maybe-value
            pre-flow ...)]{
 
 Like @racket[defparam], but with separate contracts for when the parameter is being
@@ -1255,14 +1267,16 @@ coerces values matching a more flexible contract to a more restrictive one;
 @racket[current-directory] is an example).}
 
 
-@defform[(defboolparam maybe-link id arg-id pre-flow ...)]{
+@defform[(defboolparam maybe-link id arg-id
+           maybe-value
+           pre-flow ...)]{
 
 Like @racket[defparam], but the contract on a parameter argument is
 @racket[any/c], and the contract on the parameter result is
 @racket[boolean?].}
 
 
-@defform/subs[(defthing options id contract-expr-datum
+@defform/subs[(defthing options id contract-expr-datum maybe-value
                 pre-flow ...)
               ([options (code:line maybe-kind maybe-link maybe-id)]
                [maybe-kind code:blank
@@ -1270,7 +1284,9 @@ Like @racket[defparam], but the contract on a parameter argument is
                [maybe-link code:blank
                            (code:line #:link-target? link-target?-expr)]
                [maybe-id code:blank
-                         (code:line #:id id-expr)])]{
+                         (code:line #:id id-expr)]
+               [maybe-value code:blank
+                            (code:line #:value value-expr-datum)])]{
 
 Like @racket[defproc], but for a non-procedure binding.
 
@@ -1281,17 +1297,29 @@ it is used in the same way as for
 If @racket[#:id id-expr] is supplied, then the result of
 @racket[id-expr] is used in place of @racket[id].
 
+If @racket[#:value value-expr-datum] is given, @racket[value-expr-datum]
+is typeset using @racket[racketblock0] and included in the documentation.
+Wide values are put on a separate line.
+
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
 #lang scribble/manual
 @defthing[moldy-sandwich sandwich?]{
   Don't eat this. Provided for backwards compatibility.
 }
+
+@defthing[empty-sandwich sandwich? #:value (make-sandwich empty)]{
+  The empty sandwich.
+}
 }|
 @doc-render-examples[
   @defthing[#:link-target? #f
             moldy-sandwich sandwich?]{
     Don't eat this. Provided for backwards compatibility.
+  }
+  @defthing[#:link-target? #f
+            empty-sandwich sandwich? #:value (make-sandwich empty)]{
+    The empty sandwich.
   }]
 }
 
