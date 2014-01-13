@@ -1,7 +1,8 @@
 #;#;
 #<<END
-TR missed opt: expt.rkt 14:13 (expt (sin 0.25) 1.0) -- unexpected complex type
-TR opt: expt.rkt 14:19 (sin 0.25) -- unary float
+TR info: expt.rkt 15:2 (real-part (expt (sin 0.25) 1.0)) -- exact real arith
+TR missed opt: expt.rkt 15:13 (expt (sin 0.25) 1.0) -- unexpected complex type
+TR opt: expt.rkt 15:19 (sin 0.25) -- unary float
 END
 ""
 

@@ -17,16 +17,20 @@
 (define binary-float-ops
   (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
 (define binary-float-comps
-  (dict-set
-   (dict-set
+  (dict-set*
     (mk-float-tbl (list #'= #'<= #'< #'> #'>=))
     ;; not a comparison, but takes 2 floats and does not return a float,
     ;; unlike binary-float-ops
-    #'make-rectangular #'unsafe-make-flrectangular)
-   #'make-flrectangular #'unsafe-make-flrectangular))
+    #'make-rectangular #'unsafe-make-flrectangular
+    #'make-flrectangular #'unsafe-make-flrectangular))
 (define unary-float-ops
-  (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
-                      #'sqrt #'round #'floor #'ceiling #'truncate)))
+  (dict-set*
+    (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
+                        #'sqrt #'round #'floor #'ceiling #'truncate))
+    #'magnitude #'unsafe-flabs
+    #'real-part #'#%expression
+    #'flreal-part #'#%expression
+    #'unsafe-flreal-part #'#%experession))
 
 (define-literal-syntax-class -)
 (define-literal-syntax-class /)
