@@ -18,7 +18,9 @@ language, allowing types to be specified and used.
 @section{Type Annotation and Binding Forms}
 
 In general, variables in Typed Racket must be annotated with their
-type.
+type. A later subsection (@secref["when-annotations?"]) introduces a
+heuristic which more precisely details when type annotations are
+needed.
 
 @subsection{Annotating Definitions}
 
@@ -151,6 +153,52 @@ values.
 Here @racket[x] has the inferred type @racket[Integer], and @racket[y]
 has the inferred type @racket[(Listof Integer)].  The @racket[loop]
 variable has type @racket[(Integer (Listof Integer) -> Integer)].
+
+@subsection[#:tag "when-annotations?"]{When do you need type annotations?}
+
+The last several subsections explained several ways to add type annotations
+and explained that type inference allows some annotations to be left out.
+Since annotations can often be omitted, it is helpful to know the situations
+in which they are actually required.
+
+The following four rules of thumb will usually suffice to determine
+if a type annotation is necessary.
+
+An expression or definition needs a type annotation if it:
+
+@itemlist[
+  @item{is a @racket[define] form for a function,}
+  @item{is a @racket[lambda] that is immediately bound to a variable,}
+  @item{is a @racket[lambda] that is an argument to a polymorphic function, or}
+  @item{is defining a mutable variable.}
+]
+
+Here are examples that correspond to each of the cases above:
+
+Example 1:
+@racketblock[
+  (: fn (String -> Symbol))
+  (define (fn str) _...)
+]
+Example 2:
+@racketblock[
+  (: fn (String -> Symbol))
+  (define fn (lambda (str) _...))
+]
+Example 3:
+@racketblock[
+  (map (lambda: ([n : Integer]) (add1 n)) '(1 2 3))
+]
+Example 4:
+@racketblock[
+   (: maybe-animal (Option String))
+   (define maybe-animal #f)
+   (set! maybe-animal "Odontodactylus scyllarus")
+]
+
+In all four cases, if the type annotation is omitted then the inferred type
+will often be too conservative (e.g., @racket[Any]) and the code may not
+type-check.
 
 @section{New Type Names}
 
