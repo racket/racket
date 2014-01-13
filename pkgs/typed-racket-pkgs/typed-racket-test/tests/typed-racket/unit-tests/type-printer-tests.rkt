@@ -26,7 +26,10 @@
 (define-binary-check (check-prints-as? prints-as? actual expected))
 (define-binary-check (check-pretty-prints-as? pretty-prints-as? actual expected))
 
-(do-standard-inits)
+;; Using `do-standard-inits` here does not work when the file is invoked
+;; individually (rather than through the test harness)
+(initialize-type-names)
+(current-type-names (init-current-type-names))
 
 (define tests
   (test-suite
