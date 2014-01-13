@@ -57,7 +57,7 @@
 
 (define (substitute . x) (error 'substitute "~s" x))
 
-(define (run es) (traces threads reductions `((store) (threads ,@es))))
+(define (run es) (traces reductions `((store) (threads ,@es))))
 (provide run)
 
 (define (count x) 
