@@ -6,6 +6,8 @@
                     [make-module-identifier-mapping make-free-identifier-mapping]
                     [module-identifier-mapping-get free-identifier-mapping-get]
                     [module-identifier-mapping-put! free-identifier-mapping-put!])
+         "application-arity-checking.rkt"
+         "arr-util.rkt"
          (for-template racket/base
                        "misc.rkt"))
 
@@ -498,8 +500,33 @@ code does the parsing and validation of the syntax.
       [_
        (raise-syntax-error #f "bad syntax" stx)])))
 
+(define (->i-valid-app-shapes stx)
+  (define an-istx (parse-->i stx))
+  (define mans 0)
+  (define opts 0)
+  (define man-kwds '())
+  (define opt-kwds '())
+  (for ([arg (in-list (istx-args an-istx))])
+    (define kwd (arg-kwd arg))
+    (define opt? (arg-optional? arg))
+    (cond
+      [(and kwd opt?)
+       (set! opt-kwds (cons kwd opt-kwds))]
+      [(and kwd (not opt?))
+       (set! man-kwds (cons kwd man-kwds))]
+      [(and (not kwd) opt?)
+       (set! opts (+ opts 1))]
+      [(and (not kwd) (not opt?))
+       (set! mans (+ mans 1))]))
+  (valid-app-shapes-from-man/opts mans 
+                                  opts
+                                  (istx-rst an-istx)
+                                  man-kwds
+                                  opt-kwds))
+
 (provide
  parse-->i
+ ->i-valid-app-shapes
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)

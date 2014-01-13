@@ -1,7 +1,9 @@
 #lang racket/base
 
+(require "application-arity-checking.rkt")
 (provide split-doms
-         sort-keywords)
+         sort-keywords
+         valid-app-shapes-from-man/opts)
 
 ;; split-doms : syntax identifier syntax -> syntax
 ;; given a sequence of keywords interpersed with other
@@ -59,3 +61,19 @@
     (cond
       [(null? pairs) null]
       [else (insert (car pairs) (loop (cdr pairs)))])))
+
+
+
+
+ 
+
+(define (valid-app-shapes-from-man/opts min-arg-length num-of-opts rest? man-kwds opt-kwds)
+  (define opt+man-dom-lengths
+    (for/list ([i (in-range (+ num-of-opts 1))])
+      (+ i min-arg-length)))
+  (valid-app-shapes (if rest?
+                        (append opt+man-dom-lengths 
+                                (+ min-arg-length num-of-opts 1))
+                        opt+man-dom-lengths)
+                    man-kwds
+                    opt-kwds))

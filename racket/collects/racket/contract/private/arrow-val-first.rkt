@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
+                     "application-arity-checking.rkt"
                      "arr-util.rkt")
          "kwd-info-struct.rkt"
          "arity-checking.rkt"
@@ -14,7 +15,9 @@
 
 (provide ->2 ->*2
          (for-syntax ->2-handled?
-                     ->*2-handled?))
+                     ->*2-handled?
+                     ->-valid-app-shapes
+                     ->*-valid-app-shapes))
 
 (define-for-syntax (->2-handled? stx)
   (syntax-case stx (any values any/c)
@@ -444,6 +447,17 @@
                                                     this->)]
                         let-bindings))]))])))
 
+(define-for-syntax (->-valid-app-shapes stx)
+  (syntax-case stx ()
+    [(_ args ...)
+     (let ()
+       (define this-> (gensym 'this->))
+       (define-values (regular-args kwds kwd-args let-bindings)
+         (parse-arrow-args stx (syntax->list #'(args ...)) this->))
+       (valid-app-shapes (list (- (length regular-args) 1))
+                         (map syntax->datum kwds)
+                         '()))]))
+
 (define-syntax (->2 stx)
   (syntax-case stx ()
     [(_ args ...)
@@ -521,61 +535,94 @@
                kwd-doms
                (cons #`[t x] let-bindings)))])))
 
+(define-for-syntax (parse->*2 stx)
+  (syntax-case stx ()
+    [(_ (raw-mandatory-dom ...) . other)
+     (let ()
+       (define-values (raw-optional-doms rest-ctc pre rng-ctcs post)
+         (arrow:parse-leftover->* stx #'other))
+       (with-syntax ([(man-dom
+                       man-dom-kwds
+                       man-lets)
+                      (:split-doms stx '->* #'(raw-mandatory-dom ...))]
+                     [(opt-dom
+                       opt-dom-kwds
+                       opt-lets)
+                      (:split-doms stx '->* raw-optional-doms)])
+         (values
+          #'man-dom
+          #'man-dom-kwds
+          #'man-lets
+          #'opt-dom
+          #'opt-dom-kwds
+          #'opt-lets
+          rest-ctc pre rng-ctcs post)))]))
+
+(define-for-syntax (->*-valid-app-shapes stx)
+  (define-values (man-dom man-dom-kwds man-lets
+                          opt-dom opt-dom-kwds opt-lets
+                          rest-ctc pre rng-ctcs post)
+    (parse->*2 stx))
+  (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
+                [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
+    (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
+                                    (length (syntax->list opt-dom))
+                                    rest-ctc
+                                    (syntax->datum #'(mandatory-dom-kwd ...))
+                                    (syntax->datum #'(optional-dom-kwd ...)))))
+
 (define-syntax (->*2 stx)
   (cond
     [(->*2-handled? stx)
-     (syntax-case stx ()
-       [(_ (raw-mandatory-dom ...) . other)
-        (let ()
-          (define-values (raw-optional-doms rest-ctc pre rng-ctcs post)
-            (arrow:parse-leftover->* stx #'other))
-          (with-syntax ([((mandatory-dom ...) 
-                          ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...)
-                          (mandatory-let-bindings ...))
-                         (:split-doms stx '->* #'(raw-mandatory-dom ...))]
-                        [((optional-dom ...)
-                          ((optional-dom-kwd optional-dom-kwd-ctc) ...)
-                          (optional-let-bindings ...))
-                         (:split-doms stx '->* raw-optional-doms)]
-                        [(pre-x post-x) (generate-temporaries '(pre-cond post-cond))])
-            (with-syntax ([((kwd dom opt?) ...) #'((mandatory-dom-kwd mandatory-dom-kwd-ctc #f) ...
-                                                   (optional-dom-kwd optional-dom-kwd-ctc #t) ...)]
-                          [(pre-let-binding ...) (if pre
-                                                     (list #`[pre-x (λ () #,pre)])
-                                                     (list))]
-                          [(post-let-binding ...) (if post
-                                                      (list #`[post-x (λ () #,post)])
-                                                      (list))])
-              (define-values (plus-one-arity-function chaperone-constructor)
-                (build-plus-one-arity-function+chaperone-constructor
-                 stx
-                 (syntax->list #'(mandatory-dom ...))
-                 (syntax->list #'(optional-dom ...))
-                 (syntax->list #'(mandatory-dom-kwd ...))
-                 (syntax->list #'(optional-dom-kwd ...))
-                 (and pre #'pre-x)
-                 rest-ctc
-                 rng-ctcs
-                 (and post #'post-x)))
-              #`(let (mandatory-let-bindings ...
-                      optional-let-bindings ... 
-                      pre-let-binding ...
-                      post-let-binding ...)
-                  (build--> '->*
-                            (list mandatory-dom ...)
-                            (list optional-dom ...)
-                            '(mandatory-dom-kwd ...)
-                            (list mandatory-dom-kwd-ctc ...)
-                            '(optional-dom-kwd ...)
-                            (list optional-dom-kwd-ctc ...)
-                            #,rest-ctc
-                            #,(and pre #t)
-                            #,(if rng-ctcs
-                                  #`(list #,@rng-ctcs)
-                                  #'#f)
-                            #,(and post #t)
-                            #,plus-one-arity-function 
-                            #,chaperone-constructor)))))])]
+     (define-values (man-dom man-dom-kwds man-lets
+                             opt-dom opt-dom-kwds opt-lets
+                             rest-ctc pre rng-ctcs post)
+       (parse->*2 stx))
+     (with-syntax ([(mandatory-dom ...) man-dom]
+                   [((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
+                   [(mandatory-let-bindings ...) man-lets]
+                   [(optional-dom ...) opt-dom]
+                   [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds]
+                   [(optional-let-bindings ...) opt-lets]
+                   [(pre-x post-x) (generate-temporaries '(pre-cond post-cond))])
+       (with-syntax ([((kwd dom opt?) ...) #'((mandatory-dom-kwd mandatory-dom-kwd-ctc #f) ...
+                                              (optional-dom-kwd optional-dom-kwd-ctc #t) ...)]
+                     [(pre-let-binding ...) (if pre
+                                                (list #`[pre-x (λ () #,pre)])
+                                                (list))]
+                     [(post-let-binding ...) (if post
+                                                 (list #`[post-x (λ () #,post)])
+                                                 (list))])
+         (define-values (plus-one-arity-function chaperone-constructor)
+           (build-plus-one-arity-function+chaperone-constructor
+            stx
+            (syntax->list #'(mandatory-dom ...))
+            (syntax->list #'(optional-dom ...))
+            (syntax->list #'(mandatory-dom-kwd ...))
+            (syntax->list #'(optional-dom-kwd ...))
+            (and pre #'pre-x)
+            rest-ctc
+            rng-ctcs
+            (and post #'post-x)))
+         #`(let (mandatory-let-bindings ...
+                 optional-let-bindings ... 
+                 pre-let-binding ...
+                 post-let-binding ...)
+             (build--> '->*
+                       (list mandatory-dom ...)
+                       (list optional-dom ...)
+                       '(mandatory-dom-kwd ...)
+                       (list mandatory-dom-kwd-ctc ...)
+                       '(optional-dom-kwd ...)
+                       (list optional-dom-kwd-ctc ...)
+                       #,rest-ctc
+                       #,(and pre #t)
+                       #,(if rng-ctcs
+                             #`(list #,@rng-ctcs)
+                             #'#f)
+                       #,(and post #t)
+                       #,plus-one-arity-function 
+                       #,chaperone-constructor))))]
     [else
      (syntax-case stx ()
        [(_ args ...)

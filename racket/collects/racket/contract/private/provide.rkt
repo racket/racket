@@ -13,6 +13,8 @@
                      racket/list
                      racket/struct-info
                      setup/path-to-relative
+                     "application-arity-checking.rkt"
+                     "arr-i-parse.rkt"
                      (prefix-in a: "helpers.rkt")
                      (rename-in syntax/private/boundmap
                                 ;; the private version of the library
@@ -56,11 +58,13 @@
   
   (struct provide/contract-info (contract-id original-id))
   
+
   (struct provide/contract-arrow-transformer provide/contract-info
     (saved-id-table 
      saved-ho-id-table 
      partially-applied-id
-     extra-neg-party-argument-fn)
+     extra-neg-party-argument-fn
+     valid-argument-lists)
     #:property
     prop:set!-transformer
     (λ (self stx)
@@ -68,7 +72,8 @@
             [saved-id-table (provide/contract-arrow-transformer-saved-id-table self)]
             [saved-ho-id-table (provide/contract-arrow-transformer-saved-ho-id-table self)]
             [extra-neg-party-argument-fn 
-             (provide/contract-arrow-transformer-extra-neg-party-argument-fn self)])
+             (provide/contract-arrow-transformer-extra-neg-party-argument-fn self)]
+            [valid-arg-lists (provide/contract-arrow-transformer-valid-argument-lists self)])
         (with-syntax ([partially-applied-id partially-applied-id]
                       [extra-neg-party-argument-fn extra-neg-party-argument-fn])
           (if (eq? 'expression (syntax-local-context))
@@ -85,33 +90,39 @@
                 ;; Expand to a use of the lifted expression:
                 (define (adjust-location new-stx)
                   (datum->syntax new-stx (syntax-e new-stx) stx new-stx))
-                (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
-                  (syntax-case stx (set!)
-                    [name 
-                     (identifier? #'name)
-                     (let ([lifted-ctc-val
-                            (or (hash-ref saved-ho-id-table key #f)
-                                ;; No: lift the neg name creation
-                                (syntax-local-introduce 
-                                 (syntax-local-lift-expression
-                                  #'(partially-applied-id lifted-neg-party))))])
-                       (when key (hash-set! saved-ho-id-table key lifted-ctc-val))
-                       (adjust-location (syntax-local-introduce lifted-ctc-val)))]
-                    [(set! id arg)
-                     (raise-syntax-error
-                      'contract/out
-                      "cannot set! a contract/out variable"
-                      stx #'id)]
-                    [(name more ...)
-                     (with-syntax ([app (datum->syntax stx '#%app)])
-                       (adjust-location
-                        #'(app extra-neg-party-argument-fn 
-                               lifted-neg-party
-                               more ...)))])))
+                (define (gen-slow-path-code)
+                  (define lifted-ctc-val
+                    (or (hash-ref saved-ho-id-table key #f)
+                        ;; No: lift the neg name creation
+                        (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
+                          (syntax-local-introduce 
+                           (syntax-local-lift-expression
+                            #'(partially-applied-id lifted-neg-party))))))
+                  (when key (hash-set! saved-ho-id-table key lifted-ctc-val))
+                  (adjust-location (syntax-local-introduce lifted-ctc-val)))
+                (syntax-case stx (set!)
+                  [name 
+                   (identifier? #'name)
+                   (gen-slow-path-code)]
+                  [(set! id arg)
+                   (raise-syntax-error
+                    'contract/out
+                    "cannot set! a contract/out variable"
+                    stx #'id)]
+                  [(name more ...)
+                   (with-syntax ([app (datum->syntax stx '#%app)])
+                     (if (valid-argument-list? stx valid-arg-lists)
+                         (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
+                           (adjust-location
+                            #'(app extra-neg-party-argument-fn 
+                                   lifted-neg-party
+                                   more ...)))
+                         #`(app #,(gen-slow-path-code) more ...)))]))
               ;; In case of partial expansion for module-level and internal-defn
               ;; contexts, delay expansion until it's a good time to lift
               ;; expressions:
               (quasisyntax/loc stx (#%expression #,stx)))))))
+  
   
   (struct provide/contract-transformer provide/contract-info (saved-id-table partially-applied-id)
     #:property
@@ -167,10 +178,10 @@
                  #`(app #,id args ...))]
               [x (identifier? #'x) id])))))
   
-  (define (make-provide/contract-arrow-transformer contract-id id pai enpfn)
+  (define (make-provide/contract-arrow-transformer contract-id id pai enpfn val)
     (provide/contract-arrow-transformer contract-id id
                                         (make-hasheq) (make-hasheq)
-                                        pai enpfn)))
+                                        pai enpfn val)))
 
 
 ;; tl-code-for-one-id/new-name : syntax syntax syntax (union syntax #f) -> (values syntax syntax)
@@ -234,12 +245,16 @@
                                                         srcloc-expr
                                                         contract-error-name
                                                         pos-module-source)
-  (define arrow?
+  (define-values (arrow? the-valid-app-shapes)
     (syntax-case ctrct (->2 ->*2 ->i)
-      [(->2 . _) (->2-handled? ctrct)]
-      [(->*2 . _) (->*2-handled? ctrct)]
-      [(->i . _) #t]
-      [_ #f]))
+      [(->2 . _) 
+       (->2-handled? ctrct)
+       (values #t (->-valid-app-shapes ctrct))]
+      [(->*2 . _) 
+       (values (->*2-handled? ctrct)
+               (->*-valid-app-shapes ctrct))]
+      [(->i . _) (values #t (->i-valid-app-shapes ctrct))]
+      [_ (values #f #f)]))
   (with-syntax ([id id]
                 [(partially-applied-id extra-neg-party-argument-fn contract-id) 
                  (generate-temporaries (list 'idX 'idY 'idZ))]
@@ -267,10 +282,11 @@
         
         (define-syntax #,id-rename
           #,(if arrow?
-                #'(make-provide/contract-arrow-transformer 
+                #`(make-provide/contract-arrow-transformer 
                    (quote-syntax contract-id) (quote-syntax id)
                    (quote-syntax partially-applied-id)
-                   (quote-syntax extra-neg-party-argument-fn))
+                   (quote-syntax extra-neg-party-argument-fn)
+                   #,the-valid-app-shapes)
                 #'(make-provide/contract-transformer 
                    (quote-syntax contract-id) (quote-syntax id)
                    #f #f

@@ -938,6 +938,27 @@
       (eval '(require 'provide/contract48-m1)))
    "provide/contract48-m1")
   
+  ;; test to make sure that arity errors have the 
+  ;; right name at the beginning of the message
+  (test/spec-passed/result
+   'provide/contract49
+   '(let ()
+      (eval '(module provide/contract49-m1 racket/base
+               (require racket/contract/base)
+               (define (f x) x)
+               (provide (contract-out [f (-> any/c any)]))))
+      (eval '(module provide/contract49-m2 racket/base
+               (require 'provide/contract48-m1)
+               (f 1 2)))
+      (with-handlers ([exn:fail? (λ (x) 
+                                   (define m (regexp-match #rx"([^:]*:)" (exn-message x)))
+                                   (if m
+                                       (cadr m) 
+                                       (list "regexp failed to match"
+                                             (exn-message x))))])
+        (eval '(require 'provide/contract49-m2))))
+   "f:")
+  
   (contract-error-test
    'contract-error-test8
    #'(begin
