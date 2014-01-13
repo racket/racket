@@ -340,11 +340,20 @@
             (if (subtypeof? #'e -Flonum)
                 "float in complex ops"
                 "non float complex in complex ops"))]
+    #:with real-binding-value
+      (cond
+        [(subtypeof? #'e -Flonum) #'e*]
+        [(subtypeof? #'e -Real) #'(real->double-flonum e*)]
+        [else #'(real->double-flonum (real-part e*))])
+    #:with imag-binding-value
+      (cond
+        [(subtypeof? #'e -Real) #'0.0]
+        [else #'(real->double-flonum (imag-part e*))])
 
     #:with (bindings ...)
       #'(((e*) e.opt)
-         ((real-binding) (real->double-flonum (real-part e*)))
-         ((imag-binding) (real->double-flonum (imag-part e*)))))
+         ((real-binding) real-binding-value)
+         ((imag-binding) imag-binding-value)))
   (pattern e:expr
     #:do [(error (format "non exhaustive pattern match ~a" #'e))]
     #:with (bindings ...) (list)
