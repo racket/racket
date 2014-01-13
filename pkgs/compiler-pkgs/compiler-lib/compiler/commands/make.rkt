@@ -98,19 +98,20 @@
                         dest)))))))]
   ;; Parallel make:
   [else 
-   (parallel-compile-files 
-    source-files
-    #:worker-count (worker-count)
-    #:handler (lambda (type work msg out err)
-                (match type
-                  ['done (when (verbose) (printf " Made ~a\n" work))]
-                  ['output (printf " Output from: ~a\n~a~a" work out err)]
-                  [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)]))
-    #:options (let ([cons-if-true (lambda (bool carv cdrv)
-                                    (if bool
-                                        (cons carv cdrv)
-                                        cdrv))])
-                (cons-if-true 
-                 (very-verbose) 
-                 'very-verbose
-                 (cons-if-true (disable-inlining) 'disable-inlining null))))])
+   (or (parallel-compile-files
+        source-files
+        #:worker-count (worker-count)
+        #:handler (lambda (type work msg out err)
+                    (match type
+                      ['done (when (verbose) (printf " Made ~a\n" work))]
+                      ['output (printf " Output from: ~a\n~a~a" work out err)]
+                      [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)]))
+        #:options (let ([cons-if-true (lambda (bool carv cdrv)
+                                        (if bool
+                                            (cons carv cdrv)
+                                            cdrv))])
+                    (cons-if-true
+                     (very-verbose)
+                     'very-verbose
+                     (cons-if-true (disable-inlining) 'disable-inlining null))))
+       (exit 1))])
