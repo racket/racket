@@ -298,8 +298,7 @@
                                 #:worker-count [worker-count (processor-count)]
                                 #:handler [handler void]
                                 #:options [options '()])
-  (or (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count)
-      (exit 1)))
+  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)

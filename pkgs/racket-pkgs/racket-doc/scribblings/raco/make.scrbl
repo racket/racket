@@ -465,7 +465,7 @@ functionality of @exec{raco setup} and @exec{raco make}.}
                                                           [err string?])
                                                          void?)
                                             void])
-         void?]{
+         (or/c void? #f)]{
 
 The @racket[parallel-compile] utility function is used by @exec{raco make} to
 compile a list of paths in parallel.  The optional
@@ -476,6 +476,7 @@ parallel compilation.  The callback, @racket[handler], is called with the symbol
 successful compilation produces stdout/stderr output, @racket['error] when a
 compilation error has occured, or @racket['fatal-error] when a unrecoverable
 error occurs. The other arguments give more information for each status update.
+The return value is @racket[(void)] if it was successful, or @racket[#f] if there was an error.
  
   @racketblock[
     (parallel-compile-files 
