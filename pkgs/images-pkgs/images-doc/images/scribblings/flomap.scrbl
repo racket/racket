@@ -327,7 +327,7 @@ Like @racket[unsafe-flomap-ref], but returns an flvector containing all the comp
                                                                                           
 @section{Conversion and Construction}
 
-@defproc[(flomap->bitmap [fm flomap] [#:backing-scale backing-scale (>/c 0.0)]) Any]{
+@defproc[(flomap->bitmap [fm flomap] [#:backing-scale backing-scale Positive-Real]) Any]{
 Converts a flomap to a @racket[bitmap%].
 
 The return type is imprecise because Typed Racket does not support the object system well yet.
@@ -350,9 +350,12 @@ For example, if @racket[fm] is size 0×1, the result of @racket[(flomap->bitmap 
 Values are clamped to between @racket[0.0] and @racket[1.0] before conversion.
 }
 
-@defproc[(bitmap->flomap [bm Any]) flomap]{
-Given a @racket[bitmap%] instance, returns an ARGB flomap with alpha-multiplied color components.
+@defproc[(bitmap->flomap [bm Any] [#:unscaled? unscaled? Any]) flomap]{
+Given a @racket[bitmap%] instance @racket[bm], returns an ARGB flomap with alpha-multiplied color components.
 See @secref{flomap:opacity} for a discussion of opacity (alpha) representation.
+
+If @racket[unscaled?] is true, the flomap is converted from the actual bitmap backing @racket[bm] rather than a scaled version.
+See the @racket[#:unscaled?] keyword parameter of @method[bitmap% get-argb-pixels] for more information.
 
 The argument type is imprecise because Typed Racket does not support the object system well yet.
 }

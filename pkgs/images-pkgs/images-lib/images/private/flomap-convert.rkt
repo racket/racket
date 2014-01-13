@@ -8,14 +8,19 @@
 
 (provide bitmap->flomap flomap->bitmap draw-flomap)
 
-(define (bitmap->flomap bm)
+(define (bitmap->flomap bm #:unscaled? [unscaled? #f])
   (unless (is-a? bm bitmap%)
     (raise-type-error 'bitmap->flomap "bitmap% instance" bm))
-  (define w (send bm get-width))
-  (define h (send bm get-height))
+  
+  (define backing-scale (send bm get-backing-scale))
+  (define (scale d)
+    (if unscaled? (inexact->exact (ceiling (* d backing-scale))) d))
+  
+  (define w (scale (send bm get-width)))
+  (define h (scale (send bm get-height)))
   (define bs (make-bytes (* 4 w h)))
-  (send bm get-argb-pixels 0 0 w h bs #t #t)
-  (send bm get-argb-pixels 0 0 w h bs #f #t)
+  (send bm get-argb-pixels 0 0 w h bs #t #t #:unscaled? unscaled?)
+  (send bm get-argb-pixels 0 0 w h bs #f #t #:unscaled? unscaled?)
   
   (define argb-fm (make-flomap 4 w h))
   (define argb-vs (flomap-values argb-fm))

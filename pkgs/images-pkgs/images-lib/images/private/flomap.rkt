@@ -29,7 +29,7 @@
 
 (require/typed
  "flomap-convert.rkt"
- [bitmap->flomap  ((Instance Bitmap%) -> flomap)]
+ [bitmap->flomap  ((Instance Bitmap%) [#:unscaled? Any] -> flomap)]
  [flomap->bitmap  (flomap [#:backing-scale Positive-Real] -> (Instance Bitmap%))]
  [draw-flomap     ((Any -> Any) Integer Integer -> flomap)])
 
