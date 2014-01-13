@@ -11,6 +11,7 @@
          (rep type-rep)
          (for-template (base-env top-interaction))
          (utils utils tc-utils arm)
+         (only-in (types printer) pretty-format-type)
          "standard-inits.rkt"
          "tc-setup.rkt")
 
@@ -82,7 +83,7 @@
                                 (define tc (cleanup-type t))
                                 (define tg (generalize tc))
                                 (format "- : ~a~a~a\n"
-                                        tg
+                                        (pretty-format-type tg #:indent 4)
                                         (cond [(equal? tc tg) ""]
                                               [else (format " [more precisely: ~a]" tc)])
                                         (cond [(equal? tc t) ""]
@@ -92,9 +93,15 @@
                                [(tc-results: t)
                                 (define tcs (map cleanup-type t))
                                 (define tgs (map generalize tcs))
+                                (define tgs-val (make-Values tgs))
+                                (define formatted (pretty-format-type tgs-val #:indent 4))
+                                (define indented? (regexp-match? #rx"\n" formatted))
                                 (format "- : ~a~a~a\n"
-                                        (cons 'Values tgs)
+                                        formatted
                                         (cond [(andmap equal? tgs tcs) ""]
+                                              [indented?
+                                               (format "\n[more precisely: ~a]"
+                                                       (pretty-format-type (make-Values tcs) #:indent 17))]
                                               [else (format " [more precisely: ~a]" (cons 'Values tcs))])
                                         ;; did any get pruned?
                                         (cond [(andmap equal? t tcs) ""]

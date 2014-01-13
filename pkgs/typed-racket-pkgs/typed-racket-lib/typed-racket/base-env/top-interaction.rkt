@@ -81,10 +81,11 @@
          (λ (expanded type)
            #`(display
               #,(parameterize ([print-multi-line-case-> #t])
-                  (format "~a\n" (match type
-                                   [(tc-result1: t f o) t]
-                                   [(tc-results: t) (-values t)]
-                                   [(tc-any-results:) ManyUniv]))))))]
+                  (pretty-format-type
+                   (match type
+                     [(tc-result1: t f o) t]
+                     [(tc-results: t) (-values t)]
+                     [(tc-any-results:) ManyUniv]))))))]
       [form
        (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))
 

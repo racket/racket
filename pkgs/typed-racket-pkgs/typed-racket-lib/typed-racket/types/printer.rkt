@@ -4,9 +4,11 @@
 ;; data structures such as filters and objects
 
 (require racket/require racket/match unstable/sequence racket/string racket/promise
+         racket/pretty
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
+                  "utils/string.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
@@ -24,7 +26,8 @@
 (provide-printer)
 
 (provide print-multi-line-case-> special-dots-printing? print-complex-filters?
-         current-print-type-fuel current-print-unexpanded)
+         current-print-type-fuel current-print-unexpanded
+         pretty-format-type)
 
 
 ;; do we attempt to find instantiations of polymorphic types to print?
@@ -61,66 +64,90 @@
 	(sort candidates string>? #:key symbol->string))]
    [else #f]))
 
-;; print-filter : Filter Port Boolean
+;; These four functions call the helpers below to construct
+;; an s-expression and then prints it to the given port.
+(define (print-type type port write? [ignored-names '()])
+  (display (type->sexp type ignored-names) port))
+
+(define (print-pathelem pe port write?)
+  (display (pathelem->sexp pe) port))
+
+(define (print-filter filter port write?)
+  (display (filter->sexp filter) port))
+
+(define (print-object obj port write?)
+  (display (object->sexp obj) port))
+
+;; Table for formatting pretty-printed types
+(define type-style-table
+  (pretty-print-extend-style-table
+   #f '(U All) '(and lambda)))
+
+;; pretty-format-type : Type -> String
+;; Formats the type using pretty printing
+(define (pretty-format-type type #:indent [indent 0])
+  (define out (open-output-string))
+  (port-count-lines! out)
+  (display (make-string indent #\space) out)
+  (parameterize ([pretty-print-current-style-table type-style-table])
+    (pretty-display (type->sexp type '()) out))
+  (chomp (substring (get-output-string out) indent)))
+
+;; filter->sexp : Filter -> S-expression
 ;; Print a Filter (see filter-rep.rkt) to the given port
-(define (print-filter filt port write?)
-  (define (fp . args) (apply fprintf port args))
+(define (filter->sexp filt)
   (match filt
-    [(FilterSet: thn els) (fp "(~a | ~a)" thn els)]
-    [(NoFilter:) (fp "-")]
+    [(FilterSet: thn els) `(,(filter->sexp thn) \| ,(filter->sexp els))]
+    [(NoFilter:) '-]
     [(NotTypeFilter: type (list) (? syntax? id))
-     (fp "(! ~a @ ~a)" type (syntax-e id))]
+     `(! ,(type->sexp type) @ ,(syntax-e id))]
     [(NotTypeFilter: type (list) id)
-     (fp "(! ~a @ ~a)" type id)]
+     `(! ,(type->sexp type) @ ,id)]
     [(NotTypeFilter: type path (? syntax? id))
-     (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
+     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
     [(NotTypeFilter: type path id)
-     (fp "(! ~a @ ~a ~a)" type path id)]
+     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
     [(TypeFilter: type (list) (? syntax? id))
-     (fp "(~a @ ~a)" type (syntax-e id))]
+     `(,(type->sexp type) @ ,(syntax-e id))]
     [(TypeFilter: type (list) id)
-     (fp "(~a @ ~a)" type id)]
+     `(,(type->sexp type) @ ,id)]
     [(TypeFilter: type path (? syntax? id))
-     (fp "(~a @ ~a ~a)" type path (syntax-e id))]
+     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
     [(TypeFilter: type path id)
-     (fp "(~a @ ~a ~a)" type path id)]
-    [(Bot:) (fp "Bot")]
-    [(Top:) (fp "Top")]
+     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
+    [(Bot:) 'Bot]
+    [(Top:) 'Top]
     [(ImpFilter: a c)
-     (fp "(ImpFilter ~a ~a)" a c)]
-    [(AndFilter: a)
-     (fp "(AndFilter") (for ([a0 a]) (fp " ~a" a0))  (fp ")")]
-    [(OrFilter: a)
-     (fp "(OrFilter") (for ([a0 a]) (fp " ~a" a0)) (fp ")")]
-    [else (fp "(Unknown Filter: ~a)" (struct->vector filt))]))
+     `(ImpFilter ,(filter->sexp a) ,(filter->sexp c))]
+    [(AndFilter: a) `(AndFilter ,@(map filter->sexp a))]
+    [(OrFilter: a) `(OrFilter ,@(map filter->sexp a))]
+    [else `(Unknown Filter: ,(struct->vector filt))]))
 
-;; print-pathelem : PathElem Port Boolean
+;; pathelem->sexp : PathElem -> S-expression
 ;; Print a PathElem (see object-rep.rkt) to the given port
-(define (print-pathelem pathelem port write?)
-  (define (fp . args) (apply fprintf port args))
+(define (pathelem->sexp pathelem)
   (match pathelem
-    [(CarPE:) (fp "car")]
-    [(CdrPE:) (fp "cdr")]
-    [(ForcePE:) (fp "force")]
-    [(StructPE: t i) (fp "(~a ~a)" t i)]
-    [else (fp "(Unknown Path Element: ~a)" (struct->vector pathelem))]))
+    [(CarPE:) 'car]
+    [(CdrPE:) 'cdr]
+    [(ForcePE:) 'force]
+    [(StructPE: t i) `(,(pathelem->sexp t) ,i)]
+    [else `(Unknown Path Element: ,(struct->vector pathelem))]))
 
-;; print-object : Object Port Boolean
+;; object->sexp : Object -> S-expression
 ;; Print an Object (see object-rep.rkt) to the given port
-(define (print-object object port write?)
-  (define (fp . args) (apply fprintf port args))
+(define (object->sexp object)
   (match object
-    [(NoObject:) (fp "-")]
-    [(Empty:) (fp "-")]
-    [(Path: pes i) (fp "~a" (append pes (list i)))]
-    [else (fp "(Unknown Object: ~a)" (struct->vector object))]))
+    [(NoObject:) '-]
+    [(Empty:) '-]
+    [(Path: pes i) (append (map pathelem->sexp pes) (list i))]
+    [else `(Unknown Object: ,(struct->vector object))]))
 
-;; print-union : Type LSet<Type> -> Void
+;; cover-union : Type LSet<Type> -> Listof<Symbol> Listof<Type>
 ;; Unions are represented as a flat list of branches. In some cases, it would
 ;; be nicer to print them using higher-level descriptions instead.
 ;; We do set coverage, with the elements of the union being what we want to
 ;; cover, and all the names types we know about being the sets.
-(define (print-union t ignored-names)
+(define (cover-union t ignored-names)
   (match-define (Union: elems) t)
   (define valid-names
     ;; We keep only unions, and only those that are subtypes of t.
@@ -151,7 +178,7 @@
            ;; only union types can flow here, and any of those could be expanded
            (set-box! (current-print-unexpanded)
                      (append coverage-names (unbox (current-print-unexpanded))))
-           (append coverage-names uncoverable)] ; we want the names
+           (values coverage-names uncoverable)] ; we want the names
           [else
            ;; pick the candidate that covers the most uncovered types
            (define (covers-how-many? c)
@@ -168,11 +195,11 @@
                  (remove next candidates)
                  (cons next coverage))])))
 
-;; format-arr : arr -> String
+;; arr->sexp : arr -> s-expression
 ;; Convert an arr (see type-rep.rkt) to its printable form
-(define (format-arr arr)
+(define (arr->sexp arr)
   (match arr
-    [(top-arr:) "Procedure"]
+    [(top-arr:) 'Procedure]
     [(arr: dom rng rest drest kws)
      (define out (open-output-string))
      (define (fp . args) (apply fprintf out args))
@@ -180,64 +207,69 @@
        (if (print-complex-filters?)
            (apply fp fmt ret rest)
            (fp "-> ~a" ret)))
-     (fp "(")
-     (for-each (lambda (t) (fp "~a " t)) dom)
-     (for ([kw (in-list kws)])
-       (match kw
-         [(Keyword: k t req?)
-          (if req?
-              (fp "~a ~a " k t)
-              (fp "[~a ~a] " k t))]))
-     (when rest
-       (fp "~a ~a " rest (if (special-dots-printing?) "...*" "*")))
-     (when drest
-       (fp "~a ...~a~a "
-           (car drest) (if (special-dots-printing?) "" " ") (cdr drest)))
-     (match rng
-       [(AnyValues:)
-        (fp "-> AnyValues")]
-       [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
-        (fp "-> ~a" t)]
-       [(Values: (list (Result: t
-                                (FilterSet: (TypeFilter: ft pth id)
-                                            (NotTypeFilter: ft pth id))
-                                (Empty:))))        
-        (if (null? pth)
-            (fp "-> ~a : ~a" t ft)
-            (begin (fp "-> ~a : ~a @" t ft)
-                   (for ([pe (in-list pth)]) (fp " ~a" pe))))]
-       [(Values: (list (Result: t fs (Empty:))))
-        (fp/filter "-> ~a : ~a" t fs)]
-       [(Values: (list (Result: t lf lo)))
-        (fp/filter "-> ~a : ~a ~a" t lf lo)]
-       [_
-        (fp "-> ~a" rng)])
-     (fp ")")
-     (get-output-string out)]
-    [else (format "(Unknown Function Type: ~a)" (struct->vector arr))]))
+     `(,@(map type->sexp dom)
+       ;; Format keyword types as strings because the square
+       ;; brackets are significant for printing. Note that
+       ;; as long as the resulting s-expressions are `display`ed
+       ;; this is fine, though it may not pretty-print well.
+       ,@(for/list ([kw (in-list kws)])
+           (match kw
+             [(Keyword: k t req?)
+              (if req?
+                  (format "~a ~a" k (type->sexp t))
+                  (format "[~a ~a]" k (type->sexp t)))]))
+       ,@(if rest
+             (list rest (if (special-dots-printing?) '...* '*))
+             null)
+       ,@(if drest
+             (if (special-dots-printing?)
+                 (list (type->sexp (car drest))
+                       (string->symbol (format "...~a" (cdr drest))))
+                 (list (type->sexp (car drest))
+                       '...
+                       (cdr drest)))
+             null)
+       ,@(match rng
+           [(AnyValues:) '(-> AnyValues)]
+           [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
+            `(-> ,(type->sexp t))]
+           [(Values: (list (Result: t
+                                    (FilterSet: (TypeFilter: ft pth id)
+                                                (NotTypeFilter: ft pth id))
+                                    (Empty:))))
+            (if (null? pth)
+                `(-> ,(type->sexp t) : ,(type->sexp ft))
+                `(-> ,(type->sexp t) : ,(type->sexp ft) @
+                     ,@(map pathelem->sexp pth)))]
+           [(Values: (list (Result: t fs (Empty:))))
+            (if (print-complex-filters?)
+                `(-> ,(type->sexp t) : ,(filter->sexp fs))
+                `(-> ,(type->sexp t)))]
+           [(Values: (list (Result: t lf lo)))
+            (if (print-complex-filters?)
+                `(-> ,(type->sexp t) : ,(filter->sexp lf) ,(object->sexp lo))
+                `(-> ,(type->sexp t)))]
+           [_ `(-> ,(type->sexp rng))]))]
+    [else `(Unknown Function Type: ,(struct->vector arr))]))
 
-;; print-case-lambda : Type -> String
-;; Convert a case-> type to a string
-(define (print-case-lambda type)
+;; case-lambda->sexp : Type -> S-expression
+;; Convert a case-> type to an s-expression
+(define (case-lambda->sexp type)
   (match type
     [(Function: arities)
-     (let ()
-       (match arities
-         [(list) "(case->)"]
-         [(list a) (format-arr a)]
-         [(list a b ...)
-          (define multi-line? (print-multi-line-case->))
-          (format (string-append "(case-> ~a" (if multi-line? "\n        " " ") "~a)")
-                  (format-arr a)
-                  (string-join (map format-arr b) (if multi-line? "\n        " " ")))]))]))
+     (match arities
+       [(list) '(case->)]
+       [(list a) (arr->sexp a)]
+       [(list a b ...)
+        `(case-> ,(arr->sexp a) ,@(map arr->sexp b))])]))
 
-;; print out a type
-;; print-type : Type Port Boolean -> Void
-(define (print-type type port write? [ignored-names '()])
-  (define (fp . args)
+;; type->sexp : Type -> S-expression
+;; convert a type to an s-expression that can be printed
+(define (type->sexp type [ignored-names '()])
+  (define (t->s type)
     (parameterize ([current-print-type-fuel
                     (sub1 (current-print-type-fuel))])
-      (apply fprintf port args)))
+      (type->sexp type)))
   (define (tuple? t)
     (match t
       [(Pair: a (? tuple?)) #t]
@@ -249,11 +281,10 @@
       [(Value: '()) null]))
   (match type
     ;; if we know how it was written, print that
-    [(? Rep-stx a)
-     (fp "~a" (syntax->datum (Rep-stx a)))]
-    [(Univ:) (fp "Any")]
+    [(? Rep-stx a) (syntax->datum (Rep-stx a))]
+    [(Univ:) 'Any]
     ;; names are just the printed as the original syntax
-    [(Name: stx) (fp "~a" (syntax-e stx))]
+    [(Name: stx) (syntax-e stx)]
     ;; If a type has a name, then print it with that name.
     ;; However, we expand the alias in some cases
     ;; (i.e., the fuel is > 0) for the :type form.
@@ -266,100 +297,94 @@
               ;; if we still have fuel, print the expanded type and
               ;; add the name to the ignored list so that the union
               ;; printer does not try to print with the name.
-              (print-type type port write? (append names ignored-names)))]
+              (type->sexp type (append names ignored-names)))]
            [else
             ;; to allow :type to cue the user on unexpanded aliases
             (when (Union? type) ; only unions can be expanded
               (set-box! (current-print-unexpanded)
                         (cons (car names) (unbox (current-print-unexpanded)))))
-            (fp "~a" (car names))])]
-    [(StructType: (Struct: nm _ _ _ _ _)) (fp "(Struct-Type ~a)" (syntax-e nm))]
+            (car names)])]
+    [(StructType: (Struct: nm _ _ _ _ _)) `(StructType ,(syntax-e nm))]
     ;; this case occurs if the contained type is a type variable
-    [(StructType: ty) (fp "(Struct-Type ~a)" ty)]
-    [(StructTypeTop:) (fp "Struct-TypeTop")]
-    [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
-    [(BoxTop:) (fp "BoxTop")]
-    [(ChannelTop:) (fp "ChannelTop")]
-    [(ThreadCellTop:) (fp "ThreadCellTop")]
-    [(VectorTop:) (fp "VectorTop")]
-    [(HashtableTop:) (fp "HashTableTop")]
-    [(MPairTop:) (fp "MPairTop")]
-    [(Prompt-TagTop:) (fp "Prompt-TagTop")]
-    [(Continuation-Mark-KeyTop:) (fp "Continuation-Mark-KeyTop")]
+    [(StructType: ty) `(Struct-Type ,(t->s ty))]
+    [(StructTypeTop:) 'Struct-TypeTop]
+    [(StructTop: (Struct: nm _ _ _ _ _)) `(Struct ,(syntax-e nm))]
+    [(BoxTop:) 'BoxTop]
+    [(ChannelTop:) 'ChannelTop]
+    [(ThreadCellTop:) 'ThreadCellTop]
+    [(VectorTop:) 'VectorTop]
+    [(HashtableTop:) 'HashTableTop]
+    [(MPairTop:) 'MPairTop]
+    [(Prompt-TagTop:) 'Prompt-TagTop]
+    [(Continuation-Mark-KeyTop:) 'Continuation-Mark-KeyTop]
     [(App: rator rands stx)
-     (fp "~a" (list* rator rands))]
+     (list* (type->sexp rator) (map type->sexp rands))]
     ;; special cases for lists
     [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
-     (fp "(Listof ~a)" elem-ty)]
+     `(Listof ,(t->s elem-ty))]
     [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
-     (fp "(Listof ~a)" elem-ty)]
+     `(Listof ,(t->s elem-ty))]
     [(Mu: var (Union: (list (Value: '()) (MPair: elem-ty (F: var)))))
-     (fp "(MListof ~a)" elem-ty)]
+     `(MListof ,(t->s elem-ty))]
     [(Mu: var (Union: (list (MPair: elem-ty (F: var)) (Value: '()))))
-     (fp "(MListof ~a)" elem-ty)]
-    [(Value: v) (cond [(or (symbol? v) (null? v))
-                       (fp "'~a" v)]
-                      [else (fp "~a" v)])]
+     `(MListof ,(t->s elem-ty))]
+    ;; format as a string to preserve reader abbreviations and primitive
+    ;; values like characters (when `display`ed)
+    [(Value: v) (format "~v" v)]
     [(? tuple? t)
-     (fp "~a" (cons 'List (tuple-elems t)))]
-    [(Base: n cnt _ _) (fp "~s" n)]
-    [(Opaque: pred) (fp "(Opaque ~a)" (syntax->datum pred))]
+     `(List ,@(map type->sexp (tuple-elems t)))]
+    [(Base: n cnt _ _) n]
+    [(Opaque: pred) `(Opaque ,(syntax->datum pred))]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _)
-     (fp "#(struct:~a ~a" nm t)
-     (when proc
-       (fp " ~a" proc))
-     (fp ")")]
+     `#(,(string->symbol (format "struct:~a" nm))
+        ,(map t->s t)
+        ,@(if proc (list (t->s proc)) null))]
     [(Function: arities)
-     (define fun-type
-       (parameterize ([current-print-type-fuel
-                       (sub1 (current-print-type-fuel))])
-         (print-case-lambda type)))
-     (fp "~a" fun-type)]
-    [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr type))]
-    [(Vector: e) (fp "(Vectorof ~a)" e)]
-    [(HeterogeneousVector: e) (fp "(Vector")
-                              (for ([i (in-list e)])
-                                (fp " ~a" i))
-                              (fp ")")]
-    [(Box: e) (fp "(Boxof ~a)" e)]
-    [(Future: e) (fp "(Futureof ~a)" e)]
-    [(Channel: e) (fp "(Channelof ~a)" e)]
-    [(ThreadCell: e) (fp "(ThreadCellof ~a)" e)]
-    [(Promise: e) (fp "(Promise ~a)" e)]
-    [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
-    [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
-    [(Set: e) (fp "(Setof ~a)" e)]
-    [(Evt: r) (fp "(Evtof ~a)" r)]
-    [(Union: elems) (fp "~a" (cons 'U (print-union type ignored-names)))]
-    [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
+     (parameterize ([current-print-type-fuel
+                     (sub1 (current-print-type-fuel))])
+       (case-lambda->sexp type))]
+    [(arr: _ _ _ _ _) `(arr ,(arr->sexp type))]
+    [(Vector: e) `(Vectorof ,(t->s e))]
+    [(HeterogeneousVector: e) `(Vector ,@(map t->s e))]
+    [(Box: e) `(Boxof ,(t->s e))]
+    [(Future: e) `(Futureof ,(t->s e))]
+    [(Channel: e) `(Channelof ,(t->s e))]
+    [(ThreadCell: e) `(ThreadCellof ,(t->s e))]
+    [(Promise: e) `(Promise ,(t->s e))]
+    [(Ephemeron: e) `(Ephemeronof ,(t->s e))]
+    [(CustodianBox: e) `(CustodianBoxof ,(t->s e))]
+    [(Set: e) `(Setof ,(t->s e))]
+    [(Evt: r) `(Evtof ,(t->s r))]
+    [(Union: elems)
+     (define-values (covered remaining) (cover-union type ignored-names))
+     (cons 'U (append covered (map t->s remaining)))]
+    [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
     [(ListDots: dty dbound)
-     (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
-    [(F: nm) (fp "~a" nm)]
+     (define dbound*
+       (if (special-dots-printing?)
+           (list (string->symbol (format "...~a" dbound)))
+           (list '... dbound)))
+     `(List ,(t->s dty) ,@dbound*)]
+    [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
-    [(AnyValues:) (fp "AnyValues")]
-    [(Values: (list v)) (fp "~a" v)]
-    [(Values: (list v ...)) (fp "~s" (cons 'values v))]
+    [(AnyValues:) 'AnyValues]
+    [(Values: (list v)) v]
+    [(Values: (list v ...)) (cons 'values (map t->s v))]
     [(ValuesDots: v dty dbound)
-     (fp "~s" (cons 'values (append v (list dty '... dbound))))]
+     (cons 'values (append (map t->s v) (list (t->s dty) '... dbound)))]
     [(Param: in out)
      (if (equal? in out)
-         (fp "(Parameterof ~a)" in)
-         (fp "(Parameterof ~a ~a)" in out))]
-    [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
+         `(Parameterof ,(t->s in))
+         `(Parameterof ,(t->s in) ,(t->s out)))]
+    [(Hashtable: k v) `(HashTable ,(t->s k) ,(t->s v))]
     [(Continuation-Mark-Keyof: rhs)
-     (fp "(Continuation-Mark-Keyof ~a)" rhs)]
+     `(Continuation-Mark-Keyof ,(t->s rhs))]
     [(Prompt-Tagof: body handler)
-     (fp "(Prompt-Tagof ~a ~a)" body handler)]
-    #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
+     `(Prompt-Tagof ,(t->s body) ,(t->s handler))]
     [(Poly-names: names body)
-     #;(eprintf "POLY SEQ: ~a\n" (Type-seq body))
-     (fp "(All ~a ~a)" names body)]
-    #;
-    [(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]
+     `(All ,names ,(t->s body))]
     [(PolyDots-names: (list names ... dotted) body)
-     (fp "(All ~a ~a)" (append names (list dotted '...)) body)]
-    #;
-    [(Mu-unsafe: b) (fp "(unsafe-mu ~a ~a)" (Type-seq c) b)]
+     `(All ,(append names (list dotted '...)) ,(t->s body))]
     [(Mu: x (Syntax: (Union: (list
                               (Base: 'Number _ _ _)
                               (Base: 'Boolean _ _ _)
@@ -371,29 +396,23 @@
                                                    (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))
                               (Box: (F: x))))))
-     (fp "Syntax")]
-    [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
-    ;; FIXME - this should not be used
-    #;
-    [(Scope: sc) (fp "(Scope ~a)" sc)]
-
-    [(B: idx) (fp "(B ~a)" idx)]
-    [(Syntax: t) (fp "(Syntaxof ~a)" t)]
-    [(Instance: t) (fp "(Instance ~a)" t)]
-    [(Class: pf nf ms) (fp "(Class)")]
-    [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (fp "~a" t)]
-    [(Result: t fs (Empty:)) (fp "(~a : ~a)" t fs)]
-    [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
-    [(MPair: s t) (fp "(MPairof ~a ~a)" s t)]
+     'Syntax]
+    [(Mu-name: name body) `(Rec ,name ,(t->s body))]
+    [(B: idx) `(B ,idx)]
+    [(Syntax: t) `(Syntaxof ,(t->s t))]
+    [(Instance: t) `(Instance ,(t->s t))]
+    [(Class: pf nf ms) '(Class)]
+    [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
+    [(Result: t fs (Empty:)) `(,(type->sexp t) : (filter->sexp fs))]
+    [(Result: t fs lo) `(,(type->sexp t) : ,(filter->sexp fs) : ,(object->sexp lo))]
+    [(MPair: s t) `(MPairof ,(t->s s) ,(t->s t))]
     [(Refinement: parent p?)
-     (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
+     `(Refinement ,(t->s parent) ,(syntax-e p?))]
     [(Sequence: ts)
-     (fp "(Sequenceof")
-     (for ([t ts]) (fp " ~a" t))
-     (fp ")")]
-    [(Error:) (fp "Error")]
-    [(fld: t a m) (fp "(fld ~a)" t)]
-    [else (fp "(Unknown Type: ~a)" (struct->vector type))]
+     `(Sequenceof ,@(map t->s ts))]
+    [(Error:) 'Error]
+    [(fld: t a m) `(fld ,(type->sexp t))]
+    [else `(Unknown Type: ,(struct->vector type))]
     ))
 
 

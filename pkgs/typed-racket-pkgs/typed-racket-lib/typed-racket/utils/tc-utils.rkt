@@ -6,6 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (require syntax/source-syntax "disappeared-use.rkt"
+         "string.rkt"
          racket/list racket/match racket/promise racket/string
          syntax/parse (for-syntax racket/base syntax/parse)
          (only-in unstable/sequence in-slice))
@@ -162,13 +163,6 @@ don't depend on any other portion of the system
   (if delayed?
       (apply tc-error/delayed #:stx stx final-msg (reverse vals))
       (apply tc-error/stx stx final-msg (reverse vals))))
-
-;; helper for above, remove \n at end if any
-(define (chomp str)
-  (define len (string-length str))
-  (if (eq? #\newline (string-ref str (sub1 len)))
-      (substring str 0 (sub1 len))
-      str))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)
