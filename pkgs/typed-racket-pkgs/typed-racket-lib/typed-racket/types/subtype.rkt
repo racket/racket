@@ -70,29 +70,29 @@
 ;;               -> (Option (Listof (Pairof Num Num)))
 ;;
 ;; Given function types F_s and F_t, this procedure is called to check that the
-;; keyword types t-kws for F_t are subtypes of the keyword types s-kws for F_s
+;; keyword types s-kws for F_s are subtypes of the keyword types t-kws for F_t
 ;; when checking that F_s <: F_t (but *not* F_t <: F_s).
 ;;
 ;; Note that in terms of width, s-kws may have more keywords (i.e., F_s accepts
 ;; all keywords that F_t does) but the types in s-kws must be supertypes of those
 ;; in t-kws (i.e., F_s domain types are at least as permissive as those of F_t).
-(define (kw-subtypes* A0 t-kws s-kws)
-  (let loop ([A A0] [t t-kws] [s s-kws])
+(define (kw-subtypes* A0 s-kws t-kws)
+  (let loop ([A A0] [s s-kws] [t t-kws])
     (and
      A
-     (match* (t s)
-       [((cons (Keyword: kt tt rt) rest-t) (cons (Keyword: ks ts rs) rest-s))
+     (match* (s t)
+       [((cons (Keyword: ks ts rs) rest-s) (cons (Keyword: kt tt rt) rest-t))
 	(cond [(eq? kt ks)
 	       (and ;; if t is optional, s must be as well
 		(or rt (not rs))
-		(loop (subtype* A tt ts) rest-t rest-s))]
+		(loop (subtype* A tt ts) rest-s rest-t))]
 	      ;; optional extra keywords in s are ok
 	      ;; we just ignore them
-	      [(and (not rs) (keyword<? ks kt)) (loop A t rest-s)]
+	      [(and (not rs) (keyword<? ks kt)) (loop A rest-s t)]
 	      ;; extra keywords in t are a problem
 	      [else #f])]
        ;; no more keywords to satisfy, the rest in t must be optional
-       [('() _) (and (andmap (match-lambda [(Keyword: _ _ rs) (not rs)]) s) A)]
+       [(_ '()) (and (andmap (match-lambda [(Keyword: _ _ rs) (not rs)]) s) A)]
        ;; we failed to satisfy all the keyword
        [(_ _) #f]))))
 
@@ -111,13 +111,13 @@
         (arr: t1 t2 #f #f t-kws))
        (subtype-seq A0
                     (subtypes* t1 s1)
-                    (kw-subtypes* t-kws s-kws)
+                    (kw-subtypes* s-kws t-kws)
                     (subtype* s2 t2))]
       [((arr: s-dom s-rng s-rest #f s-kws)
         (arr: t-dom t-rng #f #f t-kws))
        (subtype-seq A0
                     (subtypes*/varargs t-dom s-dom s-rest)
-                    (kw-subtypes* t-kws s-kws)
+                    (kw-subtypes* s-kws t-kws)
                     (subtype* s-rng t-rng))]
       [((arr: s-dom s-rng #f #f s-kws)
         (arr: t-dom t-rng t-rest #f t-kws))
@@ -127,7 +127,7 @@
        (subtype-seq A0
                     (subtypes*/varargs t-dom s-dom s-rest)
                     (subtype* t-rest s-rest)
-                    (kw-subtypes* t-kws s-kws)
+                    (kw-subtypes* s-kws t-kws)
                     (subtype* s-rng t-rng))]
       ;; handle ... varargs when the bounds are the same
       [((arr: s-dom s-rng #f (cons s-drest dbound) s-kws)
@@ -135,7 +135,7 @@
        (subtype-seq A0
                     (subtype* t-drest s-drest)
                     (subtypes* t-dom s-dom)
-                    (kw-subtypes* t-kws s-kws)
+                    (kw-subtypes* s-kws t-kws)
                     (subtype* s-rng t-rng))]
       [(_ _) #f]))
 
