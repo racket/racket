@@ -80,12 +80,11 @@
        (tc-toplevel/full stx #'e
          (λ (expanded type)
            #`(display
-              #,(parameterize ([print-multi-line-case-> #t])
-                  (pretty-format-type
-                   (match type
-                     [(tc-result1: t f o) t]
-                     [(tc-results: t) (-values t)]
-                     [(tc-any-results:) ManyUniv]))))))]
+              #,(pretty-format-type
+                 (match type
+                   [(tc-result1: t f o) t]
+                   [(tc-results: t) (-values t)]
+                   [(tc-any-results:) ManyUniv])))))]
       [form
        (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))
 

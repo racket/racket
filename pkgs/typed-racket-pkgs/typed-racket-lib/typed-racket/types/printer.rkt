@@ -25,7 +25,7 @@
       #'(provide print-type print-filter print-object print-pathelem)))
 (provide-printer)
 
-(provide print-multi-line-case-> special-dots-printing? print-complex-filters?
+(provide special-dots-printing? print-complex-filters?
          current-print-type-fuel current-print-unexpanded
          pretty-format-type)
 
@@ -36,7 +36,6 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
-(define print-multi-line-case-> (make-parameter #f))
 (define special-dots-printing? (make-parameter #f))
 (define print-complex-filters? (make-parameter #f))
 
