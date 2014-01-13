@@ -8,7 +8,6 @@
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
-                  "utils/string.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
@@ -93,7 +92,7 @@
   (write-string (make-string indent #\space) out)
   (parameterize ([pretty-print-current-style-table type-style-table])
     (pretty-display (type->sexp type '()) out))
-  (chomp (substring (get-output-string out) indent)))
+  (string-trim #:left? #f (substring (get-output-string out) indent)))
 
 ;; filter->sexp : Filter -> S-expression
 ;; Print a Filter (see filter-rep.rkt) to the given port

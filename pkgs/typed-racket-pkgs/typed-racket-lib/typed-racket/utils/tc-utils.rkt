@@ -6,7 +6,6 @@ don't depend on any other portion of the system
 |#
 
 (require syntax/source-syntax "disappeared-use.rkt"
-         "string.rkt"
          racket/list racket/match racket/promise racket/string
          syntax/parse (for-syntax racket/base syntax/parse)
          (only-in unstable/sequence in-slice))
@@ -159,7 +158,8 @@ don't depend on any other portion of the system
       (values field-strs* (cons value vals))))
   (define more-msg (if more (string-append ";\n " more "\n") "\n"))
   (define all-fields (string-join (reverse field-strs) "\n"))
-  (define final-msg (chomp (string-append msg more-msg all-fields)))
+  (define final-msg
+    (string-trim #:left? #f (string-append msg more-msg all-fields)))
   (if delayed?
       (apply tc-error/delayed #:stx stx final-msg (reverse vals))
       (apply tc-error/stx stx final-msg (reverse vals))))
