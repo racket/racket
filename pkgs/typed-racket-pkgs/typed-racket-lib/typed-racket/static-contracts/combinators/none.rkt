@@ -23,6 +23,7 @@
       (display "#<none/sc>" port)))
 
 (struct none-combinator combinator ()
+        #:transparent
         #:methods gen:sc
           [(define (sc-map v f) v)
            (define (sc-traverse v f) (void))

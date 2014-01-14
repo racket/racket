@@ -72,7 +72,7 @@
        (if reason (~a ": " reason) "."))
    to-check))
 
-(define (generate-contract-def stx)
+(define (generate-contract-def stx cache)
   (define prop (define/fixup-contract? stx))
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
@@ -80,30 +80,34 @@
   (define kind (if flat? 'flat 'impersonator))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
-     (let ([typ (if maker?
-                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
-                    typ)])
-         (with-syntax ([cnt (type->contract
-                             typ
-                             ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side #f
-                             #:kind kind
-                             (type->contract-fail typ prop))])
-           (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc
-                stx
-              (define-values (n)
-                (recursive-contract
-                 cnt
-                 #,(contract-kind->keyword kind)))))))]
+     (define typ* (if maker?
+                      ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
+                      typ))
+     (define-values (defs cnt)
+       (type->contract typ*
+                       ;; this is for a `require/typed', so the value is not from the typed side
+                       #:typed-side #f
+                       #:kind kind
+                       #:cache cache
+                       (type->contract-fail typ* prop)))
+     (ignore ; should be ignored by the optimizer
+      (quasisyntax/loc
+        stx
+        (begin
+          #,@defs
+          (define-values (n)
+           (recursive-contract
+            #,cnt
+            #,(contract-kind->keyword kind))))))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
+  (define ctc-cache (make-hash))
   (for/list ((e (in-syntax forms)))
     (if (not (define/fixup-contract? e))
         e
-        (generate-contract-def e))))
+        (generate-contract-def e ctc-cache))))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
@@ -152,16 +156,22 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-(define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+;; type->contract : Type ... -> Listof<Syntax> Syntax
+(define (type->contract ty init-fail
+                        #:typed-side [typed-side #t]
+                        #:kind [kind 'impersonator]
+                        #:cache [cache (make-hash)])
   (let/ec escape
-    (define (fail #:reason [reason #f]) (escape (init-fail #:reason reason)))
+    (define (fail #:reason [reason #f])
+      (call-with-values (λ () (init-fail #:reason reason)) escape))
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
         #:trusted-positive typed-side
         #:trusted-negative (not typed-side))
       fail
-      kind)))
+      kind
+      #:cache cache)))
 
 
 
@@ -180,6 +190,20 @@
 (define (same sc)
   (triple sc sc sc))
 
+;; flat/sc-cache : Hash<Type, Syntax>
+;; This hashtable caches the syntax objects that represent contracts
+;; for flat static contracts. By allocating these syntax objects only once
+;; per type, type equality will match up with flat/sc equality.
+(define flat/sc-cache (make-hash))
+
+;; from-cache : Syntax -> Syntax
+;; Look up the syntax object for a flat/sc in the cache or set it if
+;; it hasn't been cached yet.
+(define (from-cache type stx)
+  (cond [(hash-ref flat/sc-cache type #f)]
+        [else
+         (hash-set! flat/sc-cache type stx)
+         stx]))
 
 (define (type->static-contract type init-fail #:typed-side [typed-side #t])
   (let/ec return
@@ -283,9 +307,10 @@
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]
         [(Base: sym cnt _ _)
-         (flat/sc #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)) sym)]
+         (flat/sc (from-cache type #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)))
+                  sym)]
         [(Refinement: par p?)
-         (and/sc (t->sc par) (flat/sc p?))]
+         (and/sc (t->sc par) (flat/sc (from-cache type p?)))]
         [(Union: elems)
          (define-values (numeric non-numeric) (partition (λ (t) (equal? 'number (Type-key t))) elems ))
          (define numeric-sc (numeric-type->static-contract (apply Un numeric)))
@@ -303,7 +328,7 @@
         [(Promise: t)
          (promise/sc (t->sc t))]
         [(Opaque: p?)
-         (flat/sc #`(flat-named-contract (quote #,(syntax-e p?)) #,p?))]
+         (flat/sc (from-cache type #`(flat-named-contract (quote #,(syntax-e p?)) #,p?)))]
         [(Continuation-Mark-Keyof: t)
          (continuation-mark-key/sc (t->sc t))]
         ;; TODO: this is not quite right for case->
@@ -430,12 +455,12 @@
                                                 nm (recursive-sc-use nm*)))))
             (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
-           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
+           [else (flat/sc (from-cache type #`(flat-named-contract '#,(syntax-e pred?) #,pred?)))])]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)
          (syntax/sc (t->sc t))]
         [(Value: v)
-         (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))) v)]
+         (flat/sc (from-cache type #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))) v)]
         [(Param: in out) 
          (parameter/sc (t->sc in) (t->sc out))]
         [(Hashtable: k v)
