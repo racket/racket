@@ -255,16 +255,16 @@
   ;;  for consumption by Optimization Coach.
   (pattern (#%plain-app op:binary-float-op n:opt-expr ...)
     #:when (maybe-exact-rational? this-syntax)
-    #:do [(log-opt-info "exact real arith")]
+    #:do [(log-opt-info "possible exact real arith")]
     #:with opt #'(op n.opt ...))
   (pattern (#%plain-app op:binary-float-comp n:opt-expr ...)
      ;; can't look at return type, since it's always bool
      #:when (andmap maybe-exact-rational? (syntax->list #'(n ...)))
-     #:do [(log-opt-info "exact real arith")]
+     #:do [(log-opt-info "possible exact real arith")]
      #:with opt #'(op n.opt ...))
   (pattern (#%plain-app op:unary-float-op n:opt-expr ...)
      #:when (maybe-exact-rational? this-syntax)
-     #:do [(log-opt-info "exact real arith")]
+     #:do [(log-opt-info "possible exact real arith")]
      #:with opt #'(op n.opt ...))
   )
 

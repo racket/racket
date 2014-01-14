@@ -1,6 +1,6 @@
 #;#;
 #<<END
-TR info: different-langs.rkt 14:0 (/ 1 2) -- exact real arith
+TR info: different-langs.rkt 14:0 (/ 1 2) -- possible exact real arith
 END
 #<<END
 1/2

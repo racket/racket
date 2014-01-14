@@ -1,9 +1,9 @@
 #;#;
 #<<END
-TR info: case-arrow.rkt 42:12 (* (- max min) x) -- exact real arith
-TR info: case-arrow.rkt 42:15 (- max min) -- exact real arith
-TR info: case-arrow.rkt 42:2 (+ min (/ (* (- max min) x) p)) -- exact real arith
-TR info: case-arrow.rkt 42:9 (/ (* (- max min) x) p) -- exact real arith
+TR info: case-arrow.rkt 42:12 (* (- max min) x) -- possible exact real arith
+TR info: case-arrow.rkt 42:15 (- max min) -- possible exact real arith
+TR info: case-arrow.rkt 42:2 (+ min (/ (* (- max min) x) p)) -- possible exact real arith
+TR info: case-arrow.rkt 42:9 (/ (* (- max min) x) p) -- possible exact real arith
 TR missed opt: case-arrow.rkt 42:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 42:15 (- max min), 42:27 x
 TR missed opt: case-arrow.rkt 42:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 42:18 max, 42:22 min
 TR missed opt: case-arrow.rkt 42:2 (+ min (/ (* (- max min) x) p)) -- all args float-arg-expr, result not Float -- caused by: 42:5 min, 42:9 (/ (* (- max min) x) p)

@@ -1,21 +1,21 @@
 #;#;
 #<<END
-TR info: dead-inf-comp.rkt 159:4 (< rat +inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 162:4 (< +inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 165:4 (< rat -inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 168:4 (< -inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 172:4 (> +inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 175:4 (> rat +inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 178:4 (> -inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 181:4 (> rat -inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 185:4 (<= rat +inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 188:4 (<= +inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 191:4 (<= rat -inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 194:4 (<= -inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 198:4 (>= +inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 201:4 (>= rat +inf.f) -- exact real arith
-TR info: dead-inf-comp.rkt 204:4 (>= -inf.f rat) -- exact real arith
-TR info: dead-inf-comp.rkt 207:4 (>= rat -inf.f) -- exact real arith
+TR info: dead-inf-comp.rkt 159:4 (< rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 162:4 (< +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 165:4 (< rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 168:4 (< -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 172:4 (> +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 175:4 (> rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 178:4 (> -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 181:4 (> rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 185:4 (<= rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 188:4 (<= +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 191:4 (<= rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 194:4 (<= -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 198:4 (>= +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 201:4 (>= rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 204:4 (>= -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 207:4 (>= rat -inf.f) -- possible exact real arith
 TR info: dead-inf-comp.rkt 212:41 displayln -- hidden parameter
 TR info: dead-inf-comp.rkt 212:41 displayln -- hidden parameter
 TR opt: dead-inf-comp.rkt 102:0 #%module-begin -- dead else branch
