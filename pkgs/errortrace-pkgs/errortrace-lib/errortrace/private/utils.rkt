@@ -8,13 +8,13 @@
 (define ((count-meta-levels phase) expr)
   (syntax-case expr ()
     [(bfs . exprs)
-     (free-identifier=? #'bfs #'begin-for-syntax phase base)
+     (and (identifier? #'bfs) (free-identifier=? #'bfs #'begin-for-syntax phase base))
      (add1 (apply max 0 (map (count-meta-levels (add1 phase)) (syntax->list #'exprs))))]
     [(ds . _)
-     (free-identifier=? #'ds #'define-syntaxes phase base)
+     (and (identifier? #'ds) (free-identifier=? #'ds #'define-syntaxes phase base))
      1]
     [(b . exprs)
-     (free-identifier=? #'b #'begin phase base)
+     (and (identifier? #'b) (free-identifier=? #'b #'begin phase base))
      (apply max 0 (map (count-meta-levels phase) (syntax->list #'exprs)))]
     [_ 0]))
 
@@ -23,7 +23,7 @@
   (syntax-shift-phase-level
    (let loop ([meta-depth meta-depth])
      (let ([e ((make-syntax-introducer)
-               #`(#%require (for-meta #,meta-depth 
+               #`(#%require (for-meta #,meta-depth
                                       errortrace/errortrace-key)))])
        (if (zero? meta-depth)
            e
