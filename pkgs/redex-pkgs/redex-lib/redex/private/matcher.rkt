@@ -621,8 +621,7 @@ See match-a-pattern.rkt for more details
 
 ;; match-pattern? : compiled-pattern exp -> boolean
 (define (match-pattern? compiled-pattern exp)
-  (let ([results ((compiled-pattern-cp compiled-pattern) exp #f)])
-    (and results #t)))
+  (and (match-pattern compiled-pattern exp) #t))
 
 ;; match-pattern : compiled-pattern exp -> (union #f (listof bindings))
 (define (match-pattern compiled-pattern exp)

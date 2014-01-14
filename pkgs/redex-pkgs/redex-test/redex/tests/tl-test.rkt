@@ -280,6 +280,9 @@
   (test (map match-bindings (redex-match grammar (a ..._1) (term (a a a))))
         '(()))
   
+  ;; make sure redex-match? does the equality check
+  (test (redex-match? empty-language (any_0 any_0) (term (1 2))) #f)
+
   (define-syntax (test-match stx)
     (syntax-case stx ()
       [(_ actual (((var val) ...) ...))
