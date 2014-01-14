@@ -11,20 +11,17 @@
          (rep type-rep filter-rep)
          (utils tc-utils)
 
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         racket/bool
-         '#%paramz
-         ;; end fixme
-
-         (for-template racket/base racket/bool '#%paramz))
+         (for-label racket/base racket/bool '#%paramz))
 
 
 (import tc-expr^)
 (export tc-app-special^)
 
+(define-literal-set literals #:for-label
+  (extend-parameterization false? not call-with-values list))
+
 (define-tc/app-syntax-class (tc/app-special expected)
-  #:literals (#%plain-app #%plain-lambda extend-parameterization quote
-              false? not call-with-values list)
+  #:literal-sets (kernel-literals literals)
   ;; parameterize
   (pattern (extend-parameterization pmz args ...)
     (let loop ([args (syntax->list #'(args ...))])

@@ -10,15 +10,17 @@
          (rep type-rep)
          (utils tc-utils)
 
-         (for-template racket/base))
+         (for-label racket/base))
 
 
 (import tc-expr^)
 (export tc-app-objects^)
 
+(define-literal-set literals #:for-label (list cons))
+
 
 (define-tc/app-syntax-class (tc/app-objects expected)
-  #:literals (#%plain-app list cons quote)
+  #:literal-sets (kernel-literals literals)
   (pattern (dmo b cl
             (#%plain-app list . pos-args)
             (#%plain-app list (#%plain-app cons (quote names) named-args) ...))

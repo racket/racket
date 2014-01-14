@@ -5,6 +5,7 @@
                     [simple-Un *Un])
          (rename-in (rep type-rep) [make-Base make-Base*])
          unstable/function
+         ;; For base type contracts
          (for-template racket/base racket/contract/base (types numeric-predicates)))
 
 (provide portable-fixnum? portable-index?

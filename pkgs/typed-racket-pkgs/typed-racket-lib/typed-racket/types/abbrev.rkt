@@ -17,13 +17,21 @@
          ;; Using this form so all-from-out works
          "base-abbrev.rkt" "match-expanders.rkt"
 
-         ;; for base type contracts
-         (for-template racket/base racket/contract/base
-                       racket/tcp racket/flonum racket/udp '#%place)
-         ;; for base type predicates
-         racket/pretty racket/udp
-         racket/tcp racket/flonum
-         '#%place) ;; avoid the other dependencies of `racket/place`
+         ;; for base type contracts and predicates
+         ;; use '#%place to avoid the other dependencies of `racket/place`
+         (for-template
+           racket/base
+           racket/contract/base
+           (only-in racket/pretty pretty-print-style-table?)
+           (only-in racket/udp udp?)
+           (only-in racket/tcp tcp-listener?)
+           (only-in racket/flonum flvector?)
+           (only-in '#%place place? place-channel?))
+         (only-in racket/pretty pretty-print-style-table?)
+         (only-in racket/udp udp?)
+         (only-in racket/tcp tcp-listener?)
+         (only-in racket/flonum flvector?)
+         (only-in '#%place place? place-channel?))
 
 (provide (except-out (all-defined-out) make-Base)
          (all-from-out "base-abbrev.rkt" "match-expanders.rkt"))
