@@ -66,8 +66,10 @@
           (~r (* contract-ratio total-time) #:precision 0)
           total-time)
 
+  (define shorten-source
+    (make-srcloc-shortener all-blames blame-source))
   (define (print-contract/loc c)
-    (printf "~a @ ~a\n" (blame-contract c) (blame-source c)))
+    (printf "~a @ ~a\n" (blame-contract c) (shorten-source c)))
 
   (displayln "\nBY CONTRACT\n")
   (define samples-by-contract
@@ -187,10 +189,12 @@
    module-graph-dot-file
    (printf "digraph {\n")
    (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
-   (for ([n nodes])
+   (define node-labels  (shorten-paths nodes))
+   (for ([n nodes]
+         [l node-labels])
      (printf "~a[label=\"~a\"][color=\"~a\"]\n"
              (hash-ref nodes->names n)
-             n
+             l
              (if (hash-ref nodes->typed? n #f) "green" "red")))
    (for ([(k v) (in-hash edge-samples)])
      (match-define (cons pos neg) k)

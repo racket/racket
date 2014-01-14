@@ -14,15 +14,6 @@
 ;; are conservative / best effort.
 
 
-(define (prune-module-name name)
-  (define (p n) (regexp-replace #rx"^.*/" n ""))
-  (cond [(string? name) (p name)]
-        [(path?   name) (p (path->string name))]
-        ;; submodule path
-        [(list?   name) (list 'submod
-                              (p (path->string (first name)))
-                              (second name))]))
-
 ;; A boundary is, at a high-level, a profile node (contracted function) and a
 ;; (potentially empty) set of profile edges (incoming call edges that cross the
 ;; contract boundary).
@@ -120,8 +111,9 @@
                         s)))
       (boundary contracted-function boundary-edges b time-spent)))
 
-  (with-output-to-report-file boundary-graph-dot-file
-                              (render all-boundaries contracts->keys))
+  (with-output-to-report-file
+   boundary-graph-dot-file
+   (render all-boundaries all-blames contracts->keys))
   (render-dot boundary-graph-dot-file)
   ;; print contract key
   ;; TODO find a way to add to pdf
@@ -145,26 +137,17 @@
   (define src (node-src node))
   (and src (srcloc-source src)))
 
-(define (node-location node)
+(define (node-location node shortened-srcloc)
   (define id (node-id node))
   (define src (node-src node))
   (format "~a~a~a"
           (if id (format "~a" id) "")
           (if (and id src) "\n" "")
-          (if src
-              (prune-module-name (format-source (node-src node)))
-              "")))
-
-(define (summarize-boundary b contracts->keys)
-  (format "\n[~a] @ ~a : ~ams"
-          ;; show the contract key
-          (dict-ref contracts->keys (blame-contract (boundary-blame b)))
-          (prune-module-name (blame-negative (boundary-blame b)))
-          (boundary-time b)))
+          (if src (format-source shortened-srcloc) "")))
 
 
 ;; Inspired by ../render-graphviz.rkt
-(define (render all-boundaries contracts->keys)
+(define (render all-boundaries all-blames contracts->keys)
 
   (define total-contract-time
     (max 1e-20 (for/sum ([b (in-list all-boundaries)]) (boundary-time b))))
@@ -183,6 +166,20 @@
            ([e (in-list (boundary-edges b))])
          (set-add nodes* (edge-caller e))))))
   (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
+  (define node->shortened-path
+    (make-srcloc-shortener (filter node-src nodes) ; nodes with paths only
+                           node-src))
+  (define party->shortened-path
+    (make-shortener (set-union (map blame-positive all-blames)
+                               (map blame-negative all-blames))))
+
+  (define (summarize-boundary b contracts->keys)
+    (define blame (boundary-blame b))
+    (format "\n[~a] @ ~a : ~ams"
+            ;; show the contract key
+            (dict-ref contracts->keys (blame-contract blame))
+            (party->shortened-path (blame-negative blame))
+            (boundary-time b)))
 
   (printf "digraph Profile {\n")
   (printf "splines=\"true\"\n") ; polyline kinda works too, maybe
@@ -205,7 +202,7 @@
       (define label
         (format
          "~a\n~ams~a"
-         (node-location node)
+         (node-location node (node->shortened-path node))
          (node-self node) ; raw running time (not contracts)
          ;; Display a summary of each boundary, which includes which contract
          ;; is used, the negative party and contract time spent.
