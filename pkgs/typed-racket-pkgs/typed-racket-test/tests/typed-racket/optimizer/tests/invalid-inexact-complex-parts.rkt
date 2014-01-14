@@ -1,6 +1,6 @@
 #;#;
 #<<END
-TR info: invalid-inexact-complex-parts.rkt 12:0 (real-part 1+2i) -- exact real arith
+TR info: invalid-inexact-complex-parts.rkt 12:0 (real-part 1+2i) -- possible exact real arith
 END
 #<<END
 1

@@ -1,8 +1,8 @@
 #;#;
 #<<END
-TR info: real-in-float-expr.rkt 23:0 (* (ann 3 Real) 2.3) -- exact real arith
-TR info: real-in-float-expr.rkt 30:0 (+ 2/3 3/4) -- exact real arith
-TR info: real-in-float-expr.rkt 32:0 (* (ann 2 Natural) 2.0) -- exact real arith
+TR info: real-in-float-expr.rkt 23:0 (* (ann 3 Real) 2.3) -- possible exact real arith
+TR info: real-in-float-expr.rkt 30:0 (+ 2/3 3/4) -- possible exact real arith
+TR info: real-in-float-expr.rkt 32:0 (* (ann 2 Natural) 2.0) -- possible exact real arith
 TR missed opt: real-in-float-expr.rkt 23:0 (* (ann 3 Real) 2.3) -- all args float-arg-expr, result not Float -- caused by: 23:8 3
 TR missed opt: real-in-float-expr.rkt 32:0 (* (ann 2 Natural) 2.0) -- all args float-arg-expr, result not Float -- caused by: 32:8 2
 TR opt: real-in-float-expr.rkt 28:0 (* 2 3) -- fixnum bounded expr

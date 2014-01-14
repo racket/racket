@@ -1,8 +1,8 @@
 #;#;
 #<<END
-TR info: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- exact real arith
-TR info: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- exact real arith
-TR info: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- exact real arith
+TR info: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- possible exact real arith
+TR info: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- possible exact real arith
+TR info: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- possible exact real arith
 TR missed opt: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- all args float-arg-expr, result not Float -- caused by: 22:23 2
 TR missed opt: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- all args float-arg-expr, result not Float -- caused by: 23:7 (* (ann 2 Integer) 3.1)
 TR missed opt: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- all args float-arg-expr, result not Float -- caused by: 23:15 2

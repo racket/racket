@@ -1,7 +1,7 @@
 #;#;
 #<<END
-TR info: float-complex-sin.rkt 21:13 (sin (* t 6.28)) -- exact real arith
-TR info: float-complex-sin.rkt 21:18 (* t 6.28) -- exact real arith
+TR info: float-complex-sin.rkt 21:13 (sin (* t 6.28)) -- possible exact real arith
+TR info: float-complex-sin.rkt 21:18 (* t 6.28) -- possible exact real arith
 TR missed opt: float-complex-sin.rkt 21:13 (sin (* t 6.28)) -- all args float-arg-expr, result not Float -- caused by: 21:18 (* t 6.28)
 TR missed opt: float-complex-sin.rkt 21:18 (* t 6.28) -- all args float-arg-expr, result not Float -- caused by: 21:21 t
 TR opt: float-complex-sin.rkt 21:10 (+ (sin (* t 6.28)) 0.0+0.0i) -- unboxed binary float complex

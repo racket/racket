@@ -1,15 +1,15 @@
 #;#;
 #<<END
-TR info: nested-same-kind.rkt 37:0 (* 2.0 (* 3.0 (ann 4 Integer))) -- exact real arith
-TR info: nested-same-kind.rkt 37:7 (* 3.0 (ann 4 Integer)) -- exact real arith
-TR info: nested-same-kind.rkt 38:0 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer)))) -- exact real arith
-TR info: nested-same-kind.rkt 38:14 (* 3.0 (ann 4 Integer)) -- exact real arith
-TR info: nested-same-kind.rkt 38:7 (* 2.0 (* 3.0 (ann 4 Integer))) -- exact real arith
-TR info: nested-same-kind.rkt 39:0 (* 2.0 (* 3.0 (ann 4 Integer) (ann 5 Integer))) -- exact real arith
-TR info: nested-same-kind.rkt 39:7 (* 3.0 (ann 4 Integer) (ann 5 Integer)) -- exact real arith
-TR info: nested-same-kind.rkt 40:0 (* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer))) -- exact real arith
-TR info: nested-same-kind.rkt 40:27 (* 3.0 (ann 4 Integer)) -- exact real arith
-TR info: nested-same-kind.rkt 40:3 (* 3.0 (ann 4 Integer)) -- exact real arith
+TR info: nested-same-kind.rkt 37:0 (* 2.0 (* 3.0 (ann 4 Integer))) -- possible exact real arith
+TR info: nested-same-kind.rkt 37:7 (* 3.0 (ann 4 Integer)) -- possible exact real arith
+TR info: nested-same-kind.rkt 38:0 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer)))) -- possible exact real arith
+TR info: nested-same-kind.rkt 38:14 (* 3.0 (ann 4 Integer)) -- possible exact real arith
+TR info: nested-same-kind.rkt 38:7 (* 2.0 (* 3.0 (ann 4 Integer))) -- possible exact real arith
+TR info: nested-same-kind.rkt 39:0 (* 2.0 (* 3.0 (ann 4 Integer) (ann 5 Integer))) -- possible exact real arith
+TR info: nested-same-kind.rkt 39:7 (* 3.0 (ann 4 Integer) (ann 5 Integer)) -- possible exact real arith
+TR info: nested-same-kind.rkt 40:0 (* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer))) -- possible exact real arith
+TR info: nested-same-kind.rkt 40:27 (* 3.0 (ann 4 Integer)) -- possible exact real arith
+TR info: nested-same-kind.rkt 40:3 (* 3.0 (ann 4 Integer)) -- possible exact real arith
 TR missed opt: nested-same-kind.rkt 37:0 (* 2.0 (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 37:7 (* 3.0 (ann 4 Integer))
 TR missed opt: nested-same-kind.rkt 37:7 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 37:19 4
 TR missed opt: nested-same-kind.rkt 38:0 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer)))) -- all args float-arg-expr, result not Float -- caused by: 38:7 (* 2.0 (* 3.0 (ann 4 Integer)))
