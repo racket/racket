@@ -8,3 +8,4 @@
 @include-section["modresolve.scrbl"]
 @include-section["modcollapse.scrbl"]
 @include-section["moddep.scrbl"]
+@include-section["wrap-modbeg.scrbl"]
