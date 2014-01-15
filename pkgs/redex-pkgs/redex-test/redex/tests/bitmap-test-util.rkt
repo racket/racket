@@ -70,22 +70,21 @@
 (define (set-fonts/call thunk)
   (case (system-type)
     [(unix)
-     (let ([rewrite-style 
-            (λ (s)
-              (let loop ([s s])
-                (cond
-                  [(pair? s) (cons (loop (car s)) (loop (cdr s)))]
-                  [(eq? s 'roman) (verify-face "DejaVu Serif")]
-                  [(eq? s 'swiss) (verify-face "DejaVu Sans")]
-                  [else s])))])
-       (parameterize ([label-style (rewrite-style (label-style))]
-                      [literal-style (rewrite-style (literal-style))]
-                      [metafunction-style (rewrite-style (metafunction-style))]
-                      [non-terminal-style (rewrite-style (non-terminal-style))]
-                      [non-terminal-subscript-style (rewrite-style (non-terminal-subscript-style))]
-                      [non-terminal-superscript-style (rewrite-style (non-terminal-superscript-style))]
-                      [default-style (rewrite-style (default-style))])
-         (thunk)))]
+     (define (rewrite-style s)
+       (let loop ([s s])
+         (cond
+           [(pair? s) (cons (loop (car s)) (loop (cdr s)))]
+           [(eq? s 'roman) (verify-face "DejaVu Serif")]
+           [(eq? s 'swiss) (verify-face "DejaVu Sans")]
+           [else s])))
+     (parameterize ([label-style (rewrite-style (label-style))]
+                    [literal-style (rewrite-style (literal-style))]
+                    [metafunction-style (rewrite-style (metafunction-style))]
+                    [non-terminal-style (rewrite-style (non-terminal-style))]
+                    [non-terminal-subscript-style (rewrite-style (non-terminal-subscript-style))]
+                    [non-terminal-superscript-style (rewrite-style (non-terminal-superscript-style))]
+                    [default-style (rewrite-style (default-style))])
+       (thunk))]
     [else
      (thunk)]))
 
@@ -192,40 +191,25 @@
   (values diff-bitmap number-of-different-pixels))
 
 (define (make-failed-panel line-number filename old-bitmap new-bitmap)
-  (define diff-bitmap 'unk)
-  (define number-of-different-pixels #f)
+  (define-values (diff-bitmap number-of-different-pixels) (compute-diffs old-bitmap new-bitmap))
   (define f (new vertical-panel% [parent (get-test-result-single-panel)]))
   (define msg (new message% [label (format "line ~a" line-number)] [parent f]))
   (define hp (new horizontal-panel% [parent f]))
   (define vp1 (new vertical-panel% [parent hp]))
   (define vp2 (new vertical-panel% [parent hp]))
-  (define computing/differences-msg (new message% [label ""] [auto-resize #t] [parent f]))
+  (define computing/differences-msg 
+    (new message% [label (format "~a pixels different" number-of-different-pixels)] [parent f]))
   (define chk (new check-box% 
                    [label "Show diff"]
+                   [value #t]
                    [parent f]
-                   [callback
-                    (λ (_1 _2)
-                      (define (update-check)
-                        (cond
-                          [(send chk get-value)
-                           (send right-hand set-label (force diff-bitmap))]
-                          [else
-                           (send right-hand set-label new-bitmap)]))
-                      (cond
-                        [(eq? diff-bitmap 'unk)
-                         (send chk enable #f)
-                         (send computing/differences-msg set-label "Computing diff ...")
-                         (thread
-                          (λ ()
-                            (define-values (_diff-bitmap number-of-different-pixels) (compute-diffs old-bitmap new-bitmap))
-                            (set! diff-bitmap _diff-bitmap)
-                            (queue-callback
-                             (λ ()
-                               (send computing/differences-msg set-label (format "~a pixels different" number-of-different-pixels))
-                               (send chk enable #t)
-                               (update-check)))))]
-                        [else
-                         (update-check)]))]))
+                   [callback (λ (_1 _2) (chk-callback))]))
+  (define (chk-callback)
+    (cond
+      [(send chk get-value)
+       (send right-hand set-label diff-bitmap)]
+      [else
+       (send right-hand set-label new-bitmap)]))
   (define btn (new button%
                    [parent f]
                    [label "Save"]
@@ -234,16 +218,18 @@
                       (send new-bitmap save-file filename 'png))]))
   (define left-label (new message% 
                           [parent vp1]
-                          [label (format "Old ~ax~a" (send old-bitmap get-width) (send old-bitmap get-height))]))
+                          [label (format "Old ~ax~a" 
+                                         (send old-bitmap get-width)
+                                         (send old-bitmap get-height))]))
   (define left-hand (new message%
                          [parent vp1]
                          [label old-bitmap]))
   (define right-label (new message% 
                            [parent vp2]
-                           [label (format "New ~ax~a" (send new-bitmap get-width) (send new-bitmap get-height))]))
+                           [label (format "New ~ax~a"
+                                          (send new-bitmap get-width)
+                                          (send new-bitmap get-height))]))
   (define right-hand (new message%
                           [parent vp2]
-                          [label new-bitmap]))
-  (send left-hand set-label old-bitmap)
-  (send right-hand set-label new-bitmap)
+                          [label diff-bitmap]))
   f)
