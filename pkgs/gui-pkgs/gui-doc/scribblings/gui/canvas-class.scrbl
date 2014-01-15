@@ -212,6 +212,9 @@ The @racket[h-value] and @racket[v-value] arguments specify the initial
  @racket[0.0] value initializes the scrollbar to its left/top, while a
  @racket[1.0] value initializes the scrollbar to its right/bottom.
 
+It is possible to adjust the virtual sizes by calling this function again.
+
+
 See also
 @method[canvas% on-scroll] and
 @method[canvas% get-virtual-size].
