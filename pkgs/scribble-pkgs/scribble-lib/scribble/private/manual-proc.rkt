@@ -479,7 +479,7 @@
                                 (list flow-spacer)
                                 (list flow-spacer flow-spacer
                                       flow-spacer flow-spacer))]
-                   [one-ok? (and (not (eq? mode 'new)) (tagged+arg-width . < . 60))])
+                   [one-ok? (and (not (eq? mode 'new)) (tagged+arg-width . < . (- max-proto-width 5)))])
                (list
                 (make-table
                  "prototype"
@@ -1030,6 +1030,7 @@
 
 (define (*defthing kind link? stx-ids names form? result-contracts content-thunk
                    [result-values (map (lambda (x) #f) result-contracts)])
+  (define max-proto-width (current-display-width))
   (make-box-splice
    (cons
     (make-blockquote
@@ -1052,77 +1053,80 @@
                   (if (block? result-contract)
                       result-contract
                       (make-omitable-paragraph (list result-contract)))]
-                 [total-width (+ (string-length (format "~a" name))
-                                 3
-                                 (block-width contract-block)
+                 [name+contract-width (+ (string-length (format "~a" name))
+                                         3
+                                         (block-width contract-block))]
+                 [total-width (+ name+contract-width
                                  (if result-block
                                      (+ (block-width result-block) 3)
-                                     0))])
+                                     0))]
+                 [thing-id (let ([target-maker
+                                  (and link?
+                                       ((if form? id-to-form-target-maker id-to-target-maker)
+                                        stx-id #t))])
+                             (define-values (content ref-content) 
+                               (if link?
+                                   (definition-site name stx-id form?)
+                                   (let ([s (make-just-context name stx-id)])
+                                     (values (to-element #:defn? #t s)
+                                             (to-element s)))))
+                             (if target-maker
+                                 (target-maker
+                                  content
+                                  (lambda (tag)
+                                    (make-toc-target2-element
+                                     #f
+                                     (make-index-element
+                                      #f
+                                      content
+                                      tag
+                                      (list (datum-intern-literal (symbol->string name)))
+                                      (list ref-content)
+                                      (with-exporting-libraries
+                                       (lambda (libs) (make-thing-index-desc name libs))))
+                                     tag
+                                     ref-content)))
+                                 content))]
+                 [contract-on-first-line? (name+contract-width . < . max-proto-width)]
+                 [single-line? (and contract-on-first-line?
+                                    (total-width . < . max-proto-width)
+                                    (not (table? result-value)))])
             (append
              (list
               (list
                ((if (zero? i) (add-background-label (or kind "value")) values)
-                (make-flow
-                 (make-table-if-necessary
-                  "argcontract"
-                  (append
-                   (list
-                    (append
-                     (list
-                      (make-flow
-                       (list
-                        (make-omitable-paragraph
-                         (list
-                          (let ([target-maker
-                                 (and link?
-                                      ((if form? id-to-form-target-maker id-to-target-maker)
-                                       stx-id #t))])
-                            (define-values (content ref-content) 
-                              (if link?
-                                  (definition-site name stx-id form?)
-                                  (let ([s (make-just-context name stx-id)])
-                                    (values (to-element #:defn? #t s)
-                                            (to-element s)))))
-                            (if target-maker
-                                (target-maker
-                                 content
-                                 (lambda (tag)
-                                   (make-toc-target2-element
-                                    #f
-                                    (make-index-element
-                                     #f
-                                     content
-                                     tag
-                                     (list (datum-intern-literal (symbol->string name)))
-                                     (list ref-content)
-                                     (with-exporting-libraries
-                                      (lambda (libs) (make-thing-index-desc name libs))))
-                                    tag
-                                    ref-content)))
-                                content))))))
-                      (make-flow
-                       (list
-                        (make-omitable-paragraph
-                         (list
-                          spacer ":" spacer))))
-                      (make-flow (list contract-block)))
-                     (if (and result-value
-                              (and (total-width . < . 60)
-                                   (not (table? result-value))))
-                         (list
-                          (to-flow (make-element #f (list spacer "=" spacer)))
-                          (make-flow (list result-block)))
-                         null)))))))))
-             (if (and result-value
-                      (or (total-width . >= . 60)
-                          (table? result-value)))
-                 (list (list (list (make-table
-                                    "argcontract"
-                                    (list (list
-                                           (to-flow (make-element #f (list spacer "=" spacer)))
-                                           (make-flow (list result-block))))))))
-                 null))))))))
-    (content-thunk))))
+                (make-table-if-necessary
+                 "argcontract"
+                 (append
+                  (list
+                   (append
+                    (list (list (make-omitable-paragraph
+                                 (list thing-id))))
+                    (if contract-on-first-line?
+                        (list
+                         (to-flow (list spacer ":" spacer))
+                         (list contract-block))
+                        null)
+                    (if (and result-block single-line?)
+                        (list
+                         (to-flow (list spacer "=" spacer))
+                         (list result-block))
+                        null))))))))
+             (if contract-on-first-line?
+                 null
+                 (list (list (make-table-if-necessary
+                              "argcontract"
+                              (list 
+                               (list (to-flow (list spacer ":" spacer))
+                                     (list contract-block)))))))
+             (if (or single-line? (not result-block))
+                 null
+                 (list (list (make-table-if-necessary
+                              "argcontract"
+                              (list (list
+                                     (to-flow (list spacer "=" spacer))
+                                     (list result-block))))))))))))))
+     (content-thunk))))
 
 (define (defthing/proc kind id contract descs)
   (*defthing kind #t (list id) (list (syntax-e id)) #f (list contract)
