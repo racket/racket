@@ -71,6 +71,34 @@
       [else sc])]
 
 
+    ;; case->/sc cases
+    [(case->/sc: arrs ...)
+     (match arrs
+       [(list (arr/sc: args #f results) ...) (=> fail)
+        (unless (equal? (set-count (apply set results)) 1)
+          (fail))
+        (define result (first results))
+        (define sorted-args (sort args (λ (l1 l2) (< (length l1) (length l2)))))
+        (define shortest-args (first sorted-args))
+        (define longest-args (last sorted-args))
+        (unless (equal? (map length sorted-args)
+                        (range (length shortest-args)
+                               (add1 (length longest-args))))
+          (fail))
+        (unless (for/and ([args (in-list sorted-args)])
+                  (equal? args (take longest-args (length args))))
+          (fail))
+        ;; All the checks passed
+        (function/sc
+          (take longest-args (length shortest-args))
+          (drop longest-args (length shortest-args))
+          empty
+          empty
+          #f
+          result)]
+       [else sc])]
+
+
 
     [else sc]))
 
