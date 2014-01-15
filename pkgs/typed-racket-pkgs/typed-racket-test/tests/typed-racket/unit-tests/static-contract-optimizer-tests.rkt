@@ -2,7 +2,7 @@
 
 (require "test-utils.rkt"
          racket/list racket/format rackunit
-         (static-contracts instantiate optimize combinators)
+         (static-contracts instantiate optimize combinators structures)
          (for-syntax racket/base syntax/parse))
 
 (provide tests)
@@ -36,6 +36,10 @@
           (lambda ()
             (unless (equal? opt expected)
               (fail-check))))))))
+
+;; Ids with unique identity so that equals works
+(define foo-id #'foo)
+(define bar-id #'bar)
 
 (define tests
   (test-suite "Static Contract Optimizer Tests"
@@ -247,5 +251,24 @@
       #:pos (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty)
       #:neg (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty))
 
+    (check-optimize
+      (recursive-sc (list foo-id bar-id)
+                    (list (listof/sc (recursive-sc-use foo-id))
+                          (listof/sc (recursive-sc-use bar-id)))
+                    (recursive-sc-use foo-id))
+      #:pos (recursive-sc (list foo-id)
+                          (list (listof/sc (recursive-sc-use foo-id)))
+                          (recursive-sc-use foo-id))
+      #:neg (recursive-sc (list foo-id)
+                          (list (listof/sc (recursive-sc-use foo-id)))
+                          (recursive-sc-use foo-id)))
+
+    (check-optimize
+      (recursive-sc (list foo-id bar-id)
+                    (list (listof/sc any/sc )
+                          (listof/sc any/sc))
+                    (recursive-sc-use foo-id))
+      #:pos any/sc
+      #:neg list?/sc)
 
     ))

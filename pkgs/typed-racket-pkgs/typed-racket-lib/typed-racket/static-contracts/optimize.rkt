@@ -130,6 +130,18 @@
             (dict-set! new-table id #t))))
       (loop new-table)))
 
+  ;; Determine if the recursive name is referenced in the static contract
+  (define (unused? new-name sc)
+    (let/ec exit
+      (define (recur sc variance)
+        (match sc
+          [(recursive-sc-use (== new-name free-identifier=?))
+           (exit #f)]
+          [else
+            (sc-traverse sc recur)]))
+      (recur sc 'covariant)
+      #t))
+
   (define (trim sc variance)
     (match sc
       [(recursive-sc names values body)
@@ -143,9 +155,16 @@
        (define new-names (map first new-name-values))
        (define new-values (map (λ (v) (trim v 'covariant))
                                (map second new-name-values)))
-       (if (empty? new-names)
-           new-body
-           (recursive-sc new-names new-values new-body))]
+       (cond
+         [(empty? new-names) new-body]
+         [(and
+            (equal? (length new-names) 1)
+            (recursive-sc-use? new-body)
+            (free-identifier=? (first new-names) (recursive-sc-use-name new-body))
+            (unused? (first new-names) (first new-values)))
+          (first new-values)]
+         [else
+          (recursive-sc new-names new-values new-body)])]
       [else
         (sc-map sc trim)]))
   (trim sc 'covariant))
