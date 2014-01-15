@@ -21,8 +21,7 @@
  (prefix-in c: racket/contract)
  (contract-req)
  (for-syntax racket/base syntax/parse racket/syntax)
- (for-template racket/base racket/contract (utils any-wrap)
-               (prefix-in t: (types numeric-predicates))))
+ (for-template racket/base racket/contract (utils any-wrap)))
 
 (provide
   (c:contract-out
@@ -428,61 +427,74 @@
            (case->/sc (map (f #t) arrs)))])]
     [_ (int-err "not a function" f)]))
 
-(define-syntax-rule (numeric/sc name body)
- (flat/sc #'(flat-named-contract 'name body) 'name))
 (module predicates racket/base
   (provide nonnegative? nonpositive?)
   (define nonnegative? (lambda (x) (>= x 0)))
   (define nonpositive? (lambda (x) (<= x 0))))
-(require (for-template 'predicates))
 
-(define positive-byte/sc (numeric/sc Positive-Byte (and/c byte? positive?)))
-(define byte/sc (numeric/sc Byte byte?))
-(define positive-index/sc (numeric/sc Positive-Index (and/c t:index? positive?)))
-(define index/sc (numeric/sc Index t:index?))
-(define positive-fixnum/sc (numeric/sc Positive-Fixnum (and/c fixnum? positive?)))
-(define nonnegative-fixnum/sc (numeric/sc Nonnegative-Fixnum (and/c fixnum? nonnegative?)))
-(define nonpositive-fixnum/sc (numeric/sc Nonpositive-Fixnum (and/c fixnum? nonpositive?)))
-(define fixnum/sc (numeric/sc Fixnum fixnum?))
-(define positive-integer/sc (numeric/sc Positive-Integer (and/c exact-integer? positive?)))
-(define natural/sc (numeric/sc Natural exact-nonnegative-integer?))
-(define negative-integer/sc (numeric/sc Negative-Integer (and/c exact-integer? negative?)))
-(define nonpositive-integer/sc (numeric/sc Nonpositive-Integer (and/c exact-integer? nonpostive?)))
-(define integer/sc (numeric/sc Integer exact-integer?))
-(define positive-rational/sc (numeric/sc Positive-Rational (and/c t:exact-rational? positive?)))
-(define nonnegative-rational/sc (numeric/sc Nonnegative-Rational (and/c t:exact-rational? nonnegative?)))
-(define negative-rational/sc (numeric/sc Negative-Rational (and/c t:exact-rational? negative?)))
-(define nonpositive-rational/sc (numeric/sc Nonpositive-Rational (and/c t:exact-rational? nonpositive?)))
-(define rational/sc (numeric/sc Rational t:exact-rational?))
-(define flonum-zero/sc (numeric/sc Float-Zero (and/c flonum? zero?)))
-(define nonnegative-flonum/sc (numeric/sc Nonnegative-Float (and/c flonum? nonnegative?)))
-(define nonpositive-flonum/sc (numeric/sc Nonpositive-Float (and/c flonum? nonpositive?)))
-(define flonum/sc (numeric/sc Float flonum?))
-(define single-flonum-zero/sc (numeric/sc Single-Flonum-Zero (and/c single-flonum? zero?)))
-(define inexact-real-zero/sc (numeric/sc Inexact-Real-Zero (and/c inexact-real? zero?)))
-(define positive-inexact-real/sc (numeric/sc Positive-Inexact-Real (and/c inexact-real? positive?)))
-(define nonnegative-single-flonum/sc (numeric/sc Nonnegative-Single-Flonum (and/c single-flonum? nonnegative?)))
-(define nonnegative-inexact-real/sc (numeric/sc Nonnegative-Inexact-Real (and/c inexact-real? nonpositive?)))
-(define negative-inexact-real/sc (numeric/sc Negative-Inexact-Real (and/c inexact-real? negative?)))
-(define nonpositive-single-flonum/sc (numeric/sc Nonpositive-Single-Flonum (and/c single-flonum? nonnegative?)))
-(define nonpositive-inexact-real/sc (numeric/sc Nonpositive-Inexact-Real (and/c inexact-real? nonpositive?)))
-(define single-flonum/sc (numeric/sc Single-Flonum single-flonum?))
-(define inexact-real/sc (numeric/sc Inexact-Real inexact-real?))
-(define real-zero/sc (numeric/sc Real-Zero (and/c real? zero?)))
-(define positive-real/sc (numeric/sc Positive-Real (and/c real? positive?)))
-(define nonnegative-real/sc (numeric/sc Nonnegative-Real (and/c real? nonnegative?)))
-(define negative-real/sc (numeric/sc Negative-Real (and/c real? negative?)))
-(define nonpositive-real/sc (numeric/sc Nonpositive-Real (and/c real? nonpositive?)))
-(define real/sc (numeric/sc Real real?))
-(define exact-number/sc (numeric/sc Exact-Number (and/c number? exact?)))
-(define inexact-complex/sc
-  (numeric/sc Inexact-Complex
-               (and/c number?
-                 (lambda (x)
-                   (and (inexact-real? (imag-part x))
-                        (inexact-real? (real-part x)))))))
-(define number/sc (numeric/sc Number number?))
+(module numeric-contracts racket/base
+  (require
+    "../utils/utils.rkt"
+    (static-contracts combinators)
+    (for-template
+      racket/base
+      racket/contract
+      (submod ".." predicates)
+      (prefix-in t: (types numeric-predicates))))
+  (provide (all-defined-out))
 
+  (define-syntax-rule (numeric/sc name body)
+    (flat/sc #'(flat-named-contract 'name body) 'name))
+
+  (define positive-byte/sc (numeric/sc Positive-Byte (and/c byte? positive?)))
+  (define byte/sc (numeric/sc Byte byte?))
+  (define positive-index/sc (numeric/sc Positive-Index (and/c t:index? positive?)))
+  (define index/sc (numeric/sc Index t:index?))
+  (define positive-fixnum/sc (numeric/sc Positive-Fixnum (and/c fixnum? positive?)))
+  (define nonnegative-fixnum/sc (numeric/sc Nonnegative-Fixnum (and/c fixnum? nonnegative?)))
+  (define nonpositive-fixnum/sc (numeric/sc Nonpositive-Fixnum (and/c fixnum? nonpositive?)))
+  (define fixnum/sc (numeric/sc Fixnum fixnum?))
+  (define positive-integer/sc (numeric/sc Positive-Integer (and/c exact-integer? positive?)))
+  (define natural/sc (numeric/sc Natural exact-nonnegative-integer?))
+  (define negative-integer/sc (numeric/sc Negative-Integer (and/c exact-integer? negative?)))
+  (define nonpositive-integer/sc (numeric/sc Nonpositive-Integer (and/c exact-integer? nonpostive?)))
+  (define integer/sc (numeric/sc Integer exact-integer?))
+  (define positive-rational/sc (numeric/sc Positive-Rational (and/c t:exact-rational? positive?)))
+  (define nonnegative-rational/sc (numeric/sc Nonnegative-Rational (and/c t:exact-rational? nonnegative?)))
+  (define negative-rational/sc (numeric/sc Negative-Rational (and/c t:exact-rational? negative?)))
+  (define nonpositive-rational/sc (numeric/sc Nonpositive-Rational (and/c t:exact-rational? nonpositive?)))
+  (define rational/sc (numeric/sc Rational t:exact-rational?))
+  (define flonum-zero/sc (numeric/sc Float-Zero (and/c flonum? zero?)))
+  (define nonnegative-flonum/sc (numeric/sc Nonnegative-Float (and/c flonum? nonnegative?)))
+  (define nonpositive-flonum/sc (numeric/sc Nonpositive-Float (and/c flonum? nonpositive?)))
+  (define flonum/sc (numeric/sc Float flonum?))
+  (define single-flonum-zero/sc (numeric/sc Single-Flonum-Zero (and/c single-flonum? zero?)))
+  (define inexact-real-zero/sc (numeric/sc Inexact-Real-Zero (and/c inexact-real? zero?)))
+  (define positive-inexact-real/sc (numeric/sc Positive-Inexact-Real (and/c inexact-real? positive?)))
+  (define nonnegative-single-flonum/sc (numeric/sc Nonnegative-Single-Flonum (and/c single-flonum? nonnegative?)))
+  (define nonnegative-inexact-real/sc (numeric/sc Nonnegative-Inexact-Real (and/c inexact-real? nonpositive?)))
+  (define negative-inexact-real/sc (numeric/sc Negative-Inexact-Real (and/c inexact-real? negative?)))
+  (define nonpositive-single-flonum/sc (numeric/sc Nonpositive-Single-Flonum (and/c single-flonum? nonnegative?)))
+  (define nonpositive-inexact-real/sc (numeric/sc Nonpositive-Inexact-Real (and/c inexact-real? nonpositive?)))
+  (define single-flonum/sc (numeric/sc Single-Flonum single-flonum?))
+  (define inexact-real/sc (numeric/sc Inexact-Real inexact-real?))
+  (define real-zero/sc (numeric/sc Real-Zero (and/c real? zero?)))
+  (define positive-real/sc (numeric/sc Positive-Real (and/c real? positive?)))
+  (define nonnegative-real/sc (numeric/sc Nonnegative-Real (and/c real? nonnegative?)))
+  (define negative-real/sc (numeric/sc Negative-Real (and/c real? negative?)))
+  (define nonpositive-real/sc (numeric/sc Nonpositive-Real (and/c real? nonpositive?)))
+  (define real/sc (numeric/sc Real real?))
+  (define exact-number/sc (numeric/sc Exact-Number (and/c number? exact?)))
+  (define inexact-complex/sc
+    (numeric/sc Inexact-Complex
+                 (and/c number?
+                   (lambda (x)
+                     (and (inexact-real? (imag-part x))
+                          (inexact-real? (real-part x)))))))
+  (define number/sc (numeric/sc Number number?))
+
+  )
+(require 'numeric-contracts)
 
 (define (numeric-type->static-contract type)
   (match type
