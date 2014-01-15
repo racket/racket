@@ -147,8 +147,10 @@
                  [res-term-stx #`(#,jf-id #,@args-stx)]
                  [property #`(bind-prop
                                (λ (bindings)
-                                 (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                           #,property)))])
+                                 #,(bind-pattern-names 'redex-check
+                                                       #'(names/ellipses ...)
+                                                       #'((lookup-binding bindings 'names) ...)
+                                                       property)))])
                 (quasisyntax/loc orig-stx
                   (let ([term-match (λ (generated)
                                       (cond [(test-match #,lang res-term-stx generated) => values]
@@ -183,9 +185,12 @@
                  [show (show-message orig-stx)]
                  [property #`(bind-prop
                                (λ (bindings)
-                                 (term-let ([lhs-names/ellipses (lookup-binding bindings 'lhs-names)] ...
-                                            [rhs-names/ellipses (lookup-binding bindings 'rhs-names)] ...)
-                                           #,property)))])
+                                 #,(bind-pattern-names 'redex-check
+                                                       #'(lhs-names/ellipses ... 
+                                                          rhs-names/ellipses ...)
+                                                       #'((lookup-binding bindings 'lhs-names) ...
+                                                          (lookup-binding bindings 'rhs-names) ...)
+                                                       property)))])
                 (quasisyntax/loc orig-stx
                   (let ([term-match (λ (generated)
                                       (cond [(test-match #,lang res-term-stx generated) => values]
@@ -214,8 +219,10 @@
       (parse-redex-check-kw-args kw-args orig-stx form)) 
     (with-syntax ([property #`(bind-prop
                                (λ (bindings)
-                                 (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                                           #,property)))])
+                                 #,(bind-pattern-names 'redex-check
+                                                       #'(name/ellipses ...)
+                                                       #'((lookup-binding bindings 'name) ...)
+                                                       property)))])
       (quasisyntax/loc orig-stx
         (let ([att #,attempts-stx]
               [ret #,retries-stx]

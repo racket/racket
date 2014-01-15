@@ -168,7 +168,9 @@
             (judgment-form-id? #'jf-name))
        (begin
          (unless (not (memq 'O (judgment-form-mode (syntax-local-value #'jf-name))))
-           (raise-syntax-error 'term "judgment forms with output mode (\"O\") positions disallowed" arg-stx stx))
+           (raise-syntax-error 'term 
+                               "judgment forms with output mode (\"O\") positions disallowed"
+                               arg-stx stx))
          (rewrite-application #'jf-name (syntax/loc stx (arg ...)) depth))]
       [f
        (and (identifier? (syntax f))
@@ -255,7 +257,9 @@
       (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
       (when m
         (unless (memq (string->symbol (list-ref m 1)) (append pattern-symbols lang-nts))
-          (raise-syntax-error 'term "before underscore must be either a non-terminal or a built-in pattern" arg-stx stx)))))
+          (raise-syntax-error 'term 
+                              "before underscore must be either a non-terminal or a built-in pattern"
+                              arg-stx stx)))))
   
   (values
    (with-syntax ([rewritten (rewrite arg-stx)])
@@ -374,40 +378,46 @@
 (define-syntax (term-let/error-name stx)
   (syntax-case stx ()
     [(_ error-name ([x1 rhs1] [x rhs] ...) body1 body2 ...)
-     (let-values ([(orig-names new-names depths new-x1)
-                   (let loop ([stx #'x1] [depth 0])
-                     (define ((combine orig-names new-names depths new-pat)
-                              orig-names* new-names* depths* new-pat*)
-                       (values (append orig-names orig-names*)
-                               (append new-names new-names*)
-                               (append depths depths*)
-                               (cons new-pat new-pat*)))
-                     (syntax-case stx (...)
-                       [x 
-                        (and (identifier? #'x)
-                             (not (free-identifier=? (quote-syntax ...) #'x)))
-                        (let ([new-name (datum->syntax #'here (syntax-e #'x) #'x #'x)])
-                          (values (list #'x)
-                                  (list new-name)
-                                  (list depth)
-                                  new-name))]
-                       [(x (... ...) . xs)
-                        (let-values ([(orig-names new-names depths new-pat)
-                                      (call-with-values
-                                       (λ () (loop #'xs depth))
-                                       (call-with-values
-                                        (λ () (loop #'x (add1 depth)))
-                                        combine))])
-                          (values orig-names new-names depths 
-                                  (list* (car new-pat) #'(... ...) (cdr new-pat))))]
-                       [(x . xs)
-                        (call-with-values
-                         (λ () (loop #'xs depth))
-                         (call-with-values
-                          (λ () (loop #'x depth))
-                          combine))]
-                       [_
-                        (values '() '() '() stx)]))])
+     (let ()
+       (unless (identifier? #'error-name)
+         (raise-syntax-error 'term-let/error-name 
+                             "expected an identifier as the first argument"
+                             stx
+                             #'error-name))
+       (define-values (orig-names new-names depths new-x1)
+         (let loop ([stx #'x1] [depth 0])
+           (define ((combine orig-names new-names depths new-pat)
+                    orig-names* new-names* depths* new-pat*)
+             (values (append orig-names orig-names*)
+                     (append new-names new-names*)
+                     (append depths depths*)
+                     (cons new-pat new-pat*)))
+           (syntax-case stx (...)
+             [x 
+              (and (identifier? #'x)
+                   (not (free-identifier=? (quote-syntax ...) #'x)))
+              (let ([new-name (datum->syntax #'here (syntax-e #'x) #'x #'x)])
+                (values (list #'x)
+                        (list new-name)
+                        (list depth)
+                        new-name))]
+             [(x (... ...) . xs)
+              (let-values ([(orig-names new-names depths new-pat)
+                            (call-with-values
+                             (λ () (loop #'xs depth))
+                             (call-with-values
+                              (λ () (loop #'x (add1 depth)))
+                              combine))])
+                (values orig-names new-names depths 
+                        (list* (car new-pat) #'(... ...) (cdr new-pat))))]
+             [(x . xs)
+              (call-with-values
+               (λ () (loop #'xs depth))
+               (call-with-values
+                (λ () (loop #'x depth))
+                combine))]
+             [_
+              (values '() '() '() stx)])))
        (with-syntax ([(orig-names ...) orig-names]
                      [(new-names ...) new-names]
                      [(depths ...) depths]

@@ -154,8 +154,10 @@
                  (λ (bindings)
                    (let ([x (lookup-binding bindings 'names)] ...)
                      (and binding-constraints ...
-                          (term-let ([names/ellipses x] ...) 
-                                    #,rest-body)))))))))]
+                          #,(bind-pattern-names orig-name
+                                                #'(names/ellipses ...)
+                                                #'(x ...)
+                                                rest-body)))))))))]
        [((-side-condition s ...) y ...)
         (side-condition-keyword? #'-side-condition)
         (if side-condition-unquoted?
@@ -239,8 +241,10 @@
                  (λ (bindings #,(if jf-results-id jf-results-id '_ignored))
                    (let ([temp (lookup-binding bindings 'output-name)] ...)
                      (and binding-constraint ...
-                          (term-let ([output-name/ellipsis temp] ...)
-                                    #,rest-body))))))))]))))
+                          #,(bind-pattern-names orig-name
+                                                #'(output-name/ellipsis ...)
+                                                #'(temp ...)
+                                                rest-body))))))))]))))
 
 (define (judgment-form-bind-withs/proc lang output-pattern output under-ellipsis? old-maps do-something)
   (let ([compiled-pattern (compile-pattern lang output-pattern #t)])
@@ -816,8 +820,10 @@
                        compiled-lhs
                        input
                        (λ (bnds)
-                         (term-let ([names/ellipses (lookup-binding bnds 'names)] ...)
-                                   #,body))
+                         #,(bind-pattern-names 'judgment-form
+                                               #'(names/ellipses ...)
+                                               #'((lookup-binding bnds 'names) ...)
+                                               body))
                        #,(if output-contracts
                              #`(λ (output)
                                  (check-judgment-form-contract '#,name output compiled-output-ctcs 'O '#,mode))

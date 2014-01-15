@@ -14,7 +14,8 @@
            (rename-out [binds? id-binds?])
            raise-ellipsis-depth-error
            make-language-id
-           language-id-nts)
+           language-id-nts
+           bind-pattern-names)
   
   (provide (struct-out id/depth))
   
@@ -58,6 +59,11 @@
 
     ;; hash[sym -o> (listof stx)]
     (define var-locs-table (make-hash))
+    
+    ;; hash[sym -o> sym]
+    ;; tells the original names for any given repeat to be replaced after
+    ;; normalization and checking has finished
+    (define original-repeat-names (make-hash))
     
     (define (record-binder pat-stx under under-mismatch-ellipsis)
       (define pat-sym (syntax->datum pat-stx))
@@ -288,24 +294,29 @@
                                           orig-stx
                                           (cadr terms)
                                           (list (caddr terms))))
-                    (define ellipsis-sym (syntax-e (cadr terms)))
-                    (define ellipsis-pre-str (symbol->string ellipsis-sym))
+                    (define ellipsis-pre-sym (syntax-e (cadr terms)))
+                    (define ellipsis-pre-str (symbol->string ellipsis-pre-sym))
                     (define mismatch? (regexp-match? #rx"^[.][.][.]_!_" ellipsis-pre-str))
-                    (define ellipsis-str (cond
-                                           [mismatch?
-                                            (set! ellipsis-number (+ ellipsis-number 1))
-                                            (format "..._r~a" ellipsis-number)]
-                                           [(regexp-match? #rx"^[.][.][.]_r" ellipsis-pre-str)
-                                            (string-append (substring ellipsis-str 0 4)
-                                                           "r"
-                                                           (substring ellipsis-str 
-                                                                      4
-                                                                      (string-length ellipsis-str)))]
-                                           [(regexp-match? #rx"^[.][.][.]_" ellipsis-pre-str) 
-                                            ellipsis-pre-str]
-                                           [else 
-                                            (set! ellipsis-number (+ ellipsis-number 1))
-                                            (format "..._r~a" ellipsis-number)]))
+                    (define-values (ellipsis-str was-named-ellipsis?)
+                      (cond
+                        [mismatch?
+                         (set! ellipsis-number (+ ellipsis-number 1))
+                         (values (format "..._r~a" ellipsis-number) #f)]
+                        [(regexp-match? #rx"^[.][.][.]_r" ellipsis-pre-str)
+                         (values (string-append (substring ellipsis-str 0 4)
+                                                "r"
+                                                (substring ellipsis-str 
+                                                           4
+                                                           (string-length ellipsis-str)))
+                                 #t)]
+                        [(regexp-match? #rx"^[.][.][.]_" ellipsis-pre-str) 
+                         (values ellipsis-pre-str #t)]
+                        [else 
+                         (set! ellipsis-number (+ ellipsis-number 1))
+                         (values (format "..._r~a" ellipsis-number) #f)]))
+                    (define ellipsis-sym (string->symbol ellipsis-str))
+                    (when was-named-ellipsis? 
+                      (hash-set! original-repeat-names ellipsis-sym ellipsis-pre-sym))
                     (define ellipsis+name (datum->syntax
                                            (cadr terms)
                                            (string->symbol ellipsis-str)
@@ -318,11 +329,13 @@
                                 (cons (syntax-e (cadr terms)) under-mismatch-ellipsis)
                                 under-mismatch-ellipsis)))
                     (define-values (rst-terms rst-vars) (t-loop (cddr terms)))
-                    (values (cons `(repeat ,fst-term 
-                                           ,ellipsis+name
-                                           ,(if mismatch? (cadr terms) #f))
+                    (values (cons `(repeat ,fst-term ,ellipsis+name ,(if mismatch? (cadr terms) #f))
                                   rst-terms)
-                            (append fst-vars rst-vars))]
+                            (append fst-vars
+                                    (if was-named-ellipsis? 
+                                        (list (id/depth (cadr terms) (length under) #f))
+                                        '())
+                                    rst-vars))]
                    [else
                     (define-values (fst-term fst-vars) 
                       (loop (car terms) under under-mismatch-ellipsis))
@@ -425,7 +438,7 @@
            (let ()
              (define final-match-repeat-name 
                (if (= 1 (hash-ref repeat-id-counts (syntax-e #'name)))
-                   #f
+                   (hash-ref original-repeat-names (syntax-e #'name) #f)
                    #'name))
              (define final-mismatch-repeat-name
                (if (and (syntax-e #'mismatch-name)
@@ -569,3 +582,13 @@
                            orig-stx)))
                       (not same-id?)))
                   (loop (cdr dups))))])))
+
+
+
+  (define (bind-pattern-names err-name names/ellipses vals body)
+    (with-syntax ([(names/ellipsis ...) names/ellipses]
+                  [(val ...) vals])
+      #`(term-let/error-name
+         #,err-name
+         ([names/ellipsis val] ...) 
+         #,body)))

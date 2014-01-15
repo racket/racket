@@ -47,17 +47,24 @@
                            (syntax->list (syntax (pattern ...))))]
                      [(cp-x ...) (generate-temporaries #'(pattern ...))]
                      [make-matcher make-matcher])
-         #'(begin
-             syncheck-expr ...
-             (make-matcher
-              'form-name lang 
-              (list 'pattern ...)
-              (list (compile-pattern lang `side-conditions-rewritten #t) ...)
-              (list (λ (match)
-                      (term-let/error-name 
-                       form-name
-                       ([names/ellipses (lookup-binding (mtch-bindings match) 'names)] ...)
-                       rhs)) ...)))))]))
+         (with-syntax ([(mtch-procs ...)
+                        (for/list ([names/ellipses (in-list (syntax->list #'((names/ellipses ...) ...)))]
+                                   [names (in-list (syntax->list #'((names ...) ...)))]
+                                   [rhs (in-list (syntax->list #'(rhs ...)))])
+                          (with-syntax ([(names ...) names])
+                            #`(λ (match)
+                                #,(bind-pattern-names 
+                                   #'form-name 
+                                   names/ellipses
+                                   #'((lookup-binding (mtch-bindings match) 'names) ...)
+                                   rhs))))])
+           #`(begin
+               syncheck-expr ...
+               (make-matcher
+                'form-name lang 
+                (list 'pattern ...)
+                (list (compile-pattern lang `side-conditions-rewritten #t) ...)
+                (list mtch-procs ...))))))]))
 
 (define-syntax (term-match/single stx)
   (term-matcher stx #'term-match/single/proc))
@@ -683,10 +690,12 @@
                      'lhs-frm-id
                      'lhs-to-id
                      `side-conditions-rewritten
-                     (λ (bindings rhs-binder)
-                       (term-let ([lhs-to-id rhs-binder]
-                                  [names/ellipses (lookup-binding bindings 'names)] ...)
-                                 (term rhs-to #:lang lang)))
+                     (λ (bindings rhs-binder) 
+                       (term-let ([lhs-to-id rhs-binder])
+                                 #,(bind-pattern-names 'reduction-relation
+                                                       #'(names/ellipses ...)
+                                                       #'((lookup-binding bindings 'names) ...)
+                                                       #'(term rhs-to #:lang lang))))
                      #,child-proc
                      `fresh-rhs-from)))
               (get-choices stx orig-name bm #'lang
@@ -779,13 +788,16 @@
                       [body-code body-code])
           #`(begin
               lhs-syncheck-expr
-              (build-rewrite-proc/leaf `side-conditions-rewritten
-                                       (λ (main-exp bindings)
-                                         (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                                   body-code))
-                                       lhs-source
-                                       name
-                                       (λ (lang-id2) `lhs-w/extras))))))
+              (build-rewrite-proc/leaf 
+               `side-conditions-rewritten
+               (λ (main-exp bindings)
+                 #,(bind-pattern-names 'reduction-relation
+                                       #'(names/ellipses ...)
+                                       #'((lookup-binding bindings 'names) ...)
+                                       #'body-code))
+               lhs-source
+               name
+               (λ (lang-id2) `lhs-w/extras))))))
     
     (define (process-extras stx orig-name name-table extras)
       (let* ([the-name #f]
@@ -1085,12 +1097,15 @@
           (let ([ans (match-pattern cpat exp)])
             (and ans
                  (map (λ (m) (make-match (sort-bindings 
-                                          (filter (λ (x) (memq (bind-name x) binders))
+                                          (filter (λ (x) (and (memq (bind-name x) binders)
+                                                              (not-ellipsis-name (bind-name x))))
                                                   (bindings-table (mtch-bindings m))))))
                       ans))))))
   (if name
       (procedure-rename redex-match-proc name)
       redex-match-proc))
+(define (not-ellipsis-name x)
+  (not (regexp-match? #rx"^[.][.][.]" (symbol->string x))))
 
 (define (sort-bindings bnds)
   (sort
@@ -1704,6 +1719,10 @@
                 "cannot use pattern language keyword as a non-terminal name")
     (check-each names (λ (x) (regexp-match? #rx"_" (symbol->string (syntax-e x))))
                 "cannot use _ in a non-terminal name")
+    (check-each names (λ (x) (regexp-match? #rx"^[.][.][.]$" (symbol->string (syntax-e x))))
+                "cannot name a non-terminal `...'")
+    (check-each names (λ (x) (regexp-match? #rx"^[.][.][.]_" (symbol->string (syntax-e x))))
+                "cannot start a non-terminal name with `..._'")
     
     (when (null? prods)
       (raise-syntax-error #f "expected at least one production to follow" 
