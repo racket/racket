@@ -6,6 +6,8 @@
          (private type-contract)
          (rep type-rep)
          (types abbrev numeric-tower union)
+         (static-contracts combinators optimize)
+         (submod typed-racket/private/type-contract numeric-contracts)
          rackunit)
 (provide tests)
 (gen-test-main)
@@ -19,6 +21,21 @@
           e
           (λ (#:reason [reason #f])
             (fail-check (or reason "Type could not be converted to contract"))))))))
+
+(define-syntax-rule (t-sc e-t e-sc)
+  (test-case (format "~a" '(e-t -> e-sc))
+    (let ([t e-t] [sc e-sc])
+      (with-check-info (['type t] ['expected sc])
+        (define actual
+          (optimize
+            (type->static-contract
+              t
+              (λ (#:reason [reason #f])
+                (fail-check (or reason "Type could not be converted to contract"))))))
+        (with-check-info (['actual actual])
+          (unless (equal? actual sc)
+            (fail-check "Static contract didn't match expected")))))))
+
 
 (define-syntax-rule (t/fail e expected-reason)
   (test-case (format "~a" 'e)
@@ -104,5 +121,10 @@
                 "case function type with optional keyword arguments")
               (t/fail (-vec (-struct #'struct-name #f (list (make-fld (-seq -Symbol) #'acc #f)) #f #t))
                       "required a chaperone contract but generated an impersonator contract")
+
+              (t-sc -Number number/sc)
+              (t-sc -Integer integer/sc)
+              (t-sc (-lst Univ) (listof/sc any-wrap/sc))
+              (t-sc (Un (-lst Univ) -Number) (or/sc number/sc (listof/sc any-wrap/sc)))
 
               ))
