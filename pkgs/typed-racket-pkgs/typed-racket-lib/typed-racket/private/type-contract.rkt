@@ -8,7 +8,8 @@
  (rep type-rep filter-rep object-rep)
  (utils tc-utils)
  (env type-name-env)
- (types resolve)
+ (rep rep-utils)
+ (types resolve union)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
@@ -30,7 +31,7 @@
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
 (provide type->contract define/fixup-contract? change-contract-fixups
-         type->contract-fail)
+         type->contract-fail any-wrap/sc)
 
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
@@ -197,13 +198,16 @@
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]
-        [t (=> fail) (or (numeric-type->static-contract t) (fail))]
         [(Base: sym cnt _ _)
          (flat/sc #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)) sym)]
         [(Refinement: par p?)
          (and/sc (t->sc par) (flat/sc p?))]
         [(Union: elems)
-         (apply or/sc (map t->sc elems))]
+         (define-values (numeric non-numeric) (partition (λ (t) (equal? 'number (Type-key t))) elems ))
+         (define numeric-sc (numeric-type->static-contract (apply Un numeric)))
+         (if numeric-sc
+             (apply or/sc numeric-sc (map t->sc non-numeric))
+             (apply or/sc (map t->sc elems)))]
         [(and t (Function: _)) (t->sc/fun t)]
         [(Set: t) (set/sc (t->sc t))]
         [(Sequence: ts) (apply sequence/sc (map t->sc ts))]
