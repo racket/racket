@@ -271,4 +271,8 @@
       #:pos any/sc
       #:neg list?/sc)
 
+    (check-optimize (cons/sc any/sc list?/sc)
+      #:pos any/sc
+      #:neg (cons/sc any/sc list?/sc))
+
     ))

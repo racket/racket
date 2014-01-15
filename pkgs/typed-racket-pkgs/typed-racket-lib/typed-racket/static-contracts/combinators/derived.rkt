@@ -5,7 +5,7 @@
 ;; Ex: (listof/sc any/sc) => list?/sc
 
 (require "simple.rkt" "structural.rkt"
-         (for-template racket/base racket/set racket/promise))
+         (for-template racket/base racket/list racket/set racket/promise))
 (provide (all-defined-out))
 
 (define identifier?/sc (flat/sc #'identifier?))
@@ -13,6 +13,7 @@
 (define syntax?/sc (flat/sc #'syntax?))
 (define promise?/sc (flat/sc #'promise?))
 
+(define cons?/sc (flat/sc #'cons?))
 (define list?/sc (flat/sc #'list?))
 
 (define set?/sc (flat/sc #'set?))

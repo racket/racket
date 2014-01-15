@@ -39,6 +39,7 @@
     ;[(hash/sc: key/sc (none/sc:)) empty-hash/sc]
 
     ;; any/sc cases
+    [(cons/sc: (any/sc:) (any/sc:)) cons?/sc]
     [(listof/sc: (any/sc:)) list?/sc]
     [(list/sc: (and scs (any/sc:)) ...) (list-length/sc (length scs))]
     [(vectorof/sc: (any/sc:)) vector?/sc]
