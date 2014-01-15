@@ -732,13 +732,18 @@
                             (string->symbol (format "make-~a" (syntax-e name-id)))
                             name-id
                             name-id))]))
+  (define keyword-modifiers? (or (not immutable?)
+                                 transparent?
+                                 cname-id))
+  (define keyword-spacer (hspace 4)) ; 2 would match DrRacket indentation, but 4 looks better with field contracts after
   (define main-table
     (make-table
      boxed-style
-     (cons
-      (list 
-       ((add-background-label "struct")
-        (make-flow
+     (append
+      ;; First line in "boxed" table is struct name and fields:
+      (list
+       (list
+        ((add-background-label "struct")
          (list
           (let* ([the-name
                   (let ([just-name
@@ -796,7 +801,9 @@
                  [sym-length (lambda (s)
                                (string-length (symbol->string s)))]
                  [short-width
-                  (apply + (length fields) 8
+                  (apply +
+                         (length fields) ; spaces between field names
+                         8 ; "struct" + "(" + ")"
                          (append
                           (map sym-length
                                (append (if (pair? name) name (list name))
@@ -808,24 +815,21 @@
                                      0))
                                fields)))])
             (if (and (short-width . < . max-proto-width)
-                     immutable?
-                     (not transparent?)
-                     (not cname-id))
+                     (not keyword-modifiers?))
+                ;; All on one line:
                 (make-omitable-paragraph
                  (list
                   (to-element
                    `(,(racket struct)
                      ,the-name
                      ,(map field-view fields)))))
+                ;; Multi-line view (leaving out last paren if keywords follow):
                 (let* ([one-right-column?
+                        ;; Does the struct name and fields fit on a single line?
                         (or (null? fields)
                             (short-width . < . max-proto-width))]
-                       [a-right-column
-                        (lambda (c)
-                          (if one-right-column?
-                              (list flow-spacer flow-spacer c)
-                              (list flow-spacer flow-spacer c 'cont 'cont)))]
                        [split-field-line?
+                        ;; start fields on the line after "struct"?
                         (max-proto-width . < . (+ 8
                                                   (if (pair? name)
                                                       (+ (sym-length (car name))
@@ -838,15 +842,12 @@
                                                       0)
                                                   1))])
                   (make-table
-                   (if one-right-column?
-                       #f
-                       ;; Shift all extra width to last column:
-                       (make-style #f (list
-                                       (make-table-columns
-                                        (for/list ([i 5])
-                                          (if (i . < . 4)
-                                              (make-style #f (list (column-attributes '((width . "0*")))))
-                                              (make-style #f null)))))))
+                   #f
+                   ;; First four columns: "(struct" <space> <name><space> (
+                   ;;   If all fields on the first line, extra columns follow;
+                   ;;   If only first field on same line, filds are in fourth column
+                   ;;   If no field is on the first line, no fourth column after all
+                   ;;    and fields are in the second column
                    (append
                     (list
                      (append
@@ -856,135 +857,138 @@
                                                     (racket struct))))
                             flow-spacer)
                       (if one-right-column?
-                          (list (to-flow (make-element
-                                          #f
-                                          (list* the-name
-                                                 spacer
-                                                 (to-element (map field-view
-                                                                  fields))
-                                                 (if (and immutable?
-                                                          (not transparent?)
-                                                          (not cname-id))
-                                                     (list (racketparenfont ")"))
-                                                     null)))))
+                          ;; struct name and fields on one line:
+                          (list (to-flow (list the-name
+                                               spacer
+                                               (to-element (map field-view
+                                                                fields))
+                                               (if (and immutable?
+                                                        (not transparent?)
+                                                        (not cname-id))
+                                                   (racketparenfont ")")
+                                                   null))))
                           (if split-field-line?
-                              (list (to-flow (make-element 'no-break the-name))
-                                    'cont
-                                    'cont)
+                              ;; Field start on line after "struct":
+                              (list (to-flow (make-element 'no-break the-name)))
+                              ;; First field on the same line as "struct":
                               (list (to-flow (make-element 'no-break the-name))
                                     (to-flow (make-element
                                               #f (list spacer (racketparenfont "("))))
-                                    (to-flow (make-element 'no-break 
+                                    (to-flow (make-element 'no-break
                                                            (let ([f (to-element (field-view (car fields)))])
                                                              (if (null? (cdr fields))
                                                                  (list f (racketparenfont ")"))
                                                                  f)))))))))
                     (if split-field-line?
+                        ;; First field, which starts on the next line:
                         (list
-                         (list flow-spacer flow-spacer flow-spacer
-                               (to-flow (make-element
-                                         #f (list spacer (racketparenfont "("))))
-                               (to-flow (make-element 'no-break 
-                                                      (let ([f (to-element (field-view (car fields)))])
-                                                        (if (null? (cdr fields))
-                                                            (list f (racketparenfont ")"))
-                                                            f))))))
+                         (list flow-spacer flow-spacer
+                               (to-flow (list
+                                         (racketparenfont "(")
+                                         (make-element 'no-break 
+                                                       (let ([f (to-element (field-view (car fields)))])
+                                                         (if (null? (cdr fields))
+                                                             (list f (racketparenfont ")"))
+                                                             f)))))))
                         null)
-                    (if (short-width . < . max-proto-width)
+                    ;; Remaining fields:
+                    (if one-right-column?
                         null
                         (let loop ([fields (if (null? fields)
-                                               fields (cdr fields))])
+                                               fields
+                                               (cdr fields))])
                           (if (null? fields)
                               null
                               (cons
                                (let ([fld (car fields)])
-                                 (list flow-spacer flow-spacer
-                                       flow-spacer flow-spacer
-                                       (to-flow
-                                        (let ([e (to-element (field-view fld))])
-                                          (if (null? (cdr fields))
-                                              (make-element
-                                               #f
-                                               (list e (racketparenfont
-                                                        (if (and immutable?
-                                                                 (not transparent?)
-                                                                 (not cname-id))
-                                                            "))" 
-                                                            ")"))))
-                                              e)))))
-                               (loop (cdr fields))))))
-                    (if cname-id
-                        (let ([kw (to-element (if (if cname-given?
-                                                      extra-cname?
-                                                      default-extra?)
-                                                  '#:extra-constructor-name
-                                                  '#:constructor-name))]
-                              [nm (to-element cname-id)]
-                              [close? (and immutable?
-                                           (not transparent?))])
-                          (if (max-proto-width . < . (+ 8 ; "(struct "
-                                                        1 ; space between kw & name
-                                                        (element-width kw) 
-                                                        (element-width nm)
-                                                        (if close? 1 0)))
-                              ;; use two lines
-                              (list (a-right-column (to-flow kw))
-                                    (a-right-column 
-                                     (to-flow
-                                      (if close?
-                                          (make-element #f (list nm (racketparenfont ")")))
-                                          nm))))
-                              ;; use one line
-                              (list (a-right-column
-                                     (to-flow (make-element 
-                                               #f
-                                               (append
-                                                (list kw
-                                                      (hspace 1)
-                                                      nm)
-                                                (if close?
-                                                    (list (racketparenfont ")"))
-                                                    null))))))))
-                        null)
-                    (cond
-                     [(and (not immutable?) transparent?)
-                      (list
-                       (a-right-column (to-flow (to-element '#:mutable)))
-                       (a-right-column (to-flow (make-element
-                                                 #f
-                                                 (list (if prefab?
-                                                           (to-element '#:prefab)
-                                                           (to-element '#:transparent))
-                                                       (racketparenfont ")"))))))]
-                     [(not immutable?)
-                      (list
-                       (a-right-column (to-flow (make-element
-                                                 #f
-                                                 (list (to-element '#:mutable)
-                                                       (racketparenfont ")"))))))]
-                     [transparent?
-                      (list
-                       (a-right-column (to-flow (make-element
-                                                 #f
-                                                 (list (if prefab?
-                                                           (to-element '#:prefab)
-                                                           (to-element '#:transparent))
-                                                       (racketparenfont ")"))))))]
-                     [else null]))))))))))
+                                 (append
+                                  (list flow-spacer flow-spacer)
+                                  (if split-field-line? null (list flow-spacer flow-spacer))
+                                  (list (to-flow
+                                         (list
+                                          (if split-field-line? spacer null)
+                                          (let ([e (to-element (field-view fld))])
+                                            (if (null? (cdr fields))
+                                                (list e
+                                                      (racketparenfont
+                                                       (if (and immutable?
+                                                                (not transparent?)
+                                                                (not cname-id))
+                                                           "))" 
+                                                           ")")))
+                                                e)))))))
+                               (loop (cdr fields)))))))))))))))
+      ;; Next lines at "boxed" level are construct-name keywords:
+      (if cname-id
+          (let ([kw (to-element (if (if cname-given?
+                                        extra-cname?
+                                        default-extra?)
+                                    '#:extra-constructor-name
+                                    '#:constructor-name))]
+                [nm (to-element cname-id)]
+                [close? (and immutable?
+                             (not transparent?))])
+            (if (max-proto-width . < . (+ (element-width keyword-spacer)
+                                          1 ; space between kw & name
+                                          (element-width kw) 
+                                          (element-width nm)
+                                          (if close? 1 0)))
+                ;; use two lines for #:constructor-name
+                (list (list (to-flow (list keyword-spacer kw)))
+                      (list (to-flow
+                             (list
+                              keyword-spacer
+                              (if close?
+                                  (make-element #f (list nm (racketparenfont ")")))
+                                  nm)))))
+                ;; use one line for #:constructor-name
+                (list (list 
+                       (to-flow (make-element 
+                                 #f
+                                 (list
+                                  keyword-spacer
+                                  kw (hspace 1) nm
+                                  (if close?
+                                      (racketparenfont ")")
+                                      null))))))))
+          null)
+      ;; Next lines at "boxed" level are prefab/transparent/mutable
+      (cond
+       [(and (not immutable?) transparent?)
+        (list
+         (list (to-flow (list keyword-spacer (to-element '#:mutable))))
+         (list (to-flow (list keyword-spacer
+                              (if prefab?
+                                  (to-element '#:prefab)
+                                  (to-element '#:transparent))
+                              (racketparenfont ")")))))]
+       [(not immutable?)
+        (list
+         (list (to-flow (list keyword-spacer
+                              (to-element '#:mutable)
+                              (racketparenfont ")")))))]
+       [transparent?
+        (list
+         (list (to-flow (list keyword-spacer
+                              (if prefab?
+                                  (to-element '#:prefab)
+                                  (to-element '#:transparent))
+                              (racketparenfont ")")))))]
+       [else null])
+      ;; Remaining lines at "boxed" level are field contracts:
       (map (lambda (v field-contract)
              (cond
-               [(pair? v)
-                (list
-                 (make-flow
-                  (make-table-if-necessary
-                   "argcontract"
-                   (list (list (to-flow (hspace 2))
-                               (to-flow (to-element (field-name v)))
-                               flow-spacer
-                               (to-flow ":")
-                               flow-spacer
-                               (make-flow (list (field-contract))))))))]
-               [else null]))
+              [(pair? v)
+               (list
+                (make-table-if-necessary
+                 "argcontract"
+                 (list (list (to-flow (hspace 2))
+                             (to-flow (to-element (field-name v)))
+                             flow-spacer
+                             (to-flow ":")
+                             flow-spacer
+                             (make-flow (list (field-contract)))))))]
+              [else null]))
            fields field-contracts))))
   (make-box-splice
    (cons
