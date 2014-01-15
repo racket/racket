@@ -275,4 +275,20 @@
       #:pos any/sc
       #:neg (cons/sc any/sc list?/sc))
 
+    (check-optimize
+      (case->/sc
+        (list
+          (arr/sc empty #f (list set?/sc))
+          (arr/sc (list identifier?/sc) #f (list (listof/sc set?/sc)))))
+      #:pos  (function/sc (list)
+                          (list identifier?/sc)
+                          (list)
+                          (list)
+                          #f
+                          #f)
+      #:neg (case->/sc
+              (list
+                (arr/sc empty #f (list set?/sc))
+                (arr/sc (list any/sc) #f (list (listof/sc set?/sc))))))
+
     ))

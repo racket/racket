@@ -62,7 +62,7 @@
 (define-match-expander case->/sc:
   (syntax-parser
     [(_ args ...)
-     #'(case->/combinator (list args ...))]))
+     #'(case-combinator (list args ...))]))
 
 (define-match-expander arr/sc:
   (syntax-parser
