@@ -79,22 +79,18 @@
          [(PolyDots? ty)
           ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
           ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-          ;; In the case that the list is empty we also do the normal thing
-          (let ((stx-list (syntax->list inst)))
-            (if (null? stx-list)
-                (instantiate-poly ty null)
-                (match stx-list
-                  [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
-                   (unless (bound-index? (syntax-e bound-id))
-                     (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
-                   (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
-                       (let* ([last-id (syntax-e bound-id)]
-                              [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
-                         (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
-                       (tc-error/expr "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                      ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
-                  [_
-                   (instantiate-poly ty (map parse-type stx-list))])))]
+          (match (syntax->list inst)
+            [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
+             (unless (bound-index? (syntax-e bound-id))
+               (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
+             (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
+                 (let* ([last-id (syntax-e bound-id)]
+                        [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
+                   (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
+                 (tc-error/expr "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
+                                ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
+            [stx-list
+             (instantiate-poly ty (map parse-type stx-list))])]
          [else
           (instantiate-poly ty (stx-map parse-type inst))]))
      (ret new-ty f o)]
