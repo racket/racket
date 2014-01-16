@@ -38,7 +38,7 @@
 
 
 ;; Typecheck an (#%expression e) form
-(define (tc/expression form expected)
+(define (tc/#%expression form expected)
   (syntax-parse form
     [(exp:type-inst e)
      (do-inst (tc-expr #'e) (attribute exp.vars))]

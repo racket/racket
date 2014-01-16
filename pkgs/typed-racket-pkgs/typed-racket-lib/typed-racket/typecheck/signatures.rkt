@@ -29,7 +29,7 @@
   ([cond-contracted tc/send ((syntax? syntax? syntax? syntax?) ((or/c tc-results/c #f)) . ->* . tc-results/c)]))
 
 (define-signature tc-expression^
-  ([cond-contracted tc/expression (syntax? (or/c tc-results/c #f) . ->* . tc-results/c)]))
+  ([cond-contracted tc/#%expression (syntax? (or/c tc-results/c #f) . ->* . tc-results/c)]))
 
 (define-signature tc-lambda^
   ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . tc-results/c)]

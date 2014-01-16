@@ -145,7 +145,7 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [(#%expression _) (tc/expression form expected)]
+      [(#%expression _) (tc/#%expression form expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -286,7 +286,7 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
-      [(#%expression _) (tc/expression form #f)]
+      [(#%expression _) (tc/#%expression form #f)]
       ;; #%variable-reference
       [(#%variable-reference . _)
        (ret -Variable-Reference)]
