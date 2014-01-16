@@ -28,7 +28,7 @@ win32-in-place', as long as you're using Microsoft Visual Studio 9.0
 want more control over the process, see below.
 
 On Mac OS X and Windows, you'll need native-library packages in the
-"native-pkgs" directory. In the git repostory, "native-pkgs" is a git
+"native-pkgs" directory. In the git repository, "native-pkgs" is a git
 submodule, so you'll need
    git submodule init
    git submodule update
@@ -148,7 +148,7 @@ The `pkg-links' makefile target installs links to a specific
 include "devel-pkgs" in the search path for packages. As a result, the
 package links are installation specific, but still isolated from any
 `installation'-scope packages that you install later. The `pkg-links'
-target alsosets the default package scope for the build to
+target also sets the default package scope for the build to
 `installation' mode. Both of those configuration adjustments are made
 only if no configuration file "racket/etc/config.rktd" exists already.
 
@@ -329,7 +329,7 @@ Roughly, the steps are
       nmake win32-client SERVER=... PKGS="..."
 
     Add `SERVER_PORT=...' to the `client' line if you picked an
-    alternate port in the `server` line; it shoul dbe the same as for
+    alternate port in the `server` line; it should be the same as for
     the `server' line.
 
     Add `DOC_SEARCH="..."' to the `client' line, if needed;
@@ -380,7 +380,7 @@ In more detail:
      `server-from-base' (i.e., steps 1a and 1b).
 
      The `SERVER_PORT' and `SERVER_HOSTS' variables of the makefile
-     configure the prt and interfaces of the server.
+     configure the port and interfaces of the server.
 
      The `PKGS' variable of the makefile determines which packages are
      built for potential inclusion in a distribution.
@@ -415,7 +415,7 @@ In more detail:
      that.
 
      Provide `SERVER' as the hostname of the server machine, but a
-     "locahost"-based tunnel back to the server is more secure and
+     "localhost"-based tunnel back to the server is more secure and
      avoids the need to specify `SERVER_HOSTS' when starting the
      server in step 1b. Also, provide `SERVER_PORT' if an alternate
      port was specified in step 1b.
