@@ -6,7 +6,7 @@
          (except-in (rep type-rep object-rep filter-rep) make-arr)
          (rename-in (types abbrev union utils filter-ops resolve)
                     [make-arr* make-arr])
-         (utils tc-utils stxclass-util)
+         (utils tc-utils stxclass-util literal-syntax-class)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
          (env tvar-env type-name-env type-alias-env lexical-env index-env)
@@ -14,7 +14,7 @@
          "parse-classes.rkt"
          (for-label
            racket/base "../base-env/colon.rkt"
-           (prefix-in t: "../base-env/base-types-extra.rkt")))
+           "../base-env/base-types-extra.rkt"))
 
 (provide/cond-contract ;; Parse the given syntax as a type
                        [parse-type (syntax? . c:-> . Type/c)]
@@ -27,11 +27,35 @@
 
 (provide star ddd/bound)
 
-(define-literal-set parse-type-literals
-    #:for-label
-    (: cons quote case-lambda values car cdr and or
-     t:Class t:Refinement t:Instance t:List t:List* t:pred t:-> t:case->
-     t:Rec t:U t:All t:Opaque t:Parameter t:Vector t:Struct t:Struct-Type t:Values))
+(define-literal-syntax-class #:for-label car)
+(define-literal-syntax-class #:for-label cdr)
+(define-literal-syntax-class #:for-label colon^ (:))
+(define-literal-syntax-class #:for-label quote)
+(define-literal-syntax-class #:for-label cons)
+(define-literal-syntax-class #:for-label Class)
+(define-literal-syntax-class #:for-label Refinement)
+(define-literal-syntax-class #:for-label Instance)
+(define-literal-syntax-class #:for-label List)
+(define-literal-syntax-class #:for-label List*)
+(define-literal-syntax-class #:for-label pred)
+(define-literal-syntax-class #:for-label ->)
+(define-literal-syntax-class #:for-label case->^ (case-> case-lambda))
+(define-literal-syntax-class #:for-label Rec)
+(define-literal-syntax-class #:for-label U)
+(define-literal-syntax-class #:for-label All)
+(define-literal-syntax-class #:for-label Opaque)
+(define-literal-syntax-class #:for-label Parameter)
+(define-literal-syntax-class #:for-label Vector)
+(define-literal-syntax-class #:for-label Struct)
+(define-literal-syntax-class #:for-label Struct-Type)
+(define-literal-syntax-class #:for-label Values)
+(define-literal-syntax-class #:for-label values)
+(define-literal-syntax-class #:for-label Top)
+(define-literal-syntax-class #:for-label Bot)
+
+
+
+
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.
@@ -43,13 +67,12 @@
 ;; The body of a Forall type
 (define-syntax-class all-body
   #:attributes (type)
-  #:literal-sets (parse-type-literals)
   (pattern (type))
-  (pattern (~and type ((~or (~once t:->) x) ...))))
+  (pattern (~and type ((~or (~once :->^) x) ...))))
 
 (define (parse-literal-alls stx)
-  (syntax-parse stx #:literal-sets (parse-type-literals)
-    [(t:All (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
+  (syntax-parse stx
+    [(:All^ (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
      (define vars-list (syntax->list #'(vars ...)))
      (cons (if (attribute v)
                (list vars-list #'v)
@@ -62,25 +85,23 @@
 ;; Parse a Forall type
 (define (parse-all-type stx)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
-  (syntax-parse stx #:literal-sets (parse-type-literals)
-    [((~and kw t:All) (vars:id ... v:id dd:ddd) . t:all-body)
+  (syntax-parse stx
+    [(:All^ (vars:id ... v:id dd:ddd) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
      (let* ([vars (stx-map syntax-e #'(vars ...))]
             [v (syntax-e #'v)])
-       (add-disappeared-use #'kw)
        (extend-indexes v
          (extend-tvars vars
            (make-PolyDots (append vars (list v)) (parse-type #'t.type)))))]
-    [((~and kw t:All) (vars:id ...) . t:all-body)
+    [(:All^ (vars:id ...) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ...)))
        (tc-error "All: duplicate type variable"))
      (let* ([vars (stx-map syntax-e #'(vars ...))])
-       (add-disappeared-use #'kw)
        (extend-tvars vars
          (make-Poly vars (parse-type #'t.type))))]
-    [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
-    [(t:All . rest) (tc-error "All: bad syntax")]))
+    [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
+    [(:All^ . rest) (tc-error "All: bad syntax")]))
 
 (define-splicing-syntax-class keyword-tys
   (pattern (~seq k:keyword t:expr)
@@ -97,10 +118,9 @@
 
 (define-syntax-class path-elem
   #:description "path element"
-  #:literal-sets (parse-type-literals)
-  (pattern car
+  (pattern :car^
            #:attr pe (make-CarPE))
-  (pattern cdr
+  (pattern :cdr^
            #:attr pe (make-CdrPE)))
 
 (define-splicing-syntax-class idx-obj
@@ -135,10 +155,9 @@
 
 (define-syntax-class (prop doms)
   #:description "filter proposition"
-  #:literal-sets (parse-type-literals)
   #:attributes (prop)
-  (pattern (~literal Top) #:attr prop -top)
-  (pattern (~literal Bot) #:attr prop -bot)
+  (pattern :Top^ #:attr prop -top)
+  (pattern :Bot^ #:attr prop -bot)
   (pattern (t:expr :@ pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
@@ -188,15 +207,13 @@
   (parameterize ([current-orig-stx stx])
     (syntax-parse
         stx
-      #:literal-sets (parse-type-literals)
       [t
        #:declare t (3d Type/c?)
        (attribute t.datum)]
       [(fst . rst)
        #:fail-unless (not (syntax->list #'rst)) #f
        (-pair (parse-type #'fst) (parse-type #'rst))]
-      [((~and kw t:Class) (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
-       (add-disappeared-use #'kw)
+      [(:Class^ (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
        (make-Class
         (parse-types #'(pos-args ...))
         (map list
@@ -209,50 +226,40 @@
         (map list
              (stx-map syntax-e #'(mname ...))
              (parse-types #'(mty ...))))]
-      [((~and kw t:Refinement) p?:id)
-       (add-disappeared-use #'kw)
+      [(:Refinement^ p?:id)
        (match (lookup-type/lexical #'p?)
          [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
           (make-Refinement dom #'p?)]
          [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
-      [((~and kw t:Struct) t)
-       (add-disappeared-use #'kw)
+      [(:Struct^ t)
        (let ([v (parse-type #'t)])
          (match (resolve v)
            [(and s (? Struct?)) (make-StructTop s)]
            [_ (tc-error/delayed "Argument to Struct must be a structure type, got ~a" v)
               (Un)]))]
-      [((~and kw t:Struct-Type) t)
-       (add-disappeared-use #'kw)
+      [(:Struct-Type^ t)
        (define v (parse-type #'t))
        (match (resolve v)
          [(? Struct? s) (make-StructType s)]
          [_ (tc-error/delayed "Argument to Struct-Type must be a structure type, got ~a" v)
             (Un)])]
-      [((~and kw t:Instance) t)
-       (add-disappeared-use #'kw)
+      [(:Instance^ t)
        (let ([v (parse-type #'t)])
          (if (not (or (Mu? v) (Class? v) (Union? v) (Error? v)))
              (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                     (make-Instance (Un)))
              (make-Instance v)))]
-      [((~and kw t:List) ts ...)
-       (add-disappeared-use #'kw)
+      [(:List^ ts ...)
        (parse-list-type stx)]
-      [((~and kw t:List*) ts ... t)
-       (add-disappeared-use #'kw)
+      [(:List*^ ts ... t)
        (-Tuple* (parse-types #'(ts ...)) (parse-type #'t))]
-      [((~and kw t:Vector) ts ...)
-       (add-disappeared-use #'kw)
+      [(:Vector^ ts ...)
        (make-HeterogeneousVector (parse-types #'(ts ...)))]
-      [((~and kw cons) fst rst)
-       (add-disappeared-use #'kw)
+      [(:cons^ fst rst)
        (-pair (parse-type #'fst) (parse-type #'rst))]
-      [((~and kw t:pred) t)
-       (add-disappeared-use #'kw)
+      [(:pred^ t)
        (make-pred-ty (parse-type #'t))]
-      [((~and kw (~or case-lambda t:case->)) tys ...)
-       (add-disappeared-use #'kw)
+      [(:case->^ tys ...)
        (make-Function
         (for/list ([ty (in-syntax #'(tys ...))])
           (let ([t (parse-type ty)])
@@ -261,13 +268,11 @@
               [_ (tc-error/stx
                   ty
                   "Component of case-lambda type was not a function clause")]))))]
-      #;[((~and kw t:Vectorof) t)
-       (add-disappeared-use #'kw)
+      #;[(:Vectorof^ t)
        (make-Vector (parse-type #'t))]
-      [((~and kw t:Rec) x:id t)
+      [(:Rec^ x:id t)
        (let* ([var (syntax-e #'x)]
               [tvar (make-F var)])
-         (add-disappeared-use #'kw)
          (extend-tvars (list var)
            (let ([t* (parse-type #'t)])
              ;; is t in a productive position?
@@ -289,57 +294,47 @@
              (if (memq var (fv t*))
                  (make-Mu var t*)
                  t*))))]
-      [((~and kw t:U) ts ...)
-       (add-disappeared-use #'kw)
+      [(:U^ ts ...)
        (apply Un (parse-types #'(ts ...)))]
-      [((~and kw quote) t)
-       (add-disappeared-use #'kw)
+      [(:quote^ t)
        (parse-quoted-type #'t)]
-      [((~and kw t:All) . rest)
+      [(:All^ . rest)
        (parse-all-type stx)]
-      [((~and kw t:Opaque) p?:id)
-       (add-disappeared-use #'kw)
+      [(:Opaque^ p?:id)
        (make-Opaque #'p?)]
-      [((~and kw t:Parameter) t)
+      [(:Parameter^ t)
        (let ([ty (parse-type #'t)])
-         (add-disappeared-use #'kw)
          (-Param ty ty))]
-      [((~and kw t:Parameter) t1 t2)
-       (add-disappeared-use #'kw)
+      [(:Parameter^ t1 t2)
        (-Param (parse-type #'t1) (parse-type #'t2))]
       ;; curried function notation
-      [((~and dom:non-keyword-ty (~not t:->)) ...
-        (~and kw t:->)
-        (~and (~seq rest-dom ...) (~seq (~or _ (~between t:-> 1 +inf.0)) ...)))
-       (add-disappeared-use #'kw)
+      [((~and dom:non-keyword-ty (~not :->^)) ...
+        :->^
+        (~and (~seq rest-dom ...) (~seq (~or _ (~between :->^ 1 +inf.0)) ...)))
        (let ([doms (for/list ([d (in-syntax #'(dom ...))])
                      (parse-type d))])
          (make-Function
           (list (make-arr
                  doms
                  (parse-type (syntax/loc stx (rest-dom ...)))))))]
-      [(dom (~and kw t:->) rng : latent:simple-latent-filter)
-       (add-disappeared-use #'kw)
+      [(dom :->^ rng : latent:simple-latent-filter)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
-      [(dom ... (~and kw t:->) rng
+      [(dom ... :->^ rng
         : ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
-       (add-disappeared-use #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (->* (parse-types #'(dom ...))
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty ddd:star kws:keyword-tys ... (~and kw t:->) rng)
-       (add-disappeared-use #'kw)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty ddd:star kws:keyword-tys ... :->^ rng)
        (make-Function
         (list (make-arr
                (parse-types #'(dom ...))
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound (~and kw t:->) rng)
-       (add-disappeared-use #'kw)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng)
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
            (tc-error/stx #'bound
@@ -352,8 +347,7 @@
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
                           bnd))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty _:ddd (~and kw t:->) rng)
-       (add-disappeared-use #'kw)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng)
        (let ([var (infer-index stx)])
          (make-Function
           (list
@@ -362,13 +356,11 @@
                           (extend-tvars (list var) (parse-type #'rest))
                           var))))]
       #| ;; has to be below the previous one
-     [(dom:expr ... (~and kw t:->) rng)
-      (add-disappeared-use #'kw)
+     [(dom:expr ... :->^ rng)
       (->* (parse-types #'(dom ...))
            (parse-values-type #'rng))]     |#
       ;; use expr to rule out keywords
-      [(dom:non-keyword-ty ... kws:keyword-tys ... (~and kw t:->) rng)
-       (add-disappeared-use #'kw)
+      [(dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng)
       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
                     (parse-type d))])
          (make-Function
@@ -392,32 +384,30 @@
           =>
           (lambda (t)
             ;(printf "found a type alias ~a\n" #'id)
-            (add-disappeared-use #'id)
+            (add-disappeared-use (syntax-local-introduce #'id))
             t)]
          ;; if it's a type name, we just use the name
          [(lookup-type-name #'id (lambda () #f))
-          (add-disappeared-use #'id)
+          (add-disappeared-use (syntax-local-introduce #'id))
           ;(printf "found a type name ~a\n" #'id)
           (make-Name #'id)]
-         [(free-identifier=? #'id #'t:->)
+         [(free-identifier=? #'id #'->)
           (tc-error/delayed "Incorrect use of -> type constructor")
           Err]
-         [else          
+         [else
           (tc-error/delayed
            "Unbound type name ~a"
            (syntax-e #'id))
           Err])]
-      [(t:Opaque . rest)
+      [(:Opaque^ . rest)
        (tc-error "Opaque: bad syntax")]
-      [(t:U . rest)
+      [(:U^ . rest)
        (tc-error "Union: bad syntax")]
-      #;[(t:Vectorof . rest)
+      #;[(:Vectorof^ . rest)
        (tc-error "Vectorof: bad syntax")]
-      [((~and (~datum mu) t:Rec) . rest)
-       (tc-error "mu: bad syntax")]
-      [(t:Rec . rest)
+      [(:Rec^ . rest)
        (tc-error "Rec: bad syntax")]
-      [(t ... t:-> . rest)
+      [(t ... :->^ . rest)
        (tc-error "->: bad syntax")]
       [(id arg args ...)
        (let loop
@@ -454,9 +444,8 @@
 ;; Parse a (List ...) type
 (define (parse-list-type stx)
   (parameterize ([current-orig-stx stx])
-    (syntax-parse stx #:literal-sets (parse-type-literals)
-      [((~and kw t:List) tys ... dty :ddd/bound)
-       (add-disappeared-use #'kw)
+    (syntax-parse stx
+      [(:List^ tys ... dty :ddd/bound)
        (let ([var (syntax-e #'bound)])
          (unless (bound-index? var)
            (if (bound-tvar? var)
@@ -467,25 +456,22 @@
                    (extend-tvars (list var)
                      (parse-type #'dty))
                    var)))]
-      [((~and kw t:List) tys ... dty _:ddd)
-       (add-disappeared-use #'kw)
+      [(:List^ tys ... dty _:ddd)
        (let ([var (infer-index stx)])
          (-Tuple* (parse-types #'(tys ...))
                   (make-ListDots
                     (extend-tvars (list var)
                       (parse-type #'dty))
                     var)))]
-      [((~and kw t:List) tys ...)
-       (add-disappeared-use #'kw)
+      [(:List^ tys ...)
        (-Tuple (parse-types #'(tys ...)))])))
 
 ;; Syntax -> Type
 ;; Parse a (Values ...) type
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])
-    (syntax-parse stx #:literal-sets (parse-type-literals)
-      [((~and kw (~or t:Values values)) tys ... dty :ddd/bound)
-       (add-disappeared-use #'kw)
+    (syntax-parse stx
+      [((~or :Values^ :values^) tys ... dty :ddd/bound)
        (let ([var (syntax-e #'bound)])
          (unless (bound-index? var)
            (if (bound-tvar? var)
@@ -495,23 +481,20 @@
                        (extend-tvars (list var)
                          (parse-type #'dty))
                        var))]
-      [((~and kw (~or t:Values values)) tys ... dty _:ddd)
-       (add-disappeared-use #'kw)
+      [((~or :Values^ :values^) tys ... dty _:ddd)
        (let ([var (infer-index stx)])
          (-values-dots (parse-types #'(tys ...))
                        (extend-tvars (list var)
                          (parse-type #'dty))
                        var))]
-      [((~and kw (~or t:Values values)) tys ...)
-       (add-disappeared-use #'kw)
+      [((~or :Values^ :values^) tys ...)
        (-values (parse-types #'(tys ...)))]
       [t
        (-values (list (parse-type #'t)))])))
 
 (define (parse-tc-results stx)
-  (syntax-parse stx #:literal-sets (parse-type-literals)
-    [((~and kw values) t ...)
-     (add-disappeared-use #'kw)
+  (syntax-parse stx
+    [(:values^ t ...)
      (ret (parse-types #'(t ...))
           (stx-map (lambda (x) (make-NoFilter)) #'(t ...))
           (stx-map (lambda (x) (make-NoObject)) #'(t ...)))]

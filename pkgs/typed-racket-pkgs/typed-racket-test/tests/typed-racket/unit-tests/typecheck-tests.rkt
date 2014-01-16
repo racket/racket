@@ -1779,14 +1779,14 @@
        ;; written by the user
        [tc-e
         (let ()
-          (: f (Any -> (Any -> Boolean : #:+ (Number @ 1 0)
-                            #:- (! Number @ 1 0))
+          (: f (Any -> (Any -> Boolean : #:+ (Symbol @ 1 0)
+                            #:- (! Symbol @ 1 0))
                     : #:+ Top #:- Bot))
-          (define f (λ (x) (λ (y) (number? x))))
-          (: b (U Number String))
-          (define b 5)
+          (define f (λ (x) (λ (y) (symbol? x))))
+          (: b (U Symbol String))
+          (define b 'sym)
           (define g (f b))
-          (if (g "foo") (add1 b) 3)
+          (if (g "foo") (symbol->string b) "str")
           (void))
         ;; type doesn't really matter, just make sure it typechecks
         -Void]
