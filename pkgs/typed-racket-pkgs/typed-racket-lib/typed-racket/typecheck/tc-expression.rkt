@@ -56,7 +56,7 @@
          (tc-expr #'e))]))
 
 
-;; do-inst : syntax? tc-results/c -> tc-results/c
+;; do-inst : syntax? (or/c tc-results/c #f) -> tc-results/c
 (define (do-inst results inst)
   (when (and inst (not (syntax? inst)))
     (int-err "Bad type-inst property ~a" inst))
