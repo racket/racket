@@ -74,17 +74,20 @@
     ;; case->/sc cases
     [(case->/sc: arrs ...)
      (match arrs
-       [(list (arr/sc: args #f results) ...) (=> fail)
-        (unless (equal? (set-count (apply set results)) 1)
+       ;; We can turn case->/sc contracts int ->* contracts in some cases.
+       [(list (arr/sc: args #f ranges) ...) (=> fail)
+        ;; All results must have the same range
+        (unless (equal? (set-count (apply set ranges)) 1)
           (fail))
-        (define result (first results))
         (define sorted-args (sort args (λ (l1 l2) (< (length l1) (length l2)))))
         (define shortest-args (first sorted-args))
         (define longest-args (last sorted-args))
+        ;; The number of arguments must increase by 1 with no gaps
         (unless (equal? (map length sorted-args)
                         (range (length shortest-args)
                                (add1 (length longest-args))))
           (fail))
+        ;; All arities must be prefixes of the longest arity
         (unless (for/and ([args (in-list sorted-args)])
                   (equal? args (take longest-args (length args))))
           (fail))
@@ -95,7 +98,7 @@
           empty
           empty
           #f
-          result)]
+          (first ranges))]
        [else sc])]
 
 
