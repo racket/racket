@@ -148,6 +148,7 @@
   racket/sequence
   racket/set
   racket/string
+  racket/system
   racket/tcp
   racket/udp
   racket/vector
@@ -1366,9 +1367,6 @@
                 -Output-Port
                 -Input-Port))
 
-
-
-
         (tc-e (subprocess (current-output-port) (current-input-port) (current-error-port) (string->path "/usr/bin/echo") 'exact "arg")
               (list
                 -Subprocess
@@ -1386,6 +1384,10 @@
                 (subprocess? p))
               #:ret (ret -Boolean (-FS -top -bot)))
 
+        (tc-e (car (process "hello"))
+              -Input-Port)
+        (tc-e (car (process* "hello"))
+              -Input-Port)
 
         #;
         (tc-e (let ()
@@ -1416,10 +1418,6 @@
                                                #"arg2")))
                 proc-id)
               -Nat)
-
-
-
-
 
         ;Compilation
         (tc-e (compile-syntax #'(+ 1 2)) -Compiled-Expression)
