@@ -72,7 +72,7 @@
                (not (= (syntax-length inst) (Poly-n ty))))
           (tc-error/expr "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
                          (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-         [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
+         [(and (PolyDots? ty) (< (syntax-length inst) (sub1 (PolyDots-n ty))))
           ;; we can provide 0 arguments for the ... var
           (tc-error/expr "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
                          (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
