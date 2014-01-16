@@ -158,7 +158,9 @@
                 #t)
             (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
        (let ([f (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))])
-         (free-identifier-mapping-put! applied-metafunctions f #t)
+         (free-identifier-mapping-put! applied-metafunctions 
+                                       (datum->syntax f (syntax-e f) #'metafunc-name)
+                                       #t)
          (rewrite-application f (syntax/loc stx (arg ...)) depth))]
       [(jf-name arg ...)
        (and (identifier? (syntax jf-name))
