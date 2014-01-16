@@ -22,7 +22,7 @@ folder, re-register @exec{MzCOM.exe} with
 
 @commandline{mzcom.exe /RegServer}
 
-The @exec{MzCOM.exe} executable find DLLs and Racket library
+The @exec{MzCOM.exe} executable will find DLLs and Racket library
 collections relative to its own path.
 
 @; ----------------------------------------------------------------------
@@ -163,7 +163,7 @@ loaded.  If an expression kills the primary Racket thread, as in
 ]
 
 then the evaluator Win32 thread is also killed.  
-When that happens, subsequent calls to Eval() will fail.
+When that happens, subsequent calls to @tt{Eval} will fail.
 
 @section{Acknowledgments}
 

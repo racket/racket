@@ -363,7 +363,7 @@ Removes any existing callback for @racket[name] in @racket[obj].}
 
 Extracts an @cpp{IUnknown} or @cpp{IDispatch} pointer from
 @racket[obj]. The former succeeds for any @tech{COM object} that has
-not been relased via @racket[com-release]. The latter succeeds
+not been released via @racket[com-release]. The latter succeeds
 only when the @tech{COM object} supports @cpp{IDispatch}, otherwise
 @racket[exn:fail] is raised.}
 
