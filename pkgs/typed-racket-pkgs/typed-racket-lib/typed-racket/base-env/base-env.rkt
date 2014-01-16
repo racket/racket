@@ -2436,30 +2436,30 @@
 [process (->key
 	  -String
 	   #:set-pwd? Univ #f
-	  (-values (list -Input-Port -Output-Port -Nat -Input-Port
-			 (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-				(-> (-val 'exit-code) (-opt -Byte))
-				(-> (-val 'wait) ManyUniv)
-				(-> (-val 'interrupt) -Void)
-				(-> (-val 'kill) -Void)))))]
+	  (-lst* -Input-Port -Output-Port -Nat -Input-Port
+                 (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                        (-> (-val 'exit-code) (-opt -Byte))
+                        (-> (-val 'wait) ManyUniv)
+                        (-> (-val 'interrupt) -Void)
+                        (-> (-val 'kill) -Void))))]
 
 [process*
  (cl->*
    (->optkey -Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f
-        (-values (list -Input-Port -Output-Port -Nat -Input-Port
-                       (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                              (-> (-val 'exit-code) (-opt -Byte))
-                              (-> (-val 'wait) ManyUniv)
-                              (-> (-val 'interrupt) -Void)
-                              (-> (-val 'kill) -Void)))))
+        (-lst* -Input-Port -Output-Port -Nat -Input-Port
+               (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                      (-> (-val 'exit-code) (-opt -Byte))
+                      (-> (-val 'wait) ManyUniv)
+                      (-> (-val 'interrupt) -Void)
+                      (-> (-val 'kill) -Void))))
    (->key -Pathlike (-val 'exact) -String
 	  #:set-pwd? Univ #f
-	  (-values (list -Input-Port -Output-Port -Nat -Input-Port
-                      (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                             (-> (-val 'exit-code) (-opt -Byte))
-                             (-> (-val 'wait) ManyUniv)
-                             (-> (-val 'interrupt) -Void)
-                             (-> (-val 'kill) -Void))))))]
+	  (-lst* -Input-Port -Output-Port -Nat -Input-Port
+                 (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                        (-> (-val 'exit-code) (-opt -Byte))
+                        (-> (-val 'wait) ManyUniv)
+                        (-> (-val 'interrupt) -Void)
+                        (-> (-val 'kill) -Void)))))]
 
 [process/ports
  (let* ((fun-type
