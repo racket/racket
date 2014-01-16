@@ -162,25 +162,25 @@
     (-mu This%
       (make-Class
        #f null null `((m ,(t:-> (make-Instance This%) N)))))]
-   ;; test #:extends
-   [(Class #:extends (Class [m (Number -> Number)]) (field [x Number]))
+   ;; test #:implements
+   [(Class #:implements (Class [m (Number -> Number)]) (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
-   [(Class #:extends (Class [m (Number -> Number)])
-           #:extends (Class [n (Number -> Number)])
+   [(Class #:implements (Class [m (Number -> Number)])
+           #:implements (Class [n (Number -> Number)])
            (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((n ,(t:-> N N)) (m ,(t:-> N N))))]
-   [(Class #:extends (Class [m (Number -> Number)])
-           #:extends (Class [m (Number -> Number)])
+   [(Class #:implements (Class [m (Number -> Number)])
+           #:implements (Class [m (Number -> Number)])
            (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
-   [(Class #:extends (Class (init [x Integer]) [m (Number -> Number)])
+   [(Class #:implements (Class (init [x Integer]) [m (Number -> Number)])
            (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
-   [FAIL (Class #:extends Number)]
-   [FAIL (Class #:extends Number [m (Number -> Number)])]
-   [FAIL (Class #:extends (Class [m (Number -> Number)]) [m String])]
-   [FAIL (Class #:extends (Class [m (Number -> Number)])
-                #:extends (Class [m (String -> String)])
+   [FAIL (Class #:implements Number)]
+   [FAIL (Class #:implements Number [m (Number -> Number)])]
+   [FAIL (Class #:implements (Class [m (Number -> Number)]) [m String])]
+   [FAIL (Class #:implements (Class [m (Number -> Number)])
+                #:implements (Class [m (String -> String)])
                 (field [x Number]))]
    ;; Test Object types
    [(Object) (make-Instance (make-Class #f null null null))]
