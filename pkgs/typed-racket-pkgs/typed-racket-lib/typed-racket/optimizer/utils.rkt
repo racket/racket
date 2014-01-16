@@ -8,6 +8,8 @@
          (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
          (utils tc-utils)
+         (only-in (utils literal-syntax-class)
+           [define-literal-syntax-class define-literal-syntax-class*])
          (for-template racket/base)
          (types type-table utils subtype)
          (rep type-rep))
@@ -100,20 +102,9 @@
            (pattern :literal #:with unsafe #'unsafe-id)))]))
 
 (define-syntax (define-literal-syntax-class stx)
-  (define-splicing-syntax-class spec
-    #:attributes (name (literals 1))
-    (pattern (~seq name:id (literals:id ...)))
-    (pattern literal:id
-             #:with (literals ...) #'(literal)
-             #:with name (format-id #'literal "~a^" #'literal)))
   (syntax-parse stx
-    ((_ :spec)
-     #'(begin
-         (define-syntax-class name
-           #:commit
-           #:literals (literals ...)
-           (pattern (~and op (~or literals ...))
-                    #:do [(add-disappeared-use (syntax-local-introduce #'op))]))))))
+    [(_ . args)
+     #'(define-literal-syntax-class* #:for-template . args)]))
 
 (define-syntax-rule (define-merged-syntax-class name (syntax-classes ...))
   (define-syntax-class name
