@@ -568,7 +568,7 @@
                 field-names field-types
                 method-names method-types)
   #:literals (init init-field field)
-  (pattern (~seq (~or (~seq #:extends extends-type:expr)
+  (pattern (~seq (~or (~seq #:implements extends-type:expr)
                       (~optional (~seq #:self self:id))
                       (init init-clause:init-type ...)
                       (init-field init-field-clause:init-type ...)
@@ -614,7 +614,7 @@
   (pattern (label:id type:expr)))
 
 ;; process-class-clauses : Syntax FieldDict MethodDict -> FieldDict MethodDict
-;; Merges #:extends class type and the current class clauses appropriately
+;; Merges #:implements class type and the current class clauses appropriately
 (define (merge-with-parent-type stx fields methods)
   ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
@@ -641,7 +641,7 @@
        (values fields methods)]
       [(? Mu?)
        (match-parent-type (unfold parent-type))]
-      [_ (tc-error "expected a class type for #:extends clause")]))
+      [_ (tc-error "expected a class type for #:implements clause")]))
   (define-values (super-fields super-methods)
     (match-parent-type parent-type))
 
@@ -656,12 +656,12 @@
     (check-duplicate-clause
      field-names super-field-names
      fields super-fields
-     "field or init-field name ~a conflicts with #:extends clause"))
+     "field or init-field name ~a conflicts with #:implements clause"))
   (define-values (checked-methods checked-super-methods)
    (check-duplicate-clause
     method-names super-method-names
     methods super-methods
-    "method name ~a conflicts with #:extends clause"))
+    "method name ~a conflicts with #:implements clause"))
 
   ;; then append the super types if there were no errors
   (define merged-fields (append checked-super-fields checked-fields))
