@@ -42,14 +42,18 @@
     [(_ ts tv) (syntax/loc stx (pt-test ts tv initial-tvar-env))]
     [(_ ty-stx ty-val tvar-env)
      (quasisyntax/loc
-         stx
+       stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
-         (unless
+         (define-values (expected actual same?)
            (phase1-phase0-eval
              (parameterize ([current-tvars tvar-env]
                             [delay-errors? #f])
-                #`#,(type-equal? (parse-type (quote-syntax ty-stx)) ty-val)))
-           (fail-check "Unequal types"))))]))
+                (define expected ty-val)
+                (define actual (parse-type (quote-syntax ty-stx)))
+                #`(values #,expected #,actual #,(type-equal? actual expected)))))
+          (unless same?
+            (with-check-info (['expected expected] ['actual actual])
+              (fail-check "Unequal types")))))]))
 
 (define-syntax pt-tests
   (syntax-rules ()
