@@ -204,7 +204,7 @@ scheme_load_compiled_stx_string
 scheme_compiled_stx_symbol
 scheme_eval_compiled_sized_string
 scheme_eval_compiled_sized_string_with_magic
-scheme_detach_multple_array
+scheme_detach_multiple_array
 GC_malloc
 GC_malloc_atomic
 GC_malloc_stubborn

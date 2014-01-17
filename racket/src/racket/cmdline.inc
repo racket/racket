@@ -495,7 +495,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             int cnt;
             mv = p->ku.multiple.array;
             cnt = p->ku.multiple.count;
-            scheme_detach_multple_array(mv);
+            scheme_detach_multiple_array(mv);
             e = scheme_make_null();
             while (cnt--) {
               e = scheme_make_pair(mv[cnt], e);

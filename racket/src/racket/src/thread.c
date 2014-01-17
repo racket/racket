@@ -6765,7 +6765,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
             if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
               rc = scheme_multiple_count;
               mv = scheme_multiple_array;
-              scheme_detach_multple_array(mv);
+              scheme_detach_multiple_array(mv);
             } else {
               rc = 1;
               mv = NULL;
@@ -6812,7 +6812,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
             if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
               rc = scheme_multiple_count;
               mv = scheme_multiple_array;
-              scheme_detach_multple_array(mv);
+              scheme_detach_multiple_array(mv);
               if (!to_call_is_handle)
                 scheme_pop_break_enable(&cframe, 1);
               return scheme_values(rc, mv);

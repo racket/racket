@@ -212,7 +212,7 @@
   scheme_extension_table->scheme_compiled_stx_symbol = scheme_compiled_stx_symbol;
   scheme_extension_table->scheme_eval_compiled_sized_string = scheme_eval_compiled_sized_string;
   scheme_extension_table->scheme_eval_compiled_sized_string_with_magic = scheme_eval_compiled_sized_string_with_magic;
-  scheme_extension_table->scheme_detach_multple_array = scheme_detach_multple_array;
+  scheme_extension_table->scheme_detach_multiple_array = scheme_detach_multiple_array;
 #ifndef SCHEME_NO_GC
 # ifndef SCHEME_NO_GC_PROTO
   scheme_extension_table->GC_malloc = GC_malloc;

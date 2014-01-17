@@ -301,7 +301,7 @@ Scheme_Object *(*scheme_eval_compiled_sized_string)(const char *str, int len, Sc
 Scheme_Object *(*scheme_eval_compiled_sized_string_with_magic)(const char *str, int len, Scheme_Env *env, 
 								      Scheme_Object *magic_symbol, Scheme_Object *magic_val,
 								      int multi_ok);
-void (*scheme_detach_multple_array)(Scheme_Object **a);
+void (*scheme_detach_multiple_array)(Scheme_Object **a);
 /*========================================================================*/
 /*                           memory management                            */
 /*========================================================================*/

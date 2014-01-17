@@ -3883,7 +3883,7 @@ Scheme_Object *scheme_values(int argc, Scheme_Object *argv[])
   return SCHEME_MULTIPLE_VALUES;
 }
 
-void scheme_detach_multple_array(Scheme_Object **values)
+void scheme_detach_multiple_array(Scheme_Object **values)
 {
   Scheme_Thread *t = scheme_current_thread;
 
