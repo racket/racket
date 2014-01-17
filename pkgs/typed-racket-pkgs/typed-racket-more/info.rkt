@@ -8,6 +8,7 @@
                "draw-lib"
                "rackunit-lib"
                "rackunit-gui"
+               "snip-lib"
                "typed-racket-lib"
                "gui-lib"
                "pict-lib"))
