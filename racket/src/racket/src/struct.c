@@ -3372,14 +3372,44 @@ Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *do_chaperone_result_guard_proc(int is_impersonator, void *data, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *proc = (Scheme_Object *)data, *o, *a[1];
+  Scheme_Object **received_vals, **guard_argv;
+  int received_cnt, i;
 
-  a[0] = argv[0];
-  o = _scheme_apply(proc, 1, a);
-  
-  if (!is_impersonator)
-    if (!scheme_chaperone_of(o, a[0]))
-      scheme_wrong_chaperoned("evt result", "value", a[0], o);
-  
+  /* in case calling `proc` mutates argv */
+  guard_argv = MALLOC_N(Scheme_Object *, argc);
+  memcpy(guard_argv, argv, sizeof(Scheme_Object *) * argc);
+
+  o = _scheme_apply_multi(proc, argc, guard_argv);
+
+  if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
+    received_cnt = scheme_multiple_count;
+    received_vals = scheme_multiple_array;
+    scheme_detach_multple_array(received_vals);
+  } else {
+      a[0] = o;
+      received_vals = a;
+      received_cnt = 1;
+  }
+
+  if (received_cnt != argc) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                     "evt %s: returned wrong number of values\n"
+                     "  %s : %V\n"
+                     "  expected count: %d\n"
+                     "  returned count: %d\n",
+                     is_impersonator ? "impersonator" : "chaperone",
+                     is_impersonator ? "impersonator" : "chaperone",
+                     proc,
+                     argc, received_cnt);
+  }
+
+  if (!is_impersonator) {
+    for (i = 0; i < argc; i++) {
+      if (!scheme_chaperone_of(received_vals[i], argv[i]))
+        scheme_wrong_chaperoned("evt result", "value", argv[i], received_vals[i]);
+    }
+  }
+
   return o;
 }
 
@@ -3447,7 +3477,7 @@ static Scheme_Object *do_chaperone_guard_proc(int is_impersonator, void *data, i
                                        : chaperone_result_guard_proc),
                                       (void *)vals[1], 
                                       "evt-result-chaperone", 
-                                      1, 1);
+                                      1, -1);
   a[1] = o;
 
   return scheme_wrap_evt(1, a);

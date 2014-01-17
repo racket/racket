@@ -1119,6 +1119,17 @@
   (test #t chaperone-of? (chaperone-evt an-e void) an-e)
   (test 18 (chaperone-evt an-e void) 9))
 
+;; test multiple valued evts
+(let ([evt (handle-evt always-evt (lambda (x) (values 0 0)))]
+      [redirect-1 (lambda (evt) (values evt (lambda args (apply values args))))]
+      [redirect-2 (lambda (evt) (values evt identity))]
+      [redirect-3 (lambda (evt) (values evt (lambda args 5)))]
+      [redirect-4 (lambda (evt) (values evt (lambda args (values 1 2))))])
+  (test-values '(0 0) (lambda () (sync (chaperone-evt evt redirect-1))))
+  (err/rt-test (sync (chaperone-evt evt redirect-2)))
+  (err/rt-test (sync (chaperone-evt evt redirect-3)))
+  (err/rt-test (sync (chaperone-evt evt redirect-4))))
+
 ;; ----------------------------------------
 ;; channel chaperones
 
