@@ -1028,7 +1028,7 @@ Examples:
          (sandwich-promise* [sandwich sandwich-expr]
                             [mixins ingredient-expr ...])
          #:contracts ([sandwich-expr sandwich?]
-                      [ingreient-expr ingredient?])]{
+                      [ingredient-expr ingredient?])]{
   Returns a promise to construct a sandwich. When forced, the promise
   will produce the result of @racket[sandwich-expr]. Each result of
   the @racket[ingredient-expr]s will be mixed into the resulting
@@ -1059,7 +1059,7 @@ Examples:
            (sandwich-promise* [sandwich sandwich-expr]
                               [mixins ingredient-expr ...])
            #:contracts ([sandwich-expr sandwich?]
-                        [ingreient-expr ingredient?])]{
+                        [ingredient-expr ingredient?])]{
     Returns a promise to construct a sandwich. When forced, the promise
     will produce the result of @racket[sandwich-expr]. Each result of
     the @racket[ingredient-expr]s will be mixed into the resulting
