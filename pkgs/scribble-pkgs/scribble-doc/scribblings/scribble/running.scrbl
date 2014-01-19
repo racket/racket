@@ -164,3 +164,22 @@ in @filepath{a.scrbl} and @filepath{b.scrbl}, then
 builds @filepath{c.html} with cross-reference links into
 @filepath{a.html} and @filepath{b.html}.
 
+
+@section{Passing Command-Line Arguments to Documents}
+
+When @exec{scribble} loads and renders a document module, by default
+it sets @racket[current-command-line-arguments] to an empty vector.
+Use the @DPFlag{arg} flag (any number of times) to add a string to
+@racket[current-command-line-arguments].
+
+For example,
+
+@commandline{scribble ++arg --mode ++arg fast turtle.scrbl}
+
+causes @racket[(current-command-line-arguments)] to return
+@racket['#("--mode" "fast")] while @filepath{turtle.scrbl} is loaded
+and rendered, which could affect the content that
+@filepath{turtle.scrbl} generates if it uses
+@racket[current-command-line-arguments].
+
+@history[#:changed "1.1" @elem{Added the empty-vector default and @DPFlag{arg} flag.}]

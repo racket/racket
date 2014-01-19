@@ -30,6 +30,7 @@
 (define current-directory-depth    (make-parameter 0))
 (define current-quiet              (make-parameter #f))
 (define helper-file-prefix         (make-parameter #f))
+(define doc-command-line-arguments (make-parameter null))
 
 (define (read-one str)
   (let ([i (open-input-string str)])
@@ -119,18 +120,23 @@
    [("++info-in") file "load format-specific cross-ref info from <file>"
     (current-info-input-files
      (cons file (current-info-input-files)))]
+   [("++arg") arg "add <arg> to current-command-line-arguments"
+    (doc-command-line-arguments
+     (cons arg (doc-command-line-arguments)))]
    #:once-each
    [("--quiet") "suppress output-file and undefined-tag reporting"
     (current-quiet #t)]
    #:args (file . another-file)
    (let ([files (cons file another-file)])
-     (build-docs (map (lambda (file) 
-                        ;; Try `doc' submodule, first:
-                        (if (module-declared? `(submod (file ,file) doc) #t)
-                            (dynamic-require `(submod (file ,file) doc) 'doc)
-                            (dynamic-require `(file ,file) 'doc)))
-                      files)
-                 files))))
+     (parameterize ([current-command-line-arguments
+                     (list->vector (reverse (doc-command-line-arguments)))])
+       (build-docs (map (lambda (file) 
+                          ;; Try `doc' submodule, first:
+                          (if (module-declared? `(submod (file ,file) doc) #t)
+                              (dynamic-require `(submod (file ,file) doc) 'doc)
+                              (dynamic-require `(file ,file) 'doc)))
+                        files)
+                   files)))))
 
 (define (build-docs docs files)
   (when (and (current-dest-name)
