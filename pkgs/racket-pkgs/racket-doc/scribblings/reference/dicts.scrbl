@@ -143,9 +143,8 @@ be used to implement any of the methods documented as
    (define (dict-remove dict key)
      (define al (alist-v dict))
      (alist (remove* (filter (λ (p) (equal? (car p) key)) al) al)))
-   (define (dict-count dict #:default [x #f])
-     (or x
-         (length (remove-duplicates (alist-v dict) #:key car))))]) (code:comment "etc. other methods")
+   (define (dict-count dict)
+     (length (remove-duplicates (alist-v dict) #:key car)))]) (code:comment "etc. other methods")
 
   (define d1 (alist '((1 . a) (2 . b))))
   (dict? d1)

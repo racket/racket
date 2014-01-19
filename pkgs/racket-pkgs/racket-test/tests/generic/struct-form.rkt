@@ -13,9 +13,8 @@
    (define (dict-remove dict key)
      (define al (alist-v dict))
      (remove* (assoc key al) al))
-   (define (dict-count dict #:default [x #f])
-     (or x
-         (length (remove-duplicates (alist-v dict) #:key car))))])
+   (define (dict-count dict)
+     (length (remove-duplicates (alist-v dict) #:key car)))])
 
 
 (module+ test
