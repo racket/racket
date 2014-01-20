@@ -294,7 +294,7 @@
             (Un)])]
       [(:Instance^ t)
        (let ([v (parse-type #'t)])
-         (if (not (or (F? v) (Mu? v) (Class? v) (Union? v) (Error? v)))
+         (if (not (or (F? v) (Mu? v) (Name? v) (Class? v) (Error? v)))
              (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                     (make-Instance (Un)))
              (make-Instance v)))]
