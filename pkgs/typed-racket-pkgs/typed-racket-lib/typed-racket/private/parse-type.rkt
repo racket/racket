@@ -120,6 +120,31 @@
            #:when (and (not (keyword? (syntax->datum #'t)))
                        (not (syntax->list #'t)))))
 
+;; syntax classes for parsing ->* function types
+(define-syntax-class ->*-mand
+  #:description "mandatory arguments for ->*"
+  #:attributes (doms kws)
+  (pattern (dom:non-keyword-ty ... kw:plain-kw-tys ...)
+           #:attr doms (syntax->list #'(dom ...))
+           #:attr kws  (attribute kw.mand-kw)))
+
+(define-splicing-syntax-class ->*-opt
+  #:description "optional arguments for ->*"
+  #:attributes (doms kws)
+ (pattern (~optional (dom:non-keyword-ty ... kw:plain-kw-tys ...))
+          #:attr doms (if (attribute dom)
+                          (syntax->list #'(dom ...))
+                          null)
+          #:attr kws (if (attribute kw)
+                         (attribute kw.opt-kw)
+                         null)))
+
+(define-splicing-syntax-class ->*-rest
+  #:description "rest argument type for ->*"
+  #:attributes (type)
+  (pattern (~optional (~seq #:rest type:non-keyword-ty))))
+
+;; syntax classes for filters, objects, and related things
 (define-syntax-class path-elem
   #:description "path element"
   (pattern :car^
@@ -379,24 +404,16 @@
                  doms
                  (parse-values-type #'rng)
                  #:kws (attribute kws.Keyword)))))]
-      [(:->*^
-        (dom:non-keyword-ty ... mand-kws:plain-kw-tys ...)
-        (~optional (opt-dom:non-keyword-ty ... opt-kws:plain-kw-tys ...))
-        (~optional (~seq #:rest rest-type:non-keyword-ty))
-        rng)
-       (define doms (for/list ([d (in-syntax #'(dom ...))])
+      [(:->*^ mand:->*-mand opt:->*-opt rest:->*-rest rng)
+       (define doms (for/list ([d (attribute mand.doms)])
                       (parse-type d)))
-       (define opt-doms (if (attribute opt-dom)
-                            (for/list ([d (in-syntax #'(opt-dom ...))])
-                              (parse-type d))
-                            null))
+       (define opt-doms (for/list ([d (attribute opt.doms)])
+                          (parse-type d)))
        (opt-fn doms opt-doms (parse-values-type #'rng)
-               #:rest (and (attribute rest-type)
-                           (parse-type #'rest-type))
-               #:kws (append (attribute mand-kws.mand-kw)
-                             (if (attribute opt-kws)
-                                 (attribute opt-kws.opt-kw)
-                                 null)))]
+               #:rest (and (attribute rest.type)
+                           (parse-type (attribute rest.type)))
+               #:kws (append (attribute mand.kws)
+                             (attribute opt.kws)))]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
