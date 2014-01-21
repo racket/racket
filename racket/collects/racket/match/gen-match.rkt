@@ -55,7 +55,11 @@
             'match (format "wrong number of match clauses, expected ~a and got ~a" len lp) pats))
          (define (mk unm rhs)
            (make-Row (for/list ([p (syntax->list pats)]) (parse p))
-                     #`(let () . #,rhs) unm null))
+                     (syntax-property
+                      (quasisyntax/loc stx
+                        (let () . #,rhs))
+                      'pattern-matching 'antimark)
+                     unm null))
          (syntax-parse rhs
            [()
             (raise-syntax-error 
@@ -72,7 +76,12 @@
            [_ (mk #f rhs)])))
      (define/with-syntax body 
        (compile* (syntax->list #'(xs ...)) parsed-clauses #'outer-fail))
-    (quasisyntax/loc stx
-      (let ([xs exprs] ...)
+     (define/with-syntax (exprs* ...)
+       (for/list ([e (in-list (syntax->list #'(exprs ...)))])
+         (syntax-property e 'pattern-matching 'antimark)))
+    (syntax-property
+     (quasisyntax/loc stx
+      (let ([xs exprs*] ...)
         (define (outer-fail) raise-error)
-        body))]))
+        body))
+     'pattern-matching #t)]))
