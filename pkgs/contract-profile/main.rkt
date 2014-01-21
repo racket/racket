@@ -58,12 +58,13 @@
                  live-contract-samples all-blames regular-profile)
     correlated)
 
-  (define contract-ratio (/ n-contract-samples (max n-samples 1) 1.0))
+  (define total-contract-time (samples-time live-contract-samples))
+  (define contract-ratio (/ total-contract-time (max total-time 1) 1.0))
   (printf "Running time is ~a% contracts\n"
           (~r (* 100 contract-ratio) #:precision 2))
   (printf "~a/~a samples\n" n-contract-samples n-samples)
   (printf "~a/~a ms\n\n"
-          (~r (* contract-ratio total-time) #:precision 0)
+          (~r total-contract-time #:precision 0)
           total-time)
 
   (define shorten-source
