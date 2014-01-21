@@ -564,15 +564,22 @@ A transformer produced by a second @racket[proc-expr] sub-expression is
  second @racket[proc-expr], @racket[id] can be given meaning both
  inside and outside patterns.
 
+Match expanders are not invoked unless @racket[id] appears in the first
+position in a sequence. Instead, identifiers bound by @racket[define-match-expander]
+are used as binding identifiers (like any other identifier) when they appear
+anywhere except the first position in a sequence.
+ 
 For example, to extend the pattern matcher and destructure syntax lists,
 @defs+int[
   #:eval match-eval
-  ((define-match-expander syntax-list 
+  ((define (syntax-list? x)
+     (and (syntax? x)
+          (list? (syntax->list x))))
+   (define-match-expander syntax-list 
      (lambda (stx)
        (syntax-case stx ()
          [(_ elts ...)
-          #'(? (lambda (x) (and (syntax? x)
-                                (list? (syntax->list x))))
+          #'(? syntax-list?
                (app syntax->list (list elts ...)))])))
    (define (make-keyword-predicate keyword)
      (lambda (stx)
@@ -594,6 +601,23 @@ For example, to extend the pattern matcher and destructure syntax lists,
     [(syntax-list (? and-keyword?) b c)
      (list "AAANND!" b c)])
  ]
+
+And here is an example showing how 
+@racket[define-match-expander]-bound identifiers are
+not treated specially unless they appear
+in the first position of pattern sequence.
+@defs+int[
+  #:eval match-eval
+  ((define-match-expander nil
+     (λ (stx) #''())
+     (λ (stx) #''()))
+   (define (len l)
+     (match l
+       [nil 0]
+       [(cons hd tl) (+ 1 (len tl))])))
+  (len nil)
+  (len (cons 1 nil))
+  (len (cons 1 (cons 2 nil)))]
 
 }
 
