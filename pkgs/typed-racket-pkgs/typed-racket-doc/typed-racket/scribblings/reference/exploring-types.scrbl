@@ -34,14 +34,31 @@ The following bindings are only available at the Typed Racket REPL.
 }
 
 @defform[(:print-type e)]{Prints the type of @racket[_e]. This prints the whole
-type, which can sometimes be quite large.}
+type, which can sometimes be quite large.
+
+@examples[#:eval the-top-eval
+  (:print-type (+ 1 2))
+  (:print-type map)
+]
+}
 
 @defform[(:query-type/args f t ...)]{Given a function @racket[f] and argument
-types @racket[t], shows the result type of @racket[f].}
+types @racket[t], shows the result type of @racket[f].
+
+@examples[#:eval the-top-eval
+  (:query-type/args + Integer Number)
+]
+}
 
 @defform[(:query-type/result f t)]{Given a function @racket[f] and a desired
 return type @racket[t], shows the arguments types @racket[f] should be given to
-return a value of type @racket[t].}
+return a value of type @racket[t].
+
+@examples[#:eval the-top-eval
+  (:query-type/result + Integer)
+  (:query-type/result + Float)
+]
+}
 
 @close-eval[the-top-eval]
 
