@@ -70,7 +70,7 @@
       -------
      
       Racket
-      Copyright (c) 2010-2013 PLT Design Inc.
+      Copyright (c) 2010-2014 PLT Design Inc.
      
       Racket is distributed under the GNU Lesser General Public License
       (LGPL).  This means that you can link Racket into proprietary
