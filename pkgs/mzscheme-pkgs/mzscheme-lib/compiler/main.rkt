@@ -387,7 +387,7 @@
            "than relying on the bytecode just-in-time compiler."))
 
 (when (compiler:option:somewhat-verbose)
-  (printf "mzc v~a [~a], Copyright (c) 2004-2013 PLT Design Inc.\n"
+  (printf "mzc v~a [~a], Copyright (c) 2004-2014 PLT Design Inc.\n"
           (version)
           (system-type 'gc)))
 

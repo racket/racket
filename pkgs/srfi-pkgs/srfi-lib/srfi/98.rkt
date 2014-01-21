@@ -1,4 +1,4 @@
-;; Copyright (c) 2009-2013 Derick Eddington.  All rights reserved.
+;; Copyright (c) 2009-2014 Derick Eddington.  All rights reserved.
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a
 ;; copy of this software and associated documentation files (the "Software"),

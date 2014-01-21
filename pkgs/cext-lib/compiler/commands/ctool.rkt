@@ -217,7 +217,7 @@
    (list "file")))
 
 (when (compiler:option:somewhat-verbose)
-  (printf "~a v~a [~a], Copyright (c) 2004-2013 PLT Design Inc.\n"
+  (printf "~a v~a [~a], Copyright (c) 2004-2014 PLT Design Inc.\n"
           (short-program+command-name)
           (version)
           (system-type 'gc)))
