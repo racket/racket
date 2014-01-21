@@ -13,7 +13,6 @@
   ;; reverse is there to sort samples in forward time, which get-times
   ;; needs.
   (define samples    (get-times (map cdr (reverse (cdr samples*)))))
-  (define n-samples             (length contract-samples))
   ;; combine blame info and stack trace info. samples should line up
   (define aug-contract-samples
     ;; If the sampler was stopped after recording a contract sample, but
@@ -23,7 +22,6 @@
                [s   (in-list samples)])
       (cons c-s s)))
   (define live-contract-samples (filter car aug-contract-samples))
-  (define n-contract-samples    (length live-contract-samples))
   (define all-blames
     (set->list (for/set ([b (in-list contract-samples)]
                          #:when b)
@@ -33,8 +31,8 @@
                      (blame-swap b) ; swap back
                      b))))
   (define regular-profile (analyze-samples samples*))
-  (contract-profile total-time n-samples n-contract-samples
-                    live-contract-samples all-blames regular-profile))
+  (contract-profile
+   total-time live-contract-samples all-blames regular-profile))
 
 
 (define (analyze-contract-samples contract-samples samples*)
@@ -54,15 +52,13 @@
 
 (define (print-breakdown correlated)
   (match-define (contract-profile
-                 total-time n-samples n-contract-samples
-                 live-contract-samples all-blames regular-profile)
+                 total-time live-contract-samples all-blames regular-profile)
     correlated)
 
   (define total-contract-time (samples-time live-contract-samples))
   (define contract-ratio (/ total-contract-time (max total-time 1) 1.0))
   (printf "Running time is ~a% contracts\n"
           (~r (* 100 contract-ratio) #:precision 2))
-  (printf "~a/~a samples\n" n-contract-samples n-samples)
   (printf "~a/~a ms\n\n"
           (~r total-contract-time #:precision 0)
           total-time)
@@ -137,8 +133,7 @@
 
 (define (module-graph-view correlated)
   (match-define (contract-profile
-                 total-time n-samples n-contract-samples
-                 live-contract-samples all-blames regular-profile)
+                 total-time live-contract-samples all-blames regular-profile)
     correlated)
 
   ;; first, enumerate all the relevant modules

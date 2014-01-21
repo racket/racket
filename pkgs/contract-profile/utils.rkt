@@ -5,7 +5,7 @@
 (provide (all-defined-out))
 
 (struct contract-profile
-  (total-time n-samples n-contract-samples
+  (total-time
    ;; (pairof blame? profile-sample)
    ;; samples taken while a contract was running
    live-contract-samples

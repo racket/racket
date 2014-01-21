@@ -46,8 +46,7 @@
 
 (define (boundary-view correlated)
   (match-define (contract-profile
-                 total-time n-samples n-contract-samples
-                 live-contract-samples all-blames regular-profile)
+                 total-time live-contract-samples all-blames regular-profile)
     correlated)
 
   (define all-contracts (remove-duplicates (map blame-contract all-blames)))
