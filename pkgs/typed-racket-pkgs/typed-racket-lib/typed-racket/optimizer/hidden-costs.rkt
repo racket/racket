@@ -10,7 +10,7 @@
 
 ;; not an exhaustive list
 (define-literal-syntax-class hidden-port-parameter-function
-  (display displayln newline write write-byte print printf))
+  (display displayln newline write write-byte write-bytes print printf))
 (define-literal-syntax-class hidden-random-parameter-function
   (random))
 
