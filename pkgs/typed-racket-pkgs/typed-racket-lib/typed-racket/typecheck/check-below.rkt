@@ -11,7 +11,10 @@
  [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()
                     [_ (if (Type/c? s) Type/c tc-results/c)])]
  [cond-check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c #f Type/c tc-results/c)]) ()
-                         [_ (if (Type/c? s) Type/c tc-results/c)])])
+                         [_ (if (Type/c? s) Type/c tc-results/c)])]
+ [type-mismatch (-->* ((-or/c Type/c string?) (-or/c Type/c string?))
+                      ((-or/c string? #f))
+                      -any)])
 
 (define (print-object o)
   (match o
@@ -27,7 +30,10 @@
 ;; Type errors with "type mismatch", arguments may be types or other things
 ;; like the length of a list of types
 (define (type-mismatch t1 t2 [more #f])
-  (tc-error/expr/fields "type mismatch" #:more more "expected" t1 "given" t2))
+  (define t1* (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1))
+  (define t2* (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))
+  (tc-error/expr/fields "type mismatch" #:more more
+                        "expected" t1* "given" t2*))
 
 ;; expected-but-got : (U Type String) (U Type String) -> Void
 ;;
@@ -46,10 +52,7 @@
      ;;        prints the binding locations of each type variable.
      (type-mismatch (format "`~a'" t1) (format "a different `~a'" t2)
                     "type variables bound in different scopes")]
-    [(_ _)
-     (type-mismatch
-      (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1)
-      (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))]))
+    [(_ _) (type-mismatch t1 t2)]))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
