@@ -209,7 +209,7 @@
        (match-let* ([(tc-result1: id-t) (single-value #'id)]
                     [(tc-result1: val-t) (single-value #'val)])
          (unless (subtype val-t id-t)
-           (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
+           (type-mismatch id-t val-t "mutation only allowed with compatible types"))
          (ret -Void))]
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
@@ -375,7 +375,7 @@
        (match-let* ([(tc-result1: id-t) (tc-expr #'id)]
                     [(tc-result1: val-t) (tc-expr #'val)])
          (unless (subtype val-t id-t)
-           (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
+           (type-mismatch id-t val-t "mutation only allowed with compatible types"))
          (ret -Void))]
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
