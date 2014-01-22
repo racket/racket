@@ -317,14 +317,26 @@
                 (syntax-local-introduce
                  (introducer
                   #`(([(pos->vals pos-next init pos-cont? val-cont? all-cont?)
-                       (make-sequence '(id ...) rhs)])
+                       #,(syntax-property
+                          (syntax/loc #'rhs (make-sequence '(id ...) rhs))
+                          'feature-profile:generic-sequence #t)])
                      (void)
                      ([pos init])
-                     (if pos-cont? (pos-cont? pos) #t)
-                     ([(id ...) (pos->vals pos)])
-                     (if val-cont? (val-cont? id ...) #t)
-                     (if all-cont? (all-cont? pos id ...) #t)
-                     ((pos-next pos)))))
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
+                        'feature-profile:generic-sequence #t)
+                     ([(id ...) #,(syntax-property
+                                   (syntax/loc #'rhs (pos->vals pos))
+                                   'feature-profile:generic-sequence #t)])
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
+                        'feature-profile:generic-sequence #t)
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if all-cont? (all-cont? pos id ...) #t))
+                        'feature-profile:generic-sequence #t)
+                     #,(syntax-property
+                        (syntax/loc #'rhs ((pos-next pos)))
+                        'feature-profile:generic-sequence #t))))
                 (make-rearm))))]
           [_
            (raise-syntax-error #f
