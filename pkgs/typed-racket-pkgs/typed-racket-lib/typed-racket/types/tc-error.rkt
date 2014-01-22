@@ -10,7 +10,7 @@
 (provide/cond-contract
  [tc-error/expr ((string?) (#:return c:any/c #:stx syntax?) #:rest (c:listof c:any/c)
                  . c:->* . c:any/c)]
- [tc-error/expr/fields ((string?) (#:more string? #:return c:any/c #:stx syntax?)
+ [tc-error/expr/fields ((string?) (#:more (c:or/c string? #f) #:return c:any/c #:stx syntax?)
                         #:rest (c:listof c:any/c) . c:->* . c:any/c)]
 
  [lookup-fail (identifier? . c:-> . Type/c)]

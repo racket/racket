@@ -42,7 +42,7 @@
 
 (provide/cond-contract
  [add-struct-fn! (identifier? StructPE? boolean? . c:-> . c:any/c)]
- [add-struct-constructor! (identifier? . c:-> . any)]
+ [add-struct-constructor! (identifier? . c:-> . c:any)]
  [struct-constructor? (identifier? . c:-> . boolean?)]
  [struct-accessor? (identifier? . c:-> . (c:or/c #f StructPE?))]
  [struct-mutator? (identifier? . c:-> . (c:or/c #f StructPE?))]

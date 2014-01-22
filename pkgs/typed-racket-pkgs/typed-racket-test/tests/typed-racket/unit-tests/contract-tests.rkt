@@ -57,11 +57,11 @@
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
               (t (-set Univ)) 
-              (t (-> Univ -Boolean : -Symbol))
+              (t (make-pred-ty -Symbol))
               (t (->key -Symbol #:key -Boolean #t Univ))
               (t (make-Function
                    (list (make-arr* (list Univ) -Boolean #:kws (list (make-Keyword '#:key Univ #t))
-                                    #:filters -Symbol))))
+                                    #:filters (-FS (-filter -Symbol 0 null) (-not-filter -Symbol 0 null))))))
               (t (-struct #'struct-name #f (list (make-fld -Symbol #'acc #f))))
               ;; Adapted from PR 13815
               (t (-poly (a) (-> a a)))
@@ -98,7 +98,7 @@
                   (list (make-arr* (list) -Boolean #:kws (list (make-Keyword '#:key Univ #f)))
                     (make-arr* (list Univ) -Boolean #:kws (list (make-Keyword '#:key2 Univ #f)))))
                 "case function type with optional keyword arguments")
-              (t/fail (-> (-> Univ -Boolean : -Symbol) -Symbol)
+              (t/fail (-> (make-pred-ty -Symbol)-Symbol)
                       "function type with filters or objects")
               (t/fail (cl->*
                         (-> -Boolean -Boolean)

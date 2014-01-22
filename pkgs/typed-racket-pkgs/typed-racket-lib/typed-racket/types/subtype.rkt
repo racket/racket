@@ -240,7 +240,7 @@
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)] or #f
 ;; is s a subtype of t, taking into account previously seen pairs A
 (define/cond-contract (subtype* A s t)
-  (c:-> (listof (cons/c fixnum? fixnum?)) Type? Type? c:any/c)
+  (c:-> (c:listof (c:cons/c fixnum? fixnum?)) Type? Type? c:any/c)
   (define ss (unsafe-Rep-seq s))
   (define st (unsafe-Rep-seq t))
   (early-return
