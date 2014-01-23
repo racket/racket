@@ -19,6 +19,8 @@
                  #:kws kw-t
                  #:rest rest
                  #:drest drest)))
+  ;; the kw function protocol passes rest args as an explicit list
+  (define rest-type (if rest (-lst rest) empty))
   (define ts 
     (flatten
      (list
@@ -31,39 +33,38 @@
       plain-t
       (for/list ([t (in-list opt-t)]) (-opt t))
       (for/list ([t (in-list opt-t)]) -Boolean)
-      ;; the kw function protocol passes rest args as an explicit list
-      (if rest (-lst rest) empty))))
+      rest-type)))
+  ;; the kw protocol puts the arguments in keyword-sorted order in the
+  ;; function header, so we need to sort the types to match
+  (define sorted-kws
+    (sort kw-t keyword<? #:key (match-lambda [(Keyword: kw _ _) kw])))
   (define ts/true
     (flatten
      (list
-      (for/list ([k (in-list mand-kw-t)])
+      (for/list ([k (in-list sorted-kws)])
         (match k
-          [(Keyword: _ t _) t]))
-      (for/list ([k (in-list opt-kw-t)])
-        (match k
-          [(Keyword: _ t _) (list t (-val #t))]))
+          [(Keyword: _ t #t) t]
+          [(Keyword: _ t #f) (list t (-val #t))]))
       plain-t
       (for/list ([t (in-list opt-t)]) t)
       (for/list ([t (in-list opt-t)]) (-val #t))
-      ;; the kw function protocol passes rest args as an explicit list
-      (if rest (-lst rest) empty))))
+      rest-type)))
   (define ts/false
     (flatten
      (list
-      (for/list ([k (in-list mand-kw-t)])
+      (for/list ([k (in-list sorted-kws)])
         (match k
-          [(Keyword: _ t _) t]))
-      (for/list ([k (in-list opt-kw-t)])
-        (match k
-          [(Keyword: _ t _) (list (-val #f) (-val #f))]))
+          [(Keyword: _ t #t) t]
+          [(Keyword: _ t #f) (list (-val #f) (-val #f))]))
       plain-t
       (for/list ([t (in-list opt-t)]) (-val #f))
-      (for/list ([t (in-list opt-t)]) (-val #f)))))
+      (for/list ([t (in-list opt-t)]) (-val #f))
+      rest-type)))
   (make-Function
     (if split?
         (remove-duplicates
-          (list (make-arr* ts/true rng #:rest rest #:drest drest)
-                (make-arr* ts/false rng #:rest rest #:drest drest)))
+          (list (make-arr* ts/true rng #:drest drest)
+                (make-arr* ts/false rng #:drest drest)))
         (list (make-arr* ts rng #:rest rest #:drest drest)))))
 
 (define (prefix-of a b)
