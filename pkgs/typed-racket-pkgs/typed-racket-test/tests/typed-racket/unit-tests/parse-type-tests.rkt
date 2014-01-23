@@ -131,6 +131,24 @@
    [FAIL (Struct-Type Integer)]
    [FAIL (Struct-Type foo)]
    [Struct-TypeTop (make-StructTypeTop)]
+
+   ;; keyword function types
+   [(#:a String -> String)
+    (->optkey [] #:a -String #t -String)]
+   [([#:a String] -> String)
+    (->optkey [] #:a -String #f -String)]
+   [(#:a String #:b String -> String)
+    (->optkey [] #:a -String #t #:b -String #t -String)]
+   [([#:a String] #:b String -> String)
+    (->optkey [] #:a -String #f #:b -String #t -String)]
+   [(#:a String [#:b String] -> String)
+    (->optkey [] #:a -String #t #:b -String #f -String)]
+   [(String #:a String -> String)
+    (->optkey -String [] #:a -String #t -String)]
+   [(String #:a String String * -> String)
+    (->optkey -String [] #:rest -String #:a -String #t -String)]
+   [(String [#:a String] String * -> String)
+    (->optkey -String [] #:rest -String #:a -String #f -String)]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

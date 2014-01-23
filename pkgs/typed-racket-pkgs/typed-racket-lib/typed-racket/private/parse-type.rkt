@@ -327,7 +327,7 @@
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty ddd:star kws:keyword-tys ... (~and kw t:->) rng)
+      [(dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star (~and kw t:->) rng)
        (add-disappeared-use #'kw)
        (make-Function
         (list (make-arr
