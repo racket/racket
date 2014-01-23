@@ -1918,6 +1918,23 @@
          (call-with-values (lambda () (eval #'(+ 1 2))) (inst list Any))
          (-lst Univ)]
 
+       ;; for/hash, for*/hash - PR 14306
+       [tc-e (for/hash: : (HashTable Symbol String)
+               ([x (in-list '(x y z))]
+                [y (in-list '("a" "b" "c"))]
+                #:when (eq? x 'x))
+               (values x y))
+             #:ret (ret (-HT -Symbol -String)
+                        (-FS -top -top)
+                        (make-NoObject))]
+       [tc-e (for*/hash: : (HashTable Symbol String)
+               ([k (in-list '(x y z))]
+                [v (in-list '("a" "b"))]
+                #:when (eq? k 'x))
+               (values k v))
+             #:ret (ret (-HT -Symbol -String)
+                        (-FS -top -top)
+                        (make-NoObject))]
         )
   (test-suite
    "tc-literal tests"

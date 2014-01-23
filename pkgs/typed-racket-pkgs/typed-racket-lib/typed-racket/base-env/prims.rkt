@@ -1057,12 +1057,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx
       #:literals (:)
       ((_ (~seq : return-annotation:expr)
-          (bind:optionally-annotated-binding ...)
+          clause:for-clauses
           body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
          (for/fold: : return-annotation
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
-           (bind ...)
+           (clause.expand ... ...)
            (let-values (((key val) (let () body ...)))
              (hash-set return-hash key val))))))))
 
@@ -1075,12 +1075,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx
       #:literals (:)
       ((_ (~seq : return-annotation:expr)
-          (bind:optionally-annotated-binding ...)
+          clause:for-clauses
           body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
          (for*/fold: : return-annotation
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
-           (bind ...)
+           (clause.expand* ... ...)
            (let-values (((key val) (let () body ...)))
              (hash-set return-hash key val))))))))
 
