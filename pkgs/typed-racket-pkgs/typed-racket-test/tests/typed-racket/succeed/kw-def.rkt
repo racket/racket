@@ -32,3 +32,56 @@
 
 (g 0 #:k 1)
 (g2 0 #:k 1)
+
+;; Additional keyword function tests
+;; FIXME: These really belong in the unit tests, but for some reason
+;;        the unit tests don't work well with keywords.
+(: f0:a (#:a String -> (List String)))
+(define (f0:a #:a a) (list a))
+
+(: f1:a (Symbol #:a String -> (List Symbol String)))
+(define (f1:a x #:a a) (list x a))
+
+(: f1:a? (Symbol [#:a String] -> (List Symbol String)))
+(define (f1:a? x #:a [a "a"]) (list x a))
+
+(: f1+:a (String #:a String String * -> (Listof String)))
+(define (f1+:a x #:a a . args) (cons x (cons a args)))
+
+(: f1+:a? (String [#:a String] String * -> (Listof String)))
+(define (f1+:a? x #:a [a "a"] . args) (cons x (cons a args)))
+
+(: f0:a:b (#:a String #:b Symbol -> (List String Symbol)))
+(define (f0:a:b #:a a #:b b) (list a b))
+
+(: f0:a?:b ([#:a String] #:b Symbol -> (List String Symbol)))
+(define (f0:a?:b #:a [a "a"] #:b b) (list a b))
+
+(: f1:a:b (String #:a String #:b Symbol -> (List String String Symbol)))
+(define (f1:a:b x #:a a #:b b) (list x a b))
+
+(: f1:a?:b (String [#:a String] #:b Symbol -> (List String String Symbol)))
+(define (f1:a?:b x #:a [a "a"] #:b b) (list x a b))
+
+(: f1+:a:b (String #:a String #:b String String * -> (Listof String)))
+(define (f1+:a:b x #:a a #:b b . args) (cons x (cons a (cons b args))))
+
+(: f0:a:b? (#:a String [#:b Symbol] -> (List String Symbol)))
+(define (f0:a:b? #:a a #:b [b 'b]) (list a b))
+
+(: f0:a?:b? ([#:a String] [#:b Symbol] -> (List String Symbol)))
+(define (f0:a?:b? #:a [a "a"] #:b [b 'b]) (list a b))
+
+(: f1:a:b? (String #:a String [#:b Symbol] -> (List String String Symbol)))
+(define (f1:a:b? x #:a a #:b [b 'b]) (list x a b))
+
+(: f1:a?:b? (String [#:a String] [#:b Symbol] -> (List String String Symbol)))
+(define (f1:a?:b? x #:a [a "a"] #:b [b 'b]) (list x a b))
+
+(: f1+:a:b? (String #:a String [#:b String] String * -> (Listof String)))
+(define (f1+:a:b? x #:a a #:b [b "b"] . args)
+  (cons x (cons a (cons b args))))
+
+(: f1+:a?:b? (String [#:a String] [#:b String] String * -> (Listof String)))
+(define (f1+:a?:b? x #:a [a "a"] #:b [b "b"] . args)
+  (cons x (cons a (cons b args))))
