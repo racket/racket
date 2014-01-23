@@ -948,15 +948,16 @@
                (define (f x) x)
                (provide (contract-out [f (-> any/c any)]))))
       (eval '(module provide/contract49-m2 racket/base
-               (require 'provide/contract48-m1)
-               (f 1 2)))
-      (with-handlers ([exn:fail? (λ (x) 
+               (require 'provide/contract49-m1)
+               (provide go)
+               (define (go) (f 1 2))))
+      (with-handlers ([exn:fail? (λ (x)
                                    (define m (regexp-match #rx"([^:]*:)" (exn-message x)))
                                    (if m
                                        (cadr m) 
                                        (list "regexp failed to match"
                                              (exn-message x))))])
-        (eval '(require 'provide/contract49-m2))))
+        ((dynamic-require ''provide/contract49-m2 'go))))
    "f:")
   
   (contract-error-test
