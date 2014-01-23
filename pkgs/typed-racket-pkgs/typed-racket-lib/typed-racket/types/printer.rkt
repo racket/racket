@@ -327,12 +327,12 @@
             `(case-> ,@cover)
             (car cover))])]))
 
-;; class->sexp : Class -> S-expression
-;; Convert a class type to an s-expression
-(define (class->sexp cls)
+;; class->sexp : Class [#:object? Boolean] -> S-expression
+;; Convert a class or object type to an s-expression
+(define (class->sexp cls #:object? [object? #f])
   (match-define (Class: _ inits fields methods) cls)
   (define inits*
-    (if (null? inits)
+    (if (or object? (null? inits))
         null
         (list
          (cons 'init
@@ -353,7 +353,7 @@
     (for/list ([name+type (in-list methods)])
       (match-define (list name type) name+type)
       `(,name ,(type->sexp type))))
-  `(Class ,@inits* ,@fields* ,@methods*))
+  `(,(if object? 'Object 'Class) ,@inits* ,@fields* ,@methods*))
 
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
@@ -488,7 +488,8 @@
     [(Mu-name: name body) `(Rec ,name ,(t->s body))]
     [(B: idx) `(B ,idx)]
     [(Syntax: t) `(Syntaxof ,(t->s t))]
-    [(Instance: t) `(Instance ,(t->s t))]
+    [(Instance: (and (? has-name?) cls)) `(Instance ,(t->s cls))]
+    [(Instance: (? Class? cls)) (class->sexp cls #:object? #t)]
     [(? Class?) (class->sexp type)]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
     [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]
