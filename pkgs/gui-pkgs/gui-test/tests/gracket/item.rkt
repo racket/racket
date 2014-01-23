@@ -359,11 +359,13 @@
 (define return-bmp 
   (make-object bitmap2% (icons-path "return.xbm") 'xbm))
 (define bb-bmp
-  (make-object bitmap2% (icons-path "bb.gif") 'gif))
+  (read-bitmap (icons-path "bomb-32x32.png") #:try-@2x? #t))
 (define mred-bmp
   (make-object bitmap2% (icons-path "mred.xbm") 'xbm))
 (define nruter-bmp
   (make-object bitmap2% (local-path "nruter.xbm") 'xbm))
+(define gc-bmp
+  (read-bitmap (icons-path "recycle.png") #:try-@2x? #t))
 
 (define (add-label-direction label-h? l)
   (if (not label-h?)
@@ -2488,6 +2490,25 @@
 	     "Warp Pointer" edp 
 	     (lambda (b e)
                (send selector warp-pointer 5 5)))
+(let* ([w (send gc-bmp get-width)]
+       [h (send gc-bmp get-height)]
+       [c (new (class canvas%
+                 (super-new)
+                 (define/override (on-event e)
+                   (when (send e button-down?)
+                     (collect-garbage))))
+               [parent edp]
+               [stretchable-width #f]
+               [stretchable-height #f]
+               [vert-margin 2]
+               [horiz-margin 2]
+               [min-width w]
+               [min-height h])])
+  (register-collecting-blit c
+                            0 0 (send gc-bmp get-width) (send gc-bmp get-height)
+                            gc-bmp (make-bitmap w h #f)))
+  
+              
 
 (define (choose-next radios)
   (let loop ([l radios])

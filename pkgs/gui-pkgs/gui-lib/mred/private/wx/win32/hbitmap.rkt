@@ -56,6 +56,12 @@
         (let ([p (cairo_get_source cr)])
           (cairo_pattern_reference p)
           (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
+          (let ([sc (send bm get-cairo-device-scale)])
+            (unless (= sc 1)
+              (let ([m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
+                (cairo_matrix_init_translate m 0 0)
+                (cairo_matrix_scale m sc sc)
+                (cairo_pattern_set_matrix (cairo_get_source cr) m))))
           (if mask-p
               (cairo_mask cr mask-p)
               (begin
