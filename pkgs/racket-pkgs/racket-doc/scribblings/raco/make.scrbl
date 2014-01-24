@@ -168,7 +168,7 @@ implements the compilation and dependency management used by
 
 Returns a procedure suitable as a value for the
 @racket[current-load/use-compiled] parameter. The returned procedure
-passes it arguments on to the @racket[current-load/use-compiled]
+passes its arguments on to the @racket[current-load/use-compiled]
 procedure that is installed when
 @racket[make-compilation-manager-load/use-compiled-handler] is called,
 but first it automatically compiles a source file to a @filepath{.zo}
