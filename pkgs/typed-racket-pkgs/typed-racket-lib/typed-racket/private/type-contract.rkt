@@ -289,17 +289,47 @@
                      (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
-        [(Instance: (Class: _ _ _ (list (list names functions) ...) _))
-         (object/sc (map (λ (n sc) (member-spec 'method n sc)) names (map t->sc/method functions)))]
-        [(Class: _ (list (list by-name-inits by-name-init-tys _) ...)
-                 fields
-                 (list (list names functions) ...)
-                 _)
+        [(Instance: (Class: _ _ fields methods _))
+         (match-define (list (list field-names field-types) ...) fields)
+         (match-define (list (list public-names public-types) ...) methods)
+         (object/sc (append (map (λ (n sc) (member-spec 'method n sc))
+                                 public-names (map t->sc/method public-types))
+                            (map (λ (n sc) (member-spec 'field n sc))
+                                 field-names (map t->sc/both field-types))))]
+        [(Class: _ inits fields publics augments)
+         (match-define (list (list init-names init-types _) ...) inits)
+         (match-define (list (list field-names field-types) ...) fields)
+         (match-define (list (list public-names public-types) ...) publics)
+         (match-define (list (list augment-names augment-types) ...) augments)
+         (define-values (pubment-names pubment-types)
+           (for/lists (_1 _2) ([name (in-list public-names)]
+                               [type (in-list public-types)]
+                               #:when (memq name augment-names))
+             (values name type)))
+         (define-values (override-names override-types)
+           (for/lists (_1 _2) ([name (in-list public-names)]
+                               [type (in-list public-types)]
+                               #:unless (memq name pubment-names))
+             (values name type)))
          (class/sc (append
                      (map (λ (n sc) (member-spec 'method n sc))
-                          names (map t->sc/method functions))
+                          public-names (map t->sc/method public-types))
+                     (map (λ (n sc) (member-spec 'inherit n sc))
+                          public-names (map t->sc/method public-types))
+                     (map (λ (n sc) (member-spec 'override n sc))
+                          override-names (map t->sc/method override-types))
+                     (map (λ (n sc) (member-spec 'super n sc))
+                          override-names (map t->sc/method override-types))
+                     (map (λ (n sc) (member-spec 'inner n sc))
+                          augment-names (map t->sc/method augment-types))
+                     (map (λ (n sc) (member-spec 'augment n sc))
+                          pubment-names (map t->sc/method pubment-types))
                      (map (λ (n sc) (member-spec 'init n sc))
-                          by-name-inits (map t->sc/neg by-name-init-tys)))
+                          init-names (map t->sc/neg init-types))
+                     (map (λ (n sc) (member-spec 'field n sc))
+                          field-names (map t->sc/both field-types))
+                     (map (λ (n sc) (member-spec 'inherit-field n sc))
+                          field-names (map t->sc/both field-types)))
                    #f empty empty)]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
