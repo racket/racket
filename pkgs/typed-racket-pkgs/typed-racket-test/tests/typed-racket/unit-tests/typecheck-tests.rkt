@@ -80,16 +80,23 @@
     (pattern (~seq #:expected v:expr))
     (pattern (~seq) #:attr v #'#f))
 
+  ;; for specifying the error message in a test
+  (define-splicing-syntax-class expected-msg
+    (pattern (~seq #:msg v:expr))
+    (pattern (~seq) #:attr v #'#f))
+
 
   (define (test-no-error stx name body)
     (quasisyntax/loc stx
       (test-not-exn (format "~a ~a" (quote-line-number #,name) '#,name)
         (lambda () #,body))))
 
-  (define (test-syntax-error stx name body)
+  (define (test-syntax-error stx name msg body)
     (quasisyntax/loc stx
       (test-exn (format "~a ~a" (quote-line-number #,name) '#,name)
-        exn:fail:syntax?
+        (λ (exn) (and (exn:fail:syntax? exn)
+                      (or (not #,msg)
+                          (regexp-match? #,msg (exn-message exn)))))
         (lambda () #,body)))))
 
 
@@ -118,14 +125,14 @@
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
   (syntax-parse stx
-    [(_ code:expr ex:expected)
-     (test-syntax-error stx (syntax/loc #'code (FAIL code))
+    [(_ code:expr ex:expected msg:expected-msg)
+     (test-syntax-error stx (syntax/loc #'code (FAIL code)) #'msg.v
        #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
 
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
-    [(_ lit:expr ex:expected)
-     (test-syntax-error stx #'(syntax/loc #'lit (LITERAL/FAIL lit))
+    [(_ lit:expr ex:expected msg:expected-msg)
+     (test-syntax-error stx #'(syntax/loc #'lit (LITERAL/FAIL lit)) #'msg.v
        #'(phase1-eval (tc-literal #'lit ex.v)))]))
 
 
@@ -426,7 +433,7 @@
                         (add1 x)
                         12))
               -Number]
-        [tc-err (5 4)]
+        [tc-err (5 4) #:msg "Cannot apply expression of type"]
         [tc-err (apply 5 '(2))]
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
         [tc-e (map add1 '(1)) (-pair -PosByte (-lst -PosByte))]
@@ -1978,5 +1985,6 @@
          (-pair (-vec (t:Un (-val ':a) (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))))
                 (-val ':b))
          #:expected (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))]
-   [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))]
+   [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))
+                    #:msg #rx"expected: Symbol"]
   ))
