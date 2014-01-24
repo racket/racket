@@ -32,5 +32,4 @@
   "keyword-expansion-test.rkt"
   "special-env-typecheck-tests.rkt"
   "contract-tests.rkt"
-  "interactive-tests.rkt"
-  "class-tests.rkt")
+  "interactive-tests.rkt")
