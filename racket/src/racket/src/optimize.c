@@ -265,7 +265,6 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       || (vtype == scheme_compiled_unclosed_procedure_type)
       || (vtype == scheme_inline_variant_type)
       || (vtype == scheme_case_lambda_sequence_type)
-      || (vtype == scheme_case_lambda_sequence_type)
       || (vtype == scheme_quote_syntax_type)
       || (vtype == scheme_varref_form_type)
       || (vtype == scheme_compiled_quote_syntax_type)) {
