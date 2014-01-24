@@ -3,7 +3,7 @@
 (require racket/runtime-path)
 (define-runtime-path here ".")
 
-(define known-wxme-failures '("collapsed.rkt"))
+(define known-wxme-failures '("collapsed.rkt" "run-collapsed.rkt"))
 
 (define (record-failure exn)
   (parameterize ([current-error-port (current-output-port)])
