@@ -68,6 +68,9 @@
     (check-prints-as? (-mu x (-lst x)) "(Rec x (Listof x))")
     (check-prints-as? (-seq -String -Symbol) "(Sequenceof String Symbol)")
     (check-prints-as? (-poly (a) (-> a -Void)) "(All (a) (a -> Void))")
+    (check-prints-as? (-> -Input-Port (make-Values (list (-result -String (-FS -top -bot) -no-obj)
+                                                         (-result -String (-FS -top -bot) -no-obj))))
+                      "(Input-Port -> (values (String : (Top | Bot)) (String : (Top | Bot))))")
     (check-prints-as? (->key Univ -Pathlike
                              #:exists
                              (one-of/c 'error 'append 'update 'replace

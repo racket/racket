@@ -407,7 +407,7 @@
     [(Instance: t) `(Instance ,(t->s t))]
     [(Class: pf nf ms) '(Class)]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
-    [(Result: t fs (Empty:)) `(,(type->sexp t) : (filter->sexp fs))]
+    [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]
     [(Result: t fs lo) `(,(type->sexp t) : ,(filter->sexp fs) : ,(object->sexp lo))]
     [(MPair: s t) `(MPairof ,(t->s s) ,(t->s t))]
     [(Refinement: parent p?)
