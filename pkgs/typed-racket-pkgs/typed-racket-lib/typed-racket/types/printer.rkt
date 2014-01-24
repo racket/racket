@@ -20,13 +20,14 @@
       #'(provide (rename-out [debug-printer print-type]
                              [debug-printer print-filter]
                              [debug-printer print-object]
-                             [debug-printer print-pathelem]))
-      #'(provide print-type print-filter print-object print-pathelem)))
+                             [debug-printer print-pathelem]
+                             [debug-pretty-format-type pretty-format-type]))
+      #'(provide print-type print-filter print-object print-pathelem
+                 pretty-format-type)))
 (provide-printer)
 
 (provide special-dots-printing? print-complex-filters?
-         current-print-type-fuel current-print-unexpanded
-         pretty-format-type)
+         current-print-type-fuel current-print-unexpanded)
 
 
 ;; do we attempt to find instantiations of polymorphic types to print?
@@ -445,4 +446,20 @@
     [_ #'(begin)]))
 
 (define-debug-printer debug-printer)
+
+;; debug-pretty-format-type : Type -> String
+;; Debugging mode for pretty printing types, which just uses
+;; the debug printer above. Ignores kw argument. Only defined
+;; in debug printing mode.
+(define-syntax (define-debug-pretty-format-type stx)
+  (syntax-parse stx
+    [(_ debug-pretty-format-type:id)
+     (if (eq? printer-type 'debug)
+       #'(define (debug-pretty-format-type type #:indent [indent 0])
+           (define out (open-output-string))
+           (debug-printer type out #t)
+           (get-output-string out))
+       #'(void))]))
+
+(define-debug-pretty-format-type debug-pretty-format-type)
 
