@@ -39,7 +39,7 @@ AC_ARG_ENABLE(places,  [  --enable-places         support places (3m only; usual
 AC_ARG_ENABLE(futures, [  --enable-futures        support futures (usually enabled by default)])
 AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)])
-AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabled by default, if available)], , enable_extflonum=yes)
+AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabled by default, if available)], , enable_extflonum=default)
 
 AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
 
@@ -302,6 +302,7 @@ show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats" "Note that this mode is NOT RECOMMENDED"
+show_explicitly_enabled "${enable_extflonum}" "Extflonums"
 show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
@@ -850,11 +851,11 @@ AC_LANG_C
 
 [ msg="for inline keyword" ]
 AC_MSG_CHECKING($msg)
-AC_COMPILE_IFELSE(
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
    static inline int foo() { return 0; }
    int main() {
       return foo();
-   }, 
+   }])], 
   inline=yes, inline=no)
 if test "$inline" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_INLINE_KEYWORD"
@@ -863,12 +864,12 @@ AC_MSG_RESULT($inline)
 
 [ msg="for noinline attribute" ]
 AC_MSG_CHECKING($msg)
-AC_COMPILE_IFELSE(
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
    static int foo() __attribute__ ((noinline));
    static int foo() { return 0; }
    int main() {
       return foo();
-   }, noinline=yes, noinline=no)
+   }])], noinline=yes, noinline=no)
 if test "$noinline" = "yes" ; then
   AC_DEFINE(MZ_USE_NOINLINE,1,[Have noinline attribute])
 fi
@@ -876,14 +877,14 @@ AC_MSG_RESULT($noinline)
 
 [ msg="for GNU preprocessor" ]
 AC_MSG_CHECKING($msg)
-AC_COMPILE_IFELSE(
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
    int main () {
    #ifdef __GNUC__
     return 0;
    #else
     if; // should fail
    #endif
-   }, using_gnu_cpp=yes, using_gnu_cpp=no)
+   }])], using_gnu_cpp=yes, using_gnu_cpp=no)
 if test "$using_gnu_cpp" = "yes" ; then
   XFORMFLAGS="$XFORMFLAGS --keep-lines"
   case "$build_os" in
@@ -956,16 +957,16 @@ fi
 
 [ msg="for mbsrtowcs" ]
 AC_MSG_CHECKING($msg)
-AC_LINK_IFELSE(
-[  #include <wchar.h> ]
-[  #include <strings.h>]
+AC_LINK_IFELSE([AC_LANG_SOURCE([
+   #include <wchar.h>
+   #include <strings.h>
    int main() {
      mbstate_t state;
-[    char *src = "X";]
-[    bzero(&state, sizeof(mbstate_t));]
-[    mbsrtowcs(0, &src, 0, &state);]
+     char *src = "X";
+     bzero(&state, sizeof(mbstate_t));
+     mbsrtowcs(0, &src, 0, &state);
      return 0;
-   }, mbsrtowcs=yes, mbsrtowcs=no)
+   }])], mbsrtowcs=yes, mbsrtowcs=no)
 if test "$mbsrtowcs" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_MBTOWC_FUNCTIONS"
 fi
@@ -974,8 +975,8 @@ AC_MSG_RESULT($mbsrtowcs)
 if test "${try_poll_syscall}" = "yes" ; then
   [ msg="for poll" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-  [  #include <poll.h> ]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+     #include <poll.h>
      int main() {
       struct pollfd pfd;
       int r;
@@ -983,7 +984,7 @@ if test "${try_poll_syscall}" = "yes" ; then
       pfd.events = POLLIN;
       r = poll(&pfd, 1, 0);
       return 0;
-     }, use_poll=yes, use_poll=no)
+     }])], use_poll=yes, use_poll=no)
   AC_MSG_RESULT($use_poll)
   if test "${use_poll}" = "yes" ; then
      AC_DEFINE(HAVE_POLL_SYSCALL,1,[Have poll])
@@ -993,8 +994,8 @@ fi
 if test "${try_epoll_syscall}" = "yes" ; then
   [ msg="for epoll" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-  [  #include <sys/epoll.h> ]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+    #include <sys/epoll.h>
     int main() {
       int fd;
       struct epoll_event ev;
@@ -1002,7 +1003,7 @@ if test "${try_epoll_syscall}" = "yes" ; then
       ev.events = EPOLLIN | EPOLLONESHOT;
       epoll_ctl(fd, EPOLL_CTL_ADD, 0, &ev);
       return 0;
-    }, use_epoll=yes, use_epoll=no)
+    }])], use_epoll=yes, use_epoll=no)
   AC_MSG_RESULT($use_epoll)
   if test "${use_epoll}" = "yes" ; then
      AC_DEFINE(HAVE_EPOLL_SYSCALL,1,[Have epoll])
@@ -1012,8 +1013,8 @@ fi
 if test "${try_inotify_syscall}" = "yes" ; then
   [ msg="for inotify" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-  [  #include <sys/inotify.h> ]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+    #include <sys/inotify.h> 
     int main() {
       int fd;
       int wd;
@@ -1022,7 +1023,7 @@ if test "${try_inotify_syscall}" = "yes" ; then
                              (IN_CREATE | IN_DELETE | IN_DELETE_SELF
                               | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_TO));
       return 0;
-    }, use_inotify=yes, use_inotify=no)
+    }])], use_inotify=yes, use_inotify=no)
   AC_MSG_RESULT($use_inotify)
   if test "${use_inotify}" = "yes" ; then
      AC_DEFINE(HAVE_INOTIFY_SYSCALL,1,[Have inotify])
@@ -1032,19 +1033,19 @@ fi
 if test "${try_kqueue_syscall}" = "yes" ; then
   [ msg="for kqueue" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-  [  #include <sys/types.h> ]
-  [  #include <sys/event.h> ]
-  [  #include <sys/time.h> ]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+     #include <sys/types.h>
+     #include <sys/event.h>
+     #include <sys/time.h>
      int main() {
         int kq;
         struct kevent kev;
-  [    struct timespec timeout = {0, 0}; ]
+        struct timespec timeout = {0, 0};
         kq = kqueue();
         EV_SET(&kev, 0, EVFILT_READ, EV_ADD, 0, 0, NULL);
         kevent(kq, &kev, 1, NULL, 0, &timeout);
         return 0;
-     }, use_kqueue=yes, use_kqueue=no)
+     }])], use_kqueue=yes, use_kqueue=no)
   AC_MSG_RESULT($use_kqueue)
   if test "${use_kqueue}" = "yes" ; then
      AC_DEFINE(HAVE_KQUEUE_SYSCALL,1,[Have kqueue])
@@ -1054,15 +1055,15 @@ fi
 if test "${check_for_mprotect}" = "yes" ; then
   [ msg="for mmap and mprotect" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-  [  #include <sys/mman.h> ]
-  [  #include <fcntl.h> ]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+     #include <sys/mman.h>
+     #include <fcntl.h>
      int main() {
       void *p;
       p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
       mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
       return 0;
-     }, use_mprotect=yes, use_mprotect=no)
+     }])], use_mprotect=yes, use_mprotect=no)
   AC_MSG_RESULT($use_mprotect)
   if test "${use_mprotect}" = "yes" ; then
      AC_DEFINE(HAVE_MMAP_MPROTECT,1,[Have mmap and mprotect])
@@ -1190,7 +1191,7 @@ fi
 if test "${enable_mzrt}" = "yes" ; then
   [ msg="for compare-and-swap" ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
    int check1(long *addr, long old, long new_val) {
      return __sync_bool_compare_and_swap(addr, old, new_val);
    }
@@ -1200,7 +1201,7 @@ if test "${enable_mzrt}" = "yes" ; then
    int main() {
       long l = 2; short s = 3;
       return !check1(&l, 2, 4) || !check2(&s, 3, 6);
-   }, cas_available=yes, cas_available=no)
+   }])], cas_available=yes, cas_available=no)
   AC_MSG_RESULT($cas_available)
   if test "${cas_available}" = "yes" ; then
     AC_DEFINE(MZ_CAS_AVAILABLE,1,[Compare-and-swap available])
@@ -1228,15 +1229,36 @@ if test "${enable_pthread}" = "yes" ; then
 
 [ msg="whether pthread_rwlock is available"   ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
-[  #include <pthread.h>]
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+   #include <pthread.h>
    pthread_rwlock_t l;
    int main() {
      return pthread_rwlock_init(&l, NULL);
-   }, rwlockavail=yes, rwlockavail=no)
+   }])], rwlockavail=yes, rwlockavail=no)
   AC_MSG_RESULT($rwlockavail)
   if test "$rwlockavail" = "yes" ; then
     AC_DEFINE(HAVE_PTHREAD_RWLOCK,1,[Have pthread_rwlock])
+  fi
+fi
+
+############## extflonum ################
+
+if test "${enable_extflonum}" = "default" ; then
+  [ msg="for powl for extflonums" ]
+  AC_MSG_CHECKING($msg)
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
+     #include <math.h>
+     #include <stdlib.h>
+     int main(int argc, char **argv) {
+      char *p;
+      long double x = 2.0, y = strtod(*(argv+1), &p);
+      if (powl(x, y) == 8.0)
+        return 0;
+      return 1;
+     }])], use_extflonums=yes, use_extflonums=no)
+  AC_MSG_RESULT($use_extflonums)
+  if test "${use_extflonums}" = "no" ; then
+    AC_DEFINE(MZ_NO_EXTFLONUMS,1,[Extflonums disabled])
   fi
 fi
 
@@ -1328,10 +1350,10 @@ if test "$check_gcc_dash_e" = "yes" ; then
   # Can use -Wl,-E for linking because we're using GNU linker?
 [ msg="whether linker accepts -Wl,-E"   ]
   AC_MSG_CHECKING($msg)
-  AC_LINK_IFELSE(
+  AC_LINK_IFELSE([AC_LANG_SOURCE([
    int main() {
       return 0;
-   }, linker_dash_e=yes, linker_dash_e=no)
+   }])], linker_dash_e=yes, linker_dash_e=no)
   if test "$linker_dash_e" = "no" ; then
     LDFLAGS="${orig_ldflags}"
   fi
