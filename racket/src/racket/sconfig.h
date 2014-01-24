@@ -417,6 +417,7 @@
 
 # define USE_TM_GMTOFF_FIELD
 # define USE_TM_ZONE_FIELD
+# define MAX_VALID_DATE_SECONDS_BITS 51
 
 # define MZ_JIT_USE_MPROTECT
 
@@ -1072,6 +1073,7 @@
 
 # define USE_TM_GMTOFF_FIELD
 # define USE_TM_ZONE_FIELD
+# define MAX_VALID_DATE_SECONDS_BITS 51
 
 # define MZ_JIT_USE_MPROTECT
 
@@ -1129,6 +1131,9 @@
  /* USER_TIME_IS_CLOCK uses the user time for system milliseconds. */
 
  /* TIME_TYPE_IS_UNSIGNED converts time_t values as unsigned. */
+
+ /* MAX_VALID_DATE_SECONDS_BITS sets a maximum number of bits for
+    seconds to pass to localtime() ro gmtime(). */
 
  /* MIN_VALID_DATE_SECONDS sets a minimum vald time in seconds. */
 

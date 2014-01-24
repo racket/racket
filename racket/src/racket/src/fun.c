@@ -9344,11 +9344,23 @@ static int VALID_TIME_RANGE(UNBUNDLE_TIME_TYPE lnow)
   return 1;
 }
 #else
+
 # ifdef MIN_VALID_DATE_SECONDS
-#  define VALID_TIME_RANGE(x) ((x) >= MIN_VALID_DATE_SECONDS)
+#  define VALID_TIME_RANGE_MIN(x) ((x) >= MIN_VALID_DATE_SECONDS)
 # else
-#  define VALID_TIME_RANGE(x) 1
+#  define VALID_TIME_RANGE_MIN(x) 1
 # endif
+
+# if defined(MAX_VALID_DATE_SECONDS_BITS) && defined(SIXTY_FOUR_BIT_INTEGERS)
+#  define VALID_TIME_RANGE_BITS(x) (((x) >= 0)                          \
+                                    ? ((x) == ((x) & (((intptr_t)1 << MAX_VALID_DATE_SECONDS_BITS) - 1))) \
+                                    : ((-(x)) == ((-(x)) & (((intptr_t)1 << MAX_VALID_DATE_SECONDS_BITS) - 1))))
+# else
+#  define VALID_TIME_RANGE_BITS(x) 1
+# endif
+
+# define VALID_TIME_RANGE(x) (VALID_TIME_RANGE_MIN(x) && VALID_TIME_RANGE_BITS(x))
+
 #endif
 
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
