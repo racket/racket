@@ -93,7 +93,7 @@
                                [(tc-results: t)
                                 (define tcs (map cleanup-type t))
                                 (define tgs (map generalize tcs))
-                                (define tgs-val (make-Values tgs))
+                                (define tgs-val (make-Values (map -result tgs)))
                                 (define formatted (pretty-format-type tgs-val #:indent 4))
                                 (define indented? (regexp-match? #rx"\n" formatted))
                                 (format "- : ~a~a~a\n"
