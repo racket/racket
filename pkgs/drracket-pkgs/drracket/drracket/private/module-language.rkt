@@ -527,7 +527,8 @@
           (when executable-specs
             (let ([executable-type (list-ref executable-specs 0)]
                   [gui? (eq? 'mred (list-ref executable-specs 1))]
-                  [executable-filename (list-ref executable-specs 2)])
+                  [executable-filename (list-ref executable-specs 2)]
+                  [aux (list-ref executable-specs 3)])
               (with-handlers ([(λ (x) #f) ;exn:fail?
                                (λ (x)
                                  (message-box
@@ -543,6 +544,7 @@
                            (create-embedding-executable
                             exe-name
                             #:gracket? gui?
+                            #:aux aux
                             #:verbose? #f
                             #:modules (list (list #f program-filename))
                             #:configure-via-first-module? #t

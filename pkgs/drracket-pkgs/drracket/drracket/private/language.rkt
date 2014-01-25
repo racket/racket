@@ -694,6 +694,7 @@
         (let* ([type (car executable-specs)]
                [base (cadr executable-specs)]
                [executable-filename (caddr executable-specs)]
+               [aux (cadddr executable-specs)]
                [create-executable
                 (case type
                   [(launcher) create-module-based-launcher]
@@ -729,7 +730,8 @@
   ;;                         (union #t 'mzscheme 'mred)
   ;;                      -> (union #f (list (union 'no-show 'launcher 'stand-alone 'distribution)
   ;;                                         (union 'no-show 'mzscheme 'mred)
-  ;;                                         string[filename]))
+  ;;                                         string[filename]
+  ;;                                         (listof (cons/c symbol? any/c))))
   (define (create-executable-gui parent program-filename show-type show-base)
     (define dlg (make-object dialog% (string-constant create-executable-title) parent))
     (define filename-panel (make-object horizontal-panel% dlg))
@@ -778,6 +780,53 @@
                                                           [(0) 'racket]
                                                           [(1) 'gracket]))
                                        (reset-filename-suffix))))))
+    
+    (define aux-panel (new group-box-panel%
+                           [label ""]
+                           [parent type/base-panel]))
+    (define aux-paths (new (class list-box%
+                             (inherit append)
+                             (super-new)
+                             (define/override (on-drop-file p)
+                               (add-aux p)))
+                           [parent aux-panel]
+                           [label (string-constant files-for-icons-etc)]
+                           [choices '()]
+                           [style '(vertical-label multiple)]
+                           [min-height 80]
+                           [callback (lambda (p e) (enable-minus))]))
+    (send aux-paths accept-drop-files #t)
+    (define aux-button-panel (new horizontal-pane%
+                                  [parent aux-panel]
+                                  [alignment '(center center)]
+                                  [stretchable-height #f]))
+    (new button%
+         [parent aux-button-panel]
+         [label "+"]
+         [callback (lambda (b e)
+                     (define p (get-file-list #f dlg))
+                     (when p
+                       (for-each add-aux p)))])
+    (define (add-aux p)
+      (define v (extract-aux-from-path p))
+      (send aux-paths append 
+            (format "~a: ~a"
+                    (if (null? v)
+                        "???"
+                        (caar v))
+                    p)
+            p))
+    (define minus-button
+      (new button%
+           [parent aux-button-panel]
+           [label "-"]
+           [callback (lambda (b e)
+                       (for ([i (in-list (sort (send aux-paths get-selections) >))])
+                         (send aux-paths delete i))
+                       (enable-minus))]))
+    (define (enable-minus)
+      (send minus-button enable (pair? (send aux-paths get-selections))))
+    (enable-minus)
     
     (define (reset-filename-suffix)
       (let ([s (send filename-text-field get-value)])
@@ -905,7 +954,10 @@
               [(0) 'mzscheme]
               [(1) 'mred])
             'no-show)
-        (send filename-text-field get-value))]))
+        (send filename-text-field get-value)
+        (apply append
+               (for/list ([i (in-range (send aux-paths get-number))])
+                 (extract-aux-from-path (send aux-paths get-data i)))))]))
   
   (define (normalize-mode mode)
     (case mode

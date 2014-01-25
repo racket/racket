@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt"
           scribble/decode scribble/eval scribble/struct scribble/racket
-          (for-label racket/gui/base framework)
+          (for-label racket/gui/base framework compiler/embed)
           setup/getinfo racket/pretty string-constants)
 
 @(define (ioinputfont . s)
@@ -901,6 +901,29 @@ with error messages, but your program will run more slowly.  To
 disable debugging, open the language dialog, click the @onscreen{Show
 Details} button, and select @onscreen{No debugging or profiling}, if
 it is available.
+
+When you create an executable in some languages, you can supply
+additional files to determine the executable's icon and similar
+properties, depending on the platform. The file's purpose is
+determined by its suffix:
+
+@itemlist[
+
+ @item{On Windows, supply an @filepath{.ico} file for an icon. Only
+       16x16, 32x32, or 48x48 images from the @filepath{.ico} file are
+       used.}
+
+ @item{On Mac OS X, supply an @filepath{.icns} file for an icon.  You
+       can set the application's creator with an @filepath{.creator}
+       file (whose first four bytes are used), and you can set
+       documents for the application through a @filepath{.utiexports}
+       file (see @racket['uti-exports] in
+       @racket[create-embedding-executable] for more information).}
+
+ @item{On Unix, supply a @filepath{.png} or @filepath{.ico} file for
+       an icon.}
+
+]
 
 @section[#:tag "follow-log"]{Following Log Messages}
 

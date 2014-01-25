@@ -1076,6 +1076,7 @@ please adhere to these guidelines:
  (executable-base "Base")
  (filename "Filename: ")
  (create "Create")
+ (files-for-icons-etc "Files for icons, etc.")
  (please-specify-a-filename "Please specify a filename to create.")
  (~a-must-end-with-~a
   "The ~a filename\n\n  ~a\n\nis illegal. The filename must end with \".~a\".")
