@@ -4,13 +4,20 @@
 
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep filter-rep) make-arr)
-         (rename-in (types abbrev union utils filter-ops resolve)
+         (rename-in (types abbrev union utils filter-ops resolve
+                           classes subtype)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env lexical-env index-env)
+         (env tvar-env type-name-env type-alias-env
+              lexical-env index-env row-constraint-env)
+         (only-in racket/list flatten)
+         racket/dict
+         racket/format
          racket/match
+         racket/syntax
+         (only-in unstable/list check-duplicate)
          "parse-classes.rkt"
          (for-label
            racket/base "../base-env/colon.rkt"
@@ -30,7 +37,7 @@
 (define-literal-set parse-type-literals
     #:for-label
     (: cons quote case-lambda values car cdr
-     t:Class t:Refinement t:Instance t:List t:List* t:pred t:-> t:case->
+     t:Class t:Object t:Refinement t:Instance t:List t:List* t:pred t:-> t:case->
      t:Rec t:U t:All t:Opaque t:Parameter t:Vector t:Struct t:Struct-Type t:Values))
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
@@ -79,6 +86,29 @@
        (add-disappeared-use #'kw)
        (extend-tvars vars
          (make-Poly vars (parse-type #'t.type))))]
+    ;; Next two are row polymorphic cases
+    [((~and kw t:All) (var:id #:row) . t:all-body)
+     (add-disappeared-use #'kw)
+     (define var* (syntax-e #'var))
+     ;; When we're inferring the row constraints, there
+     ;; should be no need to extend the constraint environment
+     (define body-type
+       (extend-tvars (list var*) (parse-type #'t.type)))
+     (make-PolyRow
+      (list var*)
+      ;; No constraints listed, so we need to infer the constraints
+      (infer-row-constraints body-type)
+      body-type)]
+    [((~and kw t:All) (var:id #:row constr:row-constraints) . t:all-body)
+     (add-disappeared-use #'kw)
+     (define var* (syntax-e #'var))
+     (define constraints (attribute constr.constraints))
+     (extend-row-constraints (list var*) (list constraints)
+       (extend-tvars (list var*)
+         (make-PolyRow
+          (list var*)
+          constraints
+          (parse-type #'t.type))))]
     [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 
@@ -89,7 +119,7 @@
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
 (define-syntax-class non-keyword-ty
-  (pattern (k e:expr ...)
+  (pattern (k e ...)
            #:when (not (keyword? (syntax->datum #'k))))
   (pattern t:expr
            #:when (and (not (keyword? (syntax->datum #'t)))
@@ -192,20 +222,10 @@
       [(fst . rst)
        #:fail-unless (not (syntax->list #'rst)) #f
        (-pair (parse-type #'fst) (parse-type #'rst))]
-      [((~and kw t:Class) (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
-       (add-disappeared-use #'kw)
-       (make-Class
-        (parse-types #'(pos-args ...))
-        (map list
-             (stx-map syntax-e #'(fname ...))
-             (parse-types #'(fty ...))
-             (for/list ((e (in-syntax #'(rest ...))))
-               (syntax-case e ()
-                 [(#t) #t]
-                 [_ #f])))
-        (map list
-             (stx-map syntax-e #'(mname ...))
-             (parse-types #'(mty ...))))]
+      [((~and kw t:Class) e ...)
+       (parse-class-type stx)]
+      [(t:Object e ...)
+       (parse-object-type stx)]
       [((~and kw t:Refinement) p?:id)
        (add-disappeared-use #'kw)
        (match (lookup-type/lexical #'p?)
@@ -229,7 +249,7 @@
       [((~and kw t:Instance) t)
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])
-         (if (not (or (Mu? v) (Class? v) (Union? v) (Error? v)))
+         (if (not (or (F? v) (Mu? v) (Name? v) (Class? v) (Error? v)))
              (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                     (make-Instance (Un)))
              (make-Instance v)))]
@@ -504,6 +524,185 @@
        (-values (parse-types #'(tys ...)))]
       [t
        (-values (list (parse-type #'t)))])))
+
+;;; Utilities for (Class ...) type parsing
+
+;; process-class-clauses : Option<F> Syntax FieldDict MethodDict AugmentDict
+;;                         -> Option<Id> FieldDict MethodDict AugmentDict
+;; Merges #:implements class type and the current class clauses appropriately
+(define (merge-with-parent-type row-var stx fields methods augments)
+  ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
+  ;; check for duplicates in a class clause
+  (define (check-duplicate-clause names super-names types super-types err-msg)
+    (define maybe-dup (check-duplicate (append names super-names)))
+    (cond [maybe-dup
+           (define type (car (dict-ref types maybe-dup)))
+           (define super-type (car (dict-ref super-types maybe-dup)))
+           (cond [;; if there is a duplicate, but the type is a subtype,
+                  ;; then let it through and check for any other duplicates
+                  (unless (subtype type super-type)
+                    ;; FIXME: this error message may need rewording
+                    (tc-error (~a "Type for member " maybe-dup
+                                  " in class type is not a subtype of the type"
+                                  " in the parent class type")))
+                  (check-duplicate-clause
+                   names (remove maybe-dup super-names)
+                   types (dict-remove super-types maybe-dup)
+                   err-msg)]
+                 [else
+                  (tc-error/stx stx err-msg maybe-dup)])]
+          [else (values types super-types)]))
+
+  (define parent-type (parse-type stx))
+  (define (match-parent-type parent-type)
+    (match parent-type
+      [(Class: row-var _ fields methods augments)
+       (values row-var fields methods augments)]
+      [(? Mu?)
+       (match-parent-type (unfold parent-type))]
+      [_ (tc-error "expected a class type for #:implements clause, got ~a"
+                   parent-type)]))
+  (define-values (super-row-var super-fields
+                  super-methods super-augments)
+    (match-parent-type parent-type))
+
+  (match-define (list (list field-names _) ...) fields)
+  (match-define (list (list method-names _) ...) methods)
+  (match-define (list (list augment-names _) ...) augments)
+  (match-define (list (list super-field-names _) ...) super-fields)
+  (match-define (list (list super-method-names _) ...) super-methods)
+  (match-define (list (list super-augment-names _) ...) super-augments)
+
+  ;; if any duplicates are found between this class and the superclass
+  ;; type, then raise an error
+  (define-values (checked-fields checked-super-fields)
+    (check-duplicate-clause
+     field-names super-field-names
+     fields super-fields
+     "field or init-field name ~a conflicts with #:implements clause"))
+  (define-values (checked-methods checked-super-methods)
+    (check-duplicate-clause
+     method-names super-method-names
+     methods super-methods
+     "method name ~a conflicts with #:implements clause"))
+  (define-values (checked-augments checked-super-augments)
+    (check-duplicate-clause
+     augment-names super-augment-names
+     augments super-augments
+     "augmentable method name ~a conflicts with #:implements clause"))
+
+  ;; it is an error for both the extending type and extended type
+  ;; to have row variables
+  (when (and row-var super-row-var)
+    (tc-error (~a "class type with row variable cannot"
+                  " extend another type that has a row variable")))
+
+  ;; then append the super types if there were no errors
+  (define merged-fields (append checked-super-fields checked-fields))
+  (define merged-methods (append checked-super-methods checked-methods))
+  (define merged-augments (append checked-super-augments checked-augments))
+
+  ;; make sure augments and methods are disjoint
+  (define maybe-dup-method (check-duplicate (dict-keys merged-methods)))
+  (when maybe-dup-method
+    (tc-error (~a "method name " maybe-dup-method " conflicts with"
+                  " another method name")))
+  (define maybe-dup-augment (check-duplicate (dict-keys merged-augments)))
+  (when maybe-dup-augment
+    (tc-error (~a "augmentable method name " maybe-dup-augment " conflicts with"
+                  " another augmentable method name")))
+
+  (values (or row-var super-row-var) merged-fields
+          merged-methods merged-augments))
+
+;; Syntax -> Type
+;; Parse a (Object ...) type
+;; This is an alternative way to write down an Instance type
+(define (parse-object-type stx)
+  (syntax-parse stx
+    [(kw clause:object-type-clauses)
+     (add-disappeared-use #'kw)
+     (define fields (map list
+                         (stx-map syntax-e #'clause.field-names)
+                         (stx-map parse-type #'clause.field-types)))
+     (define methods (map list
+                          (stx-map syntax-e #'clause.method-names)
+                          (stx-map parse-type #'clause.method-types)))
+     (check-function-types methods)
+     (make-Instance (make-Class #f null fields methods null))]))
+
+;; Syntax -> Type
+;; Parse a (Class ...) type
+(define (parse-class-type stx)
+  (syntax-parse stx
+    [(kw (~var clause (class-type-clauses parse-type)))
+     (add-disappeared-use #'kw)
+
+     (define parent-types (stx->list #'clause.extends-types))
+     (define given-inits (attribute clause.inits))
+     (define given-fields (attribute clause.fields))
+     (define given-methods (attribute clause.methods))
+     (define given-augments (attribute clause.augments))
+     (define given-row-var
+       (and (attribute clause.row-var)
+            (parse-type (attribute clause.row-var))))
+
+     (check-function-types given-methods)
+     (check-function-types given-augments)
+
+     ;; merge with all given parent types, erroring if needed
+     (define-values (row-var fields methods augments)
+      (for/fold ([row-var given-row-var]
+                 [fields given-fields]
+                 [methods given-methods]
+                 [augments given-augments])
+                ([parent-type parent-types])
+        (merge-with-parent-type row-var parent-type fields
+                                methods augments)))
+
+     ;; check constraints on row var for consistency with class
+     (when (and row-var (has-row-constraints? (F-n row-var)))
+       (define constraints (lookup-row-constraints (F-n row-var)))
+       (check-constraints given-inits (car constraints))
+       (check-constraints fields (cadr constraints))
+       (check-constraints methods (caddr constraints))
+       (check-constraints augments (cadddr constraints)))
+
+     (define class-type
+       (make-Class row-var given-inits fields methods augments))
+
+     class-type]))
+
+;; check-function-types : Dict<Name, Type> -> Void
+;; ensure all types recorded in the dictionary are function types
+(define (check-function-types method-types)
+  ;; TODO: this function should probably go in a utility
+  ;;       module since it's duplicated elsewhere
+  (define (function-type? type)
+    (match (resolve type)
+      [(? Function?) #t]
+      [(Poly: _ body) (function-type? body)]
+      [(PolyDots: _ body) (function-type? body)]
+      [(PolyRow: _ _ body) (function-type? body)]
+      [_ #f]))
+  (for ([(id pre-type) (in-dict method-types)])
+    (define type (car pre-type))
+    (unless (function-type? type)
+      (tc-error "method ~a must have a function type, given ~a"
+                id type))))
+
+;; check-constraints : Dict<Name, _> Listof<Name> -> Void
+;; helper to check if the constraints are consistent with the type
+(define (check-constraints type-table constraint-names)
+  (define names-from-type (dict-keys type-table))
+  (define conflicting-name
+    (for/or ([m (in-list names-from-type)])
+      (and (not (memq m constraint-names))
+           m)))
+  (when conflicting-name
+    (tc-error (~a "class type cannot contain member "
+                  conflicting-name
+                  " because it conflicts with the row variable constraints"))))
 
 (define (parse-tc-results stx)
   (syntax-parse stx #:literal-sets (parse-type-literals)

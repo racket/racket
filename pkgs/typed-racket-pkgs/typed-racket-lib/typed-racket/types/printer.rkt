@@ -267,6 +267,40 @@
        [(list a b ...)
         `(case-> ,(arr->sexp a) ,@(map arr->sexp b))])]))
 
+;; class->sexp : Class [#:object? Boolean] -> S-expression
+;; Convert a class or object type to an s-expression
+(define (class->sexp cls #:object? [object? #f])
+  (match-define (Class: row-var inits fields methods augments) cls)
+  (define row-var*
+    (if (and row-var (F? row-var)) `(#:row-var ,(F-n row-var)) '()))
+  (define inits*
+    (if (or object? (null? inits))
+        null
+        (list
+         (cons 'init
+               (for/list ([init inits])
+                 (match-define (list name type opt?) init)
+                 (if opt?
+                     (list name (type->sexp type) '#:optional)
+                     (list name (type->sexp type))))))))
+  (define fields*
+    (if (null? fields)
+        null
+        (list
+         (cons 'field
+               (for/list ([name+type (in-list fields)])
+                 (match-define (list name type) name+type)
+                 `(,name ,(type->sexp type)))))))
+  (define methods*
+    (for/list ([name+type (in-list methods)])
+      (match-define (list name type) name+type)
+      `(,name ,(type->sexp type))))
+  (define augments*
+    (cond [(or object? (null? augments)) '()]
+          [else (list (cons 'augment augments))]))
+  `(,(if object? 'Object 'Class)
+    ,@row-var* ,@inits* ,@fields* ,@methods* ,@augments*))
+
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
 (define (type->sexp type [ignored-names '()])
@@ -389,6 +423,9 @@
      `(All ,names ,(t->s body))]
     [(PolyDots-names: (list names ... dotted) body)
      `(All ,(append names (list dotted '...)) ,(t->s body))]
+    ;; FIXME: should this print constraints too
+    [(PolyRow-names: names _ body)
+     `(All (,(car names) #:row) ,(t->s body))]
     [(Mu: x (Syntax: (Union: (list
                               (Base: 'Number _ _ _)
                               (Base: 'Boolean _ _ _)
@@ -404,8 +441,10 @@
     [(Mu-name: name body) `(Rec ,name ,(t->s body))]
     [(B: idx) `(B ,idx)]
     [(Syntax: t) `(Syntaxof ,(t->s t))]
-    [(Instance: t) `(Instance ,(t->s t))]
-    [(Class: pf nf ms) '(Class)]
+    [(Instance: (and (? has-name?) cls)) `(Instance ,(t->s cls))]
+    [(Instance: (? Class? cls)) (class->sexp cls #:object? #t)]
+    [(ClassTop:) 'ClassTop]
+    [(? Class?) (class->sexp type)]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
     [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]
     [(Result: t fs lo) `(,(type->sexp t) : ,(filter->sexp fs) : ,(object->sexp lo))]

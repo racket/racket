@@ -1,13 +1,11 @@
 #lang typed/racket/base
 
-(require typed/private/utils typed/mred/mred)
+(require racket/class
+         typed/private/utils
+         typed/mred/mred)
 
-(dt Style-List% (Class ()
-                       ()
-                       ([find-named-style
-                         (String -> (Instance (Class ()
-                                                     ()
-                                                     ([get-font (-> (Instance Font%))]))))])))
+(define-type Style-List%
+  (Class [find-named-style (String -> (Instance (Class [get-font (-> (Instance Font%))])))]))
 
 (require/typed/provide
  framework/framework

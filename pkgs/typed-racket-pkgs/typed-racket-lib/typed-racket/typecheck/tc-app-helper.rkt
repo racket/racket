@@ -329,6 +329,9 @@
           (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
          (PolyDots-names:
           msg-vars
+          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+         (PolyRow-names:
+          msg-vars _
           (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...))))
      (let ([fcn-string (if name
                            (format "function `~a'" (syntax->datum name))
@@ -352,7 +355,8 @@
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]
     [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
-         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...))))
+         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
+         (PolyRow-names: msg-vars _ (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...))))
      (let ([fcn-string (if name
                            (format "function with keywords ~a" (syntax->datum name))
                            "function with keywords")])

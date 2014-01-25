@@ -4,7 +4,7 @@
 
 (require
  (for-template
-  (except-in racket -> ->* one-of/c)
+  (except-in racket -> ->* one-of/c class)
   racket/unsafe/ops
   ;(only-in rnrs/lists-6 fold-left)
   '#%paramz
@@ -21,6 +21,8 @@
  (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
+          make-ClassTop
+          make-Instance
           make-Name
           make-ValuesDots
           make-MPairTop
@@ -959,6 +961,12 @@
 [struct->vector (Univ . -> . (-vec Univ))]
 [struct? (-> Univ -Boolean)]
 [struct-type? (make-pred-ty (make-StructTypeTop))]
+
+;; Section 6.2 (Classes)
+[object% (-class)]
+
+;; Section 6.11 (Object, Class, and Interface Utilities)
+[is-a? (-> Univ (make-ClassTop) -Boolean)]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]

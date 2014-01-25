@@ -7,9 +7,6 @@
 
 These features are currently experimental and subject to change.
 
-@defform[(Class args ...)]{A type constructor for typing classes created using @racketmodname[racket/class].}
-@defform[(Instance c)]{A type constructor for typing objects created using @racketmodname[racket/class].}
-
 @defform[(declare-refinement id)]{Declares @racket[id] to be usable in
 refinement types.}
 

@@ -40,6 +40,11 @@
             [body* (subst-all (make-simple-substitution fixed fixed-tys)
                               body)])
        (substitute-dots rest-tys #f dotted body*))]
+    [(PolyRow: names _ body)
+     (unless (= (length types) (length names))
+       (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a"
+                (length names) (length types)))
+     (subst-all (make-simple-substitution names types) body)]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
 (define (instantiate-poly-dotted t types image var)
@@ -78,7 +83,8 @@
 
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
- [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
+ [instantiate-poly ((or/c Poly? PolyDots? PolyRow?) (listof Type/c)
+                    . -> . Type/c)]
  [instantiate-poly-dotted
   (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)] 
  [fv (Rep? . -> . (listof symbol?))]

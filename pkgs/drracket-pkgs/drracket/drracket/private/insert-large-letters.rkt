@@ -1,14 +1,13 @@
-#lang typed/racket/base
+#lang typed/racket
 
 (require typed/mred/mred
          typed/framework/framework
          racket/class
          string-constants)
 
-(define-type-alias Bitmap-Message% (Class () 
-                                          ([parent (Instance Horizontal-Panel%)])
-                                          ([set-bm ((Instance Bitmap%) -> Void)])))
-
+(define-type Bitmap-Message%
+  (Class (init [parent (Instance Horizontal-Panel%)])
+         [set-bm ((Instance Bitmap%) -> Void)]))
 
 (require/typed "bitmap-message.rkt"
                [bitmap-message% Bitmap-Message%])
@@ -61,7 +60,7 @@
                         [parent dlg]
                         [stretchable-height #f]))
   (define: font-choice : (Instance Choice%)
-    (let ([tmp-bdc (make-object bitmap-dc% (make-object bitmap% 1 1 #f))])
+    (let ([tmp-bdc (new bitmap-dc% [bitmap (make-bitmap 1 1 #f)])])
       (new choice%
            [label (string-constant fonts)]
            [parent info-bar]
@@ -157,11 +156,11 @@
 
 (: render-large-letters (String Char (Instance Font%) String (Instance Text:Basic%) -> (Instance Bitmap%)))
 (define (render-large-letters comment-prefix comment-character the-font str edit)
-  (define bdc (make-object bitmap-dc% (make-object bitmap% 1 1 #t)))
+  (define bdc (new bitmap-dc% [bitmap (make-bitmap 1 1 #t)]))
   (define-values (tw raw-th td ta) (send bdc get-text-extent str the-font))
   (define th (let-values ([(_1 h _2 _3) (send bdc get-text-extent "X" the-font)])
                (max raw-th h)))
-  (define tmp-color (make-object color%))
+  (define tmp-color (make-color 0 0 0))
   
   (: get-char (Real Real -> Char))
   (define (get-char x y)
@@ -171,9 +170,9 @@
           comment-character
           #\space)))  
   (define bitmap
-    (make-object bitmap% 
-      (max 1 (inexact->exact tw))
-      (inexact->exact th)
+    (make-bitmap
+      (max 1 (assert (exact-floor tw) positive?))
+      (assert (exact-floor th) positive?)
       #t))
   
   (: fetch-line (Real -> String))

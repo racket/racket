@@ -16,28 +16,36 @@
 (provide Mu-name:
          Poly-names: Poly-fresh:
          PolyDots-names:
+         PolyRow-names: PolyRow-fresh:
          Type-seq
          Mu-unsafe: Poly-unsafe:
          PolyDots-unsafe:
-         Mu? Poly? PolyDots?
+         Mu? Poly? PolyDots? PolyRow?
          Filter? Object?
          Type/c Type/c?
          Values/c SomeValues/c
          Poly-n
          PolyDots-n
+         Class? Row? Row:
          free-vars*
          type-compare type<?
          remove-dups
          sub-f sub-o sub-pe
-         (rename-out [Mu:* Mu:]
+         (rename-out [Class:* Class:]
+                     [Class* make-Class]
+                     [Row* make-Row]
+                     [Mu:* Mu:]
                      [Poly:* Poly:]
                      [PolyDots:* PolyDots:]
+                     [PolyRow:* PolyRow:]
                      [Mu* make-Mu]
                      [Poly* make-Poly]
                      [PolyDots* make-PolyDots]
+                     [PolyRow* make-PolyRow]
                      [Mu-body* Mu-body]
                      [Poly-body* Poly-body]
-                     [PolyDots-body* PolyDots-body]))
+                     [PolyDots-body* PolyDots-body]
+                     [PolyRow-body* PolyRow-body]))
 
 (provide/cond-contract [type-equal? (Rep? Rep? . -> . boolean?)])
 
@@ -234,6 +242,20 @@
   [#:frees (λ (f) (f body))]
   [#:fold-rhs (let ([body* (remove-scopes n body)])
                 (*PolyDots n (add-scopes n (type-rec-id body*))))])
+
+;; interp. A row polymorphic function type
+;; constraints are row absence constraints, represented
+;; as a set for each of init, field, methods
+(def-type PolyRow (constraints body) #:no-provide
+  [#:contract (->i ([constraints (list/c list? list? list? list?)]
+                    [body (scope-depth 1)])
+                   (#:syntax [stx (or/c #f syntax?)])
+                   [result PolyRow?])]
+  [#:frees (λ (f) (f body))]
+  [#:fold-rhs (let ([body* (remove-scopes 1 body)])
+                (*PolyRow constraints
+                          (add-scopes 1 (type-rec-id body*))))]
+  [#:key (Type-key body)])
 
 ;; pred : identifier
 (def-type Opaque ([pred identifier?])
@@ -434,29 +456,62 @@
 ;; t : Type
 (def-type Syntax ([t Type/c]) [#:key 'syntax])
 
-;; pos-flds  : (Listof Type)
-;; name-flds : (Listof (Tuple Symbol Type Boolean))
-;; methods   : (Listof (Tuple Symbol Function))
-(def-type Class ([pos-flds (listof Type/c)]
-                 [name-flds (listof (list/c symbol? Type/c boolean?))]
-                 [methods (listof (list/c symbol? Function?))])
+;; A Row used in type instantiation
+;; For now, this should not appear in user code. It's used
+;; internally to perform row instantiations and to represent
+;; class types.
+;;
+;; invariant: all clauses are sorted by the key name
+(def-type Row ([inits (listof (list/c symbol? Type/c boolean?))]
+               [fields (listof (list/c symbol? Type/c))]
+               [methods (listof (list/c symbol? Function?))]
+               [augments (listof (list/c symbol? Function?))])
+  #:no-provide
   [#:frees (λ (f) (combine-frees
-                   (map f (append pos-flds
-                                  (map cadr name-flds)
-                                  (map cadr methods)))))]
-  [#:key 'class]
-  [#:fold-rhs (match (list pos-flds name-flds methods)
+                   (map f (append (map cadr inits)
+                                  (map cadr fields)
+                                  (map cadr methods)
+                                  (map cadr augments)))))]
+  [#:fold-rhs (match (list inits fields methods augments)
                 [(list
-                  pos-tys
                   (list (list init-names init-tys reqd) ___)
-                  (list (list mname mty) ___))
-                 (*Class
-                  (map type-rec-id pos-tys)
+                  (list (list fname fty) ___)
+                  (list (list mname mty) ___)
+                  (list (list aname aty) ___))
+                 (*Row
                   (map list
                        init-names
                        (map type-rec-id init-tys)
                        reqd)
-                  (map list mname (map type-rec-id mty)))])])
+                  (map list fname (map type-rec-id fty))
+                  (map list mname (map type-rec-id mty))
+                  (map list aname (map type-rec-id aty)))])])
+
+;; Supertype of all Class types, cannot instantiate
+;; or subclass these
+(def-type ClassTop () [#:fold-rhs #:base])
+
+;; row-ext : Option<(U F B Row)>
+;; row     : Row
+;;
+;; interp. The first field represents a row extension
+;;         The second field represents the concrete row
+;;         that the class starts with
+;;
+(def-type Class ([row-ext (or/c #f F? B? Row?)]
+                 [row Row?])
+  #:no-provide
+  [#:frees (λ (f) (combine-frees
+                   ;; FIXME: is this correct?
+                   `(,@(or (and (F? row-ext) (list (f row-ext)))
+                           '())
+                     ,(f row))))]
+  [#:key 'class]
+  [#:fold-rhs (match (list row-ext row)
+                [(list row-ext row)
+                 (*Class
+                  (and row-ext (type-rec-id row-ext))
+                  (type-rec-id row))])])
 
 ;; cls : Class
 (def-type Instance ([cls Type/c]) [#:key 'instance])
@@ -695,6 +750,22 @@
        (int-err "Wrong number of names: expected ~a got ~a" n (length names)))
      (instantiate-many (map *F names) scope)]))
 
+;; Constructor and destructor for row polymorphism
+;;
+;; Note that while `names` lets you specify multiple names, it's
+;; expected that row polymorphic types only bind a single name at
+;; a time. This may change in the future.
+;;
+(define (PolyRow* names constraints body #:original-names [orig names])
+  (let ([v (*PolyRow constraints (abstract-many names body))])
+    (hash-set! name-table v orig)
+    v))
+
+(define (PolyRow-body* names t)
+  (match t
+    [(PolyRow: constraints scope)
+     (instantiate-many (map *F names) scope)]))
+
 (print-struct #t)
 
 (define-match-expander Mu-unsafe:
@@ -804,4 +875,104 @@
                           [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
+
+(define-match-expander PolyRow:*
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ nps constrp bp)
+       #'(? PolyRow?
+            (app (lambda (t)
+                   (define sym (gensym))
+                   (list (list sym)
+                         (PolyRow-constraints t)
+                         (PolyRow-body* (list sym) t)))
+                 (list nps constrp bp)))])))
+
+(define-match-expander PolyRow-names:
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ nps constrp bp)
+       #'(? PolyRow?
+            (app (lambda (t)
+                   (define syms (hash-ref name-table t (λ _ (list (gensym)))))
+                   (list syms
+                         (PolyRow-constraints t)
+                         (PolyRow-body* syms t)))
+                 (list nps constrp bp)))])))
+
+(define-match-expander PolyRow-fresh:
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ nps freshp constrp bp)
+       #'(? PolyRow?
+            (app (lambda (t)
+                   (define syms (hash-ref name-table t (λ _ (list (gensym)))))
+                   (define fresh-syms (list (gensym (car syms))))
+                   (list syms fresh-syms
+                         (PolyRow-constraints t)
+                         (PolyRow-body* fresh-syms t)))
+                 (list nps freshp constrp bp)))])))
+
+;; Row*
+;; This is a custom constructor for Row types
+;; Sorts all clauses by the key (the clause name)
+(define (Row* inits fields methods augments)
+  (*Row (sort-row-clauses inits)
+        (sort-row-clauses fields)
+        (sort-row-clauses methods)
+        (sort-row-clauses augments)))
+
+;; Class*
+;; This is a custom constructor for Class types that
+;; doesn't require writing make-Row everywhere
+(define/cond-contract (Class* row-var inits fields methods augments)
+  (-> (or/c F? B? Row? #f)
+      (listof (list/c symbol? Type/c boolean?))
+      (listof (list/c symbol? Type/c))
+      (listof (list/c symbol? Function?))
+      (listof (list/c symbol? Function?))
+      Class?)
+  (*Class row-var (Row* inits fields methods augments)))
+
+;; Class:*
+;; This match expander replaces the built-in matching with
+;; a version that will merge the members inside the substituted row
+;; with the existing fields.
+
+;; helper function for the expansion of Class:*
+;; just does the merging
+(define (merge-class/row class-type)
+  (define row (Class-row-ext class-type))
+  (define class-row (Class-row class-type))
+  (define inits (Row-inits class-row))
+  (define fields (Row-fields class-row))
+  (define methods (Row-methods class-row))
+  (define augments (Row-augments class-row))
+  (cond [(and row (Row? row))
+         (define row-inits (Row-inits row))
+         (define row-fields (Row-fields row))
+         (define row-methods (Row-methods row))
+         (define row-augments (Row-augments row))
+         (list row
+               ;; FIXME: instead of sorting here every time
+               ;;        the match expander is called, the row
+               ;;        fields should be merged on substitution
+               (sort-row-clauses (append inits row-inits))
+               (sort-row-clauses (append fields row-fields))
+               (sort-row-clauses (append methods row-methods))
+               (sort-row-clauses (append augments row-augments)))]
+        [else (list row inits fields methods augments)]))
+
+;; sorts the given field of a Row by the member name
+(define (sort-row-clauses clauses)
+  (sort clauses symbol<? #:key car))
+
+(define-match-expander Class:*
+  (λ (stx)
+    (syntax-case stx ()
+      [(_ row-pat inits-pat fields-pat methods-pat augments-pat)
+       #'(? Class?
+            (app merge-class/row
+                 (list row-pat inits-pat fields-pat
+                       methods-pat augments-pat)))])))
 
