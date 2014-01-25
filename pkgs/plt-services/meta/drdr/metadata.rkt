@@ -9,11 +9,7 @@
 (define (path-command-line a-path a-timeout)
   (define suffix (filename-extension a-path))
   (define default-cmd
-    (and suffix
-         (case (string->symbol (bytes->string/utf-8 suffix))
-           [(ss scm scrbl rkt sls)
-            `(raco "test" "-m" "--timeout" ,(number->string a-timeout) *)]
-           [else                   #f])))
+    `(raco "test" "-m" "--timeout" ,(number->string a-timeout) *))
   (define (replace-* s)
     (cond
       [(eq? '* s)
