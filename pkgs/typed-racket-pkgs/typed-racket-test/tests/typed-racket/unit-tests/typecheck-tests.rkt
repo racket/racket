@@ -152,6 +152,7 @@
   racket/list
   racket/math
   racket/path
+  racket/port
   racket/sequence
   racket/set
   racket/string
@@ -1942,6 +1943,11 @@
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
                         (make-NoObject))]
+       ;; call-with-input-string and friends - PR 14050
+       [tc-e (call-with-input-string "abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
+             #:ret (ret (list (-val 'a) (-val 'b)))]
+       [tc-e (call-with-input-bytes #"abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
+             #:ret (ret (list (-val 'a) (-val 'b)))]
         )
   (test-suite
    "tc-literal tests"

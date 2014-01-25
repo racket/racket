@@ -386,10 +386,28 @@
            (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
                   ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
                   [new-tys  (for/list ([var (in-list vars)])
-                              (substitute (make-F var) dbound s-dty))]
+                              ;; must be a Result since we are matching these against
+                              ;; the contents of the `Values`, which are Results
+                              (make-Result
+                               (substitute (make-F var) dbound s-dty)
+                               -no-filter -no-obj))]
                   ;; generate constraints on the prefixes, and on the dummy types
                   [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
              ;; now take all the dummy types, and use them to constrain dbound appropriately
+             (move-vars-to-dmap new-cset dbound vars))]
+
+          ;; like the case above, but constrains `dbound' to be |ss| - |ts|
+          [((Values: ss) (ValuesDots: ts t-dty dbound))
+           (unless (>= (length ss) (length ts)) (fail! ss ts))
+           (unless (memq dbound Y) (fail! S T))
+
+           ;; see comments for last case, this case swaps `s` and `t` order
+           (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
+                  [new-tys  (for/list ([var (in-list vars)])
+                              (make-Result
+                               (substitute (make-F var) dbound t-dty)
+                               -no-filter -no-obj))]
+                  [new-cset (cgen/list V (append vars X) Y ss (append ts new-tys))])
              (move-vars-to-dmap new-cset dbound vars))]
 
           ;; identical bounds - just unify pairwise

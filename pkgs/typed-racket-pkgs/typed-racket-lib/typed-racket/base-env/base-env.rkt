@@ -1605,8 +1605,14 @@
 [with-output-to-bytes
   (-> (-> ManyUniv) -Bytes)]
 
-[call-with-input-string (-poly (a) (-> -String (-> -Input-Port a) a))]
-[call-with-input-bytes (-poly (a) (-> -Bytes (-> -Input-Port a) a))]
+[call-with-input-string
+ (-polydots (a)
+   (-> -String (-> -Input-Port (make-ValuesDots '() a 'a))
+       (make-ValuesDots '() a 'a)))]
+[call-with-input-bytes
+ (-polydots (a)
+   (-> -Bytes (-> -Input-Port (make-ValuesDots '() a 'a))
+       (make-ValuesDots '() a 'a)))]
 
 [with-input-from-string (-poly (a) (-> -String (-> a) a))]
 [with-input-from-bytes (-poly (a) (-> -Bytes (-> a) a))]
