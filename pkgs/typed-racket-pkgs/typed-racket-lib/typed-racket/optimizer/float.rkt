@@ -6,7 +6,7 @@
          "../utils/utils.rkt"
          (utils tc-utils)
          (types numeric-tower union abbrev)
-         (optimizer utils numeric-utils logging fixnum binary-expansion))
+         (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr int-expr)
 
@@ -115,11 +115,6 @@
                     safe-to-opt?)
            #:do [(log-fl-opt "unary float")]
            #:with opt #'(op.unsafe f.opt))
-  ;; Turn multiway operators into a tree of binary operations
-  (pattern (~and (#%plain-app op:binary-float-op (~between args:real-expr 3 +inf.0) ...)
-                 _:float-expr)
-    #:with :opt-expr (binary-expand this-syntax))
-
   (pattern (#%plain-app op:binary-float-op
                         ;; for now, accept anything that can be coerced to float
                         ;; finer-grained checking is done below
