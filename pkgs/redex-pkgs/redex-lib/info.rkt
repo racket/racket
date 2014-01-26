@@ -1,5 +1,7 @@
 #lang info
 
+;; racket -l redex/tests/run-tests
+
 (define collection 'multi)
 
 (define deps '("scheme-lib"
