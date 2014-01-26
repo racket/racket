@@ -795,7 +795,7 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/intm-adv.rktl" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/intm-intml.rktl" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/intmlam-adv.rktl" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/test-htdp.rkt" drdr:timeout 360
+"pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/test-htdp.rkt" drdr:timeout 500
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/test-image.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-test/tests/stepper" responsible (clements)
 "pkgs/htdp-pkgs/htdp-test/tests/stepper/already-defined.rktl" drdr:command-line #f
