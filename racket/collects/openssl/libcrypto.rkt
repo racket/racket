@@ -19,4 +19,7 @@
   (with-handlers ([exn:fail? (lambda (x)
                                (set! libcrypto-load-fail-reason (exn-message x))
                                #f)])
-    (ffi-lib libcrypto-so '("" "1.0.0" "1.0" "0.9.8b" "0.9.8" "0.9.7"))))
+    (ffi-lib libcrypto-so '(""
+                            "1.0.1e"
+                            "1.0.0" "1.0"
+                            "0.9.8b" "0.9.8" "0.9.7"))))
