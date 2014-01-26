@@ -6,7 +6,7 @@
          "../utils/utils.rkt"
          (utils tc-utils)
          (types numeric-tower union abbrev)
-         (optimizer utils numeric-utils logging fixnum))
+         (optimizer utils numeric-utils logging fixnum binary-expansion))
 
 (provide float-opt-expr float-arg-expr int-expr)
 
@@ -105,6 +105,7 @@
 (define-syntax-class float-opt-expr
   #:commit
   #:literal-sets (kernel-literals)
+  #:attributes (opt)
   (pattern (#%plain-app op:unary-float-op f:float-arg-expr)
            #:when (let* ([safe-to-opt? (subtypeof? this-syntax -Flonum)]
                          [missed-optimization? (and (not safe-to-opt?)
@@ -114,6 +115,11 @@
                     safe-to-opt?)
            #:do [(log-fl-opt "unary float")]
            #:with opt #'(op.unsafe f.opt))
+  ;; Turn multiway operators into a tree of binary operations
+  (pattern (~and (#%plain-app op:binary-float-op (~between args:real-expr 3 +inf.0) ...)
+                 _:float-expr)
+    #:with :opt-expr (binary-expand this-syntax))
+
   (pattern (#%plain-app op:binary-float-op
                         ;; for now, accept anything that can be coerced to float
                         ;; finer-grained checking is done below
@@ -125,20 +131,11 @@
                           ;; - all non-float arguments need to be provably non-zero
                           ;;   otherwise, we may hit corner cases like (* 0 <float>) => 0
                           ;;   or (+ 0 -0.0) => -0.0 (while (+ 0.0 -0.0) => 0.0)
-                          ;; - only one argument can be coerced. If more than one needs
-                          ;;   coercion, we could end up turning exact (or single-float)
-                          ;;   operations into float operations by accident.
-                          ;;   (Note: could allow for more args, if not next to each other, but
-                          ;;    probably not worth the trouble (most ops have 2 args anyway))
                           (and (subtypeof? this-syntax -Flonum)
                                (for/and ([a (in-syntax #'(fs ...))])
                                  ;; flonum or provably non-zero
                                  (or (subtypeof? a -Flonum)
-                                     (subtypeof? a (Un -PosReal -NegReal))))
-                               (>= 1
-                                   (for/sum ([a (in-syntax #'(fs ...))]
-                                             #:when (not (subtypeof? a -Flonum)))
-                                     1)))]
+                                     (subtypeof? a (Un -PosReal -NegReal)))))]
                          ;; if we don't have a return type of float, or if the return type is
                          ;; float, but we can't optimizer for some other reason, we missed an
                          ;; optimization opportunity, report it
@@ -192,7 +189,8 @@
                          this-syntax extra-precision-subexprs)))
                     safe-to-opt?)
            #:do [(log-fl-opt "binary float")]
-           #:with opt (n-ary->binary #'op.unsafe #'(fs.opt ...)))
+           ;; If we reach here there must be exactly two args, so directly applying the op is safe
+           #:with opt #'(op.unsafe fs.opt ...))
   (pattern (#%plain-app op:binary-float-comp f1:float-expr f2:float-expr)
     #:do [(log-fl-opt "binary float comp")]
     #:with opt #'(op.unsafe f1.opt f2.opt))
