@@ -3212,6 +3212,13 @@
     (test (capture-output (test-equal (term (f 1)) (term ((1))))
                           (test-results))
           "One test passed.\n"))
+
+  (let ()
+    (define-metafunction empty-language [(f any) ((any))])
+    (define (my-equal? x y) (and (memq x '(a b c)) (memq y '(a b c))))
+    (test (capture-output (test-equal (term a) (term b) #:equiv my-equal?)
+                          (test-results))
+          "One test passed.\n"))
   
   (let ()
     (test (capture-output (test-predicate odd? 1)
