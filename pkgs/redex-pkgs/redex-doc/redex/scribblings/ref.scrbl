@@ -1544,9 +1544,11 @@ Defaults to @racket['()].
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform[(test-equal e1 e2)]{
+@defform/subs[(test-equal e1 e2)
+              ([option (code:line #:equiv ~)])
+	      #:contracts ([~ (-> any/c any/c boolean)])]{
 
-Tests to see if @racket[e1] is equal to @racket[e2].
+Tests to see if @racket[e1] is equal to @racket[e2], modulo @racket[~].
 }
 
 @defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
