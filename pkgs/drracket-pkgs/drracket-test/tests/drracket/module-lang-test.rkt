@@ -382,7 +382,7 @@
 (module+ test (printf "test\n"))
 (module+ other (printf "other\n"))}
       #f
-      #rx"main\ntest")
+      #rx"test\nmain")
 
 
 (test @t{#lang racket}
