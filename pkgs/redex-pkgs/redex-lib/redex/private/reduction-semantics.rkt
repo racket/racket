@@ -2394,9 +2394,11 @@
 (define-syntax (test-equal stx)
   (syntax-case stx ()
     [(_ e1 e2)
-     #`(test-equal/proc e1 e2 #,(get-srcloc stx))]))
+     #`(test-equal/proc e1 e2 #,(get-srcloc stx) equal?)]
+    [(_ e1 e2 #:equiv ~equal?)
+     #`(test-equal/proc e1 e2 #,(get-srcloc stx) ~equal?)]))
 
-(define (test-equal/proc v1 v2 srcinfo)
+(define (test-equal/proc v1 v2 srcinfo equal?)
   (inc-tests)
   (unless (equal? v1 v2)
     (inc-failures)
