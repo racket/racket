@@ -715,9 +715,9 @@
      (define-values (mprefix use-shortcut?)
        (case (system-type)
          [(windows unix)
-          (if (equal? (get-default-shortcut-prefix) 'ctl)
-              (values (list* 'alt 'shift (get-default-shortcut-prefix)) #f)
-              (values (get-default-shortcut-prefix) #t))]
+          (if (equal? (get-default-shortcut-prefix) (list 'ctl))
+              (values (list* 'alt 'shift (get-default-shortcut-prefix)) #t)
+              (values (get-default-shortcut-prefix) #f))]
          [(macosx)
           (values (cons 'option (get-default-shortcut-prefix)) #t)]))
 
