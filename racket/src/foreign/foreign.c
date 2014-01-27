@@ -3929,7 +3929,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
        `free_cl_cif_queue_args' to clean up this extra level. */
     GC_CAN_IGNORE void **tmp, *cr;
     if (constant_reply) {
-      cr = malloc(constant_reply_size);
+      cr = malloc(constant_reply_size ? constant_reply_size : 1);
       memcpy(cr, constant_reply, constant_reply_size);
       constant_reply = cr;
     }
