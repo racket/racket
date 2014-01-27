@@ -1962,7 +1962,7 @@
   (define *in-directory
     (case-lambda 
      [() (*in-directory #f (lambda (d) #t))]
-     [(orig-dir) (*in-directory #f (lambda (d) #t))]
+     [(orig-dir) (*in-directory orig-dir (lambda (d) #t))]
      [(orig-dir use-dir?)
       (define init-dir (current-directory))
       ;; current state of the sequence is a list of paths to produce; when

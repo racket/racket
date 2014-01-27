@@ -1683,6 +1683,75 @@
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `in-directory'
+
+(let ([tmp-dir (make-temporary-file "rktindir~a" 'directory)])
+  (define (touch p) (call-with-output-file* p #:exists 'can-update void))
+  (make-directory (build-path tmp-dir "a"))
+  (touch (build-path tmp-dir "a" "alpha"))
+  (touch (build-path tmp-dir "a" "apple"))
+  (make-directory (build-path tmp-dir "b"))
+  (touch (build-path tmp-dir "b" "beta"))
+  (make-directory (build-path tmp-dir "c"))
+  (define paths (list (build-path "a")
+                      (build-path "a" "alpha")
+                      (build-path "a" "apple")
+                      (build-path "b")
+                      (build-path "b" "beta")
+                      (build-path "c")))
+  (let ([ht (for/hash ([p (in-list paths)]) (values p #t))])
+    (test ht
+          'in-dir/no-arg
+          (parameterize ([current-directory tmp-dir])
+            (for/hash ([f (in-directory)])
+              (values f #t))))
+    (define (mk) (in-directory))
+    (test ht
+          'in-dir/no-arg/outline
+          (parameterize ([current-directory tmp-dir])
+            (for/hash ([f (mk)])
+              (values f #t)))))
+  (let ([ht (for/hash ([p (in-list paths)]) (values (build-path tmp-dir p) #t))])
+    (test ht
+          'in-dir/full
+          (for/hash ([f (in-directory tmp-dir)])
+            (values f #t)))
+    (define (mk) (in-directory tmp-dir))
+    (test ht
+          'in-dir/full/outline
+          (for/hash ([f (mk)])
+            (values f #t))))
+  (define-values (dir-parent dir-name dir?) (split-path tmp-dir))
+  (let ([ht (for/hash ([p (in-list paths)]) (values (build-path dir-name p) #t))])
+    (test ht
+          'in-dir/relative
+          (parameterize ([current-directory dir-parent])
+            (for/hash ([f (in-directory dir-name)])
+              (values f #t))))
+    (define (mk) (in-directory dir-name))
+    (test ht
+          'in-dir/relative/outline
+          (parameterize ([current-directory dir-parent])
+            (for/hash ([f (mk)])
+              (values f #t)))))
+  (let ([ht (hash-remove (for/hash ([p (in-list paths)]) (values p #t))
+                         (build-path "b" "beta"))])
+    (define (not-b? p)
+      (not (equal? p (build-path tmp-dir "b"))))
+    (test ht
+          'in-dir/skip-b
+          (parameterize ([current-directory tmp-dir])
+            (for/hash ([f (in-directory #f not-b?)])
+              (values f #t))))
+    (define (mk) (in-directory #f not-b?))
+    (test ht
+          'in-dir/skip-b/outline
+          (parameterize ([current-directory tmp-dir])
+            (for/hash ([f (mk)])
+              (values f #t)))))
+  (delete-directory/files tmp-dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `in-directory' fails properly on filesystem errors
 
 (unless (eq? 'windows (system-type))
