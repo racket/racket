@@ -90,4 +90,5 @@
  [covered-cases (-> coverage? (listof (cons/c string? natural-number/c)))]
  [redex-pseudo-random-generator (parameter/c pseudo-random-generator?)]
  [default-attempt-size attempt-size/c]
- [default-check-attempts (parameter/c natural-number/c)])
+ [default-check-attempts (parameter/c natural-number/c)]
+ [default-equiv (parameter/c (-> any/c any/c any/c))])

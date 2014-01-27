@@ -2267,7 +2267,7 @@
 (define-for-syntax test-equiv-name
   "#:equiv argument")
 (define-for-syntax test-equiv-default
-  #'equal?)
+  #'(default-equiv))
 
 (define-syntax (test-->> stx)
   (syntax-parse stx
@@ -2391,10 +2391,12 @@
     (eprintf "  ~v does not hold for\n  ~v\n" 
              pred arg)))
 
+(define default-equiv (make-parameter equal?))
+
 (define-syntax (test-equal stx)
   (syntax-case stx ()
     [(_ e1 e2)
-     #`(test-equal/proc e1 e2 #,(get-srcloc stx) equal?)]
+     #`(test-equal/proc e1 e2 #,(get-srcloc stx) #,test-equiv-default)]
     [(_ e1 e2 #:equiv ~equal?)
      #`(test-equal/proc e1 e2 #,(get-srcloc stx) ~equal?)]))
 
@@ -2472,7 +2474,8 @@
          test-->
          test-->>∃ (rename-out [test-->>∃ test-->>E])
          test-predicate
-         test-results)
+         test-results
+         default-equiv)
 
 
 (provide language-nts

@@ -1,3 +1,10 @@
+v6.1
+
+  * added #:equiv option to test-equal
+
+  * added default-equiv
+
+
 v6.0
 
   * Added an enumerator for patterns. For example, here's how to get

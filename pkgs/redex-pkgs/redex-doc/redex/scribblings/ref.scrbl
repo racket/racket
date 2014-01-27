@@ -1544,12 +1544,42 @@ Defaults to @racket['()].
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform/subs[(test-equal e1 e2)
-              ([option (code:line #:equiv ~)])
-	      #:contracts ([~ (-> any/c any/c boolean)])]{
+@defform/subs[(test-equal e1 e2 option)
+              ([option (code:line #:equiv pred-expr)
+                       (code:line)])
+	      #:contracts ([pred-expr (-> any/c any/c any/c)])]{
 
-Tests to see if @racket[e1] is equal to @racket[e2], modulo @racket[~].
-}
+Tests to see if @racket[e1] is equal to @racket[e2], using @racket[pred-expr] as
+the comparison. It defaults to @racket[(default-equiv)].
+
+@examples[#:eval redex-eval
+                 
+                 (define-language L
+                   (bt ::= 
+                       empty
+                       (node any bt bt))
+                   (lt ::=
+                       empty
+                       (node any lt empty)))
+                 
+                 (define-metafunction L
+                   linearize/a : bt lt -> lt
+                   [(linearize/a empty lt) lt]
+                   [(linearize/a (node any_val bt_left bt_right) lt)
+                    (node any_val (linearize/a bt_left (linearize/a bt_right lt)) empty)])
+                 
+                 (define-metafunction L
+                   linearize : bt -> lt
+                   [(linearize bt) (linearize/a bt empty)])
+                 
+                 (test-equal (term (linearize empty))
+                             (term empty))
+                 (test-equal (term (linearize (node 1
+                                                    (node 2 empty empty)
+                                                    (node 3 empty empty))))
+                             (term (node 1 (node 2 (node 3 empty empty) empty) empty)))
+                 (test-results)
+]}
 
 @defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
               ([option (code:line #:cycles-ok)
@@ -1577,7 +1607,8 @@ does terminate if there are cycles in the (finite) graph.
 
 If @racket[#:cycles-ok] is not supplied then any cycles detected
 are treated as a test failure. If a @racket[pred-expr] is supplied,
-then it is used to compare the expected and actual results.
+then it is used to compare the expected and actual results. If it 
+isn't supplied, then @racket[(default-equiv)] is used.
 }
 
 @defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)
@@ -1589,7 +1620,8 @@ then it is used to compare the expected and actual results.
 
 Tests to see if the term @racket[e1-expr],
 reduces to the terms @racket[e2-expr] in a single @racket[rel-expr]
-step, using @racket[pred-expr] to determine equivalence.
+step, using @racket[pred-expr] to determine equivalence (or
+@racket[(default-equiv)] if @racket[pred-expr] isn't specified).
 }
 
 @examples[
@@ -1651,6 +1683,14 @@ Tests to see if the value of @racket[e] matches the predicate @racket[p?].
 Prints out how many tests passed and failed, and resets the
 counters so that next time this function is called, it
 prints the test results for the next round of tests.
+}
+
+@defparam[default-equiv equiv (-> any/c any/c any/c)]{
+  The value of this parameter is used as the default value
+  of the equivalence predicates
+  for @racket[test-equal], @racket[test-->], and @racket[test-->>].
+  
+  It defaults to @racket[equal?].
 }
 
 @defform/subs[(make-coverage subject)
