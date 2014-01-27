@@ -50,9 +50,11 @@
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define MAX_SHIFT_TRY 61
 # define MAX_SHIFT_EVER 64
+# define MAX_FIXNUM_SQRT 3037000498
 #else
 # define MAX_SHIFT_TRY 29
 # define MAX_SHIFT_EVER 32
+# define MAX_FIXNUM_SQRT 46339
 #endif
 
 /* locals */
@@ -3217,31 +3219,36 @@ static Scheme_Object *fixnum_expt(intptr_t x, intptr_t y)
 
   if ((x == 2) && (y <= MAX_SHIFT_TRY))
     return scheme_make_integer((intptr_t)1 << y);
-  else
-  {
+  else {
     intptr_t result = 1;
-    int odd_result = (x < 0) && (y & 0x1);
+    int neg_result = (x < 0) && (y & 0x1);
 
     if (x < 0)
       x = -x;
-    while (y > 0)
-    {
+
+    while (y > 0) {
       /* x^y*result is invariant and result <= x */
-      if (x > 46339 && y > 1) /* x * x won't fit in 31 bits */
-        return scheme_generic_integer_power(scheme_make_integer_value(orig_x), scheme_make_integer_value(orig_y));
+      if (x > MAX_FIXNUM_SQRT && y > 1) /* x * x won't fit in fixnum */
+        return scheme_generic_integer_power(scheme_make_integer_value(orig_x),
+                                            scheme_make_integer_value(orig_y));
 
       if (y & 0x1) /* if (odd?) */
       {
-        intptr_t next_result = x * result;
-        if (y == 1 && x > 46339 && !(next_result / x == result))
-          return scheme_generic_integer_power(scheme_make_integer_value(orig_x), scheme_make_integer_value(orig_y));
+        uintptr_t next_result = (uintptr_t)x * (uintptr_t)result;
+        if ((y == 1)
+            && (x > MAX_FIXNUM_SQRT)
+            && (((intptr_t)next_result < 0)
+                || !(next_result / (uintptr_t)x == (uintptr_t)result)))
+          return scheme_generic_integer_power(scheme_make_integer_value(orig_x),
+                                              scheme_make_integer_value(orig_y));
         else
-          result = next_result;
+          result = (intptr_t)next_result;
       }
       y = y >> 1;
       x = x * x;
     }
-    return scheme_make_integer_value(odd_result ? -result : result);
+
+    return scheme_make_integer_value(neg_result ? -result : result);
   }
 }
 
