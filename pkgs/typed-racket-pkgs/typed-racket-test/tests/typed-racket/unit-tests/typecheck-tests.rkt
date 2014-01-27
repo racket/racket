@@ -1948,6 +1948,14 @@
              #:ret (ret (list (-val 'a) (-val 'b)))]
        [tc-e (call-with-input-bytes #"abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
              #:ret (ret (list (-val 'a) (-val 'b)))]
+
+       [tc-e (lambda: ([x : (U (Parameter Symbol) Symbol)])
+               (if (parameter? x)
+                   (x)
+                   x))
+             #:ret (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))
+             #:expected (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))]
+
         )
   (test-suite
    "tc-literal tests"

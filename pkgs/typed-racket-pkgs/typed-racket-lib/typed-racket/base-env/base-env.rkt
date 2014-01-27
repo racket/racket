@@ -1210,7 +1210,7 @@
 [make-parameter (-poly (a b) (cl-> [(a) (-Param a a)]
                                    [(b (a . -> . b)) (-Param a b)]))]
 [make-derived-parameter (-poly (a b c d) (-> (-Param a b) (-> c a) (-> b d) (-Param c d)))]
-[parameter? (make-pred-ty (-poly (a b) (-Param a b)))]
+[parameter? (make-pred-ty (-Param -Bottom Univ))]
 [parameter-procedure=? (-poly (a b c d) (-> (-Param a b) (-Param c d) B))]
 
 [current-parameterization (-> -Parameterization)]
