@@ -444,7 +444,10 @@
         (display "# }}} bindir\n")
         (when use-librktdir?
           (display "# {{{ librktdir\n")
-          (display "librktdir=\"$bindir/../lib\"\n")
+          (display "librktdir=\"$bindir/")
+          (display (find-relative-path (find-console-bin-dir)
+                                       (find-lib-dir)))
+          (display "\"\n")
           (display "# }}} librktdir\n"))
         (newline)
         (display (assemble-exec exec args)))))
