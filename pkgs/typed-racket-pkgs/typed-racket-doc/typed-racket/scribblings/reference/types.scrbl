@@ -513,6 +513,14 @@ functions and continuation mark functions.
       (is-zero? 2 #:equality =)
       (is-zero? 2 #:equality eq? #:zero 2.0)]}
 
+@deftogether[(
+@defidform[Top]
+@defidform[Bot])]{ These are filters that can be used with @racket[->].
+  @racket[Top] is the filter with no information.
+  @racket[Bot] is the filter which means the result cannot happen.
+}
+
+
 @defidform[Procedure]{is the supertype of all function types. The @racket[Procedure]
   type corresponds to values that satisfy the @racket[procedure?] predicate.
   Because this type encodes @emph{only} the fact that the value is a procedure, and
