@@ -86,7 +86,7 @@ compatibility only.}
 @function[(Scheme_Object* scheme_make_prim_closure_w_arity
            [Scheme_Prim_Closure_Proc* prim]
            [int c]
-           [Scheme_Object* vals]
+           [Scheme_Object** vals]
            [char* name]
            [int mina]
            [int maxa])]{
@@ -103,7 +103,7 @@ generated primitive is passed as the last parameter. The form of
                                              Scheme_Object *prim);
 }
 
-The macro @cppi{SCHEME_PRIM_CLOSURE_ELS} takes a primitive-closure
+The macro @cppdef{SCHEME_PRIM_CLOSURE_ELS} takes a primitive-closure
 object and returns an array with the same length and content as
 @var{vals}. (3m: see @secref["im:3m"] for a caution about
 @cppi{SCHEME_PRIM_CLOSURE_ELS}.)}
