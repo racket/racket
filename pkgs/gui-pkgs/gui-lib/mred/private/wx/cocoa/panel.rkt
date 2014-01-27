@@ -22,8 +22,8 @@
 
 (define-objc-class FrameView NSView 
   []
-  (- #:async-apply (box (void))
-     _void (drawRect: [_NSRect r])
+  (-a #:async-apply (box (void))
+      _void (drawRect: [_NSRect r])
       (let ([ctx (tell NSGraphicsContext currentContext)])
         (tellv ctx saveGraphicsState)
         (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
