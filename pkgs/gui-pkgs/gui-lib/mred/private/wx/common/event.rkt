@@ -77,6 +77,9 @@
                    [[bool? shift-down] #f]
                    [[bool? control-down] #f]
                    [[bool? meta-down] #f]
+                   [[bool? mod3-down] #f]
+                   [[bool? mod4-down] #f]
+                   [[bool? mod5-down] #f]
                    [[bool? alt-down] #f]
                    [[exact-integer? x] 0]
                    [[exact-integer? y] 0])
