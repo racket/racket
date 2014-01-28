@@ -165,6 +165,8 @@
   ;; Needed for bindings of types and TR primitives in expressions
   (except-in (base-env extra-procs prims base-types base-types-extra)
     define lambda λ)
+  ;; For tests that rely on kw/opt properties
+  (prefix-in tr: (only-in (base-env prims) define lambda λ))
   ;; Needed for constructing TR types in expected values
   (for-syntax
     (rep type-rep filter-rep object-rep)
@@ -1956,6 +1958,19 @@
              #:ret (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))
              #:expected (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))]
 
+       ;; test kw function without type annotation
+       [tc-e (let () (tr:define (f x #:y y) y) (f 'a #:y 'b)) Univ]
+       [tc-e (let () (tr:define (f x #:y y . args) y) (f 'a 'b #:y 'c)) Univ]
+       [tc-e (let () (tr:define (f x #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
+       [tc-e (let () (tr:define (f x #:y [y 'y]) y) (f "a" #:y "b")) Univ]
+       [tc-e (let () (tr:define (f x #:y [y 'y] . args) y) (f "a" "b" #:y "b")) Univ]
+       [tc-e (let () (tr:define (f #{x : Symbol} #:y y) x) (f 'a #:y 'b)) -Symbol]
+       [tc-err (let () (tr:define (f #{x : Symbol} #:y y) y) (f "a" #:y 'b))
+               #:msg #rx"expected: Symbol.*given: String"]
+       [tc-err (let () (tr:define (f x #:y y) (string-append x "foo")) (void))
+               #:msg #rx"expected: String.*given: Any"]
+       [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
+               #:msg #rx"Required keyword not supplied"]
         )
   (test-suite
    "tc-literal tests"

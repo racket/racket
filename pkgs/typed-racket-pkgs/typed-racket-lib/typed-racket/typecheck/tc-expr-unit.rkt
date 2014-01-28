@@ -365,6 +365,20 @@
                    ignore-this-case
                    (#%plain-app _ _ _arg-var2 ...))))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
+      ;; kw function def
+      [(~and (let-values ([(f) fun])
+               (let-values (_)
+                 (#%plain-app
+                  _ _
+                  (case-lambda ; wrapper function
+                    (formals . _))
+                  _
+                  (quote (all-kw:keyword ...))
+                  . rst)))
+             _:kw-lambda^)
+       (ret (kw-unconvert (tc-expr/t #'fun)
+                          #'formals
+                          (syntax->datum #'(all-kw ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form)]
