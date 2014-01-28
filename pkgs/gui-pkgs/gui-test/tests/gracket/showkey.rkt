@@ -16,7 +16,7 @@
     (class canvas%
       (super-new)
       (define/override (on-event ev)
-        (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a\n" 
+        (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a\n" 
                 (es-check)
                 iter
                 (send ev get-event-type)
@@ -27,6 +27,9 @@
                 (if (send ev get-alt-down) " ALT" "")
                 (if (send ev get-shift-down) " SHIFT" "")
                 (if (send ev get-caps-down) " CAPS" "")
+                (if (send ev get-mod3-down) " MOD3" "")
+                (if (send ev get-mod4-down) " MOD4" "")
+                (if (send ev get-mod5-down) " MOD5" "")
                 (if (send ev get-left-down) " LEFT" "")
                 (if (send ev get-middle-down) " MIDDLE" "")
                 (if (send ev get-right-down) " RIGHT" "")
@@ -44,7 +47,7 @@
                     "")))
       (define/override (on-char ev)
         (set! iter (add1 iter))
-        (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a\n" 
+        (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a~a~a~a\n" 
                 (es-check)
                 iter
                 (let ([v (send ev get-key-code)])
@@ -69,7 +72,10 @@
                 (if (send ev get-control-down) " CTL" "")
                 (if (send ev get-alt-down) " ALT" "")
                 (if (send ev get-shift-down) " SHIFT" "")
-                (if (send ev get-caps-down) " CAPS" "")))))
+                (if (send ev get-caps-down) " CAPS" "")
+                (if (send ev get-mod3-down) " MOD3" "")
+                (if (send ev get-mod4-down) " MOD4" "")
+                (if (send ev get-mod5-down) " MOD5" "")))))
   (define f (make-object (class frame%
                            (inherit accept-drop-files)
                            (define/override (on-drop-file file)

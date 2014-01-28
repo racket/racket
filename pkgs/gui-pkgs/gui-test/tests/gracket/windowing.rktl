@@ -1112,4 +1112,65 @@
 (panel-tests frame% #f)
 (panel-tests dialog% 'dialog)
 
+(let ([e (make-object mouse-event%
+                      'motion
+                      #t ; left
+                      #f ; middle
+                      #f ; right
+                      11 ; x
+                      33 ; y
+                      #t ; shift
+                      #f ; control
+                      #t ; meta
+                      #f ; alt
+                      13 ; timestamp
+                      #f ; caps
+                      #t ; mod3
+                      #f ; mod4
+                      #t ; mod5
+                      )])
+  (st 'motion e get-event-type)
+  (st #t e get-left-down)
+  (st #f e get-middle-down)
+  (st #f e get-right-down)
+  (st 11 e get-x) 
+  (st 33 e get-y)
+  (st #t e get-shift-down)
+  (st #f e get-control-down)
+  (st #t e get-meta-down)
+  (st #f e get-alt-down)
+  (st 13 e get-time-stamp)
+  (st #f e get-caps-down)
+  (st #t e get-mod3-down)
+  (st #f e get-mod4-down)
+  (st #t e get-mod5-down))
+
+(let ([e (make-object key-event%
+                      #\x
+                      #t ; shift
+                      #f ; control
+                      #t ; meta
+                      #f ; alt
+                      11 ; x
+                      33 ; y
+                      13 ; timestamp
+                      #f ; caps
+                      #t ; mod3
+                      #f ; mod4
+                      #t ; mod5
+                      )])
+  (st #\x e get-key-code)
+  (st 'press e get-key-release-code)
+  (st 11 e get-x) 
+  (st 33 e get-y)
+  (st #t e get-shift-down)
+  (st #f e get-control-down)
+  (st #t e get-meta-down)
+  (st #f e get-alt-down)
+  (st 13 e get-time-stamp)
+  (st #f e get-caps-down)
+  (st #t e get-mod3-down)
+  (st #f e get-mod4-down)
+  (st #t e get-mod5-down))
+
 (report-errs)

@@ -26,7 +26,10 @@ See also @|mousekeydiscuss|.
                  [meta-down any/c #f]
                  [alt-down any/c #f]
                  [time-stamp exact-integer? 0]
-                 [caps-down any/c #f])]{
+                 [caps-down any/c #f]
+                 [mod3-down any/c #f]
+                 [mod4-down any/c #f]
+                 [mod5-down any/c #f])]{
 
 Creates a mouse event for a particular type of event. The event types
  are:
@@ -47,8 +50,10 @@ See the corresponding @racketidfont{get-} and @racketidfont{set-}
  methods for information about @racket[left-down],
  @racket[middle-down], @racket[right-down], @racket[x], @racket[y],
  @racket[shift-down], @racket[control-down], @racket[meta-down],
- @racket[alt-down], @racket[time-stamp], and @racket[caps-down].
+ @racket[alt-down], @racket[time-stamp], @racket[caps-down], @racket[mod3-down],
+ @racket[mod4-down], and @racket[mod5-down].
 
+@history[#:changed "1.1" @elem{Added @racket[mod3-down], @racket[mod4-down], and @racket[mod5-down].}]
 }
 
 @defmethod[(button-changed? [button (or/c 'left 'middle 'right 'any) 'any])
@@ -175,6 +180,27 @@ Returns @racket[#t] if the middle mouse button was down (but not
 
 }
 
+@defmethod[(get-mod3-down)
+           boolean?]{
+
+Returns @racket[#t] if the Mod3 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
+
+@defmethod[(get-mod4-down)
+           boolean?]{
+
+Returns @racket[#t] if the Mod4 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
+
+@defmethod[(get-mod5-down)
+           boolean?]{
+
+Returns @racket[#t] if the Mod5 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
+
 @defmethod[(get-right-down)
            boolean?]{
 
@@ -287,6 +313,27 @@ Sets whether the middle mouse button was down (but not pressed) for
  the event.  On Mac OS X, a middle-button click is impossible.
 
 }
+
+@defmethod[(set-mod3-down [down? any/c])
+           void?]{
+
+Sets whether the Mod3 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
+
+@defmethod[(set-mod4-down [down? any/c])
+           void?]{
+
+Sets whether the Mod4 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
+
+@defmethod[(set-mod5-down [down? any/c])
+           void?]{
+
+Sets whether the Mod5 (Unix) key was down for the event.
+
+@history[#:added "1.1"]}
 
 @defmethod[(set-right-down [down? any/c])
            void?]{

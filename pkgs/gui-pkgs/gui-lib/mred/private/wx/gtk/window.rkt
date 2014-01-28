@@ -395,6 +395,9 @@
                             [control-down (bit? modifiers GDK_CONTROL_MASK)]
                             [meta-down (bit? modifiers GDK_META_MASK)]
                             [alt-down (bit? modifiers GDK_MOD1_MASK)]
+                            [mod3-down (bit? modifiers GDK_MOD3_MASK)]
+                            [mod4-down (bit? modifiers GDK_MOD4_MASK)]
+                            [mod5-down (bit? modifiers GDK_MOD5_MASK)]
                             [time-stamp ((if motion? GdkEventMotion-time 
                                              (if crossing? GdkEventCrossing-time GdkEventButton-time))
                                          event)]

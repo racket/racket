@@ -20,24 +20,26 @@ See also @|mousekeydiscuss|.
                  [shift-down any/c #f]
                  [control-down any/c #f]
                  [meta-down any/c #f]
-                 [mod3-down any/c #f]
-                 [mod4-down any/c #f]
-                 [mod5-down any/c #f]
                  [alt-down any/c #f]
                  [x exact-integer? 0]
                  [y exact-integer? 0]
                  [time-stamp exact-integer? 0]
-                 [caps-down any/c #f])]{
+                 [caps-down any/c #f]
+                 [mod3-down any/c #f]
+                 [mod4-down any/c #f]
+                 [mod5-down any/c #f])]{
 
 See the corresponding @racketidfont{get-} and @racketidfont{set-}
  methods for information about @racket[key-code], @racket[shift-down],
  @racket[control-down], @racket[meta-down], @racket[mod3-down], @racket[mod4-down],
  @racket[mod5-down], @racket[alt-down], @racket[x], @racket[y], 
- @racket[time-stamp], @racket[caps-down].
+ @racket[time-stamp], @racket[caps-down], @racket[mod3-down],
+ @racket[mod4-down], and @racket[mod5-down].
 
 The release key code, as returned by @method[key-event%
 get-key-release-code], is initialized to @racket['press].
 
+@history[#:changed "1.1" @elem{Added @racket[mod3-down], @racket[mod4-down], and @racket[mod5-down].}]
 }
 
 @defmethod[(get-alt-down)
@@ -214,21 +216,21 @@ Returns @racket[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
 
 Returns @racket[#t] if the Mod3 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(get-mod4-down)
            boolean?]{
 
 Returns @racket[#t] if the Mod4 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(get-mod5-down)
            boolean?]{
 
 Returns @racket[#t] if the Mod5 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(get-other-altgr-key-code)
            (or/c char? key-code-symbol? #f)]{
@@ -369,21 +371,21 @@ Sets whether the Meta (Unix), Alt (Windows), or Command (Mac OS X) key
 
 Sets whether the Mod3 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(set-mod4-down [down? any/c])
            void?]{
 
 Sets whether the Mod4 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(set-mod5-down [down? any/c])
            void?]{
 
 Sets whether the Mod5 (Unix) key was down for the event.
 
-}
+@history[#:added "1.1"]}
 
 @defmethod[(set-other-altgr-key-code [code (or/c char? key-code-symbol? #f)])
            void?]{

@@ -29,7 +29,10 @@
                    [[bool? meta-down] #f]
                    [[bool? alt-down] #f])
   (init [time-stamp 0])
-  (init-properties [[bool? caps-down] #f])
+  (init-properties [[bool? caps-down] #f]
+                   [[bool? mod3-down] #f]
+                   [[bool? mod4-down] #f]
+                   [[bool? mod5-down] #f])
   (super-new [time-stamp time-stamp])
 
   (def/public (button-changed? [(symbol-in left middle right any) [button 'any]])
@@ -77,14 +80,14 @@
                    [[bool? shift-down] #f]
                    [[bool? control-down] #f]
                    [[bool? meta-down] #f]
-                   [[bool? mod3-down] #f]
-                   [[bool? mod4-down] #f]
-                   [[bool? mod5-down] #f]
                    [[bool? alt-down] #f]
                    [[exact-integer? x] 0]
                    [[exact-integer? y] 0])
   (init [time-stamp 0])
-  (init-properties [[bool? caps-down] #f])
+  (init-properties [[bool? caps-down] #f]
+                   [[bool? mod3-down] #f]
+                   [[bool? mod4-down] #f]
+                   [[bool? mod5-down] #f])
   (properties [[(make-alts symbol? char?) key-release-code] 'press]
               [[(make-or-false (make-alts symbol? char?)) other-shift-key-code] #f]
               [[(make-or-false (make-alts symbol? char?)) other-altgr-key-code] #f]
