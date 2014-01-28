@@ -273,10 +273,10 @@
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
-          (tc-expr/check/type #'fun (kw-convert f #:split #t))]
+          (tc-expr/check/type #'fun (kw-convert f #:split #t))
+          expected]
          [(or (tc-results: _) (tc-any-results:))
-          (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
-       expected]
+          (tc-expr (remove-ascription form))])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        (define conv-type

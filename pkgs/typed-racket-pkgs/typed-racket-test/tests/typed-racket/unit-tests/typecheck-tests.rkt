@@ -1981,6 +1981,10 @@
        [tc-err (let () (tr:define (f #{x : Symbol} #:y y) y) (f "a" #:y 'b))
                #:msg #rx"expected: Symbol.*given: String"]
        |#
+       [tc-e (tr:lambda (x #:y y) y) (->key Univ #:y Univ #t Univ)]
+       [tc-e ((tr:lambda (x #:y y) y) 'a #:y 'b) Univ]
+       [tc-e ((tr:lambda (x #:y y . args) y) 'a #:y 'b) Univ]
+       [tc-e ((tr:lambda (x #:y [y 'y] . args) y) 'a #:y 'b) Univ]
        [tc-err (let () (tr:define (f x #:y y) (string-append x "foo")) (void))
                #:msg #rx"expected: String.*given: Any"]
        [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
