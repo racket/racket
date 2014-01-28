@@ -371,13 +371,13 @@
                  (#%plain-app
                   _ _
                   (case-lambda ; wrapper function
-                    (formals . _))
+                    (formals . _) ...)
                   _
                   (quote (all-kw:keyword ...))
                   . rst)))
              _:kw-lambda^)
        (ret (kw-unconvert (tc-expr/t #'fun)
-                          #'formals
+                          (syntax->list #'(formals ...))
                           (syntax->datum #'(all-kw ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)

@@ -131,15 +131,22 @@
       [(PolyDots-names: names f)
        (make-PolyDots names (kw-convert f #:split split?))]))
 
-;; kw-unconvert : Type Syntax (Listof Keyword) -> Type
+;; kw-unconvert : Type (Listof Syntax) (Listof Keyword) -> Type
 ;; Given a type for a core keyword function, unconvert it to a
 ;; normal function type if possible. Otherwise return `Procedure`.
 ;;
 ;; invariant: only call this for functions with no type annotations,
 ;; which means they will never have polymorphic types.
-(define (kw-unconvert ft formals keywords)
-  (define-values (non-kw-argc rest?)
-    (syntax-parse formals
+(define (kw-unconvert ft formalss keywords)
+  (define (lengthish formals)
+    (define lst (syntax->list formals))
+    (if lst (length lst) +inf.0))
+  ;; only need longest formals and smallest formals to determine
+  ;; which arguments are optional non-kw arguments
+  (define max-formals (argmax lengthish formalss))
+  (define min-formals (argmin lengthish formalss))
+  (define-values (raw-non-kw-argc rest?)
+    (syntax-parse max-formals
       [(_ _ non-kw:id ...)
        (values (length (syntax->list #'(non-kw ...))) #f)]
       [(_ _ non-kw:id ... . rst:id)
@@ -156,7 +163,7 @@
   (define mand-non-kw-argc (- non-kw-argc (* 2 opt-non-kw-argc)))
   (match ft
     [(Function: arrs)
-     (cond [(= (length arrs) 1)
+     (cond [(= (length arrs) 1) ; no optional args (either kw or not)
             (match-define (arr: doms rng _ _ _) (car arrs))
             (define kw-length
               (- (length doms) (+ non-kw-argc (if rest? 1 0))))
@@ -175,14 +182,17 @@
                               rng
                               #:kws actual-kws
                               #:rest rest-type)))]
-           [(= (length arrs) 2)
-            (match-define (list ts/true ts/false) arrs)
+           [(and (even? (length arrs)) ; had optional args
+                 (>= (length arrs) 2)) ; only first pair should be needed
+            (match-define (list ts/true ts/false) (take arrs 2))
             (match-define (arr: true-doms rng _ _ _) ts/true)
             (match-define (arr: false-doms _ _ _ _) ts/false)
             (define kw-length
               (- (length true-doms) (+ non-kw-argc (if rest? 1 0))))
             (define-values (true-kw-args other-args)
               (split-at true-doms kw-length))
+            (define-values (mand-args opt-and-rest-args)
+              (split-at other-args mand-non-kw-argc))
             (define false-kw-args (take false-doms kw-length))
             (define kw-types
               (let loop ([true-kw-args true-kw-args]
@@ -209,14 +219,22 @@
                   (make-Keyword kw type mand?)))
               (define rest-type
                 (and rest?
-                     (if (equal? (last other-args) Univ)
+                     (if (equal? (last opt-and-rest-args) Univ)
                          Univ
                          -Bottom)))
+              (define opt-types
+                (let loop ([opt-args opt-and-rest-args]
+                           [opt-types '()])
+                  (if (or (null? opt-args)
+                          (null? (cdr opt-args)))
+                      (reverse opt-types)
+                      (loop (cddr opt-args) (cons (car opt-args) opt-types)))))
               (make-Function
-               (list (make-arr* (take other-args non-kw-argc)
-                                rng
-                                #:kws actual-kws
-                                #:rest rest-type)))]
+               (for/list ([to-take (in-range (add1 (length opt-types)))])
+                 (make-arr* (append mand-args (take opt-types to-take))
+                            rng
+                            #:kws actual-kws
+                            #:rest rest-type)))]
            [else top-func])]
     [_ (int-err "unsupported keyword function type")]))
 

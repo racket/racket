@@ -1960,15 +1960,24 @@
 
        ;; test kw function without type annotation
        [tc-e (let () (tr:define (f x #:y y) y) (f 'a #:y 'b)) Univ]
+       [tc-e (let () (tr:define (f x [a "a"] #:y y) y) (f 'a #:y 'b)) Univ]
        [tc-e (let () (tr:define (f x #:y y . args) y) (f 'a 'b #:y 'c)) Univ]
+       [tc-e (let () (tr:define (f x [a "a"] #:y y . args) y) (f 'a 'b #:y 'c)) Univ]
        [tc-e (let () (tr:define (f x #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
+       [tc-e (let () (tr:define (f x [a "a"] #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
        [tc-e (let () (tr:define (f x #:y [y 'y]) y) (f "a" #:y "b")) Univ]
+       [tc-e (let () (tr:define (f x [a "a"] #:y [y 'y]) y) (f "a" #:y "b")) Univ]
        [tc-e (let () (tr:define (f x #:y [y 'y] . args) y) (f "a" "b" #:y "b")) Univ]
+       [tc-e (let () (tr:define (f x [a "a"] #:y [y 'y] . args) y) (f "a" "b" #:y "b")) Univ]
        [tc-e (let () (tr:define (f #{x : Symbol} #:y y) x) (f 'a #:y 'b)) -Symbol]
        [tc-e (tr:lambda (x #:y y) y) (->key Univ #:y Univ #t Univ)]
        [tc-e ((tr:lambda (x #:y y) y) 'a #:y 'b) Univ]
        [tc-e ((tr:lambda (x #:y y . args) y) 'a #:y 'b) Univ]
        [tc-e ((tr:lambda (x #:y [y 'y] . args) y) 'a #:y 'b) Univ]
+       [tc-e (tr:lambda (x [z "a"] #:y y) y) (->optkey Univ [Univ] #:y Univ #t Univ)]
+       [tc-e ((tr:lambda (x [z "a"] #:y y) y) 'a #:y 'b) Univ]
+       [tc-e ((tr:lambda (x [z "a"] #:y y . args) y) 'a #:y 'b) Univ]
+       [tc-e ((tr:lambda (x [z "a"] #:y [y 'y] . args) y) 'a #:y 'b) Univ]
        [tc-err (let () (tr:define (f #{x : Symbol} #:y y) y) (f "a" #:y 'b))
                #:msg #rx"expected: Symbol.*given: String"]
        [tc-err (let () (tr:define (f x #:y y) (string-append x "foo")) (void))
