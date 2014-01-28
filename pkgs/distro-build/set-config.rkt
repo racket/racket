@@ -47,9 +47,7 @@
        [table (if (equal? install-name "")
                   table
                   (hash-set table 'installation-name install-name))]
-       [table (if (equal? build-stamp "")
-                  table
-                  (hash-set table 'build-stamp build-stamp))])
+       [table (hash-set table 'build-stamp build-stamp)])
   (unless (equal? table orig)
     (make-directory* (path-only dest-config-file))
     (call-with-output-file dest-config-file
