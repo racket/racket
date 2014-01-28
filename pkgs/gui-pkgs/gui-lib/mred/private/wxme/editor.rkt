@@ -899,7 +899,10 @@
                                         (size . < . max-undos)
                                         emacs-style-undo?)
                                     ;; make more room
-                                    (let* ([s (min (* size 2) (if (eq? max-undos 'forever) (* size 2) max-undos))]
+                                    (let* ([s (min (* size 2) (if (or (eq? max-undos 'forever)
+                                                                      emacs-style-undo?)
+                                                                  (* size 2)
+                                                                  max-undos))]
                                            [naya (make-vector s #f)])
                                       (for ([j (in-range size)])
                                         (vector-set! naya j (vector-ref c (modulo (+ start j) size))))
