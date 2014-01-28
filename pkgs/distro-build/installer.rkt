@@ -40,7 +40,7 @@
    (values human-name
            (format "~a v~a" human-name (version))
            (format "~a-~a" base-name (version))
-           (if release?
+           (if (and release? (not source?))
                dir-name
                (format "~a-~a" dir-name (version)))
            (if (string=? dist-suffix "")
