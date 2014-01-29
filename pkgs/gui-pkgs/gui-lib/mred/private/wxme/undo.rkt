@@ -241,6 +241,8 @@
       (send editor resize snip x y)
       cont?)))
 
+;; Used for Emac-style undo: eventually pairs an undo action with
+;; its inverse without requiring snips to be duplicated, etc.
 (define composite-record%
   (class change-record%
     (init       count)
@@ -276,7 +278,9 @@
     (define/override (inverse)
       (make-object inverse-record% id (not parity?)))))
 
-
+;; An indirection to help with the inverse mapping in
+;; `composite-record%` an isolate it from an extra
+;; "finalization" via `cancel`:
 (define inverse-record%
   (class change-record%
     (init-field id
@@ -290,7 +294,7 @@
           (mcdr id)))
 
     (define/override (cancel)
-      ;; Avoid double-frees by not doing anything
+      ;; Avoid double-finalization by not doing anything
       (void))
 
     (define/override (undo editor)

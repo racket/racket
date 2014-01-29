@@ -767,6 +767,10 @@ Returns the maximum number of undoables that will be remembered by the
  multiple events at a time (such as when the user types a stream of
  characters at once).
 
+When an editor is in preserve-all-history mode (see @method[editor<%>
+ set-undo-preserves-all-history]), then any non-@racket[0] value is
+ treated the same as @racket['forever].
+
 }
 
 @defmethod[(get-max-view-size)
@@ -2282,6 +2286,10 @@ Sets the maximum number of undoables that will be remembered by the
  @indexed-racket['forever] is accepted as a synonym for a very large
  number.
 
+When an editor is in preserve-all-history mode (see @method[editor<%>
+ set-undo-preserves-all-history]), then any non-@racket[0] value is
+ treated the same as @racket['forever].
+
 }
 
 
@@ -2389,6 +2397,19 @@ Setting the style list is disallowed when the editor is internally
 
 }
 
+@defmethod[(set-undo-preserves-all-history [on? any/c]) void?]{
+
+When @racket[on?] is true, configures the editor to preserve all
+editing history, including operations that have been undone, as long
+as the maximum undo history is non-zero (see @method[editor<%>
+set-max-undo-history]).  Otherwise, operations that are undone (and not
+redone) before another operation are lost from the editor's history.
+
+The default mode is determined by the @Resource{emacs-undo} preference
+(see @secref["mredprefs"]).
+
+@history[#:added "1.1"]}
+
 
 @defmethod[(size-cache-invalid)
            void?]{
@@ -2440,6 +2461,15 @@ The system may perform an undo without calling this method in response
 See also @method[editor<%> add-undo] .
 
 }
+
+
+@defmethod[(undo-preserves-all-history?) boolean?]{
+
+Reports whether the editor is in preserve-all-history mode.
+See @method[editor<%> set-undo-preserves-all-history] for more information.
+
+@history[#:added "1.1"]}
+
 
 @defmethod*[([(use-file-text-mode) boolean?]
              [(use-file-text-mode [on? any/c]) void?])]{

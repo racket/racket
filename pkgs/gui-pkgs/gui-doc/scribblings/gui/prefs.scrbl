@@ -31,8 +31,10 @@ The following are the preference names used by GRacket:
  labels) are suppressed.}
 
  @item{@ResourceFirst{emacs-undo} --- a true value makes undo in
- editors work as in Emacs (i.e., undo operations are themselves kept
- in the undo stack).}
+ editors by default preserve all editing history, including operations
+ that are undone (as in Emacs); the @xmethod[editor<%>
+ set-undo-preserves-all-history] method changes a specific editor's
+ configuration.}
 
  @item{@ResourceFirst{wheelStep} --- sets the default mouse-wheel step
  size of @racket[editor-canvas%] objects.}

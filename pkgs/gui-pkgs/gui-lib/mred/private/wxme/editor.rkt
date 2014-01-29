@@ -109,7 +109,7 @@
 
 ;; ----------------------------------------
 
-(define emacs-style-undo? (and (get-preference* 'GRacket:emacs-undo) #t))
+(define default-emacs-style-undo? (and (get-preference* 'GRacket:emacs-undo) #t))
 (define (max-undo-value? v) (or (exact-nonnegative-integer? v)
                                 (eq? v 'forever)))
 
@@ -131,6 +131,7 @@
   (define redomode? #f)
   (define interceptmode? #f)
   (define loadoverwritesstyles? #t)
+  (define emacs-style-undo? default-emacs-style-undo?)
 
   (field [s-custom-cursor-overrides? #f]
          [s-need-on-display-size? #f])
@@ -870,7 +871,8 @@
               (unless (= redochanges-start redochanges-end)
                 (append-undo (vector-ref redochanges redochanges-start) #f)
                 (vector-set! redochanges redochanges-start #f)
-                (set! redochanges-start (modulo (add1 redochanges-start) redochanges-size))))
+                (set! redochanges-start (modulo (add1 redochanges-start) redochanges-size))
+                (loop)))
             (set! redochanges-start 0)
             (set! redochanges-end 0))]
          [else
@@ -1023,6 +1025,11 @@
      intercepted
      (set! interceptmode? #f)
      (set! intercepted null)))
+
+  (define/public (undo-preserves-all-history?)
+    emacs-style-undo?)
+  (define/public (set-undo-preserves-all-history on?)
+    (set! emacs-style-undo? (and on? #t)))
   
   ;; ----------------------------------------
 
