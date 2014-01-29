@@ -22,7 +22,6 @@
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
           make-ClassTop
-          make-Instance
           make-Name
           make-ValuesDots
           make-MPairTop

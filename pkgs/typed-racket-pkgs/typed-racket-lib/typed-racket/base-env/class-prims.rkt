@@ -4,6 +4,7 @@
 
 (require (rename-in racket/class [class untyped-class])
          "colon.rkt"
+         "../typecheck/internal-forms.rkt"
          (for-syntax
           racket/base
           racket/class
@@ -19,7 +20,6 @@
           syntax/parse
           syntax/stx
           unstable/list
-          (for-template "../typecheck/internal-forms.rkt")
           "../utils/tc-utils.rkt"
           "../types/utils.rkt"))
 
@@ -92,12 +92,13 @@
             (quote-syntax inspect)))))
 
 (begin-for-syntax
- ;; A Clause is a (clause Syntax Id Listof<Syntax> Option<Type>)
+ ;; A Clause is a (clause Syntax Id Listof<Syntax> Listof<Option<Type>>)
  ;;
  ;; interp. a class clause such as init or field.
+ ;;   stx   - the syntax of the entire clause with types erased
  ;;   kind  - the kind of clause (e.g., init, field)
  ;;   ids   - list of the ids defined in this clause
- ;;   types - types for each id, #f if none provided
+ ;;   types - types for each id, #f if a type is not provided
  (struct clause (stx kind ids types))
 
  ;; An InitClause is a (init-clause Syntax Id Listof<Syntax> Boolean)
@@ -111,6 +112,9 @@
  ;;         class clauses such as init or field.
  (struct non-clause (stx))
 
+ (define-literal-set class-literals
+   (:))
+
  (define-splicing-syntax-class maybe-type-parameter
    (pattern (~seq #:forall type-variable:id)
             #:attr type-variables #'(type-variable))
@@ -118,24 +122,30 @@
             #:attr type-variables #'(type-variable ...))
    (pattern (~seq)
             #:attr type-variables #'()))
- 
+
+ ;; interp:
+ ;;   optional? - optional init arg or not (has default value or not)
+ ;;   ids       - internal and external id for this argument
+ ;;   type      - type annotation, if any
+ ;;   form      - type erased form
  (define-syntax-class init-decl
    #:attributes (optional? ids type form)
+   #:literal-sets (class-literals)
    (pattern id:id
             #:attr optional? #f
             #:with ids #'(id id)
             #:attr type #f
             #:with form this-syntax)
-   (pattern (id:id (~datum :) type:expr)
+   (pattern (id:id : type:expr)
             #:attr optional? #f
             #:with ids #'(id id)
             #:with form #'id)
-   (pattern (ren:renamed (~optional (~seq (~datum :) type:expr)))
+   (pattern (ren:renamed (~optional (~seq : type:expr)))
             #:attr optional? #f
             #:with ids #'ren.ids
             #:with form #'(ren))
    (pattern (mren:maybe-renamed
-             (~optional (~seq (~datum :) type:expr))
+             (~optional (~seq : type:expr))
              default-value:expr)
             #:attr optional? #t
             #:with ids #'mren.ids
@@ -143,44 +153,71 @@
 
  (define-syntax-class field-decl
    #:attributes (ids type form)
+   #:literal-sets (class-literals)
    (pattern (mren:maybe-renamed
-             (~optional (~seq (~datum :) type:expr))
+             (~optional (~seq : type:expr))
              default-value:expr)
             #:with ids #'mren.ids
             #:with form #'(mren default-value)))
 
  (define-syntax-class method-decl
    #:attributes (ids type form)
+   #:literal-sets (class-literals)
    (pattern mren:maybe-renamed
             #:with ids #'mren.ids
             #:attr type #f
             #:with form this-syntax)
-   (pattern (mren:maybe-renamed (~datum :) type:expr)
+   (pattern (mren:maybe-renamed : type:expr)
             #:with ids #'mren.ids
             #:with form #'mren))
 
  (define-syntax-class private-decl
    #:attributes (id type form)
+   #:literal-sets (class-literals)
    (pattern id:id
             #:attr type #f
             #:with form this-syntax)
-   (pattern (id:id (~datum :) type:expr)
+   (pattern (id:id : type:expr)
             #:with form #'id))
 
  (define-syntax-class renamed
+   #:attributes (ids)
    (pattern (internal-id:id external-id:id)
             #:with ids #'(internal-id external-id)))
 
  (define-syntax-class maybe-renamed
+   #:attributes (ids)
    (pattern id:id
             #:with ids #'(id id))
    (pattern ren:renamed
             #:with ids #'ren.ids))
 
+ (define-syntax-class init-like-clause-names
+   (pattern (~or (~literal init)
+                 (~literal init-field))))
+
+ (define-syntax-class method-like-clause-names
+   (pattern (~or (~literal inherit-field)
+                 (~literal public)
+                 (~literal pubment)
+                 (~literal public-final)
+                 (~literal override)
+                 (~literal overment)
+                 (~literal override-final)
+                 (~literal augment)
+                 (~literal augride)
+                 (~literal augment-final)
+                 (~literal inherit)
+                 (~literal inherit/super)
+                 (~literal inherit/inner)
+                 (~literal rename-super))))
+
+ (define-syntax-class private-like-clause-names
+   (pattern (~or (~literal private)
+                 (~literal abstract))))
+
  (define-syntax-class class-clause
-   (pattern ((~and clause-name (~or (~literal init)
-                                    (~literal init-field)))
-             names:init-decl ...)
+   (pattern (clause-name:init-like-clause-names names:init-decl ...)
             ;; in the future, use a data structure and
             ;; make this an attribute instead to represent
             ;; internal and external names
@@ -195,29 +232,13 @@
                                 #'field
                                 (stx->list #'(names.ids ...))
                                 (attribute names.type)))
-   (pattern ((~and clause-name (~or (~literal inherit-field)
-                                    (~literal public)
-                                    (~literal pubment)
-                                    (~literal public-final)
-                                    (~literal override)
-                                    (~literal overment)
-                                    (~literal override-final)
-                                    (~literal augment)
-                                    (~literal augride)
-                                    (~literal augment-final)
-                                    (~literal inherit)
-                                    (~literal inherit/super)
-                                    (~literal inherit/inner)
-                                    (~literal rename-super)))
-             names:method-decl ...)
+   (pattern (clause-name:method-like-clause-names names:method-decl ...)
             #:attr data
             (clause #'(clause-name names.form ...)
                     #'clause-name
                     (stx->list #'(names.ids ...))
                     (attribute names.type)))
-   (pattern ((~and clause-name (~or (~literal private)
-                                    (~literal abstract)))
-             names:private-decl ...)
+   (pattern (clause-name:private-like-clause-names names:private-decl ...)
             #:attr data
             (clause #'(clause-name names.form ...)
                     #'clause-name
@@ -225,7 +246,8 @@
                     (attribute names.type))))
 
  (define-syntax-class class-clause-or-other
-   (pattern e:class-clause #:attr data (attribute e.data))
+   #:attributes (data)
+   (pattern :class-clause)
    (pattern e:expr #:attr data (non-clause #'e)))
 
  ;; Listof<Clause> -> Dict<Identifier, Names>
@@ -259,7 +281,7 @@
            [else
             (define stx (disarm (class-expand (car stxs))))
             (syntax-parse stx
-              #:literals (begin define-syntaxes)
+              #:literals (begin define-syntaxes define-values)
               [(begin . _)
                (loop (append (flatten-begin stx) (cdr stxs)))]
               ;; Handle syntax definitions in the expanded syntax
