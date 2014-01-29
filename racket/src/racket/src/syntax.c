@@ -5386,7 +5386,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   /* Although it makes no sense to simplify the rename table itself,
      we can simplify it in the context of a particular wrap suffix.
      (But don't mutate the wrap list, because that will stomp on
-     tables that might be needed by a propoagation.)
+     tables that might be needed by a propagation.)
 
      A lex_cache maps wrap starts within `w' to lists of simplified
      tables. This helps avoid re-simplifying when the result is
