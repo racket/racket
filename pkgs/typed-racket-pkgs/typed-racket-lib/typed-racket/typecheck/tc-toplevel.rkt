@@ -159,10 +159,8 @@
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literal-sets (kernel-literals)
-      ;; need to special case this
-      ;; FIXME: is there a better way?
-      [stx
-       #:when (syntax-property form 'tr:class)
+      ;; need to special case this to avoid errors at top-level
+      [stx:tr:class^
        (tc-expr #'stx)]
 
       ;; these forms we have been instructed to ignore

@@ -65,5 +65,12 @@
   (opt-lambda opt-lambda)
   (kw-lambda kw-lambda)
   (tail-position typechecker:called-in-tail-position #:mark)
+  (tr:class tr:class #:mark)
+  (tr:class:top-level tr:class:top-level)
+  (tr:class:super-new tr:class:super-new)
+  (tr:class:type-annotation tr:class:type-annotation)
+  (tr:class:super tr:class:super)
+  (tr:class:local-table tr:class:local-table)
+  (tr:class:method tr:class:method)
   )
 
