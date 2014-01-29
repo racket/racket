@@ -438,24 +438,28 @@
               ;; as the object to 'make-method-call' so that the
               ;; arguments end up in the right order.
               (unsyntax
-               (make-method-call
-                stx
-                #`(wrapped-object-neg-party receiver)
-                (syntax/loc stx method)
-                (syntax/loc stx sym)
-                #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
-                rest-arg?
-                kw-args/var))
+               (syntax-property
+                (make-method-call
+                 stx
+                 #`(wrapped-object-neg-party receiver)
+                 (syntax/loc stx method)
+                 (syntax/loc stx sym)
+                 #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
+                 rest-arg?
+                 kw-args/var)
+                'feature-profile:send-dispatch 'antimark))
               (let ([receiver (wrapped-object-object receiver)])
                 (unsyntax
-                 (make-method-call
-                  stx
-                  (syntax/loc stx receiver)
-                  (syntax/loc stx method-in-wrapper-fallback-case)
-                  (syntax/loc stx sym)
-                  arg-list
-                  rest-arg?
-                  kw-args/var))))
+                 (syntax-property
+                  (make-method-call
+                   stx
+                   (syntax/loc stx receiver)
+                   (syntax/loc stx method-in-wrapper-fallback-case)
+                   (syntax/loc stx sym)
+                   arg-list
+                   rest-arg?
+                   kw-args/var)
+                  'feature-profile:send-dispatch 'antimark))))
           (unsyntax
            (make-method-call
             stx

@@ -3591,7 +3591,8 @@ An example
         (set! arg-list (reverse arg-list))
         (set! let-bindings (reverse let-bindings))
         
-        (quasisyntax/loc stx
+        (syntax-property
+         (quasisyntax/loc stx
           (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
                         [(receiver) (unsyntax obj)]
                         [(method) (find-method/who '(unsyntax form) receiver sym)])
@@ -3603,7 +3604,8 @@ An example
                (make-method-call-to-possibly-wrapped-object
                 stx kw-args/var arg-list rest-arg?
                 #'sym #'method #'receiver
-                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))))
+                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
+         'feature-profile:send-dispatch #t)))
     
     (define (core-send apply? kws?)
       (lambda (stx)
