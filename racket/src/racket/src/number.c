@@ -3241,8 +3241,15 @@ static Scheme_Object *fixnum_expt(intptr_t x, intptr_t y)
                 || !(next_result / (uintptr_t)x == (uintptr_t)result)))
           return scheme_generic_integer_power(scheme_make_integer_value(orig_x),
                                               scheme_make_integer_value(orig_y));
-        else
+        else {
           result = (intptr_t)next_result;
+          if (y == 1) {
+            /* Don't allow another x * x, because it could overflow
+               (and if it overflows, then a compiler is technically
+               free to make it do anything at all): */
+            break;
+          }
+        }
       }
       y = y >> 1;
       x = x * x;
