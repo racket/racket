@@ -411,7 +411,7 @@ For communication among @tech{places}, the new byte string is allocated in the
 @section{Bytes to Bytes Encoding Conversion}
 
 @defproc[(bytes-open-converter [from-name string?] [to-name string?])
-         bytes-converter?]{
+         (or/c bytes-converter? #f)]{
 
 Produces a @deftech{byte converter} to go from the encoding named by
 @racket[from-name] to the encoding named by @racket[to-name]. If the

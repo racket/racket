@@ -79,7 +79,7 @@ values can be folded to a constant. For example, @racket[+],
 @function[(Scheme_Object* scheme_make_prim
            [Scheme_Prim* prim])]{
 
-Same as @cppi{scheme_make_prim_w_arity}, but the arity (0, -1) and the
+Same as @cppi{scheme_make_prim_w_arity}, but the arity is (0, -1) and the
 name ``UNKNOWN'' is assumed. This function is provided for backward
 compatibility only.}
 

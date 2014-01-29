@@ -716,7 +716,7 @@ chaperones of the original values, @racket[abort-proc] must produce
 the same values or chaperones of the values that it is given, and
 @racket[cc-guard-proc] must produce the same values or chaperones of
 the original result values, and @racket[callcc-chaperone-proc] must
-procedure a procedure that is a chaperone or the same as the given
+produce a procedure that is a chaperone or the same as the given
 procedure.
 
 @examples[
