@@ -2059,6 +2059,46 @@
                #:msg #rx"expected: String.*given: Any"]
        [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
                #:msg #rx"Required keyword not supplied"]
+
+       ;; test lambdas with mixed type expressions, typed keywords, typed
+       ;; optional arguments
+       ;; FIXME: support rest args
+       [tc-e (tr:lambda (x [y : String]) (string-append y "b"))
+             #:ret (ret (t:-> Univ -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x z [y : String]) (string-append y "b"))
+             #:ret (ret (t:-> Univ Univ -String -String) (-FS -top -bot))]
+       [tc-err (tr:lambda (x [y : String "a"] z) (string-append y "b"))
+               #:msg "expected optional lambda argument"]
+       #| FIXME: requires improvement in opt-lambda checker
+       [tc-e (tr:lambda (x [y : String "a"]) (string-append y "b"))
+             (->opt Univ [-String] -String)]
+       |#
+       [tc-e (tr:lambda (x #:y [y : String]) (string-append y "b"))
+             (->key Univ #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "a"]) (string-append y "b"))
+             (->key Univ #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z "z"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "a"] [z "z"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #f -String)]
+       [tc-e (tr:lambda (x [z "z"] #:y [y : String]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #t -String)]
+       [tc-e (tr:lambda (x [z "z"] #:y [y : String "a"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z : String "z"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "y"] [z : String "z"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #f -String)]
+       [tc-e (tr:lambda (x [z : String "z"] #:y [y : String]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #t -String)]
+       [tc-e (tr:lambda (x [z : String "z"] #:y [y : String "a"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] #:z [z : String]) (string-append y z))
+             (->key Univ #:y -String #t #:z -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] #:z [z : String "z"]) (string-append y z))
+             (->key Univ #:y -String #t #:z -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String "y"] #:z [z : String "z"]) (string-append y z))
+             (->key Univ #:y -String #f #:z -String #f -String)]
         )
   (test-suite
    "tc-literal tests"
