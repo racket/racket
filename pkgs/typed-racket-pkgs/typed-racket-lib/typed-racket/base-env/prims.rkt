@@ -1118,49 +1118,86 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (values (mk #'let/cc) (mk #'let/ec))))
 
 
+;; Syntax classes for -lambda
 (begin-for-syntax
-  (define-syntax-class optional-arg
-    (pattern name:id #:attr value #f)
-    (pattern (name:id value:expr)))
-  (define-splicing-syntax-class lambda-args
-    #:attributes (required-pos
-                  optional-pos
-                  optional-kws
-                  required-kws)
-    (pattern (~seq (~or pos:optional-arg (~seq kw:keyword key:optional-arg)) ...)
-             #:attr optional-pos (length (filter values (attribute pos.value)))
-             #:attr required-pos (- (length (filter values (attribute pos.name)))
-                                    (attribute optional-pos))
-             #:attr optional-kws
-               (for/list ((kw (attribute kw))
-                          (kw-value (attribute key.value))
-                          #:when kw-value)
-                 kw)
-             #:attr required-kws (remove* (attribute optional-kws) (attribute kw)))))
+  (define-splicing-syntax-class kw-formal
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern (~seq kw:keyword id:id)
+             #:with form #'(kw id)
+             #:attr default #f
+             #:attr type #f)
+    (pattern (~seq kw:keyword [id:id default:expr])
+             #:with form #'(kw [id default])
+             #:attr type #f)
+    (pattern (~seq kw:keyword [id:id : type:expr])
+             #:with form #`(kw #,(type-label-property #'id #'type))
+             #:attr default #f)
+    (pattern (~seq kw:keyword [id:id : type:expr default:expr])
+             #:with form #`(kw [#,(type-label-property #'id #'type) default])))
+
+  (define-splicing-syntax-class mand-formal
+    #:description "lambda argument"
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern id:id
+             #:with form #'(id)
+             #:attr default #f
+             #:attr type #f
+             #:attr kw #f)
+    (pattern [id:id : type:expr]
+             #:with form #`(#,(type-label-property #'id #'type))
+             #:attr default #f
+             #:attr kw #f)
+    (pattern :kw-formal))
+
+  (define-splicing-syntax-class opt-formal
+    #:description "optional lambda argument"
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern [id:id default:expr]
+             #:with form #'([id default])
+             #:attr type #f
+             #:attr kw #f)
+    (pattern [id:id : type:expr default:expr]
+             #:with form #`([#,(type-label-property #'id #'type) default])
+             #:attr kw #f)
+    (pattern :kw-formal))
+
+  (define-syntax-class rest-arg
+    #:description "rest argument"
+    #:attributes (form)
+    #:literals (:)
+    (pattern () #:attr form #'())
+    (pattern rest:id #:attr form #'rest)
+    ;; FIXME: add a typed rest-arg case if a good syntax is found
+    )
+
+  (define-syntax-class lambda-formals
+    #:attributes (opt-property kw-property erased)
+    #:literals (:)
+    (pattern (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
+             #:attr kw-property
+             (> (length (append (filter values (attribute mand.kw))
+                                (filter values (attribute opt.kw))))
+                0)
+             #:attr req-len (length (attribute mand))
+             #:attr opt-len (length (attribute opt))
+             #:attr opt-property
+             (list (attribute req-len) (attribute opt-len))
+             #:attr erased #`(#,@(apply append (stx-map syntax->list #'(mand.form ...)))
+                              #,@(apply append (stx-map syntax->list #'(opt.form ...)))
+                              . rest.form))))
 
 
 ;; annotation to help tc-expr pick out keyword functions
 (define-syntax (-lambda stx)
   (syntax-parse stx
-    [(_ formals . body)
-     (define d (syntax/loc stx (λ formals . body)))
-     (syntax-parse #'formals
-      [(~or (~and (args:lambda-args) (~bind (rest #f)))
-            (args:lambda-args . rest:id))
-       (define kw-property
-         (> (+ (length (attribute args.required-kws))
-               (length (attribute args.optional-kws)))
-            0))
-       (define opt-property
-         (and (> (attribute args.optional-pos) 0)
-           (list
-             (attribute args.required-pos)
-             (attribute args.optional-pos))))
-       (opt-lambda-property
-         (kw-lambda-property d kw-property)
-         opt-property)]
-       ;; This is an error and will be caught by the real lambda
-      [_ d])]))
+    [(_ formals:lambda-formals . body)
+     (define d (syntax/loc stx (λ formals.erased . body)))
+     (if (attribute formals.kw-property)
+         (kw-lambda-property d (attribute formals.kw-property))
+         (opt-lambda-property d (attribute formals.opt-property)))]))
 
 
 ;; do this ourselves so that we don't get the static bindings,
