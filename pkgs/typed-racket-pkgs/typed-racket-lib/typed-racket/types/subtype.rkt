@@ -577,8 +577,8 @@
                        (subtype* s-out t-out))]
          [((Param: in out) t)
           (subtype* A0 (cl->* (-> out) (-> in -Void)) t)]
-         [((Instance: (Class: _ _ field-map method-map augment-map))
-           (Instance: (Class: _ _ field-map* method-map* augment-map*)))
+         [((Instance: (Class: _ _ field-map method-map augment-map _))
+           (Instance: (Class: _ _ field-map* method-map* augment-map* _)))
           (define (subtype-clause? map map*)
             ;; invariant: map and map* are sorted by key
             (let loop ([A A0] [map map] [map* map*])
@@ -600,8 +600,8 @@
                (subtype-clause? method-map method-map*)
                (subtype-clause? field-map field-map*))]
          [((? Class?) (ClassTop:)) A0]
-         [((Class: row inits fields methods augments)
-           (Class: row* inits* fields* methods* augments*))
+         [((Class: row inits fields methods augments init-rest)
+           (Class: row* inits* fields* methods* augments* init-rest*))
           ;; TODO: should the result be folded instead?
           (define sub (curry subtype* A))
           ;; check that each of inits, fields, methods, etc. are
@@ -632,7 +632,8 @@
                (equal-clause? inits inits* #t)
                (equal-clause? fields fields*)
                (equal-clause? methods methods*)
-               (equal-clause? augments augments*))]
+               (equal-clause? augments augments*)
+               (sub init-rest init-rest*))]
          ;; otherwise, not a subtype
          [(_ _) #f])))
      (when (null? A)

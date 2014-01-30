@@ -5,6 +5,7 @@
 (require "../utils/utils.rkt"
          racket/dict
          racket/format
+         racket/list
          racket/match
          racket/pretty ;; DEBUG ONLY
          racket/set
@@ -58,7 +59,7 @@
 
 (define-syntax-class internal-class-data
   #:literals (#%plain-app quote-syntax class-internal begin
-              values c:init c:init-field optional-init c:field
+              values c:init c:init-field c:init-rest optional-init c:field
               c:public c:override c:private c:inherit c:inherit-field
               private-field c:augment c:pubment)
   (pattern (begin (quote-syntax
@@ -66,6 +67,7 @@
                     (#:forall type-parameter:id ...)
                     (c:init init-names:name-pair ...)
                     (c:init-field init-field-names:name-pair ...)
+                    (c:init-rest (~optional init-rest-name:id))
                     (optional-init optional-names:id ...)
                     (c:field field-names:name-pair ...)
                     (c:public public-names:name-pair ...)
@@ -151,6 +153,7 @@
                 type-parameters
                 init-internals init-externals
                 init-field-internals init-field-externals
+                init-rest-name
                 optional-inits
                 field-internals field-externals
                 public-internals public-externals
@@ -189,7 +192,7 @@
 ;;  class produced by `class` due to the syntax property
 (define (check-class form [expected #f])
   (match (and expected (resolve expected))
-    [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
+    [(tc-result1: (and self-class-type (Class: _ _ _ _ _ _)))
      (parse-and-check form self-class-type)]
     [(tc-result1: (Poly-names: ns body-type))
      ;; FIXME: this case probably isn't quite right
@@ -227,6 +230,8 @@
              'init-internals
              (set-union (syntax->datum #'cls.init-internals)
                         (syntax->datum #'cls.init-field-internals))
+             'init-rest-name     (and (attribute cls.init-rest-name)
+                                      (syntax-e (attribute cls.init-rest-name)))
              'public-internals   (syntax->datum #'cls.public-internals)
              'override-internals (syntax->datum #'cls.override-internals)
              'pubment-internals  (syntax->datum #'cls.pubment-internals)
@@ -297,12 +302,12 @@
 (define (do-check expected super-type parse-info)
   ;; unpack superclass names and types
   (define-values (super-row super-inits super-fields
-                  super-methods super-augments)
+                  super-methods super-augments super-init-rest)
     (match super-type
       [(tc-result1: (Class: super-row super-inits super-fields
-                            super-methods super-augments))
+                            super-methods super-augments super-init-rest))
        (values super-row super-inits super-fields
-               super-methods super-augments)]
+               super-methods super-augments super-init-rest)]
       [(tc-result1: t)
        (tc-error/expr "expected a superclass but got value of type ~a" t
                       #:stx (hash-ref parse-info 'superclass-expr))
@@ -333,15 +338,31 @@
   (define super-new-stxs
     (trawl-for-property make-methods-stx 'tr:class:super-new))
   (define super-new-stx (check-super-new-exists super-new-stxs))
-  (define provided-super-inits
+  (define-values (provided-pos-args provided-super-inits)
     (if super-new-stx
         (find-provided-inits super-new-stx super-inits)
-        '()))
+        (values null null)))
   (define provided-init-names (dict-keys provided-super-inits))
-  (define remaining-super-inits
-    (for/list ([(name val) (in-dict super-inits)]
-               #:unless (member name provided-init-names))
-      (cons name val)))
+  (define pos-length (length provided-pos-args))
+  ;; super-init-rest* - The init-rest passed to the `infer-self-type` function.
+  ;;                    This reflects any changes to the `super-init-rest` type
+  ;;                    that are necessary due to the super constructor call in
+  ;;                    this class.
+  (define-values (super-init-rest* remaining-super-inits)
+    (cond [;; too many init arguments, and no init-rest
+           (and (not super-init-rest) (> pos-length (length super-inits)))
+           (values super-init-rest
+                   (tc-error/expr "too many positional init arguments provided"
+                                  #:return null))]
+          [;; no remaining by-name inits, so change the init-rest type
+           ;; and return a null remaining named inits list
+           (> pos-length (length super-inits))
+           (values (Un) null)]
+          [else
+           (values super-init-rest
+                   (for/list ([(name val) (in-dict (drop super-inits pos-length))]
+                              #:unless (member name provided-init-names))
+                     (cons name val)))]))
   ;; define which init names are optional
   (define optional-inits (hash-ref parse-info 'optional-inits))
   (define optional-external (for/set ([n optional-inits])
@@ -362,8 +383,9 @@
                      remaining-super-inits
                      super-fields
                      super-methods
-                     super-augments))
-  (match-define (Instance: (Class: _ inits fields methods augments))
+                     super-augments
+                     super-init-rest*))
+  (match-define (Instance: (Class: _ inits fields methods augments init-rest))
                 self-type)
   (do-timestamp "built self type")
   ;; trawl the body for the local name table
@@ -371,6 +393,7 @@
     (trawl-for-property make-methods-stx 'tr:class:local-table))
   (define-values (local-method-table local-private-table local-field-table
                   local-private-field-table local-init-table
+                  local-init-rest-table
                   local-inherit-table local-inherit-field-table
                   local-super-table
                   local-augment-table local-inner-table)
@@ -393,6 +416,7 @@
                                local-field-table fields
                                local-private-field-table private-field-types
                                local-init-table inits
+                               local-init-rest-table init-rest
                                local-inherit-table
                                local-inherit-field-table
                                local-super-table
@@ -403,7 +427,8 @@
                                self-type))
   (do-timestamp "built local tables")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-    (check-super-new provided-super-inits super-inits))
+    (check-super-new provided-pos-args provided-super-inits
+                     super-inits super-init-rest))
   (do-timestamp "checked super-new")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (for ([stx top-level-exprs]
@@ -467,7 +492,7 @@
          remaining-super-inits
          super-field-names super-method-names super-augment-names)
   (when expected
-   (match-define (Class: _ inits fields methods augments) expected)
+   (match-define (Class: _ inits fields methods augments _) expected)
    (define exp-init-names (dict-keys inits))
    (define exp-field-names (dict-keys fields))
    (define exp-method-names (dict-keys methods))
@@ -519,7 +544,7 @@
   (match-define
    (Instance:
     (and class-type
-         (Class: row-var inits fields methods augments)))
+         (Class: row-var inits fields methods augments init-rest)))
    self-type)
   (define (make-new-methods methods method-types)
     (for/fold ([methods methods])
@@ -535,7 +560,8 @@
       (dict-set methods name type)))
   (make-Class row-var inits fields
               (make-new-methods methods method-types)
-              (make-new-methods augments augment-types)))
+              (make-new-methods augments augment-types)
+              init-rest))
 
 ;; local-tables->lexical-env : Dict Dict<Symbol, Symbol>
 ;;                             LocalMapping NameTypeDict
@@ -551,6 +577,7 @@
                                    local-private-field-table
                                    private-field-types
                                    local-init-table inits
+                                   local-init-rest-table init-rest
                                    local-inherit-table
                                    local-inherit-field-table
                                    local-super-table
@@ -687,6 +714,17 @@
       (define external (dict-ref internal-external-mapping i))
       (car (dict-ref inits external (list -Bottom)))))
 
+  (define localized-init-rest-name
+    (let ([name (hash-ref parse-info 'init-rest-name)])
+      (if name
+          (list (dict-ref local-init-rest-table name))
+          null)))
+
+  (define init-rest-type
+    (if (hash-ref parse-info 'init-rest-name)
+        (list (or init-rest Univ))
+        null))
+
   (define all-names (append localized-method-names
                             localized-private-methods
                             localized-field-get-names
@@ -713,6 +751,7 @@
           ;;        from top-level environment to avoid <undefined>
           (append all-names
                   localized-init-names
+                  localized-init-rest-name
                   ;; Set `self` to the self-type and `init-args`
                   ;; to Any, so that accessors can use them without
                   ;; problems.
@@ -721,6 +760,7 @@
                         (hash-ref parse-info 'initializer-args-id)))
           (append all-types
                   init-types
+                  init-rest-type
                   (list self-type (make-Univ)))))
 
 ;; check-methods : Listof<Symbol> Listof<Syntax> Dict<Symbol, Symbol> Dict Type
@@ -898,6 +938,8 @@
                     ...)]
                   [(init:id ...)
                    (#%plain-app values (#%plain-lambda () local-init:id) ...)]
+                  [(init-rest:id ...)
+                   (#%plain-app values (#%plain-lambda () local-init-rest:id) ...)]
                   [(inherit:id ...)
                    (#%plain-app
                     values
@@ -940,6 +982,10 @@
              (map cons
                   (syntax->datum #'(init ...))
                   (syntax->list #'(local-init ...)))
+             ;; this should only be a singleton list or null
+             (map cons
+                  (syntax->datum #'(init-rest ...))
+                  (syntax->list #'(local-init-rest ...)))
              (map cons
                   (syntax->datum #'(inherit ...))
                   (syntax->list #'(local-inherit ...)))
@@ -971,12 +1017,19 @@
          #f]
         [else (car stxs)]))
 
-;; find-provided-inits : Syntax Inits -> Dict<Symbol, Syntax>
+;; find-provided-inits : Syntax Inits -> Listof<Syntax> Dict<Symbol, Syntax>
 ;; Find the init arguments that were provided via super-new
 (define (find-provided-inits stx super-inits)
   (syntax-parse stx
     #:literals (#%plain-app list cons quote)
-    [(#%plain-app super-go _ _ _ _ _
+    [(#%plain-app
+      (#%plain-lambda args
+        (#%plain-app super-go _ _ _ _ _ _))
+      pos-arg:expr ...)
+     (values (syntax->list #'(pos-arg ...)) null)]
+    [(#%plain-app super-go _ _ _ _
+                  (~or (#%plain-app list pos-arg:expr ...)
+                       (~and _ (~bind [(pos-arg 1) '()])))
                   (#%plain-app
                    list
                    (#%plain-app cons (quote init-id) arg:expr)
@@ -986,17 +1039,40 @@
        (unless (dict-ref super-inits name #f)
          (tc-error/expr "super-new: init argument ~a not accepted by superclass"
                         name)))
-     (map cons provided-inits (syntax->list #'(arg ...)))]))
+     (values
+      (syntax->list #'(pos-arg ...))
+      (map cons provided-inits (syntax->list #'(arg ...))))]))
 
-;; check-super-new : Dict<Symbol, Syntax> Dict<Symbol, Type> -> Void
+;; check-super-new : Listof<Syntax> Dict<Symbol, Syntax>
+;;                   Dict<Symbol, Type> Type -> Void
 ;; Check if the super-new call is well-typed
-(define (check-super-new provided-inits super-inits)
-  (for ([(init-id init-arg) (in-dict provided-inits)])
-    (define maybe-expected (dict-ref super-inits init-id #f))
-    (if maybe-expected
-        (tc-expr/check init-arg (ret (car maybe-expected)))
-        (tc-error/expr "init argument ~a not accepted by superclass"
-                       init-id))))
+(define (check-super-new provided-pos-args provided-inits super-inits init-rest)
+  (define pos-init-diff (- (length provided-pos-args) (length super-inits)))
+  (cond [(and (> pos-init-diff 0) (not init-rest))
+         ;; errror case that's caught above, do nothing
+         (void)]
+        [(> pos-init-diff 0)
+         (define-values (pos-args for-init-rest)
+           (split-at provided-pos-args (length super-inits)))
+         (for ([pos-arg pos-args]
+               [init super-inits])
+           (match-define (list _ type _) init)
+           (tc-expr/check pos-arg (ret type)))
+         (tc-expr/check #`(#%plain-app list #,@for-init-rest)
+                        (ret init-rest))]
+        [else
+         (define-values (pos-inits remaining-inits)
+           (split-at super-inits (length provided-pos-args)))
+         (for ([pos-arg provided-pos-args]
+               [init pos-inits])
+           (match-define (list _ type _) init)
+           (tc-expr/check pos-arg (ret type)))
+         (for ([(init-id init-arg) (in-dict provided-inits)])
+           (define maybe-expected (dict-ref remaining-inits init-id #f))
+           (if maybe-expected
+               (tc-expr/check init-arg (ret (car maybe-expected)))
+               (tc-error/expr "init argument ~a not accepted by superclass"
+                              init-id)))]))
 
 ;; Syntax -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for
@@ -1079,7 +1155,7 @@
 
 ;; infer-self-type : Dict RowVar Class Dict<Symbol, Type> Dict<Symbol, Type>
 ;;                   Set<Symbol> Dict<Symbol, Symbol>
-;;                   Inits Fields Methods
+;;                   Inits Fields Methods Type
 ;;                   -> Type
 ;; Construct a self object type based on all type annotations
 ;; and the expected type
@@ -1090,52 +1166,74 @@
                          optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
-                         super-augments)
-  (define (make-type-dict names supers maybe-expected
-                          #:inits [inits? #f]
-                          #:annotations-from [annotation-table annotation-table]
-                          #:default-type [default-type Univ])
+                         super-augments super-init-rest)
+  ;; Gets a type for a given name in the class.
+  ;; A type is assigned for each member in this order:
+  ;;   (1) a type annotation from the user
+  ;;   (2) the expected type
+  ;;   (3) Any or Procedure
+  (define (assign-type name expected annotation-table update default-type)
+    (cond [(dict-ref annotation-table name #f) => update]
+          [(and expected (dict-ref expected name #f))
+           => (compose update car)]
+          [default-type => update]))
+
+  ;; construct the new init type dict
+  (define (make-inits names supers expected)
+    (define-values (inits new-inits)
+      (for/fold ([type-dict supers] [new-entries '()])
+                ([name names])
+        (define external (dict-ref internal-external-mapping name))
+        (define (update-dict type)
+          (define entry (list type (set-member? optional-inits name)))
+          ;; new entries have to go on the front, so sort them separately
+          (if (dict-has-key? type-dict external)
+              (values (dict-set type-dict external entry) new-entries)
+              (values type-dict (cons (cons external entry) new-entries))))
+        (assign-type name expected annotation-table update-dict Univ)))
+    (append (reverse new-inits) inits))
+
+  ;; construct type dicts for fields, methods, and augments
+  (define (make-type-dict names supers expected default-type
+                          #:annotations-from [annotation-table annotation-table])
     (for/fold ([type-dict supers])
               ([name names])
       (define external (dict-ref internal-external-mapping name))
       (define (update-dict type)
-        (define entry
-          (if inits?
-              (list type (set-member? optional-inits name))
-              (list type)))
+        (define entry (list type))
         (dict-set type-dict external entry))
-      ;; A type is assigned for each member in this order:
-      ;;   (1) a type annotation from the user
-      ;;   (2) the expected type
-      ;;   (3) Any or Procedure
-      (cond [(dict-ref annotation-table name #f) => update-dict]
-            [(and maybe-expected
-                  (dict-ref maybe-expected name #f))
-             => (compose update-dict car)]
-            [default-type => update-dict])))
+      (assign-type name expected annotation-table update-dict default-type)))
+
   (define-values (expected-inits expected-fields
-                  expected-publics expected-augments)
+                  expected-publics expected-augments
+                  expected-init-rest)
     (match expected
-      [(Class: _ inits fields publics augments)
-       (values inits fields publics augments)]
-      [_ (values #f #f #f #f)]))
-  (define-values (inits fields publics pubments)
+      [(Class: _ inits fields publics augments init-rest)
+       (values inits fields publics augments init-rest)]
+      [_ (values #f #f #f #f #f)]))
+  (define-values (inits fields publics pubments init-rest-name)
     (values (hash-ref parse-info 'init-internals)
             (hash-ref parse-info 'field-internals)
             (hash-ref parse-info 'public-internals)
-            (hash-ref parse-info 'pubment-internals)))
-  (define init-types (make-type-dict inits super-inits expected-inits
-                                     #:inits #t))
-  (define field-types (make-type-dict fields super-fields expected-fields))
+            (hash-ref parse-info 'pubment-internals)
+            (hash-ref parse-info 'init-rest-name)))
+  (define init-types (make-inits inits super-inits expected-inits))
+  (define field-types (make-type-dict fields super-fields expected-fields Univ))
   (define public-types (make-type-dict (append publics pubments)
                                        super-methods expected-publics
-                                       #:default-type top-func))
+                                       top-func))
   (define augment-types (make-type-dict
-                         pubments super-augments expected-augments
-                         #:default-type top-func
+                         pubments super-augments expected-augments top-func
                          #:annotations-from augment-annotation-table))
+  ;; For the init-rest type, if the user didn't provide one, then
+  ;; take the superclass init-rest. Otherwise, find the annotated type
+  ;; or use (Listof Any) as the type if no annotation exists.
+  (define init-rest-type
+    (cond [(not init-rest-name) super-init-rest]
+          [(dict-ref annotation-table init-rest-name #f)]
+          [else (-lst Univ)]))
   (make-Instance (make-Class super-row init-types field-types
-                             public-types augment-types)))
+                             public-types augment-types init-rest-type)))
 
 ;; function->method : Function Type -> Function
 ;; Fix up a method's arity from a regular function type

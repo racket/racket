@@ -289,14 +289,14 @@
                      (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
-        [(Instance: (Class: _ _ fields methods _))
+        [(Instance: (Class: _ _ fields methods _ _))
          (match-define (list (list field-names field-types) ...) fields)
          (match-define (list (list public-names public-types) ...) methods)
          (object/sc (append (map (λ (n sc) (member-spec 'method n sc))
                                  public-names (map t->sc/method public-types))
                             (map (λ (n sc) (member-spec 'field n sc))
                                  field-names (map t->sc/both field-types))))]
-        [(Class: _ inits fields publics augments)
+        [(Class: _ inits fields publics augments _)
          (match-define (list (list init-names init-types _) ...) inits)
          (match-define (list (list field-names field-types) ...) fields)
          (match-define (list (list public-names public-types) ...) publics)

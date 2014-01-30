@@ -465,19 +465,22 @@
 (def-type Row ([inits (listof (list/c symbol? Type/c boolean?))]
                [fields (listof (list/c symbol? Type/c))]
                [methods (listof (list/c symbol? Function?))]
-               [augments (listof (list/c symbol? Function?))])
+               [augments (listof (list/c symbol? Function?))]
+               [init-rest (or/c Type/c #f)])
   #:no-provide
   [#:frees (λ (f) (combine-frees
                    (map f (append (map cadr inits)
                                   (map cadr fields)
                                   (map cadr methods)
-                                  (map cadr augments)))))]
-  [#:fold-rhs (match (list inits fields methods augments)
+                                  (map cadr augments)
+                                  (if init-rest (list init-rest) null)))))]
+  [#:fold-rhs (match (list inits fields methods augments init-rest)
                 [(list
                   (list (list init-names init-tys reqd) ___)
                   (list (list fname fty) ___)
                   (list (list mname mty) ___)
-                  (list (list aname aty) ___))
+                  (list (list aname aty) ___)
+                  init-rest)
                  (*Row
                   (map list
                        init-names
@@ -485,7 +488,8 @@
                        reqd)
                   (map list fname (map type-rec-id fty))
                   (map list mname (map type-rec-id mty))
-                  (map list aname (map type-rec-id aty)))])])
+                  (map list aname (map type-rec-id aty))
+                  (if init-rest (type-rec-id init-rest) #f))])])
 
 ;; Supertype of all Class types, cannot instantiate
 ;; or subclass these
@@ -916,23 +920,25 @@
 ;; Row*
 ;; This is a custom constructor for Row types
 ;; Sorts all clauses by the key (the clause name)
-(define (Row* inits fields methods augments)
-  (*Row (sort-row-clauses inits)
+(define (Row* inits fields methods augments init-rest)
+  (*Row inits
         (sort-row-clauses fields)
         (sort-row-clauses methods)
-        (sort-row-clauses augments)))
+        (sort-row-clauses augments)
+        init-rest))
 
 ;; Class*
 ;; This is a custom constructor for Class types that
 ;; doesn't require writing make-Row everywhere
-(define/cond-contract (Class* row-var inits fields methods augments)
+(define/cond-contract (Class* row-var inits fields methods augments init-rest)
   (-> (or/c F? B? Row? #f)
       (listof (list/c symbol? Type/c boolean?))
       (listof (list/c symbol? Type/c))
       (listof (list/c symbol? Function?))
       (listof (list/c symbol? Function?))
+      (or/c Type/c #f)
       Class?)
-  (*Class row-var (Row* inits fields methods augments)))
+  (*Class row-var (Row* inits fields methods augments init-rest)))
 
 ;; Class:*
 ;; This match expander replaces the built-in matching with
@@ -948,20 +954,29 @@
   (define fields (Row-fields class-row))
   (define methods (Row-methods class-row))
   (define augments (Row-augments class-row))
+  (define init-rest (Row-init-rest class-row))
   (cond [(and row (Row? row))
          (define row-inits (Row-inits row))
          (define row-fields (Row-fields row))
          (define row-methods (Row-methods row))
          (define row-augments (Row-augments row))
+         (define row-init-rest (Row-init-rest row))
          (list row
+               ;; Init types from a mixin go at the start, since
+               ;; mixins only add inits at the start
+               (append row-inits inits)
                ;; FIXME: instead of sorting here every time
                ;;        the match expander is called, the row
                ;;        fields should be merged on substitution
-               (sort-row-clauses (append inits row-inits))
                (sort-row-clauses (append fields row-fields))
                (sort-row-clauses (append methods row-methods))
-               (sort-row-clauses (append augments row-augments)))]
-        [else (list row inits fields methods augments)]))
+               (sort-row-clauses (append augments row-augments))
+               ;; The class type's existing init-rest types takes
+               ;; precedence since it's the one that was already assumed
+               ;; (say, in a mixin type's domain). The mismatch will
+               ;; be caught by application type-checking later.
+               (if init-rest init-rest row-init-rest))]
+        [else (list row inits fields methods augments init-rest)]))
 
 ;; sorts the given field of a Row by the member name
 (define (sort-row-clauses clauses)
@@ -970,9 +985,9 @@
 (define-match-expander Class:*
   (λ (stx)
     (syntax-case stx ()
-      [(_ row-pat inits-pat fields-pat methods-pat augments-pat)
+      [(_ row-pat inits-pat fields-pat methods-pat augments-pat init-rest-pat)
        #'(? Class?
             (app merge-class/row
                  (list row-pat inits-pat fields-pat
-                       methods-pat augments-pat)))])))
+                       methods-pat augments-pat init-rest-pat)))])))
 

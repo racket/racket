@@ -589,7 +589,7 @@
   (define parent-type (parse-type stx))
   (define (match-parent-type parent-type)
     (match parent-type
-      [(Class: row-var _ fields methods augments)
+      [(Class: row-var _ fields methods augments _)
        (values row-var fields methods augments)]
       [(? Mu?)
        (match-parent-type (unfold parent-type))]
@@ -662,7 +662,7 @@
                           (stx-map syntax-e #'clause.method-names)
                           (stx-map parse-type #'clause.method-types)))
      (check-function-types methods)
-     (make-Instance (make-Class #f null fields methods null))]))
+     (make-Instance (make-Class #f null fields methods null #f))]))
 
 ;; Syntax -> Type
 ;; Parse a (Class ...) type
@@ -679,6 +679,9 @@
      (define given-row-var
        (and (attribute clause.row-var)
             (parse-type (attribute clause.row-var))))
+     (define given-init-rest
+       (and (attribute clause.init-rest)
+            (parse-type (attribute clause.init-rest))))
 
      (check-function-types given-methods)
      (check-function-types given-augments)
@@ -702,7 +705,7 @@
        (check-constraints augments (cadddr constraints)))
 
      (define class-type
-       (make-Class row-var given-inits fields methods augments))
+       (make-Class row-var given-inits fields methods augments given-init-rest))
 
      class-type]))
 
