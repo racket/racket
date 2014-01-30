@@ -376,6 +376,7 @@
            (printf "(doc-dir . ~s)\n" (dir: 'doc))
            (preserve 'catalogs)
            (preserve 'doc-search-url)
+           (preserve 'build-stamp)
            (when (eq? 'shared (system-type 'link)) ; never true for now
              (printf "      (dll-dir . ~s)\n" (dir: 'lib)))
            (printf "      (lib-dir . ~s)\n" (dir: 'librkt))
