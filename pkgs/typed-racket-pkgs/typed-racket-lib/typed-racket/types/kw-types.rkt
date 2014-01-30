@@ -2,7 +2,8 @@
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
          "../utils/tc-utils.rkt"
-         racket/list racket/set racket/dict racket/match)
+         racket/list racket/set racket/dict racket/match
+         syntax/parse)
 
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type]
 ;;           [Option Type] [Option (Pair Type symbol)] boolean -> Type
@@ -130,6 +131,113 @@
       [(PolyDots-names: names f)
        (make-PolyDots names (kw-convert f #:split split?))]))
 
+;; kw-unconvert : Type (Listof Syntax) (Listof Keyword) (Listof Keyword) -> Type
+;; Given a type for a core keyword function, unconvert it to a
+;; normal function type.
+;;
+;; precondition: only call this for functions with no type annotations,
+;;               which means they will never have polymorphic types.
+(define (kw-unconvert ft formalss mand-keywords keywords)
+  (define (lengthish formals)
+    (define lst (syntax->list formals))
+    (if lst (length lst) +inf.0))
+  ;; only need longest formals and smallest formals to determine
+  ;; which arguments are optional non-kw arguments
+  (define max-formals (argmax lengthish formalss))
+  (define min-formals (argmin lengthish formalss))
+  (define-values (raw-non-kw-argc rest?)
+    (syntax-parse max-formals
+      [(_ _ non-kw:id ...)
+       (values (length (syntax->list #'(non-kw ...))) #f)]
+      [(_ _ non-kw:id ... . rst:id)
+       (values (length (syntax->list #'(non-kw ...))) #t)]))
+  (define opt-non-kw-argc
+    (syntax-parse min-formals
+      [(_ _ non-kw:id ...)
+       (- raw-non-kw-argc (length (syntax->list #'(non-kw ...))))]
+      ;; if min and max both have rest args, then there cannot
+      ;; have been any optional arguments
+      [(_ _ non-kw:id ... . rst:id) 0]))
+  ;; counted twice since optionals expand to two arguments
+  (define non-kw-argc (+ raw-non-kw-argc opt-non-kw-argc))
+  (define mand-non-kw-argc (- non-kw-argc (* 2 opt-non-kw-argc)))
+  (match ft
+    [(Function: arrs)
+     (cond [(= (length arrs) 1) ; no optional args (either kw or not)
+            (match-define (arr: doms rng _ _ _) (car arrs))
+            (define kw-length
+              (- (length doms) (+ non-kw-argc (if rest? 1 0))))
+            (define-values (kw-args other-args) (split-at doms kw-length))
+            (define actual-kws
+              (for/list ([kw (in-list keywords)]
+                         [kw-type (in-list kw-args)])
+                (make-Keyword kw kw-type #t)))
+            (define rest-type
+              (and rest?
+                   (if (equal? (last other-args) Univ)
+                       Univ
+                       -Bottom)))
+            (make-Function
+             (list (make-arr* (take other-args non-kw-argc)
+                              rng
+                              #:kws actual-kws
+                              #:rest rest-type)))]
+           [(and (even? (length arrs)) ; had optional args
+                 (>= (length arrs) 2))
+            ;; assumption: only one arr is needed, since the types for
+            ;; the actual domain are the same (the difference is in the
+            ;; second type for the optional keyword protocol)
+            (match-define (arr: doms rng _ _ _) (car arrs))
+            (define kw-length
+              (- (length doms) (+ non-kw-argc (if rest? 1 0))))
+            (define kw-args (take doms kw-length))
+            (define actual-kws (compute-kws mand-keywords keywords kw-args))
+            (define other-args (drop doms kw-length))
+            (define-values (mand-args opt-and-rest-args)
+              (split-at other-args mand-non-kw-argc))
+            (define rest-type
+              (and rest?
+                   (if (equal? (last opt-and-rest-args) Univ)
+                       Univ
+                       -Bottom)))
+            (define opt-types
+              (let loop ([opt-args opt-and-rest-args]
+                         [opt-types '()])
+                (if (or (null? opt-args)
+                        (null? (cdr opt-args)))
+                    (reverse opt-types)
+                    (loop (cddr opt-args) (cons (car opt-args) opt-types)))))
+            (make-Function
+             (for/list ([to-take (in-range (add1 (length opt-types)))])
+               (make-arr* (append mand-args (take opt-types to-take))
+                          rng
+                          #:kws actual-kws
+                          #:rest rest-type)))]
+           [else (int-err "unsupported arrs in keyword function type")])]
+    [_ (int-err "unsupported keyword function type")]))
+
+;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
+;;               -> (Listof make-Keyword)
+;; Computes the keyword types for an arr in kw-unconvert
+;;
+;; assumptions: (1) in kw-args, there are two types per optional kw
+;;                  and the first type is the argument type (which is
+;;                  the same in every `arr` in the function type)
+;;              (2) kw-args and keywords are sorted by keyword<? order
+(define (compute-kws mand-keywords keywords kw-args)
+  (let loop ([kw-args kw-args]
+             [keywords keywords]
+             [kw-types '()])
+    (cond [(empty? kw-args) (reverse kw-types)]
+          [(memq (car keywords) mand-keywords)
+           (loop (cdr kw-args) (cdr keywords)
+                 (cons (make-Keyword (car keywords) (car kw-args) #t)
+                       kw-types))]
+          [else ; optional, so there are two arg types
+           (loop (cddr kw-args) (cdr keywords)
+                 (cons (make-Keyword (car keywords) (car kw-args) #f)
+                       kw-types))])))
+
 (define ((opt-convert-arr required-pos optional-pos) arr)
   (match arr
     [(arr: args result #f #f '())
@@ -167,4 +275,4 @@
          (make-PolyDots names (loop f))]
         [t t]))))
 
-(provide kw-convert opt-convert)
+(provide kw-convert kw-unconvert opt-convert)

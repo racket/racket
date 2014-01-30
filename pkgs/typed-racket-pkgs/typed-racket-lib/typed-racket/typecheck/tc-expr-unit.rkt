@@ -273,10 +273,10 @@
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
-          (tc-expr/check/type #'fun (kw-convert f #:split #t))]
+          (tc-expr/check/type #'fun (kw-convert f #:split #t))
+          expected]
          [(or (tc-results: _) (tc-any-results:))
-          (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
-       expected]
+          (tc-expr (remove-ascription form))])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        (define conv-type
@@ -365,6 +365,23 @@
                    ignore-this-case
                    (#%plain-app _ _ _arg-var2 ...))))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
+      ;; kw function def
+      [(~and _:kw-lambda^
+             (let-values ([(f) fun])
+               (let-values _
+                 (#%plain-app
+                  maker
+                  lambda-for-kws
+                  (case-lambda ; wrapper function
+                    (formals . cl-body) ...)
+                  (~or (quote (mand-kw:keyword ...))
+                       (~and _ (~bind [(mand-kw 1) '()])))
+                  (quote (all-kw:keyword ...))
+                  . rst))))
+       (ret (kw-unconvert (tc-expr/t #'fun)
+                          (syntax->list #'(formals ...))
+                          (syntax->datum #'(mand-kw ...))
+                          (syntax->datum #'(all-kw ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form)]
