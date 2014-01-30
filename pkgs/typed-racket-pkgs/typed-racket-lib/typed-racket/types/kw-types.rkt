@@ -131,13 +131,13 @@
       [(PolyDots-names: names f)
        (make-PolyDots names (kw-convert f #:split split?))]))
 
-;; kw-unconvert : Type (Listof Syntax) (Listof Keyword) -> Type
+;; kw-unconvert : Type (Listof Syntax) (Listof Keyword) (Listof Keyword) -> Type
 ;; Given a type for a core keyword function, unconvert it to a
-;; normal function type if possible. Otherwise return `Procedure`.
+;; normal function type.
 ;;
-;; invariant: only call this for functions with no type annotations,
-;; which means they will never have polymorphic types.
-(define (kw-unconvert ft formalss keywords)
+;; precondition: only call this for functions with no type annotations,
+;;               which means they will never have polymorphic types.
+(define (kw-unconvert ft formalss mand-keywords keywords)
   (define (lengthish formals)
     (define lst (syntax->list formals))
     (if lst (length lst) +inf.0))
@@ -183,60 +183,60 @@
                               #:kws actual-kws
                               #:rest rest-type)))]
            [(and (even? (length arrs)) ; had optional args
-                 (>= (length arrs) 2)) ; only first pair should be needed
-            (match-define (list ts/true ts/false) (take arrs 2))
-            (match-define (arr: true-doms rng _ _ _) ts/true)
-            (match-define (arr: false-doms _ _ _ _) ts/false)
+                 (>= (length arrs) 2))
+            ;; assumption: only one arr is needed, since the types for
+            ;; the actual domain are the same (the difference is in the
+            ;; second type for the optional keyword protocol)
+            (match-define (arr: doms rng _ _ _) (car arrs))
             (define kw-length
-              (- (length true-doms) (+ non-kw-argc (if rest? 1 0))))
-            (define-values (true-kw-args other-args)
-              (split-at true-doms kw-length))
+              (- (length doms) (+ non-kw-argc (if rest? 1 0))))
+            (define kw-args (take doms kw-length))
+            (define actual-kws (compute-kws mand-keywords keywords kw-args))
+            (define other-args (drop doms kw-length))
             (define-values (mand-args opt-and-rest-args)
               (split-at other-args mand-non-kw-argc))
-            (define false-kw-args (take false-doms kw-length))
-            (define kw-types
-              (let loop ([true-kw-args true-kw-args]
-                         [false-kw-args false-kw-args]
-                         [kws '()])
-                (cond [(empty? true-kw-args) (reverse kws)]
-                      [;; check | X     True  | case
-                       ;;       | False False |
-                       ;; assumption: X != False
-                       (and (equal? (car false-kw-args) (-val #f))
-                            (not (empty? (cdr true-kw-args)))
-                            (not (empty? (cdr false-kw-args)))
-                            (equal? (cadr true-kw-args) (-val #t))
-                            (equal? (cadr false-kw-args) (-val #f)))
-                       (loop (cddr true-kw-args) (cddr false-kw-args)
-                             (cons (list (car true-kw-args) #f) kws))]
-                      [else
-                       (loop (cdr true-kw-args) (cdr false-kw-args)
-                             (cons (list (car true-kw-args) #t) kws))])))
-              (define actual-kws
-                (for/list ([kw (in-list keywords)]
-                           [kw-type (in-list kw-types)])
-                  (match-define (list type mand?) kw-type)
-                  (make-Keyword kw type mand?)))
-              (define rest-type
-                (and rest?
-                     (if (equal? (last opt-and-rest-args) Univ)
-                         Univ
-                         -Bottom)))
-              (define opt-types
-                (let loop ([opt-args opt-and-rest-args]
-                           [opt-types '()])
-                  (if (or (null? opt-args)
-                          (null? (cdr opt-args)))
-                      (reverse opt-types)
-                      (loop (cddr opt-args) (cons (car opt-args) opt-types)))))
-              (make-Function
-               (for/list ([to-take (in-range (add1 (length opt-types)))])
-                 (make-arr* (append mand-args (take opt-types to-take))
-                            rng
-                            #:kws actual-kws
-                            #:rest rest-type)))]
-           [else top-func])]
+            (define rest-type
+              (and rest?
+                   (if (equal? (last opt-and-rest-args) Univ)
+                       Univ
+                       -Bottom)))
+            (define opt-types
+              (let loop ([opt-args opt-and-rest-args]
+                         [opt-types '()])
+                (if (or (null? opt-args)
+                        (null? (cdr opt-args)))
+                    (reverse opt-types)
+                    (loop (cddr opt-args) (cons (car opt-args) opt-types)))))
+            (make-Function
+             (for/list ([to-take (in-range (add1 (length opt-types)))])
+               (make-arr* (append mand-args (take opt-types to-take))
+                          rng
+                          #:kws actual-kws
+                          #:rest rest-type)))]
+           [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
+
+;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
+;;               -> (Listof make-Keyword)
+;; Computes the keyword types for an arr in kw-unconvert
+;;
+;; assumptions: (1) in kw-args, there are two types per optional kw
+;;                  and the first type is the argument type (which is
+;;                  the same in every `arr` in the function type)
+;;              (2) kw-args and keywords are sorted by keyword<? order
+(define (compute-kws mand-keywords keywords kw-args)
+  (let loop ([kw-args kw-args]
+             [keywords keywords]
+             [kw-types '()])
+    (cond [(empty? kw-args) (reverse kw-types)]
+          [(memq (car keywords) mand-keywords)
+           (loop (cdr kw-args) (cdr keywords)
+                 (cons (make-Keyword (car keywords) (car kw-args) #t)
+                       kw-types))]
+          [else ; optional, so there are two arg types
+           (loop (cddr kw-args) (cdr keywords)
+                 (cons (make-Keyword (car keywords) (car kw-args) #f)
+                       kw-types))])))
 
 (define ((opt-convert-arr required-pos optional-pos) arr)
   (match arr

@@ -1964,6 +1964,11 @@
        [tc-e (let () (tr:define (f x #:y y . args) y) (f 'a 'b #:y 'c)) Univ]
        [tc-e (let () (tr:define (f x [a "a"] #:y y . args) y) (f 'a 'b #:y 'c)) Univ]
        [tc-e (let () (tr:define (f x #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
+       [tc-e (let () (tr:define (f x #:y [y "y"] #:z z) y)
+                     (f 'a #:y 'y #:z 'd) (f 'a #:z 'd)) Univ]
+       [tc-e (let () (tr:define (f x #:y [y "y"] #:z [z "z"]) y)
+                     (f 'a) (f 'a #:z 'd) (f 'a #:y 'y #:z 'd)) Univ]
+       [tc-e (let () (tr:define (f x #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
        [tc-e (let () (tr:define (f x [a "a"] #:y y #:z z) y) (f 'a #:y 'c #:z 'd)) Univ]
        [tc-e (let () (tr:define (f x #:y [y 'y]) y) (f "a" #:y "b")) Univ]
        [tc-e (let () (tr:define (f x [a "a"] #:y [y 'y]) y) (f "a" #:y "b")) Univ]

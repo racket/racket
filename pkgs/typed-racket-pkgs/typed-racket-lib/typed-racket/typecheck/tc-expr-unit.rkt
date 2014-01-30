@@ -366,18 +366,21 @@
                    (#%plain-app _ _ _arg-var2 ...))))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
       ;; kw function def
-      [(~and (let-values ([(f) fun])
-               (let-values (_)
+      [(~and _:kw-lambda^
+             (let-values ([(f) fun])
+               (let-values _
                  (#%plain-app
-                  _ _
+                  maker
+                  lambda-for-kws
                   (case-lambda ; wrapper function
-                    (formals . _) ...)
-                  _
+                    (formals . cl-body) ...)
+                  (~or (quote . mand-kw)
+                       (~and _ (~bind [mand-kw #'(())])))
                   (quote (all-kw:keyword ...))
-                  . rst)))
-             _:kw-lambda^)
+                  . rst))))
        (ret (kw-unconvert (tc-expr/t #'fun)
                           (syntax->list #'(formals ...))
+                          (car (syntax->datum #'mand-kw))
                           (syntax->datum #'(all-kw ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
