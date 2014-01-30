@@ -49,8 +49,7 @@
 
  ;; forms that are not allowed by Typed Racket yet
  (define unsupported-forms
-   (list (quote-syntax init-rest)
-         (quote-syntax augride)
+   (list (quote-syntax augride)
          ;; FIXME: see if override contracts are enough
          ;;        to keep these at bay or whether they
          ;;        need to be handled
@@ -75,6 +74,7 @@
             (quote-syntax init)
             (quote-syntax field)
             (quote-syntax init-field)
+            (quote-syntax init-rest)
             (quote-syntax inherit-field)
             (quote-syntax private)
             (quote-syntax public)
@@ -227,6 +227,11 @@
                          (stx->list #'(names.ids ...))
                          (attribute names.type)
                          (attribute names.optional?)))
+   (pattern ((~literal init-rest) name:private-decl)
+            #:attr data (clause #'(init-rest name.form)
+                                #'init-rest
+                                (stx->list #'(name.id))
+                                (list (attribute name.type))))
    (pattern ((~literal field) names:field-decl ...)
             #:attr data (clause #'(field names.form ...)
                                 #'field
@@ -384,6 +389,7 @@
                     (#:forall #,@(attribute forall.type-variables))
                     (init #,@(dict-ref name-dict #'init '()))
                     (init-field #,@(dict-ref name-dict #'init-field '()))
+                    (init-rest #,@(dict-ref name-dict #'init-rest '()))
                     (optional-init #,@optional-inits)
                     (field #,@(dict-ref name-dict #'field '()))
                     (public #,@(dict-ref name-dict #'public '()))
@@ -428,7 +434,8 @@
               ([content contents])
       (define stx (non-clause-stx content))
       (syntax-parse stx
-        #:literals (: define-values super-new)
+        #:literals (: define-values super-new
+                    super-make-object super-instantiate)
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
         [(define-values (id) . rst)
@@ -469,7 +476,9 @@
                  (append rest-top (list plain-annotation))
                  private-fields)]
         ;; Identify super-new for the benefit of the type checker
-        [(super-new [init-id init-expr] ...)
+        [(~or (super-new [init-id init-expr] ...)
+              (super-make-object init-expr ...)
+              (super-instantiate (init-expr ...) [name expr] ...))
          (define new-non-clause
            (non-clause (syntax-property stx 'tr:class:super-new #t)))
          (values methods (append rest-top (list new-non-clause))
@@ -526,6 +535,7 @@
               (stx-map stx-car (dict-ref name-dict #'init-field '()))))
     (define init-names
       (stx-map stx-car (dict-ref name-dict #'init '())))
+    (define init-rest-name (dict-ref name-dict #'init-rest '()))
     (define inherit-names
       (stx-map stx-car (dict-ref name-dict #'inherit '())))
     (define inherit-field-names
@@ -552,6 +562,9 @@
                     [(#,@init-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx))
                                      init-names))]
+                    [(#,@init-rest-name)
+                     (values #,@(map (λ (stx) #`(λ () #,stx))
+                                     init-rest-name))]
                     [(#,@inherit-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
                                      inherit-names))]

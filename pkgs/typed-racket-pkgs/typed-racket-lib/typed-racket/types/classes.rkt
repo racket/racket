@@ -77,7 +77,7 @@
   (match-define (list init-absents field-absents
                       method-absents augment-absents)
                 constraints)
-  (match-define (Row: inits fields methods augments) row)
+  (match-define (Row: inits fields methods augments _) row)
   ;; check a given clause type (e.g., init, field)
   (define (check-clauses row-dict absence-set)
     (for ([(name _) (in-dict row-dict)])
@@ -92,15 +92,21 @@
 (define-splicing-syntax-class (row-clauses parse-type)
   #:description "Row type clause"
   #:attributes (row)
-  (pattern (~seq (~var clause (type-clause parse-type)) ...)
+  #:literals (init-rest)
+  (pattern (~seq (~or (~optional (init-rest init-rest-type:expr))
+                      (~var clause (type-clause parse-type)))
+                 ...)
            #:attr inits (apply append (attribute clause.init-entries))
            #:attr fields (apply append (attribute clause.field-entries))
            #:attr methods (apply append (attribute clause.method-entries))
            #:attr augments (apply append (attribute clause.augment-entries))
+           #:attr init-rest (and (attribute init-rest-type)
+                                 (parse-type (attribute init-rest-type)))
            #:attr row (make-Row (attribute inits)
                                 (attribute fields)
                                 (attribute methods)
-                                (attribute augments))
+                                (attribute augments)
+                                (attribute init-rest))
            #:fail-when
            (check-duplicate (map first (attribute inits)))
            "duplicate init or init-field clause"
@@ -122,7 +128,7 @@
     (type-case
      (#:Type inf #:Filter (sub-f inf) #:Object (sub-o inf))
      type
-     [#:Class row inits fields methods augments
+     [#:Class row inits fields methods augments init-rest
       (cond
        [(and row (F? row))
         (match-define (list init-cs field-cs method-cs augment-cs)
@@ -132,7 +138,7 @@
                     (append (dict-keys fields) field-cs)
                     (append (dict-keys methods) method-cs)
                     (append (dict-keys augments) augment-cs)))
-        (make-Class row inits fields methods augments)]
+        (make-Class row inits fields methods augments init-rest)]
        [else
         (match-define (list (list init-names init-tys init-reqds) ...) inits)
         (match-define (list (list field-names field-tys) ...) fields)
@@ -143,7 +149,8 @@
          (map list init-names (map inf init-tys) init-reqds)
          (map list field-names (map inf field-tys))
          (map list method-names (map inf method-tys))
-         (map list augment-names (map inf augment-tys)))])]))
+         (map list augment-names (map inf augment-tys))
+         init-rest)])]))
   (inf type)
   (map remove-duplicates constraints))
 
@@ -152,7 +159,7 @@
 (define (infer-row constraints class-type)
   (match-define (list init-cs field-cs method-cs augment-cs)
                 constraints)
-  (match-define (Class: _ inits fields methods augments)
+  (match-define (Class: _ inits fields methods augments init-rest)
                 (resolve class-type))
   (define (dict-remove* dict keys)
     (for/fold ([dict dict])
@@ -161,7 +168,8 @@
   (make-Row (dict-remove* inits init-cs)
             (dict-remove* fields field-cs)
             (dict-remove* methods method-cs)
-            (dict-remove* augments augment-cs)))
+            (dict-remove* augments augment-cs)
+            init-rest))
 
 ;; Syntax -> Syntax
 ;; removes two levels of nesting
@@ -195,15 +203,19 @@
 (define-splicing-syntax-class (class-type-clauses parse-type)
   #:description "Class type clause"
   #:attributes (row-var extends-types
-                inits fields methods augments)
+                inits fields methods augments init-rest)
+  #:literals (init-rest)
   (pattern (~seq (~or (~optional (~seq #:row-var row-var:id))
                       (~seq #:implements extends-type:id)
+                      (~optional (init-rest init-rest-type:expr))
                       (~var clause (type-clause parse-type)))
                  ...)
            #:attr inits (apply append (attribute clause.init-entries))
            #:attr fields (apply append (attribute clause.field-entries))
            #:attr methods (apply append (attribute clause.method-entries))
            #:attr augments (apply append (attribute clause.augment-entries))
+           #:attr init-rest (and (attribute init-rest-type)
+                                 (parse-type (attribute init-rest-type)))
            #:with extends-types #'(extends-type ...)
            #:fail-when
            (check-duplicate (map first (attribute inits)))

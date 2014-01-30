@@ -3070,7 +3070,72 @@
    [tc-err (class object% (super-new)
              (define/pubment (foo x) 0)
              (define/public (g x) (foo 3)))
-           #:msg #rx"Cannot apply expression of type Any"])
+           #:msg #rx"Cannot apply expression of type Any"]
+   ;; the next several tests are for positional init arguments
+   [tc-e (let ()
+           (define c% (class object% (super-new) (init a b)))
+           (new c% [a "a"] [b "b"])
+           (make-object c% "a" "b")
+           (instantiate c% ("a") [b "b"])
+           (void))
+         -Void]
+   [tc-e (let ()
+           (define c% (class object% (super-new) (init a [b 'b])))
+           (new c% [a "a"] [b "b"])
+           (new c% [a "a"])
+           (make-object c% "a")
+           (make-object c% "a" "b")
+           (instantiate c% () [a "a"] [b "b"])
+           (instantiate c% ("a") [b "b"])
+           (instantiate c% ("a" "b"))
+           (void))
+         -Void]
+   [tc-e (let ()
+           (define c% (class (class object%
+                               (super-new)
+                               (init [b 'b]))
+                        (super-new) (init [a 'a])))
+           (new c% [a "a"] [b "b"])
+           (new c% [b "b"])
+           (new c% [a "a"])
+           (make-object c% "a")
+           (make-object c% "a" "b")
+           (instantiate c% () [a "a"] [b "b"])
+           (instantiate c% ("a") [b "b"])
+           (instantiate c% ("a" "b"))
+           (void))
+         -Void]
+   [tc-e (let ()
+           (define c% (class object%
+                        (super-new)
+                        (init-rest [rst : (List String String)])))
+           (make-object c% "a" "b")
+           (void))
+         -Void]
+   [tc-e (let ()
+           (define c% (class object%
+                        (super-new)
+                        (init [a : Symbol])
+                        (init-rest [rst : (List String String)])))
+           (make-object c% 'a "b" "c")
+           (void))
+         -Void]
+   [tc-e (let ()
+           (define c% (class object%
+                        (super-new)
+                        (init-rest [rst : (U (List Symbol)
+                                             (List String String))])))
+           (make-object c% "b" "c")
+           (make-object c% 'a)
+           (void))
+         -Void]
+   [tc-err (let ()
+             (define c% (class object%
+                          (super-new)
+                          (init-rest [rst : (List Symbol)])))
+             (make-object c% "wrong"))
+           #:msg #rx"expected: Symbol.*given: String"]
+        )
   (test-suite
    "tc-literal tests"
    (tc-l 5 -PosByte)

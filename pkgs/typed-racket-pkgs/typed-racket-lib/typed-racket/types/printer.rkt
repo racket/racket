@@ -270,7 +270,7 @@
 ;; class->sexp : Class [#:object? Boolean] -> S-expression
 ;; Convert a class or object type to an s-expression
 (define (class->sexp cls #:object? [object? #f])
-  (match-define (Class: row-var inits fields methods augments) cls)
+  (match-define (Class: row-var inits fields methods augments init-rest) cls)
   (define row-var*
     (if (and row-var (F? row-var)) `(#:row-var ,(F-n row-var)) '()))
   (define inits*
@@ -298,8 +298,12 @@
   (define augments*
     (cond [(or object? (null? augments)) '()]
           [else (list (cons 'augment augments))]))
+  (define init-rest*
+    (if (and init-rest (not object?))
+        (list `(init-rest ,init-rest))
+        null))
   `(,(if object? 'Object 'Class)
-    ,@row-var* ,@inits* ,@fields* ,@methods* ,@augments*))
+    ,@row-var* ,@inits* ,@init-rest* ,@fields* ,@methods* ,@augments*))
 
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed

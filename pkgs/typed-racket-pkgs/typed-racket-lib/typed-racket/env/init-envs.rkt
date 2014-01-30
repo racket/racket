@@ -93,7 +93,7 @@
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
     [(PolyRow-names: ns c b) `(make-PolyRow (list ,@(map sub ns))
                                             (quote ,c) ,(sub b))]
-    [(Class: row inits fields methods augments)
+    [(Class: row inits fields methods augments init-rest)
      (cond [(and (current-class-cache)
                  (dict-ref (unbox (current-class-cache)) v #f)) => car]
            [else
@@ -108,7 +108,8 @@
                            (list ,@(convert inits #t))
                            (list ,@(convert fields))
                            (list ,@(convert methods))
-                           (list ,@(convert augments))))
+                           (list ,@(convert augments))
+                           ,(sub init-rest)))
             (define name (gensym))
             (define cache-box (current-class-cache))
             (when cache-box

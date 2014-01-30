@@ -16,7 +16,7 @@
    (match rcvr-type
      [(tc-result1: (Instance: (? Mu? type)))
       (do-check (ret (make-Instance (unfold type))))]
-     [(tc-result1: (Instance: (and c (Class: _ _ _ methods _))))
+     [(tc-result1: (Instance: (and c (Class: _ _ _ methods _ _))))
       (match (tc-expr method)
         [(tc-result1: (Value: (? symbol? s)))
          (let* ([ftype (cond [(assq s methods) => cadr]

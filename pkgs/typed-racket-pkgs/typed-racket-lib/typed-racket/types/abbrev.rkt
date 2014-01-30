@@ -318,7 +318,8 @@
         (append ?clause.inits ...)
         (append ?clause.fields ...)
         (append ?clause.methods ...)
-        (append ?clause.augments ...))]))
+        (append ?clause.augments ...)
+        #f)]))
 
 (define-syntax-rule (-object . ?clauses)
   (make-Instance (-class . ?clauses)))
