@@ -1,5 +1,6 @@
 #lang racket/base
 (require "class-internal.rkt"
+         "class-c-old.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
          (only-in "../contract/private/guts.rkt"

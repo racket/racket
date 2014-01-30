@@ -1,3 +1,4 @@
-(module class mzscheme
-  (require racket/private/class-internal)
-  (provide-public-names))
+#lang racket/base
+(require racket/private/class-internal
+         racket/private/class-c-old)
+(provide-public-names)

@@ -8,6 +8,7 @@
          "blame.rkt"
          (for-syntax "opt-guts.rkt")
          racket/private/class-internal
+         racket/private/class-c-old
          racket/stxparam)
 
 (require (for-syntax racket/base))
