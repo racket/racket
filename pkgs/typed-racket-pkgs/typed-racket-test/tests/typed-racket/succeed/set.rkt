@@ -39,3 +39,6 @@
 (set-eq? q)
 (cast (and (set? s0) s0) (Setof Any))
 (generic-set? s0)
+(in-set s)
+(for ([x (in-set s)])
+  s0)

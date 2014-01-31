@@ -875,7 +875,6 @@
 [set-eqv? (-poly (e) (-> (-set e) B))]
 [set-eq? (-poly (e) (-> (-set e) B))]
 
-[in-set (-poly (e) (-> (-set e) (-seq e)))]
 [list->set    (-poly (e) (-> (-lst e) (-set e)))]
 [list->seteq  (-poly (e) (-> (-lst e) (-set e)))]
 [list->seteqv (-poly (e) (-> (-lst e) (-set e)))]
