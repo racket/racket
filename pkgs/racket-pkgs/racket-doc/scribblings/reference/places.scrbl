@@ -106,6 +106,13 @@ channels that are reachable only from the same threads, the threads
 and place channels are all considered reachable, instead of
 unreachable.
 
+When a place is created, its @tech{parameter} values are generally set
+to the @emph{initial} values of the parameters in the creating place,
+except that the @emph{current} values of the following parameters are
+used: @racket[current-library-collection-paths],
+@racket[current-library-collection-links], and
+@racket[current-compiled-file-roots].
+
 
 @defproc[(place-enabled?) boolean?]{
 
