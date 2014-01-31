@@ -2075,10 +2075,15 @@
                #:msg "expected: Symbol.*given: String"]
        [tc-err (tr:lambda (x [y : String "a"] z) (string-append y "b"))
                #:msg "expected optional lambda argument"]
-       #| FIXME: requires improvement in opt-lambda checker
        [tc-e (tr:lambda (x [y : String "a"]) (string-append y "b"))
              (->opt Univ [-String] -String)]
-       |#
+       [tc-e (tr:lambda (x y [z : String "a"]) (string-append z "b"))
+             (->opt Univ Univ [-String] -String)]
+       [tc-e (tr:lambda (w x [y : String "y"] [z : String "z"]) (string-append y z))
+             (->opt Univ Univ [-String -String] -String)]
+       [tc-e (tr:lambda (w [x : String] [y : String "y"] [z : String "z"])
+               (string-append x z))
+             (->opt Univ -String [-String -String] -String)]
        [tc-e (tr:lambda (x #:y [y : String]) (string-append y "b"))
              (->key Univ #:y -String #t -String)]
        [tc-e (tr:lambda (x #:y [y : String]) : String (string-append y "b"))
