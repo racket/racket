@@ -159,9 +159,6 @@
   ;; in-indexed
   [(make-template-identifier 'in-indexed 'racket/private/for)
    (-poly (a) (-> (-seq a) (-seq a -Nat)))]
-  ;; in-set
-  [(make-template-identifier 'in-set 'racket/private/set)
-   (-poly (a) (-> (-set a) (-seq a)))]
   ;; check-in-bytes-lines
   [(make-template-identifier 'check-in-bytes-lines 'racket/private/for)
    (-> Univ Univ Univ)]
