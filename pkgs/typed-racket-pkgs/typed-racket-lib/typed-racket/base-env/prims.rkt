@@ -61,6 +61,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (for-syntax
           racket/lazy-require
           syntax/parse
+          syntax/parse/experimental/template
           syntax/stx
           racket/list
           racket/syntax
@@ -1178,16 +1179,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
     #:literals (:)
     (pattern (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
              #:attr kw-property
-             (> (length (append (filter values (attribute mand.kw))
-                                (filter values (attribute opt.kw))))
-                0)
-             #:attr req-len (length (attribute mand))
-             #:attr opt-len (length (attribute opt))
+             (ormap values (append (attribute mand.kw) (attribute opt.kw)))
              #:attr opt-property
-             (list (attribute req-len) (attribute opt-len))
-             #:attr erased #`(#,@(apply append (stx-map syntax->list #'(mand.form ...)))
-                              #,@(apply append (stx-map syntax->list #'(opt.form ...)))
-                              . rest.form))))
+             (list (length (attribute mand)) (length (attribute opt)))
+             #:attr erased
+             (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form)))))
 
 
 ;; annotation to help tc-expr pick out keyword functions
