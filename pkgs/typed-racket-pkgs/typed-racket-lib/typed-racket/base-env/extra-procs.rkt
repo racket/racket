@@ -4,7 +4,8 @@
 (define-syntax assert
   (syntax-rules ()
     ((assert v)
-     (or v (error (format "Assertion failed on ~v" v))))
+     (let ([val v])
+       (or val (error (format "Assertion failed on ~v" val)))))
     ((assert v pred)
      (let ((val v))
        (if ((#%expression pred) val)
