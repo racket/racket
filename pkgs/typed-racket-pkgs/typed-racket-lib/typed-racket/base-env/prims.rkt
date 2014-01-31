@@ -1193,8 +1193,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; annotation to help tc-expr pick out keyword functions
 (define-syntax (-lambda stx)
   (syntax-parse stx
-    [(_ formals:lambda-formals . body)
-     (define d (syntax/loc stx (λ formals.erased . body)))
+    #:literals (:)
+    [(_ formals:lambda-formals (~optional (~seq : return-type:expr))
+        e ... last-e)
+     ;; Annotate the last expression with the return type. Should be correct
+     ;; since if a function returns, it has to do so through the last expression
+     ;; even with continuations.
+     (define/with-syntax last-e*
+       (if (attribute return-type)
+           #`(ann last-e #,(attribute return-type))
+           #'last-e))
+     (define d (syntax/loc stx (λ formals.erased e ... last-e*)))
      (if (attribute formals.kw-property)
          (kw-lambda-property d (attribute formals.kw-property))
          (opt-lambda-property d (attribute formals.opt-property)))]))
