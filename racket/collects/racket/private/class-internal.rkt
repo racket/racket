@@ -4484,7 +4484,7 @@ An example
          
          ;; for class-c-old.rkt:
          -class? make-naming-constructor prop:object _object? object-ref replace-ictc-blame
-         concretize-ictc-method field-info-extend-external field-info-extend-internal
+         concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object
          ;; end class-c-old.rkt requirements
          
