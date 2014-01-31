@@ -707,6 +707,10 @@ This SRFI's syntax is part of Racket's default reader.
  (raise #f "raise")
 )]
 
+An @racket[else] is recognized as either the one from
+@racketmodname[racket/base] or as an identifier with the symbolic form
+@racket['else] and no binding.
+
 @; ----------------------------------------
 
 @srfi[35]{Conditions}
