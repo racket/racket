@@ -4,6 +4,7 @@
          racket/contract/private/misc
          racket/contract/private/prop
          racket/private/class-internal
+         racket/private/class-c-old
          "contract-arr-checks.rkt")
 
 (require (for-syntax racket/base
