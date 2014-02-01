@@ -263,11 +263,19 @@
            (path->relative-string/setup p))
           (delete-directory/files p)))))
 
+  (define auto-main? (and auto-start-doc? 
+                          (or (ormap can-build*? main-docs)
+                              (and tidy? (not avoid-main?)))))
+  (define auto-user? (and auto-start-doc? 
+                          (or (ormap can-build*? user-docs)
+                              (and tidy? make-user?))))
+  (define (can-build**? doc) (can-build? only-dirs doc auto-main? auto-user?))
+  
   (unless latex-dest
     ;; Make sure "scribble.css", etc., is in place:
     (let ([ht (make-hash)])
       (for ([doc (in-list docs)])
-        (when (can-build? only-dirs doc)
+        (when (can-build**? doc)
           (check-shared-files (doc-dest-dir doc)
                               (or (memq 'main-doc-root (doc-flags doc))
                                   (memq 'user-doc-root (doc-flags doc)))
@@ -275,13 +283,6 @@
                               ht
                               setup-printf)))))
 
-  (define auto-main? (and auto-start-doc? 
-                          (or (ormap can-build*? main-docs)
-                              (and tidy? (not avoid-main?)))))
-  (define auto-user? (and auto-start-doc? 
-                          (or (ormap can-build*? user-docs)
-                              (and tidy? make-user?))))
-  (define (can-build**? docs) (can-build? only-dirs docs auto-main? auto-user?))
   (define force-out-of-date? #f)
   
   (define lock-ch #f)
