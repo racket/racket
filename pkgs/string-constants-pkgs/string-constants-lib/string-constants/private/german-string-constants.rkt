@@ -957,6 +957,7 @@
  (executable-base "Hauptteil")
  (filename "Dateiname: ")
  (create "Erzeugen")
+ (files-for-icons-etc "Dateien für für Bildchen etc.")
  (please-specify-a-filename "Bitte einen Dateinamen angeben.")
  (~a-must-end-with-~a
   "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Der Dateiname muss auf \".~a\" enden.")
