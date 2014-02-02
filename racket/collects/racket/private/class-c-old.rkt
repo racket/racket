@@ -33,113 +33,122 @@
 (define (class/c-check-first-order ctc cls fail)
   (unless (-class? cls)  ;; TODO: might be a wrapper class
     (fail '(expected: "a class" given: "~v") cls))
-  (let ([method-ht (class-method-ht cls)]
-        [methods (class-methods cls)]
-        [beta-methods (class-beta-methods cls)]
-        [meth-flags (class-meth-flags cls)]) 
-    (for ([m (in-list (class/c-methods ctc))]
-          [c (in-list (class/c-method-contracts ctc))])
-      (define mth (hash-ref method-ht m #f))
-      (unless mth (fail "no public method ~a" m))
-      (when c
-        (define meth-proc
-          (let loop ([m/l (vector-ref methods mth)])
-            (cond
-              [(pair? m/l) (loop (car m/l))]
-              [else m/l])))
-        (unless (contract-first-order-passes? c meth-proc)
-          (fail "public method ~a doesn't match contract" m))))
-    (unless (class/c-opaque? ctc)
-      (for ([m (class/c-absents ctc)])
-        (when (hash-ref method-ht m #f)
-          (fail "class already contains public method ~a" m))))
-    (when (class/c-opaque? ctc)
-      (for ([m (in-hash-keys method-ht)])
-        (unless (memq m (class/c-methods ctc))
-          (if (symbol-interned? m)
-              (fail "method ~a not specified in contract" m)
-              (fail "some local member not specified in contract")))))
-    (for ([m (class/c-inherits ctc)])
-      (unless (hash-ref method-ht m #f)
-        (fail "no public method ~a" m)))
-    (for ([m (class/c-overrides ctc)])
-      (let ([index (hash-ref method-ht m #f)])
-        (unless index
-          (fail "no public method ~a" m))
-        (let ([vec (vector-ref beta-methods index)])
-          (unless (zero? (vector-length vec))
-            (fail "method ~a was previously augmentable" m)))
-        (let ([flag (vector-ref meth-flags index)])
-          (when (eq? flag 'final)
-            (fail "method ~a is final" m)))))
-    (for ([m (class/c-augments ctc)])
-      (let ([index (hash-ref method-ht m #f)])
-        (unless index
-          (fail "no public method ~a" m))
-        (let* ([vec (vector-ref beta-methods index)])
-          (when (zero? (vector-length vec))
-            (fail "method ~a has never been augmentable" m))
-          (when (vector-ref vec (sub1 (vector-length vec)))
-            (fail "method ~a is currently overrideable, not augmentable" m)))))
-    (for ([m (class/c-augrides ctc)])
-      (let ([index (hash-ref method-ht m #f)])
-        (unless index
-          (fail "no public method ~a" m))
-        (let ([vec (vector-ref beta-methods index)])
-          (when (zero? (vector-length vec))
-            (fail "method ~a has never been augmentable" m))
-          (unless (vector-ref vec (sub1 (vector-length vec)))
-            (fail "method ~a is currently augmentable, not overrideable" m)))))
-    (for ([s (class/c-supers ctc)])
-      (let ([index (hash-ref method-ht s #f)])
-        (unless index
-          (fail "no public method ~a" s))
-        (let ([flag (vector-ref meth-flags index)])
-          (when (eq? flag 'final)
-            (fail "method ~a is final" s))
-          (when (eq? flag 'augmentable)
-            (fail "method ~a is augmentable, not overrideable" s)))))
-    (for ([i (class/c-inners ctc)])
-      (let ([index (hash-ref method-ht i #f)])
-        (unless index
-          (fail "no public method ~a" i))
-        (let ([vec (vector-ref beta-methods index)])
-          (when (zero? (vector-length vec))
-            (fail "method ~a has never been augmentable" i)))
-        (let ([flag (vector-ref meth-flags index)])
-          (when (eq? flag 'final)
-            (fail "method ~a is final" i)))))
-    (let ([field-ht (class-field-ht cls)])
-      (for ([f (class/c-fields ctc)])
-        (unless (hash-ref field-ht f #f)
-          (fail "no public field ~a" f)))
-      (unless (class/c-opaque? ctc)
-        (for ([f (class/c-absent-fields ctc)])
-          (when (hash-ref field-ht f #f)
-            (fail "class already contains public field ~a" f))))
-      (when (class/c-opaque? ctc)
-        (for ([f (in-hash-keys field-ht)])
-          (unless (memq f (class/c-fields ctc))
-            (if (symbol-interned? f)
-                (fail "field ~a not specified in contract" f)
-                (fail "some local member field not specified in contract")))))
-      (for ([f (class/c-inherit-fields ctc)])
-        (unless (hash-ref field-ht f #f)
-          (fail "no public field ~a" f)))))
+  (define method-ht (class-method-ht cls))
+  (define methods (class-methods cls))
+  (define beta-methods (class-beta-methods cls))
+  (define meth-flags (class-meth-flags cls))
+  (for ([m (in-list (class/c-methods ctc))]
+        [c (in-list (class/c-method-contracts ctc))])
+    (define mth (hash-ref method-ht m #f))
+    (unless mth (fail "no public method ~a" m))
+    (when c
+      (define meth-proc
+        (let loop ([m/l (vector-ref methods mth)])
+          (cond
+            [(pair? m/l) (loop (car m/l))]
+            [else m/l])))
+      (unless (contract-first-order-passes? c meth-proc)
+        (fail "public method ~a doesn't match contract" m))))
+  (unless (class/c-opaque? ctc)
+    (for ([m (class/c-absents ctc)])
+      (when (hash-ref method-ht m #f)
+        (fail "class already contains public method ~a" m))))
+  (when (class/c-opaque? ctc)
+    (for ([m (in-hash-keys method-ht)])
+      (unless (memq m (class/c-methods ctc))
+        (if (symbol-interned? m)
+            (fail "method ~a not specified in contract" m)
+            (fail "some local member not specified in contract")))))
+  
+  (define field-ht (class-field-ht cls))
+  (for ([f (class/c-fields ctc)])
+    (unless (hash-ref field-ht f #f)
+      (fail "no public field ~a" f)))
+  (unless (class/c-opaque? ctc)
+    (for ([f (class/c-absent-fields ctc)])
+      (when (hash-ref field-ht f #f)
+        (fail "class already contains public field ~a" f))))
+  (when (class/c-opaque? ctc)
+    (for ([f (in-hash-keys field-ht)])
+      (unless (memq f (class/c-fields ctc))
+        (if (symbol-interned? f)
+            (fail "field ~a not specified in contract" f)
+            (fail "some local member field not specified in contract")))))
+  #t)
+
+(define (internal-class/c-check-first-order internal-ctc cls fail)
+  (define method-ht (class-method-ht cls))
+  (define methods (class-methods cls))
+  (define beta-methods (class-beta-methods cls))
+  (define meth-flags (class-meth-flags cls))
+  (for ([m (internal-class/c-inherits internal-ctc)])
+    (unless (hash-ref method-ht m #f)
+      (fail "no public method ~a" m)))
+  (for ([m (internal-class/c-overrides internal-ctc)])
+    (let ([index (hash-ref method-ht m #f)])
+      (unless index
+        (fail "no public method ~a" m))
+      (let ([vec (vector-ref beta-methods index)])
+        (unless (zero? (vector-length vec))
+          (fail "method ~a was previously augmentable" m)))
+      (let ([flag (vector-ref meth-flags index)])
+        (when (eq? flag 'final)
+          (fail "method ~a is final" m)))))
+  (for ([m (internal-class/c-augments internal-ctc)])
+    (let ([index (hash-ref method-ht m #f)])
+      (unless index
+        (fail "no public method ~a" m))
+      (let* ([vec (vector-ref beta-methods index)])
+        (when (zero? (vector-length vec))
+          (fail "method ~a has never been augmentable" m))
+        (when (vector-ref vec (sub1 (vector-length vec)))
+          (fail "method ~a is currently overrideable, not augmentable" m)))))
+  (for ([m (internal-class/c-augrides internal-ctc)])
+    (let ([index (hash-ref method-ht m #f)])
+      (unless index
+        (fail "no public method ~a" m))
+      (let ([vec (vector-ref beta-methods index)])
+        (when (zero? (vector-length vec))
+          (fail "method ~a has never been augmentable" m))
+        (unless (vector-ref vec (sub1 (vector-length vec)))
+          (fail "method ~a is currently augmentable, not overrideable" m)))))
+  (for ([s (internal-class/c-supers internal-ctc)])
+    (let ([index (hash-ref method-ht s #f)])
+      (unless index
+        (fail "no public method ~a" s))
+      (let ([flag (vector-ref meth-flags index)])
+        (when (eq? flag 'final)
+          (fail "method ~a is final" s))
+        (when (eq? flag 'augmentable)
+          (fail "method ~a is augmentable, not overrideable" s)))))
+  (for ([i (internal-class/c-inners internal-ctc)])
+    (let ([index (hash-ref method-ht i #f)])
+      (unless index
+        (fail "no public method ~a" i))
+      (let ([vec (vector-ref beta-methods index)])
+        (when (zero? (vector-length vec))
+          (fail "method ~a has never been augmentable" i)))
+      (let ([flag (vector-ref meth-flags index)])
+        (when (eq? flag 'final)
+          (fail "method ~a is final" i)))))
+  (define field-ht (class-field-ht cls))
+  (for ([f (internal-class/c-inherit-fields internal-ctc)])
+    (unless (hash-ref field-ht f #f)
+      (fail "no public field ~a" f)))
+  
   #t)
 
 (define (class/c-proj ctc)
+  (define ep (class/c-external-proj ctc))
+  (define ip (internal-class/c-proj (class/c-internal ctc)))
+  (λ (blame)
+    (define eb (ep blame))
+    (define ib (ip blame))
+    (λ (val)
+      (ib (eb val)))))
+
+(define (class/c-external-proj ctc)
   (define ctc-methods (class/c-methods ctc))
-  (define dynamic-features
-    (append (class/c-overrides ctc)
-            (class/c-augments ctc)
-            (class/c-augrides ctc)
-            (class/c-inherits ctc)))
-  (define dynamic-contracts
-    (append (class/c-override-contracts ctc)
-            (class/c-augment-contracts ctc)
-            (class/c-augride-contracts ctc)
-            (class/c-inherit-contracts ctc)))
   (λ (blame)
     (define bswap (blame-swap blame))
     (define public-method-projections
@@ -147,18 +156,8 @@
                  [c (in-list (class/c-method-contracts ctc))])
         (and c
              ((contract-projection c) (blame-add-method-context blame name)))))
-    (define super-projections
-      (for/list ([name (in-list (class/c-supers ctc))]
-                 [c (in-list (class/c-super-contracts ctc))])
-        (and c
-             ((contract-projection c) (blame-add-method-context blame name)))))
-    (define inner-projections
-      (for/list ([name (in-list (class/c-inners ctc))]
-                 [c (in-list (class/c-inner-contracts ctc))])
-        (and c
-             ((contract-projection c) (blame-add-method-context bswap name)))))
     
-    (define internal-field-projections
+    (define external-field-projections
       (for/list ([f (in-list (class/c-fields ctc))]
                  [c (in-list (class/c-field-contracts ctc))])
         (and c
@@ -167,33 +166,6 @@
                    [p-neg ((contract-projection c)
                            (blame-add-context bswap (format "the ~a field in" f)))])
                (cons p-pos p-neg)))))
-    (define external-field-projections
-      (for/list ([f (in-list (class/c-inherit-fields ctc))]
-                 [c (in-list (class/c-inherit-field-contracts ctc))])
-        (and c
-             (let ([p-pos ((contract-projection c) blame)]
-                   [p-neg ((contract-projection c) bswap)])
-               (cons p-pos p-neg)))))
-    
-    (define override-projections
-      (for/list ([m (in-list (class/c-overrides ctc))]
-                 [c (in-list (class/c-override-contracts ctc))])
-        (and c
-             ((contract-projection c) (blame-add-method-context bswap m)))))
-    
-    (define augment/augride-projections
-      (for/list ([m (in-list (append (class/c-augments ctc)
-                                     (class/c-augrides ctc)))]
-                 [c (in-list (append (class/c-augment-contracts ctc)
-                                     (class/c-augride-contracts ctc)))])
-        (and c
-             ((contract-projection c) (blame-add-method-context blame m)))))
-    
-    (define inherit-projections
-      (for/list ([m (in-list (class/c-inherits ctc))]
-                 [c (in-list (class/c-inherit-contracts ctc))])
-        (and c
-             ((contract-projection c) (blame-add-method-context blame m)))))
     
     ;; zip the inits and contracts together for ordered selection
     (define inits+contracts 
@@ -229,24 +201,9 @@
              [methods (if (null? ctc-methods)
                           (class-methods cls)
                           (make-vector method-width))]
-             [super-methods (if (null? (class/c-supers ctc))
-                                (class-super-methods cls)
-                                (make-vector method-width))]
-             [int-methods (if (null? dynamic-features)
-                              (class-int-methods cls)
-                              (make-vector method-width))]
-             [inner-projs (if (null? (class/c-inners ctc))
-                              (class-inner-projs cls)
-                              (make-vector method-width))]
-             [dynamic-idxs (if (null? dynamic-features)
-                               (class-dynamic-idxs cls)
-                               (make-vector method-width))]
-             [dynamic-projs (if (null? dynamic-features)
-                                (class-dynamic-projs cls)
-                                (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
-             [no-field-ctcs? (and (null? (class/c-fields ctc))
-                                  (null? (class/c-inherit-fields ctc)))]
+             [no-field-ctcs? (null? (class/c-fields ctc))]
+             
              [field-ht (if no-field-ctcs?
                            (class-field-ht cls)
                            (hash-copy (class-field-ht cls)))]
@@ -269,14 +226,14 @@
                             #f
                             
                             methods
-                            super-methods
-                            int-methods
+                            (class-super-methods cls)
+                            (class-int-methods cls)
                             (class-beta-methods cls)
                             (class-meth-flags cls)
                             
-                            inner-projs
-                            dynamic-idxs
-                            dynamic-projs
+                            (class-inner-projs cls)
+                            (class-dynamic-idxs cls)
+                            (class-dynamic-projs cls)
                             
                             (class-field-width cls)
                             field-pub-width
@@ -347,120 +304,15 @@
               (define mp (vector-ref methods i))
               (vector-set! methods i (make-method (p mp) m)))))
         
-        ;; Handle super contracts
-        (unless (null? (class/c-supers ctc))
-          ;; First, fill in from old (possibly contracted) super methods
-          (vector-copy! super-methods 0 (class-super-methods cls))
-          ;; Now apply projections.
-          (for ([m (in-list (class/c-supers ctc))]
-                [p (in-list super-projections)])
-            (when p
-              (define i (hash-ref method-ht m))
-              (define mp (vector-ref super-methods i))
-              (vector-set! super-methods i (make-method (p mp) m)))))
-        
-        ;; Add inner projections
-        (unless (null? (class/c-inners ctc))
-          (vector-copy! inner-projs 0 (class-inner-projs cls))
-          (for ([m (in-list (class/c-inners ctc))]
-                [p (in-list inner-projections)])
-            (when p
-              (define i (hash-ref method-ht m))
-              (define old-proj (vector-ref inner-projs i))
-              (vector-set! inner-projs i (λ (v) (old-proj (p v)))))))
-        
-        ;; Handle both internal and external field contracts
+        ;; Handle both external field contracts
         (unless no-field-ctcs?
           (for ([f (in-list (class/c-fields ctc))]
-                [p-pr (in-list internal-field-projections)])
-            (when p-pr
-              (define fi (hash-ref field-ht f))
-              (define p-pos (car p-pr))
-              (define p-neg (cdr p-pr))
-              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg))))
-          (for ([f (in-list (class/c-inherit-fields ctc))]
                 [p-pr (in-list external-field-projections)])
             (when p-pr
               (define fi (hash-ref field-ht f))
               (define p-pos (car p-pr))
               (define p-neg (cdr p-pr))
-              (hash-set! field-ht f (field-info-extend-internal fi p-pos p-neg)))))
-        
-        ;; Now the trickiest of them all, internal dynamic dispatch.
-        ;; First we update any dynamic indexes, as applicable.
-        (let ([old-idxs (class-dynamic-idxs (class-orig-cls cls))])
-          (unless (null? dynamic-features)
-            ;; Go ahead and do all the copies here.
-            (vector-copy! dynamic-projs 0 (class-dynamic-projs cls))
-            (vector-copy! int-methods 0 (class-int-methods cls))
-            (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
-            (for ([m (in-list dynamic-features)]
-                  [c (in-list dynamic-contracts)])
-              (when c
-                (let* ([i (hash-ref method-ht m)]
-                       [old-idx (vector-ref old-idxs i)]
-                       [new-idx (vector-ref dynamic-idxs i)])
-                  ;; We need to extend all the vectors, so let's do that here.
-                  (when (= old-idx new-idx)
-                    (let* ([new-idx (add1 old-idx)]
-                           [new-proj-vec (make-vector (add1 new-idx))]
-                           [old-proj-vec (vector-ref dynamic-projs i)]
-                           [new-int-vec (make-vector (add1 new-idx))]
-                           [old-int-vec (vector-ref int-methods i)])
-                      (vector-set! dynamic-idxs i new-idx)
-                      (vector-copy! new-proj-vec 0 old-proj-vec)
-                      (vector-set! new-proj-vec new-idx values)
-                      (vector-set! dynamic-projs i new-proj-vec)
-                      (vector-copy! new-int-vec 0 old-int-vec)
-                      ;; Just copy over the last entry here.  We'll
-                      ;; update it appropriately later.
-                      (vector-set! new-int-vec new-idx
-                                   (vector-ref old-int-vec old-idx))
-                      (vector-set! int-methods i new-int-vec)))))))
-          
-          ;; Now we handle updating override contracts... here we just
-          ;; update the projections, and not the methods (which we must
-          ;; do during class composition).
-          (unless (null? (class/c-overrides ctc))
-            (for ([m (in-list (class/c-overrides ctc))]
-                  [p (in-list override-projections)])
-              (when p
-                (let* ([i (hash-ref method-ht m)]
-                       [old-idx (vector-ref old-idxs i)]
-                       [proj-vec (vector-ref dynamic-projs i)]
-                       [old-proj (vector-ref proj-vec old-idx)])
-                  (vector-set! proj-vec old-idx (λ (v) (old-proj (p v))))))))
-          
-          ;; For augment and augride contracts, we both update the projection
-          ;; and go ahead and apply the projection to the last slot (which will
-          ;; only be used by later classes).
-          (unless (and (null? (class/c-augments ctc))
-                       (null? (class/c-augrides ctc)))
-            (for ([m (in-list (append (class/c-augments ctc)
-                                      (class/c-augrides ctc)))]
-                  [p (in-list augment/augride-projections)])
-              (when p
-                (let* ([i (hash-ref method-ht m)]
-                       [old-idx (vector-ref old-idxs i)]
-                       [new-idx (vector-ref dynamic-idxs i)]
-                       [proj-vec (vector-ref dynamic-projs i)]
-                       [int-vec (vector-ref int-methods i)]
-                       [old-proj (vector-ref proj-vec old-idx)])
-                  (vector-set! proj-vec old-idx (λ (v) (p (old-proj v))))
-                  (vector-set! int-vec new-idx
-                               (make-method (p (vector-ref int-vec new-idx)) m))))))
-          
-          ;; Now (that things have been extended appropriately) we handle
-          ;; inherits.
-          (unless (null? (class/c-inherits ctc))
-            (for ([m (in-list (class/c-inherits ctc))]
-                  [p (in-list inherit-projections)])
-              (when p
-                (let* ([i (hash-ref method-ht m)]
-                       [new-idx (vector-ref dynamic-idxs i)]
-                       [int-vec (vector-ref int-methods i)])
-                  (vector-set! int-vec new-idx
-                               (make-method (p (vector-ref int-vec new-idx)) m)))))))
+              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
         
         ;; Unlike the others, we always want to do this, even if there are no init contracts,
         ;; since we still need to handle either calling the previous class/c's init or
@@ -522,6 +374,337 @@
         
         c))))
 
+(define (internal-class/c-proj internal-ctc)
+  (define dynamic-features
+    (append (internal-class/c-overrides internal-ctc)
+            (internal-class/c-augments internal-ctc)
+            (internal-class/c-augrides internal-ctc)
+            (internal-class/c-inherits internal-ctc)))
+  (define dynamic-contracts
+    (append (internal-class/c-override-contracts internal-ctc)
+            (internal-class/c-augment-contracts internal-ctc)
+            (internal-class/c-augride-contracts internal-ctc)
+            (internal-class/c-inherit-contracts internal-ctc)))
+  (λ (blame)
+    (define bswap (blame-swap blame))
+    (define super-projections
+      (for/list ([name (in-list (internal-class/c-supers internal-ctc))]
+                 [c (in-list (internal-class/c-super-contracts internal-ctc))])
+        (and c
+             ((contract-projection c) (blame-add-method-context blame name)))))
+    (define inner-projections
+      (for/list ([name (in-list (internal-class/c-inners internal-ctc))]
+                 [c (in-list (internal-class/c-inner-contracts internal-ctc))])
+        (and c
+             ((contract-projection c) (blame-add-method-context bswap name)))))
+    
+    (define internal-field-projections
+      (for/list ([f (in-list (internal-class/c-inherit-fields internal-ctc))]
+                 [c (in-list (internal-class/c-inherit-field-contracts internal-ctc))])
+        (and c
+             (let ([p-pos ((contract-projection c) blame)]
+                   [p-neg ((contract-projection c) bswap)])
+               (cons p-pos p-neg)))))
+    
+    (define override-projections
+      (for/list ([m (in-list (internal-class/c-overrides internal-ctc))]
+                 [c (in-list (internal-class/c-override-contracts internal-ctc))])
+        (and c
+             ((contract-projection c) (blame-add-method-context bswap m)))))
+    
+    (define augment/augride-projections
+      (for/list ([m (in-list (append (internal-class/c-augments internal-ctc)
+                                     (internal-class/c-augrides internal-ctc)))]
+                 [c (in-list (append (internal-class/c-augment-contracts internal-ctc)
+                                     (internal-class/c-augride-contracts internal-ctc)))])
+        (and c
+             ((contract-projection c) (blame-add-method-context blame m)))))
+    
+    (define inherit-projections
+      (for/list ([m (in-list (internal-class/c-inherits internal-ctc))]
+                 [c (in-list (internal-class/c-inherit-contracts internal-ctc))])
+        (and c
+             ((contract-projection c) (blame-add-method-context blame m)))))
+    (λ (cls)
+      (internal-class/c-check-first-order internal-ctc
+                                          cls 
+                                          (λ args (apply raise-blame-error blame cls args)))
+      
+      (let* ([name (class-name cls)]
+             [never-wrapped? (eq? (class-orig-cls cls) cls)]
+             ;; Only add a new slot if we're not projecting an already contracted class.
+             [supers (if never-wrapped?
+                         (list->vector (append (vector->list (class-supers cls))
+                                               (list #f)))                           
+                         (list->vector (vector->list (class-supers cls))))]
+             [pos (if never-wrapped?
+                      (add1 (class-pos cls))
+                      (class-pos cls))]
+             [method-width (class-method-width cls)]
+             [method-ht (class-method-ht cls)]
+             [method-ictcs (class-method-ictcs cls)]
+             
+             [field-pub-width (class-field-pub-width cls)]
+             [no-field-ctcs? (null? (internal-class/c-inherit-fields internal-ctc))]
+             
+             [field-ht (if no-field-ctcs?
+                           (class-field-ht cls)
+                           (hash-copy (class-field-ht cls)))]
+             [init (class-init cls)]
+             [class-make (if name
+                             (make-naming-constructor struct:class name "class")
+                             make-class)]
+             [super-methods (if (null? (internal-class/c-supers internal-ctc))
+                                (class-super-methods cls)
+                                (make-vector method-width))]
+             [int-methods (if (null? dynamic-features)
+                              (class-int-methods cls)
+                              (make-vector method-width))]
+             [inner-projs (if (null? (internal-class/c-inners internal-ctc))
+                              (class-inner-projs cls)
+                              (make-vector method-width))]
+             [dynamic-idxs (if (null? dynamic-features)
+                               (class-dynamic-idxs cls)
+                               (make-vector method-width))]
+             [dynamic-projs (if (null? dynamic-features)
+                                (class-dynamic-projs cls)
+                                (make-vector method-width))][field-ht (if no-field-ctcs?
+                           (class-field-ht cls)
+                           (hash-copy (class-field-ht cls)))]
+             [init (class-init cls)]
+             [class-make (if name
+                             (make-naming-constructor struct:class name "class")
+                             make-class)]
+             [c (class-make name
+                            pos
+                            supers
+                            (class-self-interface cls)
+                            void ;; No inspecting
+                            
+                            method-width
+                            method-ht
+                            (class-method-ids cls)
+                            (class-abstract-ids cls)
+                            method-ictcs
+                            
+                            #f
+                            
+                            (class-methods cls)
+                            super-methods
+                            int-methods
+                            (class-beta-methods cls)
+                            (class-meth-flags cls)
+                            
+                            inner-projs
+                            dynamic-idxs
+                            dynamic-projs
+                            
+                            (class-field-width cls)
+                            field-pub-width
+                            field-ht
+                            (class-field-ids cls)
+                            
+                            'struct:object 'object? 'make-object
+                            'field-ref 'field-set!
+                            
+                            ;; class/c introduced subclasses do not consume init args
+                            null
+                            'normal
+                            #f
+                            
+                            (class-orig-cls cls)
+                            #f #f ; serializer is never set
+                            #f)]
+             [obj-name (if name
+                           (string->symbol (format "object:~a" name))
+                           'object)])
+      
+        (define (make-method proc meth-name)
+          (procedure-rename
+           (procedure->method proc)
+           (string->symbol
+            (format "~a method~a~a"
+                    meth-name
+                    (if name " in " "")
+                    (or name "")))))
+        
+        (vector-set! supers pos c)
+        
+        ;; --- Make the new object struct ---
+        (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
+                      (make-struct-type obj-name
+                                        (class-struct:object cls)
+                                        0 ;; No init fields
+                                        0 ;; No new fields in this class replacement
+                                        undefined
+                                        ;; Map object property to class:
+                                        (list (cons prop:object c)))])
+          (set-class-struct:object! c struct:object)
+          (set-class-object?! c object?)
+          (set-class-make-object! c object-make)
+          (set-class-field-ref! c object-field-ref)
+          (set-class-field-set!! c object-field-set!))
+        
+        ;; Handle super contracts
+        (unless (null? (internal-class/c-supers internal-ctc))
+          ;; First, fill in from old (possibly contracted) super methods
+          (vector-copy! super-methods 0 (class-super-methods cls))
+          ;; Now apply projections.
+          (for ([m (in-list (internal-class/c-supers internal-ctc))]
+                [p (in-list super-projections)])
+            (when p
+              (define i (hash-ref method-ht m))
+              (define mp (vector-ref super-methods i))
+              (vector-set! super-methods i (make-method (p mp) m)))))
+        
+        ;; Add inner projections
+        (unless (null? (internal-class/c-inners internal-ctc))
+          (vector-copy! inner-projs 0 (class-inner-projs cls))
+          (for ([m (in-list (internal-class/c-inners internal-ctc))]
+                [p (in-list inner-projections)])
+            (when p
+              (define i (hash-ref method-ht m))
+              (define old-proj (vector-ref inner-projs i))
+              (vector-set! inner-projs i (λ (v) (old-proj (p v)))))))
+        
+        ;; Handle external field contracts
+        (unless no-field-ctcs?
+          (for ([f (in-list (internal-class/c-inherit-fields internal-ctc))]
+                [p-pr (in-list internal-field-projections)])
+            (when p-pr
+              (define fi (hash-ref field-ht f))
+              (define p-pos (car p-pr))
+              (define p-neg (cdr p-pr))
+              (hash-set! field-ht f (field-info-extend-internal fi p-pos p-neg)))))
+        
+        ;; Now the trickiest of them all, internal dynamic dispatch.
+        ;; First we update any dynamic indexes, as applicable.
+        (let ([old-idxs (class-dynamic-idxs (class-orig-cls cls))])
+          (unless (null? dynamic-features)
+            ;; Go ahead and do all the copies here.
+            (vector-copy! dynamic-projs 0 (class-dynamic-projs cls))
+            (vector-copy! int-methods 0 (class-int-methods cls))
+            (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
+            (for ([m (in-list dynamic-features)]
+                  [c (in-list dynamic-contracts)])
+              (when c
+                (let* ([i (hash-ref method-ht m)]
+                       [old-idx (vector-ref old-idxs i)]
+                       [new-idx (vector-ref dynamic-idxs i)])
+                  ;; We need to extend all the vectors, so let's do that here.
+                  (when (= old-idx new-idx)
+                    (let* ([new-idx (add1 old-idx)]
+                           [new-proj-vec (make-vector (add1 new-idx))]
+                           [old-proj-vec (vector-ref dynamic-projs i)]
+                           [new-int-vec (make-vector (add1 new-idx))]
+                           [old-int-vec (vector-ref int-methods i)])
+                      (vector-set! dynamic-idxs i new-idx)
+                      (vector-copy! new-proj-vec 0 old-proj-vec)
+                      (vector-set! new-proj-vec new-idx values)
+                      (vector-set! dynamic-projs i new-proj-vec)
+                      (vector-copy! new-int-vec 0 old-int-vec)
+                      ;; Just copy over the last entry here.  We'll
+                      ;; update it appropriately later.
+                      (vector-set! new-int-vec new-idx
+                                   (vector-ref old-int-vec old-idx))
+                      (vector-set! int-methods i new-int-vec)))))))
+          
+          ;; Now we handle updating override contracts... here we just
+          ;; update the projections, and not the methods (which we must
+          ;; do during class composition).
+          (unless (null? (internal-class/c-overrides internal-ctc))
+            (for ([m (in-list (internal-class/c-overrides internal-ctc))]
+                  [p (in-list override-projections)])
+              (when p
+                (let* ([i (hash-ref method-ht m)]
+                       [old-idx (vector-ref old-idxs i)]
+                       [proj-vec (vector-ref dynamic-projs i)]
+                       [old-proj (vector-ref proj-vec old-idx)])
+                  (vector-set! proj-vec old-idx (λ (v) (old-proj (p v))))))))
+          
+          ;; For augment and augride contracts, we both update the projection
+          ;; and go ahead and apply the projection to the last slot (which will
+          ;; only be used by later classes).
+          (unless (and (null? (internal-class/c-augments internal-ctc))
+                       (null? (internal-class/c-augrides internal-ctc)))
+            (for ([m (in-list (append (internal-class/c-augments internal-ctc)
+                                      (internal-class/c-augrides internal-ctc)))]
+                  [p (in-list augment/augride-projections)])
+              (when p
+                (let* ([i (hash-ref method-ht m)]
+                       [old-idx (vector-ref old-idxs i)]
+                       [new-idx (vector-ref dynamic-idxs i)]
+                       [proj-vec (vector-ref dynamic-projs i)]
+                       [int-vec (vector-ref int-methods i)]
+                       [old-proj (vector-ref proj-vec old-idx)])
+                  (vector-set! proj-vec old-idx (λ (v) (p (old-proj v))))
+                  (vector-set! int-vec new-idx
+                               (make-method (p (vector-ref int-vec new-idx)) m))))))
+          
+          ;; Now (that things have been extended appropriately) we handle
+          ;; inherits.
+          (unless (null? (internal-class/c-inherits internal-ctc))
+            (for ([m (in-list (internal-class/c-inherits internal-ctc))]
+                  [p (in-list inherit-projections)])
+              (when p
+                (let* ([i (hash-ref method-ht m)]
+                       [new-idx (vector-ref dynamic-idxs i)]
+                       [int-vec (vector-ref int-methods i)])
+                  (vector-set! int-vec new-idx
+                               (make-method (p (vector-ref int-vec new-idx)) m)))))))
+        
+        ;; Unlike the others, we always want to do this, even if there are no init contracts,
+        ;; since we still need to handle either calling the previous class/c's init or
+        ;; calling continue-make-super appropriately.
+        (let ()
+          ;; grab all the inits+contracts that involve the same init arg
+          ;; (assumes that inits and contracts were sorted in class/c creation)
+          (define (grab-same-inits lst)
+            (if (null? lst)
+                (values null null)
+                (let loop ([inits/c (cdr lst)]
+                           [prefix (list (car lst))])
+                  (cond
+                    [(null? inits/c) 
+                     (values (reverse prefix) inits/c)]
+                    [(eq? (list-ref (car inits/c) 0) (list-ref (car prefix) 0))
+                     (loop (cdr inits/c)
+                           (cons (car inits/c) prefix))]
+                    [else (values (reverse prefix) inits/c)]))))
+          ;; run through the list of init-args and apply contracts for same-named
+          ;; init args
+          (define (apply-init-contracts inits/c init-args)
+            (let loop ([init-args init-args]
+                       [inits/c inits/c]
+                       [handled-args null])
+              (cond
+                [(null? init-args)
+                 (reverse handled-args)]
+                [(null? inits/c)
+                 (append (reverse handled-args) init-args)]
+                [(eq? (list-ref (car inits/c) 0) (car (car init-args)))
+                 (let ([init-arg (car init-args)]
+                       [p (list-ref (car inits/c) 1)])
+                   (loop (cdr init-args)
+                         (cdr inits/c)
+                         (cons (cons (car init-arg) (if p
+                                                        (p (cdr init-arg))
+                                                        (cdr init-arg)))
+                               handled-args)))]
+                [else (loop (cdr init-args)
+                            inits/c
+                            (cons (car init-args) handled-args))])))
+          (set-class-init! 
+           c
+           (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+             ;; Since we never consume init args, we can ignore si_leftovers
+             ;; since init-args is the same.
+             (if never-wrapped?
+                 (super-go the-obj si_c si_inited? init-args null null)
+                 (init the-obj super-go si_c si_inited? init-args init-args)))))
+        
+        c))))
+
 (define (blame-add-init-context blame name)
   (blame-add-context blame
                      (format "the ~a init argument in" name)
@@ -538,12 +721,16 @@
      (blame-add-context blame "an unnamed method in")]
     [else (error 'blame-add-method-context "uhoh ~s" name)]))
 
-(define-struct class/c 
-  (methods method-contracts fields field-contracts inits init-contracts
-   inherits inherit-contracts inherit-fields inherit-field-contracts
+(struct internal-class/c
+  (inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
-   augrides augride-contracts absents absent-fields opaque? name)
+   augrides augride-contracts))
+
+(define-struct class/c 
+  (methods method-contracts fields field-contracts inits init-contracts
+   absents absent-fields 
+   internal opaque? name)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -584,23 +771,34 @@
                    handled-methods
                    (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
                    (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
-                   (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
+                   (handle-optional 'inherit 
+                                    (internal-class/c-inherits (class/c-internal ctc))
+                                    (internal-class/c-inherit-contracts (class/c-internal ctc)))
                    (handle-optional 'inherit-field 
-                                    (class/c-inherit-fields ctc)
-                                    (class/c-inherit-field-contracts ctc))
-                   (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
-                   (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
+                                    (internal-class/c-inherit-fields (class/c-internal ctc))
+                                    (internal-class/c-inherit-field-contracts (class/c-internal ctc)))
+                   (handle-optional 'super
+                                    (internal-class/c-supers (class/c-internal ctc))
+                                    (internal-class/c-super-contracts (class/c-internal ctc)))
+                   (handle-optional 'inner 
+                                    (internal-class/c-inners (class/c-internal ctc)) 
+                                    (internal-class/c-inner-contracts (class/c-internal ctc)))
                    (handle-optional 'override
-                                    (class/c-overrides ctc)
-                                    (class/c-override-contracts ctc))
-                   (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))
-                   (handle-optional 'augride (class/c-augrides ctc) (class/c-augride-contracts ctc))
+                                    (internal-class/c-overrides (class/c-internal ctc))
+                                    (internal-class/c-override-contracts (class/c-internal ctc)))
+                   (handle-optional 'augment
+                                    (internal-class/c-augments (class/c-internal ctc))
+                                    (internal-class/c-augment-contracts (class/c-internal ctc)))
+                   (handle-optional 'augride
+                                    (internal-class/c-augrides (class/c-internal ctc))
+                                    (internal-class/c-augride-contracts (class/c-internal ctc)))
                    (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc)))))))
    #:first-order
    (λ (ctc)
      (λ (cls)
        (let/ec ret
-         (class/c-check-first-order ctc cls (λ args (ret #f))))))))
+         (and (class/c-check-first-order ctc cls (λ args (ret #f)))
+              (internal-class/c-check-first-order (class/c-internal ctc) cls (λ args (ret #f)))))))))
 
 (define-for-syntax (parse-class/c-specs forms object/c?)
   (define parsed-forms (make-hasheq))
@@ -830,14 +1028,15 @@
                  (make-class/c methods method-ctcs
                                fields field-ctcs
                                inits init-ctcs
-                               inherits inherit-ctcs
-                               inherit-fields inherit-field-ctcs
-                               supers super-ctcs
-                               inners inner-ctcs
-                               overrides override-ctcs
-                               augments augment-ctcs
-                               augrides augride-ctcs
                                absents absent-fields
+                               (internal-class/c
+                                inherits inherit-ctcs
+                                inherit-fields inherit-field-ctcs
+                                supers super-ctcs
+                                inners inner-ctcs
+                                overrides override-ctcs
+                                augments augment-ctcs
+                                augrides augride-ctcs)
                                opaque?
                                'name)))))))]))
 
