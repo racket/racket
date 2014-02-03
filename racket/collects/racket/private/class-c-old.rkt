@@ -14,7 +14,8 @@
          make-wrapper-object
          check-object-contract
          (for-syntax parse-class/c-specs)
-         (struct-out internal-class/c))
+         (struct-out internal-class/c)
+         just-check-existence just-check-existence?)
 
 (define undefined (letrec ([x x]) x))
 
