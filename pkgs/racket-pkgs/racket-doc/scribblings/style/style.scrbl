@@ -5,6 +5,8 @@
 @title{How to Program Racket}
 @author{Matthias Felleisen, Matthew Flatt, Robby Findler, Jay McCarthy}
 
+@section-index{Style Guide}
+
 @; -----------------------------------------------------------------------------
 
 Since 1995 the number of ``repository contributors'' has grown from a small handful to
