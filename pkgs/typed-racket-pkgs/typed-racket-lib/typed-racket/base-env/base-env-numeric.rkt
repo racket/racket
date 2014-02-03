@@ -1197,6 +1197,7 @@
     (-> -PosFixnum -One -NonNegFixnum)
     (-> -PosInt -One -Nat)
     (-> -NonNegFixnum -NonNegFixnum -Fixnum)
+    (-> -NegFixnum -NonPosFixnum -Fixnum)
     (->* (list -PosInt -NonPosInt) -NonPosInt -PosInt)
     (->* (list -Nat -NonPosInt) -NonPosInt -Nat)
     (->* (list -NegInt -Nat) -Nat -NegInt)
