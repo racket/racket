@@ -44,8 +44,9 @@
           (blame-positive b) (blame-negative b)
           (blame-contract b) (blame-value b) (blame-source b)))
 
-;; (sequenceof (U path-string? submodule-path)) -> same
-(define (shorten-paths ps)
+;; (sequenceof (U path-string? submodule-path #f)) -> same
+(define (shorten-paths ps*)
+  (define ps (for/list ([p ps*] #:when p) p)) ; remove non-paths
   ;; zeroth pass, chop off submodule parts, to put back later
   (define submodules ; (listof (U submodule-part #f))
     (for/list ([p ps])
