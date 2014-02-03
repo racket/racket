@@ -1798,7 +1798,7 @@ Generates terms in a number of different ways:
                  
                  The @racket[#:i-th] option uses an enumeration of the non-terminals in a language. 
                  If @racket[index-expr] is supplied, @racket[generate-term] returns the corresponding
-                 term and if it isn't, @racket[generate-term] returns a function from indicies
+                 term and if it isn't, @racket[generate-term] returns a function from indices
                  to terms.
                  @examples[#:eval
                            redex-eval
