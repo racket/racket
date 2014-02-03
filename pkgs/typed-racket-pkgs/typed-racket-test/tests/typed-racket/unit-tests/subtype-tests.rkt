@@ -293,23 +293,23 @@
     (->optkey -String [-Void] #:x -Symbol #t Univ)]
 
    ;; classes and objects
-   [(make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))
-    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))]
-   [(make-Instance (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat)))))
-    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat)))))]
-   [(make-Instance (make-Class #f null null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
-    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
-   [(make-Instance (make-Class #f null `((f ,-Nat)) `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
-    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
-   [(make-Instance (make-Class #f `((a ,-Nat)) null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
-    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
+   [(-class #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))
+    (-class #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))]
+   [(-object #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))
+    (-object #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))]
+   [(-object #:method ((m (-> -Nat)) (n (-> -Nat))))
+    (-object #:method ((m (-> -Nat))))]
+   [(-object #:method ((f -Nat)) #:augment ((m (-> -Nat)) (n (-> -Nat))))
+    (-object #:method ((m (-> -Nat))))]
+   [(-object #:field ((a -Nat)) #:method ((m (-> -Nat)) (n (-> -Nat))))
+    (-object #:method ((m (-> -Nat))))]
    [FAIL
-    (make-Instance (make-Class #f null null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
-    (make-Instance (make-Class #f null null `((l ,(-> -Nat)) (m ,(-> -Nat))) null))]
+    (-object #:method ((m (-> -Nat)) (n (-> -Nat))))
+    (-object #:method ((l (-> -Nat)) (m (-> -Nat))))]
    [FAIL
-    (make-Class #f null null `((m ,(-> -Nat))) null)
-    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))]
+    (-class #:method ((m (-> -Nat))))
+    (-class #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))]
    [FAIL
-    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))
-    (make-Class #f null null `((m ,(-> -Nat))) null)]
+    (-class #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))
+    (-class #:method ((m (-> -Nat))))]
    ))
