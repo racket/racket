@@ -2008,7 +2008,7 @@ As with the external contracts, when a method or field name is specified
 
 ]}
 
-@defform[(absent abspent-spec ...)]{
+@defform[(absent absent-spec ...)]{
 See @racket[class/c]; use outside of a @racket[class/c] form is a syntax error.
 }
 
