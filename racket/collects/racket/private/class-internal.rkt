@@ -3764,7 +3764,7 @@ An example
 
 (define (do-set-field! who id obj val)
   (unless (object? obj)
-    (raise-argument-error 'set-field!
+    (raise-argument-error who
                           "object?"
                           obj))
   (let* ([cls (object-ref/unwrap obj)]
@@ -3772,7 +3772,7 @@ An example
          [fi (hash-ref field-ht id #f)])
      (if fi
          ((field-info-external-set! fi) obj val)
-         (obj-error 'get-field
+         (obj-error who
                     "given object does not have the requested field"
                     "field name" (as-write id)
                     "object" obj))))

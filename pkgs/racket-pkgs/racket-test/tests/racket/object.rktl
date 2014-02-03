@@ -1296,6 +1296,10 @@
 
 (error-test #'(set-field! x 1 2))
 (error-test #'(set-field! x (new object%) 2) exn:fail:object?)
+(error-test #'(set-field! x (new object%) 2) 
+            (λ (exn) (regexp-match? #rx"^set-field!" (exn-message exn))))
+(error-test #'(dynamic-set-field! 'x (new object%) 2) 
+            (λ (exn) (regexp-match? #rx"^dynamic-set-field!" (exn-message exn))))
 (error-test #'(set-field! x (new (class object% (define x 1) (super-new))) 2)
             exn:fail:object?)
 (error-test #'(let ([o (let ()
