@@ -12,7 +12,9 @@
          blame-add-method-context blame-add-init-context
          class/c ->m ->*m ->dm case->m object/c instanceof/c
          make-wrapper-object
-         check-object-contract)
+         check-object-contract
+         (for-syntax parse-class/c-specs)
+         (struct-out internal-class/c))
 
 (define undefined (letrec ([x x]) x))
 
@@ -721,11 +723,37 @@
      (blame-add-context blame "an unnamed method in")]
     [else (error 'blame-add-method-context "uhoh ~s" name)]))
 
+(define (build-internal-class/c inherits inherit-contracts inherit-fields inherit-field-contracts
+                                supers super-contracts inners inner-contracts
+                                overrides override-contracts augments augment-contracts
+                                augrides augride-contracts)
+  (internal-class/c inherits (adjust-jce inherit-contracts)
+                    inherit-fields (adjust-jce inherit-field-contracts)
+                    supers (adjust-jce super-contracts)
+                    inners (adjust-jce inner-contracts)
+                    overrides (adjust-jce override-contracts)
+                    augments (adjust-jce augment-contracts)
+                    augrides (adjust-jce augride-contracts)))
 (struct internal-class/c
   (inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
    augrides augride-contracts))
+
+(define (build-class/c methods method-contracts fields field-contracts inits init-contracts
+                       absents absent-fields 
+                       internal opaque? name)
+  (make-class/c
+   methods (adjust-jce method-contracts)
+   fields (adjust-jce field-contracts)
+   inits (adjust-jce init-contracts)
+   absents absent-fields
+   internal opaque? name))
+(define (adjust-jce objs)
+  (for/list ([obj (in-list objs)])
+    (cond
+      [(just-check-existence? obj) #f]
+      [else (coerce-contract 'class/c obj)])))
 
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
@@ -800,6 +828,12 @@
          (and (class/c-check-first-order ctc cls (λ args (ret #f)))
               (internal-class/c-check-first-order (class/c-internal ctc) cls (λ args (ret #f)))))))))
 
+(define-values (just-check-existence just-check-existence?)
+  (let ()
+    (struct just-check-existence ())
+    (values (just-check-existence) 
+            just-check-existence?)))
+
 (define-for-syntax (parse-class/c-specs forms object/c?)
   (define parsed-forms (make-hasheq))
   (define bindings '())
@@ -809,12 +843,11 @@
       [x
        (identifier? #'x)
        (with-syntax ([id (localize #'x)])
-         (values #'`id #f))]
+         (values #'`id #'just-check-existence))]
       [(x ctc)
        (identifier? #'x)
        (with-syntax ([id (localize #'x)])
-         (values #'`id
-                 #`(coerce-contract '#,form-name (let ([x ctc]) x))))]
+         (values #'`id #'ctc))]
       [_
        (raise-syntax-error form-name "expected identifier or (id contract)" stx)]))
   (define (parse-names-ctcs stx)
@@ -1025,20 +1058,20 @@
            (syntax/loc stx
              (let bindings
                (let-values ([(inits init-ctcs) (sort-inits+contracts (list (cons i i-c) ...))])
-                 (make-class/c methods method-ctcs
-                               fields field-ctcs
-                               inits init-ctcs
-                               absents absent-fields
-                               (internal-class/c
-                                inherits inherit-ctcs
-                                inherit-fields inherit-field-ctcs
-                                supers super-ctcs
-                                inners inner-ctcs
-                                overrides override-ctcs
-                                augments augment-ctcs
-                                augrides augride-ctcs)
-                               opaque?
-                               'name)))))))]))
+                 (build-class/c methods method-ctcs
+                                fields field-ctcs
+                                inits init-ctcs
+                                absents absent-fields
+                                (build-internal-class/c
+                                 inherits inherit-ctcs
+                                 inherit-fields inherit-field-ctcs
+                                 supers super-ctcs
+                                 inners inner-ctcs
+                                 overrides override-ctcs
+                                 augments augment-ctcs
+                                 augrides augride-ctcs)
+                                opaque?
+                                'name)))))))]))
 
 (define (sort-inits+contracts lst)
   (define sorted

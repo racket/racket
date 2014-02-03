@@ -6,7 +6,8 @@
          (only-in "../contract/private/guts.rkt"
                   wrapped-extra-arg-arrow?)
          (for-syntax racket/base
-                     syntax/name))
+                     syntax/name
+                     syntax/stx))
 
 (provide class/c2)
 
@@ -17,7 +18,13 @@
       [(_ #:opaque args ...)
        (values #t #'(args ...))]
       [(_ args ...)
-       (values #f #'(args ...))]))
+       (let ()
+         (define stx-args #'(args ...))
+         (define l (syntax->list stx-args))
+         (printf "l ~\n" l)
+         (when (and (pair? l) (keyword? (syntax-e (car l))))
+           (raise-syntax-error #f "unrecognized keyword" stx (car l)))
+         (values #f stx-args))]))
   (syntax-case args ()
     [(clauses ...)
      (let loop ([clauses (syntax->list #'(clauses ...))]
@@ -96,12 +103,7 @@
                      (cons #`[x ctc] let-bindings)))]
             [else (give-up)])]))]))
 
-(define-values (just-check-existence just-check-existence?)
-  (let ()
-    (struct just-check-existence ())
-    (values (just-check-existence) 
-            just-check-existence?)))
-
+#;
 (define-syntax (class/c2 stx)
   (define-values (opaque? mths flds inits let-bindings) (parse-class/c stx))
   (cond
@@ -118,14 +120,84 @@
               (make-an-ext-class/c-contract '#,opaque?
                                             (list `lmth-name ...)
                                             (list mth-ctc ...)
+                                            '() '()
                                             (list 'init-name ...)
                                             (list init-ctc ...)
-                                            'name)))])]
+                                            'name
+                                            empty-internal/c)))])]
     [else
      ;(printf "nope: ~a:~a\n" (syntax-source stx) (syntax-line stx))
      (syntax-case stx ()
        [(_ args ...)
         #'(class/c args ...)])]))
+
+(define-syntax (class/c2 stx)
+  (define-values (opaque? args)
+    (syntax-case stx ()
+      [(_ #:opaque args ...)
+       (values #t (syntax->list #'(args ...)))]
+      [(_ args ...)
+       (let ()
+         (define stx-args (syntax->list #'(args ...)))
+         (when (and (pair? stx-args) (keyword? (syntax-e (car stx-args))))
+           (raise-syntax-error #f "unrecognized keyword" stx (car stx-args)))
+         (values #f stx-args))]))
+  (define-values (bindings pfs) (parse-class/c-specs args #f))
+  (printf ">> ~s ~s\n" bindings (hash-ref pfs 'methods null))
+  (with-syntax ([methods #`(list #,@(reverse (hash-ref pfs 'methods null)))]
+                [method-ctcs #`(list #,@(reverse (hash-ref pfs 'method-contracts null)))]
+                [fields #`(list #,@(reverse (hash-ref pfs 'fields null)))]
+                [field-ctcs #`(list #,@(reverse (hash-ref pfs 'field-contracts null)))]
+                [(i ...) (reverse (hash-ref pfs 'inits null))]
+                [(i-c ...) (reverse (hash-ref pfs 'init-contracts null))]
+                [inherits #`(list #,@(reverse (hash-ref pfs 'inherits null)))]
+                [inherit-ctcs #`(list #,@(reverse (hash-ref pfs 'inherit-contracts null)))]
+                [inherit-fields #`(list #,@(reverse (hash-ref pfs 'inherit-fields null)))]
+                [inherit-field-ctcs #`(list #,@(reverse (hash-ref pfs 'inherit-field-contracts
+                                                                  null)))]
+                [supers #`(list #,@(reverse (hash-ref pfs 'supers null)))]
+                [super-ctcs #`(list #,@(reverse (hash-ref pfs 'super-contracts null)))]
+                [inners #`(list #,@(reverse (hash-ref pfs 'inners null)))]
+                [inner-ctcs #`(list #,@(reverse (hash-ref pfs 'inner-contracts null)))]
+                [overrides #`(list #,@(reverse (hash-ref pfs 'overrides null)))]
+                [override-ctcs #`(list #,@(reverse (hash-ref pfs 'override-contracts null)))]
+                [augments #`(list #,@(reverse (hash-ref pfs 'augments null)))]
+                [augment-ctcs #`(list #,@(reverse (hash-ref pfs 'augment-contracts null)))]
+                [augrides #`(list #,@(reverse (hash-ref pfs 'augrides null)))]
+                [augride-ctcs #`(list #,@(reverse (hash-ref pfs 'augride-contracts null)))]
+                [absents #`(list #,@(reverse (hash-ref pfs 'absents null)))]
+                [absent-fields #`(list #,@(reverse (hash-ref pfs 'absent-fields null)))])
+    (with-syntax ([name 
+                   ;; same as syntax-local-infer-name, except doesn't
+                   ;; make a name up from the src loc; in that case,
+                   ;; we just use the big ole (class/c  ...)-based name
+                   (or (let loop ([prop (syntax-property stx 'inferred-name)])
+                         (cond
+                           [(symbol? prop) prop]
+                           [(pair? prop) (or (loop (car prop))
+                                             (loop (cdr prop)))]
+                           [else #f]))
+                       (syntax-local-name))]
+                  [bindings bindings]
+                  [opaque? opaque?])
+      (syntax/loc stx
+        (let bindings
+;          (let-values ([(inits init-ctcs) (sort-inits+contracts (list (cons i i-c) ...))])
+            (make-an-ext-class/c-contract
+             'opaque?
+             methods method-ctcs
+             fields field-ctcs
+             (list 'i ...)
+             (list i-c ...)
+             'name
+             (internal-class/c
+              inherits inherit-ctcs
+              inherit-fields inherit-field-ctcs
+              supers super-ctcs
+              inners inner-ctcs
+              overrides override-ctcs
+              augments augment-ctcs
+              augrides augride-ctcs)))))))
 
 (define (class/c2-proj this)
   (λ (blame)
@@ -169,16 +241,11 @@
                             ctc))
                       (ext-class/c-contract-init-ctc-pairs this))
                  
-                 
-                 '() '() ;; inherit
-                 '() '() ;; inherit fields
-                 '() '() ;; super
-                 '() '() ;; inner
-                 '() '() ;; override
-                 '() '() ;; augment
-                 '() '() ;; augride
                  '() '() ;; absent
-                 #f #f))
+                 empty-internal-class/c
+                 #f ;; opaque?
+                 #f ;; name
+                 ))
               (λ (neg-party)
                 (((class/c-proj ctc) (blame-add-missing-party blame neg-party)) cls))]
              [else (build-neg-acceptor-proc this maybe-err blame cls (make-hash) '())])]
@@ -206,6 +273,16 @@
               (raise-blame-error 
                blame #:missing-party neg-party cls
                '(expected: "a class"))))])))))
+
+(define empty-internal-class/c
+  (internal-class/c
+   '() '() ;; inherit
+   '() '() ;; inherit fields
+   '() '() ;; super
+   '() '() ;; inner
+   '() '() ;; override
+   '() '() ;; augment
+   '() '())) ;; augride
 
 (define (build-neg-acceptor-proc this maybe-err blame cls new-mths-ht old-init-pairs)
   (define mth->idx (class-method-ht cls))
@@ -329,7 +406,11 @@
             [else
              (cons new (loop olds (cdr news)))])]))]))
 
-(define (make-an-ext-class/c-contract opaque? mth-names mth-ctcs init-names init-ctcs ctc-name)
+(define (make-an-ext-class/c-contract opaque? 
+                                      mth-names mth-ctcs
+                                      fld-names fld-ctcs
+                                      init-names init-ctcs 
+                                      ctc-name internal-ctc)
   (define ctc-hash
     (make-hash (for/list ([raw-ctc (in-list mth-ctcs)]
                           [name (in-list mth-names)])
