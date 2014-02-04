@@ -172,7 +172,7 @@ Produces information about the mappings in @racket[readtable] for
 
 @itemize[
 
- @item{either a character (mapping to same behavior as the
+ @item{either a character (mapping to the same behavior as the
  character in the default readtable), @racket['terminating-macro], or
  @racket['non-terminating-macro]; this result reports the main (i.e.,
  non-@racket['dispatch-macro]) mapping for @racket[key]. When the result
