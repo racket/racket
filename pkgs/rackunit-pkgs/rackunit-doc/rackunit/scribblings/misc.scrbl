@@ -22,3 +22,13 @@ This example gets @racket[make-failure-test], which is defined in a RackUnit tes
 @racketblock[
 (require/expose rackunit/private/check-test (make-failure-test))
 ]
+
+@defproc[(dynamic-require/expose [mod (or/c module-path?
+                                            module-path-index?
+                                            resolved-module-path?)]
+                                 [name symbol?])
+         any]{
+
+Like @racket[dynamic-require], but gets internal bindings like
+@racket[require/expose].
+}

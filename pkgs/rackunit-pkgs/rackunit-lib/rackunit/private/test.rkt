@@ -60,6 +60,7 @@
          around
 
          require/expose
+         dynamic-require/expose
 
          define-shortcut
 

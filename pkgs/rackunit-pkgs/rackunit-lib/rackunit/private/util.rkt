@@ -35,6 +35,7 @@
          "test-case.rkt")
 
 (provide require/expose
+         dynamic-require/expose
          test-suite*
          check-regexp-match)
 
@@ -54,11 +55,26 @@
          ;; Use the correct module-registry
          (parameterize ((current-namespace
                          (variable-reference->namespace (#%variable-reference))))
-           ;; Make sure module the module is instantiated
-           (dynamic-require the-resolved-mod #f)
-           ;; Get the module namespace
-           (parameterize ((current-namespace (module->namespace the-resolved-mod)))
-             (values (eval 'id) ...)))))]))
+           (dynamic-require/expose* the-resolved-mod '(id ...)))))]))
+
+(define (dynamic-require/expose mod name)
+  (unless (or (path? mod)
+              (module-path? mod)
+              (module-path-index? mod)
+              (resolved-module-path? mod))
+    (raise-argument-error 'dynamic-require/expose
+                          "(or/c module-path? module-path-index? resolved-module-path?)"
+                          0 mod name))
+  (unless (symbol? name)
+    (raise-argument-error 'dynamic-require/expose "symbol?" 1 mod name))
+  (dynamic-require/expose* mod (list name)))
+
+(define (dynamic-require/expose* mod names)
+  ;; Make sure module the module is instantiated
+  (dynamic-require mod #f)
+  ;; Get the module namespace
+  (parameterize ((current-namespace (module->namespace mod)))
+    (apply values (map eval names))))
 
 (define-syntax test-suite*
   (syntax-rules ()
@@ -70,4 +86,3 @@
 (define-simple-check (check-regexp-match regex string)
   (and (string? string) 
        (regexp-match regex string)))
-
