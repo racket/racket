@@ -19,7 +19,12 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
-       (syntax/loc stx (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat))))))])))
+       ;; Note: in practice it's unlikely that the second pattern will ever come up
+       ;;       because the sequence number for '() will be low and the union will
+       ;;       be sorted by sequence number. As a paranoid precaution, however,
+       ;;       we will match against both patterns here.
+       (syntax/loc stx (or (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat)))))
+                           (Mu: var-pat (Union: (list (Pair: elem-pat (F: var-pat)) (Value: '()))))))])))
 
 (define-match-expander List:
   (lambda (stx)
@@ -40,4 +45,6 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pat)
-       #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
+       ;; see note above
+       #'(or (Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))
+             (Mu: var (Union: (list (MPair: elem-pat (F: var)) (Value: '())))))])))

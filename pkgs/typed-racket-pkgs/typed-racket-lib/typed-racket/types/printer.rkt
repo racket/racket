@@ -8,6 +8,7 @@
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
+                  "types/match-expanders.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
@@ -324,13 +325,9 @@
     [(App: rator rands stx)
      (list* (type->sexp rator) (map type->sexp rands))]
     ;; special cases for lists
-    [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
+    [(Listof: elem-ty)
      `(Listof ,(t->s elem-ty))]
-    [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
-     `(Listof ,(t->s elem-ty))]
-    [(Mu: var (Union: (list (Value: '()) (MPair: elem-ty (F: var)))))
-     `(MListof ,(t->s elem-ty))]
-    [(Mu: var (Union: (list (MPair: elem-ty (F: var)) (Value: '()))))
+    [(MListof: elem-ty)
      `(MListof ,(t->s elem-ty))]
     ;; format as a string to preserve reader abbreviations and primitive
     ;; values like characters (when `display`ed)
