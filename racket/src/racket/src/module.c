@@ -3121,7 +3121,14 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
   Scheme_Env *menv;
   Scheme_Object *modchain;
 
-  name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
+  if (SCHEME_MODNAMEP(name)) {
+    ;
+  } else if (SAME_TYPE(SCHEME_TYPE(name), scheme_module_index_type)) {
+    name = scheme_module_resolve(name, 1);
+  } else {
+    /* name is path or module-path */
+    name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
+  }
 
   menv = get_special_modenv(name);
   if (!menv) {
@@ -3163,8 +3170,11 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 
   env = scheme_get_env(NULL);
 
-  if (!scheme_is_module_path(argv[0]))
-    scheme_wrong_contract("module->namespace", "module-path?", 0, argc, argv);
+  if (!SCHEME_PATHP(argv[0])
+      && !SCHEME_MODNAMEP(argv[0])
+      && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type)
+      && !scheme_is_module_path(argv[0]))
+    scheme_wrong_contract("module->namespace", "(or/c module-path? module-path-index? resolved-module-path?)", 0, argc, argv);
 
   return scheme_module_to_namespace(argv[0], env);
 }

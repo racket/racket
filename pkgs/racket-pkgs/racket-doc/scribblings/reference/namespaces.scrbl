@@ -309,7 +309,10 @@ Returns the @tech{module registry} of the given namespace. This value
 is useful only for identification via @racket[eq?].}
 
 
-@defproc[(module->namespace [modname module-path?]) namespace?]{
+@defproc[(module->namespace [mod (or/c module-path? 
+                                       resolved-module-path? 
+                                       module-path-index?)])
+         namespace?]{
 
 Returns a namespace that corresponds to the body of an instantiated
 module in the current namespace's @tech{module registry} and in the
