@@ -222,7 +222,7 @@
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
       (if rest
-          (list rest (if (special-dots-printing?) '...* '*))
+          (list (type->sexp rest) (if (special-dots-printing?) '...* '*))
           null)
       (if drest
           (if (special-dots-printing?)

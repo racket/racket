@@ -71,6 +71,9 @@
     (check-prints-as? (-> -Input-Port (make-Values (list (-result -String (-FS -top -bot) -no-obj)
                                                          (-result -String (-FS -top -bot) -no-obj))))
                       "(Input-Port -> (values (String : (Top | Bot)) (String : (Top | Bot))))")
+    ;; this case tests that the Number union is printed with its name
+    ;; rather than its expansion (a former bug)
+    (check-prints-as? (->* '() -Number -Void) "(Number * -> Void)")
     (check-prints-as? (->key Univ -Pathlike
                              #:exists
                              (one-of/c 'error 'append 'update 'replace
