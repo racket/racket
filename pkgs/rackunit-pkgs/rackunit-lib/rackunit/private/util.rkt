@@ -38,8 +38,6 @@
          test-suite*
          check-regexp-match)
 
-(define-namespace-anchor this-ns)
-
 ;; Requires a module and exposes some of its unprovided identifiers.
 ;; USAGE: (require/expose MODULE-NAME (IDS ...))
 ;;   where MODULE-NAME is as in the MzRacket manual (i.e.,
@@ -53,13 +51,14 @@
        (require (only-in mod))
        (define-runtime-module-path the-resolved-mod mod)
        (define-values (id ...)
-         (let ([the-mod (resolved-module-path-name the-resolved-mod)])
-           ;; Use the correct module-registry:
-           (parameterize ((current-namespace (namespace-anchor->namespace this-ns)))
-             ;; Get the module namespace:
-             (parameterize ((current-namespace (module->namespace the-mod)))
-               ;; Use eval so id-macros (eg struct constructors, names w/ contracts) work:
-               (values (eval 'id) ...))))))]))
+         ;; Use the correct module-registry
+         (parameterize ((current-namespace
+                         (variable-reference->namespace (#%variable-reference))))
+           ;; Make sure module the module is instantiated
+           (dynamic-require the-resolved-mod #f)
+           ;; Get the module namespace
+           (parameterize ((current-namespace (module->namespace the-resolved-mod)))
+             (values (eval 'id) ...)))))]))
 
 (define-syntax test-suite*
   (syntax-rules ()
