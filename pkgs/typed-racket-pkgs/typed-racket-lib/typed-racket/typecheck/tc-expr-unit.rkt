@@ -234,9 +234,8 @@
       (int-err "bad form input to tc-expr: ~a" form))
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
-      [stx
-       ;; a class: generated class
-       #:when (syntax-property form 'tr:class)
+      ;; a TR-annotated class
+      [stx:tr:class^
        (check-class form expected)
        expected]
       [stx:exn-handlers^
@@ -374,8 +373,7 @@
   (define (internal-tc-expr form)
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
-      [stx
-       #:when (syntax-property form 'tr:class)
+      [stx:tr:class^
        (ret (check-class form #f))]
       ;;
       [stx:exn-handlers^

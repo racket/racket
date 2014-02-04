@@ -11,15 +11,19 @@
           racket/dict
           racket/list
           racket/match
-          racket/pretty ;; get rid of this later
           racket/syntax
-          racket/private/classidmap ;; this is bad
+          ;; Note: This imports `generate-class-expand-context` from
+          ;;       the internals of the class system. It's needed for
+          ;;       local expansion to establish the right context, but it
+          ;;       is hacky.
+          racket/private/classidmap
           syntax/flatten-begin
           syntax/id-table
           syntax/kerncase
           syntax/parse
           syntax/stx
           unstable/list
+          "../private/syntax-properties.rkt"
           "../utils/tc-utils.rkt"
           "../types/utils.rkt"))
 
@@ -199,6 +203,8 @@
    (pattern (~or (~literal init)
                  (~literal init-field))))
 
+ ;; matches ids with clauses shaped like method clauses,
+ ;; not necessarily clauses that declare methods
  (define-syntax-class method-like-clause-names
    (pattern (~or (~literal inherit-field)
                  (~literal public)
@@ -221,7 +227,7 @@
 
  (define-syntax-class class-clause
    (pattern (clause-name:init-like-clause-names names:init-decl ...)
-            ;; in the future, use a data structure and
+            ;; FIXME: in the future, use a data structure and
             ;; make this an attribute instead to represent
             ;; internal and external names
             #:attr data
@@ -262,14 +268,11 @@
  ;; Extract names from init, public, etc. clauses
  (define (extract-names clauses)
    (for/fold ([clauses (make-immutable-free-id-table)])
-             ([clause clauses])
-     (if (dict-has-key? clauses (clause-kind clause))
-         (dict-update clauses (clause-kind clause)
-                      (λ (old-names)
-                        (append old-names (clause-ids clause))))
-         (dict-set clauses
-                   (clause-kind clause)
-                   (clause-ids clause)))))
+             ([clause (in-list clauses)])
+     (dict-update clauses (clause-kind clause)
+                  (λ (old-names)
+                    (append old-names (clause-ids clause)))
+                  '())))
 
  ;; FIXME: less magic
  ;; magic used to disarm syntax after expansion
@@ -323,7 +326,6 @@
 (define-syntax (class stx)
   (syntax-parse stx
     [(_ super forall:maybe-type-parameter e ...)
-     ;; FIXME: potentially needs to expand super clause?
      (define class-ctx (generate-class-expand-context))
      (define def-ctx (syntax-local-make-definition-context))
      (define expanded-stx
@@ -340,30 +342,15 @@
         (internal-definition-context-seal def-ctx)
         (define-values (annotated-methods other-top-level private-fields)
           (process-class-contents others name-dict))
-        (define annotated-super
-          (syntax-property #'super 'tr:class:super #t))
+        (define annotated-super (tr:class:super-property #'super #t))
         (define optional-inits (get-optional-inits clauses))
-        (syntax-property
-         (syntax-property
+        (ignore
+         (tr:class
           #`(let-values ()
-              #,(internal
-                 ;; FIXME: maybe put this in a macro and/or a syntax class
-                 ;;        so that it's easier to deal with
-                 #`(class-internal
-                    (#:forall #,@(attribute forall.type-variables))
-                    (init #,@(dict-ref name-dict #'init '()))
-                    (init-field #,@(dict-ref name-dict #'init-field '()))
-                    (init-rest #,@(dict-ref name-dict #'init-rest '()))
-                    (optional-init #,@optional-inits)
-                    (field #,@(dict-ref name-dict #'field '()))
-                    (public #,@(dict-ref name-dict #'public '()))
-                    (override #,@(dict-ref name-dict #'override '()))
-                    (private #,@(dict-ref name-dict #'private '()))
-                    (private-field #,@private-fields)
-                    (inherit #,@(dict-ref name-dict #'inherit '()))
-                    (inherit-field #,@(dict-ref name-dict #'inherit-field '()))
-                    (augment #,@(dict-ref name-dict #'augment '()))
-                    (pubment #,@(dict-ref name-dict #'pubment '()))))
+              #,(internal (make-class-name-table (attribute forall.type-variables)
+                                                 private-fields
+                                                 optional-inits
+                                                 name-dict))
               (untyped-class #,annotated-super
                 #,@(map clause-stx clauses)
                 ;; construct in-body type annotations for clauses
@@ -372,19 +359,20 @@
                             (match-define (clause _1 _2 ids types) a-clause)
                             (for/list ([id ids] [type types]
                                        #:when type)
-                              (syntax-property
-                               (syntax-property
+                              ;; FIXME: it might be cleaner to use the type-label-property
+                              ;;        here and use the property to build annotation tables
+                              ;;        in the class type-checker.
+                              (tr:class:type-annotation-property
+                               (tr:class:top-level-property
                                 #`(: #,(if (stx-pair? id) (stx-car id) id)
                                      #,type)
-                                'tr:class:top-level #t)
-                               'tr:class:type-annotation #t))))
+                                #t)
+                               #t))))
                 #,@(map non-clause-stx annotated-methods)
-                #,(syntax-property
+                #,(tr:class:top-level-property
                    #`(begin #,@(map non-clause-stx other-top-level))
-                   'tr:class:top-level #t)
-                #,(make-locals-table name-dict private-fields)))
-          'tr:class #t)
-         'typechecker:ignore #t)])]))
+                   #t)
+                #,(make-locals-table name-dict private-fields)))))])]))
 
 (begin-for-syntax
   ;; process-class-contents : Listof<Syntax> Dict<Id, Listof<Id>>
@@ -403,15 +391,8 @@
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
         [(define-values (id) . rst)
-         #:when (memf (λ (n) (free-identifier=? #'id n))
-                      (append (stx-map stx-car (dict-ref name-dict #'public '()))
-                              (stx-map stx-car (dict-ref name-dict #'pubment '()))
-                              (stx-map stx-car (dict-ref name-dict #'override '()))
-                              (stx-map stx-car (dict-ref name-dict #'augment '()))
-                              (dict-ref name-dict #'private '())))
-         (values (cons (non-clause (syntax-property stx
-                                                    'tr:class:method
-                                                    (syntax-e #'id)))
+         #:when (method-id? #'id name-dict)
+         (values (cons (non-clause (tr:class:method-property stx (syntax-e #'id)))
                        methods)
                  rest-top private-fields)]
         ;; private field definition
@@ -423,19 +404,19 @@
         ;; special : annotation for augment interface
         [(: name:id type:expr #:augment augment-type:expr)
          (define new-clause
-           (non-clause (syntax-property #'(quote-syntax (:-augment name augment-type))
-                                        'tr:class:type-annotation #t)))
+           (non-clause (tr:class:type-annotation-property
+                        #'(quote-syntax (:-augment name augment-type)) #t)))
          (define plain-annotation
-           (non-clause (syntax-property (syntax/loc stx (: name type))
-                                        'tr:class:type-annotation #t)))
+           (non-clause (tr:class:type-annotation-property
+                        (syntax/loc stx (: name type)) #t)))
          (values methods
                  (append rest-top (list plain-annotation new-clause))
                  private-fields)]
         ;; Just process this to add the property
         [(: name:id type:expr)
          (define plain-annotation
-           (non-clause (syntax-property (syntax/loc stx (: name type))
-                                        'tr:class:type-annotation #t)))
+           (non-clause (tr:class:type-annotation-property
+                        (syntax/loc stx (: name type)) #t)))
          (values methods
                  (append rest-top (list plain-annotation))
                  private-fields)]
@@ -444,14 +425,24 @@
               (super-make-object init-expr ...)
               (super-instantiate (init-expr ...) [name expr] ...))
          (define new-non-clause
-           (non-clause (syntax-property stx 'tr:class:super-new #t)))
+           (non-clause (tr:class:super-new-property stx #t)))
          (values methods (append rest-top (list new-non-clause))
                  private-fields)]
         [_ (values methods (append rest-top (list content))
                    private-fields)])))
 
+  ;; method-id? : Id Dict<Id, Id> -> Boolean
+  ;; Check whether the given id is a known method name
+  (define (method-id? id name-dict)
+    (memf (λ (n) (free-identifier=? id n))
+          (append (stx-map stx-car (dict-ref name-dict #'public '()))
+                  (stx-map stx-car (dict-ref name-dict #'pubment '()))
+                  (stx-map stx-car (dict-ref name-dict #'override '()))
+                  (stx-map stx-car (dict-ref name-dict #'augment '()))
+                  (dict-ref name-dict #'private '()))))
+
   ;; get-optional-inits : Listof<Clause> -> Listof<Id>
-  ;; Get a list of the internal names of mandatory inits
+  ;; Get a list of the internal names of optional inits
   (define (get-optional-inits clauses)
     (flatten
      (for/list ([clause clauses]
@@ -472,6 +463,28 @@
          (car entry)
          "unsupported class clause: ~a"
          (syntax-e form)))))
+
+  ;; make-class-name-table : Listof<Id> Listof<Id> Listof<Id> Dict<Id, Id> -> Stx
+  ;; construct syntax used by the class type-checker as a reliable source
+  ;; for the member names that are in a given class, plus any type
+  ;; variables that are bound
+  (define (make-class-name-table foralls private-fields
+                                 optional-inits name-dict)
+    #`(class-internal
+       (#:forall #,@foralls)
+       (init #,@(dict-ref name-dict #'init '()))
+       (init-field #,@(dict-ref name-dict #'init-field '()))
+       (init-rest #,@(dict-ref name-dict #'init-rest '()))
+       (optional-init #,@optional-inits)
+       (field #,@(dict-ref name-dict #'field '()))
+       (public #,@(dict-ref name-dict #'public '()))
+       (override #,@(dict-ref name-dict #'override '()))
+       (private #,@(dict-ref name-dict #'private '()))
+       (private-field #,@private-fields)
+       (inherit #,@(dict-ref name-dict #'inherit '()))
+       (inherit-field #,@(dict-ref name-dict #'inherit-field '()))
+       (augment #,@(dict-ref name-dict #'augment '()))
+       (pubment #,@(dict-ref name-dict #'pubment '()))))
 
   ;; This is a neat/horrible trick
   ;;
@@ -500,7 +513,7 @@
     (define augment-names
       (append (stx-map stx-car (dict-ref name-dict #'pubment '()))
               (stx-map stx-car (dict-ref name-dict #'augment '()))))
-    (syntax-property
+    (tr:class:local-table-property
      #`(let-values ([(#,@public-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
                                      public-names))]
@@ -532,5 +545,5 @@
                      (values #,@(map (λ (stx) #`(λ () (#,stx) (inner #f #,stx)))
                                      augment-names))])
          (void))
-     'tr:class:local-table #t)))
+     #t)))
 

@@ -324,7 +324,7 @@
   ;; trawl the body for top-level expressions
   (define make-methods-stx (hash-ref parse-info 'make-methods))
   (define top-level-exprs
-    (trawl-for-property make-methods-stx 'tr:class:top-level))
+    (trawl-for-property make-methods-stx tr:class:top-level-property))
   ;; augment annotations go in their own table, because they're
   ;; the only kind of type annotation that is allowed to be duplicate
   ;; (i.e., m can have type Integer -> Integer and an augment type of
@@ -336,7 +336,7 @@
   (do-timestamp "built annotation table")
   ;; find the `super-new` call (or error if missing)
   (define super-new-stxs
-    (trawl-for-property make-methods-stx 'tr:class:super-new))
+    (trawl-for-property make-methods-stx tr:class:super-new-property))
   (define super-new-stx (check-super-new-exists super-new-stxs))
   (define-values (provided-pos-args provided-super-inits)
     (if super-new-stx
@@ -390,7 +390,7 @@
   (do-timestamp "built self type")
   ;; trawl the body for the local name table
   (define locals
-    (trawl-for-property make-methods-stx 'tr:class:local-table))
+    (trawl-for-property make-methods-stx tr:class:local-table-property))
   (define-values (local-method-table local-private-table local-field-table
                   local-private-field-table local-init-table
                   local-init-rest-table
@@ -434,8 +434,8 @@
     (for ([stx top-level-exprs]
           ;; avoid checking these to avoid duplication and to avoid checking
           ;; ignored expressions
-          #:unless (syntax-property stx 'tr:class:super-new)
-          #:unless (syntax-property stx 'tr:class:type-annotation))
+          #:unless (tr:class:super-new-property stx)
+          #:unless (tr:class:type-annotation-property stx))
       (tc-expr stx)))
   (do-timestamp "checked other top-level exprs")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
@@ -444,7 +444,8 @@
                        inits))
   (do-timestamp "checked field initializers")
   ;; trawl the body and find methods and type-check them
-  (define meth-stxs (trawl-for-property make-methods-stx 'tr:class:method))
+  (define meth-stxs
+    (trawl-for-property make-methods-stx tr:class:method-property))
   (define checked-method-types
     (with-lexical-env/extend lexical-names lexical-types
       (check-methods (append (hash-ref parse-info 'pubment-names)
@@ -770,7 +771,7 @@
                        meths methods self-type)
   (for/fold ([checked '()])
             ([meth meths])
-    (define method-name (syntax-property meth 'tr:class:method))
+    (define method-name (tr:class:method-property meth))
     (define external-name (dict-ref internal-external-mapping method-name #f))
     (define maybe-expected (and external-name (dict-ref methods external-name #f)))
     (cond [(and maybe-expected
@@ -804,7 +805,7 @@
 ;; Type-check private methods
 (define (check-private-methods stxs names types self-type)
   (for ([stx stxs])
-    (define method-name (syntax-property stx 'tr:class:method))
+    (define method-name (tr:class:method-property stx))
     (define private? (set-member? names method-name))
     (define annotation (dict-ref types method-name #f))
     (cond [(and private? annotation)
@@ -1074,18 +1075,18 @@
                (tc-error/expr "init argument ~a not accepted by superclass"
                               init-id)))]))
 
-;; Syntax -> Listof<Syntax>
+;; Syntax (Syntax -> Any) -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for
 ;; syntax with some property (e.g., methods)
-(define (trawl-for-property form prop)
+(define (trawl-for-property form accessor)
   (define (recur-on-all stx-list)
-    (apply append (map (λ (stx) (trawl-for-property stx prop))
+    (apply append (map (λ (stx) (trawl-for-property stx accessor))
                        (syntax->list stx-list))))
   (syntax-parse form
     #:literals (let-values letrec-values #%plain-app
                 #%plain-lambda letrec-syntaxes+values)
     [stx
-     #:when (syntax-property form prop)
+     #:when (accessor #'stx)
      (list form)]
     [(let-values (b ...) body ...)
      (recur-on-all #'(b ... body ...))]
@@ -1286,7 +1287,7 @@
        m)
      (define annotated-self-param
        (type-ascription-property #'self-param self-type))
-     #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
+     #`(let-values ([(#,(type-label-property #'meth-name method-type))
                      ;; attach source location to the lambda in order to
                      ;; obtain better error messages for arity errors
                      #,(quasisyntax/loc stx
@@ -1299,15 +1300,15 @@
                                    core-body ...)))
                      method-body ...)])
        m)
-     #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
-                     #,(syntax-property
+     #`(let-values ([(#,(type-label-property #'meth-name method-type))
+                     #,(kw-lambda-property
                         #`(let-values (((core)
                                         ;; see comment above
                                         #,(quasisyntax/loc stx
                                            (#%plain-lambda (param ...)
                                                            core-body ...))))
                             method-body ...)
-                        'kw-lambda #t)])
+                        #t)])
          m)]
     [_ (tc-error "annotate-method: internal error")]))
 
