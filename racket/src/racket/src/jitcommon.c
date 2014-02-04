@@ -2606,7 +2606,7 @@ static int common6(mz_jit_state *jitter, void *_data)
     mz_patch_branch(ref2);
     mz_patch_branch(ref7);
     (void)mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
-    jit_rshi_l(JIT_V1, JIT_R2, SCHEME_LOG_MARK_SEGMENT_SIZE - JIT_LOG_WORD_SIZE);
+    jit_rshi_l(JIT_V1, JIT_R2, SCHEME_LOG_MARK_SEGMENT_SIZE);
     (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
     jit_ldxi_l(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_seg_count);
     ref4 = jit_bger_i(jit_forward(), JIT_V1, JIT_R0); /* => take slow path */
