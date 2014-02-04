@@ -124,12 +124,9 @@
                (unless (eq? t sampler-thread)
                  (when custom-keys
                    (set! custom-snapshots
-                         (cons (let ([cms (continuation-mark-set->list*
-                                           (continuation-marks t)
-                                           custom-keys)])
-                                 (if (null? cms)
-                                     #f
-                                     (car cms))) ; value
+                         (cons (continuation-mark-set->list*
+                                (continuation-marks t)
+                                custom-keys) ; frames
                                custom-snapshots)))
                  (set! snapshots
                        (cons (list* (thread-id t)

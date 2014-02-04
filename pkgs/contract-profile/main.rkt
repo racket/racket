@@ -219,5 +219,5 @@
         (define samples (sampler 'get-snapshots))
         (define contract-samples
           (for/list ([s (in-list (sampler 'get-custom-snapshots))])
-            (and s (vector-ref s 0))))
+            (and (not (empty? s)) (vector-ref (car s) 0))))
         (analyze-contract-samples contract-samples samples)))))
