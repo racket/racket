@@ -60,6 +60,7 @@ SHARED_OK static Scheme_Object *init_stderr_level = scheme_make_integer(SCHEME_L
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_gc_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_future_logger);
+THREAD_LOCAL_DECL(static Scheme_Logger *scheme_place_logger);
 
 /* readonly globals */
 READ_ONLY const char *scheme_compile_stx_string = "compile";
@@ -795,6 +796,9 @@ void scheme_init_logger()
 
   REGISTER_SO(scheme_future_logger);
   scheme_future_logger = scheme_make_logger(scheme_main_logger, scheme_intern_symbol("future"));
+
+  REGISTER_SO(scheme_place_logger);
+  scheme_place_logger = scheme_make_logger(scheme_main_logger, scheme_intern_symbol("place"));
 }
 
 Scheme_Logger *scheme_get_main_logger() {
@@ -807,6 +811,10 @@ Scheme_Logger *scheme_get_gc_logger() {
 
 Scheme_Logger *scheme_get_future_logger() {
   return scheme_future_logger;
+}
+
+Scheme_Logger *scheme_get_place_logger() {
+  return scheme_place_logger;
 }
 
 void scheme_init_error_config(void)

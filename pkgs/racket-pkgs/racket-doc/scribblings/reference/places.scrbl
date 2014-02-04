@@ -113,6 +113,9 @@ used: @racket[current-library-collection-paths],
 @racket[current-library-collection-links], and
 @racket[current-compiled-file-roots].
 
+@; ----------------------------------------
+
+@section[#:tag "places-api"]{Using Places}
 
 @defproc[(place-enabled?) boolean?]{
 
@@ -390,3 +393,5 @@ A distributed places note created with @racket[create-place-node]
 is an example of a @tech{place location}.}
 
 @;------------------------------------------------------------------------
+
+@include-section["places-logging.scrbl"]

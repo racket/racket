@@ -279,6 +279,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Logger *scheme_main_logger_;
   struct Scheme_Logger *scheme_gc_logger_;
   struct Scheme_Logger *scheme_future_logger_;
+  struct Scheme_Logger *scheme_place_logger_;
   int intdef_counter_;
   int builtin_ref_counter_;
   int env_uid_counter_;
@@ -313,6 +314,7 @@ typedef struct Thread_Local_Variables {
   double start_this_gc_real_time_;
   double end_this_gc_real_time_;
   struct Scheme_Struct_Type *gc_info_prefab_;
+  struct Scheme_Struct_Type *place_event_prefab_;
   volatile short delayed_break_ready_;
   struct Scheme_Thread *main_break_target_thread_;
   intptr_t scheme_code_page_total_;
@@ -660,6 +662,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_main_logger XOA (scheme_get_thread_local_variables()->scheme_main_logger_)
 #define scheme_gc_logger XOA (scheme_get_thread_local_variables()->scheme_gc_logger_)
 #define scheme_future_logger XOA (scheme_get_thread_local_variables()->scheme_future_logger_)
+#define scheme_place_logger XOA (scheme_get_thread_local_variables()->scheme_place_logger_)
 #define intdef_counter XOA (scheme_get_thread_local_variables()->intdef_counter_)
 #define builtin_ref_counter XOA (scheme_get_thread_local_variables()->builtin_ref_counter_)
 #define env_uid_counter XOA (scheme_get_thread_local_variables()->env_uid_counter_)
@@ -694,6 +697,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define start_this_gc_real_time XOA (scheme_get_thread_local_variables()->start_this_gc_real_time_)
 #define end_this_gc_real_time XOA (scheme_get_thread_local_variables()->end_this_gc_real_time_)
 #define gc_info_prefab XOA (scheme_get_thread_local_variables()->gc_info_prefab_)
+#define place_event_prefab XOA (scheme_get_thread_local_variables()->place_event_prefab_)
 #define delayed_break_ready XOA (scheme_get_thread_local_variables()->delayed_break_ready_)
 #define main_break_target_thread XOA (scheme_get_thread_local_variables()->main_break_target_thread_)
 #define scheme_code_page_total XOA (scheme_get_thread_local_variables()->scheme_code_page_total_)

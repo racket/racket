@@ -12,8 +12,10 @@
 
 (define collection 'multi)
 
-(define deps '("racket-lib"
-               ["racket" #:version "6.0.0.1"]))
+(define version "6.0.0.2")
+
+(define deps `("racket-lib"
+               ["racket" #:version ,version]))
 
 (define implies '(core))
 
@@ -21,4 +23,3 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "6.0.0.1")

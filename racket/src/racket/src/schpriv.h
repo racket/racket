@@ -362,6 +362,7 @@ void scheme_init_place_local_symbol_table(void);
 Scheme_Logger *scheme_get_main_logger(void);
 Scheme_Logger *scheme_get_gc_logger(void);
 Scheme_Logger *scheme_get_future_logger(void);
+Scheme_Logger *scheme_get_place_logger(void);
 void scheme_init_logger_config(void);
 
 void register_network_evts();
@@ -4124,6 +4125,7 @@ typedef struct Scheme_Place_Object {
   void *parent_signal_handle; /* set to NULL when the place terminates */
   intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
 
+  int id;
   intptr_t memory_use; /* set by inform hook on GC, used by GC for memory accounting */
   intptr_t prev_notify_memory_use; /* if memory_use > use_factor * prev_notify_memory_use, alert parent */
   double use_factor;

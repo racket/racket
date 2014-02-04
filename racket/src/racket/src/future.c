@@ -1094,6 +1094,11 @@ static void log_future_event(Scheme_Future_State *fs,
                              Scheme_Object *user_data) 
 {
   Scheme_Object *data, *v;
+  Scheme_Logger *fl;
+
+  fl = scheme_get_future_logger();
+  if (!scheme_log_level_p(fl, SCHEME_LOG_DEBUG))
+    return;
 
   data = scheme_make_blank_prefab_struct_instance(fs->fevent_prefab);
   if (what == FEVENT_MISSING || fid == NO_FUTURE_ID)
@@ -1121,7 +1126,7 @@ static void log_future_event(Scheme_Future_State *fs,
 
   ((Scheme_Structure *)data)->slots[5] = user_data;
   
-  scheme_log_w_data(scheme_get_future_logger(), SCHEME_LOG_DEBUG, 0,
+  scheme_log_w_data(fl, SCHEME_LOG_DEBUG, 0,
                     data,                 
                     msg_str,
                     fid,

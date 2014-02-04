@@ -47,6 +47,7 @@ SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(static struct Scheme_Place_Object *place_object);
 THREAD_LOCAL_DECL(static Scheme_Place *all_child_places);
 THREAD_LOCAL_DECL(static uintptr_t force_gc_for_place_accounting);
+THREAD_LOCAL_DECL(static Scheme_Struct_Type *place_event_prefab);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
@@ -93,6 +94,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 #endif
 
 static void places_prepare_direct(Scheme_Object *so);
+static void log_place_event(const char *what, const char *tag, int has_amount, intptr_t amount);
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -155,6 +157,9 @@ void scheme_init_place(Scheme_Env *env)
 
 #ifdef MZ_USE_PLACES
   REGISTER_SO(all_child_places);
+  
+  REGISTER_SO(place_event_prefab);
+  place_event_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("place-event"), 4);
 #endif
 }
 
@@ -217,6 +222,7 @@ typedef struct Place_Start_Data {
   intptr_t in;
   intptr_t out;
   intptr_t err;
+  Scheme_Object *new_id;
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -481,6 +487,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   mzrt_sema_destroy(ready);
   ready = NULL;
 
+  log_place_event("id %d: create %" PRIdPTR, "create", 1, place_data->place_obj->id);
+
   place_data->ready = NULL;
   place_data->place_obj = NULL;
 
@@ -535,6 +543,7 @@ static void do_place_kill(Scheme_Place *place)
 {
   Scheme_Place_Object *place_obj;
   intptr_t refcount;
+  int old_id;
 
   place_obj = place->place_obj;
 
@@ -567,10 +576,14 @@ static void do_place_kill(Scheme_Place *place)
   else
     all_child_places = place->next;
 
+  old_id = place_obj->id;
+
   if (!refcount) {
     destroy_place_object_locks(place_obj);
   }
   place->place_obj = NULL;
+
+  log_place_event("id %d: reap %" PRIdPTR, "reap", 1, old_id);
 }
 
 static int do_place_break(Scheme_Place *place, int kind) 
@@ -2368,6 +2381,36 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base
 }
 #endif
 
+static void log_place_event(const char *what, const char *tag, int has_amount, intptr_t amount)
+{
+  int id;
+  Scheme_Logger *pl;
+  Scheme_Object *data, *tag_sym, *t;
+
+  pl = scheme_get_place_logger();
+  if (!scheme_log_level_p(pl, SCHEME_LOG_DEBUG))
+    return;
+
+  id = scheme_current_place_id;
+  tag_sym = scheme_intern_symbol(tag);
+
+  data = scheme_make_blank_prefab_struct_instance(place_event_prefab);
+  ((Scheme_Structure *)data)->slots[0] = scheme_make_integer(id);
+  ((Scheme_Structure *)data)->slots[1] = tag_sym;
+  ((Scheme_Structure *)data)->slots[2] = (has_amount 
+                                          ? scheme_make_integer(amount)
+                                          : scheme_false);
+  t = scheme_make_double(scheme_get_inexact_milliseconds());
+  ((Scheme_Structure *)data)->slots[3] = t;
+
+  if (has_amount)
+    scheme_log_w_data(pl, SCHEME_LOG_DEBUG, 0, data,
+                      what, id, amount);
+  else
+    scheme_log_w_data(pl, SCHEME_LOG_DEBUG, 0, data,
+                      what, id);
+}
+
 static void *place_start_proc(void *data_arg) {
   void *stack_base;
   void *rc;
@@ -2583,7 +2626,7 @@ static void terminate_current_place(Scheme_Object *result)
 
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
 {
-  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting via (exit)", scheme_current_place_id);
+  log_place_event("id %d: exit (via `exit')", "exit", 0, 0);
 
   terminate_current_place(argv[0]);
 
@@ -2638,7 +2681,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   mzrt_mutex_unlock(id_counter_mutex);
 
   mem_limit = SCHEME_INT_VAL(place_data->cust_limit);
-  
+
   /* scheme_make_thread behaves differently if the above global vars are not null */
   scheme_place_instance_init(stack_base, place_data->parent_gc, mem_limit);
 
@@ -2659,6 +2702,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   place_object = place_obj;
   place_obj->refcount++;
 
+  place_obj->id = scheme_current_place_id;
+  
   {
     void *signal_handle;
     signal_handle = scheme_get_signal_handle();
@@ -2704,7 +2749,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_place_exit_proc);
 
-  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: started", scheme_current_place_id);
+  log_place_event("id %d: enter", "enter", 0, 0);
 
   if (do_embedded_load()) {
     Scheme_Thread * volatile p;
@@ -2735,7 +2780,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     result = scheme_make_integer(1);
   }
 
-  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
+  log_place_event("id %d: exit", "exit", 0, 0);
 
   terminate_current_place(result);
 
@@ -3200,6 +3245,12 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
     maybe_report_message_size(ch);
   }
 
+  {
+    intptr_t msg_size;
+    msg_size = GC_message_allocator_size(msg_memory);
+    log_place_event("id %d: put message of %" PRIdPTR " bytes", "put", 1, msg_size);
+  }
+
   if (!cnt && ch->wakeup_signal) {
     /*wake up possibly sleeping single receiver */  
     if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal)) {
@@ -3403,6 +3454,12 @@ static Scheme_Object *scheme_place_async_try_receive_raw(Scheme_Place_Async_Chan
   if (!msg && !ch->wr_ref && _no_writers)
     *_no_writers = 1;
   mzrt_mutex_unlock(ch->lock);
+
+  if (msg) {
+    intptr_t msg_size;
+    msg_size = GC_message_allocator_size(msg_memory);
+    log_place_event("id %d: get message of %" PRIdPTR " bytes", "get", 1, msg_size);
+  }
 
   *msg_memory_ptr = msg_memory;
   return msg;

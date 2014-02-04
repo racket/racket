@@ -18,7 +18,7 @@ a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
 
 @racketblock[
-(define-struct future-event (future-id proc-id action time)
+(struct future-event (future-id proc-id action time)
   #:prefab)
 ]
 
@@ -31,7 +31,7 @@ The @racket[proc-id] fields is an exact, non-negative integer that
 identifies a parallel process. Process 0 is the main Racket process,
 where all expressions other than future thunks evaluate.
 
-The @racket[time-id] field is an inexact number that represents time in
+The @racket[time] field is an inexact number that represents time in
 the same way as @racket[current-inexact-milliseconds].
 
 The @racket[action] field is a symbol:
