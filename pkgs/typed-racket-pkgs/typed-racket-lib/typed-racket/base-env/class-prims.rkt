@@ -45,8 +45,6 @@
   (raise-syntax-error 'class "should only be used internally"))
 
 (begin-for-syntax
- (module+ test (require rackunit))
-
  ;; forms that are not allowed by Typed Racket yet
  (define unsupported-forms
    (list (quote-syntax augride)
@@ -90,6 +88,11 @@
             (quote-syntax super-instantiate)
             (quote-syntax super-make-object)
             (quote-syntax inspect)))))
+
+;; export some syntax-time definitions for testing purposes
+(module+ internal
+  (provide (for-syntax init-decl class-clause class-clause-or-other
+                       extract-names clause init-clause get-optional-inits)))
 
 (begin-for-syntax
  ;; A Clause is a (clause Syntax Id Listof<Syntax> Option<Type>)
@@ -293,46 +296,7 @@
    (add-kind #'init-field)
    (add-kind #'field)
    (add-kind #'public)
-   (add-kind #'pubment))
- 
- (module+ test
-   ;; equal? check but considers id & stx pair equality
-   (define (equal?/id x y)
-     (cond [(and (identifier? x) (identifier? y))
-            (free-identifier=? x y)]
-           [(and (syntax? x) (syntax? y))
-            (and (free-identifier=? (stx-car x) (stx-car y))
-                 (free-identifier=? (stx-car (stx-cdr x))
-                                    (stx-car (stx-cdr y))))]
-           (equal?/recur x y equal?/id)))
-
-   ;; utility macro for checking if a syntax matches a
-   ;; given syntax class
-   (define-syntax-rule (syntax-parses? stx syntax-class)
-     (syntax-parse stx
-       [(~var _ syntax-class) #t]
-       [_ #f]))
-
-   ;; for rackunit with equal?/id
-   (define-binary-check (check-equal?/id equal?/id actual expected))
-
-   (check-true (syntax-parses? #'x init-decl))
-   (check-true (syntax-parses? #'([x y]) init-decl))
-   (check-true (syntax-parses? #'(x 0) init-decl))
-   (check-true (syntax-parses? #'([x y] 0) init-decl))
-   (check-true (syntax-parses? #'(init x y z) class-clause))
-   (check-true (syntax-parses? #'(public f g h) class-clause))
-   (check-true (syntax-parses? #'(public f) class-clause-or-other))
-   (check-equal?/id
-    (extract-names (list (clause #'(init x y z)
-                                 #'init
-                                 (list #'(x x) #'(y y) #'(z z)))
-                         (clause #'(public f g h)
-                                 #'public
-                                 (list #'(f f) #'(g g) #'(h h)))))
-    (make-immutable-free-id-table
-     (hash #'public (list #'(f f) #'(g g) #'(h h))
-           #'init (list #'(x x) #'(y y) #'(z z)))))))
+   (add-kind #'pubment)))
 
 (define-syntax (class stx)
   (syntax-parse stx
@@ -474,13 +438,6 @@
                   [optional? (in-list (init-clause-optional? clause))]
                   #:when optional?)
          (stx-car id-pair)))))
-
-  (module+ test
-    (check-equal?/id
-     (get-optional-inits
-      (list (init-clause #'(init [x 0]) #'init #'([x x]) (list #t))
-            (init-clause #'(init [(a b)]) #'init #'([a b]) (list #f))))
-     (list #'x)))
 
   ;; check-unsupported-features : Dict<Identifier, Names> -> Void
   ;; Check if features that are not supported were used and
