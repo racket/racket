@@ -33,6 +33,13 @@
               'pos
               'neg))
   
+  (test/spec-passed
+   'class/c-first-order-opaque-class-3
+   '(contract (class/c #:opaque m)
+              (class object% (super-new) (define/public (m) 3))
+              'pos
+              'neg))
+  
   (test/pos-blame
    'class/c-first-order-method-1
    '(contract (class/c [m (-> any/c number? number?)])
@@ -1109,6 +1116,22 @@
       (new d%/c/c [a #t] [a "foo"])))
   
   (test/spec-passed
+   'class/c-higher-order-init-9
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (make-object c% 3)))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-10
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (make-object c% #f)))
+  
+  (test/spec-passed
    'class/c-higher-order-init-field-1
    '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
                         (class object% (super-new) (init-field f) (f 3))
@@ -2084,6 +2107,44 @@
       (class/c (init-field [x (begin (set! x (+ x 1)) any/c)]))
       x)
    1)
+  
+  (test/pos-blame
+   'class/c-field-in-class-with-interface-ctc
+   '(get-field f (new (contract (class/c (field [f integer?]))
+                                (class* object% ((interface () [m (-> any/c integer?)]))
+                                  (field [f #f])
+                                  (define/public (m) 1)
+                                  (super-new))
+                                'pos
+                                'neg))))
+  
+  (test/pos-blame
+   'class/c-field-in-class-with-interface-ctc2
+   '(new (contract (class/c (field f))
+                   (class* object% ((interface () [m (-> any/c integer?)]))
+                     (define/public (m) 1)
+                     (super-new))
+                   'pos
+                   'neg)))
+  
+  (test/pos-blame
+   'class/c-absent-in-class-with-interface-ctc
+   '(contract (class/c (absent m))
+              (class* object% ((interface () [m (-> any/c integer?)]))
+                (define/public (m) 1)
+                (super-new))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-absent-in-class-with-interface-ctc
+   '(contract (class/c (absent (field f)))
+              (class* object% ((interface () [m (-> any/c integer?)]))
+                (define/public (m) 1)
+                (field [f 1])
+                (super-new))
+              'pos
+              'neg))
   
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))

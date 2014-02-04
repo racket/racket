@@ -203,8 +203,4 @@
   (ctest #t contract-first-order-passes?
          (class/c [m (-> any/c integer? integer?)]) 
          (class* object% ((interface () [m (-> any/c integer? integer?)]))
-           (define/public (m x) x)))
-  
-  
-  
-  )
+           (define/public (m x) x))))

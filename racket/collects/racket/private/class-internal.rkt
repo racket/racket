@@ -3241,6 +3241,8 @@ An example
      (wrapped-object
       unwrapped-o
       (wrapped-class-info-neg-extra-arg-ht the-info)
+      (wrapped-class-info-pos-field-projs the-info)
+      (wrapped-class-info-neg-field-projs the-info)
       (wrapped-class-neg-party class))]
     [else
      (raise-argument-error 'instantiate "class?" class)]))
@@ -3763,22 +3765,43 @@ An example
   (do-set-field! 'set-field! id obj val))
 
 (define (do-set-field! who id obj val)
-  (unless (object? obj)
-    (raise-argument-error who
-                          "object?"
-                          obj))
-  (let* ([cls (object-ref/unwrap obj)]
-         [field-ht (class-field-ht cls)]
-         [fi (hash-ref field-ht id #f)])
-     (if fi
-         ((field-info-external-set! fi) obj val)
-         (obj-error who
-                    "given object does not have the requested field"
-                    "field name" (as-write id)
-                    "object" obj))))
+  (cond
+    [(_object? obj) 
+     (do-set-field!/raw-object who id obj val)]
+    [(wrapped-object? obj)
+     (define projs+set! (hash-ref (wrapped-object-neg-field-projs obj) id #f))
+     (cond
+       [projs+set! 
+        (define np (wrapped-object-neg-party obj))
+        (let loop ([projs+set! projs+set!]
+                   [val val])
+          (cond
+            [(pair? projs+set!)
+             (define the-proj (car projs+set!))
+             (loop (cdr projs+set!)
+                   ((the-proj val) np))]
+            [else
+             (projs+set! (wrapped-object-object obj) val)]))]
+       [else
+        (do-field-get/raw-object who id (wrapped-object-object obj))])]    
+    [else
+     (raise-argument-error who
+                           "object?"
+                           obj)]))
+
+(define (do-set-field!/raw-object who id obj val)
+  (define cls (object-ref obj))
+  (define field-ht (class-field-ht cls))
+  (define fi (hash-ref field-ht id #f))
+  (if fi
+      ((field-info-external-set! fi) obj val)
+      (obj-error who
+                 "given object does not have the requested field"
+                 "field name" (as-write id)
+                 "object" obj)))
 
 (define (dynamic-set-field! id obj val)
-  (unless (symbol? id) (raise-argument-error 'dynamic-get-field "symbol?" id))
+  (unless (symbol? id) (raise-argument-error 'dynamic-set-field! "symbol?" id))
   (do-set-field! 'dynamic-set-field! id obj val))
 
 (define-syntax (get-field stx)
@@ -3796,19 +3819,40 @@ An example
   (do-get-field 'get-field id obj))
 
 (define (do-get-field who id obj)
-  (unless (object? obj)
-    (raise-argument-error who
-                          "object?"
-                          obj))
-  (let* ([cls (object-ref/unwrap obj)]
-         [field-ht (class-field-ht cls)]
-         [fi (hash-ref field-ht id #f)])
-    (if fi
-        ((field-info-external-ref fi) obj)
-        (obj-error who
-                   "given object does not have the requested field"
-                   "field name" (as-write id)
-                   "object" obj))))
+  (cond
+    [(_object? obj)
+     (do-field-get/raw-object who id obj)]
+    [(wrapped-object? obj)
+     (define projs+ref (hash-ref (wrapped-object-pos-field-projs obj) id #f))
+     (cond
+       [projs+ref
+        (define np (wrapped-object-neg-party obj))
+        (let loop ([projs+ref projs+ref])
+          (cond
+            [(pair? projs+ref)
+             (define the-proj (car projs+ref))
+             (define field-val-with-other-contracts (loop (cdr projs+ref)))
+             ((the-proj field-val-with-other-contracts) np)]
+            [else
+             ;; projs+ref is the struct field accessor
+             (projs+ref (wrapped-object-object obj))]))]
+       [else
+        (do-field-get/raw-object who id (wrapped-object-object obj))])]
+    [else 
+     (raise-argument-error who
+                           "object?"
+                           obj)]))
+
+(define (do-field-get/raw-object who id obj)
+  (define cls (object-ref obj))
+  (define field-ht (class-field-ht cls))
+  (define fi (hash-ref field-ht id #f))
+  (if fi
+      ((field-info-external-ref fi) obj)
+      (obj-error who
+                 "given object does not have the requested field"
+                 "field name" (as-write id)
+                 "object" obj)))
 
 (define (dynamic-get-field id obj)
   (unless (symbol? id) (raise-argument-error 'dynamic-get-field "symbol?" id))
@@ -4170,7 +4214,10 @@ An example
 ;; runtime wrappers to support contracts with better space properties
 ;;--------------------------------------------------------------------
 
-(struct wrapped-class-info (class blame neg-extra-arg-ht neg-acceptors-ht init-proj-pairs)
+(struct wrapped-class-info (class blame 
+                             neg-extra-arg-ht neg-acceptors-ht 
+                             pos-field-projs neg-field-projs
+                             init-proj-pairs)
   #:transparent)
 (struct wrapped-class (the-info neg-party)
   #:property prop:custom-write
@@ -4183,7 +4230,8 @@ An example
       [(wrapped-class? class) (loop (wrapped-class-info-class (wrapped-class-the-info class)))]
       [else class])))
 
-(struct wrapped-object (object method-wrappers neg-party) #:transparent
+(struct wrapped-object (object method-wrappers pos-field-projs neg-field-projs neg-party)
+  #:transparent
   #:property prop:custom-write
   (λ (stct port mode)
     (do-custom-write (wrapped-object-object stct) port mode)))
@@ -4205,7 +4253,7 @@ An example
 
 (define (check-arg-contracts wrapped-blame wrapped-neg-party val init-proj-pairs orig-named-args)
   ;; blame will be #f only when init-ctc-pairs is '()
-  (define arg-blame (and wrapped-blame (blame-swap wrapped-blame))) 
+  (define arg-blame (and wrapped-blame (blame-swap wrapped-blame)))
   
   (define (missing-one init-ctc-pair)
     (raise-blame-error arg-blame #:missing-party wrapped-neg-party val
@@ -4487,6 +4535,9 @@ An example
          concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object
          ;; end class-c-old.rkt requirements
+
+         field-info-internal-ref
+         field-info-internal-set!
          
          (rename-out [_class class]) class* class/derived
          define-serializable-class define-serializable-class*

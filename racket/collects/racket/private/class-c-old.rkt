@@ -9,13 +9,14 @@
          (only-in "../contract/private/arrow.rkt" making-a-method method-contract?))
 
 (provide make-class/c class/c-proj
-         blame-add-method-context blame-add-init-context
+         blame-add-method-context blame-add-field-context blame-add-init-context
          class/c ->m ->*m ->dm case->m object/c instanceof/c
          make-wrapper-object
          check-object-contract
          (for-syntax parse-class/c-specs)
          (struct-out internal-class/c)
-         just-check-existence just-check-existence?)
+         just-check-existence just-check-existence?
+         build-internal-class/c internal-class/c-proj)
 
 (define undefined (letrec ([x x]) x))
 
@@ -153,7 +154,6 @@
 (define (class/c-external-proj ctc)
   (define ctc-methods (class/c-methods ctc))
   (λ (blame)
-    (define bswap (blame-swap blame))
     (define public-method-projections
       (for/list ([name (in-list ctc-methods)]
                  [c (in-list (class/c-method-contracts ctc))])
@@ -165,9 +165,9 @@
                  [c (in-list (class/c-field-contracts ctc))])
         (and c
              (let ([p-pos ((contract-projection c)
-                           (blame-add-context blame (format "the ~a field in" f)))]
+                           (blame-add-field-context blame f #:swap? #f))]
                    [p-neg ((contract-projection c)
-                           (blame-add-context bswap (format "the ~a field in" f)))])
+                           (blame-add-field-context blame f #:swap? #t))])
                (cons p-pos p-neg)))))
     
     ;; zip the inits and contracts together for ordered selection
@@ -307,7 +307,7 @@
               (define mp (vector-ref methods i))
               (vector-set! methods i (make-method (p mp) m)))))
         
-        ;; Handle both external field contracts
+        ;; Handle external field contracts
         (unless no-field-ctcs?
           (for ([f (in-list (class/c-fields ctc))]
                 [p-pr (in-list external-field-projections)])
@@ -723,6 +723,9 @@
     [(not name)
      (blame-add-context blame "an unnamed method in")]
     [else (error 'blame-add-method-context "uhoh ~s" name)]))
+
+(define (blame-add-field-context blame f #:swap? swap?)
+  (blame-add-context blame (format "the ~a field in" f) #:swap? swap?))
 
 (define (build-internal-class/c inherits inherit-contracts inherit-fields inherit-field-contracts
                                 supers super-contracts inners inner-contracts
@@ -1161,9 +1164,12 @@
       (define new-cls (p (object-ref val)))
       (cond
         [(wrapped-class? new-cls)
+         (define the-info (wrapped-class-the-info new-cls))
          (wrapped-object
           val
-          (wrapped-class-info-neg-extra-arg-ht (wrapped-class-the-info new-cls))
+          (wrapped-class-info-neg-extra-arg-ht the-info)
+          (wrapped-class-info-pos-field-projs the-info)
+          (wrapped-class-info-neg-field-projs the-info)
           (wrapped-class-neg-party new-cls))]
         [else
          (impersonate-struct val object-ref (λ (o c) new-cls)
@@ -1303,11 +1309,9 @@
       (for ([f (in-list fields)]
             [c (in-list field-contracts)])
         (when c
-          (define fld-context (format "the ~a field in" f))
-          (define bset (blame-add-context blame fld-context #:swap? #t))
-          (let ([fi (hash-ref field-ht f)]
-                [p-pos ((contract-projection c) (blame-add-context blame fld-context))]
-                [p-neg ((contract-projection c) bset)])
-            (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg))))))
+          (define fi (hash-ref field-ht f))
+          (define p-pos ((contract-projection c) (blame-add-field-context blame f #:swap? #f)))
+          (define p-neg ((contract-projection c) (blame-add-field-context blame f #:swap? #t)))
+          (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
     
     c))

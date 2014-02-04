@@ -11,126 +11,6 @@
 
 (provide class/c2)
 
-(define-for-syntax (parse-class/c stx)
-  (define (give-up) (values #f #f #f #f #f))
-  (define-values (opaque? args)
-    (syntax-case stx ()
-      [(_ #:opaque args ...)
-       (values #t #'(args ...))]
-      [(_ args ...)
-       (let ()
-         (define stx-args #'(args ...))
-         (define l (syntax->list stx-args))
-         (printf "l ~\n" l)
-         (when (and (pair? l) (keyword? (syntax-e (car l))))
-           (raise-syntax-error #f "unrecognized keyword" stx (car l)))
-         (values #f stx-args))]))
-  (syntax-case args ()
-    [(clauses ...)
-     (let loop ([clauses (syntax->list #'(clauses ...))]
-                [mths '()]
-                [flds '()]
-                [inits '()]
-                [let-bindings '()])
-       (cond
-         [(null? clauses) 
-          (values opaque?
-                  (reverse mths)
-                  (reverse flds)
-                  (reverse inits)
-                  (reverse let-bindings))]
-         [else
-          (syntax-case (car clauses) (field inherit inherit-field init init-field super inner 
-                                            override augment augride absent)
-            [(super . x) (give-up)]
-            [(inner . x) (give-up)]
-            [(override . x) (give-up)]
-            [(augment . x) (give-up)]
-            [(augride . x) (give-up)]
-            [(absent . x) (give-up)]
-            [(inherit . x) (give-up)]
-            [(inherit-field . x) (give-up)]
-            [(field x ...) (give-up)]
-            [(init x ...) 
-             (let ()
-               (define new-let-bindings let-bindings)
-               (define new-inits '())
-               (for ([clause (in-list (syntax->list #'(x ...)))])
-                 (syntax-case clause ()
-                   [(id ctc)
-                    (with-syntax ([(x) (generate-temporaries #'(id))])
-                      (set! new-let-bindings (cons #`[x ctc] new-let-bindings))
-                      (set! new-inits (cons #`[id x] new-inits)))]
-                   [id
-                    (identifier? #'id)
-                    (begin
-                      (set! new-inits (cons #`[id just-check-existence] new-inits)))]
-                   [_
-                    (raise-syntax-error 'class/c "expected a field-spec" stx clause)]))
-               (loop (cdr clauses)
-                     mths flds (append new-inits inits) new-let-bindings))]
-            [(init-field x ...)
-             (let ()
-               (define new-let-bindings let-bindings)
-               (define clauses '())
-               (for ([cl (in-list (syntax->list #'(x ...)))])
-                 (syntax-case cl ()
-                   [(id ctc) 
-                    (identifier? #'id)
-                    (with-syntax ([(x) (generate-temporaries (list #'id))])
-                      (set! new-let-bindings (cons #`[x ctc] new-let-bindings))
-                      (set! clauses (cons #'[id x] clauses)))]
-                   [id
-                    (identifier? #'id)
-                    (begin
-                      (set! clauses (cons #'[id just-check-existence] clauses)))]
-                   [_
-                    (raise-syntax-error 'class/c "expected a field-spec" stx cl)]))
-               (loop (cdr clauses) mths (append clauses flds) (append clauses inits)
-                     new-let-bindings))]
-                                           
-            [x (identifier? #'x) 
-               (loop (cdr clauses) 
-                     (cons #`[#,(car clauses) just-check-existence] mths)
-                     flds inits let-bindings)]
-            [[mth ctc] 
-             (identifier? #'mth)
-             (with-syntax ([(x) (generate-temporaries #'(mth))])
-               (loop (cdr clauses) 
-                     (cons #`[mth x] mths)
-                     flds
-                     inits
-                     (cons #`[x ctc] let-bindings)))]
-            [else (give-up)])]))]))
-
-#;
-(define-syntax (class/c2 stx)
-  (define-values (opaque? mths flds inits let-bindings) (parse-class/c stx))
-  (cond
-    [(and mths (null? flds))
-     (syntax-case (list mths inits) ()
-       [(((mth-name mth-ctc) ...)
-         ((init-name init-ctc) ...))
-        ;(printf " yup: ~a:~a\n" (syntax-source stx) (syntax-line stx))
-        (with-syntax ([(lmth-name ...) (for/list ([m (in-list (syntax->list #'(mth-name ...)))])
-                                         (localize m))]
-                      [name (syntax-local-infer-name stx)])
-          ;#'(class/c [m ctc] ...)
-          #`(let #,let-bindings
-              (make-an-ext-class/c-contract '#,opaque?
-                                            (list `lmth-name ...)
-                                            (list mth-ctc ...)
-                                            '() '()
-                                            (list 'init-name ...)
-                                            (list init-ctc ...)
-                                            'name
-                                            empty-internal/c)))])]
-    [else
-     ;(printf "nope: ~a:~a\n" (syntax-source stx) (syntax-line stx))
-     (syntax-case stx ()
-       [(_ args ...)
-        #'(class/c args ...)])]))
-
 (define-syntax (class/c2 stx)
   (define-values (opaque? args)
     (syntax-case stx ()
@@ -143,7 +23,6 @@
            (raise-syntax-error #f "unrecognized keyword" stx (car stx-args)))
          (values #f stx-args))]))
   (define-values (bindings pfs) (parse-class/c-specs args #f))
-  (printf ">> ~s ~s\n" bindings (hash-ref pfs 'methods null))
   (with-syntax ([methods #`(list #,@(reverse (hash-ref pfs 'methods null)))]
                 [method-ctcs #`(list #,@(reverse (hash-ref pfs 'method-contracts null)))]
                 [fields #`(list #,@(reverse (hash-ref pfs 'fields null)))]
@@ -182,22 +61,23 @@
                   [opaque? opaque?])
       (syntax/loc stx
         (let bindings
-;          (let-values ([(inits init-ctcs) (sort-inits+contracts (list (cons i i-c) ...))])
-            (make-an-ext-class/c-contract
-             'opaque?
-             methods method-ctcs
-             fields field-ctcs
-             (list 'i ...)
-             (list i-c ...)
-             'name
-             (internal-class/c
-              inherits inherit-ctcs
-              inherit-fields inherit-field-ctcs
-              supers super-ctcs
-              inners inner-ctcs
-              overrides override-ctcs
-              augments augment-ctcs
-              augrides augride-ctcs)))))))
+          (make-an-ext-class/c-contract
+           'opaque?
+           methods method-ctcs
+           fields field-ctcs
+           (list i ...)
+           (list i-c ...)
+           absents 
+           absent-fields
+           'name
+           (build-internal-class/c
+            inherits inherit-ctcs
+            inherit-fields inherit-field-ctcs
+            supers super-ctcs
+            inners inner-ctcs
+            overrides override-ctcs
+            augments augment-ctcs
+            augrides augride-ctcs)))))))
 
 (define (class/c2-proj this)
   (λ (blame)
@@ -224,13 +104,23 @@
                         (if (just-check-existence? ctc) 
                             any/c
                             ctc))))
+              
+              (define fields 
+                (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
+                  fld))
+              (define field-ctcs
+                (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
+                  (if (just-check-existence? ctc)
+                      #f
+                      ctc)))
+              
               (define ctc
                 (make-class/c
                  ;; methods
                  (map car mth-lst)
                  (map cdr mth-lst)
                  
-                 '() '() ;; fields  
+                 fields field-ctcs
                  
                  ;; inits
                  (map (λ (x) (list-ref x 0)) (ext-class/c-contract-init-ctc-pairs this))
@@ -241,14 +131,17 @@
                             ctc))
                       (ext-class/c-contract-init-ctc-pairs this))
                  
-                 '() '() ;; absent
-                 empty-internal-class/c
-                 #f ;; opaque?
-                 #f ;; name
-                 ))
+                 (ext-class/c-contract-absent-methods this)
+                 (ext-class/c-contract-absent-fields this)
+
+                 (ext-class/c-contract-internal-ctc this)
+                 (ext-class/c-contract-opaque? this)
+                 (ext-class/c-contract-name this)))
               (λ (neg-party)
                 (((class/c-proj ctc) (blame-add-missing-party blame neg-party)) cls))]
-             [else (build-neg-acceptor-proc this maybe-err blame cls (make-hash) '())])]
+             [else 
+              (build-neg-acceptor-proc this maybe-err blame cls (make-hash) '() 
+                                       (make-hasheq) (make-hasheq))])]
           [(wrapped-class? cls) 
            (define neg-acceptors-ht
              (wrapped-class-info-neg-acceptors-ht (wrapped-class-the-info cls)))
@@ -266,7 +159,9 @@
            (build-neg-acceptor-proc this maybe-err blame 
                                     (wrapped-class-info-class the-info)
                                     new-mths-ht
-                                    fixed-neg-init-projs)]
+                                    fixed-neg-init-projs
+                                    (wrapped-class-info-pos-field-projs the-info)
+                                    (wrapped-class-info-neg-field-projs the-info))]
           [else
            (maybe-err
             (λ (neg-party)
@@ -274,19 +169,12 @@
                blame #:missing-party neg-party cls
                '(expected: "a class"))))])))))
 
-(define empty-internal-class/c
-  (internal-class/c
-   '() '() ;; inherit
-   '() '() ;; inherit fields
-   '() '() ;; super
-   '() '() ;; inner
-   '() '() ;; override
-   '() '() ;; augment
-   '() '())) ;; augride
-
-(define (build-neg-acceptor-proc this maybe-err blame cls new-mths-ht old-init-pairs)
+(define (build-neg-acceptor-proc this maybe-err blame cls new-mths-ht old-init-pairs 
+                                 old-pos-fld-ht old-neg-fld-ht)
   (define mth->idx (class-method-ht cls))
   (define mtd-vec (class-methods cls))
+  
+  (define internal-proj (internal-class/c-proj (ext-class/c-contract-internal-ctc this)))
   
   (define (get-unwrapped-method name)
     (cond
@@ -298,6 +186,9 @@
   
   (define neg-extra-arg-ht (make-hash))
   (define neg-acceptors-ht (make-hash))
+  
+  (define pos-field-projs (hash-copy old-pos-fld-ht))
+  (define neg-field-projs (hash-copy old-neg-fld-ht))
   
   (define (generic-wrapper mth)
     (define raw-proc (get-unwrapped-method mth))
@@ -322,7 +213,7 @@
        ;; if we just check the method's existence,
        ;; then make an inefficient wrapper for it
        ;; that discards the neg-party argument
-       (generic-wrapper mth)]
+       (hash-set! neg-extra-arg-ht mth (generic-wrapper mth))]
       [else
        (define w/blame (proj (blame-add-method-context blame mth)))
        (define projd-mth (w/blame m-mth))
@@ -341,7 +232,16 @@
                (apply (projd-mth neg-party) args)))]))
        (hash-set! neg-extra-arg-ht mth neg-acceptor)]))
   
+  (define absent-methods (ext-class/c-contract-absent-methods this))
   (for ([(mth _) (in-hash mth->idx)])
+    (when (member mth absent-methods)
+      (maybe-err
+       (λ (neg-party)
+         (raise-blame-error 
+          blame #:missing-party neg-party cls
+          '(expected: "a class that does not have the method ~a")
+          mth))))
+    
     ;; use a generic wrapper to drop the neg-party argument, which means
     ;; methods without explicit contracts are going to be slow
     (unless (hash-ref neg-extra-arg-ht mth #f)
@@ -353,7 +253,7 @@
                  (format " ~a" mth)))
              (raise-blame-error 
               blame #:missing-party neg-party cls
-              '(expected: "~a" given: "a class that has a method ~a")
+              '(expected: "~a" given: "a class that has a method: ~a")
               (cond
                 [(null? mth-names) "a class with no methods"]
                 [(null? (cdr mth-names)) 
@@ -363,6 +263,58 @@
                          (apply string-append mth-names))])
               mth)))
           (hash-set! neg-extra-arg-ht mth (generic-wrapper mth)))))
+  
+  (for ([(fld proj) (in-hash (ext-class/c-contract-table-of-flds-to-projs this))])
+    (define field-ht (class-field-ht cls))
+    (define fi (hash-ref field-ht fld #f))
+    (unless fi
+      (maybe-err
+       (λ (neg-party)
+         (raise-blame-error 
+          blame #:missing-party neg-party cls
+          '(expected: "a class with a public field named ~a")
+          fld))))
+    
+    (unless (just-check-existence? proj)
+      (define (update-ht field-projs field-info-internal-ref/set! swap?)
+        (define prior (hash-ref field-projs fld (λ () (field-info-internal-ref/set! fi))))
+        (define w-blame (proj (blame-add-field-context blame proj #:swap? swap?)))
+        (hash-set! field-projs fld (cons w-blame prior)))
+      (update-ht pos-field-projs field-info-internal-ref #f)
+      (update-ht neg-field-projs field-info-internal-set! #t)))
+  
+  (define absent-fields (ext-class/c-contract-absent-fields this))
+  (unless (null? absent-fields)
+    (for ([(fld proj) (in-hash (class-field-ht cls))])
+      (when (member fld absent-fields)
+        (maybe-err
+         (λ (neg-party)
+           (raise-blame-error 
+            blame #:missing-party neg-party cls
+            '(expected: "a class that does not have the field ~a")
+            fld))))))
+  
+  (when (ext-class/c-contract-opaque? this)
+    (define allowed-flds (ext-class/c-contract-table-of-flds-to-projs this))
+    (for ([(fld proj) (in-hash (class-field-ht cls))])
+      (unless (hash-ref allowed-flds fld #f)
+        (maybe-err
+         (λ (neg-party)
+           (define fld-names
+             (for/list ([(fld proj) (in-hash allowed-flds)])
+               (format " ~a" fld)))
+           (raise-blame-error 
+            blame #:missing-party neg-party cls
+            '(expected: "~a" given: "a class that has the field: ~a")
+            (cond
+              [(null? fld-names) "a class with no fields"]
+              [(null? (cdr fld-names))
+               (format "a class with only one field:~a" (car fld-names))]
+              [else
+               (format "a class with only the fields:~a" 
+                       (apply string-append fld-names))])
+            fld))))))
+      
   (define new-init-projs 
     (for/list ([ctc-pair (in-list (ext-class/c-contract-init-ctc-pairs this))])
       (define ctc (list-ref ctc-pair 1))
@@ -374,14 +326,28 @@
                  (blame-add-init-context blame (car ctc-pair)))))))
   (define merged-init-pairs (merge-init-pairs old-init-pairs new-init-projs))
   (define the-info (wrapped-class-info cls blame neg-extra-arg-ht neg-acceptors-ht 
+                                       pos-field-projs neg-field-projs
                                        merged-init-pairs))
+  
   (λ (neg-party)
     ;; run this for the side-effect of 
     ;; checking that first-order tests on
     ;; methods (arity, etc) all pass
     (for ([(mth neg-party-acceptor) (in-hash neg-acceptors-ht)])
       (neg-party-acceptor neg-party))
-    (wrapped-class the-info neg-party)))
+    
+    ;; XXX: we have to not do this;
+    ;; (instead we should use just the-info)
+    ;; the internal projection should run
+    ;; on the class only when it is
+    ;; time to instantiate it; not here
+    (define the-info/adjusted-cls
+      (struct-copy wrapped-class-info
+                   the-info
+                   [class ((internal-proj (blame-add-missing-party blame neg-party))
+                           cls)]))
+    
+    (wrapped-class the-info/adjusted-cls neg-party)))
 
 (define (merge-init-pairs old-init-pairs new-init-pairs)
   (cond
@@ -410,32 +376,42 @@
                                       mth-names mth-ctcs
                                       fld-names fld-ctcs
                                       init-names init-ctcs 
+                                      absent-methods absent-fields
                                       ctc-name internal-ctc)
-  (define ctc-hash
-    (make-hash (for/list ([raw-ctc (in-list mth-ctcs)]
-                          [name (in-list mth-names)])
+  (define (build-a-ctc-table names ctcs)
+    (make-hash (for/list ([raw-ctc (in-list ctcs)]
+                          [name (in-list names)])
                  (define ctc (if (just-check-existence? raw-ctc)
                                  raw-ctc
                                  (coerce-contract 'class/c raw-ctc)))
                  (cons name ctc))))
+  (define (build-a-proj-table hash names)
+    (make-hash
+     (for/list ([name (in-list names)])
+       (define ctc (hash-ref hash name))
+       (cond
+         [(just-check-existence? ctc)
+          (cons name ctc)]
+         [else
+          (define proj (get/build-val-first-projection ctc))
+          (cons name proj)]))))
+  (define mth-ctc-hash (build-a-ctc-table mth-names mth-ctcs))
+  (define fld-ctc-hash (build-a-ctc-table fld-names fld-ctcs))
+  (define mth-proj-hash (build-a-proj-table mth-ctc-hash mth-names))
+  (define fld-proj-hash (build-a-proj-table fld-ctc-hash fld-names))
   (ext-class/c-contract 
    opaque?
-   ctc-hash
-   (make-hash (for/list ([name (in-list mth-names)])
-                (define ctc (hash-ref ctc-hash name))
-                (cond
-                  [(just-check-existence? ctc)
-                   (cons name ctc)]
-                  [else
-                   (define proj (get/build-val-first-projection ctc))
-                   (cons name proj)])))
+   mth-ctc-hash mth-proj-hash
+   fld-ctc-hash fld-proj-hash
    (for/list ([name (in-list init-names)]
               [ctc (in-list init-ctcs)])
      (list name
            (if (just-check-existence? ctc)
                ctc
                (coerce-contract 'class/c ctc))))
-   ctc-name))
+   absent-methods absent-fields
+   ctc-name
+   internal-ctc))
 
 (define (class/c-first-order-passes? ctc cls)
   (cond
@@ -444,15 +420,26 @@
      (define mtd-vec (class-methods cls))
      (for/and ([(name ctc) (in-hash (ext-class/c-contract-table-of-meths-to-ctcs ctc))])
        (define mth-idx (hash-ref mth->idx name #f))
-       (and mth-idx
-            (contract-first-order-passes? ctc (vector-ref mtd-vec mth-idx))))]
+       (cond
+         [mth-idx
+          (define mth-record (vector-ref mtd-vec mth-idx))
+          (contract-first-order-passes? 
+           ctc 
+           (if (pair? mth-record)
+               (car mth-record)
+               mth-record))]
+         [else #f]))]
     [else #f]))
 
 (struct ext-class/c-contract (opaque?
                               table-of-meths-to-ctcs 
                               table-of-meths-to-projs
+                              table-of-flds-to-ctcs
+                              table-of-flds-to-projs
                               init-ctc-pairs
-                              name)
+                              absent-methods absent-fields
+                              name
+                              internal-ctc)
   #:property prop:contract
   (build-contract-property
    #:projection 
