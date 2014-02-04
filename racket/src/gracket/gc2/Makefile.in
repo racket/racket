@@ -100,7 +100,7 @@ GRACKETMZOBJS_la =
 	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp
 
 MZFW = ../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket
-MRAPPSKEL = ../GRacket@MMM@.app/Contents/MacOS
+MRAPPSKEL = ../GRacket@MMM@.app/Contents/Info.plist
 
 ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@: $(MRAPPSKEL) $(MZFW) grmain.@LTO@
 	$(GRACKETLINKER) $(LDFLAGS) -o ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@ grmain.@LTO@ -Wl,-headerpad_max_install_names -F../../racket/gc2 -framework Racket -framework CoreFoundation
@@ -109,7 +109,7 @@ MRAPPSKEL = ../GRacket@MMM@.app/Contents/MacOS
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
-$(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt
+$(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h
 	env BUILDBASE=../.. BUILDING_3M=yes @RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
 
 ../gracket@MMM@@OSX@ :
