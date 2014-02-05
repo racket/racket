@@ -194,7 +194,7 @@
   (make-keyword-procedure
    (lambda (kws kw-args name expected pos . args)
      (if (number? pos)
-         (raise-type-error name expected pos args)
+         (apply raise-type-error name expected pos args)
          (raise-type-error name expected (car pos))))))
      
 

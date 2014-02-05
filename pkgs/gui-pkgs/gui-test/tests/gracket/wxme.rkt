@@ -1422,6 +1422,13 @@
   (send t1 insert "Hello\tWorld")
   (send t1 get-extent (box 0) (box 0)))
 
+;; ----------------------------------------
+;; Error reporting
+
+(when (regexp-match? #rx"raise-type-error"
+                     (with-handlers ([exn:fail? exn-message])
+                       (send (new text%) get-text 1 'end #t)))
+  (error "bad error message"))
 
 ;; ----------------------------------------
 
