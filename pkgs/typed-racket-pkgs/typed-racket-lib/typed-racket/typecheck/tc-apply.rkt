@@ -79,7 +79,7 @@
            (-Tuple* domain
                     (cond
                       ;; the actual work, when we have a * function
-                      [rest (make-Listof rest)]
+                      [rest]
                       ;; ... function
                       [drest (make-ListDots (car drest) (cdr drest))]
                       ;; the function has no rest argument,
@@ -99,7 +99,7 @@
            [(and rest
                  (infer fixed-vars (list dotted-var)
                         (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple* domain (make-Listof rest)))
+                        (list (-Tuple* domain rest))
                         range))
             => finish]
            ;; ... function, ... arg
@@ -130,7 +130,7 @@
                       fixed-vars (list dotted-var)
                       (cons tail-arg-ty (append arg-tys tail-arg-tys))
                       (cons (car drest) domain)
-                      (car drest)
+                      (-lst (car drest))
                       range)]
                    [(List: tail-arg-tys)
                     (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) domain

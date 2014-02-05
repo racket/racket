@@ -34,7 +34,7 @@
         arg-tys
         (abstract-results body arg-names)
         #:kws (map make-Keyword kw kw-ty req?)
-        #:rest (and rest (second rest))
+        #:full-rest (and rest (second rest))
         #:drest (and drest (second drest))))]))
 
 (define-syntax-class cl-rhs
@@ -120,17 +120,17 @@
       [else
        (define base-rest-type
          (cond
-          [(type-annotation rest) (get-type rest #:default Univ)]
+          [(type-annotation rest) (get-type rest #:default (-lst Univ))]
           [rest-ty rest-ty]
-          [else Univ]))
+          [else (-lst Univ)]))
        (define extra-types
          (if (<= arg-len tys-len)
-             (drop arg-tys arg-len)
+             (map -lst (drop arg-tys arg-len))
              null))
        (define rest-type (apply Un base-rest-type extra-types))
 
        (with-lexical-env/extend
-        (list rest) (list (-lst rest-type))
+        (list rest) (list rest-type)
         (check-body rest-type))])))
 
 ;; typecheck a single lambda, with argument list and body
@@ -219,10 +219,10 @@
                  (tc-body body)))))]
          ;; Lambda with regular rest argument
          [rest-id
-          (let ([rest-type (get-type rest-id #:default Univ)])
+          (let ([rest-type (get-type rest-id #:default (-lst Univ))])
             (with-lexical-env/extend
              (cons rest-id arg-list)
-             (cons (make-Listof rest-type) arg-types)
+             (cons rest-type arg-types)
              (lam-result
                combined-args
                null
@@ -240,8 +240,8 @@
              #f
              (tc-body body)))]))]))
 
-;; positional: natural? - the number of positional arguments
-;; rest: boolean? - if there is a positional argument
+;; positional: (listof identifier?) - identifiers that represent formals
+;; rest: boolean? - if there is a rest argument
 ;; syntax: syntax? - the improper syntax list of identifiers
 (struct formals (positional rest syntax) #:transparent)
 
@@ -357,7 +357,7 @@
           [(Function: (list)) #f]
           [_ #t]))
       ;; TODO improve error message.
-      (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
+      (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) (-lst Univ)) #f (ret (Un))))
                      "Expected a function of type ~a, but got a function with the wrong arity"
                      expected-type)
       (apply append

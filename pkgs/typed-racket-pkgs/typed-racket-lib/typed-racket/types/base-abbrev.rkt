@@ -159,18 +159,21 @@
 ;; Function types
 (define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
+                                 #:full-rest [full-rest #f]
                                  #:filters [filters -top-filter] #:object [obj -empty-obj])
   (c:->* ((c:listof Type/c) (c:or/c SomeValues/c Type/c))
          (#:rest (c:or/c #f Type/c)
           #:drest (c:or/c #f (c:cons/c Type/c symbol?))
           #:kws (c:listof Keyword?)
+          #:full-rest (c:or/c #f Type/c)
           #:filters FilterSet?
           #:object Object?)
          arr?)
   (make-arr dom (if (Type/c? rng)
                     (make-Values (list (-result rng filters obj)))
                     rng)
-            rest drest (sort #:key Keyword-kw kws keyword<?)))
+            (if full-rest full-rest (and rest (make-Listof rest)))
+            drest (sort #:key Keyword-kw kws keyword<?)))
 
 (define-syntax (->* stx)
   (define-syntax-class c

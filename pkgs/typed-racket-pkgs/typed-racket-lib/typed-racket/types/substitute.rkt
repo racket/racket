@@ -4,7 +4,7 @@
          racket/match racket/set
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -lst* -result)
+         (only-in (types base-abbrev) -lst -lst* -result)
          (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -122,7 +122,7 @@
                                        (let ([expanded (sb (car drest))])
                                          (map (lambda (img) (substitute img name expanded)) images)))
                                       (sb rng)
-                                      rimage
+                                      (and rimage (-lst rimage))
                                       #f
                                       (map sb kws))
                             (make-arr (map sb dom)

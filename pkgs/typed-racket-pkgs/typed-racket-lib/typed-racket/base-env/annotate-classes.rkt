@@ -4,6 +4,7 @@
          syntax/parse/experimental/template
          "../private/parse-classes.rkt"
          "../private/syntax-properties.rkt"
+         (for-template "base-types.rkt")
          (for-label "colon.rkt"))
 (provide (all-defined-out))
 
@@ -82,7 +83,7 @@
   #:literal-sets (colon)
   (pattern (~seq name:id : ty s:star)
            #:with formal-ty #'(ty s)
-           #:with ann-name (type-label-property #'name #'ty)))
+           #:with ann-name (type-label-property #'name #'(Listof ty))))
 
 (define-splicing-syntax-class annotated-dots-rest
   #:attributes (name ann-name bound ty formal-ty)
@@ -227,7 +228,7 @@
   #:opaque
   (pattern rest:id #:attr form #'rest)
   (pattern (rest:id : type:expr :star)
-           #:attr form (type-label-property #'rest #'type))
+           #:attr form (type-label-property #'rest #'(Listof type)))
   (pattern (rest:id : type:expr bnd:ddd/bound)
            #:attr bound (attribute bnd.bound)
            #:attr form (type-dotted-property

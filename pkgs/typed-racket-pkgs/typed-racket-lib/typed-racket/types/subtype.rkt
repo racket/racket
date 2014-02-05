@@ -156,8 +156,7 @@
       [(and (null? dom) (null? argtys)) A]
       [(null? argtys) #f]
       [(and (null? dom) rst)
-       (cond [(subtype* A (car argtys) rst) => (lambda (A) (loop-varargs dom (cdr argtys) A))]
-             [else #f])]
+       (subtype* A (apply -lst* argtys) rst)]
       [(null? dom) #f]
       [(subtype* A (car argtys) (car dom)) => (lambda (A) (loop-varargs (cdr dom) (cdr argtys) A))]
       [else #f])))

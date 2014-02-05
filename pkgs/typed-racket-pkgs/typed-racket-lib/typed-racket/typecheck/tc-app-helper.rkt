@@ -2,7 +2,9 @@
 
 (require "../utils/utils.rkt"
          racket/match unstable/list unstable/sequence racket/set racket/list
-         (only-in srfi/1 unzip4) (only-in racket/list make-list)
+         syntax/stx
+         (only-in srfi/1 unzip4)
+         (only-in racket/list make-list drop)
          (contract-req)
          (typecheck check-below tc-subst)
          (utils tc-utils)
@@ -36,10 +38,16 @@
                                "expected at least" (length dom)
                                "given" (length t-a)
                                #:delayed? #t)])
-       (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))]
+       (define remaining-arg-ts
+         (and rest
+              (> (length t-a) (length dom))
+              (drop t-a (length dom))))
+       (for ([dom-t (in-list dom)]
              [a (in-syntax args-stx)]
              [arg-t (in-list t-a)])
-         (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
+         (parameterize ([current-orig-stx a]) (check-below arg-t dom-t)))
+       (when remaining-arg-ts
+         (check-below (apply -lst* remaining-arg-ts) rest)))
      (let* ([dom-count (length dom)])
        ;; Currently do nothing with rest args and keyword args as there are no support for them in
        ;; objects yet.

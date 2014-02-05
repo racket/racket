@@ -95,7 +95,7 @@
     [(list (and a (arr: dom rng rest #f ktys)))
      (tc-keywords/internal a kws kw-args #t)
      (tc/funapp (car (syntax-e form)) kw-args
-                (ret (make-Function (list (make-arr* dom rng #:rest rest))))
+                (ret (make-Function (list (make-arr* dom rng #:full-rest rest))))
                 (stx-map tc-expr pos-args) expected)]
     [(list (and a (arr: doms rngs rests (and drests #f) ktyss)) ...)
      (let ([new-arities
@@ -103,7 +103,7 @@
                        ;; find all the arities where the keywords match
                        #:when (tc-keywords/internal a kws kw-args #f))
               (match a
-                [(arr: dom rng rest #f ktys) (make-arr* dom rng #:rest rest)]))])
+                [(arr: dom rng rest #f ktys) (make-arr* dom rng #:full-rest rest)]))])
        (if (null? new-arities)
            (domain-mismatches
             (car (syntax-e form)) (cdr (syntax-e form))

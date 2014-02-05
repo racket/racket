@@ -19,10 +19,10 @@
       (make-arr* (append plain-t (take opt-t i))
                  rng
                  #:kws kw-t
-                 #:rest rest
+                 #:full-rest rest
                  #:drest drest)))
   ;; the kw function protocol passes rest args as an explicit list
-  (define rest-type (if rest (-lst rest) empty))
+  (define rest-type (or rest empty))
   (define ts 
     (flatten
      (list
@@ -67,7 +67,7 @@
         (remove-duplicates
           (list (make-arr* ts/true rng #:drest drest)
                 (make-arr* ts/false rng #:drest drest)))
-        (list (make-arr* ts rng #:rest rest #:drest drest)))))
+        (list (make-arr* ts rng #:full-rest rest #:drest drest)))))
 
 
 ;; This is used to fix the filters of keyword types.
@@ -188,12 +188,12 @@
                          [kw-type (in-list kw-args)])
                 (make-Keyword kw kw-type #t)))
             (define rest-type
-              (and rest? (last other-args)))
+              (and rest? (->rest (last other-args))))
             (make-Function
              (list (make-arr* (take other-args non-kw-argc)
                               (erase-filter/Values rng)
                               #:kws actual-kws
-                              #:rest rest-type)))]
+                              #:full-rest rest-type)))]
            [(and (even? (length arrs)) ; had optional args
                  (>= (length arrs) 2))
             ;; assumption: only one arr is needed, since the types for
@@ -208,14 +208,14 @@
             (define-values (mand-args opt-and-rest-args)
               (split-at other-args mand-non-kw-argc))
             (define rest-type
-              (and rest? (last opt-and-rest-args)))
+              (and rest? (->rest (last opt-and-rest-args))))
             (define opt-types (take opt-and-rest-args opt-non-kw-argc))
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
                (make-arr* (append mand-args (take opt-types to-take))
                           (erase-filter/Values rng)
                           #:kws actual-kws
-                          #:rest rest-type)))]
+                          #:full-rest rest-type)))]
            [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
 
@@ -240,6 +240,14 @@
            (loop (cddr kw-args) (cdr keywords)
                  (cons (make-Keyword (car keywords) (car kw-args) #f)
                        kw-types))])))
+
+;; ->rest : Type -> Type
+;; If the rest type is Univ, which means it had no annotation, then
+;; convert it to a uniform rest type. Otherwise pass through.
+(define (->rest type)
+  (if (equal? type Univ)
+      (-lst Univ)
+      type))
 
 (define ((opt-convert-arr required-pos optional-pos) arr)
   (match arr
@@ -310,13 +318,13 @@
             (define-values (mand-args opt-and-rest-args)
               (split-at doms mand-argc))
             (define rest-type
-              (and rest? (last opt-and-rest-args)))
+              (and rest? (->rest (last opt-and-rest-args))))
             (define opt-types (take opt-and-rest-args opt-argc))
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
                (make-arr* (append mand-args (take opt-types to-take))
                           rng
-                          #:rest rest-type)))]
+                          #:full-rest rest-type)))]
            [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
 

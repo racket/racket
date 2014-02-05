@@ -24,6 +24,7 @@
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
           make-ClassTop
+          make-Function
           make-Name
           make-ValuesDots
           make-MPairTop
@@ -764,8 +765,7 @@
 [hash-eqv? (-> -HashTop B)]
 [hash-equal? (-> -HashTop B)]
 [hash-weak? (-> -HashTop B)]
-;; not a very useful type, but better than nothing
-[hash (-poly (a b) (-> (-HT a b)))]
+[hash (-poly (a b) (make-Function (list (make-arr* '() (-HT a b) #:full-rest (-mu x (Un (-val '()) (-pair a (-pair b x))))))))]
 [hasheqv (-poly (a b) (-> (-HT a b)))]
 [hasheq (-poly (a b) (-> (-HT a b)))]
 [make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
