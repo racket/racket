@@ -1,83 +1,83 @@
 #;#;
 #<<END
-TR info: dead-inf-comp.rkt 177:4 (< rat +inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 180:4 (< +inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 183:4 (< rat -inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 186:4 (< -inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 190:4 (> +inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 193:4 (> rat +inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 196:4 (> -inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 199:4 (> rat -inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 203:4 (<= rat +inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 206:4 (<= +inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 209:4 (<= rat -inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 212:4 (<= -inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 216:4 (>= +inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 219:4 (>= rat +inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 222:4 (>= -inf.f rat) -- possible exact real arith
-TR info: dead-inf-comp.rkt 225:4 (>= rat -inf.f) -- possible exact real arith
-TR info: dead-inf-comp.rkt 230:41 displayln -- hidden parameter
-TR info: dead-inf-comp.rkt 230:41 displayln -- hidden parameter
-TR missed opt: dead-inf-comp.rkt 124:4 (< rat +inf.0) -- generic comparison -- caused by: 124:7 rat
-TR missed opt: dead-inf-comp.rkt 127:4 (< +inf.0 rat) -- generic comparison -- caused by: 127:14 rat
-TR missed opt: dead-inf-comp.rkt 130:4 (< rat -inf.0) -- generic comparison -- caused by: 130:7 rat
-TR missed opt: dead-inf-comp.rkt 133:4 (< -inf.0 rat) -- generic comparison -- caused by: 133:14 rat
-TR missed opt: dead-inf-comp.rkt 137:4 (> +inf.0 rat) -- generic comparison -- caused by: 137:14 rat
-TR missed opt: dead-inf-comp.rkt 140:4 (> rat +inf.0) -- generic comparison -- caused by: 140:7 rat
-TR missed opt: dead-inf-comp.rkt 143:4 (> -inf.0 rat) -- generic comparison -- caused by: 143:14 rat
-TR missed opt: dead-inf-comp.rkt 146:4 (> rat -inf.0) -- generic comparison -- caused by: 146:7 rat
-TR missed opt: dead-inf-comp.rkt 150:4 (<= rat +inf.0) -- generic comparison -- caused by: 150:8 rat
-TR missed opt: dead-inf-comp.rkt 153:4 (<= +inf.0 rat) -- generic comparison -- caused by: 153:15 rat
-TR missed opt: dead-inf-comp.rkt 156:4 (<= rat -inf.0) -- generic comparison -- caused by: 156:8 rat
-TR missed opt: dead-inf-comp.rkt 159:4 (<= -inf.0 rat) -- generic comparison -- caused by: 159:15 rat
-TR missed opt: dead-inf-comp.rkt 163:4 (>= +inf.0 rat) -- generic comparison -- caused by: 163:15 rat
-TR missed opt: dead-inf-comp.rkt 166:4 (>= rat +inf.0) -- generic comparison -- caused by: 166:8 rat
-TR missed opt: dead-inf-comp.rkt 169:4 (>= -inf.0 rat) -- generic comparison -- caused by: 169:15 rat
-TR missed opt: dead-inf-comp.rkt 172:4 (>= rat -inf.0) -- generic comparison -- caused by: 172:8 rat
-TR missed opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- generic comparison -- caused by: 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i))
-TR missed opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- generic comparison -- caused by: 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i))
-TR opt: dead-inf-comp.rkt 126:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 128:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 131:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 135:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 139:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 141:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 144:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 148:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 152:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 154:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 157:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 161:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 165:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 167:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 170:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 174:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 179:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 181:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 184:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 188:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 192:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 194:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 197:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 201:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 205:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 207:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 210:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 214:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 218:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 220:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 223:4 (quote dead) -- dead then branch
-TR opt: dead-inf-comp.rkt 227:4 (quote dead) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
-TR opt: dead-inf-comp.rkt 230:36 3 -- in-range
+TR info: dead-inf-comp.rkt 102:4 (>= -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 105:4 (>= rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 110:41 displayln -- hidden parameter
+TR info: dead-inf-comp.rkt 110:41 displayln -- hidden parameter
+TR info: dead-inf-comp.rkt 57:4 (< rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 60:4 (< +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 63:4 (< rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 66:4 (< -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 70:4 (> +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 73:4 (> rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 76:4 (> -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 79:4 (> rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 83:4 (<= rat +inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 86:4 (<= +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 89:4 (<= rat -inf.f) -- possible exact real arith
+TR info: dead-inf-comp.rkt 92:4 (<= -inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 96:4 (>= +inf.f rat) -- possible exact real arith
+TR info: dead-inf-comp.rkt 99:4 (>= rat +inf.f) -- possible exact real arith
+TR missed opt: dead-inf-comp.rkt 10:4 (< rat -inf.0) -- generic comparison -- caused by: 10:7 rat
+TR missed opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- generic comparison -- caused by: 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i))
+TR missed opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- generic comparison -- caused by: 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i))
+TR missed opt: dead-inf-comp.rkt 13:4 (< -inf.0 rat) -- generic comparison -- caused by: 13:14 rat
+TR missed opt: dead-inf-comp.rkt 17:4 (> +inf.0 rat) -- generic comparison -- caused by: 17:14 rat
+TR missed opt: dead-inf-comp.rkt 20:4 (> rat +inf.0) -- generic comparison -- caused by: 20:7 rat
+TR missed opt: dead-inf-comp.rkt 23:4 (> -inf.0 rat) -- generic comparison -- caused by: 23:14 rat
+TR missed opt: dead-inf-comp.rkt 26:4 (> rat -inf.0) -- generic comparison -- caused by: 26:7 rat
+TR missed opt: dead-inf-comp.rkt 30:4 (<= rat +inf.0) -- generic comparison -- caused by: 30:8 rat
+TR missed opt: dead-inf-comp.rkt 33:4 (<= +inf.0 rat) -- generic comparison -- caused by: 33:15 rat
+TR missed opt: dead-inf-comp.rkt 36:4 (<= rat -inf.0) -- generic comparison -- caused by: 36:8 rat
+TR missed opt: dead-inf-comp.rkt 39:4 (<= -inf.0 rat) -- generic comparison -- caused by: 39:15 rat
+TR missed opt: dead-inf-comp.rkt 43:4 (>= +inf.0 rat) -- generic comparison -- caused by: 43:15 rat
+TR missed opt: dead-inf-comp.rkt 46:4 (>= rat +inf.0) -- generic comparison -- caused by: 46:8 rat
+TR missed opt: dead-inf-comp.rkt 49:4 (>= -inf.0 rat) -- generic comparison -- caused by: 49:15 rat
+TR missed opt: dead-inf-comp.rkt 4:4 (< rat +inf.0) -- generic comparison -- caused by: 4:7 rat
+TR missed opt: dead-inf-comp.rkt 52:4 (>= rat -inf.0) -- generic comparison -- caused by: 52:8 rat
+TR missed opt: dead-inf-comp.rkt 7:4 (< +inf.0 rat) -- generic comparison -- caused by: 7:14 rat
+TR opt: dead-inf-comp.rkt 100:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 103:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 107:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 110:36 3 -- in-range
+TR opt: dead-inf-comp.rkt 11:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 15:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 19:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 21:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 24:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 28:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 32:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 34:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 37:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 41:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 45:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 47:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 50:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 54:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 59:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 61:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 64:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 68:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 6:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 72:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 74:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 77:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 81:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 85:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 87:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 8:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 90:4 (quote dead) -- dead then branch
+TR opt: dead-inf-comp.rkt 94:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 98:4 (quote dead) -- dead else branch
 END
 #<<END
 'live
@@ -118,6 +118,7 @@ END
 
 END
 #lang typed/racket/base
+#reader tests/typed-racket/optimizer/reset-port
 
 (define: rat : Exact-Rational 2/3)
 

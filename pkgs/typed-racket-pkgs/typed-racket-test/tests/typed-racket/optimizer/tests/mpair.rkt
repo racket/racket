@@ -1,21 +1,21 @@
 #;#;
 #<<END
-TR opt: mpair.rkt 22:0 (mcar x) -- pair
-TR opt: mpair.rkt 23:0 (mcdr x) -- pair
-TR opt: mpair.rkt 24:0 (set-mcar! x (+ 1 2)) -- pair
-TR opt: mpair.rkt 24:13 (+ 1 2) -- fixnum bounded expr
-TR opt: mpair.rkt 25:0 (set-mcdr! x (+ 1.0 2.0)) -- pair
-TR opt: mpair.rkt 25:13 (+ 1.0 2.0) -- binary float
-TR opt: mpair.rkt 31:6 (mcar x) -- pair
+TR opt: mpair.rkt 13:6 (mcar x) -- pair
+TR opt: mpair.rkt 4:0 (mcar x) -- pair
+TR opt: mpair.rkt 5:0 (mcdr x) -- pair
+TR opt: mpair.rkt 6:0 (set-mcar! x (+ 1 2)) -- pair
+TR opt: mpair.rkt 6:13 (+ 1 2) -- fixnum bounded expr
+TR opt: mpair.rkt 7:0 (set-mcdr! x (+ 1.0 2.0)) -- pair
+TR opt: mpair.rkt 7:13 (+ 1.0 2.0) -- binary float
 END
 #<<END
 1
 1.0
 
 END
-
 #lang typed/scheme
 #:optimize
+#reader tests/typed-racket/optimizer/reset-port
 
 (: x (MPairof Integer Float))
 (define x (mcons 1 1.0))

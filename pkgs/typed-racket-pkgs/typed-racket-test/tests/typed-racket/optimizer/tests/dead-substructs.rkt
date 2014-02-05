@@ -1,16 +1,16 @@
 #;#;
 #<<END
-TR info: dead-substructs.rkt 28:4 make-child1 -- struct constructor
-TR info: dead-substructs.rkt 29:4 make-child2 -- struct constructor
+TR info: dead-substructs.rkt 15:4 make-child1 -- struct constructor
+TR info: dead-substructs.rkt 16:4 make-child2 -- struct constructor
 END
 #<<END
 1
 2
 
 END
-
 #lang typed/scheme
 #:optimize
+#reader tests/typed-racket/optimizer/reset-port
 
 ;; originally from nucleic3
 ;; cond on substructs, branches were considered dead

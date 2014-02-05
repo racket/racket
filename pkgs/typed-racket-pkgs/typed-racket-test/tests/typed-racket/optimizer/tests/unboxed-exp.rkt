@@ -1,19 +1,19 @@
 #;#;
 #<<END
-TR opt: unboxed-exp.rkt 32:39 (real-part p) -- complex accessor elimination
-TR opt: unboxed-exp.rkt 32:50 p -- unbox float-complex
-TR opt: unboxed-exp.rkt 33:39 (imag-part p) -- complex accessor elimination
-TR opt: unboxed-exp.rkt 33:50 p -- unbox float-complex
-TR opt: unboxed-exp.rkt 35:25 (exp 2.0+3.4i) -- unboxed unary float complex
-TR opt: unboxed-exp.rkt 35:30 2.0+3.4i -- unboxed literal
-TR opt: unboxed-exp.rkt 36:25 (exp 0.0+0.0i) -- unboxed unary float complex
-TR opt: unboxed-exp.rkt 36:30 0.0+0.0i -- unboxed literal
-TR opt: unboxed-exp.rkt 37:25 (exp -12.2-4.7i) -- unboxed unary float complex
-TR opt: unboxed-exp.rkt 37:30 -12.2-4.7i -- unboxed literal
-TR opt: unboxed-exp.rkt 38:25 (exp 12.2-4.7i) -- unboxed unary float complex
-TR opt: unboxed-exp.rkt 38:30 12.2-4.7i -- unboxed literal
-TR opt: unboxed-exp.rkt 39:25 (exp -12.2+4.7i) -- unboxed unary float complex
-TR opt: unboxed-exp.rkt 39:30 -12.2+4.7i -- unboxed literal
+TR opt: unboxed-exp.rkt 10:25 (exp 12.2-4.7i) -- unboxed unary float complex
+TR opt: unboxed-exp.rkt 10:30 12.2-4.7i -- unboxed literal
+TR opt: unboxed-exp.rkt 11:25 (exp -12.2+4.7i) -- unboxed unary float complex
+TR opt: unboxed-exp.rkt 11:30 -12.2+4.7i -- unboxed literal
+TR opt: unboxed-exp.rkt 4:39 (real-part p) -- complex accessor elimination
+TR opt: unboxed-exp.rkt 4:50 p -- unbox float-complex
+TR opt: unboxed-exp.rkt 5:39 (imag-part p) -- complex accessor elimination
+TR opt: unboxed-exp.rkt 5:50 p -- unbox float-complex
+TR opt: unboxed-exp.rkt 7:25 (exp 2.0+3.4i) -- unboxed unary float complex
+TR opt: unboxed-exp.rkt 7:30 2.0+3.4i -- unboxed literal
+TR opt: unboxed-exp.rkt 8:25 (exp 0.0+0.0i) -- unboxed unary float complex
+TR opt: unboxed-exp.rkt 8:30 0.0+0.0i -- unboxed literal
+TR opt: unboxed-exp.rkt 9:25 (exp -12.2-4.7i) -- unboxed unary float complex
+TR opt: unboxed-exp.rkt 9:30 -12.2-4.7i -- unboxed literal
 END
 #<<END
 "-7.14373-1.88821"
@@ -23,9 +23,9 @@ END
 "-0.00000-0.00001"
 
 END
-
 #lang typed/racket
 #:optimize
+#reader tests/typed-racket/optimizer/reset-port
 
 (: complex->decimal-string (Float-Complex -> String))
 (define (complex->decimal-string p)

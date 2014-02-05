@@ -1,12 +1,13 @@
 #;#;
 #<<END
-TR opt: annotations.rkt 11:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 14:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 17:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 19:15 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 10:15 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 2:10 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 5:10 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 8:10 (+ 1.0 2.0) -- binary float
 END
 ""
 #lang typed/racket #:optimize
+#reader tests/typed-racket/optimizer/reset-port
 
 (define a (+ 1.0 2.0))
 
