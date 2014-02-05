@@ -31,6 +31,12 @@
                      (blame-swap b) ; swap back
                      b))))
   (define regular-profile (analyze-samples samples*))
+  ;; all blames must be complete, otherwise we get bogus profiles
+  (for ([b (in-list all-blames)])
+    (unless (and (blame-positive b)
+                 (blame-negative b))
+      (error (string-append "contract-profile: incomplete blame:\n"
+                            (format-blame b)))))
   (contract-profile
    total-time live-contract-samples all-blames regular-profile))
 

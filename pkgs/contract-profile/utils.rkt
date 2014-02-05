@@ -35,8 +35,8 @@
         (lambda () body ...))))
 
 ;; for debugging
-(define (print-blame b)
-  (printf (string-append "#<blame positive=~a\n"
+(define (format-blame b)
+  (format (string-append "#<blame positive=~a\n"
                          "        negative=~a\n"
                          "        contract=~a\n"
                          "        value=~a\n"
