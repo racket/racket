@@ -1,10 +1,11 @@
 #;#;
 #<<END
-TR opt: case-lambda-dead-branch.rkt 13:5 (x y) -- dead case-lambda branch
-TR opt: case-lambda-dead-branch.rkt 19:5 (x y) -- dead case-lambda branch
+TR opt: case-lambda-dead-branch.rkt 12:5 (x y) -- dead case-lambda branch
+TR opt: case-lambda-dead-branch.rkt 6:5 (x y) -- dead case-lambda branch
 END
 ""
 #lang typed/racket
+#reader tests/typed-racket/optimizer/reset-port
 
 (: f (case-> (Symbol Symbol -> String)))
 (define f
