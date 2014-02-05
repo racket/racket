@@ -6366,16 +6366,14 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
            identity. */
         WRAP_POS l;
         Scheme_Object *la, *this_set_identity, *set_identity;
-        int kind, sealed;
+        int kind;
 
         if (SCHEME_RENAMESP(a)) {
           this_set_identity = ((Module_Renames *)a)->set_identity;
           kind = ((Module_Renames *)a)->kind;
-          sealed = ((Module_Renames *)a)->sealed;
         } else {
           this_set_identity = ((Module_Renames_Set *)a)->set_identity;
           kind = ((Module_Renames_Set *)a)->kind;
-          sealed = ((Module_Renames_Set *)a)->sealed;
         }
         
         if (kind != mzMOD_RENAME_TOPLEVEL) {
@@ -6415,14 +6413,12 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
               scheme_hash_set(rns, scheme_eof, (Scheme_Object *)identity_map);
             }
 
-            key = scheme_make_pair(scheme_make_integer(kind), 
-                                   scheme_make_pair(scheme_make_integer(sealed),
-                                                    this_set_identity));
-
+            key = scheme_make_pair(scheme_make_integer(kind), this_set_identity);
+            
             la = scheme_hash_get(identity_map, key);
             if (!la) {
               la = scheme_make_module_rename(scheme_make_integer(0), kind, NULL, NULL, this_set_identity);
-              ((Module_Renames *)la)->sealed = sealed;
+              ((Module_Renames *)la)->sealed = STX_SEAL_ALL;
               scheme_hash_set(identity_map, key, la);
             }
 

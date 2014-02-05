@@ -1049,6 +1049,23 @@
     (test expected dynamic-require/o '(submod 'm sub) 'x)
     (test expected dynamic-require/o '(submod 'm sub) 'x))
   (test expected-out get-output-string o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check handling of module contexts that are kept
+;; only for the context's identity (where sealing
+;; could be mishandled)
+
+(let ()
+  (define m '(module m racket
+               (provide (all-defined-out) def)
+               (define-syntax def (make-rename-transformer #'define))))
+  (define c #f)
+  (sync (thread ; thread isolates `errortrace` parameter side effects
+         (lambda ()
+           (parameterize ([current-namespace (make-base-namespace)])
+             (namespace-require 'errortrace)
+             (set! c (compile m))))))
+  (write c (open-output-bytes)))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
