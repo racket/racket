@@ -1,12 +1,21 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/core scribble/html-properties scribble/latex-properties
-          "utils.rkt"
-          (for-label racket/base
-                     ;; FIXME: need to get this in
-                     ;; scribble/text
-                     ))
+          (except-in "utils.rkt" splice begin include)
+          (for-label (except-in racket/base begin)
+                     scribble/text
+                     (only-in scribble/text
+                              [begin/text begin]
+                              [include/text include])))
 @initialize-tests
+
+@(define (tech/r s) @tech[s #:doc '(lib "scribblings/reference/reference.scrbl")])
+
+@(define-syntax-rule (def-rkt t-id)
+   (begin
+    (require (for-label racket/include))
+    (define t-id @racket[include])))
+@(def-rkt rkt-include)
 
 @title[#:tag "text"
        #:style (make-style #f (list (make-tex-addition "shaded.tex")
@@ -14,9 +23,12 @@
       ]{Text Generation}
 @section-index["Preprocessor"]
 
-@defmodulelang[scribble/text]{The @racketmodname[scribble/text] language
-provides everything from @racket[racket/base] with a few changes that
-make it suitable as a text generation or a preprocessor language:
+@defmodulelang[scribble/text]{The @racketmodname[scribble/text]
+language provides everything from @racket[racket/base],
+@racket[racket/promise], @racket[racket/list], and
+@racket[racket/string], but with additions and a changed treatment of
+the module top level to make it suitable as for text generation or a
+preprocessor language:
 
 @itemize[
 
@@ -32,6 +44,12 @@ make it suitable as a text generation or a preprocessor language:
         textual output.}]
 
 }
+
+When @racketmodname[scribble/text] is used via @racket[require]
+instead of @hash-lang[], then it does not change the printing of
+values, it does not include the bindings of @racket[racket/base],
+@racket[include] is provided as @racket[include/text], and
+@racket[begin] is provided as @racket[begin/text].
 
 @; TODO:
 @; * make all example sections be subsections,
@@ -1197,3 +1215,130 @@ Racket-with-@"@"-expressions file as shown above.)
     ... and to that I say "Foo!", I think.
   Repeating yourself much?
   }-|
+
+@;--------------------------------------------------------------------
+@section{Text Generation Functions}
+
+@defproc[(output [v any/c] [port output-port? (current-output-port)]) void?]{
+
+Outputs values to @racket[port] as follows for each kind of @racket[v]:
+
+ @itemlist[
+
+   @item{@tech/r{strings}, @tech/r{byte strings}, @tech/r{symbols},
+         @tech/r{paths}, @tech/r{keywords}, @tech/r{numbers}, and
+         @tech/r{characters}: converts the value to a string along the
+         same lines as @racket[display], and then passes the string to
+         the @deftech{current writer}, which is initially
+         @racket[display]}
+
+   @item{@|void-const|, @racket[#f], or @racket[null]: no output}
+
+   @item{@tech/r{list}: output depends on the current mode, which is
+         initially @tech{splice mode}:
+
+         @itemlist[
+
+            @item{@deftech{block mode}: each item in order, using the
+                   starting column as the @deftech{current
+                   indentation} (which starts out empty)}
+
+            @item{@deftech{splice mode}: outputs each item in order}
+
+          ]}
+
+   @item{@racket[(block _v2 ...)]: outputs each @racket[_v2] in @tech{block mode}.}
+
+   @item{@racket[(splice _v2 ...)]: outputs each @racket[_v2] in @tech{splice mode}.}
+
+   @item{@racket[(set-prefix _pfx _v2 ...)]: sets the @deftech{current
+         prefix}, which is initially empty, to @racket[_pfx] while
+         outputting each @racket[_v2].}
+
+   @item{@racket[(add-prefix _pfx _v2 ...)]: sets the @tech{current
+         prefix} to by adding @racket[_pfx] while outputting each
+         @racket[_v2].}
+
+   @item{@racket[(disable-prefix _v2 ...)]: sets the @tech{current
+         prefix} to empty while outputting each @racket[_v2].}
+
+   @item{@racket[(restore-prefix _v2 ...)]: rewinds the
+         @tech{current prefix} by one enclosing adjustments while
+         outputting each @racket[_v2].}
+
+   @item{@racket[flush]: outputs the @tech{current indentation} and @tech{current prefix}.}
+
+   @item{@racket[(with-writer _writer _v2 ...)]: sets the @tech{current writer}
+         to @racket[_writer] with outputting each @racket[_v2].}
+
+   @item{@tech/r{promise}: outputs the result of @racket[(force v)]}
+
+   @item{@tech/r{box}: outputs the result of @racket[(unbox v)]}
+
+   @item{procedure of 0 arguments: outputs the result of @racket[(v)]}
+
+]}
+
+@defproc[(block [v any/c] ...) any/c]{
+
+Produces a value that outputs each @racket[v] in @tech{block mode}.}
+
+@defproc[(splice [v any/c] ...) any/c]{
+
+Produces a value that outputs each @racket[v] in @tech{splice mode}.}
+
+@deftogether[(
+@defproc[(disable-prefix [v any/c] ...) any/c]
+@defproc[(restore-prefix [v any/c] ...) any/c]
+@defproc[(add-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v any/c] ...) any/c]
+@defproc[(set-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v any/c] ...) any/c]
+)]{
+
+Produces a value that outputs with an adjusted @tech{current prefix}.
+An integer as a prefix is equivalent to a string with as many space
+characters.}
+
+
+@defthing[flush void?]{
+
+A value that outputs as the @tech{current indentation} plus @tech{current prefix}.}
+
+
+@defproc[(with-writer [writer (string? . -> . any/c)] [v any/c] ...) any/c]{
+
+Produces a value that outputs with an adjusted @tech{current writer}.}
+
+
+@defproc[(add-newlines [items list?] [#:sep sep an/y "\n"]) list?]{
+
+Like @racket[add-between], but first removes @racket[#f] and @|void-const|
+elements of @racket[items].}
+
+
+@defproc[(split-lines [items list?]) (listof list?)]{
+
+Converts @racket[items] to a list of lists, where consecutive
+non-@racket["\n"] values are kept together in a nested list, and
+@racket["\n"] values are dropped.}
+
+
+@defform[(include/text maybe-char path-spec)
+         #:grammar ([maybe-char code:blank
+                                (code:line #:command-char command-char)])]{
+
+Like @rkt-include from @racketmodname[racket/include], but reads the
+file at @racket[path-spec] in the same way as for
+@racketmodname[scribble/text]. If @racket[command-char] is supplied,
+then it replaces @litchar["@"] as the escape character.
+
+The @racketmodname[scribble/text] language via @hash-lang[] provides
+@racket[include/text] as @racket[include].}
+
+@defform[(begin/text form ...)]{
+
+Like @racket[begin], but the results of expression @racket[forms] are
+collected into a list that is returned as the result of the
+@racket[begin/list] form.
+
+The @racketmodname[scribble/text] language via @hash-lang[] provides
+@racket[begin/text] as @racket[begin].}

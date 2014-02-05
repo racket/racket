@@ -115,20 +115,20 @@
   (define (str->elts str)
     (let ([spaces (regexp-match-positions #rx"(?:^| ) +" str)])
       (if spaces
-        (list* (substring str 0 (caar spaces))
-               (hspace (- (cdar spaces) (caar spaces)))
+        (list* (str->elts (substring str 0 (caar spaces)))
+               (smaller (hspace (- (cdar spaces) (caar spaces))))
                (str->elts (substring str (cdar spaces))))
-        (list (make-element 'tt (list str))))))
+        (list (smaller (make-element 'tt str))))))
   (define (make-line str)
-    (if (equal? str "")
-      ;;FIXME: this works in html, but in latex it creates a redundant newline
-      (list (as-flow (make-element 'newline '())))
-      (list (as-flow (make-element 'tt (str->elts str))))))
-  (define (small-attr attr)
-    (make-style attr (list
-                      (make-attributes '([style . "font-size: 82%;"])))))
-  (define (make-box strs)
-    (make-table (small-attr "Shaded") (map make-line strs)))
+    (list (as-flow (if (equal? str "")
+                       (smaller (hspace 1))
+                       (str->elts str)))))
+  (define (make-box strs [file #f])
+    (nested #:style 'code-inset
+            (let ([t (make-table plain (map make-line strs))])
+              (if file
+                  (filebox file t)
+                  t))))
   (define filenames (map car more))
   (define indent (let ([d (- max-textsample-width
                              (for*/fold ([m 0])
@@ -144,19 +144,10 @@
   (values
    (make-table 
      (make-style #f
-                 (list (make-table-columns (list (make-style (if (null? filenames)
-                                                                 "Short"
-                                                                 "Medium")
-                                                             '(right top))
-                                                 (make-style #f '(left top))))))
-     (cons (list (as-flow (make-table (small-attr #f)
-                                      (list (list (as-flow indent)))))
-                 (as-flow (make-box strs1)))
+                 (list (make-table-columns (list (make-style #f '(left top))))))
+     (cons (list (as-flow (make-box strs1)))
            (map (lambda (file strs)
-                  (let* ([file (make-element 'tt (list file ":" 'nbsp))]
-                         [file (list (make-element 'italic (list file)))])
-                    (list (as-flow (make-element (make-style #f (list (make-background-color-property '(232 232 255)))) file))
-                          (as-flow (make-box strs)))))
+                  (list (as-flow (make-box strs file))))
                 filenames strsm)))
    (make-box strs2)))
 
