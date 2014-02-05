@@ -1,21 +1,41 @@
 #;#;
 #<<END
-TR opt: float-complex-float.rkt 31:0 (+ 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
-TR opt: float-complex-float.rkt 31:12 2.0 -- float in complex ops
-TR opt: float-complex-float.rkt 31:16 3.0+6.0i -- unboxed literal
-TR opt: float-complex-float.rkt 31:3 1.0+2.0i -- unboxed literal
-TR opt: float-complex-float.rkt 32:0 (- 1.0 2.0+4.0i 3.0+6.0i) -- unboxed binary float complex
-TR opt: float-complex-float.rkt 32:16 3.0+6.0i -- unboxed literal
-TR opt: float-complex-float.rkt 32:3 1.0 -- float in complex ops
-TR opt: float-complex-float.rkt 32:7 2.0+4.0i -- unboxed literal
-TR opt: float-complex-float.rkt 33:0 (- 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
-TR opt: float-complex-float.rkt 33:12 2.0 -- float in complex ops
-TR opt: float-complex-float.rkt 33:16 3.0+6.0i -- unboxed literal
-TR opt: float-complex-float.rkt 33:3 1.0+2.0i -- unboxed literal
-TR opt: float-complex-float.rkt 34:0 (- 1.0+2.0i 2.0+4.0i 3.0) -- unboxed binary float complex
-TR opt: float-complex-float.rkt 34:12 2.0+4.0i -- unboxed literal
-TR opt: float-complex-float.rkt 34:21 3.0 -- float in complex ops
-TR opt: float-complex-float.rkt 34:3 1.0+2.0i -- unboxed literal
+TR opt: float-complex-float.rkt 51:0 (+ 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 51:0 (+ 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 51:12 2.0 -- float in complex ops
+TR opt: float-complex-float.rkt 51:16 3.0+6.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 51:16 3.0+6.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 51:16 3.0+6.0i -- unboxed literal
+TR opt: float-complex-float.rkt 51:3 1.0+2.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 51:3 1.0+2.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 51:3 1.0+2.0i -- unboxed literal
+TR opt: float-complex-float.rkt 52:0 (- 1.0 2.0+4.0i 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 52:0 (- 1.0 2.0+4.0i 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 52:16 3.0+6.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 52:16 3.0+6.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 52:16 3.0+6.0i -- unboxed literal
+TR opt: float-complex-float.rkt 52:3 1.0 -- float in complex ops
+TR opt: float-complex-float.rkt 52:7 2.0+4.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 52:7 2.0+4.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 52:7 2.0+4.0i -- unboxed literal
+TR opt: float-complex-float.rkt 53:0 (- 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 53:0 (- 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 53:12 2.0 -- float in complex ops
+TR opt: float-complex-float.rkt 53:16 3.0+6.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 53:16 3.0+6.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 53:16 3.0+6.0i -- unboxed literal
+TR opt: float-complex-float.rkt 53:3 1.0+2.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 53:3 1.0+2.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 53:3 1.0+2.0i -- unboxed literal
+TR opt: float-complex-float.rkt 54:0 (- 1.0+2.0i 2.0+4.0i 3.0) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 54:0 (- 1.0+2.0i 2.0+4.0i 3.0) -- unboxed binary float complex
+TR opt: float-complex-float.rkt 54:12 2.0+4.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 54:12 2.0+4.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 54:12 2.0+4.0i -- unboxed literal
+TR opt: float-complex-float.rkt 54:21 3.0 -- float in complex ops
+TR opt: float-complex-float.rkt 54:3 1.0+2.0i -- leave var unboxed
+TR opt: float-complex-float.rkt 54:3 1.0+2.0i -- unboxed let bindings
+TR opt: float-complex-float.rkt 54:3 1.0+2.0i -- unboxed literal
 END
 #<<END
 6.0+8.0i
