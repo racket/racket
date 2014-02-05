@@ -188,7 +188,7 @@
            [body (wrap-module-begin body)]
            [all-loc (vector src line col pos
                             (let-values ([(l c p) (port-next-location port)])
-                              (and p pos (- p pos))))]
+                              (and p pos (max 0 (- p pos)))))]
            [p-name (object-name port)]
            [name (if (path? p-name)
                    (let-values ([(base name dir?) (split-path p-name)])
@@ -199,9 +199,10 @@
                       (if stx?
                         (datum->syntax
                          #f v (vector src line col pos
-                                      (and pos (- (or (syntax-position modpath)
-                                                      (add1 pos))
-                                                  pos))))
+                                      (and pos (max 0
+                                                    (- (or (syntax-position modpath)
+                                                           (add1 pos))
+                                                       pos)))))
                         v))]
            [r `(,(tag-src 'module) ,(tag-src name) ,lang ,body)])
       (if stx? (datum->syntax #f r all-loc) r)))
@@ -249,7 +250,7 @@
                              (datum->syntax #f
                                             guarded-spec
                                             (vector src spec-line spec-col spec-pos
-                                                    (- spec-end-pos spec-pos)))
+                                                    (max 0 (- spec-end-pos spec-pos))))
                              guarded-spec))
                         (loop (cdr specs))))
                   (bad spec #f))))))
