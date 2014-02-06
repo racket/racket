@@ -10,7 +10,7 @@
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 @(define at-reader-ref @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl")]{reader})
 @(define text-ref
-   @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl") "text"])
+   @secref[#:doc '(lib "scribblings/scribble/scribble-pp.scrbl") "text"])
 
 @title[#:tag "templates"]{Templates: Separation of View}
 
