@@ -1,6 +1,7 @@
 #lang info
 
 (define scribblings '(("scribble.scrbl" (multi-page) (racket-core -24))
+                      ("scribble-pp.scrbl" (multi-page) (tool))
 
                       ("demo-s1.scrbl" (keep-style no-search) (omit-start))
                       ("demo-m1.scrbl" (multi-page keep-style no-search) (omit-start))

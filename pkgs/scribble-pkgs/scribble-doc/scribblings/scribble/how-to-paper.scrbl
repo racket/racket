@@ -577,7 +577,8 @@ the @hash-lang[] line that starts the document.  The
 @racket[decode] operation.  The @racketmodname[scribble/text] language,
 however, acts more like a plain-text generator and preprocessor, and it
 does not perform any such decoding rules.  (For more on
-@racketmodname[scribble/text], see @secref["text"].)
+@racketmodname[scribble/text], see @other-doc['(lib
+"scribblings/scribble/scribble-pp.scrbl")].)
 
 @margin-note{More precisely, languages like
              @racketmodname[scribble/base] apply @racket[decode] only after
@@ -677,4 +678,5 @@ Racket, continue with @secref["reader"] and then
 need more power.
 
 If you are interested in text generation and preprocessing, continue
-with @secref["reader"], but then skip to @secref["text"].
+with @secref["reader"], but then switch to
+@other-doc['(lib "scribblings/scribble/scribble-pp.scrbl")].

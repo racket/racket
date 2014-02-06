@@ -10,6 +10,8 @@
 @initialize-tests
 
 @(define (tech/r s) @tech[s #:doc '(lib "scribblings/reference/reference.scrbl")])
+@(define scribble-doc '(lib "scribblings/scribble/scribble.scrbl"))
+@(define @-form @tech[#:doc scribble-doc]{@"@"-forms})
 
 @(define-syntax-rule (def-rkt t-id)
    (begin
@@ -21,7 +23,6 @@
        #:style (make-style #f (list (make-tex-addition "shaded.tex")
                                     (make-css-addition "shaded.css")))
       ]{Text Generation}
-@section-index["Preprocessor"]
 
 @defmodulelang[scribble/text]{The @racketmodname[scribble/text]
 language provides everything from @racket[racket/base],
@@ -33,9 +34,9 @@ preprocessor language:
 @itemize[
 
   @item{The language uses @racket[read-syntax-inside] to read the body
-        of the module, similar to @secref["docreader"].  This means that
+        of the module, similar to @secref[#:doc scribble-doc "docreader"].  This means that
         by default, all text is read in as Racket strings; and
-        @seclink["reader"]|{@-forms}| can be used to use Racket
+        @seclink[#:doc scribble-doc "reader"]|{@-forms}| can be used to use Racket
         functions and expression escapes.}
 
   @item{Values of expressions are printed with a custom @racket[output]
@@ -77,7 +78,7 @@ part shows the source input, and the right part the printed result.)
            feature on top of feature, but
            blah blah blah.}-|
 
-Using @seclink["reader"]|{@-forms}|, we can define and use Racket
+Using @seclink[#:doc scribble-doc "reader"]|{@-forms}|, we can define and use Racket
 functions.
 
 @example|-{#lang scribble/text
@@ -114,7 +115,7 @@ convenient conditional output.
            You have 3 errors in your code,
            I fixed 1 error.}-|
 
-Using the scribble @seclink["reader"]|{@-forms}| syntax, you can write
+Using the scribble @seclink[#:doc scribble-doc "reader"]|{@-forms}| syntax, you can write
 functions more conveniently too.
 
 @example|-{#lang scribble/text
@@ -277,14 +278,14 @@ The separator can be set to any value.
 @section{Defining Functions and More}
 
 (Note: most of the tips in this section are applicable to any code
-that uses the Scribble @tech{@"@"-form} syntax.)
+that uses the Scribble @|@-form| syntax.)
 
 Because the Scribble reader is uniform, you can use it in place of any
 expression where it is more convenient.  (By convention, we use a
 plain S-expression syntax when we want a Racket expression escape, and
-an @tech{@"@"-form} for expressions that render as text, which, in the
+an @|@-form| for expressions that render as text, which, in the
 @racket[scribble/text] language, is any value-producing expression.)
-For example, you can use an @tech{@"@"-form} for a function that you define.
+For example, you can use an @|@-form| for a function that you define.
 
 @example|-{#lang scribble/text
            @(define @bold[text] @list{*@|text|*})
@@ -298,7 +299,7 @@ will need to accept a variable number of arguments.  In fact, this
 leads to a common problem: what if we want to write a function that
 consumes a number of ``text arguments'' rathen than a single
 ``rest-like'' body?  The common solution for this is to provide the
-separate text arguments in the S-expression part of an @tech{@"@"-form}.
+separate text arguments in the S-expression part of an @|@-form|.
 
 @example|-{#lang scribble/text
            @(define (choose 1st 2nd)
@@ -310,7 +311,7 @@ separate text arguments in the S-expression part of an @tech{@"@"-form}.
            Either you're with us, or against us.
            }-|
 
-You can even use @tech{@"@"-forms} with a Racket quote or quasiquote as the
+You can even use @|@-form|s with a Racket quote or quasiquote as the
 ``head'' part to make it shorter, or use a macro to get grouping of
 sub-parts without dealing with quotes.
 
@@ -337,7 +338,7 @@ sub-parts without dealing with quotes.
 
 Yet another solution is to look at the text values and split the input
 arguments based on a specific token.  Using @racket[match] can make it
-convenient --- you can even specify the patterns with @tech{@"@"-forms}.
+convenient --- you can even specify the patterns with @|@-form|s.
 
 @example|-{#lang scribble/text
            @(require racket/match)
@@ -487,7 +488,7 @@ is the indentation of the output.  This can be crucial in some cases, if
 you're generating code for an indentation-sensitive language (e.g.,
 Haskell, Python, or C preprocessor directives).  To get a better
 understanding of how the pieces interact, you may want to review how the
-@seclink["reader"]|{Scribble reader}| section, but also remember that
+@seclink[#:doc scribble-doc "reader"]|{Scribble reader}| section, but also remember that
 you can use quoted forms to see how some form is read.
 
 @example|-{#lang scribble/text
@@ -983,7 +984,7 @@ trivial: the source text is still source code in a module, so you can
              more
            }-|
 
-Note that the @seclink["at-exp-lang"]{@racket[at-exp] language} can
+Note that the @seclink[#:doc scribble-doc "at-exp-lang"]{@racket[at-exp] language} can
 often be useful here, since such files need to deal with texts.  Using
 it, it is easy to include a lot of textual content.
 
@@ -1018,7 +1019,7 @@ it, it is easy to include a lot of textual content.
            }-|
 
 Of course, the extreme side of this will be to put all of your content
-in a plain Racket module, using @tech{@"@"-forms} for convenience.  However,
+in a plain Racket module, using @|@-form|s for convenience.  However,
 there is no need to use the text language in this case; instead, you can
 @racket[(require scribble/text)], which will get all of the bindings
 that are available in the @racket[scribble/text] language.  Using
