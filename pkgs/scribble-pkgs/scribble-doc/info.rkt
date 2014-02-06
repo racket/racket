@@ -19,6 +19,7 @@
                      "sandbox-lib"
                      "slideshow-lib"
                      "scribble-lib"
+                     "scribble-text-lib"
                      "racket-doc"))
 
 (define pkg-desc "documentation part of \"scribble\"")

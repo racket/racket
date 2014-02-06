@@ -101,6 +101,7 @@
                      (string-join `(,@tgtdir ,file*) "/"))])))
   (if (equal? '("") result) "." (string-join result "/")))
 
+#;
 (module+ test
   (require tests/eli-tester)
   (define R relativize)
