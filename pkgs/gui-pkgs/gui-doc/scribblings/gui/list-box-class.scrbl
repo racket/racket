@@ -279,12 +279,13 @@ The control's callback procedure is @italic{not} invoked.
 }
 
 
-@defmethod[(set [choices (listof label-string?)]
+@defmethod[(set [choices0 (listof label-string?)]
+                [choices (listof label-string?)]
                 ...)
            void?]{
 
 Clears the list box and installs a new list of items. The number of
-@racket[choices] lists must match the number of columns, and all
+@racket[choices0] plus @racket[choices] lists must match the number of columns, and all
 @racket[choices] lists must have the same number of items, otherwise
 @|MismatchExn|.}
 
