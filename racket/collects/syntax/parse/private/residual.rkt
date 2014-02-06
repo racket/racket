@@ -139,15 +139,13 @@
 ;; Checks that value is (listof^depth syntax); forces promises.
 ;; Slow path for attribute-mapping code, assumes value is not syntax-list^depth? already.
 (define (check/force-syntax-list^depth depth value0 source-id)
-  (define (bad)
-    (raise-syntax-error #f
-                        (format "attribute is bound to non-syntax value\n  value: ~e" value0)
-                        source-id))
+  (define (bad sub-depth sub-value)
+    (attribute-not-syntax-error depth value0 source-id sub-depth sub-value))
   (define (loop depth value)
     (cond [(promise? value)
            (loop depth (force value))]
           [(zero? depth)
-           (if (syntax? value) value (bad))]
+           (if (syntax? value) value (bad depth value))]
           [else (loop-list depth value)]))
   (define (loop-list depth value)
     (cond [(promise? value)
@@ -163,8 +161,25 @@
           [(null? value)
            null]
           [else
-           (bad)]))
+           (bad depth value)]))
   (loop depth value0))
+
+(define (attribute-not-syntax-error depth0 value0 source-id sub-depth sub-value)
+  (raise-syntax-error #f
+    (format (string-append "bad attribute value for syntax template"
+                           "\n  attribute value: ~e"
+                           "\n  expected for attribute: ~a"
+                           "\n  sub-value: ~e"
+                           "\n  expected for sub-value: ~a")
+            value0
+            (describe-depth depth0)
+            sub-value
+            (describe-depth sub-depth))
+    source-id))
+
+(define (describe-depth depth)
+  (cond [(zero? depth) "syntax"]
+        [else (format "list of depth ~s of syntax" depth)]))
 
 ;; syntax-list^depth? : nat any -> boolean
 ;; Returns true iff value is (listof^depth syntax).
