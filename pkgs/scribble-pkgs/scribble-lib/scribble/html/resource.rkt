@@ -100,55 +100,55 @@
         [else (error 'relativize "target url is not in any known root: ~a"
                      (string-join `(,@tgtdir ,file*) "/"))])))
   (if (equal? '("") result) "." (string-join result "/")))
-#| tests
-(require tests/eli-tester)
-(define R relativize)
-(let ()
-  (test do (test (R "bleh.txt"   '()        '()       ) => "bleh.txt"
-                 (R "bleh.txt"   '("x")     '()       ) => "x/bleh.txt"
-                 (R "bleh.txt"   '("x" "y") '()       ) => "x/y/bleh.txt"
-                 (R "bleh.txt"   '()        '("x")    ) => "../bleh.txt"
-                 (R "bleh.txt"   '("x")     '("x")    ) => "bleh.txt"
-                 (R "bleh.txt"   '("x" "y") '("x")    ) => "y/bleh.txt"
-                 (R "bleh.txt"   '()        '("x" "y")) => "../../bleh.txt"
-                 (R "bleh.txt"   '("x")     '("x" "y")) => "../bleh.txt"
-                 (R "bleh.txt"   '("x" "y") '("x" "y")) => "bleh.txt"
-                 (R "bleh.txt"   '("x" "y") '("y" "x")) => "../../x/y/bleh.txt"
-                 (R "index.html" '()        '()       ) => "."
-                 (R "index.html" '("x")     '()       ) => "x/"
-                 (R "index.html" '("x" "y") '()       ) => "x/y/"
-                 (R "index.html" '()        '("x")    ) => "../"
-                 (R "index.html" '("x")     '("x")    ) => "."
-                 (R "index.html" '("x" "y") '("x")    ) => "y/"
-                 (R "index.html" '()        '("x" "y")) => "../../"
-                 (R "index.html" '("x")     '("x" "y")) => "../"
-                 (R "index.html" '("x" "y") '("x" "y")) => "."
-                 (R "index.html" '("x" "y") '("y" "x")) => "../../x/y/")
-        do (parameterize ([url-roots '(["/x" "/X/"] ["/y" "/Y/"])])
-             (test (R "bleh.txt"   '()        '()       ) =error> "not in any"
-                   (R "bleh.txt"   '("x")     '()       ) => "/X/bleh.txt"
-                   (R "bleh.txt"   '("x" "y") '()       ) => "/X/y/bleh.txt"
-                   (R "bleh.txt"   '()        '("x")    ) =error> "not in any"
+
+(module+ test
+  (require tests/eli-tester)
+  (define R relativize)
+  (let ()
+    (test do (test (R "bleh.txt"   '()        '()       ) => "bleh.txt"
+                   (R "bleh.txt"   '("x")     '()       ) => "x/bleh.txt"
+                   (R "bleh.txt"   '("x" "y") '()       ) => "x/y/bleh.txt"
+                   (R "bleh.txt"   '()        '("x")    ) => "../bleh.txt"
                    (R "bleh.txt"   '("x")     '("x")    ) => "bleh.txt"
                    (R "bleh.txt"   '("x" "y") '("x")    ) => "y/bleh.txt"
-                   (R "bleh.txt"   '()        '("x" "y")) =error> "not in any"
+                   (R "bleh.txt"   '()        '("x" "y")) => "../../bleh.txt"
                    (R "bleh.txt"   '("x")     '("x" "y")) => "../bleh.txt"
                    (R "bleh.txt"   '("x" "y") '("x" "y")) => "bleh.txt"
-                   (R "bleh.txt"   '("x" "y") '("y" "x")) => "/X/y/bleh.txt"
-                   (R "index.html" '()        '()       ) =error> "not in any"
-                   (R "index.html" '("x")     '()       ) => "/X/"
-                   (R "index.html" '("x" "y") '()       ) => "/X/y/"
-                   (R "index.html" '()        '("x")    ) =error> "not in any"
+                   (R "bleh.txt"   '("x" "y") '("y" "x")) => "../../x/y/bleh.txt"
+                   (R "index.html" '()        '()       ) => "."
+                   (R "index.html" '("x")     '()       ) => "x/"
+                   (R "index.html" '("x" "y") '()       ) => "x/y/"
+                   (R "index.html" '()        '("x")    ) => "../"
                    (R "index.html" '("x")     '("x")    ) => "."
                    (R "index.html" '("x" "y") '("x")    ) => "y/"
-                   (R "index.html" '()        '("x" "y")) =error> "not in any"
+                   (R "index.html" '()        '("x" "y")) => "../../"
                    (R "index.html" '("x")     '("x" "y")) => "../"
                    (R "index.html" '("x" "y") '("x" "y")) => "."
-                   (R "index.html" '("x" "y") '("y" "x")) => "/X/y/"))
-        do (parameterize ([url-roots '(["/x" "/X/"] ["/y" "/Y/" abs])])
-             (test (R "foo.txt" '("x" "1") '("x" "2")) => "../1/foo.txt"
-                   (R "foo.txt" '("y" "1") '("y" "2")) => "/1/foo.txt"))))
-|#
+                   (R "index.html" '("x" "y") '("y" "x")) => "../../x/y/")
+          do (parameterize ([url-roots '(["/x" "/X/"] ["/y" "/Y/"])])
+               (test (R "bleh.txt"   '()        '()       ) =error> "not in any"
+                     (R "bleh.txt"   '("x")     '()       ) => "/X/bleh.txt"
+                     (R "bleh.txt"   '("x" "y") '()       ) => "/X/y/bleh.txt"
+                     (R "bleh.txt"   '()        '("x")    ) =error> "not in any"
+                     (R "bleh.txt"   '("x")     '("x")    ) => "bleh.txt"
+                     (R "bleh.txt"   '("x" "y") '("x")    ) => "y/bleh.txt"
+                     (R "bleh.txt"   '()        '("x" "y")) =error> "not in any"
+                     (R "bleh.txt"   '("x")     '("x" "y")) => "../bleh.txt"
+                     (R "bleh.txt"   '("x" "y") '("x" "y")) => "bleh.txt"
+                     (R "bleh.txt"   '("x" "y") '("y" "x")) => "/X/y/bleh.txt"
+                     (R "index.html" '()        '()       ) =error> "not in any"
+                     (R "index.html" '("x")     '()       ) => "/X/"
+                     (R "index.html" '("x" "y") '()       ) => "/X/y/"
+                     (R "index.html" '()        '("x")    ) =error> "not in any"
+                     (R "index.html" '("x")     '("x")    ) => "."
+                     (R "index.html" '("x" "y") '("x")    ) => "y/"
+                     (R "index.html" '()        '("x" "y")) =error> "not in any"
+                     (R "index.html" '("x")     '("x" "y")) => "../"
+                     (R "index.html" '("x" "y") '("x" "y")) => "."
+                     (R "index.html" '("x" "y") '("y" "x")) => "/X/y/"))
+          do (parameterize ([url-roots '(["/x" "/X/"] ["/y" "/Y/" abs])])
+               (test (R "foo.txt" '("x" "1") '("x" "2")) => "../1/foo.txt"
+                     (R "foo.txt" '("y" "1") '("y" "2")) => "/1/foo.txt")))))
 
 ;; utility for keeping a list of renderer thunks
 (define-values [add-renderer get/reset-renderers]

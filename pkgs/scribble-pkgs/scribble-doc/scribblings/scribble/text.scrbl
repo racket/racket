@@ -1277,7 +1277,10 @@ Outputs values to @racket[port] as follows for each kind of @racket[v]:
 
    @item{procedure of 0 arguments: outputs the result of @racket[(v)]}
 
-]}
+]
+
+Any other kind of @racket[v] triggers an exception.}
+
 
 @defproc[(block [v any/c] ...) any/c]{
 

@@ -27,6 +27,7 @@ starting with the @filepath{scribble.scrbl} file.
 @include-section["plt.scrbl"]
 @include-section["lp.scrbl"]
 @include-section["text.scrbl"]
+@include-section["html.scrbl"]
 @include-section["internals.scrbl"]
 @include-section["running.scrbl"]
 
