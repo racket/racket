@@ -18,9 +18,6 @@ TR info: dead-inf-comp.rkt 204:4 (>= -inf.f rat) -- possible exact real arith
 TR info: dead-inf-comp.rkt 207:4 (>= rat -inf.f) -- possible exact real arith
 TR info: dead-inf-comp.rkt 212:41 displayln -- hidden parameter
 TR info: dead-inf-comp.rkt 212:41 displayln -- hidden parameter
-TR opt: dead-inf-comp.rkt 102:0 #%module-begin -- dead else branch
-TR opt: dead-inf-comp.rkt 102:0 #%module-begin -- dead else branch
-TR opt: dead-inf-comp.rkt 102:0 #%module-begin -- dead else branch
 TR opt: dead-inf-comp.rkt 108:4 (quote dead) -- dead else branch
 TR opt: dead-inf-comp.rkt 110:4 (quote dead) -- dead then branch
 TR opt: dead-inf-comp.rkt 113:4 (quote dead) -- dead then branch
@@ -53,6 +50,9 @@ TR opt: dead-inf-comp.rkt 200:4 (quote dead) -- dead else branch
 TR opt: dead-inf-comp.rkt 202:4 (quote dead) -- dead then branch
 TR opt: dead-inf-comp.rkt 205:4 (quote dead) -- dead then branch
 TR opt: dead-inf-comp.rkt 209:4 (quote dead) -- dead else branch
+TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
+TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
 TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
 TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
 TR opt: dead-inf-comp.rkt 212:0 (for: ((i (in-range 5 +inf.0 2)) (j 3)) (displayln i)) -- dead else branch
