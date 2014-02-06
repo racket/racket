@@ -5,7 +5,6 @@ TR info: mandelbrot.rkt 10:18 (* 2.0 y) -- possible exact real arith
 TR info: mandelbrot.rkt 11:15 (/ (* 2.0 x) n) -- possible exact real arith
 TR info: mandelbrot.rkt 11:18 (* 2.0 x) -- possible exact real arith
 TR info: mandelbrot.rkt 21:28 (* 2 zr zi) -- possible exact real arith
-TR info: mandelbrot.rkt 21:28 (* 2 zr zi) -- possible exact real arith
 TR missed opt: mandelbrot.rkt 10:12 (- (/ (* 2.0 y) n) 1.0) -- all args float-arg-expr, result not Float -- caused by: 10:15 (/ (* 2.0 y) n)
 TR missed opt: mandelbrot.rkt 10:12 (- (/ (* 2.0 y) n) 1.0) -- exact ops inside float expr -- caused by: 10:15 (/ (* 2.0 y) n)
 TR missed opt: mandelbrot.rkt 10:15 (/ (* 2.0 y) n) -- all args float-arg-expr, result not Float -- caused by: 10:18 (* 2.0 y), 10:28 n
@@ -15,20 +14,12 @@ TR missed opt: mandelbrot.rkt 11:12 (- (/ (* 2.0 x) n) 1.5) -- exact ops inside 
 TR missed opt: mandelbrot.rkt 11:15 (/ (* 2.0 x) n) -- all args float-arg-expr, result not Float -- caused by: 11:18 (* 2.0 x), 11:28 n
 TR missed opt: mandelbrot.rkt 11:18 (* 2.0 x) -- all args float-arg-expr, result not Float -- caused by: 11:25 x
 TR missed opt: mandelbrot.rkt 18:14 (> (+ zrq ziq) 4) -- generic comparison -- caused by: 18:29 4
-TR missed opt: mandelbrot.rkt 18:14 (> (+ zrq ziq) 4) -- generic comparison -- caused by: 18:29 4
-TR missed opt: mandelbrot.rkt 21:25 (- (* 2 zr zi) ci) -- all args float-arg-expr, result not Float -- caused by: 21:28 (* 2 zr zi)
 TR missed opt: mandelbrot.rkt 21:25 (- (* 2 zr zi) ci) -- all args float-arg-expr, result not Float -- caused by: 21:28 (* 2 zr zi)
 TR missed opt: mandelbrot.rkt 21:28 (* 2 zr zi) -- all args float-arg-expr, result not Float -- caused by: 21:31 2
-TR missed opt: mandelbrot.rkt 21:28 (* 2 zr zi) -- all args float-arg-expr, result not Float -- caused by: 21:31 2
-TR opt: mandelbrot.rkt 15:21 (* zr zr) -- binary float
 TR opt: mandelbrot.rkt 15:21 (* zr zr) -- binary float
 TR opt: mandelbrot.rkt 16:21 (* zi zi) -- binary float
-TR opt: mandelbrot.rkt 16:21 (* zi zi) -- binary float
-TR opt: mandelbrot.rkt 18:17 (+ zrq ziq) -- binary float
 TR opt: mandelbrot.rkt 18:17 (+ zrq ziq) -- binary float
 TR opt: mandelbrot.rkt 20:25 (+ (- zrq ziq) cr) -- binary float
-TR opt: mandelbrot.rkt 20:25 (+ (- zrq ziq) cr) -- binary float
-TR opt: mandelbrot.rkt 20:28 (- zrq ziq) -- binary float
 TR opt: mandelbrot.rkt 20:28 (- zrq ziq) -- binary float
 END
 ""

@@ -1,7 +1,6 @@
 #;#;
 #<<END
 TR info: in-vector.rkt 2:7 display -- hidden parameter
-TR info: in-vector.rkt 2:7 display -- hidden parameter
 TR opt: in-vector.rkt 1:20 (vector 1 2 3) -- in-vector
 END
 "123"

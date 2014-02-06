@@ -7,7 +7,6 @@ TR info: marketplace-struct.rkt 96:3 vm -- struct constructor
 TR missed opt: marketplace-struct.rkt 118:34 (in-hash-keys (vm-processes state)) -- non-specialized for clause
 TR missed opt: marketplace-struct.rkt 127:32 (in-hash-keys (vm-processes state)) -- non-specialized for clause
 TR missed opt: marketplace-struct.rkt 132:46 (in-hash-keys (process-endpoints p)) -- non-specialized for clause
-TR missed opt: marketplace-struct.rkt 132:46 (in-hash-keys (process-endpoints p)) -- non-specialized for clause
 TR opt: marketplace-struct.rkt 103:2 (struct-copy vm state (processes (hash-set (vm-processes state) (Process-pid wp) wp))) -- dead else branch
 TR opt: marketplace-struct.rkt 103:2 (struct-copy vm state (processes (hash-set (vm-processes state) (Process-pid wp) wp))) -- struct ref
 TR opt: marketplace-struct.rkt 103:45 (vm-processes state) -- struct ref
@@ -18,10 +17,6 @@ TR opt: marketplace-struct.rkt 112:60 (vm-processes state) -- struct ref
 TR opt: marketplace-struct.rkt 118:48 (vm-processes state) -- struct ref
 TR opt: marketplace-struct.rkt 127:46 (vm-processes state) -- struct ref
 TR opt: marketplace-struct.rkt 132:60 (process-endpoints p) -- struct ref
-TR opt: marketplace-struct.rkt 132:60 (process-endpoints p) -- struct ref
-TR opt: marketplace-struct.rkt 133:35 (process-endpoints p) -- struct ref
-TR opt: marketplace-struct.rkt 133:35 (process-endpoints p) -- struct ref
-TR opt: marketplace-struct.rkt 133:35 (process-endpoints p) -- struct ref
 TR opt: marketplace-struct.rkt 133:35 (process-endpoints p) -- struct ref
 END
 ""
