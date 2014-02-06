@@ -1,7 +1,6 @@
 #;#;
 #<<END
 TR info: in-bytes.rkt 2:7 display -- hidden parameter
-TR info: in-bytes.rkt 2:7 display -- hidden parameter
 TR opt: in-bytes.rkt 1:20 #"123" -- in-bytes
 END
 "495051"

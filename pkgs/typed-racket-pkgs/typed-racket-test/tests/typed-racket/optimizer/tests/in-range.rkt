@@ -1,7 +1,6 @@
 #;#;
 #<<END
 TR info: in-range.rkt 2:3 display -- hidden parameter
-TR info: in-range.rkt 2:3 display -- hidden parameter
 TR opt: in-range.rkt 1:9 4 -- in-range
 END
 "0123"
