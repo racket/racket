@@ -1233,7 +1233,8 @@
                         pre-guard
                         post-guard
                         [loop-arg ...]) ...) (reverse (syntax->list #'binds))])
-         #`(let-values (outer-binding ... ...)
+         (quasisyntax/loc #'orig-stx
+           (let-values (outer-binding ... ...)
              outer-check ...
              #,(syntax/loc #'orig-stx
                  (let for-loop ([fold-var fold-init] ...
@@ -1249,7 +1250,7 @@
                                    (for-loop fold-var ... loop-arg ... ...)
                                    (values* fold-var ...)))
                              (values* fold-var ...)))
-                       (values* fold-var ...))))))]
+                       (values* fold-var ...)))))))]
       ;; Bad body cases:
       [(_ [orig-stx . _] fold-bind ())
        (raise-syntax-error
