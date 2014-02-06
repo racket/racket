@@ -1,30 +1,17 @@
 #;#;
 #<<END
-TR info: case-arrow.rkt 42:12 (* (- max min) x) -- possible exact real arith
-TR info: case-arrow.rkt 42:15 (- max min) -- possible exact real arith
-TR info: case-arrow.rkt 42:2 (+ min (/ (* (- max min) x) p)) -- possible exact real arith
-TR info: case-arrow.rkt 42:9 (/ (* (- max min) x) p) -- possible exact real arith
-TR missed opt: case-arrow.rkt 42:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 42:15 (- max min), 42:27 x
-TR missed opt: case-arrow.rkt 42:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 42:18 max, 42:22 min
-TR missed opt: case-arrow.rkt 42:2 (+ min (/ (* (- max min) x) p)) -- all args float-arg-expr, result not Float -- caused by: 42:5 min, 42:9 (/ (* (- max min) x) p)
-TR missed opt: case-arrow.rkt 42:9 (/ (* (- max min) x) p) -- all args float-arg-expr, result not Float -- caused by: 42:12 (* (- max min) x), 42:30 p
+TR info: case-arrow.rkt 15:12 (* (- max min) x) -- possible exact real arith
+TR info: case-arrow.rkt 15:15 (- max min) -- possible exact real arith
+TR info: case-arrow.rkt 15:2 (+ min (/ (* (- max min) x) p)) -- possible exact real arith
+TR info: case-arrow.rkt 15:9 (/ (* (- max min) x) p) -- possible exact real arith
+TR missed opt: case-arrow.rkt 15:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 15:15 (- max min), 15:27 x
+TR missed opt: case-arrow.rkt 15:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 15:18 max, 15:22 min
+TR missed opt: case-arrow.rkt 15:2 (+ min (/ (* (- max min) x) p)) -- all args float-arg-expr, result not Float -- caused by: 15:5 min, 15:9 (/ (* (- max min) x) p)
+TR missed opt: case-arrow.rkt 15:9 (/ (* (- max min) x) p) -- all args float-arg-expr, result not Float -- caused by: 15:12 (* (- max min) x), 15:30 p
 END
 ""
 #lang typed/racket
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#reader tests/typed-racket/optimizer/reset-port
 
 ;; Typechecking functions with case-> types causes the body to be typechecked
 ;; multiple times, which is fine, except that it used to cause the type table

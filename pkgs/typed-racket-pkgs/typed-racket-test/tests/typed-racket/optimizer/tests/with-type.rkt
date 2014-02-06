@@ -1,13 +1,13 @@
 #;#;
 #<<END
-TR opt: with-type.rkt 16:18 (#%app + x val) -- binary float
+TR opt: with-type.rkt 6:18 (#%app + x val) -- binary float
 END
 #<<END
 34.6
 
 END
-
 #lang racket
+#reader tests/typed-racket/optimizer/reset-port
 
 (require typed/racket)
 

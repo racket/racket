@@ -1,17 +1,17 @@
 #;#;
 #<<END
-TR info: all-real.rkt 29:0 (+ (ann 3 Real) (ann 4 Real)) -- possible exact real arith
-TR info: all-real.rkt 30:0 (* (ann 3 Real) (ann 4 Real)) -- possible exact real arith
-TR missed opt: all-real.rkt 29:0 (+ (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 29:8 3, 29:21 4
-TR missed opt: all-real.rkt 30:0 (* (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 30:8 3, 30:21 4
+TR info: all-real.rkt 15:0 (+ (ann 3 Real) (ann 4 Real)) -- possible exact real arith
+TR info: all-real.rkt 16:0 (* (ann 3 Real) (ann 4 Real)) -- possible exact real arith
+TR missed opt: all-real.rkt 15:0 (+ (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 15:8 3, 15:21 4
+TR missed opt: all-real.rkt 16:0 (* (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 16:8 3, 16:21 4
 END
 #<<END
 7
 12
 
 END
-
 #lang typed/racket
+#reader tests/typed-racket/optimizer/reset-port
 
 ;; all-real expressions
 ;; They currently get reported as missed float optimizations.

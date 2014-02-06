@@ -97,16 +97,17 @@
                     [(vs rhs:opt-expr)
                      #'((vs rhs.opt))]))))
          (define-syntax-class unboxed-clauses
-           #:attributes ([bindings 1])
+           #:attributes (bindings)
            (pattern (clauses:unboxed-clause ...)
-             #:with (bindings ...) (template ((?@ . clauses.bindings) ...))))]
+             #:attr bindings (delay (template ((?@ . clauses.bindings) ...)))))]
 
-   #:with opt
+   #:attr opt
      (syntax-parse #'(clause ...)
       [clauses:unboxed-clauses
-       (quasisyntax/loc/origin
-          this-syntax #'letk.kw
-          (letk.key ... (clauses.bindings ...) body.opt ...))])))
+        (delay
+          (quasisyntax/loc/origin
+            this-syntax #'letk.kw
+            (letk.key ... clauses.bindings body.opt ...)))])))
 
 
 

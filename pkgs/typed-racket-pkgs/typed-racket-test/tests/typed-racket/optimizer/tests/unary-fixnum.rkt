@@ -1,7 +1,7 @@
 #;#;
 #<<END
-TR opt: unary-fixnum.rkt 16:0 (bitwise-not 4) -- unary fixnum
-TR opt: unary-fixnum.rkt 17:0 (- (ann 2 Nonnegative-Fixnum)) -- unary fixnum
+TR opt: unary-fixnum.rkt 2:0 (bitwise-not 4) -- unary fixnum
+TR opt: unary-fixnum.rkt 3:0 (- (ann 2 Nonnegative-Fixnum)) -- unary fixnum
 END
 #<<END
 -5
@@ -9,9 +9,9 @@ END
 2
 
 END
-
 #lang typed/scheme
 #:optimize
+#reader tests/typed-racket/optimizer/reset-port
 
 (bitwise-not 4)
 (- (ann 2 Nonnegative-Fixnum))
