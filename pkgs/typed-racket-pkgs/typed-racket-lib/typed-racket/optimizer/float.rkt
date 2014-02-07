@@ -202,6 +202,28 @@
                         fs:float-expr ...)
     #:do [(log-fl-opt "multi float comp")]
     #:with opt (n-ary-comp->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...)))
+  (pattern (#%plain-app op:binary-float-comp args:opt-expr ...)
+    ;; some args, but not all (otherwise above would have matched) are floats
+    ;; mixed-type comparisons are slow and block futures
+    #:when (let ([some-float? (for/first ([e (in-syntax #'(args ...))]
+                                          #:when (subtypeof? e -Flonum))
+                                e)])
+             (when some-float?
+               (define non-floats ; irritants
+                 (for/list ([e (in-syntax #'(args ...))]
+                            #:unless (subtypeof? e -Flonum))
+                   e))
+               (log-missed-optimization
+                "generic comparison"
+                (string-append
+                 "This expression compares values of different exactnesses, "
+                 "which prevents optimization. "
+                 "To fix, explicitly convert the highlighted expressions to "
+                 "be of type Float.")
+                this-syntax
+                non-floats))
+             #f) ; keep trying other patterns
+    #:with opt #f) ; will never be reached
 
   (pattern (#%plain-app op:-^ f:float-expr)
     #:do [(log-fl-opt "unary float")]
