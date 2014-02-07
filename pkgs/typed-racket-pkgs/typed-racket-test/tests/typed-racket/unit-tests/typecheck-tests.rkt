@@ -149,9 +149,11 @@
   racket/fixnum
   racket/flonum
   racket/function
+  racket/future
   racket/list
   racket/math
   racket/path
+  racket/place
   racket/port
   racket/sequence
   racket/set
@@ -1927,6 +1929,37 @@
        [tc-e
          (call-with-values (lambda () (eval #'(+ 1 2))) (inst list Any))
          (-lst Univ)]
+
+       ;; futures & places primitives
+       [tc-e (future (λ () "foo")) (-future -String)]
+       [tc-e (would-be-future (λ () "foo")) (-future -String)]
+       [tc-e (touch (future (λ () "foo"))) -String]
+       [tc-e (current-future) (-opt (-future Univ))]
+       [tc-e (add1 (processor-count)) -PosInt]
+       [tc-e (assert (current-future) future?) (-future Univ)]
+       [tc-e (futures-enabled?) -Boolean]
+       [tc-e (place-enabled?) -Boolean]
+       [tc-e (dynamic-place "a.rkt" 'a #:at #f) -Place]
+       [tc-e (let-values
+               ([(p _1 _2 _3)
+                 (dynamic-place* "a.rkt" 'a #:in (open-input-string "hi"))])
+               p)
+             -Place]
+       [tc-e (let ([p (dynamic-place "a.rkt" 'a)])
+               (place-break p)
+               (place-break p 'terminate)
+               (place-kill p)
+               (list (place-wait p)
+                     (place-dead-evt p)))
+             (-lst* -Int (-mu x (make-Evt x)))]
+       [tc-e (let ()
+               (define-values (c1 c2) (place-channel))
+               (place-channel-get c2)
+               (place-channel-get c2)
+               (place-channel-put/get c2 "b")
+               (place-channel-put c1 "a"))
+             -Void]
+       [tc-e (place-message-allowed? 'msg) -Boolean]
 
        ;; for/hash, for*/hash - PR 14306
        [tc-e (for/hash: : (HashTable Symbol String)

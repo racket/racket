@@ -1219,9 +1219,14 @@
 ;; Section 11.4 (Futures)
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
+[futures-enabled? (-> -Boolean)]
+[current-future (-> (-opt (-future Univ)))]
+[future? (make-pred-ty (-future Univ))]
+[would-be-future (-poly (A) ((-> A) . -> . (-future A)))]
 [processor-count (-> -PosInt)]
 
 ;; Section 11.5 (Places)
+[place-enabled? (-> -Boolean)]
 [place? (make-pred-ty -Place)]
 [place-channel? (make-pred-ty -Place-Channel)]
 ;; FIXME: the `#:at` keyword is for remote places, not supported yet
@@ -1229,14 +1234,23 @@
                       #:at (-val #f) #f
                       #:named (Un (-val #f) -Symbol) #f
                       -Place)]
+[dynamic-place* (->key -Module-Path Sym
+                       #:in (-opt -Input-Port) #f
+                       #:out (-opt -Output-Port) #f
+                       #:err (-opt -Output-Port) #f
+                      (-values (list -Place
+                                     (-opt -Output-Port)
+                                     (-opt -Input-Port)
+                                     (-opt -Input-Port))))]
 [place-wait (-> -Place -Int)]
-[place-dead-evt (-> -Place (make-Evt -Byte))]
-[place-break (-> -Place -Void)]
+[place-dead-evt (-> -Place (-mu x (make-Evt x)))]
+[place-break (->opt -Place [(-opt (one-of/c 'hang-up 'terminate))] -Void)]
 [place-kill (-> -Place -Void)]
 [place-channel (-> (-values (list -Place-Channel -Place-Channel)))]
 [place-channel-put (-> -Place-Channel Univ -Void)]
 [place-channel-get (-> -Place-Channel Univ)]
 [place-channel-put/get (-> -Place-Channel Univ Univ)]
+[place-message-allowed? (-> Univ -Boolean)]
 
 ;; Section 12 (Macros)
 
