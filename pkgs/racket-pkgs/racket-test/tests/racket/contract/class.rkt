@@ -2146,6 +2146,155 @@
               'pos
               'neg))
   
+  (test/spec-passed
+   'generic1
+   '(let* ([c% (class object%
+                 (super-new)
+                 (define/public (m x) x))])
+      (send-generic (new (contract (class/c
+                                    (m (->m integer? integer?)))
+                                   c%
+                                   'pos 'neg))
+                    (generic c% m)
+                    5)))
+  
+  (test/neg-blame
+   'generic2
+   '(let* ([c% (class object%
+                 (super-new)
+                 (define/public (m x) x))])
+      (send-generic (new (contract (class/c
+                                    (m (->m integer? integer?)))
+                                   c%
+                                   'pos 'neg))
+                    (generic c% m)
+                    #f)))
+  
+  (test/spec-passed
+   'generic3
+   '(let* ([i<%> (interface () m)]
+           [c% (class* object% (i<%>)
+                (super-new)
+                (define/public (m x) x))])
+      (send-generic (new (contract (class/c
+                                    (m (->m integer? integer?)))
+                                   c%
+                                   'pos 'neg))
+                    (generic i<%> m)
+                    5)))
+  
+  (test/neg-blame
+   'generic4
+   '(let* ([i<%> (interface () m)]
+           [c% (class* object% (i<%>)
+                (super-new)
+                (define/public (m x) x))])
+      (send-generic (new (contract (class/c
+                                    (m (->m integer? integer?)))
+                                   c%
+                                   'pos 'neg))
+                    (generic i<%> m)
+                    #f)))
+  
+  (test/spec-passed
+   'generic5
+   '(let* ([c% (class object%
+                 (super-new)
+                 (define/public (m x) x))]
+           [c%+c (contract (class/c (m (->m integer? integer?)))
+                           c%
+                           'pos 'neg)]
+           [o (new c%)]
+           [g (generic c%+c m)])
+      (send-generic o g #f)))
+
+  (test/neg-blame
+   'generic6
+   '(let* ([c% (class object%
+                 (super-new)
+                 (define/public (m x) x))]
+           [c%+c (contract (class/c (m (->m integer? integer?)))
+                           c%
+                           'pos 'neg)]
+           [o (new c%+c)]
+           [g (generic c% m)])
+      (send-generic o g #f)))
+  
+  (test/spec-passed
+   'generic7
+   '(let* ([i<%> (interface () m)]
+           [c% (class* object% (i<%>)
+                (super-new)
+                (define/public (m x) x))])
+      (send-generic (new (contract (class/c m)
+                                   c%
+                                   'pos 'neg))
+                    (generic c% m)
+                    5)))
+  
+  (test/spec-passed
+   'generic8
+   '(let* ([i<%> (interface () n)]
+           [c% (class* object% (i<%>)
+                (super-new)
+                 (define/public (m x) x)
+                 (define/public (n x) x))])
+      (send-generic (new (contract (class/c m)
+                                   c%
+                                   'pos 'neg))
+                    (generic c% n)
+                    5)))
+  
+  (test/spec-passed
+   'dynamic-send1
+   '(dynamic-send (new (contract (class/c [m (->m integer? integer?)])
+                                 (class object% (define/public (m x) x) (super-new))
+                                 'pos
+                                 'neg))
+                  'm 1))
+  (test/spec-passed
+   'dynamic-send2
+   '(dynamic-send (new (contract (class/c m)
+                                 (class object% (define/public (m x) x) (super-new))
+                                 'pos
+                                 'neg))
+                  'm 1))
+  (test/spec-passed
+   'dynamic-send3
+   '(dynamic-send (new (contract (class/c m)
+                                 (class object% 
+                                   (define/public (m x) x) 
+                                   (define/public (n x) x)
+                                   (super-new))
+                                 'pos
+                                 'neg))
+                  'n 1))
+  (test/neg-blame
+   'dynamic-send4
+   '(dynamic-send (new (contract (class/c [m (->m integer? integer?)])
+                                 (class object% (define/public (m x) x) (super-new))
+                                 'pos
+                                 'neg))
+                  'm #f))
+  
+  (test/spec-passed
+   'with-method1
+   '(let ([o (new (contract (class/c [m (->m integer? integer?)])
+                            (class object% (define/public (m x) x) (super-new))
+                            'pos
+                            'neg))])
+      (with-method ([m (o m)])
+        (m 1))))
+  
+  (test/neg-blame
+   'with-method1
+   '(let ([o (new (contract (class/c [m (->m integer? integer?)])
+                            (class object% (define/public (m x) x) (super-new))
+                            'pos
+                            'neg))])
+      (with-method ([m (o m)])
+        (m #f))))
+  
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
                        (regexp-match? #rx"expected: boolean[?]" (exn-message exn))

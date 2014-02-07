@@ -1885,16 +1885,23 @@
                (super-new)
                (define/public (m x) x)))
   
+  (define i<%> (interface () m))
+  (define c/i% (class* object% (i<%>)
+                 (super-new)
+                 (define/public (m x) x)))
+  
   (define c%/c
     (class/c
      (m (->m integer? integer?))))
   
   (provide
    (contract-out
-    [c% c%/c])
+    [c% c%/c]
+    [c/i% (class/c [m (-> any/c integer? integer?)])])
    is-c%?
    c%-is?
-   is-a-c%?)
+   is-a-c%?
+   i<%>)
   
   (define (is-c%? c)
     (c . subclass? . c%))
@@ -1913,6 +1920,7 @@
 (test #t is-a-c%? (new c%))
 
 (test 5 'send-generic (send-generic (new c%) (generic c% m) 5))
+(test 6 'send-generic-interface (send-generic (new c/i%) (generic i<%> m) 6))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

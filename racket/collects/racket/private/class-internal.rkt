@@ -4,6 +4,7 @@
          racket/stxparam
          racket/unsafe/ops
          "serialize-structs.rkt"
+         "class-wrapped.rkt"
          racket/runtime-path
          (only-in "../contract/region.rkt" current-contract-region)
          "../contract/base.rkt"
@@ -3240,7 +3241,7 @@ An example
                                   (wrapped-class-info-init-proj-pairs the-info)))
      (wrapped-object
       unwrapped-o
-      (wrapped-class-info-neg-extra-arg-ht the-info)
+      (wrapped-class-info-neg-extra-arg-vec the-info)
       (wrapped-class-info-pos-field-projs the-info)
       (wrapped-class-info-neg-field-projs the-info)
       (wrapped-class-neg-party class))]
@@ -3464,44 +3465,15 @@ An example
           (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
                         [(receiver) (unsyntax obj)]
                         [(method) (find-method/who '(unsyntax form) receiver sym)])
-            
-            #;(unsyntax
-             (make-method-call
-              stx
-              (syntax/loc stx receiver)
-              (syntax/loc stx method)
-              (syntax/loc stx sym)
-              args
-              rest-arg?
-              kw-args/var))
-            
-            
             (let (#,@(if kw-args
                          (list #`[kw-arg-tmp #,(cadr kw-args)])
                          (list))
                   #,@let-bindings)
-              (if (wrapped-object? receiver)
-                  ;; this is kind of a hack: passing the neg party in
-                  ;; as the object to 'make-method-call' so that the
-                  ;; arguments end up in the right order.
-                  (unsyntax
-                   (make-method-call
-                    stx
-                    #`(wrapped-object-neg-party receiver)
-                    (syntax/loc stx method)
-                    (syntax/loc stx sym)
-                    #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
-                    rest-arg?
-                    kw-args/var))
-                  (unsyntax
-                   (make-method-call
-                    stx
-                    (syntax/loc stx receiver)
-                    (syntax/loc stx method)
-                    (syntax/loc stx sym)
-                    arg-list
-                    rest-arg?
-                    kw-args/var))))))))
+              (unsyntax
+               (make-method-call-to-possibly-wrapped-object
+                stx kw-args/var arg-list rest-arg?
+                #'sym #'method #'receiver
+                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))))
     
     (define (core-send apply? kws?)
       (lambda (stx)
@@ -3553,7 +3525,20 @@ An example
    (lambda (kws kw-vals obj method-name . args)
      (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
      (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
-     (keyword-apply (find-method/who 'dynamic-send obj method-name) kws kw-vals obj args))))
+     (define mtd (find-method/who 'dynamic-send obj method-name))
+     (cond
+       [(wrapped-object? obj)
+        (if mtd
+            (keyword-apply mtd kws kw-vals 
+                           (wrapped-object-neg-party obj) 
+                           (wrapped-object-object obj)
+                           args)
+            (keyword-apply dynamic-send kws kw-vals
+                           (wrapped-object-object obj)
+                           method-name
+                           args))]
+       [else
+        (keyword-apply mtd kws kw-vals obj args)]))))
 
 ;; imperative chained send
 (define-syntax (send* stx)
@@ -3594,13 +3579,20 @@ An example
   (cond
     [(_object? in-object)
      (define cls (object-ref in-object #f))
-     (define pos (hash-ref (class-method-ht cls) name #f))
-     (if pos
-         (vector-ref (class-methods cls) pos)
+     (define mth-idx (hash-ref (class-method-ht cls) name #f))
+     (if mth-idx
+         (vector-ref (class-methods cls) mth-idx)
          (no-such-method who name cls))]
     [(wrapped-object? in-object)
-     (or (hash-ref (wrapped-object-method-wrappers in-object) name #f)
-         (no-such-method who name (object-ref in-object)))]
+     (define cls
+       (let loop ([obj in-object])
+         (cond
+           [(wrapped-object? obj) (loop (wrapped-object-object obj))]
+           [else 
+            (object-ref obj #f)])))
+     (define mth-idx (hash-ref (class-method-ht cls) name #f))
+     (unless mth-idx (no-such-method who name (object-ref in-object)))
+     (vector-ref (wrapped-object-neg-extra-arg-vec in-object) mth-idx)]
     [else
      (obj-error who "target is not an object"
                 "target" in-object 
@@ -3684,20 +3676,24 @@ An example
                                                    "method name" (as-write name)
                                                    #:class-name (class-name class))))]
                        [instance? (class-object? (class-orig-cls class))]
+                       [fail (λ (obj)
+                               (obj-error 
+                                (string->symbol (format "generic:~a" name))
+                                "target is not an instance of the generic's class"
+                                "target" obj
+                                #:class-name (class-name class)))]
                        [dynamic-generic
                         (lambda (obj)
-                          (unless (instance? obj)
-                            (obj-error 
-                             (string->symbol (format "generic:~a" name))
-                             "target is not an instance of the generic's class"
-                             "target" obj
-                             #:class-name (class-name class)))
-                          (vector-ref (class-methods (object-ref obj)) pos))]) ;; TODO: object-ref audit
+                          (cond
+                            [(wrapped-object? obj)
+                             (vector-ref (wrapped-object-neg-extra-arg-vec obj) pos)]
+                            [(instance? obj)
+                             (vector-ref (class-methods (object-ref obj)) pos)]
+                            [else (fail obj)]))])
                   (if (eq? 'final (vector-ref (class-meth-flags class) pos))
                       (let ([method (vector-ref (class-methods class) pos)])
                         (lambda (obj)
-                          (unless (instance? obj)
-                            (dynamic-generic obj))
+                          (unless (instance? obj) (fail obj))
                           method))
                       dynamic-generic)))))])
     make-generic))
@@ -3713,15 +3709,18 @@ An example
          (quasisyntax/loc stx
            (let* ([obj object]
                   [gen generic])
+             ;(check-generic gen)
              (unsyntax
-              (make-method-call
-               stx
-               (syntax obj)
-               (syntax/loc stx ((generic-applicable gen) obj))
-               (syntax/loc stx (generic-name gen))
-               flat-stx
-               (not proper?)
-               #f))))))]))
+              (make-method-call-to-possibly-wrapped-object
+               stx #f flat-stx (not proper?)
+               #'(generic-name gen) 
+               #'((generic-applicable gen) obj) 
+               #'obj
+               #'((generic-applicable gen) obj)))))))]))
+
+(define (check-generic gen)
+  (unless (generic? gen)
+    (raise-argument-error 'send-generic "generic?" gen)))
 
 (define-syntaxes (class-field-accessor class-field-mutator generic/form)
   (let ([mk
@@ -4210,46 +4209,6 @@ An example
 (define-values (impersonator-prop:original-object has-original-object? original-object)
   (make-impersonator-property 'impersonator-prop:original-object))
 
-;;--------------------------------------------------------------------
-;; runtime wrappers to support contracts with better space properties
-;;--------------------------------------------------------------------
-
-(struct wrapped-class-info (class blame 
-                             neg-extra-arg-ht neg-acceptors-ht 
-                             pos-field-projs neg-field-projs
-                             init-proj-pairs)
-  #:transparent)
-(struct wrapped-class (the-info neg-party)
-  #:property prop:custom-write
-  (λ (stct port mode)
-    (do-custom-write (wrapped-class-info-class (wrapped-class-the-info stct)) port mode))
-  #:transparent)
-(define (unwrap-class cls)
-  (let loop ([class cls])
-    (cond
-      [(wrapped-class? class) (loop (wrapped-class-info-class (wrapped-class-the-info class)))]
-      [else class])))
-
-(struct wrapped-object (object method-wrappers pos-field-projs neg-field-projs neg-party)
-  #:transparent
-  #:property prop:custom-write
-  (λ (stct port mode)
-    (do-custom-write (wrapped-object-object stct) port mode)))
-
-(define (do-custom-write v port mode)
-  (cond
-    [(custom-write? v)
-     ((custom-write-accessor v) v port mode)]
-    [(equal? mode #t)
-     (write v port)]
-    [(equal? mode #f)
-     (display v port)]
-    [else
-     (print v port mode)]))
-(define (unwrap-object o)
-  (cond
-    [(wrapped-object? o) (unwrap-object (wrapped-object-object o))]
-    [else o]))
 
 (define (check-arg-contracts wrapped-blame wrapped-neg-party val init-proj-pairs orig-named-args)
   ;; blame will be #f only when init-ctc-pairs is '()

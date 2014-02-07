@@ -1167,7 +1167,7 @@
          (define the-info (wrapped-class-the-info new-cls))
          (wrapped-object
           val
-          (wrapped-class-info-neg-extra-arg-ht the-info)
+          (wrapped-class-info-neg-extra-arg-vec the-info)
           (wrapped-class-info-pos-field-projs the-info)
           (wrapped-class-info-neg-field-projs the-info)
           (wrapped-class-neg-party new-cls))]

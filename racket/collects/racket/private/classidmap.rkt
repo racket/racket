@@ -2,7 +2,8 @@
 
 (require syntax/stx
          (for-syntax racket/base)
-         (for-template racket/base))
+         (for-template racket/base
+                       "class-wrapped.rkt"))
 
 (define insp (variable-reference->module-declaration-inspector
               (#%variable-reference)))
@@ -282,14 +283,9 @@
          (let* ([args-stx (syntax args)]
                 [proper? (stx-list? args-stx)]
                 [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
-           (make-method-call
-            stx
-            method-obj-stx
-            method-stx
-            (syntax (quote id))
-            flat-args-stx
-            (not proper?)
-            #f))]
+           (make-method-call-to-possibly-wrapped-object
+            stx #f flat-args-stx (not proper?)
+            #''id method-stx method-obj-stx method-obj-stx))]
         [id
          (identifier? (syntax id))
          (raise-syntax-error 
@@ -364,12 +360,55 @@
                  [args args-stx])
      (qstx (app method kw-arg ... object . args)))))
 
+(define (make-method-call-to-possibly-wrapped-object
+         stx kw-args/var arg-list rest-arg?
+         sym method receiver method-in-wrapper-fallback-case)
+  (with-syntax ([sym sym]
+                [method method]
+                [receiver receiver]
+                [method-in-wrapper-fallback-case method-in-wrapper-fallback-case])
+    (quasisyntax/loc stx
+      (if (wrapped-object? receiver)
+          (if method
+              ;; this is a hack: passing the neg party in
+              ;; as the object to 'make-method-call' so that the
+              ;; arguments end up in the right order.
+              (unsyntax
+               (make-method-call
+                stx
+                #`(wrapped-object-neg-party receiver)
+                (syntax/loc stx method)
+                (syntax/loc stx sym)
+                #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
+                rest-arg?
+                kw-args/var))
+              (let ([receiver (wrapped-object-object receiver)])
+                (unsyntax
+                 (make-method-call
+                  stx
+                  (syntax/loc stx receiver)
+                  (syntax/loc stx method-in-wrapper-fallback-case)
+                  (syntax/loc stx sym)
+                  arg-list
+                  rest-arg?
+                  kw-args/var))))
+          (unsyntax
+           (make-method-call
+            stx
+            (syntax/loc stx receiver)
+            (syntax/loc stx method)
+            (syntax/loc stx sym)
+            arg-list
+            rest-arg?
+            kw-args/var))))))
+
 (provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 
                       make-rename-super-map make-rename-inner-map
                       make-init-error-map make-init-redirect super-error-map 
                       make-with-method-map
-                      flatten-args make-method-call
+                      flatten-args make-method-call 
+                      make-method-call-to-possibly-wrapped-object
                       do-localize make-private-name
                       generate-super-call generate-inner-call
                       generate-class-expand-context class-top-level-context?))

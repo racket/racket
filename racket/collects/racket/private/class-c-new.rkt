@@ -140,16 +140,18 @@
               (λ (neg-party)
                 (((class/c-proj ctc) (blame-add-missing-party blame neg-party)) cls))]
              [else 
-              (build-neg-acceptor-proc this maybe-err blame cls (make-hash) '() 
+              (build-neg-acceptor-proc this maybe-err blame cls #f '() 
                                        (make-hasheq) (make-hasheq))])]
           [(wrapped-class? cls) 
-           (define neg-acceptors-ht
-             (wrapped-class-info-neg-acceptors-ht (wrapped-class-the-info cls)))
            (define wrapper-neg-party (wrapped-class-neg-party cls))
-           (define new-mths-ht
-             (for/hash ([(mth neg-acceptor) (in-hash neg-acceptors-ht)])
-               (values mth (neg-acceptor wrapper-neg-party))))
            (define the-info (wrapped-class-the-info cls))
+           (define neg-acceptors (wrapped-class-info-neg-acceptors-ht the-info))
+           (define real-class (wrapped-class-info-class the-info))
+           (define mth->idx (class-method-ht real-class))
+           (define new-mths (make-vector (vector-length (class-methods real-class)) #f))
+           (for ([(mth neg-acceptor) (in-hash neg-acceptors)])
+             (define mth-idx (hash-ref mth->idx mth))
+             (vector-set! new-mths mth-idx (neg-acceptor wrapper-neg-party)))
            (define fixed-neg-init-projs
              (for/list ([proj-pair (wrapped-class-info-init-proj-pairs the-info)])
                (cons (list-ref proj-pair 0)
@@ -158,7 +160,7 @@
                                   ((func val) wrapper-neg-party)))))))
            (build-neg-acceptor-proc this maybe-err blame 
                                     (wrapped-class-info-class the-info)
-                                    new-mths-ht
+                                    new-mths
                                     fixed-neg-init-projs
                                     (wrapped-class-info-pos-field-projs the-info)
                                     (wrapped-class-info-neg-field-projs the-info))]
@@ -169,100 +171,81 @@
                blame #:missing-party neg-party cls
                '(expected: "a class"))))])))))
 
-(define (build-neg-acceptor-proc this maybe-err blame cls new-mths-ht old-init-pairs 
+(define (build-neg-acceptor-proc this maybe-err blame cls old-mths-vec old-init-pairs 
                                  old-pos-fld-ht old-neg-fld-ht)
   (define mth->idx (class-method-ht cls))
   (define mtd-vec (class-methods cls))
   
   (define internal-proj (internal-class/c-proj (ext-class/c-contract-internal-ctc this)))
   
-  (define (get-unwrapped-method name)
-    (cond
-      [(hash-ref new-mths-ht name #f) => values]
-      [else
-       (define mth-idx (hash-ref mth->idx name #f))
-       (and mth-idx
-            (vector-ref mtd-vec mth-idx))]))
-  
-  (define neg-extra-arg-ht (make-hash))
+  ;; The #f may survive if the method is just-check-existence or
+  ;; if the contract doesn't mention the method (and it isn't opaque)
+  (define neg-extra-arg-vec (make-vector (vector-length mtd-vec) #f))
   (define neg-acceptors-ht (make-hash))
   
   (define pos-field-projs (hash-copy old-pos-fld-ht))
   (define neg-field-projs (hash-copy old-neg-fld-ht))
   
-  (define (generic-wrapper mth)
-    (define raw-proc (get-unwrapped-method mth))
-    (make-keyword-procedure
-     (λ (kwds kwd-args neg-party . args)
-       (keyword-apply raw-proc kwds kwd-args args))
-     (λ (neg-party . args)
-       (apply raw-proc args))))
-  
-  (for ([(mth proj) (in-hash (ext-class/c-contract-table-of-meths-to-projs this))])
-    (define m-mth (get-unwrapped-method mth))
-    (unless m-mth
+  (for ([(mth-name proj) (in-hash (ext-class/c-contract-table-of-meths-to-projs this))])
+    (define mth-idx (hash-ref mth->idx mth-name #f))
+    (unless mth-idx
       (maybe-err
        (λ (neg-party)
          (raise-blame-error 
           blame #:missing-party neg-party cls
           '(expected: "a class with a public method named ~a")
-          mth))))
+          mth-name))))
     
-    (cond
-      [(just-check-existence? proj)
-       ;; if we just check the method's existence,
-       ;; then make an inefficient wrapper for it
-       ;; that discards the neg-party argument
-       (hash-set! neg-extra-arg-ht mth (generic-wrapper mth))]
-      [else
-       (define w/blame (proj (blame-add-method-context blame mth)))
-       (define projd-mth (w/blame m-mth))
-       (hash-set! neg-acceptors-ht mth projd-mth)
-       (define neg-acceptor
-         (cond
-           [(wrapped-extra-arg-arrow? projd-mth)
-            (wrapped-extra-arg-arrow-extra-neg-party-argument projd-mth)]
-           [else 
-            ;; if some contract doesn't subscribe to the wrapped-extra-arg-arrow
-            ;; protocol, then make an inefficient wrapper for it.
-            (make-keyword-procedure
-             (λ (kwds kwd-args neg-party . args)
-               (keyword-apply (projd-mth neg-party) kwds kwd-args args))
-             (λ (neg-party . args)
-               (apply (projd-mth neg-party) args)))]))
-       (hash-set! neg-extra-arg-ht mth neg-acceptor)]))
+    (unless (just-check-existence? proj)
+      (define w/blame (proj (blame-add-method-context blame mth-name)))
+      (define m-mth (if old-mths-vec
+                        (or (vector-ref old-mths-vec mth-idx)
+                            (vector-ref mtd-vec mth-idx))
+                        (vector-ref mtd-vec mth-idx)))
+      (define projd-mth (w/blame m-mth))
+      (hash-set! neg-acceptors-ht mth-name projd-mth)
+      (define neg-extra-arg
+        (cond
+          [(wrapped-extra-arg-arrow? projd-mth)
+           (wrapped-extra-arg-arrow-extra-neg-party-argument projd-mth)]
+          [else 
+           ;; if some contract doesn't subscribe to the wrapped-extra-arg-arrow
+           ;; protocol, then make an inefficient wrapper for it.
+           (make-keyword-procedure
+            (λ (kwds kwd-args neg-party . args)
+              (keyword-apply (projd-mth neg-party) kwds kwd-args args))
+            (λ (neg-party . args)
+              (apply (projd-mth neg-party) args)))]))
+      (vector-set! neg-extra-arg-vec mth-idx neg-extra-arg)))
   
   (define absent-methods (ext-class/c-contract-absent-methods this))
-  (for ([(mth _) (in-hash mth->idx)])
-    (when (member mth absent-methods)
+  (for ([(mth-name mth-idx) (in-hash mth->idx)])
+    (when (member mth-name absent-methods)
       (maybe-err
        (λ (neg-party)
          (raise-blame-error 
           blame #:missing-party neg-party cls
           '(expected: "a class that does not have the method ~a")
-          mth))))
+          mth-name))))
     
-    ;; use a generic wrapper to drop the neg-party argument, which means
-    ;; methods without explicit contracts are going to be slow
-    (unless (hash-ref neg-extra-arg-ht mth #f)
-      (if (ext-class/c-contract-opaque? this)
-          (maybe-err
-           (λ (neg-party)
-             (define mth-names
-               (for/list ([(mth proj) (in-hash (ext-class/c-contract-table-of-meths-to-projs this))])
-                 (format " ~a" mth)))
-             (raise-blame-error 
-              blame #:missing-party neg-party cls
-              '(expected: "~a" given: "a class that has a method: ~a")
-              (cond
-                [(null? mth-names) "a class with no methods"]
-                [(null? (cdr mth-names)) 
-                 (format "a class with only one method:~a" (car mth-names))]
-                [else
-                 (format "a class with only the methods:~a" 
-                         (apply string-append mth-names))])
-              mth)))
-          (hash-set! neg-extra-arg-ht mth (generic-wrapper mth)))))
+    (when (ext-class/c-contract-opaque? this)
+      (unless (hash-ref (ext-class/c-contract-table-of-meths-to-projs this) mth-name #f)
+        (maybe-err
+         (λ (neg-party)
+           (define mth-names
+             (for/list ([(mth proj) (in-hash (ext-class/c-contract-table-of-meths-to-projs this))])
+               (format " ~a" mth)))
+           (raise-blame-error 
+            blame #:missing-party neg-party cls
+            '(expected: "~a" given: "a class that has a method: ~a")
+            (cond
+              [(null? mth-names) "a class with no methods"]
+              [(null? (cdr mth-names)) 
+               (format "a class with only one method:~a" (car mth-names))]
+              [else
+               (format "a class with only the methods:~a" 
+                       (apply string-append mth-names))])
+            mth-name))))))
   
   (for ([(fld proj) (in-hash (ext-class/c-contract-table-of-flds-to-projs this))])
     (define field-ht (class-field-ht cls))
@@ -325,7 +308,7 @@
                 ((get/build-val-first-projection ctc) 
                  (blame-add-init-context blame (car ctc-pair)))))))
   (define merged-init-pairs (merge-init-pairs old-init-pairs new-init-projs))
-  (define the-info (wrapped-class-info cls blame neg-extra-arg-ht neg-acceptors-ht 
+  (define the-info (wrapped-class-info cls blame neg-extra-arg-vec neg-acceptors-ht
                                        pos-field-projs neg-field-projs
                                        merged-init-pairs))
   
@@ -333,7 +316,7 @@
     ;; run this for the side-effect of 
     ;; checking that first-order tests on
     ;; methods (arity, etc) all pass
-    (for ([(mth neg-party-acceptor) (in-hash neg-acceptors-ht)])
+    (for ([(mth-name neg-party-acceptor) (in-hash neg-acceptors-ht)])
       (neg-party-acceptor neg-party))
     
     ;; XXX: we have to not do this;
