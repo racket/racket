@@ -300,15 +300,14 @@ on forms to document Racket bindings.
 @section{Showing Racket Examples}
 
 The @racket[examples] form from @racket[scribble/eval]
-helps you generate examples in your documentation. @bold{Warning:} the
-@racket[examples] form is especially likely to change or be replaced.
+helps you generate examples in your documentation.
 
 To use @racket[examples], the procedures to document must be suitable
 for use at documentation time; in fact, @racket[examples] uses
 bindings introduced into the document source by
 @racket[require]. Thus, to generate examples using @racket[my-helper]
 from the previous section, @filepath{helper.rkt} must be imported both
-via @racket[require-for-label] and @racket[require]:
+via @racket[(require (for-label ....))] and @racket[require]:
 
 @verbatim[#:indent 2]|{
   #lang scribble/manual
