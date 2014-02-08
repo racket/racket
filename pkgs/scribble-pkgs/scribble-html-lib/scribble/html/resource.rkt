@@ -206,7 +206,8 @@
             ;; we're in local build mode, and insist on an absolute url, so
             ;; construct a `file://' result
             (list* "file://" (current-directory) url))))
-  (add-renderer path render)
+  (when renderer
+    (add-renderer path render))
   (define (url [absolute? #f])
     ;; be conservative, in case it needs to be extended in the future
     (case absolute?

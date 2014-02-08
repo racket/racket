@@ -392,13 +392,13 @@ result of @racket[(entity '_entity-id)].}
 @defmodule[scribble/html/resource]
 
 @defproc[(resource [path string?]
-                   [renderer (path-string? . -> . any)]
+                   [renderer (or/c (path-string? . -> . any) #f)]
                    [#:exists exists (or/c 'delete-file #f) 'delete-file])
          (and/c resource?
                 (->* () (any/c) -> string?))]{
 
 Creates and returns a new @deftech{resource} value. Creating a
-resource registers @racket[renderer] to be called when rendering is
+resource registers @racket[renderer] (if non-@racket[#f]) to be called when rendering is
 initiated by @racket[render-all], while calling the result resource as
 a function generates a URL for the resource.
 
@@ -416,8 +416,10 @@ determines the ultimate URL. The @racket[path] string must be a
 @litchar{/}-separated relative path with no @litchar{..}, @litchar{.},
 or @litchar{//}. The @racket[path] string can end in @litchar{/}, in
 which case @racket["index.html"] is effectively added to the string.
+Using @racket[resource] with @racket[#f] as @racket[renderer] is
+useful for converting a path to a URL according to @racket[url-roots].
 
-The @racket[renderer] argument renders the resource, receiving the
+The @racket[renderer] argument (when non-@racket[#f]) renders the resource, receiving the
 path for the file to be created. The path provided to
 @racket[renderer] will be different from @racket[path], because the
 function is invoked in the target directory.
