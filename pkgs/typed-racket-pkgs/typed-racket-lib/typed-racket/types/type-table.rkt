@@ -6,6 +6,7 @@
 
 ;; TODO figure out why these imports are needed even though they don't seem to be.
 (require racket/match
+         syntax/parse
          "../utils/utils.rkt"
          (contract-req)
          (types utils union)
@@ -22,7 +23,14 @@
  [contradiction? (syntax? . -> . boolean?)]
  [neither? (syntax? . -> . boolean?)]
  [add-dead-lambda-branch (syntax? . -> . any)]
- [dead-lambda-branch? (syntax? . -> . boolean?)])
+ [dead-lambda-branch? (syntax? . -> . boolean?)]
+ [;; Register that the given expression should be ignored
+  register-ignored! (syntax? . -> . any)]
+ [;; Look up whether a given expression is ignored
+  is-ignored? (syntax? . -> . boolean?)])
+
+(provide ;; Syntax class for is-ignored?
+         ignore-table^)
 
 (define table (make-hasheq))
 
@@ -83,3 +91,21 @@
     (hash-set! lambda-dead-table formals #t)))
 (define (dead-lambda-branch? formals)
   (hash-ref lambda-dead-table formals #f))
+
+;; The following provides functions for manipulating the ignore-table, which
+;; stores expressions that should be ignored for type-checking, optimization,
+;; and other type-related analyses.
+;;
+;; Since the type-checker doesn't add annotations to its input syntax, if
+;; the type-checker discovers that something should be ignored by future
+;; passes, it needs to use this side-channel.
+(define ignore-table (make-hasheq))
+
+(define (register-ignored! stx)
+  (hash-set! ignore-table stx #t))
+
+(define (is-ignored? stx)
+  (hash-ref ignore-table stx #f))
+
+(define-syntax-class ignore-table^
+  (pattern _ #:when (is-ignored? this-syntax)))

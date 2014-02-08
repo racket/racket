@@ -185,8 +185,10 @@
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
       [stx:exn-handlers^
+       (register-ignored! form)
        (check-subforms/with-handlers/check form expected)]
       [stx:ignore-some^
+       (register-ignored! form)
        (check-subforms/ignore form)
        ;; We trust ignore to be only on syntax objects objects that are well typed
        expected]
@@ -267,6 +269,7 @@
                (if wrapped-object-check
                    ignore-this-case
                    (#%plain-app _ _ _arg-var2 ...))))))
+       (register-ignored! form)
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
       ;; kw function def
       [(~and (let-values ([(f) fun]) . body) _:kw-lambda^)
@@ -321,8 +324,10 @@
       #:literal-sets (kernel-literals tc-expr-literals)
       ;;
       [stx:exn-handlers^
+       (register-ignored! form)
        (check-subforms/with-handlers form) ]
       [stx:ignore-some^
+       (register-ignored! form)
        (check-subforms/ignore form)
        (ret Univ)]
       ;; explicit failure
@@ -364,6 +369,7 @@
                (if wrapped-object-check
                    ignore-this-case
                    (#%plain-app _ _ _arg-var2 ...))))))
+       (register-ignored! form)
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
       ;; kw function def
       [(~and _:kw-lambda^

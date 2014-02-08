@@ -165,6 +165,7 @@
 
       ;; this is a form that we mostly ignore, but we check some interior parts
       [stx:ignore-some^
+       (register-ignored! form)
        (check-subforms/ignore form)]
 
       ;; these forms should always be ignored

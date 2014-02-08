@@ -3,6 +3,7 @@
 (require syntax/parse racket/pretty
          "../utils/utils.rkt"
          (private syntax-properties)
+         (types type-table)
          (optimizer utils
                     number fixnum float float-complex vector string list pair
                     sequence box struct dead-code apply unboxed-let
@@ -18,7 +19,10 @@
   #:literal-sets (kernel-literals)
   #:attributes (opt)
   ;; Can't optimize this code because it isn't typechecked
-  (pattern (~or opt:ignore^ opt:ignore-some^ opt:exn-handlers^))
+  (pattern opt:ignore^)
+
+  ;; Same as above, but if the stx is in the ignore table
+  (pattern opt:ignore-table^)
 
   ;; Can't optimize the body of this code because it isn't typechecked
   (pattern (~and _:kw-lambda^
