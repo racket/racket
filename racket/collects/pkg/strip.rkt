@@ -143,7 +143,7 @@
   (define level
     (let ([i (get-info/full dir #:namespace drop-keep-ns)])
       (cond
-       [(or (not get-info) 
+       [(or (not i)
             (not (eq? 'multi (i 'collection (lambda () #t)))))
         'collection] ; single-collection package
        [else 'package])))
