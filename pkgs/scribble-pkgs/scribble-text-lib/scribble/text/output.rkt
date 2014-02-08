@@ -1,8 +1,12 @@
 #lang racket/base
+(require racket/promise
+         racket/contract/base)
 
-(require racket/promise)
-
-(provide output)
+(provide
+ outputable/c
+ (contract-out 
+  [output (->* (outputable/c) (output-port?) void?)]))
+;; See also `provide-special` below
 
 ;; Outputs values for the `scribble/text' language:
 ;; - several atomic values are printed as in `display',
@@ -251,11 +255,11 @@
 (define-syntax define/provide-special
   (syntax-rules ()
     [(_ (name))
-     (begin (provide name)
+     (begin (provide (contract-out [name (->* () () #:rest (listof outputable/c) any/c)]))
             (define (name . contents)
               (make-special 'name contents)))]
-    [(_ (name x ...))
-     (begin (provide name)
+    [(_ (name [x ctc] ...))
+     (begin (provide (contract-out [name (->* (ctc ...) () #:rest (listof outputable/c) any/c)]))
             (define (name x ... . contents)
               (make-special 'name (list* x ... contents))))]
     [(_ name)
@@ -267,9 +271,9 @@
 (define/provide-special flush)
 (define/provide-special (disable-prefix))
 (define/provide-special (restore-prefix))
-(define/provide-special (add-prefix pfx))
-(define/provide-special (set-prefix pfx))
-(define/provide-special (with-writer writer))
+(define/provide-special (add-prefix [pfx (or/c string? exact-nonnegative-integer?)]))
+(define/provide-special (set-prefix [pfx (or/c string? exact-nonnegative-integer?)]))
+(define/provide-special (with-writer [writer (or/c #f (string? output-port? . -> . any/c))]))
 #; ; no need for this hack yet
 (define/provide-special (with-writer-change writer))
 
@@ -302,3 +306,24 @@
       [(null? list) (reverse (cons (reverse cur) r))]
       [(equal? "\n" (car list)) (loop (cdr list) '() (cons (reverse cur) r))]
       [else (loop (cdr list) (cons (car list) cur) r)])))
+
+(define outputable/c
+  (lambda (v) #t)
+  ;; too expensive:
+  #;
+  (recursive-contract
+   (or/c void?
+         #f
+         null?
+         (cons/c outputable/c outputable/c)
+         (-> outputable/c)
+         promise?
+         (box/c outputable/c)
+         special?
+         string?
+         bytes?
+         symbol?
+         path?
+         keyword?
+         number?
+         char?)))

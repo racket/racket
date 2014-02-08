@@ -67,7 +67,7 @@ Produces a value that @tech{XML-renders} as a DOCTYPE declaration.
               (xml->string (doctype 'xhtml)))]}
 
 
-@defproc[(xhtml [content any/c] ...) procedure?]{
+@defproc[(xhtml [content outputable/c] ...) procedure?]{
 
 Produces a value that @tech{XML-renders} as the given content wrapped
 as XHTML.
@@ -78,7 +78,7 @@ as XHTML.
 
 @(define-syntax-rule (def-tags tag ...)
    @deftogether[(
-   @defproc[(tag [v any/c] (... ...)) procedure?] ...
+   @defproc[(tag [v outputable/c] (... ...)) procedure?] ...
    )]{
 
    Like @racket[element/not-empty], but with the symbolic form of the function
@@ -169,7 +169,7 @@ as XHTML.
 
 @(define-syntax-rule (def-tags/empty tag ...)
    @deftogether[(
-   @defproc[(tag [v any/c] (... ...)) procedure?] ...
+   @defproc[(tag [v outputable/c] (... ...)) procedure?] ...
    )]{
 
    Like @racket[element], but with the symbolic form of the function
@@ -196,7 +196,7 @@ as XHTML.
   lang rang dagger Dagger plusmn deg)
 
 
-@defproc[(script/inline [v any/c] ...) procedure?]{
+@defproc[(script/inline [v outputable/c] ...) procedure?]{
 
 Procedures a value that renders as an inline script.
 
@@ -204,7 +204,7 @@ Procedures a value that renders as an inline script.
 (output-xml (script/inline type: "text/javascript" "var x = 5;"))]}
 
 
-@defproc[(style/inline [v any/c] ...) procedure?]{
+@defproc[(style/inline [v outputable/c] ...) procedure?]{
 
 Procedures a value that renders as an inline style sheet.
 
@@ -222,7 +222,7 @@ provides functions for XML representations that @deftech{XML-render} to string f
 via @racket[output-xml] or @racket[xml->string].}
 
 
-@defproc[(output-xml [content any/c] [port output-port? (current-output-port)])
+@defproc[(output-xml [content outputable/c] [port output-port? (current-output-port)])
          void?]{
 
 Renders @racket[content] in the same way as @racket[output], but using
@@ -230,7 +230,7 @@ the value of @racket[xml-writer] as the @tech{current writer} so that
 special characters are escaped as needed.}
 
 
-@defproc[(xml->string [content any/c]) string?]{
+@defproc[(xml->string [content outputable/c]) string?]{
 
 Renders @racket[content] to a string via @racket[output-xml].}
 
@@ -243,9 +243,9 @@ A parameter for a function that is used with @racket[with-writer] by
 
 
 @defproc[(make-element [tag symbol?]
-                       [attrs (listof (cons/c symbol? any/c))]
-                       [content any/c])
-         procedure?]{
+                       [attrs (listof (cons/c symbol? outputable/c))]
+                       [content outputable/c])
+         (and/c procedure outputable/c?)]{
 
 Produces a value that @tech{XML-renders} as XML for the
 given tag, attributes, and content.
@@ -262,7 +262,7 @@ rendered as present, but without a value.
 
 
 @defproc[(element [tag symbol?] [attrs-and-content any/c] ...)
-         procedure?]{
+         (and procedure outputable/c?)]{
 
 Like @racket[make-element], but the list of @racket[attrs-and-content]
 is parsed via @racket[attributes+body] to separate the attributes and
@@ -278,7 +278,7 @@ content.
 
 
 @defproc[(element/not-empty [tag symbol?] [attrs-and-content any/c] ...)
-         procedure?]{
+         (and/c procedure? outputable/c)]{
 
 Like @racket[element], but the result always renders with an separate
 closing tag.
@@ -342,7 +342,7 @@ symbolic entity.
 (output-xml (entity 'gt))]}
 
 
-@defproc[(comment [content any/c] ... [#:newlines? newlines? any/c #f])
+@defproc[(comment [content outputable/c] ... [#:newlines? newlines? any/c #f])
          procedure?]{
 
 Produces a value that @tech{XML-renders} as a comment with
@@ -353,7 +353,7 @@ inserted before and after the content.
 (output-xml (comment "testing" 1 2 3))]}
 
 
-@defproc[(cdata [content any/c] ... 
+@defproc[(cdata [content outputable/c] ... 
                 [#:newlines? newlines? any/c #t]
                 [#:line-pfx line-pfx any/c #f])
          procedure?]{
@@ -395,7 +395,7 @@ result of @racket[(entity '_entity-id)].}
                    [renderer (or/c (path-string? . -> . any) #f)]
                    [#:exists exists (or/c 'delete-file #f) 'delete-file])
          (and/c resource?
-                (->* () (any/c) -> string?))]{
+                (->* () (outputable/c) -> string?))]{
 
 Creates and returns a new @deftech{resource} value. Creating a
 resource registers @racket[renderer] (if non-@racket[#f]) to be called when rendering is
@@ -473,8 +473,8 @@ arguments) produced by @racket[resource].}
 Generates all resources registered via @racket[resource].}
 
 
-@defproc[(file-writer [content-writer (any/c output-port? . -> . any)]
-                      [content any/c])
+@defproc[(file-writer [content-writer (outputable/c output-port? . -> . any)]
+                      [content outputable/c])
          (path-string? . -> . any)]{
 
 Produces a function that is useful as a @racket[_writer] argument to

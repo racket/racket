@@ -1220,7 +1220,15 @@ Racket-with-@"@"-expressions file as shown above.)
 @;--------------------------------------------------------------------
 @section{Text Generation Functions}
 
-@defproc[(output [v any/c] [port output-port? (current-output-port)]) void?]{
+@defthing[outputable/c contract?]{
+
+A contract that (in principle) corresponds to value that can be output
+by @racket[output]. Currently, however, this contract accepts all
+values (to avoid the cost of checking at every boundary).
+
+@history[#:added "1.1"]}
+
+@defproc[(output [v outputable/c] [port output-port? (current-output-port)]) void?]{
 
 Outputs values to @racket[port] as follows for each kind of @racket[v]:
 
@@ -1283,19 +1291,19 @@ Outputs values to @racket[port] as follows for each kind of @racket[v]:
 Any other kind of @racket[v] triggers an exception.}
 
 
-@defproc[(block [v any/c] ...) any/c]{
+@defproc[(block [v outputable/c] ...) outputable/c]{
 
 Produces a value that outputs each @racket[v] in @tech{block mode}.}
 
-@defproc[(splice [v any/c] ...) any/c]{
+@defproc[(splice [v outputable/c] ...) outputable/c]{
 
 Produces a value that outputs each @racket[v] in @tech{splice mode}.}
 
 @deftogether[(
-@defproc[(disable-prefix [v any/c] ...) any/c]
-@defproc[(restore-prefix [v any/c] ...) any/c]
-@defproc[(add-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v any/c] ...) any/c]
-@defproc[(set-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v any/c] ...) any/c]
+@defproc[(disable-prefix [v outputable/c] ...) outputable/c]
+@defproc[(restore-prefix [v outputable/c] ...) outputable/c]
+@defproc[(add-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v outputable/c] ...) outputable/c]
+@defproc[(set-prefix [pfx (or/c string? exact-nonnegative-integer?)] [v outputable/c] ...) outputable/c]
 )]{
 
 Produces a value that outputs with an adjusted @tech{current prefix}.
@@ -1308,9 +1316,12 @@ characters.}
 A value that outputs as the @tech{current indentation} plus @tech{current prefix}.}
 
 
-@defproc[(with-writer [writer (string? . -> . any/c)] [v any/c] ...) any/c]{
+@defproc[(with-writer [writer (or/c (string? output-port? . -> . any/c) #f)]
+                      [v outputable/c] ...)
+         outputable/c]{
 
-Produces a value that outputs with an adjusted @tech{current writer}.}
+Produces a value that outputs with an adjusted @tech{current writer},
+where @racket[#f] indicates @racket[write-string].}
 
 
 @defproc[(add-newlines [items list?] [#:sep sep an/y "\n"]) list?]{
