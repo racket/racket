@@ -4340,7 +4340,7 @@ An example
 
 (define (check-mixin-super mixin-name super% from-ids)
   (let ([mixin-name (or mixin-name 'mixin)])
-    (unless (class? super%)
+    (unless (-class? super%)
       (obj-error mixin-name 
                  "argument is not a class"
                  "argument" super%))

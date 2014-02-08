@@ -2295,6 +2295,23 @@
       (with-method ([m (o m)])
         (m #f))))
   
+  (test/spec-passed
+   'mixin1
+   '((mixin () () (super-new)) 
+     (contract (class/c m)
+               (class object% (define/public (m x) x) (super-new))
+               'pos
+               'neg)))
+  
+  (test/spec-passed
+   'mixin2
+   '(send (new ((mixin () () (super-new)) 
+                (contract (class/c [m (->m integer? integer?)])
+                          (class object% (define/public (m x) x) (super-new))
+                          'pos
+                          'neg)))
+          m 1))
+  
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
                        (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
