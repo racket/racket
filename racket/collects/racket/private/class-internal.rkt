@@ -2089,11 +2089,8 @@ last few projections.
                         init-args
                         "initialization argument names")
     ;; We intentionally leave inherited names out of the lists below,
-    ;;  on the threory that it's ok to decide to inherit from
-    ;;  yourself:
-    (check-still-unique name
-                        (append public-field-names)
-                        "field names")
+    ;;  on the theory that it's ok to decide to inherit from yourself:
+    (check-still-unique name public-field-names "field names")
     (check-still-unique name
                         (append pubment-names public-final-names public-normal-names
                                 overment-names override-final-names override-normal-names
@@ -2316,6 +2313,28 @@ last few projections.
             (setup-all-implemented! i)
             (vector-set! (class-supers c) (add1 (class-pos super)) c)
             (set-class-orig-cls! c c)
+
+            
+            ;; --- Make the new external method contract records ---
+            ;; (they are just copies of the super at this point, updated below)
+            (define wci-neg-extra-arg-vec 
+              (if (class? raw-super)
+                  #f
+                  (let* ([the-info (wrapped-class-the-info raw-super)]
+                         [ov (wrapped-class-info-neg-extra-arg-vec the-info)])
+                    (if no-method-changes?
+                        ov
+                        (let ([v (make-vector method-width #f)])
+                          (vector-copy! v 0 ov)
+                          v)))))
+            (define wci-neg-acceptors-ht
+              (if (class? raw-super)
+                  #f
+                  (let* ([the-info (wrapped-class-the-info raw-super)]
+                         [oh (wrapped-class-info-neg-acceptors-ht the-info)])
+                    (if no-method-changes?
+                        oh
+                        (hash-copy oh)))))
             
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
@@ -2531,8 +2550,13 @@ last few projections.
                                                        ;; Apply current inner contract projection
                                                        (make-method ((vector-ref inner-projs index) method) id))
                                           (vector-set! beta-methods index v))))
-                                  (when (not (vector-ref meth-flags index))
-                                    (vector-set! meth-flags index (not make-struct:prim))))
+                                  (unless (vector-ref meth-flags index)
+                                    (vector-set! meth-flags index (not make-struct:prim)))
+                                  
+                                  ;; clear out external contracts for methods that are overriden
+                                  (when wci-neg-extra-arg-vec
+                                    (vector-set! wci-neg-extra-arg-vec index #f)
+                                    (hash-remove! wci-neg-acceptors-ht method)))
                                 (append replace-augonly-indices replace-final-indices replace-normal-indices
                                         refine-augonly-indices refine-final-indices refine-normal-indices)
                                 (append override-methods augride-methods)
@@ -2619,29 +2643,45 @@ last few projections.
                       ;; --- Install initializer into class ---
                       (set-class-init! c init)
                       
+                      (define c+ctc
+                        (if wci-neg-extra-arg-vec
+                            (let ([info (wrapped-class-the-info raw-super)])
+                              (wrapped-class
+                               (wrapped-class-info 
+                                c
+                                (wrapped-class-info-blame info)
+                                wci-neg-extra-arg-vec
+                                wci-neg-acceptors-ht
+                                (wrapped-class-info-pos-field-projs info)
+                                (wrapped-class-info-neg-field-projs info)
+                                (wrapped-class-info-init-proj-pairs info))
+                               (wrapped-class-neg-party raw-super)))
+                            c))
+                      
                       ;; -- result is the class, and maybe deserialize-info ---
                       (if deserialize-id
-                          (values c (make-deserialize-info
-                                     (if (interface-extension? i externalizable<%>)
-                                         (lambda (args)
-                                           (let ([o (make-object c)])
-                                             (send o internalize args)
-                                             o))
-                                         (lambda (args)
-                                           (let ([o (object-make)])
-                                             ((class-fixup c) o args)
-                                             o)))
-                                     (if (interface-extension? i externalizable<%>)
-                                         (lambda ()
-                                           (obj-error 'deserialize 
-                                                      "cannot deserialize instance with cycles"
-                                                      #:class-name name))
-                                         (lambda ()
-                                           (let ([o (object-make)])
-                                             (values o
-                                                     (lambda (o2)
-                                                       ((class-fixup c) o o2))))))))
-                          c))))))))))))
+                          (values c+ctc
+                                  (make-deserialize-info
+                                   (if (interface-extension? i externalizable<%>)
+                                       (lambda (args)
+                                         (let ([o (make-object c)])
+                                           (send o internalize args)
+                                           o))
+                                       (lambda (args)
+                                         (let ([o (object-make)])
+                                           ((class-fixup c) o args)
+                                           o)))
+                                   (if (interface-extension? i externalizable<%>)
+                                       (lambda ()
+                                         (obj-error 'deserialize 
+                                                    "cannot deserialize instance with cycles"
+                                                    #:class-name name))
+                                       (lambda ()
+                                         (let ([o (object-make)])
+                                           (values o
+                                                   (lambda (o2)
+                                                     ((class-fixup c) o o2))))))))
+                          c+ctc))))))))))))
 
 ;; (listof interface?) -> (listof symbol?)
 ;; traverse the interfaces and figure out contracted methods

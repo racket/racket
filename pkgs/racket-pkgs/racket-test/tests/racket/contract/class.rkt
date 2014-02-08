@@ -2312,6 +2312,55 @@
                           'neg)))
           m 1))
   
+  (test/neg-blame
+   'subclass-and-external-contracts1
+   '(let* ([c%
+            (contract (class/c [m (->m integer? integer?)])
+                      (class object%
+                        (define/public (m x) x)
+                        (super-new))
+                      'pos 'neg)]
+           [sub-c% (class c% (super-new))])
+      (send (new sub-c%) m #f)))
+  
+  (test/spec-passed
+   'subclass-and-external-contracts2
+   '(let* ([c%
+            (contract (class/c [m (->m integer? integer?)])
+                      (class object%
+                        (define/public (m x) x)
+                        (super-new))
+                      'pos 'neg)]
+           [sub-c% (class c% 
+                     (define/override (m x) (super m x))
+                     (super-new))])
+      (send (new sub-c%) m #f)))
+  
+  (test/spec-passed
+   'subclass-and-external-contracts3
+   '(let* ([c% (contract (class/c (field [f integer?]))
+                         (class object% (field [f #f]) (super-new))
+                         'pos 'neg)]
+           [sub-c% (class c% (super-new))])
+      (new sub-c%)))
+  
+  (test/pos-blame
+   'subclass-and-external-contracts4
+   '(let* ([c% (contract (class/c (field [f integer?]))
+                         (class object% (field [f #f]) (super-new))
+                         'pos 'neg)]
+           [sub-c% (class c% (super-new))])
+      (get-field f (new sub-c%))))
+  
+  (test/spec-passed
+   'subclass-and-external-contracts5
+   '(let* ([c% (contract (class/c (init [f integer?]))
+                         (class object% (init f) (super-new))
+                         'pos 'neg)]
+           [sub-c% (class c% (super-new))])
+      (new sub-c% [f 1])))
+  
+  
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
                        (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
