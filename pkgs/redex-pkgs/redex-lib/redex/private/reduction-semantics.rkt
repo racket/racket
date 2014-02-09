@@ -184,6 +184,15 @@
     (error name "expected <reduction-relation> as first argument, got ~e" red))
   (unless (compiled-lang? lang)
     (error name "expected <lang> as second argument, got ~e" lang))
+  
+  (let ([lang-nts (language-nts lang)])
+    (for ([red-lang-nt (in-list (language-nts (reduction-relation-lang red)))])
+      (unless (member red-lang-nt lang-nts)
+        (error 
+         name 
+         "language argument does not contain a definition of the non-terminal ~a, needed by the reduction-relation"
+         red-lang-nt))))
+  
   (let ([cp (compile-pattern
              lang
              `(in-hole (name ctxt ,pat)

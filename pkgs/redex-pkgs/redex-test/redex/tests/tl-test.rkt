@@ -3078,6 +3078,23 @@
         (apply-reduction-relation T (term q))
         (test (and (regexp-match #px"tl-test.(?:.+):\\d+:\\d+" (caar (covered-cases c))) #t)
               #t))))
+
+(let ()
+  (define-language A
+    (e ::= 1))
+  
+  (define-extended-language B A
+    (fred ::= 0))
+  
+  (define err-msg
+    (with-handlers ([exn:fail? exn-message])
+      (compatible-closure
+       (reduction-relation B (--> fred fred))
+       A ;; should've been B
+       e)
+      "no error raised"))
+  
+  (test #t (regexp-match? #rx"^compatible-closure:.*fred" err-msg)))
   
   (let* ([R (reduction-relation
              empty-language
