@@ -22,6 +22,20 @@ entry. The default @racket[entry-reader] unpacks entries to the
 filesystem; call @racket[make-filesystem-entry-reader] to configure
 aspects of the unpacking, such as  the destination directory.}
 
+@defproc[(with-unzip [zip_file path-string?]
+                     [user_proc (-> path-string? any)])
+         void?]{
+
+A helper func to wrap unzip with clean temporay unzip files.
+
+Unzips an entire @exec{zip} archive from file path @racket[zip_file] to a temporary directory.
+
+The temporary directory is created in the @racket[zip_file]'s directory.
+
+@racket[user_proc] has this temporary directory path as its parameter.
+
+When done, delete temporay unzip files and directories.}
+
 @defproc[(make-filesystem-entry-reader
           [#:dest dest-path (or/c path-string? #f) #f]
           [#:strip-count strip-count exact-nonnegative-integer? 0]
@@ -118,6 +132,20 @@ in the same way as for @racket[unzip].
 If @racket[entry] is not in @racket[zipdir], an
 @racket[exn:fail:unzip:no-such-entry] exception is raised.}
 
+@defproc[(with-unzip-entry [zip_file path-string?]
+                           [entry_file path-string?]
+                           [user_proc (-> path-string? any)])
+         void?]{
+
+A helper func to wrap unzip-entry with clean temporay unzip file.
+
+Unzip an specific entry from @racket[zip_file] to a temporary directory, @racket[entry_file] is a entry path in @racket[zip_file].
+
+The temporary directory is created in the @racket[zip_file]'s directory.
+
+@racket[user_proc] has this unzipped temporary file path as its parameter.
+
+When done, delete temporay unzip file.}
 
 @defproc[(path->zip-path [path path-string?]) bytes?]{
 
