@@ -123,7 +123,7 @@ Note that this has two potentially important impacts on the use of
         even inside the module in which it is defined, this may increase
         the number of times the contract is checked. This could lead to
         a performance degradation. This is especially true if the function
-        is called repeatedly in loops or recursion.}
+        is called repeatedly in loops or using recursion.}
   @item{In some situations, a function may be written to accept a more
         lax set of inputs when called by other code in the same module.
         For such use cases, the contract boundary established by
