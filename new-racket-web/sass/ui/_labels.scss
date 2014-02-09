@@ -1,0 +1,86 @@
+/* Labels */
+
+.badge, .label {
+  height: 20px;
+  display: inline-block;
+  font-family: Helvetica, arial, verdana, sans-serif;
+  font-weight: bold;
+  line-height: 20px;
+  text-align:center;
+  color: #fff;
+  a {
+    color: #fff;
+  }
+  @each $shade in $ui-coloring {
+    &.#{nth($shade, 1)} {
+      background: nth($shade, 2);
+      @if nth($shade, 1) == default {
+        color: darken(nth($shade, 2), 61.5%);
+        border: 1px solid nth($shade, 2);
+        &:hover {
+          border: 1px solid darken(nth($shade, 2), 5%);
+        }
+        a {
+          color: darken(nth($shade, 2), 61.5%);
+        }
+      }
+      @if nth($shade, 1) == warning {
+        color: darken(nth($shade, 2), 40%);
+        a {
+          color: darken(nth($shade, 2), 40%);
+        }
+      }
+    }
+    &.light {
+      background: #fff;
+      color: $body-font-color;
+      border: 1px solid $default-color;
+      a {
+        color: $body-link-color;
+      }
+    }
+    &.dark {
+      background: #212121;
+    }
+  }
+}
+
+.badge {
+  padding: 0 10px;
+  @include font-size(ms(0, 14px));
+  @include border-radius(10px);
+}
+
+.label {
+  padding: 0 10px;
+  @include font-size(ms(0, 12px));
+  @include border-radius(2px);
+}
+
+.alert {
+  padding: 0 10px;
+  font-family: $font-family;
+  font-weight: $font-weight-semibold;
+  list-style-type: none;
+  word-wrap: break-word;
+  margin-bottom: $norm / 2;
+  @include font-size(ms(0, 14px));
+  @include border-radius($button-radius);
+  @each $shade in $ui-coloring {
+    &.#{nth($shade, 1)} {
+      background: lighten(nth($shade, 2), 20%);
+      border: 1px solid nth($shade, 2);
+      color: darken(nth($shade, 2), 20%);
+      @if nth($shade, 1) == info {
+        color: $default-color;
+      }
+      @if nth($shade, 1) == default {
+        color: darken(nth($shade, 2), 61.5%);
+        border: 1px solid nth($shade, 2);
+      }
+      @if nth($shade, 1) == warning {
+        color: darken(nth($shade, 2), 40%);
+      }
+    }
+  }
+}

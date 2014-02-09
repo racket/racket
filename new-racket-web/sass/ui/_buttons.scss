@@ -1,0 +1,151 @@
+/* Buttons */
+
+// Buttons
+@import "../functions/buttons";
+
+.btn, .skiplink {
+  display: inline-block;
+  width: auto;
+  background: $default-color;
+  -webkit-appearance: none;
+  font-family: $font-family;
+  font-weight: $button-font-weight;
+  padding: 0 !important;
+  text-align: center;
+  .pretty & { @extend .pretty.btn; }
+  .metro & { @extend .metro.btn; }
+
+  > a, input, button {
+    display: block;
+    padding: 0 $default-button-padding;
+    color: $white;
+    height: 100%;
+  }
+
+  input, button {
+    background: none;
+    border: none;
+    width: 100%;
+    font-size: 100%;
+    cursor: pointer;
+    font-weight: $type-font-weight;
+    @include appearance(none);
+  }
+
+  &.xlarge {
+    @include button-size(xlarge);
+  }
+  &.large {
+    @include button-size(large);
+  }
+  &.medium {
+    @include button-size(medium);
+    a {
+      padding: 0 ms(1);
+    }
+  }
+  &.small {
+    @include button-size(small);
+    a {
+      padding: 0 ms(-1);
+    }
+  }
+
+  &.oval {
+    @include border-radius(1000px);
+  }
+
+  &.pill-left {
+    @include border-radius(500px 0 0 500px);
+  }
+
+  &.pill-right {
+    @include border-radius(0 500px 500px 0);
+  }
+
+  @each $shade in $ui-coloring {
+    &.#{nth($shade, 1)} {
+      background: nth($shade, 2);
+      border: 1px solid nth($shade, 2);
+      &:hover {
+        background: lighten(nth($shade, 2), 10%);
+      }
+      &:active {
+        background: darken(nth($shade, 2), 10%);
+      }
+      @if nth($shade, 1) == default {
+        color: darken(nth($shade, 2), 61.5%);
+        border: 1px solid nth($shade, 2);
+        &:hover {
+          border: 1px solid darken(nth($shade, 2), 5%);
+        }
+        a, input, button {
+          color: darken(nth($shade, 2), 61.5%);
+        }
+      }
+      @if nth($shade, 1) == warning {
+        color: darken(nth($shade, 2), 40%);
+        a, input, button {
+          color: darken(nth($shade, 2), 40%);
+        }
+      }
+    }
+  }
+
+  @each $style in $styling {
+    &.#{nth($style, 1)} {
+      @include border-radius(nth($style, 2));
+      &:hover {
+        @extend .btn.#{nth($style, 1)}
+      }
+      &:active {
+        @extend .btn.#{nth($style, 1)}
+      }
+      @if nth($style, 1) == metro {
+        &.rounded {
+          @include border-radius($button-radius);
+        }
+      }
+      @if nth($style, 1) == pretty {
+        &.squared {
+          @include border-radius($metro-radius);
+        }
+      }
+    }
+  }
+
+  &.pretty {
+    @each $grade in $ui-coloring {
+      &.#{nth($grade, 1)} {
+        @include background-image(linear-gradient(lighten(nth($grade, 2), 20%), saturate(nth($grade, 2), 5%)));
+        @include box-shadow(inset 0 0 3px lighten(nth($grade, 2), 45%));
+        border: 1px solid darken(nth($grade, 2), 15%);
+        &:hover {
+          @include background-image(linear-gradient(lighten(nth($grade, 3), 15%), saturate(nth($grade, 3), 5%)));
+          @include box-shadow(inset 0 0 3px lighten(nth($grade, 3), 40%));
+          border: 1px solid darken(nth($grade, 3), 15%);
+        }
+        &:active {
+          @include background-image(linear-gradient(saturate(nth($grade, 2), 5%), lighten(nth($grade, 2), 20%)));
+          @include box-shadow(inset 0 0 3px lighten(nth($grade, 2), 50%));
+        }
+        @if nth($grade, 1) == default {
+          a, input, button {
+            text-shadow: 0 1px 1px lighten(nth($grade, 2), 20%);
+          }
+        }
+        @elseif nth($grade, 1) == warning {
+          color: darken(nth($grade, 2), 40%);
+          a, input, button {
+            text-shadow: 0 1px 1px lighten(nth($grade, 2), 20%);
+          }
+        }
+        @else {
+          a, input, button {
+            text-shadow: 0 1px 1px darken(nth($grade, 2), 20%);
+          }
+        }
+      }
+    }
+  }
+}

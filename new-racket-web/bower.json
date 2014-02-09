@@ -1,0 +1,5 @@
+{
+  "name": "gumby",
+  "version": "2.3.4",
+  "main": ["./js/libs/gumby.min.js", "./css/gumby.css"]
+}

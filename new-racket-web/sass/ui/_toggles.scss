@@ -1,0 +1,69 @@
+
+.drawer {
+  position: relative;
+  width: 100%;
+  max-height: 0;
+  background: $drawer-background-color;
+  @include box-shadow(
+    inset $drawer-inner-shadow-x-offset  #{-$drawer-inner-shadow-y-offset} $drawer-inner-shadow-blur $drawer-inner-shadow-color,
+    inset $drawer-inner-shadow-x-offset $drawer-inner-shadow-y-offset $drawer-inner-shadow-blur $drawer-inner-shadow-color);
+  ;
+  overflow: hidden;
+  @include transition-duration(.3s);
+  &.active {
+    height: auto;
+    max-height: 800px;
+    @include transition-duration(.5s);
+  }
+}
+
+.modal {
+	width: 100%;
+	height: 100%;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: -999999;
+  background: rgb(0, 0, 0);
+  background: $modal-overlay-color;
+ 	> .content {
+ 		width: 50%;
+ 		min-height: 50%;
+    max-height: 65%;
+ 		position: relative;
+ 		top: 25%;
+ 		margin: 0 auto;
+ 		padding: $gutter-in-px;
+ 		background: $modal-window-color;
+ 		z-index: 2;
+ 		overflow: auto;
+    @include respond(portrait-tablets) {
+      width: 80%;
+      min-height: 80%;
+      max-height: 80%;
+      top: 10%;
+    }
+    @include respond(all-phones) {
+      width: 92.5%;
+      min-height: 92.5%;
+      max-height: 92.5%;
+      top: 3.75%;
+    }
+ 	  > .close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+    }
+  }
+  &, > .content {
+    @include opacity(0);
+    @include transition-duration(.3s);
+  }
+ 	&.active {
+ 		z-index: 999999;
+    &, > .content {
+      @include opacity(1);
+    }
+ 	}
+}

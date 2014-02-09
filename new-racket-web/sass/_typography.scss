@@ -1,0 +1,274 @@
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: $font-family;
+  font-weight: $header-font-weight;
+  color: $header-font-color;
+  text-rendering: optimizeLegibility;
+  @include padding-leader($rhythm-spacing);
+  @include adjust-leading-to($rhythm-height);
+  @include padding-trailer($rhythm-spacing);
+  a {
+    color: $header-link-color;
+  }
+}
+
+@include respond(all-phones) {
+
+  h1,h2,h3,h4,h5,h6 { word-wrap: break-word;}
+
+}
+
+h1 {
+  @include font-size($xxxlarge);
+  &.xlarge {
+    @include font-size($reallybig);
+  }
+  &.xxlarge {
+    @include font-size($tremendous);
+  }
+  &.absurd {
+    @include font-size($absurd);
+  }
+}
+h2 { @include font-size($xlarge); }
+h3 { @include font-size($larger);}
+h4 { @include font-size($large);}
+h5 { @include font-size($med);}
+h6 { @include font-size($norm);}
+
+@include respond(all-phones) {
+
+  h1 { @include font-size($xlarge);}
+  h2 { @include font-size($larger + 6);}
+
+}
+
+.subhead {
+  color: #777;
+  font-weight: normal;
+  margin-bottom: 20px;
+}
+
+/*=====================================================
+ 
+  Links & Paragraph styles
+  
+  ======================================================*/
+
+p {
+  font-family: $font-family;
+  font-weight: $body-font-weight;
+  @include font-size($base-font-size);
+  margin-bottom: $base-line-height / 2;
+  @include adjust-leading-to(1);
+  &.lead {
+    @include font-size(ms(0) * 1.25);
+    margin-bottom: ms(1);
+  }
+  @include respond(portrait-tablets) {
+    @include font-size($base-font-size * 1.1);
+    @include adjust-leading-to(1);
+  }
+}
+
+a {
+  color: $body-link-color;
+  text-decoration: none;
+  outline: 0;
+  line-height: inherit;
+  &:hover {
+    color: $body-link-hover-color;
+  }
+}
+
+/*=====================================================
+
+  Lists
+  
+ ======================================================*/
+
+ul, ol {
+  @include margin-trailer($rhythm-spacing);
+}
+
+ul {
+  list-style: none outside;
+}
+
+ol {
+  list-style: decimal;
+  margin-left: 30px;
+}
+
+ul {
+  &.square, &.circle, &.disc {
+    margin-left: 25px;
+  }
+  &.square {
+    list-style: square outside;
+  }
+  &.circle {
+    list-style: circle outside;
+  }
+  &.disc {
+    list-style: disc outside;
+  }
+  ul {
+    margin: 4px 0 5px 25px;
+  }
+}
+
+ol ol {
+  margin: 4px 0 5px 30px;
+}
+
+li {
+  @include padding-trailer($rhythm-spacing);
+}
+
+ul.large li {
+  line-height: 21px;
+}
+
+dl dt {
+  font-weight: bold;
+  @include font-size($norm);
+}
+
+@include respond(portrait-tablets) {
+  
+  ul, ol, dl, p { text-align: left;}
+
+}
+
+/* Mobile */
+
+em {
+  font-style: italic;
+  line-height: inherit;
+}
+
+strong {
+  font-weight: $font-weight-bold;
+  line-height: inherit;
+}
+
+small {
+  font-size: 56.4%;
+  line-height: inherit;
+}
+
+h1 small, h2 small, h3 small, h4 small, h5 small {
+  color: #777;
+}
+
+/*  Blockquotes  */
+
+blockquote {
+  line-height: 20px;
+  color: #777;
+  p {
+    line-height: 20px;
+    color: #777;
+  }
+  margin: 0 0 18px;
+  padding: 9px 20px 0 19px;
+  border-left: 5px solid $horizontal-rule-color;
+  cite {
+    display: block;
+    font-size: 12px;
+    font-size: 1.2rem;
+    color: $body-font-color;
+    &:before {
+      content: "\2014 \0020";
+    }
+    a {
+      color: $body-font-color;
+      &:visited {
+        color: $body-font-color;
+      }
+    }
+  }
+}
+
+hr {
+  border: 1px solid $horizontal-rule-color;
+  clear: both;
+  margin: 16px 0 18px;
+  height: 0;
+}
+
+abbr, acronym {
+  text-transform: uppercase;
+  font-size: 90%;
+  color: #222;
+  border-bottom: 1px solid $horizontal-rule-color;
+  cursor: help;
+}
+
+abbr {
+  text-transform: none;
+}
+
+/**
+   * Print styles.
+ *
+ * Inlined to avoid required HTTP connection: www.phpied.com/delay-loading-your-print-css/
+ * Credit to Paul Irish and HTML5 Boilerplate (html5boilerplate.com)
+ */
+
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -ms-filter: none !important;
+  }
+  /* Black prints faster: sanbeiji.com/archives/953 */
+  p a {
+    color: $body-font-color !important;
+    text-decoration: underline;
+    &:visited {
+      color: $body-font-color !important;
+      text-decoration: underline;
+    }
+    &[href]:after {
+      content: " (" attr(href) ")";
+    }
+  }
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+  .ir a:after {
+    content: "";
+  }
+  a {
+    &[href^="javascript:"]:after, &[href^="#"]:after {
+      content: "";
+    }
+  }
+  /* Don't show links for images, or javascript/internal links */
+  pre, blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  /* css-discuss.incutio.com/wiki/Printing_Tables */
+  tr, img {
+    page-break-inside: avoid;
+  }
+  @page {
+    margin: 0.5cm;
+  }
+
+  p, h2, h3 {
+    orphans: 3;
+    widows: 3;
+  }
+  h2, h3 {
+    page-break-after: avoid;
+  }
+}

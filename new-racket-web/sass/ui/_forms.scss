@@ -1,0 +1,375 @@
+/* Form Styles */
+
+@import "../functions/forms";
+
+
+form { 
+  margin: 0 0 18px;
+  label {
+    display: block;
+    @include font-size($norm);
+    @include adjust-leading-to(1);
+    cursor: pointer;
+    margin-bottom: 9px;
+    &.inline {
+      display: inline-block;
+      padding-right: 20px;
+    }
+  }
+  dt {
+    margin: 0;
+  }
+  textarea {
+    height: 150px;
+  }
+  ul, ul li {
+    margin-left: 0;
+    list-style-type: none;
+  }
+  fieldset {
+    @include rhythm-borders(1px,1,$norm,solid);
+    border-color: darken($default-color, 10%);
+    margin: 18px 0;
+    legend {
+      padding: 5px 10px;
+    }
+  }
+}
+  
+.field {
+  position: relative;
+  max-width: 100%;
+  margin-bottom: 10px;
+  vertical-align: middle;
+  // Font-size 16px for weird form style error
+  font-size: 16px;
+  &.metro, .metro {
+    @include border-radius(0);
+  }
+  input, input[type="*"], textarea {
+    max-width: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    resize: none;
+    -webkit-appearance: none;
+    font-family: $font-family;
+    font-weight: $font-weight-light;
+    @include font-size($norm);
+    @include box-shadow(none);
+  }
+  .radio, .checkbox {
+    position: relative;
+  }
+  .radio input[type="radio"], .checkbox input[type="checkbox"] {
+    display: none;
+  }
+  .input {
+    position: relative;
+    padding: 0 10px;
+    background: #fff;
+    border: 1px solid darken($default-color, 10%);
+    @include line-and-height(height-calc($norm));
+    @include font-size($norm);
+    @include border-radius(4px);
+    &.search {
+      @include line-and-height(height-calc($norm));
+      @include border-radius(1000px);
+      padding-right: 0;
+    }
+  }
+  .input.textarea {
+    height: auto;
+  }
+
+  @each $width in $field-sizes {
+    .#{nth($width, 1)} {
+      @include input-size(#{nth($width, 1)})
+    }
+  }
+
+  @include input-sizes-list() {
+    margin:0;
+    &:last-child {
+      margin-left: -4px;
+    }
+    &:first-child {
+      margin-right: 3.94%;
+      margin-left: 0;
+    }
+    &:first-child:last-child {
+      margin: 0;
+    }
+  }
+
+  label + {
+    @include input-sizes-list() {
+      &:last-child {
+        margin-left: 0;
+      }
+    }
+  }
+
+  @include respond(document-width) {
+
+    .xxwide:first-child, .xxwide:last-child {
+      margin-right: 0%;
+    }
+
+  }
+
+  /* remove inline-block white-space — A 0px font-size = 0px of white space */
+  &.prepend, &.append {
+    font-size: 0;
+    white-space: nowrap;
+    padding-bottom: 3.5px;
+  }
+
+  &.prepend input,
+  &.prepend .input,
+  &.append input,
+  &.append .input {
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  &.prepend input,
+  &.prepend .input {
+    @include border-radius(0px 4px 4px 0);
+  }
+
+  &.append input,
+  &.append .input {
+    @include border-radius(4px 0 0 4px);
+  }
+
+  &.prepend.append input {
+    @include border-radius(0);
+  }
+
+  &.prepend.append input:first-child {
+    @include border-radius(4px 0 0 4px);
+  }
+
+  &.prepend.append input:last-child {
+    margin-left: -1px;
+    @include border-radius(0px 4px 4px 0);
+  }
+
+  &.prepend .adjoined, &.append .adjoined, &.prepend .btn, &.append .btn {
+    position: relative;
+    display: inline-block;
+    margin-bottom:0;
+    z-index: 99;
+  }
+  &.prepend .btn, &.append .btn {
+    a, input, button {
+      padding: 0 12px;
+    }
+  }
+
+  &.prepend .adjoined, &.append .adjoined  {
+    padding: 0 10px 0 10px;
+    background: $default-color;
+    border: 1px solid darken($default-color, 10%);
+    font-family: $font-family;
+    font-weight: $font-weight-semibold;
+    color: $body-font-color;
+    @include font-size($norm);
+    @include line-and-height(height-calc($norm));
+  }
+
+  &.prepend *:first-child {
+    @include border-radius(4px 0 0 4px);
+  }
+
+  &.prepend input:first-child {
+    margin-right: 0;
+  }
+
+  &.prepend .adjoined, &.prepend .btn {
+    margin-right: -1px;
+  }
+
+  .adjoined:first-child {
+    margin-left: 0 !important;
+  }
+
+  &.append .adjoined, &.append .btn {
+    margin-left: -1px;
+  }
+
+  &.append *:last-child {
+    @include border-radius(0px 4px 4px 0);
+  }
+
+  &.append input:first-child {
+    margin-right: 0;
+  }
+
+  &.double input, &.double .input {
+    width: 50% !important;
+    &:last-child {
+      margin-left: -1px;
+    }
+  }
+
+  @each $error in danger $danger-color, warning $warning-color, success $success-color {
+    &.#{nth($error, 1)} {
+      &:after {
+        @if($icons != ""){
+          font-family: "#{$icons}";
+          @if nth($error, 1) == danger {
+            content: "#{$entypo-icon-cancel-circled}";
+          }
+          @if nth($error, 1) == warning {
+            content: "#{$entypo-icon-attention}";
+          }
+          @if nth($error, 1) == success {
+            content: "#{$entypo-icon-check}";
+          }
+        font-size: $norm;
+        position: absolute;
+        top: percentage((strip-units($base-font-size)) / 100) - 2;
+        right: 15px;
+        z-index: 999;
+        color: nth($error, 2);
+        }
+      }
+
+      // <input> does not allow :before & :after
+      // pseudo elements. Removing validation
+      // icons from those elements to avoid
+      // edge-case styling issues
+      &.append:after, &.prepend:after {
+        content: "";
+      }
+      input, .input, textarea, .textarea, .radio span, .checkbox span, .picker {
+        border-color: nth($error, 2);
+        color: nth($error, 2);
+        background: lighten(nth($error, 2), 35%);
+        @include transition-duration(.2s);
+      }
+
+      textarea { color: nth($error, 2); }
+
+      input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
+        color: nth($error, 2);
+      }
+      input:-moz-placeholder, textarea:-moz-placeholder {
+        color: nth($error, 2);
+      }
+    }
+  }
+
+  .picker {
+    @each $error in danger $danger-color, warning $warning-color, success $success-color {
+      &.#{nth($error, 1)} {
+        border-color: nth($error, 2);
+        color: nth($error, 2);
+        background: lighten(nth($error, 2), 35%);
+        @include transition-duration(.2s);
+        select, &:after { color: nth($error, 2); }
+      }
+    }
+  }
+  
+  .radio, & .checkbox {
+    @each $error in danger $danger-color, warning $warning-color, success $success-color {
+      &.#{nth($error, 1)} {
+        color: nth($error, 2);
+        @if nth($error, 1) == success {
+          color: $body-font-color;
+          i { color: nth($error, 2); }
+        }
+        span {
+          border-color: nth($error, 2);
+          color: nth($error, 2);
+          background: lighten(nth($error, 2), 35%);
+          @include transition-duration(.2s);
+        }
+      }
+    }
+  }
+
+  .radio span, & .checkbox span {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    position: relative;
+    top: 2px;
+    border: solid 1px #ccc;
+    background: #fefefe;
+  }
+  .radio span {
+    @include border-radius(8px);
+  }
+  .checkbox span {
+    @include border-radius(3px);
+  }
+  .radio.checked i, .checkbox.checked i {
+    position: absolute;
+    top: -1px;
+    left: -8px;
+    line-height: 16px;
+  }
+}
+  
+.field .text input[type="search"] {
+  -webkit-appearance: textfield;
+}
+  
+
+/* Form Picker Element (<select>) */
+  
+.picker {
+  position: relative;
+  width: auto;
+  display: inline-block;
+  margin: 0 0 2px 1.2%;
+  overflow: hidden;
+  border: 1px solid darken($default-color, 5%);
+  @include border-radius(4px);
+  font-family: $font-family;
+  font-weight: $font-weight-semibold;
+  height: auto;
+  @include background-image(linear-gradient(lighten($default-color, 20%), $default-color));
+  &:after {
+    content: "\25BE";
+    z-index: 0;
+    position:absolute;
+    right: 8%;
+    top: 50%;
+    margin-top: -12px;
+    color: $body-font-color;
+  }
+  &:first-child {
+    margin-left: 0;
+  }
+  select {
+    position: relative;
+    display: block;
+    min-width: 100%;
+    width: 135%;
+    height: 34px;
+    padding: 6px 45px 6px 15px;
+    color: $body-font-color;
+    border: none;
+    background: transparent;
+    outline: none;
+    -webkit-appearance: none;
+    z-index: 99;
+        cursor: pointer;
+    @include font-size($norm);
+  }
+}
+
+// IE9 fix - seems no other way around this :(
+.ie9 {
+  .radio.checked i, .checkbox.checked i {
+    top: 0px;
+  }
+}
+

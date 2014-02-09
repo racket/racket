@@ -1,0 +1,413 @@
+/*=====================================================
+
+   Navigation (with dropdowns)
+
+ ======================================================*/
+
+
+.navbar {
+  width: 100%;
+  min-height: 60px;
+  display: block;
+  margin-bottom: 20px;
+  background: $navbar-color; // Change this color in settings to change the navbar color
+  @include respond(all-phones) {
+    position: relative;
+    border: none;
+    .column, .columns {
+      min-height: 0;
+    }
+  }
+
+  &.fixed {
+    top: 0;
+    left: 0;
+    z-index: 99999;
+  }
+  a.toggle {
+    display: none;
+
+    // Navigation Toggle Mobile styles
+    @include respond(all-phones) {
+      top: 18%;
+      right: 4%;
+      width: 46px;
+      position: absolute;
+      text-align: center;
+      display: inline-block;
+      color: $navbar-link-color;
+      background: $navbar-color;
+      @include line-and-height(40px);
+      @include border-radius($button-radius);
+      @include font-size($larger);
+      &:hover {
+        background: lighten($navbar-color, 5%);
+      }
+      &:active, &.active {
+        background: darken($navbar-color, 5%);
+      }
+    }
+
+  }
+  .logo {
+    display: inline-block;
+    margin: 0 $gutter 0 0;
+    padding: 0;
+    @include line-and-height(height-calc($larger - 3));
+    a {
+      display: block;
+      padding: 0 0 0 $norm;
+      overflow: hidden;
+      @include line-and-height(height-calc($larger - 3));
+    }
+
+    // Navbar Logo Mobile Styles
+    @include respond(all-phones) {
+      float: $default-float;
+      display: inline;
+      a {
+        padding: 0;
+        img {
+          width: auto;
+          height: auto;
+          max-width: 100%;
+        }
+      }
+    }
+  }
+
+  ul {
+    display: table;
+    vertical-align: middle;
+    margin: 0;
+    float: none;
+
+    // Navbar Navigation List Mobile Specific Styles
+    @include respond(all-phones) {
+      position: absolute;
+      display: block;
+      width: 100% !important;
+      height: 0;
+      max-height: 0;
+      top: 60px;
+      left: 0;
+      overflow: hidden;
+      text-align: center;
+      background: darken($navbar-color, 5%);
+      &.active {
+        height: auto;
+        max-height: 600px;
+        z-index: 999999;
+        @include transition-duration(.5s);
+        @include box-shadow(0 2px 2px darken($navbar-color, 15%));
+      }
+    }
+
+    li {
+      display: table-cell;
+      text-align: center;
+      padding-bottom: 0;
+      margin: 0;
+      @include line-and-height(height-calc($larger - 3));
+
+      // Navbar List Item Mobile Specific Styles
+      @include respond(all-phones) {
+        display: block;
+        position: relative;
+        min-height: 50px;
+        max-height: 320px;
+        height: auto;
+        width: 100%;
+        border-right: 0 !important;
+        @include box-shadow(none);
+        @include transition-duration(.5s);
+      }
+
+      > a {
+        display: block;
+        padding: 0 ms(0);
+        white-space: nowrap;
+        color: $navbar-link-color;
+        text-shadow: 0 1px 2px darken($navbar-color, 20%),
+                     0 1px 0 darken($navbar-color, 20%);
+        @include line-and-height(height-calc($larger - 3));
+        @include font-size($norm);
+      }
+      .btn {
+        border-color: darken($navbar-color, 30%) !important;
+      }
+      &.field {
+        margin-bottom: 0 !important;
+        margin-right: 0;
+        @include respond(all-phones) {
+          padding: 0 $gutter-in-px;
+        }
+        input.search {
+          background: darken($navbar-color, 20%);
+          border: none;
+          color: $default-color;
+        }
+      }
+      .dropdown {
+        width: auto;
+        min-width: 0px;
+        max-width: $min-device-width;
+        height: 0;
+        position: absolute;
+        background: lighten($default-color, 3%);
+        overflow: hidden;
+        z-index: 999;
+      }
+      // Navigation Dropdown Mobile Specific Styles
+      @include respond(all-phones) {
+        .dropdown {
+          width: 100%;
+          max-width: 100%;
+          position: relative;
+          @include box-shadow(none !important);
+        }
+        &.active .dropdown {
+          border-bottom: 1px solid darken($navbar-color, 10%);
+        }
+        &.active .dropdown ul {
+          position: relative;
+          top: 0;
+          background: darken($navbar-color, 8%);
+          min-height: 50px;
+          max-height: 250px;
+          height: auto;
+          overflow: auto;
+          @include box-shadow(none !important);
+          li {
+            min-height: 50px;
+            border-bottom: darken($navbar-color, 5%);
+            a {
+              color: $white;
+              border-bottom: 1px solid darken($navbar-color, 10%);
+              &:hover {color: $body-link-color;}
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Mobile Only Navbar Styles
+  @include respond(tablets) {
+    > ul > li > .btn a {
+      padding: 0 $small 0 $small !important;
+    }
+    ul > li .dropdown ul li.active .dropdown {
+      left: -$min-device-width;
+    }
+  }
+
+}
+
+
+
+
+/**** Navbar positioning for Microsoft's browser who deserves not to be mentioned ****/
+
+.ie7 .navbar > ul { width: auto; }
+
+.ie7 .navbar, .ie7 .navbar > ul > li > a { display: block; }
+
+.ie7 .navbar .logo, .ie7 .navbar ul, .ie7 .navbar ul li { float: left; display: inline-block; }
+
+.ie7 .navbar .logo a { display: block; overflow: hidden; }
+
+.ie7 .navbar > ul > li .field { display: block; padding: 12px 18px 0; width: 80%; }
+
+
+// Pretty Navigation Styles
+
+.pretty.navbar {
+  @include background-image(linear-gradient(lighten($navbar-color, 20%),darken($navbar-color, 10%)));
+  @include box-shadow(inset 0 1px 1px lighten($navbar-color, 20%),
+          0 1px 2px rgba(0,0,0,0.80) !important); /* Remove this line if you dont want a dropshadow on your navigation*/
+  
+  // Pretty Nav Toggle Styles
+  @include respond(all-phones) {
+    a.toggle {
+      border: 1px solid darken($navbar-color, 5%);
+      @include background-image(linear-gradient(lighten($navbar-color, 20%), $navbar-color));
+      @include box-shadow(inset 0 1px 2px lighten($navbar-color, 25%),
+        inset 0 -1px 1px lighten($navbar-color, 5%),
+        inset 1px 0 1px lighten($navbar-color, 5%),
+        inset -1px 0 1px lighten($navbar-color, 5%),
+        0 1px 1px lighten($navbar-color, 10%));
+      i {
+        @include text-shadow(0 1px 1px darken($navbar-color, 20%));
+      }
+      &:hover {
+        @include background-image(linear-gradient(lighten($navbar-color, 25%), lighten($navbar-color, 5%)));
+      }
+      &:active, &.active {
+        @include background-image(linear-gradient(darken($navbar-color, 5%), $navbar-color));
+        @include box-shadow(0 1px 1px lighten($navbar-color, 10%));
+      }
+    }
+  }
+  &.row {
+    @include border-radius($button-radius);
+    @include respond(all-phones) {
+      @include border-radius(0);
+    }
+  }
+  ul li.field input.search {
+    @include background-image(linear-gradient(darken($navbar-color, 20%), lighten($navbar-color, 2%)));
+    border: none;
+    @include box-shadow(0 1px 2px lighten($navbar-color, 25%) !important); /* Remove this line if you dont want a dropshadow on your navigation*/
+  }
+  > ul > li:first-child, .pretty.navbar > ul > li:first-child a:hover {
+    @include box-shadow(none);
+  }
+}
+
+// Dropdown menu styles
+
+.navbar li .dropdown ul {
+  margin: 0;
+  display: block;
+  > li {
+    position:relative;
+    display: block;
+    width: 100%;
+    float: left;
+    text-align: left;
+    height: auto;
+    @include border-radius(none);
+    @include respond(tablets) {
+      max-width: $min-device-width;
+      word-wrap: break-word;
+    }
+    a {
+      display: block;
+      padding: 0 20px;
+      color: $body-link-color;
+      border-bottom: 1px solid $horizontal-rule-color;
+      text-shadow: none;
+      @include line-and-height(height-calc($large - 3));
+      @include respond(all-phones) {
+        padding: 0 $gutter-in-px;
+      }
+    }
+    .dropdown {
+      display: none;
+      background: lighten($default-color, 10%);
+    }
+  }
+  li:first-child a {
+    @include border-radius(0);
+  }
+}
+
+.no-touch .navbar ul li:hover > a {
+  position: relative;
+  background: $info-hover-color;
+  z-index: 1000;
+}
+
+.no-touch .navbar ul li:hover .dropdown, 
+.touch .navbar ul li.active .dropdown {
+  min-height: 50px;
+  max-height: $tablet-device-width - 207;
+  overflow: visible;
+  height: auto;
+  width: 100%;
+  padding: 0;
+  border-top: 1px solid darken($navbar-color, 5%);
+  @include box-shadow(0px 3px 4px rgba(0,0,0,.3));
+}
+
+.no-touch .navbar ul li:hover .dropdown ul {
+  position: relative;
+  top: 0;
+  min-height: 50px;
+  max-height: 250px;
+  height: auto;
+  @include box-shadow(none !important);
+  @include transition-duration(.5s);
+  li {
+    min-height: 50px;
+  }
+  min-height: 50px;
+  max-height: 250px;
+  height: auto;
+  @include box-shadow(none !important);
+  @include transition-duration(.5s);
+  @include respond(all-phones) {
+    overflow: auto;
+    background: darken($navbar-color, 8%);
+    li {
+      border-bottom: darken($navbar-color, 5%);
+      a {
+        color: $white;
+        border-bottom: 1px solid darken($navbar-color, 10%);
+        &:hover {color: $body-link-color;}
+      }
+    }
+  }
+  li {
+    min-height: 50px;
+  }
+}
+
+.no-touch .navbar li .dropdown ul > li:hover .dropdown,
+.touch .navbar li .dropdown ul > li.active .dropdown {
+  border-top: none;
+  display: block;
+  position: absolute;
+  z-index: 9999;
+  left: 100%;
+  top: $nav-distance;
+  margin-top: 0;
+  @include respond(all-phones) {
+    position: relative;
+    left: 0;
+    ul {
+      background: darken($navbar-color, 15%) !important;
+    }
+  }
+}
+
+.no-touch .navbar li .dropdown ul li a:hover {
+  background: $default-color;
+}
+
+.touch .navbar a:hover {
+  color: $navbar-link-color !important;
+}
+
+.subnav {
+  display: block;
+  width: auto;
+  overflow: hidden;
+  margin: 0 0 18px 0;
+  padding-top: 4px;
+  li, dt, dd {
+    float: left;
+    display: inline;
+    margin-left: 9px;
+    margin-bottom: 4px;
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+  dt {
+    color: #999;
+    font-weight: normal;
+  }
+  li a, dd a {
+    color: #05390a;
+    font-size: 15px;
+    text-decoration: none;
+    @include border-radius(4px);
+  }
+  li.active a, dd.active a {
+    background: #5dbb73;
+    padding: 5px 9px;
+    text-shadow: 0 1px 1px #77d58e;
+  }
+}

@@ -1,0 +1,37 @@
+/* Icons */
+
+@import "../var/icons/entypo";
+
+[class^="icon-"] a:before,
+[class*=" icon-"] a:before,
+[class^="icon-"] a:after,
+[class*=" icon-"] a:after,
+i[class^="icon-"],
+i[class*=" icon-"] {
+  font-family: "#{$icons}";
+  position:absolute;
+  text-decoration:none;
+  zoom: 1;
+}
+
+i[class^="icon-"],
+i[class*=" icon-"] {
+  display: inline-block;
+  position: static;
+  min-width: 20px;
+  margin: 0 5px;
+  text-align: center;
+}
+
+@each $icon in $entypo-icons {
+  .#{nth($icon, 1)} {
+    &.icon-left a:before, &.icon-right a:after {
+      content: "#{nth($icon, 2)}";
+      height: inherit;
+    }
+  }
+  i.#{nth($icon, 1)}:before {
+    content: "#{nth($icon, 2)}";
+    height: inherit;
+  }
+}

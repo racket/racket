@@ -1,0 +1,59 @@
+// Calculate grid values
+$gutter: percentage($gutter-in-px / $row-max-width); // 2.1276596
+
+// Return single column width
+@function oneCol($hybrid-grid: false) {
+  @if ($hybrid-grid == true){
+    @return (100% - ($gutter * ($hybrid - 1))) / $hybrid;
+  }
+  @else{
+    @return (100% - ($gutter * ($cols - 1))) / $cols;
+  }
+}
+
+// Calculate Grid Column Widths
+@function columns($num, $hybrid-grid: false){
+  @if ($hybrid-grid == true) {
+    @return (oneCol(true) * $num) + ($gutter * ($num - 1));
+  }
+  @else {
+    @return (oneCol() * $num) + ($gutter * ($num - 1)); // (One column * 'x') + (gutter * ('x' - 1)) = Column Width
+  }
+}
+
+
+// Calculate Push Class Margins
+@function push_x($num, $first-child: false, $is-hybrid: false) {
+  @if $first-child and $is-hybrid {
+    @return (oneCol(true) * $num) + ($gutter * ($num - 1)) + $gutter; // Column width + gutter
+  }
+  @else if $first-child != true and $is_hybrid{
+    @return (oneCol(true) * $num) + ($gutter * ($num - 1)) + ($gutter * 2); // Column width + (gutter * 2)
+  }
+  @else if $first-child and $is_hybrid != true{
+      @return (oneCol() * $num) + ($gutter * ($num - 1)) + $gutter;
+  }
+  @else {
+    @return (oneCol() * $num) + ($gutter * ($num - 1)) + ($gutter * 2); // Column width + (gutter * 2)
+  }
+}
+
+// Calculate Centered Class Margins
+@function centered($num, $hybrid-grid: false) {
+  @if $hybrid-grid{
+    @return 50% - ((($num * (oneCol(true))) + (($num - 1) * $gutter)) / 2);
+  }
+  @else{
+    @return 50% - ((($num * (oneCol())) + (($num - 1) * $gutter)) / 2);
+  }
+}
+
+// Create class names from column count integers
+@function number-as-word($number){
+  $w: "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+"twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
+"twenty", "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five", "twenty-six", "twenty-seven",
+"twenty-eight", "twenty-nine", "thirty", "thirty-one", "thirty-two", "thirty-three",
+"thirty-four", "thirty-five", "thirty-six";
+  @return nth($w, $number);
+}

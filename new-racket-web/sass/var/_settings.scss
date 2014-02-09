@@ -1,0 +1,134 @@
+// Welcome to Gumby 2.0 Settings.
+// Happy Tinkering!
+
+
+// Grid Settings
+$row-max-width: 940px !default;    				// 940px
+$gutter-in-px: 20px !default;      				// 20px
+$cols: 12 !default;              				// 12 Column Default Grid
+$hybrid: 16 !default;							// 16 Column Default Hybrid Grid
+
+// Responsiveness Settings
+$min-device-width: 320px; 						// iPhone Portrait
+$tablet-device-width: 768px;					// iPad Portrait
+$document-width: $row-max-width;				// Default Document
+$max-device-width: 2880px;						// Max Document Size
+
+// Spacing
+$nav-distance: 0px; 							// Navigation distance from the top of the viewport
+
+// Typography
+$font-family: "Open Sans";
+$font-style-italic: italic;
+$icons: entypo;
+$font-smoothing: antialiased;
+
+// Font Weights
+$font-weight-bold: 700;
+$font-weight-semibold: 600;
+$font-weight-medium: 400;
+$font-weight-regular: 400;
+$font-weight-light: 300;
+$font-weight-thin: 300;
+
+$header-font-weight: $font-weight-thin;
+$body-font-weight: $font-weight-regular;
+$type-font-weight: $font-weight-regular;
+$link-font-weight: $font-weight-regular;
+$button-font-weight: $font-weight-semibold;
+$tabs-font-weight: $font-weight-semibold;
+
+// Vertical Rhythm Spacing
+$base-line-height: ms(1) !default;
+$rhythm-spacing: .168;
+$rhythm-height: .711;
+
+// Modular Scale Settings
+// http://www.modularscale.com by Tim Brown
+// https://github.com/scottkellum/modular-scale
+$ratio: golden();						// Ratio for Modular Scale
+$base-font-size: 16px !default;
+$importantNum: 78px !default;
+$base-size: $base-font-size $importantNum;
+// Gumby Default Scale Values: 16, 18, 26, 30, 42, 48, 68, 78, 110, 126;
+
+// Sizing
+$xsmall: ms(-2);
+$small: ms(-1);
+$norm: ms(0);									// $base-font-size (16px == default)
+$med: ms(1);
+$large: ms(2);
+$larger: ms(3);
+$xlarge: ms(4);
+$xxlarge: ms(5);
+$xxxlarge: ms(6);
+$reallybig: ms(8);
+$tremendous: ms(9);
+$absurd: ms(10);
+
+// Typography Colors
+$header-font-color: #444444 !default;
+$header-link-color: #d04526 !default;
+$header-link-hover-color: #c03d20 !default;
+$body-font-color: #555555 !default;
+$body-link-color: #d04526 !default;
+$body-link-hover-color: #c03d20 !default;
+
+// User Interface Colors
+$global-bg-color: #fff;
+$navbar-color: #4a4d50;
+$navbar-link-color: #fff;
+
+$primary-color: #3085d6;
+$secondary-color: #42a35a;
+$default-color: #f2f2f2;
+$info-color: #4a4d50;
+$danger-color: #ca3838;
+$warning-color: #f6b83f;
+$success-color: #58c026;
+
+$primary-hover-color: #58b2fa;
+$secondary-hover-color: #6dbb80;
+$default-hover-color: #ffffff;
+$info-hover-color: #868d92;
+$danger-hover-color: #f14f4f;
+$warning-hover-color: #fdd27f;
+$success-hover-color: #66d92f;
+
+$horizontal-rule-color: #ccc !default;
+
+$black: #000;
+$white: #fff;
+
+// Borders
+$button-radius: 4px !default;
+$metro-radius: 0 !default;
+$bigger-radius: 8px;
+
+// Buttons
+// Font Sizing
+$xlarge-button-font-size: $larger;
+$large-button-font-size: $large;
+$medium-button-font-size: $norm;
+$small-button-font-size: $small;
+// Padding
+$default-button-padding: $med;
+// Height
+$default-button-height: 36px;
+
+// Tabs
+$tab-height: 42px;
+
+// Drawers & Modals
+$modal-overlay-color: rgba(0, 0, 0, 0.8);
+$modal-window-color: $white;
+$drawer-background-color: #3e4144;
+$drawer-inner-shadow-x-offset: 0;
+$drawer-inner-shadow-y-offset: 2px;
+$drawer-inner-shadow-blur: 5px;
+$drawer-inner-shadow-color: #313436;
+
+// Floats
+$default-float: left;
+$switch-float: right;
+

@@ -1,0 +1,108 @@
+/* Tabs */
+
+.tabs { 
+	display: block;
+  .tab-nav {
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid darken($default-color, 5%);
+    > li {
+      display: inline-block;
+      width: auto;
+      padding: 0;
+      margin: 0 $gutter 0 0;
+      cursor: default;
+      top: 1px;
+      @include box-shadow(0 1px 0 $white);
+      > a {
+        display: block;
+        width: auto;
+        padding: 0 $norm;
+        margin: 0;
+        color: $body-font-color;
+        font-family: $font-family;
+        font-weight: $tabs-font-weight;
+        border: 1px solid darken($default-color, 5%);
+        border-width: 1px 1px 0 1px;
+        text-shadow: 0 1px 1px lighten($default-color, 5%);
+        background: $default-color;
+        cursor: pointer;
+        @include border-radius($button-radius $button-radius 0 0);
+        @include line-and-height($tab-height);
+        &:hover {
+          text-decoration: none;
+          background: lighten($default-color, 1%);
+        }
+        &:active {
+          background: darken($default-color, 2%);
+        }
+      }
+      &.active > a {
+        @include line-and-height($tab-height + 1);
+        background: $white;
+      }
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+  .tab-content {
+    display: none;
+    padding: 20px 10px;
+    &.active {
+      display: block;
+    }
+  }
+  &.pill .tab-nav {
+    width: 100%;                                  /* remove if you dont want the tabs to span the full container width */
+    display: table;
+    overflow: hidden;
+    border: 1px solid darken($default-color, 5%);
+    @include border-radius($button-radius);
+    > li {
+      display: table-cell;
+      margin: 0;
+      margin-left: -4px;
+      text-align: center;
+      top: 0;
+      &:first-child {
+        margin-left: 0;
+      }
+      > a {
+        border: none;
+        border-right: 1px solid darken($default-color, 5%);
+        @include border-radius(0);
+        @include line-and-height($tab-height);
+      }
+      &:last-child > a {
+        border-right:none;
+      }
+    }
+  }
+  &.vertical {
+    .tab-nav {
+      border: none;
+      > li {
+        display: block;
+        margin: 0;
+        margin-bottom: 5px;
+        &.active {
+          position: relative;
+          z-index: 99;
+          > a {
+            border-right: 1px solid $global-bg-color;
+          }
+        }
+        > a {
+          border: 1px solid darken($default-color, 5%);
+          @include border-radius($button-radius 0 0 $button-radius);
+        }
+      }
+    }
+    .tab-content {
+      padding: 10px 0 30px 20px;
+      margin-left: -1px;
+      border-left: 1px solid darken($default-color, 5%);
+    }
+  }
+}

@@ -1,0 +1,7 @@
+
+// Make line-height equal to an element's height
+
+@mixin line-and-height($height) {
+  height: $height;
+  line-height: $height - 2;
+}

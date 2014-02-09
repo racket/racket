@@ -1,0 +1,22 @@
+body .video {
+  width: 100%;
+  position: relative;
+  height: 0;
+  padding-bottom: 56.25%;
+  &.twitch, &.youtube.show_controls {
+    padding-top: 30px;
+    // Use .show_controls f you want the play/pause controls
+    // to show before the video plays, like on older youtube.
+  }
+  &.youtube, &.vimeo {
+    // Nothing goes here anymore. Both use overlay transports.
+  }
+}
+
+.video > video, .video > iframe, .video > object, .video > embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}

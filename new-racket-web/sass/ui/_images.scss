@@ -1,0 +1,21 @@
+.image {
+  line-height:0;
+  margin-bottom: 20px;
+  &.circle {
+    @include border-radius(50% !important);
+    overflow: hidden;
+    width: auto;
+  }
+  &.rounded {
+    overflow: hidden;
+    @include border-radius($button-radius $button-radius);
+  }
+  &.photo {
+    border: 5px solid #fff;
+    @include box-shadow(0 0 1px $body-font-color);
+    &.polaroid {
+      padding-bottom: 50px;
+      background: #fff;
+    }
+  }
+}

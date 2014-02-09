@@ -1,0 +1,17 @@
+// Visibility Mixins
+
+// Mixin for hidden
+
+@mixin hidden($media) {
+  @include respond($media) {
+    display: none !important;
+  }
+}
+
+// Mixin for visible
+
+@mixin visible($media) {
+  @include respond($media) {
+    display: inherit !important;
+  }
+}

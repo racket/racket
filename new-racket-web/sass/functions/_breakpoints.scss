@@ -1,0 +1,11 @@
+@function breakpoint($breakpoint) {
+  @if $breakpoint == $document-width {
+    @return $document-width - 1;
+  }
+  @if $breakpoint == $tablet-device-width {
+  	@return $tablet-device-width - 1;
+  }
+  @if $breakpoint == $min-device-width {
+  	@return $min-device-width + 1;
+  }
+}

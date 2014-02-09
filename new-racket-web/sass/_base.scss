@@ -1,0 +1,60 @@
+@import "compass/typography/vertical_rhythm";
+
+@include establish-baseline;
+
+html * {
+	@include box-sizing(border-box);
+}
+
+body {
+  background: $global-bg-color;
+  font-family: $font-family;
+  font-weight: $body-font-weight;
+  color: $body-font-color;
+  position: relative;
+  -webkit-font-smoothing: $font-smoothing;
+  @include respond(all-phones) {
+    -webkit-text-size-adjust: none;
+    -ms-text-size-adjust: none;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+html, body {
+  height: 100%;
+}
+
+.ie9 {
+  font-family: $font-family;
+  * {
+    font-family: $font-family;
+  }
+}
+
+.hide {
+  display: none;
+}
+
+.hide.active, .show {
+  display: block;
+}
+
+.fixed {
+  position: fixed;
+  @include respond(portrait-tablets) {
+    position: relative !important;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
