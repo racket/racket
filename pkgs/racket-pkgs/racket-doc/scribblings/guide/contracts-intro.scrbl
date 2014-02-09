@@ -210,3 +210,30 @@ with the @racket[module+] keyword at the front. The first form after
 @racket[module] is the name of the module to be used in a subsequent
 @racket[require] statement (where each reference through a
 @racket[require] prefixes the name with @racket[".."]).
+
+@ctc-section[#:tag "intro-nested"]{Experimenting with Nested Contract Boundaries}
+
+In many cases, it makes sense to attach contracts at module boundaries.
+It is often convenient, however, to be able to use contracts at
+a finer granularity than modules. The @racket[define/contract]
+form enables this kind of use:
+
+@racketmod[
+racket
+
+(define/contract amount
+  (and/c number? positive?)
+  150)
+
+(+ amount 10)
+]
+
+In this example, the @racket[define/contract] form establishes a contract
+boundary between the definition of @racket[amount] and its surrounding
+context. In other words, the two parties here are the definition and
+the module that contains it.
+
+Forms that create these @emph{nested contract boundaries} can sometimes
+be subtle to use because they may have unexpected performance implications
+or blame a party that may seem unintuitive. These subtleties are explained
+in @secref["simple-nested"] and @ctc-link["gotcha-nested"].

@@ -100,6 +100,36 @@ is just another way of writing
 (-> number? any)
 ]
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "simple-nested"]{Using @racket[define/contract] and @racket[->]}
+
+The @racket[define/contract] form introduced in @ctc-link["intro-nested"] can
+also be used to define functions that come with a contract. For example,
+
+@racketblock[
+(define/contract (deposit amount)
+  (-> number? any)
+  (code:comment "implementation goes here")
+  ....)
+]
+
+which defines the @racket[deposit] function with the contract from earlier.
+Note that this has two potentially important impacts on the use of
+@racket[deposit]:
+
+@itemlist[#:style "ordered"
+  @item{Since the contract will always be checked on calls to @racket[deposit],
+        even inside the module in which it is defined, this may increase
+        the number of times the contract is checked. This could lead to
+        a performance degradation. This is especially true if the function
+        is called repeatedly in loops or recursion.}
+  @item{In some situations, a function may be written to accept a more
+        lax set of inputs when called by other code in the same module.
+        For such use cases, the contract boundary established by
+        @racket[define/contract] is too strict.}
+]
+
 @; ----------------------------------------------------------------------
 @section{@racket[any] and @racket[any/c]}
 
