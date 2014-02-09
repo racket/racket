@@ -1430,6 +1430,15 @@ Works like @racket[define], except that the contract
 definition of @racket[head] and @racket[args], see @racket[define].
 For the definition of @racket[free-var-list], see @racket[with-contract].
 
+@examples[#:eval (contract-eval)
+  (define/contract distance (>=/c 0) 43.52)
+  (define/contract (furlongs->feet fr)
+    (-> real? real?)
+    (* 660 fr))
+  (code:comment "a contract violation expected here:")
+  (furlongs->feet "not a furlong")
+]
+
 The @racket[define/contract] form treats the individual definition as
 a contract region. The definition itself is responsible for positive
 (co-variant) positions of the contract, and references to
@@ -1438,10 +1447,34 @@ positions of the contract. Since the contract boundary is
 between the definition and the surrounding context, references to
 @racket[id] inside the @racket[define/contract] form are not checked.
 
+@examples[#:eval (contract-eval)
+  (code:comment "an unsual predicate that prints when called")
+  (define (printing-int? x)
+    (displayln "I was called")
+    (exact-integer? x))
+  (define/contract (fact n)
+    (-> printing-int? printing-int?)
+    (if (zero? n)
+        1
+        (* n (fact (sub1 n)))))
+  (fact 5) (code:comment "only prints twice, not for each recursive call")
+]
+
 If a free-var-list is given, then any uses of the free variables
 inside the @racket[body] will be protected with contracts that
 blame the context of the @racket[define/contract] form for the positive
-positions and the @racket[define/contract] form for the negative ones.}
+positions and the @racket[define/contract] form for the negative ones.
+
+@examples[#:eval (contract-eval)
+  (define (integer->binary-string n)
+    (number->string n 2))
+  (define/contract (numbers->strings lst)
+    (-> (listof number?) (listof string?))
+    #:freevar integer->binary-string (-> exact-integer? string?)
+    (code:comment "mistake, lst might contain inexact numbers")
+    (map integer->binary-string lst))
+  (numbers->strings '(4.0 3.3 5.8))
+]}
 
 @defform*[[(define-struct/contract struct-id ([field contract-expr] ...)
                                    struct-option ...)
