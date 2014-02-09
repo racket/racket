@@ -1,0 +1,131 @@
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video { margin: 0; padding: 0; border: 0; font: inherit; font-size: 100%; vertical-align: baseline; }
+
+b { font-weight: bold; }
+
+html { line-height: 1; }
+
+ol, ul { list-style: none; }
+
+table { border-collapse: collapse; border-spacing: 0; }
+
+caption, th, td { text-align: left; font-weight: normal; vertical-align: middle; }
+
+q, blockquote { quotes: none; }
+q:before, q:after, blockquote:before, blockquote:after { content: ""; content: none; }
+
+a img { border: none; }
+
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary { display: block; }
+
+* html { font-size: 100%; }
+
+html { font-size: 16px; line-height: 1.625em; }
+
+html * { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }
+
+body { background: white; font-family: "Open Sans"; font-weight: 400; color: #1e1e1e; position: relative; -webkit-font-smoothing: antialiased; }
+@media only screen and (max-width: 767px) { body { -webkit-text-size-adjust: none; -ms-text-size-adjust: none; width: 100%; min-width: 0; } }
+
+html, body { height: 100%; }
+
+.ie9 { font-family: "Open Sans"; }
+.ie9 * { font-family: "Open Sans"; }
+
+
+@media only screen and (max-width: 767px) { h1, h2, h3, h4, h5, h6 { word-wrap: break-word; } }
+h1 { font-size: 68px; font-size: 4.25rem; }
+h1.xlarge { font-size: 110px; font-size: 6.875rem; }
+h1.xxlarge { font-size: 126px; font-size: 7.875rem; }
+h1.absurd { font-size: 177px; font-size: 11.0625rem; }
+
+h2 { font-size: 42px; font-size: 2.625rem; padding-top: 18px; padding-bottom: 16px; }
+
+h3 { font-size: 30px; font-size: 1.875rem; padding-top: 16px; padding-bottom: 16px; }
+
+h4 { font-size: 26px; font-size: 1.625rem; }
+
+h5 { font-size: 18px; font-size: 1.125rem; }
+
+h6 { font-size: 16px; font-size: 1rem; }
+
+@media only screen and (max-width: 767px) { h1 { font-size: 42px; font-size: 2.625rem; }
+  h2 { font-size: 36px; font-size: 2.25rem; } }
+
+/*=====================================================  Links & Paragraph styles  ======================================================*/
+p { font-family: "Open Sans"; font-weight: 400; color: black; font-size: 16px; font-size: 1rem; margin-bottom: 13px; line-height: 1.625em; }
+p.lead { font-size: 20px; font-size: 1.25rem; margin-bottom: 18px; }
+@media only screen and (max-width: 768px) { p { font-size: 17.6px; font-size: 1.1rem; line-height: 1.625em; } }
+
+a { color: #d04526; text-decoration: none; outline: 0; line-height: inherit; }
+a:hover { color: #c03d20; }
+
+/*=====================================================
+ Lists  ======================================================*/
+ul, ol { margin-bottom: 0.273em; }
+
+ul { list-style: none outside; }
+
+ol { list-style: decimal; margin-left: 30px; }
+
+ul.square, ul.circle, ul.disc { margin-left: 25px; }
+ul.square { list-style: square outside; }
+ul.circle { list-style: circle outside; }
+ul.disc { list-style: disc outside; }
+ul ul { margin: 4px 0 5px 25px; }
+
+ol ol { margin: 4px 0 5px 30px; }
+
+li { padding-bottom: 0.273em; }
+
+ul.large li { line-height: 21px; }
+
+dl dt { font-weight: bold; font-size: 16px; font-size: 1rem; }
+
+@media only screen and (max-width: 768px) { ul, ol, dl, p { text-align: left; } }
+/* Mobile */
+em { font-style: italic; line-height: inherit; }
+
+strong { font-weight: 700; line-height: inherit; }
+
+small { font-size: 56.4%; line-height: inherit; }
+
+h1 small, h2 small, h3 small, h4 small, h5 small { color: #777; }
+
+/*  Blockquotes  */
+blockquote { line-height: 20px; color: #777; margin: 0 0 18px; padding: 9px 20px 0 19px; border-left: 5px solid #cccccc; }
+blockquote p { line-height: 20px; color: #777; }
+blockquote cite { display: block; font-size: 12px; font-size: 1.2rem; color: #1e1e1e; }
+blockquote cite:before { content: "\2014 \0020"; }
+blockquote cite a { color: #1e1e1e; }
+blockquote cite a:visited { color: #1e1e1e; }
+
+hr { border: 1px solid #cccccc; clear: both; margin: 16px 0 18px; height: 0; }
+
+abbr, acronym { text-transform: uppercase; font-size: 90%; color: #222; border-bottom: 1px solid #cccccc; cursor: help; }
+
+abbr { text-transform: none; }
+
+pre, code { color: black; font-family: 'Inconsolata'; }
+
+/** Print styles.  Inlined to avoid required HTTP connection: www.phpied.com/delay-loading-your-print-css/ Credit to Paul Irish and HTML5 Boilerplate (html5boilerplate.com) */
+@media print { * { background: transparent !important; color: black !important; text-shadow: none !important; filter: none !important; -ms-filter: none !important; }
+  /* Black prints faster: sanbeiji.com/archives/953 */
+  p a { color: #1e1e1e !important; text-decoration: underline; }
+  p a:visited { color: #1e1e1e !important; text-decoration: underline; }
+  p a[href]:after { content: " (" attr(href) ")"; }
+  abbr[title]:after { content: " (" attr(title) ")"; }
+  .ir a:after { content: ""; }
+  a[href^="javascript:"]:after, a[href^="#"]:after { content: ""; }
+  /* Don't show links for images, or javascript/internal links */
+  pre, blockquote { border: 1px solid #999; page-break-inside: avoid; color: black; }
+  thead { display: table-header-group; }
+  /* css-discuss.incutio.com/wiki/Printing_Tables */
+  tr, img { page-break-inside: avoid; }
+  @page { margin: 0.5cm; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3 { page-break-after: avoid; } }
+/*=================================================
+ +++ LE GRID +++ A Responsive Grid -- Gumby defaults to a standard 960 grid, but you can change it to whatever you'd like.
+ ==================================================*/
+/*.container { padding: 0px $gutter-in-px;
+}*/
