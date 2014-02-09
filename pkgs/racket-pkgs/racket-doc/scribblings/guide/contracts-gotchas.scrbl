@@ -50,6 +50,64 @@ the @racket[eq?] call would return @racket[#t].
 
 Moral: Do not use @racket[eq?] on values that have contracts.
 
+@ctc-section[#:tag "gotcha-nested"]{Contract boundaries and @racket[define/contract]}
+
+The contract boundaries established by @racket[define/contract], which
+creates a nested contract boundary, are sometimes unintuitive. This is
+especially true when multiple functions or other values with contracts
+interact. For example, consider these two interacting functions:
+
+@(define e2 (make-base-eval))
+@(interaction-eval #:eval e2 (require racket/contract))
+@interaction[#:eval e2
+(define/contract (f x)
+  (-> integer? integer?)
+  x)
+(define/contract (g)
+  (-> string?)
+  (f "not an integer"))
+(g)
+]
+
+One might expect that the function @racket[g] will be blamed
+for breaking the terms of its contract with @racket[f]. 
+Blaming @racket[g] would be right if @racket[f] and @racket[g]
+were directly establishing contracts with each other.
+They aren't, however. Instead, the access between @racket[f]
+and @racket[g] is mediated through the top-level of the enclosing
+module.
+
+More precisely, @racket[f] and the top-level of the module have
+the @racket[(-> integer? integer?)] contract mediating their
+interaction; @racket[g] and the top-level have @racket[(-> string?)]
+mediating their interaction, but there is no contract directly
+between @racket[f] and @racket[g]. This means that the reference to
+@racket[f] in the body of @racket[g] is really the top-level
+of the module's responsibility, not @racket[g]'s. In other words,
+the function @racket[f] has been given to @racket[g] with
+no contract between @racket[g] and the top-level and thus
+the top-level is blamed.
+
+If we wanted to add a contract between @racket[g] and the
+top-level, we can use @racket[define/contract]'s
+@racket[#:freevar] declaration and see the expected blame:
+
+@interaction[#:eval e2
+(define/contract (f x)
+  (-> integer? integer?)
+  x)
+(define/contract (g)
+  (-> string?)
+  #:freevar f (-> integer? integer?)
+  (f "not an integer"))
+(g)
+]
+@(close-eval e2)
+
+Moral: if two values with contracts should interact,
+       put them in separate modules with contracts at
+       the module boundary or use @racket[#:freevar].
+
 @ctc-section[#:tag "exists-gotcha"]{Exists Contracts and Predicates}
 
 Much like the @racket[eq?] example above, @racket[#:∃] contracts
@@ -152,40 +210,3 @@ racket
 ]
 
 Moral: This is a bug that we will address in a future release.
-
-@ctc-section[#:tag "gotcha-nested"]{Contract boundaries established by @racket[define/contract]}
-
-The contract boundaries established by @racket[define/contract], which
-creates a nested contract boundary, is sometimes unintuitive. This is
-especially true when multiple functions or other values with contracts
-interact. For example, consider these two interacting functions:
-
-@(define e2 (make-base-eval))
-@(interaction-eval #:eval e2 (require racket/contract))
-@interaction[#:eval e2
-(define/contract (f x)
-  (-> integer? integer?)
-  x)
-(define/contract (g)
-  (-> string?)
-  (f "not an integer"))
-(g)
-]
-@(close-eval e2)
-
-One may expect that the function @racket[g] will be blamed
-for breaking the terms of its contract with @racket[f]. Instead, the
-``top-level'' is blamed.
-
-The reason that the ``top-level'' is blamed is because there are two
-contract boundaries in play and none of them are directly between
-@racket[f] and @racket[g]. Both @racket[f] and @racket[g] establish
-boundaries between themselves and their context, i.e., the top-level.
-In order for @racket[f] to be called by @racket[g], the arguments
-that are supplied by @racket[g] pass through the top-level, which
-takes responsibility for the values ultimately supplied to @racket[f].
-Thus, it makes sense that the top-level is blamed.
-
-Moral: if two values with contracts should interact,
-       consider putting them in separate modules with contracts at
-       the module boundary.
