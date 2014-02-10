@@ -24,8 +24,7 @@
 
 ;; Section definitions for manuals that appear on the start page.
 (define manual-sections
-  '((getting-started (link "Getting Started"
-                           (lib "scribblings/main/getting-started.scrbl")))
+  '((getting-started #f)
     (tutorial        "Tutorials")
     (racket-core     "Racket Language and Core Libraries")
     (teaching        "Teaching")
