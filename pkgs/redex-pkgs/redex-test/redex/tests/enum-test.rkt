@@ -105,13 +105,13 @@
   (x number)
 
   ;; Example of poorly behaved mismatch
-  (ambig (x ... x ...)))
+  (ambig (y ... y ...)))
 
 (try-it 100 M m)
 (try-it 100 M n)
 (try-it 100 M p)
 ;; Ambiguity kills us here
-;; (try-it 5 M (ambig_!_1 ambig_!_1))
+;; (try-it 2 M (ambig_!_1 ambig_!_1))
 
 ;; test variable filtering
 (define-language Vars
