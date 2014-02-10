@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{Getting Started with Racket}
+@title{Getting Started}
 
 To get started with Racket,
 @link["http://racket-lang.org/download/"]{download it} from the web page and

@@ -93,8 +93,8 @@
           (lambda content
             (list (make-flow (list (make-paragraph content)))))]
          [line
-          (lambda (spec)
-            (plain-line (hspace 2) 
+          (lambda (spec indent?)
+            (plain-line (if indent? (hspace 2) null)
                         (if (element? spec)
                             spec
                             (other-manual spec #:underline? #f))))])
@@ -110,17 +110,23 @@
                     ;; Drop section if it contains no manuals.
                     null]
                    [else
-                    (list*
-                     (plain-line (hspace 1))
-                     (plain-line (let loop ([s (sec-label sec)])
-                                   (match s
-                                     [(list 'elem parts ...)
-                                      (apply elem (map loop parts))]
-                                     [(list 'link text doc-mod-path)
-                                      (seclink "top" #:doc doc-mod-path #:underline? #f text)]
-                                     [(list 'link text doc-mod-path tag)
-                                      (seclink tag #:doc doc-mod-path #:underline? #f text)]
-                                     [_ s])))
+                    (append
+                     ;; Spacer
+                     (list (plain-line (hspace 1)))
+                     ;; Section title, if any:
+                     (if (sec-label sec)
+                         (list
+                          (plain-line (let loop ([s (sec-label sec)])
+                                        (match s
+                                          [(list 'elem parts ...)
+                                           (apply elem (map loop parts))]
+                                          [(list 'link text doc-mod-path)
+                                           (seclink "top" #:doc doc-mod-path #:underline? #f text)]
+                                          [(list 'link text doc-mod-path tag)
+                                           (seclink tag #:doc doc-mod-path #:underline? #f text)]
+                                          [_ s]))))
+                         null)
+                     ;; Documents in section:
                      (add-sections
                       (sec-cat sec)
                       (lambda (str)
@@ -128,7 +134,10 @@
                          (make-element (if (string=? str "") "sepspace" "septitle")
                                        (list 'nbsp str))))
                       (sort (map (lambda (doc)
-                                   (list (cadr doc) (line (cadddr (cdr doc))) (caddr doc)))
+                                   (list (cadr doc)
+                                         (line (cadddr (cdr doc))
+                                               (and (sec-label sec) #t))
+                                         (caddr doc)))
                                  docs)
                             (lambda (ad bd)
                               (if (= (car ad) (car bd))

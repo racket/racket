@@ -389,7 +389,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @itemize[
 
      @item{@racket['getting-started] : High-level, introductory
-           documentation.}
+           documentation, typeset at the same level as other
+           category titles.}
 
      @item{@racket['language] : Documentation for a prominent
            programming language.}
