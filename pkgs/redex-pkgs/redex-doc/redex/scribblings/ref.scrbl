@@ -1900,8 +1900,8 @@ Generates terms in a number of different ways:
                              (generate-term L overlap #:i-th i))]
 
                  For similar reasons, enumerations for mismatch
-                 patterns @racketvarfont[_!_] do not work properly when given ambiguous patterns;
-                 they may repeat elements of the enumeration.
+                 patterns (using @racketvarfont{_!_}) do not work properly when given 
+                 ambiguous patterns; they may repeat elements of the enumeration.
                  @examples[#:eval
                            redex-eval
                            (define-language Bad
