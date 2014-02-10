@@ -344,8 +344,8 @@ computing and from databases to charts.
 
 @columns[3 style: "text-color: black"]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
-  @p{Racket version 5.6 has been released.}
-  @p{@a[href: "racketcon.html"]{RacketCon 2014} will be in September in St Louis.}}}
+  @p{Racket version 6.0 has been released.}
+  @p{@a[href: "http://con.racket-lang.org/"]{RacketCon 2014} will be in September in St Louis.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
@@ -423,11 +423,11 @@ explains how to install
 @row{
 @columns[4]{
 @panetitle{News & Events}
-@p{@a[href: "racketcon.html"]{RacketCon} — The annual
+@p{@a[href: "http://con.racket-lang.org/"]{RacketCon} — The annual
   Racket meeting, coming up in September.  Previously
-  in @a[href: "http://con.racket-lang.org/2013"]{2013},
-  @a[href: "http://con.racket-lang.org/2012"]{2012},
-  and @a[href: "http://con.racket-lang.org/2011"]{2011}.}
+  in @a[href: "http://con.racket-lang.org/2013/"]{2013},
+  @a[href: "http://con.racket-lang.org/2012/"]{2012},
+  and @a[href: "http://con.racket-lang.org/2011/"]{2011}.}
 
 @p{@a[href: "http://blog.racket-lang.org/"]{Blog}
   — Announcements, helpful hints, and thoughtful rants.}
@@ -443,7 +443,7 @@ explains how to install
 Chat in the @tt[style: "background-color: #d8d8e8;"]{@big{@strong{#racket}}} channel on
 @a[href: "http://freenode.net"]{@tt{freenode.net}} — An informal
 discussion channel for all things related to Racket.
-(@a[href: "https://botbot.me/freenode/racket/"]{Browse the logs}.)}
+@a[href: "https://botbot.me/freenode/racket/"]{Browse the logs}.}
 
 @p{@people   —
 The people behind Racket.}
@@ -480,7 +480,7 @@ File, query, and maybe fix existing reports.}}}
     @li{Aimed at the programming novice.}}}
 
 @columns[4]{@panetitle{Realm of Racket}
-  @p{Learn Racket and programming, one game at a time/}
+  @p{Learn Racket and programming, one game at a time.}
   @ul{
     @li{Sample game code comes with the Racket distribution.}
     @li{For those just starting out with Racket.}

@@ -136,7 +136,7 @@
       (list-ref l n)
       d))
 
-(define ((navbar-maker logo columns) this)
+(define ((navbar-maker logo columns page-style?) this)
   (define (icon name) @i[class: name]{})
   (define (row . content) (apply div class: "row" content))
   
@@ -144,8 +144,10 @@
   
   @div[class: "navbar gumby-content" gumby-fixed: "top" id: "nav1"]{
   @row{
-   @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
-     @icon{icon-menu}}
+   @(if page-style?
+         @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
+            @icon{icon-menu}}
+         '())
    @a[class: "five columns logo" href: (url-of main-promise)]{
      @img[class: "logo" src: logo width: "198" height: "60" alt: "Racket"]}
    @ul[class: "five columns"]{
@@ -211,7 +213,8 @@
     @;@link[rel: "stylesheet" href: (resources "style.css")]
     @; TODO: Modify `racket-style' definition (and what it depends on)
     @;   in "resources.rkt", possibly do something similar with the new files
-    @link[rel: "stylesheet" type: "text/css" href: style title: "default"]
+    @(and style
+          @link[rel: "stylesheet" type: "text/css" href: style title: "default"])
     @; TODO: Edit the `more.css' definition in www/index.rkt
     @; More ideas for your <head> here: h5bp.com/d/head-Tips
     @; All JavaScript at the bottom, except for Modernizr / Respond.
@@ -234,9 +237,9 @@
       [(make-navbar)  make-navbar] ; page -> navbar
       [(icon-headers) icon-headers]
       ;; aliases for specific resource files
-      [(style-path) (resources "plt.css")]
+      [(style-path) (and page-style? (resources "plt.css"))]
       [(logo-path)  (resources "logo-and-text.png")]
-      [(icon-path)  (resources "plticon.ico")]
+      [(icon-path)  (and page-style? (resources "plticon.ico"))]
       ;; get a resource file path
       [else (cond [(assoc what files)
                    ;; delay the `url-of' until we're in the rendering context
@@ -244,7 +247,7 @@
                   [else (error 'resource "unknown resource: ~e" what)])]))
   (define icon-headers   (html-icon-headers (resources 'icon-path)))
   (define headers        (html-headers resources icon-headers page-style?))
-  (define make-navbar    (navbar-maker (resources 'logo-path) navigation))
+  (define make-navbar    (navbar-maker (resources 'logo-path) navigation page-style?))
   (define preamble (cons @doctype['html]
                          (if page-style? gumby-preamble null)))
   (define postamble (if page-style? (make-gumby-postamble resources) null))

@@ -7,7 +7,7 @@
   (site "www"
         #:navigation
         (list
-         @a[href: "http://pkgs.racket-lang.org"]{Packages}
-         @a[href: "http://docs.racket-lang.org"]{Documentation}
-         @a[href: "http://blog.racket-lang.org"]{Blog}
+         @a[href: (resource "stubs/pkgs" #f)]{Packages}
+         @a[href: (resource "stubs/docs" #f)]{Documentation}
+         @a[href: (resource "stubs/blog" #f)]{Blog}
          @navigation-button[@(a href: (resource "download/" #f) "Download")])))
