@@ -1869,9 +1869,9 @@ Generates terms in a number of different ways:
                            (for/list ([i (in-range 20)])
                              (generate-term L any #:i-th i))]
                  
-                 In addition, all other pattern types are supported except for mismatch @racket[_!_]
-                 patterns, mismatch repeat @racket[..._!_] patterns and @racket[side-condition] 
-                 patterns.
+                 In addition, all other pattern types are supported
+                 except for mismatch repeat @racket[..._!_] patterns
+                 and @racket[side-condition] patterns.
                  
                  The enumerators do not repeat terms unless the given pattern is ambiguous.
                  Roughly speaking, the enumerator generates all possible ways that a pattern
@@ -1898,7 +1898,17 @@ Generates terms in a number of different ways:
                              (overlap ::= natural integer))
                            (for/list ([i (in-range 10)])
                              (generate-term L overlap #:i-th i))]
-                 
+
+                 For similar reasons, enumerations for mismatch
+                 patterns @racket[_!_] are unsound in the presence of
+                 ambiguity, but work as expected for unambiguous
+                 grammars.
+
+                 @examples[#:eval
+                           redex-eval
+                           (define-language Bad
+                             (ambig ::= (x ... x ...)))
+                           (generate-term Bad (ambig_!_1 ambig_!_1 #:i-th 4))]
                  
                  }
            @item{@racket[from-judgment-form]: Randomly picks a term that satisfies
