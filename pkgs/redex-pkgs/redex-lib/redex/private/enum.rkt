@@ -31,6 +31,7 @@
 ;; cc-enums : promise/c (hash[sym -o> enum])
 ;; unused-var/e : enum
 (struct lang-enum (nt-enums delayed-cc-enums unused-var/e))
+(struct production (n term) #:transparent)
 (struct repeat (n terms) #:transparent)
 (struct name-ref (name) #:transparent)
 (struct misname-ref (name tag) #:transparent)
@@ -88,9 +89,16 @@
    (pat/e pat l-enum)))
 
 (define (enumerate-rhss rhss l-enum)
-  (apply sum/e
-         (for/list ([production (in-list rhss)])
-           (pat/e (rhs-pattern production) l-enum))))
+  (define (with-index i e)
+    (cons (map/e (curry production i)
+                 production-term
+                 e)
+          (λ (nd-x) (= i (production-n nd-x)))))
+  (apply disj-sum/e #:alternate? #t
+         (for/list ([i (in-naturals)]
+                    [production (in-list rhss)])
+           (with-index i
+                       (pat/e (rhs-pattern production) l-enum)))))
 
 (define (pat/e pat l-enum)
   (match-define (ann-pat nv pp-pat) (preprocess pat))
@@ -215,7 +223,9 @@
   (match refpat
     [(ann-pat nv term)
      (λ (_)
-      ((refs-to-fn term) nv))]
+        ((refs-to-fn term) nv))]
+    [(production _ term)
+     (refs-to-fn term)]
     [(decomp ctx-refs termpat-refs)
      (define ctx-fn (refs-to-fn ctx-refs))
      (define term-fn (refs-to-fn termpat-refs))
