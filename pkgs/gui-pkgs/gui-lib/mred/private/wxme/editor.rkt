@@ -176,10 +176,6 @@
 
   (super-new)
 
-  (define/public (~)
-    (send s-style-list forget-notification notify-id)
-    (clear-undos))
-
   (define/public (is-printing?) (and printing #t))
 
   ;; ----------------------------------------

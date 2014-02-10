@@ -354,16 +354,6 @@
   ;;; so we can unlock the editor now. If code with
   ;;; effects is added below, be sure to move the
   ;;; unlocking.
-  
-  (def/override (~)
-    (set! word-break-map standard-wordbreak)
-    (let loop ([snip snips])
-      (when snip
-        (let ([next (snip->next snip)])
-          (send snip ~)
-          (loop next))))
-    (set! snips #f)
-    (set! clickbacks null))
 
   (def/override (copy-self)
     (let ([m (new text% [line-spacing line-spacing])])

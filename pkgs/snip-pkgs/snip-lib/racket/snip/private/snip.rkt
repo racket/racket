@@ -138,11 +138,6 @@
 
   (super-new)
 
-  (def/public (~)
-    (set! s-next #f)
-    (set! s-prev #f)
-    (set! s-line #f))
-
   (def/public (next) s-next)
   (def/public (previous) s-prev)
   (def/public (get-admin) s-admin)
@@ -414,9 +409,6 @@
     
     (unless (equal? str "")
       (insert str (min (string-length str) len) 0)))
-
-  (def/override (~)
-    (set! s-buffer ""))
 
   (def/override (size-cache-invalid)
     (set! str-metric #f))
