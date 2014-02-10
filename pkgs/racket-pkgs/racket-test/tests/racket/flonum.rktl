@@ -157,6 +157,11 @@
 (test-sequence [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
 (test-sequence [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
 
+;; flvector sequence tests
+
+(test-sequence [(1.0 2.0 3.0)] (flvector 1.0 2.0 3.0))
+(test '() 'empty-flvector-sequence (for/list ([i (flvector)]) i))
+
 ;; Check safety:
 (err/rt-test (for/flvector ([i 5]) 8))
 (err/rt-test (for/flvector #:length 5 ([i 5]) 8))

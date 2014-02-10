@@ -211,7 +211,7 @@
 
 ;; ----------------------------------------
 
-;; in-flvector tests, copied from for.rktl
+;; in-fxvector tests, copied from for.rktl
 
 (test-sequence [(1 2 3)] (in-fxvector (fxvector 1 2 3)))
 (test-sequence [(2 3 4)] (in-fxvector (fxvector 1 2 3 4) 1))
@@ -220,6 +220,10 @@
 (test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 1 -2))
 (test-sequence [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 6 2))
 (test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 2 -2))
+
+;; fxvector sequence tests
+(test-sequence [(1 2 3)] (fxvector 1 2 3))
+(test '() 'empty-fxvector-sequence (for/list ([i (fxvector)]) i))
 
 ;; Check safety:
 (err/rt-test (for/fxvector ([i 5]) 8.0))

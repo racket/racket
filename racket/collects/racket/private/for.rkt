@@ -7,6 +7,7 @@
              "member.rkt"
              "reverse.rkt"
              '#%unsafe
+             '#%flfxnum
              (for-syntax '#%kernel
                          "stx.rkt"
                          "qqstx.rkt"
@@ -459,6 +460,8 @@
         (stream? v)
         (mpair? v)
         (vector? v)
+        (flvector? v)
+        (fxvector? v)
         (string? v)
         (bytes? v)
         (input-port? v)
@@ -472,6 +475,8 @@
       [(mpair? v) (:mlist-gen v)]
       [(list? v) (:list-gen v)]
       [(vector? v) (:vector-gen v 0 (vector-length v) 1)]
+      [(flvector? v) (:flvector-gen v 0 (flvector-length v) 1)]
+      [(fxvector? v) (:fxvector-gen v 0 (fxvector-length v) 1)]
       [(string? v) (:string-gen v 0 (string-length v) 1)]
       [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
       [(input-port? v) (:input-port-gen v)]
@@ -875,6 +880,11 @@
                          #'bytes-length
                          #'in-bytes
                          #'bytes-ref))
+
+  (define-:vector-like-gen :flvector-gen unsafe-flvector-ref)
+  ;; in-flvector is defined in racket/flonum
+  (define-:vector-like-gen :fxvector-gen unsafe-fxvector-ref)
+  ;; in-fxvector is defined in racket/fixnum
 
   ;; ------------------------------------------------------------------------
 

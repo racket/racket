@@ -53,6 +53,10 @@ built-in datatypes, the sequence datatype includes the following:
 
  @item{vectors (see @secref["vectors"])}
 
+ @item{flvectors (see @secref["flvectors"])}
+
+ @item{fxvectors (see @secref["fxvectors"])}
+
  @item{hash tables (see @secref["hashtables"])}
 
  @item{dictionaries (see @secref["dicts"])}
