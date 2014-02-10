@@ -1830,9 +1830,9 @@ Generates terms in a number of different ways:
                  
                  The @racket[string] enumeration produces all single character strings before
                  going on to strings with multiple characters. For each character it starts
-                 the lowercase Latin characters, then upercase Latin, and then every remaining Unicode
-                 character. The @racket[variable] enumeration is the same, except it produces
-                 symbols instead of strings.
+                 the lowercase Latin characters, then uppercase Latin, and then every remaining
+                 Unicode character. The @racket[variable] enumeration is the same, except it 
+                 produces symbols instead of strings.
                  
                  @examples[#:eval
                            redex-eval
@@ -1863,7 +1863,7 @@ Generates terms in a number of different ways:
                            (for/list ([i (in-range 10)])
                              (generate-term L unused #:i-th i))]
 
-                 Finally, the @racket[any] pattern enumerates sexpressions of the above base-types.
+                 Finally, the @racket[any] pattern enumerates sexpressions of the above base types.
                  @examples[#:eval
                            redex-eval
                            (for/list ([i (in-range 20)])
@@ -1900,15 +1900,19 @@ Generates terms in a number of different ways:
                              (generate-term L overlap #:i-th i))]
 
                  For similar reasons, enumerations for mismatch
-                 patterns @racket[_!_] are unsound in the presence of
-                 ambiguity, but work as expected for unambiguous
-                 grammars.
-
+                 patterns @racketvarfont[_!_] do not work properly when given ambiguous patterns;
+                 they may repeat elements of the enumeration.
                  @examples[#:eval
                            redex-eval
                            (define-language Bad
                              (ambig ::= (x ... x ...)))
-                           (generate-term Bad (ambig_!_1 ambig_!_1 #:i-th 4))]
+                           (generate-term Bad (ambig_!_1 ambig_!_1) #:i-th 4)]
+                 In this case, the elements of the resulting list are the same,
+                 even though they should not be, according to the pattern. Internally,
+                 the enumerator has discovered two different ways to generate @racket[ambig]
+                 (one where the @racket[x] comes from the first ellipses and one from the second)
+                 but those two different ways produce the same term and so the enumerator
+                 incorrectly produces @racket[(x x)].
                  
                  }
            @item{@racket[from-judgment-form]: Randomly picks a term that satisfies
