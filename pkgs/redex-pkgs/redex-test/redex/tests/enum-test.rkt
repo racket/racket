@@ -98,15 +98,20 @@
 (try-it 25 λv x)
 
 ;; No longer supported
-;; (define-language M
-;;   (m (x_!_1 x_!_1))
-;;   (p (number_!_1 number_!_1))
-;;   (n (p_!_1 p_!_1))
-;;   (x number))
+(define-language M
+  (m (x_!_1 x_!_1))
+  (p (number_!_1 number_!_1))
+  (n (p_!_1 p_!_1))
+  (x number)
 
-;; (try-it 100 M m)
-;; (try-it 100 M n)
-;; (try-it 100 M p)
+  ;; Example of poorly behaved mismatch
+  (ambig (x ... x ...)))
+
+(try-it 100 M m)
+(try-it 100 M n)
+(try-it 100 M p)
+;; Ambiguity kills us here
+;; (try-it 5 M (ambig_!_1 ambig_!_1))
 
 ;; test variable filtering
 (define-language Vars

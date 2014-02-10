@@ -135,9 +135,7 @@
      [`(name ,n ,pat)
       (const/e (name-ref n))]
      [`(mismatch-name ,n ,tag)
-      (unsupported "mismatch patterns")
-      ;; (const/e (misname-ref n tag))
-      ]
+      (const/e (misname-ref n tag))]
      [`(in-hole ,p1 ,p2)
       (map/e decomp
              (match-lambda
