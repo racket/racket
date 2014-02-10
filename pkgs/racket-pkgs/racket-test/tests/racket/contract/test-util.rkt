@@ -171,25 +171,33 @@
     (contract-eval
      #:test-case-name name
      `(,test
-       (void)
-       (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
-       (list ',expression '(void))))
+       #:test-case-name ',name
+       'no-exn-raised
+       eval
+       '(with-handlers ([exn:fail? exn-message])
+          ,expression
+          'no-exn-raised)))
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
         (contract-eval
          #:test-case-name (format "~a rewrite-out" name)
          `(,test
-           (void)
-           (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
-           (list ',new-expression '(void)))))))
+           #:test-case-name ,(format "~a rewrite-out" name)
+           'no-exn-raised
+           eval
+           '(with-handlers ([exn:fail? exn-message])
+              ,new-expression
+              'no-exn-raised))))))
   
   (let/ec k
     (contract-eval
      #:test-case-name (format "~a rewrite-to-add-opt/c" name)
-     `(,test (void)
-             (let ([for-each-eval (lambda (l) (for-each (λ (x) (eval x)) l))])
-               for-each-eval)
-             (list ',(rewrite-to-add-opt/c expression k) '(void))))))
+     `(,test #:test-case-name ,(format "~a rewrite-to-add-opt/c" name)
+             'no-exn-raised
+             eval
+             '(with-handlers ([exn:fail? exn-message])
+                ,(rewrite-to-add-opt/c expression k)
+                'no-exn-raised)))))
 
 (define (test/spec-passed/result name expression result)
   (parameterize ([compile-enforce-module-constants #f])
