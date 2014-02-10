@@ -1508,4 +1508,10 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (struct s ([a #:mutable]))
+  (err/rt-test (impersonate-struct 5 set-s-a! (lambda (a b) b))))
+
+;; ----------------------------------------
+
 (report-errs)

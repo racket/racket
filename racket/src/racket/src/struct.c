@@ -5458,7 +5458,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     if (SCHEME_CHAPERONEP(proc)) proc = SCHEME_CHAPERONE_VAL(proc);
     if (SCHEME_TRUEP(struct_setter_p(1, a))) {
       kind = "mutator";
-      offset = stype->num_slots;
+      if (stype)
+        offset = stype->num_slots;
+      else
+        offset = 0;
     } else if (SCHEME_TRUEP(struct_getter_p(1, a))) {
       kind = "accessor";
       offset = 0;
