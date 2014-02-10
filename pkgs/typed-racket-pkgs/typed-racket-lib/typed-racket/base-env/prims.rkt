@@ -1183,21 +1183,28 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:attr opt-property
              (list (length (attribute mand)) (length (attribute opt)))
              #:attr erased
-             (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form)))))
+             (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
+
+  (define-splicing-syntax-class return-ann
+    #:description "return type annotation"
+    #:literals (:)
+    (pattern (~seq : type:expr))
+    (pattern (~seq) #:attr type #f)))
 
 
 ;; annotation to help tc-expr pick out keyword functions
 (define-syntax (-lambda stx)
   (syntax-parse stx
     #:literals (:)
-    [(_ formals:lambda-formals (~optional (~seq : return-type:expr))
-        e ... last-e)
+    [(_ formals:lambda-formals return:return-ann
+        (~describe "body expression or definition" e) ...
+        (~describe "body expression" last-e))
      ;; Annotate the last expression with the return type. Should be correct
      ;; since if a function returns, it has to do so through the last expression
      ;; even with continuations.
      (define/with-syntax last-e*
-       (if (attribute return-type)
-           #`(ann last-e #,(attribute return-type))
+       (if (attribute return.type)
+           #`(ann last-e #,(attribute return.type))
            #'last-e))
      (define d (syntax/loc stx (λ formals.erased e ... last-e*)))
      (if (attribute formals.kw-property)
