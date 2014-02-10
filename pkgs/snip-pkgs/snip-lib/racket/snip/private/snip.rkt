@@ -29,11 +29,13 @@
          snip->prev
          snip->flags
          snip->line
+         snip->loc
          snip->style
          snip->snipclass
 
          set-snip-admin!
          set-snip-line!
+         set-snip-loc!
          set-snip-style!
          set-snip-flags!
          set-snip-count!
@@ -113,7 +115,7 @@
   ;; For use only by the owning editor:
   (field [s-prev #f]
          [s-next #f]
-         [s-line #f])
+         [s-line #f]) ; used for line by text%, loc by pastebpard%
   (define/public (set-s-prev p) (set! s-prev p))
   (define/public (set-s-next p) (set! s-next p))
   (define/public (set-s-line l) (set! s-line l))
@@ -1401,11 +1403,13 @@
 (define snip->prev (class-field-accessor snip% s-prev))
 (define snip->flags (class-field-accessor snip% s-flags))
 (define snip->line (class-field-accessor snip% s-line))
+(define snip->loc (class-field-accessor snip% s-line))
 (define snip->style (class-field-accessor snip% s-style))
 (define snip->snipclass (class-field-accessor snip% s-snipclass))
 
 (define set-snip-admin! (class-field-mutator snip% s-admin))
 (define set-snip-line! (class-field-mutator snip% s-line))
+(define set-snip-loc! (class-field-mutator snip% s-line))
 (define set-snip-style! (class-field-mutator snip% s-style))
 (define set-snip-flags! (class-field-mutator snip% s-flags))
 (define set-snip-count! (class-field-mutator snip% s-count))

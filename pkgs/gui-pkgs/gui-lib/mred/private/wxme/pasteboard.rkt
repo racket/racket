@@ -102,8 +102,14 @@
   (define snips #f)
   (define last-snip #f)
 
-  (define snip-location-list (make-hasheq))
-  (define/private (snip-loc snip) (hash-ref snip-location-list snip #f))
+  (define (in-snip-locs)
+    (make-do-sequence
+     (lambda () (values snip->loc
+                        snip->next
+                        snips
+                        values
+                        #f
+                        #f))))
 
   (define snip-admin (new standard-snip-admin% [editor this]))
   
@@ -255,7 +261,7 @@
         (let ([snip (find-snip x y)])
           (when (and prev-mouse-snip
                      (not (eq? snip prev-mouse-snip)))
-            (let ([loc (snip-loc prev-mouse-snip)])
+            (let ([loc (snip->loc prev-mouse-snip)])
               (send prev-mouse-snip on-event
                     dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
                     (loc-x loc) (loc-y loc)
@@ -264,7 +270,7 @@
           (when (and snip
                      (has-flag? (snip->flags snip) HANDLES-ALL-MOUSE-EVENTS)
                      (not (eq? snip s-caret-snip)))
-            (let ([loc (snip-loc snip)])
+            (let ([loc (snip->loc snip)])
               (set! prev-mouse-snip snip)
               (send snip on-event
                     dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
@@ -273,7 +279,7 @@
           (if (and s-caret-snip
                    (or (not (send event button-down?))
                        (eq? snip s-caret-snip)))
-              (let ([loc (snip-loc s-caret-snip)])
+              (let ([loc (snip->loc s-caret-snip)])
                 (send s-caret-snip on-event
                       dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
                       (loc-x loc) (loc-y loc)
@@ -329,7 +335,7 @@
                   (if dragable?
                       (begin
                         (if snip
-                            (let ([loc (snip-loc snip)])
+                            (let ([loc (snip->loc snip)])
                               (set! orig-x (loc-x loc))
                               (set! orig-y (loc-y loc))
                               (set! orig-w (loc-w loc))
@@ -404,7 +410,7 @@
           (let ([x (+ (send event get-x) scrollx)]
                 [y (+ (send event get-y) scrolly)])
             (if s-caret-snip
-                (let ([loc (snip-loc s-caret-snip)])
+                (let ([loc (snip->loc s-caret-snip)])
                   (send s-caret-snip on-char
                         dc (loc-x loc) (loc-y loc) (- x scrollx) (- y scrolly)
                         event))
@@ -442,7 +448,7 @@
       (let loop ([s #f])
         (let ([s (find-next-selected-snip s)])
           (when s
-            (let ([loc (snip-loc s)])
+            (let ([loc (snip->loc s)])
               (set-loc-startx! loc (loc-x loc))
               (set-loc-starty! loc (loc-y loc)))
             (loop s)))))
@@ -455,7 +461,7 @@
     (let loop ([s #f])
       (let ([s (find-next-selected-snip s)])
         (when s
-          (let* ([loc (snip-loc s)]
+          (let* ([loc (snip->loc s)]
                  [x (loc-startx loc)]
                  [y (loc-starty loc)])
             (set-loc-startx! loc (loc-x loc))
@@ -469,7 +475,7 @@
     (let loop ([s #f])
       (let ([s (find-next-selected-snip s)])
         (when s
-          (let* ([loc (snip-loc s)])
+          (let* ([loc (snip->loc s)])
             (move-to s (loc-startx loc) (loc-starty loc)))
           (loop s))))
 
@@ -484,7 +490,7 @@
       (let loop ([s #f])
         (let ([s (find-next-selected-snip s)])
           (when s
-            (let ([loc (snip-loc s)])
+            (let ([loc (snip->loc s)])
               (let-boxes ([x (+ (loc-startx loc) dx)]
                           [y (+ (loc-starty loc) dy)])
                   (interactive-adjust-move s x y)
@@ -539,7 +545,7 @@
     (end-edit-sequence))
 
   (define/private (do-select snip on?)
-    (let ([loc (snip-loc snip)])
+    (let ([loc (and snip (snip->loc snip))])
       (when (and loc
                  (not (eq? (loc-selected? loc) on?)))
         (set! write-locked (add1 write-locked))
@@ -571,7 +577,7 @@
 
         (let loop ([s snips])
           (when s
-            (let ([loc (snip-loc s)])
+            (let ([loc (snip->loc s)])
               (when (and
                      loc
                      (not (loc-selected? loc))
@@ -637,7 +643,8 @@
                           (new image-snip%)
                           snip)])
             
-            (let ([search (and (snip-loc before)
+            (let ([search (and before
+                               (snip->loc before)
                                before)])
   
               (set-snip-next! snip search)
@@ -657,7 +664,7 @@
                         0.0 0.0
                         #f #t
                         snip)])
-              (hash-set! snip-location-list snip loc)
+              (set-snip-loc! snip loc)
             
               (set-snip-style! snip (send s-style-list convert (snip->style snip)))
               (when (eq? (snip->style snip)
@@ -731,7 +738,7 @@
      args
      [()
       (delete-some (lambda (s) 
-                     (let ([l (snip-loc s)])
+                     (let ([l (and s (snip->loc s))])
                        (and l ;; deleted already!
                             (loc-selected? l)))))]
      [([snip% s])
@@ -749,7 +756,7 @@
     (delete-some (lambda (s) #t)))
   
   (define/private (-delete del-snip del)
-    (when (snip-loc del-snip)
+    (when (snip->loc del-snip)
       (when (eq? del-snip prev-mouse-snip)
         (set! prev-mouse-snip #f))
       (set! write-locked (add1 write-locked))
@@ -781,8 +788,8 @@
                  (set-snip-prev! (snip->next del-snip) (snip->prev del-snip))
                  (set! last-snip (snip->prev del-snip)))
 
-             (let ([loc (snip-loc del-snip)])
-               (hash-remove! snip-location-list del-snip)
+             (let ([loc (snip->loc del-snip)])
+               (set-snip-loc! del-snip #f)
                (when del
                  (send del insert-snip del-snip (snip->next del-snip) (loc-x loc) (loc-y loc))))
              
@@ -828,7 +835,7 @@
   (def/public (move-to [snip% snip] [real? x] [real? y])
     (unless (or s-user-locked?
                 (not (zero? write-locked)))
-      (let ([loc (snip-loc snip)])
+      (let ([loc (snip->loc snip)])
         (when (and loc
                    (not (and
                          (= (loc-x loc) x)
@@ -888,14 +895,14 @@
      [([snip% snip] [real? dx] [real? dy])
       (unless (or s-user-locked?
                   (not (zero? write-locked)))
-        (let ([loc (snip-loc snip)])
+        (let ([loc (snip->loc snip)])
           (when loc
             (move-to snip (+ (loc-x loc) dx) (+ (loc-y loc) dy)))))]
      [([real? dx] [real? dy])
       (unless (or s-user-locked?
                   (not (zero? write-locked)))
         (begin-edit-sequence)
-        (for ([loc (in-hash-values snip-location-list)])
+        (for ([loc (in-snip-locs)])
           (when (loc-selected? loc)
             (move (loc-snip loc) dx dy)))
         (end-edit-sequence))]
@@ -904,7 +911,7 @@
   (def/public (resize [snip% snip] [real? w] [real? h])
     (if (not s-admin)
         #f
-        (let ([loc (snip-loc snip)])
+        (let ([loc (snip->loc snip)])
           (if (not loc)
               #f
               (let ([oldw (loc-w loc)]
@@ -981,8 +988,7 @@
                        (send snip size-cache-invalid)
                        (update-snip snip)
                        #t)
-                     (for/fold ([didit? #f])
-                         ([loc (in-hash-keys snip-location-list)])
+                     (for/fold ([didit? #f]) ([loc (in-snip-locs)])
                        (if (loc-selected? loc)
                            (let ([snip (loc-snip loc)])
                              (send rec add-style-change (loc-snip loc) (snip->style snip))
@@ -1026,11 +1032,11 @@
   (define/private (set-between snip before after)
     (unless (or s-user-locked?
                 (not (zero? write-locked))
-                (not (snip-loc snip))
+                (not (snip->loc snip))
                 (eq? snip before)
                 (eq? snip after)
-                (and before (not (snip-loc before)))
-                (and after (not (snip-loc after))))
+                (and before (not (snip->loc before)))
+                (and after (not (snip->loc after))))
       (set! write-locked (add1 write-locked))
       (if (not (can-reorder? snip (or before after) (and before #t)))
           (set! write-locked (sub1 write-locked))
@@ -1156,12 +1162,12 @@
   (def/public (find-snip [real? x] [real? y] [(make-or-false snip%) [after #f]])
     (let ([dummy (box 0)])
       (let loop ([s (if after 
-                        (if (snip-loc after)
+                        (if (snip->loc after)
                             (snip->next after)
                             #f)
                         snips)])
         (and s
-             (let ([loc (snip-loc s)])
+             (let ([loc (snip->loc s)])
                (cond
                 [(and ((loc-x loc) . <= . x)
                       ((loc-y loc) . <= . y)
@@ -1176,18 +1182,18 @@
   (def/override (find-first-snip) snips)
   
   (def/public (is-selected? [snip% asnip])
-    (let ([loc (snip-loc asnip)])
+    (let ([loc (snip->loc asnip)])
       (and loc
            (loc-selected? loc))))
   
   (def/public (find-next-selected-snip [(make-or-false snip%) start])
     (let loop ([s (if start 
-                      (if (snip-loc start)
+                      (if (snip->loc start)
                           (snip->next start)
                           #f)
                       snips)])
       (and s
-           (if (loc-selected? (snip-loc s))
+           (if (loc-selected? (snip->loc s))
                s
                (loop (snip->next s))))))
 
@@ -1228,7 +1234,7 @@
           (let loop ([snip last-snip]
                      [old-style #f])
             (if snip
-                (let ([loc (snip-loc snip)])
+                (let ([loc (snip->loc snip)])
                   (when (and ((loc-x loc) . <= . cr)
                              ((loc-y loc) . <= . cb)
                              ((loc-r loc) . >= . cx)
@@ -1402,7 +1408,7 @@
             (let-values ([(r b)
                           (for/fold ([r 0.0]
                                      [b 0.0])
-                              ([loc (in-hash-values snip-location-list)])
+                              ([loc (in-snip-locs)])
                             (when size-cache-invalid?
                               (send (loc-snip loc) size-cache-invalid)
                               (set-loc-need-resize?! loc #t))
@@ -1517,13 +1523,13 @@
               (+ (loc-h loc) DOT-WIDTH))))
   
   (define/private (update-snip snip)
-    (let ([loc (snip-loc snip)])
+    (let ([loc (snip->loc snip)])
       (when loc
         (update-location loc))))
 
   (define/private (update-selected)
     (begin-edit-sequence)
-    (for ([loc (in-hash-values snip-location-list)])
+    (for ([loc (in-snip-locs)])
       (when (loc-selected? loc)
 	(update-location loc)))
     (end-edit-sequence))
@@ -1609,7 +1615,7 @@
       (on-focus (not snip))))
 
   (def/override (resized [snip% snip] [any? redraw-now?])
-    (let ([loc (snip-loc snip)])
+    (let ([loc (snip->loc snip)])
       (when (and loc
                  (not (loc-need-resize? loc)))
         (set! changed? #t)
@@ -1765,7 +1771,7 @@
                   s-style-list)])
       (let loop ([snip snips])
         (when snip
-          (let ([loc (snip-loc snip)])
+          (let ([loc (snip->loc snip)])
             (when (loc-selected? loc)
               (let ([asnip (send snip copy)])
                 (send asnip set-admin #f)
@@ -1801,11 +1807,11 @@
                            [right -inf.0]
                            [bottom -inf.0])
                   (if (eq? snip start)
-                      (let ([dx (- cx (/ (left + right) 2))]
-                            [dy (- cy (/ (top + bottom) 2))])
+                      (let ([dx (- cx (/ (+ left right) 2))]
+                            [dy (- cy (/ (+ top bottom) 2))])
                         ;; shift the pasted group to center:
                         (move dx dy))
-                      (let ([loc (snip-loc snip)])
+                      (let ([loc (snip->loc snip)])
                         (add-selected snip)
                         (when (loc-need-resize? loc)
                           (loc-resize loc dc))
@@ -1872,7 +1878,7 @@
           (when bottom-right?
             (check-recalc))
 
-          (let ([loc (snip-loc thesnip)])
+          (let ([loc (snip->loc thesnip)])
             (and loc
                  (begin
                    (when x (set-box! x (+ (loc-x loc)
@@ -1888,7 +1894,7 @@
   ;; ----------------------------------------
 
   (def/override (get-snip-data [snip% snip])
-    (let ([loc (snip-loc snip)]
+    (let ([loc (snip->loc snip)]
           [sup (super get-snip-data snip)])
       (if (not loc)
           sup
@@ -1898,7 +1904,7 @@
             (send data set-next sup)
             data))))
 
-  (def/override (set-snip-data [snip% snip] [editor-data% data])
+  (def/override (set-snip-data [snip% snip] [(make-or-false editor-data%) data])
     (let loop ([data data])
       (when data
         (let ([c (send data get-dataclass)])
