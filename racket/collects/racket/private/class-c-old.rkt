@@ -3,6 +3,7 @@
                      racket/stxparam
                      syntax/parse)
          racket/stxparam
+         "class-wrapped.rkt"
          "class-internal.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
@@ -16,7 +17,8 @@
          (for-syntax parse-class/c-specs)
          (struct-out internal-class/c)
          just-check-existence just-check-existence?
-         build-internal-class/c internal-class/c-proj)
+         build-internal-class/c internal-class/c-proj
+         class/c-internal-name-clauses)
 
 (define undefined (letrec ([x x]) x))
 
@@ -35,7 +37,7 @@
   (syntax-parameterize ([making-a-method #'this-param] [method-contract? #t]) (->d . stx)))
 
 (define (class/c-check-first-order ctc cls fail)
-  (unless (-class? cls)  ;; TODO: might be a wrapper class
+  (unless (class? cls)
     (fail '(expected: "a class" given: "~v") cls))
   (define method-ht (class-method-ht cls))
   (define methods (class-methods cls))
@@ -180,13 +182,6 @@
             (list init #f))))
     
     (λ (cls)
-      ;; TODO: hack! this drops the new-style contract
-      ;; from classes that are going thru the old-style contract
-      (let loop ([a-class cls])
-        (cond
-          [(wrapped-class? a-class) 
-           (loop (wrapped-class-info-class (wrapped-class-the-info a-class)))]
-          [else (set! cls a-class)]))
       (class/c-check-first-order ctc cls (λ args (apply raise-blame-error blame cls args)))
       (let* ([name (class-name cls)]
              [never-wrapped? (eq? (class-orig-cls cls) cls)]
@@ -759,6 +754,66 @@
       [(just-check-existence? obj) #f]
       [else (coerce-contract 'class/c obj)])))
 
+(define (build-class/c-name ctc)
+  (or (build-class/c-name ctc)
+      (let* ([handled-methods
+              (for/list ([i (in-list (class/c-methods ctc))]
+                         [ctc (in-list (class/c-method-contracts ctc))])
+                (cond
+                  [ctc (build-compound-type-name i ctc)]
+                  [else i]))])
+        (apply build-compound-type-name
+               'class/c 
+               (append
+                handled-methods
+                (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
+                (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
+                (class/c-internal-name-clauses (class/c-internal ctc))
+                (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc)))))))
+
+(define (class/c-internal-name-clauses internal-ctc)
+  (append
+   (handle-optional 'inherit 
+                    (internal-class/c-inherits internal-ctc)
+                    (internal-class/c-inherit-contracts internal-ctc))
+   (handle-optional 'inherit-field 
+                    (internal-class/c-inherit-fields internal-ctc)
+                    (internal-class/c-inherit-field-contracts internal-ctc))
+   (handle-optional 'super
+                    (internal-class/c-supers internal-ctc)
+                    (internal-class/c-super-contracts internal-ctc))
+   (handle-optional 'inner 
+                    (internal-class/c-inners internal-ctc) 
+                    (internal-class/c-inner-contracts internal-ctc))
+   (handle-optional 'override
+                    (internal-class/c-overrides internal-ctc)
+                    (internal-class/c-override-contracts internal-ctc))
+   (handle-optional 'augment
+                    (internal-class/c-augments internal-ctc)
+                    (internal-class/c-augment-contracts internal-ctc))
+   (handle-optional 'augride
+                    (internal-class/c-augrides internal-ctc)
+                    (internal-class/c-augride-contracts internal-ctc))))
+
+(define (pair-ids-ctcs is ctcs)
+  (for/list ([i (in-list is)]
+             [ctc (in-list ctcs)])
+    (if (not ctc)
+        i
+        (build-compound-type-name i ctc))))
+(define (handle-optional name is ctcs)
+  (if (null? is)
+      null
+      (list (cons name (pair-ids-ctcs is ctcs)))))
+(define (handle-absents meths fields)
+  (cond
+    [(and (null? meths) (null? fields))
+     null]
+    [(null? fields)
+     (list (cons 'absent meths))]
+    [else
+     (list (list* 'absent (cons 'field fields) meths))]))
+             
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
    absents absent-fields 
@@ -767,64 +822,7 @@
   #:property prop:contract
   (build-contract-property
    #:projection class/c-proj
-   #:name 
-   (λ (ctc)
-     (or (class/c-name ctc)
-         (let* ([pair-ids-ctcs
-                 (λ (is ctcs)
-                   (for/list ([i (in-list is)]
-                              [ctc (in-list ctcs)])
-                     (if (not ctc)
-                         i
-                         (build-compound-type-name i ctc))))]
-                [handle-optional
-                 (λ (name is ctcs)
-                   (if (null? is)
-                       null
-                       (list (cons name (pair-ids-ctcs is ctcs)))))]
-                [handle-absents
-                 (λ (meths fields)
-                   (cond
-                     [(and (null? meths) (null? fields))
-                      null]
-                     [(null? fields)
-                      (list (cons 'absent meths))]
-                     [else
-                      (list (list* 'absent (cons 'field fields) meths))]))]
-                [handled-methods
-                 (for/list ([i (in-list (class/c-methods ctc))]
-                            [ctc (in-list (class/c-method-contracts ctc))])
-                   (cond
-                     [ctc (build-compound-type-name i ctc)]
-                     [else i]))])
-           (apply build-compound-type-name
-                  'class/c 
-                  (append
-                   handled-methods
-                   (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
-                   (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
-                   (handle-optional 'inherit 
-                                    (internal-class/c-inherits (class/c-internal ctc))
-                                    (internal-class/c-inherit-contracts (class/c-internal ctc)))
-                   (handle-optional 'inherit-field 
-                                    (internal-class/c-inherit-fields (class/c-internal ctc))
-                                    (internal-class/c-inherit-field-contracts (class/c-internal ctc)))
-                   (handle-optional 'super
-                                    (internal-class/c-supers (class/c-internal ctc))
-                                    (internal-class/c-super-contracts (class/c-internal ctc)))
-                   (handle-optional 'inner 
-                                    (internal-class/c-inners (class/c-internal ctc)) 
-                                    (internal-class/c-inner-contracts (class/c-internal ctc)))
-                   (handle-optional 'override
-                                    (internal-class/c-overrides (class/c-internal ctc))
-                                    (internal-class/c-override-contracts (class/c-internal ctc)))
-                   (handle-optional 'augment
-                                    (internal-class/c-augments (class/c-internal ctc))
-                                    (internal-class/c-augment-contracts (class/c-internal ctc)))
-                   (handle-optional 'augride
-                                    (internal-class/c-augrides (class/c-internal ctc))
-                                    (internal-class/c-augride-contracts (class/c-internal ctc)))
-                   (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc)))))))
+   #:name build-class/c-name
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -1163,14 +1161,15 @@
       (define original-obj (if (has-original-object? val) (original-object val) val))
       (define new-cls (p (object-ref val)))
       (cond
-        [(wrapped-class? new-cls)
-         (define the-info (wrapped-class-the-info new-cls))
+        [(impersonator-prop:has-wrapped-class-neg-party? new-cls)
+         (define the-info (impersonator-prop:get-wrapped-class-info new-cls))
+         (define neg-party (impersonator-prop:get-wrapped-class-neg-party new-cls))
          (wrapped-object
           val
           (wrapped-class-info-neg-extra-arg-vec the-info)
           (wrapped-class-info-pos-field-projs the-info)
           (wrapped-class-info-neg-field-projs the-info)
-          (wrapped-class-neg-party new-cls))]
+          neg-party)]
         [else
          (impersonate-struct val object-ref (λ (o c) new-cls)
                              impersonator-prop:contracted ctc

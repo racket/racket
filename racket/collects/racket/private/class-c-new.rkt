@@ -1,6 +1,7 @@
 #lang racket/base
 (require "class-internal.rkt"
          "class-c-old.rkt"
+         "class-wrapped.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
          (only-in "../contract/private/guts.rkt"
@@ -88,6 +89,27 @@
               (neg-accepter #f)
               (k neg-accepter)))
         (cond
+          [(impersonator-prop:has-wrapped-class-neg-party? cls)
+           (define wrapper-neg-party (impersonator-prop:get-wrapped-class-neg-party cls))
+           (define the-info (impersonator-prop:get-wrapped-class-info cls))
+           (define neg-acceptors (wrapped-class-info-neg-acceptors-ht the-info))
+           (define mth->idx (class-method-ht cls))
+           (define new-mths (make-vector (vector-length (class-methods cls)) #f))
+           (for ([(mth neg-acceptor) (in-hash neg-acceptors)])
+             (define mth-idx (hash-ref mth->idx mth))
+             (vector-set! new-mths mth-idx (neg-acceptor wrapper-neg-party)))
+           (define fixed-neg-init-projs
+             (for/list ([proj-pair (wrapped-class-info-init-proj-pairs the-info)])
+               (cons (list-ref proj-pair 0)
+                     (for/list ([func (in-list (cdr proj-pair))])
+                       (λ (val) (λ (neg-party) 
+                                  ((func val) wrapper-neg-party)))))))
+           (build-neg-acceptor-proc this maybe-err blame 
+                                    cls
+                                    new-mths
+                                    fixed-neg-init-projs
+                                    (wrapped-class-info-pos-field-projs the-info)
+                                    (wrapped-class-info-neg-field-projs the-info))]
           [(class-struct-predicate? cls)
            (define mtd-vec (class-methods cls))
            (cond
@@ -142,28 +164,6 @@
              [else 
               (build-neg-acceptor-proc this maybe-err blame cls #f '() 
                                        (make-hasheq) (make-hasheq))])]
-          [(wrapped-class? cls) 
-           (define wrapper-neg-party (wrapped-class-neg-party cls))
-           (define the-info (wrapped-class-the-info cls))
-           (define neg-acceptors (wrapped-class-info-neg-acceptors-ht the-info))
-           (define real-class (wrapped-class-info-class the-info))
-           (define mth->idx (class-method-ht real-class))
-           (define new-mths (make-vector (vector-length (class-methods real-class)) #f))
-           (for ([(mth neg-acceptor) (in-hash neg-acceptors)])
-             (define mth-idx (hash-ref mth->idx mth))
-             (vector-set! new-mths mth-idx (neg-acceptor wrapper-neg-party)))
-           (define fixed-neg-init-projs
-             (for/list ([proj-pair (wrapped-class-info-init-proj-pairs the-info)])
-               (cons (list-ref proj-pair 0)
-                     (for/list ([func (in-list (cdr proj-pair))])
-                       (λ (val) (λ (neg-party) 
-                                  ((func val) wrapper-neg-party)))))))
-           (build-neg-acceptor-proc this maybe-err blame 
-                                    (wrapped-class-info-class the-info)
-                                    new-mths
-                                    fixed-neg-init-projs
-                                    (wrapped-class-info-pos-field-projs the-info)
-                                    (wrapped-class-info-neg-field-projs the-info))]
           [else
            (maybe-err
             (λ (neg-party)
@@ -308,9 +308,14 @@
                 ((get/build-val-first-projection ctc) 
                  (blame-add-init-context blame (car ctc-pair)))))))
   (define merged-init-pairs (merge-init-pairs old-init-pairs new-init-projs))
-  (define the-info (wrapped-class-info cls blame neg-extra-arg-vec neg-acceptors-ht
+  (define the-info (wrapped-class-info blame neg-extra-arg-vec neg-acceptors-ht
                                        pos-field-projs neg-field-projs
                                        merged-init-pairs))
+  (define class+one-property 
+    (chaperone-struct cls
+                        set-class-orig-cls! (λ (a b) b)
+                        impersonator-prop:wrapped-class-info
+                        the-info))
   
   (λ (neg-party)
     ;; run this for the side-effect of 
@@ -324,13 +329,17 @@
     ;; the internal projection should run
     ;; on the class only when it is
     ;; time to instantiate it; not here
-    (define the-info/adjusted-cls
-      (struct-copy wrapped-class-info
-                   the-info
-                   [class ((internal-proj (blame-add-missing-party blame neg-party))
-                           cls)]))
+    (define class+one-property/adjusted
+      (chaperone-struct ((internal-proj (blame-add-missing-party blame neg-party))
+                         cls)
+                        set-class-orig-cls! (λ (a b) b)
+                        impersonator-prop:wrapped-class-info
+                        the-info))
     
-    (wrapped-class the-info/adjusted-cls neg-party)))
+    (chaperone-struct class+one-property/adjusted
+                      set-class-orig-cls! (λ (a b) b)
+                      impersonator-prop:wrapped-class-neg-party
+                      neg-party)))
 
 (define (merge-init-pairs old-init-pairs new-init-pairs)
   (cond
@@ -437,19 +446,54 @@
      (cond
        [(ext-class/c-contract-name c) => values]
        [else
+        (define field-names
+          (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs c))])
+            `(,fld ,(contract-name ctc))))
+        (define init-fields '())
         (define init-names
-          (for/list ([pr (in-list (ext-class/c-contract-init-ctc-pairs c))])
-            (define name (list-ref pr 0))
-            (define ctc (list-ref pr 1))
-            (if (just-check-existence? ctc)
-                name
-                `[,name ,(contract-name ctc)])))
+          (filter
+           values
+           (for/list ([pr (in-list (ext-class/c-contract-init-ctc-pairs c))])
+             (define name (list-ref pr 0))
+             (define ctc (list-ref pr 1))
+             (cond
+               [(just-check-existence? ctc)
+                name]
+               [else 
+                (define c-name (contract-name ctc))
+                (define clause `[,name ,c-name])
+                (define fld-ctc (hash-ref (ext-class/c-contract-table-of-flds-to-ctcs c) name #f))
+                (cond
+                  [(and fld-ctc (equal? c-name (contract-name fld-ctc)))
+                   (set! init-fields (cons clause init-fields))
+                   #f]
+                  [else clause])]))))
+        (set! field-names (filter (λ (x) (not (member (car x) (map car init-fields))))
+                                  field-names))
+        
         (define meth-names
           (for/list ([(name ctc) (in-hash (ext-class/c-contract-table-of-meths-to-ctcs c))])
             (if (just-check-existence? ctc)
                 name
                 `[,name ,(contract-name ctc)])))
+        
+        (define absents
+          (let ([ams (ext-class/c-contract-absent-methods c)]
+                [afs (ext-class/c-contract-absent-fields c)])
+            (cond
+              [(and (null? ams) (null? afs)) '()]
+              [(null? afs) (list `(absent ,@ams))]
+              [else (list `(absent ,@ams (field ,@afs)))])))
+        
         `(class/c ,@(if (null? init-names)
                         (list)
                         (list `(init ,@init-names)))
-                  ,@meth-names)]))))
+                  ,@(if (null? field-names)
+                        (list)
+                        (list `(field ,@field-names)))
+                  ,@(if (null? init-fields)
+                        (list)
+                        (list `(init-field ,@init-fields)))
+                  ,@meth-names
+                  ,@absents
+                  ,@(class/c-internal-name-clauses (ext-class/c-contract-internal-ctc c)))]))))

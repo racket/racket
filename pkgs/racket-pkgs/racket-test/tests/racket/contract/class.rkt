@@ -2051,19 +2051,65 @@
          [x 2]))
   
   (test/spec-passed/result
-   'class-field-accessor
+   'class-field-accessor1
    '(let ([c% (class object% (super-new) (field [f 1]))])
-      ((class-field-accessor c% f) 
+      ((class-field-accessor c% f)
        (new (contract (class/c) c% 'pos 'neg))))
    1)
   
+  (test/spec-passed
+   'class-field-accessor2
+   '(let* ([c% (class object% (field [f 1]) (super-new))]
+           [c+c% (contract (class/c (field [f integer?])) c% 'pos 'neg)])
+      ((class-field-accessor c+c% f) (new c%))))
+  
+  (test/pos-blame
+   'class-field-accessor3
+   '(let* ([c% (class object% (field [f #f]) (super-new))]
+           [c+c% (contract (class/c (field [f integer?])) c% 'pos 'neg)])
+      ((class-field-accessor c+c% f) (new c%))))
+  
+  (test/spec-passed
+   'class-field-accessor4
+   '(let* ([c% (class object% (field [f #f]) (super-new))]
+           [c+c% (contract (class/c (field [f integer?])) c% 'pos 'neg)])
+      ((class-field-accessor c% f) (new c+c%))))
+  
   (test/spec-passed/result
-   'class-field-mutator
+   'class-field-mutator1
    '(let* ([c% (class object% (super-new) (field [f 1]))]
            [o (new (contract (class/c) c% 'pos 'neg))])
       ((class-field-mutator c% f) o 2)
       ((class-field-accessor c% f) o))
    2)
+  
+  (test/spec-passed/result
+   'class-field-mutator2
+   '(let* ([c% (class object% (super-new) (field [f 1]))]
+           [o (new (contract (class/c (field [f boolean?])) c% 'pos 'neg))])
+      ((class-field-mutator c% f) o #f)
+      ((class-field-accessor c% f) o))
+   #f)
+  
+  (test/spec-passed
+   'class-field-mutator3 
+   '(let* ([c% (class object% (super-new) (field [f 1]))]
+           [o (new (contract (class/c (field [f boolean?])) c% 'pos 'neg))])
+      ((class-field-mutator c% f) o 11)))
+  
+  (test/neg-blame
+   'class-field-mutator4
+   '(let* ([c% (class object% (super-new) (field [f 1]))]
+           [c%+c (contract (class/c (field [f boolean?])) c% 'pos 'neg)]
+           [o (new c%+c)])
+      ((class-field-mutator c%+c f) o 11)))
+  
+  (test/neg-blame
+   'class-field-mutator5
+   '(let* ([c% (class object% (super-new) (field [f 1]))]
+           [c%+c (contract (class/c (field [f boolean?])) c% 'pos 'neg)]
+           [o (new c%)])
+      ((class-field-mutator c%+c f) o 11)))
   
   (test/spec-passed/result
    'order-of-evaluation
@@ -2360,6 +2406,70 @@
            [sub-c% (class c% (super-new))])
       (new sub-c% [f 1])))
   
+  (test/neg-blame
+   'subclass-and-external-contracts6
+   '(let* ([c% (contract (class/c (init [f integer?]))
+                         (class object% (init f) (super-new))
+                         'pos 'neg)]
+           [sub-c% (class c% (super-new))])
+      (new sub-c% [f #f])))
+  
+  (test/spec-passed
+   'subclass-and-external-contracts7
+   '(let* ([c% (contract (class/c (init [i integer?]))
+                         (class object% (init i) (super-new))
+                         'pos 'neg)]
+           [sub-c% (class c% (init i) (super-new [i 2]))])
+      (new sub-c% [i #f])))
+  
+  (test/neg-blame
+   'subclass-and-external-contracts8
+   '(let* ([c%
+            (contract (class/c (init [i integer?]))
+                      (class object% (init i) (super-new))
+                      'pos 'neg)]
+            [d% (class c% (super-new [i #f]))])
+      (new d%)))
+  
+  (test/spec-passed
+   'subclass-and-external-contracts9
+   '(let* ([c%
+            (contract (class/c (init [i integer?] [j integer?]))
+                      (class object% (init i) (init j) (super-new))
+                      'pos 'neg)]
+            [d% (class c% (init i) (super-new [i 1]))])
+      (new d% [i #f] [j 1])))
+  
+  (test/neg-blame
+   'subclass-and-external-contracts10
+   '(let* ([c%
+            (contract (class/c (init [i integer?] [j integer?]))
+                      (class object% (init i) (init j) (super-new))
+                      'pos 'neg)]
+           [d% (class c% (init i) (super-new [i 1]))])
+      (new d% [i #f] [j #f])))
+  
+  (test/spec-passed/result
+   'object=?
+   '(let ([o (new (contract (class/c (m (->m integer? integer?)))
+                            (class object%
+                              (define/public (m x) x)
+                              (define/public (get-this) this)
+                              (super-new))
+                            'pos 'neg))])
+      (object=? (send o get-this) o))
+   #t)
+
+  ;; this test case won't pass until the internal-ctc
+  ;; call is delayed in the new class/c projections
+  ;; (but otherwise it passes)
+  #;
+  (test/spec-passed/result
+   'chaperone-of
+   '(let* ([c% (class object% (define/public (m x) x))]
+           [c+c% (contract (class/c (m (->m integer? integer?))) c% 'pos 'neg)])
+      (chaperone-of? c+c% c%))
+   #t)
   
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))

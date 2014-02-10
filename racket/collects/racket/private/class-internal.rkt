@@ -2031,15 +2031,10 @@ last few projections.
 
 |#
 
-(define -class?
-  (let ([class?
-         (λ (x) (or (class? x) (wrapped-class? x)))])
-    class?))
-
 ;; compose-class: produces one result if `deserialize-id' is #f, two
 ;;                results if `deserialize-id' is not #f
 (define (compose-class name                ; symbol
-                       raw-super           ; class, possibly wrapper-class
+                       super               ; class, possibly with contract impersonator properties
                        interfaces          ; list of interfaces
                        inspector           ; inspector or #f
                        deserialize-id      ; identifier or #f
@@ -2076,10 +2071,9 @@ last few projections.
               meth-name
               (if name " in " "")
               (or name "")))))
-  (define super (unwrap-class raw-super))
   
   ;; -- Check superclass --
-  (unless (-class? super)
+  (unless (class? super)
     (obj-error 'class* "superclass expression result is not a class"
                "result" super
                #:class-name name))
@@ -2318,23 +2312,23 @@ last few projections.
             ;; --- Make the new external method contract records ---
             ;; (they are just copies of the super at this point, updated below)
             (define wci-neg-extra-arg-vec 
-              (if (class? raw-super)
-                  #f
-                  (let* ([the-info (wrapped-class-the-info raw-super)]
+              (if (impersonator-prop:has-wrapped-class-neg-party? super)
+                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
                          [ov (wrapped-class-info-neg-extra-arg-vec the-info)])
                     (if no-method-changes?
                         ov
                         (let ([v (make-vector method-width #f)])
                           (vector-copy! v 0 ov)
-                          v)))))
+                          v)))
+                  #f))
             (define wci-neg-acceptors-ht
-              (if (class? raw-super)
-                  #f
-                  (let* ([the-info (wrapped-class-the-info raw-super)]
+              (if (impersonator-prop:has-wrapped-class-neg-party? super)
+                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
                          [oh (wrapped-class-info-neg-acceptors-ht the-info)])
                     (if no-method-changes?
                         oh
-                        (hash-copy oh)))))
+                        (hash-copy oh)))
+                  #f))
             
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
@@ -2641,22 +2635,63 @@ last few projections.
                                    (loop (add1 i))))))))
                       
                       ;; --- Install initializer into class ---
-                      (set-class-init! c init)
-                      
+                      ;;     and create contract-wrapped subclass
                       (define c+ctc
-                        (if wci-neg-extra-arg-vec
-                            (let ([info (wrapped-class-the-info raw-super)])
-                              (wrapped-class
-                               (wrapped-class-info 
-                                c
-                                (wrapped-class-info-blame info)
-                                wci-neg-extra-arg-vec
-                                wci-neg-acceptors-ht
-                                (wrapped-class-info-pos-field-projs info)
-                                (wrapped-class-info-neg-field-projs info)
-                                (wrapped-class-info-init-proj-pairs info))
-                               (wrapped-class-neg-party raw-super)))
-                            c))
+                        (cond
+                          [wci-neg-extra-arg-vec
+                           (define neg-party (impersonator-prop:get-wrapped-class-neg-party super))
+                           (define info (impersonator-prop:get-wrapped-class-info super))
+                           (define blame (wrapped-class-info-blame info))
+                           (define sub-init-proj-pairs
+                             (let loop ([proj-pairs (wrapped-class-info-init-proj-pairs info)])
+                               (cond
+                                 [(null? proj-pairs) '()]
+                                 [else
+                                  (define pr (car proj-pairs))
+                                  (if (member (list-ref pr 0) init-args)
+                                      (loop (cdr proj-pairs))
+                                      (cons pr (loop (cdr proj-pairs))))])))
+                           (define super-init-proj-pairs (wrapped-class-info-init-proj-pairs info))
+                           
+                           ;; use an init that checks the super contracts on a super call
+                           (set-class-init!
+                            c
+                            (λ (o continue-make-super c inited? leftovers named-args)
+                              (define (contract-checking-continue-make-super o c inited?
+                                                                             leftovers
+                                                                             by-pos-args
+                                                                             new-named-args)
+                                (check-arg-contracts blame neg-party c
+                                                     super-init-proj-pairs
+                                                     new-named-args)
+                                (continue-make-super o c inited?
+                                                     leftovers
+                                                     by-pos-args
+                                                     new-named-args))
+                              (init o contract-checking-continue-make-super
+                                    c inited? leftovers named-args)))
+                           
+                           ;; add properties to the subclass that
+                           ;; check the residual external contracts
+                           (impersonate-struct
+                            c
+                            
+                            set-class-orig-cls! (λ (a b) b)
+                            
+                            impersonator-prop:wrapped-class-neg-party
+                            neg-party
+                            
+                            impersonator-prop:wrapped-class-info
+                            (wrapped-class-info 
+                             blame
+                             wci-neg-extra-arg-vec
+                             wci-neg-acceptors-ht
+                             (wrapped-class-info-pos-field-projs info)
+                             (wrapped-class-info-neg-field-projs info)
+                             sub-init-proj-pairs))]
+                          [else
+                           (set-class-init! c init)
+                           c]))
                       
                       ;; -- result is the class, and maybe deserialize-info ---
                       (if deserialize-id
@@ -2812,7 +2847,8 @@ An example
                       (make-struct-type 'props struct-type 0 0 #f props #f)])
           struct:))))
 
-(define-values (prop:object _object? object-ref) (make-struct-type-property 'object 'can-impersonate))
+(define-values (prop:object _object? object-ref) 
+  (make-struct-type-property 'object 'can-impersonate))
 (define (object? o)
   (or (_object? o)
       (wrapped-object? o)))
@@ -2823,6 +2859,7 @@ An example
     [else 
      ;; error case
      (object-ref o)]))
+
 
 
 ;;--------------------------------------------------------------------
@@ -3269,22 +3306,22 @@ An example
 
 (define (do-make-object blame class by-pos-args named-args)
   (cond
-    [(class? class)
-     (do-make-object/real-class blame class by-pos-args named-args #f #f '())]
-    [(wrapped-class? class)
-     (define the-info (wrapped-class-the-info class))
-     (define unwrapped-class (wrapped-class-info-class the-info))
+    [(impersonator-prop:has-wrapped-class-neg-party? class)
+     (define the-info (impersonator-prop:get-wrapped-class-info class))
+     (define neg-party (impersonator-prop:get-wrapped-class-neg-party class))
      (define unwrapped-o 
-       (do-make-object/real-class blame unwrapped-class by-pos-args named-args
+       (do-make-object/real-class blame class by-pos-args named-args
                                   (wrapped-class-info-blame the-info)
-                                  (wrapped-class-neg-party class)
+                                  neg-party
                                   (wrapped-class-info-init-proj-pairs the-info)))
      (wrapped-object
       unwrapped-o
       (wrapped-class-info-neg-extra-arg-vec the-info)
       (wrapped-class-info-pos-field-projs the-info)
       (wrapped-class-info-neg-field-projs the-info)
-      (wrapped-class-neg-party class))]
+      neg-party)]
+    [(class? class)
+     (do-make-object/real-class blame class by-pos-args named-args #f #f '())]
     [else
      (raise-argument-error 'instantiate "class?" class)]))
 
@@ -3645,41 +3682,69 @@ An example
              #:class-name (class-name cls)))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
-  (let ([check-and-get-index
-         (λ (who class name)
-           (unless (-class? class)
-             (raise-argument-error who "class?" class))
-           (unless (symbol? name)
-             (raise-argument-error who "symbol?" name))
-           (hash-ref (class-field-ht (unwrap-class class)) name
-                     (lambda ()
-                       (obj-error who "no such field"
-                                  "field-name" (as-write name)
-                                  #:class-name (class-name (unwrap-class class))))))])
+  (let ()
+    (define (check-and-get-proc who class name get?)
+      (unless (class? class)
+        (raise-argument-error who "class?" class))
+      (unless (symbol? name)
+        (raise-argument-error who "symbol?" name))
+      (define field-info-external-X (if get? field-info-external-ref field-info-external-set!))
+      (define wrapped-class-info-X-field-projs
+        (if get? 
+            wrapped-class-info-pos-field-projs
+            wrapped-class-info-neg-field-projs))
+      (define (get-accessor)
+        (field-info-external-X
+         (hash-ref (class-field-ht class) name
+                   (lambda ()
+                     (obj-error who "no such field"
+                                "field-name" (as-write name)
+                                #:class-name (class-name class))))))
+      (cond
+        [(impersonator-prop:has-wrapped-class-neg-party? class)
+         (define the-info (impersonator-prop:get-wrapped-class-info class))
+         (define projs (hash-ref (wrapped-class-info-X-field-projs the-info) name #f))
+         (define np (impersonator-prop:get-wrapped-class-neg-party class))
+         (cond
+           [projs 
+            (if get?
+                (let loop ([projs projs])
+                  (cond
+                    [(pair? projs)
+                     (define f-rest (loop (cdr projs)))
+                     (define f-this (car projs))
+                     (λ (val) ((f-this (f-rest val)) np))]
+                    [else projs]))
+                (let loop ([projs projs])
+                  (cond
+                    [(pair? projs)
+                     (define f-rest (loop (cdr projs)))
+                     (define f-this (car projs))
+                     (λ (o val) ((f-this (f-rest o val)) np))]
+                    [else projs])))]
+           [else (get-accessor)])]
+        [else
+         (get-accessor)]))
     (values (λ (class name)
-              (let* ([fi (check-and-get-index 'class-field-accessor class name)]
-                     [ref (field-info-external-ref fi)])
-                (λ (o) 
-                  (cond
-                    [(_object? o)
-                     (ref o)]
-                    [else
-                     (define uw (unwrap-object o))
-                     (if (_object? uw)
-                         (ref uw)
-                         (raise-argument-error 'class-field-accessor "object?" o))]))))
+              (define ref (check-and-get-proc 'class-field-accessor class name #t))
+              (λ (o)
+                (cond
+                  [(_object? o)
+                   (ref o)]
+                  [(wrapped-object? o)
+                   (ref (wrapped-object-object o))]
+                  [else
+                   (raise-argument-error 'class-field-accessor "object?" o)])))
             (λ (class name)
-              (let* ([fi (check-and-get-index 'class-field-mutator class name)]
-                     [setter! (field-info-external-set! fi)])
-                (λ (o v) 
-                  (cond
-                    [(_object? o)
-                     (setter! o v)]
-                    [else
-                     (define uw (unwrap-object o))
-                     (if (_object? uw)
-                         (setter! uw v)
-                         (raise-argument-error 'class-field-mutator "object?" o))])))))))
+              (define setter! (check-and-get-proc 'class-field-mutator class name #f))
+              (λ (o v) 
+                (cond
+                  [(_object? o)
+                   (setter! o v)]
+                  [(wrapped-object? o)
+                   (setter! (unwrap-object o) v)]
+                  [else
+                   (raise-argument-error 'class-field-mutator "object?" o)]))))))
 
 (define-struct generic (name applicable))
 
@@ -3689,7 +3754,7 @@ An example
 (define make-generic/proc
   (let ([make-generic
          (lambda (class name)
-           (unless (or (-class? class) (interface? class))
+           (unless (or (class? class) (interface? class))
              (raise-argument-error 'make-generic "(or/c class? interface?)" class))
            (unless (symbol? name)
              (raise-argument-error 'make-generic "symbol?" name))
@@ -3709,8 +3774,7 @@ An example
                        "target" obj
                        #:intf-name (interface-name intf)))
                     (find-method/who 'make-generic obj name)))
-                (let* ([class (unwrap-class class)]  ;; TODO: should this do checking?
-                       [pos (hash-ref (class-method-ht class) name
+                (let* ([pos (hash-ref (class-method-ht class) name
                                       (lambda ()
                                         (obj-error 'make-generic "no such method"
                                                    "method name" (as-write name)
@@ -4003,17 +4067,17 @@ An example
 
 (define (is-a? v c)
   (cond
-    [(-class? c) 
-     (and (object? v) ((class-object? (class-orig-cls (unwrap-class c))) (unwrap-object v)))]
+    [(class? c) 
+     (and (object? v) ((class-object? (class-orig-cls c)) (unwrap-object v)))]
     [(interface? c) (and (object? v) (implementation? (object-ref/unwrap v) c))]
     [else (raise-argument-error 'is-a? "(or/c class? interface?)" 1 v c)]))
 
 (define (subclass? v c)
-  (unless (-class? c)
+  (unless (class? c)
     (raise-argument-error 'subclass? "class?" 1 v c))
-  (and (-class? v)
-       (let* ([c (class-orig-cls (unwrap-class c))]
-              [v (class-orig-cls (unwrap-class v))]
+  (and (class? v)
+       (let* ([c (class-orig-cls c)]
+              [v (class-orig-cls v)]
               [p (class-pos c)])
          (and (<= p (class-pos v))
               (eq? c (vector-ref (class-supers v) p))))))
@@ -4042,8 +4106,8 @@ An example
 (define (implementation? v i)
   (unless (interface? i)
     (raise-argument-error 'implementation? "interface?" 1 v i))
-  (and (-class? v)
-       (interface-extension? (class-self-interface (unwrap-class v)) i)))
+  (and (class? v)
+       (interface-extension? (class-self-interface v) i)))
 
 (define (interface-extension? v i)
   (unless (interface? i)
@@ -4059,9 +4123,9 @@ An example
   (and (memq s (interface-public-ids i)) #t))
 
 (define (class->interface c)
-  (unless (-class? c)
+  (unless (class? c)
     (raise-argument-error 'class->interface "class?" c))
-  (class-self-interface (unwrap-class c)))
+  (class-self-interface c))
 
 (define (interned? sym)
   (eq? sym (string->symbol (symbol->string sym))))
@@ -4090,10 +4154,9 @@ An example
       (string->symbol s)
       s))
 
-(define (class-info _c)
-  (unless (-class? _c)
-    (raise-argument-error 'class-info "class?" _c))
-  (define c (unwrap-class _c))
+(define (class-info c)
+  (unless (class? c)
+    (raise-argument-error 'class-info "class?" c))
   (if (struct? ((class-insp-mk c)))
       (let ([super (vector-ref (class-supers c) (sub1 (class-pos c)))])
         (let loop ([next super][skipped? #f])
@@ -4143,9 +4206,15 @@ An example
     (raise-argument-error 'object=? "object?" o1))
   (unless (object? o2)
     (raise-argument-error 'object=? "object?" o2))
-  (let ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
-        [orig-o2 (if (has-original-object? o2) (original-object o2) o2)])
-    (eq? orig-o1 orig-o2)))
+  (let* ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
+         [orig-o2 (if (has-original-object? o2) (original-object o2) o2)]
+         [orig-orig-o1 (if (wrapped-object? orig-o1)
+                           (wrapped-object-object orig-o1)
+                           orig-o1)]
+         [orig-orig-o2 (if (wrapped-object? orig-o2)
+                           (wrapped-object-object orig-o2)
+                           orig-o2)])
+    (eq? orig-orig-o1 orig-orig-o2)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4380,7 +4449,7 @@ An example
 
 (define (check-mixin-super mixin-name super% from-ids)
   (let ([mixin-name (or mixin-name 'mixin)])
-    (unless (-class? super%)
+    (unless (class? super%)
       (obj-error mixin-name 
                  "argument is not a class"
                  "argument" super%))
@@ -4530,7 +4599,7 @@ An example
 (provide (protect-out get-field/proc)
          
          ;; for class-c-old.rkt:
-         -class? make-naming-constructor prop:object _object? object-ref replace-ictc-blame
+         make-naming-constructor prop:object _object? object-ref replace-ictc-blame
          concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object
          ;; end class-c-old.rkt requirements
@@ -4540,7 +4609,7 @@ An example
          
          (rename-out [_class class]) class* class/derived
          define-serializable-class define-serializable-class*
-         (rename-out [-class? class?])
+         class?
          mixin
          (rename-out [_interface interface]) interface* interface?
          object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
@@ -4569,4 +4638,4 @@ An example
          (for-syntax localize) 
          (except-out (struct-out class) class class?)
          (rename-out [class? class-struct-predicate?])
-         (struct-out wrapped-class) (struct-out wrapped-class-info) (struct-out wrapped-object))
+         (struct-out wrapped-object))

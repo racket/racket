@@ -1,20 +1,21 @@
 #lang racket/base
-(provide (struct-out wrapped-class-info)
-         (struct-out wrapped-class)
+(provide (except-out (struct-out wrapped-class-info) wrapped-class-info?)
          (struct-out wrapped-object)
-         unwrap-class
-         unwrap-object)
+         unwrap-object
+         
+         impersonator-prop:wrapped-class-info 
+         impersonator-prop:has-wrapped-class-info?
+         impersonator-prop:get-wrapped-class-info
 
-(struct wrapped-class-info (class blame 
-                             neg-extra-arg-vec ;; vector that parallels the class's vector of methods
-                             neg-acceptors-ht ;; range of ht has curried (neg-pary -> mth) fns
-                             pos-field-projs neg-field-projs
-                             init-proj-pairs)
-  #:transparent)
-(struct wrapped-class (the-info neg-party)
-  #:property prop:custom-write
-  (λ (stct port mode)
-    (do-custom-write (wrapped-class-info-class (wrapped-class-the-info stct)) port mode))
+         impersonator-prop:wrapped-class-neg-party
+         impersonator-prop:has-wrapped-class-neg-party?
+         impersonator-prop:get-wrapped-class-neg-party)
+
+(struct wrapped-class-info (blame 
+                            neg-extra-arg-vec ;; vector that parallels the class's vector of methods
+                            neg-acceptors-ht ;; range of ht has curried (neg-pary -> mth) fns
+                            pos-field-projs neg-field-projs
+                            init-proj-pairs)
   #:transparent)
 
 (struct wrapped-object (object neg-extra-arg-vec pos-field-projs neg-field-projs neg-party)
@@ -34,13 +35,17 @@
     [else
      (print v port mode)]))
 
-
 (define (unwrap-object o)
   (cond
     [(wrapped-object? o) (wrapped-object-object o)]
     [else o]))
 
-(define (unwrap-class cls)
-  (cond
-    [(wrapped-class? cls) (wrapped-class-info-class (wrapped-class-the-info cls))]
-    [else cls]))
+(define-values (impersonator-prop:wrapped-class-info 
+                impersonator-prop:has-wrapped-class-info?
+                impersonator-prop:get-wrapped-class-info)
+  (make-impersonator-property 'wrapped-class-info))
+
+(define-values (impersonator-prop:wrapped-class-neg-party
+                impersonator-prop:has-wrapped-class-neg-party?
+                impersonator-prop:get-wrapped-class-neg-party)
+  (make-impersonator-property 'wrapped-class-neg-party))
