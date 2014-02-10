@@ -3071,7 +3071,7 @@
              [p (mline-get-position line)])
         (let loop ([snip (mline-snip line)]
                    [p p])
-          (if (eq? snip thesnip)
+          (if (object=? snip thesnip)
               (begin
                 (when pos
                   (set-box! pos p))

@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         racket/contract
          (only-in racket/gui/base
                   color% 
                   font%
@@ -1421,6 +1422,37 @@
   (send t1 set-tabs '(100 200 300 400 500 600 700 800 900 1000 100) 1 #t)
   (send t1 insert "Hello\tWorld")
   (send t1 get-extent (box 0) (box 0)))
+
+;; ----------------------------------------
+;; Identity and contracts
+
+(let ([t (new text%)])
+  (define s (new editor-snip%))
+  (send t insert "x")
+  (send t insert s)
+  (define (check s)
+    (expect (send t get-snip-location s) #t)
+    (expect (send t get-snip-position s) 1))
+  (check s)
+  (define/contract s2 (object/c) s)
+  (check s2))
+
+(let ([t (new pasteboard%)])
+  (define s (new editor-snip%))
+  (send t insert (make-object string-snip% "x"))
+  (send t insert s 13 14)
+  (define (check s)
+    (define x (box 0))
+    (define y (box 0))
+    (expect (send t get-snip-location s x y) #t)
+    (expect (unbox x) 13.0)
+    (expect (unbox y) 14.0))
+  (check s)
+  (define/contract s2 (object/c) s)
+  (check s2)
+  (send t delete s2)
+  (expect (send t get-snip-location s) #f)
+  (expect (send t get-snip-location s2) #f))
 
 ;; ----------------------------------------
 ;; Error reporting

@@ -15,6 +15,9 @@
 
 ;; FIXME: need contracts on public classes
 
+(define (object/bool=? a b)
+  (and a b (object=? a b)))
+
 ;; ----------------------------------------
 
 (define simple-scroll%
@@ -1013,7 +1016,7 @@
   (define/public (set-editor m [update? #t])
     (unless (eq? media m)
       (when media
-        (when (eq? admin (send media get-admin))
+        (when (object/bool=? admin (send media get-admin))
           (send media set-admin 
                 (or (send admin get-nextadmin)
                     (send admin get-prevadmin))))
@@ -1063,11 +1066,11 @@
   (define/private (in-chain? admin oldadmin)
     (or (let loop ([oldadmin oldadmin])
           (and oldadmin
-               (or (eq? admin oldadmin)
+               (or (object/bool=? admin oldadmin)
                    (loop (send oldadmin get-prevadmin)))))
         (let loop ([oldadmin oldadmin])
           (and oldadmin
-               (or (eq? admin oldadmin)
+               (or (object/bool=? admin oldadmin)
                    (loop (send oldadmin get-nextadmin)))))))
 
   (define/public (allow-scroll-to-last to-last?)

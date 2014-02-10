@@ -757,7 +757,8 @@
   
   (define/private (-delete del-snip del)
     (when (snip->loc del-snip)
-      (when (eq? del-snip prev-mouse-snip)
+      (when (and prev-mouse-snip
+                 (object=? del-snip prev-mouse-snip))
         (set! prev-mouse-snip #f))
       (set! write-locked (add1 write-locked))
       (begin-edit-sequence)
@@ -773,7 +774,8 @@
            (set! write-locked (sub1 write-locked))
            
            (let ([update-cursor?
-                  (and (eq? del-snip s-caret-snip)
+                  (and (and s-caret-snip
+                            (object=? del-snip s-caret-snip))
                        (begin
                          (send s-caret-snip own-caret #f)
                          (set! s-caret-snip #f)
@@ -1033,8 +1035,8 @@
     (unless (or s-user-locked?
                 (not (zero? write-locked))
                 (not (snip->loc snip))
-                (eq? snip before)
-                (eq? snip after)
+                (and before (object=? snip before))
+                (and after (object=? snip after))
                 (and before (not (snip->loc before)))
                 (and after (not (snip->loc after))))
       (set! write-locked (add1 write-locked))
