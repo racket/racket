@@ -1,11 +1,28 @@
 #lang racket/base
 
+;; This module provides functions that manipulate tables mapping expressions
+;; to type information or other properties. This allows the optimizer or
+;; other downstream analyses to use information from the type-checker.
+
 ;; TODO figure out why these imports are needed even though they don't seem to be.
 (require racket/match
          "../utils/utils.rkt"
          (contract-req)
          (types utils union)
          (utils tc-utils))
+
+(provide/cond-contract
+ [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
+ [type-of (syntax? . -> . tc-results/c)]
+ [reset-type-table (-> any/c)]
+ [add-tautology (syntax? . -> . any)]
+ [add-contradiction (syntax? . -> . any)]
+ [add-neither (syntax? . -> . any)]
+ [tautology? (syntax? . -> . boolean?)]
+ [contradiction? (syntax? . -> . boolean?)]
+ [neither? (syntax? . -> . boolean?)]
+ [add-dead-lambda-branch (syntax? . -> . any)]
+ [dead-lambda-branch? (syntax? . -> . boolean?)])
 
 (define table (make-hasheq))
 
@@ -66,17 +83,3 @@
     (hash-set! lambda-dead-table formals #t)))
 (define (dead-lambda-branch? formals)
   (hash-ref lambda-dead-table formals #f))
-
-
-(provide/cond-contract
- [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
- [type-of (syntax? . -> . tc-results/c)]
- [reset-type-table (-> any/c)]
- [add-tautology (syntax? . -> . any)]
- [add-contradiction (syntax? . -> . any)]
- [add-neither (syntax? . -> . any)]
- [tautology? (syntax? . -> . boolean?)]
- [contradiction? (syntax? . -> . boolean?)]
- [neither? (syntax? . -> . boolean?)]
- [add-dead-lambda-branch (syntax? . -> . any)]
- [dead-lambda-branch? (syntax? . -> . boolean?)])
