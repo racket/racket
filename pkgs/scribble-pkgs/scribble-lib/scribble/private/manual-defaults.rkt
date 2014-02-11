@@ -1,7 +1,8 @@
 #lang scheme/base
 (require scribble/core
          scribble/html-properties
-         "defaults.rkt")
+         "defaults.rkt"
+         "on-demand.rkt")
 
 (provide post-process
          manual-doc-style)
@@ -20,5 +21,5 @@
                                (scribble-file "manual-racket.css")))
                 #t))
 
-(define manual-doc-style
+(define-on-demand manual-doc-style
   (part-style (post-process (part #f null #f plain null null null))))
