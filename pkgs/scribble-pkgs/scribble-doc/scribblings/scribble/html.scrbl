@@ -444,8 +444,9 @@ before @racket[renderer] is called.}
 
 
 @defparam[url-roots roots (or/c #f
-                                (listof (or/c (list path-string? string?)
-                                              (list path-string? string? 'abs))))]{
+                                (listof (cons/c path-string?
+                                                (cons/c string?
+                                                        (listof 'abs 'index)))))]{
 
 A parameter that determines how resource paths are converted to URLs
 for reference. A @racket[#f] value is equivalent to an empty list.
@@ -459,7 +460,10 @@ all paths are expected to be disjoint (e.g., no @racket["/foo"] and
 
 If an item in the parameter's list includes @racket['abs], then an
 absolute URL is produced for all references to files with the
-corresponding prefix.}
+corresponding prefix. If an item includes @racket['index], then an
+refer to a directory path is converted to a reference to
+@filepath{index.html}, otherwise a reference to @filepath{index.html}
+is converted to a directory path.}
 
 
 @defproc[(resource? [v any/c]) boolean?]{

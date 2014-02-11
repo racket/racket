@@ -74,7 +74,12 @@
                  (and (pair? p) (equal? (car p) (car r))
                       (loop (cdr r) (cdr p)))
                  (case mode
-                   [(get-path) `(,(cadr root+url+flags) ,@p ,file*)]
+                   [(get-path) `(,(cadr root+url+flags) 
+                                 ,@p 
+                                 ,(if (and (equal? file* "")
+                                           (memq 'index (cddr root+url+flags)))
+                                      default-file
+                                      file*))]
                    [(get-abs-or-true)
                     (if (memq 'abs (cddr root+url+flags)) `("" ,@p) #t)]
                    [else (error 'relativize "internal error: ~e" mode)]))))
