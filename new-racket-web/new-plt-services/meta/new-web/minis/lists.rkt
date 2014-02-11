@@ -2,7 +2,8 @@
 
 (provide mailing-lists-quick)
 
-(define lists-site (site "lists"))
+(define lists-site (site "lists"
+                         #:url "http://lists.racket-lang.org/"))
 
 (struct ML (name gmane-name google-name description))
 

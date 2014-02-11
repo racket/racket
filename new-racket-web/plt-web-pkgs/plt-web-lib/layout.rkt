@@ -276,6 +276,7 @@
   (let ([site
          (lambda (dir
                   #:url [url #f]
+                  #:always-abs-url? [abs-url? #f]
                   #:robots [robots #t]
                   #:htaccess [htaccess #t]
                   #:navigation [navigation null]
@@ -283,8 +284,10 @@
                   #:meta? [meta? page-style?]
                   #:share-from [given-sharing-site #f])
            (when url
-             (extra-roots (cons (list dir url)
-                                (extra-roots))))
+             (registered-url-roots (cons (list* dir
+                                                url
+                                                (if abs-url? '(abs) null))
+                                         (registered-url-roots))))
            (define sharing-site
              ;; Can use given site only if it has enough relative to
              ;; this one:

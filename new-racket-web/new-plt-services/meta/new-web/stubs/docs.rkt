@@ -3,6 +3,8 @@
 (require (only-in "../www/resources.rkt" www-site))
 
 (define docs-site (site "stubs/docs" 
+                        #:url "http://docs.racket-lang.org/"
+                        #:always-abs-url? #t
                         #:page-style? #f
                         #:meta? #t
                         #:share-from www-site))

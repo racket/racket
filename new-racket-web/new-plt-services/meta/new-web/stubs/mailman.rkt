@@ -1,6 +1,8 @@
 #lang plt-web
 
-(define mailman-site (site "stubs/mailman"))
+(define mailman-site (site "stubs/mailman"
+                           #:url "http://lists.racket-lang.org/"
+                           #:always-abs-url? #t))
 
 (define (MM  . tag) @literal{<MM-@|tag|>})
 (define (MM/ . tag) @literal{</MM-@|tag|>})

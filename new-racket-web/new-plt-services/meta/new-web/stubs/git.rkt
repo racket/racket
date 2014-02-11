@@ -4,6 +4,8 @@
 
 (define git-site
   (site "stubs/git"
+        #:url "http://git.racket-lang.org/"
+        #:always-abs-url? #t
         #:robots (add-newlines (for/list ([d '(plt libs testing play)])
                                  @list{Disallow: /@|d|/}))))
 

@@ -1,8 +1,7 @@
 #lang racket/base
 
 (require racket/cmdline racket/runtime-path racket/file scribble/html
-         pkg/path
-         "config.rkt"
+         pkg/path net/url
          "private/roots.rkt")
 
 (define build-mode 'web)
@@ -12,13 +11,15 @@
 
 (command-line
  #:once-any
- [("-l" "--local")
-  "local mode: create content that is viewable in the build directory"
-  "  (all links are relative) "
-  (set! build-mode 'local)]
  [("-w" "--web")
   "web mode: create content that is viewable via HTTP"
   (set! build-mode 'web)]
+ [("-l" "--local")
+  "local mode: create content that is viewable in the build directory"
+  (set! build-mode 'local)]
+ [("-r" "--relative")
+  "local mode, but all links are relative"
+  (set! build-mode 'relative)]
  #:once-each
  [("-o" "--output") dir
   "output directory"
@@ -33,8 +34,6 @@
  [("+e" "++extra") extra
   "extra file to render more content"
   (set! extra-files (cons extra extra-files))])
-
-(unless build-mode (raise-user-error 'build "build mode not specified"))
 
 (let ([cache (make-hash)])
   (define (check-dest p)
@@ -59,10 +58,15 @@
       (raise-user-error 'build "Aborting."))))
 
 (printf "Building ~a content...\n" build-mode)
-(parameterize ([url-roots (if (eq? 'web build-mode)
-                              (append (extra-roots)
-                                      sites)
-                              (url-roots))])
+(parameterize ([url-roots (case build-mode
+                            [(web) (registered-url-roots)]
+                            [(local) (map (lambda (s)
+                                            (list* (car s)
+                                                   (url->string (path->url (build-path output-dir (car s))))
+                                                   (cons 'index
+                                                         (cddr s))))
+                                          (registered-url-roots))]
+                            [else (url-roots)])])
   (for ([extra (in-list extra-files)])
     (if (file-exists? extra)
       (dynamic-require `(file ,extra) #f)

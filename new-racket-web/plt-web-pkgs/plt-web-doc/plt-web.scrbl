@@ -35,6 +35,7 @@ relative directory is mapped to a destination URL via
 
 @defproc[(site [dir path-string?]
                [#:url url (or/c string? #f) #f]
+               [#:always-abs-url? always-abs-url? any/c #f]
                [#:share-from share-from (or/c site? #f) #f]
                [#:page-style? page-style? any/c #t]
                [#:meta? meta? any/c page-style?]
@@ -45,7 +46,9 @@ relative directory is mapped to a destination URL via
 
 Creates a value that represents a site. If @racket[url] is not
 @racket[#f], then it will be registered to @racket[url-roots] for a
-build in web mode (as opposed to local mode).
+build in web mode (as opposed to local mode). If
+@racket[always-abs-url?] is true, the @racket[url] is registered with
+a @racket['abs] flag.
 
 If @racket[share-from] is a site, then resources generated for the
 site (such as icons or CSS files) are used when as possible for the
@@ -209,7 +212,10 @@ that is introduced by @racketmodname[plt-web]:
        across top-level sites use absolute URLs. This mode is the
        default.}
 
- @item{@Flag{l} or @DFlag{local} --- Build output in local mode, where
+ @item{@Flag{l} or @DFlag{local} --- Build output in local mode using
+       @filepath{file://} URLs between top-level sites.}
+
+ @item{@Flag{r} or @DFlag{relative} --- Build output in local mode, where
        all references use relative paths, exploiting the fact that
        sites are rendered in adjacent directories within the output
        directory. (You may need to deal with an occasional manual
@@ -219,8 +225,8 @@ that is introduced by @racketmodname[plt-web]:
        Writes output to subdirectories of @nonterm{dir}, which
        defaults to the current directory. All existing files and
        directories within @nonterm{dir} will be deleted. As a safety
-       check, the destination directory must not be within an
-       installed package.}
+       check, the destination directory must overlap with any
+       installed package directory.}
 
  @item{@Flag{f} or @DFlag{force} --- Overwrite files in the destination
        directory.}

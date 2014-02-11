@@ -3,7 +3,9 @@
 (require (only-in "../www/resources.rkt" www-site)
          racket/port)
 
-(define blog-site (site "stubs/blog" 
+(define blog-site (site "stubs/blog"
+                        #:url "http://blog.racket-lang.org/"
+                        #:always-abs-url? #t
                         #:share-from www-site))
 
 (define racket-css

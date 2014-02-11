@@ -2,11 +2,25 @@
 
 (require "resources.rkt"
          (prefix-in download: "../download/index.rkt")
+         "../download/download-pages.rkt"
          racket/runtime-path)
 
 (provide download)
 (define download download:index)
 
+;; For old references that go to "www/download/", make a copy of
+;; the main download page:
+(define www-download-site (site "www/download"
+                                #:share-from www-site
+                                #:meta? #f))
+(void
+ @page[#:site www-download-site
+       #:file "index.html"
+       #:title "Download" #:window-title "Download Racket"
+       #:part-of 'download #:width 'full]{
+    @(render-download-page)})
+
+#|
 (define-runtime-path img-dir "img")
 (define images (list (copyfile #:site www-site (build-path img-dir "download.png"))
                      (copyfile #:site www-site (build-path img-dir "download-dark.png"))))
@@ -40,3 +54,4 @@
        onmouseout: "set_download_image(0);"]{
       @img[id: "download_button" src: (car images) style: "border-width: 0;"
            alt: "Download Racket" title: "Download Racket"]}})
+|#

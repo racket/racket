@@ -2,7 +2,9 @@
 
 (require "git.rkt")
 
-(define pre-site (site "stubs/pre"))
+(define pre-site (site "stubs/pre"
+                       #:url "http://pre.racket-lang.org/"
+                       #:always-abs-url? #t))
 
 (define temporary-outdated-warning
   @div[style: "border: 1px dotted red; padding: 0ex 1ex"]{

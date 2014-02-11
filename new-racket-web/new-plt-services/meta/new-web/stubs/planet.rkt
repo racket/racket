@@ -1,6 +1,8 @@
 #lang plt-web
 
-(define planet-site (site "stubs/planet"))
+(define planet-site (site "stubs/planet"
+                          #:url "http://planet.racket-lang.org/"
+                          #:always-abs-url? #t))
 
 (provide planet)
 (define planet

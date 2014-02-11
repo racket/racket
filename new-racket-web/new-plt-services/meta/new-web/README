@@ -1,8 +1,6 @@
 Sources:
 ========
 
-* common: specific code for the racket web pages.
-
 * www: actual content of main site.
 
 * download: content of download site (only installer pages and such)
@@ -21,28 +19,21 @@ Sources:
 To build:
 =========
 
-* Run any `index.rkt' to build a page and things that it references.
+* Run any "*.rkt" to build a page and things that it references.
   (Use `-h' as usual.)
 
-* You can choose `-w' (the default) or `-l' for a web or local mode,
-  respectively.  The difference is that in local mode inter-site links
-  are set up as relative links so you can see all sites from the
-  resulting directories, and this is what you usually need to test
-  things out.  (You will still need to deal with an occasional
-  addition of "index.html" which is not done when looking at file://
-  URLs.)
+* You can choose `-w' (the default) for web mode, `-l' for local using
+  "file://" references, or `-r` for' local mode using relative
+  refernces. Normally, you'll want to use `-l' for testing, and then
+  use `-w' for deployment.
 
 * Use `-o <dir>' to specify a directory where the built contents is
-  placed, otherwise the content will be placed in the current directory.
-  (Use `-f' in scripts to avoid answering the question about deleting
-  existing files.)
+  placed, otherwise the content will be placed in the current
+  directory.  As a safety measure, the target directory must not
+  overlap with any installed directory.  (Use `-f' in scripts to avoid
+  answering the question about deleting existing files.)
 
-* If you're not running from a git repository, you will also need to set
-  a $GIT_DIR environment variable otherwise the resulting build will not
-  have release information for the various builds.  (This doesn't matter
-  if you're not working on download pages.)
-
-* You can also include more files that hook additional contents with
-  with `-e <some-file>'.  These files are required dynamically, and they
-  set things up to add more content building.  The common example here
-  is "web/all.rkt" in iplt.
+* Set the $GIT_DIR environment variable to point to the ".git"
+  directory of a Racket repository, otherwise the resulting build will
+  not have release information for the various builds.  (This doesn't
+  matter if you're not working on download pages.)

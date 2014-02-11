@@ -3,6 +3,8 @@
 (require (only-in "../www/resources.rkt" www-site))
 
 (define pkgs-site (site "stubs/pkgs"
+                        #:url "http://pkgs.racket-lang.org/"
+                        #:always-abs-url? #t
                         #:page-style? #f
                         #:share-from www-site))
 

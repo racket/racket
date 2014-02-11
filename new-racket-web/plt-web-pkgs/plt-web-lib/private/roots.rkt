@@ -1,4 +1,4 @@
 #lang racket/base
 
-(provide extra-roots)
-(define extra-roots (make-parameter null))
+(provide registered-url-roots)
+(define registered-url-roots (make-parameter null))
