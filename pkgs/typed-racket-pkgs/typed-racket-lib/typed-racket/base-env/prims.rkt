@@ -72,6 +72,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           "annotate-classes.rkt"
           "../utils/tc-utils.rkt"
+          "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
           "../types/utils.rkt"
           "for-clauses.rkt"
@@ -1169,15 +1170,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
     #:description "rest argument"
     #:attributes (form)
     #:literals (:)
-    (pattern () #:attr form #'())
+    ;; specifying opaque here helps produce a better error
+    ;; message for optional argumenents, but produces worse
+    ;; error messages for rest arguments.
+    #:opaque
     (pattern rest:id #:attr form #'rest)
-    ;; FIXME: add a typed rest-arg case if a good syntax is found
-    )
+    (pattern (rest:id : type:expr :star)
+             #:attr form (type-label-property #'rest #'type)))
 
   (define-syntax-class lambda-formals
     #:attributes (opt-property kw-property erased)
     #:literals (:)
-    (pattern (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
+    (pattern (~or (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
+                  (~and (mand:mand-formal ... opt:opt-formal ...)
+                        (~bind [rest.form #'()])))
              #:attr kw-property
              (ormap values (append (attribute mand.kw) (attribute opt.kw)))
              #:attr opt-property
