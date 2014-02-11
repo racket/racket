@@ -4,7 +4,7 @@
          "resources.rkt" "people.rkt" "irc.rkt"
          "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
-         (prefix-in pre: "../stubs/pre.rkt"))
+         (prefix-in pre: "../minis/pre.rkt"))
 
 (provide community)
 (define community
@@ -31,7 +31,7 @@
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub}).}
-      @text{@pre:installers and @pre:index{more}.}
+      @text{@pre:installers{Snapshot} — daily builds.}
       @text{@bug-reports — create and query existing reports.}]
     @parlist[@strong{Support}
       @text{

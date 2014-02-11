@@ -1,7 +1,7 @@
 #lang plt-web
 
 (require "resources.rkt" "data.rkt" "installer-pages.rkt" "symlinks.rkt" plt-web/style
-         (prefix-in pre: "../stubs/pre.rkt"))
+         (prefix-in pre: "../minis/pre.rkt"))
 
 (provide render-download-page)
 (define (render-download-page [release current-release] [package 'racket])
@@ -35,7 +35,7 @@
                        @a[href: @docs]{Documentation}]}
           @row{@links[@license{License}
                        all-version-pages
-                       @pre:installers{Nightly Installers}]}))}
+                       @pre:installers{Snapshot Builds}]}))}
   @columns[4 #:center? #t #:center-text? #t #:row? #t]{ @div[id: "linux_explain"
            style: '("font-size: 75%; display: none;"
                     " margin-top: 1ex;")]{
@@ -142,8 +142,9 @@
         @tfoot{
           @tr[class: 'version-row]{
             @td[align: 'center colspan: 3]{@pre:installers}
-            @td{@nbsp @pre:docs[#:sub 'html]{[HTML]} @;
-                @nbsp @pre:docs[#:sub 'pdf]{[PDF]} @nbsp}}}}}}))
+            @td{@; @nbsp @pre:docs[#:sub 'html]{[HTML]} @;
+                @; @nbsp @pre:docs[#:sub 'pdf]{[PDF]}
+                @nbsp}}}}}}))
 
 (define license
   @page[#:site download-site
