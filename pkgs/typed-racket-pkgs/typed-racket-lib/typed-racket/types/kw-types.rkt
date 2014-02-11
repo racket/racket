@@ -173,10 +173,7 @@
                          [kw-type (in-list kw-args)])
                 (make-Keyword kw kw-type #t)))
             (define rest-type
-              (and rest?
-                   (if (equal? (last other-args) Univ)
-                       Univ
-                       -Bottom)))
+              (and rest? (last other-args)))
             (make-Function
              (list (make-arr* (take other-args non-kw-argc)
                               rng
@@ -196,10 +193,7 @@
             (define-values (mand-args opt-and-rest-args)
               (split-at other-args mand-non-kw-argc))
             (define rest-type
-              (and rest?
-                   (if (equal? (last opt-and-rest-args) Univ)
-                       Univ
-                       -Bottom)))
+              (and rest? (last opt-and-rest-args)))
             (define opt-types (take opt-and-rest-args opt-non-kw-argc))
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
@@ -301,10 +295,7 @@
             (define-values (mand-args opt-and-rest-args)
               (split-at doms mand-argc))
             (define rest-type
-              (and rest?
-                   (if (equal? (last opt-and-rest-args) Univ)
-                       Univ
-                       -Bottom)))
+              (and rest? (last opt-and-rest-args)))
             (define opt-types (take opt-and-rest-args opt-argc))
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
