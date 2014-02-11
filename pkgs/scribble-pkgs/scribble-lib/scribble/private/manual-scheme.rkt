@@ -7,6 +7,7 @@
          (only-in "../core.rkt" style style-properties)
          "manual-style.rkt"
          "manual-utils.rkt" ;; used via datum->syntax
+         "on-demand.rkt"
          (for-syntax racket/base)
          (for-label racket/base))
 
@@ -211,7 +212,7 @@
       (*as-modname-link s e indirect?)
       e))
 
-(define indirect-module-link-color
+(define-on-demand indirect-module-link-color
   (struct-copy style module-link-color
                [properties (cons 'indirect-link
                                  (style-properties module-link-color))]))
