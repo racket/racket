@@ -1961,7 +1961,7 @@
              -Void]
        [tc-e (place-message-allowed? 'msg) -Boolean]
 
-       ;; fxvectors
+       ;; fxvectors & flvectors
        [tc-e (let ()
                (define fx1 (fxvector 0 500 34))
                (define fx2 (make-fxvector 20 3))
@@ -1970,6 +1970,13 @@
                (fxvector-length fx1)
                (fxvector-copy fx2 0 5))
              -FxVector]
+       [tc-e (let ()
+               (define s1 (in-flvector (flvector 1.0 2.0 3.0)))
+               (define f1 (sequence-ref s1 0))
+               (define s2 (in-fxvector (fxvector 1 2 3)))
+               (define f2 (sequence-ref s2 2))
+               (list f1 f2))
+             (-lst* -Flonum -Fixnum)]
 
        ;; for/hash, for*/hash - PR 14306
        [tc-e (for/hash: : (HashTable Symbol String)
