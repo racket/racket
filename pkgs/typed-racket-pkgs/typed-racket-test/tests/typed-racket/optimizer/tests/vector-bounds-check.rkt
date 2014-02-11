@@ -1,7 +1,7 @@
 #;#;
 #<<END
 TR opt: vector-bounds-check.rkt 28:0 (vector-ref (make-my-vector) 0) -- vector partial bounds checking elimination
-TR opt: vector-bounds-check.rkt 29:0 (flvector-ref (make-my-flvector) 0) -- flvector partial bounds checking elimination
+TR opt: vector-bounds-check.rkt 29:0 (flvector-ref (make-my-flvector) (ann 0 Fixnum)) -- flvector partial bounds checking elimination
 END
 #<<END
 1.0
@@ -26,4 +26,4 @@ END
   (flvector 1.0 2.0 3.0))
 
 (vector-ref (make-my-vector) 0)
-(flvector-ref (make-my-flvector) 0)
+(flvector-ref (make-my-flvector) (ann 0 Fixnum))
