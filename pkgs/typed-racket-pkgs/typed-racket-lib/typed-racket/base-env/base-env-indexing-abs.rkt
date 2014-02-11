@@ -2,7 +2,7 @@
 
 (require
  "../utils/utils.rkt"
- (for-template racket/base racket/list racket/unsafe/ops racket/flonum)
+ (for-template racket/base racket/list racket/unsafe/ops racket/flonum racket/fixnum)
  (utils tc-utils) 
  (rename-in (types union abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
@@ -286,6 +286,23 @@
    [unsafe-flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
                                 (-> -FlVector -Fixnum -Flonum -Void)
                                 (-> -FlVector index-type -Flonum -Void))]
+
+   ;; Section 4.2.4.2 (Fixnum vectors)
+   [fxvector? (make-pred-ty -FxVector)]
+   [fxvector (->* (list) -Fixnum -FxVector)]
+   [make-fxvector (cl->* (-> index-type -FxVector)
+                         (-> index-type -Fixnum -FxVector))]
+
+   [fxvector-length (-> -FxVector -Index)]
+   [fxvector-ref (cl->* (-> -FxVector -NonNegFixnum -Fixnum)
+                        (-> -FxVector -Fixnum -Fixnum)
+                        (-> -FxVector index-type -Fixnum))]
+   [fxvector-set! (cl->* (-> -FxVector -NonNegFixnum -Fixnum -Void)
+                         (-> -FxVector -Fixnum -Fixnum -Void)
+                         (-> -FxVector index-type -Fixnum -Void))]
+   [fxvector-copy (cl->* (-> -FxVector -FxVector)
+                         (-> -FxVector index-type -FxVector)
+                         (-> -FxVector index-type index-type -FxVector))]
 
 
    [bytes-ref (-> -Bytes index-type -Byte)]

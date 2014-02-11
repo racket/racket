@@ -6,7 +6,8 @@
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
 @(define the-top-eval (make-base-eval))
-@(the-top-eval '(require (except-in typed/racket #%module-begin)))
+@(the-top-eval '(require (except-in typed/racket #%module-begin)
+                         racket/flonum racket/fixnum))
 
 @(define-syntax-rule (ex . args)
    (examples #:eval the-top-eval . args))
@@ -322,11 +323,15 @@ corresponding to @racket[trest], where @racket[bound]
 
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
 @defform[(Vector t ...)]{is the type of the list with one element, in order,
-  for each type provided to the @racket[Vector] type constructor.}
-@defidform[FlVector]{An @rtech{flvector}.}
+  for each type provided to the @racket[Vector] type constructor.
 
-@ex[(vector 1 2 3)
-#(a b c)]
+  @ex[(vector 1 2 3)
+  #(a b c)]}
+
+@defidform[FlVector]{An @rtech{flvector}.
+  @ex[(flvector 1.0 2.0 3.0)]}
+@defidform[FxVector]{An @rtech{fxvector}.
+  @ex[(fxvector 1 2 3)]}
 
 @defidform[VectorTop]{is the type of a @rtech{vector} with unknown length and
   element types and is the supertype of all vector types.

@@ -26,11 +26,13 @@
            (only-in racket/udp udp?)
            (only-in racket/tcp tcp-listener?)
            (only-in racket/flonum flvector?)
+           (only-in racket/fixnum fxvector?)
            (only-in '#%place place? place-channel?))
          (only-in racket/pretty pretty-print-style-table?)
          (only-in racket/udp udp?)
          (only-in racket/tcp tcp-listener?)
          (only-in racket/flonum flvector?)
+         (only-in racket/fixnum fxvector?)
          (only-in '#%place place? place-channel?))
 
 (provide (except-out (all-defined-out) make-Base)
@@ -141,6 +143,7 @@
 (define/decl -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener? tcp-listener?))
 (define/decl -UDP-Socket (make-Base 'UDP-Socket #'udp? udp?))
 (define/decl -FlVector (make-Base 'FlVector #'flvector? flvector?))
+(define/decl -FxVector (make-Base 'FxVector #'fxvector? fxvector?))
 (define -Syntax make-Syntax)
 (define/decl In-Syntax
   (-mu e

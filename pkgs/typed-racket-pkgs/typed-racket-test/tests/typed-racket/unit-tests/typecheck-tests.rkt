@@ -1961,6 +1961,16 @@
              -Void]
        [tc-e (place-message-allowed? 'msg) -Boolean]
 
+       ;; fxvectors
+       [tc-e (let ()
+               (define fx1 (fxvector 0 500 34))
+               (define fx2 (make-fxvector 20 3))
+               (fx+ (fxvector-ref fx1 0) 2)
+               (fxvector-set! fx2 1 5)
+               (fxvector-length fx1)
+               (fxvector-copy fx2 0 5))
+             -FxVector]
+
        ;; for/hash, for*/hash - PR 14306
        [tc-e (for/hash: : (HashTable Symbol String)
                ([x (in-list '(x y z))]

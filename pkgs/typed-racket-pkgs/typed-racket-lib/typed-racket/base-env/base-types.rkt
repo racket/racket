@@ -151,6 +151,7 @@
 [Listof -Listof]
 [Vectorof (-poly (a) (make-Vector a))]
 [FlVector -FlVector]
+[FxVector -FxVector]
 [Option (-poly (a) (-opt a))]
 [HashTable (-poly (a b) (-HT a b))]
 [Promise (-poly (a) (-Promise a))]
