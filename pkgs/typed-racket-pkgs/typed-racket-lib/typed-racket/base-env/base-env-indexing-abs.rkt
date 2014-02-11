@@ -269,23 +269,15 @@
                          (-> index-type -Flonum -FlVector))]
 
    [flvector-length (-> -FlVector -Index)]
-   [flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
-                        (-> -FlVector -Fixnum -Flonum)
-                        (-> -FlVector index-type -Flonum))]
-   [flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
-                         (-> -FlVector -Fixnum -Flonum -Void)
-                         (-> -FlVector index-type -Flonum -Void))]
+   [flvector-ref (-> -FlVector index-type -Flonum)]
+   [flvector-set! (-> -FlVector index-type -Flonum -Void)]
    [flvector-copy (cl->* (-> -FlVector -FlVector)
                          (-> -FlVector index-type -FlVector)
                          (-> -FlVector index-type index-type -FlVector))]
 
    [unsafe-flvector-length (-> -FlVector -Index)]
-   [unsafe-flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
-                               (-> -FlVector -Fixnum -Flonum)
-                               (-> -FlVector index-type -Flonum))]
-   [unsafe-flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
-                                (-> -FlVector -Fixnum -Flonum -Void)
-                                (-> -FlVector index-type -Flonum -Void))]
+   [unsafe-flvector-ref (-> -FlVector index-type -Flonum)]
+   [unsafe-flvector-set! (-> -FlVector index-type -Flonum -Void)]
 
    ;; Section 4.2.4.2 (Fixnum vectors)
    [fxvector? (make-pred-ty -FxVector)]
@@ -294,12 +286,8 @@
                          (-> index-type -Fixnum -FxVector))]
 
    [fxvector-length (-> -FxVector -Index)]
-   [fxvector-ref (cl->* (-> -FxVector -NonNegFixnum -Fixnum)
-                        (-> -FxVector -Fixnum -Fixnum)
-                        (-> -FxVector index-type -Fixnum))]
-   [fxvector-set! (cl->* (-> -FxVector -NonNegFixnum -Fixnum -Void)
-                         (-> -FxVector -Fixnum -Fixnum -Void)
-                         (-> -FxVector index-type -Fixnum -Void))]
+   [fxvector-ref (-> -FxVector index-type -Fixnum)]
+   [fxvector-set! (-> -FxVector index-type -Fixnum -Void)]
    [fxvector-copy (cl->* (-> -FxVector -FxVector)
                          (-> -FxVector index-type -FxVector)
                          (-> -FxVector index-type index-type -FxVector))]
