@@ -273,7 +273,7 @@
 (define/provide-special (restore-prefix))
 (define/provide-special (add-prefix [pfx (or/c string? exact-nonnegative-integer?)]))
 (define/provide-special (set-prefix [pfx (or/c string? exact-nonnegative-integer?)]))
-(define/provide-special (with-writer [writer (or/c #f (string? output-port? . -> . any/c))]))
+(define/provide-special (with-writer [writer (or/c #f (->* (string? output-port?) (exact-nonnegative-integer?) any/c))]))
 #; ; no need for this hack yet
 (define/provide-special (with-writer-change writer))
 

@@ -1316,7 +1316,10 @@ characters.}
 A value that outputs as the @tech{current indentation} plus @tech{current prefix}.}
 
 
-@defproc[(with-writer [writer (or/c (string? output-port? . -> . any/c) #f)]
+@defproc[(with-writer [writer (or/c (->* (string? output-port?) 
+                                         (exact-nonnegative-integer?)
+                                         any/c)
+                                    #f)]
                       [v outputable/c] ...)
          outputable/c]{
 
