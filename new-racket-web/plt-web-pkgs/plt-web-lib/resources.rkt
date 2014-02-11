@@ -11,8 +11,7 @@
 
 (require "utils.rkt")
 
-(provide make-resource-files
-         navbar-style page-sizes font-family) ; needed for the blog template
+(provide make-resource-files)
 
 (define-runtime-path resources-dir "resources")
 
@@ -20,7 +19,7 @@
 ;; they can be #t (the default) for the standard ones, or some text that gets
 ;; added to the standard contents -- which is the user-agent line and the
 ;; ErrorDocument respectively.
-(define (make-resource-files page dir robots htaccess page-style?)
+(define (make-resource-files page dir robots htaccess page-style? meta? sharing?)
   ;; the default target argument duplicate the behavior in "utils.rkt"
   (define (copyfile file [target (basename file)])
     (list target (copyfile-resource (build-path resources-dir file) (web-path dir target))))
@@ -31,12 +30,11 @@
     (list file
           (apply page (string->symbol (regexp-replace #rx"[.]html$" file ""))
                  contents)))
-  `(,@(if page-style?
-          (list
-           (writefile "plt.css" racket-style))
+  `(,@(if (not sharing?)
+          (list (copyfile "logo-and-text.png" "logo-and-text.png"))
           null)
-    ,(copyfile "logo-and-text.png" "logo-and-text.png")
-    ,@(if page-style?
+    ,@(if (and page-style?
+               (not sharing?))
           (list
            (copyfile "css/gumby.css" "gumby.css")
            (copyfile "js/libs/jquery-1.9.1.min.js" "jquery-1.9.1.min.js")
@@ -47,12 +45,20 @@
            (copyfile "fonts/icons/entypo.ttf" "entypo.ttf")
            (copyfile "fonts/icons/entypo.woff" "entypo.woff")
            (copyfile "fonts/icons/entypo.eot" "entypo.eot"))
-          (list
-           (copyfile "css/gumby-slice.css" "gumby-slice.css")))
-    ,@(if page-style?
+          null)
+    ,@(if (not sharing?)
+          ;; Not used in `page-style?` mode, but available for sharing
+          ;; for non-`page-style?` sites:
+          (list (copyfile "css/gumby-slice.css" "gumby-slice.css"))
+          null)
+    ,@(if (and page-style?
+               (not sharing?))
           (list
            (copyfile "plticon.ico" "plticon.ico")
-           (copyfile "logo.png" "logo.png") ; a kind of backward compatibility, just in case
+           (copyfile "logo.png" "logo.png")) ; a kind of backward compatibility, just in case
+          null)
+    ,@(if meta?
+          (list
            ;; the following resources are not used directly, so their names are
            ;; irrelevant
            @writefile["google5b2dc47c0b1b15cb.html"]{
@@ -80,57 +86,3 @@
                   [t (if (boolean? htaccess) t (list htaccess "\n" t))])
              (if t (writefile ".htaccess" t) '(#f #f))))
           null)))
-
-(define page-sizes
-  @list{
-    margin-left: auto;
-    margin-right: auto;
-    width: 45em;
-  })
-
-(define navbar-style
-  @list{})
-
-(define font-family
-  @list{
-    font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
-  })
-
-(define racket-style
-  @list{
-    @; ---- generic styles ----
-    html {
-      overflow-y: scroll;
-    }
-    body {
-      color: black;
-      background-color: white;
-      margin: 0px;
-      padding: 0px;
-    }
-    a {
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    @; ---- content styles ----
-    .bodycontent {
-      @page-sizes
-    }
-    @; ---- styles for extras ----
-    .parlisttitle {
-      margin-bottom: 0.5em;
-    }
-    .parlistitem {
-      margin-bottom: 0.5em;
-      margin-left: 2em;
-    }
-    
-    tt { 
-        font-family: Inconsolata;
-    }
-
-    i { font-style: italic; }
-
-  })

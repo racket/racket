@@ -345,7 +345,7 @@ computing and from databases to charts.
 @columns[3 style: "text-color: black"]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
   @p{Racket version 6.0 has been released.}
-  @p{@a[href: "http://con.racket-lang.org/"]{RacketCon 2014} will be in September in St Louis.}}}
+  @p{@-rcon[2014]{RacketCon 2014} will be in September in St Louis.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
@@ -423,11 +423,9 @@ explains how to install
 @row{
 @columns[4]{
 @panetitle{News & Events}
-@p{@a[href: "http://con.racket-lang.org/"]{RacketCon} — The annual
+@p{@-rcon[#f]{RacketCon} — The annual
   Racket meeting, coming up in September.  Previously
-  in @a[href: "http://con.racket-lang.org/2013/"]{2013},
-  @a[href: "http://con.racket-lang.org/2012/"]{2012},
-  and @a[href: "http://con.racket-lang.org/2011/"]{2011}.}
+  @-rcon[2013], @-rcon[2012], and @-rcon[2011].}
 
 @p{@a[href: "http://blog.racket-lang.org/"]{Blog}
   — Announcements, helpful hints, and thoughtful rants.}

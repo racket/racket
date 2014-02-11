@@ -35,10 +35,9 @@ relative directory is mapped to a destination URL via
 
 @defproc[(site [dir path-string?]
                [#:url url (or/c string? #f) #f]
-               [#:resources resources (or/c #f
-                                            ((or/c symbol? path-string?) . -> . any/c))
-                                      #f]
+               [#:share-from share-from (or/c site? #f) #f]
                [#:page-style? page-style? any/c #t]
+               [#:meta? meta? any/c page-style?]
                [#:robots robots (or/c #f #t outputable/c) #t]
                [#:htaccess htaccess (or/c #f #t outputable/c) #t]
                [#:navigation navigation (listof outputable/c) null])
@@ -48,54 +47,17 @@ Creates a value that represents a site. If @racket[url] is not
 @racket[#f], then it will be registered to @racket[url-roots] for a
 build in web mode (as opposed to local mode).
 
-The @racket[resources] procedure determines a mapping from an abstract
-(symbol) or concrete (path) resource to the content or references to
-the resource. Normally, and when @racket[#f] is provided as
-@racket[resources], the resource mapping is computed automatically
-based on the default page style and arguments such as @racket[robots],
-@racket[htaccess], and @racket[navigation]. A resource-mapping
-function must support at least the following arguments:
+If @racket[share-from] is a site, then resources generated for the
+site (such as icons or CSS files) are used when as possible for the
+new site.
 
-@itemlist[
+If @racket[page-style?] is true, HTML pages generated for the site
+include content to set the style of the overall page. Otherwise, only
+sufficient resources and content are included to specify the style of
+the PLT web-page header (i.e., a bar with the Racket logo).
 
- @item{@racket['preamble] : @racket[outputable/c] --- content to precede
-       the @tag{html} tag, such as @racket[(doctype 'html)].}
-
- @item{@racket['postamble] : @racket[outputable/c] --- content to
-       follow the rest of the page content (after the @tag{body}
-       tag).}
-
- @item{@racket['headers] : @racket[outputable/c] --- content to
-       included in the @tag{head} tag.}
-
- @item{@racket['make-navbar] : @racket[(any/c . -> . outputable)] ---
-       given the destination page, produces content to precede the
-       rest of the page content  (within the @tag{body}
-       tag).}
-
- @item{@racket['icon-headers] : @racket[outputable/c] --- content to
-       specify a ``favicon'' for the page, included already
-       in @racket['headers] content.}
-
- @item{@racket['style-path] : @racket[outputable/c] --- reference to a
-       resource for the page's CSS, included already in
-       @racket['headers] content.}
-
- @item{@racket['logo-path] : @racket[outputable/c] --- reference to a
-       resource for a logo, included already in @racket['headers]
-       content.}
-
- @item{@racket['icon-path] : @racket[outputable/c] --- reference to a
-       resource for a ``favicon'', included already in
-       @racket['icon-headers] content.}
-]
-
-If @racket[page-style?] is true, then the default resource-mapping
-function for the site includes content to set the style of the overall
-page. Otherwise, only sufficient resources and content are included to
-specify the style of the PLT web-page header (i.e., a bar with the
-Racket logo).
-
+If @racket[meta?] is true, then @filepath{.htaccess},
+@filepath{robots.txt}, and similar files are generated for the site.
 The @racket[robots] and @racket[htaccess] arguments determine robot
 and access information included by the default resource-mapping
 function. A @racket[#t] value enables normal access, a @racket[#f]
@@ -117,10 +79,28 @@ Returns @racket[#t] if @racket[v] represents a site, @racket[#f] otherwise.}
 Extracts the destination directory of @racket[s].}
 
 
-@defproc[(site-resources [s site?]) ((or/c symbol? path-string?) . -> . any/c)]{
+@defproc[(site-css-path [s site?]) outputable/c]{
 
-Extracts the resource-mapping function from @racket[s].}
+Extracts a reference to a CSS resource for HTML pages at site
+@racket[s].}
 
+@defproc[(site-favicon-path [s site?]) outputable/c]{
+
+Extracts a reference to a @filepath{favicon.ico} file for the
+site @racket[s]. The result is @racket[#f] if meta-file resources are not
+generated for the site.}
+
+
+@defproc[(site-navbar [s site?]) outputable/c]{
+
+Generates HTML for the banner on HTML pages at the site @racket[s].}
+
+
+@defproc[(site-navbar-dynamic-js [s site?]) outputable/c]{
+
+Generates a JavaScript definition of a @tt{AddNavbarToBody} function,
+which adds a banner dynamically to the current page for a page at site
+@racket[s].}
 
 @; ----------------------------------------
 
@@ -259,3 +239,8 @@ that is introduced by @racketmodname[plt-web]:
 
 Extracts a file name from a path.}
 
+
+@defproc[(web-path [str string?] ...) string?]{
+
+Joins @racket[str]s with a @racket["/"] separator to form a relative
+URL path.}

@@ -4,7 +4,8 @@
 
 (require (only-in "../download/resources.rkt" download-site))
 
-(define dirlist-site (site "stubs/dirlist" #:resources (site-resources download-site)))
+(define dirlist-site (site "stubs/dirlist" 
+                           #:share-from download-site))
 
 (define header+footer
   (lazy (regexp-split #rx"{{{BODY}}}"

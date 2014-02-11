@@ -2,7 +2,7 @@
 
 (require (only-in "../www/resources.rkt" www-site))
 
-(define wiki-site (site "stubs/wiki" #:resources (site-resources www-site)))
+(define wiki-site (site "stubs/wiki" #:share-from www-site))
 
 (define template
   (page #:site wiki-site

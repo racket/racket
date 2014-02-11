@@ -3,7 +3,8 @@
 (require (only-in "../www/resources.rkt" www-site)
          racket/port)
 
-(define blog-site (site "stubs/blog" #:resources (site-resources www-site)))
+(define blog-site (site "stubs/blog" 
+                        #:share-from www-site))
 
 (define racket-css
   @text{
@@ -22,19 +23,24 @@
       opacity: 1.0; filter: alpha(opacity=100);
     }
     /* --- navbar styles --- */
-    @navbar-style
+    @"@"import url("@(site-css-path www-site)");
+  })
+
+(define font-family
+  @list{
+    font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
   })
 
 (define (get-resource-text what #:args [args #f])
-  (define r   ((site-resources www-site) what))
+  (define r   (what www-site))
   (define xml (if args (apply r args) r))
   (define str (xml->string xml))
   ;; due to some obscure xml issue the `nbsp' entity is not recognized
   ;; in blogger pages
   (regexp-replace* #rx"&nbsp;" str "\\&#160;"))
 
-(define (racket-navbar)  (get-resource-text 'make-navbar #:args '(community)))
-(define (racket-favicon) (get-resource-text 'icon-headers))
+(define (racket-navbar)  (get-resource-text site-navbar))
+(define (racket-favicon) (get-resource-text site-favicon-path))
 
 (provide blog)
 (define blog
@@ -231,7 +237,9 @@ a img {
   // ELI:
   margin-top: 0;
   margin-bottom: 0;
-  @page-sizes
+  margin-left: auto;
+  margin-right: auto;
+  width: 45em;
   padding: 10px;
   text-align: left;
   font: $bodyfont;

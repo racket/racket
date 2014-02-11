@@ -6,7 +6,6 @@
   (site "stubs/git"
         #:robots (add-newlines (for/list ([d '(plt libs testing play)])
                                  @list{Disallow: /@|d|/}))))
-(define (the-resources) (site-resources git-site))
 
 (provide git)
 (define git
@@ -44,9 +43,9 @@
     our $site_header = "header.html";
     our $site_footer = "footer.html";
     our $home_text = "@(regexp-replace #rx"^.*/" (home-file) "")";
-    push @"@"stylesheets, "@((the-resources) 'style-path)";
+    push @"@"stylesheets, "@(site-css-path git-site)";
     @||
-    our $favicon = "@((the-resources) 'icon-path)";
+    our $favicon = "@(site-favicon-path git-site)";
     our $logo = "@gitweb-logo";
     our $logo_url = "http://racket-lang.org/";
     our $logo_label = "Racket Homepage";

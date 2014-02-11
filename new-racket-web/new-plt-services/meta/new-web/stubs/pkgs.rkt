@@ -1,7 +1,10 @@
 #lang plt-web
 
+(require (only-in "../www/resources.rkt" www-site))
+
 (define pkgs-site (site "stubs/pkgs"
-                        #:page-style? #f))
+                        #:page-style? #f
+                        #:share-from www-site))
 
 (provide pkgs)
 (define pkgs

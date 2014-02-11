@@ -9,8 +9,11 @@
          symlink
          (rename-out [mk-site site])
          site?
-         site-resources
-         site-dir)
+         site-dir
+         site-css-path
+         site-favicon-path
+         site-navbar
+         site-navbar-dynamic-js)
 
 (define-for-syntax (process-contents who layouter stx xs)
   (let loop ([xs xs] [kws '()] [id? #f])
@@ -136,13 +139,10 @@
       (list-ref l n)
       d))
 
-(define ((navbar-maker logo columns page-style?) this)
+(define ((navbar-content logo columns page-style?))
   (define (icon name) @i[class: name]{})
-  (define (row . content) (apply div class: "row" content))
-  
+  (define (row . content) (apply div class: "row" content))  
   (define main-promise (resource "www/" #f))
-  
-  @div[class: "navbar gumby-content" gumby-fixed: "top" id: "nav1"]{
   @row{
    @(if page-style?
          @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
@@ -154,7 +154,11 @@
      @li{@(list-ref* columns 0 "")}
      @li{@(list-ref* columns 1 "")}
      @li{@(list-ref* columns 2 "")}
-     @li{@(list-ref* columns 3 "")}}}})
+     @li{@(list-ref* columns 3 "")}}})
+
+(define ((navbar-maker logo columns page-style?) this)
+  @div[class: "navbar gumby-content" gumby-fixed: "top" id: "nav1"]{
+    @((navbar-content logo columns page-style?))})
 
 (define gumby-preamble
   @list{
@@ -190,7 +194,6 @@
         @link[rel: "shortcut icon" href: icon type: "image/x-icon"]})
 
 (define (html-headers resources favicon page-style?)
-  (define style (resources 'style-path))
   @list{
     @meta[name: "generator" content: "Racket"]
     @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
@@ -207,14 +210,7 @@
     @; @link[rel: "stylesheet" href="css/minified.css"]
     @; CSS imports non-minified for staging, minify before moving to
     @;   production
-    @(if page-style?
-         @link[rel: "stylesheet" href: (resources "gumby.css")]
-         @link[rel: "stylesheet" href: (resources "gumby-slice.css")])
-    @;@link[rel: "stylesheet" href: (resources "style.css")]
-    @; TODO: Modify `racket-style' definition (and what it depends on)
-    @;   in "resources.rkt", possibly do something similar with the new files
-    @(and style
-          @link[rel: "stylesheet" type: "text/css" href: style title: "default"])
+    @link[rel: "stylesheet" href: (resources 'style-path)]
     @; TODO: Edit the `more.css' definition in www/index.rkt
     @; More ideas for your <head> here: h5bp.com/d/head-Tips
     @; All JavaScript at the bottom, except for Modernizr / Respond.
@@ -227,27 +223,39 @@
          null)
     })
 
-(define (make-resources files navigation page-style?)
+(define (make-resources files navigation page-style? sharing-site)
+  (define (recur/share what)
+    (if sharing-site
+        ((site-resources sharing-site) what)
+        (resources what)))
   (define (resources what)
     (case what
       ;; composite resources
+      [(page-style?)  page-style?]
       [(preamble)     preamble]
       [(postamble)    postamble]
       [(headers)      headers]
       [(make-navbar)  make-navbar] ; page -> navbar
+      [(make-navbar-content)  make-navbar-content] ; -> outputable
       [(icon-headers) icon-headers]
       ;; aliases for specific resource files
-      [(style-path) (and page-style? (resources "plt.css"))]
-      [(logo-path)  (resources "logo-and-text.png")]
-      [(icon-path)  (and page-style? (resources "plticon.ico"))]
+      [(style-path) (recur/share 
+                     (if page-style?
+                         "gumby.css"
+                         "gumby-slice.css"))]
+      [(logo-path)  (recur/share "logo-and-text.png")]
+      [(icon-path)  (and page-style?
+                         (recur/share "plticon.ico"))]
       ;; get a resource file path
       [else (cond [(assoc what files)
                    ;; delay the `url-of' until we're in the rendering context
                    => (λ(f) (λ() (url-of (cadr f))))]
+                  [sharing-site (recur/share what)]
                   [else (error 'resource "unknown resource: ~e" what)])]))
   (define icon-headers   (html-icon-headers (resources 'icon-path)))
   (define headers        (html-headers resources icon-headers page-style?))
   (define make-navbar    (navbar-maker (resources 'logo-path) navigation page-style?))
+  (define make-navbar-content (navbar-content (resources 'logo-path) navigation page-style?))
   (define preamble (cons @doctype['html]
                          (if page-style? gumby-preamble null)))
   (define postamble (if page-style? (make-gumby-postamble resources) null))
@@ -272,24 +280,58 @@
                   #:htaccess [htaccess #t]
                   #:navigation [navigation null]
                   #:page-style? [page-style? #t]
-                  #:resources [resources #f])
+                  #:meta? [meta? page-style?]
+                  #:share-from [given-sharing-site #f])
            (when url
              (extra-roots (cons (list dir url)
                                 (extra-roots))))
+           (define sharing-site
+             ;; Can use given site only if it has enough relative to
+             ;; this one:
+             (and given-sharing-site
+                  (or ((site-resources given-sharing-site) 'page-style?)
+                      (not page-style?))
+                  given-sharing-site))
            (define the-site
              (make-site dir (delay
-                              (or resources
-                                  (make-resources
-                                   (make-resource-files
-                                    (λ (id . content)
-                                      (page* #:id id
-                                             #:site the-site
-                                             content))
-                                    dir robots htaccess
-                                    (or page-style?
-                                        (pair? navigation)))
-                                   navigation
-                                   page-style?)))))
+                              (make-resources
+                               (make-resource-files
+                                (λ (id . content)
+                                  (page* #:id id
+                                         #:site the-site
+                                         content))
+                                dir robots htaccess
+                                (or page-style?
+                                    (pair? navigation))
+                                meta?
+                                (and sharing-site
+                                     #t))
+                               navigation
+                               page-style?
+                               sharing-site))))
            the-site)])
     site))
+
+(define (site-css-path s)
+  ((site-resources s) 'style-path))
+
+(define (site-favicon-path s)
+  ((site-resources s) 'icon-path))
+
+(define (site-navbar s)
+  (((site-resources s) 'make-navbar) #f))
+
+(define (site-navbar-dynamic-js s)
+  (define xml (((site-resources s) 'make-navbar-content)))
+  @list{
+    function AddNavbarToBody() {
+      var body = document.getElementsByTagName("body")[0];
+      var h = document.createElement('div');
+      h.setAttribute("class", "navbar gumby-content");
+      h.innerHTML = @(let ([p (open-output-string)])
+                       (output xml p)
+                       (format "~s" (regexp-replace* #rx"\n +" (get-output-string p) "")));
+      body.insertBefore(h, body.firstChild);
+     }
+  })
 
