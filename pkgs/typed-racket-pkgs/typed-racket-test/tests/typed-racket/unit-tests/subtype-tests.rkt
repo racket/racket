@@ -80,6 +80,10 @@
    [(-val 6) -Number]
    [(-val 'hello) -Symbol]
    [(-set -Number) (make-Sequence (list -Number))]
+   [-FlVector (make-Sequence (list -Flonum))]
+   [-FlVector (make-Sequence (list -Number))]
+   [-FxVector (make-Sequence (list -Fixnum))]
+   [-FxVector (make-Sequence (list -Number))]
    [((Un -Symbol -Number) . -> . -Number) (-> -Number -Number)]
    [(-poly (t) (-> -Number t)) (-mu t (-> -Number t))]
    ;; not subtypes

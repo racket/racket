@@ -316,6 +316,10 @@
           (subtypes* A0 ts (map (λ (_) t*) ts))]
          [((Vector: t) (Sequence: (list t*)))
           (subtype* A0 t t*)]
+         [((Base: 'FlVector _ _ _) (Sequence: (list t*)))
+          (subtype* A0 -Flonum t*)]
+         [((Base: 'FxVector _ _ _) (Sequence: (list t*)))
+          (subtype* A0 -Fixnum t*)]
          [((Base: 'String _ _ _) (Sequence: (list t*)))
           (subtype* A0 -Char t*)]
          [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
