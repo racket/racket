@@ -2137,6 +2137,17 @@
              (->key Univ #:y -String #t #:z -String #f -String)]
        [tc-e (tr:lambda (x #:y [y : String "y"] #:z [z : String "z"]) (string-append y z))
              (->key Univ #:y -String #f #:z -String #f -String)]
+       ;; for these next two tests, test the application instead of the
+       ;; type of the function because the precise filters are hard to
+       ;; get right in the expected result type.
+       [tc-e ((inst (tr:lambda (x [y : A]) #:forall (A) y) String) 'a "foo")
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e ((inst (tr:lambda (x [y : A]) #:∀ (A) y) String) 'a "foo")
+             #:ret (ret -String (-FS -top -bot))]
+       #| FIXME: does not work yet, TR thinks the type variable is unbound
+       [tc-e (inst (tr:lambda (x [y : A] [z : String "z"]) #:forall (A) y) String)
+             #:ret (ret (->opt Univ -String [-String] -String) (-FS -top -bot))]
+       |#
 
        ;; test new :-less forms that allow fewer annotations
        [tc-e (let ([x "foo"]) x) -String]
@@ -2148,6 +2159,10 @@
              -String]
        [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
              -String]
+       [tc-e (let ([x : A "foo"]) #:forall (A) x)
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e (let ([y 'y] [x : A "foo"]) #:forall (A) x)
+             #:ret (ret -String (-FS -top -bot))]
        [tc-e (let* ([x "foo"]) x) -String]
        [tc-e (let* ([x : String "foo"]) (string-append x "bar"))
              -String]
