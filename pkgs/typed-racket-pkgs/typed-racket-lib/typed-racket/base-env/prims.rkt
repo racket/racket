@@ -496,6 +496,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                 (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                  #,(quasisyntax/loc stx nm)))])
         bs.rhs ...))]
+    [(-let ([bn:optionally-annotated-name e] ...)
+           vars:lambda-type-vars . rest)
+     (define/with-syntax (bn* ...)
+       ;; singleton names go to just the name
+       (for/list ([bn (in-syntax #'(bn ...))])
+         (if (empty? (stx-cdr bn))
+             (stx-car bn)
+             bn)))
+     (template ((-lambda (bn* ...) (?@ . vars) . rest) e ...))]
     [(-let . rest)
      (syntax/loc stx (-let-internal . rest))]))
 
@@ -1227,7 +1236,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (-lambda stx)
   (syntax-parse stx
     #:literals (:)
-    [(_ formals:lambda-formals return:return-ann
+    [(_ formals:lambda-formals
+        vars:maybe-lambda-type-vars
+        return:return-ann
         (~describe "body expression or definition" e) ...
         (~describe "body expression" last-e))
      ;; Annotate the last expression with the return type. Should be correct
@@ -1238,9 +1249,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
            #`(ann last-e #,(attribute return.type))
            #'last-e))
      (define d (syntax/loc stx (λ formals.erased e ... last-e*)))
-     (if (attribute formals.kw-property)
-         (kw-lambda-property d (attribute formals.kw-property))
-         (opt-lambda-property d (attribute formals.opt-property)))]))
+     (define d/prop
+       (if (attribute formals.kw-property)
+           (kw-lambda-property d (attribute formals.kw-property))
+           (opt-lambda-property d (attribute formals.opt-property))))
+     ;; attach a plambda property if necessary
+     (if (attribute vars.type-vars)
+         (quasisyntax/loc stx
+           (#%expression
+            #,(plambda-property d/prop (attribute vars.type-vars))))
+         d/prop)]))
 
 
 ;; do this ourselves so that we don't get the static bindings,

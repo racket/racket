@@ -147,3 +147,15 @@
 (define-splicing-syntax-class optional-standalone-annotation
   (pattern (~optional a:standalone-annotation)
            #:with ty (if (attribute a) #'a.ty #f)))
+
+(define-splicing-syntax-class lambda-type-vars
+  #:description "optional type parameters"
+  #:attributes (type-vars)
+  (pattern (~seq (~or #:forall #:∀) (var:id ...))
+           #:attr type-vars #'(var ...)))
+
+(define-splicing-syntax-class maybe-lambda-type-vars
+  #:description "optional type parameters"
+  #:attributes (type-vars)
+  (pattern :lambda-type-vars)
+  (pattern (~seq) #:attr type-vars #f))
