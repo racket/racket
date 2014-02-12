@@ -48,6 +48,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [-letrec-values letrec-values:]
                      [-let/cc let/cc:]
                      [-let/ec let/ec:]
+                     [-do do]
+                     [-do do:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
                      [for/annotation for]
@@ -780,20 +782,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
   (values (rts #t) (rts #f))))
 
-(define-syntax (do: stx)
+(define-syntax (-do stx)
   (syntax-parse stx #:literals (:)
-    [(_ : ty
+    [(_ (~optional (~seq : ty) #:defaults ([ty #f]))
         ((var:optionally-annotated-name rest ...) ...)
         (stop?:expr ret ...)
         c:expr ...)
-     (quasisyntax/loc
-         stx
-       (ann #,(syntax/loc
-                  stx
-                (do ((var.ann-name rest ...) ...)
-                    (stop? ret ...)
-                  c ...))
-            ty))]))
+     (define do-stx
+       (syntax/loc stx
+         (do ((var.ann-name rest ...) ...)
+             (stop? ret ...)
+           c ...)))
+     (if (attribute ty)
+         (quasisyntax/loc stx
+           (ann #,do-stx #,(attribute ty)))
+         do-stx)]))
 
 ;; wrap the original for with a type annotation
 (define-syntax (for/annotation stx)
