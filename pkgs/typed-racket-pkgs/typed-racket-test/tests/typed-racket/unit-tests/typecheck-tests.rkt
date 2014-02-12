@@ -169,6 +169,8 @@
     define lambda λ)
   ;; For tests that rely on kw/opt properties
   (prefix-in tr: (only-in (base-env prims) define lambda λ))
+  ;; Needed for the `let-name` syntax class before
+  (prefix-in r: (only-in racket/base let-values))
   ;; Needed for constructing TR types in expected values
   (for-syntax
     (rep type-rep filter-rep object-rep)
@@ -179,8 +181,8 @@
 (begin-for-syntax
   ;; More tests need to be written to use these macros.
   (define-syntax-class (let-name n)
-    #:literals (let-values)
-    (pattern (let-values ([(i:id) _] ...) . _)
+    #:literals (r:let-values)
+    (pattern (r:let-values ([(i:id) _] ...) . _)
              #:with x (list-ref (syntax->list #'(i ...)) n)))
 
   (define-syntax-rule (get-let-name id n e)
@@ -2135,6 +2137,60 @@
              (->key Univ #:y -String #t #:z -String #f -String)]
        [tc-e (tr:lambda (x #:y [y : String "y"] #:z [z : String "z"]) (string-append y z))
              (->key Univ #:y -String #f #:z -String #f -String)]
+
+       ;; test new :-less forms that allow fewer annotations
+       [tc-e (let ([x "foo"]) x) -String]
+       [tc-e (let ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([x "foo"]) x) -String]
+       [tc-e (let* ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([x "foo"]) x) -String]
+       [tc-e (letrec ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let-values ([(x y) (values "foo" "bar")]) x) -String]
+       [tc-e (let-values ([(x y) (values "foo" "bar")]
+                          [([z : String]) (values "baz")])
+               (string-append x y z))
+             -String]
+       [tc-e (let-values ([([x : String] [y : String]) (values "foo" "bar")])
+               (string-append x y))
+             -String]
+       [tc-e (letrec-values ([(x y) (values "foo" "bar")]) x)
+             -String]
+       [tc-e (letrec-values ([(x y) (values "foo" "bar")]
+                             [([z : String]) (values "baz")])
+               (string-append x y z))
+             -String]
+       [tc-e (letrec-values ([([x : String] [y : String]) (values "foo" "bar")])
+               (string-append x y))
+             -String]
+       [tc-e (let loop ([x "x"]) x)
+             #:ret (ret Univ (-FS -top -bot))]
+       [tc-e (let loop ([x : String "x"]) x)
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e (let/cc k "foo") -String]
+       [tc-e (let/ec k "foo") -String]
+       [tc-e (let/cc k : String (k "foo")) -String]
+       [tc-e (let/ec k : String (k "foo")) -String]
         )
   (test-suite
    "tc-literal tests"
