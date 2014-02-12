@@ -22,7 +22,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (except-out (all-defined-out) dtsi* dtsi/exec* let-internal: define-for-variants define-for*-variants 
+(provide (except-out (all-defined-out) dtsi* dtsi/exec* -let-internal define-for-variants define-for*-variants
                      with-handlers: for/annotation for*/annotation define-for/acc:-variants base-for/flvector: base-for/vector
                      -lambda -define)
          ;; provide the contracted bindings as primitives
@@ -34,6 +34,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [-lambda lambda]
                      [-lambda λ]
                      [-define define]
+                     [-let let]
+                     [-let* let*]
+                     [-letrec letrec]
+                     [-let-values let-values]
+                     [-letrec-values letrec-values]
+                     [-let/cc let/cc]
+                     [-let/ec let/ec]
+                     [-let let:]
+                     [-let* let*:]
+                     [-letrec letrec:]
+                     [-let-values let-values:]
+                     [-letrec-values letrec-values:]
+                     [-let/cc let/cc:]
+                     [-let/ec let/ec:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
                      [for/annotation for]
@@ -434,7 +448,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(opt-lambda: formals:opt-lambda-annotated-formals . body)
      (syntax/loc stx (-lambda formals.ann-formals . body))]))
 
-(define-syntaxes (let-internal: let*: letrec:)
+(define-syntaxes (-let-internal -let* -letrec)
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
@@ -442,7 +456,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let) (mk #'let*) (mk #'letrec))))
 
-(define-syntaxes (let-values: let*-values: letrec-values:)
+(define-syntaxes (-let-values -let*-values -letrec-values)
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
@@ -450,9 +464,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let-values) (mk #'let*-values) (mk #'letrec-values))))
 
-(define-syntax (let: stx)
+(define-syntax (-let stx)
   (syntax-parse stx #:literals (:)
-    [(let: nm:id ~! ; named let:
+    [(-let nm:id ~! ; named let:
            (~and (~seq (~optional (~seq : ret-ty))
                        (bs:optionally-annotated-binding ...) body ...)
                  (~seq rest ...)))
@@ -461,7 +475,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
             #:literals (:)
             [(: ret-ty (bs:annotated-binding ...) . body)
              (quasisyntax/loc stx
-               (letrec: ([nm : (bs.ty ... -> ret-ty)
+               (-letrec ([nm : (bs.ty ... -> ret-ty)
                              #,(quasisyntax/loc stx
                                  (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                         #,(quasisyntax/loc stx nm)))]
@@ -476,8 +490,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                 (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                  #,(quasisyntax/loc stx nm)))])
         bs.rhs ...))]
-    [(let: . rest)
-     (syntax/loc stx (let-internal: . rest))]))
+    [(-let . rest)
+     (syntax/loc stx (-let-internal . rest))]))
 
 (define-syntax (plet: stx)
   (syntax-parse stx #:literals (:)
@@ -1111,14 +1125,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ p:id)
      (quasisyntax/loc stx #,(internal #'(declare-refinement-internal p)))]))
 
-(define-syntaxes (let/cc: let/ec:)
+(define-syntaxes (-let/cc -let/ec)
   (let ()
     (define ((mk l/c) stx)
       (syntax-parse stx
-       [(_ (~var k (param-annotated-name (lambda (s) #`(#,s -> (U))))) . body)
+       [(_ (~or (~var k (param-annotated-name (lambda (s) #`(#,s -> (U)))))
+                (~and k:id (~bind [k.ann-name #'k]))) . body)
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
-
 
 ;; Syntax classes for -lambda
 (begin-for-syntax
@@ -1338,11 +1352,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ for: #:length n-expr:expr (clauses ...) body ...+)
      (syntax/loc stx
-       (let: ([n : Integer  n-expr])
+       (-let ([n : Integer  n-expr])
          (cond [(n . > . 0)
                 (define xs (make-flvector n))
                 (define: i : Nonnegative-Fixnum 0)
-                (let/ec: break : Void
+                (-let/ec break : Void
                   (for: (clauses ...)
                     (unsafe-flvector-set! xs i (let () body ...))
                     (set! i (unsafe-fx+ i 1))
@@ -1356,10 +1370,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (define xs (make-flvector 4))
          (define i 0)
          (for: (clauses ...)
-           (let: ([x : Float  (let () body ...)])
+           (-let ([x : Float  (let () body ...)])
              (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
                                       (define new-xs (make-flvector new-n x))
-                                      (let: loop : Void ([i : Nonnegative-Fixnum 0])
+                                      (-let loop : Void ([i : Nonnegative-Fixnum 0])
                                         (when (i . unsafe-fx< . n)
                                           (unsafe-flvector-set! new-xs i (unsafe-flvector-ref xs i))
                                           (loop (unsafe-fx+ i 1))))

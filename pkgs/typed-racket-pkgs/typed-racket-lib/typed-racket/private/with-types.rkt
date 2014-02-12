@@ -3,6 +3,8 @@
 (require racket/require racket/promise
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
+                     let let* letrec letrec-values let-values
+                     let/cc let/ec
                      default-continuation-prompt-tag)
           "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))

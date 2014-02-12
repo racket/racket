@@ -2,7 +2,9 @@
 
 (providing (libs (except scheme/base #%module-begin #%top-interaction
                          with-handlers default-continuation-prompt-tag
-                         define λ lambda define-struct for for*))
+                         define λ lambda define-struct for for*
+                         let let* let-values letrec letrec-values
+                         let/cc let/ec))
 	   (basics #%module-begin #%top-interaction))
 
 (require typed-racket/base-env/extra-procs
