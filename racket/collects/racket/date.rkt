@@ -1,8 +1,5 @@
 #lang racket/base
 (require racket/promise
-         racket/match
-         racket/list
-         racket/function
          racket/contract/base)
 
 (provide/contract
@@ -186,32 +183,10 @@
 
 (define (one-entry b)
   (string-append
-   (number->string (first b))
+   (number->string (car b))
    " "
-   (second b)
-   (if (= 1 (first b)) "" "s")))
-(define (date-offset->string date [seconds? #f])
-  (define fields 
-    (list (list (date-offset-year date) "year")
-          (list (date-offset-day date) "day")
-          (list (date-offset-hour date) "hour")
-          (list (date-offset-minute date) "minute")
-          (list (if seconds? (date-offset-second date) 0) "second")))
-  (define non-zero-fields 
-    (filter (negate (compose (curry = 0) first)) fields))
-  (match non-zero-fields
-    [(list) ""]
-    [(list one) (one-entry one)]
-    [_
-     (for/fold ([string ""])
-       ([b (in-list non-zero-fields)])
-       (cond
-         [(= 0 (first b)) string]
-         [(string=? string "")
-          (string-append "and "
-                         (one-entry b)
-                         string)]
-         [else (string-append (one-entry b) ", " string)]))]))
+   (cadr b)
+   (if (= 1 (car b)) "" "s")))
 
 (define (days-per-month year month)
   (cond
