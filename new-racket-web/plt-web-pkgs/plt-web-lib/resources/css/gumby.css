@@ -98,7 +98,7 @@ p { font-family: "Open Sans"; font-weight: 400; color: black; font-size: 16px; f
 p.lead { font-size: 20px; font-size: 1.25rem; margin-bottom: 18px; }
 @media only screen and (max-width: 768px) { p { font-size: 17.6px; font-size: 1.1rem; line-height: 1.625em; } }
 
-a { color: #d04526; text-decoration: none; outline: 0; line-height: inherit; }
+a { color: rgba(44, 33, 206, 1); text-decoration: none; outline: 0; line-height: inherit; }
 a:hover { color: #c03d20; }
 
 /*=====================================================
@@ -352,6 +352,7 @@ img { -ms-interpolation-mode: bicubic; }
 /*=====================================================
  Navigation (with dropdowns)
  ======================================================*/
+.navbar div ul li a:hover { background: #292929; } /* Racket customization */
 .navbar { width: 100%; min-height: 60px; display: block; margin-bottom: 20px; background: black; }
 @media only screen and (max-width: 767px) { .navbar { position: relative; border: none; }
   .navbar .column, .navbar .columns { min-height: 0; } }

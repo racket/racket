@@ -3,10 +3,7 @@ We highly recommend you use SASS and write your custom styles in sass/_custom.sc
 However, this blank file is available if you prefer
 */
 
-  body { background: url(loud.png) center 60%  no-repeat fixed;  }
-
   .modal h2, .modal .btn { margin: 10px 0 0px; }
-  .navbar div ul li a:hover { background: #292929; }
 
   b { font-weight: bold; }
   tt { font-family: "Inconsolata"; }
@@ -25,3 +22,9 @@ However, this blank file is available if you prefer
  .wide_only { display: none; }
  .narrow_only { display: block; }
 }
+
+.thanks {
+  margin-top: 2em;
+  line-height: 1.5em;
+  font-size: small;
+ }

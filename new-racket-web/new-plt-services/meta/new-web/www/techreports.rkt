@@ -2,7 +2,8 @@
 
 ;; New style TR entries
 
-(require "resources.rkt" "people.rkt" "../download/data.rkt")
+(require "resources.rkt" "people.rkt" "../download/data.rkt"
+         plt-web/style)
 
 (define (-all-techreports-)
   (list (TR 1 'reference "Reference: Racket" '(mflatt plt)
@@ -93,6 +94,7 @@
 (provide techreports)
 (define techreports
   @page[#:site www-site #:file "tr/" #:title "PLT Technical Reports" #:part-of 'learning]{
+    @columns[10 #:row? #t]{
     @p*{
     @~ For citations of generic pieces of the Racket infrastructure, please use
        @TT{\cite{plt-tr1}}, @TT{\cite{plt-tr2}}, etc. in LaTeX, or
@@ -102,4 +104,4 @@
        @TT{\cite[Version M.N]{plt-tr1}} or
        @TT|{@cite[(in-bib plt-tr1 "Version M.N")]}|
        instead.}
-    @dl{@(add-newlines (-all-techreports-))}})
+    @dl{@(add-newlines (-all-techreports-))}}})

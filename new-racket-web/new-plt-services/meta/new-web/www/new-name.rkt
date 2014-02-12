@@ -1,6 +1,7 @@
 #lang plt-web
 
-(require "resources.rkt")
+(require "resources.rkt"
+         plt-web/style)
 
 (define name i)
 
@@ -47,6 +48,8 @@
   @page[#:site www-site
         #:title "From PLT Scheme to Racket"]{
     @styles
+
+  @columns[9 #:row? #t]{
 
     @heading{PLT Scheme is a Racket}
 
@@ -167,4 +170,4 @@
         it has a vague connection to the word “scheme.”  Mostly, though, we
         just like it.}}
 
-      }})
+      }}})

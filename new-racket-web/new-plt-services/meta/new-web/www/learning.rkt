@@ -6,22 +6,14 @@
 (provide learning)
 (define learning
   @page[#:site www-site
-        #:window-title "Racket Learning" #:part-of 'learning #:width 'full
+        #:window-title "Racket Research" #:link-title "Research"
+        #:part-of 'learning #:width 'full
         #:description
-        '@{Racket-related learning resources.  Introductions to Racket, @;
-           the Racket Guide, Computer Science textbooks that use Racket, @;
-           outreach programs, and graduate studies.}]{
+        '@{Racket-related research and education:
+           outreach programs, publications, and graduate studies.}]{
     @columns[10 #:row? #t]{
-    @parlist[@strong{Resources for Learning}
-      (apply parlist @text{Documentation for getting started:} intros)
-      @text{@-htdp — a textbook for introductory programming, but also
-        worthwhile for experience programmers who are new to “functional
-        programming.”}
-      @text{@-plai — a textbook on programming languages.}]
-    @parlist[@strong{Videos}
-      @text{See the @-wiki["Videos"] page at the @|-wiki|.}]
     @parlist[
-      @strong{Outreach}
+      @strong{Education and Outreach}
       @text{@-pbd — a workshop to train teachers using @-htdp in the
         classroom.}
       @text{@-bootstrap — a curriculum for middle-school students.}]

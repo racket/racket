@@ -1,4 +1,5 @@
 @charset "UTF-8";
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:400); /* for navbar links */
 /**
 * Gumby Framework
 * ---------------
@@ -16,12 +17,17 @@
 * Free to use under the MIT license.
 * http://www.opensource.org/licenses/mit-license.php
 *
-* This file is just enough of "gumby.css" to make the navigationless
-* header work.
+* This file is just enough of "gumby.css" to make the header work
+* without any buttons and without much size adaptation.
 */
 
-/* Banner needs 0 margin for body: */
+/* Navbar needs 0 margin for body: */
 body { margin: 0px; padding: 0px; }
+
+/* In case the navbar has links: */
+.gumby-content { font-family: "Open Sans"; font-weight: 400; }
+.gumby-content a { color: #d04526; text-decoration: none; outline: 0; line-height: inherit; }
+.navbar div ul li a:hover { background: #292929; }
 
 .gumby-content { background: white; color: #1e1e1e; position: relative; -webkit-font-smoothing: antialiased; }
 @media only screen and (max-width: 767px) { .gumby-content { -webkit-text-size-adjust: none; -ms-text-size-adjust: none; width: 100%; min-width: 0; } }

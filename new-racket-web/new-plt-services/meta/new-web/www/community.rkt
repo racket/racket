@@ -6,6 +6,23 @@
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../minis/pre.rkt"))
 
+(provide thanks)
+(define thanks
+      @text{
+        Thanks to @a[href: "http://www.nsf.gov/"]{the NSF},
+        @a[href: "http://www.darpa.mil/"]{DARPA},
+        the
+        @a[href: "http://www.ed.gov/FIPSE/"]{
+          Fund for the Improvement of Postsecondary Education (FIPSE)}
+        at the @a[href: "http://www.ed.gov/"]{US Department of Education},
+        the @a[href: '("http://www.exxonmobil.com/Corporate/"
+                       "community_foundation.aspx")]{Exxon Foundation},
+        CORD, partners of the Academy of Information Technology,
+        @a[href: "http://microsoft.com"]{Microsoft},
+        @a[href: "http://mozilla.org"]{Mozilla},
+        and @a[href: "http://google.com"]{Google}
+        for their generous support over the years.})
+
 (provide community)
 (define community
   @page[#:site www-site
@@ -34,17 +51,4 @@
       @text{@pre:installers{Snapshot} — daily builds.}
       @text{@bug-reports — create and query existing reports.}]
     @parlist[@strong{Support}
-      @text{
-        Thanks to @a[href: "http://www.nsf.gov/"]{the NSF},
-        @a[href: "http://www.darpa.mil/"]{DARPA},
-        the
-        @a[href: "http://www.ed.gov/FIPSE/"]{
-          Fund for the Improvement of Postsecondary Education (FIPSE)}
-        at the @a[href: "http://www.ed.gov/"]{US Department of Education},
-        the @a[href: '("http://www.exxonmobil.com/Corporate/"
-                       "community_foundation.aspx")]{Exxon Foundation},
-        CORD,partners of the Academy of Information Technology,
-        @a[href: "http://microsoft.com"]{Microsoft},
-        @a[href: "http://mozilla.org"]{Mozilla},
-        and @a[href: "http://google.com"]{Google}
-        for their generous support over the years.}]}})
+      @thanks]}})

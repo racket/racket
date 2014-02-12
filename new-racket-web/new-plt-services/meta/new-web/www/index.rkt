@@ -8,7 +8,8 @@
 ;; -- use links
 ;; -- indentation
 
-(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "people.rkt")
+(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "people.rkt"
+         "community.rkt")
 
 (define-runtime-path img-dir "img")
 (define-runtime-path js-dir "js")
@@ -445,6 +446,9 @@ discussion channel for all things related to Racket.
 
 @p{@people   —
 The people behind Racket.}
+
+@p{@learning   —
+Publications and educational resources.}
 }
 
 
@@ -507,6 +511,8 @@ File, query, and maybe fix existing reports.}}}
 @book-image{
   @a[href: "http://redex.racket-lang.org/"]{@img[src: (copyfile #:site www-site (build-path img-dir "redex-cover.jpg"))]}}
 }}
+
+@columns[12 #:row? #t #:center? #t]{@div[class: "thanks"]{@thanks}}
   })
 
 (define (slideshow-explain l1 l2)

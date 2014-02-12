@@ -304,8 +304,7 @@
                                          #:site the-site
                                          content))
                                 dir robots htaccess
-                                (or page-style?
-                                    (pair? navigation))
+                               page-style?
                                 meta?
                                 (and sharing-site
                                      #t))
