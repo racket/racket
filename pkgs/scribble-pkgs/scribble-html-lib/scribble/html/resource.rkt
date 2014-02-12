@@ -26,8 +26,10 @@
 
 (require scribble/text)
 
-;; default file, urls to it will point to its directory instead, and a
-;; /-suffixed path will render to this file
+;; default file, urls to it will point to its directory instead, a
+;; /-suffixed path will render to this file, and `url-roots' entries
+;; with 'index will append this file name to a rewritten path that
+;; otherwise ends in /
 (define default-file "index.html")
 
 ;; the currently rendered directory, as a list
