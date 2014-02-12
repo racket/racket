@@ -415,30 +415,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ arg tys ...)
      (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ...))]))
 
-(define-syntax (define: stx)
-  (syntax-parse stx #:literals (:)
-    [(define: (nm:id . formals:annotated-formals) (~describe "return type annotation" (~seq : ret-ty)) body ...)
-     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
-       (syntax/loc stx
-         (define: nm : arrty
-           (lambda: formals body ...))))]
-    [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
-     (identifier? #'nm)
-     (with-syntax ([new-nm (type-label-property #'nm #'ty)])
-       (syntax/loc stx (define new-nm body)))]
-    [(define: tvars:type-variables nm:id : ty body)
-     (with-syntax ([type (syntax/loc #'ty (All (tvars.vars ...) ty))])
-       (syntax/loc stx
-         (begin
-           (: nm : type)
-           (define nm body))))]
-    [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
-     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars.vars ...) (formals.arg-ty ... -> ret-ty)))])
-       (syntax/loc stx
-         (begin
-          (: nm : type)
-          (define (nm . formals.ann-formals) body ...))))]))
-
 (define-syntax (lambda: stx)
   (syntax-parse stx
     [(lambda: formals:annotated-formals . body)
@@ -1227,6 +1203,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:attr erased
              (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
 
+  (define-syntax-class curried-formals
+    #:attributes (erased)
+    #:literals (:)
+    (pattern fun:id #:with erased #'fun)
+    (pattern (fun:curried-formals . formals:lambda-formals)
+             #:with erased #`(fun.erased . #,(attribute formals.erased))))
+
   (define-splicing-syntax-class return-ann
     #:description "return type annotation"
     #:literals (:)
@@ -1262,12 +1245,63 @@ This file defines two sorts of primitives. All of them are provided into any mod
             #,(plambda-property d/prop (attribute vars.type-vars))))
          d/prop)]))
 
+;; for backwards compatibility, note that this only accepts formals
+;; with type annotations and also accepts type variables differently
+;; than -define
+(define-syntax (define: stx)
+  (syntax-parse stx #:literals (:)
+    [(define: (nm:id . formals:annotated-formals) (~describe "return type annotation" (~seq : ret-ty)) body ...)
+     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
+       (syntax/loc stx
+         (-define nm : arrty
+           (-lambda formals body ...))))]
+    [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
+     #'(-define nm : ty body)]
+    [(define: tvars:type-variables nm:id : ty body)
+     #'(-define nm #:forall tvars : ty body)]
+    [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
+     #'(-define (nm . formals) #:forall tvars : ret-ty body ...)]))
 
-;; do this ourselves so that we don't get the static bindings,
-;; which are harder to typecheck
 (define-syntax (-define stx)
-  (define-values (i b) (normalize-definition stx #'-lambda #t #t))
-  (datum->syntax stx `(,#'define ,i ,b) stx stx))
+  (syntax-parse stx #:literals (:)
+    ;; the first two cases are actually subsumed by the last,
+    ;; but manually expanding to using the : annotation form
+    ;; produces better error messages on duplicate annotations
+    [(-define nm:id return:return-ann body)
+     (define/with-syntax maybe-ann
+       (if (attribute return.type)
+           #'(: nm return.type)
+           #'(void)))
+     (syntax/loc stx (begin maybe-ann (define nm body)))]
+    [(-define nm:id vars:lambda-type-vars : ty body)
+     (define/with-syntax type
+       (syntax/loc #'ty (All vars.type-vars ty)))
+     (syntax/loc stx
+       (begin
+         (: nm : type)
+         (define nm body)))]
+    [(-define formals:curried-formals
+              vars:maybe-lambda-type-vars
+              return:return-ann
+              body ... last-body)
+     ;; have to preprocess for the return type annotation
+     (define/with-syntax last-body*
+       (if (attribute return.type)
+           #`(ann last-body #,(attribute return.type))
+           #'last-body))
+     (define-values (defined-id rhs)
+       (normalize-definition
+        #`(define formals.erased body ... last-body*)
+        #'-lambda
+        #t #t))
+     ;; insert in type variables if necessary
+     (define rhs*
+       (syntax-parse rhs
+         #:literals (-lambda)
+         [(-lambda formals . others)
+          (template (-lambda formals (?@ . vars) . others))]
+         [_ rhs]))
+     #`(define #,defined-id #,rhs*)]))
 
 (define-syntax (with-asserts stx)
   (define-syntax-class with-asserts-clause
