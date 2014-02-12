@@ -30,6 +30,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "top-interaction.rkt")
          :
          (rename-out [define-typed-struct define-struct:]
+                     [define-typed-struct define-struct]
+                     [-struct struct]
+                     [-struct struct:]
                      [lambda: λ:]
                      [-lambda lambda]
                      [-lambda λ]
@@ -52,6 +55,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [-do do:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
+                     [define-typed-struct/exec define-struct/exec]
                      [for/annotation for]
                      [for*/annotation for*]))
 
@@ -572,7 +576,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class fld-spec
     #:literals (:)
     #:description "[field-name : type]"
-    (pattern [fld:id : ty]))
+    (pattern [fld:id : ty]
+             #:with form this-syntax)
+    (pattern fld:id
+             #:fail-when #t
+             (format "field `~a' requires a type annotation"
+                     (syntax-e #'fld))
+             #:with form 'dummy))
 
   (define-syntax-class struct-name
     #:description "struct name (with optional super-struct name)"
@@ -610,7 +620,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    ...))))
 
 ;; User-facing macros for defining typed structure types
-(define-syntaxes (define-typed-struct struct:)
+(define-syntaxes (define-typed-struct -struct)
   (values
    (lambda (stx)
      (syntax-parse stx
@@ -621,7 +631,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (with-syntax ([d-s (ignore-some
                                (syntax/loc stx (define-struct nm (fs.fld ...) . opts)))]
                         [dtsi (quasisyntax/loc stx
-                                (dtsi* (vars.vars ...) nm (fs ...)
+                                (dtsi* (vars.vars ...) nm (fs.form ...)
                                        #:maker #,cname
                                        #,@mutable?))])
             (if (eq? (syntax-local-context) 'top-level)
@@ -651,7 +661,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                . opts)))]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...)
-                                       nm.old-spec (fs ...)
+                                       nm.old-spec (fs.form ...)
                                        #,@mutable?))])
             ;; see comment above
             (if (eq? (syntax-local-context) 'top-level)
