@@ -336,7 +336,7 @@
                      c%/c))
   (test-name '(class/c (field [f integer?])) (class/c (field [f integer?])))
   (test-name '(class/c (field [f integer?])) (class/c (field [f integer?])))
-  (test-name '(class/c (init-field [f integer?])) (class/c (init-field [f integer?])))
+  (test-name '(class/c (init [f integer?]) (field [f integer?])) (class/c (init-field [f integer?])))
   (test-name '(class/c (inherit-field [f integer?])) (class/c (inherit-field [f integer?])))
   (test-name '(class/c (absent a b c (field d e f))) (class/c (absent a b c (field d e f))))
   (test-name '(class/c (absent a b c)) (class/c (absent a b c)))

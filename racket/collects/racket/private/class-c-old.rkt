@@ -755,7 +755,7 @@
       [else (coerce-contract 'class/c obj)])))
 
 (define (build-class/c-name ctc)
-  (or (build-class/c-name ctc)
+  (or (class/c-name ctc)
       (let* ([handled-methods
               (for/list ([i (in-list (class/c-methods ctc))]
                          [ctc (in-list (class/c-method-contracts ctc))])
@@ -812,7 +812,7 @@
     [(null? fields)
      (list (cons 'absent meths))]
     [else
-     (list (list* 'absent (cons 'field fields) meths))]))
+     (list `(absent ,@meths (field ,@fields)))]))
              
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
