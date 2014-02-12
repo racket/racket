@@ -149,6 +149,7 @@
 (define license
   @page[#:site download-site
         #:title "Software License" #:part-of 'download]{
+    @columns[10 #:center? #t #:row? #t]{
     @p*{
     @~ Racket is distributed under the
        @a[href: "http://www.gnu.org/licenses/lgpl-3.0.html"]{
@@ -186,7 +187,7 @@
     @~ We are, of course, not lawyers, and this should not be taken as legal
        advice.  However, we wanted to make it clear that Racket is an
        appropriate building block for all kinds of software, and to clarify how
-       we view the license of Racket.}})
+       we view the license of Racket.}}})
 
 (define downloader-script
   @script/inline[type: 'text/javascript]{@||
