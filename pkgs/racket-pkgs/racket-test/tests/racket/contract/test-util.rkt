@@ -29,11 +29,13 @@
 (define failures 0)
 
 (provide new-test-case new-failure)
-(define (new-test-case) (set! test-cases (+ test-cases 1)))
+(define (new-test-case name)
+  ;(printf "running test ~a\n" name)
+  (set! test-cases (+ test-cases 1)))
 (define (new-failure) (set! failures (+ failures 1)))
 
 (define (test #:test-case-name [name #f] expected fun arg1 . args)
-  (new-test-case)
+  (new-test-case name)
   ;(printf "\n\nexpected ~s\n" arg1)
   (define result
     (cond
@@ -50,7 +52,7 @@
     (new-failure)))
 
 (define (test-an-error name thunk sexp predicate?)
-  (new-test-case)
+  (new-test-case name)
   (define exn
     (with-handlers ((exn:fail? values))
       (thunk)
