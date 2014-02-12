@@ -448,7 +448,9 @@
        [else
         (define field-names
           (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs c))])
-            `(,fld ,(contract-name ctc))))
+            (if (just-check-existence? ctc)
+                fld
+                `(,fld ,(contract-name ctc)))))
         (define init-fields '())
         (define init-names
           (filter
@@ -468,7 +470,8 @@
                    (set! init-fields (cons clause init-fields))
                    #f]
                   [else clause])]))))
-        (set! field-names (filter (λ (x) (not (member (car x) (map car init-fields))))
+        (set! field-names (filter (λ (x) (or (not (pair? x))
+                                             (not (member (car x) (map car init-fields)))))
                                   field-names))
         
         (define meth-names

@@ -352,6 +352,7 @@
                       (override [o (->m (<=/c 2) integer?)])
                       (augment [p (->m (<=/c 3) integer?)])
                       (augride [q (->m (<=/c 4) integer?)])))
+  (test-name '(class/c (field n)) (class/c (field n)))
 
   (test-name '(struct/dc s
                          [a integer?]
