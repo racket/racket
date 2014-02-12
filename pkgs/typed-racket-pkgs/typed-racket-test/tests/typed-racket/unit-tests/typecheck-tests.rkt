@@ -2149,6 +2149,18 @@
              #:ret (ret (->opt Univ -String [-String] -String) (-FS -top -bot))]
        |#
 
+       ;; test `define` with mixed type annotations
+       [tc-e (let () (tr:define y "bar")
+                     (tr:define x : String "foo")
+                     (string-append x y))
+             -String]
+       [tc-e (let () (tr:define ((f [x : String]) y) x)
+                     ;; FIXME: does not work due to a bug in
+                     ;; lambda type-checking
+                     ;(tr:define ((g x) [y : String]) y)
+                     (string-append ((f "foo") 'y) "bar"))
+             -String]
+
        ;; test new :-less forms that allow fewer annotations
        [tc-e (let ([x "foo"]) x) -String]
        [tc-e (let ([x : String "foo"]) (string-append x "bar"))
