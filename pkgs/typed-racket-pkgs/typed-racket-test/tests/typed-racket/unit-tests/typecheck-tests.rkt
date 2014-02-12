@@ -2191,6 +2191,11 @@
        [tc-e (let/ec k "foo") -String]
        [tc-e (let/cc k : String (k "foo")) -String]
        [tc-e (let/ec k : String (k "foo")) -String]
+       [tc-e (ann (do ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
+                  Integer)
+             #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
+       [tc-e (do : Integer ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
+             #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
         )
   (test-suite
    "tc-literal tests"
