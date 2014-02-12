@@ -1,13 +1,14 @@
 #lang plt-web
 
-(require "resources.rkt")
+(require "resources.rkt" plt-web/style)
 
 (define webchat-link
   "http://webchat.freenode.net?channels=racket&uio=OT10cnVlJjExPTIzNg6b")
 
 (define irc-chat
   @page[#:site www-site #:title "IRC" #:part-of 'community]{
-    @iframe[src: webchat-link width: "100%" height: "400"]})
+    @columns[12 #:row? #t #:center? #t]{
+      @iframe[src: webchat-link width: "100%" height: "400"]}})
 
 (define log-header+footer
   (lazy (regexp-split #rx"{{{BODY}}}"
