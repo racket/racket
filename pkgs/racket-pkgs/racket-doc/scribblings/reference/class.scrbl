@@ -2420,16 +2420,27 @@ Returns @racket[#t] if @racket[v] is a @tech{generic}, @racket[#f] otherwise.
 
 @defproc[(object=? [a object?] [b object?]) boolean?]{
 
-Determines if two objects are the same object, or not; this procedure uses
-@racket[eq?], but also works properly with contracts.
+Determines whether @racket[a] and @racket[b] were returned from
+the same call to @racket[new] or not. If the two objects
+have fields, this procedure determines whether mutating a field
+of one would change that field in the other.
+
+This procedure is similar in spirit to
+@racket[eq?] but also works properly with contracts
+(and has a stronger guarantee).
 
 @defexamples[#:eval class-ctc-eval
   (define obj-1 (new object%))
-  (define/contract obj-2 (object/c) obj-1)
+  (define obj-2 (new object%))
+  (define/contract obj-3 (object/c) obj-1)
+  
   (object=? obj-1 obj-1)
-  (object=? (new object%) obj-1)
   (object=? obj-1 obj-2)
-  (object=? obj-1 (new (class object% (super-new))))
+  (object=? obj-1 obj-3)
+  
+  (eq? obj-1 obj-1)
+  (eq? obj-1 obj-2)
+  (eq? obj-1 obj-3)
 ]}
 
 
