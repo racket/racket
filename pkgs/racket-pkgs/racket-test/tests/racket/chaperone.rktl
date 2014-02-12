@@ -1510,7 +1510,12 @@
 
 (let ()
   (struct s ([a #:mutable]))
-  (err/rt-test (impersonate-struct 5 set-s-a! (lambda (a b) b))))
+  (err/rt-test (impersonate-struct 5 set-s-a! (lambda (a b) b)))
+  (err/rt-test (impersonate-struct (s 1) #f (λ (a b) v))
+               (λ (x) 
+                 (and (exn:application:type? x)
+                      (regexp-match #rx"struct-type-property-accessor-procedure[?]" 
+                                    (exn-message x))))))
 
 ;; ----------------------------------------
 

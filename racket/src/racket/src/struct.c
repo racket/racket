@@ -5473,10 +5473,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       offset = -2;
     } else {
       scheme_wrong_contract(name, 
-                            (is_impersonator
-                             ? "(or/c struct-accessor-procedure? struct-mutator-procedure?)"
-                             : ("(or/c struct-accessor-procedure? struct-mutator-procedure?"
-                                " struct-type-property-accessor-procedure? (one-of/c struct-info))")),
+                            "(or/c struct-accessor-procedure?\n"
+			    "      struct-mutator-procedure?\n"
+                            "      struct-type-property-accessor-procedure?\n"
+			    "      (one-of/c struct-info))",
                             i, argc, argv);
       return NULL;
     }
