@@ -4,7 +4,7 @@
                          with-handlers default-continuation-prompt-tag
                          define λ lambda define-struct for for*
                          let let* let-values letrec letrec-values
-                         let/cc let/ec do))
+                         let/cc let/ec do struct))
            (basics #%module-begin #%top-interaction))
 
 (require typed-racket/base-env/extra-procs
