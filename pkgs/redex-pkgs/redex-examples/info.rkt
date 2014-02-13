@@ -6,7 +6,10 @@
                "compiler-lib"
                "rackunit-lib"
                "redex-gui-lib"
-               "slideshow-lib"))
+               "slideshow-lib"
+               "math-lib"
+               "plot-gui-lib"))
+
 (define build-deps '())
 
 (define pkg-desc "PLT Redex examples")
