@@ -64,8 +64,13 @@
 ;; The body of a Forall type
 (define-syntax-class all-body
   #:attributes (type)
-  (pattern (type))
-  (pattern (~and type ((~or (~once :->^) x) ...))))
+  ;; FIXME: the error message when a failure is triggered by this case
+  ;;        is not very good, but I have been unsuccessful with ~fail
+  ;;        or with #:fail-when. -- AT
+  (pattern (~and (:->^ x y ~! z ...) (~fail))
+           #:with type 'dummy)
+  (pattern (~and type ((~or (~once :->^) (~not :->^)) ...)))
+  (pattern (type)))
 
 (define (parse-literal-alls stx)
   (syntax-parse stx
