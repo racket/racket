@@ -51,13 +51,39 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [-letrec-values letrec-values:]
                      [-let/cc let/cc:]
                      [-let/ec let/ec:]
+                     [for: for]
+                     [for/list: for/list]
+                     [for/vector: for/vector]
+                     [for/hash: for/hash]
+                     [for/hasheq: for/hasheq]
+                     [for/hasheqv: for/hasheqv]
+                     [for/and: for/and]
+                     [for/or: for/or]
+                     [for/sum: for/sum]
+                     [for/product: for/product]
+                     [for/lists: for/lists]
+                     [for/first: for/first]
+                     [for/last: for/last]
+                     [for/fold: for/fold]
+                     [for*: for*]
+                     [for*/list: for*/list]
+                     [for*/lists: for*/lists]
+                     [for*/vector: for*/vector]
+                     [for*/hash: for*/hash]
+                     [for*/hasheq: for*/hasheq]
+                     [for*/hasheqv: for*/hasheqv]
+                     [for*/and: for*/and]
+                     [for*/or: for*/or]
+                     [for*/sum: for*/sum]
+                     [for*/product: for*/product]
+                     [for*/first: for*/first]
+                     [for*/last: for*/last]
+                     [for*/fold: for*/fold]
                      [-do do]
                      [-do do:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
-                     [define-typed-struct/exec define-struct/exec]
-                     [for/annotation for]
-                     [for*/annotation for*]))
+                     [define-typed-struct/exec define-struct/exec]))
 
 (module struct-extraction racket/base
   (provide extract-struct-info/checked)
@@ -822,9 +848,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
            (pattern (~seq (var:optionally-annotated-name seq-expr:expr))
                     #:with (expand ...) #'((var.ann-name seq-expr)))
            ;; multi-valued seq-expr
-           ;; currently disabled because it triggers an internal error in the typechecker
-           ;; (pattern ((v:optionally-annotated-name ...) seq-expr:expr)
-           ;;          #:with (expand ...) #'(((v.ann-name ...) seq-expr)))
+           (pattern ((v:optionally-annotated-formal ...) seq-expr:expr)
+                    #:with (expand ...) #'(((v.ann-name ...) seq-expr)))
            ;; break-clause, pass it directly
            ;; Note: these don't ever typecheck
            (pattern (~seq (~and kw (~or #:break #:final)) guard-expr:expr)
@@ -904,7 +929,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
-        ((var:optionally-annotated-name) ...)
+        (var:optionally-annotated-formal ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (type-ascription-property
@@ -913,15 +938,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (clause.expand ... ...)
           c ...))
       #'ty)]
-    [(_ ((var:annotated-name) ...)
+    [(_ (var:optionally-annotated-formal ...)
         clause:for-clauses
         c ...)
-     (type-ascription-property
-      (quasisyntax/loc stx
-        (for/lists (var.ann-name ...)
-          (clause.expand ... ...)
-          c ...))
-      #'(values var.ty ...))]))
+     (define all-typed? (andmap values (attribute var.ty)))
+     (define for-stx
+       (quasisyntax/loc stx
+          (for/lists (var.ann-name ...)
+            (clause.expand ... ...)
+            c ...)))
+     (if all-typed?
+         (type-ascription-property
+          for-stx
+          #`(values #,@(attribute var.ty)))
+         for-stx)]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
@@ -937,12 +967,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ accum:accumulator-bindings
         clause:for-clauses
         c ...)
-     (type-ascription-property
-      (quasisyntax/loc stx
-        (for/fold ((accum.ann-name accum.init) ...)
-          (clause.expand ... ...)
-          c ...))
-      #'(values accum.ty ...))]))
+     (define all-typed? (andmap values (attribute accum.ty)))
+     (define for-stx
+       (quasisyntax/loc stx
+         (for/fold ((accum.ann-name accum.init) ...)
+                   (clause.expand ... ...)
+           c ...)))
+     (if all-typed?
+         (type-ascription-property
+          for-stx
+          #`(values #,@(attribute accum.ty)))
+         for-stx)]))
 
 
 (define-syntax (for*: stx)

@@ -15,19 +15,22 @@
   (pattern [~seq name:id : ty]
            #:with ann-name (type-label-property #'name #'ty))
   (pattern name:id
-           #:with ty (type-label-property #'name)
-           #:when #'ty
+           #:attr *ty (type-label-property #'name)
+           #:when (attribute *ty)
+           #:attr ty (datum->syntax #'name (attribute *ty))
            #:with ann-name #'name))
 
 (define-splicing-syntax-class optionally-annotated-name
-  #:attributes (name ann-name)
+  #:attributes (name ty ann-name)
   #:description "optionally type-annotated identifier"
   #:literal-sets (colon)
   (pattern n:annotated-name
            #:with name #'n.name
+           #:with ty #'n.ty
            #:with ann-name #'n.ann-name)
   (pattern n:id
            #:with name #'n
+           #:attr ty #f
            #:with ann-name #'n))
 
 (define-splicing-syntax-class (param-annotated-name trans)
@@ -99,12 +102,14 @@
 (define-syntax-class optionally-annotated-formal
   #:description "optionally annotated variable of the form [x : T] or just x"
   #:opaque
-  #:attributes (name ann-name)
+  #:attributes (name ty ann-name)
   (pattern f:annotated-formal
            #:with name #'f.name
+           #:attr ty #'f.ty
            #:with ann-name #'f.ann-name)
   (pattern f:id
            #:with name #'f
+           #:attr ty #f
            #:with ann-name #'f))
 
 (define-syntax-class annotated-formals
