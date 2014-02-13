@@ -15,13 +15,12 @@
                                       (var.ann-name seq-expr)))
            #:with (expand* ...) #'(expand ... #:when '#t))
   ;; multi-valued seq-expr
-  ;; currently disabled because it triggers an internal error in the typechecker
-  ;; (pattern (~and c (((v:optionally-annotated-name) ...) seq-expr:expr))
-  ;;          #:with (expand ...) (list (syntax/loc #'c
-  ;;                                      ((v.ann-name ...) seq-expr)))
-  ;;          #:with (expand* ...) (list (quasisyntax/loc #'c
-  ;;                                       ((v.ann-name ...) seq-expr))
-  ;;                                     #'#:when #'#t))
+  (pattern (~and c ((v:optionally-annotated-formal ...) seq-expr:expr))
+           #:with (expand ...) (list (syntax/loc #'c
+                                       ((v.ann-name ...) seq-expr)))
+           #:with (expand* ...) (list (quasisyntax/loc #'c
+                                        ((v.ann-name ...) seq-expr))
+                                      #'#:when #'#t))
   ;; Note: #:break and #:final clauses don't ever typecheck
   (pattern (~seq (~and kw (~or #:when #:unless #:break #:final)) guard:expr)
            #:with (expand ...) (list #'kw #'guard)
@@ -35,7 +34,7 @@
 (define-syntax-class accumulator-binding
   #:description "accumumulator binding"
   #:attributes (ann-name init ty)
-  (pattern (:annotated-name init:expr)))
+  (pattern (:optionally-annotated-name init:expr)))
 
 (define-syntax-class accumulator-bindings
   #:description "accumumulator bindings"
