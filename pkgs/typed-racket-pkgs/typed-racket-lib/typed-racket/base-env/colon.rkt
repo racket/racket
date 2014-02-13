@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
+                     "../private/parse-classes.rkt"
                      "../utils/disappeared-use.rkt"
                      (only-in "../utils/tc-utils.rkt" tc-error/stx))
          "../typecheck/internal-forms.rkt"
@@ -28,14 +29,9 @@
     [_
      #:when (eq? 'expression ctx)
      (err stx "must be used in a definition context")]
-    [(: id (~and kw :) x ...)
-     #:fail-unless (for/first ([i (in-syntax #'(x ...))]
-                               #:when (identifier? i)
-                               #:when (free-identifier=? i #'t:->))
-                     i)
-     #f
+    [(: id (~and kw :) . more:omit-parens)
      (add-disappeared-use #'kw)
-     (wrap stx #`(:-helper #,top-level? id (x ...)))]
+     (wrap stx #`(:-helper #,top-level? id more.type))]
     [(: id : . more)
      (wrap stx #`(:-helper #,top-level? id . more))]
     [(: e ...) (wrap stx #`(:-helper #,top-level? e ...))]))

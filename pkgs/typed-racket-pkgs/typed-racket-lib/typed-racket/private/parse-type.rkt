@@ -61,20 +61,9 @@
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
-;; The body of a Forall type
-(define-syntax-class all-body
-  #:attributes (type)
-  ;; FIXME: the error message when a failure is triggered by this case
-  ;;        is not very good, but I have been unsuccessful with ~fail
-  ;;        or with #:fail-when. -- AT
-  (pattern (~and (:->^ x y ~! z ...) (~fail))
-           #:with type 'dummy)
-  (pattern (~and type ((~or (~once :->^) (~not :->^)) ...)))
-  (pattern (type)))
-
 (define (parse-literal-alls stx)
   (syntax-parse stx
-    [(:All^ (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
+    [(:All^ (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:omit-parens)
      (define vars-list (syntax->list #'(vars ...)))
      (cons (if (attribute v)
                (list vars-list #'v)
@@ -88,7 +77,7 @@
 (define (parse-all-type stx)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx
-    [(:All^ (vars:id ... v:id dd:ddd) . t:all-body)
+    [(:All^ (vars:id ... v:id dd:ddd) . t:omit-parens)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
      (let* ([vars (stx-map syntax-e #'(vars ...))]
@@ -96,7 +85,7 @@
        (extend-indexes v
          (extend-tvars vars
            (make-PolyDots (append vars (list v)) (parse-type #'t.type)))))]
-    [(:All^ (vars:id ...) . t:all-body)
+    [(:All^ (vars:id ...) . t:omit-parens)
      (when (check-duplicate-identifier (syntax->list #'(vars ...)))
        (tc-error "All: duplicate type variable"))
      (let* ([vars (stx-map syntax-e #'(vars ...))])
