@@ -545,7 +545,7 @@ functions and continuation mark functions.
                         (code:line keyword type)]
           [rest (code:line)
                 (code:line #:rest type)])]{
-  Contructs the type of functions with optional or rest arguments. The first
+  Constructs the type of functions with optional or rest arguments. The first
   list of @racket[mandatory-dom]s correspond to mandatory argument types. The list
   @racket[optional-doms], if provided, specifies the optional argument types.
 
