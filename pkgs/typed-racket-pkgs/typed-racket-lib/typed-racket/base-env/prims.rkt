@@ -1186,7 +1186,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     #:opaque
     (pattern rest:id #:attr form #'rest)
     (pattern (rest:id : type:expr :star)
-             #:attr form (type-label-property #'rest #'type)))
+             #:attr form (type-label-property #'rest #'type))
+    (pattern (rest:id : type:expr bnd:ddd/bound)
+             #:attr bound (attribute bnd.bound)
+             #:attr form (type-dotted-property
+                          (type-label-property #'rest #'type)
+                          (attribute bound))))
 
   (define-syntax-class lambda-formals
     #:attributes (opt-property kw-property erased)
