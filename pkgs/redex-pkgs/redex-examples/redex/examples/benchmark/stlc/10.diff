@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "app rule the range of the function is matched to the argument")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+57c57
+<    (typeof Γ M_2 σ)
+---
+>    (typeof Γ M_2 σ_2)
+231d230
+< 

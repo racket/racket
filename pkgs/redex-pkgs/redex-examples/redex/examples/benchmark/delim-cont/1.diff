@@ -1,0 +1,13 @@
+3c3,6
+< (define the-error "no-error")
+---
+> (define the-error "guarded mark reduction doesn't wrap results with a list/c")
+> 
+> ;; note: this bug was found and fixed during the development of this model
+> ;; with commit: 4b848777d12a2e5b59b43c8e77f9f68b747d1151
+224c227
+<         (monitor (list/c ctc) (ccm mk t) k l j)
+---
+>         (monitor ctc (ccm mk t) k l j) 
+1554d1556
+< 

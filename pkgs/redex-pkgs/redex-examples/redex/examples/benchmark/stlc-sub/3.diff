@@ -1,0 +1,16 @@
+3,4d2
+< (define the-error "no error")
+< 
+6d3
+<          racket/match
+7a5
+>          racket/match
+11a10,11
+> (define the-error "substitutes rator into rand in application")
+> 
+115c115
+<    ((subst M x M_x) (subst N x M_x))]
+---
+>    ((subst M x M_x) (subst N x M))]
+253a254
+> 

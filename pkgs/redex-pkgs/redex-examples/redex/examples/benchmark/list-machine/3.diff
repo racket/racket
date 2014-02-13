@@ -1,0 +1,8 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "cons doesn't actually update the store")
+78c78
+<         (p r_2 ι)
+---
+>         (p r ι)

@@ -1,0 +1,8 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "list/c contracts aren't applied properly in the cons case")
+206c206
+<    (--> (monitor (list/c ctc) (cons v_1 v_2) k l j)
+---
+>    (--> (monitor ctc (cons v_1 v_2) k l j)

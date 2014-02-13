@@ -1,0 +1,8 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "doesn't increment black depth in non-empty case")
+75c75
+<   [(rbt (B (c_1 t_11 n_1 t_12) n (c_2 t_21 n_2 t_22)) n_1min n_2max (s n_bd))
+---
+>   [(rbt (B (c_1 t_11 n_1 t_12) n (c_2 t_21 n_2 t_22)) n_1min n_2max n_bd)

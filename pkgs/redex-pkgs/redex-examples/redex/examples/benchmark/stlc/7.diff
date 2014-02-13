@@ -1,0 +1,15 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "evaluation isn't allowed on the rhs of applications")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+35,36c35
+<      (E M)
+<      (v E)))
+---
+>      (E M)))
+231d229
+< 

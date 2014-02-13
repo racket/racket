@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "hd reduction acts on partially applied cons")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+87c87
+<    (--> (in-hole E (hd ((cons v_1) v_2)))
+---
+>    (--> (in-hole E (hd (cons v_1)))
+231d230
+< 

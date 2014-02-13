@@ -1,0 +1,12 @@
+11c11
+< (define the-error "no error")
+---
+> (define the-error "the type of cons is incorrect")
+119c119
+<    (∀ a (a → ((list a) → (list a))))]
+---
+>    (∀ a (a → ((list a) → a)))]
+261c261
+<       M]
+---
+>      M]

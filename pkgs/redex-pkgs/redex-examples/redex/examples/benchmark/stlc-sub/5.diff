@@ -1,0 +1,12 @@
+3,4d2
+< (define the-error "no error")
+< 
+6d3
+<          racket/match
+7a5
+>          racket/match
+11a10,11
+> (define the-error "picks up the bound variable when recurring inside λ")
+> 
+253a254
+> 

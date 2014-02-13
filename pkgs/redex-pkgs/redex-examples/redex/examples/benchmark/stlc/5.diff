@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "the tail reduction returns the wrong value")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+91c91
+<         (in-hole E v_2)
+---
+>         (in-hole E v_1)
+231d230
+< 

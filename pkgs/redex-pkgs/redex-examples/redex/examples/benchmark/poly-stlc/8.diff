@@ -1,0 +1,12 @@
+11c11
+< (define the-error "no error")
+---
+> (define the-error "lookup always returns int")
+108c108
+<    σ]
+---
+>    int]
+261c261
+<       M]
+---
+>      M]

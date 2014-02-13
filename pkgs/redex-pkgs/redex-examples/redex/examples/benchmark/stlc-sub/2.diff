@@ -1,0 +1,16 @@
+3,4d2
+< (define the-error "no error")
+< 
+6d3
+<          racket/match
+7a5
+>          racket/match
+11a10,11
+> (define the-error "only substitutes inside of hd constants")
+> 
+112,113c112,113
+<   [(subst (c M) x M_x)
+<    (c (subst M x M_x))]
+---
+>   [(subst (hd M) x M_x)
+>    (hd (subst M x M_x))]

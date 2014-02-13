@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "lookup always returns int")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+75c75
+<    σ]
+---
+>    int]
+231d230
+< 

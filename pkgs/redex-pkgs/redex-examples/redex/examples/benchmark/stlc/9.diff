@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "variables aren't required to match in lookup")
+7d6
+<          racket/contract
+8a8
+>          racket/contract
+74c74
+<   [(lookup (x σ Γ) x)
+---
+>   [(lookup (x σ Γ) x_2)
+231d230
+< 

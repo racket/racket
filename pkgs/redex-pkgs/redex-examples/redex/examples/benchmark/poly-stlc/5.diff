@@ -1,0 +1,12 @@
+11c11
+< (define the-error "no error")
+---
+> (define the-error "the tail reduction returns the wrong value")
+165c165
+<         (in-hole E v_2)
+---
+>         (in-hole E v_1)
+261c261
+<       M]
+---
+>      M]

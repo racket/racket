@@ -1,0 +1,18 @@
+3,4d2
+< (define the-error "no error")
+< 
+6d3
+<          racket/match
+7a5
+>          racket/match
+11a10,11
+> (define the-error "the order of the variable clauses is swapped")
+> 
+102,103d101
+<   [(subst x x M)
+<    M]
+105a104,105
+>   [(subst x x M)
+>    M]
+253a254
+> 

@@ -1,0 +1,12 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "ins does no rebalancing")
+90c90
+<    (balance (c (ins n_1 t_1) n_2 t_2))
+---
+>    (c (ins n_1 t_1) n_2 t_2)
+93c93
+<    (balance (c t_1 n_2 (ins n_1 t_2)))
+---
+>    (c t_1 n_2 (ins n_1 t_2))
