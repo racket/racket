@@ -39,6 +39,7 @@
 (define-literal-syntax-class #:for-label List*)
 (define-literal-syntax-class #:for-label pred)
 (define-literal-syntax-class #:for-label ->)
+(define-literal-syntax-class #:for-label ->*)
 (define-literal-syntax-class #:for-label case->^ (case-> case-lambda))
 (define-literal-syntax-class #:for-label Rec)
 (define-literal-syntax-class #:for-label U)
@@ -60,15 +61,9 @@
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
-;; The body of a Forall type
-(define-syntax-class all-body
-  #:attributes (type)
-  (pattern (type))
-  (pattern (~and type ((~or (~once :->^) x) ...))))
-
 (define (parse-literal-alls stx)
   (syntax-parse stx
-    [(:All^ (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
+    [(:All^ (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:omit-parens)
      (define vars-list (syntax->list #'(vars ...)))
      (cons (if (attribute v)
                (list vars-list #'v)
@@ -82,7 +77,7 @@
 (define (parse-all-type stx)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx
-    [(:All^ (vars:id ... v:id dd:ddd) . t:all-body)
+    [(:All^ (vars:id ... v:id dd:ddd) . t:omit-parens)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
      (let* ([vars (stx-map syntax-e #'(vars ...))]
@@ -90,7 +85,7 @@
        (extend-indexes v
          (extend-tvars vars
            (make-PolyDots (append vars (list v)) (parse-type #'t.type)))))]
-    [(:All^ (vars:id ...) . t:all-body)
+    [(:All^ (vars:id ...) . t:omit-parens)
      (when (check-duplicate-identifier (syntax->list #'(vars ...)))
        (tc-error "All: duplicate type variable"))
      (let* ([vars (stx-map syntax-e #'(vars ...))])
@@ -99,9 +94,16 @@
     [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(:All^ . rest) (tc-error "All: bad syntax")]))
 
-(define-splicing-syntax-class keyword-tys
+;; syntax class for standard keyword syntax (same as contracts), may be
+;; optional or mandatory depending on where it's used
+(define-splicing-syntax-class plain-kw-tys
   (pattern (~seq k:keyword t:expr)
-           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
+           #:attr mand-kw (make-Keyword (syntax-e #'k) (parse-type #'t) #t)
+           #:attr opt-kw  (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+
+(define-splicing-syntax-class keyword-tys
+  (pattern kw:plain-kw-tys #:attr Keyword (attribute kw.mand-kw))
+  ;; custom optional keyword syntax for TR
   (pattern (~seq [k:keyword t:expr])
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
@@ -112,6 +114,31 @@
            #:when (and (not (keyword? (syntax->datum #'t)))
                        (not (syntax->list #'t)))))
 
+;; syntax classes for parsing ->* function types
+(define-syntax-class ->*-mand
+  #:description "mandatory arguments for ->*"
+  #:attributes (doms kws)
+  (pattern (dom:non-keyword-ty ... kw:plain-kw-tys ...)
+           #:attr doms (syntax->list #'(dom ...))
+           #:attr kws  (attribute kw.mand-kw)))
+
+(define-splicing-syntax-class ->*-opt
+  #:description "optional arguments for ->*"
+  #:attributes (doms kws)
+ (pattern (~optional (dom:non-keyword-ty ... kw:plain-kw-tys ...))
+          #:attr doms (if (attribute dom)
+                          (syntax->list #'(dom ...))
+                          null)
+          #:attr kws (if (attribute kw)
+                         (attribute kw.opt-kw)
+                         null)))
+
+(define-splicing-syntax-class ->*-rest
+  #:description "rest argument type for ->*"
+  #:attributes (type)
+  (pattern (~optional (~seq #:rest type:non-keyword-ty))))
+
+;; syntax classes for filters, objects, and related things
 (define-syntax-class path-elem
   #:description "path element"
   (pattern :car^
@@ -313,24 +340,29 @@
           (list (make-arr
                  doms
                  (parse-type (syntax/loc stx (rest-dom ...)))))))]
-      [(dom :->^ rng : latent:simple-latent-filter)
+      [(~or (:->^ dom rng :colon^ latent:simple-latent-filter)
+            (dom :->^ rng :colon^ latent:simple-latent-filter))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
-      [(dom ... :->^ rng
-        : ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
+      [(~or (:->^ dom ... rng
+             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
+            (dom ... :->^ rng
+             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...))))))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (->* (parse-types #'(dom ...))
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
        (make-Function
         (list (make-arr
                (parse-types #'(dom ...))
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
+            (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
            (tc-error/stx #'bound
@@ -343,7 +375,8 @@
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
                           bnd))))]
-      [(dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty _:ddd rng)
+            (dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng))
        (let ([var (infer-index stx)])
          (make-Function
           (list
@@ -356,7 +389,8 @@
       (->* (parse-types #'(dom ...))
            (parse-values-type #'rng))]     |#
       ;; use expr to rule out keywords
-      [(dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng)
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng))
       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
                     (parse-type d))])
          (make-Function
@@ -364,7 +398,16 @@
                  doms
                  (parse-values-type #'rng)
                  #:kws (attribute kws.Keyword)))))]
-
+      [(:->*^ mand:->*-mand opt:->*-opt rest:->*-rest rng)
+       (define doms (for/list ([d (attribute mand.doms)])
+                      (parse-type d)))
+       (define opt-doms (for/list ([d (attribute opt.doms)])
+                          (parse-type d)))
+       (opt-fn doms opt-doms (parse-values-type #'rng)
+               #:rest (and (attribute rest.type)
+                           (parse-type (attribute rest.type)))
+               #:kws (append (attribute mand.kws)
+                             (attribute opt.kws)))]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)

@@ -260,9 +260,10 @@
 (define/decl -true-filter (-FS -top -bot))
 (define/decl -false-filter (-FS -bot -top))
 
-(define (opt-fn args opt-args result)
+(define (opt-fn args opt-args result #:rest [rest #f] #:kws [kws null])
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])
-                 (make-Function (list (make-arr* (append args (take opt-args i)) result))))))
+                 (make-Function (list (make-arr* (append args (take opt-args i)) result
+                                                 #:rest rest #:kws kws))))))
 
 (define-syntax-rule (->opt args ... [opt ...] res)
   (opt-fn (list args ...) (list opt ...) res))

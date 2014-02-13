@@ -54,7 +54,7 @@
                       "(Vector Symbol String)")
     (check-prints-as? (-box (-val 3)) "(Boxof 3)")
     (check-prints-as? (make-Future -Void) "(Futureof Void)")
-    (check-prints-as? (-> -String -Void) "(String -> Void)")
+    (check-prints-as? (-> -String -Void) "(-> String Void)")
     (check-prints-as? (Un -String -Void) "(U String Void)")
     (check-prints-as? (-pair -String -Void) "(Pairof String Void)")
     (check-prints-as? (make-ListDots -Boolean 'x) "(List Boolean ... x)")
@@ -64,16 +64,16 @@
     (check-prints-as? (make-ValuesDots (list -String -Symbol) (make-F 'x) 'x)
                       "(values String Symbol x ... x)")
     (check-prints-as? (-polydots (a b) (->... (list a) (b b) a))
-                      "(All (a b ...) (a b ... b -> a))")
+                      "(All (a b ...) (-> a b ... b a))")
     (check-prints-as? (-mu x (-lst x)) "(Rec x (Listof x))")
     (check-prints-as? (-seq -String -Symbol) "(Sequenceof String Symbol)")
-    (check-prints-as? (-poly (a) (-> a -Void)) "(All (a) (a -> Void))")
+    (check-prints-as? (-poly (a) (-> a -Void)) "(All (a) (-> a Void))")
     (check-prints-as? (-> -Input-Port (make-Values (list (-result -String (-FS -top -bot) -no-obj)
                                                          (-result -String (-FS -top -bot) -no-obj))))
-                      "(Input-Port -> (values (String : (Top | Bot)) (String : (Top | Bot))))")
+                      "(-> Input-Port (values (String : (Top | Bot)) (String : (Top | Bot))))")
     ;; this case tests that the Number union is printed with its name
     ;; rather than its expansion (a former bug)
-    (check-prints-as? (->* '() -Number -Void) "(Number * -> Void)")
+    (check-prints-as? (->* '() -Number -Void) "(-> Number * Void)")
     (check-prints-as? (->key Univ -Pathlike
                              #:exists
                              (one-of/c 'error 'append 'update 'replace
@@ -83,10 +83,27 @@
                              (one-of/c 'binary 'text)
                              #f
                              -Void)
-                      (string-append "(Any Path-String [#:exists (U 'error"
+                      (string-append "(-> Any Path-String [#:exists (U 'error"
                                      " 'append 'update 'replace 'truncate"
                                      " 'truncate/replace)] [#:mode (U"
-                                     " 'binary 'text)] -> Void)")))
+                                     " 'binary 'text)] Void)"))
+    (check-prints-as? (->opt Univ [] -Void) "(-> Any Void)")
+    (check-prints-as? (->opt [-String] -Void) "(->* () (String) Void)")
+    (check-prints-as? (->opt Univ [-String] -Void) "(->* (Any) (String) Void)")
+    (check-prints-as? (->opt Univ -Symbol [-String] -Void)
+                      "(->* (Any Symbol) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #f -Void)
+                      "(->* (Any) (String #:x String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) Void)")
+    (check-prints-as? (->optkey Univ [-String] #:rest -String #:x -String #t -Void)
+                      "(->* (Any #:x String) (String) #:rest String Void)")
+    (check-prints-as? (cl->* (->opt -Pathlike [-String] -Void)
+                             (->optkey Univ [-String] #:rest -String #:x -String #t -Void))
+                      (string-append "(case-> (->* (Path-String) (String) Void) "
+                                     "(->* (Any #:x String) (String) #:rest String Void))")))
    (test-suite
     "Pretty printing tests"
     (check-pretty-prints-as? (-val 3) "3")
@@ -105,11 +122,11 @@
          ((-lst b) b) . ->... .(-lst c))))
      (string-append "(All (c a b ...)\n"
                     "  (case->\n"
-                    "   ((a -> c) (Pairof a (Listof a)) -> (Pairof c (Listof c)))\n"
-                    "   ((a b ... b -> c) (Listof a) (Listof b) ... b -> (Listof c))))"))
+                    "   (-> (-> a c) (Pairof a (Listof a)) (Pairof c (Listof c)))\n"
+                    "   (-> (-> a b ... b c) (Listof a) (Listof b) ... b (Listof c))))"))
     (check-pretty-prints-as?
      (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                        (-> (-Syntax Univ) Univ Univ)))
      (string-append "(All (a)\n"
-                    "  (case-> ((Syntaxof a) Any Any -> (Syntaxof a)) ((Syntaxof Any) Any -> Any)))")))))
+                    "  (case-> (-> (Syntaxof a) Any Any (Syntaxof a)) (-> (Syntaxof Any) Any Any)))")))))
 

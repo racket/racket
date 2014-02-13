@@ -275,4 +275,9 @@
          (make-PolyDots names (loop f))]
         [t t]))))
 
-(provide kw-convert kw-unconvert opt-convert)
+;; partition-kws : (Listof Keyword) -> (values (Listof Keyword) (Listof Keyword))
+;; Partition keywords by whether they are mandatory or not
+(define (partition-kws kws)
+  (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws))
+
+(provide kw-convert kw-unconvert opt-convert partition-kws)
