@@ -10,6 +10,11 @@
 (define (rtech . x)
   (apply tech x #:doc '(lib "scribblings/reference/reference.scrbl")))
 
+(define (tr-guide-secref tag)
+  (secref tag #:doc '(lib "typed-racket/scribblings/ts-guide.scrbl")))
+(define (tr-reference-secref tag)
+  (secref tag #:doc '(lib "typed-racket/scribblings/ts-reference.scrbl")))
+
 (define ** (let ([* #f]) @racket[*]))
 
 (define-syntax-rule (annvar x t)

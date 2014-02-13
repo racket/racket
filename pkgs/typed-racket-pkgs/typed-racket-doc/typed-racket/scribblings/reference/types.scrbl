@@ -499,33 +499,52 @@ functions and continuation mark functions.
                 (dom -> rng : pred)]
                ([ooo #,(racket ...)]
                 [dom type
-                     (code:line keyword type)
-                     [keyword type]])]{
+                     mandatory-kw
+                     optional-kw]
+                [mandatory-kw (code:line keyword type)]
+                [optional-kw [keyword type]])]{
   The type of functions from the (possibly-empty)
-  sequence @racket[dom ...] to the @racket[rng] type.  The second form
-  specifies a uniform rest argument of type @racket[rest], and the
+  sequence @racket[dom ....] to the @racket[rng] type.
+
+  @ex[(λ: ([x : Number]) x)
+      (λ: () 'hello)]
+
+  The second form specifies a uniform rest argument of type @racket[rest], and the
   third form specifies a non-uniform rest argument of type
-  @racket[rest] with bound @racket[bound].  In the third form, the
-  @racket[...] introduced by @racket[ooo] is literal, and @racket[bound]
-  must be an identifier denoting a type variable. In the fourth form,
-  there must be only one @racket[dom] and @racket[pred] is the type
-  checked by the predicate. @racket[dom] can include both mandatory and
-  optional keyword arguments.
+  @racket[rest] with bound @racket[bound]. The bound refers to the type variable
+  that is in scope within the rest argument type.
+
+  @ex[(λ: ([x : Number] . [y : String *]) (length y))
+      ormap]
+
+  In the third form, the @racket[...] introduced by @racket[ooo] is literal,
+  and @racket[bound] must be an identifier denoting a type variable.
+
+  In the fourth form, there must be only one @racket[dom] and @racket[pred] is the type
+  checked by the predicate. The type @racket[pred] is known as a @emph{filter} for
+  the function type (for an introduction to filters, see
+  @tr-guide-secref["filters-and-predicates"]).
+
+  @ex[string?]
+
+  The @racket[dom]s can include both mandatory and optional keyword arguments.
+  Mandatory keyword arguments are a pair of keyword and type, while optional
+  arguments are surrounded by a pair of parentheses.
+
+  @ex[(:print-type file->string)
+      (: is-zero? : (-> Number #:equality (-> Number Number Any) [#:zero Number] Any))
+      (define (is-zero? n #:equality equality #:zero [zero 0])
+        (equality n zero))
+      (is-zero? 2 #:equality =)
+      (is-zero? 2 #:equality eq? #:zero 2.0)]
 
   The type of functions can also be specified with an @emph{infix} @racket[->]
   which comes immediately before the @racket[rng] type. The fifth through
   eighth forms match the first four cases, but with the infix style of arrow.
 
-  @ex[(λ: ([x : Number]) x)
-      (λ: ([x : Number] . [y : String *]) (length y))
-      ormap
-      string?
-      (:print-type file->string)
-      (: is-zero? : Number #:equality (Number Number -> Any) [#:zero Number] -> Any)
-      (define (is-zero? n #:equality equality #:zero [zero 0])
-        (equality n zero))
-      (is-zero? 2 #:equality =)
-      (is-zero? 2 #:equality eq? #:zero 2.0)]}
+  @ex[(: add2 (Number -> Number))
+      (define (add2 n) (+ n 2))]
+}
 
 @;; This is a trick to get a reference to ->* in another manual
 @(module id-holder racket/base
