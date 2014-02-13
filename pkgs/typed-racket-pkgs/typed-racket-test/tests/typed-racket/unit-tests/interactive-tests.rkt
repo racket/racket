@@ -104,7 +104,7 @@
     (test-form-exn #rx"exactly one argument"
       (:print-type 1 2))
 
-    (test-form (regexp-quote "(4 Zero -> Zero)")
+    (test-form (regexp-quote "(-> 4 Zero Zero)")
       (:query-type/args * 4 0))
     (test-form-exn #rx":query-type/args.*applied to arguments"
       :query-type/args)
@@ -113,7 +113,7 @@
     (test-form-exn #rx"at least one argument"
       (:query-type/args))
 
-    (test-form (regexp-quote "(case-> (One -> One) (-> One))")
+    (test-form (regexp-quote "(case-> (-> One One) (-> One))")
       (:query-type/result * 1))
     (test-form #rx"not in the given function's range.\n"
       (:query-type/result + String))

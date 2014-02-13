@@ -87,7 +87,7 @@
 ;; Table for formatting pretty-printed types
 (define type-style-table
   (pretty-print-extend-style-table
-   #f '(U All) '(and lambda)))
+   #f '(U All -> ->*) '(and lambda and and)))
 
 ;; pretty-format-type : Type -> String
 ;; Formats the type using pretty printing
@@ -214,6 +214,7 @@
            (apply fp fmt ret rest)
            (fp "-> ~a" ret)))
      (append
+      (list '->)
       (map type->sexp dom)
       ;; Format keyword types as strings because the square
       ;; brackets are significant for printing. Note that
@@ -236,7 +237,6 @@
                     '...
                     (cdr drest)))
           null)
-      (list '->)
       (match rng
         [(AnyValues:) '(AnyValues)]
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
