@@ -488,7 +488,12 @@ functions and continuation mark functions.
 @section{Other Type Constructors}
 
 @defform*/subs[#:id -> #:literals (* ...)
-               [(dom ... -> rng)
+               [(-> dom ... rng)
+                (-> dom ... rest * rng)
+                (-> dom ... rest ooo bound rng)
+                (-> dom rng : pred)
+
+                (dom ... -> rng)
                 (dom ... rest * -> rng)
                 (dom ... rest ooo bound -> rng)
                 (dom -> rng : pred)]
@@ -507,6 +512,10 @@ functions and continuation mark functions.
   checked by the predicate. @racket[dom] can include both mandatory and
   optional keyword arguments.
 
+  The type of functions can also be specified with an @emph{infix} @racket[->]
+  which comes immediately before the @racket[rng] type. The fifth through
+  eighth forms match the first four cases, but with the infix style of arrow.
+
   @ex[(λ: ([x : Number]) x)
       (λ: ([x : Number] . [y : String *]) (length y))
       ormap
@@ -517,6 +526,50 @@ functions and continuation mark functions.
         (equality n zero))
       (is-zero? 2 #:equality =)
       (is-zero? 2 #:equality eq? #:zero 2.0)]}
+
+@;; This is a trick to get a reference to ->* in another manual
+@(module id-holder racket/base
+   (require scribble/manual (for-label racket/contract))
+   (provide ->*-element)
+   (define ->*-element (racket ->*)))
+@(require 'id-holder)
+
+@defform[#:literals (* ...)
+         (->* (mandatory-dom ...) optional-doms rest rng)
+         #:grammar
+         ([mandatory-dom type
+                         (code:line keyword type)]
+          [optional-doms (code:line)
+                         (optional-dom ...)]
+          [optional-dom type
+                        (code:line keyword type)]
+          [rest (code:line)
+                (code:line #:rest type)])]{
+  Contructs the type of functions with optional or rest arguments. The first
+  list of @racket[mandatory-dom]s correspond to mandatory argument types. The list
+  @racket[optional-doms], if provided, specifies the optional argument types.
+
+  @ex[(: append-bar (->* (String) (Positive-Integer) String))
+      (define (append-bar str [how-many 1])
+        (apply string-append str (make-list how-many "bar")))]
+
+  If provided, the @racket[rest] expression specifies the type of
+  elements in the rest argument list.
+
+  @ex[(: +all (->* (Integer) #:rest Integer (Listof Integer)))
+      (define (+all inc . rst)
+        (map (λ: ([x : Integer]) (+ x inc)) rst))
+      (+all 20 1 2 3)]
+
+  Both the mandatory and optional argument lists may contain keywords paired
+  with types.
+
+  @ex[(: kw-f (->* (#:x Integer) (#:y Integer) Integer))
+      (define (kw-f #:x x #:y [y 0]) (+ x y))]
+
+  The syntax for this type constructor matches the syntax of the @->*-element
+  contract combinator, but with types instead of contracts.
+  }
 
 @deftogether[(
 @defidform[Top]
@@ -559,7 +612,7 @@ functions and continuation mark functions.
            (All (a ... a ooo) t)]]{
   is a parameterization of type @racket[t], with
   type variables @racket[v ...].  If @racket[t] is a function type
-      constructed with @racket[->], the outer pair of parentheses
+      constructed with infix @racket[->], the outer pair of parentheses
       around the function type may be omitted.
       @ex[(: list-length : (All (A) (Listof A) -> Natural))
           (define (list-length lst)
