@@ -6,8 +6,7 @@
          racket/place
          racket/match
          racket/system
-         "make-mutants.rkt"
-         "test-place.rkt")
+         "make-mutants.rkt")
 
 (define names '())
 (define verbose? #f)
