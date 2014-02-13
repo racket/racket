@@ -1321,7 +1321,7 @@
 		   (set! screen-bitmap? (= 4 (send self get-selection)))
 		   (set! compat-bitmap? (= 5 (send self get-selection)))
 		   (set! scaled-bitmap? (= 6 (send self get-selection)))
-		   (set! use-record? (<= 7 (send self get-selection) 6))
+		   (set! use-record? (<= 7 (send self get-selection) 8))
 		   (set! serialize-record? (= 8 (send self get-selection)))
 		   (set! use-bad? (< 9 (send self get-selection)))
 		   (send canvas refresh)))

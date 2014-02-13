@@ -325,7 +325,7 @@
            (apply values (if (eq? (car l) 'scale)
                              (cdr l)
                              (cons 1.0 l))))
-         (define bm (make-object bitmap% w h (not color?) alpha? #:backing-scale s))
+         (define bm (make-object bitmap% w h (not color?) alpha? s))
          (define (scale v) (inexact->exact (ceiling (* s v))))
          (send bm set-argb-pixels 0 0 (scale w) (scale h) bstr #:unscaled? #t)
          bm)))
