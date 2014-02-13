@@ -31,14 +31,15 @@
      (err stx "must be used in a definition context")]
     [(: id (~and kw :) . more:omit-parens)
      (add-disappeared-use #'kw)
-     (wrap stx #`(:-helper #,top-level? id more.type))]
+     (wrap stx #`(:-helper #,stx #,top-level? id more.type))]
     [(: id : . more)
-     (wrap stx #`(:-helper #,top-level? id . more))]
-    [(: e ...) (wrap stx #`(:-helper #,top-level? e ...))]))
+     (wrap stx #`(:-helper #,stx #,top-level? id . more))]
+    [(: e ...)
+     (wrap stx #`(:-helper #,stx #,top-level? e ...))]))
 
 (define-syntax (:-helper stx)
   (syntax-parse stx
-    [(_ top-level? i:id ty)
+    [(_ _ top-level? i:id ty)
      (unless (or (syntax-e #'top-level?)
                  (identifier-binding #'i))
        (tc-error/stx #'i
@@ -48,9 +49,9 @@
      (syntax-property (syntax/loc stx (begin (quote-syntax (:-internal i ty))
                                              (#%plain-app values)))
                       'disappeared-use #'i)]
-    [(_ _ i:id x ...)
+    [(_ orig-stx _ i:id x ...)
      (case (syntax-length #'(x ...))
-       [(1)  (err stx "can only annotate identifiers with types" #'i)]
-       [(0)  (err stx "missing type")]
-       [else (err stx "bad syntax (multiple types after identifier)")])]))
+       [(1)  (err #'orig-stx "can only annotate identifiers with types" #'i)]
+       [(0)  (err #'orig-stx "missing type")]
+       [else (err #'orig-stx "bad syntax (multiple types after identifier)")])]))
 
