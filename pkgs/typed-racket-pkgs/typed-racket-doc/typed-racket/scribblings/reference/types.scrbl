@@ -1,6 +1,9 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval racket/sandbox)
+@begin[(require "../utils.rkt"
+                "numeric-tower-pict.rkt"
+                scribble/eval
+                racket/sandbox)
        (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
 
 @(define the-eval (make-base-eval))
@@ -28,7 +31,19 @@ any expression of this type will not evaluate to a value.}
 
 @subsection{Numeric Types}
 
-These types represent the hierarchy of @rtech{numbers} of Racket.
+These types represent the hierarchy of @rtech{numbers} of Racket. The
+diagram below shows the relationships between the types in the hierarchy.
+
+@centered[@numeric-tower-pict]
+
+The regions with a solid border are @emph{layers} of the numeric hierarchy
+corresponding to sets of numbers such as integers or rationals. Layers
+contained within another are subtypes of the layer containing them. For
+example, @racket[Exact-Rational] is a subtype of @racket[Exact-Number].
+
+The @racket[Real] layer is also divided into positive and negative types
+(shown with a dotted line). The @racket[Integer] layer is subdivided into
+several fixed-width integers types, detailed later in this section.
 
 @defnums[(Number Complex)]
 @racket[Number] and @racket[Complex] are synonyms. This is the most general
@@ -136,7 +151,14 @@ sign. However, programs using them may require additional dynamic checks when
 the type-checker cannot guarantee that the sign constraints will be respected.
 
 In addition to being divided by sign, integers are further subdivided into
-range-bounded types.
+range-bounded types. The relationships between most of the range-bounded types
+are shown in this diagram:
+
+@centered[@integer-pict]
+
+Like the previous diagram, types nested inside of another in the
+diagram are subtypes of its containing types.
+
 @defnums[(
 One
 Byte
