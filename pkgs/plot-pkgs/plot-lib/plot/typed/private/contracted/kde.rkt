@@ -4,5 +4,8 @@
 
 (require/typed/provide
  plot/private/contracted/kde
- [kde  ((Listof Real) Real -> (Values mapped-function (Option Real) (Option Real)))]
+ [kde  (case-> ((Listof Real) Real
+                              -> (Values mapped-function (Option Real) (Option Real)))
+               ((Listof Real) Real (U (Listof Real) #f)
+                              -> (Values mapped-function (Option Real) (Option Real))))]
  )

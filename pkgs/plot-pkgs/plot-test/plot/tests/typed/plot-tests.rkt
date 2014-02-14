@@ -35,6 +35,7 @@
             (function (λ: ([x : Real]) x) -1.5 (- (exp 1.5) 1) #:color 0 #:style 'dot)))
 
 (plot (density xs 1))
+(plot (density xs 1 (map (λ: ([x : Flonum]) (sqr x)) xs)))
 
 (plot (lines-interval
        (map (λ: ([x : Real] [y : Real]) (list x y 5.0))

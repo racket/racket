@@ -78,6 +78,7 @@
  
  [density (((Sequenceof Real))
            (Real
+            (Option (Sequenceof Real))
             [#:x-min (Option Real)]
             [#:x-max (Option Real)]
             [#:y-min (Option Real)]
