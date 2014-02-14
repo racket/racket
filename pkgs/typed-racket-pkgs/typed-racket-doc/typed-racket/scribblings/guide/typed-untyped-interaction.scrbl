@@ -47,7 +47,7 @@ typed/racket
 
 (require/typed "distance.rkt"
                [#:struct pt ([x : Real] [y : Real])]
-               [distance (pt pt -> Real)])
+               [distance (-> pt pt Real)])
 
 (distance (pt 3 5) (p 7 0))
 ]
@@ -58,7 +58,7 @@ and allows us to use the structure type as if it were defined with
 @racket[struct:].
 
 The second clause in the example above specifies that a given
-binding @racket[_distance] has the given type @racket[(pt pt -> Real)].
+binding @racket[_distance] has the given type @racket[(-> pt pt Real)].
 
 Note that the @racket[require/typed] form can import bindings
 from any module, including those that are part of the Racket standard
@@ -67,7 +67,7 @@ library. For example,
 @racketmod[
 typed/racket
 
-(require/typed racket/base [add1 (Integer -> Integer)])
+(require/typed racket/base [add1 (-> Integer Integer)])
 ]
 
 is a valid use of the @racket[require/typed] form and imports @racket[add1]
@@ -113,14 +113,14 @@ and a typed module that uses it:
 @interaction[#:eval the-eval
 (module client typed/racket
 
-  (require/typed 'increment [increment (Integer -> Integer)])
+  (require/typed 'increment [increment (-> Integer Integer)])
 
   (increment 5))
 ]
 
 This combined program is not correct. All uses of @racket[_increment]
 in Typed Racket are correct under the assumption that the
-@racket[_increment] function upholds the @racket[(Integer -> Integer)]
+@racket[_increment] function upholds the @racket[(-> Integer Integer)]
 type. Unfortunately, our @racket[_increment] implementation does not
 actually uphold this assumption, because the function actually produces
 strings.

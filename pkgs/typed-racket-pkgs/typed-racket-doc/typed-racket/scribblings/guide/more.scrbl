@@ -50,7 +50,7 @@ in both top-level and internal contexts.
 (define: (id [z : Number]) : Number z)]
 
 Here, @racket[x] has the type @racket[Number], and @racket[id] has the
-type @racket[(Number -> Number)].  In the body of @racket[id],
+type @racket[(-> Number Number)].  In the body of @racket[id],
 @racket[z] has the type @racket[Number].
 
 @subsection{Annotating Local Binding}
@@ -87,14 +87,14 @@ of @racket[Number]s.
 
 @racketblock[(lambda: ([x : String] (unsyntax @tt["."]) [y : Number #,**]) (apply + y))]
 
-This function has the type @racket[(String Number #,** -> Number)].
+This function has the type @racket[(-> String Number #,** Number)].
 Functions defined by cases may also be annotated:
 
 @racketblock[(case-lambda: [() 0]
 			   [([x : Number]) x])]
 
 This function has the type
-@racket[(case-lambda (-> Number) (Number -> Number))].
+@racket[(case-> (-> Number) (-> Number Number))].
 
 @subsection{Annotating Single Variables}
 
@@ -152,7 +152,7 @@ values.
 
 Here @racket[x] has the inferred type @racket[Integer], and @racket[y]
 has the inferred type @racket[(Listof Integer)].  The @racket[loop]
-variable has type @racket[(Integer (Listof Integer) -> Integer)].
+variable has type @racket[(-> Integer (Listof Integer) Integer)].
 
 @subsection[#:tag "when-annotations?"]{When do you need type annotations?}
 
@@ -177,12 +177,12 @@ Here are examples that correspond to each of the cases above:
 
 Example 1:
 @racketblock[
-  (: fn (String -> Symbol))
+  (: fn (-> String Symbol))
   (define (fn str) _...)
 ]
 Example 2:
 @racketblock[
-  (: fn (String -> Symbol))
+  (: fn (-> String Symbol))
   (define fn (lambda (str) _...))
 ]
 Example 3:
@@ -204,9 +204,9 @@ type-check.
 
 Any type can be given a name with @racket[define-type].
 
-@racketblock[(define-type NN (Number -> Number))]
+@racketblock[(define-type NN (-> Number Number))]
 
 Anywhere the name @racket[NN] is used, it is expanded to
-@racket[(Number -> Number)].   Type names may not be recursive.
+@racket[(-> Number Number)].   Type names may not be recursive.
 
 @(close-eval the-eval)

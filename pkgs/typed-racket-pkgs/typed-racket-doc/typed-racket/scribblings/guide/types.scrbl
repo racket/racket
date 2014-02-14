@@ -49,14 +49,14 @@ Finally, any value is itself a type:
 @section{Function Types}
 
 We have already seen some examples of function types.  Function types
-are constructed using @racket[->], with the argument types before the
-arrow and the result type after.  Here are some example function
-types:
+are constructed using @racket[->], where the last type is the result
+type and the others are the argument types.
+Here are some example function types:
 
 @racketblock[
-(Number -> Number)
-(String String -> Boolean)
-(Char -> (values String Natural))
+(-> Number Number)
+(-> String String Boolean)
+(-> Char (values String Natural))
 ]
 
 The first type requires a @racket[Number] as input, and produces a
@@ -121,7 +121,7 @@ a real number.  Therefore, the following code is acceptable to the
 type checker:
 
 @racketblock[
-(: f (Real -> Real))
+(: f (-> Real Real))
 (define (f x) (* x 0.75))
 
 (: x Integer)
@@ -137,8 +137,8 @@ union, so @racket[String] is a subtype of @racket[(U String Number)].
 One function type is a subtype of another if they have the same number
 of arguments, the subtype's arguments are more permissive (is a supertype), and the
 subtype's result type is less permissive (is a subtype).
-For example, @racket[(Any -> String)] is a subtype of @racket[(Number
--> (U String #f))].
+For example, @racket[(-> Any String)] is a subtype of @racket[(-> Number
+(U String #f))].
 
 @;@section{Occurrence Typing}
 
@@ -155,7 +155,7 @@ written like this:
 
 @racketmod[
 typed/racket
-(: sum-list ((Listof Number) -> Number))
+(: sum-list (-> (Listof Number) Number))
 (define (sum-list l)
   (cond [(null? l) 0]
         [else (+ (car l) (sum-list (cdr l)))]))
@@ -178,7 +178,7 @@ typed/racket
 
 (define-type (Opt a) (U None (Some a)))
 
-(: find (Number (Listof Number) -> (Opt Number)))
+(: find (-> Number (Listof Number) (Opt Number)))
 (define (find v l)
   (cond [(null? l) (None)]
         [(= v (car l)) (Some v)]
@@ -220,7 +220,7 @@ write a function that takes the length of a list of numbers:
 
 @racketmod[
 typed/racket
-(: list-number-length ((Listof Number) -> Integer))
+(: list-number-length (-> (Listof Number) Integer))
 (define (list-number-length l)
   (if (null? l)
       0
@@ -230,7 +230,7 @@ and also a function that takes the length of a list of strings:
 
 @racketmod[
 typed/racket
-(: list-string-length ((Listof String) -> Integer))
+(: list-string-length (-> (Listof String) Integer))
 (define (list-string-length l)
   (if (null? l)
       0
@@ -245,7 +245,7 @@ We can abstract over the type of the element as follows:
 
 @racketmod[
 typed/racket
-(: list-length (All (A) ((Listof A) -> Integer)))
+(: list-length (All (A) (-> (Listof A) Integer)))
 (define (list-length l)
   (if (null? l)
       0
@@ -268,7 +268,7 @@ the type variable @racket[_a] to annotate the argument
 @racket[_x]:
 
 @racketblock[
-(: my-id (All (a) (a -> a)))
+(: my-id (All (a) (-> a a)))
 (define my-id (lambda: ([x : a]) x))
 ]
 
@@ -276,10 +276,10 @@ Lexical scope also implies that type variables can be shadowed,
 such as in the following example:
 
 @racketblock[
-(: my-id (All (a) (a -> a)))
+(: my-id (All (a) (-> a a)))
 (define my-id
   (lambda: ([x : a])
-    (: helper (All (a) (a -> a)))
+    (: helper (All (a) (-> a a)))
     (define helper
       (lambda: ([y : a]) y))
     (helper x)))

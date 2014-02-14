@@ -19,7 +19,7 @@ fails.
 To illustrate, consider the following code:
 
 @racketblock+eval[#:eval the-eval
-  (: flexible-length ((U String (Listof Any)) -> Integer))
+  (: flexible-length (-> (U String (Listof Any)) Integer))
   (define (flexible-length str-or-lst)
     (if (string? str-or-lst)
         (string-length str-or-lst)
@@ -66,7 +66,7 @@ For example, consider the REPL's type printout for @racket[string?]:
 
 @interaction[#:eval the-eval string?]
 
-The type @racket[(Any -> Boolean : String)] has three parts. The first
+The type @racket[(-> Any Boolean : String)] has three parts. The first
 two are the same as any other function type and indicate that the
 predicate takes any value and returns a boolean. The third part, after
 the @racket[_:], is a @tech{filter} that tells the typechecker two
@@ -94,7 +94,7 @@ For example, the @racket[_flexible-length] function from earlier can
 be re-written to use @racket[cond] with no additional effort:
 
 @racketblock+eval[#:eval the-eval
-  (: flexible-length/cond ((U String (Listof Any)) -> Integer))
+  (: flexible-length/cond (-> (U String (Listof Any)) Integer))
   (define (flexible-length/cond str-or-lst)
     (cond [(string? str-or-lst) (string-length str-or-lst)]
           [else (length str-or-lst)]))

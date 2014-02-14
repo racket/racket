@@ -71,8 +71,8 @@ converted to a contract:
 
 @interaction[#:eval the-eval
   (require/typed racket/base
-    [object-name (case-> (Struct-Type-Property -> Symbol)
-                         (Regexp -> (U String Bytes)))])
+    [object-name (case-> (-> Struct-Type-Property Symbol)
+                         (-> Regexp (U String Bytes)))])
 ]
 
 This function type by cases is a valid type, but a corresponding
@@ -85,8 +85,8 @@ of type precision at use sites:
 
 @interaction[#:eval the-eval
   (require/typed racket/base
-    [object-name ((U Struct-Type-Property Regexp)
-                  -> (U String Bytes Symbol))])
+    [object-name (-> (U Struct-Type-Property Regexp)
+                     (U String Bytes Symbol))])
   (object-name #rx"a regexp")
 ]
 

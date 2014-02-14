@@ -36,18 +36,21 @@ form from @racketmodname[racket]---when porting a program from
 @racketmodname[racket] to @racketmodname[typed/racket], uses of
 @racket[struct] should be changed to @racket[struct:].
 
-@racketblock[(: distance (pt pt -> Real))]
+@racketblock[(: distance (-> pt pt Real))]
 
-This declares that @racket[distance] has the type @racket[(pt pt -> Real)].
+This declares that @racket[distance] has the type @racket[(-> pt pt Real)].
 @;{@racket[distance] must be defined at the top-level of the module containing
 the declaration.}
 
-The type @racket[(pt pt -> Real)] is a function type, that is, the type
+The type @racket[(-> pt pt Real)] is a function type, that is, the type
 of a procedure.  The input type, or domain, is two arguments of
 type @racket[pt], which refers to an instance of the @racket[pt]
-structure.  The @racket[->] both indicates that this is a function
-type and separates the domain from the range, or output type, in this
-case @racket[Real].
+structure.  The @racket[->] indicates that this is a function
+type. The range type, or output type, is the last element in the
+function type, in this case @racket[Real].
+
+If you are familiar with @rtech{contracts}, the notation for function
+types is similar to function contract combinators.
 
 @racketblock[
 (define (distance p1 p2)
@@ -75,13 +78,13 @@ typed/racket
 (struct: leaf ([val : Number]))
 (struct: node ([left : Tree] [right : Tree]))
 
-(: tree-height (Tree -> Integer))
+(: tree-height (-> Tree Integer))
 (define (tree-height t)
   (cond [(leaf? t) 1]
         [else (max (+ 1 (tree-height (node-left t)))
                    (+ 1 (tree-height (node-right t))))]))
 
-(: tree-sum (Tree -> Number))
+(: tree-sum (-> Tree Number))
 (define (tree-sum t)
   (cond [(leaf? t) (leaf-val t)]
         [else (+ (tree-sum (node-left t))

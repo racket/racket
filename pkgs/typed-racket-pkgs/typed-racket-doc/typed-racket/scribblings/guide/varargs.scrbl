@@ -31,7 +31,7 @@ We can define such functions in Typed Racket as well:
 
 @racketmod[
 typed/racket
-(: sum (Number * -> Number))
+(: sum (-> Number * Number))
 (define (sum . xs)
   (if (null? xs)
       0
@@ -83,9 +83,8 @@ In Typed Racket, we can define @racket[fold-left] as follows:
 typed/racket
 (: fold-left
    (All (C A B ...)
-        ((C A B ... B -> C) C (Listof A) (Listof B) ... B
-         ->
-         C)))
+        (-> (-> C A B ... B C) C (Listof A) (Listof B) ... B
+            C)))
 (define (fold-left f i as . bss)
   (if (or (null? as)
           (ormap null? bss))
@@ -110,7 +109,6 @@ replaced with the corresponding type from the sequence.
 So the type of @racket[(inst fold-left Integer Boolean String Number)]
 is
 
-@racket[((Integer Boolean String Number -> Integer)
-         Integer (Listof Boolean) (Listof String) (Listof Number)
-         ->
-         Integer)].
+@racket[(-> (-> Integer Boolean String Number Integer)
+            Integer (Listof Boolean) (Listof String) (Listof Number)
+            Integer)].
