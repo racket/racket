@@ -8,6 +8,13 @@
         @author+email["Asumu Takikawa" "asumu@racket-lang.org"]
         ]
 
+This manual describes the Typed Racket language, a sister language
+of Racket with a static type-checker. The types, special forms, and
+other tools provided by Typed Racket are documented here.
+
+For a friendly introduction, see the companion manual
+@other-doc['(lib "typed-racket/scribblings/ts-guide.scrbl")].
+
 @(defmodulelang* (typed/racket/base typed/racket)
                  #:use-sources
                     (typed-racket/typed-racket
