@@ -71,6 +71,36 @@ each of these types.
 (lambda: ([c : Char]) (values (string c) (char->integer c)))]
 
 
+@section{Types for Functions with Optional or Keyword Arguments}
+
+Racket functions often take optional or keyword arguments in addition
+to standard mandatory arguments. Types for these functions can written
+concisely using the @racket[->*] type constructor. Here are some
+examples:
+
+@racketblock[
+(->* () (Number) Number)
+(->* (String String) Boolean)
+(->* (#:x Number) (#:y Number) (values Number Number))
+]
+
+The first type describes a function that has no mandatory arguments,
+one optional argument with type @racket[Number], and returns a
+@racket[Number].
+
+The second requires two mandatory arguments, no optional arguments,
+and produces a @racket[Boolean]. This function type could have been
+written using @racket[->] as @racket[(-> String String Boolean)].
+
+The third requires a mandatory keyword argument with the keyword
+@racket[#:x] and accepts an optional argument with keyword @racket[#:y].
+The result is two values of type @racket[Number].
+
+@;; FIXME: examples for these are not great right now because
+@;; the lambda: does not allow optional arguments and lambda does
+@;; not allow type annotations. This will be fixed in the future,
+@;; so update the Guide then.
+
 @section{Union Types}
 
 Sometimes a value can be one of several types.  To specify this, we
