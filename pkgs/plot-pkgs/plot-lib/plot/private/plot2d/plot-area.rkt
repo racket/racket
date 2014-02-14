@@ -31,6 +31,8 @@
     (define half-char-height (* 1/2 char-height))
     
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
+    (define x-size (- x-max x-min))
+    (define y-size (- y-max y-min))
     (define x-mid (* 1/2 (+ x-min x-max)))
     (define y-mid (* 1/2 (+ y-min y-max)))
     
@@ -74,7 +76,8 @@
     
     ;; There are three coordinate systems:
     ;;  1. Plot coordinates (original, user-facing coordinate system)
-    ;;  2. View coordinates (from plot coordinates: transform for each axis)
+    ;;  2. View coordinates (from plot coordinates: transform for each axis, then translate and scale
+    ;;     to the interval [0,1])
     ;;  3. Device context coordinates (from view coordinates: scale to plot area)
     
     (match-define (invertible-function fx gx) (apply-axis-transform (plot-x-transform) x-min x-max))
@@ -90,27 +93,39 @@
       (set! x-max (exact->inexact x-max))
       (set! y-min (exact->inexact y-min))
       (set! y-max (exact->inexact y-max))
+      (set! x-size (exact->inexact x-size))
+      (set! y-size (exact->inexact y-size))
       (set! x-mid (exact->inexact x-mid))
       (set! y-mid (exact->inexact y-mid)))
     
     (define plot->view
       (if flonum-ok?
+          (let-map
+           (x-min y-min x-size y-size) exact->inexact
+           (if identity-transforms?
+               (match-lambda
+                 [(vector x y)
+                  (vector (fl/ (fl- (exact->inexact x) x-min) x-size)
+                          (fl/ (fl- (exact->inexact y) y-min) y-size))])
+               (match-lambda
+                 [(vector (? rational? x) (? rational? y))
+                  (vector (fl/ (fl- (exact->inexact (fx x)) x-min) x-size)
+                          (fl/ (fl- (exact->inexact (fy y)) y-min) y-size))]
+                 [(vector x y)
+                  (vector +nan.0 +nan.0)])))
           (if identity-transforms?
               (match-lambda
-                [(vector x y)  (vector (exact->inexact x) (exact->inexact y))])
+                [(vector (? rational? x) (? rational? y))
+                 (vector (exact->inexact (/ (- (inexact->exact x) x-min) x-size))
+                         (exact->inexact (/ (- (inexact->exact y) y-min) y-size)))]
+                [(vector x y)
+                 (vector +nan.0 +nan.0)])
               (match-lambda
                 [(vector (? rational? x) (? rational? y))
-                 (vector (exact->inexact (fx x)) (exact->inexact (fy y)))]
-                [(vector x y)  (vector +nan.0 +nan.0)]))
-          (if identity-transforms?
-              (match-lambda
-                [(vector (? rational? x) (? rational? y))
-                 (vector (inexact->exact x) (inexact->exact y))]
-                [(vector x y)  (vector +nan.0 +nan.0)])
-              (match-lambda
-                [(vector (? rational? x) (? rational? y))
-                 (vector (inexact->exact (fx x)) (inexact->exact (fy y)))]
-                [(vector x y)  (vector +nan.0 +nan.0)]))))
+                 (vector (exact->inexact (/ (- (inexact->exact (fx x)) x-min) x-size))
+                         (exact->inexact (/ (- (inexact->exact (fy y)) y-min) y-size)))]
+                [(vector x y)
+                 (vector +nan.0 +nan.0)]))))
     
     (define view->dc #f)
     (define (plot->dc v) (view->dc (plot->view v)))
@@ -128,17 +143,12 @@
       (define area-y-max (- dc-y-size bottom))
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
       (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
-      (if flonum-ok?
-          (let-map
-           (area-x-min area-per-view-x x-min area-y-max y-min area-per-view-y) exact->inexact
-           (λ (v)
-             (match-define (vector x y) v)
-             (vector (fl+ area-x-min (fl* (fl- x x-min) area-per-view-x))
-                     (fl- area-y-max (fl* (fl- y y-min) area-per-view-y)))))
-          (λ (v)
-            (match-define (vector x y) v)
-            (vector (+ area-x-min (* (- x x-min) area-per-view-x))
-                    (- area-y-max (* (- y y-min) area-per-view-y))))))
+      (let-map
+       (area-x-min area-y-max area-per-view-x area-per-view-y) exact->inexact
+       (λ (v)
+         (match-define (vector x y) v)
+         (vector (fl+ area-x-min (fl* x area-per-view-x))
+                 (fl- area-y-max (fl* y area-per-view-y))))))
     
     (define init-top-margin
       (cond [(and (plot-decorations?) (plot-title))  (* 3/2 char-height)]
@@ -307,20 +317,20 @@
     
     (define (get-x-label-params)
       (define offset (vector 0 (+ max-x-tick-offset max-x-tick-label-height half-char-height)))
-      (list (plot-x-label) (v+ (view->dc (vector x-mid y-min)) offset) 'top))
+      (list (plot-x-label) (v+ (view->dc (vector 0.5 0.0)) offset) 'top))
     
     (define (get-y-label-params)
       (define offset (vector (+ max-y-tick-offset max-y-tick-label-width half-char-height) 0))
-      (list (plot-y-label) (v- (view->dc (vector x-min y-mid)) offset) 'bottom (/ pi 2)))
+      (list (plot-y-label) (v- (view->dc (vector 0.0 0.5)) offset) 'bottom (/ pi 2)))
     
     (define (get-x-far-label-params)
       (define offset (vector 0 (+ max-x-far-tick-offset max-x-far-tick-label-height
                                   half-char-height)))
-      (list (plot-x-far-label) (v- (view->dc (vector x-mid y-max)) offset) 'bottom))
+      (list (plot-x-far-label) (v- (view->dc (vector 0.5 1.0)) offset) 'bottom))
     
     (define (get-y-far-label-params)
       (define offset (vector (+ max-y-far-tick-offset max-y-far-tick-label-width half-char-height) 0))
-      (list (plot-y-far-label) (v+ (view->dc (vector x-max y-mid)) offset) 'top (/ pi 2)))
+      (list (plot-y-far-label) (v+ (view->dc (vector 1.0 0.5)) offset) 'top (/ pi 2)))
     
     ;; -----------------------------------------------------------------------------------------------
     ;; All parameters
@@ -347,12 +357,16 @@
     ;; Fixpoint margin computation
     
     (define (get-param-vs/set-view->dc! left right top bottom)
-      ;(printf "margins = ~v ~v ~v ~v~n" left right top bottom)
+      ;(printf "margins: ~v ~v ~v ~v~n~n" left right top bottom)
       (set! view->dc (make-view->dc left right top bottom))
-      (append (append* (map (λ (params) (send/apply pd get-text-corners params))
-                            (get-all-label-params)))
-              (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
-                            (get-all-tick-params)))))
+      ;(printf "params: ~v~n~n" (get-x-label-params))
+      (define res
+        (append (append* (map (λ (params) (send/apply pd get-text-corners params))
+                              (get-all-label-params)))
+                (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
+                              (get-all-tick-params)))))
+      ;(printf "res = ~v~n~n" res)
+      res)
     
     (define-values (left right top bottom)
       (margin-fixpoint 0 dc-x-size init-top-margin dc-y-size 0 0 init-top-margin 0
@@ -367,17 +381,26 @@
       (vector (ivl area-x-min area-x-max) (ivl area-y-min area-y-max)))
     
     (define view->plot
-      (cond [identity-transforms?  (λ (v) v)]
-            [else  (λ (v) (match-let ([(vector x y)  v])
-                            (vector (gx x) (gy y))))]))
+      (let-map
+       (x-min y-min x-size y-size) inexact->exact
+       (cond [identity-transforms?
+              (match-lambda
+                [(vector x y)
+                 (vector (+ (* (inexact->exact x) x-size) x-min)
+                         (+ (* (inexact->exact y) y-size) y-min))])]
+             [else
+              (match-lambda
+                [(vector x y)
+                 (vector (gx (+ (* (inexact->exact x) x-size) x-min))
+                         (gy (+ (* (inexact->exact y) y-size) y-min)))])])))
     
     (define dc->view
       (let ([area-per-view-x  (/ (- area-x-max area-x-min) view-x-size)]
             [area-per-view-y  (/ (- area-y-max area-y-min) view-y-size)])
-        (λ (v)
-          (match-define (vector x y) v)
-          (vector (+ x-min (/ (- x area-x-min) area-per-view-x))
-                  (+ y-min (/ (- area-y-max y) area-per-view-y))))))
+        (match-lambda
+          [(vector x y)
+           (vector (/ (- x area-x-min) area-per-view-x)
+                   (/ (- area-y-max y) area-per-view-y))])))
     
     (define/public (dc->plot v)
       (view->plot (dc->view v)))
