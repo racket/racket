@@ -10,6 +10,7 @@
                "typed-racket-lib"
                "typed-racket-more"
                "compatibility-lib"
+               "math-lib"
                "unstable-contract-lib"
                "unstable-flonum-lib"
                "unstable-latent-contract-lib"

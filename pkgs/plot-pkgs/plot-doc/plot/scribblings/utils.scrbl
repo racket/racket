@@ -130,7 +130,7 @@ Renderer-producing functions that accept a @(racket (real? . -> . real?)) also a
 }
 
 @doc-apply[kde]{
-Given samples and a kernel bandwidth, returns a @(racket mapped-function) representing a kernel density estimate, and bounds, outside of which the density estimate is zero.
+Given optionally weighted samples and a kernel bandwidth, returns a @(racket mapped-function) representing a kernel density estimate, and bounds, outside of which the density estimate is zero.
 Used by @(racket density).
 }
 

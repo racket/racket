@@ -138,7 +138,7 @@ For example, drawing a full circle:
 }
 
 @doc-apply[density]{
-Returns a renderer that plots an estimated density for the given points.
+Returns a renderer that plots an estimated density for the given points, which are optionally weighted by @racket[ws].
 The bandwidth for the kernel is calculated as @(racket (* bw-adjust 1.06 sd (expt n -0.2))), where @(racket sd) is the standard deviation of the data and @(racket n) is the number of points.
 Currently, the only supported kernel is the Gaussian.
 
