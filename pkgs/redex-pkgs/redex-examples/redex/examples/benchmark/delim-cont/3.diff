@@ -2,7 +2,12 @@
 < (define the-error "no-error")
 ---
 > (define the-error "the function argument to call/comp has the wrong type")
-470c470
+325a326
+> 
+463c464
 <   [(tc Γ Σ e_1 (→ (→ t_3 t_2) t_3))
 ---
 >   [(tc Γ Σ e_1 (→ t_2 t_3))
+936a938,939
+> 
+> 

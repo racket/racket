@@ -5,9 +5,11 @@
 > 
 > ;; note: this bug was found and fixed during the development of this model
 > ;; with commit: 4b848777d12a2e5b59b43c8e77f9f68b747d1151
-224c227
+223c226
 <         (monitor (list/c ctc) (ccm mk t) k l j)
 ---
 >         (monitor ctc (ccm mk t) k l j) 
-1554d1556
-< 
+325a329
+> 
+936a941
+> 

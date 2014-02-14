@@ -4,6 +4,7 @@
          racket/cmdline
          racket/list
          racket/set
+         racket/match
          math/statistics)
 
 (define minutes 1)
@@ -25,8 +26,14 @@
    #:multi
    [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref"
                     (set! types (cons (string->symbol t) types))]
-   #:args (filename)
-   filename))
+   #:args filenames
+   (match filenames
+     [`()
+      (exit)]
+     [(list name)
+      name]
+     [else
+      (error "Expected a single file as an argument")])))
 
 (when (empty? types)
   (set! types all-types))
