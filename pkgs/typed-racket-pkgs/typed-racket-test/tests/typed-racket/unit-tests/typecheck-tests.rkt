@@ -857,7 +857,8 @@
               (-polydots (z x y) (t:-> (cl->*
                                         ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
                                         ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))
-                                       : (-FS (-not-filter (-val #f) #'map) (-filter (-val #f) #'map))))]
+                                       : (-FS (-not-filter (-val #f) #'map) (-filter (-val #f) #'map))
+                                       : (make-Path null #'map)))]
 
         ;; error tests
         [tc-err (+ 3 #f)]
@@ -1778,6 +1779,16 @@
            (void))
          ;; type doesn't really matter, just make sure it typechecks
          -Void]
+
+        ;; Tests the absence of a regression with curried functions
+        ;; (should not trigger an error with free-identifier=?)
+        [tc-e (lambda (x) (lambda (y) y))
+              #:ret
+              (ret (t:-> Univ (t:-> Univ Univ : (-FS (-not-filter (-val #f) (list 0 0))
+                                                     (-filter (-val #f) (list 0 0)))
+                                              : (make-Path null (list 0 0)))
+                              : (-FS -top -bot))
+                   (-FS -top -bot))]
 
        ;; The following ensures that the correct filter can be
        ;; written by the user

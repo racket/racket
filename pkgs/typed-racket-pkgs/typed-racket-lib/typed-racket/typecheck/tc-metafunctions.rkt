@@ -118,11 +118,7 @@
 ;; the given object
 (define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
-  (define (lookup y)
-    (for/first ([x (in-list ids)] [i (in-list keys)] #:when (free-identifier=? x y)) i))
-  (define-match-expander lookup:
-    (syntax-rules ()
-      [(_ i) (app lookup (? values i))]))
+  (define-lookup: lookup: ids keys)
   (match o
     [(Path: p (lookup: idx)) (make-Path p idx)]
     [_ -no-obj]))
@@ -138,15 +134,9 @@
 
 (define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
-  (define/cond-contract (lookup y)
-    (identifier? . -> . (or/c #f (list/c integer? integer?)))
-    (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
-  (define-match-expander lookup:
-    (syntax-rules ()
-      [(_ i) (or (? identifier? (app lookup (? values i)))
-                 i)]))
   (define (rec f) (abo xs idxs f))
   (define (sb-t t) t)
+  (define-lookup: lookup: xs idxs)
   (filter-case (#:Type sb-t #:Filter rec) f
                [#:TypeFilter
                 t p (lookup: idx)
@@ -154,6 +144,27 @@
                [#:NotTypeFilter
                 t p (lookup: idx)
                 (-not-filter t idx p)]))
+
+;; Look up the identifier in a mapping of a list of identifiers
+;; to a list of path indices
+(define/cond-contract (lookup-index target ids keys)
+  (-> identifier? (listof identifier?) (listof (list/c integer? integer?))
+      (or/c #f (list/c integer? integer?)))
+  (for/first ([id (in-list ids)] [index (in-list keys)]
+              #:when (free-identifier=? id target))
+    index))
+
+;; Generates a match expander to make `lookup-index` convenient
+(define-syntax-rule (define-lookup: lookup: ids keys)
+  (define-match-expander lookup:
+    (syntax-rules ()
+      [(_ i)
+       (or ;; No need to look up if it's not an identifier,
+           ;; since that means it was already abstracted
+           ;; into an index.
+           (? identifier? (app (λ (id) (lookup-index id ids keys))
+                               (? values i)))
+           i)])))
 
 (define (merge-filter-sets fs)
   (match fs
