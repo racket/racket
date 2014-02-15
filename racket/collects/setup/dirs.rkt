@@ -239,7 +239,7 @@
 ;; "apps"
 
 (define-finder provide
-  config:share-dir
+  config:apps-dir
   find-apps-dir
   find-user-apps-dir #:default (build-path "share" "applications")
   (chain-to (lambda () (build-path (find-share-dir) "applications"))))
