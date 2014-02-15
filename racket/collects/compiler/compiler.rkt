@@ -114,12 +114,18 @@
                                  [manager-skip-file-handler
                                   (lambda (path)
                                     (and (pair? skip-paths)
-                                         (let ([b (path->bytes (simplify-path path #f))])
+                                         (let* ([simp-path (simplify-path path #f)]
+                                                [b (path->bytes simp-path)])
                                            (for/or ([skip-path (in-list skip-paths)])
                                              (let ([len (bytes-length skip-path)])
                                                (and ((bytes-length b) . > . len)
                                                     (bytes=? (subbytes b 0 len) skip-path)
-                                                    (cons -inf.0 "")))))))])
+                                                    (let-values ([(base name dir?) (split-path simp-path)])
+                                                      (or (and (path? base)
+                                                               ;; Compute the stamp:
+                                                               (file-stamp-in-paths simp-path (list base)))
+                                                          ;; This shouldn't happen, but just in case:
+                                                          (cons -inf.0 "")))))))))])
                     (let* ([sses (append
                                   ;; Find all .rkt/.ss/.scm files:
                                   (filter extract-base-filename/ss (directory-list))
