@@ -79,12 +79,6 @@ both:
 INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
 SETUP_ARGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) -N "raco" -l- setup @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
 
-# Pass compile and link flags to `make install' for use by any
-#  collection-setup actions that compile and link C code:
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
-LDFLAGS = @LDFLAGS@
-WITH_ENV_VARS = env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" 
-
 install:
 	$(MAKE) install-@MAIN_VARIANT@
 
@@ -154,7 +148,7 @@ install-3m-common:
 
 install-3m:
 	$(MAKE) install-3m-common
-	$(WITH_ENV_VARS) @RUN_RACKET_MMM@ $(SETUP_ARGS)
+	@RUN_RACKET_MMM@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-3m:
@@ -177,7 +171,7 @@ install-cgc-common:
 
 install-cgc:
 	$(MAKE) install-cgc-common
-	$(WITH_ENV_VARS) @RUN_RACKET_CGC@ $(SETUP_ARGS)
+	@RUN_RACKET_CGC@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-cgc:
@@ -200,7 +194,7 @@ install-both-common:
 
 install-both:
 	$(MAKE) install-both-common
-	$(WITH_ENV_VARS) @RUN_RACKET_MAIN_VARIANT@ $(SETUP_ARGS)
+	@RUN_RACKET_MAIN_VARIANT@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-both:

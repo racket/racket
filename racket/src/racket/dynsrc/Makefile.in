@@ -19,7 +19,9 @@ MZSRC = $(srcdir)/../src
 
 CC = @CC@
 PLAIN_CC = @PLAIN_CC@
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src @MZOPTIONS@
+CFLAGS = @CFLAGS@ @COMPFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src @MZOPTIONS@
 
 dynlib:
 	$(MAKE) ../mzdyn.o
@@ -40,23 +42,23 @@ HEADERS = $(builddir)/../mzconfig.h \
 MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.exp
 
 ../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
-	$(PLAIN_CC) @DYN_CFLAGS@ $(CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
+	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
 
 ../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
-	$(PLAIN_CC) @DYN_CFLAGS@ $(CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
+	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
 
 ../dynexmpl.so: dynexmpl.o $(MZDYNDEP)
 	$(DYNLINK) ../dynexmpl.so dynexmpl.o
 dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
-	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
+	$(PLAIN_CC) $(ALL_CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
 
 ../starter@NOT_MINGW@: $(srcdir)/ustart.c
-	$(PLAIN_CC) $(CFLAGS) -o ../starter $(srcdir)/ustart.c
+	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter $(srcdir)/ustart.c
 
 ../starter@MINGW@: $(srcdir)/start.c ../mrstarter@EXE_SUFFIX@ sres.o
-	$(PLAIN_CC) $(CFLAGS) -o ../starter $(srcdir)/start.c sres.o
+	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter $(srcdir)/start.c sres.o
 ../mrstarter@EXE_SUFFIX@:  sres.o
-	$(PLAIN_CC) $(CFLAGS) -mwindows -DMRSTART -o ../mrstarter $(srcdir)/start.c sres.o
+	$(PLAIN_CC) $(ALL_CFLAGS) -mwindows -DMRSTART -o ../mrstarter $(srcdir)/start.c sres.o
 
 sres.o:
 	@WINDRES@ -i $(srcdir)/../../worksp/starters/start.rc -o sres.o

@@ -49,8 +49,10 @@ mainsrcdir = @srcdir@/../..
 # compiler options; mainly used to allow importing options
 OPTIONS=@OPTIONS@ @CGCOPTIONS@
 
-BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
-CFLAGS= $(BASEFLAGS) @PROFFLAGS@ $(OPTIONS) -DNO_EXECUTE_PERMISSION -DSILENT -DNO_GETENV -DLARGE_CONFIG -DATOMIC_UNCOLLECTABLE -DINITIAL_MARK_STACK_SIZE=8192
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
+CPPFLAGS = @PREFLAGS@
+BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src $(CFLAGS) $(CPPFLAGS)
+ALL_CFLAGS= $(BASEFLAGS) $(OPTIONS) -DNO_EXECUTE_PERMISSION -DSILENT -DNO_GETENV -DLARGE_CONFIG -DATOMIC_UNCOLLECTABLE -DINITIAL_MARK_STACK_SIZE=8192
 
 # To build the parallel collector on Linux, add to the above:
 # -DGC_LINUX_THREADS -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC
@@ -336,7 +338,7 @@ HOSTCFLAGS=$(BASEFLAGS)
 #   /proc/self/stat.
 #
 
-CXXFLAGS= $(CFLAGS) 
+CXXFLAGS= $(ALL_CFLAGS) 
 NICEAR = $(mainsrcdir)/utils/nicear
 AR= @AR@
 ARFLAGS= @ARFLAGS@
@@ -436,7 +438,7 @@ CURSES= -lcurses -ltermlib
 # the SHELL environment variable.
 SHELL= /bin/sh
 
-SPECIALCFLAGS = -I$(srcdir)/include -I$(AO_INSTALL_DIR)/include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
+SPECIALCFLAGS = -I$(srcdir)/include -I$(AO_INSTALL_DIR)/include $(CFLAGS) $(CPPFLAGS)
 # Alternative flags to the C compiler for mach_dep.c.
 # Mach_dep.c often doesn't like optimization, and it's
 # not time-critical anyway.
@@ -449,12 +451,12 @@ all: gc.a gctest
 libatomic_ops/libatomic_ops.a: 
 	cd libatomic_ops; $(MAKE)
 
-LEAKFLAGS=$(CFLAGS) -DFIND_LEAK
+LEAKFLAGS=$(ALL_CFLAGS) -DFIND_LEAK
 
 BSD-pkg-all: bsd-libgc.a bsd-libleak.a
 
 bsd-libgc.a:
-	$(MAKE) CFLAGS="$(CFLAGS)" clean c++-t
+	$(MAKE) CFLAGS="$(ALL_CFLAGS)" clean c++-t
 	mv gc.a bsd-libgc.a
 
 bsd-libleak.a:
@@ -493,7 +495,7 @@ specific.@LTO@ pthread_support.@LTO@ thread_local_alloc.@LTO@ win32_threads.@LTO
 dbg_mlc.@LTO@ gcj_mlc.@LTO@: $(srcdir)/include/private/dbg_mlc.h
 
 tests/test.@LTO@: tests $(srcdir)/tests/test.c
-	$(CC) $(CFLAGS) -c $(srcdir)/tests/test.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/tests/test.c
 	mv test.@LTO@ tests/test.@LTO@
 
 tests:
@@ -541,7 +543,7 @@ c++: gc_cpp.@LTO@ $(srcdir)/include/gc_cpp.h test_cpp
 
 # PLTSCHEME: need $(srcdir):
 dyn_load_sunos53.@LTO@: $(srcdir)/dyn_load.c
-	$(CC) $(CFLAGS) -DSUNOS53_SHARED_LIB -c $(srcdir)/dyn_load.c -o $@
+	$(CC) $(ALL_CFLAGS) -DSUNOS53_SHARED_LIB -c $(srcdir)/dyn_load.c -o $@
 
 # SunOS5 shared library version of the collector
 sunos5gc.so: $(OBJS) dyn_load_sunos53.@LTO@
@@ -565,7 +567,7 @@ liblinuxgc.so: $(OBJS) dyn_load.@LTO@
 
 # Build gctest with dynamic library
 dyn_test:
-	$(CC) $(CFLAGS) -o gctest tests/test.c libgc.so `./threadlibs`
+	$(CC) $(ALL_CFLAGS) -o gctest tests/test.c libgc.so `./threadlibs`
 	./gctest
 
 # Alternative Linux rule.  This is preferable, but is likely to break the
@@ -575,7 +577,7 @@ dyn_test:
 #.SUFFIXES: .lo $(SUFFIXES)
 #
 #.c.lo:
-#	$(CC) $(CFLAGS) $(CPPFLAGS) -fPIC -c $< -o $@
+#	$(CC) $(ALL_CFLAGS) $(CPPFLAGS) -fPIC -c $< -o $@
 #
 # liblinuxgc.so: $(LIBOBJS) dyn_load.lo
 # 	gcc -shared -Wl,-soname=libgc.so.0 -o libgc.so.0 $(LIBOBJS) dyn_load.lo
@@ -609,8 +611,8 @@ mach_dep1.@LTO@: $(srcdir)/mach_dep1.c $(srcdir)/ia64_save_regs_in_stack.s $(UTI
 
 mark_rts.@LTO@: $(srcdir)/mark_rts.c $(UTILS)
 	rm -f mark_rts.@LTO@
-	-./if_mach ALPHA OSF1 $(CC) -c $(CFLAGS) -Wo,-notail $(srcdir)/mark_rts.c
-	./if_not_there mark_rts.@LTO@ $(CC) -c $(CFLAGS) $(srcdir)/mark_rts.c
+	-./if_mach ALPHA OSF1 $(CC) -c $(ALL_CFLAGS) -Wo,-notail $(srcdir)/mark_rts.c
+	./if_not_there mark_rts.@LTO@ $(CC) -c $(ALL_CFLAGS) $(srcdir)/mark_rts.c
 #	Work-around for DEC optimizer tail recursion elimination bug.
 #  The ALPHA-specific line should be removed if gcc is used.
 
@@ -620,36 +622,36 @@ cord:
 	mkdir cord
 
 cord/cordbscs.@LTO@: cord $(srcdir)/cord/cordbscs.c $(CORD_INCLUDE_FILES)
-	$(CC) $(CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordbscs.c
+	$(CC) $(ALL_CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordbscs.c
 	mv cordbscs.@LTO@ cord/cordbscs.@LTO@
 #  not all compilers understand -o filename
 
 cord/cordxtra.@LTO@: cord $(srcdir)/cord/cordxtra.c $(CORD_INCLUDE_FILES)
-	$(CC) $(CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordxtra.c
+	$(CC) $(ALL_CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordxtra.c
 	mv cordxtra.@LTO@ cord/cordxtra.@LTO@
 
 cord/cordprnt.@LTO@: cord $(srcdir)/cord/cordprnt.c $(CORD_INCLUDE_FILES)
-	$(CC) $(CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordprnt.c
+	$(CC) $(ALL_CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordprnt.c
 	mv cordprnt.@LTO@ cord/cordprnt.@LTO@
 
 cord/cordtest: $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a $(UTILS)
 	rm -f cord/cordtest
-	./if_mach SPARC DRSNX $(CC) $(CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a -lucb
-	./if_mach HP_PA HPUX $(CC) $(CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a -ldld `./threadlibs`
-	./if_mach M68K AMIGA $(CC) $(CFLAGS) -UGC_AMIGA_MAKINGLIB -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a `./threadlibs`
-	./if_not_there cord/cordtest $(CC) $(CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a `./threadlibs`
+	./if_mach SPARC DRSNX $(CC) $(ALL_CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a -lucb
+	./if_mach HP_PA HPUX $(CC) $(ALL_CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a -ldld `./threadlibs`
+	./if_mach M68K AMIGA $(CC) $(ALL_CFLAGS) -UGC_AMIGA_MAKINGLIB -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a `./threadlibs`
+	./if_not_there cord/cordtest $(CC) $(ALL_CFLAGS) -o cord/cordtest $(srcdir)/cord/cordtest.c $(CORD_OBJS) gc.a `./threadlibs`
 
 cord/de: $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(UTILS)
 	rm -f cord/de
-	./if_mach SPARC DRSNX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) -lucb `./threadlibs`
-	./if_mach HP_PA HPUX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) -ldld `./threadlibs`
-	./if_mach POWERPC AIX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses
-	./if_mach POWERPC DARWIN $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a
-	./if_mach I386 LINUX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
-	./if_mach ALPHA LINUX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
-	./if_mach IA64 LINUX $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
-	./if_mach M68K AMIGA $(CC) $(CFLAGS) -UGC_AMIGA_MAKINGLIB -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses
-	./if_not_there cord/de $(CC) $(CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) `./threadlibs`
+	./if_mach SPARC DRSNX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) -lucb `./threadlibs`
+	./if_mach HP_PA HPUX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) -ldld `./threadlibs`
+	./if_mach POWERPC AIX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses
+	./if_mach POWERPC DARWIN $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a
+	./if_mach I386 LINUX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
+	./if_mach ALPHA LINUX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
+	./if_mach IA64 LINUX $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses `./threadlibs`
+	./if_mach M68K AMIGA $(CC) $(ALL_CFLAGS) -UGC_AMIGA_MAKINGLIB -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a -lcurses
+	./if_not_there cord/de $(CC) $(ALL_CFLAGS) -o cord/de $(srcdir)/cord/de.c cord/cordbscs.@LTO@ cord/cordxtra.@LTO@ gc.a $(CURSES) `./threadlibs`
 
 if_mach: $(srcdir)/if_mach.c $(srcdir)/include/private/gcconfig.h
 	$(HOSTCC) $(HOSTCFLAGS) -o if_mach $(srcdir)/if_mach.c
@@ -668,16 +670,16 @@ clean:
 
 gctest: tests/test.@LTO@ gc.a $(UTILS)
 	rm -f gctest
-	./if_mach SPARC DRSNX $(CC) $(CFLAGS) -o gctest  tests/test.@LTO@ gc.a -lucb
-	./if_mach HP_PA HPUX $(CC) $(CFLAGS) -o gctest  tests/test.@LTO@ gc.a -ldld `./threadlibs`
-	./if_mach M68K AMIGA $(CC) $(CFLAGS) -UGC_AMIGA_MAKINGLIB -o gctest  tests/test.@LTO@ gc.a `./threadlibs`
-	./if_not_there gctest $(CC) $(CFLAGS) -o gctest tests/test.@LTO@ gc.a `./threadlibs`
+	./if_mach SPARC DRSNX $(CC) $(ALL_CFLAGS) -o gctest  tests/test.@LTO@ gc.a -lucb
+	./if_mach HP_PA HPUX $(CC) $(ALL_CFLAGS) -o gctest  tests/test.@LTO@ gc.a -ldld `./threadlibs`
+	./if_mach M68K AMIGA $(CC) $(ALL_CFLAGS) -UGC_AMIGA_MAKINGLIB -o gctest  tests/test.@LTO@ gc.a `./threadlibs`
+	./if_not_there gctest $(CC) $(ALL_CFLAGS) -o gctest tests/test.@LTO@ gc.a `./threadlibs`
 
 # If an optimized setjmp_test generates a segmentation fault,
 # odds are your compiler is broken.  Gctest may still work.
 # Try compiling setjmp_t.c unoptimized.
 setjmp_test: $(srcdir)/setjmp_t.c $(srcdir)/include/gc.h $(UTILS) $(AO_INSTALL_DIR)
-	$(CC) $(CFLAGS) -o setjmp_test $(srcdir)/setjmp_t.c
+	$(CC) $(ALL_CFLAGS) -o setjmp_test $(srcdir)/setjmp_t.c
 
 test:  KandRtest cord/cordtest
 	cord/cordtest
@@ -736,7 +738,7 @@ gctest_irix_dyn_link: tests/test.@LTO@ libirixgc.so
 # The following appear to be dead, especially since libgc_globals.h
 # is apparently lost.
 test_dll.@LTO@: tests/test.c libgc_globals.h
-	$(CC) $(CFLAGS) -DGC_USE_DLL -c tests/test.c -o test_dll.@LTO@
+	$(CC) $(ALL_CFLAGS) -DGC_USE_DLL -c tests/test.c -o test_dll.@LTO@
 
 test_dll: test_dll.@LTO@ libgc_dll.a libgc.dll
 	$(CC) test_dll.@LTO@ -L$(ABSDIR) -lgc_dll -o test_dll
@@ -760,94 +762,94 @@ user_namespace: $(SRCS)
 
 # PLTSCHEME: explicit targets to get $(srcdir) in place for non-gmake
 alloc.@LTO@: $(srcdir)/alloc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/alloc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/alloc.c
 
 reclaim.@LTO@: $(srcdir)/reclaim.c
-	$(CC) $(CFLAGS) -c $(srcdir)/reclaim.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/reclaim.c
 
 allchblk.@LTO@: $(srcdir)/allchblk.c
-	$(CC) $(CFLAGS) -c $(srcdir)/allchblk.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/allchblk.c
 
 misc.@LTO@: $(srcdir)/misc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/misc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/misc.c
 
 os_dep.@LTO@: $(srcdir)/os_dep.c
-	$(CC) $(CFLAGS) -c $(srcdir)/os_dep.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/os_dep.c
 
 headers.@LTO@: $(srcdir)/headers.c
-	$(CC) $(CFLAGS) -c $(srcdir)/headers.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/headers.c
 
 mark.@LTO@: $(srcdir)/mark.c
-	$(CC) $(CFLAGS) -c $(srcdir)/mark.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/mark.c
 
 obj_map.@LTO@: $(srcdir)/obj_map.c
-	$(CC) $(CFLAGS) -c $(srcdir)/obj_map.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/obj_map.c
 
 blacklst.@LTO@: $(srcdir)/blacklst.c
-	$(CC) $(CFLAGS) -c $(srcdir)/blacklst.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/blacklst.c
 
 finalize.@LTO@: $(srcdir)/finalize.c
-	$(CC) $(CFLAGS) -c $(srcdir)/finalize.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/finalize.c
 
 new_hblk.@LTO@: $(srcdir)/new_hblk.c
-	$(CC) $(CFLAGS) -c $(srcdir)/new_hblk.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/new_hblk.c
 
 dbg_mlc.@LTO@: $(srcdir)/dbg_mlc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/dbg_mlc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/dbg_mlc.c
 
 malloc.@LTO@: $(srcdir)/malloc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/malloc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/malloc.c
 
 stubborn.@LTO@: $(srcdir)/stubborn.c
-	$(CC) $(CFLAGS) -c $(srcdir)/stubborn.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/stubborn.c
 
 checksums.@LTO@: $(srcdir)/checksums.c
-	$(CC) $(CFLAGS) -c $(srcdir)/checksums.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/checksums.c
 
 solaris_threads.@LTO@: $(srcdir)/solaris_threads.c
-	$(CC) $(CFLAGS) -c $(srcdir)/solaris_threads.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/solaris_threads.c
 
 win32_threads.@LTO@: $(srcdir)/win32_threads.c
-	$(CC) $(CFLAGS) -c $(srcdir)/win32_threads.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/win32_threads.c
 
 pthread_support.@LTO@: $(srcdir)/pthread_support.c
-	$(CC) $(CFLAGS) -c $(srcdir)/pthread_support.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/pthread_support.c
 
 pthread_stop_world.@LTO@: $(srcdir)/pthread_stop_world.c
-	$(CC) $(CFLAGS) -c $(srcdir)/pthread_stop_world.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/pthread_stop_world.c
 
 darwin_stop_world.@LTO@: $(srcdir)/darwin_stop_world.c
-	$(CC) $(CFLAGS) -c $(srcdir)/darwin_stop_world.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/darwin_stop_world.c
 
 openbsd_stop_world.@LTO@: $(srcdir)/openbsd_stop_world.c
-	$(CC) $(CFLAGS) -c $(srcdir)/openbsd_stop_world.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/openbsd_stop_world.c
 
 backgraph.@LTO@: $(srcdir)/backgraph.c
-	$(CC) $(CFLAGS) -c $(srcdir)/backgraph.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/backgraph.c
 
 typd_mlc.@LTO@: $(srcdir)/typd_mlc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/typd_mlc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/typd_mlc.c
 
 ptr_chck.@LTO@: $(srcdir)/ptr_chck.c
-	$(CC) $(CFLAGS) -c $(srcdir)/ptr_chck.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/ptr_chck.c
 
 mallocx.@LTO@: $(srcdir)/mallocx.c
-	$(CC) $(CFLAGS) -c $(srcdir)/mallocx.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/mallocx.c
 
 solaris_pthreads.@LTO@: $(srcdir)/solaris_pthreads.c
-	$(CC) $(CFLAGS) -c $(srcdir)/solaris_pthreads.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/solaris_pthreads.c
 
 gcj_mlc.@LTO@: $(srcdir)/gcj_mlc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/gcj_mlc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/gcj_mlc.c
 
 specific.@LTO@: $(srcdir)/specific.c
-	$(CC) $(CFLAGS) -c $(srcdir)/specific.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/specific.c
 
 gc_dlopen.@LTO@: $(srcdir)/gc_dlopen.c
-	$(CC) $(CFLAGS) -c $(srcdir)/gc_dlopen.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/gc_dlopen.c
 
 dyn_load.@LTO@: $(srcdir)/dyn_load.c
-	$(CC) $(CFLAGS) -c $(srcdir)/dyn_load.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/dyn_load.c
 
 thread_local_alloc.@LTO@: $(srcdir)/thread_local_alloc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/thread_local_alloc.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/thread_local_alloc.c

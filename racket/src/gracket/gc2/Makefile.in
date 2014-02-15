@@ -36,7 +36,9 @@ WXVARIANT =  @WXVARIANT@
 
 NOGCINC = -I$(PLTBUILDDIR)/racket/ -I$(PLTSRCDIR)/racket/include/
 INC = -I$(PLTSRCDIR)/racket/$(GCDIRECTORY) $(NOGCINC)
-CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
+CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ $(CFLAGS) $(CPPFLAGS)
 LDFLAGS = @LDFLAGS@
 ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 ###########################
@@ -72,14 +74,14 @@ xsrc/grmain.c: $(srcdir)/../grmain.c $(XFORMDEP)
 	$(XFORMWP) xsrc/grmain.c $(DEF_C_DIRS) $(srcdir)/../grmain.c
 
 GCPREINC = -include $(srcdir)/../../racket/gc2/gc2.h
-POSTFLAGS = $(OPTIONS) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
+POSTFLAGS = $(OPTIONS)
 
 wx_xt_EXTRAFLAGS =
 wx_mac_EXTRAFLAGS =
 EXTRAFLAGS = $(@WXVARIANT@_EXTRAFLAGS)
 
 grmain.@LTO@: xsrc/grmain.c
-	$(CC) $(CFLAGS) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(POSTFLAGS) -o grmain.@LTO@ xsrc/grmain.c
+	$(CC) $(ALL_CFLAGS) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(POSTFLAGS) -o grmain.@LTO@ xsrc/grmain.c
 
 XSRCS = xsrc/grmain.c
 

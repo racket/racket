@@ -23,9 +23,10 @@ AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
-MOST_CPPFLAGS = @PREFLAGS@ @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
-CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(MOST_CPPFLAGS)
-CFLAGS = -I$(builddir)/.. -I$(srcdir)/../include @CFLAGS@ $(MOST_CPPFLAGS) @COMPFLAGS@ @PROFFLAGS@
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+ALL_CFLAGS = $(CFLAGS) $(ALL_CPPFLAGS)
 LIBS = @LIBS@
 
 LIBFFI_INCLUDE_ON = -I../../foreign/libffi/include
@@ -42,7 +43,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 RUN_THIS_RACKET_CGC = ../racket@CGC@
 
 XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/xform.rkt --setup .
-XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
+XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
@@ -289,7 +290,7 @@ $(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/sfs.c: ../src/sfs.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
 $(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
-	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
+	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
 $(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
@@ -305,122 +306,122 @@ $(XSRCDIR)/validate.c: ../src/validate.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
 $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
-	$(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
+	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
 $(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
 bignum.@LTO@: $(XSRCDIR)/bignum.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/bignum.c -o bignum.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/bignum.c -o bignum.@LTO@
 bool.@LTO@: $(XSRCDIR)/bool.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/bool.c -o bool.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/bool.c -o bool.@LTO@
 builtin.@LTO@: $(XSRCDIR)/builtin.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
 char.@LTO@: $(XSRCDIR)/char.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
 compenv.@LTO@: $(XSRCDIR)/compenv.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/compenv.c -o compenv.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/compenv.c -o compenv.@LTO@
 compile.@LTO@: $(XSRCDIR)/compile.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/compile.c -o compile.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/compile.c -o compile.@LTO@
 complex.@LTO@: $(XSRCDIR)/complex.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/complex.c -o complex.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/complex.c -o complex.@LTO@
 dynext.@LTO@: $(XSRCDIR)/dynext.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/dynext.c -o dynext.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/dynext.c -o dynext.@LTO@
 env.@LTO@: $(XSRCDIR)/env.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/env.c -o env.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/env.c -o env.@LTO@
 error.@LTO@: $(XSRCDIR)/error.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/error.c -o error.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/error.c -o error.@LTO@
 eval.@LTO@: $(XSRCDIR)/eval.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/eval.c -o eval.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/eval.c -o eval.@LTO@
 file.@LTO@: $(XSRCDIR)/file.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/file.c -o file.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/file.c -o file.@LTO@
 fun.@LTO@: $(XSRCDIR)/fun.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
 future.@LTO@: $(XSRCDIR)/future.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/future.c -o future.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/future.c -o future.@LTO@
 hash.@LTO@: $(XSRCDIR)/hash.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
 jitalloc.@LTO@: $(XSRCDIR)/jitalloc.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitalloc.c -o jitalloc.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitalloc.c -o jitalloc.@LTO@
 jitarith.@LTO@: $(XSRCDIR)/jitarith.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitarith.c -o jitarith.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitarith.c -o jitarith.@LTO@
 jitcall.@LTO@: $(XSRCDIR)/jitcall.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitcall.c -o jitcall.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitcall.c -o jitcall.@LTO@
 jitcommon.@LTO@: $(XSRCDIR)/jitcommon.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitcommon.c -o jitcommon.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitcommon.c -o jitcommon.@LTO@
 jitinline.@LTO@: $(XSRCDIR)/jitinline.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitinline.c -o jitinline.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitinline.c -o jitinline.@LTO@
 jitprep.@LTO@: $(XSRCDIR)/jitprep.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitprep.c -o jitprep.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitprep.c -o jitprep.@LTO@
 jitstack.@LTO@: $(XSRCDIR)/jitstack.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstack.c -o jitstack.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitstack.c -o jitstack.@LTO@
 jitstate.@LTO@: $(XSRCDIR)/jitstate.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 marshal.@LTO@: $(XSRCDIR)/marshal.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/marshal.c -o marshal.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/marshal.c -o marshal.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
 mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
-	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
+	$(CC) $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
 numarith.@LTO@: $(XSRCDIR)/numarith.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/numarith.c -o numarith.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/numarith.c -o numarith.@LTO@
 number.@LTO@: $(XSRCDIR)/number.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/number.c -o number.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/number.c -o number.@LTO@
 numcomp.@LTO@: $(XSRCDIR)/numcomp.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
 numstr.@LTO@: $(XSRCDIR)/numstr.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
 optimize.@LTO@: $(XSRCDIR)/optimize.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/optimize.c -o optimize.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/optimize.c -o optimize.@LTO@
 place.@LTO@: $(XSRCDIR)/place.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/place.c -o place.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/place.c -o place.@LTO@
 port.@LTO@: $(XSRCDIR)/port.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
 portfun.@LTO@: $(XSRCDIR)/portfun.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/portfun.c -o portfun.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/portfun.c -o portfun.@LTO@
 print.@LTO@: $(XSRCDIR)/print.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/print.c -o print.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/print.c -o print.@LTO@
 rational.@LTO@: $(XSRCDIR)/rational.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/rational.c -o rational.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/rational.c -o rational.@LTO@
 read.@LTO@: $(XSRCDIR)/read.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/read.c -o read.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/read.c -o read.@LTO@
 regexp.@LTO@: $(XSRCDIR)/regexp.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/regexp.c -o regexp.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/regexp.c -o regexp.@LTO@
 resolve.@LTO@: $(XSRCDIR)/resolve.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/resolve.c -o resolve.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/resolve.c -o resolve.@LTO@
 sema.@LTO@: $(XSRCDIR)/sema.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/sema.c -o sema.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/sema.c -o sema.@LTO@
 setjmpup.@LTO@: $(XSRCDIR)/setjmpup.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
 sfs.@LTO@: $(XSRCDIR)/sfs.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/sfs.c -o sfs.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/sfs.c -o sfs.@LTO@
 string.@LTO@: $(XSRCDIR)/string.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
 struct.@LTO@: $(XSRCDIR)/struct.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/struct.c -o struct.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/struct.c -o struct.@LTO@
 symbol.@LTO@: $(XSRCDIR)/symbol.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/symbol.c -o symbol.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/symbol.c -o symbol.@LTO@
 syntax.@LTO@: $(XSRCDIR)/syntax.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/syntax.c -o syntax.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/syntax.c -o syntax.@LTO@
 thread.@LTO@: $(XSRCDIR)/thread.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/thread.c -o thread.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/thread.c -o thread.@LTO@
 type.@LTO@: $(XSRCDIR)/type.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/type.c -o type.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/type.c -o type.@LTO@
 validate.@LTO@: $(XSRCDIR)/validate.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/validate.c -o validate.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/validate.c -o validate.@LTO@
 vector.@LTO@: $(XSRCDIR)/vector.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/vector.c -o vector.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/vector.c -o vector.@LTO@
 foreign.@LTO@: $(XSRCDIR)/foreign.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/foreign.c -o foreign.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/foreign.c -o foreign.@LTO@
 main.@LTO@: $(XSRCDIR)/main.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
 gc2.@LTO@: \
 		$(srcdir)/alloc_cache.c \
@@ -464,7 +465,7 @@ gc2.@LTO@: \
 		$(srcdir)/vm_osk.c \
 		$(srcdir)/vm_osx.c \
 		$(srcdir)/weak.c
-	$(CC) $(CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
+	$(CC) $(ALL_CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
 
 FOREIGN_OBJS_ON = ../../foreign/libffi/src/*.@LTO@ ../../foreign/libffi/src/*/*.@LTO@
 FOREIGN_LIB_ON = ../../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
@@ -529,7 +530,7 @@ clean:
 #--------------------------------------------------
 
 test.@LTO@: $(srcdir)/test.c
-	$(CC) $(CFLAGS) -c $(srcdir)/test.c -o test.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/test.c -o test.@LTO@
 
 gct: test.@LTO@ gc2.@LTO@
 	$(CC) -o gct test.@LTO@ gc2.@LTO@

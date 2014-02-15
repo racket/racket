@@ -49,7 +49,9 @@ WXVARIANT =  @WXVARIANT@
 
 NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/racket/ -I$(PLTSRCDIR)/racket/include/
 INC = -I$(PLTSRCDIR)/racket/$(GCDIRECTORY) $(NOGCINC)
-CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
+CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) $(CFLAGS) $(CPPFLAGS)
 LDFLAGS = @LDFLAGS@
 ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 ###########################
@@ -140,10 +142,10 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 grmain.@LTO@ :  $(srcdir)/grmain.c $(srcdir)/../racket/main.c \
             $(srcdir)/../racket/cmdline.inc $(srcdir)/../racket/src/stypes.h \
             $(srcdir)/../racket/include/scheme.h
-	$(CC) $(LOCALFLAGS) $(CFLAGS) $(DEF_C_DIRS) -c $(srcdir)/grmain.c -o grmain.@LTO@
+	$(CC) $(LOCALFLAGS) $(ALL_CFLAGS) $(DEF_C_DIRS) -c $(srcdir)/grmain.c -o grmain.@LTO@
 
 grmain_ee.@LTO@ : gracket.@LTO@
-	$(CC) $(LOCALFLAGS) $(CFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_C_DIRS) -c $(srcdir)/grmain.cxx -o grmain_ee.@LTO@
+	$(CC) $(LOCALFLAGS) $(ALL_CFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_C_DIRS) -c $(srcdir)/grmain.cxx -o grmain_ee.@LTO@
 
 ee-main:
 	$(MAKE) grmain_ee.@LTO@

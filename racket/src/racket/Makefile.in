@@ -26,6 +26,11 @@ NOOP = :
 CC = @CC@
 CPP = @CPP@
 
+# Although CFLAGS is defined via configure, the intent is that
+# CFLAGS and CPPFLAGS can be adjusted at `make' time.
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
+CPPFLAGS =  @PREFLAGS@
+
 NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
@@ -226,10 +231,10 @@ DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 main.@LTO@: $(srcdir)/main.c $(srcdir)/include/scheme.h $(srcdir)/sconfig.h $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc $(srcdir)/oskglue.inc
-	$(CC) -I$(builddir) -I$(srcdir)/include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
+	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
 
 main_ee.@LTO@: main.@LTO@
-	$(CC) -I$(builddir) -I$(srcdir)/include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
+	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
 
 ee-main:
 	$(MAKE) main_ee.@LTO@
@@ -238,7 +243,7 @@ ee-app: $(RACKET) main_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
 
 mzstart.exe: $(srcdir)/dynsrc/start.c
-	$(CC) @CFLAGS@ -o mzstart.exe $(srcdir)/dynsrc/start.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o mzstart.exe $(srcdir)/dynsrc/start.c
 
 starter: mzstart.exe
 
@@ -340,7 +345,7 @@ unix-install:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" @COLLECTS_PATH@ @CONFIG_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
-	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
+	cd ..; echo 'CFLAGS=$(CFLAGS) $(CPPFLAGS)' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
 	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> "$(BUILDINFO)"
 	cd ..; echo "LDFLAGS=@LDFLAGS@" >> "$(BUILDINFO)"
