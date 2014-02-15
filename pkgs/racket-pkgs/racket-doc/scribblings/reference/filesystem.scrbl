@@ -730,7 +730,7 @@ Similar to @racket[define-runtime-path], but @racket[id] is bound to a
 @tech{module path index} that encapsulates the result of
 @racket[module-path-expr] relative to the enclosing module.
 
-Use @racket[define-runtime-module-path] to bind a module path that is
+Use @racket[define-runtime-module-path-index] to bind a module path that is
 passed to a reflective function like @racket[dynamic-require] while
 also creating a module dependency for building and distributing
 executables.}
