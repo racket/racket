@@ -577,6 +577,17 @@
              ;; now take all the dummy types, and use them to constrain dbound appropriately
              (move-vars-to-dmap new-cset dbound vars))]
 
+          ;; same as above, constrains `dbound' to be |ss| - |ts|
+          [((List: ss) (ListDots: t-dty dbound))
+           (unless (memq dbound Y) (fail! S T))
+
+           ;; see comments for last case, we flip s and t though
+           (let* ([vars     (var-store-take dbound t-dty (length ss))]
+                  [new-tys  (for/list ([var (in-list vars)])
+                              (substitute (make-F var) dbound t-dty))]
+                  [new-cset (cgen/list V (append vars X) Y ss new-tys)])
+             (move-vars-to-dmap new-cset dbound vars))]
+
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
           ;; This relies on (B 0) only unifying with itself, and thus only hitting the first case of this `match'

@@ -2019,6 +2019,15 @@
              #:ret (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))
              #:expected (ret (t:-> (t:Un (-Param -Symbol -Symbol) -Symbol) -Symbol))]
 
+       ;; time-apply and similar functions (test improved inference)
+       [tc-e (let ()
+               (: f (All (b a ...) (-> (List a ... a) b b)))
+               (define (f lst x) x)
+               (f '(a b) "foo"))
+             -String]
+       [tc-e (time-apply (lambda: ([x : Symbol] [y : Symbol]) "foo") '(a b))
+             #:ret (ret (list (-lst* -String) -Nat -Nat -Nat))]
+
        ;; test kw function without type annotation
        [tc-e (let () (tr:define (f x #:y y) y) (f 'a #:y 'b)) Univ]
        [tc-e (let () (tr:define (f x [a "a"] #:y y) y) (f 'a #:y 'b)) Univ]
