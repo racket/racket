@@ -2,14 +2,8 @@
 < (define the-error "no error")
 ---
 > (define the-error "the ((cons number) v) value has been omitted")
-6,7d5
-<          racket/list
-<          racket/contract
-8a7,8
->          racket/contract
->          racket/list
 32,33c32
-<      (cons number)
-<      ((cons number) v))
+<      (cons v)
+<      ((cons v) v))
 ---
->      (cons number))
+>      (cons v))

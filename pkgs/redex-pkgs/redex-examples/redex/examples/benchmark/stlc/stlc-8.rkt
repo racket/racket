@@ -29,8 +29,8 @@
   (v (λ (x τ) M)
      c
      number
-     (cons number)
-     ((cons number) v))
+     (cons v)
+     ((cons v) v))
   (E hole
      (E M)
      (v E)))

@@ -3,9 +3,9 @@
 (define the-error "the ((cons number) v) value has been omitted")
 
 (require redex/reduction-semantics
-         racket/match
-         racket/contract
          racket/list
+         racket/contract
+         racket/match
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -29,7 +29,7 @@
   (v (λ (x τ) M)
      c
      number
-     (cons number))
+     (cons v))
   (E hole
      (E M)
      (v E)))
