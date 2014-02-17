@@ -7,7 +7,7 @@
          "stop.rkt"
          "universe-image.rkt"
          "pad.rkt"
-         (only-in 2htdp/image scale overlay/align)
+         (only-in 2htdp/image scale overlay/align rotate)
          htdp/error
          mzlib/runtime-path
          mrlib/bitmap-label
@@ -232,7 +232,11 @@
       ;; Image -> Void
       ;; show the image in the visible world
       (define/public (show pict0)
-        (define pict (add-game-pad pict0))
+	(define pict*
+	  (if (is-a? pict0 bitmap%)
+	      (rotate 0 pict0)
+	      pict0))
+        (define pict (add-game-pad pict*))
         (send visible begin-edit-sequence)
         (send visible lock #f)
         (let ([s (send visible find-first-snip)]
