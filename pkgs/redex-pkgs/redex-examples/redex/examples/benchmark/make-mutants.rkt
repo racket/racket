@@ -8,7 +8,6 @@
 
 (define-runtime-path stlc "stlc")
 (define-runtime-path stlc-sub "stlc-sub")
-
 (define-runtime-path poly-stlc "poly-stlc")
 (define-runtime-path rbtrees "rbtrees")
 (define-runtime-path delim-cont "delim-cont")

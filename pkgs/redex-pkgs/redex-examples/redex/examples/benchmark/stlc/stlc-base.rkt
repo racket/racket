@@ -6,6 +6,7 @@
          racket/list
          racket/contract
          racket/match
+         math/base
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -245,7 +246,10 @@
       (let ([red-res (apply-reduction-relation red term)]
             [t-type (type-check term)])
         (and
-         (= (length red-res) 1)
-	 (or 
+         (= (length red-res) 1) 
+         (or 
           (equal? (car red-res) "error")
           (equal? t-type (type-check (car red-res))))))))
+
+(define (generate-enum-term)
+  (generate-term stlc M #:i-th (random-natural #e10e200)))

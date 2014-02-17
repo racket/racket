@@ -11,7 +11,9 @@
 (define verbose #f)
 (define output-file #f)
 
-(define all-types '(search grammar search-gen search-gen-ref search-gen-enum search-gen-enum-ref))
+(define all-types '(search grammar search-gen search-gen-ref 
+                           search-gen-enum search-gen-enum-ref
+                           enum))
 (define types '())
 
 (define filename
@@ -24,7 +26,7 @@
    [("-o" "--output") out-file "Output file name"
                       (set! output-file out-file)]
    #:multi
-   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref"
+   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum"
                     (set! types (cons (string->symbol t) types))]
    #:args filenames
    (match filenames
@@ -100,24 +102,29 @@
       ((/ dev avg) . > . 0.1)))
 
 (define (test-file fname verbose? no-errs? gen-type seconds)
-  (define fpath (string->path fname))
-  (define tc (dynamic-require fpath 'type-check))
-  (define check (dynamic-require fpath 'check))
-  (define gen-term (dynamic-require fpath 'generate-M-term))
-  (define gen-typed-term (dynamic-require fpath 'generate-typed-term))
-  (define typed-generator (dynamic-require fpath 'typed-generator))
-  (define err (dynamic-require fpath 'the-error))
+  (define tc (dynamic-require fname 'type-check))
+  (define check (dynamic-require fname 'check))
+  (define gen-term (dynamic-require fname 'generate-M-term))
+  (define gen-typed-term (dynamic-require fname 'generate-typed-term))
+  (define typed-generator (dynamic-require fname 'typed-generator))
+  (define gen-enum (dynamic-require fname 'generate-enum-term))
+  (define err (dynamic-require fname 'the-error))
   (printf "\n-------------------------------------------------------------------\n")
-  (printf "~s has the error: ~a\n\n" fname err)
-  (printf "Running ~s....\n" fname)
+  (printf "~a has the error: ~a\n\n" fname err)
+  (printf "Running ~a....\n" fname)
   (printf "Using generator: ~s\n" gen-type)
+  (define (gen-and-type gen)
+    (λ ()
+      (λ ()
+        (define t (gen))
+        (and (tc t)
+             t))))
   (cond
     [(equal? gen-type 'grammar)
-     (define (gen-and-type)
-       (define t (gen-term))
-       (and (tc t)
-            t))
-     (run-generations fname verbose? no-errs? (λ () gen-and-type) 
+     (run-generations fname verbose? no-errs? (gen-and-type gen-term) 
+                      check seconds gen-type)]
+    [(equal? gen-type 'enum)
+     (run-generations fname verbose? no-errs? (gen-and-type gen-enum) 
                       check seconds gen-type)]
     [(equal? gen-type 'search)
      (run-generations fname verbose? no-errs? (λ () gen-typed-term)

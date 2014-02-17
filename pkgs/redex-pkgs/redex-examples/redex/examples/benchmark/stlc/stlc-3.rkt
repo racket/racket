@@ -6,6 +6,7 @@
          racket/list
          racket/match
          racket/contract
+         math/base
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -246,6 +247,9 @@
             [t-type (type-check term)])
         (and
          (= (length red-res) 1)
-	 (or 
+         (or 
           (equal? (car red-res) "error")
           (equal? t-type (type-check (car red-res))))))))
+
+(define (generate-enum-term)
+  (generate-term stlc M #:i-th (random-natural #e10e200)))
