@@ -1,16 +1,25 @@
 #lang racket
 
-(require racket/cmdline)
+(require racket/cmdline
+         racket/runtime-path)
 
 (provide directories
          get-base-stem)
 
-(define directories '("stlc"
-                      "stlc-sub"
-                      "poly-stlc"
-                      "rbtrees"
-                      "delim-cont"
-                      "list-machine"))
+(define-runtime-path stlc "stlc")
+(define-runtime-path stlc-sub "stlc-sub")
+
+(define-runtime-path poly-stlc "poly-stlc")
+(define-runtime-path rbtrees "rbtrees")
+(define-runtime-path delim-cont "delim-cont")
+(define-runtime-path list-machine "list-machine")
+
+(define directories (list stlc
+                          stlc-sub
+                          poly-stlc
+                          rbtrees
+                          delim-cont
+                          list-machine))
 
 (define (make-mutants directory)
   (cond 
