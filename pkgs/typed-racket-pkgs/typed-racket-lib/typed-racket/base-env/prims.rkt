@@ -498,15 +498,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                 (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                  #,(quasisyntax/loc stx nm)))])
         bs.rhs ...))]
-    [(-let ([bn:optionally-annotated-name e] ...)
-           vars:lambda-type-vars . rest)
+    [(-let vars:lambda-type-vars
+           ([bn:optionally-annotated-name e] ...)
+           . rest)
      (define/with-syntax (bn* ...)
        ;; singleton names go to just the name
        (for/list ([bn (in-syntax #'(bn ...))])
          (if (empty? (stx-cdr bn))
              (stx-car bn)
              bn)))
-     (template ((-lambda (bn* ...) (?@ . vars) . rest) e ...))]
+     (template ((-lambda (?@ . vars) (bn* ...) . rest) e ...))]
     [(-let . rest)
      (syntax/loc stx (-let-internal . rest))]))
 
@@ -1259,8 +1260,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (-lambda stx)
   (syntax-parse stx
     #:literals (:)
-    [(_ formals:lambda-formals
-        vars:maybe-lambda-type-vars
+    [(_ vars:maybe-lambda-type-vars
+        formals:lambda-formals
         return:return-ann
         (~describe "body expression or definition" e) ...
         (~describe "body expression" last-e))
@@ -1296,9 +1297,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
      #'(-define nm : ty body)]
     [(define: tvars:type-variables nm:id : ty body)
-     #'(-define nm #:forall tvars : ty body)]
+     #'(-define #:forall tvars nm : ty body)]
     [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
-     #'(-define (nm . formals) #:forall tvars : ret-ty body ...)]))
+     #'(-define #:forall tvars (nm . formals) : ret-ty body ...)]))
 
 (define-syntax (-define stx)
   (syntax-parse stx #:literals (:)
@@ -1311,15 +1312,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
            #'(: nm return.type)
            #'(void)))
      (syntax/loc stx (begin maybe-ann (define nm body)))]
-    [(-define nm:id vars:lambda-type-vars : ty body)
+    [(-define vars:lambda-type-vars nm:id : ty body)
      (define/with-syntax type
        (syntax/loc #'ty (All vars.type-vars ty)))
      (syntax/loc stx
        (begin
          (: nm : type)
          (define nm body)))]
-    [(-define formals:curried-formals
-              vars:maybe-lambda-type-vars
+    [(-define vars:maybe-lambda-type-vars
+              formals:curried-formals
               return:return-ann
               body ... last-body)
      ;; have to preprocess for the return type annotation
@@ -1337,7 +1338,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (syntax-parse rhs
          #:literals (-lambda)
          [(-lambda formals . others)
-          (template (-lambda formals (?@ . vars) . others))]
+          (template (-lambda (?@ . vars) formals . others))]
          [_ rhs]))
      #`(define #,defined-id #,rhs*)]))
 

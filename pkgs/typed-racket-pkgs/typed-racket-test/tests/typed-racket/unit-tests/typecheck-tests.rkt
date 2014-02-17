@@ -2141,14 +2141,14 @@
        ;; type of the function because the precise filters are hard to
        ;; get right in the expected result type and polymorphic types are
        ;; harder to test for equality.
-       [tc-e ((inst (tr:lambda (x [y : A]) #:forall (A) y) String) 'a "foo")
+       [tc-e ((inst (tr:lambda #:forall (A) (x [y : A]) y) String) 'a "foo")
              #:ret (ret -String (-FS -top -bot))]
-       [tc-e ((inst (tr:lambda (x [y : A]) #:∀ (A) y) String) 'a "foo")
+       [tc-e ((inst (tr:lambda #:∀ (A) (x [y : A]) y) String) 'a "foo")
              #:ret (ret -String (-FS -top -bot))]
-       [tc-e ((inst (tr:lambda (x . [rst : A ... A]) #:forall (A ...) rst) String) 'a "foo")
+       [tc-e ((inst (tr:lambda #:forall (A ...) (x . [rst : A ... A]) rst) String) 'a "foo")
              #:ret (ret (-lst* -String) (-FS -top -bot))]
        #| FIXME: does not work yet, TR thinks the type variable is unbound
-       [tc-e (inst (tr:lambda (x [y : A] [z : String "z"]) #:forall (A) y) String)
+       [tc-e (inst (tr:lambda #:forall (A) (x [y : A] [z : String "z"]) y) String)
              #:ret (ret (->opt Univ -String [-String] -String) (-FS -top -bot))]
        |#
 
@@ -2163,8 +2163,7 @@
                      ;(tr:define ((g x) [y : String]) y)
                      (string-append ((f "foo") 'y) "bar"))
              -String]
-       [tc-e (let () (tr:define (f x . [rst : A ... A])
-                       #:forall (A ...) rst)
+       [tc-e (let () (tr:define #:forall (A ...) (f x . [rst : A ... A]) rst)
                      (f 'a "b" "c"))
              #:ret (ret (-lst* -String -String) (-FS -top -bot))]
 
@@ -2178,9 +2177,9 @@
              -String]
        [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
              -String]
-       [tc-e (let ([x : A "foo"]) #:forall (A) x)
+       [tc-e (let #:forall (A) ([x : A "foo"]) x)
              #:ret (ret -String (-FS -top -bot))]
-       [tc-e (let ([y 'y] [x : A "foo"]) #:forall (A) x)
+       [tc-e (let #:forall (A) ([y 'y] [x : A "foo"]) x)
              #:ret (ret -String (-FS -top -bot))]
        [tc-e (let* ([x "foo"]) x) -String]
        [tc-e (let* ([x : String "foo"]) (string-append x "bar"))
