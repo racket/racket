@@ -5,6 +5,7 @@
          racket/list
          racket/set
          racket/match
+         racket/path
          math/statistics)
 
 (define minutes 1)
@@ -102,16 +103,20 @@
       ((/ dev avg) . > . 0.1)))
 
 (define (test-file fname verbose? no-errs? gen-type seconds)
-  (define tc (dynamic-require fname 'type-check))
-  (define check (dynamic-require fname 'check))
-  (define gen-term (dynamic-require fname 'generate-M-term))
-  (define gen-typed-term (dynamic-require fname 'generate-typed-term))
-  (define typed-generator (dynamic-require fname 'typed-generator))
-  (define gen-enum (dynamic-require fname 'generate-enum-term))
-  (define err (dynamic-require fname 'the-error))
+  (define maybe-fpath (string->path fname))
+  (define fpath (if (relative-path? maybe-fpath)
+                    maybe-fpath
+                    (find-relative-path (current-directory) maybe-fpath)))
+  (define tc (dynamic-require fpath 'type-check))
+  (define check (dynamic-require fpath 'check))
+  (define gen-term (dynamic-require fpath 'generate-M-term))
+  (define gen-typed-term (dynamic-require fpath 'generate-typed-term))
+  (define typed-generator (dynamic-require fpath 'typed-generator))
+  (define gen-enum (dynamic-require fpath 'generate-enum-term))
+  (define err (dynamic-require fpath 'the-error))
   (printf "\n-------------------------------------------------------------------\n")
-  (printf "~a has the error: ~a\n\n" fname err)
-  (printf "Running ~a....\n" fname)
+  (printf "~a has the error: ~a\n\n" fpath err)
+  (printf "Running ~a....\n" fpath)
   (printf "Using generator: ~s\n" gen-type)
   (define (gen-and-type gen)
     (λ ()
@@ -121,16 +126,16 @@
              t))))
   (cond
     [(equal? gen-type 'grammar)
-     (run-generations fname verbose? no-errs? (gen-and-type gen-term) 
+     (run-generations fpath verbose? no-errs? (gen-and-type gen-term) 
                       check seconds gen-type)]
     [(equal? gen-type 'enum)
-     (run-generations fname verbose? no-errs? (gen-and-type gen-enum) 
+     (run-generations fpath verbose? no-errs? (gen-and-type gen-enum) 
                       check seconds gen-type)]
     [(equal? gen-type 'search)
-     (run-generations fname verbose? no-errs? (λ () gen-typed-term)
+     (run-generations fpath verbose? no-errs? (λ () gen-typed-term)
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen)
-     (run-generations fname verbose? no-errs? typed-generator
+     (run-generations fpath verbose? no-errs? typed-generator
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen-ref)
      (define t (current-process-milliseconds))
@@ -140,11 +145,11 @@
          (set! t (current-process-milliseconds))
          (set! g (typed-generator)))
        (g))
-     (run-generations fname verbose? no-errs? (λ () gen)
+     (run-generations fpath verbose? no-errs? (λ () gen)
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen-enum)
      (parameterize ([gen-state (set-remove (gen-state) 'shuffle-clauses)])
-       (run-generations fname verbose? no-errs? typed-generator
+       (run-generations fpath verbose? no-errs? typed-generator
                         check seconds gen-type))]
     [(equal? gen-type 'search-gen-enum-ref)
      (parameterize ([gen-state (set-remove (gen-state) 'shuffle-clauses)])
@@ -155,7 +160,7 @@
            (set! t (current-process-milliseconds))
            (set! g (typed-generator)))
          (g))
-       (run-generations fname verbose? no-errs? (λ () gen)
+       (run-generations fpath verbose? no-errs? (λ () gen)
                         check seconds gen-type))])) 
 
 (for ([gen-type (in-list types)])

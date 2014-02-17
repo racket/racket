@@ -4,21 +4,24 @@
          racket/runtime-path)
 
 (provide directories
+         get-directories
+         get-directory
          get-base-stem)
 
-(define-runtime-path stlc "stlc")
-(define-runtime-path stlc-sub "stlc-sub")
-(define-runtime-path poly-stlc "poly-stlc")
-(define-runtime-path rbtrees "rbtrees")
-(define-runtime-path delim-cont "delim-cont")
-(define-runtime-path list-machine "list-machine")
+(define directories (list "stlc"
+                          "stlc-sub"
+                          "poly-stlc"
+                          "rbtrees"
+                          "delim-cont"
+                          "list-machine"))
+  
+(define-runtime-path here ".")
 
-(define directories (list stlc
-                          stlc-sub
-                          poly-stlc
-                          rbtrees
-                          delim-cont
-                          list-machine))
+(define (get-directory name)
+  (build-path here name))
+
+(define (get-directories names)
+  (map get-directory names))
 
 (define (make-mutants directory)
   (cond 
@@ -35,7 +38,7 @@
        (copy-file base name #t)
        (system* (find-executable-path "patch") name (path->string f)))]
     [else
-     (map make-mutants directories)]))
+     (map make-mutants (get-directories directories))]))
 
 (define (get-base-stem files)
   (car (filter-map (λ (f) (regexp-match #rx"^(.*)-base\\.rkt$" (path->string f))) files)))
