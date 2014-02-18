@@ -104,6 +104,9 @@
 (define (ls . dir)
   (sort (map path->string (apply directory-list dir)) string<?))
 
+(define (ls* dir)
+  (if (directory-exists? dir) (ls dir) null))
+
 ;; convenient wrapper for a simple subprocess
 (define (run cmd . args)
   (let-values
@@ -258,13 +261,13 @@
     (when (file-exists? "gracket") (fix-executable "gracket"))
     (when (file-exists? "starter") (fix-executable "starter"))))
 
-(define (fix-desktop-files appsdir bindir sharerktdir)
+(define (fix-desktop-files appsdir bindir sharerktdir [appfiles #f])
   ;; For absolute mode, change `Exec' and `Icon' lines to
   ;; have absolute paths:
   (define (fixup-path at-dir orig-path)
     (build-path at-dir (let-values ([(base name dir?) (split-path orig-path)])
                          name)))
-  (for ([d (in-list (directory-list appsdir))])
+  (for ([d (in-list (or appfiles (directory-list appsdir)))])
     (when (regexp-match? #rx"[.]desktop$" d)
       (define ls (call-with-input-file (build-path appsdir d)
                    (lambda (i)
@@ -458,7 +461,7 @@
   (when (ormap (lambda (p) (regexp-match #rx"libracket.*[.]so" p)) (ls "lib"))
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
-    (define binfiles (if (directory-exists? "bin") (ls "bin") null)) ; see below
+    (define binfiles (ls* "bin"))
     (if (eq? 'windows (system-type))
         ;; Windows executables appear in the immediate directory:
         (for ([f (in-list (directory-list))])
@@ -471,6 +474,7 @@
     (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
     (do-tree "lib"      'librkt)
     (do-tree "include"  'includerkt)
+    (define appfiles (ls* "share/applications"))
     (do-tree "share/applications" 'apps #:missing 'skip) ; Unix only
     (parameterize ([current-skip-filter (make-apps-skip)])
       (do-tree "share" 'sharerkt))
@@ -490,7 +494,7 @@
     ;; we need to know which files need fixing
     (unless bundle?
       (fix-executables (dir: 'bin) (dir: 'librkt) binfiles)
-      (fix-desktop-files (dir: 'apps) (dir: 'bin) (dir: 'sharerkt))
+      (fix-desktop-files (dir: 'apps) (dir: 'bin) (dir: 'sharerkt) appfiles)
       (write-uninstaller)
       (write-config)))
   (when move?
