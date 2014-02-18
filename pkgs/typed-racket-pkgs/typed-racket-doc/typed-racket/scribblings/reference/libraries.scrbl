@@ -67,6 +67,7 @@ The following libraries are included with Typed Racket in the
 @defmodule/incl[typed/net/smtp]
 @defmodule/incl[typed/net/uri-codec]
 @defmodule/incl[typed/net/url]
+@defmodule/incl[typed/pict]
 @defmodule/incl[typed/rackunit]
 @defmodule/incl[typed/srfi/14]
 @defmodule/incl[typed/syntax/stx]

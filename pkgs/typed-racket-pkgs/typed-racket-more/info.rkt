@@ -9,7 +9,8 @@
                "rackunit-lib"
                "rackunit-gui"
                "typed-racket-lib"
-               "gui-lib"))
+               "gui-lib"
+               "pict-lib"))
 
 (define pkg-desc "Types for various libraries")
 
