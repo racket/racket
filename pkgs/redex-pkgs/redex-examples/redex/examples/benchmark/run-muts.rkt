@@ -46,7 +46,7 @@
             (λ (fn)
               (string-append dir "/" (path->string fn)))
             (filter
-             (curry regexp-match #px"^.*([\\d]+|base)\\.rkt$")
+             (compose (curry regexp-match #px"^.*([\\d]+)\\.rkt$") path->string)
              (directory-list (get-directory dir))))))))
 
 (define worklist files)

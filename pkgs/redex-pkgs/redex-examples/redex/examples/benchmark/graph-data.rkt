@@ -11,10 +11,10 @@
 
 
 (define types (make-parameter '()))
-(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref))
+(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref enum))
 (define names '("grammar" "search" "backjumping" "backjumping, ordered space" "backjumping, with refresh"
-                          "backjumping, ordered space with refresh"))
-(define symbols '(circle triangle square asterisk diamond plus))
+                          "backjumping, ordered space with refresh" "enumeration"))
+(define symbols '(circle triangle square asterisk diamond plus 5star))
 (define type-names
   (for/hash ([t all-types] [n names])
     (values t n)))
