@@ -1317,4 +1317,23 @@
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match? #rx"^external-name: " (exn-message x)))))
+  
+  
+  (contract-error-test
+   're-providing
+   '(begin
+      (eval '(module bad1-server racket
+               (provide (contract-out [bad1-boo (-> number? number?)]))
+               (define (bad1-boo x) x)))
+      
+      (eval '(module bad1-client racket
+               (require 'bad1-server)
+               (provide (contract-out [bad1-boo (-> symbol? number?)]))))
+      
+      (eval '(require 'bad1-client))
+      (eval '(bad1-boo 'wrong)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match? #rx"blaming: bad1-client" (exn-message x)))))
+  
   )
