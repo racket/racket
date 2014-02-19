@@ -24,7 +24,18 @@
      (racket default-continuation-prompt-tag))
    (define lambda-id (racket lambda))
    (define λ-id (racket λ))
+   (define let-id (racket let))
+   (define letrec-id (racket letrec))
+   (define let*-id (racket let*))
+   (define let-values-id (racket let-values))
+   (define letrec-values-id (racket letrec-values))
+   (define let*-values-id (racket let*-values))
+   (define let/cc-id (racket let/cc))
+   (define let/ec-id (racket let/ec))
    (define define-id (racket define))
+   (define do-id (racket do))
+   (define struct-id (racket struct))
+   (define define-struct-id (racket define-struct))
 
    (provide (all-defined-out)))
 
@@ -38,77 +49,138 @@ creating new types, and annotating expressions.
 
 @section{Binding Forms}
 
-@racket[_loop], @racket[_f], @racket[_a], and @racket[_v] are names, @racket[_t] is a type.
- @racket[_e] is an expression and @racket[_body] is a block.
+@racket[_loop], @racket[_f], @racket[_a], and @racket[_var] are names,
+@racket[_type] is a type.
+@racket[_e] is an expression and @racket[_body] is a block.
 
-@defform*[[
-  (let: ([v : t e] ...) . body)
-  (let: loop : t0 ([v : t e] ...) . body)]]{
-Local bindings, like @racket[let], each with
-associated types.  In the second form, @racket[_t0] is the type of the
+@defform*[[(let maybe-tvars (binding ...) . body)
+           (let loop maybe-ret (binding ...) . body)]
+          #:grammar
+          ([binding [var e]
+                    [var : type e]]
+           [maybe-tvars (code:line)
+                        (code:line #:forall (tvar ...))
+                        (code:line #:∀ (tvar ...))]
+           [maybe-ret (code:line)
+                      (code:line : type0)])]{
+Local bindings, like @|let-id|, each with
+associated types.  In the second form, @racket[_type0] is the type of the
 result of @racket[_loop] (and thus the result of the entire
-                              expression as well as the final
-                                expression in @racket[body]).
-                                Type annotations are optional.
-@ex[(: filter-even : (Listof Natural) (Listof Natural) -> (Listof Natural))
+expression as well as the final expression in @racket[body]).
+Type annotations are optional.
+
+@ex[(: filter-even : (-> (Listof Natural) (Listof Natural) (Listof Natural)))
     (define (filter-even lst accum)
       (if (null? lst)
           accum
-          (let: ([first : Natural (car lst)]
-                 [rest  : (Listof Natural) (cdr lst)])
+          (let ([first : Natural (car lst)]
+                [rest  : (Listof Natural) (cdr lst)])
                 (if (even? first)
                     (filter-even rest (cons first accum))
                     (filter-even rest accum)))))
     (filter-even (list 1 2 3 4 5 6) null)]
 
-@ex[(: filter-even-loop : (Listof Natural) -> (Listof Natural))
+@ex[(: filter-even-loop (-> (Listof Natural) (Listof Natural)))
     (define (filter-even-loop lst)
-      (let: loop : (Listof Natural)
-            ([accum : (Listof Natural) null]
-             [lst   : (Listof Natural) lst])
-            (cond
-              [(null? lst)       accum]
-              [(even? (car lst)) (loop (cons (car lst) accum) (cdr lst))]
-              [else              (loop accum (cdr lst))])))
-    (filter-even-loop (list 1 2 3 4))]}
-@defform[(plet: (a ...) ([v : t e] ...) . body)]{
-A polymorphic version of @racket[let:], abstracted over the type variables
-@racket[a]. The type variables @racket[a] are bound in both the types
-of the formal, and in any type expressions in the @racket[body].
-Does not support the looping form of let.}
+      (let loop : (Listof Natural)
+           ([accum : (Listof Natural) null]
+            [lst   : (Listof Natural) lst])
+           (cond
+             [(null? lst)       accum]
+             [(even? (car lst)) (loop (cons (car lst) accum) (cdr lst))]
+             [else              (loop accum (cdr lst))])))
+    (filter-even-loop (list 1 2 3 4))]
+
+If polymorphic type variables are provided, they are bound in the type
+expressions for variable bindings.
+
+@ex[(let #:forall (A) ([x : A 0]) x)]
+}
 
 @deftogether[[
-@defform[(letrec: ([v : t e] ...) . body)]
-@defform[(let*: ([v : t e] ...) . body)]
-@defform[(let-values: ([([v : t] ...) e] ...) . body)]
-@defform[(letrec-values: ([([v : t] ...) e] ...) . body)]
-@defform[(let*-values: ([([v : t] ...) e] ...) . body)]]]{
-Type-annotated versions of
-@racket[letrec], @racket[let*], @racket[let-values],
-@racket[letrec-values], and @racket[let*-values]. As with
-@racket[let:], type annotations are optional.}
+@defform[(letrec (binding ...) . body)]
+@defform[(let* (binding ...) . body)]
+@defform[(let-values ([(var+type ...) e] ...) . body)]
+@defform[(letrec-values ([(var+type ...) e] ...) . body)]
+@defform[(let*-values ([(var+type ...) e] ...) . body)]]]{
+
+Type-annotated versions of @|letrec-id|, @|let*-id|, @|let-values-id|,
+@|letrec-values-id|, and @|let*-values-id|. As with
+@racket[let], type annotations are optional.}
 
 @deftogether[[
-@defform[(let/cc: v : t . body)]
-@defform[(let/ec: v : t . body)]]]{Type-annotated versions of
-@racket[let/cc] and @racket[let/ec].}
+@defform[(let/cc v : t . body)]
+@defform[(let/ec v : t . body)]]]{
+  Type-annotated versions of @|let/cc-id| and @|let/ec-id|.
+}
 
 @section{Anonymous Functions}
 
-@defform/subs[(lambda: formals . body)
-              ([formals ([v : t] ...)
-                        ([v : t] ... v : t *)
-                        ([v : t] ... v : t ooo bound)])]{
-A function of the formal arguments @racket[v], where each formal
-argument has the associated type.  If a rest argument is present, then
-it has type @racket[(Listof t)].}
-@defform[(λ: formals . body)]{
-An alias for the same form using @racket[lambda:].}
-@defform*[[(plambda: (a ...) formals . body)
-           (plambda: (a ... b ooo) formals . body)]]{
-A polymorphic function, abstracted over the type variables
-@racket[a]. The type variables @racket[a] are bound in both the types
-of the formal, and in any type expressions in the @racket[body].}
+@defform[(lambda maybe-tvars formals maybe-ret . body)
+         #:grammar
+         ([formals (formal ...)
+                   (formal ... . rst)]
+          [formal var
+                  [var default-expr]
+                  [var : type]
+                  [var : type default-expr]
+                  (code:line keyword var)
+                  (code:line keyword [var : type])
+                  (code:line keyword [var : type default-expr])]
+          [rst var
+               [var : type *]
+               [var : type ooo bound]]
+          [maybe-tvars (code:line)
+                       (code:line #:forall (tvar ...))
+                       (code:line #:∀ (tvar ...))
+                       (code:line #:forall (tvar ... ooo))
+                       (code:line #:∀ (tvar ... ooo))]
+          [maybe-ret (code:line)
+                     (code:line : type)])]{
+
+Constructs an anonymous function like the @|lambda-id| form from
+@racketmodname[racket/base], but allows type annotations on the formal
+arguments. If a type annotation is left out, the formal will have
+the type @racket[Any].
+
+@ex[
+  (lambda ([x : String]) (string-append x "bar"))
+  (lambda (x [y : Integer]) (add1 y))
+  (lambda (x) x)
+]
+
+Type annotations may also be specified for keyword and optional arguments:
+
+@ex[
+  (lambda ([x : String "foo"]) (string-append x "bar"))
+  (lambda (#:x [x : String]) (string-append x "bar"))
+  (lambda (x #:y [y : Integer 0]) (add1 y))
+  (lambda ([x 'default]) x)
+]
+
+The @racket[lambda] expression may also specify polymorphic type variables
+that are bound for the type expressions in the formals.
+
+@ex[
+  (lambda #:forall (A) ([x : A]) x)
+  (lambda #:∀ (A) ([x : A]) x)
+]
+
+In addition, a type may optionally be specified for the @gtech{rest argument}
+with either a uniform type or using a polymorphic type. In the former case,
+the rest argument is given the type @racket[(Listof type)] where @racket[type]
+is the provided type annotation.
+
+@ex[
+  (lambda (x . rst) rst)
+  (lambda (x rst : Integer *) rst)
+  (lambda #:forall (A ...) (x rst : A ... A) rst)
+]
+}
+
+@defform[(λ formals . body)]{
+An alias for the same form using @racket[lambda].}
+
 @defform[(case-lambda: [formals body] ...)]{
 A function of multiple arities.  Note that each @racket[formals] must have a
 different arity.
@@ -124,26 +196,20 @@ For the type declaration of @racket[add-map] look at @racket[case-lambda].}
 @defform*[[(pcase-lambda: (a ...) [formals body] ...)
            (pcase-lambda: (a ... b ooo) [formals body] ...)]]{
 A polymorphic function of multiple arities.}
-@defform/subs[(opt-lambda: formals . body)
-([formals ([v : t] ... [v : t default] ...)
-          ([v : t] ... [v : t default] ... v : t *)
-          ([v : t] ... [v : t default] ... v : t ooo bound)])]{
-A function with optional arguments.}
-@defform*[[(popt-lambda: (a ...) formals . body)
-           (popt-lambda: (a ... a ooo) formals . body)]]{
-A polymorphic function with optional arguments.}
-
 
 @section{Loops}
 
-@defform/subs[(for: type-ann-maybe (for:-clause ...)
+@defform/subs[(for type-ann-maybe (for:-clause ...)
                 expr ...+)
               ([type-ann-maybe code:blank
                                @code:line[: u]]
-               [for:-clause [id : t seq-expr]
-                            [id seq-expr]
-                            @code:line[#:when guard]])]{
-Like @racket[for], but each @racket[id] having the associated type
+               [for-clause [id : t seq-expr]
+                           [(binding ...) seq-expr]
+                           [id seq-expr]
+                           @code:line[#:when guard]]
+               [binding id
+                        [id : t]])]{
+Like @|for-id| from @racketmodname[racket/base], but each @racket[id] having the associated type
 @racket[t]. Since the return type is always @racket[Void], annotating
 the return type of a @racket[for] form is optional. Unlike
 @racket[for], multi-valued @racket[seq-expr]s are not supported.
@@ -152,73 +218,67 @@ variants.
 }
 
 @deftogether[[
-@defform[(for/list: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/hash: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/hasheq: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/hasheqv: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/vector: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/flvector: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/and: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/or:   type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/first: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/last: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/sum: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for/product: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/list: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/hash: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/hasheq: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/hasheqv: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/vector: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/flvector: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/and: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/or:   type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/first: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/last: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/sum: type-ann-maybe (for:-clause ...) expr ...+)]
-@defform[(for*/product: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/list type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/hash type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/hasheq type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/vector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/and type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/or   type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/first type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/last type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/sum type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/product type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/list type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/hash type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/hasheq type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/vector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/and type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/or   type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/first type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/last type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/sum type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/product type-ann-maybe (for-clause ...) expr ...+)]
 ]]{
 These behave like their non-annotated counterparts, with the exception
 that @racket[#:when] clauses can only appear as the last
-@racket[for:-clause]. The return value of the entire form must be of
-type @racket[u]. For example, a @racket[for/list:] form would be
+@racket[for-clause]. The return value of the entire form must be of
+type @racket[u]. For example, a @racket[for/list] form would be
 annotated with a @racket[Listof] type. All annotations are optional.
 }
 
 @deftogether[[
-@defform[(for/lists: type-ann-maybe ([id : t] ...)
-           (for:-clause ...)
+@defform[(for/lists type-ann-maybe ([id : t] ...)
+           (for-clause ...)
            expr ...+)]
-@defform[(for/fold:  type-ann-maybe ([id : t init-expr] ...)
-           (for:-clause ...)
+@defform[(for/fold  type-ann-maybe ([id : t init-expr] ...)
+           (for-clause ...)
            expr ...+)]]]{
 These behave like their non-annotated counterparts. Unlike the above,
 @racket[#:when] clauses can be used freely with these.
 }
 
 @deftogether[[
-@defform[(for*: void-ann-maybe (for-clause ...)
+@defform[(for* void-ann-maybe (for-clause ...)
            expr ...+)]
-@defform[(for*/lists: type-ann-maybe ([id : t] ...)
-           (for:-clause ...)
+@defform[(for*/lists type-ann-maybe ([id : t] ...)
+           (for-clause ...)
            expr ...+)]
-@defform[(for*/fold:  type-ann-maybe ([id : t init-expr] ...)
-           (for:-clause ...)
+@defform[(for*/fold  type-ann-maybe ([id : t init-expr] ...)
+           (for-clause ...)
            expr ...+)]]]{
 These behave like their non-annotated counterparts.
 }
 
-@deftogether[[
-@defidform[for]
-@defidform[for*]]]{
-These are identical to @|for-id| and @|for*-id|, but provide additional annotations to help the typechecker.
-}
-
-@defform/subs[(do: : u ([id : t init-expr step-expr-maybe] ...)
-                       (stop?-expr finish-expr ...)
+@defform/subs[(do : u ([id : t init-expr step-expr-maybe] ...)
+                      (stop?-expr finish-expr ...)
                 expr ...+)
               ([step-expr-maybe code:blank
                                 step-expr])]{
-Like @racket[do], but each @racket[id] having the associated type @racket[t], and
+Like @|do-id| from @racketmodname[racket/base], but each @racket[id] having the associated type @racket[t], and
 the final body @racket[expr] having the type @racket[u]. Type
 annotations are optional.
 }
@@ -226,43 +286,90 @@ annotations are optional.
 
 @section{Definitions}
 
-@defform*[[(define: v : t e)
-           (define: (a ...) v : t e)
-           (define: (a ... a ooo) v : t e)
-           (define: (f . formals) : t . body)
-           (define: (a ...) (f . formals) : t . body)
-           (define: (a ... a ooo) (f . formals) : t . body)]]{
-These forms define variables, with annotated types.  The first form
-defines @racket[v] with type @racket[t] and value @racket[e]. The second
-form does the same, but allows the specification of type variables. The third
-allows for polydotted variables. The fourth, fifth, and sixth forms define a
-function @racket[f] with appropriate types. In most cases, use of @racket[:] is
-preferred to use of @racket[define:].
+@defform*[[(define maybe-tvars v maybe-ann e)
+           (define maybe-tvars header maybe-ann . body)]
+          #:grammar
+          ([header (function-name . formals)
+                   (header . formals)]
+           [formals (formal ...)
+                    (formal ... . rst)]
+           [formal var
+                   [var default-expr]
+                   [var : type]
+                   [var : type default-expr]
+                   (code:line keyword var)
+                   (code:line keyword [var : type])
+                   (code:line keyword [var : type default-expr])]
+           [rst var
+                [var : type *]
+                [var : type ooo bound]]
+           [maybe-tvars (code:line)
+                        (code:line #:forall (tvar ...))
+                        (code:line #:∀ (tvar ...))
+                        (code:line #:forall (tvar ... ooo))
+                        (code:line #:∀ (tvar ... ooo))]
+           [maybe-ann (code:line)
+                      (code:line : type)])]{
 
-@ex[(define: foo : Integer 10)
+Like @|define-id| from @racketmodname[racket/base], but allows optional
+type annotations for the variables.
 
-    (define: (A) mt-seq : (Sequenceof A) empty-sequence)
+The first form defines a variable @racket[v] to the result of evaluating
+the expression @racket[e]. The variable may have an optional type annotation.
 
-    (define: (add [first : Integer]
-                  [rest  : Integer]) : Integer
+@ex[
+  (define foo "foo")
+  (define bar : Integer 10)
+]
+
+If polymorphic type variables are provided, then they are bound for use
+in the type annotation.
+
+@ex[
+  (define #:forall (A) mt-seq : (Sequenceof A) empty-sequence)
+]
+
+The second form allows the definition of functions with optional
+type annotations on any variables. If a return type annotation is
+provided, it is used to check the result of the function.
+
+Like @racket[lambda], optional and keyword arguments are supported.
+
+@ex[
+    (define (add [first : Integer]
+                 [rest  : Integer]) : Integer
       (+ first rest))
 
-    (define: (A) (poly-app [func : (A A -> A)]
-                           [first : A]
-                           [rest  : A]) : A
+    (define #:forall (A)
+            (poly-app [func : (A A -> A)]
+                      [first : A]
+                      [rest  : A]) : A
       (func first rest))]
+
+The function definition form also allows curried function arguments with
+corresponding type annotations.
+
+@ex[
+  (define ((addx [x : Number]) [y : Number]) (+ x y))
+  (define add2 (addx 2))
+  (add2 5)
+]
+
+Note that unlike @|define-id| from @racketmodname[racket/base], @racket[define]
+does not bind functions with keyword arguments to static information about
+those functions.
 }
 
 
 
 @section{Structure Definitions}
 @defform/subs[
-(struct: maybe-type-vars name-spec ([f : t] ...) options ...)
+(struct maybe-type-vars name-spec ([f : t] ...) options ...)
 ([maybe-type-vars code:blank (v ...)]
  [name-spec name (code:line name parent)]
  [options #:transparent #:mutable])]{
  Defines a @rtech{structure} with the name @racket[name], where the
- fields @racket[f] have types @racket[t], similar to the behavior of @racket[struct].
+ fields @racket[f] have types @racket[t], similar to the behavior of @|struct-id|.
   When @racket[parent] is present, the
 structure is a substructure of @racket[parent].  When
 @racket[maybe-type-vars] is present, the structure is polymorphic in the type
@@ -275,16 +382,16 @@ Options provided have the same meaning as for the @racket[struct] form.}
 
 
 @defform/subs[
-(define-struct: maybe-type-vars name-spec ([f : t] ...) options ...)
+(define-struct maybe-type-vars name-spec ([f : t] ...) options ...)
 ([maybe-type-vars code:blank (v ...)]
  [name-spec name (name parent)]
- [options #:transparent #:mutable])]{Legacy version of @racket[struct:],
-corresponding to @racket[define-struct].}
+ [options #:transparent #:mutable])]{Legacy version of @racket[struct],
+corresponding to @|define-struct-id| from @racketmodname[racket/base].}
 
 @defform/subs[
-(define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
+(define-struct/exec name-spec ([f : t] ...) [e : proc-t])
 ([name-spec name (name parent)])]{
- Like @racket[define-struct:], but defines a procedural structure.
+ Like @racket[define-struct], but defines a procedural structure.
  The procdure @racket[e] is used as the value for @racket[prop:procedure], and must have type @racket[proc-t].}
 
 @section{Names for Types}
@@ -482,17 +589,9 @@ Uses outside of a module top-level raise an error.
 
 @section{Other Forms}
 
-@deftogether[[@defidform[with-handlers]
-              @defidform[lambda]
-              @defidform[λ]
-              @defidform[define]]]{
-Identical to @|with-handlers-id|, @|lambda-id|, @|λ-id|, and @|define-id|, respectively, 
-but provide additional annotations to assist the typechecker.  The @racket[define:], 
-@racket[lambda:], and @racket[λ:] forms are useful replacements which support type
-annotation.
-             
-Note that unlike @|define-id|, @racket[define] does not bind functions with keyword arguments
-to static information about those functions.
+@defidform[with-handlers]{
+Identical to @|with-handlers-id| from @racketmodname[racket/base]
+but provides additional annotations to assist the typechecker.
 }
 
 @defproc[(default-continuation-prompt-tag) (-> (Prompt-Tagof Any (Any -> Any)))]{
