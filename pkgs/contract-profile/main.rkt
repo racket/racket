@@ -222,7 +222,8 @@
 ;;---------------------------------------------------------------------------
 ;; Entry point
 
-(provide (rename-out [contract-profile/user contract-profile]))
+(provide (rename-out [contract-profile/user contract-profile])
+	 contract-profile-thunk)
 
 ;; TODO have kw args for profiler, etc.
 ;; TODO have kw args for output files
@@ -237,3 +238,7 @@
           (for/list ([s (in-list (sampler 'get-custom-snapshots))])
             (and (not (empty? s)) (vector-ref (car s) 0))))
         (analyze-contract-samples contract-samples samples)))))
+
+;; TODO: document
+(define (contract-profile-thunk f)
+  (contract-profile/user (f)))
