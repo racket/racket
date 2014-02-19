@@ -173,10 +173,7 @@
                          [kw-type (in-list kw-args)])
                 (make-Keyword kw kw-type #t)))
             (define rest-type
-              (and rest?
-                   (if (equal? (last other-args) Univ)
-                       Univ
-                       -Bottom)))
+              (and rest? (last other-args)))
             (make-Function
              (list (make-arr* (take other-args non-kw-argc)
                               rng
@@ -196,17 +193,8 @@
             (define-values (mand-args opt-and-rest-args)
               (split-at other-args mand-non-kw-argc))
             (define rest-type
-              (and rest?
-                   (if (equal? (last opt-and-rest-args) Univ)
-                       Univ
-                       -Bottom)))
-            (define opt-types
-              (let loop ([opt-args opt-and-rest-args]
-                         [opt-types '()])
-                (if (or (null? opt-args)
-                        (null? (cdr opt-args)))
-                    (reverse opt-types)
-                    (loop (cddr opt-args) (cons (car opt-args) opt-types)))))
+              (and rest? (last opt-and-rest-args)))
+            (define opt-types (take opt-and-rest-args opt-non-kw-argc))
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
                (make-arr* (append mand-args (take opt-types to-take))
@@ -275,9 +263,51 @@
          (make-PolyDots names (loop f))]
         [t t]))))
 
+;; opt-unconvert : Type (Listof Syntax) -> Type
+;; Given a type for a core optional arg function, unconvert it to a
+;; normal function type. See `kw-unconvert` above.
+(define (opt-unconvert ft formalss)
+  (define (lengthish formals)
+    (define lst (syntax->list formals))
+    (if lst (length lst) +inf.0))
+  (define max-formals (argmax lengthish formalss))
+  (define min-formals (argmin lengthish formalss))
+  (define-values (raw-argc rest?)
+    (syntax-parse max-formals
+      [(arg:id ...)
+       (values (length (syntax->list #'(arg ...))) #f)]
+      [(arg:id ... . rst:id)
+       (values (length (syntax->list #'(arg ...))) #t)]))
+  (define opt-argc
+    (syntax-parse min-formals
+      [(arg:id ...)
+       (- raw-argc (length (syntax->list #'(arg ...))))]
+      ;; if min and max both have rest args, then there cannot
+      ;; have been any optional arguments
+      [(arg:id ... . rst:id) 0]))
+  ;; counted twice since optionals expand to two arguments
+  (define argc (+ raw-argc opt-argc))
+  (define mand-argc (- argc (* 2 opt-argc)))
+  (match ft
+    [(Function: arrs)
+     (cond [(and (even? (length arrs)) (>= (length arrs) 2))
+            (match-define (arr: doms rng _ _ _) (car arrs))
+            (define-values (mand-args opt-and-rest-args)
+              (split-at doms mand-argc))
+            (define rest-type
+              (and rest? (last opt-and-rest-args)))
+            (define opt-types (take opt-and-rest-args opt-argc))
+            (make-Function
+             (for/list ([to-take (in-range (add1 (length opt-types)))])
+               (make-arr* (append mand-args (take opt-types to-take))
+                          rng
+                          #:rest rest-type)))]
+           [else (int-err "unsupported arrs in keyword function type")])]
+    [_ (int-err "unsupported keyword function type")]))
+
 ;; partition-kws : (Listof Keyword) -> (values (Listof Keyword) (Listof Keyword))
 ;; Partition keywords by whether they are mandatory or not
 (define (partition-kws kws)
   (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws))
 
-(provide kw-convert kw-unconvert opt-convert partition-kws)
+(provide kw-convert kw-unconvert opt-convert opt-unconvert partition-kws)

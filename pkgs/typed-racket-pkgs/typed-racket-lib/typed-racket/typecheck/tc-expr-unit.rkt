@@ -289,12 +289,9 @@
                           (attribute opt.value))
             (opt-convert fun-type required-pos optional-pos)]
            [_ #f]))
-       (match-define (tc-result1: returned-fun-type)
-         (if conv-type
-             (tc-expr/check/type #'fun conv-type)
-             (tc-expr #'fun)))
-       (with-lexical-env/extend (list #'f) (list returned-fun-type)
-         (tc-body/check #'body expected))]
+       (if conv-type
+           (begin (tc-expr/check/type #'fun conv-type) expected)
+           (tc-expr (remove-ascription form)))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
@@ -388,6 +385,12 @@
                           (syntax->list #'(formals ...))
                           (syntax->datum #'(mand-kw ...))
                           (syntax->datum #'(all-kw ...))))]
+      ;; opt function def
+      [(~and opt:opt-lambda^
+             (let-values ([(f) fun])
+               (case-lambda (formals . cl-body) ...)))
+       (ret (opt-unconvert (tc-expr/t #'fun)
+                           (syntax->list #'(formals ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form)]

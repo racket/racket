@@ -22,7 +22,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (except-out (all-defined-out) dtsi* dtsi/exec* let-internal: define-for-variants define-for*-variants 
+(provide (except-out (all-defined-out) dtsi* dtsi/exec* -let-internal define-for-variants define-for*-variants
                      with-handlers: for/annotation for*/annotation define-for/acc:-variants base-for/flvector: base-for/vector
                      -lambda -define)
          ;; provide the contracted bindings as primitives
@@ -30,14 +30,60 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "top-interaction.rkt")
          :
          (rename-out [define-typed-struct define-struct:]
+                     [define-typed-struct define-struct]
+                     [-struct struct]
+                     [-struct struct:]
                      [lambda: λ:]
                      [-lambda lambda]
                      [-lambda λ]
                      [-define define]
+                     [-let let]
+                     [-let* let*]
+                     [-letrec letrec]
+                     [-let-values let-values]
+                     [-letrec-values letrec-values]
+                     [-let/cc let/cc]
+                     [-let/ec let/ec]
+                     [-let let:]
+                     [-let* let*:]
+                     [-letrec letrec:]
+                     [-let-values let-values:]
+                     [-letrec-values letrec-values:]
+                     [-let/cc let/cc:]
+                     [-let/ec let/ec:]
+                     [for: for]
+                     [for/list: for/list]
+                     [for/vector: for/vector]
+                     [for/hash: for/hash]
+                     [for/hasheq: for/hasheq]
+                     [for/hasheqv: for/hasheqv]
+                     [for/and: for/and]
+                     [for/or: for/or]
+                     [for/sum: for/sum]
+                     [for/product: for/product]
+                     [for/lists: for/lists]
+                     [for/first: for/first]
+                     [for/last: for/last]
+                     [for/fold: for/fold]
+                     [for*: for*]
+                     [for*/list: for*/list]
+                     [for*/lists: for*/lists]
+                     [for*/vector: for*/vector]
+                     [for*/hash: for*/hash]
+                     [for*/hasheq: for*/hasheq]
+                     [for*/hasheqv: for*/hasheqv]
+                     [for*/and: for*/and]
+                     [for*/or: for*/or]
+                     [for*/sum: for*/sum]
+                     [for*/product: for*/product]
+                     [for*/first: for*/first]
+                     [for*/last: for*/last]
+                     [for*/fold: for*/fold]
+                     [-do do]
+                     [-do do:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
-                     [for/annotation for]
-                     [for*/annotation for*]))
+                     [define-typed-struct/exec define-struct/exec]))
 
 (module struct-extraction racket/base
   (provide extract-struct-info/checked)
@@ -61,6 +107,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (for-syntax
           racket/lazy-require
           syntax/parse
+          syntax/parse/experimental/template
           syntax/stx
           racket/list
           racket/syntax
@@ -71,6 +118,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           "annotate-classes.rkt"
           "../utils/tc-utils.rkt"
+          "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
           "../types/utils.rkt"
           "for-clauses.rkt"
@@ -393,30 +441,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ arg tys ...)
      (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ...))]))
 
-(define-syntax (define: stx)
-  (syntax-parse stx #:literals (:)
-    [(define: (nm:id . formals:annotated-formals) (~describe "return type annotation" (~seq : ret-ty)) body ...)
-     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
-       (syntax/loc stx
-         (define: nm : arrty
-           (lambda: formals body ...))))]
-    [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
-     (identifier? #'nm)
-     (with-syntax ([new-nm (type-label-property #'nm #'ty)])
-       (syntax/loc stx (define new-nm body)))]
-    [(define: tvars:type-variables nm:id : ty body)
-     (with-syntax ([type (syntax/loc #'ty (All (tvars.vars ...) ty))])
-       (syntax/loc stx
-         (begin
-           (: nm : type)
-           (define nm body))))]
-    [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
-     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars.vars ...) (formals.arg-ty ... -> ret-ty)))])
-       (syntax/loc stx
-         (begin
-          (: nm : type)
-          (define (nm . formals.ann-formals) body ...))))]))
-
 (define-syntax (lambda: stx)
   (syntax-parse stx
     [(lambda: formals:annotated-formals . body)
@@ -432,7 +456,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(opt-lambda: formals:opt-lambda-annotated-formals . body)
      (syntax/loc stx (-lambda formals.ann-formals . body))]))
 
-(define-syntaxes (let-internal: let*: letrec:)
+(define-syntaxes (-let-internal -let* -letrec)
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
@@ -440,7 +464,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let) (mk #'let*) (mk #'letrec))))
 
-(define-syntaxes (let-values: let*-values: letrec-values:)
+(define-syntaxes (-let-values -let*-values -letrec-values)
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
@@ -448,9 +472,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let-values) (mk #'let*-values) (mk #'letrec-values))))
 
-(define-syntax (let: stx)
+(define-syntax (-let stx)
   (syntax-parse stx #:literals (:)
-    [(let: nm:id ~! ; named let:
+    [(-let nm:id ~! ; named let:
            (~and (~seq (~optional (~seq : ret-ty))
                        (bs:optionally-annotated-binding ...) body ...)
                  (~seq rest ...)))
@@ -459,7 +483,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
             #:literals (:)
             [(: ret-ty (bs:annotated-binding ...) . body)
              (quasisyntax/loc stx
-               (letrec: ([nm : (bs.ty ... -> ret-ty)
+               (-letrec ([nm : (bs.ty ... -> ret-ty)
                              #,(quasisyntax/loc stx
                                  (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                         #,(quasisyntax/loc stx nm)))]
@@ -474,8 +498,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                 (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                  #,(quasisyntax/loc stx nm)))])
         bs.rhs ...))]
-    [(let: . rest)
-     (syntax/loc stx (let-internal: . rest))]))
+    [(-let vars:lambda-type-vars
+           ([bn:optionally-annotated-name e] ...)
+           . rest)
+     (define/with-syntax (bn* ...)
+       ;; singleton names go to just the name
+       (for/list ([bn (in-syntax #'(bn ...))])
+         (if (empty? (stx-cdr bn))
+             (stx-car bn)
+             bn)))
+     (template ((-lambda (?@ . vars) (bn* ...) . rest) e ...))]
+    [(-let . rest)
+     (syntax/loc stx (-let-internal . rest))]))
 
 (define-syntax (plet: stx)
   (syntax-parse stx #:literals (:)
@@ -553,8 +587,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (begin-for-syntax
   (define-syntax-class fld-spec
     #:literals (:)
-    #:description "[field-name : type]"
-    (pattern [fld:id : ty]))
+    #:description "[field-name : type] or field-name"
+    (pattern [fld:id : ty]
+             #:with form this-syntax)
+    (pattern fld:id
+             #:with ty #'Any
+             #:with form #'[fld : ty]))
 
   (define-syntax-class struct-name
     #:description "struct name (with optional super-struct name)"
@@ -592,7 +630,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    ...))))
 
 ;; User-facing macros for defining typed structure types
-(define-syntaxes (define-typed-struct struct:)
+(define-syntaxes (define-typed-struct -struct)
   (values
    (lambda (stx)
      (syntax-parse stx
@@ -603,7 +641,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (with-syntax ([d-s (ignore-some
                                (syntax/loc stx (define-struct nm (fs.fld ...) . opts)))]
                         [dtsi (quasisyntax/loc stx
-                                (dtsi* (vars.vars ...) nm (fs ...)
+                                (dtsi* (vars.vars ...) nm (fs.form ...)
                                        #:maker #,cname
                                        #,@mutable?))])
             (if (eq? (syntax-local-context) 'top-level)
@@ -633,7 +671,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                . opts)))]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...)
-                                       nm.old-spec (fs ...)
+                                       nm.old-spec (fs.form ...)
                                        #,@mutable?))])
             ;; see comment above
             (if (eq? (syntax-local-context) 'top-level)
@@ -764,20 +802,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
   (values (rts #t) (rts #f))))
 
-(define-syntax (do: stx)
+(define-syntax (-do stx)
   (syntax-parse stx #:literals (:)
-    [(_ : ty
+    [(_ (~optional (~seq : ty) #:defaults ([ty #f]))
         ((var:optionally-annotated-name rest ...) ...)
         (stop?:expr ret ...)
         c:expr ...)
-     (quasisyntax/loc
-         stx
-       (ann #,(syntax/loc
-                  stx
-                (do ((var.ann-name rest ...) ...)
-                    (stop? ret ...)
-                  c ...))
-            ty))]))
+     (define do-stx
+       (syntax/loc stx
+         (do ((var.ann-name rest ...) ...)
+             (stop? ret ...)
+           c ...)))
+     (if (attribute ty)
+         (quasisyntax/loc stx
+           (ann #,do-stx #,(attribute ty)))
+         do-stx)]))
 
 ;; wrap the original for with a type annotation
 (define-syntax (for/annotation stx)
@@ -810,9 +849,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
            (pattern (~seq (var:optionally-annotated-name seq-expr:expr))
                     #:with (expand ...) #'((var.ann-name seq-expr)))
            ;; multi-valued seq-expr
-           ;; currently disabled because it triggers an internal error in the typechecker
-           ;; (pattern ((v:optionally-annotated-name ...) seq-expr:expr)
-           ;;          #:with (expand ...) #'(((v.ann-name ...) seq-expr)))
+           (pattern ((v:optionally-annotated-formal ...) seq-expr:expr)
+                    #:with (expand ...) #'(((v.ann-name ...) seq-expr)))
            ;; break-clause, pass it directly
            ;; Note: these don't ever typecheck
            (pattern (~seq (~and kw (~or #:break #:final)) guard-expr:expr)
@@ -892,7 +930,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
-        ((var:optionally-annotated-name) ...)
+        (var:optionally-annotated-formal ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (type-ascription-property
@@ -901,15 +939,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (clause.expand ... ...)
           c ...))
       #'ty)]
-    [(_ ((var:annotated-name) ...)
+    [(_ (var:optionally-annotated-formal ...)
         clause:for-clauses
         c ...)
-     (type-ascription-property
-      (quasisyntax/loc stx
-        (for/lists (var.ann-name ...)
-          (clause.expand ... ...)
-          c ...))
-      #'(values var.ty ...))]))
+     (define all-typed? (andmap values (attribute var.ty)))
+     (define for-stx
+       (quasisyntax/loc stx
+          (for/lists (var.ann-name ...)
+            (clause.expand ... ...)
+            c ...)))
+     (if all-typed?
+         (type-ascription-property
+          for-stx
+          #`(values #,@(attribute var.ty)))
+         for-stx)]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
@@ -925,12 +968,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ accum:accumulator-bindings
         clause:for-clauses
         c ...)
-     (type-ascription-property
-      (quasisyntax/loc stx
-        (for/fold ((accum.ann-name accum.init) ...)
-          (clause.expand ... ...)
-          c ...))
-      #'(values accum.ty ...))]))
+     (define all-typed? (andmap values (attribute accum.ty)))
+     (define for-stx
+       (quasisyntax/loc stx
+         (for/fold ((accum.ann-name accum.init) ...)
+                   (clause.expand ... ...)
+           c ...)))
+     (if all-typed?
+         (type-ascription-property
+          for-stx
+          #`(values #,@(attribute accum.ty)))
+         for-stx)]))
 
 
 (define-syntax (for*: stx)
@@ -1109,65 +1157,190 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ p:id)
      (quasisyntax/loc stx #,(internal #'(declare-refinement-internal p)))]))
 
-(define-syntaxes (let/cc: let/ec:)
+(define-syntaxes (-let/cc -let/ec)
   (let ()
     (define ((mk l/c) stx)
       (syntax-parse stx
-       [(_ (~var k (param-annotated-name (lambda (s) #`(#,s -> (U))))) . body)
+       [(_ (~or (~var k (param-annotated-name (lambda (s) #`(#,s -> (U)))))
+                (~and k:id (~bind [k.ann-name #'k]))) . body)
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
 
-
+;; Syntax classes for -lambda
 (begin-for-syntax
-  (define-syntax-class optional-arg
-    (pattern name:id #:attr value #f)
-    (pattern (name:id value:expr)))
-  (define-splicing-syntax-class lambda-args
-    #:attributes (required-pos
-                  optional-pos
-                  optional-kws
-                  required-kws)
-    (pattern (~seq (~or pos:optional-arg (~seq kw:keyword key:optional-arg)) ...)
-             #:attr optional-pos (length (filter values (attribute pos.value)))
-             #:attr required-pos (- (length (filter values (attribute pos.name)))
-                                    (attribute optional-pos))
-             #:attr optional-kws
-               (for/list ((kw (attribute kw))
-                          (kw-value (attribute key.value))
-                          #:when kw-value)
-                 kw)
-             #:attr required-kws (remove* (attribute optional-kws) (attribute kw)))))
+  (define-splicing-syntax-class kw-formal
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern (~seq kw:keyword id:id)
+             #:with form #'(kw id)
+             #:attr default #f
+             #:attr type #f)
+    (pattern (~seq kw:keyword [id:id default:expr])
+             #:with form #'(kw [id default])
+             #:attr type #f)
+    (pattern (~seq kw:keyword [id:id : type:expr])
+             #:with form #`(kw #,(type-label-property #'id #'type))
+             #:attr default #f)
+    (pattern (~seq kw:keyword [id:id : type:expr default:expr])
+             #:with form #`(kw [#,(type-label-property #'id #'type) default])))
+
+  (define-splicing-syntax-class mand-formal
+    #:description "lambda argument"
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern id:id
+             #:with form #'(id)
+             #:attr default #f
+             #:attr type #f
+             #:attr kw #f)
+    (pattern [id:id : type:expr]
+             #:with form #`(#,(type-label-property #'id #'type))
+             #:attr default #f
+             #:attr kw #f)
+    (pattern :kw-formal))
+
+  (define-splicing-syntax-class opt-formal
+    #:description "optional lambda argument"
+    #:attributes (form id default type kw)
+    #:literals (:)
+    (pattern [id:id default:expr]
+             #:with form #'([id default])
+             #:attr type #f
+             #:attr kw #f)
+    (pattern [id:id : type:expr default:expr]
+             #:with form #`([#,(type-label-property #'id #'type) default])
+             #:attr kw #f)
+    (pattern :kw-formal))
+
+  (define-syntax-class rest-arg
+    #:description "rest argument"
+    #:attributes (form)
+    #:literals (:)
+    ;; specifying opaque here helps produce a better error
+    ;; message for optional argumenents, but produces worse
+    ;; error messages for rest arguments.
+    #:opaque
+    (pattern rest:id #:attr form #'rest)
+    (pattern (rest:id : type:expr :star)
+             #:attr form (type-label-property #'rest #'type))
+    (pattern (rest:id : type:expr bnd:ddd/bound)
+             #:attr bound (attribute bnd.bound)
+             #:attr form (type-dotted-property
+                          (type-label-property #'rest #'type)
+                          (attribute bound))))
+
+  (define-syntax-class lambda-formals
+    #:attributes (opt-property kw-property erased)
+    #:literals (:)
+    (pattern (~or (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
+                  (~and (mand:mand-formal ... opt:opt-formal ...)
+                        (~bind [rest.form #'()])))
+             #:attr kw-property
+             (ormap values (append (attribute mand.kw) (attribute opt.kw)))
+             #:attr opt-property
+             (list (length (attribute mand)) (length (attribute opt)))
+             #:attr erased
+             (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
+
+  (define-syntax-class curried-formals
+    #:attributes (erased)
+    #:literals (:)
+    (pattern fun:id #:with erased #'fun)
+    (pattern (fun:curried-formals . formals:lambda-formals)
+             #:with erased #`(fun.erased . #,(attribute formals.erased))))
+
+  (define-splicing-syntax-class return-ann
+    #:description "return type annotation"
+    #:literals (:)
+    (pattern (~seq : type:expr))
+    (pattern (~seq) #:attr type #f)))
 
 
 ;; annotation to help tc-expr pick out keyword functions
 (define-syntax (-lambda stx)
   (syntax-parse stx
-    [(_ formals . body)
-     (define d (syntax/loc stx (λ formals . body)))
-     (syntax-parse #'formals
-      [(~or (~and (args:lambda-args) (~bind (rest #f)))
-            (args:lambda-args . rest:id))
-       (define kw-property
-         (> (+ (length (attribute args.required-kws))
-               (length (attribute args.optional-kws)))
-            0))
-       (define opt-property
-         (and (> (attribute args.optional-pos) 0)
-           (list
-             (attribute args.required-pos)
-             (attribute args.optional-pos))))
-       (opt-lambda-property
-         (kw-lambda-property d kw-property)
-         opt-property)]
-       ;; This is an error and will be caught by the real lambda
-      [_ d])]))
+    #:literals (:)
+    [(_ vars:maybe-lambda-type-vars
+        formals:lambda-formals
+        return:return-ann
+        (~describe "body expression or definition" e) ...
+        (~describe "body expression" last-e))
+     ;; Annotate the last expression with the return type. Should be correct
+     ;; since if a function returns, it has to do so through the last expression
+     ;; even with continuations.
+     (define/with-syntax last-e*
+       (if (attribute return.type)
+           #`(ann last-e #,(attribute return.type))
+           #'last-e))
+     (define d (syntax/loc stx (λ formals.erased e ... last-e*)))
+     (define d/prop
+       (if (attribute formals.kw-property)
+           (kw-lambda-property d (attribute formals.kw-property))
+           (opt-lambda-property d (attribute formals.opt-property))))
+     ;; attach a plambda property if necessary
+     (if (attribute vars.type-vars)
+         (quasisyntax/loc stx
+           (#%expression
+            #,(plambda-property d/prop (attribute vars.type-vars))))
+         d/prop)]))
 
+;; for backwards compatibility, note that this only accepts formals
+;; with type annotations and also accepts type variables differently
+;; than -define
+(define-syntax (define: stx)
+  (syntax-parse stx #:literals (:)
+    [(define: (nm:id . formals:annotated-formals) (~describe "return type annotation" (~seq : ret-ty)) body ...)
+     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
+       (syntax/loc stx
+         (-define nm : arrty
+           (-lambda formals body ...))))]
+    [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
+     #'(-define nm : ty body)]
+    [(define: tvars:type-variables nm:id : ty body)
+     #'(-define #:forall tvars nm : ty body)]
+    [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
+     #'(-define #:forall tvars (nm . formals) : ret-ty body ...)]))
 
-;; do this ourselves so that we don't get the static bindings,
-;; which are harder to typecheck
 (define-syntax (-define stx)
-  (define-values (i b) (normalize-definition stx #'-lambda #t #t))
-  (datum->syntax stx `(,#'define ,i ,b) stx stx))
+  (syntax-parse stx #:literals (:)
+    ;; the first two cases are actually subsumed by the last,
+    ;; but manually expanding to using the : annotation form
+    ;; produces better error messages on duplicate annotations
+    [(-define nm:id return:return-ann body)
+     (define/with-syntax maybe-ann
+       (if (attribute return.type)
+           #'(: nm return.type)
+           #'(void)))
+     (syntax/loc stx (begin maybe-ann (define nm body)))]
+    [(-define vars:lambda-type-vars nm:id : ty body)
+     (define/with-syntax type
+       (syntax/loc #'ty (All vars.type-vars ty)))
+     (syntax/loc stx
+       (begin
+         (: nm : type)
+         (define nm body)))]
+    [(-define vars:maybe-lambda-type-vars
+              formals:curried-formals
+              return:return-ann
+              body ... last-body)
+     ;; have to preprocess for the return type annotation
+     (define/with-syntax last-body*
+       (if (attribute return.type)
+           #`(ann last-body #,(attribute return.type))
+           #'last-body))
+     (define-values (defined-id rhs)
+       (normalize-definition
+        #`(define formals.erased body ... last-body*)
+        #'-lambda
+        #t #t))
+     ;; insert in type variables if necessary
+     (define rhs*
+       (syntax-parse rhs
+         #:literals (-lambda)
+         [(-lambda formals . others)
+          (template (-lambda (?@ . vars) formals . others))]
+         [_ rhs]))
+     #`(define #,defined-id #,rhs*)]))
 
 (define-syntax (with-asserts stx)
   (define-syntax-class with-asserts-clause
@@ -1283,11 +1456,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ for: #:length n-expr:expr (clauses ...) body ...+)
      (syntax/loc stx
-       (let: ([n : Integer  n-expr])
+       (-let ([n : Integer  n-expr])
          (cond [(n . > . 0)
                 (define xs (make-flvector n))
                 (define: i : Nonnegative-Fixnum 0)
-                (let/ec: break : Void
+                (-let/ec break : Void
                   (for: (clauses ...)
                     (unsafe-flvector-set! xs i (let () body ...))
                     (set! i (unsafe-fx+ i 1))
@@ -1301,10 +1474,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (define xs (make-flvector 4))
          (define i 0)
          (for: (clauses ...)
-           (let: ([x : Float  (let () body ...)])
+           (-let ([x : Float  (let () body ...)])
              (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
                                       (define new-xs (make-flvector new-n x))
-                                      (let: loop : Void ([i : Nonnegative-Fixnum 0])
+                                      (-let loop : Void ([i : Nonnegative-Fixnum 0])
                                         (when (i . unsafe-fx< . n)
                                           (unsafe-flvector-set! new-xs i (unsafe-flvector-ref xs i))
                                           (loop (unsafe-fx+ i 1))))

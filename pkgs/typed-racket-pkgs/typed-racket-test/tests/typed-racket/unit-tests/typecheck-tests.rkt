@@ -169,6 +169,8 @@
     define lambda λ)
   ;; For tests that rely on kw/opt properties
   (prefix-in tr: (only-in (base-env prims) define lambda λ))
+  ;; Needed for the `let-name` syntax class before
+  (prefix-in r: (only-in racket/base let-values))
   ;; Needed for constructing TR types in expected values
   (for-syntax
     (rep type-rep filter-rep object-rep)
@@ -179,8 +181,8 @@
 (begin-for-syntax
   ;; More tests need to be written to use these macros.
   (define-syntax-class (let-name n)
-    #:literals (let-values)
-    (pattern (let-values ([(i:id) _] ...) . _)
+    #:literals (r:let-values)
+    (pattern (r:let-values ([(i:id) _] ...) . _)
              #:with x (list-ref (syntax->list #'(i ...)) n)))
 
   (define-syntax-rule (get-let-name id n e)
@@ -2059,6 +2061,174 @@
                #:msg #rx"expected: String.*given: Any"]
        [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
                #:msg #rx"Required keyword not supplied"]
+
+       ;; test lambdas with mixed type expressions, typed keywords, typed
+       ;; optional arguments
+       [tc-e (tr:lambda (x [y : String]) (string-append y "b"))
+             #:ret (ret (t:-> Univ -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x [y : String] . z) (string-append y "b"))
+             #:ret (ret (->* (list Univ -String) Univ -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x [y : String] . [z : String *]) (string-append y "b"))
+             #:ret (ret (->* (list Univ -String) -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x [y : String]) : String (string-append y "b"))
+             #:ret (ret (t:-> Univ -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x z [y : String]) (string-append y "b"))
+             #:ret (ret (t:-> Univ Univ -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x z [y : String] . w) (string-append y "b"))
+             #:ret (ret (->* (list Univ Univ -String) Univ -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x z [y : String] . [w : String *]) (string-append y "b"))
+             #:ret (ret (->* (list Univ Univ -String) -String -String) (-FS -top -bot))]
+       [tc-e (tr:lambda (x z [y : String]) : String (string-append y "b"))
+             #:ret (ret (t:-> Univ Univ -String -String) (-FS -top -bot))]
+       [tc-err (tr:lambda (x [y : String]) : Symbol (string-append y "b"))
+               #:msg "expected: Symbol.*given: String"]
+       [tc-err (tr:lambda (x [y : String "a"] z) (string-append y "b"))
+               #:msg "expected optional lambda argument"]
+       [tc-e (tr:lambda (x [y : String "a"]) (string-append y "b"))
+             (->opt Univ [-String] -String)]
+       [tc-e (tr:lambda (x [y : String "a"] . z) (string-append y "b"))
+             (->optkey Univ [-String] #:rest Univ -String)]
+       [tc-e (tr:lambda (x [y : String "a"] . [z : String *]) (string-append y "b"))
+             (->optkey Univ [-String] #:rest -String -String)]
+       [tc-e (tr:lambda (x y [z : String "a"]) (string-append z "b"))
+             (->opt Univ Univ [-String] -String)]
+       [tc-e (tr:lambda (w x [y : String "y"] [z : String "z"]) (string-append y z))
+             (->opt Univ Univ [-String -String] -String)]
+       [tc-e (tr:lambda (w [x : String] [y : String "y"] [z : String "z"])
+               (string-append x z))
+             (->opt Univ -String [-String -String] -String)]
+       [tc-e (tr:lambda (x #:y [y : String]) (string-append y "b"))
+             (->key Univ #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] . z) (string-append y "b"))
+             (->optkey Univ [] #:rest Univ #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] . [z : String *]) (string-append y "b"))
+             (->optkey Univ [] #:rest -String #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String]) : String (string-append y "b"))
+             (->key Univ #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "a"]) (string-append y "b"))
+             (->key Univ #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String "a"]) : String (string-append y "b"))
+             (->key Univ #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z "z"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "a"] [z "z"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #f -String)]
+       [tc-e (tr:lambda (x [z "z"] #:y [y : String]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #t -String)]
+       [tc-e (tr:lambda (x [z "z"] #:y [y : String "a"]) (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #f -String)]
+       [tc-e (tr:lambda (x [z "z"] #:y [y : String "a"]) : String (string-append y "b"))
+             (->optkey Univ [Univ] #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z : String "z"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z : String "z"] . w) (string-append y z))
+             (->optkey Univ [-String] #:rest Univ #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] [z : String "z"] . [w : String *]) (string-append y z))
+             (->optkey Univ [-String] #:rest -String #:y -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String "y"] [z : String "z"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #f -String)]
+       [tc-e (tr:lambda (x [z : String "z"] #:y [y : String]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #t -String)]
+       [tc-e (tr:lambda (x [z : String "z"] #:y [y : String "a"]) (string-append y z))
+             (->optkey Univ [-String] #:y -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String] #:z [z : String]) (string-append y z))
+             (->key Univ #:y -String #t #:z -String #t -String)]
+       [tc-e (tr:lambda (x #:y [y : String] #:z [z : String "z"]) (string-append y z))
+             (->key Univ #:y -String #t #:z -String #f -String)]
+       [tc-e (tr:lambda (x #:y [y : String "y"] #:z [z : String "z"]) (string-append y z))
+             (->key Univ #:y -String #f #:z -String #f -String)]
+       ;; for these next three tests, test the application instead of the
+       ;; type of the function because the precise filters are hard to
+       ;; get right in the expected result type and polymorphic types are
+       ;; harder to test for equality.
+       [tc-e ((inst (tr:lambda #:forall (A) (x [y : A]) y) String) 'a "foo")
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e ((inst (tr:lambda #:∀ (A) (x [y : A]) y) String) 'a "foo")
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e ((inst (tr:lambda #:forall (A ...) (x . [rst : A ... A]) rst) String) 'a "foo")
+             #:ret (ret (-lst* -String) (-FS -top -bot))]
+       #| FIXME: does not work yet, TR thinks the type variable is unbound
+       [tc-e (inst (tr:lambda #:forall (A) (x [y : A] [z : String "z"]) y) String)
+             #:ret (ret (->opt Univ -String [-String] -String) (-FS -top -bot))]
+       |#
+
+       ;; test `define` with mixed type annotations
+       [tc-e (let () (tr:define y "bar")
+                     (tr:define x : String "foo")
+                     (string-append x y))
+             -String]
+       [tc-e (let () (tr:define ((f [x : String]) y) x)
+                     ;; FIXME: does not work due to a bug in
+                     ;; lambda type-checking
+                     ;(tr:define ((g x) [y : String]) y)
+                     (string-append ((f "foo") 'y) "bar"))
+             -String]
+       [tc-e (let () (tr:define #:forall (A ...) (f x . [rst : A ... A]) rst)
+                     (f 'a "b" "c"))
+             #:ret (ret (-lst* -String -String) (-FS -top -bot))]
+
+       ;; test new :-less forms that allow fewer annotations
+       [tc-e (let ([x "foo"]) x) -String]
+       [tc-e (let ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let #:forall (A) ([x : A "foo"]) x)
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e (let #:forall (A) ([y 'y] [x : A "foo"]) x)
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e (let* ([x "foo"]) x) -String]
+       [tc-e (let* ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let* ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([x "foo"]) x) -String]
+       [tc-e (letrec ([x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([x : String "foo"] [y 'y]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (letrec ([y 'y] [x : String "foo"]) (string-append x "bar"))
+             -String]
+       [tc-e (let-values ([(x y) (values "foo" "bar")]) x) -String]
+       [tc-e (let-values ([(x y) (values "foo" "bar")]
+                          [([z : String]) (values "baz")])
+               (string-append x y z))
+             -String]
+       [tc-e (let-values ([([x : String] [y : String]) (values "foo" "bar")])
+               (string-append x y))
+             -String]
+       [tc-e (letrec-values ([(x y) (values "foo" "bar")]) x)
+             -String]
+       [tc-e (letrec-values ([(x y) (values "foo" "bar")]
+                             [([z : String]) (values "baz")])
+               (string-append x y z))
+             -String]
+       [tc-e (letrec-values ([([x : String] [y : String]) (values "foo" "bar")])
+               (string-append x y))
+             -String]
+       [tc-e (let loop ([x "x"]) x)
+             #:ret (ret Univ (-FS -top -bot))]
+       [tc-e (let loop ([x : String "x"]) x)
+             #:ret (ret -String (-FS -top -bot))]
+       [tc-e (let/cc k "foo") -String]
+       [tc-e (let/ec k "foo") -String]
+       [tc-e (let/cc k : String (k "foo")) -String]
+       [tc-e (let/ec k : String (k "foo")) -String]
+       [tc-e (ann (do ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
+                  Integer)
+             #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
+       [tc-e (do : Integer ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
+             #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
         )
   (test-suite
    "tc-literal tests"

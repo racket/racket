@@ -3,7 +3,15 @@
 (require racket/require racket/promise
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
-                     default-continuation-prompt-tag)
+                     let let* letrec letrec-values let-values
+                     let/cc let/ec do struct define-struct
+                     default-continuation-prompt-tag
+                     for/list for/vector for/hash for/hasheq for/hasheqv
+                     for/and for/or for/sum for/product for/lists
+                     for/first for/last for/fold for*/list for*/lists
+                     for*/vector for*/hash for*/hasheq for*/hasheqv for*/and
+                     for*/or for*/sum for*/product for*/first for*/last
+                     for*/fold)
           "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
          "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers λ lambda define)
