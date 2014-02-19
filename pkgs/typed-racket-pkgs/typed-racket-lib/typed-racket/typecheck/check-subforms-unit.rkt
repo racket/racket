@@ -9,6 +9,7 @@
          (private syntax-properties)
          (utils tc-utils)
          (for-syntax racket/base syntax/parse)
+         (for-template racket/base)
          (rep type-rep))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
@@ -41,7 +42,10 @@
      #'(let loop ([form init-form])
          (parameterize ([current-orig-stx form])
            (syntax-parse form
+             #:literals (quote-syntax)
              [clause bodies ...] ...
+             ;; avoid going under quote-syntax, nothing to typecheck
+             [(quote-syntax . rst) (void)]
              [(a . b)
               (loop #'a)
               (loop #'b) ]
