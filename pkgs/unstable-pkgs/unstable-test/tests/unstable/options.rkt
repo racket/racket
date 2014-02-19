@@ -710,7 +710,7 @@
                                          (provide (contract-out [boo transfer/c])))
                                        (require 'client)
                                        (boo 'wrong))
-                                      (list "top-level" "top-level"))
+                                      (list "top-level" "client"))
                                      
                                      (test-contract-fail
                                       "fails (positive) after two transfers (with contract)"
@@ -750,7 +750,7 @@
                                          (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        (boo 'wrong))
-                                      (list "top-level" "top-level" "top-level"))
+                                      (list "top-level" "middle1" "middle0"))
                                      
                                      (test-pass
                                       "passes after void transfer"
@@ -824,7 +824,7 @@
                                                                 [bar transfer/c])))                                      
                                        (require 'client1)
                                        (bar boo))
-                                      (list "top-level" "client1" "client" "server"))
+                                      (list "client" "client1" "client" "server"))
                                      
                                      (test-contract-fail
                                       "fails (negative-ho) after three transfers and exercise (with-contract)"
@@ -848,7 +848,7 @@
                                                                 [bar transfer/c])))                                      
                                        (require 'client1)
                                        (bar boo))
-                                      (list "server" "top-level" "top-level" "top-level"))) 
+                                      (list "server" "top-level" "client1" "client"))) 
                          
                          (test-suite "exercise-option"
                                      
@@ -898,7 +898,7 @@
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) "wrong!"))
                                        (require 'client))
-                                      (list "client" "client"))   
+                                      (list "client" "middle"))   
                                      
                                      (test-pass
                                       "passes after void exercise"
@@ -986,7 +986,7 @@
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) "wrong!"))
                                        (require 'client))
-                                      (list "client" "client"))   
+                                      (list "client" "middle"))   
                                      
                                      
                                      (test-contract-fail
@@ -1176,7 +1176,7 @@
                                          (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 'wrong))
-                                      (list "top-level" "top-level" "top-level"))
+                                      (list "top-level" "middle1" "middle0"))
                                      
                                      (test-contract-fail
                                       "fails (positive) after two transfers and tweak"
@@ -1211,7 +1211,7 @@
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 42)
                                        ((tweak-option boo) 'wrong))
-                                      (list "top-level" "top-level" "top-level"))
+                                      (list "top-level" "middle1" "middle0"))
                                      
                                      (test-pass
                                       "passes after two transfers and tweak (with-contract)"
