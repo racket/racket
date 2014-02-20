@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require syntax/parse
+         syntax/parse/experimental/template
          "../private/parse-classes.rkt"
          "../private/syntax-properties.rkt"
          (for-label "colon.rkt"))
@@ -153,6 +154,13 @@
   (pattern (~optional a:standalone-annotation)
            #:with ty (if (attribute a) #'a.ty #f)))
 
+(define-syntax-class type-variables
+  #:attributes ((vars 1))
+  #:description "a sequence of type variables"
+  (pattern (vars:id ...)
+           #:fail-when (check-duplicate-identifier (syntax->list #'(vars ...)))
+           "duplicate type variable declaration"))
+
 (define-splicing-syntax-class lambda-type-vars
   #:description "optional type parameters"
   #:attributes (type-vars)
@@ -164,3 +172,88 @@
   #:attributes (type-vars)
   (pattern :lambda-type-vars)
   (pattern (~seq) #:attr type-vars #f))
+
+(define-splicing-syntax-class kw-formal
+  #:attributes (form id default type kw)
+  #:literal-sets (colon)
+  (pattern (~seq kw:keyword id:id)
+           #:with form #'(kw id)
+           #:attr default #f
+           #:attr type #f)
+  (pattern (~seq kw:keyword [id:id default:expr])
+           #:with form #'(kw [id default])
+           #:attr type #f)
+  (pattern (~seq kw:keyword [id:id : type:expr])
+           #:with form #`(kw #,(type-label-property #'id #'type))
+           #:attr default #f)
+  (pattern (~seq kw:keyword [id:id : type:expr default:expr])
+           #:with form #`(kw [#,(type-label-property #'id #'type) default])))
+
+(define-splicing-syntax-class mand-formal
+  #:description "lambda argument"
+  #:attributes (form id default type kw)
+  #:literal-sets (colon)
+  (pattern id:id
+           #:with form #'(id)
+           #:attr default #f
+           #:attr type #f
+           #:attr kw #f)
+  (pattern [id:id : type:expr]
+           #:with form #`(#,(type-label-property #'id #'type))
+           #:attr default #f
+           #:attr kw #f)
+  (pattern :kw-formal))
+
+(define-splicing-syntax-class opt-formal
+  #:description "optional lambda argument"
+  #:attributes (form id default type kw)
+  #:literal-sets (colon)
+  (pattern [id:id default:expr]
+           #:with form #'([id default])
+           #:attr type #f
+           #:attr kw #f)
+  (pattern [id:id : type:expr default:expr]
+           #:with form #`([#,(type-label-property #'id #'type) default])
+           #:attr kw #f)
+  (pattern :kw-formal))
+
+(define-syntax-class rest-arg
+  #:description "rest argument"
+  #:attributes (form)
+  #:literal-sets (colon)
+  ;; specifying opaque here helps produce a better error
+  ;; message for optional argumenents, but produces worse
+  ;; error messages for rest arguments.
+  #:opaque
+  (pattern rest:id #:attr form #'rest)
+  (pattern (rest:id : type:expr :star)
+           #:attr form (type-label-property #'rest #'type))
+  (pattern (rest:id : type:expr bnd:ddd/bound)
+           #:attr bound (attribute bnd.bound)
+           #:attr form (type-dotted-property
+                        (type-label-property #'rest #'type)
+                        (attribute bound))))
+
+(define-syntax-class lambda-formals
+  #:attributes (opt-property kw-property erased)
+  (pattern (~or (mand:mand-formal ... opt:opt-formal ... . rest:rest-arg)
+                (~and (mand:mand-formal ... opt:opt-formal ...)
+                      (~bind [rest.form #'()])))
+           #:attr kw-property
+           (ormap values (append (attribute mand.kw) (attribute opt.kw)))
+           #:attr opt-property
+           (list (length (attribute mand)) (length (attribute opt)))
+           #:attr erased
+           (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
+
+(define-syntax-class curried-formals
+  #:attributes (erased)
+  (pattern fun:id #:with erased #'fun)
+  (pattern (fun:curried-formals . formals:lambda-formals)
+           #:with erased #`(fun.erased . #,(attribute formals.erased))))
+
+(define-splicing-syntax-class return-ann
+  #:description "return type annotation"
+  #:literal-sets (colon)
+  (pattern (~seq : type:expr))
+  (pattern (~seq) #:attr type #f))
