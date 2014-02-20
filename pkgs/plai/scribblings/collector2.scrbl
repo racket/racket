@@ -250,13 +250,13 @@ should never signal an error.
 @defproc[(gc:closure-code-ptr [loc location?]) heap-value?]{
  Given a location returned from an earlier allocation
  check to see if it is a closure; if not signal an
- error. if so, return the @racket[_code-ptr] for that closure.
+ error. If so, return the @racket[_code-ptr] for that closure.
 }
 
 @defproc[(gc:closure-env-ref [loc location?] [i exact-nonnegative-integer?])
          location?]{
   Given a location returned from an earlier allocation, check
-  to see if it is a closure; if not signal an error. Uf so,
+  to see if it is a closure; if not signal an error. If so,
   return the @racket[i]th variable in the closure (counting from 0).
 }
 
