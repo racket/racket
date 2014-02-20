@@ -1086,7 +1086,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx
       #:literals (:)
-      ((_ (~seq : return-annotation:expr)
+      [(_ (~seq : return-annotation:expr)
           clause:for-clauses
           body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
@@ -1094,7 +1094,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
            (clause.expand ... ...)
            (let-values (((key val) (let () body ...)))
-             (hash-set return-hash key val))))))))
+             (hash-set return-hash key val))))]
+      [(_ clause:for-clauses body ...)
+       (syntax/loc stx
+         (for/hash (clause.expand ... ...)
+           body ...))])))
 
 (define-syntax for/hash:    (define-for/hash:-variant #'make-immutable-hash))
 (define-syntax for/hasheq:  (define-for/hash:-variant #'make-immutable-hasheq))
@@ -1147,6 +1151,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 (~and k:id (~bind [k.ann-name #'k]))) . body)
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
+
 
 ;; lambda with optional type annotations, uses syntax properties
 (define-syntax (-lambda stx)

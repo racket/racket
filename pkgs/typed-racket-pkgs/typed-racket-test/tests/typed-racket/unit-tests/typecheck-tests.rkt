@@ -2039,6 +2039,14 @@
                (foo #hash(("foo" . foo))))
              (-HT -Symbol -String)]
 
+       ;; for/hash doesn't always need a return annotation inside
+       [tc-e (let ()
+               (tr:define h : (HashTable Any Any)
+                 (for/hash ([(k v) (in-hash #hash(("a" . a)))])
+                   (values v k)))
+               h)
+             (-HT Univ Univ)]
+
        ;; call-with-input-string and friends - PR 14050
        [tc-e (call-with-input-string "abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
              #:ret (ret (list (-val 'a) (-val 'b)))]
