@@ -2008,6 +2008,17 @@
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
                         (make-NoObject))]
+
+       ;; PR 13937
+       [tc-e (let ()
+               (: foo ((HashTable String Symbol) -> (HashTable Symbol String)))
+               (define (foo map)
+                 (for/hash : (HashTable Symbol String)
+                             ([(str sym) map])
+                   (values sym str)))
+               (foo #hash(("foo" . foo))))
+             (-HT -Symbol -String)]
+
        ;; call-with-input-string and friends - PR 14050
        [tc-e (call-with-input-string "abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
              #:ret (ret (list (-val 'a) (-val 'b)))]
