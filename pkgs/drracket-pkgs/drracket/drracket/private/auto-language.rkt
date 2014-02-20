@@ -1,4 +1,4 @@
-#lang typed/racket/base #:no-optimize
+#lang typed/racket/base
 
 (require typed/framework/framework 
 	 typed/mred/mred
