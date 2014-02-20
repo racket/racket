@@ -17,74 +17,7 @@ Typed Racket provides support for object-oriented programming with
 the classes and objects provided by the @racketmodname[racket/class]
 library.
 
-@defform[#:literals (init field augment)
-         (Class class-type-clause ...)
-         #:grammar ([class-type-clause name+type
-                                       (init init-type ...)
-                                       (field name+type ...)
-                                       (augment name+type ...)
-                                       (code:line #:implements type-alias-id)
-                                       (code:line #:row-var row-var-id)]
-                    [init-type name+type
-                               [id type #:optional]]
-                    [name+type [id type]])]{
-  The type of a class with the given initialization argument, method, and
-  field types.
-
-  The types of methods are provided either without a keyword, in which case
-  they correspond to public methods, or with the @racketidfont{augment}
-  keyword, in which case they correspond to a method that can be augmented.
-
-  An initialization argument type specifies a name and type and optionally
-  a @racket[#:optional] keyword. An initialization argument type with
-  @racket[#:optional] corresponds to an argument that does not need to
-  be provided at object instantiation.
-
-  When @racket[type-alias-id] is provided, the resulting class type
-  includes all of the initialization argument, method, and field types
-  from the specified type alias (which must be an alias for a class type).
-  Multiple @racket[#:implements] clauses may be provided for a single class
-  type.
-
-  @ex[
-    (define-type Point<%> (Class (field [x Real] [y Real])))
-    (: colored-point% (Class #:implements Point<%>
-                             (field [color String])))
-  ]
-
-  When @racket[row-var-id] is provided, the class type is an abstract type
-  that is row polymorphic. A row polymorphic class type can be instantiated
-  at a specific row using @racket[inst]. Only a single @racket[#:row-var]
-  clause may appear in a class type.
-}
-
-@defidform[ClassTop]{
-  The supertype of all class types. A value of this type
-  cannot be used for subclassing, object creation, or most
-  other class functions. Its primary use is for reflective
-  operations such as @racket[is-a?].
-}
-
-@defform[#:literals (field)
-         (Object object-type-clause ...)
-         #:grammar ([object-type-clause name+type
-                                        (field name+type ...)])]{
-  The type of an object with the given field and method types.
-
-  @ex[
-    (new object%)
-    (new (class object% (super-new) (field [x : Real 0])))
-  ]
-}
-
-@defform[(Instance class-type-expr)]{
-  The type of an object that corresponds to @racket[class-type-expr].
-
-  This is the same as an @racket[Object] type that has all of the
-  method and field types from @racket[class-type-expr]. The types for
-  the @racketidfont{augment} and @racketidfont{init} clauses in the
-  class type are ignored.
-}
+@section{Special forms}
 
 @;; This uses a trick to link to racket/class's class identifier
 @;; in certain cases rather than the class defined here
@@ -204,5 +137,76 @@ library.
     cons%
     (new (inst cons% Integer String) [car 5] [cdr "foo"])
   ]
+}
+
+@section{Types}
+
+@defform[#:literals (init field augment)
+         (Class class-type-clause ...)
+         #:grammar ([class-type-clause name+type
+                                       (init init-type ...)
+                                       (field name+type ...)
+                                       (augment name+type ...)
+                                       (code:line #:implements type-alias-id)
+                                       (code:line #:row-var row-var-id)]
+                    [init-type name+type
+                               [id type #:optional]]
+                    [name+type [id type]])]{
+  The type of a class with the given initialization argument, method, and
+  field types.
+
+  The types of methods are provided either without a keyword, in which case
+  they correspond to public methods, or with the @racketidfont{augment}
+  keyword, in which case they correspond to a method that can be augmented.
+
+  An initialization argument type specifies a name and type and optionally
+  a @racket[#:optional] keyword. An initialization argument type with
+  @racket[#:optional] corresponds to an argument that does not need to
+  be provided at object instantiation.
+
+  When @racket[type-alias-id] is provided, the resulting class type
+  includes all of the initialization argument, method, and field types
+  from the specified type alias (which must be an alias for a class type).
+  Multiple @racket[#:implements] clauses may be provided for a single class
+  type.
+
+  @ex[
+    (define-type Point<%> (Class (field [x Real] [y Real])))
+    (: colored-point% (Class #:implements Point<%>
+                             (field [color String])))
+  ]
+
+  When @racket[row-var-id] is provided, the class type is an abstract type
+  that is row polymorphic. A row polymorphic class type can be instantiated
+  at a specific row using @racket[inst]. Only a single @racket[#:row-var]
+  clause may appear in a class type.
+}
+
+@defidform[ClassTop]{
+  The supertype of all class types. A value of this type
+  cannot be used for subclassing, object creation, or most
+  other class functions. Its primary use is for reflective
+  operations such as @racket[is-a?].
+}
+
+@defform[#:literals (field)
+         (Object object-type-clause ...)
+         #:grammar ([object-type-clause name+type
+                                        (field name+type ...)])]{
+  The type of an object with the given field and method types.
+
+  @ex[
+    (new object%)
+    (new (class object% (super-new) (field [x : Real 0])))
+  ]
+}
+
+@defform[(Instance class-type-expr)]{
+  The type of an object that corresponds to @racket[class-type-expr].
+
+  This is the same as an @racket[Object] type that has all of the
+  method and field types from @racket[class-type-expr]. The types for
+  the @racketidfont{augment} and @racketidfont{init} clauses in the
+  class type are ignored.
 }
 
