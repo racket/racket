@@ -9,7 +9,9 @@ CC = @CC@
 
 MZSRC = $(srcdir)
 
-CFLAGS = -I$(builddir)/.. -I$(srcdir)/../include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
@@ -166,124 +168,124 @@ schsys.h : $(srcdir)/sysname
 	$(srcdir)/sysname >> schsys.h
 
 depend:
-	makedepend -- $(CFLAGS) -- $(SRCS)
+	makedepend -- $(ALL_CFLAGS) -- $(SRCS)
 
 clean:
 	/bin/rm -f *.@LTO@ schsys.h
 
 salloc.@LTO@: $(srcdir)/salloc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/salloc.c -o salloc.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/salloc.c -o salloc.@LTO@
 bignum.@LTO@: $(srcdir)/bignum.c $(srcdir)/bgnfloat.inc
-	$(CC) $(CFLAGS) -c $(srcdir)/bignum.c -o bignum.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/bignum.c -o bignum.@LTO@
 bool.@LTO@: $(srcdir)/bool.c
-	$(CC) $(CFLAGS) -c $(srcdir)/bool.c -o bool.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/bool.c -o bool.@LTO@
 builtin.@LTO@: $(srcdir)/builtin.c
-	$(CC) $(CFLAGS) -c $(srcdir)/builtin.c -o builtin.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/builtin.c -o builtin.@LTO@
 char.@LTO@: $(srcdir)/char.c
-	$(CC) $(CFLAGS) -c $(srcdir)/char.c -o char.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/char.c -o char.@LTO@
 compenv.@LTO@: $(srcdir)/compenv.c
-	$(CC) $(CFLAGS) -c $(srcdir)/compenv.c -o compenv.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/compenv.c -o compenv.@LTO@
 compile.@LTO@: $(srcdir)/compile.c
-	$(CC) $(CFLAGS) -c $(srcdir)/compile.c -o compile.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/compile.c -o compile.@LTO@
 complex.@LTO@: $(srcdir)/complex.c
-	$(CC) $(CFLAGS) -c $(srcdir)/complex.c -o complex.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/complex.c -o complex.@LTO@
 dynext.@LTO@: $(srcdir)/dynext.c
-	$(CC) $(CFLAGS) -c $(srcdir)/dynext.c -o dynext.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/dynext.c -o dynext.@LTO@
 env.@LTO@: $(srcdir)/env.c
-	$(CC) $(CFLAGS) -c $(srcdir)/env.c -o env.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/env.c -o env.@LTO@
 error.@LTO@: $(srcdir)/error.c
-	$(CC) $(CFLAGS) -c $(srcdir)/error.c -o error.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/error.c -o error.@LTO@
 eval.@LTO@: $(srcdir)/eval.c $(srcdir)/schapp.inc $(srcdir)/schnapp.inc
-	$(CC) $(CFLAGS) -c $(srcdir)/eval.c -o eval.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/eval.c -o eval.@LTO@
 file.@LTO@: $(srcdir)/file.c
-	$(CC) $(CFLAGS) -c $(srcdir)/file.c -o file.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/file.c -o file.@LTO@
 fun.@LTO@: $(srcdir)/fun.c
-	$(CC) $(CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
 future.@LTO@: $(srcdir)/future.c
-	$(CC) $(CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
 gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h \
            $(srcdir)/../include/schthread.h $(srcdir)/../sconfig.h
-	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c
-	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
 jit.@LTO@: $(srcdir)/jit.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
 jitalloc.@LTO@: $(srcdir)/jitalloc.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitalloc.c -o jitalloc.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitalloc.c -o jitalloc.@LTO@
 jitarith.@LTO@: $(srcdir)/jitarith.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitarith.c -o jitarith.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitarith.c -o jitarith.@LTO@
 jitcall.@LTO@: $(srcdir)/jitcall.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitcall.c -o jitcall.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitcall.c -o jitcall.@LTO@
 jitcommon.@LTO@: $(srcdir)/jitcommon.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitcommon.c -o jitcommon.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitcommon.c -o jitcommon.@LTO@
 jitinline.@LTO@: $(srcdir)/jitinline.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitinline.c -o jitinline.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitinline.c -o jitinline.@LTO@
 jitprep.@LTO@: $(srcdir)/jitprep.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitprep.c -o jitprep.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitprep.c -o jitprep.@LTO@
 jitstack.@LTO@: $(srcdir)/jitstack.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitstack.c -o jitstack.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitstack.c -o jitstack.@LTO@
 jitstate.@LTO@: $(srcdir)/jitstate.c
-	$(CC) $(CFLAGS) -c $(srcdir)/jitstate.c -o jitstate.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitstate.c -o jitstate.@LTO@
 list.@LTO@: $(srcdir)/list.c
-	$(CC) $(CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
 marshal.@LTO@: $(srcdir)/marshal.c
-	$(CC) $(CFLAGS) -c $(srcdir)/marshal.c -o marshal.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/marshal.c -o marshal.@LTO@
 module.@LTO@: $(srcdir)/module.c
-	$(CC) $(CFLAGS) -c $(srcdir)/module.c -o module.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/module.c -o module.@LTO@
 mzrt.@LTO@: $(srcdir)/mzrt.c
-	$(CC) $(CFLAGS) -c $(srcdir)/mzrt.c -o mzrt.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(srcdir)/network.c
-	$(CC) $(CFLAGS) -c $(srcdir)/network.c -o network.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/network.c -o network.@LTO@
 numarith.@LTO@: $(srcdir)/numarith.c
-	$(CC) $(CFLAGS) -c $(srcdir)/numarith.c -o numarith.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/numarith.c -o numarith.@LTO@
 number.@LTO@: $(srcdir)/number.c
-	$(CC) $(CFLAGS) -c $(srcdir)/number.c -o number.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/number.c -o number.@LTO@
 numcomp.@LTO@: $(srcdir)/numcomp.c
-	$(CC) $(CFLAGS) -c $(srcdir)/numcomp.c -o numcomp.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/numcomp.c -o numcomp.@LTO@
 numstr.@LTO@: $(srcdir)/numstr.c
-	$(CC) $(CFLAGS) -c $(srcdir)/numstr.c -o numstr.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/numstr.c -o numstr.@LTO@
 optimize.@LTO@: $(srcdir)/optimize.c
-	$(CC) $(CFLAGS) -c $(srcdir)/optimize.c -o optimize.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/optimize.c -o optimize.@LTO@
 place.@LTO@: $(srcdir)/place.c
-	$(CC) $(CFLAGS) -c $(srcdir)/place.c -o place.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/place.c -o place.@LTO@
 port.@LTO@: $(srcdir)/port.c
-	$(CC) $(CFLAGS) -c $(srcdir)/port.c -o port.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/port.c -o port.@LTO@
 portfun.@LTO@: $(srcdir)/portfun.c
-	$(CC) $(CFLAGS) -c $(srcdir)/portfun.c -o portfun.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/portfun.c -o portfun.@LTO@
 print.@LTO@: $(srcdir)/print.c
-	$(CC) $(CFLAGS) -c $(srcdir)/print.c -o print.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/print.c -o print.@LTO@
 rational.@LTO@: $(srcdir)/rational.c $(srcdir)/ratfloat.inc
-	$(CC) $(CFLAGS) -c $(srcdir)/rational.c -o rational.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/rational.c -o rational.@LTO@
 read.@LTO@: $(srcdir)/read.c
-	$(CC) $(CFLAGS) -c $(srcdir)/read.c -o read.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/read.c -o read.@LTO@
 regexp.@LTO@: $(srcdir)/regexp.c
-	$(CC) $(CFLAGS) -c $(srcdir)/regexp.c -o regexp.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/regexp.c -o regexp.@LTO@
 resolve.@LTO@: $(srcdir)/resolve.c
-	$(CC) $(CFLAGS) -c $(srcdir)/resolve.c -o resolve.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/resolve.c -o resolve.@LTO@
 sema.@LTO@: $(srcdir)/sema.c
-	$(CC) $(CFLAGS) -c $(srcdir)/sema.c -o sema.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/sema.c -o sema.@LTO@
 setjmpup.@LTO@: $(srcdir)/setjmpup.c
-	$(CC) $(CFLAGS) -c $(srcdir)/setjmpup.c -o setjmpup.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/setjmpup.c -o setjmpup.@LTO@
 sfs.@LTO@: $(srcdir)/sfs.c
-	$(CC) $(CFLAGS) -c $(srcdir)/sfs.c -o sfs.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/sfs.c -o sfs.@LTO@
 string.@LTO@: $(srcdir)/string.c
-	$(CC) $(CFLAGS) -c $(srcdir)/string.c -I. -o string.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/string.c -I. -o string.@LTO@
 struct.@LTO@: $(srcdir)/struct.c
-	$(CC) $(CFLAGS) -c $(srcdir)/struct.c -o struct.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/struct.c -o struct.@LTO@
 symbol.@LTO@: $(srcdir)/symbol.c
-	$(CC) $(CFLAGS) -c $(srcdir)/symbol.c -o symbol.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/symbol.c -o symbol.@LTO@
 syntax.@LTO@: $(srcdir)/syntax.c
-	$(CC) $(CFLAGS) -c $(srcdir)/syntax.c -o syntax.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/syntax.c -o syntax.@LTO@
 thread.@LTO@: $(srcdir)/thread.c
-	$(CC) $(CFLAGS) -c $(srcdir)/thread.c -o thread.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/thread.c -o thread.@LTO@
 type.@LTO@: $(srcdir)/type.c
-	$(CC) $(CFLAGS) -c $(srcdir)/type.c -o type.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/type.c -o type.@LTO@
 unwind.@LTO@: $(srcdir)/unwind/libunwind.c $(srcdir)/unwind/libunwind.h $(srcdir)/unwind/libunwind_i.h
-	$(CC) $(CFLAGS) -c $(srcdir)/unwind/libunwind.c -o unwind.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/unwind/libunwind.c -o unwind.@LTO@
 validate.@LTO@: $(srcdir)/validate.c
-	$(CC) $(CFLAGS) -c $(srcdir)/validate.c -o validate.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/validate.c -o validate.@LTO@
 vector.@LTO@: $(srcdir)/vector.c
-	$(CC) $(CFLAGS) -c $(srcdir)/vector.c -o vector.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/vector.c -o vector.@LTO@
 
 gmp_alpha_gcc.@LTO@: $(srcdir)/gmp/gmp_alpha_gcc.s
 	$(AS) -o gmp_alpha_gcc.@LTO@ $(srcdir)/gmp/gmp_alpha_gcc.s
