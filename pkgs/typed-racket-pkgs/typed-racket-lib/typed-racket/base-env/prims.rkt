@@ -24,7 +24,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (provide (except-out (all-defined-out) dtsi* dtsi/exec* -let-internal define-for-variants define-for*-variants
                      with-handlers: for/annotation for*/annotation define-for/acc:-variants base-for/flvector: base-for/vector
-                     -lambda -define)
+                     -lambda -define -do -let -let* -let*-values -let-values -let/cc -let/ec -letrec -letrec-values -struct)
          ;; provide the contracted bindings as primitives
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")

@@ -128,6 +128,38 @@ preferred to use of @racket[define:].
 @defalias[define-struct/exec: define-struct/exec]
 
 @defalias[for: for]
+@deftogether[(@defidform[for*/and:]
+              @defidform[for*/first:]
+              @defidform[for*/flvector:]
+              @defidform[for*/fold:]
+              @defidform[for*/hash:]
+              @defidform[for*/hasheq:]
+              @defidform[for*/hasheqv:]
+              @defidform[for*/last:]
+              @defidform[for*/list:]
+              @defidform[for*/lists:]
+              @defidform[for*/or:]
+              @defidform[for*/product:]
+              @defidform[for*/sum:]
+              @defidform[for*/vector:]
+              @defidform[for*:]
+              @defidform[for/and:]
+              @defidform[for/first:]
+              @defidform[for/flvector:]
+              @defidform[for/fold:]
+              @defidform[for/hash:]
+              @defidform[for/hasheq:]
+              @defidform[for/hasheqv:]
+              @defidform[for/last:]
+              @defidform[for/list:]
+              @defidform[for/lists:]
+              @defidform[for/or:]
+              @defidform[for/product:]
+              @defidform[for/sum:]
+              @defidform[for/vector:])]{
+ Aliases for the same iteration forms without a @racket[_:].
+}
+@defalias[do: do]
 
 @defidform[define-type-alias]{Equivalent to @racket[define-type].}
 @defidform[define-typed-struct]{Equivalent to @racket[define-struct:]}
