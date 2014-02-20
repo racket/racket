@@ -27,7 +27,7 @@ library.
    (define class-element (racket class)))
 @(require 'id-holder)
 
-@defform[#:literals (inspect init init-field field inherit-field
+@defform[#:literals (inspect init init-field init-rest field inherit-field
                      public pubment override augment private inherit
                      begin)
          (class superclass-expr
@@ -36,6 +36,7 @@ library.
          #:grammar ([class-clause (inspect inspector-expr)
                                   (init init-decl ...)
                                   (init-field init-decl ...)
+                                  (init-rest id/type)
                                   (field field-decl ...)
                                   (inherit-field field-decl ...)
                                   (public maybe-renamed/type ...)
@@ -137,14 +138,47 @@ library.
     cons%
     (new (inst cons% Integer String) [car 5] [cdr "foo"])
   ]
+
+  Initialization arguments may be provided by-name using the @racket[new]
+  form, by-position using the @racket[make-object] form, or both using
+  the @racket[instantiate] form.
+
+  As in ordinary Racket classes, the order in which initialization arguments
+  are declared determines the order of initialization types in the class type.
+
+  Furthermore, a class may also have a typed @racket[init-rest] clause, in
+  which case the class constructor takes an unbounded number of arguments
+  by-position. The type of the @racket[init-rest] clause must be either a
+  @racket[List] type, @racket[Listof] type, or any other list type.
+
+  @ex[
+    (define point-copy%
+      (code:comment "a point% with a copy constructor")
+      (class object%
+        (super-new)
+        (init-rest [rst : (U (List Integer Integer)
+                             (List (Object (field [x Integer]
+                                                  [y Integer]))))])
+        (field [x : Integer 0] [y : Integer 0])
+        (match rst
+          [(list (? integer? *x) *y)
+           (set! x *x) (set! y *y)]
+          [(list (? (negate integer?) obj))
+           (set! x (get-field x obj))
+           (set! y (get-field y obj))])))
+    (define p1 (make-object point-copy% 1 2))
+    (make-object point-copy% p1)
+  ]
 }
 
 @section{Types}
 
-@defform[#:literals (init field augment)
+@defform[#:literals (init init-field init-rest field augment)
          (Class class-type-clause ...)
          #:grammar ([class-type-clause name+type
                                        (init init-type ...)
+                                       (init-field init-type ...)
+                                       (init-rest name+type)
                                        (field name+type ...)
                                        (augment name+type ...)
                                        (code:line #:implements type-alias-id)
@@ -163,6 +197,10 @@ library.
   a @racket[#:optional] keyword. An initialization argument type with
   @racket[#:optional] corresponds to an argument that does not need to
   be provided at object instantiation.
+
+  The order of initialization arguments in the type is significant, because
+  it determines the types of by-position arguments for use with
+  @racket[make-object] and @racket[instantiate].
 
   When @racket[type-alias-id] is provided, the resulting class type
   includes all of the initialization argument, method, and field types
