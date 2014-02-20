@@ -4,7 +4,7 @@
                          with-handlers default-continuation-prompt-tag
                          define λ lambda define-struct for for*
                          let let* let-values letrec letrec-values
-                         let/cc let/ec do
+                         let/cc let/ec do case-lambda
                          for/list for/vector for/hash for/hasheq for/hasheqv
                          for/and for/or for/sum for/product for/lists
                          for/first for/last for/fold for*/list for*/lists

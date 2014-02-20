@@ -166,9 +166,9 @@
   typed-racket/utils/utils
   ;; Needed for bindings of types and TR primitives in expressions
   (except-in (base-env extra-procs prims base-types base-types-extra)
-    define lambda λ)
+    define lambda λ case-lambda)
   ;; For tests that rely on kw/opt properties
-  (prefix-in tr: (only-in (base-env prims) define lambda λ))
+  (prefix-in tr: (only-in (base-env prims) define lambda λ case-lambda))
   ;; Needed for the `let-name` syntax class before
   (prefix-in r: (only-in racket/base let-values))
   ;; Needed for constructing TR types in expected values
@@ -332,6 +332,7 @@
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
+        [tc-e/t (tr:case-lambda [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
         [tc-e (let: ([x : Number 5]) x) -Number]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y)))
@@ -484,6 +485,21 @@
         [tc-err (apply
                  (case-lambda: [([x : Number]) x]
                                [([y : Number] [x : Number]) x])
+                 '(1 foo))]
+        [tc-err ((tr:case-lambda [([x : Number]) x]
+                                 [([y : Number] [x : Number]) x])
+                 1 2 3)]
+        [tc-err ((tr:case-lambda [([x : Number]) x]
+                                 [([y : Number] [x : Number]) x])
+                 1 'foo)]
+
+        [tc-err (apply
+                 (tr:case-lambda [([x : Number]) x]
+                                 [([y : Number] [x : Number]) x])
+                 '(1 2 3))]
+        [tc-err (apply
+                 (tr:case-lambda [([x : Number]) x]
+                                 [([y : Number] [x : Number]) x])
                  '(1 foo))]
 
         [tc-e (let: ([x : Any #f])
@@ -798,6 +814,10 @@
                   1)]
 
         [tc-e ((case-lambda:
+                [[x : Number *] (+ 1 (car x))])
+               5)
+              -Number]
+        [tc-e ((tr:case-lambda
                 [[x : Number *] (+ 1 (car x))])
                5)
               -Number]
@@ -2240,6 +2260,31 @@
              #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
        [tc-e (do : Integer ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
              #:ret (ret -Integer (make-NoFilter) (make-NoObject))]
+       [tc-e (tr:case-lambda [(x [y : String]) x])
+             #:ret (ret (t:-> Univ -String Univ
+                              : (-FS (-not-filter (-val #f) (list 0 0))
+                                     (-filter (-val #f) (list 0 0)))
+                              : (make-Path null (list 0 0)))
+                        (-FS -top -bot))]
+       [tc-e (tr:case-lambda [(x [y : String] . rst) x])
+             #:ret (ret (->* (list Univ -String) Univ Univ
+                             : (-FS (-not-filter (-val #f) (list 0 0))
+                                    (-filter (-val #f) (list 0 0)))
+                             : (make-Path null (list 0 0)))
+                        (-FS -top -bot))]
+       [tc-e (tr:case-lambda [(x [y : String] . [rst : String *]) x])
+             #:ret (ret (->* (list Univ -String) -String Univ
+                             : (-FS (-not-filter (-val #f) (list 0 0))
+                                    (-filter (-val #f) (list 0 0)))
+                             : (make-Path null (list 0 0)))
+                        (-FS -top -bot))]
+       [tc-e (tr:case-lambda #:forall (A) [([x : A]) x])
+             #:ret (ret (-poly (A)
+                          (t:-> A A
+                                : (-FS (-not-filter (-val #f) (list 0 0))
+                                       (-filter (-val #f) (list 0 0)))
+                                : (make-Path null (list 0 0))))
+                        (-FS -top -bot))]
         )
   (test-suite
    "tc-literal tests"

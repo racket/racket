@@ -13,8 +13,13 @@
          racket/match
          "parse-classes.rkt"
          (for-label
-           racket/base "../base-env/colon.rkt"
-           "../base-env/base-types-extra.rkt"))
+           (except-in racket/base case-lambda)
+           "../base-env/colon.rkt"
+           "../base-env/base-types-extra.rkt"
+           ;; match on the `case-lambda` binding in the TR primitives
+           ;; rather than the one from Racket, which is no longer bound
+           ;; in most TR modules.
+           (only-in "../base-env/case-lambda.rkt" case-lambda)))
 
 (provide/cond-contract ;; Parse the given syntax as a type
                        [parse-type (syntax? . c:-> . Type/c)]

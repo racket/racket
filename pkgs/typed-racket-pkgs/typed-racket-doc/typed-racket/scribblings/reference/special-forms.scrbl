@@ -181,21 +181,27 @@ is the provided type annotation.
 @defform[(λ formals . body)]{
 An alias for the same form using @racket[lambda].}
 
-@defform[(case-lambda: [formals body] ...)]{
-A function of multiple arities.  Note that each @racket[formals] must have a
-different arity.
+@defform[(case-lambda maybe-tvars [formals body] ...)]{
+
+A function of multiple arities. The @racket[_formals] are identical
+to those accepted by the @racket[lambda] form except that keyword
+and optional arguments are not allowed.
+
+Polymorphic type variables, if provided, are bound in the type
+expressions in the formals.
+
+Note that each @racket[formals] must have a different arity.
+
 @ex[(define add-map
-      (case-lambda:
+      (case-lambda
        [([lst : (Listof Integer)])
         (map add1 lst)]
        [([lst1 : (Listof Integer)]
          [lst2 : (Listof Integer)])
         (map + lst1 lst2)]))]
-For the type declaration of @racket[add-map] look at @racket[case-lambda].}
 
-@defform*[[(pcase-lambda: (a ...) [formals body] ...)
-           (pcase-lambda: (a ... b ooo) [formals body] ...)]]{
-A polymorphic function of multiple arities.}
+To see how to declare a type for @racket[add-map], see the
+@racket[case->] type constructor.}
 
 @section{Loops}
 

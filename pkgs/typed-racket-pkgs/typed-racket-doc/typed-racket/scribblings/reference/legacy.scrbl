@@ -44,6 +44,12 @@ A function with optional arguments.}
            (popt-lambda: (a ... a ooo) formals . body)]]{
 A polymorphic function with optional arguments.}
 
+@defalias[case-lambda: case-lambda]
+
+@defform*[[(pcase-lambda: (a ...) [formals body] ...)
+           (pcase-lambda: (a ... b ooo) [formals body] ...)]]{
+A polymorphic function of multiple arities.}
+
 @defform*[[
   (let: ([v : t e] ...) . body)
   (let: loop : t0 ([v : t e] ...) . body)]]{

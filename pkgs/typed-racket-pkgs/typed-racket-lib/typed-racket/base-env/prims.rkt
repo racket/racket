@@ -28,6 +28,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          ;; provide the contracted bindings as primitives
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
+         (all-from-out "case-lambda.rkt")
          :
          (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct define-struct]
@@ -102,6 +103,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "top-interaction.rkt"
          "base-types.rkt"
          "base-types-extra.rkt"
+         "case-lambda.rkt"
          'struct-extraction
          racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
@@ -391,15 +393,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
             (syntax/loc stx (lambda: formals . body))
             #'(tvars.vars ...))))]))
 
-(define-syntax (pcase-lambda: stx)
-  (syntax-parse stx
-    [(pcase-lambda: tvars:type-variables cl ...)
-     (quasisyntax/loc stx
-       (#%expression
-        #,(plambda-property
-            (syntax/loc stx (case-lambda: cl ...))
-            #'(tvars.vars ...))))]))
-
 (define-syntax (popt-lambda: stx)
   (syntax-parse stx
     [(popt-lambda: tvars:type-variables formals . body)
@@ -437,11 +430,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(lambda: formals:annotated-formals . body)
      (syntax/loc stx (-lambda formals.ann-formals . body))]))
-
-(define-syntax (case-lambda: stx)
-  (syntax-parse stx
-    [(case-lambda: [formals:annotated-formals . body] ...)
-     (syntax/loc stx (case-lambda [formals.ann-formals . body] ...))]))
 
 (define-syntax (opt-lambda: stx)
   (syntax-parse stx
