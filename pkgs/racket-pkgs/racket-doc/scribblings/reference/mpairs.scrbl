@@ -28,7 +28,7 @@ of the sequence. See also @racket[in-mlist].
 @defproc[(mpair? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is
 a @tech{mutable pair}, @racket[#f] otherwise.}
 
-@defproc[(mcons [a any/c] [d any/c]) pair?]{Returns a newly allocated 
+@defproc[(mcons [a any/c] [d any/c]) mpair?]{Returns a newly allocated 
 @tech{mutable pair} whose first
 element is @racket[a] and second element is @racket[d].}
 
