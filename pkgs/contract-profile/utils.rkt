@@ -2,7 +2,7 @@
 
 (require racket/port racket/contract racket/list setup/collects)
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) shorten-paths))
 
 (struct contract-profile
   (total-time
@@ -44,10 +44,16 @@
           (blame-positive b) (blame-negative b)
           (blame-contract b) (blame-value b) (blame-source b)))
 
-;; (sequenceof (U path-string? submodule-path #f)) -> same
+;; (listof (U path-string? submodule-path #f)) -> same
 (define (shorten-paths ps*)
-  (define ps (for/list ([p ps*] #:when p) p)) ; remove non-paths
   ;; zeroth pass, chop off submodule parts, to put back later
+  (define ps ; remove non-paths
+    (for/list ([p (in-list ps*)]
+               #:when (or (path-string? p)
+                          (and (list? p) ; submodule
+                               (not (empty? p))
+                               (path-string? (first p)))))
+      p))
   (define submodules ; (listof (U submodule-part #f))
     (for/list ([p ps])
       (and (list? p) (rest p))))
@@ -76,11 +82,27 @@
              [m (in-list (append collect-paths relative-paths))])
     (if s (cons m s) m)))
 
-(define (make-shortener ps [extract-path values])
-  (define table
+;; (sequenceof A) (A -> (U path-string? submodule-path #f)) -> (A -> (U ...))
+(define (make-shortener ps* [extract-path values])
+  ;; special-case things shorten-paths can't deal with
+  ;; these should just map to themselves
+  (define-values (ps bad)
+    (partition (lambda (p)
+                 (or (path-string? p)
+                     (and (list? p) ; submodule path
+                          (not (empty? p))
+                          (path-string? (first p)))))
+               ;; can be any kind of sequence, turn into a list
+               (for/list ([p ps*]) p)))
+  (define init-table
     (for/hash ([p ps]
                [s (shorten-paths (map extract-path ps))])
       (values p s)))
+  ;; add bad "paths", mapping to themselves
+  (define table
+    (for/fold ([table init-table])
+        ([b (in-list bad)])
+      (hash-set table b b)))
   (lambda (p)
     (or (hash-ref table p #f)
         (extract-path p))))

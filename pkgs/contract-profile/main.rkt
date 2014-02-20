@@ -183,8 +183,10 @@
         (with-handlers
             ([(lambda (e)
                 (and (exn:fail:contract? e)
-                     (regexp-match "^dynamic-require: unknown module"
-                                   (exn-message e))))
+                     (or (regexp-match "^dynamic-require: unknown module"
+                                       (exn-message e))
+                         (regexp-match "^path->string"
+                                       (exn-message e)))))
               (lambda _ #f)])
           (dynamic-require
            (append (list 'submod (list 'file (path->string filename)))
@@ -199,12 +201,11 @@
    module-graph-dot-file
    (printf "digraph {\n")
    (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
-   (define node-labels  (shorten-paths nodes))
-   (for ([n nodes]
-         [l node-labels])
+   (define node->labels (make-shortener nodes))
+   (for ([n nodes])
      (printf "~a[label=\"~a\"][color=\"~a\"]\n"
              (hash-ref nodes->names n)
-             l
+             (node->labels n)
              (if (hash-ref nodes->typed? n #f) "green" "red")))
    (for ([(k v) (in-hash edge-samples)])
      (match-define (cons pos neg) k)
