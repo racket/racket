@@ -5,6 +5,10 @@
          racket/class
          string-constants)
 
+(require/typed framework
+               [frame:focus-table-mixin
+                (-> Dialog% Dialog%)])
+
 (define-type Bitmap-Message%
   (Class (init [parent (Instance Horizontal-Panel%)])
          [set-bm ((Instance Bitmap%) -> Void)]))
@@ -46,7 +50,7 @@
 ;; make-large-letters-dialog : string char top-level-window<%> -> void
 (: make-large-letters-dialog (String Char Any -> (Option String)))
 (define (make-large-letters-dialog comment-prefix comment-character parent)
-  (define dlg (new dialog% 
+  (define dlg (new (frame:focus-table-mixin dialog%)
                    [parent parent] 
                    [width 700]
                    [label (string-constant large-semicolon-letters)]))

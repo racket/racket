@@ -226,7 +226,7 @@
     (let loop ([window  window])
       (cond [(not window) #f]
             [(null? window) #f]  ;; is this test needed?
-            [(eq? window frame) #t]
+            [(object=? window frame) #t]
             [else  (loop (send window get-parent))]))))
 
 ;;
@@ -527,7 +527,20 @@
                [(not (send window is-enabled?))
                 (error key-tag "focused window is not enabled")]
                [(not (in-active-frame? window))
-                (error key-tag "focused window is not in active frame")]
+                (error 
+                 key-tag 
+                 (string-append
+                  "focused window is not in active frame;"
+                  "active frame's label is ~s and focused window is in a frame with label ~s")
+                 (let ([f (test:get-active-top-level-window)])
+                   (and f (send (test:get-active-top-level-window) get-label)))
+                 (let loop ([p window])
+                   (cond
+                     [(is-a? p top-level-window<%>)
+                      (send p get-label)]
+                     [(is-a? p area<%>)
+                      (loop (send p get-parent))]
+                     [else #f])))]
                [else
                 (let ([event (make-key-event key window modifier-list)])
                   (send-key-event window event)
