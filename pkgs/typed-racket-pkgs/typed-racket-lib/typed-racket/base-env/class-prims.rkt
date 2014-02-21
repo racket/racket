@@ -123,9 +123,7 @@
    (:))
 
  (define-splicing-syntax-class maybe-type-parameter
-   (pattern (~seq #:forall type-variable:id)
-            #:attr type-variables #'(type-variable))
-   (pattern (~seq #:forall (type-variable:id ...))
+   (pattern (~seq (~or #:∀ #:forall) (type-variable:id ...))
             #:attr type-variables #'(type-variable ...))
    (pattern (~seq)
             #:attr type-variables #'()))

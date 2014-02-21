@@ -3322,7 +3322,7 @@
    [tc-e (let ()
            (define point%
              (class object%
-               #:forall X
+               #:∀ (X)
                (super-new)
                (init-field [x : X] [y : X])))
            (new (inst point% Integer) [x 0] [y 5])
@@ -3359,13 +3359,13 @@
            #:msg #rx"expected: X.*given: String"]
    ;; fails because default init value cannot be polymorphic
    [tc-err (class object%
-             #:forall Z
+             #:forall (Z)
              (super-new)
              (init-field [x : Z] [y : Z 0]))
            #:msg #rx"Default init value has wrong type"]
    ;; fails because default field value cannot be polymorphic
    [tc-err (class object%
-             #:forall Z
+             #:forall (Z)
              (super-new)
              (field [x : Z "a"]))
            #:msg #rx"expected: Z.*given: String"]

@@ -50,8 +50,8 @@ library.
                                   expr
                                   (begin class-clause ...)]
                     [maybe-type-parameters (code:line)
-                                           (code:line #:forall type-variable)
-                                           (code:line #:forall (type-variable ...))]
+                                           (code:line #:forall (type-variable ...))
+                                           (code:line #:∀ (type-variable ...))]
                     [init-decl id/type
                                [renamed]
                                [renamed : type-expr]
