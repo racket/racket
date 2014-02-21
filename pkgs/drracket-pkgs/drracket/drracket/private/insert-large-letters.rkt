@@ -160,7 +160,7 @@
   (define-values (tw raw-th td ta) (send bdc get-text-extent str the-font))
   (define th (let-values ([(_1 h _2 _3) (send bdc get-text-extent "X" the-font)])
                (max raw-th h)))
-  (define tmp-color (make-color 0 0 0))
+  (define tmp-color (make-object color%))
   
   (: get-char (Real Real -> Char))
   (define (get-char x y)
@@ -170,8 +170,8 @@
           comment-character
           #\space)))  
   (define bitmap
-    (make-bitmap
-      (max 1 (assert (exact-floor tw) positive?))
+    (make-object bitmap%
+      (max 1 (exact-floor tw))
       (assert (exact-floor th) positive?)
       #t))
   

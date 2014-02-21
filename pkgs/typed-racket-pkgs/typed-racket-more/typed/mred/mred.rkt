@@ -35,14 +35,19 @@
            [show (Any -> Void)])))
 
 (define-type Bitmap%
-  (Class [get-width (-> Integer)]
+  (Class (init-rest (U (List Exact-Positive-Integer Exact-Positive-Integer)
+                       (List Exact-Positive-Integer Exact-Positive-Integer Any)
+                       (List Exact-Positive-Integer Exact-Positive-Integer Any Any)
+                       (List Exact-Positive-Integer Exact-Positive-Integer Any Any Real)))
+         [get-width (-> Integer)]
          [get-height (-> Integer)]))
 
 (define-type Font-List%
   (Class
    [find-or-create-font
     (case-> (Integer Symbol Symbol Symbol -> (Instance Font%))
-            (Integer String Symbol Symbol Symbol -> (Instance Font%)))]))
+            (Integer String Symbol Symbol Symbol -> (Instance Font%))
+            (Integer String Symbol Symbol Symbol Symbol -> (Instance Font%)))]))
 
 (define-type Font%
   (Class [get-face (-> (Option String))]
@@ -101,7 +106,10 @@
          [draw-text (String Number Number -> Void)]))
 
 (define-type Color%
-  (Class [red (-> Number)]))
+  (Class (init-rest (U Null
+                       (List Byte Byte Byte)
+                       (List Byte Byte Byte Real)))
+         [red (-> Number)]))
 
 (define-type Snip%
   (Class [get-count (-> Integer)]))
