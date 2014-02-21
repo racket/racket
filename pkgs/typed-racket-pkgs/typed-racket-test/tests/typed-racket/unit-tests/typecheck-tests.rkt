@@ -1974,6 +1974,7 @@
        [tc-e (futures-enabled?) -Boolean]
        [tc-e (place-enabled?) -Boolean]
        [tc-e (dynamic-place "a.rkt" 'a #:at #f) -Place]
+       [tc-e (dynamic-place (string->path "a.rkt") 'a #:at #f) -Place]
        [tc-e (let-values
                ([(p _1 _2 _3)
                  (dynamic-place* "a.rkt" 'a #:in (open-input-string "hi"))])
