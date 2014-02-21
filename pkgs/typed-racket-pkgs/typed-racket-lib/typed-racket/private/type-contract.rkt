@@ -405,7 +405,9 @@
                   (fail #:reason (~a "cannot generate contract for case function type"
                                      " with optional keyword arguments")))
                 (if case->
-                  (arr/sc (map t->sc/neg dom) (and rst (t->sc/neg rst)) (map t->sc rngs))
+                  (arr/sc (process-dom (map t->sc/neg dom))
+                          (and rst (t->sc/neg rst))
+                          (map t->sc rngs))
                   (function/sc
                     (process-dom (map t->sc/neg dom))
                     null
