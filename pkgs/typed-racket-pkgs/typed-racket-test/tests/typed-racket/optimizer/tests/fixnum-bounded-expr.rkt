@@ -9,7 +9,7 @@ TR opt: fixnum-bounded-expr.rkt 12:2 (- x (* y y)) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 12:7 (* y y) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 19:2 (+ x y) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 22:2 (+ x y) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 27:0 (abs 45) -- fixnum fxabs
+TR opt: fixnum-bounded-expr.rkt 27:0 (abs 45) -- unary number
 TR opt: fixnum-bounded-expr.rkt 30:0 (fx+ 5 2) -- fixnum fx+
 TR opt: fixnum-bounded-expr.rkt 31:0 (fx+ (+ 34 231) (* 24 25)) -- fixnum fx+
 TR opt: fixnum-bounded-expr.rkt 31:16 (* 24 25) -- fixnum bounded expr

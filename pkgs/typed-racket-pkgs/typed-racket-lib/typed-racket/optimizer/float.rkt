@@ -34,7 +34,6 @@
 (define unary-float-ops
   (dict-set*
     unary-float-math-ops
-    #'real-part #'#%expression
     #'flreal-part #'#%expression
     #'unsafe-flreal-part #'#%experession))
 
