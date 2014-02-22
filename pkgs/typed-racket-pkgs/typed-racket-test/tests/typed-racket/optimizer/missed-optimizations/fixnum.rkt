@@ -20,7 +20,7 @@ TR opt: fixnum.rkt 15:17 (+ 301 302) -- fixnum bounded expr
 TR opt: fixnum.rkt 15:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum.rkt 28:0 (add1 min-fixnum) -- fixnum add1
 TR opt: fixnum.rkt 30:0 (- max-fixnum) -- unary fixnum
-TR opt: fixnum.rkt 31:0 (abs max-fixnum) -- fixnum fxabs
+TR opt: fixnum.rkt 31:0 (abs max-fixnum) -- unary number
 TR opt: fixnum.rkt 32:0 (sub1 max-fixnum) -- fixnum sub1
 TR opt: fixnum.rkt 35:0 (= (- max-fixnum max-fixnum) 0) -- binary fixnum comp
 TR opt: fixnum.rkt 35:3 (- max-fixnum max-fixnum) -- fixnum bounded expr
