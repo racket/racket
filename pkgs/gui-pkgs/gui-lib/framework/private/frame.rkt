@@ -870,11 +870,8 @@
     
     (define/public (get-info-panel) info-panel)
     (define/public (update-memory-text)
-      (when show-memory-text?
-        (for-each
-         (λ (memory-canvas)
-           (send memory-canvas set-str (format-number (current-memory-use))))
-         memory-canvases)))
+      (for ([memory-canvas (in-list memory-canvases)])
+        (send memory-canvas set-str (format-number (current-memory-use)))))
     
     (define/private (format-number n)
       (let* ([mbytes (/ n 1024 1024)]
@@ -900,30 +897,29 @@
     
     [define lock-canvas (make-object lock-canvas% (get-info-panel))]
     
-    ; only for checkouts and nightly build users
-    (when show-memory-text?
-      (let* ([panel (new horizontal-panel%
-                         [parent (get-info-panel)]
-                         [stretchable-width #f]
-                         [stretchable-height #f])]
-             [ec (new position-canvas%
-                      [parent panel]
-                      [button-up
-                       (λ (evt)
-                         (cond
-                           [(or (send evt get-alt-down)
-                                (send evt get-control-down))
-                            (dynamic-require 'tests/drracket/follow-log #f)]
-                           [else
-                            (collect-garbage)
-                            (update-memory-text)]))]
-                      [init-width "99.99 MB"])])
-        (set! memory-canvases (cons ec memory-canvases))
-        (update-memory-text)
-        (set! memory-cleanup
-              (λ ()
-                (set! memory-canvases (remq ec memory-canvases))))
-        (send panel stretchable-width #f)))
+    ; set up the memory use display in the status line
+    (let* ([panel (new horizontal-panel%
+                       [parent (get-info-panel)]
+                       [stretchable-width #f]
+                       [stretchable-height #f])]
+           [ec (new position-canvas%
+                    [parent panel]
+                    [button-up
+                     (λ (evt)
+                       (cond
+                         [(or (send evt get-alt-down)
+                              (send evt get-control-down))
+                          (dynamic-require 'tests/drracket/follow-log #f)]
+                         [else
+                          (collect-garbage)
+                          (update-memory-text)]))]
+                    [init-width "99.99 MB"])])
+      (set! memory-canvases (cons ec memory-canvases))
+      (update-memory-text)
+      (set! memory-cleanup
+            (λ ()
+              (set! memory-canvases (remq ec memory-canvases))))
+      (send panel stretchable-width #f))
     
     (define gc-canvas (new bday-click-canvas% [parent (get-info-panel)] [style '(border no-focus)]))
     (define/private (register-gc-blit)
@@ -2731,16 +2727,7 @@
     (define/override (get-editor%) (text:searching-mixin (super get-editor%)))
     (super-new)))
 
-;; code copied to drracket/private/unit.rkt
-(define checkout-or-nightly?
-  (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
-        (directory-exists? (collection-path "repo-time-stamp")))
-      (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
-        (let ([fw (collection-path "framework")])
-          (directory-exists? (build-path fw 'up 'up ".git"))))))
-
 (define memory-canvases '())
-(define show-memory-text? checkout-or-nightly?)
 
 (define bday-click-canvas%
   (class canvas%

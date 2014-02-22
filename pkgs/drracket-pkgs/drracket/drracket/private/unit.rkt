@@ -57,14 +57,6 @@
     (λ args
       (apply fprintf op args))))
 
-;; code copied from framework/private/frame.rkt
-(define checkout-or-nightly?
-  (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
-        (directory-exists? (collection-path "repo-time-stamp")))
-      (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
-        (let ([fw (collection-path "framework")])
-          (directory-exists? (build-path fw 'up 'up ".git"))))))
-
 ;; ===================================================================================================
 ;; Compiled bitmaps
 
@@ -4580,26 +4572,25 @@
       (inherit get-info-panel)
       
       (define color-status-canvas 
-        (and checkout-or-nightly?
-             (let ()
-               (define on-string "()")
-               (define color-status-canvas
-                 (new canvas% 
-                      [parent (get-info-panel)]
-                      [style '(transparent)]
-                      [stretchable-width #f]
-                      [paint-callback
-                       (λ (c dc)
-                         (when (number? th)
-                           (unless color-valid?
-                             (let-values ([(cw ch) (send c get-client-size)])
-                               (send dc set-font small-control-font)
-                               (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
-               (define-values (tw th ta td) 
-                 (send (send color-status-canvas get-dc) get-text-extent
-                       on-string small-control-font))
-               (send color-status-canvas min-width (inexact->exact (ceiling tw)))
-               color-status-canvas)))
+        (let ()
+          (define on-string "()")
+          (define color-status-canvas
+            (new canvas% 
+                 [parent (get-info-panel)]
+                 [style '(transparent)]
+                 [stretchable-width #f]
+                 [paint-callback
+                  (λ (c dc)
+                    (when (number? th)
+                      (unless color-valid?
+                        (let-values ([(cw ch) (send c get-client-size)])
+                          (send dc set-font small-control-font)
+                          (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
+          (define-values (tw th ta td) 
+            (send (send color-status-canvas get-dc) get-text-extent
+                  on-string small-control-font))
+          (send color-status-canvas min-width (inexact->exact (ceiling tw)))
+          color-status-canvas))
       (define color-valid? #t)
       (define/public (set-color-status! v?)
         (when color-status-canvas
