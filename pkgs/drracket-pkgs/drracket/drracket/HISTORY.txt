@@ -5,6 +5,10 @@
   . changed the online expansion handler machinery so that
     the handlers receive exceptions when expansion raises one
 
+  . made the memory log and the () highlighter's computation status
+    visible in released versions of DrRacket (previously they were
+    visible only in git-based versions and nightly builds)
+
 ------------------------------
        Version 6.0
 ------------------------------
