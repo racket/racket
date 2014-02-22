@@ -1649,7 +1649,7 @@
 [angle     (cl->* (-PosReal . -> . -Zero)
                   (-FloatComplex . -> . -Flonum)
                   (-InexactComplex . -> . -InexactReal)
-                  (N . -> . -Real))]
+                  (N . -> . (Un -InexactReal -Zero)))]
 [numerator
  (from-cases (map unop all-int-types)
              (-PosRat . -> . -PosInt)
