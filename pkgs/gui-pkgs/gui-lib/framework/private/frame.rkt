@@ -892,8 +892,7 @@
         [else (number->string n)]))
     
     (define pref-save-canvas #f)
-    (when checkout-or-nightly?
-      (set! pref-save-canvas (new pref-save-canvas% [parent (get-info-panel)])))
+    (set! pref-save-canvas (new pref-save-canvas% [parent (get-info-panel)]))
     
     [define lock-canvas (make-object lock-canvas% (get-info-panel))]
     
