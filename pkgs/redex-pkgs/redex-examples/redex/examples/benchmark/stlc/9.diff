@@ -6,9 +6,13 @@
 <          racket/contract
 8a8
 >          racket/contract
-74c74
+75c75
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
-231d230
+232d231
 < 
+249c248
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)

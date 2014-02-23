@@ -2,8 +2,12 @@
 < (define the-error "no error")
 ---
 > (define the-error "the ((cons number) v) value has been omitted")
-32,33c32
+33,34c33
 <      (cons v)
 <      ((cons v) v))
 ---
 >      (cons v))
+249c248
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)
