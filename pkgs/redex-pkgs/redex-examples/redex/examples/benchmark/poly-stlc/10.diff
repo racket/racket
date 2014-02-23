@@ -1,12 +1,12 @@
-11c11
+12c12
 < (define the-error "no error")
 ---
 > (define the-error "app rule the range of the function is matched to the argument")
-72c72
+73c73
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ_2))
-261c261
+262c262
 <       M]
 ---
 >      M]
