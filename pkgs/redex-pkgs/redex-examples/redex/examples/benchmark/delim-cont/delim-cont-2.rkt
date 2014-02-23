@@ -2,7 +2,8 @@
 
 (define the-error "list/c contracts aren't applied properly in the cons case")
 
-(require redex/reduction-semantics)
+(require redex/reduction-semantics
+         math/base)
 
 (provide (all-defined-out))
 
@@ -937,3 +938,6 @@
   (judgment-holds (tc · · ,e t)))
 
 
+
+(define (generate-enum-term)
+  (generate-term abort-lang e #:i-th (random-natural #e10e200)))
