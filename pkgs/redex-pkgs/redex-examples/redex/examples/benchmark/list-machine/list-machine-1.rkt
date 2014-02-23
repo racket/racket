@@ -4,7 +4,8 @@
 
 (require redex/reduction-semantics
          racket/list
-         racket/match)
+         racket/match
+         math/base)
 
 (provide (all-defined-out))
 
@@ -431,3 +432,6 @@
     [`(check-program ,p ,Π)
      p]
     [#f #f]))
+
+(define (generate-enum-term)
+  (generate-term list-machine-typing (l0 : ι p) #:i-th (random-natural #e10e200)))

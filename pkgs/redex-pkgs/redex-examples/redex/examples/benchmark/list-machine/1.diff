@@ -2,18 +2,18 @@
 < (define the-error "no error")
 ---
 > (define the-error "confuses the lhs value for the rhs value in cons type rule")
-112c112,113
+113c113,114
 <        (let ([closure (apply-reduction-relation* 
 ---
 >        (let* ([stopped #f]
 >               [closure (apply-reduction-relation* 
-119c120,122
+120c121,123
 <                              (count . > . 1000)
 ---
 >                              (count . > . 100)
 >                              (when (count . > . 100)
 >                                (set! stopped #t))
-122,124c125,128
+123,125c126,129
 <          ;; (if the #:stop-when condition is true, we get back an empty list, 
 <          ;; and the same thing for a reduction cycle)
 <          (or (empty? closure)
@@ -22,7 +22,7 @@
 >          ;; (when the reduction is stopped artificially, the current term is returned)
 >          (or stopped
 >              (empty? closure)
-225c229
+226c230
 <   [(:lookup-Γ Γ v_0 τ_0) (:lookup-Γ Γ v_1 τ_1)
 ---
 >   [(:lookup-Γ Γ v_0 τ_0) (:lookup-Γ Γ v_0 τ_1)
