@@ -1,12 +1,12 @@
-11c11
+12c12
 < (define the-error "no error")
 ---
 > (define the-error "the order of the types in the function position of application has been swapped")
-72c72
+73c73
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ))
-261c261
+262c262
 <       M]
 ---
 >      M]

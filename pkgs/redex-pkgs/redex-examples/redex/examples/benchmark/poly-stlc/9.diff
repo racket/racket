@@ -1,12 +1,12 @@
-11c11
+12c12
 < (define the-error "no error")
 ---
 > (define the-error "variables aren't required to match in lookup")
-107c107
+108c108
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
-261c261
+262c262
 <       M]
 ---
 >      M]

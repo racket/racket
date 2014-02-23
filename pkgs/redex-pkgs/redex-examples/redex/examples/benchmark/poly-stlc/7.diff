@@ -1,13 +1,13 @@
-11c11
+12c12
 < (define the-error "no error")
 ---
 > (define the-error "evaluation isn't allowed on the rhs of applications")
-49,50c49
+50,51c50
 <      (E M)
 <      (v E)))
 ---
 >      (E M)))
-261c260
+262c261
 <       M]
 ---
 >      M]
