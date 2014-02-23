@@ -21,7 +21,8 @@
                      "rewrite-side-conditions.rkt"
                      "term-fn.rkt"
                      "keyword-macros.rkt")
-         math/base)
+         math/base
+         math/distributions)
 
 (define-for-syntax (metafunc name)
   (and (identifier? name)
@@ -122,8 +123,8 @@
      (redex-check/jf stx #'form #'lang #'jform-id #'pats #'property #'kw-args)]
     [(form lang #:satisfying . rest)
      (raise-syntax-error 'redex-check "#:satisfying expected judgment form or metafunction syntax followed by a property" stx #'rest)]
-    [(form lang pat #:enum biggest-e property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #'biggest-e #'kw-args)]
+    [(form lang pat #:enum property . kw-args)
+     (redex-check/pat stx #'form #'lang #'pat #'property #t #'kw-args)]
     [(form lang pat property . kw-args)
      (redex-check/pat stx #'form #'lang #'pat #'property #f #'kw-args)]))
 
@@ -209,7 +210,7 @@
                          property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match
                          #,keep-going-stx)))))))
 
-(define-for-syntax (redex-check/pat orig-stx form lang pat property enum-bound-e kw-args)
+(define-for-syntax (redex-check/pat orig-stx form lang pat property enum? kw-args)
   (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
                  (rewrite-side-conditions/check-errs 
                   lang
@@ -236,12 +237,11 @@
           (parameterize ([attempt->size #,size-stx])
             #,(cond
                 [source-stx
-                 (when enum-bound-e 
+                 (when enum? 
                    (raise-syntax-error
                     #f
                     "#:enum cannot be used with the #:source keyword"
-                    orig-stx
-                    enum-bound-e))
+                    orig-stx))
                  #`(let-values ([(metafunc/red-rel num-cases) 
                                   #,(cond [(metafunc source-stx)
                                            => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
@@ -262,9 +262,9 @@
                        #:term-match term-match))]
                 [else
                  (cond
-                   [enum-bound-e
+                   [enum?
                     #`(check-one
-                       (ith-generator #,lang `pattern #,enum-bound-e)
+                       (ith-generator #,lang `pattern)
                        property att ret (and print? show) (or fix (λ (x) x)) term-match
                        keep-going?)]
                    [else
@@ -273,16 +273,31 @@
                        property att ret (and print? show) fix (and fix term-match)
                        keep-going?)])])))))))
 
-(define (ith-generator lang pat orig-bound)
+(define (ith-generator lang pat)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
   (define the-size (enum-size enum))
-  (define bound (if (equal? the-size +inf.0)
-                    orig-bound
-                    (min orig-bound the-size)))
-  (λ (_size _attempt _retries)
-    (values (enum-ith enum (random-natural bound))
-            'ignored)))
+  (cond
+    [(equal? the-size +inf.0)
+     (λ (_size _attempt _retries)
+       (values (enum-ith enum (pick-an-index))
+               'ignored))]
+    [else
+     (λ (_size _attempt _retries)
+       (values (enum-ith enum (random-natural the-size))
+               'ignored))]))
+
+(define (pick-an-index)
+  (max (random-natural/no-mean 0.01)
+       (random-natural/no-mean 0.01)
+       (random-natural/no-mean 0.01)))
+
+;; (: random-natural/no-mean (-> Real Natural))
+(define (random-natural/no-mean prob-zero)
+  (define n (exact-floor (sample (geometric-dist prob-zero))))
+  (define m1 (expt 2 n))
+  (define m0 (quotient m1 2))
+  (random-integer m0 m1))
 
 (define-for-syntax (parse-redex-check-kw-args kw-args orig-stx form-name)
   (apply values

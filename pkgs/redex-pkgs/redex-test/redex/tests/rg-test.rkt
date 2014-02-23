@@ -894,7 +894,7 @@
   
   
   (test (let ([checked 0])
-          (redex-check lang n #:enum 100 (set! checked (add1 checked)) 
+          (redex-check lang n #:enum (set! checked (add1 checked)) 
                        #:print? #f
                        #:attempts 10)
           checked)

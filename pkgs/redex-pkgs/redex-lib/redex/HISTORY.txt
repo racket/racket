@@ -4,6 +4,8 @@ v6.1
 
   * added default-equiv
 
+  * changed the meaning of the redex-check #:enum keyword
+    (based on statistics help from Neil Toronto)
 
 v6.0
 

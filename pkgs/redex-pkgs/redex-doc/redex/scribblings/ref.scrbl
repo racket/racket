@@ -1997,7 +1997,7 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
 
 @defform/subs[(redex-check template property-expr kw-arg ...)
               ([template (code:line language @#,ttpattern)
-                         (code:line language @#,ttpattern #:enum enum-expr)
+                         (code:line language @#,ttpattern #:enum)
                          (code:line language #:satisfying
                             (judgment-form-id @#,ttpattern ...))
                          (code:line language #:satisfying 
@@ -2028,12 +2028,15 @@ using the @racket[match-bindings] produced by @racket[match]ing
 how @math{t} is generated:
 @itemlist[
           @item{@racket[language @#,ttpattern]:
-                 In this case, redex-check randomly generates terms that match
+                 In this case, @racket[redex-check] randomly generates terms that match
                  @racket[_pattern].}
-           @item{@racket[language @#,ttpattern]:
-                 In this case, redex-check uniformly at random picks a number less
-                 than the value of @racket[enum-expr] (which must be a non-negative integer)
-                 and then uses that to index into an enumeration of @racket[_pattern].}
+           @item{@racket[language @#,ttpattern #:enum]:
+                 In this case, @racket[redex-check] picks a random natural number
+                 and then uses that to index into an enumeration of @racket[_pattern].
+                 If the enumeration is finite, @racket[redex-check] picks a natural number
+                 uniformly at random; if it isn't, @racket[redex-check] uses a geometric
+                 distribution to pick the number of bits in the index and then picks a
+                 number uniformly at random with that number of bits.}
           @item{@racket[language #:satisfying (judgment-form-id @#,ttpattern ...)]:
                   Generates terms that match @racket[pattern] and satisfy 
                   the judgment form.}
