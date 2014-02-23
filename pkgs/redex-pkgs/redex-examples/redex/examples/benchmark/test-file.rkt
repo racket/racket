@@ -17,6 +17,11 @@
                            enum))
 (define types '())
 
+(define (set-type! arg)
+  (define t (string->symbol arg))
+  (unless (list? (member t all-types))
+    (error "Expected a generation type, got" t))
+  (set! types (cons t types)))
 (define filename
   (command-line
    #:once-each
@@ -28,7 +33,7 @@
                       (set! output-file out-file)]
    #:multi
    [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum"
-                    (set! types (cons (string->symbol t) types))]
+                    (set-type! t)]
    #:args filenames
    (match filenames
      [`()
