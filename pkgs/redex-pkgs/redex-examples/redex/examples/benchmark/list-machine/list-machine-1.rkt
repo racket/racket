@@ -3,9 +3,9 @@
 (define the-error "confuses the lhs value for the rhs value in cons type rule")
 
 (require redex/reduction-semantics
+         (only-in redex/private/generate-term pick-an-index)
          racket/list
-         racket/match
-         math/base)
+         racket/match)
 
 (provide (all-defined-out))
 
@@ -434,4 +434,4 @@
     [#f #f]))
 
 (define (generate-enum-term)
-  (generate-term list-machine-typing (l0 : ι p) #:i-th (random-natural #e10e200)))
+  (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index)))

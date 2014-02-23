@@ -6,7 +6,7 @@
 ;; with commit: 4b848777d12a2e5b59b43c8e77f9f68b747d1151
 
 (require redex/reduction-semantics
-         math/base)
+         (only-in redex/private/generate-term pick-an-index))
 
 (provide (all-defined-out))
 
@@ -942,4 +942,4 @@
 
 
 (define (generate-enum-term)
-  (generate-term abort-lang e #:i-th (random-natural #e10e200)))
+  (generate-term abort-lang e #:i-th (pick-an-index)))

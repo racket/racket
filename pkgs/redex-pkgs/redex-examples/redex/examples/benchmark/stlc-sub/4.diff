@@ -1,21 +1,21 @@
 3,4d2
 < (define the-error "no error")
 < 
-6d3
+7d4
 <          racket/match
-7a5
+8a6
 >          racket/match
-11a10,11
+12a11,12
 > (define the-error "substitutes inside of λ that binds the sub variable")
 > 
-107,108d106
+108,109d107
 <   [(subst (λ (x τ) M) x M_x)
 <    (λ (x τ) M)]
-113,114d110
+114,115d111
 <   [(subst (c M) x M_x)
 <    (c (subst M x M_x))]
-116a113,114
+117a114,115
 >   [(subst (c M) x M_x)
 >    (c (subst M x M_x))]
-254a253
+255a254
 > 

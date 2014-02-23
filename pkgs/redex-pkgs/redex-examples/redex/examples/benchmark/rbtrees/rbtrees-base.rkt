@@ -3,8 +3,8 @@
 (define the-error "no-error")
 
 (require redex/reduction-semantics
-         racket/match
-         math/base)
+         (only-in redex/private/generate-term pick-an-index)
+         racket/match)
 
 (provide (all-defined-out))
 
@@ -290,4 +290,4 @@
       (ins-preserves-rb-tree t)))
 
 (define (generate-enum-term)
-  (generate-term rbtrees t #:i-th (random-natural #e10e200)))
+  (generate-term rbtrees t #:i-th (pick-an-index)))
