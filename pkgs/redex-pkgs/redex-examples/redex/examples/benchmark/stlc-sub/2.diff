@@ -8,7 +8,7 @@
 11a10,11
 > (define the-error "only substitutes inside of hd constants")
 > 
-112,113c112,113
+113,114c113,114
 <   [(subst (c M) x M_x)
 <    (c (subst M x M_x))]
 ---

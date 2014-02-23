@@ -11,8 +11,8 @@
 111a112,113
 >   [(subst (M N) x M_x)
 >    ((subst M_x x M) (subst N x M_x))]
-114,115d115
+115,116d116
 <   [(subst (M N) x M_x)
 <    ((subst M x M_x) (subst N x M_x))]
-253a254
+254a255
 > 

@@ -8,9 +8,9 @@
 11a10,11
 > (define the-error "swaps the order of the λ clauses")
 > 
-106,107d105
+107,108d106
 <   [(subst (λ (x τ) M) x M_x)
 <    (λ (x τ) M)]
-111a110,111
+112a111,112
 >   [(subst (λ (x τ) M) x M_x)
 >    (λ (x τ) M)]
