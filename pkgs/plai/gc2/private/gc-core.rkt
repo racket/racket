@@ -98,7 +98,13 @@
 (provide/contract
  [root? (-> any/c boolean?)]
  [root-name (-> root? any/c)]
- [make-root (-> any/c (-> location?) (-> location? void) root?)])
+ [make-root (-> any/c (-> location?) (-> location? void) root?)]
+ [simple-root (-> location? root?)])
+
+(define (simple-root n)
+  (make-root 'simple-root
+             (λ () n)
+             (λ (n2) (set! n n2))))
 
 (provide make-env-root)
 (define-syntax (make-env-root stx)

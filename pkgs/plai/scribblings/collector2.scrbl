@@ -96,6 +96,10 @@ Determines if @racket[v] is a root.
   Updates @racket[root] to refer to @racket[loc].
 }
 
+@defproc[(simple-root [l location?]) root?]{
+  Makes a root that is initialized with @racket[l].                                            
+}
+
 @defproc[(make-root [name symbol?] [get (-> location?)] [set (-> location? void?)])
          root?]{
   Creates a new root. When @racket[read-root] is called, it invokes
