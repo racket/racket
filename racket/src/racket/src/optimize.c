@@ -1971,6 +1971,20 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
         return produces_local_type(app->rator, 2);
       }
       break;
+    case scheme_branch_type:
+      {
+        Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
+        return (expr_produces_local_type(b->tbranch, fuel / 2)
+                && expr_produces_local_type(b->fbranch, fuel / 2));
+      }
+      break;
+    case scheme_sequence_type:
+      {
+        Scheme_Sequence *seq = (Scheme_Sequence *)expr;
+        
+        expr = seq->array[seq->count-1];
+        break;
+      }
     case scheme_compiled_let_void_type:
       {
         Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;

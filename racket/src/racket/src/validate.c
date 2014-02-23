@@ -1621,7 +1621,8 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int cnt;
       int i, r;
 
-      no_typed(need_local_type, port);
+      if (type != scheme_sequence_type)
+        no_typed(need_local_type, port);
       
       cnt = seq->count;
 	  
@@ -1642,8 +1643,6 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_Branch_Rec *b;
       int vc_pos, vc_ncpos, r;
 
-      no_typed(need_local_type, port);
-
       b = (Scheme_Branch_Rec *)expr;
       r = validate_expr(port, b->test, stack, tls, depth, letlimit, delta, 
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
@@ -1660,7 +1659,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       r = validate_expr(port, b->tbranch, stack, tls, depth, letlimit, delta, 
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
-                        NULL, 0, result_ignored, vc, tailpos, 0, procs,
+                        NULL, 0, result_ignored, vc, tailpos, need_local_type, procs,
                         expected_results, NULL);
       result = validate_join_seq(result, r);
       

@@ -1641,6 +1641,8 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   Branch_Info for_this_branch;
   GC_CAN_IGNORE Branch_Info_Addr addrs[NUM_QUICK_INFO_ADDRS];
   GC_CAN_IGNORE jit_insn *ref2;
+  mz_jit_unbox_state ubs;
+  int ubd, save_ubd;
   int pushed_marks;
   int nsrs, nsrs1, g1, g2, amt, need_sync, flostack, flostack_pos;
   int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false, old_self_pos;
@@ -1709,6 +1711,8 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
 
   mz_rs_sync();
 
+  scheme_mz_unbox_save(jitter, &ubs);
+
   if (!scheme_generate_inlined_test(jitter, branch->test, then_short_ok, &for_this_branch, need_sync)) {
     CHECK_LIMIT();
     generate_non_tail_with_branch(branch->test, jitter, 0, 1, 0, &for_this_branch);
@@ -1718,6 +1722,9 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     }
   }
   CHECK_LIMIT();
+
+  save_ubd = jitter->unbox_depth;
+  scheme_mz_unbox_restore(jitter, &ubs);
 
   /* True branch */
   scheme_mz_runstack_saved(jitter);
@@ -1786,6 +1793,10 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   if (old_self_pos != jitter->self_pos)
     scheme_signal_error("internal error: self position moved across branch");
 
+  ubd = jitter->unbox_depth;
+  jitter->unbox_depth = save_ubd;
+  scheme_mz_unbox_restore(jitter, &ubs);
+
   /* False branch */
   mz_SET_REG_STATUS_VALID(0);
   scheme_mz_runstack_saved(jitter);
@@ -1842,6 +1853,9 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   FOR_LOG(jitter->log_depth--);
 
   END_JIT_DATA(12);
+
+  if (ubd != jitter->unbox_depth)
+    scheme_signal_error("internal error: different unbox depth for branches");
 
   /* Return result */
 
@@ -2600,9 +2614,12 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     {
       Scheme_Sequence *seq = (Scheme_Sequence *)obj;
       int cnt = seq->count, i;
+      mz_jit_unbox_state ubs;
       START_JIT_DATA();
 
       LOG_IT(("begin\n"));
+
+      scheme_mz_unbox_save(jitter, &ubs);
 
       for (i = 0; i < cnt - 1; i++) {
 	scheme_generate_non_tail(seq->array[i], jitter, 1, 1, 1);
@@ -2610,6 +2627,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       }
 
       END_JIT_DATA(11);
+
+      scheme_mz_unbox_restore(jitter, &ubs);
 
       return scheme_generate(seq->array[cnt - 1], jitter, is_tail, wcm_may_replace, 
                              multi_ok, orig_target, for_branch);

@@ -283,7 +283,7 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
   }
 }
 
-int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
+int can_unbox_directly(Scheme_Object *obj, int extfl, int bfuel)
 /* Used only when !can_unbox_inline(). Detects safe operations that
    produce flonums when they don't raise an exception, and that the JIT
    supports directly unboxing. */
@@ -348,10 +348,26 @@ int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
     case scheme_letrec_type:
       obj = ((Scheme_Letrec *)obj)->body;
       break;
+    case scheme_branch_type:
+      if (!bfuel)
+        return 0;
+      bfuel--;
+      if (!can_unbox_directly(((Scheme_Branch_Rec *)obj)->tbranch, extfl, bfuel))
+        return 0;
+      obj = ((Scheme_Branch_Rec *)obj)->fbranch;
+      break;
+    case scheme_sequence_type:
+      obj = ((Scheme_Sequence *)obj)->array[((Scheme_Sequence *)obj)->count - 1];
+      break;
     default:
       return 0;
     }
   }
+}
+
+int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
+{
+  return can_unbox_directly(obj, extfl, 3);
 }
 
 static jit_insn *generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *rator, 

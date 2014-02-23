@@ -3244,6 +3244,38 @@
             (phase1-eval)))
 (test #t syntax? (f))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check unboxing through conditionals
+
+(let ()
+  (define (check pred t1 e1)
+    (define v (* 2.0 (if (eval (pred 7.0))
+                         (eval (t1 7.0))
+                         (eval (e1 7.0)))))
+    (test v (eval `(lambda (arg)
+                     (let ([x (if ,(pred 'arg)
+                                  ,(t1 'arg)
+                                  ,(e1 'arg))])
+                       (fl+ x x))))
+          7.0)
+    (test v (eval `(lambda (arg)
+                     (fl* 2.0 (if ,(pred 'arg)
+                                  ,(t1 'arg)
+                                  ,(e1 'arg)))))
+          7.0))
+  (for ([pred (in-list (list
+                        (lambda (arg) `(negative? ,arg))
+                        (lambda (arg) `(positive? ,arg))
+                        (lambda (arg) `(even? (fl* ,arg ,arg)))))])
+    (for ([t1 (in-list (list
+                        (lambda (arg) `(fl+ ,arg 8.0))
+                        (lambda (arg) `(fl- (fl+ ,arg 8.0) 1.0))))])
+      (for ([e1 (in-list (list (lambda (arg) `(fl* 8.0 ,arg))
+                               (lambda (arg) `(begin
+                                                (display "")
+                                                (fl* 8.0 ,arg)))))])
+        (check pred t1 e1)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

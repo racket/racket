@@ -805,6 +805,7 @@ void scheme_mz_unbox_save(mz_jit_state *jitter, mz_jit_unbox_state *r)
   }
 
 void scheme_mz_unbox_restore(mz_jit_state *jitter, mz_jit_unbox_state *r)
+/* can be called multipel times for an `r` by generate_branch() */
 {
   jitter->unbox = r->unbox;
 #ifdef MZ_LONG_DOUBLE
