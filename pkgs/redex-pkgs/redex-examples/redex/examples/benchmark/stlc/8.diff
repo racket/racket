@@ -6,9 +6,13 @@
 <          racket/contract
 8a8
 >          racket/contract
-75c75
+76c76
 <    σ]
 ---
 >    int]
-231d230
+232d231
 < 
+249c248
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)

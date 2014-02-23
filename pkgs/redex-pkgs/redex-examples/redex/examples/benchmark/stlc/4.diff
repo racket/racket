@@ -6,7 +6,11 @@
 <          racket/contract
 8a8
 >          racket/contract
-66c66
+67c67
 <    (int → ((list int) → (list int)))]
 ---
 >    (int → ((list int) → int))]
+249c249
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)

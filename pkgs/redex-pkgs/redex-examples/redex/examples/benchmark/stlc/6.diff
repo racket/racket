@@ -6,9 +6,13 @@
 <          racket/contract
 8a8
 >          racket/contract
-87c87
+88c88
 <    (--> (in-hole E (hd ((cons v_1) v_2)))
 ---
 >    (--> (in-hole E (hd (cons v_1)))
-231d230
+232d231
 < 
+249c248
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)

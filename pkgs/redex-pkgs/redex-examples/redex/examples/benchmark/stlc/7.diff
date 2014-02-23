@@ -6,10 +6,14 @@
 <          racket/contract
 8a8
 >          racket/contract
-35,36c35
+36,37c36
 <      (E M)
 <      (v E)))
 ---
 >      (E M)))
-231d229
+232d230
 < 
+249c247
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)

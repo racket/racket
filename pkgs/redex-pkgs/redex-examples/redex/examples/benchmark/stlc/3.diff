@@ -6,7 +6,11 @@
 <          racket/contract
 8a8
 >          racket/contract
-56c56
+57c57
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ))
+249c249
+<          (= (length red-res) 1) 
+---
+>          (= (length red-res) 1)
