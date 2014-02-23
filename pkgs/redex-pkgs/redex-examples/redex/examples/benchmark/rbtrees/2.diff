@@ -2,6 +2,6 @@
 < (define the-error "no-error")
 ---
 > (define the-error "the first case is removed from balance")
-99,100d98
+100,101d99
 <   [(balance (B (R (R t_1 n_1 t_2) n_2 t_3) n_3 t_4))
 <    (R (B t_1 n_1 t_2) n_2 (B t_3 n_3 t_4))]

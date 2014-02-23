@@ -5,7 +5,8 @@
 (require redex/reduction-semantics
          racket/match
          racket/list
-         racket/contract)
+         racket/contract
+         math/base)
 
 (provide (all-defined-out))
 
@@ -271,3 +272,6 @@
 	 (or 
           (equal? (car red-res) "error")
           (equal? t-type (type-check (car red-res))))))))
+
+(define (generate-enum-term)
+  (generate-term stlc M #:i-th (random-natural #e10e200)))

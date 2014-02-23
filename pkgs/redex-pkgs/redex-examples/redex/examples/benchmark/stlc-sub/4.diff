@@ -8,14 +8,14 @@
 11a10,11
 > (define the-error "substitutes inside of λ that binds the sub variable")
 > 
-106,107d105
+107,108d106
 <   [(subst (λ (x τ) M) x M_x)
 <    (λ (x τ) M)]
-112,113d109
+113,114d110
 <   [(subst (c M) x M_x)
 <    (c (subst M x M_x))]
-115a112,113
+116a113,114
 >   [(subst (c M) x M_x)
 >    (c (subst M x M_x))]
-253a252
+254a253
 > 

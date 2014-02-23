@@ -3,11 +3,12 @@
 (require redex/reduction-semantics
          racket/list
          racket/match
-         racket/contract)
+         racket/contract
+         math/base)
 
 (provide (all-defined-out))
-
 (define the-error "picks up the bound variable when recurring inside λ")
+
 
 (define-language stlc
   (M N ::= 
@@ -250,8 +251,8 @@
             (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)])
     [`(typeof • ,M ,τ)
      M]
-    [#f #f]))
 
+    [#f #f]))
 (define (typed-generator)
   (let ([g (redex-generator stlc 
                             (typeof • M τ)
@@ -272,3 +273,6 @@
 	 (or 
           (equal? (car red-res) "error")
           (equal? t-type (type-check (car red-res))))))))
+
+(define (generate-enum-term)
+  (generate-term stlc M #:i-th (random-natural #e10e200)))

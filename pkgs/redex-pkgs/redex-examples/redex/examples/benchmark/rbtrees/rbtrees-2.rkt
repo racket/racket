@@ -3,7 +3,8 @@
 (define the-error "the first case is removed from balance")
 
 (require redex/reduction-semantics
-         racket/match)
+         racket/match
+         math/base)
 
 (provide (all-defined-out))
 
@@ -285,3 +286,6 @@
 (define (check t)
   (or (not t)
       (ins-preserves-rb-tree t)))
+
+(define (generate-enum-term)
+  (generate-term rbtrees t #:i-th (random-natural #e10e200)))

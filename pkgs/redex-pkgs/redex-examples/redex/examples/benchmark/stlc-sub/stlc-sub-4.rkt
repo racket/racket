@@ -3,11 +3,12 @@
 (require redex/reduction-semantics
          racket/list
          racket/match
-         racket/contract)
+         racket/contract
+         math/base)
 
 (provide (all-defined-out))
-
 (define the-error "substitutes inside of λ that binds the sub variable")
+
 
 (define-language stlc
   (M N ::= 
@@ -270,3 +271,6 @@
 	 (or 
           (equal? (car red-res) "error")
           (equal? t-type (type-check (car red-res))))))))
+
+(define (generate-enum-term)
+  (generate-term stlc M #:i-th (random-natural #e10e200)))
