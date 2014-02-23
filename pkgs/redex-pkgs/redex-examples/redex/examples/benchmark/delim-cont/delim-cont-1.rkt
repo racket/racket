@@ -5,7 +5,8 @@
 ;; note: this bug was found and fixed during the development of this model
 ;; with commit: 4b848777d12a2e5b59b43c8e77f9f68b747d1151
 
-(require redex/reduction-semantics)
+(require redex/reduction-semantics
+         math/base)
 
 (provide (all-defined-out))
 
@@ -939,3 +940,6 @@
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
 
+
+(define (generate-enum-term)
+  (generate-term abort-lang e #:i-th (random-natural #e10e200)))

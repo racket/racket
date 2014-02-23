@@ -2,7 +2,8 @@
 
 (define the-error "no-error")
 
-(require redex/reduction-semantics)
+(require redex/reduction-semantics
+         math/base)
 
 (provide (all-defined-out))
 
@@ -934,3 +935,6 @@
 
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
+
+(define (generate-enum-term)
+  (generate-term abort-lang e #:i-th (random-natural #e10e200)))
