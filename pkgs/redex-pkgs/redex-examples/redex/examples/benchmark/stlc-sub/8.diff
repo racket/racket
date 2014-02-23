@@ -1,16 +1,16 @@
 3,4d2
 < (define the-error "no error")
 < 
-6d3
+7d4
 <          racket/match
-7a5
+8a6
 >          racket/match
-11a10,11
+12a11,12
 > (define the-error "swaps the order of the λ clauses")
 > 
-107,108d106
+108,109d107
 <   [(subst (λ (x τ) M) x M_x)
 <    (λ (x τ) M)]
-112a111,112
+113a112,113
 >   [(subst (λ (x τ) M) x M_x)
 >    (λ (x τ) M)]

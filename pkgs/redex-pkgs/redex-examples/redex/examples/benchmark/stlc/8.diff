@@ -2,9 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "lookup always returns int")
-7d6
+8d7
 <          racket/contract
-8a8
+9a9
 >          racket/contract
 76c76
 <    σ]

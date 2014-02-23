@@ -3,10 +3,10 @@
 (define the-error "no error")
 
 (require redex/reduction-semantics
+         (only-in redex/private/generate-term pick-an-index)
          racket/list
          racket/contract
          racket/match
-         math/base
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -252,4 +252,4 @@
           (equal? t-type (type-check (car red-res))))))))
 
 (define (generate-enum-term)
-  (generate-term stlc M #:i-th (random-natural #e10e200)))
+  (generate-term stlc M #:i-th (pick-an-index)))

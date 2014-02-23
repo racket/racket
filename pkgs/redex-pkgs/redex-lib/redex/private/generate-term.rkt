@@ -822,4 +822,5 @@
          exn:fail:redex:generation-failure?
          redex-generator
          (struct-out counterexample)
-         (struct-out exn:fail:redex:test))
+         (struct-out exn:fail:redex:test)
+         pick-an-index)
