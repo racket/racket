@@ -19,14 +19,19 @@
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
-    [((arr: dom (and rng (or (AnyValues:) (Values: _))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
+    [((arr: dom rng rest #f (and kws (list (Keyword: _ _ #f) ...)))
       (list (tc-result1: t-a phi-a o-a) ...))
 
      (when check?
        (define error-ret
          (match rng
           ((AnyValues:) tc-any-results)
-          ((Values: (list (Result: t-r _ _) ...)) (ret t-r))))
+          ((Values: (list (Result: t-r _ _) ...)) (ret t-r))
+          ((ValuesDots: (list (Result: t-r _ _) ...) dty dbound)
+           (ret t-r
+                (make-list (length t-r) -no-filter)
+                (make-list (length t-r) -no-obj)
+                dty dbound))))
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
               (tc-error/expr #:return error-ret
                              "Wrong number of arguments, expected ~a and got ~a" (length dom) (length t-a))]
@@ -53,7 +58,13 @@
                (for/lists (t-r f-r o-r)
                  ([r (in-list results)])
                  (open-Result r o-a t-a)))
-             (ret t-r f-r o-r)))))]
+             (ret t-r f-r o-r))
+            ((ValuesDots: results dty dbound)
+             (define-values (t-r f-r o-r)
+               (for/lists (t-r f-r o-r)
+                 ([r (in-list results)])
+                 (open-Result r o-a t-a)))
+             (ret t-r f-r o-r dty dbound)))))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _

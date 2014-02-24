@@ -507,7 +507,12 @@
             (let* ([ts* (do-inst form ts)]
                    [r (ret ts* fs os)])
               (add-typeof-expr form r)
-              r)]))])))
+              r)]
+           [(tc-results: ts fs os dty dbound)
+            (define ts* (do-inst form ts))
+            (define r (ret ts* fs os dty dbound))
+            (add-typeof-expr form r)
+            r]))])))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))

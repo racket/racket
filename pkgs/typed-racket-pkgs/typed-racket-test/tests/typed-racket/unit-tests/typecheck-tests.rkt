@@ -2302,6 +2302,21 @@
                                        (-filter (-val #f) (list 0 0)))
                                 : (make-Path null (list 0 0))))
                         (-FS -top -bot))]
+
+       ;; PR 13651 and related
+       [tc-e (tr:lambda #:forall (a ...) ([f : (-> String (values a ... a))])
+               (f "foo"))
+             #:ret (ret (-polydots (a)
+                          (t:-> (t:-> -String (make-ValuesDots '() a 'a))
+                                (make-ValuesDots '() a 'a)))
+                        (-FS -top -bot))]
+       [tc-e (inst (plambda: (A B ...) ((a : A) b : B ... B)
+                     ((ann (lambda () (apply (inst values A B ... B) a b))
+                           (-> (values A B ... B)))))
+                   String String Symbol)
+             #:ret (ret (t:-> -String -String -Symbol
+                              (-values (list -String -String -Symbol)))
+                        (-FS -top -bot))]
         )
   (test-suite
    "tc-literal tests"
