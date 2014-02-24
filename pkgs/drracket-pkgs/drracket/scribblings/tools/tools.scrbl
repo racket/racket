@@ -238,6 +238,7 @@ as the @racket[_key] argument to the @racket[_get-info] function to do so:
 
 @itemize[@item{@language-info-ref[drracket:toolbar-buttons]}
           @item{@language-info-ref[drracket:opt-out-toolbar-buttons]}
+          @item{@language-info-ref[definitions-text-surrogate]}
           @item{@language-info-ref[color-lexer]}]
 
 If the call to @racket[read-language] raises an error, DrRacket logs the
@@ -548,6 +549,7 @@ files.
 @subsection{General-purpose Modes}
 
 @index{definitions-text-surrogate}
+@language-info-def[definitions-text-surrogate]{
 DrRacket provides support for multiple editor modes based on the
 @tt{#lang} line at the beginning of the editor. If the 
 @onscreen{Modes} submenu of the @onscreen{Edit} menu has
@@ -561,7 +563,7 @@ a quoted module path (in the sense of @racket[module-path?]) that
 names a module that exports @racket[surrogate%]. It is expected
 to be bound to a class implementing the @racket[mode:surrogate-text<%>]
 interface. Assuming so, it is used as the surrogate for the definitions
-text.
+text.}
 
 Additionally, plugins can register modes via
 @racket[drracket:modes:add-mode]. Each mode is
