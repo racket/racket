@@ -310,8 +310,17 @@
                        (subtype* t1 t*)
                        (subtype* t2 (simple-Un (-val null) (make-MPairTop)))
                        (subtype* t2 t))]
-         [((List: ts) (Sequence: (list t*)))
-          (subtypes* A0 ts (map (λ (_) t*) ts))]
+         ;; Note: this next case previously used the List: match expander, but
+         ;;       using that would cause an infinite loop in certain cases
+         ;;       (i.e., Struct types, see PR 14364) because the expander
+         ;;       uses `resolve`. This is not normally a problem, but during
+         ;;       subtyping it's dangerous to call functions that can cause
+         ;;       substitution and thus more subtyping checks.
+         ;;
+         ;;       Instead, we can just check for Null here since combined with
+         ;;       the Pair: case above and resolution of types like Mu, all the
+         ;;       List: cases should be covered.
+         [((Value: '()) (Sequence: (list t*))) A0]
          [((HeterogeneousVector: ts) (Sequence: (list t*)))
           (subtypes* A0 ts (map (λ (_) t*) ts))]
          [((Vector: t) (Sequence: (list t*)))
