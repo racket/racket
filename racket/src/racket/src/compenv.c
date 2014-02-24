@@ -2037,7 +2037,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
             || scheme_is_unsafe_modname(modname)
             || scheme_is_flfxnum_modname(modname)
             || scheme_is_extfl_modname(modname)
-            || scheme_is_futures_modname(modname))
+            || scheme_is_futures_modname(modname)
+            || scheme_is_foreign_modname(modname))
           || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
@@ -2126,6 +2127,16 @@ Scheme_Object *scheme_extract_futures(Scheme_Object *o)
   Scheme_Env *home;
   home = scheme_get_bucket_home((Scheme_Bucket *)o);
   if (home && home->module && scheme_is_futures_modname(home->module->modname))
+    return (Scheme_Object *)((Scheme_Bucket *)o)->val;
+  else
+    return NULL;
+}
+
+Scheme_Object *scheme_extract_foreign(Scheme_Object *o)
+{
+  Scheme_Env *home;
+  home = scheme_get_bucket_home((Scheme_Bucket *)o);
+  if (home && home->module && scheme_is_foreign_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
     return NULL;

@@ -393,7 +393,8 @@ static void init_extfl(Scheme_Env *env)
   extfl_env->attached = 1;
 
 #if USE_COMPILED_STARTUP
-  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT + EXPECTED_EXTFL_COUNT)) {
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT
+                              + EXPECTED_EXTFL_COUNT)) {
     printf("extfl count %d doesn't match expected count %d\n",
 	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT - EXPECTED_FLFXNUM_COUNT, 
            EXPECTED_EXTFL_COUNT);
@@ -418,9 +419,34 @@ static void init_futures(Scheme_Env *env)
   futures_env->attached = 1;
 
 #if USE_COMPILED_STARTUP
-  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT + EXPECTED_EXTFL_COUNT + EXPECTED_FUTURES_COUNT)) {
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT
+                              + EXPECTED_EXTFL_COUNT + EXPECTED_FUTURES_COUNT)) {
     printf("Futures count %d doesn't match expected count %d\n",
-	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT - EXPECTED_FLFXNUM_COUNT - EXPECTED_EXTFL_COUNT, EXPECTED_FUTURES_COUNT);
+	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT - EXPECTED_FLFXNUM_COUNT
+           - EXPECTED_EXTFL_COUNT, 
+           EXPECTED_FUTURES_COUNT);
+    abort();
+  }
+#endif
+}
+
+static void init_foreign(Scheme_Env *env)
+{
+  Scheme_Env *ffi_env;
+
+  scheme_init_foreign(env);
+
+  ffi_env = scheme_get_foreign_env();
+  scheme_populate_pt_ht(ffi_env->module->me->rt);
+  ffi_env->attached = 1;
+
+#if USE_COMPILED_STARTUP
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT
+                              + EXPECTED_EXTFL_COUNT + EXPECTED_FUTURES_COUNT + EXPECTED_FOREIGN_COUNT)) {
+    printf("Foreign count %d doesn't match expected count %d\n",
+	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT - EXPECTED_FLFXNUM_COUNT
+           - EXPECTED_EXTFL_COUNT - EXPECTED_FUTURES_COUNT,
+           EXPECTED_FOREIGN_COUNT);
     abort();
   }
 #endif
@@ -535,8 +561,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_jit_fill_threadlocal_table();
 #endif
   scheme_init_futures_per_place();
-
-  scheme_init_foreign(env);
 
   REGISTER_SO(literal_string_table);
   REGISTER_SO(literal_number_table);
@@ -787,6 +811,7 @@ static void make_kernel_env(void)
   init_flfxnum(env);
   init_extfl(env);
   init_futures(env);
+  init_foreign(env);
   
   scheme_init_print_global_constants();
   scheme_init_variable_references_constants();
@@ -1444,7 +1469,7 @@ Scheme_Object **scheme_make_builtin_references_table(void)
     t[j] = scheme_false;
   }
 
-  for (j = 0; j < 5; j++) {
+  for (j = 0; j < 6; j++) {
     if (!j)
       kenv = kernel_env;
     else if (j == 1)
@@ -1453,8 +1478,10 @@ Scheme_Object **scheme_make_builtin_references_table(void)
       kenv = flfxnum_env;
     else if (j == 3)
       kenv = extfl_env;
-    else
+    else if (j == 4)
       kenv = futures_env;
+    else
+      kenv = scheme_get_foreign_env();
     
     ht = kenv->toplevel;
     
@@ -1481,7 +1508,7 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
 
   result = scheme_make_hash_table(SCHEME_hash_ptr);
       
-  for (j = 0; j < 5; j++) {
+  for (j = 0; j < 6; j++) {
     if (!j)
       kenv = kernel_env;
     else if (j == 1)
@@ -1490,8 +1517,10 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
       kenv = flfxnum_env;
     else if (j == 3)
       kenv = extfl_env;
-    else
+    else if (j == 4)
       kenv = futures_env;
+    else
+      kenv = scheme_get_foreign_env();
     
     ht = kenv->toplevel;
     bs = ht->buckets;
@@ -1515,7 +1544,7 @@ const char *scheme_look_for_primitive(void *code)
   intptr_t i;
   int j;
 
-  for (j = 0; j < 5; j++) {
+  for (j = 0; j < 6; j++) {
     if (!j)
       kenv = kernel_env;
     else if (j == 1)
@@ -1524,8 +1553,10 @@ const char *scheme_look_for_primitive(void *code)
       kenv = flfxnum_env;
     else if (j == 3)
       kenv = extfl_env;
-    else
+    else if (j == 4)
       kenv = futures_env;
+    else
+      kenv = scheme_get_foreign_env();
     
     ht = kenv->toplevel;
     bs = ht->buckets;

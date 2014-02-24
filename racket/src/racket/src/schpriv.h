@@ -2737,6 +2737,7 @@ Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
 Scheme_Object *scheme_extract_extfl(Scheme_Object *o);
 Scheme_Object *scheme_extract_futures(Scheme_Object *o);
+Scheme_Object *scheme_extract_foreign(Scheme_Object *o);
 
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
@@ -3503,6 +3504,7 @@ Scheme_Env *scheme_get_unsafe_env();
 Scheme_Env *scheme_get_flfxnum_env();
 Scheme_Env *scheme_get_extfl_env();
 Scheme_Env *scheme_get_futures_env();
+Scheme_Env *scheme_get_foreign_env();
 
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
@@ -3518,6 +3520,7 @@ int scheme_is_unsafe_modname(Scheme_Object *modname);
 int scheme_is_flfxnum_modname(Scheme_Object *modname);
 int scheme_is_extfl_modname(Scheme_Object *modname);
 int scheme_is_futures_modname(Scheme_Object *modname);
+int scheme_is_foreign_modname(Scheme_Object *modname);
 
 void scheme_clear_modidx_cache(void);
 void scheme_clear_shift_cache(void);

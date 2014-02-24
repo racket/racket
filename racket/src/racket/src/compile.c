@@ -4570,6 +4570,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
               return scheme_extract_extfl(var);
             } else if (scheme_extract_futures(var)) {
               return scheme_extract_futures(var);
+            } else if (scheme_extract_foreign(var)) {
+              return scheme_extract_foreign(var);
             }
           }
           if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)

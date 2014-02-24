@@ -368,14 +368,14 @@ static uintptr_t adjustment;
 }
 
 /* (ffi-obj-lib ffi-obj) -> ffi-lib */
-@cdefine[ffi-obj-lib 1]{
+@cdefine[ffi-obj-lib 1 #:kind immed]{
   if (!SCHEME_FFIOBJP(argv[0]))
     scheme_wrong_contract(MYNAME, "ffi-obj?", 0, argc, argv);
   return (Scheme_Object*)(((ffi_obj_struct*)argv[0])->lib);
 }
 
 /* (ffi-obj-name ffi-obj) -> string */
-@cdefine[ffi-obj-name 1]{
+@cdefine[ffi-obj-name 1 #:kind immed]{
   if (!SCHEME_FFIOBJP(argv[0]))
     scheme_wrong_contract(MYNAME, "ffi-obj?", 0, argc, argv);
   return scheme_make_byte_string(((ffi_obj_struct*)argv[0])->name);
@@ -619,10 +619,12 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
          [s->c  (prop 's->c (and macro @list{SCHEME_@|macro|_VAL}))]
          [c->s  (prop 'c->s)]
          [offset (prop 'offset #f)]
+         [unwrap? (prop 'unwrap? #f)]
          [cast (prop 'cast 'MZ_TYPE_CAST)])
     (output (describe-type stype cname ftype ctype pred s->c c->s offset))
     `(,type (stype ,stype) (cname ,cname) (ftype ,ftype) (ctype ,ctype)
-      (macro ,macro) (pred ,pred) (s->c ,s->c) (c->s ,c->s) (offset ,offset) (cast ,cast))))
+      (macro ,macro) (pred ,pred) (s->c ,s->c) (c->s ,c->s) (offset ,offset) 
+      (unwrap? ,unwrap?) (cast ,cast))))
 
 (define (defctype name . args)
   (set! types (append types (list (make-ctype name args)))))
@@ -648,11 +650,12 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                      [c->s  (id 'c->s)]
                      [offset (id 'offset)]
                      [ptr?  (id 'ptr?)]
+                     [unwrap? (id 'unwrap?)]
                      [cast  (id 'cast)])
          #'(maplines #:semicolons? 'semi?
                      (lambda (t)
                        (define data (cdr t))
-                       (define (get sym) (cadr (assq sym data)))
+                      (define (get sym) (cadr (assq sym data)))
                        (let* ([stype (get 'stype)]
                               [cname (get 'cname)]
                               [ftype (get 'ftype)]
@@ -664,6 +667,7 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                               [offset (get 'offset)]
                               [ptr? (or (equal? "pointer" ftype)
                                         (equal? "gcpointer" ftype))]
+                              [unwrap? (get 'unwrap?)]
                               [cast (get 'cast)])
                          body ...))
                      types)))]))
@@ -867,12 +871,14 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * value, either a cpointer object or #f is returned. */
 @(defctype 'pointer
    'ctype "void*"
+   'unwrap? #t
    'macro "FFIANYPTR"
    'offset "FFIANYPTR"
    'c->s  "scheme_make_foreign_external_cpointer")
 
 @(defctype 'gcpointer
    'ftype "gcpointer"
+   'unwrap? #t
    'ctype "void*"
    'macro "FFIANYPTR"
    'offset "FFIANYPTR"
@@ -899,7 +905,7 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Special type, not actually used for anything except to mark values
  * that are treated like pointers but not referenced.  Used for
  * creating function types. */
-@(defctype 'fpointer 'ftype "pointer" 'ctype "void*")
+@(defctype 'fpointer 'ftype "pointer" 'ctype "void*" 'unwrap? #t)
 
 typedef union _ForeignAny {
   @(map-types (when ctype @list{@ctype x_@cname}))
@@ -949,20 +955,20 @@ static ffi_type ffi_type_gcpointer;
 #define CTYPE_ARG_PRIMTYPE(x) ((CTYPE_PRIMLABEL(x) == FOREIGN_array) ? &ffi_type_pointer : CTYPE_PRIMTYPE(x))
 
 /* Returns #f for primitive types. */
-@cdefine[ctype-basetype 1]{
+@cdefine[ctype-basetype 1 #:kind immed]{
   if (!SCHEME_CTYPEP(argv[0]))
     scheme_wrong_contract(MYNAME, "ctype?", 0, argc, argv);
   return CTYPE_BASETYPE(argv[0]);
 }
 
-@cdefine[ctype-scheme->c 1]{
+@cdefine[ctype-scheme->c 1 #:kind immed]{
   if (!SCHEME_CTYPEP(argv[0]))
     scheme_wrong_contract(MYNAME, "ctype?", 0, argc, argv);
   return (CTYPE_PRIMP(argv[0])) ? scheme_false :
            ((ctype_struct*)(argv[0]))->scheme_to_c;
 }
 
-@cdefine[ctype-c->scheme 1]{
+@cdefine[ctype-c->scheme 1 #:kind immed]{
   if (!SCHEME_CTYPEP(argv[0]))
     scheme_wrong_contract(MYNAME, "ctype?", 0, argc, argv);
   return (CTYPE_PRIMP(argv[0])) ? scheme_false :
@@ -1369,7 +1375,7 @@ static int check_cpointer_property(Scheme_Object *v)
     return 0;
 }
 
-static Scheme_Object *unwrap_cpointer_property(Scheme_Object *orig_v)
+static Scheme_Object *unwrap_cpointer_property_slow(Scheme_Object *orig_v)
 {
   Scheme_Object *v = orig_v, *val;
   int must = 0;
@@ -1401,11 +1407,19 @@ static Scheme_Object *unwrap_cpointer_property(Scheme_Object *orig_v)
   return v;
 }
 
+static Scheme_Object *unwrap_cpointer_property(Scheme_Object *v)
+{
+  if (SCHEME_FFIANYPTRP(v))
+    return v;
+  else
+    return unwrap_cpointer_property_slow(v);
+}
+
 int scheme_is_cpointer(Scheme_Object *cp) {
   return (SCHEME_FFIANYPTRP(cp) || check_cpointer_property(cp));
 }
 
-@cdefine[cpointer? 1]{
+@cdefine[cpointer? 1 #:kind immed]{
   return (scheme_is_cpointer(argv[0])
           ? scheme_true
           : scheme_false);
@@ -1537,8 +1551,8 @@ static void* SCHEME2C(const char *who,
       val = _scheme_apply(CTYPE_USER_S2C(type), 1, (Scheme_Object**)(&val));
     type = CTYPE_BASETYPE(type);
   }
-  val = unwrap_cpointer_property(val);
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
+    val = unwrap_cpointer_property(val);
     /* No need for the SET_CTYPE trick for pointers. */
     if (SCHEME_FFICALLBACKP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_callback_struct*)val)->callback;
@@ -1591,6 +1605,9 @@ static void* SCHEME2C(const char *who,
                        ((int*)W_OFFSET(dst,delta))[0] = 0;
                      }
                    }
+                   @(if unwrap?
+                       @list{val = unwrap_cpointer_property(val);}
+                       null)
                    if (@f[pred]) {
                      @ctype tmp@";"@and[offset]{ intptr_t toff@";"}
                      tmp = @cast(@ctype, @f[s->c]);
@@ -1627,6 +1644,7 @@ static void* SCHEME2C(const char *who,
     case FOREIGN_struct:
     case FOREIGN_array:
     case FOREIGN_union:
+      val = unwrap_cpointer_property(val);
       if (!SCHEME_FFIANYPTRP(val)) {
         switch (CTYPE_PRIMLABEL(type)) {
         case FOREIGN_struct:
@@ -1670,7 +1688,7 @@ static void* SCHEME2C(const char *who,
 /* C type information */
 
 /* (ctype-sizeof type) -> int, returns 0 for void, error if not a C type */
-@cdefine[ctype-sizeof 1]{
+@cdefine[ctype-sizeof 1 #:kind immed]{
   intptr_t size;
   size = ctype_sizeof(argv[0]);
   if (size >= 0) return scheme_make_integer(size);
@@ -1679,7 +1697,7 @@ static void* SCHEME2C(const char *who,
 }
 
 /* (ctype-alignof type) -> int, returns 0 for void, error if not a C type */
-@cdefine[ctype-alignof 1]{
+@cdefine[ctype-alignof 1 #:kind immed]{
   Scheme_Object *type;
   type = get_ctype_base(argv[0]);
   if (type == NULL) scheme_wrong_contract(MYNAME, "ctype?", 0, argc, argv);
@@ -1691,7 +1709,7 @@ static void* SCHEME2C(const char *who,
  * The symbols are in 'int 'char 'void 'short 'long '*, order does not matter,
  * when a single symbol is used, a list is not needed.
  * (This is about actual C types, not C type objects.) */
-@cdefine[compiler-sizeof 1]{
+@cdefine[compiler-sizeof 1 #:kind immed]{
   int res=0;
   int basetype = 0; /* 1=int, 2=char, 3=void, 4=float, 5=double */
   int intsize = 0;  /* "short" => decrement, "long" => increment */
@@ -1915,7 +1933,7 @@ static void* SCHEME2C(const char *who,
 }
 
 /* (malloc-immobile-cell v) */
-@cdefine[malloc-immobile-cell 1]{
+@cdefine[malloc-immobile-cell 1 #:kind immed]{
   void *p;
   p = scheme_malloc_immobile_box(argv[0]);
   return scheme_make_foreign_external_cpointer(p); /* <- beware: macro duplicates `p' */
@@ -2129,19 +2147,19 @@ static Scheme_Object *do_memop(const char *who, int mode,
   return scheme_void;
 }
 
-@cdefine[vector->cpointer 1]{
+@cdefine[vector->cpointer 1 #:kind immed]{
   if (!SCHEME_VECTORP(argv[0]))
     scheme_wrong_contract(MYNAME, "vector?", 0, argc, argv);
   return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_VEC_ELS((Scheme_Object *)0x0), NULL);
 }
 
-@cdefine[flvector->cpointer 1]{
+@cdefine[flvector->cpointer 1 #:kind immed]{
   if (!SCHEME_FLVECTORP(argv[0]))
     scheme_wrong_contract(MYNAME, "flvector?", 0, argc, argv);
   return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FLVEC_ELS((Scheme_Object *)0x0), NULL);
 }
 
-@cdefine[extflvector->cpointer 1]{
+@cdefine[extflvector->cpointer 1 #:kind immed]{
 @@@IFDEF{MZ_LONG_DOUBLE}{
   if (!SCHEME_EXTFLVECTORP(argv[0]))
     scheme_wrong_contract(MYNAME, "extflvector?", 0, argc, argv);
@@ -3172,12 +3190,12 @@ static void save_errno_values(int kind)
   p->saved_errno = errno;
 }
 
-@cdefine[saved-errno 0]{
+@cdefine[saved-errno 0 #:kind immed]{
   Scheme_Thread *p = scheme_current_thread;
   return scheme_make_integer_value(p->saved_errno);
 }
 
-@cdefine[lookup-errno 1]{
+@cdefine[lookup-errno 1 #:kind immed]{
   Scheme_Object *v = argv[0];
   @(let* ([errnos '(EINTR EEXIST EAGAIN)]
           [syms (string-append
@@ -3204,17 +3222,17 @@ static void save_errno_values(int kind)
 /*****************************************************************************/
 
 /* (make-stubborn-will-executor) -> #<will-executor> */
-@cdefine[make-stubborn-will-executor 0]{
+@cdefine[make-stubborn-will-executor 0 #:kind immed]{
   return scheme_make_stubborn_will_executor();
 }
 
 /* (make-late-weak-box val) -> #<weak-box> */
-@cdefine[make-late-weak-box 1]{
+@cdefine[make-late-weak-box 1 #:kind immed]{
   return scheme_make_late_weak_box(argv[0]);
 }
 
 /* (make-late-weak-hasheq) -> #<hash> */
-@cdefine[make-late-weak-hasheq 0]{
+@cdefine[make-late-weak-hasheq 0 #:kind immed]{
   return (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_late_weak_ptr);
 }
 
@@ -3241,6 +3259,8 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 /*****************************************************************************/
 /* Initialization */
 
+static Scheme_Env *ffi_env = NULL;
+
 /* types need to be initialized before places can spawn
  * types become entries in the GC mark and fixup tables
  * this function should initialize read-only globals that can be 
@@ -3248,7 +3268,9 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 void scheme_init_foreign_globals()
 {
   @(maplines (lambda (x)
-               @list{@(cadr x)_tag = scheme_make_type("<@(car x)>")})
+              (if (equal? (cadr x) "ctype")
+                  @list{ctype_tag = scheme_ctype_type}
+                  @list{@(cadr x)_tag = scheme_make_type("<@(car x)>")}))
              (reverse (cstructs)))
   @@IFDEF{MZ_PRECISE_GC}{
     @(maplines (lambda (x)
@@ -3256,7 +3278,7 @@ void scheme_init_foreign_globals()
                          @(cadr x)_MARK, @(cadr x)_FIXUP, 1, 0)})
                  (reverse (cstructs)))
   }
-  scheme_set_type_printer(ctype_tag, ctype_printer);
+  scheme_set_type_printer(scheme_ctype_type, ctype_printer);
   @(maplines (lambda (sym)
                @list{MZ_REGISTER_STATIC(@(cadr sym));
                      @(cadr sym) = scheme_intern_symbol("@(car sym)")})
@@ -3286,9 +3308,9 @@ void scheme_init_foreign(Scheme_Env *env)
   menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   @(maplines
      (lambda (x)
-       (define-values (sname cfun min max) (apply values x))
-       @list{scheme_add_global("@sname",
-               scheme_make_prim_w_arity(@cfun, "@sname", @min, @max), menv)})
+       (define-values (sname cfun min max kind) (apply values x))
+       @list{scheme_add_global_constant("@sname",
+               scheme_make_@|kind|_prim(@cfun, "@sname", @min, @max), menv)})
       (reverse (cfunctions)))
   @(map-types
      ;; no need for these, at least for now:
@@ -3298,15 +3320,23 @@ void scheme_init_foreign(Scheme_Env *env)
            @cmake["t" ctype "s"
                   @list{(Scheme_Object*)(void*)(&ffi_type_@ftype)}
                   @list{(Scheme_Object*)FOREIGN_@cname}]
-           scheme_add_global("_@stype", (Scheme_Object*)t, menv)})
+           scheme_add_global_constant("_@stype", (Scheme_Object*)t, menv)})
   scheme_add_global_constant("prop:cpointer", scheme_cpointer_property, menv);
   scheme_finish_primitive_module(menv);
   scheme_protect_primitive_provide(menv, NULL);
+  MZ_REGISTER_STATIC(ffi_env);
+  ffi_env = menv;
+}
+
+Scheme_Env *scheme_get_foreign_env() {
+  return ffi_env;
 }
 
 /*****************************************************************************/
 
 #else /* DONT_USE_FOREIGN */
+
+static Scheme_Env *ffi_env = NULL;
 
 int scheme_is_cpointer(Scheme_Object *cp)
 {
@@ -3353,15 +3383,21 @@ void scheme_init_foreign(Scheme_Env *env)
   menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   @(maplines
      (lambda (x)
-       (define-values (sname cfun min max) (apply values x))
-       @list{scheme_add_global("@sname",
-              scheme_make_prim_w_arity((Scheme_Prim *)@(lookup cfun), "@sname", @min, @max), menv)})
+       (define-values (sname cfun min max kind) (apply values x))
+       @list{scheme_add_global_constant("@sname",
+              scheme_make_@|kind|_prim((Scheme_Prim *)@(lookup cfun), "@sname", @min, @max), menv)})
       (reverse (cfunctions)))
   @(map-types
-     @list{scheme_add_global("_@stype", scheme_false, menv)})
+     @list{scheme_add_global_constant("_@stype", scheme_false, menv)})
   scheme_add_global_constant("prop:cpointer", scheme_cpointer_property, menv);
   scheme_finish_primitive_module(menv);
   scheme_protect_primitive_provide(menv, NULL);
+  MZ_REGISTER_STATIC(ffi_env);
+  ffi_env = menv;
+}
+
+Scheme_Env *scheme_get_foreign_env() {
+  return ffi_env;
 }
 
 #endif

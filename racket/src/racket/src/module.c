@@ -181,6 +181,7 @@ READ_ONLY static Scheme_Object *flfxnum_modname;
 READ_ONLY static Scheme_Object *extfl_modname;
 READ_ONLY static Scheme_Object *futures_modname;
 READ_ONLY static Scheme_Object *unsafe_modname;
+READ_ONLY static Scheme_Object *foreign_modname;
 
 /* global read-only phase wraps */
 READ_ONLY static Scheme_Object *scheme_sys_wraps0;
@@ -429,6 +430,7 @@ void scheme_init_module(Scheme_Env *env)
   REGISTER_SO(flfxnum_modname);
   REGISTER_SO(extfl_modname);
   REGISTER_SO(futures_modname);
+  REGISTER_SO(foreign_modname);
   kernel_symbol = scheme_intern_symbol("#%kernel");
   kernel_modname = scheme_intern_resolved_module_path(kernel_symbol);
   kernel_modidx = scheme_make_modidx(scheme_make_pair(quote_symbol,
@@ -440,6 +442,7 @@ void scheme_init_module(Scheme_Env *env)
   flfxnum_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%flfxnum"));
   extfl_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%extfl"));
   futures_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%futures"));
+  foreign_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%foreign"));
   
   REGISTER_SO(module_begin_symbol);
   module_begin_symbol = scheme_intern_symbol("#%module-begin");
@@ -780,6 +783,11 @@ int scheme_is_futures_modname(Scheme_Object *modname)
   return SAME_OBJ(modname, futures_modname);
 }
 
+int scheme_is_foreign_modname(Scheme_Object *modname)
+{
+  return SAME_OBJ(modname, foreign_modname);
+}
+
 Scheme_Module *get_special_module(Scheme_Object *name)
 {
   if (SAME_OBJ(name, kernel_modname))
@@ -792,6 +800,8 @@ Scheme_Module *get_special_module(Scheme_Object *name)
     return scheme_get_extfl_env()->module;
   else if (SAME_OBJ(name, futures_modname))
     return scheme_get_futures_env()->module;
+  else if (SAME_OBJ(name, foreign_modname))
+    return scheme_get_foreign_env()->module;
   else
     return NULL;
 }
@@ -808,6 +818,8 @@ Scheme_Env *get_special_modenv(Scheme_Object *name)
     return scheme_get_futures_env();
   else if (SAME_OBJ(name, unsafe_modname))
     return scheme_get_unsafe_env();
+  else if (SAME_OBJ(name, foreign_modname))
+    return scheme_get_foreign_env();
   else
     return NULL;
 }
@@ -818,7 +830,8 @@ static int is_builtin_modname(Scheme_Object *modname)
           || SAME_OBJ(modname, unsafe_modname)
           || SAME_OBJ(modname, flfxnum_modname)
           || SAME_OBJ(modname, extfl_modname)
-          || SAME_OBJ(modname, futures_modname));
+          || SAME_OBJ(modname, futures_modname)
+          || SAME_OBJ(modname, foreign_modname));
 }
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
@@ -2339,7 +2352,8 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   if (!SAME_OBJ(name, kernel_modname)
       && !SAME_OBJ(name, flfxnum_modname)
       && !SAME_OBJ(name, extfl_modname)
-      && !SAME_OBJ(name, futures_modname)) {
+      && !SAME_OBJ(name, futures_modname)
+      && !SAME_OBJ(name, foreign_modname)) {
     if (SAME_OBJ(name, unsafe_modname))
       menv2 = scheme_get_unsafe_env();
     else
@@ -4733,7 +4747,8 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
       || SAME_OBJ(modname, unsafe_modname)
       || SAME_OBJ(modname, flfxnum_modname)
       || SAME_OBJ(modname, extfl_modname)
-      || SAME_OBJ(modname, futures_modname))
+      || SAME_OBJ(modname, futures_modname)
+      || SAME_OBJ(modname, foreign_modname))
     return -1;
 
   m = module_load(modname, env, NULL);
@@ -4767,7 +4782,8 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
   } else if (SAME_OBJ(modname, unsafe_modname)
              || SAME_OBJ(modname, flfxnum_modname)
              || SAME_OBJ(modname, extfl_modname)
-             || SAME_OBJ(modname, futures_modname)) {
+             || SAME_OBJ(modname, futures_modname)
+             || SAME_OBJ(modname, foreign_modname)) {
     /* no unsafe, flfxnum, extfl, or futures syntax */
     return NULL;
   } else {
@@ -7200,7 +7216,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       || SAME_OBJ(m->modname, unsafe_modname)
       || SAME_OBJ(m->modname, flfxnum_modname)
       || SAME_OBJ(m->modname, extfl_modname)
-      || SAME_OBJ(m->modname, futures_modname)) {
+      || SAME_OBJ(m->modname, futures_modname)
+      || SAME_OBJ(m->modname, foreign_modname)) {
     /* Too confusing. Give it a different name while compiling. */
     Scheme_Object *k2;
     const char *kname;
@@ -7212,6 +7229,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       kname = "#%extfl";
     else if (SAME_OBJ(m->modname, futures_modname))
       kname = "#%futures";
+    else if (SAME_OBJ(m->modname, foreign_modname))
+      kname = "#%foreign";
     else
       kname = "#%unsafe";
     k2 = scheme_intern_resolved_module_path(scheme_make_symbol(kname)); /* uninterned! */

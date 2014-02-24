@@ -51,9 +51,9 @@
 ;; User function definition
 (provide cfunctions)
 (define cfunctions (make-parameter '()))
-(define (_cdefine name minargs maxargs . body)
+(define (_cdefine name minargs maxargs kind . body)
   (define cname @list{foreign_@(racket-id->c-name name)})
-  (cfunctions (cons (list name cname minargs maxargs) (cfunctions)))
+  (cfunctions (cons (list name cname minargs maxargs kind) (cfunctions)))
   @list{@disable-prefix{#define MYNAME "@name"}
         static Scheme_Object *@|cname|(int argc, Scheme_Object *argv[])
         {
@@ -63,11 +63,18 @@
 (provide cdefine)
 (define-syntax (cdefine stx)
   (syntax-case stx ()
+    [(_ name minargs maxargs #:kind kind body ...)
+     (number? (syntax-e #'maxargs))
+     #'(_cdefine `name minargs maxargs `kind body ...)]
     [(_ name minargs maxargs body ...)
      (number? (syntax-e #'maxargs))
-     #'(_cdefine `name minargs maxargs body ...)]
+     ;; Default is 'noncm, because anything that involves
+     ;; cpointers can involve a structure-type property
+     #'(_cdefine `name minargs maxargs 'noncm body ...)]
+    [(_ name args #:kind kind body ...)
+     #'(_cdefine `name args args `kind body ...)]
     [(_ name args body ...)
-     #'(_cdefine `name args args body ...)]))
+     #'(_cdefine `name args args 'noncm body ...)]))
 
 ;; Struct definitions
 (provide cstructs)
@@ -93,7 +100,7 @@
           @(maplines (lambda (s t) @list{@t @s}) slots types)
         } @|cname|_struct;
         #define SCHEME_@|mname|P(x) (SCHEME_TYPE(x)==@|cname|_tag)
-        @_cdefine[predname 1 1]{
+        @_cdefine[predname 1 1 'immed]{
           return SCHEME_@|mname|P(argv[0]) ? scheme_true : scheme_false@";"
         }
         /* 3m stuff for @cname */
