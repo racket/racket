@@ -1992,11 +1992,15 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
        Such a closure can refer back to itself, so we use a flag
        to track cycles. Also check need_local_type. */
     result = validate_join_const(result, expected_results);
-    if (SAME_TYPE(type, scheme_closure_type)) {
+    if (SAME_TYPE(type, scheme_closure_type)
+        /* If the closure is not empty, then it must be from 3-D code
+           (where PLT_VALIDATE_COMPILE is set), and validation is not
+           our responsibility here: */
+        && (SCHEME_COMPILED_CLOS_CODE(expr)->closure_size == 0)) {
       Scheme_Closure_Data *data;
       no_typed(need_local_type, port);
       expr = (Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(expr);
-      data = (Scheme_Closure_Data *)expr;        
+      data = (Scheme_Closure_Data *)expr;
       if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_VALIDATED) {
         /* Done with this one. */
       } else {
