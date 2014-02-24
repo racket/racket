@@ -8,7 +8,7 @@
 12a11,12
 > (define the-error "swaps to/from expressions when recurring in the rhs of app")
 > 
-112a113,114
+113a114,115
 >   [(subst (M N) x M_x)
 >    ((subst M_x x M) (subst N x M_x))]
 116,117d117
