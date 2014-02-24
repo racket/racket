@@ -110,9 +110,9 @@
   [(subst (λ (x_1 τ) M) x_2 v)
    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
    (where x_new ,(variable-not-in (term (x_1 e x_2))
+                                  (term x_1)))]
   [(subst (M N) x M_x)
    ((subst M_x x M) (subst N x M_x))]
-                                  (term x_1)))]
   [(subst (c M) x M_x)
    (c (subst M x M_x))]
   [(subst M x M_x)
