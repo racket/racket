@@ -290,4 +290,4 @@
       (ins-preserves-rb-tree t)))
 
 (define (generate-enum-term)
-  (generate-term rbtrees t #:i-th (pick-an-index)))
+  (generate-term rbtrees t #:i-th (pick-an-index 0.2)))

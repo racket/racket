@@ -287,10 +287,10 @@
        (values (enum-ith enum (random-natural the-size))
                'ignored))]))
 
-(define (pick-an-index)
-  (max (random-natural/no-mean 0.01)
-       (random-natural/no-mean 0.01)
-       (random-natural/no-mean 0.01)))
+(define (pick-an-index [prob-of-zero 0.01])
+  (max (random-natural/no-mean prob-of-zero)
+       (random-natural/no-mean prob-of-zero)
+       (random-natural/no-mean prob-of-zero)))
 
 ;; (: random-natural/no-mean (-> Real Natural))
 (define (random-natural/no-mean prob-zero)
