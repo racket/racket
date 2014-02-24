@@ -200,6 +200,7 @@
   (with-output-to-report-file
    module-graph-dot-file
    (printf "digraph {\n")
+   (printf "rankdir=LR\n")
    (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
    (define node->labels (make-shortener nodes))
    (for ([n nodes])
