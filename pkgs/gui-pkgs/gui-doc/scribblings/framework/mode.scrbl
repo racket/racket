@@ -12,11 +12,11 @@
    [(_ spec ...)
    #`(begin
     @definterface[mode:surrogate-text<%> ()]{
-      @defmethod[(on-enable-surrogate) any]{
+      @defmethod[(on-enable-surrogate [txt (is-a?/c text%)]) any]{
         Called by @method[mode:host-text<%> set-surrogate] to notify the
         surrogate that it has just become active.
       }
-      @defmethod[(on-disable-surrogate) any]{
+      @defmethod[(on-disable-surrogate [txt (is-a?/c text%)]) any]{
         Called by @method[mode:host-text<%> set-surrogate] to notify the
         surrogate that it has just been disabled.
       }
