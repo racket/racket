@@ -24,18 +24,11 @@
     #'make-rectangular #'unsafe-make-flrectangular
     #'make-flrectangular #'unsafe-make-flrectangular))
 
-(define unary-float-math-ops
+(define unary-float-ops
   (dict-set
     (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
                         #'sqrt #'round #'floor #'ceiling #'truncate))
     #'magnitude #'unsafe-flabs))
-
-
-(define unary-float-ops
-  (dict-set*
-    unary-float-math-ops
-    #'flreal-part #'#%expression
-    #'unsafe-flreal-part #'#%experession))
 
 (define-literal-syntax-class -)
 (define-literal-syntax-class /)
@@ -62,7 +55,6 @@
 (define-syntax-class/specialize int-expr (subtyped-expr -Integer))
 (define-syntax-class/specialize real-expr (subtyped-expr -Real))
 (define-syntax-class/specialize unary-float-op (float-op unary-float-ops))
-(define-syntax-class/specialize unary-float-math-op (float-op unary-float-math-ops))
 (define-syntax-class/specialize binary-float-op (float-op binary-float-ops))
 (define-syntax-class/specialize binary-float-comp (float-op binary-float-comps))
 
@@ -290,7 +282,7 @@
      #:when (andmap maybe-exact-rational? (syntax->list #'(n ...)))
      #:do [(log-opt-info "possible exact real arith")]
      #:with opt #'(op n.opt ...))
-  (pattern (#%plain-app op:unary-float-math-op n:opt-expr ...)
+  (pattern (#%plain-app op:unary-float-op n:opt-expr ...)
      #:when (maybe-exact-rational? this-syntax)
      #:do [(log-opt-info "possible exact real arith")]
      #:with opt #'(op n.opt ...))
