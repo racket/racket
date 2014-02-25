@@ -462,13 +462,11 @@
                   [else
                    (loop l1 (cdr l2))]))]
          [((Union: es) t)
-          ;(set! lengths (cons (length es) lengths))
           (and 
            (for/and ([elem (in-list es)])
              (subtype* A0 elem t))
            A0)]
          [(s (Union: es))
-          ;(set! lengths (cons (length es) lengths))
           (and (for/or ([elem (in-list es)])
                  (subtype* A0 s elem))
                A0)]
@@ -558,7 +556,6 @@
          [((Continuation-Mark-Keyof: _) (Continuation-Mark-KeyTop:)) A0]
          ;; subtyping on structs follows the declared hierarchy
          [((Struct: nm (? Type/c? parent) _ _ _ _) other)
-          ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
           (subtype* A0 parent other)]
          ;; subtyping on values is pointwise
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
