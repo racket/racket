@@ -10,6 +10,7 @@ run() {
 
 cd tests 
 
+run random-seed-works.rkt
 run bitmap-as-image-in-universe.rkt
 run key-error.rkt
 run run-movie.rkt
