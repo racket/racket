@@ -21,17 +21,23 @@ by @racket[kind], which must be one of the following:
 
 @itemize[
 
- @item{@indexed-racket['home-dir] --- the current user's home
- directory.
+ @item{@indexed-racket['home-dir] --- the current @deftech{user's home
+ directory}.
 
- On Unix and Mac OS X, this directory is determined by expanding
- the path @filepath{~}, which is expanded by first checking for a
- @indexed-envvar{HOME} environment variable. If none is defined, the
- @indexed-envvar{USER} and @indexed-envvar{LOGNAME} environment
+ On all platforms, if the @indexed-envvar{PLTUSERHOME} environment
+ variable is defined as a @tech{complete} path, then the path is used
+ as the user's home directory.
+
+ On Unix and Mac OS X, when @envvar{PLTUSERHOME} does not apply,
+ the user's home directory is determined by
+ expanding the path @filepath{~}, which is expanded by first checking
+ for a @indexed-envvar{HOME} environment variable. If none is defined,
+ the @indexed-envvar{USER} and @indexed-envvar{LOGNAME} environment
  variables are consulted (in that order) to find a user name, and then
  system files are consulted to locate the user's home directory.
 
- On Windows, the user's home directory is the user-specific profile
+ On Windows, when @envvar{PLTUSERHOME} does not apply,
+ the user's home directory is the user-specific profile
  directory as determined by the Windows registry. If the registry
  cannot provide a directory for some reason, the value of the
  @indexed-envvar{USERPROFILE} environment variable is used instead, as
@@ -44,12 +50,14 @@ by @racket[kind], which must be one of the following:
 
  @item{@indexed-racket['pref-dir] --- the standard directory for
  storing the current user's preferences. On Unix, the directory is
- @filepath{.racket} in the user's home directory.  On Windows, it
- is @filepath{Racket} in the user's application-data folder as
- specified by the Windows registry; the application-data folder is
- usually @filepath{Application Data} in the user's profile
- directory. On Mac OS X, it is @filepath{Library/Preferences} in the
- user's home directory. This directory might not exist.}
+ @filepath{.racket} in the @tech{user's home directory}.  On Windows,
+ it is @filepath{Racket} in the @tech{user's home directory} if
+ determined by @envvar{PLTUSERHOME}, otherwise in the user's
+ application-data folder as specified by the Windows registry; the
+ application-data folder is usually @filepath{Application Data} in the
+ user's profile directory. On Mac OS X, the preferences directory
+ is @filepath{Library/Preferences} in the
+ @tech{user's home directory}. The preferences directory might not exist.}
 
  @item{@indexed-racket['pref-file] --- a file that contains a
  symbol-keyed association list of preference values. The file's
@@ -70,7 +78,7 @@ by @racket[kind], which must be one of the following:
 
  @item{@indexed-racket['init-dir] --- the directory containing the
  initialization file used by the Racket executable.
- It is the same as the current user's home directory.}
+ It is the same as the @tech{user's home directory}.}
 
  @item{@indexed-racket['init-file] --- the file loaded at start-up by
  the Racket executable. The directory part of the
@@ -103,24 +111,26 @@ by @racket[kind], which must be one of the following:
  overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
- @filepath{Library/Racket} in the user's home directory on Mac
+ @filepath{Library/Racket} in the @tech{user's home directory} on Mac
  OS X and @racket['pref-dir] otherwise.  The directory might not
  exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
- storing the current user's documents. On Unix, it's the same as
- @racket['home-dir]. On Mac OS X, it's the
- @filepath{Documents} directory in the user's home directory. On
- Windows, it is the user's documents folder as specified by the
- Windows registry; the documents folder is usually @filepath{My Documents}
- in the user's home directory.}
+ storing the current user's documents. On Unix, it's
+ the @tech{user's home directory}.  On Windows, it is the @tech{user's
+ home directory} if determined by @envvar{PLTUSERHOME}, otherwise it
+ is the user's documents folder as specified by the Windows registry;
+ the documents folder is usually @filepath{My Documents} in the user's
+ home directory.  On Mac OS X, it's the @filepath{Documents} directory
+ in the @tech{user's home directory}.}
 
  @item{@indexed-racket['desk-dir] --- the directory for the current user's
- desktop. On Unix, it's the same as @racket['home-dir]. On
- Windows, it is the user's desktop folder as specified by the Windows
- registry; the documents folder is usually @filepath{Desktop} in the
- user's home directory. On Mac OS X, it is the desktop directory,
- which is specifically @filepath{~/Desktop} on Mac OS X.}
+ desktop. On Unix, it's the @tech{user's home directory}. On
+ Windows, it is the @tech{user's home directory} if determined by
+ @envvar{PLTUSERHOME}, otherwise it is the user's desktop folder as
+ specified by the Windows registry; the desktop folder is usually
+ @filepath{Desktop} in the user's home directory. On Mac OS X, it is
+ @filepath{Desktop} in the @tech{user's home directory}}
 
  @item{@indexed-racket['sys-dir] --- the directory containing the
  operating system for Windows. On @|AllUnix|, the
@@ -157,7 +167,9 @@ by @racket[kind], which must be one of the following:
  from @racket[(find-system-path 'exec-file)] or
  @racket[(find-system-path 'run-file)] to a complete path.}
 
- ]}
+ ]
+
+@history[#:changed "6.0.0.3" @elem{Added @envvar{PLTUSERHOME}.}]}
 
 @defproc[(path-list-string->path-list [str (or/c string? bytes?)]
                                       [default-path-list (listof path?)])

@@ -53,28 +53,30 @@
   (let ([plthome (getenv "PLTHOME")]
 	[collects (getenv "PLTCOLLECTS")]
         [out (open-output-string)])
+    (define temp-home-dir (make-temporary-file "racket-tmp-home~a" 'directory))
     ;; Try to hide usual collections:
-    (when plthome
-      (putenv "PLTHOME" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
-    (when collects
-      (putenv "PLTCOLLECTS" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
-    ;; Execute:
-    (parameterize ([current-directory (find-system-path 'temp-dir)])
-      (when (file-exists? "stdout")
-	(delete-file "stdout"))
-      (let ([path (if (and mred? (eq? 'macosx (system-type)))
-                      (let-values ([(base name dir?) (split-path exe)])
-                        (build-path exe "Contents" "MacOS"
-                                    (path-replace-suffix name #"")))
-                      exe)])
-        (test #t
-              path
-              (parameterize ([current-output-port out])
-                (system* path)))))
-    (when plthome
-      (putenv "PLTHOME" plthome))
-    (when collects
-      (putenv "PLTCOLLECTS" collects))
+    (parameterize ([current-environment-variables
+                    (environment-variables-copy
+                     (current-environment-variables))])
+      (putenv "PLTUSERHOME" (path->string temp-home-dir))
+      (when plthome
+        (putenv "PLTHOME" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
+      (when collects
+        (putenv "PLTCOLLECTS" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
+      ;; Execute:
+      (parameterize ([current-directory (find-system-path 'temp-dir)])
+        (when (file-exists? "stdout")
+          (delete-file "stdout"))
+        (let ([path (if (and mred? (eq? 'macosx (system-type)))
+                        (let-values ([(base name dir?) (split-path exe)])
+                          (build-path exe "Contents" "MacOS"
+                                      (path-replace-suffix name #"")))
+                        exe)])
+          (test #t
+                path
+                (parameterize ([current-output-port out])
+                  (system* path))))))
+    (delete-directory/files temp-home-dir)
     (let ([stdout-file (build-path (find-system-path 'temp-dir) "stdout")])
       (if (file-exists? stdout-file)
           (test expect with-input-from-file stdout-file

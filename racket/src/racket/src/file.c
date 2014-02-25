@@ -1847,7 +1847,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       char user[256], *home = NULL, *naya;
       struct passwd *who = NULL;
       int u, f, len, flen;
-    
+
       for (u = 0, f = 1; 
            u < 255 && filename[f] && filename[f] != '/'; 
            u++, f++) {
@@ -1867,13 +1867,13 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       if (!user[0]) {
         if (!(home = getenv("HOME"))) {
           char *ptr;
-
+          
           ptr = getenv("USER");
           if (!ptr)
             ptr = getenv("LOGNAME");
-
+          
           who = ptr ? getpwnam(ptr) : NULL;
-
+          
           if (!who)
             who = getpwuid(getuid());
         }
@@ -6272,8 +6272,11 @@ find_system_path(int argc, Scheme_Object **argv)
   {
     /* Everything else is in ~: */
     Scheme_Object *home;
-    char *home_str, *ex_home;
+    char *home_str, *ex_home, *alt_home;
     int ends_in_slash;
+
+    /* cast here avoids a clang warning: */
+# define mz_STR_OFFSET(s, d) ((const char *)s XFORM_OK_PLUS d)
 
     if ((which == id_pref_dir) 
 	|| (which == id_pref_file)
@@ -6296,19 +6299,30 @@ find_system_path(int argc, Scheme_Object **argv)
 #endif
         home_str = "~/";
     }
-    
-    ex_home = do_expand_filename(NULL, home_str, strlen(home_str), NULL,
-                                 NULL,
-                                 0, 1,
-                                 0, SCHEME_UNIX_PATH_KIND, 
-                                 1);
 
-    if (!ex_home) {
-      /* Something went wrong with the user lookup. Just drop "~'. */
-      home = scheme_make_sized_offset_path(home_str, 1, -1, 1);
-    } else
-      home = scheme_make_path(ex_home);
+    alt_home = getenv("PLTUSERHOME");
+    if (alt_home && scheme_is_complete_path(alt_home, strlen(alt_home), SCHEME_PLATFORM_PATH_KIND)) {
+      home = scheme_make_path(alt_home);
+      if (home_str[2]) {
+        Scheme_Object *a[2];
+        a[0] = home;
+        a[1] = scheme_make_path(mz_STR_OFFSET(home_str, 2));
+        home = scheme_build_path(2, a);
+      } else
+        home = scheme_path_to_directory_path(home);
+    } else {
+      ex_home = do_expand_filename(NULL, home_str, strlen(home_str), NULL,
+                                   NULL,
+                                   0, 1,
+                                   0, SCHEME_UNIX_PATH_KIND, 
+                                   1);
 
+      if (!ex_home) {
+        /* Something went wrong with the user lookup. Just drop "~'. */
+        home = scheme_make_sized_offset_path(home_str, 1, -1, 1);
+      } else
+        home = scheme_make_path(ex_home);
+    }
     
     if ((which == id_pref_dir) || (which == id_init_dir) 
 	|| (which == id_home_dir) || (which == id_addon_dir)
@@ -6317,9 +6331,6 @@ find_system_path(int argc, Scheme_Object **argv)
 
     ends_in_slash = (SCHEME_PATH_VAL(home))[SCHEME_PATH_LEN(home) - 1] == '/';
     
-    /* cast here avoids a clang warning: */
-# define mz_STR_OFFSET(s, d) ((const char *)s + d)
-
     if (which == id_init_file)
       return append_path(home, scheme_make_path(mz_STR_OFFSET("/.racketrc", ends_in_slash)));
     if (which == id_pref_file) {
@@ -6359,7 +6370,11 @@ find_system_path(int argc, Scheme_Object **argv)
 
     home = NULL;
 
-    {
+    p = getenv("PLTUSERHOME");
+    if (p && scheme_is_complete_path(p, strlen(p), SCHEME_PLATFORM_PATH_KIND))
+      home = scheme_path_to_directory_path(scheme_make_path(p));
+
+    if (!home) {
       /* Try to get Application Data directory: */
       LPITEMIDLIST items;
       int which_folder;
