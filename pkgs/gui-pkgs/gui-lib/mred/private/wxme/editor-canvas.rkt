@@ -942,19 +942,29 @@
       
       (maybe-reset-size)
 
-      (when (and (x . > . -1)
-                 (not fake-x-scroll?))
-        (when (positive? scroll-width)
-          (set-scroll-pos 'horizontal (min (->long (min x scroll-width)) 10000000))))
-      
-      (when (and (y . > . -1)
-                 (not fake-y-scroll?))
-        (when (positive? scroll-height)
-          (set-scroll-pos 'vertical (min (->long (min y scroll-height))  10000000))))
+      (define change?
+        (or
+         ;; Set x
+         (and (x . > . -1)
+              (not fake-x-scroll?)
+              (positive? scroll-width)
+              (let ([x (min (->long (min x scroll-width)) 10000000)])
+                (and (not (= x old-x))
+                     (begin (set-scroll-pos 'horizontal x)
+                            #t))))
+         ;; Set y
+         (and (y . > . -1)
+              (not fake-y-scroll?)
+              (positive? scroll-height)
+              (let ([y (min (->long (min y scroll-height))  10000000)])
+                (and (not (= y old-y))
+                     (begin
+                       (set-scroll-pos 'vertical y)
+                       #t))))))
       
       (set! noloop? savenoloop?)
 
-      (when refresh?
+      (when (and change? refresh?)
         (if (and #f ;; special scrolling disabled: not faster with Cocoa, broken for Windows
                  (not need-refresh?)
                  (not lazy-refresh?)
