@@ -8,7 +8,7 @@
                "redex-gui-lib"
                "slideshow-lib"
                "math-lib"
-               "plot-gui-lib"))
+               "plot-lib"))
 
 (define build-deps '())
 
