@@ -51,6 +51,8 @@
  package-world ;; Package -> World 
  )
 
+(define p-r-g (make-pseudo-random-generator))
+
 (define world%
   (last-mixin
    (clock-mixin
@@ -264,7 +266,10 @@
        (rec    on-receive))
       
       (define drawing #f) ;; Boolean; is a draw callback scheduled?
-      (define (set-draw#!) (set! draw# (random 3)) (set! drawing #f))
+      (define (set-draw#!) 
+        (set! draw# (parameterize ((current-pseudo-random-generator p-r-g))
+                      (random 3)))
+        (set! drawing #f))
       (define draw# 0) 
       (set-draw#!)
       
