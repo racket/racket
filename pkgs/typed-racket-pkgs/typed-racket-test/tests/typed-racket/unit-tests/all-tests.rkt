@@ -34,4 +34,5 @@
   "contract-tests.rkt"
   "interactive-tests.rkt"
   "class-tests.rkt"
-  "class-util-tests.rkt")
+  "class-util-tests.rkt"
+  "rep-tests.rkt")
