@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require plot
+(require plot/pict
          racket/cmdline
          racket/list
          racket/match
