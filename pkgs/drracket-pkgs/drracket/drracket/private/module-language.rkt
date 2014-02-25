@@ -91,6 +91,7 @@
           [prefix drracket:rep: drracket:rep^]
           [prefix drracket:init: drracket:init^]
           [prefix drracket:module-language-tools: drracket:module-language-tools/int^]
+          [prefix drracket:modes: drracket:modes^]
           [prefix drracket: drracket:interface^])
   (export drracket:module-language/int^)
   
@@ -2595,15 +2596,60 @@
                 #:when v)
       v))
   
+  (define modes<%> (interface () 
+                     maybe-change-language
+                     change-mode-to-match))
   
-  
-  (define-local-member-name maybe-change-language)
-
-  (define change-lang-host<%> (interface () maybe-change-language))
-  
-  (define change-lang-host-mixin
-    (mixin ((class->interface text%) mode:host-text<%>) (change-lang-host<%>)
-      (inherit set-surrogate)
+  (define modes-mixin
+    (mixin ((class->interface text%)
+            mode:host-text<%>
+            drracket:unit:definitions-text<%>)
+      (modes<%>)
+          
+      (inherit get-surrogate set-surrogate 
+               get-next-settings get-tab)
+      
+      (define/augment (after-set-next-settings next-settings)
+        (change-mode-to-match)
+        (inner (void) after-set-next-settings next-settings))
+      
+      (define current-mode #f)
+      
+      (define/public (set-current-mode mode)
+        (set! current-mode mode)
+        (define surrogate (drracket:modes:mode-surrogate mode))
+        (cond
+          [(is-a? surrogate default-surrogate%)
+           (update-surrogate)]
+          [else
+           (set-surrogate surrogate)])
+        (define interactions-text (send (get-tab) get-ints))
+        (when interactions-text
+          (send interactions-text set-surrogate surrogate)
+          (send interactions-text set-submit-predicate
+                (drracket:modes:mode-repl-submit mode))))
+      
+      (define/public (is-current-mode? mode)
+        (and current-mode
+             (equal? (drracket:modes:mode-name current-mode) 
+                     (drracket:modes:mode-name mode))))
+      
+      (define/public (change-mode-to-match)
+        (let* ([language-settings (get-next-settings)]
+               [language-name 
+                (and language-settings
+                     (send (drracket:language-configuration:language-settings-language
+                            language-settings)
+                           get-language-position))])
+          (let loop ([modes (drracket:modes:get-modes)])
+            (cond
+              [(null? modes) (error 'change-mode-to-match
+                                    "didn't find a matching mode")]
+              [else (let ([mode (car modes)])
+                      (if ((drracket:modes:mode-matches-language mode) language-name)
+                          (unless (is-current-mode? mode)
+                            (set-current-mode mode))
+                          (loop (cdr modes))))]))))
       
       (define current-surrogate-mod #f)
       (define current-language-end #f)
@@ -2628,7 +2674,8 @@
           (and get-info
                (get-info 'definitions-text-surrogate #f)))
         (set! current-language-end pos)
-        (unless (equal? current-surrogate-mod new-surrogate-mod)
+        (unless (and current-surrogate-mod
+                     (equal? current-surrogate-mod new-surrogate-mod))
           (set! current-surrogate-mod new-surrogate-mod)
           (define new-surrogate
             (and new-surrogate-mod
@@ -2651,12 +2698,12 @@
     (mixin (mode:surrogate-text<%>) ()
       (define/override (after-insert ths supr start len)
         (super after-insert ths supr start len)
-        (when (is-a? ths change-lang-host<%>)
+        (when (is-a? ths modes<%>)
           (send ths maybe-change-language start)))
       
       (define/override (after-delete ths supr start len)
         (super after-delete ths supr start len)
-        (when (is-a? ths change-lang-host<%>)
+        (when (is-a? ths modes<%>)
           (send ths maybe-change-language start)))
       
       (super-new)))

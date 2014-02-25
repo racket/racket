@@ -111,7 +111,8 @@
    
    change-lang-surrogate-mixin
    default-surrogate%
-   change-lang-host-mixin))
+   modes<%>
+   modes-mixin))
 
 (define-signature drracket:module-language-tools-cm^
   (frame-mixin

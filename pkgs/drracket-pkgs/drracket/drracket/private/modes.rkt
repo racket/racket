@@ -27,6 +27,13 @@
                                        surrogate
                                        repl-submit
                                        matches-language)])
+    (for ([old-mode (in-list modes)])
+      (when (equal? (mode-name old-mode) name)
+        (raise-argument-error
+         'drracket:modes:add-mode
+         "name that is not already used by any other mode"
+         0
+         name surrogate repl-submit matches-language)))
     (set! modes (cons new-mode modes))
     new-mode))
 

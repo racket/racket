@@ -1131,6 +1131,13 @@ all of the names in the tools library, for use defining keybindings
   ()
   @{Returns all of the modes currently added to DrRacket.
     
+    Note that the @racket[_surrogate] field of the
+    mode corresponding to the module language does not
+    take into account the 
+    @language-info-ref[definitions-text-surrogate], so it
+    may not be the actual class used directly in DrRacket,
+    even when the mode is active.
+    
     See also
     @racket[drracket:modes:add-mode].})
  

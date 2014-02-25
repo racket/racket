@@ -54,6 +54,12 @@
   set-dep-paths
   set-dirty-if-dep)
 
+;; mode changing definitions text mixin
+(define-local-member-name 
+  maybe-change-language
+  change-mode-to-match)
+
+
 (provide (struct-out drracket:language-configuration:language-settings))
 ;; type language-settings = (language-settings (instanceof language<%>) settings)
 (define-struct drracket:language-configuration:language-settings (language settings))

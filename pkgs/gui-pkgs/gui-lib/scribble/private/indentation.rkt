@@ -1,5 +1,30 @@
-#lang racket
-(require framework)
+#lang racket/base
+(require racket/class
+         racket/gui/base
+         framework)
+
+(define surrogate%
+  (class (racket:text-mode-mixin 
+          (color:text-mode-mixin
+           mode:surrogate-text%))
+    (define/override (on-enable-surrogate txt)
+      (send (send txt get-keymap) chain-to-keymap at-exp-keymap #f)
+      (super on-enable-surrogate txt))
+    (define/override (on-disable-surrogate txt)
+      (keymap:remove-chained-keymap txt at-exp-keymap)
+      (super on-disable-surrogate txt))
+    (super-new)))
+
+(define at-exp-keymap (new keymap:aug-keymap%))
+(define (reindent-paragraph t evt)
+  (unless (send t is-stopped?)
+    (define sp (send t get-start-position))
+    (when (= sp (send t get-end-position))
+      (paragraph-indentation t sp 60))))
+
+(send at-exp-keymap add-function "reindent-paragraph" reindent-paragraph)
+(send at-exp-keymap map-function "esc;q" "reindent-paragraph")
+(send at-exp-keymap map-function "?:a:q" "reindent-paragraph")
 
 ;;(paragraph-indentation a-racket:text posi width) → void?
 ;; posi : exact-integer? = current given position
@@ -102,7 +127,7 @@
                                      [nxt-para-start (send txt paragraph-start-position nxt-para-num)]
                                      [nxt-para-end (send txt paragraph-end-position nxt-para-num)]
                                      [nxt-para-classify (txt-position-classify txt nxt-para-start nxt-para-end)])
-                                (when (equal? 'text (first nxt-para-classify))
+                                (when (equal? 'text (car nxt-para-classify))
                                   ;now text
                                   (send txt delete nxt-para-start 'back)
                                   (send txt insert #\space (sub1 nxt-para-start)))))     
@@ -284,7 +309,7 @@
 
 ;;test cases
 (module+ test
-  (require rackunit)
+  (require rackunit framework)
   
   ;test start-skip-spaces
   (check-equal? (let ([t (new racket:text%)])
@@ -475,4 +500,5 @@
                     (send t get-text))) "aaaa\nbbbb") 
   )
 
-(provide determine-spaces adjust-para-width paragraph-indentation)
+(provide determine-spaces adjust-para-width paragraph-indentation
+         surrogate%)

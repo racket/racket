@@ -217,7 +217,7 @@
     (let ([ext (filename-extension fn)])
       (and ext
            (let ([sym (string->symbol (bytes->string/utf-8 ext))])
-             (ormap (λ (pr) (and (eq? sym (car pr)) (cadr pr)))
+             (ormap (λ (pr) (and (equal? sym (car pr)) (cadr pr)))
                     allowed-extensions)))))
   
   (define allowed-extensions '((png png)
@@ -253,11 +253,11 @@
            (define tokens (get-tokens start end))
            (for/or ([tok tokens])
              (define type (list-ref tok 0))
-             (cond [(or (eq? type 'symbol)
-                        (eq? type 'hash-colon-keyword)
+             (cond [(or (equal? type 'symbol)
+                        (equal? type 'hash-colon-keyword)
                         ;; The token may have been categorized as a keyword due to
                         ;; its presence in the tabification preferences:
-                        (eq? type 'keyword))
+                        (equal? type 'keyword))
                     tok]
                    [else
                     #f])))
@@ -538,8 +538,8 @@
                         text:info%))))))))))))])
        ((get-program-editor-mixin)
         (class* definitions-super% (drracket:unit:definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line
-                   is-printing?)
+          (inherit get-top-level-window is-locked? lock while-unlocked
+                   highlight-first-line is-printing?)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -548,36 +548,6 @@
           (define tab #f)
           (define/public (get-tab) tab)
           (define/public (set-tab t) (set! tab t))
-          
-          (inherit get-surrogate set-surrogate)
-          (define/public (set-current-mode mode)
-            (let ([surrogate (drracket:modes:mode-surrogate mode)])
-              (set-surrogate surrogate)
-              (when interactions-text
-                (send interactions-text set-surrogate surrogate)
-                (send interactions-text set-submit-predicate
-                      (drracket:modes:mode-repl-submit mode)))))
-          
-          (define/public (is-current-mode? mode)
-            (let ([surrogate (drracket:modes:mode-surrogate mode)])
-              (eq? surrogate (get-surrogate))))
-          
-          (define/public (change-mode-to-match)
-            (let* ([language-settings (get-next-settings)]
-                   [language-name 
-                    (and language-settings
-                         (send (drracket:language-configuration:language-settings-language
-                                language-settings)
-                               get-language-position))])
-              (let loop ([modes (drracket:modes:get-modes)])
-                (cond
-                  [(null? modes) (error 'change-mode-to-match
-                                        "didn't find a matching mode")]
-                  [else (let ([mode (car modes)])
-                          (if ((drracket:modes:mode-matches-language mode) language-name)
-                              (unless (is-current-mode? mode)
-                                (set-current-mode mode))
-                              (loop (cdr modes))))]))))
           
           (inherit begin-edit-sequence end-edit-sequence
                    delete insert last-position paragraph-start-position
@@ -729,7 +699,6 @@
                          get-reader-module))
               (set-modified #t))
             (set! next-settings _next-settings)
-            (change-mode-to-match)
             (let ([f (get-top-level-window)])
               (when (and f
                          (is-a? f drracket:unit:frame<%>))
@@ -968,8 +937,10 @@
             (let ([prefs-setting (preferences:get 
                                   drracket:language-configuration:settings-preferences-symbol)])
               (cond
-                [(eq? (drracket:language-configuration:language-settings-language prefs-setting)
-                      module-language)
+                [(and module-language
+                      (object=? (drracket:language-configuration:language-settings-language
+                                 prefs-setting)
+                                module-language))
                  (drracket:language-configuration:language-settings-settings prefs-setting)]
                 [else 
                  (and module-language
@@ -1346,7 +1317,7 @@
         (set! running? b?)
         (send frame update-running b?))
       
-      (define/public-final (is-current-tab?) (eq? this (send frame get-current-tab)))
+      (define/public-final (is-current-tab?) (object=? this (send frame get-current-tab)))
       
       (define log-visible? #f)
       (define/public-final (toggle-log)
@@ -1845,9 +1816,9 @@
                             '(yes-no)
                             #:dialog-mixin frame:focus-table-mixin)])
                 (cond
-                  [(eq? query 'no) 
+                  [(equal? query 'no) 
                    #f]
-                  [(eq? query 'yes)
+                  [(equal? query 'yes)
                    (with-handlers ([exn:fail:filesystem?
                                     (λ (exn)
                                       (message-box 
@@ -1965,20 +1936,20 @@
         (car (preferences:get 'drracket:toolbar-state)))
       (define/private (toolbar-is-top?)
         (and (not (toolbar-is-hidden?))
-             (eq? (cdr (preferences:get 'drracket:toolbar-state))
-                  'top)))
+             (equal? (cdr (preferences:get 'drracket:toolbar-state))
+                     'top)))
       (define/private (toolbar-is-right?)
         (and (not (toolbar-is-hidden?))
-             (eq? (cdr (preferences:get 'drracket:toolbar-state))
-                  'right)))
+             (equal? (cdr (preferences:get 'drracket:toolbar-state))
+                     'right)))
       (define/private (toolbar-is-left?)
         (and (not (toolbar-is-hidden?))
-             (eq? (cdr (preferences:get 'drracket:toolbar-state))
-                  'left)))
+             (equal? (cdr (preferences:get 'drracket:toolbar-state))
+                     'left)))
       (define/private (toolbar-is-top-no-label?)
         (and (not (toolbar-is-hidden?))
-             (eq? (cdr (preferences:get 'drracket:toolbar-state))
-                  'top-no-label)))
+             (equal? (cdr (preferences:get 'drracket:toolbar-state))
+                     'top-no-label)))
       
       (define/private (orient/show bar-at-beginning?)
         (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
@@ -2176,7 +2147,7 @@
       (define was-locked? #f)
       
       (define/public-final (disable-evaluation-in-tab tab)
-        (when (eq? tab current-tab)
+        (when (object=? tab current-tab)
           (disable-evaluation)))
       
       (define/pubment (disable-evaluation)
@@ -2186,7 +2157,7 @@
         (inner (void) disable-evaluation))
       
       (define/public-final (enable-evaluation-in-tab tab)
-        (when (eq? tab current-tab)
+        (when (object=? tab current-tab)
           (enable-evaluation)))
       
       (define/pubment (enable-evaluation)
@@ -2201,7 +2172,7 @@
         (let ([mod? (send definitions-text is-modified?)])
           (modified mod?)
           (if save-button
-              (unless (eq? mod? (send save-button is-shown?))
+              (unless (equal? mod? (send save-button is-shown?))
                 (send save-button show mod?))
               (set! save-init-shown? mod?))
           (update-tab-label current-tab)))
@@ -2265,7 +2236,7 @@
         (define tab-index
           (for/or ([i (in-list tabs)]
                    [n (in-naturals 1)])
-            (and (eq? i tab) n)))
+            (and (object=? i tab) n)))
         (define i-prefix
           (cond
             [(not tab-index) ""]
@@ -2350,11 +2321,11 @@
           (toggle-show/hide-definitions)
           (update-shown)))
       (define/public (ensure-rep-shown rep)
-        (unless (eq? rep interactions-text)
+        (unless (object=? rep interactions-text)
           (let loop ([tabs tabs])
             (unless (null? tabs)
               (let ([tab (car tabs)])
-                (if (eq? (send tab get-ints) rep)
+                (if (object=? (send tab get-ints) rep)
                     (change-to-tab tab)
                     (loop (cdr tabs)))))))
         (unless interactions-shown?
@@ -2427,23 +2398,22 @@
       
       (define/private (add-modes-submenu edit-menu)
         (new menu%
-             (parent edit-menu)
-             (label (string-constant mode-submenu-label))
-             (demand-callback
+             [parent edit-menu]
+             [label (string-constant mode-submenu-label)]
+             [demand-callback
               (λ (menu)
-                (for-each (λ (item) (send item delete))
-                          (send menu get-items))
-                (for-each (λ (mode) 
-                            (let* ([item
-                                    (new checkable-menu-item%
-                                         (label (drracket:modes:mode-name mode))
-                                         (parent menu)
-                                         (callback 
-                                          (λ (_1 _2) (send definitions-text set-current-mode
-                                                           mode))))])
-                              (when (send definitions-text is-current-mode? mode)
-                                (send item check #t))))
-                          (drracket:modes:get-modes))))))
+                (for ([item (in-list (send menu get-items))])
+                  (send item delete))
+                (for ([mode (in-list (drracket:modes:get-modes))])
+                  (define item
+                    (new checkable-menu-item%
+                         (label (drracket:modes:mode-name mode))
+                         (parent menu)
+                         (callback 
+                          (λ (_1 _2) (send definitions-text set-current-mode
+                                           mode)))))
+                  (when (send definitions-text is-current-mode? mode)
+                    (send item check #t))))]))
       
       
       
@@ -2507,7 +2477,7 @@
                  [(null? canvases) (error 'split "couldn't split; didn't find canvas")]
                  [else
                   (let ([canvas (car canvases)])
-                    (if (eq? canvas canvas-to-be-split)
+                    (if (object=? canvas canvas-to-be-split)
                         (list* new-canvas
                                canvas
                                (cdr canvases))
@@ -2529,7 +2499,7 @@
                                 orig-percentages
                                 (send resizable-panel get-children))]
                         [else (let ([canvas (car canvases)])
-                                (if (eq? canvas-to-be-split canvas)
+                                (if (object=? canvas-to-be-split canvas)
                                     (list* (/ (car percentages) 2)
                                            (/ (car percentages) 2)
                                            (cdr percentages))
@@ -2649,7 +2619,7 @@
             (let* ([old-percentages (send resizable-panel get-percentages)]
                    [soon-to-be-bigger-canvas #f]
                    [percentages
-                    (if (eq? (car (get-canvases)) target)
+                    (if (and target (object=? (car (get-canvases)) target))
                         (begin
                           (set! soon-to-be-bigger-canvas (cadr (get-canvases)))
                           (cons (+ (car old-percentages)
@@ -2665,7 +2635,7 @@
                             [(null? percentages)
                              (error 'collapse "internal error.2")]
                             [else
-                             (if (eq? (car canvases) target)
+                             (if (and target (object=? (car canvases) target))
                                  (begin
                                    (set! soon-to-be-bigger-canvas prev-canvas)
                                    (cons (+ (car percentages)
@@ -2740,7 +2710,8 @@
         (define (immediate child)
           (let loop ([child child])
             (define immediate-parent (send child get-parent))
-            (if (eq? immediate-parent parent)
+            (if (and immediate-parent 
+                     (object=? immediate-parent parent))
                 child
                 (loop immediate-parent))))
         (for/list ([child children])
@@ -2829,7 +2800,7 @@
       
       (define/augment (can-close?)
         (and (andmap (lambda (tab)
-                       (or (eq? tab current-tab)
+                       (or (object=? tab current-tab)
                            (and (send (send tab get-defs) can-close?)
                                 (send (send tab get-ints) can-close?))))
                      tabs)
@@ -2838,11 +2809,11 @@
       (define/augment (on-close)
         (inner (void) on-close)
         (for-each (lambda (tab)
-                    (unless (eq? tab current-tab)
+                    (unless (object=? tab current-tab)
                       (send (send tab get-defs) on-close)
                       (send (send tab get-ints) on-close)))
                   tabs)
-        (when (eq? this newest-frame)
+        (when (object=? this newest-frame)
           (set! newest-frame #f))
         (when transcript
           (stop-transcript))
@@ -2994,7 +2965,7 @@
       ;; to be the nth tab. Also updates the GUI to show the new tab
       (inherit begin-container-sequence end-container-sequence)
       (define/public (change-to-tab tab)
-        (unless (eq? current-tab tab)
+        (unless (object=? current-tab tab)
           (let ([old-tab current-tab])
             (save-visible-tab-regions)
             (set! current-tab tab)
@@ -3016,7 +2987,8 @@
             
             (send definitions-text update-frame-filename)
             (update-running (send current-tab is-running?))
-            (when (eq? this (get-top-level-focus-window))
+            (when (let ([tlw (get-top-level-focus-window)])
+                    (and tlw (object=? this tlw)))
               (send current-tab touched))
             (on-tab-change old-tab current-tab)
             (send tab update-log)
@@ -3043,7 +3015,7 @@
       (define/pubment (on-tab-change from-tab to-tab)
         (let ([old-enabled (send from-tab get-enabled)]
               [new-enabled (send to-tab get-enabled)])
-          (unless (eq? old-enabled new-enabled)
+          (unless (object=? old-enabled new-enabled)
             (if new-enabled
                 (enable-evaluation)
                 (disable-evaluation))))
@@ -3111,7 +3083,7 @@
                [(null? l-tabs) (error 'close-current-tab "uh oh.3")]
                [else
                 (let ([tab (car l-tabs)])
-                  (if (eq? tab current-tab)
+                  (if (object=? tab current-tab)
                       (when (close-tab tab)
                         (for-each (lambda (t) (send t set-i (- (send t get-i) 1)))
                                   (cdr l-tabs))
@@ -3271,7 +3243,7 @@
       
       (define/private (update-close-menu-item-shortcut item)
         (cond
-          [(eq? (system-type) 'unix)
+          [(equal? (system-type) 'unix)
            (send item set-label (string-constant close-menu-item))]
           [else
            (define just-one? (and (pair? tabs) (null? (cdr tabs))))
@@ -3285,7 +3257,7 @@
       
       (define/override (file-menu:close-callback item control)
         (define just-one? (and (pair? tabs) (null? (cdr tabs))))
-        (if (and (eq? (system-type) 'unix)
+        (if (and (equal? (system-type) 'unix)
                    (not just-one?))
             (close-current-tab)
             (super file-menu:close-callback item control)))
@@ -3299,10 +3271,10 @@
           (when tab-to-save
             (let ([defs-to-save (send tab-to-save get-defs)])
               (when (send defs-to-save is-modified?)
-                (unless (eq? tab-to-save original-tab)
+                (unless (object=? tab-to-save original-tab)
                   (change-to-tab tab-to-save))
                 (send defs-to-save user-saves-or-not-modified? #f)
-                (unless (eq? tab-to-save original-tab)
+                (unless (object=? tab-to-save original-tab)
                   (change-to-tab original-tab)))))))
       
       
@@ -3503,7 +3475,7 @@
         
         (let ([split
                (new menu:can-restore-menu-item%
-                    (shortcut (if (eq? (system-type) 'macosx) #f #\m))
+                    (shortcut (if (equal? (system-type) 'macosx) #f #\m))
                     (label (string-constant split-menu-item-label))
                     (parent (get-show-menu))
                     (callback (λ (x y) (split)))
@@ -3789,7 +3761,7 @@
           (make-object separator-menu-item% file-menu))]
       (define close-tab-menu-item #f)
       (define/override (file-menu:between-close-and-quit file-menu)
-        (unless (eq? (system-type) 'unix)
+        (unless (equal? (system-type) 'unix)
           (set! close-tab-menu-item
                 (new (get-menu-item%)
                      (label (string-constant close-tab))
@@ -4161,7 +4133,7 @@
                                                 (floor (/ limit 1024 1024)))))])
                     (when num
                       (cond
-                        [(eq? num #t)
+                        [(equal? num #t)
                          (preferences:set 'drracket:child-only-memory-limit #f)
                          (send interactions-text set-custodian-limit #f)]
                         [else
@@ -4201,8 +4173,8 @@
         (new menu:can-restore-menu-item%
              (label (string-constant jump-to-prev-error-highlight-menu-item-label))
              (parent language-specific-menu)
-             (shortcut (if (eq? (system-type) 'macosx) #\. #\,))
-             (shortcut-prefix (if (eq? (system-type) 'macosx)
+             (shortcut (if (equal? (system-type) 'macosx) #\. #\,))
+             (shortcut-prefix (if (equal? (system-type) 'macosx)
                                   (cons 'shift (get-default-shortcut-prefix))
                                   (get-default-shortcut-prefix)))
              (callback (λ (_1 _2) (jump-to-previous-error-loc)))
@@ -5303,7 +5275,7 @@
        (cond
          [(and newest-frame
                name
-               (not (eq? newest-frame 'nothing-yet)) 
+               (not (equal? newest-frame 'nothing-yet)) 
                (send newest-frame still-untouched?))
           (send newest-frame change-to-file name)
           (send newest-frame show #t)
