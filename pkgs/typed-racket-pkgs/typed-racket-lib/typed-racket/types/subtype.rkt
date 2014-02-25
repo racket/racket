@@ -448,7 +448,6 @@
          [((Base: _ _ _ #t) (Union: l2))
           #:when (eq? kt 'number)
           (and (memq s l2) A0)]
-         ;; this appears to never be called
          [((Union: l1) (Union: l2))
           #:when (and (eq? ks 'number) (eq? kt 'number))
           ;; l1 should be a subset of l2
