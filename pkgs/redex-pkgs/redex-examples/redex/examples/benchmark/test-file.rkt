@@ -58,6 +58,22 @@
                                     (last (regexp-split #rx"/" filename))))
                      "-results.rktd")))
 
+(define (with-timeout time thunk fail-thunk)
+  (define res-chan (make-channel))
+  (define exn-chan (make-channel))
+  (define thd (thread (λ () 
+                        (with-handlers ([exn:fail? (λ (exn) (channel-put exn-chan exn))])
+                          (channel-put res-chan (thunk))))))
+  (sync
+   (handle-evt (alarm-evt (+ (current-inexact-milliseconds) time))
+               (λ (_) 
+                 (break-thread thd)
+                 (fail-thunk)))
+   (handle-evt exn-chan
+               (λ (exn) (raise exn)))
+   (handle-evt res-chan
+               (λ (result-of-thunk) result-of-thunk))))
+
 (define (run-generations fname verbose? no-errs? get-gen check seconds type)
   (collect-garbage)
   (define s-time (current-process-milliseconds))
@@ -74,9 +90,16 @@
                       (+ i terms) tot-time (exact->inexact (/ (+ i terms) (/ tot-time 1000)))))
          (void)]
         [else
-         (define term (g))
+         (define term (with-timeout (* 5 60 60) g 
+                                    (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
+                                                  fname type)
+                                      (displayln i)
+                                      (loop (add1 i)))))
          (define me-time (- (current-process-milliseconds) t-time))
-         (define ok? (check term))
+         (define ok? (with-timeout (* 5 60 60) (λ () (check term))
+                                   (λ () (printf "\nIn ~a, ~a, timed out checking the term:~a\n"
+                                                 fname type term)
+                                     (loop (add1 i)))))
          (cond
            [(not ok?)
             (when verbose?

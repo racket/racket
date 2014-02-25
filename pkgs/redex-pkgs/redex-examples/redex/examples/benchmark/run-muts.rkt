@@ -49,7 +49,10 @@
              (compose (curry regexp-match #px"^.*([\\d]+)\\.rkt$") path->string)
              (directory-list (get-directory dir))))))))
 
-(define worklist files)
+(struct work (file type))
+
+(define worklist (for*/list ([f files] [t gen-types])
+                   (work f t)))
 
 (define work-sem (make-semaphore 1))
 
@@ -60,25 +63,36 @@
      (semaphore-post work-sem)
      (void)]
     [else
-     (define path (simplify-path (build-path here (car worklist))))
+     (match-define (work file type) (car worklist))
      (set! worklist (cdr worklist))
      (semaphore-post work-sem)
+     (define path (simplify-path (build-path here file)))
+     (define output-name (string-append (first 
+                                         (regexp-split #rx"\\."
+                                                       (last (regexp-split #rx"/" file))))
+                                        "-"
+                                        (symbol->string type)
+                                        "-results.rktd"))
      (define args (apply string-append 
-                         (add-between (list* (if verbose? "-v" "")
-                                             (string-append "-m " (number->string minutes))
-                                             (map (λ (t)
-                                                    (string-append "-t "
-                                                                   (symbol->string t))) 
-                                                  gen-types))
+                         (add-between (list (if verbose? "-v" "")
+                                            (string-append "-m " (number->string minutes))
+                                            (string-append "-o " output-name)
+                                            (string-append "-t "
+                                                           (symbol->string type)))
                                       " ")))
-     (system (let ([ans (apply string-append (add-between (list "racket" (path->string (build-path here "test-file.rkt"))
-                                                                args (path->string path)) " "))])
-               (printf "~s\n" ans)
-               ans))
+     (define command (apply string-append 
+                            (add-between (list "racket" (path->string (build-path here "test-file.rkt"))
+                                               args (path->string path)) " ")))
+     (printf "running: ~s\n" command)
+     (system command)
      (do-next)]))
 
 (define (do-work)
-  (displayln worklist)
+  (printf "worklist:\n~a\n" (apply string-append
+                                   (add-between (for/list ([w (in-list worklist)])
+                                                  (match-define (work f t) w)
+                                                  (string-append f ": " (symbol->string t)))
+                                                ", ")))
   (for/list ([_ (in-range num-procs)])
     (thread do-next)))
 
