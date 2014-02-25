@@ -5293,7 +5293,7 @@
                                 (let ([old-style (snip->style snip)])
                                   (let-boxes ([w 0.0] [h 0.0] [descent 0.0] [space 0.0])
                                       (send snip get-extent dc x ycounter w h descent space #f #f)
-                                    (let* ([align (send (snip->style snip) get-alignment)]
+                                    (let* ([align (style->alignment (snip->style snip))]
                                            [down
                                             (cond
                                              [(eq? 'bottom align)

@@ -5,6 +5,7 @@
          racket/draw
          racket/draw/private/syntax
          racket/draw/private/font-syms
+         (only-in racket/draw/private/color color-red color-blue color-green)
          racket/snip/private/private
          "prefs.rkt")
 
@@ -17,7 +18,12 @@
          setup-style-reads-writes
          done-style-reads-writes
          read-styles-from-file
-         write-styles-to-file)
+         write-styles-to-file
+         (protect-out style->alignment
+                      style->cached-text-width
+                      style->cached-text-height
+                      style->cached-text-descent
+                      style->cached-text-space))
 
 ;; for contracts
 (define editor-stream-out% object%)
@@ -561,12 +567,15 @@
   s-remove-child
   s-set-as-basic
   s-update
+  s-font
   get-s-font
   get-s-pen
   get-s-brush
   get-s-alignment
   get-s-trans-text?
+  s-foreground
   get-s-foreground
+  s-background
   get-s-background
   get-s-base-style
   get-s-join-shift-style
@@ -582,7 +591,12 @@
   set-s-cached-sizes
   set-s-pen
   set-s-brush
-  set-s-shift-style)
+  set-s-shift-style
+  s-alignment
+  s-text-width
+  s-text-height
+  s-text-descent
+  s-text-space)
 
 (defclass style% object%
   (super-new)
@@ -608,19 +622,19 @@
 
   ;; cache computation:
   (define trans-text? #f)
-  (define foreground (new color%))
-  (define background (new color%))
-  (define font #f)
+  (field [s-foreground (new color%)]
+         [s-background (new color%)]
+         [s-font #f])
   (define pen #f)
   (define brush #f)
-  (define alignment 'bottom)
+  (field [s-alignment 'bottom])
 
   (define cached-sizes 0)
   (define/public (set-s-cached-sizes v) (set! cached-sizes v))
-  (define text-width 0.0)
-  (define text-height 0.0)
-  (define text-descent 0.0)
-  (define text-space 0.0)
+  (field [s-text-width 0.0]
+         [s-text-height 0.0]
+         [s-text-descent 0.0]
+         [s-text-space 0.0])
 
   (define children null)
 
@@ -633,13 +647,13 @@
     (set! nonjoin-delta (new style-delta%))
     (send nonjoin-delta set-delta 'change-normal)
 
-    (set! font (send the-font-list find-or-create-font
+    (set! s-font (send the-font-list find-or-create-font
                      default-size 'default 'normal 'normal))
-    (send foreground set 0 0 0)
-    (send background set 255 255 255)
-    (set! pen (send the-pen-list find-or-create-pen foreground 0 'solid))
-    (set! brush (send the-brush-list find-or-create-brush background 'solid))
-    (set! alignment 'bottom)
+    (send s-foreground set 0 0 0)
+    (send s-background set 255 255 255)
+    (set! pen (send the-pen-list find-or-create-pen s-foreground 0 'solid))
+    (set! brush (send the-brush-list find-or-create-brush s-background 'solid))
+    (set! s-alignment 'bottom)
     (set! trans-text? #t))
 
   (define/public (s-update basic target propagate? top-level? send-notify?)
@@ -765,9 +779,9 @@
                                    (send target get-s-background))
 
                   (send target set-s-pen 
-                        (send the-pen-list find-or-create-pen foreground 0 'solid))
+                        (send the-pen-list find-or-create-pen s-foreground 0 'solid))
                   (send target set-s-brush
-                        (send the-brush-list find-or-create-brush background 'solid))
+                        (send the-brush-list find-or-create-brush s-background 'solid))
 
                   (when propagate?
                     (for-each (lambda (child)
@@ -781,19 +795,19 @@
                         (send style-list style-was-changed #f)))))))))))
   
   (def/public (get-name) name)
-  (def/public (get-family) (send font get-family))
-  (def/public (get-face) (send font get-face))
-  (def/public (get-font) font)
-  (def/public (get-size) (send font get-point-size))
-  (def/public (get-weight) (send font get-weight))
-  (def/public (get-style) (send font get-style))
-  (def/public (get-smoothing) (send font get-smoothing))
-  (def/public (get-underlined) (send font get-underlined))
-  (def/public (get-size-in-pixels) (send font get-size-in-pixels))
+  (def/public (get-family) (send s-font get-family))
+  (def/public (get-face) (send s-font get-face))
+  (def/public (get-font) s-font)
+  (def/public (get-size) (send s-font get-point-size))
+  (def/public (get-weight) (send s-font get-weight))
+  (def/public (get-style) (send s-font get-style))
+  (def/public (get-smoothing) (send s-font get-smoothing))
+  (def/public (get-underlined) (send s-font get-underlined))
+  (def/public (get-size-in-pixels) (send s-font get-size-in-pixels))
   (def/public (get-transparent-text-backing) trans-text?)
-  (def/public (get-foreground) (make-object color% foreground))
-  (def/public (get-background) (make-object color% background))
-  (def/public (get-alignment) alignment)
+  (def/public (get-foreground) (make-object color% s-foreground))
+  (def/public (get-background) (make-object color% s-background))
+  (def/public (get-alignment) s-alignment)
   (def/public (is-join?) (and join-shift-style #t))
 
   (def/public (get-delta [style-delta% d])
@@ -855,26 +869,26 @@
             (s-update #f #f #t #t #t))))))
 
   (define/private (color->rgb c)
-    (values (send c red) (send c green) (send c blue)))
+    (values (color-red c) (color-green c) (color-blue c)))
 
   (def/public (switch-to [dc<%> dc] [(make-or-false style<%>) old-style])
-    (let-values ([(afr afg afb) (if old-style (color->rgb (send old-style get-s-foreground)) (values 0 0 0))]
-                 [(bfr bfg bfb) (color->rgb foreground)]
-                 [(abr abg abb) (if old-style (color->rgb (send old-style get-s-background)) (values 0 0 0))]
-                 [(bbr bbg bbb) (color->rgb background)])
+    (let-values ([(afr afg afb) (if old-style (color->rgb (style->foreground old-style)) (values 0 0 0))]
+                 [(bfr bfg bfb) (color->rgb s-foreground)]
+                 [(abr abg abb) (if old-style (color->rgb (style->background old-style)) (values 0 0 0))]
+                 [(bbr bbg bbb) (color->rgb s-background)])
       (when (or (not old-style)
-                (not (eq? (send old-style get-s-font) font)))
-        (send dc set-font font))
+                (not (eq? (send old-style get-s-font) s-font)))
+        (send dc set-font s-font))
       (when (or (not old-style)
                 (not (= afr bfr))
                 (not (= afb bfb))
                 (not (= afg bfg)))
-        (send dc set-text-foreground foreground))
+        (send dc set-text-foreground s-foreground))
       (when (or (not old-style)
                 (not (= abr bbr))
                 (not (= abb bbb))
                 (not (= abg bbg)))
-        (send dc set-text-background background))
+        (send dc set-text-background s-background))
       (when (or (not old-style)
                 (not (eq? (send old-style get-s-pen) pen)))
         (send dc set-pen pen))
@@ -886,28 +900,28 @@
     (let ([can-cache (send dc cache-font-metrics-key)])
       (unless (and (not (zero? cached-sizes))
                    (eq? cached-sizes can-cache))
-        (let-values ([(w h d s) (send dc get-text-extent " " font)])
-          (set! text-width w)
-          (set! text-height h)
-          (set! text-descent d)
-          (set! text-space s)
+        (let-values ([(w h d s) (send dc get-text-extent " " s-font)])
+          (set! s-text-width w)
+          (set! s-text-height h)
+          (set! s-text-descent d)
+          (set! s-text-space s)
           (set! cached-sizes can-cache)))))
 
   (def/public (get-text-width [dc<%> dc])
     (reset-text-metrics dc)
-    text-width)
+    s-text-width)
 
   (def/public (get-text-height [dc<%> dc])
     (reset-text-metrics dc)
-    text-height)
+    s-text-height)
 
   (def/public (get-text-descent [dc<%> dc])
     (reset-text-metrics dc)
-    text-descent)
+    s-text-descent)
 
   (def/public (get-text-space [dc<%> dc])
     (reset-text-metrics dc)
-    text-space)
+    s-text-space)
 
   (define/public (s-add-child c)
     (set! children (cons c children)))
@@ -915,19 +929,29 @@
   (define/public (s-remove-child c)
     (set! children (remq c children)))
 
-  (define/public (get-s-font) font)
-  (define/public (set-s-font v) (set! font v))
+  (define/public (get-s-font) s-font)
+  (define/public (set-s-font v) (set! s-font v))
   (define/public (get-s-pen) pen)
   (define/public (set-s-pen v) (set! pen v))
   (define/public (get-s-brush) brush)
   (define/public (set-s-brush v) (set! brush v))
-  (define/public (get-s-alignment) alignment)
-  (define/public (set-s-alignment v) (set! alignment v))
+  (define/public (get-s-alignment) s-alignment)
+  (define/public (set-s-alignment v) (set! s-alignment v))
   (define/public (get-s-trans-text?) trans-text?)
-  (define/public (get-s-foreground) foreground)
-  (define/public (get-s-background) background))
+  (define/public (get-s-foreground) s-foreground)
+  (define/public (get-s-background) s-background))
 
 (define style<%> (class->interface style%))
+
+(define style->foreground (class-field-accessor style% s-foreground))
+(define style->background (class-field-accessor style% s-background))
+(define style->font (class-field-accessor style% s-font))
+(define style->alignment (class-field-accessor style% s-alignment))
+
+(define style->cached-text-width (class-field-accessor style% s-text-width))
+(define style->cached-text-height (class-field-accessor style% s-text-height))
+(define style->cached-text-descent (class-field-accessor style% s-text-descent))
+(define style->cached-text-space (class-field-accessor style% s-text-space))
 
 ;; ----------------------------------------
 

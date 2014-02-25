@@ -1345,8 +1345,8 @@
           (cairo_translate cr x y)
           (cairo_rotate cr (- angle)))
         (let ([desc (get-pango font)]
-              [attrs (send font get-pango-attrs)]
-              [force-hinting (case (send font get-hinting)
+              [attrs (font->pango-attrs font)]
+              [force-hinting (case (font->hinting font)
                                [(aligned) round]
                                [else values])]
               [x (if rotate? 0.0 (exact->inexact x))]

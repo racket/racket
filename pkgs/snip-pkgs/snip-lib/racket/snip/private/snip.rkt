@@ -445,18 +445,20 @@
     (when wo (set-box! wo (if (vector? str-metric)
                               (vector-ref str-metric 0)
                               str-metric)))
+    (when (or ho dso so)
+      (send s-style reset-text-metrics dc))
     (when ho
       (set-box! ho (if (vector? str-metric)
                        (vector-ref str-metric 1)
-                       (send s-style get-text-height dc))))
+                       (style->cached-text-height s-style))))
     (when dso
       (set-box! dso (if (vector? str-metric)
                         (vector-ref str-metric 2)
-                        (send s-style get-text-descent dc))))
+                        (style->cached-text-descent s-style))))
     (when so
       (set-box! so (if (vector? str-metric)
                        (vector-ref str-metric 3)
-                       (send s-style get-text-space dc))))
+                       (style->cached-text-space s-style))))
     (when ls (set-box! ls 0.0))
     (when rs (set-box! rs 0.0)))
 

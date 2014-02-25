@@ -17,10 +17,14 @@
          get-pango-attrs
          get-face-list
          (protect-out substitute-fonts?
-                      install-alternate-face))
+                      install-alternate-face
+                      font->pango-attrs
+                      font->hinting))
 
 (define-local-member-name 
-  get-pango-attrs)
+  get-pango-attrs
+  s-pango-attrs
+  s-hinting)
 
 (define underlined-attrs (let ([l (pango_attr_list_new)])
                            (pango_attr_list_insert l (pango_attr_underline_new
@@ -166,10 +170,9 @@
           (atomically (hash-set! font-descs key desc))
           desc)))
 
+  (field [s-pango-attrs #f])
   (define/public (get-pango-attrs)
-    (if underlined?
-        underlined-attrs
-        #f))
+    s-pango-attrs)
 
   (define face #f)
   (def/public (get-face) face)
@@ -186,14 +189,13 @@
   (define smoothing 'default)
   (def/public (get-smoothing) smoothing)
   
-  (define hinting 'aligned)
-  (def/public (get-hinting) hinting)
+  (field [s-hinting 'aligned])
+  (def/public (get-hinting) s-hinting)
   
   (define style 'normal)
   (def/public (get-style) style)
 
-  (define underlined? #f)
-  (def/public (get-underlined) underlined?)
+  (def/public (get-underlined) (and s-pango-attrs #t))
 
   (define weight 'normal)
   (def/public (get-weight) weight)
@@ -221,10 +223,10 @@
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
-    (set! underlined? _underlined?)
+    (set! s-pango-attrs (and _underlined? underlined-attrs))
     (set! smoothing _smoothing)
     (set! size-in-pixels? _size-in-pixels?)
-    (set! hinting _hinting)]
+    (set! s-hinting _hinting)]
    [([size? _size]
      [(make-or-false string?) _face]
      [family-symbol? _family]
@@ -239,10 +241,10 @@
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
-    (set! underlined? _underlined?)
+    (set! s-pango-attrs (and _underlined? underlined-attrs))
     (set! smoothing _smoothing)
     (set! size-in-pixels? _size-in-pixels?)
-    (set! hinting _hinting)]
+    (set! s-hinting _hinting)]
    (init-name 'font%))
 
   (define id 
@@ -250,13 +252,16 @@
         (send the-font-name-directory find-or-create-font-id face family)
         (send the-font-name-directory find-family-default-font-id family)))
   (define key
-    (let ([key (vector id size style weight underlined? smoothing size-in-pixels? hinting)])
+    (let ([key (vector id size style weight (and s-pango-attrs #t) smoothing size-in-pixels? s-hinting)])
       (let ([old-key (atomically (hash-ref keys key #f))])
         (if old-key
             (weak-box-value old-key)
             (begin
               (atomically (hash-set! keys key (make-weak-box key)))
               key))))))
+
+(define font->pango-attrs (class-field-accessor font% s-pango-attrs))
+(define font->hinting (class-field-accessor font% s-hinting))
 
 ;; ----------------------------------------
 

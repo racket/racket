@@ -16,7 +16,8 @@
 
 (define-local-member-name
   r g b a
-  set-immutable)
+  set-immutable
+  s-immutable?)
 
 (define color%
   (class object%
@@ -24,7 +25,7 @@
            [g 0]
            [b 0]
            [a 1.0])
-    (define immutable? #f)
+    (field [s-immutable? #f])
 
     (init-rest args)
     (super-new)
@@ -61,7 +62,7 @@
     (define/public (alpha) a)
 
     (define/public (set rr rg rb [ra 1.0])
-      (if immutable?
+      (if s-immutable?
           (error (method-name 'color% 'set) "object is immutable")
           (begin
             (set! r rr)
@@ -70,11 +71,11 @@
             (set! a (exact->inexact ra)))))
 
     (define/public (ok?) #t)
-    (define/public (is-immutable?) immutable?)
-    (define/public (set-immutable) (set! immutable? #t))
+    (define/public (is-immutable?) s-immutable?)
+    (define/public (set-immutable) (set! s-immutable? #t))
 
     (define/public (copy-from c)
-      (if immutable?
+      (if s-immutable?
           (error (method-name 'color% 'copy-from) "object is immutable")
           (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
                  this)))))
@@ -83,6 +84,7 @@
 (define color-green (class-field-accessor color% g))
 (define color-blue (class-field-accessor color% b))
 (define color-alpha (class-field-accessor color% a))
+(define color-is-immutable? (class-field-accessor color% s-immutable?))
 
 ;; byte byte byte real -> color%
 ;; produce an immutable color% object
@@ -92,7 +94,7 @@
   color)
 
 (define (color->immutable-color c)
-  (if (send c is-immutable?)
+  (if (color-is-immutable? c)
       c
       (let ([c2 (new color%)])
         (send c2 copy-from c)
