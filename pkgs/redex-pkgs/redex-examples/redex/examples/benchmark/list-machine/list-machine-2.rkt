@@ -434,4 +434,4 @@
     [#f #f]))
 
 (define (generate-enum-term)
-  (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index)))
+  (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index 0.0001)))

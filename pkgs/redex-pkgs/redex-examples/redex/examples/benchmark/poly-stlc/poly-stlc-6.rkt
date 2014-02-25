@@ -281,4 +281,4 @@
           (equal? t-type (type-check (car red-res))))))))
 
 (define (generate-enum-term)
-  (generate-term poly-stlc M #:i-th (pick-an-index)))
+  (generate-term poly-stlc M #:i-th (pick-an-index 0.001)))

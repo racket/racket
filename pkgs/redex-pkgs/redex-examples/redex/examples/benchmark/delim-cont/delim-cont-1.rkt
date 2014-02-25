@@ -942,4 +942,4 @@
 
 
 (define (generate-enum-term)
-  (generate-term abort-lang e #:i-th (pick-an-index)))
+  (generate-term abort-lang e #:i-th (pick-an-index 0.0001)))
