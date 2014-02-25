@@ -656,6 +656,13 @@
           (-> -Zero neg pos)
           (-> -Zero non-pos non-neg)))
 
+  ;; Used because (- min-fixnum) > max-fixnum
+  (define (half-negation-pattern pos neg non-neg non-pos)
+    (list (-> pos neg)
+          (-> non-neg non-pos)
+          (-> -Zero pos neg)
+          (-> -Zero non-neg non-pos)))
+
   (define abs-cases ; used both for abs and magnitude
     (list
      (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum))
@@ -1181,7 +1188,7 @@
 
 [- (from-cases
     (binop -Zero)
-    (negation-pattern -PosFixnum -NegFixnum -NonNegFixnum -NonPosFixnum)
+    (half-negation-pattern -PosFixnum -NegFixnum -NonNegFixnum -NonPosFixnum)
     (negation-pattern -PosInt -NegInt -Nat -NonPosInt)
     (negation-pattern -PosRat -NegRat -NonNegRat -NonPosRat)
     (negation-pattern -PosFlonum -NegFlonum -NonNegFlonum -NonPosFlonum)
