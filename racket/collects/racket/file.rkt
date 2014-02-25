@@ -419,9 +419,9 @@
                                     ;; in the configuration directory:
                                     (values
                                      (let* ([d (find-config-dir)]
-                                            [f (and d (build-path d "racket-prefs.rktd"))])
-                                       (if (file-exists? f)
-                                           f
+                                            [c-f (and d (build-path d "racket-prefs.rktd"))])
+                                       (if (and c-f (file-exists? c-f))
+                                           c-f
                                            ;; Trigger a filesystem error:
                                            (call-with-input-file* f void)))
                                      #f))))))])
