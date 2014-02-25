@@ -14,7 +14,8 @@
   (contract-out
     [struct member-spec ([modifier symbol?] [id symbol?] [sc static-contract?])]
     [object/sc ((listof object-member-spec?) . -> . static-contract?)]
-    [class/sc ((listof member-spec?) boolean? (listof identifier?) (listof identifier?) . -> . static-contract?)]))
+    [class/sc ((listof member-spec?) boolean? (listof identifier?) (listof identifier?) . -> . static-contract?)]
+    [instanceof/sc (static-contract? . -> . static-contract?)]))
 
 
 
@@ -55,6 +56,27 @@
      (define (sc->constraints v f)
        (merge-restricts* 'impersonator (map f (member-seq->list (combinator-args v)))))])
 
+(struct instanceof-combinator combinator (class)
+  #:transparent
+  #:property prop:combinator-name "instanceof/sc"
+  #:methods gen:sc
+    [(define (sc-map v f)
+       (match v
+         [(instanceof-combinator args class)
+          ;; FIXME: is this variance correct?
+          (instanceof-combinator args (f class 'covariant))]))
+     (define (sc-traverse v f)
+       (match v
+         [(instanceof-combinator _ class)
+          (f class 'covariant)
+          (void)]))
+     (define (sc->contract v f)
+       (instance/sc->contract v f))
+     (define (sc->constraints v f)
+       (match v
+         [(instanceof-combinator _ class)
+          (f class)]))])
+
 
 (define member-seq->list
   (match-lambda
@@ -81,6 +103,8 @@
   (object-combinator (member-seq specs)))
 (define (class/sc specs opaque absent-fields absent-methods)
   (class-combinator (member-seq specs) opaque absent-fields absent-methods))
+(define (instanceof/sc class)
+  (instanceof-combinator null class))
 
 (define (wrap mod ctc)
   (define mod-stx
@@ -115,3 +139,7 @@
     #`(class/c #,@(if opaque (list '#:opaque) empty)
                #,@(map (member-spec->form f) vals)
                (absent #,@absent-methods (field #,@absent-fields)))]))
+(define (instance/sc->contract v f)
+  (match v
+   [(instanceof-combinator _ class)
+    #`(instanceof/c #,(f class))]))

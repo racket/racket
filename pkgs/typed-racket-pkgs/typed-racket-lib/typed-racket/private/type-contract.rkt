@@ -373,6 +373,8 @@
                      (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
+        [(Instance: (? Name? t))
+         (instanceof/sc (t->sc t))]
         [(Instance: (Class: _ _ fields methods _ _))
          (match-define (list (list field-names field-types) ...) fields)
          (match-define (list (list public-names public-types) ...) methods)
