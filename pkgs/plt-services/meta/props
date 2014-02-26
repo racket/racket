@@ -771,6 +771,7 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *) drdr:timeout 300
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/random-seed-works.rkt" responsible (matthias) drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/record.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/release.rkt" drdr:command-line (gracket *)
