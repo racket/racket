@@ -219,8 +219,8 @@ elements of the sequence in different ways:
 @exercise[]
 
 Use @racket[redex-match] to extract the body of the
-function from this object-language program:
-@racketblock[((λ (x) (+ x 1)) 
+@racket[λ] expression from this object-language program:
+@racketblock[((λ (x num) (+ x 1)) 
               17)]
 
 @exercise[]
