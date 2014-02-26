@@ -86,6 +86,11 @@ Determines if @racket[v] is a root.
   Returns the current @racket[root?]s as a list. This returns
   valid roots only when invoked via the mutator language. Otherwise
   it returns only what has been set up with @racket[with-roots].
+  
+  Note that if your collector is being invoked via @racket[gc:cons]
+  or @racket[gc:closure], then there may be live data that is 
+  not reachable via the result of @racket[get-root-set], but that
+  is reachable via the roots passed as arguments to those functions.
 }
 
 @defproc[(read-root (root root?)) location?]{
