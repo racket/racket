@@ -27,7 +27,7 @@
     ;; If a union element is a Name application, then it should not
     ;; be checked for subtyping since that can cause infinite
     ;; loops if this is called during type instantiation.
-    [((App: (and (Name: _) rator) rands stx) _)
+    [((App: (? Name? rator) rands stx) _)
      ;; However, we should check if it's a well-formed application
      ;; so that bad applications are rejected early.
      (resolve-app-check-error rator rands stx)

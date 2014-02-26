@@ -41,6 +41,9 @@
   ;; maps ids defined in this module to an identifier which is the possibly-contracted version of the key
   (define mapping (make-free-id-table))
 
+  ;; a cache for use in contract generation (to reduce sharing)
+  (define ctc-cache (make-hash))
+
   ;; triple/c in the signatures corresponds to three values:
   ;; (values syntax? identfier? (listof (list/c identifier? identifier?))
   ;; First return value is a syntax object of definitions
@@ -103,8 +106,8 @@
                    [protected-id (freshen-id #'id)])
       (values
         #`(begin
-            #,constr-defn
             #,@defns
+            #,constr-defn
             (define-syntax protected-id
               (let ((info (list type-desc* (syntax export-id) pred* (list accs* ...)
                                 (list #,@(map (lambda (x) #'#f) accs)) super*)))
@@ -133,12 +136,14 @@
 
   ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
   (define (mk-value-triple internal-id new-id ty)
-    (define contract (type->contract ty (λ (#:reason [reason #f]) #f)))
+    (define-values (definitions contract)
+      (type->contract ty (λ (#:reason [reason #f]) (values '() #f))
+                      #:cache ctc-cache))
 
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
                    [export-id new-id])
-      (define/with-syntax definitions
+      (define/with-syntax ctc-definition
         (if contract
             (with-syntax* ([module-source pos-blame-id]
                            [the-contract (generate-temporary 'generated-contract)])
@@ -153,8 +158,9 @@
             #'(define-syntax (untyped-id stx)
                 (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
       (values
-        #'(begin
-            definitions
+        #`(begin
+            #,@definitions
+            ctc-definition
             (def-export export-id id untyped-id))
         new-id
         null)))

@@ -207,6 +207,7 @@ Any type can be given a name with @racket[define-type].
 @racketblock[(define-type NN (-> Number Number))]
 
 Anywhere the name @racket[NN] is used, it is expanded to
-@racket[(-> Number Number)].   Type names may not be recursive.
+@racket[(-> Number Number)]. Type names may be recursive
+or even mutually recursive.
 
 @(close-eval the-eval)

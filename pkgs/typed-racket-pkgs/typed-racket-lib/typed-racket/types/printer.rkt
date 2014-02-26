@@ -12,8 +12,10 @@
                   "types/match-expanders.rkt"
                   "types/kw-types.rkt"
                   "types/utils.rkt"
+                  "types/resolve.rkt"
                   "utils/utils.rkt"
-                  "utils/tc-utils.rkt")
+                  "utils/tc-utils.rkt"
+                  "env/type-name-env.rkt")
          (for-syntax racket/base syntax/parse))
 
 ;; printer-type: (one-of/c 'custom 'debug)
@@ -385,8 +387,8 @@
     ;; if we know how it was written, print that
     [(? Rep-stx a) (syntax->datum (Rep-stx a))]
     [(Univ:) 'Any]
-    ;; names are just the printed as the original syntax
-    [(Name: stx) (syntax-e stx)]
+    ;; struct names are just printed as the original syntax
+    [(Name: id _ _ #t) (syntax-e id)]
     ;; If a type has a name, then print it with that name.
     ;; However, we expand the alias in some cases
     ;; (i.e., the fuel is > 0) for the :type form.
@@ -399,7 +401,8 @@
               ;; if we still have fuel, print the expanded type and
               ;; add the name to the ignored list so that the union
               ;; printer does not try to print with the name.
-              (type->sexp type (append names ignored-names)))]
+              (type->sexp (if (Name? type) (resolve type) type)
+                          (append names ignored-names)))]
            [else
             ;; to allow :type to cue the user on unexpanded aliases
             (when (Union? type) ; only unions can be expanded

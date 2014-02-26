@@ -305,14 +305,17 @@
   (define-values (super-row super-inits super-fields
                   super-methods super-augments super-init-rest)
     (match super-type
-      [(tc-result1: (Class: super-row super-inits super-fields
-                            super-methods super-augments super-init-rest))
-       (values super-row super-inits super-fields
-               super-methods super-augments super-init-rest)]
       [(tc-result1: t)
-       (tc-error/expr "expected a superclass but got value of type ~a" t
-                      #:stx (hash-ref parse-info 'superclass-expr))
-       (values #f null null null null)]))
+       (match (resolve t)
+         [(Class: super-row super-inits super-fields
+                  super-methods super-augments super-init-rest)
+          (values super-row super-inits super-fields
+                  super-methods super-augments super-init-rest)]
+         [t
+          (tc-error/expr "expected a superclass but got value of type ~a" t
+                         #:stx (hash-ref parse-info 'superclass-expr))
+          (values #f null null null null #f)])]
+      [_ (int-err "Unhandled result")]))
   (define super-init-names    (dict-keys super-inits))
   (define super-field-names   (dict-keys super-fields))
   (define super-method-names  (dict-keys super-methods))
@@ -1250,11 +1253,11 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [(Poly: ns body)
+    [(Poly-names: ns body)
      (make-Poly ns (function->method body self-type))]
-    [(PolyDots: ns body)
+    [(PolyDots-names: ns body)
      (make-PolyDots ns (function->method body self-type))]
-    [(PolyRow: ns constraints body)
+    [(PolyRow-names: ns constraints body)
      (make-PolyRow ns constraints (function->method body self-type))]
     [_ (int-err "function->method: ~a" type)]))
 
@@ -1268,11 +1271,11 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cdr doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [(Poly: ns body)
+    [(Poly-names: ns body)
      (make-Poly ns (method->function body))]
-    [(PolyDots: ns body)
+    [(PolyDots-names: ns body)
      (make-PolyDots ns (method->function type))]
-    [(PolyRow: ns constraints body)
+    [(PolyRow-names: ns constraints body)
      (make-PolyRow ns constraints (method->function type))]
     [_ (tc-error/expr "expected a function type for method")]))
 

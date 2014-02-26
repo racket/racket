@@ -8,7 +8,7 @@
          (rep type-rep object-rep free-variance)
          (private parse-type syntax-properties)
          (types abbrev utils resolve substitute type-table struct-table)
-         (env global-env type-name-env tvar-env)
+         (env global-env type-name-env type-alias-env tvar-env)
          (utils tc-utils)
          (typecheck def-binding internal-forms)
          (for-syntax syntax/parse racket/base))
@@ -120,7 +120,13 @@
 (define/cond-contract (register-sty! sty names desc)
   (c:-> Struct? struct-names? struct-desc? void?)
 
-  (register-type-name (struct-names-type-name names)
+  ;; a type alias needs to be registered here too, to ensure
+  ;; that parse-type will map the identifier to this Name type
+  (define type-name (struct-names-type-name names))
+  (register-resolved-type-alias
+   type-name
+   (make-Name type-name null #f #t))
+  (register-type-name type-name
                       (make-Poly (struct-desc-tvars desc) sty)))
 
 
@@ -139,10 +145,13 @@
 
 
   ;; the base-type, with free type variables
+  (define name-type
+    (make-Name (struct-names-type-name names)
+               null #f #t))
   (define poly-base
     (if (null? tvars)
-        (make-Name (struct-names-type-name names))
-        (make-App (make-Name (struct-names-type-name names)) (map make-F tvars) #f)))
+        name-type
+        (make-App name-type (map make-F tvars) #f)))
 
   ;; is this structure covariant in *all* arguments?
   (define covariant?
@@ -210,25 +219,13 @@
          null
          (register-struct-bindings! sty names desc si)))))
 
+;; Listof<Parsed-Struct> -> Void
+;; Refines the variance of struct types in the name environment
 (define (refine-struct-variance! parsed-structs)
   (define stys (map parsed-struct-sty parsed-structs))
   (define tvarss (map (compose struct-desc-tvars parsed-struct-desc) parsed-structs))
-  (let loop ()
-    (define sames
-      (for/list ((sty (in-list stys)) (tvars (in-list tvarss)))
-        (cond
-          ((null? tvars) #t)
-          (else
-            (define name (Struct-name sty))
-            (define free-vars (free-vars-hash (free-vars* sty)))
-            (define variance (map (λ (v) (hash-ref free-vars v Constant)) tvars))
-            (define old-variance (lookup-type-variance name))
-
-            (register-type-variance! name variance)
-            (equal? variance old-variance)))))
-    (unless (andmap values sames)
-      (loop))))
-
+  (define names (map Struct-name stys))
+  (refine-variance! names stys tvarss))
 
 ;; check and register types for a define struct
 ;; tc/struct : Listof[identifier] (U identifier (list identifier identifier))
@@ -285,7 +282,8 @@
      (c:-> identifier? (c:or/c #f identifier?) (c:listof identifier?)
            (c:listof Type/c) (c:or/c #f identifier?)
            c:any/c)
-  (define parent-type (and parent (resolve-name (make-Name parent))))
+  (define parent-type
+    (and parent (resolve-name (make-Name parent null #f #t))))
   (define parent-tys (map fld-t (get-flds parent-type)))
 
   (define names (get-struct-names nm fld-names #f))

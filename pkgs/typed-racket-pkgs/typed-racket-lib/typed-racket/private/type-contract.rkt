@@ -7,7 +7,7 @@
  syntax/parse
  (rep type-rep filter-rep object-rep)
  (utils tc-utils)
- (env type-name-env)
+ (env type-name-env type-alias-env)
  (rep rep-utils)
  (types resolve union utils kw-types)
  (prefix-in t: (types abbrev numeric-tower))
@@ -72,7 +72,7 @@
        (if reason (~a ": " reason) "."))
    to-check))
 
-(define (generate-contract-def stx)
+(define (generate-contract-def stx cache)
   (define prop (define/fixup-contract? stx))
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
@@ -80,30 +80,34 @@
   (define kind (if flat? 'flat 'impersonator))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
-     (let ([typ (if maker?
-                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
-                    typ)])
-         (with-syntax ([cnt (type->contract
-                             typ
-                             ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side #f
-                             #:kind kind
-                             (type->contract-fail typ prop))])
-           (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc
-                stx
-              (define-values (n)
-                (recursive-contract
-                 cnt
-                 #,(contract-kind->keyword kind)))))))]
+     (define typ* (if maker?
+                      ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
+                      typ))
+     (define-values (defs cnt)
+       (type->contract typ*
+                       ;; this is for a `require/typed', so the value is not from the typed side
+                       #:typed-side #f
+                       #:kind kind
+                       #:cache cache
+                       (type->contract-fail typ* prop)))
+     (ignore ; should be ignored by the optimizer
+      (quasisyntax/loc
+        stx
+        (begin
+          #,@defs
+          (define-values (n)
+           (recursive-contract
+            #,cnt
+            #,(contract-kind->keyword kind))))))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
+  (define ctc-cache (make-hash))
   (for/list ((e (in-syntax forms)))
     (if (not (define/fixup-contract? e))
         e
-        (generate-contract-def e))))
+        (generate-contract-def e ctc-cache))))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
@@ -152,16 +156,22 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-(define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+;; type->contract : Type ... -> Listof<Syntax> Syntax
+(define (type->contract ty init-fail
+                        #:typed-side [typed-side #t]
+                        #:kind [kind 'impersonator]
+                        #:cache [cache (make-hash)])
   (let/ec escape
-    (define (fail #:reason [reason #f]) (escape (init-fail #:reason reason)))
+    (define (fail #:reason [reason #f])
+      (call-with-values (λ () (init-fail #:reason reason)) escape))
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
         #:trusted-positive typed-side
         #:trusted-negative (not typed-side))
       fail
-      kind)))
+      kind
+      #:cache cache)))
 
 
 
@@ -180,6 +190,20 @@
 (define (same sc)
   (triple sc sc sc))
 
+;; flat/sc-cache : Hash<Type, Syntax>
+;; This hashtable caches the syntax objects that represent contracts
+;; for flat static contracts. By allocating these syntax objects only once
+;; per type, type equality will match up with flat/sc equality.
+(define flat/sc-cache (make-hash))
+
+;; from-cache : Syntax -> Syntax
+;; Look up the syntax object for a flat/sc in the cache or set it if
+;; it hasn't been cached yet.
+(define (from-cache type stx)
+  (cond [(hash-ref flat/sc-cache type #f)]
+        [else
+         (hash-set! flat/sc-cache type stx)
+         stx]))
 
 (define (type->static-contract type init-fail #:typed-side [typed-side #t])
   (let/ec return
@@ -194,14 +218,99 @@
       (define (t->sc/method t) (t->sc/function t fail typed-side recursive-values loop #t))
       (define (t->sc/fun t) (t->sc/function t fail typed-side recursive-values loop #f))
       (match type
-        [(or (App: _ _ _) (Name: _)) (t->sc (resolve-once type))]
+        ;; Applications of implicit recursive type aliases
+        ;;
+        ;; We special case this rather than just resorting to standard
+        ;; App resolution (see case below) because the resolution process
+        ;; will make type->static-contract infinite loop.
+        [(App: (Name: name _ _ #f) rands _)
+         ;; Key with (cons name 'app) instead of just name because the
+         ;; application of the Name is not necessarily the same as the
+         ;; Name type alone
+         (cond [(hash-ref recursive-values (cons name 'app) #f)]
+               [else
+                (define name* (generate-temporary name))
+                (recursive-sc (list name*)
+                              (list
+                               (t->sc (resolve-once type)
+                                      #:recursive-values
+                                      (hash-set recursive-values
+                                                (cons name 'app)
+                                                (recursive-sc-use name*))))
+                              (recursive-sc-use name*))])]
+        ;; Implicit recursive aliases
+        [(Name: name-id dep-ids args #f)
+         ;; FIXME: this may not be correct for different aliases that have
+         ;;        the same name that are somehow used together, if that's
+         ;;        possible
+         (define name (syntax-e name-id))
+         (define deps (map syntax-e dep-ids))
+         (cond [;; recursive references are looked up, see F case
+                (hash-ref recursive-values name #f) =>
+                (λ (rv) (triple-lookup rv typed-side))]
+               [else
+                ;; see Mu case, which uses similar machinery
+                (match-define (and n*s (list untyped-n* typed-n* both-n*))
+                              (generate-temporaries (list name name name)))
+                (define-values (untyped-deps typed-deps both-deps)
+                  (values (generate-temporaries deps)
+                          (generate-temporaries deps)
+                          (generate-temporaries deps)))
+                (define *rv
+                  (hash-set recursive-values name
+                            (triple (recursive-sc-use untyped-n*)
+                                    (recursive-sc-use typed-n*)
+                                    (recursive-sc-use both-n*))))
+                (define rv
+                  (for/fold ([rv *rv])
+                            ([dep (in-list deps)]
+                             [untyped-dep (in-list untyped-deps)]
+                             [typed-dep (in-list typed-deps)]
+                             [both-dep (in-list both-deps)])
+                    (hash-set rv dep
+                              (triple (recursive-sc-use untyped-dep)
+                                      (recursive-sc-use typed-dep)
+                                      (recursive-sc-use both-dep)))))
+                (define resolved-name (resolve-once type))
+                (define resolved-deps
+                  (map (λ (dep) (lookup-type-alias dep values)) dep-ids))
+
+                ;; resolved-deps->scs : (Listof Type) (U 'untyped 'typed 'both)
+                ;;                      -> (Listof Static-Contract)
+                (define (resolved-deps->scs deps typed-side)
+                  (for/list ([resolved-dep resolved-deps])
+                    (loop resolved-dep typed-side rv)))
+
+                (case typed-side
+                 [(both) (recursive-sc
+                          (append (list both-n*) both-deps)
+                          (cons (loop resolved-name 'both rv)
+                                (resolved-deps->scs resolved-deps 'both))
+                          (recursive-sc-use both-n*))]
+                 [(typed untyped)
+                  (define untyped (loop resolved-name 'untyped rv))
+                  (define typed (loop resolved-name 'typed rv))
+                  (define both (loop resolved-name 'both rv))
+                  (define-values (untyped-dep-scs typed-dep-scs both-dep-scs)
+                    (values
+                     (resolved-deps->scs resolved-deps 'untyped)
+                     (resolved-deps->scs resolved-deps 'typed)
+                     (resolved-deps->scs resolved-deps 'both)))
+                  (recursive-sc
+                   (append n*s untyped-deps typed-deps both-deps)
+                   (append (list untyped typed both)
+                           untyped-dep-scs typed-dep-scs both-dep-scs)
+                   (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])])]
+        ;; Ordinary type applications or struct type names, just resolve
+        [(or (App: _ _ _) (Name: _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]
         [(Base: sym cnt _ _)
-         (flat/sc #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)) sym)]
+         (flat/sc (from-cache type #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt)))
+                  sym)]
         [(Refinement: par p?)
-         (and/sc (t->sc par) (flat/sc p?))]
+         (and/sc (t->sc par) (flat/sc (from-cache type p?)))]
         [(Union: elems)
          (define-values (numeric non-numeric) (partition (λ (t) (equal? 'number (Type-key t))) elems ))
          (define numeric-sc (numeric-type->static-contract (apply Un numeric)))
@@ -219,7 +328,7 @@
         [(Promise: t)
          (promise/sc (t->sc t))]
         [(Opaque: p?)
-         (flat/sc #`(flat-named-contract (quote #,(syntax-e p?)) #,p?))]
+         (flat/sc (from-cache type #`(flat-named-contract (quote #,(syntax-e p?)) #,p?)))]
         [(Continuation-Mark-Keyof: t)
          (continuation-mark-key/sc (t->sc t))]
         ;; TODO: this is not quite right for case->
@@ -289,6 +398,8 @@
                      (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
+        [(Instance: (? Name? t))
+         (instanceof/sc (t->sc t))]
         [(Instance: (Class: _ _ fields methods _ _))
          (match-define (list (list field-names field-types) ...) fields)
          (match-define (list (list public-names public-types) ...) methods)
@@ -344,12 +455,12 @@
                                                 nm (recursive-sc-use nm*)))))
             (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
-           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
+           [else (flat/sc (from-cache type #`(flat-named-contract '#,(syntax-e pred?) #,pred?)))])]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)
          (syntax/sc (t->sc t))]
         [(Value: v)
-         (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))) v)]
+         (flat/sc (from-cache type #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))) v)]
         [(Param: in out) 
          (parameter/sc (t->sc in) (t->sc out))]
         [(Hashtable: k v)

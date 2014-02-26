@@ -127,13 +127,29 @@
        (poly-fail f-stx args-stx t argtys
                   #:name (and (identifier? f-stx) f-stx)
                   #:expected expected))
-     ;; only infer if there's 1 argument
-     (for ([dom doms])
-       (unless (and (= 1 (length argtys-t) (length dom)))
-         (fail)))
-     (cond [(Class? (car argtys-t))
+     ;; there's only one row variable in a PolyRow (for now)
+     (define row-var (car vars))
+     ;; only infer if there is only one argument type that has the relevant
+     ;; row type variable in its free variables in all cases
+     (define row-var-idxs
+       (for/list ([dom doms])
+         (define num-occurs
+           (for/list ([dom-type dom] [idx (in-naturals)]
+                      #:when (member row-var (fv dom-type)))
+             idx))
+         (unless (<= (length num-occurs) 1)
+           (fail))
+         (if (null? num-occurs) 0 (car num-occurs))))
+     (unless (or (< (length row-var-idxs) 2)
+                 (apply = row-var-idxs))
+       ;; row var wasn't in the same position in some cases
+       (fail))
+     (define idx (car row-var-idxs))
+     (define resolved-argty (resolve (list-ref argtys-t idx)))
+     (cond [(Class? resolved-argty)
             (define substitution
-              (hash (car vars) (t-subst (infer-row constraints (car argtys-t)))))
+              (hash row-var
+                    (t-subst (infer-row constraints resolved-argty))))
             (or (for/or ([arr (in-list arrs)])
                   (tc/funapp1 f-stx args-stx (subst-all substitution arr)
                               argtys expected #:check #f))

@@ -14,7 +14,8 @@
                         #:rest (c:listof c:any/c) . c:->* . c:any/c)]
 
  [lookup-fail (identifier? . c:-> . Type/c)]
- [lookup-type-fail (identifier? . c:-> . Type/c)])
+ [lookup-type-fail (identifier? . c:-> . Type/c)]
+ [lookup-variance-fail (identifier? . c:-> . void?)])
 
 ;; produce a type-checking error, and also return a result (e.g., a type)
 (define (tc-error/expr msg
@@ -48,3 +49,6 @@
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
+
+(define (lookup-variance-fail i)
+  (int-err "~a is bound but missing a variance" (syntax-e i)))

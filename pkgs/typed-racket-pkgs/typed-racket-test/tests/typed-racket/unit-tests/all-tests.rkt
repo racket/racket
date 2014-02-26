@@ -33,6 +33,7 @@
   "special-env-typecheck-tests.rkt"
   "contract-tests.rkt"
   "interactive-tests.rkt"
+  "type-alias-helper.rkt"
   "class-tests.rkt"
   "class-util-tests.rkt"
   "rep-tests.rkt")

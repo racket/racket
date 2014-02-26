@@ -111,10 +111,20 @@
 (def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars]
   [#:fold-rhs #:base])
 
-;; id is an Identifier
-;; This will always resolve to a struct
-(def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f]
-  [#:fold-rhs #:base])
+;; Name, an indirection of a type through the environment
+;;
+;; interp.
+;; A type name, potentially recursive or mutually recursive or pointing
+;; to a type for a struct type
+;; id is the name stored in the environment
+;; deps are the other aliases this depends on, if any
+;; args are the type parameters for this type (or #f if none)
+;; struct? indicates if this maps to a struct type
+(def-type Name ([id identifier?]
+                [deps (listof identifier?)]
+                [args (or/c #f (listof identifier?))]
+                [struct? boolean?])
+  [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
 ;; rands is a list of types
@@ -123,7 +133,7 @@
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
   [#:frees (λ (f)
               (match rator 
-                ((Name: n)
+                ((Name: n _ _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 
@@ -633,6 +643,10 @@
                    (*ListDots (sb dty)
                               (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+       [#:PolyRow constraints body*
+                  (let ([body (remove-scopes 1 body*)])
+                    (*PolyRow constraints
+                              (add-scopes 1 (loop (+ 1 outer) body))))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (add-scopes n (loop (+ n outer) body))))]
@@ -681,6 +695,9 @@
                    (*ListDots (sb dty)
                               (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+       [#:PolyRow constraints body*
+                  (let ([body (remove-scopes 1 body*)])
+                    (*PolyRow constraints (add-scopes 1 (loop (+ 1 outer) body))))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (add-scopes n (loop (+ n outer) body))))]

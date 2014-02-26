@@ -35,12 +35,12 @@
          [(list _ (F: _)) #t]
          [(list (Opaque: _) _) #t]
          [(list _ (Opaque: _)) #t]
-         [(list (Name: n) (Name: n*))
+         [(list (Name: n _ _ _) (Name: n* _ _ _))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]
-         [(list _ (Name: _))
+         [(list _ (Name: _ _ _ _))
            (overlap t1 (resolve-once t2))]
-         [(list (Name: _) _)
+         [(list (Name: _ _ _ _) _)
            (overlap (resolve-once t1) t2)]
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
@@ -118,7 +118,7 @@
     (if (subtype old rem)
         (Un) ;; the empty type
         (match (list old rem)
-          [(list (or (App: _ _ _) (Name: _)) t)
+          [(list (or (App: _ _ _) (Name: _ _ _ _)) t)
            ;; must be different, since they're not subtypes
            ;; and n must refer to a distinct struct type
            old]
