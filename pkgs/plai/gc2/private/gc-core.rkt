@@ -178,7 +178,7 @@
     (define rt (getter))
     (unless (location? rt)
       (raise-argument-error 'with-roots
-                            'location?
+                            "location?"
                             rt)))
   (parameterize ([user-specified-roots 
                   (append

@@ -127,7 +127,7 @@ Determines if @racket[v] is a root.
   ]}
                                                      
 @defform[(with-roots (root-var ...) expr1 expr2 ...)
-         #:contracts ([roots-expr (listof location?)])]{
+         #:contracts ([root-var location?])]{
   Evaluates each of @racket[expr1] and the @racket[expr2]s in
   in a context with additional roots, one for each of
   the @racket[root-var]s. The @racket[get-root-set] function
@@ -146,6 +146,7 @@ Determines if @racket[v] is a root.
   
   @racketblock[
     (test (with-heap (make-vector 4)
+                     (init-allocator)
                      (define f1 (gc:alloc-flat 1))
                      (define r1 (make-root 'f1 
                                            (λ () f1)
