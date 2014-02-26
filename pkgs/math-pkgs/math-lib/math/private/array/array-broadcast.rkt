@@ -46,7 +46,7 @@
                    new-arr
                    (array-default-strict new-arr))]))
 
-(: shape-insert-axes (Indexes Fixnum -> Indexes))
+(: shape-insert-axes (Indexes Integer -> Indexes))
 (define (shape-insert-axes ds n)
   (vector-append ((inst make-vector Index) n 1) ds))
 
