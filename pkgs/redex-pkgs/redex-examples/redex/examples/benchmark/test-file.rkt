@@ -86,20 +86,19 @@
       (cond
         [((/ tot-time 1000) . > . seconds)
          (when verbose?
-              (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
-                      (+ i terms) tot-time (exact->inexact (/ (+ i terms) (/ tot-time 1000)))))
+           (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
+                   (+ i terms) tot-time (exact->inexact (/ (+ i terms) (/ tot-time 1000)))))
          (void)]
         [else
-         (define term (with-timeout (* 5 60 60) g 
+         (define term (with-timeout (* 5 60 1000) g 
                                     (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
                                                   fname type)
-                                      (displayln i)
-                                      (loop (add1 i)))))
+                                      (trials-loop t))))
          (define me-time (- (current-process-milliseconds) t-time))
-         (define ok? (with-timeout (* 5 60 60) (λ () (check term))
+         (define ok? (with-timeout (* 5 60 1000) (λ () (check term))
                                    (λ () (printf "\nIn ~a, ~a, timed out checking the term:~a\n"
                                                  fname type term)
-                                     (loop (add1 i)))))
+                                     (trials-loop t))))
          (cond
            [(not ok?)
             (when verbose?
