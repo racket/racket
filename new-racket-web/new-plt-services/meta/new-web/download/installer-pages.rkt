@@ -11,7 +11,7 @@
   (define date      (release-date-string release))
   (define package   (package->name (installer-package installer)))
   (define size      (installer-size installer))
-  (define type      (if (installer-binary? installer) "" " source"))
+  (define type      "") ;; (if (installer-binary? installer) "" " source")
   (define platform  (platform->name (installer-platform installer)))
   (define title     @text{Download @package v@|version type| for @platform})
   (define suffix-desc (suffix->name (installer-suffix installer)))

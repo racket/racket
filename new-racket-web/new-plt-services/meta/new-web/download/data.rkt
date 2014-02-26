@@ -2,11 +2,13 @@
 
 (define -platform-names-
   `(;; source platforms
+    ["win"  "Windows source"]
+    ["mac"  "Mac OS X source"]
+    ["unix" "Unix source"]
     ["src-builtpkgs" "Source + built packages"]
     ["src"  "Source"]
-    ["win"  "Windows"]
-    ["mac"  "Mac OS X"]
-    ["unix" "Unix"]
+    ["src-builtpkgs-unix" "Unix source + built packages"]
+    ["src-unix" "Unix source"]
     ;; binary platforms
     ["i386-win32" "Windows (x86, 32-bit)"]
     ["x86_64-win32" "Windows (x64, 64-bit)"]
