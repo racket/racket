@@ -3277,6 +3277,23 @@
         (check pred t1 e1)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check unboxing with mutual recusion:
+
+(let ()
+  ;; Literal lists thwart inlining:
+  (define (odd n acc)
+    (if (fl= n 0.0)
+        '(nope)
+        (even (fl- n 1.0)
+              (fl+ acc 0.5))))
+  (define (even n acc)
+    (if (fl= n 0.0)
+        (cons acc '(yep))
+        (odd (fl- n 1.0)
+             (fl+ acc 0.5))))
+  (test '(0.5e7 yep) (lambda () (even 1e7 0.0))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

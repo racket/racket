@@ -1463,7 +1463,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
                         int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-                              int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
+                              int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg,
+                              Scheme_Closure_Data *direct_data);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
                                   int is_inlined, int unboxed_args);

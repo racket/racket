@@ -1099,6 +1099,7 @@ int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offse
   __END_TINY_JUMPS__(1);
   CHECK_LIMIT();
   jit_movi_l(JIT_R0, offset);
+  LOG_IT((" {box flonum}\n"));
   MZ_FPUSEL_STMT(extfl,
                  (void)jit_calli(sjc.box_extflonum_from_stack_code),
                  (void)jit_calli(sjc.box_flonum_from_stack_code));
@@ -3570,12 +3571,18 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     }
   }
 
-  LOG_IT(("PROC: %s, %d args, flags: %x\n", 
-          (data->name ? scheme_format_utf8("~s", 2, 1, &data->name, NULL) : "???"),
-          data->num_params,
-          SCHEME_CLOSURE_DATA_FLAGS(data)));
-  FOR_LOG(jitter->log_depth++);
-
+  FOR_LOG({
+      char *log_name;
+      Scheme_Object *a[1];
+      a[0] = data->name;
+      log_name = (data->name ? scheme_format_utf8("~s", 2, 1, a, NULL) : "???");
+      LOG_IT(("PROC: %s, %d args, flags: %x\n", 
+              log_name,
+              data->num_params,
+              SCHEME_CLOSURE_DATA_FLAGS(data)));
+      jitter->log_depth++;
+    });
+  
   jitter->self_data = data;
 
   jitter->self_restart_code = jit_get_ip();

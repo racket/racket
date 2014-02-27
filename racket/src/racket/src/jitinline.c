@@ -1677,7 +1677,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "unsafe-flrandom")) {
       mz_jit_unbox_state ubs;
 
-      LOG_IT(("inlined %s\n", name));
+      LOG_IT(("inlined unsafe-flrandom\n"));
       
       mz_runstack_skipped(jitter, 1);
 

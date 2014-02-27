@@ -3613,7 +3613,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
 
     __END_SHORT_JUMPS__(1);
     
-    scheme_generate_tail_call(jitter, -1, 0, 1, 0, NULL, NULL);
+    scheme_generate_tail_call(jitter, -1, 0, 1, 0, NULL, NULL, NULL);
     CHECK_LIMIT();
   }
 
