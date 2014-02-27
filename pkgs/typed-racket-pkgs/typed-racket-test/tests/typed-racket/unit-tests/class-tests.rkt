@@ -835,6 +835,14 @@
                (inst f #:row (field [y Integer])))
              (instantiated
               (class object% (super-new))))]
+   ;; fails, the argument object lacks required fields (with inference)
+   [tc-err (let ()
+             (: mixin (All (r #:row)
+                         (-> (Class (field [x Any]) #:row-var r)
+                             (Class (field [x Any]) #:row-var r))))
+             (define (mixin cls) cls)
+             (mixin object%))
+           #:msg (regexp-quote "expected: (Class (field (x Any)))")]
    ;; mixin application succeeds
    [tc-e (let ()
            (: f (All (A #:row (field x))

@@ -119,9 +119,7 @@
        (and t (PolyRow:
                vars
                constraints
-               (Function: (list (and arrs (arr: doms rngs rests (and drests #f)
-                                                (list (Keyword: _ _ kw?) ...)))
-                                ...)))))
+               (and f-ty (Function: (list (arr: doms _ _ #f _) ...))))))
       (list (tc-result1: argtys-t) ...))
      (define (fail)
        (poly-fail f-stx args-stx t argtys
@@ -149,10 +147,8 @@
             (define substitution
               (hash row-var
                     (t-subst (infer-row constraints (list-ref argtys-t idx)))))
-            (or (for/or ([arr (in-list arrs)])
-                  (tc/funapp1 f-stx args-stx (subst-all substitution arr)
-                              argtys expected #:check #f))
-                (fail))]
+            (tc/funapp f-stx args-stx (ret (subst-all substitution f-ty))
+                       argtys expected)]
            [else (fail)])]
     ;; procedural structs
     [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _))) _)
