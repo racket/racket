@@ -12,15 +12,9 @@
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
 (lazy-require [typed-racket/typecheck/tc-toplevel (tc-toplevel-form tc-module)])
 
-(provide invis-kw maybe-optimize init-current-type-names
+(provide maybe-optimize init-current-type-names
          tc-module/full
          tc-toplevel/full)
-
-(define-syntax-class invis-kw
-  #:literals (define-values define-syntaxes #%require
-              #%provide #%declare begin begin-for-syntax)
-  (pattern (~or define-values define-syntaxes #%require
-                #%provide #%declare begin begin-for-syntax)))
 
 (define (maybe-optimize body)
   ;; do we optimize?

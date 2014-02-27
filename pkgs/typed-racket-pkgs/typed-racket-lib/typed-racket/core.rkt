@@ -66,9 +66,10 @@
          (with-syntax*
           ([(optimized-body . _) (maybe-optimize #`(#,body2))])
           (syntax-parse body2
-            ;; any of these do not produce an expression to be printed
-            [(head:invis-kw . _) (arm #'optimized-body)]
             [_ (let ([ty-str (match type
+                               ;; 'no-type means the form is not an expression and
+                               ;; has no meaningful type to print
+                               ['no-type #f]
                                ;; don't print results of type void
                                [(tc-result1: (== -Void type-equal?))
                                 #f]
@@ -110,6 +111,6 @@
                                                     :print-type-message]))]
                                [x (int-err "bad type result: ~a" x)])])
                  (if ty-str
-                     #`(let ([type '#,ty-str])
-                         (begin0 #,(arm #'optimized-body) (display type)))
+                     #`(begin (display '#,ty-str)
+                              #,(arm #'optimized-body))
                      (arm #'optimized-body)))]))))]))

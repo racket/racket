@@ -154,7 +154,7 @@
 
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
-;; syntax? -> (or/c void? tc-results/c)
+;; syntax? -> (or/c 'no-type tc-results/c)
 (define (tc-toplevel/pass2 form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
@@ -165,7 +165,7 @@
 
       ;; these forms we have been instructed to ignore
       [stx:ignore^
-       (void)]
+       'no-type]
 
       ;; this is a form that we mostly ignore, but we check some interior parts
       [stx:ignore-some^
@@ -173,28 +173,30 @@
        (check-subforms/ignore form)]
 
       ;; these forms should always be ignored
-      [((~or define-syntaxes begin-for-syntax #%require #%provide #%declare) . _) (void)]
+      [((~or define-syntaxes begin-for-syntax #%require #%provide #%declare) . _) 'no-type]
 
       ;; submodules take care of themselves:
-      [(module n spec (#%plain-module-begin body ...)) (void)]
+      [(module n spec (#%plain-module-begin body ...)) 'no-type]
       ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
-      [(module* n spec body ...) (void)]
+      [(module* n spec body ...) 'no-type]
 
       ;; definitions just need to typecheck their bodies
       [(define-values () expr)
-       (tc-expr/check #'expr (ret empty))]
+       (tc-expr/check #'expr (ret empty))
+       'no-type]
       [(define-values (var ...) expr)
        #:when (for/and ([v (in-syntax #'(var ...))])
                 (free-id-table-ref unann-defs v (lambda _ #f)))
-       (void)]
+       'no-type]
       [(define-values (var:typed-id^ ...) expr)
        (let ([ts (attribute var.type)])
          (when (= 1 (length ts))
            (add-scoped-tvars #'expr (lookup-scoped-tvars (stx-car #'(var ...)))))
-         (tc-expr/check #'expr (ret ts))) ]
+         (tc-expr/check #'expr (ret ts)))
+       'no-type]
 
       ;; to handle the top-level, we have to recur into begins
-      [(begin) (void)]
+      [(begin) 'no-type]
       [(begin . rest)
        (for/last ([form (in-syntax #'rest)])
          (tc-toplevel/pass2 form))]
@@ -357,15 +359,16 @@
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
-;; syntax -> (or/c void? tc-results/c)
+;; syntax -> (or/c 'no-type tc-results/c)
 (define (tc-toplevel-form form)
   (syntax-parse form
     ;; Don't open up `begin`s that are supposed to be ignored
     [(~and ((~literal begin) e ...)
            (~not (~or _:ignore^ _:ignore-some^)))
      (begin0
-       (for/last ([form (in-syntax #'(e ...))])
-         (tc-toplevel-form form))
+       (or (for/last ([form (in-syntax #'(e ...))])
+             (tc-toplevel-form form))
+           'no-type)
        (report-all-errors))]
     [_
      ;; Handle type aliases

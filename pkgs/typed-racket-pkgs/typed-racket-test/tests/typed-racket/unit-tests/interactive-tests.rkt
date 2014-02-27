@@ -74,6 +74,22 @@
       #rx"" (define module displayln)
       #rx"racket" (module 'racket))
 
+    (test-form (regexp-quote "String")
+      "foo")
+    (test-form (regexp-quote "String")
+      (begin "foo"))
+    (test-form (regexp-quote "String")
+      (begin "foo" "bar"))
+    (test-form #rx"^$"
+      (begin))
+    (test-form #rx"^$"
+      (define x "foo"))
+    (test-form #rx"^$"
+      (begin (: x String)
+             (define x "foo")))
+    (test-form #rx"^$"
+      (struct foo ()))
+
     (test-form #rx"1"
       (:type 1))
     (test-form (regexp-quote "(U Positive-Byte Zero)")
@@ -103,6 +119,10 @@
       (:print-type))
     (test-form-exn #rx"exactly one argument"
       (:print-type 1 2))
+    (test-form (regexp-quote "has no type")
+      (:print-type (begin (begin))))
+    (test-form (regexp-quote "has no type")
+      (:print-type (require racket/format)))
 
     (test-form (regexp-quote "(-> 4 Zero Zero)")
       (:query-type/args * 4 0))
