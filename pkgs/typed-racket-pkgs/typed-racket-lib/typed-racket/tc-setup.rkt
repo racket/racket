@@ -3,6 +3,7 @@
 (require "utils/utils.rkt"
          (except-in syntax/parse id) syntax/stx
          racket/pretty racket/promise racket/lazy-require
+         racket/syntax
          (env type-name-env type-alias-env mvar-env)
          (utils tc-utils disarm mutated-vars)
          "standard-inits.rkt"
@@ -42,7 +43,7 @@
 
 (define-logger online-check-syntax)
 
-(define (tc-setup orig-stx stx expand-ctxt checker k)
+(define (tc-setup orig-stx stx expand-ctxt do-expand checker k)
   (set-box! typed-context? #t)
   ;(start-timing (syntax-property stx 'enclosing-module-name))
   (with-handlers
@@ -58,7 +59,7 @@
                    ;; reinitialize disappeared uses
                    [disappeared-use-todo      null]
                    [disappeared-bindings-todo null])
-      (define fully-expanded-stx (disarm* (local-expand stx expand-ctxt (list #'module*))))
+      (define fully-expanded-stx (disarm* (do-expand stx expand-ctxt (list #'module*))))
       (when (show-input?)
         (pretty-print (syntax->datum fully-expanded-stx)))
       (do-time "Local Expand Done")
@@ -82,7 +83,26 @@
             (apply k fully-expanded-stx results)))))))
 
 (define (tc-toplevel/full orig-stx stx k)
-  (tc-setup orig-stx stx 'top-level tc-toplevel-form k))
+  (tc-setup orig-stx stx 'top-level local-expand/capture* tc-toplevel-form k))
 
 (define (tc-module/full orig-stx stx k)
-  (tc-setup orig-stx stx 'module-begin tc-module k))
+  (tc-setup orig-stx stx 'module-begin local-expand tc-module k))
+
+;; like `local-expand/capture-lifts` but expands the lifted expression, which
+;; allows us to type-check lifted expressions at the top-level
+(define (local-expand/capture* stx ctx stop-ids)
+  (define-values (defs expr)
+    ;; at each iteration, get lifted definitions and the expanded expression
+    (let loop ([stx stx])
+      (define stx* (local-expand/capture-lifts stx ctx stop-ids))
+      (syntax-parse stx*
+        #:literals (begin define-values)
+        [(begin (define-values (n) e) ... e*)
+         (define-values (sub-defss defs)
+           (for/lists (_1 _2) ([e (in-list (syntax->list #'(e ...)))]
+                               [n (in-list (syntax->list #'(n ...)))])
+             ;; lifted expressions may re-lift, so recur
+             (define-values (sub-defs e-expanded) (loop e))
+             (values sub-defs #`(define-values (#,n) #,e-expanded))))
+         (values (append (apply append sub-defss) defs) #'e*)])))
+  #`(begin #,@defs #,expr))
