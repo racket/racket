@@ -8968,12 +8968,7 @@ void *scheme_malloc_gmp(uintptr_t amt, void **mem_pool)
 {
   void *p, *mp;
 
-#ifdef MZ_PRECISE_GC      
-  if (amt < GC_malloc_stays_put_threshold())
-    amt = GC_malloc_stays_put_threshold();
-#endif
-
-  p = scheme_malloc_atomic(amt);
+  p = scheme_malloc_atomic_allow_interior(amt);
 
   mp = scheme_make_raw_pair(p, *mem_pool);
   *mem_pool = mp;
