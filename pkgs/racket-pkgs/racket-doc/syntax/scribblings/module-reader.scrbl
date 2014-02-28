@@ -42,7 +42,7 @@ language, though it may also be @racket[require]d to get
                   (code:line #:language-info language-info-expr)])
   #:contracts ([read-expr (input-port? . -> . any/c)]
                [read-syntax-expr (any/c input-port? . -> . any/c)]
-               [whole-expr any/c]
+               [whole?-expr any/c]
                [wrapper1-expr (or/c ((-> any/c) . -> . any/c)
                                     ((-> any/c) boolean? . -> . any/c))]
                [wrapper2-expr (or/c (input-port? (input-port? . -> . any/c) 
@@ -50,7 +50,7 @@ language, though it may also be @racket[require]d to get
                                     (input-port? (input-port? . -> . any/c) 
                                      boolean? . -> . any/c))]
                [info-expr (symbol? any/c (symbol? any/c . -> . any/c) . -> . any/c)]
-               [module-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
+               [language-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
                [lang-expr (or/c module-path?
                                 (and/c syntax? (compose module-path? syntax->datum))
                                 procedure?)])]{
