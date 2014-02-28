@@ -70,17 +70,17 @@
   (case-lambda [(t)
                 (make-tc-results
                  (cond [(Type/c? t)
-                        (list (make-tc-result t -no-filter -no-obj))]
+                        (list (make-tc-result t -top-filter -empty-obj))]
                        [else
                         (for/list ([i (in-list t)])
-                          (make-tc-result i -no-filter -no-obj))])
+                          (make-tc-result i -top-filter -empty-obj))])
                  #f)]
                [(t f)
                 (make-tc-results
                  (if (Type/c? t)
-                     (list (make-tc-result t f -no-obj))
+                     (list (make-tc-result t f -empty-obj))
                      (for/list ([i (in-list t)] [f (in-list f)])
-                       (make-tc-result i f -no-obj)))
+                       (make-tc-result i f -empty-obj)))
                  #f)]
                [(t f o)
                 (make-tc-results

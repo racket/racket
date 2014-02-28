@@ -81,15 +81,15 @@
                       (let ([filter
                              (match* (f2 f3)
                                [((NoFilter:) _)
-                                -no-filter]
+                                -top-filter]
                                [(_ (NoFilter:))
-                                -no-filter]
+                                -top-filter]
                                [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
                                 ;(printf "f2- ~a f+ ~a\n" f2- fs+)
                                 (-FS (-or (apply -and fs+ f2+ new-thn-props) (apply -and fs- f3+ new-els-props))
                                      (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
                             [type (Un t2 t3)]
-                            [object (if (object-equal? o2 o3) o2 -no-obj)])
+                            [object (if (object-equal? o2 o3) o2 -empty-obj)])
                         ;(printf "result filter is: ~a\n" filter)
                         (ret type filter object))))]
                   ;; special case if one of the branches is unreachable

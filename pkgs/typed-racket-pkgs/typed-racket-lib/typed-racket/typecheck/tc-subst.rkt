@@ -42,7 +42,7 @@
     [(FilterSet: f+ f-)
      (-FS (subst-filter (add-extra-filter f+) k o polarity)
           (subst-filter (add-extra-filter f-) k o polarity))]
-    [_ -no-filter]))
+    [_ -top-filter]))
 
 ;; Substitution of objects into a type
 ;; This is essentially t [o/x] from the paper
@@ -81,9 +81,9 @@
     [(Path: p i)
      (if (name-ref=? i k)
          (match o
-           [(Empty:) -no-obj]
+           [(Empty:) -empty-obj]
            ;; the result is not from an annotation, so it isn't a NoObject
-           [(NoObject:) -no-obj]
+           [(NoObject:) -empty-obj]
            [(Path: p* i*) (make-Path (append p p*) i*)])
          t)]))
 

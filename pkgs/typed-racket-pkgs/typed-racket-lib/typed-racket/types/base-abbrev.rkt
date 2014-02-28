@@ -101,15 +101,15 @@
        (make-Mu 'var ty))]))
 
 ;; Results
-(define/cond-contract (-result t [f -no-filter] [o -no-obj])
+(define/cond-contract (-result t [f -top-filter] [o -empty-obj])
   (c:->* (Type/c) (FilterSet? Object?) Result?)
   (make-Result t f o))
 
 ;; Filters
 (define/decl -top (make-Top))
 (define/decl -bot (make-Bot))
-(define/decl -no-filter (make-FilterSet -top -top))
-(define/decl -no-obj (make-Empty))
+(define/decl -top-filter (make-FilterSet -top -top))
+(define/decl -empty-obj (make-Empty))
 
 (define/cond-contract (-FS + -)
   (c:-> Filter/c Filter/c FilterSet?)
@@ -145,7 +145,7 @@
 ;; Function types
 (define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
-                                 #:filters [filters -no-filter] #:object [obj -no-obj])
+                                 #:filters [filters -top-filter] #:object [obj -empty-obj])
   (c:->* ((c:listof Type/c) (c:or/c SomeValues/c Type/c))
          (#:rest (c:or/c #f Type/c)
           #:drest (c:or/c #f (c:cons/c Type/c symbol?))

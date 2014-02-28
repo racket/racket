@@ -18,7 +18,7 @@
     [(ValuesDots: (list (Result: ts _ _) ...) dty dbound)
      (ret ts
           (for/list ([t (in-list ts)]) (make-NoFilter))
-          (for/list ([t (in-list ts)]) -no-obj)
+          (for/list ([t (in-list ts)]) -empty-obj)
           dty dbound)]
     [_ (int-err "do-ret fails: ~a" t)]))
 

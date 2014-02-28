@@ -68,8 +68,8 @@
     (check-prints-as? (-mu x (-lst x)) "(Rec x (Listof x))")
     (check-prints-as? (-seq -String -Symbol) "(Sequenceof String Symbol)")
     (check-prints-as? (-poly (a) (-> a -Void)) "(All (a) (-> a Void))")
-    (check-prints-as? (-> -Input-Port (make-Values (list (-result -String (-FS -top -bot) -no-obj)
-                                                         (-result -String (-FS -top -bot) -no-obj))))
+    (check-prints-as? (-> -Input-Port (make-Values (list (-result -String (-FS -top -bot) -empty-obj)
+                                                         (-result -String (-FS -top -bot) -empty-obj))))
                       "(-> Input-Port (values (String : (Top | Bot)) (String : (Top | Bot))))")
     ;; this case tests that the Number union is printed with its name
     ;; rather than its expansion (a former bug)
