@@ -67,3 +67,8 @@ file.
 ]
 
 }
+
+@defproc[(contract-profile-thunk [thunk (-> any)]) any]{
+  Like @racket[contract-profile], but as a function which takes a thunk to
+  profile as argument.
+}

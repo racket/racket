@@ -239,6 +239,5 @@
             (and (not (empty? s)) (vector-ref (car s) 0))))
         (analyze-contract-samples contract-samples samples)))))
 
-;; TODO: document
 (define (contract-profile-thunk f)
   (contract-profile/user (f)))
