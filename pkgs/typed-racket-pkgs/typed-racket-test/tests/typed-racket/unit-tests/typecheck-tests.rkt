@@ -2318,6 +2318,86 @@
              #:ret (ret (t:-> -String -String -Symbol
                               (-values (list -String -String -Symbol)))
                         (-FS -top -bot))]
+
+       ;; make-input-port, make-output-port (examples from Reference)
+       [tc-e (let ()
+               (define /dev/null-in
+                 (make-input-port
+                  'null
+                  (lambda (s) eof)
+                  (lambda (skip s progress-evt) eof)
+                  void
+                  (lambda () never-evt)
+                  (lambda (k progress-evt done-evt)
+                    (error "no successful peeks!"))))
+               (read-char /dev/null-in))
+             (t:Un -Char (-val eof))]
+       [tc-e (let ()
+               (define infinite-ones
+                 (let ([one! (tr:lambda ([s : Bytes])
+                               (bytes-set! s 0 (char->integer #\1)) 1)])
+                   (make-input-port
+                    'ones
+                    one!
+                    (tr:lambda ([s : Bytes] skip progress-evt) (one! s))
+                    void)))
+               (read-string 5 infinite-ones))
+             (t:Un -String (-val eof))]
+       [tc-e (let ()
+               (define infinite-voids
+                 (make-input-port
+                  'voids
+                  (lambda (s) (lambda args 'void))
+                  (lambda (skip s evt) (lambda args 'void))
+                  void))
+               (read-char-or-special infinite-voids))
+             Univ]
+       [tc-e (let ()
+               (define mod3-cycle/one-thread
+                 (let* ([n 2]
+                        [mod! (tr:lambda ([s : Bytes] [delta : Integer])
+                                (bytes-set! s 0 (+ 48 (modulo (+ n delta) 3)))
+                                1)])
+                   (make-input-port
+                    'mod3-cycle/not-thread-safe
+                    (tr:lambda ([s : Bytes])
+                      (set! n (modulo (add1 n) 3))
+                      (mod! s 0))
+                    (tr:lambda ([s : Bytes] [skip : Integer] evt)
+                      (mod! s skip))
+                    void)))
+               (read-string 5 mod3-cycle/one-thread))
+             (t:Un -String (-val eof))]
+       [tc-e (let ()
+               (define /dev/null-out
+                 (make-output-port
+                  'null
+                  always-evt
+                  (tr:lambda (s [start : Integer] [end : Integer] non-block? breakable?)
+                    (- end start))
+                  void
+                  (lambda (special non-block? breakable?) #t)
+                  (tr:lambda (s [start : Integer] [end : Integer])
+                    (wrap-evt always-evt (lambda (x) (- end start))))
+                  (lambda (special) always-evt)))
+               (display "hello" /dev/null-out))
+             -Void]
+       [tc-e (let ()
+               (: accum-list (Listof Char))
+               (define accum-list null)
+               (define accumulator/not-thread-safe
+                 (make-output-port
+                  'accum/not-thread-safe
+                  always-evt
+                  (tr:lambda ([s : Bytes] [start : Integer] [end : Integer] _1 _2)
+                    (set! accum-list
+                          (append accum-list
+                                  (map integer->char
+                                       (bytes->list (subbytes s start end)))))
+                    (- end start))
+                  void))
+               (display "hello" accumulator/not-thread-safe))
+             -Void]
         )
   (test-suite
    "tc-literal tests"

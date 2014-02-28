@@ -1603,11 +1603,43 @@
 [prop:output-port -Struct-Type-Property]
 
 ;; Section 13.1.9
-;; TODO write the types for these
-;; They are fairly complicated and require events
-
-;make-input-port
-;make-output-port
+[make-input-port
+ (->opt Univ
+        (Un (-> -Bytes (Un -Nat (-val eof) top-func (make-Evt Univ)))
+            -Input-Port)
+        (Un (-> -Bytes -Nat (-opt (make-Evt Univ))
+                (Un -Nat (-val eof) top-func (make-Evt Univ) (-val #f)))
+            -Input-Port
+            (-val #f))
+        (-> Univ)
+        [(-opt (-> (make-Evt Univ)))
+         (-opt (-> -PosInt (make-Evt Univ) (make-Evt Univ) Univ))
+         (-opt (-> (-values (list (-opt -Integer)
+                                  (-opt -Integer)
+                                  (-opt -Integer)))))
+         (-> Univ)
+         (Un -Integer -Port (-val #f) (-> (-opt -Integer)))
+         (-opt (cl->* (-> (one-of/c 'block 'none) Univ)
+                      (-> (-opt (one-of/c 'block 'none)))))]
+        -Input-Port)]
+[make-output-port
+ (->opt Univ
+        (make-Evt Univ)
+        (Un (-> -Bytes -Nat -Nat -Boolean -Boolean
+                (Un -Integer (-val #f) (make-Evt Univ)))
+            -Output-Port)
+        (-> Univ)
+        [(-opt (Un -Output-Port (-> Univ -Boolean -Boolean Univ)))
+         (-opt (-> -Bytes -Nat -Nat (make-Evt Univ)))
+         (-opt (-> Univ (make-Evt Univ)))
+         (-opt (-> (-values (list (-opt -Integer)
+                                  (-opt -Integer)
+                                  (-opt -Integer)))))
+         (-> Univ)
+         (Un -Integer -Port (-val #f) (-> (-opt -Integer)))
+         (-opt (cl->* (-> (one-of/c 'block 'none) Univ)
+                      (-> (-opt (one-of/c 'block 'none)))))]
+        -Output-Port)]
 
 ;; Section 13.1.10
 
