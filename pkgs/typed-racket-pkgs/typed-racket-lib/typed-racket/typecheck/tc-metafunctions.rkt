@@ -121,7 +121,7 @@
   (define-lookup: lookup: ids keys)
   (match o
     [(Path: p (lookup: idx)) (make-Path p idx)]
-    [_ -no-obj]))
+    [_ -empty-obj]))
 
 ;; Abstract all given id objects into index objects (keys) in
 ;; the given filter set
@@ -130,7 +130,7 @@
   (match fs
     [(FilterSet: f+ f-)
      (-FS (abo ids keys f+) (abo ids keys f-))]
-    [(NoFilter:) -no-filter]))
+    [(NoFilter:) -top-filter]))
 
 (define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)

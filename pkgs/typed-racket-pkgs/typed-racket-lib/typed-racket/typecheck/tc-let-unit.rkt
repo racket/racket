@@ -65,7 +65,7 @@
                    (for/list ([i (in-list lst)])
                      (for/fold ([s i])
                        ([nm (in-list (apply append abstract namess))])
-                       (proc s nm -no-obj #t))))])
+                       (proc s nm -empty-obj #t))))])
      (define (run res)
        (match res
          [(tc-any-results:) res]

@@ -241,7 +241,7 @@
 (define-syntax-class object
   #:attributes (object)
   (pattern e:expr
-           #:attr object -no-obj))
+           #:attr object -empty-obj))
 
 (define-splicing-syntax-class (full-latent doms)
   #:description "latent propositions and object"
@@ -250,7 +250,7 @@
                  (~optional (~seq #:object o:object)))
            #:attr positive (apply -and (attribute p+.prop))
            #:attr negative (apply -and (attribute p-.prop))
-           #:attr object (or (attribute o.object) -no-obj)))
+           #:attr object (or (attribute o.object) -empty-obj)))
 
 (define (parse-types stx-list)
   (stx-map parse-type stx-list))
@@ -744,9 +744,9 @@
   (syntax-parse stx
     [(:values^ t ...)
      (ret (parse-types #'(t ...))
-          (stx-map (lambda (x) (make-NoFilter)) #'(t ...))
-          (stx-map (lambda (x) (make-NoObject)) #'(t ...)))]
-    [t (ret (parse-type #'t) (make-NoFilter) (make-NoObject))]))
+          (stx-map (lambda (x) -no-filter) #'(t ...))
+          (stx-map (lambda (x) -no-obj) #'(t ...)))]
+    [t (ret (parse-type #'t) -no-filter -no-obj)]))
 
 (define parse-tc-results/id (parse/id parse-tc-results))
 

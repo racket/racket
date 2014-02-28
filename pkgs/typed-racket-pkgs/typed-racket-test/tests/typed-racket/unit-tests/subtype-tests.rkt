@@ -245,8 +245,8 @@
     (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
 
    [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
-    (-> Univ -Boolean : (-FS -top -top))]
-   [(-> Univ -Boolean : (-FS -bot -bot))
+    (-> Univ -Boolean : -top-filter)]
+   [(-> Univ -Boolean : -bot-filter)
     (-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))]
    [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
     (-> (Un -Symbol -String) -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))]

@@ -27,7 +27,7 @@
 
 (begin-for-syntax (do-standard-inits))
 
-(define-syntax-rule (tc-e/t e t) (tc-e e #:ret (ret t (-FS -top -bot))))
+(define-syntax-rule (tc-e/t e t) (tc-e e #:ret (ret t -true-filter)))
 
 (define-syntax (tc-e stx)
   (syntax-parse stx

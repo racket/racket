@@ -208,5 +208,5 @@
     [(tc-any-results:) tc]
     [(tc-results: ts _ _)
      (ret ts
-          (for/list ([f (in-list ts)]) (make-NoFilter))
-          (for/list ([f (in-list ts)]) (make-NoObject)))]))
+          (for/list ([f (in-list ts)]) -no-filter)
+          (for/list ([f (in-list ts)]) -no-obj))]))

@@ -691,7 +691,7 @@
                         (public [m m])
                         (define m (lambda () "a"))))
            (send (new c%) m))
-         #:ret (ret -String (-FS -top -bot))]
+         #:ret (ret -String -true-filter)]
    ;; fails, internal name not accessible
    [tc-err (let ()
              (define c% (class object% (super-new)
@@ -780,7 +780,7 @@
            (define c% (class object% (super-new)
                         (define/public (m) "a")))
            (send (new c%) m))
-         #:ret (ret -String (-FS -top -bot))]
+         #:ret (ret -String -true-filter)]
    ;; test inheritance without expected
    [tc-e (let ()
            (define c% (class (class object% (super-new)
