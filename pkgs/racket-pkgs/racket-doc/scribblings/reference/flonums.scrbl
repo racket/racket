@@ -121,10 +121,18 @@ integer.}
 
 
 @deftogether[(
-@defproc[(make-flrectangular [a flonum?] [b flonum?]) 
-         (and/c complex? inexact? (not/c real?))]
-@defproc[(flreal-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
-@defproc[(flimag-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
+@defproc[(make-flrectangular [a flonum?] [b flonum?])
+         (and/c complex?
+                (lambda (c) (flonum? (real-part c)))
+                (lambda (c) (flonum? (imag-part c))))]
+@defproc[(flreal-part [a (and/c complex?
+                                (lambda (c) (flonum? (real-part c)))
+                                (lambda (c) (flonum? (imag-part c))))])
+         flonum?]
+@defproc[(flimag-part [a (and/c complex?
+                                (lambda (c) (flonum? (real-part c)))
+                                (lambda (c) (flonum? (imag-part c))))])
+         flonum?]
 )]{
 
 Like @racket[make-rectangular], @racket[real-part], and

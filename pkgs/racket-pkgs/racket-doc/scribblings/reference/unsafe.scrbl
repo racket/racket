@@ -156,12 +156,19 @@ For @tech{flonums}: Unchecked (potentially) versions of
 @racket[flsqrt], and @racket[flexpt]. Currently, some of these
 bindings are simply aliases for the corresponding safe bindings.}
 
-
 @deftogether[(
-@defproc[(unsafe-make-flrectangular [a flonum?] [b flonum?]) 
-         (and/c complex? inexact? (not/c real?))]
-@defproc[(unsafe-flreal-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
-@defproc[(unsafe-flimag-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
+@defproc[(unsafe-make-flrectangular [a flonum?] [b flonum?])
+         (and/c complex?
+                (lambda (c) (flonum? (real-part c)))
+                (lambda (c) (flonum? (imag-part c))))]
+@defproc[(unsafe-flreal-part [a (and/c complex?
+                                       (lambda (c) (flonum? (real-part c)))
+                                       (lambda (c) (flonum? (imag-part c))))])
+         flonum?]
+@defproc[(unsafe-flimag-part [a (and/c complex?
+                                       (lambda (c) (flonum? (real-part c)))
+                                       (lambda (c) (flonum? (imag-part c))))])
+         flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],

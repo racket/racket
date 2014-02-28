@@ -3722,7 +3722,11 @@ Scheme_Object *scheme_checked_flreal_part (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_COMPLEXP(o)
       || !SCHEME_DBLP(((Scheme_Complex *)o)->r))
-    scheme_wrong_contract("flreal-part", "(and/c complex? (lambda (c) (flonum? (real-part c))))", 0, argc, argv);
+    scheme_wrong_contract("flreal-part",
+                          "(and/c complex?"
+                          /* */ " (lambda (c) (flonum? (real-part c)))"
+                          /* */ " (lambda (c) (flonum? (imag-part c))))",
+                          0, argc, argv);
 
   return _scheme_complex_real_part(o);
 }
@@ -3733,7 +3737,11 @@ Scheme_Object *scheme_checked_flimag_part (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_COMPLEXP(o)
       || !SCHEME_DBLP(((Scheme_Complex *)o)->r))
-    scheme_wrong_contract("flimag-part", "(and/c complex? (lambda (c) (flonum? (real-part c))))", 0, argc, argv);
+    scheme_wrong_contract("flimag-part",
+                          "(and/c complex?"
+                          /* */ " (lambda (c) (flonum? (real-part c)))"
+                          /* */ " (lambda (c) (flonum? (imag-part c))))",
+                          0, argc, argv);
 
   return scheme_complex_imaginary_part(o);
 }
