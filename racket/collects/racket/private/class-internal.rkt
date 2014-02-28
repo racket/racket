@@ -4203,9 +4203,9 @@ An example
 
 (define (object=? o1 o2)
   (unless (object? o1)
-    (raise-argument-error 'object=? "object?" o1))
+    (raise-argument-error 'object=? "object?" 0 o1 o2))
   (unless (object? o2)
-    (raise-argument-error 'object=? "object?" o2))
+    (raise-argument-error 'object=? "object?" 1 o1 o2))
   (let* ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
          [orig-o2 (if (has-original-object? o2) (original-object o2) o2)]
          [orig-orig-o1 (if (wrapped-object? orig-o1)
