@@ -108,7 +108,11 @@
                (malloc (add1 (bytes-length cur)) cur 'raw)))))
     complete))
 
-(set-ffi-obj! "rl_readline_name" libreadline _bytes #"mzscheme")
+(set-ffi-obj! "rl_readline_name" libreadline _pointer
+              (let ([s #"mzscheme"])
+                (define m (malloc (add1 (bytes-length s)) 'atomic-interior))
+                (memcpy m s (add1 (bytes-length s)))
+                m))
 
 ;; need to capture the real input port below
 (define real-input-port (current-input-port))
