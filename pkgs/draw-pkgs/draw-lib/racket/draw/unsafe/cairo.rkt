@@ -133,14 +133,18 @@
                                     [width _double]
                                     [height _double]))
 (define-cstruct _cairo_rectangle_list_t ([status _int]
-                                         [rectangles _cairo_rectangle_t-pointer]
+                                         [rectangles _cairo_rectangle_t-pointer/null]
                                          [num_rectangles _int]))
 (provide (struct-out cairo_rectangle_t) _cairo_rectangle_t
          (struct-out cairo_rectangle_list_t))
 (define-cairo cairo_rectangle_list_destroy (_cfun _cairo_rectangle_list_t-pointer -> _void)
-  #:wrap (deallocator))
+  #:wrap (deallocator)
+  ;; cairo_rectangle_list_destroy is in 1.4 and later
+  #:fail (lambda () (lambda (l) (void))))
 (define-cairo cairo_copy_clip_rectangle_list (_cfun _cairo_t -> _cairo_rectangle_list_t-pointer)
-  #:wrap (allocator cairo_rectangle_list_destroy))
+  #:wrap (allocator cairo_rectangle_list_destroy)
+  ;; cairo_copy_clip_rectangle_list is in 1.4 and later
+  #:fail (lambda () (lambda (c) (make-cairo_rectangle_list_t -1 #f 0))))
 
 (define-cairo cairo_fill_extents (_cfun _cairo_t 
                                         (x1 : (_ptr o _double)) 
@@ -281,7 +285,9 @@
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_ps_surface_create (_cfun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
+#; ; 1.2 and later:
 (define-cairo cairo_surface_set_fallback_resolution (_cfun _cairo_surface_t _double* _double* -> _void))
+#; ; 1.8 and later:
 (define-cairo cairo_surface_get_fallback_resolution (_cfun _cairo_surface_t (x : (_ptr o _double)) (y :  (_ptr o _double))
                                                            -> _void
                                                            -> (values x y)))
