@@ -110,6 +110,7 @@
 (define/decl -bot (make-Bot))
 (define/decl -no-filter (make-NoFilter))
 (define/decl -top-filter (make-FilterSet -top -top))
+(define/decl -bot-filter (make-FilterSet -bot -bot))
 (define/decl -no-obj (make-NoObject))
 (define/decl -empty-obj (make-Empty))
 
