@@ -31,6 +31,6 @@
   (test-suite
    "Type Annotation tests"
    ;; FIXME - ask Ryan
-   (tat (ann foo : Number) (ret -Number (make-NoFilter) (make-NoObject)))
+   (tat (ann foo : Number) (ret -Number -no-filter -no-obj))
    (tat foo #f)
-   (tat (ann foo : 3) (ret (-val 3) (make-NoFilter) (make-NoObject)))))
+   (tat (ann foo : 3) (ret (-val 3) -no-filter -no-obj))))
