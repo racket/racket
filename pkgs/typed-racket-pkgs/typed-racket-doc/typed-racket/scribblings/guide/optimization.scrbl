@@ -162,7 +162,13 @@ cases.
 @subsection[#:tag "optimization-coach"]{Optimization coaching}
 
 The Optimization Coach package provides optimization coaching support to help
-you get the most of the Typed Racket optimizer.
+you get the most of the Typed Racket optimizer. To install it, run the following
+command:
+
+@commandline{raco pkg install optimization-coach}
+
+After it is installed, an "Optimization Coach" button will appear on the
+DrRacket toolbar for Typed Racket programs.
 
 Similar information (albeit without in-depth explanations or advice) is
 available from the command line. When compiling a Typed Racket program, setting
@@ -187,4 +193,11 @@ racket}; using @racket[require/typed] is unnecessary in these cases.
 
 If you suspect that contracts at a typed-untyped boundary may be have a
 significant cost in your program, you can investigate further using the
-contract profiler.
+@seclink["top" #:doc '(lib "contract-profile/scribblings/contract-profile.scrbl")
+               #:indirect? #t
+         "contract profiler"].
+
+If the contract profiler is not already installed, the following command
+will install it:
+
+@commandline{raco pkg install contract-profile}
