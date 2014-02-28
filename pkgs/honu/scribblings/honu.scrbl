@@ -188,7 +188,7 @@ An @deftech{expression} can be one of the following
   @codeblock|{(1 + 1) * 2}|}
 ]
 
-@section{Macros}
+@section{Macros in Honu}
 
 @subsection{Honu syntax}
 A good concrete syntax for honu macros is still under development.
