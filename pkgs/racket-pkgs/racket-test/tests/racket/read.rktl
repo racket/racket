@@ -1176,6 +1176,9 @@
 
 (test "x.rkt:10:11" srcloc->string (make-srcloc "x.rkt" 10 11 100 8))
 (test "x.rkt::100" srcloc->string (make-srcloc "x.rkt" #f #f 100 8))
+(test "x.rkt::100" srcloc->string (chaperone-struct (make-srcloc "x.rkt" #f #f 100 8)
+                                                    srcloc-line (lambda (s v) v)))
+(err/rt-test (srcloc->string 1))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

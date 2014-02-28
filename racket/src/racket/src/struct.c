@@ -5211,7 +5211,11 @@ Scheme_Object *scheme_make_location(Scheme_Object *src,
 
 int scheme_is_location(Scheme_Object *o)
 {
-  return scheme_is_struct_instance(location_struct, o);
+  if (SCHEME_CHAPERONEP(o))
+    o = SCHEME_CHAPERONE_VAL(o);
+
+  return (SCHEME_STRUCTP(o)
+          && scheme_is_struct_instance(location_struct, o));
 }
 
 static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv)
