@@ -744,9 +744,9 @@
   (syntax-parse stx
     [(:values^ t ...)
      (ret (parse-types #'(t ...))
-          (stx-map (lambda (x) (make-NoFilter)) #'(t ...))
-          (stx-map (lambda (x) (make-NoObject)) #'(t ...)))]
-    [t (ret (parse-type #'t) (make-NoFilter) (make-NoObject))]))
+          (stx-map (lambda (x) -no-filter) #'(t ...))
+          (stx-map (lambda (x) -no-obj) #'(t ...)))]
+    [t (ret (parse-type #'t) -no-filter -no-obj)]))
 
 (define parse-tc-results/id (parse/id parse-tc-results))
 
