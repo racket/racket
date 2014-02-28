@@ -937,10 +937,8 @@
             (let ([prefs-setting (preferences:get 
                                   drracket:language-configuration:settings-preferences-symbol)])
               (cond
-                [(and module-language
-                      (object=? (drracket:language-configuration:language-settings-language
-                                 prefs-setting)
-                                module-language))
+                [(eq? (drracket:language-configuration:language-settings-language prefs-setting)
+                      module-language)
                  (drracket:language-configuration:language-settings-settings prefs-setting)]
                 [else 
                  (and module-language
@@ -1317,7 +1315,7 @@
         (set! running? b?)
         (send frame update-running b?))
       
-      (define/public-final (is-current-tab?) (object=? this (send frame get-current-tab)))
+      (define/public-final (is-current-tab?) (eq? this (send frame get-current-tab)))
       
       (define log-visible? #f)
       (define/public-final (toggle-log)
@@ -2147,7 +2145,7 @@
       (define was-locked? #f)
       
       (define/public-final (disable-evaluation-in-tab tab)
-        (when (object=? tab current-tab)
+        (when (eq? tab current-tab)
           (disable-evaluation)))
       
       (define/pubment (disable-evaluation)
@@ -2157,7 +2155,7 @@
         (inner (void) disable-evaluation))
       
       (define/public-final (enable-evaluation-in-tab tab)
-        (when (object=? tab current-tab)
+        (when (eq? tab current-tab)
           (enable-evaluation)))
       
       (define/pubment (enable-evaluation)
@@ -2236,7 +2234,7 @@
         (define tab-index
           (for/or ([i (in-list tabs)]
                    [n (in-naturals 1)])
-            (and (object=? i tab) n)))
+            (and (eq? i tab) n)))
         (define i-prefix
           (cond
             [(not tab-index) ""]
@@ -2321,11 +2319,11 @@
           (toggle-show/hide-definitions)
           (update-shown)))
       (define/public (ensure-rep-shown rep)
-        (unless (object=? rep interactions-text)
+        (unless (eq? rep interactions-text)
           (let loop ([tabs tabs])
             (unless (null? tabs)
               (let ([tab (car tabs)])
-                (if (object=? (send tab get-ints) rep)
+                (if (eq? (send tab get-ints) rep)
                     (change-to-tab tab)
                     (loop (cdr tabs)))))))
         (unless interactions-shown?
@@ -2477,7 +2475,7 @@
                  [(null? canvases) (error 'split "couldn't split; didn't find canvas")]
                  [else
                   (let ([canvas (car canvases)])
-                    (if (object=? canvas canvas-to-be-split)
+                    (if (eq? canvas canvas-to-be-split)
                         (list* new-canvas
                                canvas
                                (cdr canvases))
@@ -2499,7 +2497,7 @@
                                 orig-percentages
                                 (send resizable-panel get-children))]
                         [else (let ([canvas (car canvases)])
-                                (if (object=? canvas-to-be-split canvas)
+                                (if (eq? canvas-to-be-split canvas)
                                     (list* (/ (car percentages) 2)
                                            (/ (car percentages) 2)
                                            (cdr percentages))
@@ -2619,7 +2617,7 @@
             (let* ([old-percentages (send resizable-panel get-percentages)]
                    [soon-to-be-bigger-canvas #f]
                    [percentages
-                    (if (and target (object=? (car (get-canvases)) target))
+                    (if (and target (eq? (car (get-canvases)) target))
                         (begin
                           (set! soon-to-be-bigger-canvas (cadr (get-canvases)))
                           (cons (+ (car old-percentages)
@@ -2635,7 +2633,7 @@
                             [(null? percentages)
                              (error 'collapse "internal error.2")]
                             [else
-                             (if (and target (object=? (car canvases) target))
+                             (if (and target (eq? (car canvases) target))
                                  (begin
                                    (set! soon-to-be-bigger-canvas prev-canvas)
                                    (cons (+ (car percentages)
@@ -2711,7 +2709,7 @@
           (let loop ([child child])
             (define immediate-parent (send child get-parent))
             (if (and immediate-parent 
-                     (object=? immediate-parent parent))
+                     (eq? immediate-parent parent))
                 child
                 (loop immediate-parent))))
         (for/list ([child children])
@@ -2800,7 +2798,7 @@
       
       (define/augment (can-close?)
         (and (andmap (lambda (tab)
-                       (or (object=? tab current-tab)
+                       (or (eq? tab current-tab)
                            (and (send (send tab get-defs) can-close?)
                                 (send (send tab get-ints) can-close?))))
                      tabs)
@@ -2809,11 +2807,11 @@
       (define/augment (on-close)
         (inner (void) on-close)
         (for-each (lambda (tab)
-                    (unless (object=? tab current-tab)
+                    (unless (eq? tab current-tab)
                       (send (send tab get-defs) on-close)
                       (send (send tab get-ints) on-close)))
                   tabs)
-        (when (object=? this newest-frame)
+        (when (eq? this newest-frame)
           (set! newest-frame #f))
         (when transcript
           (stop-transcript))
@@ -2965,7 +2963,7 @@
       ;; to be the nth tab. Also updates the GUI to show the new tab
       (inherit begin-container-sequence end-container-sequence)
       (define/public (change-to-tab tab)
-        (unless (object=? current-tab tab)
+        (unless (eq? current-tab tab)
           (let ([old-tab current-tab])
             (save-visible-tab-regions)
             (set! current-tab tab)
@@ -2988,7 +2986,7 @@
             (send definitions-text update-frame-filename)
             (update-running (send current-tab is-running?))
             (when (let ([tlw (get-top-level-focus-window)])
-                    (and tlw (object=? this tlw)))
+                    (and tlw (eq? this tlw)))
               (send current-tab touched))
             (on-tab-change old-tab current-tab)
             (send tab update-log)
@@ -3015,7 +3013,7 @@
       (define/pubment (on-tab-change from-tab to-tab)
         (let ([old-enabled (send from-tab get-enabled)]
               [new-enabled (send to-tab get-enabled)])
-          (unless (object=? old-enabled new-enabled)
+          (unless (eq? old-enabled new-enabled)
             (if new-enabled
                 (enable-evaluation)
                 (disable-evaluation))))
@@ -3083,7 +3081,7 @@
                [(null? l-tabs) (error 'close-current-tab "uh oh.3")]
                [else
                 (let ([tab (car l-tabs)])
-                  (if (object=? tab current-tab)
+                  (if (eq? tab current-tab)
                       (when (close-tab tab)
                         (for-each (lambda (t) (send t set-i (- (send t get-i) 1)))
                                   (cdr l-tabs))
@@ -3271,10 +3269,10 @@
           (when tab-to-save
             (let ([defs-to-save (send tab-to-save get-defs)])
               (when (send defs-to-save is-modified?)
-                (unless (object=? tab-to-save original-tab)
+                (unless (eq? tab-to-save original-tab)
                   (change-to-tab tab-to-save))
                 (send defs-to-save user-saves-or-not-modified? #f)
-                (unless (object=? tab-to-save original-tab)
+                (unless (eq? tab-to-save original-tab)
                   (change-to-tab original-tab)))))))
       
       
