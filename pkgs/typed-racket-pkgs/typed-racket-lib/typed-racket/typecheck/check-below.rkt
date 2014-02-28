@@ -145,7 +145,7 @@
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
 
     ;; Handle the multi value cases
-    [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
+    [((tc-results: ts fs os) (tc-results: ts2 (list (NoFilter:) ...) (list (NoObject:) ...)))
      (unless (= (length ts) (length ts2))
        (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
      (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
