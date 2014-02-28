@@ -140,7 +140,7 @@ that actually does drawing in a window.
 
 (define bernoulli-sequence-pict (make-bernoulli-sequence-pict 50))
 (define (draw-splash-ada dc current max width height)
-  (send dc erase)
+  (send dc clear)
   (draw-ada dc (/ current max) width height) #t)
 
 (module+ main
