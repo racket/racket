@@ -159,7 +159,7 @@ preferable to vectors. Typed Racket can optimize struct access in all
 cases.
 
 
-@subsection[#:tag "optimization-coach"]{Optimization Coaching}
+@subsection[#:tag "optimization-coach"]{Optimization coaching}
 
 The Optimization Coach package provides optimization coaching support to help
 you get the most of the Typed Racket optimizer.
@@ -173,3 +173,18 @@ debugging information. Setting the Racket logging level can be done on the
 command line with the @racket[-W] flag:
 
 @commandline["racket -W debug@TR-optimizer my-typed-program.rkt"]
+
+
+@subsection[#:tag "contract-costs"]{Contract boundaries}
+
+When interoperating with untyped code (see @secref{typed-untyped-interaction}),
+contracts are installed between typed and untyped modules. Contracts can have
+significant overhead, thus typed-untyped boundary crossings should be avoided
+in performance-sensitive code.
+
+Typed Racket provides types for most of the bindings provided by @tt{#lang
+racket}; using @racket[require/typed] is unnecessary in these cases.
+
+If you suspect that contracts at a typed-untyped boundary may be have a
+significant cost in your program, you can investigate further using the
+contract profiler.

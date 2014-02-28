@@ -166,3 +166,7 @@ Additionally, macros that are defined in Typed Racket modules cannot
 be used in ordinary Racket modules because such uses can
 circumvent the protections of the type system.
 
+@section{Expensive contract boundaries}
+
+Contract boundaries installed for typed-untyped interaction may cause
+significant slowdowns. See @secref{contract-costs} for details.
