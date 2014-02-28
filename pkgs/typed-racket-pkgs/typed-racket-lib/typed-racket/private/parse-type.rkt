@@ -241,7 +241,7 @@
 (define-syntax-class object
   #:attributes (object)
   (pattern e:expr
-           #:attr object -no-obj))
+           #:attr object -empty-obj))
 
 (define-splicing-syntax-class (full-latent doms)
   #:description "latent propositions and object"
@@ -250,7 +250,7 @@
                  (~optional (~seq #:object o:object)))
            #:attr positive (apply -and (attribute p+.prop))
            #:attr negative (apply -and (attribute p-.prop))
-           #:attr object (or (attribute o.object) -no-obj)))
+           #:attr object (or (attribute o.object) -empty-obj)))
 
 (define (parse-types stx-list)
   (stx-map parse-type stx-list))

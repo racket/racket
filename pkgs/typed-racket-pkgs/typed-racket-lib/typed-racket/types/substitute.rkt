@@ -4,7 +4,7 @@
          racket/match racket/set
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -lst* -result -no-filter -no-obj)
+         (only-in (types base-abbrev) -lst* -result)
          (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -109,10 +109,7 @@
                                      ;; We need to recur first, just to expand out any dotted usages of this.
                                      (let ([expanded (sb dty)])
                                        (for/list ([img (in-list images)])
-                                         (make-Result
-                                          (substitute img name expanded)
-                                          -no-filter
-                                          -no-obj)))))
+                                         (-result (substitute img name expanded))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)

@@ -29,8 +29,8 @@
           ((Values: (list (Result: t-r _ _) ...)) (ret t-r))
           ((ValuesDots: (list (Result: t-r _ _) ...) dty dbound)
            (ret t-r
-                (make-list (length t-r) -no-filter)
-                (make-list (length t-r) -no-obj)
+                (make-list (length t-r) -top-filter)
+                (make-list (length t-r) -empty-obj)
                 dty dbound))))
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
               (tc-error/expr #:return error-ret
@@ -47,9 +47,9 @@
        (let-values
            ([(o-a t-a) (for/lists (os ts)
                          ([nm (in-range arg-count)]
-                          [oa (in-sequence-forever (in-list o-a) -no-obj)]
+                          [oa (in-sequence-forever (in-list o-a) -empty-obj)]
                           [ta (in-sequence-forever (in-list t-a) -Bottom)])
-                         (values (if (>= nm dom-count) -no-obj oa)
+                         (values (if (>= nm dom-count) -empty-obj oa)
                                  ta))])
            (match rng
             ((AnyValues:) tc-any-results)

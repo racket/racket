@@ -388,9 +388,7 @@
                   [new-tys  (for/list ([var (in-list vars)])
                               ;; must be a Result since we are matching these against
                               ;; the contents of the `Values`, which are Results
-                              (make-Result
-                               (substitute (make-F var) dbound s-dty)
-                               -no-filter -no-obj))]
+                              (-result (substitute (make-F var) dbound s-dty)))]
                   ;; generate constraints on the prefixes, and on the dummy types
                   [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
              ;; now take all the dummy types, and use them to constrain dbound appropriately
@@ -404,9 +402,7 @@
            ;; see comments for last case, this case swaps `s` and `t` order
            (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
                   [new-tys  (for/list ([var (in-list vars)])
-                              (make-Result
-                               (substitute (make-F var) dbound t-dty)
-                               -no-filter -no-obj))]
+                              (-result (substitute (make-F var) dbound t-dty)))]
                   [new-cset (cgen/list V (append vars X) Y ss (append ts new-tys))])
              (move-vars-to-dmap new-cset dbound vars))]
 
