@@ -136,6 +136,7 @@
 (define-syntax-class unboxed-float-complex-opt-expr
   #:commit
   #:attributes (real-binding imag-binding (bindings 1))
+  #:literal-sets (kernel-literals)
 
   ;; We let racket's optimizer handle optimization of 0.0s
   (pattern (#%plain-app op:+^ (~between cs:unboxed-float-complex-opt-expr 2 +inf.0) ...)
