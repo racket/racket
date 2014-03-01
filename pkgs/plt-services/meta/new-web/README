@@ -34,6 +34,5 @@ To build:
   answering the question about deleting existing files.)
 
 * Set the $GIT_DIR environment variable to point to the ".git"
-  directory of a Racket repository, otherwise the resulting build will
-  not have release information for the various builds.  (This doesn't
-  matter if you're not working on download pages.)
+  directory of a Racket repository if you want to extract release
+  information from a repository other than the enclosing one.
