@@ -1,6 +1,7 @@
 #lang plt-web
 (require plt-web/style
-         racket/runtime-path)
+         racket/runtime-path
+         (prefix-in pre: "../minis/pre.rkt"))
 
 ;; TODO
 ;; -- add links in top paragraph
@@ -463,7 +464,7 @@ Useful pages
     Projects}
   and @a[href: "https://github.com/plt/racket/wiki/Videos"]{Videos},
   including tutorials, interviews, and more.}
-@p{@a[href: "http://www.cs.utah.edu/plt/snapshots"]{Snapshot builds}   —
+@p{@pre:installers{Snapshot builds}   —
 The freshest versions of Racket.}
 
 @p{@a[href: "http://bugs.racket-lang.org"]{Bug reports}   —
