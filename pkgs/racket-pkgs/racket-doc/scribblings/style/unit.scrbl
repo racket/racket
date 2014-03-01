@@ -391,7 +391,7 @@ addition, keyword arguments also ``thin'' out calls because function calls
 don't need to refer to default values of arguments that are considered
 optional.
 
-Similarly, if your function or method consumers two (or more)
+Similarly, if your function or method consumes two (or more)
 @emph{optional} parameters, keyword arguments are a must.
 
 Write a purpose statement for your function.  If you can, add an informal
