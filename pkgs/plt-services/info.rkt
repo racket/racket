@@ -24,7 +24,8 @@
                "sandbox-lib"
                "scheme-lib"
                "scribble-lib"
-               "compatibility-lib"))
+               "compatibility-lib"
+               "plt-web"))
 
 (define pkg-desc "Miscellaneous management and maintenance tools used by the Racket development team")
 
