@@ -141,7 +141,8 @@
                     @sep})})
         @tfoot{
           @tr[class: 'version-row]{
-            @td[align: 'center colspan: 3]{@pre:installers}
+            @td[]{Snapshots}
+            @td[align: 'center colspan: 2]{@pre:installers}
             @td{@; @nbsp @pre:docs[#:sub 'html]{[HTML]} @;
                 @; @nbsp @pre:docs[#:sub 'pdf]{[PDF]}
                 @nbsp}}}}}}))
