@@ -42,6 +42,7 @@
 
 (define-syntax-class sequence-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   ;; if we're iterating (with the for macros) over something we know is a list,
   ;; we can generate code that would be similar to if in-list had been used
   (pattern (#%plain-app op:make-sequence _ l:list-expr)

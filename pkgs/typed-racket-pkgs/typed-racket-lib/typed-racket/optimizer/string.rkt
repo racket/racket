@@ -15,6 +15,7 @@
 
 (define-syntax-class string-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   (pattern (#%plain-app op:string-length^ s:opt-expr)
     #:do [(log-opt "string-length" "String check elimination.")]
     #:with opt #'(op.unsafe s.opt))

@@ -46,6 +46,7 @@
 (define-syntax-class pair-opt-expr
   #:commit
   #:attributes (opt)
+  #:literal-sets (kernel-literals)
 
   ;; no logging here, redundant with actual pair opt
   (pattern :pair-derived-opt-expr)

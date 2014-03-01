@@ -65,6 +65,7 @@
 (define-syntax-class float-arg-expr
   #:commit
   #:attributes (opt)
+  #:literal-sets (kernel-literals)
   ;; we can convert literals right away
   (pattern (quote n)
     #:when (and (real?  (syntax->datum #'n))

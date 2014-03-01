@@ -364,6 +364,7 @@
 (define-syntax-class float-complex-opt-expr
   #:commit
   #:attributes (opt)
+  #:literal-sets (kernel-literals)
   ;; Dummy pattern that can't actually match.
   ;; We just want to detect "unexpected" Complex _types_ that come up.
   ;; (not necessarily complex _values_, in fact, most of the time this
@@ -418,6 +419,7 @@
 (define-syntax-class (float-complex-arith-expr* optimizing)
   #:commit
   #:attributes (opt)
+  #:literal-sets (kernel-literals)
 
   ;; we can optimize taking the real of imag part of an unboxed complex
   ;; hopefully, the compiler can eliminate unused bindings for the other part if it's not used

@@ -26,6 +26,7 @@
        (not (subtypeof? t -Real))))
 
 (define-syntax-class arith-expr
+  #:literal-sets (kernel-literals)
   (pattern (#%plain-app op:arith-op args ...)))
 (define-syntax-class arith-op
   (pattern

@@ -26,6 +26,7 @@
 
 (define-syntax-class struct-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   ;; we can always optimize struct accessors and mutators
   ;; if they typecheck, they're safe
   (pattern (#%plain-app op:struct-op s:opt-expr v:opt-expr ...)

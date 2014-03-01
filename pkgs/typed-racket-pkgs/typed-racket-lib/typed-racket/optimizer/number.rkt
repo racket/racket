@@ -26,6 +26,7 @@
 
 (define-syntax-class number-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   ;; these cases are all identity
   (pattern (#%plain-app op:unary-op f:opt-expr)
     #:do [(log-opt "unary number" "Identity elimination.")]

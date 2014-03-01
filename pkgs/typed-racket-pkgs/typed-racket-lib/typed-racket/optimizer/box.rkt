@@ -18,6 +18,7 @@
 
 (define-syntax-class box-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   (pattern (#%plain-app op:box-op b:opt-expr new:opt-expr ...)
     #:do [(log-opt "box" "Box check elimination.")]
     #:with opt #`(op.unsafe b.opt new.opt ...)))

@@ -28,6 +28,7 @@
 
 (define-syntax-class list-opt-expr
   #:commit
+  #:literal-sets (kernel-literals)
   ;; Similar to known-length vectors opts.
   ;; If we use `list-ref' or `list-tail' on a known-length list with a
   ;; literal index, we can optimize if the index is within bounds.

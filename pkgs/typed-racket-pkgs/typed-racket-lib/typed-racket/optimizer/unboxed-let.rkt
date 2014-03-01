@@ -259,6 +259,7 @@
 (define-syntax-class unbox-fun-clause
   #:commit
   #:attributes ([bindings 1])
+  #:literal-sets (kernel-literals)
   (pattern ((fun:unboxed-fun) (#%plain-lambda params body:opt-expr ...))
     #:with (real-params ...)
     (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(fun.unboxed ...))

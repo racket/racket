@@ -52,6 +52,16 @@
              (eval `(#%top-interaction .
                      ,(syntax->datum #'form)) (get-ns f.fresh))))))]))
 
+(define-syntax (test-form-not-exn stx)
+  (syntax-parse stx
+    [(_ f:fresh-kw form:expr)
+     (quasisyntax/loc stx
+       (test-case #,(~a (syntax->datum #'form))
+         (check-not-exn
+           (lambda ()
+             (eval `(#%top-interaction .
+                     ,(syntax->datum #'form)) (get-ns f.fresh))))))]))
+
 (define-syntax (test-form stx)
   (syntax-parse stx
     [(_ f:fresh-kw (~seq regexp:expr form:expr) ...)
@@ -89,6 +99,9 @@
              (define x "foo")))
     (test-form #rx"^$"
       (struct foo ()))
+
+    ;; PR 14380
+    (test-form-not-exn (begin - (void)))
 
     (test-form #rx"1"
       (:type 1))
