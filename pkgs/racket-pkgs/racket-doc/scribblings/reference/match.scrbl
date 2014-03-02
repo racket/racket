@@ -2,7 +2,7 @@
 @(require "mz.rkt" "match-grammar.rkt" racket/match)
 
 @(define match-eval (make-base-eval))
-@(interaction-eval #:eval match-eval (require racket/match))
+@(interaction-eval #:eval match-eval (require racket/match racket/list))
 @(interaction-eval #:eval match-eval (require (for-syntax racket/base)))
 
 @title[#:tag "match"]{Pattern Matching}
