@@ -32,14 +32,19 @@ compiling Racket programs and maintaining a Racket installation.
    @commandline{raco setup take-over}}
 
 
- @item{@exec{raco planet} manages packages that are normally
- downloaded automatically, on demand.
+ @item{@exec{raco pkg} manages @tech{package}s that can be installed
+ through the Racket package manager.
 
- For example, if you'd like to see a list of @|PLaneT| packages that
- are currently installed, then run
+ For example, to see the list of installed packages run:
 
-    @commandline{raco planet show}}
+    @commandline{raco pkg show}
 
+ To install a new package named @tt{<package-name>} run:
+
+    @commandline{raco pkg install <package-name>}
+
+ See @other-doc['(lib "pkg/scribblings/pkg.scrbl")] for more details
+ about package management.}
 ]
 
 For more information on @exec{raco}, see @other-manual['(lib
