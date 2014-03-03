@@ -73,4 +73,15 @@
       (printf "  ignoring missing extra file: ~a\n" extra)))
   (parameterize ([current-directory output-dir])
     (render-all)))
+
+(case build-mode
+  [(web) (call-with-output-file (build-path output-dir "sites.rktd")
+           #:exists 'truncate
+           (lambda (o)
+             (write (for/hash ([i (in-list (registered-url-roots))])
+                      (values (car i) (cadr i)))
+                    o)
+             (newline o)))]
+  [else (void)])
+
 (printf "Done.\n")

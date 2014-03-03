@@ -46,9 +46,10 @@ relative directory is mapped to a destination URL via
 
 Creates a value that represents a site. If @racket[url] is not
 @racket[#f], then it will be registered to @racket[url-roots] for a
-build in web mode (as opposed to local mode). If
-@racket[always-abs-url?] is true, the @racket[url] is registered with
-a @racket['abs] flag.
+build in web mode (as opposed to local mode) and recorded as the
+target for @racket[dir] in a @filepath{sites.rktd} file when building
+in @tech{deployment mode}. If @racket[always-abs-url?] is true, the
+@racket[url] is registered with a @racket['abs] flag.
 
 If @racket[share-from] is a site, then resources generated for the
 site (such as icons or CSS files) are used when as possible for the
@@ -207,7 +208,7 @@ that is introduced by @racketmodname[plt-web]:
 
 @itemlist[
 
- @item{@Flag{w} or @DFlag{web} --- Build output in deployment mode, where references
+ @item{@Flag{w} or @DFlag{web} --- Build output in @deftech{deployment mode}, where references
        within a top-level site use relative paths, but references
        across top-level sites use absolute URLs. This mode is the
        default.}
