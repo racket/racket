@@ -2,7 +2,8 @@
 @(require scribble/manual
           (for-label openssl
                      racket
-                     openssl/sha1))
+                     openssl/sha1
+                     openssl/md5))
 
 @title{OpenSSL: Secure Communication}
 
@@ -649,3 +650,34 @@ until an end-of-file.}
 Converts the given byte string to a string representation, where each
 byte in @racket[bstr] is converted to its two-digit hexadecimal
 representation in the resulting string.}
+
+@defproc[(hex-string->bytes [str string?]) bytes?]{
+
+The inverse of @racket[bytes->hex-string].}
+
+@; ----------------------------------------------------------------------
+
+@section{MD5 Hashing}
+
+@defmodule[openssl/md5]{The @racketmodname[openssl/md5] library
+provides a Racket wrapper for the OpenSSL library's MD5 hashing
+functions. If the OpenSSL library cannot be opened, this library logs
+a warning and falls back to the implementation in
+@racketmodname[file/md5].}
+
+@history[#:added "6.0.0.3"]
+
+@defproc[(md5 [in input-port?]) string?]{
+
+Returns a 32-character string that represents the MD5 hash (in
+hexadecimal notation) of the content from @racket[in], consuming all
+of the input from @racket[in] until an end-of-file.
+
+The @racket[md5] function composes @racket[bytes->hex-string] with
+@racket[md5-bytes].}
+
+@defproc[(md5-bytes [in input-port?]) bytes?]{
+
+Returns a 16-byte byte string that represents the MD5 hash of the
+content from @racket[in], consuming all of the input from @racket[in]
+until an end-of-file.}

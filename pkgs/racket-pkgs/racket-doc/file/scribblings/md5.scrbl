@@ -8,6 +8,9 @@
 
 @defmodule[file/md5]
 
+See @racketmodname[openssl/md5] for a faster implementation with a
+slightly different interface.
+
 @defproc[(md5 [in (or/c input-port? bytes? string?)]
               [hex-encode? boolean? #t]) bytes?]{
 
