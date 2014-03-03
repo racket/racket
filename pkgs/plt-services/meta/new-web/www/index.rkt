@@ -325,7 +325,7 @@ computing and from databases to charts.
      @p[class: "metro primary btn"
         style: "position: absolute; top: -20%; right: 0%;"]{
         @a[href: "#" class: "switch" id: "question_button"]{
-         @icon["icon-help"]}}
+         explain}}
      @a[href: "#" class: "toggle narrow_only prev_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: -40%; left: 35%"]{@prev}
