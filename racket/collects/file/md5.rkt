@@ -1,4 +1,6 @@
 #lang racket/base
+(require racket/unsafe/ops
+         (for-syntax racket/base))
 
 (provide md5)
 
@@ -72,8 +74,6 @@
 ;; - moved from mzlib/md5 to file/md5
 ;; - made it work on strings again
 
-(require (for-syntax racket/base))
-
 ;;; Word arithmetic (32 bit)
 ;; Terminology
 ;;    word:  32 bit unsigned integer
@@ -110,40 +110,12 @@
 ;; destructive operations to save on consing
 
 ;; destructive cons
-(define (cons! p x y)
-  (set-mcar! p x)
-  (set-mcdr! p y))
-
-;; a := b
-(define (word=! a b)
-  (cons! a (mcar b) (mcdr b)))
-
-;; a := a + b
-(define (word+=! a b)
-  (let ([t1 (+ (mcar a) (mcar b))]
-        [t2 (+ (mcdr a) (mcdr b))])
-    (cons! a
-           (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535)
-           (bitwise-and t2 65535))))
-
-(define word<<<!
-  (let* ([masks '#(#x0 #x1 #x3 #x7 #xF #x1F #x3F #x7F #xFF #x1FF #x3FF #x7FF
-                   #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)])
-    (lambda (a s)
-      (let-values ([(hi lo s)
-                    (cond [(< s 16) (values (mcar a) (mcdr a) s)]
-                          [(< s 32) (values (mcdr a) (mcar a) (- s 16))]
-                          [else (error 'word<<< "shift out of range: ~e" s)])])
-        (cons!
-         a
-         (bitwise-ior
-          (arithmetic-shift (bitwise-and hi (vector-ref masks (- 16 s))) s)
-          (bitwise-and (arithmetic-shift lo (- s 16))
-                       (vector-ref masks s)))
-         (bitwise-ior
-          (arithmetic-shift (bitwise-and lo (vector-ref masks (- 16 s))) s)
-          (bitwise-and (arithmetic-shift hi (- s 16))
-                       (vector-ref masks s))))))))
+(define-syntax-rule (cons! _p _x _y)
+  (let ([p _p]
+        [x _x]
+        [y _y])
+    (unsafe-set-mcar! p x)
+    (unsafe-set-mcdr! p y)))
 
 ;; Bytes and words
 ;; The least significant byte of a word is the first
@@ -154,15 +126,13 @@
   ;; assumption: always getting a byte-string with 64 places
   ;; (unless (eq? 64 (bytes-length l-raw))
   ;;   (error 'bytes->word-vector! "something bad happened"))
-  (let loop ([n 15])
-    (when (<= 0 n)
-      (let ([m (arithmetic-shift n 2)])
-        (cons! (vector-ref result n)
-               (+ (bytes-ref l-raw (+ 2 m))
-                  (arithmetic-shift (bytes-ref l-raw (+ 3 m)) 8))
-               (+ (bytes-ref l-raw m)
-                  (arithmetic-shift (bytes-ref l-raw (+ 1 m)) 8))))
-      (loop (sub1 n)))))
+  (for ([n (in-range 16)])
+    (let ([m (unsafe-fxlshift n 2)])
+      (cons! (unsafe-vector*-ref result n)
+             (unsafe-fx+ (unsafe-bytes-ref l-raw (unsafe-fx+ 2 m))
+                         (unsafe-fxlshift (unsafe-bytes-ref l-raw (unsafe-fx+ 3 m)) 8))
+             (unsafe-fx+ (unsafe-bytes-ref l-raw m)
+                         (unsafe-fxlshift (unsafe-bytes-ref l-raw (unsafe-fx+ 1 m)) 8))))))
 
 (define empty-port (open-input-bytes #""))
 
@@ -171,11 +141,11 @@
 ;; reads 512 bytes from the port, writes them into the `result' vector of 16
 ;; 32-bit words when the port is exhausted it returns #f for the port and the
 ;; last few bytes padded
-(define (read-block! a-port done result)
+(define (read-block! l-raw-buffer bytes->word-vector! a-port done result)
   (define-syntax write-words!
     (syntax-rules ()
       [(_ done buf) (bytes->word-vector! result (step2 (* 8 done) buf))]))
-  (let ([l-raw (read-bytes 512/8 a-port)])
+  (let ([l-raw (read-bytes! l-raw-buffer a-port)])
     (cond
       ;; File size was a multiple of 512 bits, or we're doing one more round to
       ;; add the correct padding from the short case
@@ -191,15 +161,15 @@
            (make-bytes 448/8 0)))
        (values #f done)]
       ;; We read exactly 512 bits, the algorithm proceeds as usual
-      [(eq? (bytes-length l-raw) 512/8)
-       (bytes->word-vector! result l-raw)
-       (values a-port (+ done (bytes-length l-raw)))]
+      [(eq? l-raw 512/8)
+       (bytes->word-vector! result l-raw-buffer)
+       (values a-port (+ done l-raw))]
       ;; We read less than 512 bits, so the file has ended.
       [else
-       (let ([done (+ done (bytes-length l-raw))])
-         (write-words! done (step1 l-raw))
+       (let ([done (+ done l-raw)])
+         (write-words! done (step1 (subbytes l-raw-buffer 0 l-raw)))
          (values
-          (if (> (* 8 (bytes-length l-raw)) 446)
+          (if (> (* 8 l-raw) 446)
             ;; However, we don't have enough room to add the correct trailer,
             ;; so we add what we can, then go for one more round which will
             ;; automatically fall into the (eof-object? case)
@@ -224,7 +194,8 @@
                   [(input-port? a-thing) a-thing]
                   [else (raise-type-error 'md5 "input-port, bytes, or string"
                                           a-thing)])])
-       (encode (step4 a-port) hex-encode?))]))
+       (define big-fixnums? (fixnum? (arithmetic-shift 1 60)))
+       (encode ((if big-fixnums? step4/64 step4) a-port) hex-encode?))]))
 
 ;; Step 1  -  Append Padding Bits
 ;; The message is padded so the length (in bits) becomes 448 modulo 512.  We
@@ -258,8 +229,106 @@
 ;; For each 16 word block, go through a round one to four.
 ;; step4 : input-port -> (list word word word word)
 
+(define shift-masks '#(#x0 #x1 #x3 #x7 #xF #x1F #x3F #x7F #xFF #x1FF #x3FF #x7FF
+                           #xFFF #x1FFF #x3FFF #x7FFF #xFFFF))
+
 ;; Step 3 :-) (magic constants)
 (define (step4 a-port)
+  ;; Each round consists of the application of the following basic functions.
+  ;; They functions on a word bitwise, as follows.
+  ;;          F(X,Y,Z) = XY v not(X) Z  (NB: or can be replaced with + in F)
+  ;;          G(X,Y,Z) = XZ v Y not(Z)
+  ;;          H(X,Y,Z) = X xor Y xor Z
+  ;;          I(X,Y,Z) = Y xor (X v not(Z))
+
+  #| These functions used to be simple, for example:
+  (define (F x y z)
+  (word-or (word-and x y) (word-and (word-not x) z)))
+  but we don't want to allocate stuff for each operation, so we add an output
+  pair for each of these functions (the `t' argument).  However, this means
+  that if we want to avoid consing, we need either a few such pre-allocated
+  `register' values...  The solution is to use a macro that will perform an
+  operation on the cars, cdrs, and set the result into the target pair.  Works
+  only because these operations are symmetrical in their use of the two
+  halves.
+  |#
+
+  (define-syntax cons-op!
+    (syntax-rules ()
+      [(cons-op! t (x ...) body)
+       (cons! t (let ([x (unsafe-mcar x)] ...) body) (let ([x (unsafe-mcdr x)] ...) body))]))
+
+  (define-syntax define-inline
+    (syntax-rules ()
+      [(_ (f arg ...) body)
+       (define-inline (f arg ...) () body)]
+      [(_ (f arg0 arg ...) (tmp ...) body)
+       (define-inline (f arg ...) (tmp ... [arg0 tmp0]) body)]
+      [(_ (f) ([arg tmp] ...) body)
+       (define-syntax-rule (f tmp ...)
+         (let ([arg tmp] ...) body))]))
+
+  (define-inline (F t x y z)
+    (cons-op! t (x y z)
+              (unsafe-fxand (unsafe-fxior (unsafe-fxand x y)
+                                          (unsafe-fxand (unsafe-fxnot x) z))
+                            65535)))
+
+  (define-inline (G t x y z)
+    (cons-op! t (x y z)
+              (unsafe-fxand (unsafe-fxior (unsafe-fxand x z)
+                                          (unsafe-fxand y (unsafe-fxnot z)))
+                            65535)))
+
+  (define-inline (H t x y z)
+    (cons-op! t (x y z) (unsafe-fxxor x (unsafe-fxxor y z))))
+
+  (define-inline (II t x y z)
+    (cons-op! t (x y z)
+              (unsafe-fxand (unsafe-fxxor y (unsafe-fxior x (unsafe-fxnot z)))
+                            65535)))
+
+  ;; a := b
+  (define-inline (word=! a b)
+    (cons! a (unsafe-mcar b) (unsafe-mcdr b)))
+
+  ;; a := a + b
+  (define-inline (word+=*! a b-hi b-lo)
+    (let ([t1 (unsafe-fx+ (unsafe-mcar a) b-hi)]
+          [t2 (unsafe-fx+ (unsafe-mcdr a) b-lo)])
+      (cons! a
+             (unsafe-fxand (unsafe-fx+ t1 (unsafe-fxrshift t2 16)) 65535)
+             (unsafe-fxand t2 65535))))
+  (define-inline (word+=! a b)
+    (word+=*! a (unsafe-mcar b) (unsafe-mcdr b)))
+
+  ;; a := a <<< s
+  (define-inline (word<<<! a s)
+    (let ()
+      (define-syntax-rule (shift hi lo s)
+        (cons!
+         a
+         (unsafe-fxior
+          (unsafe-fxlshift (unsafe-fxand hi (unsafe-vector*-ref shift-masks (unsafe-fx- 16 s))) s)
+          (unsafe-fxand (unsafe-fxrshift lo (unsafe-fx- 16 s))
+                        (unsafe-vector*-ref shift-masks s)))
+         (unsafe-fxior
+          (unsafe-fxlshift (unsafe-fxand lo (unsafe-vector*-ref shift-masks (unsafe-fx- 16 s))) s)
+          (unsafe-fxand (unsafe-fxrshift hi (unsafe-fx- 16 s))
+                        (unsafe-vector*-ref shift-masks s)))))
+      (cond
+       [(< s 16)
+        (let ([hi (unsafe-mcar a)]
+              [lo (unsafe-mcdr a)])
+          (shift hi lo s))]
+       [else
+        (let ([hi (unsafe-mcdr a)]
+              [lo (unsafe-mcar a)]
+              [s (unsafe-fx- s 16)])
+          (shift hi lo s))])))
+
+
+  (define buffer (make-bytes 512/8))
   ;; X is always a vector of 16 words (it changes in read-block!)
   (define X
     (vector
@@ -277,9 +346,11 @@
   (define tmp (mcons 0 0))
   (let loop ([a-port a-port] [done 0])
     (if (not a-port)
-      (list A B C D)
-      (let-values ([(b-port done) (read-block! a-port done X)])
-        (define-syntax step
+      (let ()
+        (define (decode p) (+ (mcdr p) (arithmetic-shift (mcar p) 16)))
+        (list (decode A) (decode B) (decode C) (decode D)))
+      (let-values ([(b-port done) (read-block! buffer bytes->word-vector! a-port done X)])
+        (define-syntax step!
           (syntax-rules ()
             [(_ a b c d e f g h)
              #| This is the `no GC version' (aka C-in-Scheme) of this:
@@ -290,8 +361,8 @@
              |#
              (begin (e tmp b c d)
                     (word+=! a tmp)
-                    (word+=! a (vector-ref X f))
-                    (word+=! a (word h))
+                    (word+=! a (unsafe-vector*-ref X f))
+                    (word+=*! a (quotient h 65536) (remainder h 65536))
                     (word<<<! a g)
                     (word+=! a b))]))
         ;;---
@@ -300,121 +371,232 @@
         ;; the last column is generated with
         ;;  (lambda (i) (inexact->exact (floor (* 4294967296 (abs (sin i))))))
         ;; for i from 1 to 64
-        (step A B C D F   0  7 3614090360)
-        (step D A B C F   1 12 3905402710)
-        (step C D A B F   2 17  606105819)
-        (step B C D A F   3 22 3250441966)
-        (step A B C D F   4  7 4118548399)
-        (step D A B C F   5 12 1200080426)
-        (step C D A B F   6 17 2821735955)
-        (step B C D A F   7 22 4249261313)
-        (step A B C D F   8  7 1770035416)
-        (step D A B C F   9 12 2336552879)
-        (step C D A B F  10 17 4294925233)
-        (step B C D A F  11 22 2304563134)
-        (step A B C D F  12  7 1804603682)
-        (step D A B C F  13 12 4254626195)
-        (step C D A B F  14 17 2792965006)
-        (step B C D A F  15 22 1236535329)
+        (step! A B C D F   0  7 3614090360)
+        (step! D A B C F   1 12 3905402710)
+        (step! C D A B F   2 17  606105819)
+        (step! B C D A F   3 22 3250441966)
+        (step! A B C D F   4  7 4118548399)
+        (step! D A B C F   5 12 1200080426)
+        (step! C D A B F   6 17 2821735955)
+        (step! B C D A F   7 22 4249261313)
+        (step! A B C D F   8  7 1770035416)
+        (step! D A B C F   9 12 2336552879)
+        (step! C D A B F  10 17 4294925233)
+        (step! B C D A F  11 22 2304563134)
+        (step! A B C D F  12  7 1804603682)
+        (step! D A B C F  13 12 4254626195)
+        (step! C D A B F  14 17 2792965006)
+        (step! B C D A F  15 22 1236535329)
         ;;---
-        (step A B C D G   1  5 4129170786)
-        (step D A B C G   6  9 3225465664)
-        (step C D A B G  11 14  643717713)
-        (step B C D A G   0 20 3921069994)
-        (step A B C D G   5  5 3593408605)
-        (step D A B C G  10  9   38016083)
-        (step C D A B G  15 14 3634488961)
-        (step B C D A G   4 20 3889429448)
-        (step A B C D G   9  5  568446438)
-        (step D A B C G  14  9 3275163606)
-        (step C D A B G   3 14 4107603335)
-        (step B C D A G   8 20 1163531501)
-        (step A B C D G  13  5 2850285829)
-        (step D A B C G   2  9 4243563512)
-        (step C D A B G   7 14 1735328473)
-        (step B C D A G  12 20 2368359562)
+        (step! A B C D G   1  5 4129170786)
+        (step! D A B C G   6  9 3225465664)
+        (step! C D A B G  11 14  643717713)
+        (step! B C D A G   0 20 3921069994)
+        (step! A B C D G   5  5 3593408605)
+        (step! D A B C G  10  9   38016083)
+        (step! C D A B G  15 14 3634488961)
+        (step! B C D A G   4 20 3889429448)
+        (step! A B C D G   9  5  568446438)
+        (step! D A B C G  14  9 3275163606)
+        (step! C D A B G   3 14 4107603335)
+        (step! B C D A G   8 20 1163531501)
+        (step! A B C D G  13  5 2850285829)
+        (step! D A B C G   2  9 4243563512)
+        (step! C D A B G   7 14 1735328473)
+        (step! B C D A G  12 20 2368359562)
         ;;---
-        (step A B C D H   5  4 4294588738)
-        (step D A B C H   8 11 2272392833)
-        (step C D A B H  11 16 1839030562)
-        (step B C D A H  14 23 4259657740)
-        (step A B C D H   1  4 2763975236)
-        (step D A B C H   4 11 1272893353)
-        (step C D A B H   7 16 4139469664)
-        (step B C D A H  10 23 3200236656)
-        (step A B C D H  13  4  681279174)
-        (step D A B C H   0 11 3936430074)
-        (step C D A B H   3 16 3572445317)
-        (step B C D A H   6 23   76029189)
-        (step A B C D H   9  4 3654602809)
-        (step D A B C H  12 11 3873151461)
-        (step C D A B H  15 16  530742520)
-        (step B C D A H   2 23 3299628645)
+        (step! A B C D H   5  4 4294588738)
+        (step! D A B C H   8 11 2272392833)
+        (step! C D A B H  11 16 1839030562)
+        (step! B C D A H  14 23 4259657740)
+        (step! A B C D H   1  4 2763975236)
+        (step! D A B C H   4 11 1272893353)
+        (step! C D A B H   7 16 4139469664)
+        (step! B C D A H  10 23 3200236656)
+        (step! A B C D H  13  4  681279174)
+        (step! D A B C H   0 11 3936430074)
+        (step! C D A B H   3 16 3572445317)
+        (step! B C D A H   6 23   76029189)
+        (step! A B C D H   9  4 3654602809)
+        (step! D A B C H  12 11 3873151461)
+        (step! C D A B H  15 16  530742520)
+        (step! B C D A H   2 23 3299628645)
         ;;---
-        (step A B C D II  0  6 4096336452)
-        (step D A B C II  7 10 1126891415)
-        (step C D A B II 14 15 2878612391)
-        (step B C D A II  5 21 4237533241)
-        (step A B C D II 12  6 1700485571)
-        (step D A B C II  3 10 2399980690)
-        (step C D A B II 10 15 4293915773)
-        (step B C D A II  1 21 2240044497)
-        (step A B C D II  8  6 1873313359)
-        (step D A B C II 15 10 4264355552)
-        (step C D A B II  6 15 2734768916)
-        (step B C D A II 13 21 1309151649)
-        (step A B C D II  4  6 4149444226)
-        (step D A B C II 11 10 3174756917)
-        (step C D A B II  2 15  718787259)
-        (step B C D A II  9 21 3951481745)
+        (step! A B C D II  0  6 4096336452)
+        (step! D A B C II  7 10 1126891415)
+        (step! C D A B II 14 15 2878612391)
+        (step! B C D A II  5 21 4237533241)
+        (step! A B C D II 12  6 1700485571)
+        (step! D A B C II  3 10 2399980690)
+        (step! C D A B II 10 15 4293915773)
+        (step! B C D A II  1 21 2240044497)
+        (step! A B C D II  8  6 1873313359)
+        (step! D A B C II 15 10 4264355552)
+        (step! C D A B II  6 15 2734768916)
+        (step! B C D A II 13 21 1309151649)
+        (step! A B C D II  4  6 4149444226)
+        (step! D A B C II 11 10 3174756917)
+        (step! C D A B II  2 15  718787259)
+        (step! B C D A II  9 21 3951481745)
         ;;---
         (word+=! A AA) (word+=! B BB) (word+=! C CC) (word+=! D DD)
         ;;---
         (loop b-port done)))))
 
-;; Each round consists of the application of the following basic functions.
-;; They functions on a word bitwise, as follows.
-;;          F(X,Y,Z) = XY v not(X) Z  (NB: or can be replaced with + in F)
-;;          G(X,Y,Z) = XZ v Y not(Z)
-;;          H(X,Y,Z) = X xor Y xor Z
-;;          I(X,Y,Z) = Y xor (X v not(Z))
+;; ----------------------------------------
+;; An alternate version of step4 that is valid for 64-bit platformss
 
-#| These functions used to be simple, for example:
-     (define (F x y z)
-       (word-or (word-and x y) (word-and (word-not x) z)))
-   but we don't want to allocate stuff for each operation, so we add an output
-   pair for each of these functions (the `t' argument).  However, this means
-   that if we want to avoid consing, we need either a few such pre-allocated
-   `register' values...  The solution is to use a macro that will perform an
-   operation on the cars, cdrs, and set the result into the target pair.  Works
-   only because these operations are symmetrical in their use of the two
-   halves.
-|#
+(define (bytes->word-vector!/64 result l-raw)
+  ;; assumption: always getting a byte-string with 64 places
+  ;; (unless (eq? 64 (bytes-length l-raw))
+  ;;   (error 'bytes->word-vector! "something bad happened"))
+  (for ([n (in-range 16)])
+    (let ([m (unsafe-fxlshift n 2)])
+      (unsafe-vector*-set! result
+                           n
+                           (unsafe-fx+ 
+                            (unsafe-bytes-ref l-raw m)
+                            (unsafe-fx+
+                             (unsafe-fxlshift (unsafe-bytes-ref l-raw (unsafe-fx+ 2 m)) 16)
+                             (unsafe-fx+
+                              (unsafe-fxlshift (unsafe-bytes-ref l-raw (unsafe-fx+ 1 m)) 8)
+                              (unsafe-fxlshift (unsafe-bytes-ref l-raw (unsafe-fx+ 3 m)) 24))))))))
 
-(define-syntax cons-op!
-  (syntax-rules ()
-    [(cons-op! t (x ...) body)
-     (cons! t (let ([x (mcar x)] ...) body) (let ([x (mcdr x)] ...) body))]))
 
-(define (F t x y z)
-  (cons-op! t (x y z)
-    (bitwise-and (bitwise-ior (bitwise-and x y)
-                              (bitwise-and (bitwise-not x) z))
-                 65535)))
-
-(define (G t x y z)
-  (cons-op! t (x y z)
-    (bitwise-and (bitwise-ior (bitwise-and x z)
-                              (bitwise-and y (bitwise-not z)))
-                 65535)))
-
-(define (H t x y z)
-  (cons-op! t (x y z) (bitwise-xor x y z)))
-
-(define (II t x y z)
-  (cons-op! t (x y z)
-    (bitwise-and (bitwise-xor y (bitwise-ior x (bitwise-not z)))
-                 65535)))
+(define (step4/64 a-port)
+  (define buffer (make-bytes 512/8))
+  (define X
+    (vector 0 0 0 0 0 0
+            0 0 0 0 0 0
+            0 0 0 0))
+  (define A #x67452301)
+  (define B #xefcdab89)
+  (define C #x98badcfe)
+  (define D #x10325476)
+  (define AA 0)
+  (define BB 0)
+  (define CC 0)
+  (define DD 0)
+  (define tmp 0)
+  (define-syntax-rule (xword+ a b)
+    (unsafe-fxand (unsafe-fx+ a b) 4294967295))
+  (define-syntax-rule (xword<<< a r)
+    (let ([m (unsafe-fxlshift a r)])
+      (unsafe-fxior (unsafe-fxand m 4294967295)
+                    (unsafe-fxrshift m 32))))
+  (define-syntax-rule (F _x y z)
+    (let ([x _x])
+      (unsafe-fxand (unsafe-fxior (unsafe-fxand x y)
+                                  (unsafe-fxand (unsafe-fxnot x) z))
+                    4294967295)))
+  (define-syntax-rule (G x y _z)
+    (let ([z _z])
+      (unsafe-fxand (unsafe-fxior (unsafe-fxand x z)
+                                  (unsafe-fxand y (unsafe-fxnot z)))
+                    4294967295)))
+  (define-syntax-rule (H x y z)
+    (unsafe-fxxor x (unsafe-fxxor y z)))
+  (define-syntax-rule (II x y z)
+    (unsafe-fxand (unsafe-fxxor y (unsafe-fxior x (unsafe-fxnot z)))
+                  4294967295))
+  (let loop ([a-port a-port] [done 0] [A A] [B B] [C C] [D D])
+    (if (not a-port)
+      (list A B C D)
+      (let-values ([(b-port done) (read-block! buffer bytes->word-vector!/64 a-port done X)])
+        (define-syntax step
+          (syntax-rules ()
+            [(_ a b c d e f g h)
+             (xword+ b (xword<<< (xword+ (xword+ a (e b c d))
+                                         (xword+ (unsafe-vector*-ref X f)
+                                                 h))
+                                 g))]))
+        (define-syntax sequence
+          (syntax-rules (set! step!)
+            [(_ (set! id rhs) . more)
+             (let ([id rhs]) (sequence . more))]
+            [(_ (step! id . others) . more)
+             (let ([id (step id . others)]) (sequence . more))]
+            [(_ e) e]))
+        ;; The `sequence` form converts `set!` and `step!` to functional
+        ;; nested binding:
+        (sequence
+          ;;---
+          (set! AA A) (set! BB B) (set! CC C) (set! DD D)
+          ;;---
+          ;; the last column is generated with
+          ;;  (lambda (i) (inexact->exact (floor (* 4294967296 (abs (sin i))))))
+          ;; for i from 1 to 64
+          (step! A B C D F   0  7 3614090360)
+          (step! D A B C F   1 12 3905402710)
+          (step! C D A B F   2 17  606105819)
+          (step! B C D A F   3 22 3250441966)
+          (step! A B C D F   4  7 4118548399)
+          (step! D A B C F   5 12 1200080426)
+          (step! C D A B F   6 17 2821735955)
+          (step! B C D A F   7 22 4249261313)
+          (step! A B C D F   8  7 1770035416)
+          (step! D A B C F   9 12 2336552879)
+          (step! C D A B F  10 17 4294925233)
+          (step! B C D A F  11 22 2304563134)
+          (step! A B C D F  12  7 1804603682)
+          (step! D A B C F  13 12 4254626195)
+          (step! C D A B F  14 17 2792965006)
+          (step! B C D A F  15 22 1236535329)
+          ;;---
+          (step! A B C D G   1  5 4129170786)
+          (step! D A B C G   6  9 3225465664)
+          (step! C D A B G  11 14  643717713)
+          (step! B C D A G   0 20 3921069994)
+          (step! A B C D G   5  5 3593408605)
+          (step! D A B C G  10  9   38016083)
+          (step! C D A B G  15 14 3634488961)
+          (step! B C D A G   4 20 3889429448)
+          (step! A B C D G   9  5  568446438)
+          (step! D A B C G  14  9 3275163606)
+          (step! C D A B G   3 14 4107603335)
+          (step! B C D A G   8 20 1163531501)
+          (step! A B C D G  13  5 2850285829)
+          (step! D A B C G   2  9 4243563512)
+          (step! C D A B G   7 14 1735328473)
+          (step! B C D A G  12 20 2368359562)
+          ;;---
+          (step! A B C D H   5  4 4294588738)
+          (step! D A B C H   8 11 2272392833)
+          (step! C D A B H  11 16 1839030562)
+          (step! B C D A H  14 23 4259657740)
+          (step! A B C D H   1  4 2763975236)
+          (step! D A B C H   4 11 1272893353)
+          (step! C D A B H   7 16 4139469664)
+          (step! B C D A H  10 23 3200236656)
+          (step! A B C D H  13  4  681279174)
+          (step! D A B C H   0 11 3936430074)
+          (step! C D A B H   3 16 3572445317)
+          (step! B C D A H   6 23   76029189)
+          (step! A B C D H   9  4 3654602809)
+          (step! D A B C H  12 11 3873151461)
+          (step! C D A B H  15 16  530742520)
+          (step! B C D A H   2 23 3299628645)
+          ;;---
+          (step! A B C D II  0  6 4096336452)
+          (step! D A B C II  7 10 1126891415)
+          (step! C D A B II 14 15 2878612391)
+          (step! B C D A II  5 21 4237533241)
+          (step! A B C D II 12  6 1700485571)
+          (step! D A B C II  3 10 2399980690)
+          (step! C D A B II 10 15 4293915773)
+          (step! B C D A II  1 21 2240044497)
+          (step! A B C D II  8  6 1873313359)
+          (step! D A B C II 15 10 4264355552)
+          (step! C D A B II  6 15 2734768916)
+          (step! B C D A II 13 21 1309151649)
+          (step! A B C D II  4  6 4149444226)
+          (step! D A B C II 11 10 3174756917)
+          (step! C D A B II  2 15  718787259)
+          (step! B C D A II  9 21 3951481745)
+          ;;---
+          (set! A (xword+ A AA)) (set! B (xword+ B BB)) (set! C (xword+ C CC)) (set! D (xword+ D DD))
+          ;;---
+          (loop b-port done A B C D))))))
 
 ;; Step 5  -  Encoding
 ;; To finish up, we convert the word to hexadecimal string - and make sure they
@@ -428,11 +610,11 @@
   (let ([digit (lambda (n b)
                  (vector-ref hex-digits
                              (bitwise-and (arithmetic-shift n (- b)) 15)))]
-        [lo (mcdr w)] [hi (mcar w)])
+        [lo (bitwise-and w 65535)] [hi (arithmetic-shift w -16)])
     (bytes (digit lo 4) (digit lo 0) (digit lo 12) (digit lo 8)
            (digit hi 4) (digit hi 0) (digit hi 12) (digit hi 8))))
 (define (word->bytes w)
-  (bytes-append (integer->integer-bytes (mcdr w) 2 #f #f)
-                (integer->integer-bytes (mcar w) 2 #f #f)))
+  (bytes-append (integer->integer-bytes (bitwise-and w 65535) 2 #f #f)
+                (integer->integer-bytes (arithmetic-shift w -16) 2 #f #f)))
 (define (encode l hex-encode?)
   (apply bytes-append (map (if hex-encode? word->digits word->bytes) l)))
