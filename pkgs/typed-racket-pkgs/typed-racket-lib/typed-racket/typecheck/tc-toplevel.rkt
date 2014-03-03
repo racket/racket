@@ -127,14 +127,8 @@
               (free-id-table-remove! unann-defs var))
             (finish-register-type var top-level?))
           (stx-map make-def-binding #'(v ...) (attribute v.type))]
-         ;; special case to infer types for top level defines
-         [_
-          (match (get-type/infer vars #'expr tc-expr tc-expr/check)
-            [(tc-results: ts)
-             (for/list ([i (in-list vars)] [t (in-list ts)])
-               (register-type i t)
-               (free-id-table-set! unann-defs i #t)
-               (make-def-binding i t))])])]
+         ;; defer to pass1.5
+         [_ (list)])]
 
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
@@ -148,9 +142,45 @@
       ;; handles expressions, provides, requires, etc and whatnot
       [_ (list)])))
 
+;; tc-toplevel/pass1.5 : syntax? -> (listof def-binding?)
+;; Handles `define-values` that still need types synthesized. Runs after
+;; pass1 but before pass2.
+;;
+;; Note: this pass does an extra traversal of the toplevel forms which
+;;       could be optimized by constructing a worklist in pass1 and only
+;;       looking at forms in that list. (if performance becomes an
+;;       issue with this pass we can do that)
+(define (tc-toplevel/pass1.5 form)
+  (parameterize ([current-orig-stx form])
+    (syntax-parse form
+      #:literals (define-values begin)
+      [(~or _:ignore^ _:ignore-some^) (list)]
 
+      [(define-values (var ...) expr)
+       (define vars (syntax->list #'(var ...)))
+       (syntax-parse vars
+         ;; Do nothing for annotated/typed things
+         [(v:type-label^ ...) (list)]
+         [(v:typed-id^ ...) (list)]
+         ;; Special case to infer types for top level defines
+         ;;
+         ;; Checking these will never return errors due to missing
+         ;; types for annotated variables due to pass1. Checking may
+         ;; error due to un-annotated variables that come later in
+         ;; the module (hence we haven't synthesized a type for yet).
+         [_
+          (match (get-type/infer vars #'expr tc-expr tc-expr/check)
+            [(tc-results: ts)
+             (for/list ([i (in-list vars)] [t (in-list ts)])
+               (register-type i t)
+               (free-id-table-set! unann-defs i #t)
+               (make-def-binding i t))])])]
 
+      ;; for the top-level, as for pass1
+      [(begin . rest)
+       (apply append (stx-map tc-toplevel/pass1.5 #'rest))]
 
+      [_ (list)])))
 
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
@@ -263,10 +293,12 @@
   ;(printf "after resolving type aliases~n")
   ;(displayln "Starting pass1")
   ;; do pass 1, and collect the defintions
-  (define defs (apply append
-                      (append
-                       struct-bindings
-                       (map tc-toplevel/pass1 forms))))
+  (define *defs (apply append
+                       (append
+                        struct-bindings
+                        (map tc-toplevel/pass1 forms))))
+  ;; do pass 1.5 to finish up the definitions
+  (define defs (append *defs (apply append (map tc-toplevel/pass1.5 forms))))
   ;(displayln "Finished pass1")
   ;; separate the definitions into structures we'll handle for provides
   (define def-tbl
@@ -385,6 +417,7 @@
        (refine-struct-variance! (list parsed))
        (register-parsed-struct-bindings! parsed))
      (tc-toplevel/pass1 form)
+     (tc-toplevel/pass1.5 form)
      (begin0 (tc-toplevel/pass2 form)
              (report-all-errors))]))
 
