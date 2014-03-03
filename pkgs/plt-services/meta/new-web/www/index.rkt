@@ -155,11 +155,12 @@
            (for ([i (in-range 25)])
              (displayln
               (integer->char
-               (+ i (char->integer #\u3B1)))))}
-     @desc{The only reason we use the encoded form of a character
-       @elemcode{#\u3B1} instead of the more direct form @elemcode{#\α} is that
-       we don't trust your browser to render it correctly.  DrRacket is
-       perfectly happy with @elemcode{#\α}.}) ;; FIXME -- what browsers does this not work on?
+               (+ i (char->integer #\α)))))}
+     @desc{You can also spell @elemcode{#\α} as
+       @elemcode{#\u3B1} to stay within ASCII.
+       Fortunately, Racket and DrRacket are both
+       perfectly happy to use Unicode characters, and DrRacket comes
+       with shortcuts for inserting them.})
     (graphical-example #:title "Functional Animations"; ---------------------------------------------
      @code{#lang htdp/bsl ; Any key inflates the balloon
            (require 2htdp/image) (require 2htdp/universe)
