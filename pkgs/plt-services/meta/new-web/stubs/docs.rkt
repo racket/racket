@@ -27,7 +27,7 @@
  (plain #:site docs-site
         #:file "doc-site.css"
         @list{
-              @"@"import url("@(site-css-path docs-site)")
+              @"@"import url("@(site-css-path docs-site)");
               .navsettop, .tocset { top: 60px; }
               .versionbox { top: 64px; }
               }))
