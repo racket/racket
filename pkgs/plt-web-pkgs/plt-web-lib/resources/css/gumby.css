@@ -147,7 +147,7 @@ abbr, acronym { text-transform: uppercase; font-size: 90%; color: #222; border-b
 
 abbr { text-transform: none; }
 
-pre, code { color: black; font-family: 'Inconsolata'; }
+pre, code { color: black; font-family: 'Inconsolata', monospace; }
 
 /** Print styles.  Inlined to avoid required HTTP connection: www.phpied.com/delay-loading-your-print-css/ Credit to Paul Irish and HTML5 Boilerplate (html5boilerplate.com) */
 @media print { * { background: transparent !important; color: black !important; text-shadow: none !important; filter: none !important; -ms-filter: none !important; }
