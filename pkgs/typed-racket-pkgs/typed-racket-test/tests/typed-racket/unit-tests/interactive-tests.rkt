@@ -103,6 +103,10 @@
     ;; PR 14380
     (test-form-not-exn (begin - (void)))
 
+    ;; test message for undefined id
+    (test-form-exn #rx"either undefined or missing a type annotation"
+      (a-name-that-isnt-bound))
+
     (test-form #rx"1"
       (:type 1))
     (test-form (regexp-quote "(U Positive-Byte Zero)")

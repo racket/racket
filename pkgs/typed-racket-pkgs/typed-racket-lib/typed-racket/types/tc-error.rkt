@@ -39,7 +39,9 @@
     ['lexical (tc-error/expr/fields "missing type for identifier"
                                     #:more "consider adding a type annotation with `:'"
                                     "identifier" (syntax-e e))]
-    [#f (tc-error/expr "untyped top-level identifier ~a" (syntax-e e))]
+    [#f (tc-error/expr/fields "missing type for top-level identifier"
+                              #:more "either undefined or missing a type annotation"
+                              "identifier" (syntax-e e))]
     [(list _ _ nominal-source-mod nominal-source-id _ _ _)
      (define-values (mod-path base-path)
        (module-path-index-split nominal-source-mod))
