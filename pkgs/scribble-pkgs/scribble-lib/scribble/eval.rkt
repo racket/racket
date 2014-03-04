@@ -337,30 +337,29 @@
     [(eq? stx 'code:blank) (void)]
     [else stx]))
 
-(define (install-pretty-printer! e ns)
-  (call-in-sandbox-context e
-    (lambda ()
-      (namespace-attach-module ns 'racket/pretty)
-      (current-print (dynamic-require 'racket/pretty 'pretty-print-handler)))))
-
 (define (make-base-eval #:lang [lang '(begin)] #:pretty-print? [pretty-print? #t] . ips)
   (call-with-trusted-sandbox-configuration
    (lambda ()
      (parameterize ([sandbox-output 'string]
                     [sandbox-error-output 'string]
-                    [sandbox-propagate-breaks #f])
+                    [sandbox-propagate-breaks #f]
+                    [sandbox-namespace-specs
+                     (append (sandbox-namespace-specs)
+                             (if pretty-print?
+                                 '(racket/pretty file/convertible)
+                                 '(file/convertible)))])
        (let ([e (apply make-evaluator lang ips)])
-         (let ([ns (namespace-anchor->namespace anchor)])
-           (call-in-sandbox-context
-            e
-            (lambda () (namespace-attach-module ns 'file/convertible)))
-           (when pretty-print? (install-pretty-printer! e ns)))
+         (when pretty-print?
+           (call-in-sandbox-context e
+             (lambda ()
+               (current-print (dynamic-require 'racket/pretty 'pretty-print-handler)))))
          e)))))
 
 (define (make-base-eval-factory mod-paths
                                 #:lang [lang '(begin)]
                                 #:pretty-print? [pretty-print? #t] . ips)
-  (let ([ns (delay (let ([ns 
+  (parameterize ([sandbox-namespace-specs
+                  (cons (λ () (let ([ns
                           ;; This namespace-creation choice needs to be consistent
                           ;; with the sandbox (i.e., with `make-base-eval')
                           (if gui?
@@ -370,16 +369,14 @@
                        (for ([mod-path (in-list mod-paths)])
                          (dynamic-require mod-path #f))
                        (when pretty-print? (dynamic-require 'racket/pretty #f)))
-                     ns))])
+                                ns))
+                        (append mod-paths (if pretty-print? '(racket/pretty) '())))])
     (lambda ()
-      (let ([ev (apply make-base-eval #:lang lang #:pretty-print? #f ips)]
-            [ns (force ns)])
-        (when pretty-print? (install-pretty-printer! ev ns))
-        (call-in-sandbox-context
-         ev
-         (lambda ()
-           (for ([mod-path (in-list mod-paths)])
-             (namespace-attach-module ns mod-path))))
+      (let ([ev (apply make-base-eval #:lang lang #:pretty-print? #f ips)])
+        (when pretty-print?
+          (call-in-sandbox-context ev
+            (lambda ()
+              (current-print (dynamic-require 'racket/pretty 'pretty-print-handler)))))
         ev))))
 
 (define (make-eval-factory mod-paths
