@@ -442,9 +442,10 @@
              (: x Symbol)
              (define x "foo"))
            #:msg #rx"expected: Symbol.*given: String"]
-   ;; fails, private field needs type annotation
-   [tc-err (class object% (super-new) (define x "foo"))
-           #:msg #rx"expected: Nothing"]
+   ;; ok, synthesis works on private fields
+   [tc-e (class object% (super-new)
+           (define x "foo") (string-append x "bar"))
+         (-class)]
    ;; test private method
    [tc-e (let ()
            (class object% (super-new)

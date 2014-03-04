@@ -19,7 +19,7 @@
          (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
          (env lexical-env tvar-env)
-         (types utils abbrev union subtype resolve)
+         (types utils abbrev union subtype resolve generalize)
          (typecheck check-below internal-forms)
          (utils tc-utils)
          (rep type-rep)
@@ -399,15 +399,21 @@
                   local-super-table
                   local-augment-table local-inner-table)
     (construct-local-mapping-tables (car locals)))
+
   ;; types for private elements
   (define private-method-types
     (for/hash ([(name type) (in-dict annotation-table)]
                #:when (set-member? (hash-ref parse-info 'private-names) name))
       (values name type)))
-  (define private-field-types
-    (for/hash ([(name type) (in-dict annotation-table)]
-               #:when (set-member? (hash-ref parse-info 'private-fields) name))
-      (values name (list type))))
+  (define private-field-types (make-hash))
+  (for ([(name type) (in-dict annotation-table)]
+        #:when (set-member? (hash-ref parse-info 'private-fields) name))
+    (hash-set! private-field-types name (list type)))
+
+  (synthesize-private-field-types top-level-exprs
+                                  local-private-field-table
+                                  private-field-types)
+
   ;; start type-checking elements in the body
   (define-values (lexical-names lexical-types
                   lexical-names/top-level lexical-types/top-level)
@@ -891,6 +897,31 @@
        #:when (free-identifier=? #'obj1 #'obj2)
        (tc-expr form)]
       [_ (void)])))
+
+;; synthesize-private-field-types : (Listof Syntax) Dict Hash -> Void
+;; Given top-level expressions in the class, synthesize types from
+;; the initialization expressions for private fields.
+(define (synthesize-private-field-types exprs locals types)
+  (for ([(name getter+setter) (in-dict locals)]
+        #:unless (hash-has-key? types name))
+    (match-define (list _ setter) getter+setter)
+    ;; only the first setter expression is the initialization for
+    ;; the field, the rest are set!s in the user code
+    (for/or ([expr exprs])
+      (syntax-parse expr
+        #:literal-sets (kernel-literals)
+        [(let-values ([(obj) self])
+           (let-values ([(field) initial-value])
+             (#%plain-app setter* _ _)))
+         #:when (free-identifier=? setter #'setter*)
+         (define type (tc-expr/t #'initial-value))
+         ;; FIXME: this always generalizes the private field
+         ;;        type, but it's better to only generalize if
+         ;;        the field is actually mutated.
+         (hash-set! types name (list (generalize type)))
+         ;; done once we find the first one
+         #t]
+        [_ #f]))))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, Id>
 ;;           Dict<Symbol, (List Symbol Symbol)> Dict<Symbol, Id>
