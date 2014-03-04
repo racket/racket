@@ -117,43 +117,21 @@
         [_ (void)]))
 
     ;; First look at the clauses that do not bind the letrec names
-    (define-values (remaining-names remaining-exprs remaining-clauses
-                    env-names env-types)
-      (let loop ([remaining-names '()]
-                 [remaining-exprs '()]
-                 [remaining-clauses '()]
-                 [env-names '()]
-                 [env-types '()]
-                 [names names] [exprs exprs] [clauses clauses]
-                 [flat-names orig-flat-names])
-        (cond
-          [(null? names)
-           (values remaining-names remaining-exprs remaining-clauses
-                   env-names env-types)]
-          ;; if none of the names bound in the letrec are free vars of this rhs
-          [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
-                       (free-vars (car exprs))))
-           ;; then check this expression separately
-           (define cur-names (car names))
-           (define types
-             (match (get-type/infer cur-names (car exprs)
-                                    (lambda (e) (tc-expr/maybe-expected/t e (car names)))
-                                    tc-expr/check)
-               [(tc-results: ts) ts]))
-           (with-lexical-env/extend cur-names types
-            (loop remaining-names remaining-exprs remaining-clauses
-                  (cons cur-names env-names)
-                  (cons types env-types)
-                  (cdr names) (cdr exprs) (cdr clauses)
-                  (remove* cur-names flat-names bound-identifier=?)))]
-          ;; otherwise, we need to process these in the next pass
-          [else
-           (loop (cons (car names) remaining-names)
-                 (cons (car exprs) remaining-exprs)
-                 (cons (car clauses) remaining-clauses)
-                 env-names env-types
-                 (cdr names) (cdr exprs) (cdr clauses)
-                 flat-names)])))
+    (define all-clauses
+      (for/list ([name-lst names] [expr exprs] [clause clauses])
+        (lr-clause name-lst expr clause)))
+
+    (define-values (ordered-clauses remaining)
+      (get-non-recursive-clauses all-clauses orig-flat-names))
+
+    (define-values (remaining-names remaining-exprs remaining-clauses)
+      (for/lists (_1 _2 _3) ([remaining-clause remaining])
+        (match-define (lr-clause name expr clause) remaining-clause)
+        (values name expr clause)))
+
+    ;; Check those and gather an environment for use below
+    (define-values (env-names env-types)
+      (check-non-recursive-clauses ordered-clauses))
 
     (with-lexical-env/extend env-names env-types
       (cond
@@ -190,6 +168,55 @@
                    ;; types the user gave. check against that to error if we could get undefined
                    (map (λ (l) (ret (map get-type l))) remaining-names)
                    form remaining-exprs body remaining-clauses expected)]))))
+
+;; An lr-clause is a
+;;   (lr-clause (Listof Identifier) Syntax Syntax)
+;;
+;; interp. represents a letrec binding
+(struct lr-clause (names expr clause) #:transparent)
+
+;; get-non-recursive-clauses : (Listof lr-clause) (Listof Identifier) ->
+;;                             (Listof lr-clause) (Listof )
+;; Find an approximation of letrec clauses that do not create variable cycles
+;;
+;; Note: this is currently approximate, but using Tarjan's algorithm would yield
+;;       an optimal ordering for checking these clauses.
+(define (get-non-recursive-clauses clauses flat-names)
+  (define-values (non-recursive remaining _ignore)
+    (for/fold ([non-recursive '()]
+               [remaining '()]
+               [flat-names flat-names])
+              ([clause clauses])
+      (match-define (lr-clause names expr _) clause)
+      (cond [(not (ormap (lambda (n) (member n flat-names bound-identifier=?))
+                         (free-vars expr)))
+             (values (cons clause non-recursive)
+                     remaining
+                     (remove* names flat-names bound-identifier=?))]
+            [else
+             (values non-recursive
+                     (cons clause remaining)
+                     flat-names)])))
+  (values (reverse non-recursive) remaining))
+
+;; check-non-recursive-clauses : (Listof lr-clause) ->
+;;                               (Listof Identifier) (Listof Type)
+;; Given a list of non-recursive clauses, check the clauses in order and
+;; build up a type environment for use in the second pass.
+(define (check-non-recursive-clauses clauses)
+  (let loop ([clauses clauses] [env-ids '()] [env-types '()])
+    (cond [(null? clauses) (values env-ids env-types)]
+          [else
+           (match-define (lr-clause names expr _) (car clauses))
+           (define results
+             (get-type/infer names expr
+                             (lambda (e) (tc-expr/maybe-expected/t e names))
+                             tc-expr/check))
+           (match-define (tc-results: types) results)
+           (with-lexical-env/extend names types
+             (loop (cdr clauses)
+                   (cons names env-ids)
+                   (cons types env-types)))])))
 
 ;; determines whether any of the variables bound in the given clause can have an undefined value
 ;; in this case, we cannot trust the type the user gave us and must union it with undefined
