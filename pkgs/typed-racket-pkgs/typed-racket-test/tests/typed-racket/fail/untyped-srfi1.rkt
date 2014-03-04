@@ -1,5 +1,5 @@
 #;
-(exn-pred ".*untyped identifier map.*" ".*srfi.*")
+(exn-pred ".*identifier: map.*" ".*srfi.*")
 #lang typed-scheme
 
 (require srfi/1)

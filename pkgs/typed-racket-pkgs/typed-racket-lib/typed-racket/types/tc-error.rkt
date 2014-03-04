@@ -36,15 +36,31 @@
 ;; error for unbound variables
 (define (lookup-fail e)
   (match (identifier-binding e)
-    ['lexical (tc-error/expr "untyped identifier ~a" (syntax-e e))]
+    ['lexical (tc-error/expr/fields "missing type for identifier"
+                                    #:more "consider adding a type annotation with `:'"
+                                    "identifier" (syntax-e e))]
     [#f (tc-error/expr "untyped top-level identifier ~a" (syntax-e e))]
     [(list _ _ nominal-source-mod nominal-source-id _ _ _)
-     (let-values ([(x y) (module-path-index-split nominal-source-mod)])
-       (cond [(and (not x) (not y))
-              (tc-error/expr "untyped identifier ~a" (syntax-e e))]
-             [else
-              (tc-error/expr "untyped identifier ~a imported from module <~a>"
-                             (syntax-e e) x)]))]))
+     (define-values (mod-path base-path)
+       (module-path-index-split nominal-source-mod))
+     (cond [(and (not mod-path) (not base-path))
+            (tc-error/expr/fields "missing type for identifier"
+                                  #:more "consider adding a type annotation with `:'"
+                                  "identifier" (syntax-e e))]
+           [(equal? mod-path '(lib "typed/racket"))
+            (tc-error/expr/fields
+             "missing type for identifier"
+             #:more
+             (string-append "The `racket' language does not seem"
+                            " to have a type for this identifier;"
+                            " please file a bug report")
+             "identifier" (syntax-e e)
+             "from module" mod-path)]
+           [else
+            (tc-error/expr/fields "missing type for identifier"
+                                  #:more "consider using `require/typed' to import it"
+                                  "identifier" (syntax-e e)
+                                  "from module" mod-path)])]))
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
