@@ -366,7 +366,8 @@
                           augment-annotation-table)
 
   ;; Calculate remaining inits, optional inits, etc.
-  ;;
+  (check-by-name super-new super-inits)
+
   ;; super-init-rest* - The init-rest passed to the `infer-self-type` function.
   ;;                    This reflects any changes to the `super-init-rest` type
   ;;                    that are necessary due to the super constructor call in
@@ -1144,14 +1145,17 @@
                      (cons name val)))]))
 
 ;; check-by-name : super-init-stxs Dict -> Void
-;; Check by-name inits for duplicates
+;; Check that by-name inits are valid for the superclass
 (define (check-by-name init-stxs super-inits)
   (match-define (super-init-stxs _ by-name) init-stxs)
-  (for/and ([(name _) (in-dict by-name)])
-    (and (dict-ref super-inits name #f)
-         (tc-error/expr "super-new: init argument ~a not accepted by superclass"
-                        name
-                        #:return #f))))
+  (for ([(name _) (in-dict by-name)])
+    (unless (dict-ref super-inits name #f)
+      (tc-error/expr/fields
+       "invalid `super-new' or `super-instantiate'"
+       #:more "init argument not accepted by superclass"
+       "init name" name
+       #:stx #`#,name
+       #:return #f))))
 
 ;; check-super-new : super-init-stxs Dict Type -> Void
 ;; Check if the super-new call is well-typed
@@ -1180,10 +1184,8 @@
            (tc-expr/check pos-arg (ret type)))
          (for ([(init-id init-arg) (in-dict provided-inits)])
            (define maybe-expected (dict-ref remaining-inits init-id #f))
-           (if maybe-expected
-               (tc-expr/check init-arg (ret (car maybe-expected)))
-               (tc-error/expr "init argument ~a not accepted by superclass"
-                              init-id)))]))
+           (when maybe-expected
+             (tc-expr/check init-arg (ret (car maybe-expected)))))]))
 
 ;; Syntax (Syntax -> Any) -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for

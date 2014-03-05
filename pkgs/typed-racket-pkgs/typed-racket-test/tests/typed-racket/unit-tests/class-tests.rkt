@@ -547,6 +547,9 @@
              (: x String)
              (init x)
              (super-new [x x]))]
+   ;; fails, superclass does not accept this init arg
+   [tc-err (class object% (super-new [x 3]))
+           #:msg "not accepted by superclass"]
    ;; test inherit method
    [tc-e (let ()
            (class (class object% (super-new)
