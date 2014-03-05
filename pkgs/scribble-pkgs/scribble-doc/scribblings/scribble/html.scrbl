@@ -454,13 +454,16 @@ for reference. A @racket[#f] value is equivalent to an empty list.
 The parameter value is a mapping from path prefixes to URLs (actually,
 any string). When two paths have the same prefix, links from one to
 the other are relative (unless absolute links are requested); if they
-have different prefixes, the URL will be used instead. The roots of
-all paths are expected to be disjoint (e.g., no @racket["/foo"] and
-@racket["/foo/bar"] roots).
+have different prefixes, the full URL is used. The paths enclosed by
+two root paths must be disjoint (e.g., the list must not include
+both @racket["/colors"] and @racket["/colors/red"], but it can include
+both @racket["/colors/red"] and @racket["/colors/blue"]).
 
-If an item in the parameter's list includes @racket['abs], then an
-absolute URL is produced for all references to files with the
-corresponding prefix. If an item includes @racket['index], then a
+If an item in the parameter's list includes @racket['abs], then a
+site-local, absolute URL (i.e., a URL that starts with @litchar{/}) is
+produced for references among files within the corresponding prefix.
+
+If an item in the parameter's list includes @racket['index], then a
 reference to a directory path is converted to a reference to
 @filepath{index.html}, otherwise a reference to @filepath{index.html}
 is converted to a directory path.}
