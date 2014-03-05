@@ -25,7 +25,8 @@
            #:xrefs (listof xref?)
            #:info-in-files (listof path-string?)
            #:info-out-file (or/c #f path-string?)
-           #:quiet? any/c)
+           #:quiet? any/c
+           #:warn-undefined? any/c)
           . ->* . void?)])
 
 (define (render docs
