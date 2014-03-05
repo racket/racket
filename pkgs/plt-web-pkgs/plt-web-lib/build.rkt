@@ -63,8 +63,8 @@
                             [(local) (map (lambda (s)
                                             (list* (car s)
                                                    (url->string (path->url (build-path output-dir (car s))))
-                                                   (cons 'index
-                                                         (cddr s))))
+                                                   ;; Drop 'abs, if any, from (cddr s)
+                                                   '(index)))
                                           (registered-url-roots))]
                             [else (url-roots)])])
   (for ([extra (in-list extra-files)])
