@@ -276,7 +276,7 @@
   (let ([site
          (lambda (dir
                   #:url [url #f]
-                  #:always-abs-url? [abs-url? #f]
+                  #:always-abs-url? [abs-url? #t]
                   #:robots [robots #t]
                   #:htaccess [htaccess #t]
                   #:navigation [navigation null]

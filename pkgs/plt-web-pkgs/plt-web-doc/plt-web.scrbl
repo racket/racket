@@ -35,7 +35,7 @@ relative directory is mapped to a destination URL via
 
 @defproc[(site [dir path-string?]
                [#:url url (or/c string? #f) #f]
-               [#:always-abs-url? always-abs-url? any/c #f]
+               [#:always-abs-url? always-abs-url? any/c #t]
                [#:share-from share-from (or/c site? #f) #f]
                [#:page-style? page-style? any/c #t]
                [#:meta? meta? any/c page-style?]
@@ -44,12 +44,17 @@ relative directory is mapped to a destination URL via
                [#:navigation navigation (listof outputable/c) null])
          site?]{
 
-Creates a value that represents a site. If @racket[url] is not
-@racket[#f], then it will be registered to @racket[url-roots] for a
-build in web mode (as opposed to local mode) and recorded as the
-target for @racket[dir] in a @filepath{sites.rktd} file when building
-in @tech{deployment mode}. If @racket[always-abs-url?] is true, the
-@racket[url] is registered with a @racket['abs] flag.
+Creates a value that represents a site.
+
+If @racket[url] is not @racket[#f], then it will be registered to
+@racket[url-roots] for a build in web mode (as opposed to local mode)
+and recorded as the target for @racket[dir] in a @filepath{sites.rktd}
+file when building in @tech{deployment mode}.
+
+If @racket[always-abs-url?] is true (the default), then @racket[url]
+is registered with a @racket['abs] flag, so that (in @tech{deployment
+mode}) references within a site are relative to the site root, as
+opposed to relative to the referencing resource.
 
 If @racket[share-from] is a site, then resources generated for the
 site (such as icons or CSS files) are used when as possible for the
@@ -208,19 +213,21 @@ that is introduced by @racketmodname[plt-web]:
 
 @itemlist[
 
- @item{@Flag{w} or @DFlag{web} --- Build output in @deftech{deployment mode}, where references
-       within a top-level site use relative paths, but references
-       across top-level sites use absolute URLs. This mode is the
-       default.}
+ @item{@Flag{w} or @DFlag{web} --- Build output in @deftech{deployment
+       mode}, where references within a top-level site use relative
+       paths or site-relative paths (that start with @litchar{/}),
+       while references across top-level sites use absolute URLs. This
+       mode is the default.}
 
  @item{@Flag{l} or @DFlag{local} --- Build output in local mode using
-       @filepath{file://} URLs between top-level sites.}
+       @filepath{file://} URLs between top-level sites and relative
+       paths within a site.}
 
- @item{@Flag{r} or @DFlag{relative} --- Build output in local mode, where
+ @item{@Flag{r} or @DFlag{relative} --- Build output in local-relative mode, where
        all references use relative paths, exploiting the fact that
        sites are rendered in adjacent directories within the output
        directory. (You may need to deal with an occasional manual
-       selection of @filepath{index.html} when viewing local output.)}
+       selection of @filepath{index.html} when viewing relative output.)}
 
  @item{@Flag{o} @nonterm{dir} or @DFlag{output} @nonterm{dir} ---
        Writes output to subdirectories of @nonterm{dir}, which
