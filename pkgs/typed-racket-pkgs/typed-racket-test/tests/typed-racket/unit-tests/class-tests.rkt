@@ -1245,6 +1245,9 @@
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
            #:msg #rx"expected: Symbol.*given: String"]
+   ;; fail, too many positional arguments to superclass
+   [tc-err (class object% (super-make-object "foo"))
+           #:msg #rx"too many positional init arguments"]
    ;; check that case-lambda methods work
    [tc-e (let ()
            (class object%

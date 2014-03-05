@@ -1132,8 +1132,13 @@
   (cond [;; too many init arguments, and no init-rest
            (and (not super-init-rest) (> pos-length (length super-inits)))
            (values super-init-rest
-                   (tc-error/expr "too many positional init arguments provided"
-                                  #:return null))]
+                   (tc-error/expr/fields
+                    "invalid `super-make-object' or `super-instantiate'"
+                    #:more "too many positional init arguments provided"
+                    "expected" (length super-inits)
+                    "given" pos-length
+                    #:stx #`(#,@provided-pos-args)
+                    #:return null))]
           [;; no remaining by-name inits, so change the init-rest type
            ;; and return a null remaining named inits list
            (> pos-length (length super-inits))
