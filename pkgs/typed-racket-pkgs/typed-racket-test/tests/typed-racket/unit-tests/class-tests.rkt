@@ -45,7 +45,7 @@
                           (init x)
                           (define/public (m x) 0)))
              (void))
-           #:msg #rx"expected a superclass but"]
+           #:msg #rx"superclass expression should produce a class"]
    ;; Method using argument type
    [tc-e (let ()
            (: e% (Class (init [x Integer])
@@ -173,6 +173,9 @@
            (define n% (class j% (super-new)))
            (void))
          -Void]
+   ;; fail, superclass expression is not a class with no expected type
+   [tc-err (class "foo" (super-new))
+           #:msg "expected: a class"]
    ;; should fail, too many methods
    [tc-err (let ()
              (: o% (Class))
