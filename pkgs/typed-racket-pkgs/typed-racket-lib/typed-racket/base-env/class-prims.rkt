@@ -411,10 +411,10 @@
                  (append rest-top (list plain-annotation new-clause))
                  private-fields)]
         ;; Just process this to add the property
-        [(: name:id type:expr)
+        [(: name:id . rst)
          (define plain-annotation
            (non-clause (tr:class:type-annotation-property
-                        (syntax/loc stx (: name type)) #t)))
+                        (syntax/loc stx (: name . rst)) #t)))
          (values methods
                  (append rest-top (list plain-annotation))
                  private-fields)]

@@ -10,6 +10,7 @@
          racket/pretty ;; DEBUG ONLY
          racket/set
          racket/syntax
+         syntax/id-table
          syntax/parse
          "signatures.rkt"
          "tc-metafunctions.rkt"
@@ -31,6 +32,13 @@
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-class^)
+
+;; A super-init-stxs is a
+;;   (super-init-stxs (Listof Syntax) (Dict Symbol Syntax))
+;;
+;; interp. Represents the by-position and by-name initialization
+;;         arguments respectively provided by the class
+(struct super-init-stxs (by-position by-name) #:transparent)
 
 ;; time debugging
 (define-syntax do-timing #f)
@@ -181,6 +189,17 @@
                  (~and make-methods :make-methods-class)
                  (quote #f)))))))
 
+;; This is similar to `type-declaration` from "internal-forms.rkt", but
+;; the expansion is slightly different in a class so we use this instead.
+(define-syntax-class class-type-declaration
+  #:literal-sets (kernel-literals)
+  #:literals (values void :-internal)
+  #:attributes (name type)
+  (pattern (let-values
+             ([() (begin (quote-syntax (:-internal name:id type:expr))
+                         (#%plain-app values))])
+             (#%plain-app void))))
+
 ;; Syntax TCResults -> Type
 ;; Type-check a class form by trawling its innards
 ;;
@@ -326,44 +345,32 @@
   (define make-methods-stx (hash-ref parse-info 'make-methods))
   (define top-level-exprs
     (trawl-for-property make-methods-stx tr:class:top-level-property))
-  ;; augment annotations go in their own table, because they're
+
+  ;; Filter top level expressions into several groups, each processed
+  ;; into appropriate data structures
+  ;;
+  ;; Augment annotations go in their own table, because they're
   ;; the only kind of type annotation that is allowed to be duplicate
   ;; (i.e., m can have type Integer -> Integer and an augment type of
   ;;          String -> String in the separate tables)
-  (define-values (annotation-table augment-annotation-table)
-    ((compose (setup-pubment-defaults (hash-ref parse-info 'pubment-names))
-              register-annotations)
-     top-level-exprs))
-  (do-timestamp "built annotation table")
-  ;; find the `super-new` call (or error if missing)
-  (define super-new-stxs
-    (trawl-for-property make-methods-stx tr:class:super-new-property))
-  (define super-new-stx (check-super-new-exists super-new-stxs))
-  (define-values (provided-pos-args provided-super-inits)
-    (if super-new-stx
-        (find-provided-inits super-new-stx super-inits)
-        (values null null)))
-  (define provided-init-names (dict-keys provided-super-inits))
-  (define pos-length (length provided-pos-args))
+  (define-values (super-new initializers
+                  annotation-table augment-annotation-table
+                  other-top-level-exprs)
+    (handle-top-levels top-level-exprs))
+
+  (setup-pubment-defaults (hash-ref parse-info 'pubment-names)
+                          annotation-table
+                          augment-annotation-table)
+
+  ;; Calculate remaining inits, optional inits, etc.
+  ;;
   ;; super-init-rest* - The init-rest passed to the `infer-self-type` function.
   ;;                    This reflects any changes to the `super-init-rest` type
   ;;                    that are necessary due to the super constructor call in
   ;;                    this class.
   (define-values (super-init-rest* remaining-super-inits)
-    (cond [;; too many init arguments, and no init-rest
-           (and (not super-init-rest) (> pos-length (length super-inits)))
-           (values super-init-rest
-                   (tc-error/expr "too many positional init arguments provided"
-                                  #:return null))]
-          [;; no remaining by-name inits, so change the init-rest type
-           ;; and return a null remaining named inits list
-           (> pos-length (length super-inits))
-           (values (Un) null)]
-          [else
-           (values super-init-rest
-                   (for/list ([(name val) (in-dict (drop super-inits pos-length))]
-                              #:unless (member name provided-init-names))
-                     (cons name val)))]))
+    (handle-pos-inits super-new super-inits super-init-rest))
+
   ;; define which init names are optional
   (define optional-inits (hash-ref parse-info 'optional-inits))
   (define optional-external (for/set ([n optional-inits])
@@ -410,7 +417,7 @@
         #:when (set-member? (hash-ref parse-info 'private-fields) name))
     (hash-set! private-field-types name (list type)))
 
-  (synthesize-private-field-types top-level-exprs
+  (synthesize-private-field-types initializers
                                   local-private-field-table
                                   private-field-types)
 
@@ -434,15 +441,10 @@
                                self-type))
   (do-timestamp "built local tables")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-    (check-super-new provided-pos-args provided-super-inits
-                     super-inits super-init-rest))
+    (check-super-new super-new super-inits super-init-rest))
   (do-timestamp "checked super-new")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-    (for ([stx top-level-exprs]
-          ;; avoid checking these to avoid duplication and to avoid checking
-          ;; ignored expressions
-          #:unless (tr:class:super-new-property stx)
-          #:unless (tr:class:type-annotation-property stx))
+    (for ([stx other-top-level-exprs])
       (tc-expr stx)))
   (do-timestamp "checked other top-level exprs")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
@@ -490,6 +492,72 @@
       (make-Poly #:original-names class-type-parameters
                  (hash-ref parse-info 'fresh-parameters)
                  final-class-type)))
+
+;; handle-top-levels : (Listof Syntax) ->
+;;                     super-init-stxs Dict Dict Hash (Listof Syntax)
+;; Divide top level expressions into several categories, and put them
+;; in appropriate data structures.
+(define (handle-top-levels exprs)
+  (define super-new #f)
+  (define initializers (make-free-id-table))
+  (define annotations (make-hash))
+  (define augment-annotations (make-hash))
+  (define other-exprs
+    (for/fold ([other-exprs '()])
+              ([expr exprs])
+      (syntax-parse expr
+        #:literal-sets (kernel-literals)
+        #:literals (:-augment)
+        ;; FIXME: this case seems too loose, many things can match this syntax
+        ;;        we likely need to set a property or match against another name
+        [(let-values ([(obj:id) self])
+           (let-values ([(field:id) initial-value])
+             (#%plain-app setter:id _ _)))
+         ;; only record the first one, which is the one that initializes
+         ;; the field or private field
+         (unless (dict-has-key? initializers #'setter)
+           (free-id-table-set! initializers #'setter #'initial-value))
+         other-exprs]
+        [:tr:class:super-new^
+         (when super-new
+           (tc-error/expr "typed classes must only call super-new a single time"))
+         (set! super-new (find-provided-inits expr))
+         other-exprs]
+        [(~and t:class-type-declaration :tr:class:type-annotation^)
+         (define name (syntax-e #'t.name))
+         (define type (parse-type #'t.type))
+         (unless (check-duplicate-member annotations name type)
+           (hash-set! annotations name type))
+         other-exprs]
+        ;; FIXME: use internal-forms for this instead
+        [(quote-syntax (:-augment name-stx:id type-stx))
+         (define name (syntax-e #'name-stx))
+         (define type (parse-type #'type-stx))
+         (unless (check-duplicate-member augment-annotations name type)
+           (hash-set! augment-annotations name type))
+         other-exprs]
+        [_ (cons expr other-exprs)])))
+  (unless super-new
+    (tc-error/expr "typed classes must call super-new at the class top-level")
+    (set! super-new (super-init-stxs null null)))
+  (values super-new
+          initializers
+          annotations
+          augment-annotations
+          other-exprs))
+
+;; check-duplicate-member : Hash Symbol Type -> Boolean
+;; return true if the class member is already annotated
+(define (check-duplicate-member table name type)
+  (and (hash-has-key? table name)
+       (not (equal? (hash-ref table name) type))
+       (tc-error/expr/fields
+        "duplicate type annotation in class"
+        #:stx #`#,name
+        #:return #t
+        "for identifier" name
+        "new type" type
+        "previous type" (hash-ref table name))))
 
 ;; check-method-presence-and-absence : Dict Type Set<Symbol> ... -> Void
 ;; use the internal class: information to check whether clauses
@@ -898,30 +966,20 @@
        (tc-expr form)]
       [_ (void)])))
 
-;; synthesize-private-field-types : (Listof Syntax) Dict Hash -> Void
+;; synthesize-private-field-types : IdTable Dict Hash -> Void
 ;; Given top-level expressions in the class, synthesize types from
 ;; the initialization expressions for private fields.
-(define (synthesize-private-field-types exprs locals types)
+(define (synthesize-private-field-types initializers locals types)
   (for ([(name getter+setter) (in-dict locals)]
         #:unless (hash-has-key? types name))
     (match-define (list _ setter) getter+setter)
-    ;; only the first setter expression is the initialization for
-    ;; the field, the rest are set!s in the user code
-    (for/or ([expr exprs])
-      (syntax-parse expr
-        #:literal-sets (kernel-literals)
-        [(let-values ([(obj) self])
-           (let-values ([(field) initial-value])
-             (#%plain-app setter* _ _)))
-         #:when (free-identifier=? setter #'setter*)
-         (define type (tc-expr/t #'initial-value))
-         ;; FIXME: this always generalizes the private field
-         ;;        type, but it's better to only generalize if
-         ;;        the field is actually mutated.
-         (hash-set! types name (list (generalize type)))
-         ;; done once we find the first one
-         #t]
-        [_ #f]))))
+    (define init-expr-stx (free-id-table-ref initializers setter #f))
+    (when init-expr-stx
+      (define type (tc-expr/t init-expr-stx))
+      ;; FIXME: this always generalizes the private field
+      ;;        type, but it's better to only generalize if
+      ;;        the field is actually mutated.
+      (hash-set! types name (list (generalize type))))))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, Id>
 ;;           Dict<Symbol, (List Symbol Symbol)> Dict<Symbol, Id>
@@ -1036,30 +1094,17 @@
                   (syntax->datum #'(augment ...))
                   (syntax->list #'(local-inner ...))))]))
 
-;; check-super-new-exists : Listof<Syntax> -> (U Syntax #f)
-;; Check if a `super-new` call exists and if there is only
-;; one call. Return #f on error.
-(define (check-super-new-exists stxs)
-  (cond [(null? stxs)
-         (tc-error/expr
-          "typed classes must call super-new at the class top-level")
-         #f]
-        [(> (length stxs) 1)
-         (tc-error/expr
-          "typed classes must only call super-new a single time")
-         #f]
-        [else (car stxs)]))
-
-;; find-provided-inits : Syntax Inits -> Listof<Syntax> Dict<Symbol, Syntax>
+;; find-provided-inits : Syntax -> super-init-stxs
 ;; Find the init arguments that were provided via super-new
-(define (find-provided-inits stx super-inits)
+(define (find-provided-inits stx)
   (syntax-parse stx
-    #:literals (#%plain-app list cons quote)
+    #:literal-sets (kernel-literals)
+    #:literals (cons list)
     [(#%plain-app
       (#%plain-lambda args
         (#%plain-app super-go _ _ _ _ _ _))
       pos-arg:expr ...)
-     (values (syntax->list #'(pos-arg ...)) null)]
+     (super-init-stxs (syntax->list #'(pos-arg ...)) null)]
     [(#%plain-app super-go _ _ _ _
                   (~or (#%plain-app list pos-arg:expr ...)
                        (~and _ (~bind [(pos-arg 1) '()])))
@@ -1068,18 +1113,48 @@
                    (#%plain-app cons (quote init-id) arg:expr)
                    ...))
      (define provided-inits (syntax->datum #'(init-id ...)))
-     (for ([name provided-inits])
-       (unless (dict-ref super-inits name #f)
-         (tc-error/expr "super-new: init argument ~a not accepted by superclass"
-                        name)))
-     (values
+     (super-init-stxs
       (syntax->list #'(pos-arg ...))
       (map cons provided-inits (syntax->list #'(arg ...))))]))
 
-;; check-super-new : Listof<Syntax> Dict<Symbol, Syntax>
-;;                   Dict<Symbol, Type> Type -> Void
+;; handle-pos-inits : super-init-stxs Dict (Option Type) -> Type Dict
+;; Check if the init-rest type works and return a potentially changed
+;; init-rest type and the remaining init args after
+(define (handle-pos-inits super-new super-inits super-init-rest)
+  (match-define (super-init-stxs provided-pos-args provided-super-inits)
+                super-new)
+  (define provided-init-names (dict-keys provided-super-inits))
+  (define pos-length (length provided-pos-args))
+  (cond [;; too many init arguments, and no init-rest
+           (and (not super-init-rest) (> pos-length (length super-inits)))
+           (values super-init-rest
+                   (tc-error/expr "too many positional init arguments provided"
+                                  #:return null))]
+          [;; no remaining by-name inits, so change the init-rest type
+           ;; and return a null remaining named inits list
+           (> pos-length (length super-inits))
+           (values (Un) null)]
+          [else
+           (values super-init-rest
+                   (for/list ([(name val) (in-dict (drop super-inits pos-length))]
+                              #:unless (member name provided-init-names))
+                     (cons name val)))]))
+
+;; check-by-name : super-init-stxs Dict -> Void
+;; Check by-name inits for duplicates
+(define (check-by-name init-stxs super-inits)
+  (match-define (super-init-stxs _ by-name) init-stxs)
+  (for/and ([(name _) (in-dict by-name)])
+    (and (dict-ref super-inits name #f)
+         (tc-error/expr "super-new: init argument ~a not accepted by superclass"
+                        name
+                        #:return #f))))
+
+;; check-super-new : super-init-stxs Dict Type -> Void
 ;; Check if the super-new call is well-typed
-(define (check-super-new provided-pos-args provided-inits super-inits init-rest)
+(define (check-super-new super-new super-inits init-rest)
+  (match-define (super-init-stxs provided-pos-args provided-inits)
+                super-new)
   (define pos-init-diff (- (length provided-pos-args) (length super-inits)))
   (cond [(and (> pos-init-diff 0) (not init-rest))
          ;; errror case that's caught above, do nothing
@@ -1133,58 +1208,17 @@
      (recur-on-all #'(e ...))]
     [_ '()]))
 
-;; register-annotations : Listof<Syntax>
-;;                        -> Dict<Symbol, Type>, Dict<Symbol, Type>
-;; Find : annotations and register them, error if duplicates are found
-;; TODO: support `define-type`?
-(define (register-annotations stxs)
-  ;; check if the key is duplicated and return the new table
-  ;; (erroring if it is a duplicate)
-  (define (check-duplicate table name type)
-    (cond [(and (hash-has-key? table name)
-                (not (equal? (hash-ref table name) type)))
-           (tc-error/expr
-            #:stx #'name
-            "Duplicate type annotation of ~a for ~a, previous was ~a"
-            type name (hash-ref table name))
-           table]
-          [else (hash-set table name type)]))
-  (for/fold ([table #hash()] [augment-table #hash()])
-            ([stx stxs])
-    (syntax-parse stx
-      #:literals (let-values begin quote-syntax :-internal :-augment
-                  #%plain-app values void)
-      [(let-values ((()
-                     (begin
-                       (quote-syntax (:-internal name-stx:id type-stx:expr))
-                       (#%plain-app values))))
-         (#%plain-app void))
-       (define name (syntax-e #'name-stx))
-       (define type (parse-type #'type-stx))
-       (values (check-duplicate table name type) augment-table)]
-      [(quote-syntax (:-augment name-stx:id type-stx))
-       (define name (syntax-e #'name-stx))
-       (define type (parse-type #'type-stx))
-       (values table (check-duplicate augment-table name type))]
-      [_ (values table augment-table)])))
-
-;; setup-pubment-defaults : Listof<Symbol> ->
-;;                          Dict<Symbol, Type> Dict<Symbol, Type> ->
-;;                          Dict<Symbol, Type> Dict<Symbol, Type>
+;; setup-pubment-defaults : Listof<Symbol> Hash Hash -> Void
 ;; this does a second pass through the type annotations and adds
 ;; the pubment types as default augment types if an augment type
 ;; was not already provided
-(define ((setup-pubment-defaults pubment-names)
-         annotations augment-annotations)
-  (for/fold ([annotations annotations]
-             [augment-annotations augment-annotations])
-            ([name pubment-names])
-    (cond [(and (not (dict-has-key? augment-annotations name))
-                (dict-has-key? annotations name))
-           (values annotations
-                   (dict-set augment-annotations name
-                             (dict-ref annotations name)))]
-          [else (values annotations augment-annotations)])))
+(define (setup-pubment-defaults pubment-names annotations augment-annotations)
+  (for ([name pubment-names])
+    (when (and (not (hash-has-key? augment-annotations name))
+               (hash-has-key? annotations name))
+      (hash-set! augment-annotations
+                 name
+                 (dict-ref annotations name)))))
 
 ;; infer-self-type : Dict RowVar Class Dict<Symbol, Type> Dict<Symbol, Type>
 ;;                   Set<Symbol> Dict<Symbol, Symbol>

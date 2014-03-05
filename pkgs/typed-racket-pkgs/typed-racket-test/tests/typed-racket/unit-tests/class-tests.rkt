@@ -1162,7 +1162,7 @@
              (super-new)
              (: x String)
              (field [x : Symbol 0]))
-           #:msg #rx"Duplicate type annotation of String"]
+           #:msg #rx"duplicate type annotation.*new type: String"]
    ;; fails, expected type and annotation don't match
    [tc-err (let ()
              (: c% (Class (field [x String])))
