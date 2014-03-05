@@ -33,11 +33,17 @@
                 (make-list (length t-r) -empty-obj)
                 dty dbound))))
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
-              (tc-error/expr #:return error-ret
-                             "Wrong number of arguments, expected ~a and got ~a" (length dom) (length t-a))]
+              (tc-error/expr/fields "could not apply function"
+                                    #:more "wrong number of arguments provided"
+                                    "expected" (length dom)
+                                    "given" (length t-a)
+                                    #:return error-ret)]
              [(and rest (< (length t-a) (length dom)))
-              (tc-error/expr #:return error-ret
-                             "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
+              (tc-error/expr/fields "could not apply function"
+                                    #:more "wrong number of arguments provided"
+                                    "expected at least" (length dom)
+                                    "given" (length t-a)
+                                    #:return error-ret)])
        (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))]
              [a (in-syntax args-stx)]
              [arg-t (in-list t-a)])
@@ -76,7 +82,9 @@
                        [_ #f])))
                  (? values req-kw))) _)
      (when check?
-       (tc-error "Required keyword not supplied: ~a" req-kw))]
+       (tc-error/fields "could not apply function"
+                        #:more "a required keyword was not supplied"
+                        "missing keyword" req-kw))]
     [((arr: _ _ _ drest '()) _)
      (int-err "funapp with drest args ~a ~a NYI" drest argtys)]
     [((arr: _ _ _ _ kws) _)
