@@ -225,55 +225,114 @@
 (struct upper-bound
   (total-bound      ;; Nat
    individual-bound ;; Nat
-   enumerators      ;; Vectorof (Enum a)
+   enumerators      ;; Vectorof (Enum a, Nat)
    )
   #:transparent)
 
 ;; layers : Listof Enum -> Listof Upper-Bound
-(define/contract (mk-layers es [prev (upper-bound 0 0 (vector es))])
+(define/contract (mk-layers es)
   ((listof enum?) . -> . (listof upper-bound?))
-  (define non-emptys (filter (negate empty/e?) es))
-  (match non-emptys
-    ['() '()]
-    [_
-     (define min-size
-       (apply exact-min (map size non-emptys)))
-     (define (not-min-size? e)
-       (not (= (size e) min-size)))
-     (define leftover
-       (filter not-min-size? non-emptys))
-     (define ves
-       (apply vector non-emptys))
-     (match-define (upper-bound prev-tb
-                                prev-ib
-                                prev-es)
-                   prev)
-     (define diff-min-size
-       (min-size . - . prev-ib))
-     (define total-bound
-       (prev-tb . + . (diff-min-size . * . (vector-length ves))))
-     (define cur-layer
-       (upper-bound total-bound
-                    min-size
-                    ves))
-     (define remaining-layers
-       (mk-layers leftover cur-layer))
-     (cons cur-layer
-           remaining-layers)]))
+  (define (loop eis prev)
+    (define non-emptys (filter (negate (compose empty/e? car)) eis))
+    (match non-emptys
+      ['() '()]
+      [_
+       (define min-size
+         (apply exact-min (map (compose size car) non-emptys)))
+       (define (not-min-size? e)
+         (not (= (size (car e)) min-size)))
+       (define leftover
+         (filter not-min-size? non-emptys))
+       (define veis
+         (apply vector non-emptys))
+       (match-define (upper-bound prev-tb
+                                  prev-ib
+                                  prev-es)
+                     prev)
+       (define diff-min-size
+         (min-size . - . prev-ib))
+       (define total-bound
+         (prev-tb . + . (diff-min-size . * . (vector-length veis))))
+       (define cur-layer
+         (upper-bound total-bound
+                      min-size
+                      veis))
+       (define remaining-layers
+         (loop leftover cur-layer))
+       (cons cur-layer
+             remaining-layers)]))
+  (define eis
+    (for/list [(i (in-naturals))
+               (e (in-list es))]
+      (cons e i)))
+  (loop eis
+        (upper-bound 0 0 eis))
+  )
 
 ;; find-layer : Nat, Nonempty-Listof Upper-bound -> Upper-bound, Upper-bound
 ;; Given an index, find the first layer 
-(define/contract (find-layer i layers)
+(define/contract (find-dec-layer i layers)
   (natural-number/c (listof upper-bound?) . -> . (values upper-bound? upper-bound?))
+  (find-layer-by-size i upper-bound-total-bound layers))
+
+(define/contract (find-index x e-ps [cur-index 0])
+  (->*
+   (any/c
+    (listof (cons/c enum?
+                    (any/c . -> . boolean?))))
+   (natural-number/c) 
+
+   (values natural-number/c
+           natural-number/c))
+  (match e-ps
+    ['() (error "invalid term")]
+    [(cons (cons e in-e?)
+           more-e-ps)
+     (cond [(in-e? x)
+            (values (encode e x)
+                    cur-index)]
+           [else
+            (find-index x more-e-ps (add1 cur-index))])]))
+
+(define/contract (find-enc-layer i e-i layers)
+  (natural-number/c natural-number/c (listof upper-bound?)
+                    . -> .
+                    (values upper-bound? upper-bound? natural-number/c))
+  (define-values (prev cur)
+    (find-layer-by-size i
+                        upper-bound-individual-bound
+                        layers))
+  (define/match (find-e-index l e-i)
+    [((upper-bound tb ib eis) e-i)
+     (define (loop low hi)
+       (when (> low hi)
+         (error "bin search bug"))
+       (define mid
+         (quotient (low . + . hi) 2))
+       (define cur
+         (cdr (vector-ref eis mid)))
+       (cond [(low . = . mid)
+              (unless (cur . = . e-i)
+                (error "that's a bug, yo"))
+              mid]
+             [(cur . = . e-i) mid]
+             [(cur . < . e-i) (loop (add1 mid) hi)]
+             [else            (loop low mid)]))
+     (loop 0 (vector-length eis))])
+  (values prev
+          cur
+          (find-e-index cur e-i)))
+
+;; TODO: change from linear to binary search
+(define (find-layer-by-size i get-size ls)
   (define (loop prev ls)
     (match ls
       ['() (error "internal error in find-layer: index out of range")]
-      [(cons (and ub (upper-bound tb ib es))
-             tl)
-       (cond [(i . < . tb) (values prev ub)]
+      [(cons ub tl)
+       (cond [(i . < . (get-size ub))
+              (values prev ub)]
              [else         (loop ub tl)])]))
-  (loop (upper-bound 0 0 (vector))
-        layers))
+  (loop (upper-bound 0 0 (vector)) ls))
 
 ;; fairly interleave a list of enumerations
 (define (disj-sum/e . e-ps)
@@ -287,18 +346,24 @@
     [_
      (define (dec i)
        (define-values (prev-up-bound cur-up-bound)
-         (find-layer i layers))
+         (find-dec-layer i layers))
        (match-define (upper-bound so-far prev-ib es1) prev-up-bound)
        (match-define (upper-bound ctb    cib     es)  cur-up-bound)
        (define this-i (i . - . so-far))
        (define len (vector-length es))
        (define-values (q r) (quotient/remainder this-i len))
-       (define this-e (vector-ref es r))
+       (define this-e (car (vector-ref es r)))
        (decode this-e (+ q prev-ib)))
      (define (enc x)
-       0
-       ;; (error 'todo)
-       )
+       (define-values (index which-e)
+         (find-index x e-ps))
+       (define-values (prev-up-bound cur-up-bound cur-e-index)
+         (find-enc-layer index which-e layers))
+       (match-define (upper-bound ptb pib pes) prev-up-bound)
+       (match-define (upper-bound ctb cib ces) cur-up-bound)
+       (+ ptb
+          cur-e-index
+          ((vector-length ces) . * . (index . - . pib))))
      (enum (apply + (map (compose size car) e-ps))
            dec
            enc)]))

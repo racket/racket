@@ -157,8 +157,7 @@
               8    (#f #t #t)
               9    (#t #f #t)))
  
- (check-bijection? multi-layered)
- )
+ (check-bijection? multi-layered))
 
 (test-begin
  (define bool-or-num
