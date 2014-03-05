@@ -18,7 +18,7 @@
 
 (define (print-object o)
   (match o
-    [(Empty:) "no object"]
+    [(or (NoObject:) (Empty:)) "no object"]
     [_ (format "object ~a" o)]))
 
 ;; If expected is #f, then just return tr1
@@ -101,7 +101,7 @@
         (type-mismatch f2 f1 "mismatch in filter")]
        [(and (filter-better? f1 f2)
              (not (object-better? o1 o2)))
-        (type-mismatch o2 o1 "mismatch in object")]
+        (type-mismatch (print-object o2) (print-object o1) "mismatch in object")]
        [(and (not (filter-better? f1 f2))
              (not (object-better? o1 o2)))
         (type-mismatch (format "`~a' and `~a'" f2 (print-object o2))

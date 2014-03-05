@@ -71,6 +71,9 @@
     (check-prints-as? (-> -Input-Port (make-Values (list (-result -String -true-filter)
                                                          (-result -String -true-filter))))
                       "(-> Input-Port (values (String : (Top | Bot)) (String : (Top | Bot))))")
+    (check-prints-as? (-> Univ (make-Values (list (-result -String -top-filter -empty-obj)
+                                                  (-result -String -no-filter -no-obj))))
+                      "(-> Any (values String String))")
     ;; this case tests that the Number union is printed with its name
     ;; rather than its expansion (a former bug)
     (check-prints-as? (->* '() -Number -Void) "(-> Number * Void)")

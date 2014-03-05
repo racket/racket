@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require "test-utils.rkt"
-         rackunit
+         rackunit racket/list
          (types abbrev union tc-result)
-         (rep filter-rep)
+         (rep filter-rep object-rep)
          (typecheck check-below)
          (for-syntax racket/base syntax/parse))
 
@@ -30,6 +30,23 @@
     (test-below #:fail 
       (ret (list -Symbol) (list -top-filter) (list -no-obj))
       (ret (list Univ) (list -true-filter) (list -no-obj)))
+
+    (test-below #:fail #rx"no object"
+      (ret (list -Symbol) (list -top-filter) (list -no-obj))
+      (ret (list Univ) (list -top-filter) (list (make-Path empty #'x))))
+
+    (test-below #:fail #rx"no object"
+      (ret (list -Symbol) (list -top-filter) (list -empty-obj))
+      (ret (list Univ) (list -top-filter) (list (make-Path empty #'x))))
+
+    (test-below #:fail #rx"no object"
+      (ret (list -Symbol) (list -top-filter) (list -no-obj))
+      (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
+
+    (test-below #:fail #rx"no object"
+      (ret (list -Symbol) (list -top-filter) (list -empty-obj))
+      (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
+
 
     ;; Enable these once check-below is fixed
     #;
