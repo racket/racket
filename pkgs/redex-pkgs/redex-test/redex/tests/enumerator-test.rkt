@@ -61,7 +61,6 @@
  (check-bijection? ints/e))              ; -1 -> 2, -3 -> 4
 
 ;; sum tests
-
 (define evens/e
   (enum +inf.0
         (λ (n)
@@ -83,68 +82,21 @@
                (error 'odd)))))
 
 (test-begin
- (let ([bool-or-num (sum/e bools/e
-                           (from-list/e '(0 1 2 3)))]
-       [bool-or-nat (sum/e bools/e
-                           nats/e)]
-       [nat-or-bool (sum/e nats/e
-                           bools/e)]
-       [odd-or-even (sum/e evens/e
-                           odds/e)])
-   (check-equal? (size bool-or-num) 6)
-   
-   (check-equal? (decode bool-or-num 0) #t)
-   (check-equal? (decode bool-or-num 1) 0)
-   (check-equal? (decode bool-or-num 2) #f)
-   (check-equal? (decode bool-or-num 3) 1)
-   (check-equal? (decode bool-or-num 4) 2)
-   (check-equal? (decode bool-or-num 5) 3)
-   
-   (check-exn exn:fail?
-              (λ ()
-                 (decode bool-or-num 6)))
-   (check-bijection? bool-or-num)
-   
-   (check-equal? (size bool-or-nat)
-                 +inf.0)
-   (check-equal? (decode bool-or-nat 0) #t)
-   (check-equal? (decode bool-or-nat 1) 0)
-   (check-bijection? bool-or-nat)
-   
-   (check-equal? (size odd-or-even)
-                 +inf.0)
-   (check-equal? (decode odd-or-even 0) 0)
-   (check-equal? (decode odd-or-even 1) 1)
-   (check-equal? (decode odd-or-even 2) 2)
-   (check-exn exn:fail?
-              (λ ()
-                 (decode odd-or-even -1)))
-   (check-equal? (encode odd-or-even 0) 0)   
-   (check-equal? (encode odd-or-even 1) 1)
-   (check-equal? (encode odd-or-even 2) 2)
-   (check-equal? (encode odd-or-even 3) 3)
-   (check-bijection? odd-or-even)
-   ;; Known bug, won't fix because I'm getting rid of sum/e anyway
-   ;; (check-bijection? nat-or-bool)
-   ))
-
-(test-begin
  (define bool-or-num
-   (disj-sum/e #:alternate? #t
-               (cons bools/e boolean?)
+   (disj-sum/e (cons bools/e boolean?)
                (cons (from-list/e '(0 1 2 3)) number?)))
  (define bool-or-nat
-   (disj-sum/e #:alternate? #t
-               (cons bools/e boolean?)
+   (disj-sum/e (cons bools/e boolean?)
                (cons nats/e number?)))
  (define nat-or-bool
-   (disj-sum/e #:alternate? #t
-               (cons nats/e number?)
+   (disj-sum/e (cons nats/e number?)
                (cons bools/e boolean?)))
  (define odd-or-even
-   (disj-sum/e #:alternate? #t
-               (cons evens/e even?)
+   (disj-sum/e (cons evens/e even?)
                (cons odds/e odd?)))
+
+
+ 
  (check-equal? (size bool-or-num) 6)
    
  (check-equal? (decode bool-or-num 0) #t)
@@ -179,17 +131,41 @@
  (check-equal? (encode odd-or-even 3) 3)
  (check-bijection? odd-or-even)
 
- (check-bijection? nat-or-bool))
+ (check-bijection? nat-or-bool)
+
+ (define multi-layered
+   (disj-sum/e (cons (take/e string/e 5) string?)
+               (cons (from-list/e '(a b c d)) symbol?)
+               (cons nats/e number?)
+               (cons bool/e boolean?)
+               (cons (many/e bool/e) list?)))
+
+ (define (test-multi-layered i x)
+   (check-equal? (decode multi-layered i) x))
+ (map test-multi-layered
+      (for/list ([i (in-range 31)])
+        i)
+      ;; Please don't reformat this!
+      '(""  a 0 #t ()
+        "a" b 1 #f (#t)
+        "b" c 2    (#f)
+        "c" d 3    (#t #t)
+        "d"   4    (#f #t)
+              5    (#t #f)
+              6    (#f #f)
+              7    (#t #t #t)
+              8    (#f #t #t)
+              9    (#t #f #t)))
+ 
+ (check-bijection? multi-layered))
 
 (test-begin
  (define bool-or-num
-   (disj-sum/e #:append? #t
-               (cons bools/e boolean?)
-               (cons (from-list/e '(0 1 2 3)) number?)))
+   (disj-append/e (cons bools/e boolean?)
+                  (cons (from-list/e '(0 1 2 3)) number?)))
  (define bool-or-nat
-   (disj-sum/e #:append? #t
-               (cons bools/e boolean?)
-               (cons nats/e number?)))
+   (disj-append/e (cons bools/e boolean?)
+                  (cons nats/e number?)))
  (check-equal? (size bool-or-num) 6)
    
  (check-equal? (decode bool-or-num 0) #t)
@@ -442,3 +418,4 @@
 (define natss
   (many/e nats/e))
 (check-bijection? natss)
+

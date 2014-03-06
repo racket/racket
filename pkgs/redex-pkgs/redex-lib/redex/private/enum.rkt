@@ -94,7 +94,7 @@
                  production-term
                  e)
           (λ (nd-x) (= i (production-n nd-x)))))
-  (apply disj-sum/e #:alternate? #t
+  (apply disj-sum/e
          (for/list ([i (in-naturals)]
                     [production (in-list rhss)])
            (with-index i
