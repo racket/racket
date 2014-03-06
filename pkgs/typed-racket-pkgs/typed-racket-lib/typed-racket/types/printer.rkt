@@ -505,7 +505,7 @@
     [(Instance: (? Class? cls)) (class->sexp cls #:object? #t)]
     [(ClassTop:) 'ClassTop]
     [(? Class?) (class->sexp type)]
-    [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
+    [(Result: t (or (NoFilter:) (FilterSet: (Top:) (Top:))) (or (NoObject:) (Empty:))) (type->sexp t)]
     [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]
     [(Result: t fs lo) `(,(type->sexp t) : ,(filter->sexp fs) : ,(object->sexp lo))]
     [(MPair: s t) `(MPairof ,(t->s s) ,(t->s t))]

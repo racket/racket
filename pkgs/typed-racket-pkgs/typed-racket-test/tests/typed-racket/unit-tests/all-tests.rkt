@@ -33,6 +33,8 @@
   "special-env-typecheck-tests.rkt"
   "contract-tests.rkt"
   "interactive-tests.rkt"
+  "type-printer-tests.rkt"
   "class-tests.rkt"
   "class-util-tests.rkt"
+  "check-below-tests.rkt"
   "rep-tests.rkt")
