@@ -230,8 +230,7 @@
   #:transparent)
 
 ;; layers : Listof Enum -> Listof Upper-Bound
-(define/contract (mk-layers es)
-  ((listof enum?) . -> . (listof upper-bound?))
+(define (mk-layers es)
   (define (loop eis prev)
     (define non-emptys (filter (negate (compose empty/e? car)) eis))
     (match non-emptys
@@ -265,27 +264,18 @@
     (for/list [(i (in-naturals))
                (e (in-list es))]
       (cons e i)))
-  (loop eis
-        (upper-bound 0 0 eis))
-  )
+  (apply vector
+         (loop eis
+               (upper-bound 0 0 eis))))
 
 ;; find-layer : Nat, Nonempty-Listof Upper-bound -> Upper-bound, Upper-bound
 ;; Given an index, find the first layer 
-(define/contract (find-dec-layer i layers)
-  (natural-number/c (listof upper-bound?) . -> . (values upper-bound? upper-bound?))
+(define (find-dec-layer i layers)
   (find-layer-by-size i upper-bound-total-bound layers))
 
-(define/contract (find-index x e-ps [cur-index 0])
-  (->*
-   (any/c
-    (listof (cons/c enum?
-                    (any/c . -> . boolean?))))
-   (natural-number/c) 
-
-   (values natural-number/c
-           natural-number/c))
+(define (find-index x e-ps [cur-index 0])
   (match e-ps
-    ['() (error "invalid term")]
+    ['() (redex-error 'encode "invalid term")]
     [(cons (cons e in-e?)
            more-e-ps)
      (cond [(in-e? x)
@@ -294,10 +284,7 @@
            [else
             (find-index x more-e-ps (add1 cur-index))])]))
 
-(define/contract (find-enc-layer i e-i layers)
-  (natural-number/c natural-number/c (listof upper-bound?)
-                    . -> .
-                    (values upper-bound? upper-bound? natural-number/c))
+(define (find-enc-layer i e-i layers)
   (define-values (prev cur)
     (find-layer-by-size i
                         upper-bound-individual-bound
@@ -306,14 +293,14 @@
     [((upper-bound tb ib eis) e-i)
      (define (loop low hi)
        (when (> low hi)
-         (error "bin search bug"))
+         (redex-error 'encode "internal bin search bug"))
        (define mid
          (quotient (low . + . hi) 2))
        (define cur
          (cdr (vector-ref eis mid)))
        (cond [(low . = . mid)
               (unless (cur . = . e-i)
-                (error "that's a bug, yo"))
+                (redex-error 'encode "internal binary search bug"))
               mid]
              [(cur . = . e-i) mid]
              [(cur . < . e-i) (loop (add1 mid) hi)]
@@ -323,16 +310,20 @@
           cur
           (find-e-index cur e-i)))
 
-;; TODO: change from linear to binary search
 (define (find-layer-by-size i get-size ls)
-  (define (loop prev ls)
-    (match ls
-      ['() (error "internal error in find-layer: index out of range")]
-      [(cons ub tl)
-       (cond [(i . < . (get-size ub))
-              (values prev ub)]
-             [else         (loop ub tl)])]))
-  (loop (upper-bound 0 0 (vector)) ls))
+  ;; Find the lowest indexed elt that is still greater than i
+  (define (loop lo hi)
+    (define mid (quotient (lo . + . hi) 2))
+    (define cur (get-size (vector-ref ls mid)))
+    (cond [(i  . = . cur) (add1 mid)]
+          [(i  . > . cur) (loop (add1 mid) hi)]
+          [(lo . = . mid) lo]
+          [else           (loop lo         mid)]))
+  (define n (loop 0 (vector-length ls)))
+  (define prev
+    (cond [(n . > . 0) (vector-ref ls (sub1 n))]
+          [else        (upper-bound 0 0 (vector))]))
+  (values prev (vector-ref ls n)))
 
 ;; fairly interleave a list of enumerations
 (define (disj-sum/e . e-ps)
@@ -921,11 +912,7 @@
             (values (real-part z)
                     (imag-part z)))
          real/e
-         (except/e real/e
-                   0
-                   ;; TODO: revert this when encode works
-                   ;; 0.0
-                   )))
+         (except/e real/e 0 0.0)))
 
 (define num/e
   (disj-sum/e (cons real/e real?)
