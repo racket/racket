@@ -20,8 +20,8 @@
          empty/e
          const/e
          from-list/e
-         sum/e
          disj-sum/e
+         disj-append/e
          cons/e
          dep/e
          dep2/e ;; requires size (eventually should replace dep/e with this)
@@ -212,148 +212,179 @@
                (- (* 2 n) 1)
                (* 2 (abs n))))))
 
-;; sum :: enum a, enum b -> enum (U a b)
-(define sum/e
-  (case-lambda
-    [(e) e]
-    [(e1 e2)
-     ;; Sum two enumerators of different sizes
-     (define (sum-uneven less/e more/e)
-       ;; interleave until less/e is exhausted
-       ;; pairsdone is 1+ the highest index using less/e
-       (let* ([less-size (size less/e)]
-              [pairsdone (* 2 less-size)])
-         (enum (+ less-size (size more/e))
-               (λ (n)
-                  (if (< n pairsdone)
-                      (let-values ([(q r) (quotient/remainder n 2)])
-                        ;; Always put e1 first though!
-                        (decode (match r
-                                  [0 e1]
-                                  [1 e2])
-                                q))
-                      (decode more/e (- n less-size))))
-               (λ (x)
-                  (with-handlers
-                      ([exn:fail?
-                        (λ (_)
-                           (let ([i (encode more/e x)])
-                             (if (< i less-size)
-                                 (+ (* 2 i) 1)
-                                 (+ (- i less-size) pairsdone))))])
-                    (* 2 (encode less/e x)))))))
-     (let* ([s1 (size e1)]
-            [s2 (size e2)])
-       (cond
-        [(= 0 s1) e2]
-        [(= 0 s2) e1]
-        [(< s1 s2)
-         (sum-uneven e1 e2)]
-        [(< s2 s1)
-         (sum-uneven e2 e1)]
-        [else ;; both the same length, interleave them
-         (enum (+ s1 s2)
-               (λ (n)
-                  (if (even? n)
-                      ((enum-from e1) (/ n 2))
-                      ((enum-from e2) (/ (- n 1) 2))))
-               (λ (x)
-                  (with-handlers ([exn:fail? 
-                                   (λ (_)
-                                      (+  (* ((enum-to e2) x) 2)
-                                          1))])
-                    (* ((enum-to e1) x) 2))))]))]
-    [(a b c . rest)
-     ;; map-pairs : (a, a -> b), (a -> b), listof a -> listof b
-     ;; apply the function to every pair, applying f to the first element of an odd length list
-     (define (map-pairs f d l)
-       (define (map-pairs/even l)
-         (match l
-           ['() '()]
-           [`(,x ,y ,rest ...)
-            (cons (f x y)
-                  (map-pairs f d rest))]))
-       (if (even? (length l))
-           (map-pairs/even l)
-           (cons (d (car l))
-                 (map-pairs/even (cdr l)))))
-     (apply sum/e (map-pairs sum/e identity (list* a b c rest)))]))
+(define (empty/e? e)
+  (= 0 (size e)))
 
-(define (disj-sum/e #:alternate? [alternate? #f] #:append? [append? #f] e-p . e-ps)
-  (define/match (disj-sum2/e e-p1 e-p2)
+(define (exact-min . xs)
+  (define (exact-min-2 x y)
+    (if (x . <= . y)
+        x
+        y))
+  (foldl exact-min-2 +inf.0 xs))
+
+(struct upper-bound
+  (total-bound      ;; Nat
+   individual-bound ;; Nat
+   enumerators      ;; Vectorof (Enum a, Nat)
+   )
+  #:transparent)
+
+;; layers : Listof Enum -> Listof Upper-Bound
+(define (mk-layers es)
+  (define (loop eis prev)
+    (define non-emptys (filter (negate (compose empty/e? car)) eis))
+    (match non-emptys
+      ['() '()]
+      [_
+       (define min-size
+         (apply exact-min (map (compose size car) non-emptys)))
+       (define (not-min-size? e)
+         (not (= (size (car e)) min-size)))
+       (define leftover
+         (filter not-min-size? non-emptys))
+       (define veis
+         (apply vector non-emptys))
+       (match-define (upper-bound prev-tb
+                                  prev-ib
+                                  prev-es)
+                     prev)
+       (define diff-min-size
+         (min-size . - . prev-ib))
+       (define total-bound
+         (prev-tb . + . (diff-min-size . * . (vector-length veis))))
+       (define cur-layer
+         (upper-bound total-bound
+                      min-size
+                      veis))
+       (define remaining-layers
+         (loop leftover cur-layer))
+       (cons cur-layer
+             remaining-layers)]))
+  (define eis
+    (for/list [(i (in-naturals))
+               (e (in-list es))]
+      (cons e i)))
+  (apply vector
+         (loop eis
+               (upper-bound 0 0 eis))))
+
+;; find-layer : Nat, Nonempty-Listof Upper-bound -> Upper-bound, Upper-bound
+;; Given an index, find the first layer 
+(define (find-dec-layer i layers)
+  (find-layer-by-size i upper-bound-total-bound layers))
+
+(define (find-index x e-ps [cur-index 0])
+  (match e-ps
+    ['() (redex-error 'encode "invalid term")]
+    [(cons (cons e in-e?)
+           more-e-ps)
+     (cond [(in-e? x)
+            (values (encode e x)
+                    cur-index)]
+           [else
+            (find-index x more-e-ps (add1 cur-index))])]))
+
+(define (find-enc-layer i e-i layers)
+  (define-values (prev cur)
+    (find-layer-by-size i
+                        upper-bound-individual-bound
+                        layers))
+  (define/match (find-e-index l e-i)
+    [((upper-bound tb ib eis) e-i)
+     (define (loop low hi)
+       (when (> low hi)
+         (redex-error 'encode "internal bin search bug"))
+       (define mid
+         (quotient (low . + . hi) 2))
+       (define cur
+         (cdr (vector-ref eis mid)))
+       (cond [(low . = . mid)
+              (unless (cur . = . e-i)
+                (redex-error 'encode "internal binary search bug"))
+              mid]
+             [(cur . = . e-i) mid]
+             [(cur . < . e-i) (loop (add1 mid) hi)]
+             [else            (loop low mid)]))
+     (loop 0 (vector-length eis))])
+  (values prev
+          cur
+          (find-e-index cur e-i)))
+
+(define (find-layer-by-size i get-size ls)
+  ;; Find the lowest indexed elt that is still greater than i
+  (define (loop lo hi)
+    (define mid (quotient (lo . + . hi) 2))
+    (define cur (get-size (vector-ref ls mid)))
+    (cond [(i  . = . cur) (add1 mid)]
+          [(i  . > . cur) (loop (add1 mid) hi)]
+          [(lo . = . mid) lo]
+          [else           (loop lo         mid)]))
+  (define n (loop 0 (vector-length ls)))
+  (define prev
+    (cond [(n . > . 0) (vector-ref ls (sub1 n))]
+          [else        (upper-bound 0 0 (vector))]))
+  (values prev (vector-ref ls n)))
+
+;; fairly interleave a list of enumerations
+(define (disj-sum/e . e-ps)
+  (define layers
+    (mk-layers (map car e-ps)))
+  (define (empty-e-p? e-p)
+    (= 0 (size (car e-p))))
+  (match (filter (negate empty-e-p?) e-ps)
+    ['() empty/e]
+    [`(,e-p) (car e-p)]
+    [_
+     (define (dec i)
+       (define-values (prev-up-bound cur-up-bound)
+         (find-dec-layer i layers))
+       (match-define (upper-bound so-far prev-ib es1) prev-up-bound)
+       (match-define (upper-bound ctb    cib     es)  cur-up-bound)
+       (define this-i (i . - . so-far))
+       (define len (vector-length es))
+       (define-values (q r) (quotient/remainder this-i len))
+       (define this-e (car (vector-ref es r)))
+       (decode this-e (+ q prev-ib)))
+     (define (enc x)
+       (define-values (index which-e)
+         (find-index x e-ps))
+       (define-values (prev-up-bound cur-up-bound cur-e-index)
+         (find-enc-layer index which-e layers))
+       (match-define (upper-bound ptb pib pes) prev-up-bound)
+       (match-define (upper-bound ctb cib ces) cur-up-bound)
+       (+ ptb
+          cur-e-index
+          ((vector-length ces) . * . (index . - . pib))))
+     (enum (apply + (map (compose size car) e-ps))
+           dec
+           enc)]))
+
+;; Like disj-sum/e, but sequences the enumerations instead of interleaving
+(define (disj-append/e e-p . e-ps)
+  (define/match (disj-append2/e e-p1 e-p2)
     [((cons e1 1?) (cons e2 2?))
-     (define (alternate-uneven less/e less? more/e more? #:less-first? less-first?)
-       (define-values (first/e second/e)
-         (if less-first?
-             (values less/e more/e)
-             (values more/e less/e)))
-       ;; interleave until less/e is exhausted
-       ;; pairsdone is 1+ the highest index using less/e
-       (define less-size (size less/e))
-       (define pairsdone (* 2 less-size))
-       (define (from-nat n)
-         (cond [(< n pairsdone)
-                (define-values (q r) (quotient/remainder n 2))
-                ;; Always put e1 first though!
-                (decode (match r
-                          [0 first/e]
-                          [1 second/e])
-                        q)]
-               [else (decode more/e (- n less-size))]))
-       (define (to-nat x)
-         (cond [(less? x)
-                (+ (* 2 (encode less/e x))
-                   (if less-first? 0 1))]
-               [(more? x)
-                (define i (encode more/e x))
-                (if (< i less-size)
-                    (+ (* 2 i)
-                       (if less-first? 1 0))
-                    (+ (- i less-size) pairsdone))]
-               [else (redex-error 'encode "bad term")]))
-       (enum (+ less-size (size more/e))
-             from-nat
-             to-nat))     
      (define s1 (size e1))
      (define s2 (size e2))
-     (cond [(not (xor alternate? append?))
-            (redex-error 'disj-sum/e "Conflicting options chosen, must pick exactly one of #:alternate? or #:append?")]
-           [alternate?
-            (cond [(= 0 s1) e2]
-                  [(= 0 s2) e1]
-                  [(< s1 s2) (alternate-uneven e1 1? e2 2? #:less-first? #t)]
-                  [(< s2 s1) (alternate-uneven e2 2? e1 1? #:less-first? #f)]
-                  [else ;; both the same length, interleave them
-                   (define (from-nats n)
-                     (cond [(even? n) (decode e1 (/ n 2))]
-                           [else (decode e2 (/ (- n 1) 2))]))
-                   (define (to-nats x)
-                     (cond [(1? x) (* (encode e1 x) 2)]
-                           [(2? x) (+ 1 (* (encode e2 x) 2))]
-                           [else (redex-error 'encode "bad term")]))
-                   (enum (+ s1 s2) from-nats to-nats)])]
-           [append?
-            (define (from-nat n)
-              (cond [(< n s1) (decode e1 n)]
-                    [else (decode e2 (- n s1))]))
-            (define (to-nat x)
-              (cond [(1? x) (encode e1 x)]
-                    [(2? x) (+ (encode e2 x) s1)]
-                    [else (redex-error 'encode "bad term")]))
-            (enum (+ s1 s2) from-nat to-nat)]
-           [(nor alternate? append?)
-            (redex-error 'disj-sum/e "Must specify either #:alternate? or #:append?")])])
+     (when (infinite? s1)
+       (error "Only the last enum in a call to disj-append/e can be infinite."))
+     (define (from-nat n)
+       (cond [(< n s1) (decode e1 n)]
+             [else (decode e2 (- n s1))]))
+     (define (to-nat x)
+       (cond [(1? x) (encode e1 x)]
+             [(2? x) (+ (encode e2 x) s1)]
+             [else (redex-error 'encode "bad term")]))
+     (enum (+ s1 s2) from-nat to-nat)])
   (car
-   (foldr (λ (e-p1 e-p2)
+   (foldr1 (λ (e-p1 e-p2)
              (match* (e-p1 e-p2)
                      [((cons e1 1?) (cons e2 2?))
-                      (cons (disj-sum2/e e-p1
-                                         (cons e2 (negate 1?)))
+                      (cons (disj-append2/e e-p1
+                                            (cons e2 (negate 1?)))
                             (λ (x)
                                (or (1? x)
                                    (2? x))))]))
-          (cons empty/e (λ (_) #f))
-          (cons e-p e-ps))))
+           (cons e-p e-ps))))
 
 (define (foldr1 f l)
   (match l
@@ -753,8 +784,7 @@
            +inf.0))
      (fix/e fix-size
             (λ (self)
-               (disj-sum/e #:alternate? #t
-                           (cons (const/e '()) null?)
+               (disj-sum/e (cons (const/e '()) null?)
                            (cons (cons/e e self) pair?))))]
     [(e n)
      (list/e (build-list n (const e)))]))
@@ -828,13 +858,12 @@
   (map/e
    integer->char
    char->integer
-   (disj-sum/e #:append? #t
-               low/e-p
-               up/e-p
-               bottom/e-p
-               mid/e-p
-               above1/e-p
-               above2/e-p)))
+   (disj-append/e low/e-p
+                  up/e-p
+                  bottom/e-p
+                  mid/e-p
+                  above1/e-p
+                  above2/e-p)))
 
 (define string/e
   (map/e
@@ -848,8 +877,7 @@
          nats/e))
 
 (define integer/e
-  (disj-sum/e #:alternate? #t
-              (cons (const/e 0) zero?)
+  (disj-sum/e (cons (const/e 0) zero?)
               (cons from-1/e (λ (n) (> n 0)))
               (cons (map/e - - from-1/e)
                     (λ (n) (< n 0)))))
@@ -871,13 +899,11 @@
                 (nor (infinite? n)
                      (nan? n))))))
 (define float/e
-  (disj-sum/e #:append? #t
-              weird-flonums/e-p
-              normal-flonums/e-p))
+  (disj-append/e weird-flonums/e-p
+                 normal-flonums/e-p))
 
 (define real/e
-  (disj-sum/e #:alternate? #t
-              (cons integer/e exact-integer?)
+  (disj-sum/e (cons integer/e exact-integer?)
               (cons float/e flonum?)))
 
 (define non-real/e
@@ -889,8 +915,7 @@
          (except/e real/e 0 0.0)))
 
 (define num/e
-  (disj-sum/e #:alternate? #t
-              (cons real/e real?)
+  (disj-sum/e (cons real/e real?)
               (cons non-real/e complex?)))
 
 (define bool/e
@@ -903,8 +928,7 @@
    (many/e char/e)))
 
 (define base/e
-  (disj-sum/e #:alternate? #t
-              (cons (const/e '()) null?)
+  (disj-sum/e (cons (const/e '()) null?)
               (cons num/e number?)
               (cons string/e string?)
               (cons bool/e boolean?)
@@ -913,8 +937,7 @@
 (define any/e
   (fix/e +inf.0
          (λ (any/e)
-            (disj-sum/e #:alternate? #t
-                        (cons base/e (negate pair?))
+            (disj-sum/e (cons base/e (negate pair?))
                         (cons (cons/e any/e any/e) pair?)))))
 (define (var-prefix/e s)
   (define as-str (symbol->string s))
