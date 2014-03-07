@@ -29,7 +29,7 @@
     #:when (for/and ([arg (in-syntax #'(args ...))])
              (not (subtypeof? arg -Output-Port)))
     #:do [(log-optimization-info "hidden parameter" #'op)]
-    #:with opt #'(op args.opt ...))
+    #:with opt (syntax/loc this-syntax (op args.opt ...)))
   ;; This one only fires if the call to `random' didn't get optimized
   ;; (which logs the hidden cost itself), i.e. (random <Integer>) .
   (pattern (#%plain-app op:hidden-random-parameter-function args:opt-expr ...)
@@ -37,7 +37,7 @@
     #:when (for/and ([arg (in-syntax #'(args ...))])
              (not (subtypeof? arg -Pseudo-Random-Generator)))
     #:do [(log-optimization-info "hidden parameter (random)" #'op)]
-    #:with opt #'(op args.opt ...))
+    #:with opt (syntax/loc this-syntax (op args.opt ...)))
 
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
@@ -49,4 +49,4 @@
              (or (and constructor-for (struct-constructor? constructor-for))
                  (struct-constructor? #'op)))
     #:do [(log-optimization-info "struct constructor" #'op)]
-    #:with opt #'(op-part args.opt ...)))
+    #:with opt (syntax/loc this-syntax (op-part args.opt ...))))
