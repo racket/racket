@@ -1,9 +1,11 @@
 #lang racket/base
 
 (require (except-in scribble/html/lang #%module-begin)
-         "layout.rkt" "extras.rkt" "links.rkt" "utils.rkt")
+         "layout.rkt" "extras.rkt" "links.rkt" "utils.rkt"
+         "indexes.rkt")
 (provide (all-from-out scribble/html/lang
-                       "layout.rkt" "extras.rkt" "links.rkt")
+                       "layout.rkt" "extras.rkt" "links.rkt"
+                       "indexes.rkt")
          basename web-path url-of ; from "utils.rkt"
          (rename-out [module-begin #%module-begin]))
 

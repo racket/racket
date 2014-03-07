@@ -196,6 +196,21 @@ Like @racket[page*], but for a resource that is a plain file.}
 Registers a resource that is either a copy of a file or a symbolic link,
 returning a value that can be used to reference the resource.}
 
+
+@defproc[(make-indexes [s site?]
+                       [dir (or/c 'same relative-path?)]
+                       [#:depth depth (or/c #f exact-nonnegative-integer?)])
+         void?]{
+
+Registers an @filepath{index.html} file for every directory within
+@racket[dir] (relative to the current directory) that does not have an
+@filepath{index.html} file already. If @racket[depth] is not @racket[#f],
+then subdirectories are explored at most @racket[depth] layers deep.
+
+The generated index files are registered for the site @racket[s] at
+destinations that correspond to treating the current directory as the
+site root.}
+
 @; ----------------------------------------
 
 @section{Generating Site Content}
