@@ -34,8 +34,7 @@
     @mailing-lists-quick
     @irc-quick
     @parlist[@strong{RacketCon}
-             @text{@-rcon[] is our annual conference:
-                   @-rcon[2012] and @-rcon[2011].}]
+             @text{@-rcon[] is our annual conference.}]
     @parlist[@strong{PLT Design Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}

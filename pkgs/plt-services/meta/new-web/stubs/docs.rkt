@@ -1,9 +1,10 @@
 #lang plt-web
 
-(require (only-in "../www/resources.rkt" www-site))
+(require (only-in "../www/resources.rkt" www-site)
+         "../testing.rkt")
 
 (define docs-site (site "stubs/docs" 
-                        #:url "http://docs.racket-lang.org/"
+                        #:url (rewrite-for-testing "http://docs.racket-lang.org/")
                         #:always-abs-url? #t
                         #:page-style? #f
                         #:meta? #t
@@ -31,3 +32,7 @@
               .navsettop, .tocset { top: 60px; }
               .versionbox { top: 64px; }
               }))
+
+(provide docs-path)
+(define (docs-path [path ""])
+  (string-append ((resource "stubs/docs/" #f)) path))

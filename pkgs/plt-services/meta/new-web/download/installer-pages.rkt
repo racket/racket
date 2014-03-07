@@ -53,7 +53,7 @@
                        (λ (m)
                          (define url
                            (mirror-link
-                            (string-append (mirror-url m) path)
+                            (string-append (mirror-url* m) path)
                             size
                             (λ () (format "~a <~a>"
                                           (mirror-person m)
@@ -71,6 +71,12 @@
     @;section{Installation instructions}
     @;(bundle-installation-instructions bundle)
     })
+
+(define (mirror-url* m)
+  (define u (mirror-url m))
+  (if (eq? u 'main)
+      ((resource "download/installers/" #f))
+      u))
 
 (provide installer->page)
 (define installer->page

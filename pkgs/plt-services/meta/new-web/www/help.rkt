@@ -1,10 +1,11 @@
 #lang plt-web
 
-(require "resources.rkt" "community.rkt")
+(require plt-web/style "resources.rkt" "community.rkt")
 
 (provide help)
 (define help
   @page[#:site www-site #:link-title "Need Help?"]{
+   @columns[12 #:center? #t #:row? #t]{
    @parlist[@strong{Don't Panic!}
             @text{Racket has a variety of resources designed to help you
                   with any problems you may have.}]
@@ -35,4 +36,4 @@
                   don't pan out@";" sign up for it in the @community area of
                   the website.}]
    @br
-   @text{Thanks for using Racket!}})
+   @text{Thanks for using Racket!}}})

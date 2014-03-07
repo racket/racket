@@ -1,6 +1,7 @@
 #lang plt-web
+(require "../testing.rkt")
 
 (provide download-site)
 
 (define download-site (site "download"
-                            #:url "http://download.racket-lang.org/"))
+                            #:url (rewrite-for-testing "http://download.racket-lang.org/")))

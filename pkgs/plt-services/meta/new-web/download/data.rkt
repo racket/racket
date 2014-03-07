@@ -50,12 +50,10 @@
     ["sit" "StuffIt Archive"]))
 
 (define -mirrors-
-  ;; This is a sequence of
-  ;;   (location url reposnisble-name email [techincal-contact])
-  '(["Main download (USA, Massachusetts, Northeastern University)"
-     "http://download.racket-lang.org/installers/"
-     "Eli Barzilay"
-     "eli@barzilay.org"]
+  '(["Main (Amazon Web Services)"
+     main
+     "Matthew Flatt"
+     "mflatt@cs.utah.edu"]
     ["USA, Illinois (Northwestern University)"
      "http://www.eecs.northwestern.edu/racket/"
      "Robby Findler"
@@ -125,7 +123,9 @@
 (struct mirror (location url person email))
 
 (define mirrors
-  (map (λ (m) (mirror (car m) (regexp-replace #rx"/?$" (cadr m) "/")
+  (map (λ (m) (mirror (car m) (if (string? (cadr m))
+                                  (regexp-replace #rx"/?$" (cadr m) "/")
+                                  (cadr m))
                       (caddr m) (cadddr m)))
        -mirrors-))
 

@@ -1,11 +1,12 @@
 #lang plt-web
-(require plt-web/style)
+(require plt-web/style
+         "../testing.rkt")
 
 (provide www-site)
 
 (define www-site
   (site "www"
-        #:url "http://racket-lang.org/"
+        #:url (rewrite-for-testing "http://racket-lang.org/")
         #:navigation
         (list
          @a[href: (resource "stubs/pkgs/" #f)]{Packages}

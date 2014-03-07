@@ -1,7 +1,12 @@
 #lang plt-web
 
+(require "../www/resources.rkt")
+
 (define drracket-site (site "drracket"
-                            #:url "http://drracket.org/"))
+                            #:url "http://drracket.org/"
+                            #:share-from www-site
+                            #:page-style? #f
+                            #:meta? #t))
 
 ;; This just shows an ascii logo and redirects to the main page.  Thanks
 ;; to Can Burak Cilingir for both the logo and the drracket.org domain

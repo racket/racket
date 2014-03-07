@@ -3,6 +3,8 @@
 (require "resources.rkt" "data.rkt" "installer-pages.rkt" "symlinks.rkt" plt-web/style
          (prefix-in pre: "../minis/pre.rkt"))
 
+(define docs "docs")
+
 (provide render-download-page)
 (define (render-download-page [release current-release] [package 'racket])
   (define version (release-version release))

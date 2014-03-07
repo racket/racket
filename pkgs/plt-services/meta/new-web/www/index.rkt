@@ -1,7 +1,9 @@
 #lang plt-web
 (require plt-web/style
          racket/runtime-path
-         (prefix-in pre: "../minis/pre.rkt"))
+         "irc.rkt"
+         (prefix-in pre: "../minis/pre.rkt")
+         (only-in "../stubs/docs.rkt" docs-path))
 
 ;; TODO
 ;; -- add links in top paragraph
@@ -15,9 +17,6 @@
 (define-runtime-path img-dir "img")
 (define-runtime-path js-dir "js")
 (define-runtime-path css-dir "css")
-
-(define (doc path . text)
-  (apply a href: (list "http://docs.racket-lang.org/" path) text))
 
 (struct example (title code desc))
 
@@ -52,6 +51,7 @@
 (define (elemcode . strs) (apply tt strs))
 
 (define examples
+  (lazy
   @; --- Each example here should be at most 7 lines long ------------
   (list
    @; Candidates for initial example: --------------------------------
@@ -264,7 +264,7 @@
                 (define x (make-hasheq))
                 (hash-set! x A B)
                 (x A)}})
-    )))
+    ))))
 
 (define blurb "Racket is a programming language")
 
@@ -314,7 +314,7 @@ dialects.  Racket's libraries support applications from web servers to distribut
 computing and from databases to charts.
 }
                                                                             
-@(apply slideshow-explain examples)
+@(apply slideshow-explain (force examples))
 
 @div[id: "topcontent"]{
 @row{
@@ -341,7 +341,7 @@ computing and from databases to charts.
      @a[href: "#" class: "toggle wide_only next_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: 40%; right: -15%"]{@next}
-   @(apply slideshow-panel examples)}}
+   @(apply slideshow-panel (force examples))}}
 
 @columns[1]
 
@@ -352,11 +352,11 @@ computing and from databases to charts.
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
-@a[href: "http://docs.racket-lang.org/quick/"]{Draw more pictures} or
-@a[href: "http://docs.racket-lang.org/more/"]{build a web server from scratch}.  Racket includes both
-@a[href: "http://docs.racket-lang.org/"]{batteries} and a 
-@a[href: "http://docs.racket-lang.org/drracket/"]{programming environment},
-so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
+@a[href: (docs-path "quick/")]{Draw more pictures} or
+@a[href: (docs-path "more/")]{build a web server from scratch}.  Racket includes both
+@a[href: (docs-path)]{batteries} and a 
+@a[href: (docs-path "drracket/")]{programming environment},
+so @a[href: (docs-path "getting-started/")]{get started}!
 }}
 
 @sectitle{Go Further}
@@ -365,22 +365,22 @@ so @a[href: "http://docs.racket-lang.org/getting-started/"]{get started}!
 
 
 @growbox["Program"]{Racket's
-@a[href: "http://docs.racket-lang.org/guide/intro.html#(part._.Interacting_with_.Racket)"]{interactive
+@a[href: (docs-path "guide/intro.html#(part._.Interacting_with_.Racket)")]{interactive
 mode} encourages experimentation, and quick scripts easily compose
 into larger systems.  Small scripts and large systems both benefit
 from
-@a[href: "http://docs.racket-lang.org/guide/performance.html"]{native-code
+@a[href: (docs-path "guide/performance.html")]{native-code
 JIT compilation} When a system gets too big to keep in your head, you
 can add
-@a[href: "http://docs.racket-lang.org/ts-guide/index.html"]{static
+@a[href: (docs-path "ts-guide/index.html")]{static
 types}.}
 
-@growbox["Language"]{@a[href: "http://docs.racket-lang.org/guide/languages.html"]{Extend
+@growbox["Language"]{@a[href: (docs-path "guide/languages.html")]{Extend
 Racket} whenever you need to.  Mold it to better suit your tasks
 without sacrificing
-@a[href: "http://docs.racket-lang.org/guide/dialects.html"]{interoperability}
+@a[href: (docs-path "guide/dialects.html")]{interoperability}
 with existing libraries and without having to modify the
-@a[href: "http://docs.racket-lang.org/guide/intro.html"]{tool chain}.
+@a[href: (docs-path "guide/intro.html")]{tool chain}.
 When less is more, you can remove parts of a language or start over
 and build a new one.}
 
@@ -388,7 +388,7 @@ and build a new one.}
 @a[href: "http://htdp.org/"]{starting out}, want to know more about
 programming language @a[href: "http://www.plai.org/"]{applications} or
 @a[href: "http://redex.racket-lang.org/"]{models}, looking to
-@a[href: "http://docs.racket-lang.org/continue/"]{expand your
+@a[href: (docs-path "continue/")]{expand your
 horizons}, or ready to dive into @a[href: "learning.html"]{research},
 Racket can help you become a better programmer and system builder.}}
 
@@ -397,25 +397,25 @@ Racket can help you become a better programmer and system builder.}}
 @row{
 @columns[5]{
   @panetitle{For getting started}
-  @docelem['Quick "An Introduction to Racket with Pictures" "http://docs.racket-lang.org/quick/"]{
+  @docelem['Quick "An Introduction to Racket with Pictures" (docs-path "quick/")]{
     gives you a taste of Racket.}
-  @docelem['More "Systems Programming with Racket" "http://docs.racket-lang.org/more/"]{
+  @docelem['More "Systems Programming with Racket" (docs-path "more/")]{
     dives much deeper and much faster, showing how to build a complete
     continuation-based web server.}
-  @docelem['Guide "Racket" "http://docs.racket-lang.org/guide/"]{
+  @docelem['Guide "Racket" (docs-path "guide/")]{
     starts with a tutorial on Racket basics, and then it
     describes the rest of the Racket language.}}
 
 
 @columns[5 #:push 2]{
   @panetitle{For experienced Racketeers}
-  @docelem['Reference "Racket" "http://docs.racket-lang.org/reference/"]{
+  @docelem['Reference "Racket" (docs-path "reference/")]{
 provides comprehensive coverage of all of Racket.}
-  @docelem['Continue "Web Applications in Racket" "http://docs.racket-lang.org/continue/"]{
+  @docelem['Continue "Web Applications in Racket" (docs-path "continue/")]{
   describes how to use the
-    Racket @a[href: "http://docs.racket-lang.org/web-server/"]{web
+    Racket @a[href: (docs-path "web-server/")]{web
     server} to build dynamic web applications.}
-  @docelem["Package Management" "Racket" "http://docs.racket-lang.org/pkg/"]{
+  @docelem["Package Management" "Racket" (docs-path "pkg/")]{
 explains how to install
     @a[href: "http://pkgs.racket-lang.org"]{packages}, and how to
     build and distribute your own.}}
@@ -440,11 +440,8 @@ explains how to install
 @panetitle{Discussion}
 @p{@a[href: "http://lists.racket-lang.org/"]{Mailing lists}
   — Discussion lists for using and developing Racket.}
-@p{@a[href: "http://racket-lang.org/irc-chat.html"]{IRC}   —
-Chat in the @tt[style: "background-color: #d8d8e8;"]{@big{@strong{#racket}}} channel on
-@a[href: "http://freenode.net"]{@tt{freenode.net}} — An informal
-discussion channel for all things related to Racket.
-@a[href: "https://botbot.me/freenode/racket/"]{Browse the logs}.}
+@p{@a[href: "http://racket-lang.org/irc-chat.html"]{IRC} —
+@irc-content}
 
 @p{@people   —
 The people behind Racket.}

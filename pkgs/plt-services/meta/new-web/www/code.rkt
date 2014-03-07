@@ -1,16 +1,16 @@
 #lang plt-web
 
 (require syntax-color/module-lexer setup/xref 
-         scribble/xref scribble/tag)
+         scribble/xref scribble/tag
+         (only-in "../stubs/docs.rkt" docs-path))
 
 (provide code)
-
-(define doc-root "http://docs.racket-lang.org/")
 
 (define expand-namespace (make-base-namespace))
 (define xref (load-collections-xref))
 
 (define (code . strs)
+  (define doc-root (docs-path))
   (define str
     (let* ([str (string-append* strs)]
            [N (- 6 (length (regexp-match-positions* "\n" str)))])
