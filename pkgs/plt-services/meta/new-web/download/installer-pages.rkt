@@ -1,6 +1,6 @@
 #lang plt-web
 
-(require "resources.rkt" "data.rkt" "mirror-link.rkt")
+(require "resources.rkt" "data.rkt" "mirror-link.rkt" plt-web/style)
 
 (define (render-installer-page installer)
   (define path      (installer-path installer))
@@ -40,17 +40,19 @@
       [else (error 'installer-page "unknown mode: ~e" mode)]))
   @page[#:site download-site 
         #:file html-file #:title title #:referrer this #:part-of 'download]{
-    @table[width: "90%" align: 'center]{
-      @tr[valign: 'top]{
-        @td[width: "50%"]{
-          @table{@(row "Package"  package)
-                 @(row "Version"  @list{@version (@date)})
-                 @(row "Platform" (list platform type))
-                 @(row "Type"     suffix-desc)
-                 @(row "File"     file)
-                 @(row "Size"     @span[title: @list{Exact size: @size bytes}]{
+    @columns[10 #:center? #t #:row? #t #:center-text? #t]{
+      @table[align: 'center style: "border: none;"]{
+        @tr[valign: 'top]{
+          @td[width: "50%" style: "border: none;"]{
+            @table[class: "striped rounded"]{
+                   @(row "Package"  package)
+                   @(row "Version"  @list{@version (@date)})
+                   @(row "Platform" (list platform type))
+                   @(row "Type"     suffix-desc)
+                   @(row "File"     file)
+                   @(row "Size"     @span[title: @list{Exact size: @size bytes}]{
                                     @human-size})}}
-        @td[width: "50%"]{
+        @td[width: "50%" style: "border: none;"]{
           Download links:
           @div[style: "font-size: 75%; text-align: right; float: right;"]{
             (Choose the nearest site)}
@@ -76,7 +78,7 @@
     @; (looks redundant now that all of the installers are pretty standard)
     @;section{Installation instructions}
     @;(bundle-installation-instructions bundle)
-    })
+    }})
 
 (define (mirror-url* m)
   (define u (mirror-url m))
