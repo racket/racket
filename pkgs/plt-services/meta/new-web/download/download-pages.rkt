@@ -8,24 +8,46 @@
 (provide render-download-page)
 (define (render-download-page [release current-release] [package 'racket])
   (define version (release-version release))
+  (define all-packages (sort (hash-map (for/hash ([i (in-list all-installers)]
+                                                  #:when (equal? release (installer-release i)))
+                                         (values (installer-package i)
+                                                 (installer->page i 'render-package-option)))
+                                       cons)
+                             (lambda (a b)
+                               (cond
+                                [(equal? (car a) package) #t]
+                                [(equal? (car b) package) #f]
+                                [else (string<? (cdr a) (cdr b))]))))
   (list
    @columns[10 #:center? #t #:row? #t #:center-text? #t]{
-    @h2[style: "text-align: center"]{@(package->name package) v@version (@(release-date-string release))}
-    @div[id: "download_panel" align: "center" style: "display: none;"]{
-      @input[type: 'submit value: "Download" onclick: "do_jump();"
-             style: '("font-size: 200%; font-weight: bolder;"
-                      " letter-spacing: 0.2em;"
-                      " margin: 0.5ex 0 1ex 0; width: 50%;")]
-      @br
-      @div[style: "margin-bottom: 20px"]{
-        Platform:
-        @select[id: "platform_selector"
+    @h3[style: "text-align: center"]{Version @version (@(release-date-string release))}
+    @div[id: "download_panel" align: "center" style: "display: none; margin-bottom: 20px;"]{
+      @div[align: "center"]{
+        Distribution:
+        @select[id: "package_selector"
                 onchange:   "selection_changed();"
                 onkeypress: "selection_changed();"]{
-          @(for/list ([i (in-list all-installers)]
-                      #:when (and (equal? release (installer-release i))
-                                  (equal? package (installer-package i))))
-             (installer->page i 'render-option))}}}}
+          @(for/list ([i (in-list all-packages)])
+             (cdr i))}
+        @(for/list ([i (in-list all-packages)]
+                    [n (in-naturals)])
+           (define this-package (car i))
+           @div[id: (format "platform_selector_panel_~a" this-package)
+                style: (if (zero? n) "display: block;" "display: none;")]{
+              Platform:
+              @select[id: (format "platform_selector_~a" this-package)
+                      onchange:   "selection_changed();"
+                      onkeypress: "selection_changed();"]{
+                @(for/list ([i (in-list all-installers)]
+                            #:when (and (equal? release (installer-release i))
+                                        (equal? this-package (installer-package i))))
+                   (installer->page i 'render-direct-option))}})}
+      @br
+      @navigation-button[@(a href: (resource "download/" #f)
+                             id: "download_link"
+                             "Download")]
+      @br
+      or @a[href: (resource "download/" #f) id: "mirror_link"]{mirror}}}
   @columns[8 #:center? #t #:center-text? #t #:row? #t]{
       @(let* ([sep   @list{@nbsp @bull @nbsp}]
               [links (λ links @(div style: "margin: 1ex 4ex;" (add-between links sep)))]
@@ -45,7 +67,7 @@
         your particular platform, try other Linux installers, starting from
         similar ones.  Very often, a build on one Linux variant will work on
         others too.}
-    @downloader-script
+    @downloader-script[package (map car all-packages)]
     @noscript{
       Installers are available for the following platforms:
       @ul{@(for/list ([i (in-list all-installers)]
@@ -192,14 +214,16 @@
        appropriate building block for all kinds of software, and to clarify how
        we view the license of Racket.}}})
 
-(define downloader-script
+(define (downloader-script package packages)
   @script/inline[type: 'text/javascript]{@||
     var do_jump, selection_changed;
+    var packages = [@(string-join (map (lambda (s) (format "\"~s\"" s)) packages) ", ")];
+    var current_package = "@|package|";
     (function() {
     // show the download panel, since JS is obviously working
     document.getElementById("download_panel").style.display = "block";
     //
-    var selector = document.getElementById("platform_selector");
+    var selector = document.getElementById("platform_selector_@|package|");
     // jump to the selected item
     do_jump = function() {
       location.href = selector[selector.selectedIndex].value;
@@ -240,6 +264,23 @@
     linux_expl_s = document.getElementById("linux_explain").style;
     selection_changed_timer = false;
     selection_changed = function() {
+      var package_selector = document.getElementById("package_selector");
+      var package = packages[package_selector.selectedIndex];
+      if (current_package != package) {
+         var panel = document.getElementById("platform_selector_panel_" + current_package);
+         panel.style.display = "none";
+         current_package = package;
+         panel = document.getElementById("platform_selector_panel_" + package);
+         panel.style.display = "block";
+         selector = document.getElementById("platform_selector_" + package);
+      }
+      var download_link = document.getElementById("download_link");
+      var selected = selector[selector.selectedIndex];
+      var path = selected.value;
+      download_link.href = path;
+      download_link.innerHTML = path.replace(/.*\//, "") + " (" + selected.getAttribute("x-installer-size") + ")";
+      var mirror_link = document.getElementById("mirror_link");
+      mirror_link.href = selected.getAttribute("x-mirror");
       if (selection_changed_timer) clearTimeout(selection_changed_timer);
       selection_changed_timer = setTimeout(do_selection_changed, 250);
     }
@@ -249,33 +290,45 @@
           "block" : "none";
     }
     //
-    var opts = selector.options;
-    var len = opts.length;
-    // get the order and a make a sorting function
-    var order = getPlatformOrder();
-    function getOrder(str) {
-      for (var i=0@";" i<order.length@";" i++)
-        if (str.search(order[i]) >= 0) return i;
-      return 999;
+    function initialize_selector(selector) {
+      var opts = selector.options;
+      var len = opts.length;
+      // get the order and a make a sorting function
+      var order = getPlatformOrder();
+      function getOrder(str) {
+        for (var i=0@";" i<order.length@";" i++)
+          if (str.search(order[i]) >= 0) return i;
+        return 999;
+      }
+      function isBetter(opt1,opt2) {
+        // sort first by the order, then by how they were placed originally
+        var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
+             if (ord1 < ord2)       return -1;
+        else if (ord1 > ord2)       return +1;
+        else if (opt1[2] < opt2[2]) return -1;
+        else if (opt1[2] > opt2[2]) return +1;
+        else                        return  0;
+      }
+      // sort the options, need to use a temporary array
+      var tmps = new Array(len);
+      for (var i=0@";" i<len@";" i++)
+        tmps[i]=[opts[i].text,
+                 opts[i].value,
+                 opts[i].getAttribute("x-installer-size"),
+                 opts[i].getAttribute("x-mirror"),
+                 i];
+      tmps.sort(isBetter);
+      for (var i=0@";" i<len@";" i++) {
+        opts[i].text  = tmps[i][0];
+        opts[i].value = tmps[i][1];
+        opts[i].setAttribute("x-installer-size", tmps[i][2]);
+        opts[i].setAttribute("x-mirror", tmps[i][3]);
+      }
+      opts.selectedIndex = 0;
     }
-    function isBetter(opt1,opt2) {
-      // sort first by the order, then by how they were placed originally
-      var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
-           if (ord1 < ord2)       return -1;
-      else if (ord1 > ord2)       return +1;
-      else if (opt1[2] < opt2[2]) return -1;
-      else if (opt1[2] > opt2[2]) return +1;
-      else                        return  0;
+    for (var i = 0; i < packages.length; i++) {
+      initialize_selector(document.getElementById("platform_selector_" + packages[i]));
     }
-    // sort the options, need to use a temporary array
-    var tmps = new Array(len);
-    for (var i=0@";" i<len@";" i++)
-      tmps[i]=[opts[i].text,opts[i].value,i];
-    tmps.sort(isBetter);
-    for (var i=0@";" i<len@";" i++) {
-      opts[i].text  = tmps[i][0];
-      opts[i].value = tmps[i][1];
-    }
-    opts.selectedIndex = 0;
+    selection_changed();
     })();
     @||})

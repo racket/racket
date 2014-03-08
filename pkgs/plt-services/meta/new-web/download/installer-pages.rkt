@@ -30,6 +30,12 @@
     (case mode
       [(only-platform) (a href: url platform type)]
       [(render-option) (option value: url platform type)]
+      [(render-direct-option) (option value: (let ([m (first mirrors)])
+                                               (string-append (mirror-url* m) path))
+                                      x-mirror: @url
+                                      x-installer-size: @human-size
+                                      platform type)]
+      [(render-package-option) (option value: url package)]
       [(#f) @a[href: url]{@title}]
       [else (error 'installer-page "unknown mode: ~e" mode)]))
   @page[#:site download-site 

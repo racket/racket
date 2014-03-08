@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/string)
 
 (define -platform-names-
   `(;; source platforms
@@ -50,7 +51,7 @@
     ["sit" "StuffIt Archive"]))
 
 (define -mirrors-
-  '(["Main (Amazon Web Services)"
+  '(["USA, East"
      main
      "Matthew Flatt"
      "mflatt@cs.utah.edu"]
@@ -279,7 +280,7 @@
     (λ (package)
       (hash-ref! t package
         (λ () (string-titlecase
-               (regexp-replace #rx"-" (symbol->string package) " ")))))))
+               (string-join (reverse (string-split (symbol->string package) "-")) " ")))))))
 
 (define platform-names
   (for/list ([pn (in-list -platform-names-)])
