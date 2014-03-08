@@ -6,4 +6,5 @@
 ;; Root URLs must be written into roots, not
 ;; paths within a URLs
 (define (rewrite-for-testing s)
-  s)
+  (regexp-replace #rx"/$" s ".s3-website-us-east-1.amazonaws.com/")
+  #;s)

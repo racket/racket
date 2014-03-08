@@ -3,7 +3,8 @@
          racket/runtime-path
          "irc.rkt"
          (prefix-in pre: "../minis/pre.rkt")
-         (only-in "../stubs/docs.rkt" docs-path))
+         (only-in "../stubs/docs.rkt" docs-path)
+         (only-in "../con/resources.rkt" rcon))
 
 ;; TODO
 ;; -- add links in top paragraph
@@ -348,7 +349,7 @@ computing and from databases to charts.
 @columns[3 style: "text-color: black"]{
   @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
   @p{Racket version 6.0 has been released.}
-  @p{@-rcon[2014]{RacketCon 2014} will be in September in St Louis.}}}
+  @p{@rcon[2014]{RacketCon 2014} will be in September in St Louis.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
@@ -426,9 +427,9 @@ explains how to install
 @row{
 @columns[4]{
 @panetitle{News & Events}
-@p{@-rcon[#f]{RacketCon} — The annual
+@p{@rcon[#f]{RacketCon} — The annual
   Racket meeting, coming up in September.  Previously
-  @-rcon[2013], @-rcon[2012], and @-rcon[2011].}
+  @rcon[2013], @rcon[2012], and @rcon[2011].}
 
 @p{@a[href: "http://blog.racket-lang.org/"]{Blog}
   — Announcements, helpful hints, and thoughtful rants.}

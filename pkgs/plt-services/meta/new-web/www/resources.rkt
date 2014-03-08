@@ -6,7 +6,7 @@
 
 (define www-site
   (site "www"
-        #:url (rewrite-for-testing "http://racket-lang.org/")
+        #:url (rewrite-for-testing "http://www.racket-lang.org/")
         #:navigation
         (list
          @a[href: (resource "stubs/pkgs/" #f)]{Packages}

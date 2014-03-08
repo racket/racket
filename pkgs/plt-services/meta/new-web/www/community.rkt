@@ -4,7 +4,8 @@
          "resources.rkt" "people.rkt" "irc.rkt"
          "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
-         (prefix-in pre: "../minis/pre.rkt"))
+         (prefix-in pre: "../minis/pre.rkt")
+         (only-in "../con/resources.rkt" rcon))
 
 (provide thanks)
 (define thanks
@@ -34,7 +35,7 @@
     @mailing-lists-quick
     @irc-quick
     @parlist[@strong{RacketCon}
-             @text{@-rcon[] is our annual conference.}]
+             @text{@rcon[] is our annual conference.}]
     @parlist[@strong{PLT Design Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
