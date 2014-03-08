@@ -32,7 +32,8 @@
       (printf "\tupdating ~a\n" pkg-name)
       (define new-checksum
         (package-url->checksum
-         (package-ref i 'source)))
+         (package-ref i 'source)
+         #:pkg-name pkg-name))
       (package-begin
        (define* i
          (hash-set i 'checksum
@@ -47,7 +48,8 @@
                           (define old-checksum (hash-ref vi 'checksum ""))
                           (define new-checksum
                             (package-url->checksum
-                             (hash-ref vi 'source "")))
+                             (hash-ref vi 'source "")
+                             #:pkg-name pkg-name))
                           (values v
                                   (hash-set vi 'checksum
                                             (or new-checksum
@@ -67,7 +69,7 @@
   (define-values (checksum module-paths dependencies)
     (pkg:get-pkg-content (pkg:pkg-desc (hash-ref i 'source)
                                        #f
-                                       #f
+                                       (hash-ref i 'name)
                                        (hash-ref i 'checksum)
                                        #f)))
   (package-begin
