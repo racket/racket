@@ -647,11 +647,27 @@ contexts.
 @transform-time[]}
 
 
-@defproc[(syntax-local-phase-level) (or/c exact-integer? #f)]{
+@defproc[(syntax-local-phase-level) exact-integer?]{
 
 During the dynamic extent of a @tech{syntax transformer} application
 by the expander, the result is the @tech{phase level} of the form
-being expanded. Otherwise, the result is @racket[0].}
+being expanded. Otherwise, the result is @racket[0].
+
+@examples[#:eval stx-eval
+  (code:comment "a macro bound at phase 0")
+  (define-syntax (print-phase-level stx)
+    (printf "phase level: ~a~n" (syntax-local-phase-level))
+    #'(void))
+  (require (for-meta 2 racket/base))
+  (begin-for-syntax
+    (code:comment "a macro bound at phase 1")
+    (define-syntax (print-phase-level stx)
+      (printf "phase level: ~a~n" (syntax-local-phase-level))
+      #'(void)))
+  (print-phase-level)
+  (begin-for-syntax (print-phase-level))
+]
+}
 
 
 @defproc[(syntax-local-module-exports [mod-path (or/c module-path?
