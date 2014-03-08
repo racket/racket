@@ -4,7 +4,7 @@
          "irc.rkt"
          (prefix-in pre: "../minis/pre.rkt")
          (only-in "../stubs/docs.rkt" docs-path)
-         (only-in "../con/resources.rkt" rcon))
+         (only-in "../rcon/resources.rkt" rcon))
 
 ;; TODO
 ;; -- add links in top paragraph

@@ -5,7 +5,7 @@
          "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../minis/pre.rkt")
-         (only-in "../con/resources.rkt" rcon))
+         (only-in "../rcon/resources.rkt" rcon))
 
 (provide thanks)
 (define thanks
