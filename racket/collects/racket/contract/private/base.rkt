@@ -53,7 +53,15 @@
       (make-blame (build-source-location loc)
                   name
                   (λ () (contract-name c))
-                  pos
+                  
+                  ;; hack! We need to allow pos = #f for backwards
+                  ;; compatibility, but we cannot put #f into the
+                  ;; blame struct now because #f means that the 
+                  ;; name is not known. Since #f is not a very good
+                  ;; name, we'll just put something stupid here 
+                  ;; instead of changing the library around.
+                  (or pos "false")
+                                  
                   (if cvfp #f neg)
                   #t))
     (define new-val

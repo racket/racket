@@ -48,6 +48,9 @@
         [rename five chaperone-five chaperone-blame-ok/c]
         [rename five flat-five flat-blame-ok/c]))))
   
+  (test/no-error
+   '(contract string? "string" #f 'neg))
+  
   (begin
     (test/no-error
      '(dynamic-require ''blame-ok-dynamic 'impersonator-five))
