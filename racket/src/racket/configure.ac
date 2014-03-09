@@ -713,11 +713,15 @@ case "$host_os" in
       fi
       if test "${CPP}" = "gcc -E" ; then
         CPP="gcc-4.0 -E"
+        need_cpp_in_extras=yes
       fi
       if test "${LD}" = "gcc" ; then
         LD=gcc-4.0
+        need_ld_in_extras=yes
       fi
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
       need_cc_in_extras=yes
       if test "$ORIG_CC_FOR_BUILD" = "" ; then
         CC_FOR_BUILD="$CC"
@@ -727,7 +731,9 @@ case "$host_os" in
     if test "${enable_sdk6}" != "" ; then 
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
     fi
     
     case "$host_cpu" in
@@ -760,6 +766,12 @@ case "$host_os" in
 
     if test "${need_cc_in_extras}" = "yes" ; then
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+    fi
+    if test "${need_cpp_in_extras}" = "yes" ; then
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
+    fi
+    if test "${need_ld_in_extras}" = "yes" ; then
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
     fi
 
     if test "${enable_quartz}" = "yes" ; then
