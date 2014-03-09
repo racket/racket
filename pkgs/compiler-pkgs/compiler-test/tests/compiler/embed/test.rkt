@@ -620,3 +620,16 @@
 (try-reader)
 (try-planet)
 (try-*sl)
+
+;; ----------------------------------------
+;; Make sure that embedding does not break future module declarations
+
+(let ()
+  (parameterize ([current-output-port (open-output-bytes)])
+    (write-module-bundle
+     #:modules (list (list #f (collection-file-path "embed-me24.rkt" "tests" "compiler" "embed")))))
+  
+  (parameterize ([read-accept-reader #t]
+                 [current-namespace (make-base-namespace)])
+    (eval (read (open-input-string "#lang racket 10")))))
+

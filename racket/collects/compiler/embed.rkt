@@ -489,10 +489,16 @@
                             ;; avoid potentially trying to redeclare cross-phase persistent modules,
                             ;; since redeclaration isn't allowed:
                             null
-                            ;; check for run-time paths by visinting the module in a fresh
-                            ;; namespace:
+                            ;; check for run-time paths by visiting the module in an
+                            ;; expand-time namespace:
                             (parameterize ([current-namespace expand-namespace])
-                              (eval code)
+                              (define no-submodule-code
+                                ;; Strip away submodules to avoid re-declaring them:
+                                (module-compiled-submodules 
+                                 (module-compiled-submodules code #f null)
+                                 #t
+                                 null))
+                              (eval no-submodule-code)
                               (let ([module-path
                                      (if (path? module-path)
                                          (path->complete-path module-path)
