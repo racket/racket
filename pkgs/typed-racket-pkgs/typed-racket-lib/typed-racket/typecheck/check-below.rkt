@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match (prefix-in - (contract-req))
-         (types utils union subtype filter-ops)
+         (types utils union subtype filter-ops abbrev)
          (utils tc-utils)
          (rep type-rep object-rep filter-rep)
          (only-in (types printer) pretty-format-type))
@@ -54,6 +54,20 @@
                     "type variables bound in different scopes")]
     [(_ _) (type-mismatch t1 t2)]))
 
+;; fix-filter: Filter -> Filter
+;; Turns NoFilter into TopFilter; leaves other filters alone.
+(define (fix-filter f)
+  (match f
+    [(NoFilter:) -top-filter]
+    [else f]))
+
+;; fix-object: Object -> Object
+;; Turns NoObject into EmptyObject; leaves other objects alone.
+(define (fix-object o)
+  (match o
+    [(NoObject:) -empty-obj]
+    [else o]))
+
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
 ;;                   (Type Results -> Type)
@@ -72,11 +86,13 @@
       [(o (or (NoObject:) (Empty:))) #t]
       [(_ _) #f]))
   (match* (tr1 expected)
-    ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (ret ts2)]
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
-     expected]
+    ;; These two cases have to be first so that bottom (exceptions, etc.) can be allowed in cases
+    ;; where multiple values are expected.
+    [((or (== -Bottom) (tc-result1: (== -Bottom))) (tc-results: ts2 fs2 os2))
+     (ret ts2 (map fix-filter fs2) (map fix-object os2))]
+    [((or (== -Bottom) (tc-result1: (== -Bottom))) (tc-results: ts2 fs2 os2 dty dbound))
+     (ret ts2 (map fix-filter fs2) (map fix-object os2) dty dbound)]
+
     [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
 
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))

@@ -24,19 +24,24 @@
 
 (define-syntax (test-below stx)
   (syntax-parse stx
-    [(_ t1:expr t2:expr)
+    [(_ t1:expr t2:expr (~optional (~seq #:result expected-result:expr)
+                                     #:defaults [(expected-result #'t2)]))
      #`(test-case (~a 't1 " <: " 't2)
-         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
+         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))]
+                           ['expected expected-result])
            (define result (check-below t1 t2))
-           (match (check-below t1 t2)
-             [(tc-results: ts fs os)
-              (for-each check-filter fs)
-              (for-each check-object os) ]
-             [(tc-results: ts fs os dty bound)
-              (for-each check-filter fs)
-              (for-each check-object os)]
-             [(or (tc-any-results:) (? Type/c?))
-              (void)])))]
+           (with-check-info (['actual result])
+             (match result 
+               [(tc-results: ts fs os)
+                (for-each check-filter fs)
+                (for-each check-object os) ]
+               [(tc-results: ts fs os dty bound)
+                (for-each check-filter fs)
+                (for-each check-object os)]
+               [(or (tc-any-results:) (? Type/c?))
+                (void)])
+             (unless (equal? expected-result result)
+               (fail-check "Check below did not return expected result.")))))]
     [(_ #:fail (~optional message:expr #:defaults [(message #'#rx"type mismatch")]) t1:expr t2:expr)
      #`(test-case (~a 't1 " !<: " 't2)
          (define exn
@@ -50,11 +55,45 @@
 
 (define tests
   (test-suite "Check Below"
-    (test-below (Un) Univ)
+    (test-below -Bottom Univ)
+    (test-below -Bottom tc-any-results
+      #:result -Bottom)
+    (test-below
+      -Bottom
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
+    (test-below
+      -Bottom
+      (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
+      #:result (ret (list Univ Univ) (list -true-filter -top-filter) (list -empty-obj -empty-obj)))
+    (test-below
+      (ret -Bottom)
+      (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
+      #:result (ret (list Univ Univ) (list -true-filter -top-filter) (list -empty-obj -empty-obj)))
+    (test-below
+      -Bottom
+      (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
+      #:result (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B))
+    (test-below
+      (ret -Bottom)
+      (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
+      #:result (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B))
+
+    ;; Bottom is not below everything if the number of values doesn't match up.
+    (test-below #:fail
+      (ret (list -Bottom -Bottom))
+      (ret (list Univ) (list -true-filter) (list -no-obj)))
+    (test-below #:fail
+      (ret (list))
+      (ret (list Univ) (list -true-filter) (list -no-obj)))
+
+
+
     (test-below #:fail -Symbol -String)
     (test-below 
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
-      (ret (list Univ) (list -no-filter) (list -no-obj)))
+      (ret (list Univ) (list -no-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -top-filter) (list -empty-obj)))
 
     (test-below #:fail 
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
