@@ -3,7 +3,7 @@
          racket/file
          net/url
          "download-page.rkt"
-         (only-in "config.rkt" extract-options))
+         (only-in distro-build/config extract-options))
 
 (module test racket/base)
 

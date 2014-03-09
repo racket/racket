@@ -6,14 +6,14 @@
          racket/file
          racket/string
          racket/path
-         (only-in "config.rkt"
+         (only-in distro-build/config
                   current-mode
                   site-config?
                   site-config-tag site-config-options site-config-content
                   current-stamp)
-         "url-options.rkt"
-         "display-time.rkt"
-         "readme.rkt"
+         distro-build/url-options
+         distro-build/display-time
+         distro-build/readme
          "email.rkt")
 
 ;; See "config.rkt" for an overview.

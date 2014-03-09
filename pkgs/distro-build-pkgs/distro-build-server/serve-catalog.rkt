@@ -12,8 +12,8 @@
          racket/tcp
          racket/port
          racket/system
-         (only-in "config.rkt" extract-options)
-         "readme.rkt")
+         (only-in distro-build/config extract-options)
+         distro-build/readme)
 
 (module test racket/base)
 

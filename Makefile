@@ -202,11 +202,11 @@ SERVE_DURING_CMD_qq =
 REQUIRED_PKGS = racket-lib
 
 # Packages needed for building distribution:
-DISTRO_BUILD_PKGS = distro-build
+DISTRO_BUILD_PKGS = distro-build-lib
 
 # To bootstrap, we use some "distro-build" libraries directly,
 # instead of from an installed package:
-DISTBLD = pkgs/distro-build
+DISTBLD = pkgs/distro-build-pkgs/distro-build-server
 
 SVR_PRT = $(SERVER):$(SERVER_PORT)
 
@@ -412,7 +412,7 @@ win32-client:
 # Install the "distro-build" package from the server into
 # a local build:
 distro-build-from-server:
-	$(RACO) pkg install $(REMOTE_USER_AUTO) distro-build
+	$(RACO) pkg install $(REMOTE_USER_AUTO) distro-build-client
 
 # Copy our local build into a "bundle/racket" build, dropping in the
 # process things that should not be in an installer (such as the "src"
