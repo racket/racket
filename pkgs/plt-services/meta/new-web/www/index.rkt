@@ -284,6 +284,12 @@
 (define prev @img[src: (copyfile #:site www-site (build-path img-dir "prev.png"))  style: "width: 50px"])
 (define next @img[src: (copyfile #:site www-site (build-path img-dir "next.png"))  style: "width: 50px"])
 
+(define explain
+      @a[href: "#" class: "switch" id: "question_button" style: "white-space: nowrap;"]{
+         @img[width: "14" height: "15"
+              src: (copyfile #:site www-site (build-path img-dir "arrow.png"))]@;
+         explain})
+
 (provide index)
 
 (define index
@@ -323,10 +329,10 @@ computing and from databases to charts.
  @columns[7]{
    @h2[style: "font-size: 180%; margin-bottom: 10pt"]{Start Quickly}
    @div[style: "position: relative"]{
-     @p[class: "metro primary btn"
-        style: "position: absolute; top: -20%; right: 0%;"]{
-        @a[href: "#" class: "switch" id: "question_button"]{
-         explain}}
+     @p[class: "wide_only"
+        style: "position: absolute; top: 0%; left: 100%;"]{@explain}
+     @p[class: "narrow_only"
+        style: "position: absolute; top: 0%; right: 0%;"]{@explain}
      @a[href: "#" class: "toggle narrow_only prev_toggle"
         gumby-trigger: ".unique_lines|.web_scraper"
         style: "position: absolute; top: -40%; left: 35%"]{@prev}
@@ -344,12 +350,12 @@ computing and from databases to charts.
         style: "position: absolute; top: 40%; right: -15%"]{@next}
    @(apply slideshow-panel (force examples))}}
 
-@columns[1]
+@columns[2]
 
-@columns[3 style: "text-color: black"]{
-  @h2[style: "font-size: 180%; margin-bottom: 10pt"]{News}
-  @p{Racket version 6.0 has been released.}
-  @p{@rcon[2014]{RacketCon 2014} will be in September in St Louis.}}}
+@columns[2 style: "text-color: black"]{
+  @h2[style: "font-size: 144%; margin-bottom: 6pt;"]{News}
+  @p[style: "font-size: 80%;"]{Racket version 6.0 has been released.}
+  @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} will be in September in St.@|nbsp|Louis.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
