@@ -123,6 +123,14 @@
     (test-below (ret -Symbol -true-filter -empty-obj Univ 'B) tc-any-results
       #:result (ret -Symbol -true-filter -empty-obj Univ 'B))
 
+    (test-below #:fail
+      (ret -Symbol -true-filter -empty-obj)
+      (ret -Symbol -true-filter -empty-obj Univ 'B))
+
+    (test-below #:fail
+      (ret -Symbol -true-filter -empty-obj Univ 'B)
+      (ret -Symbol -true-filter -empty-obj))
+
     ;; Enable these once check-below is fixed
     #;
     (test-below #:fail

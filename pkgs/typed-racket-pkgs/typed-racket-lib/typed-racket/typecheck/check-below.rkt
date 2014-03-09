@@ -125,24 +125,24 @@
                        (format "`~a' and `~a'" f1 (print-object o1))
                        "mismatch in filter and object")])
      expected]
+
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
-                      (format "~a values" (length t1))
-                      "mismatch in number of values"))
+     (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
+                    (format "~a values" (length t1))
+                    "mismatch in number of values")
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values" (length t2))
-                      (format "~a values and `~a'" (length t1) dty)
-                      "mismatch in number of values"))
+     (type-mismatch (format "~a values" (length t2))
+                    (format "~a values and `~a'" (length t1) dty)
+                    "mismatch in number of values")
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
+
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
      (unless (= (length t1) (length t2))
        (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
