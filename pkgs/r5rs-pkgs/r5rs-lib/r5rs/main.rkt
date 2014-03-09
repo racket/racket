@@ -85,6 +85,7 @@
            (syntax-id-rules (set!)
              [(_ x) (mc1r (mc2r x))]
              [(set! _ v) (set! orig v)]
+             [(_ . args) (proc-id . args)]
              [_ proc-id]))
          (provide (rename-out [id orig])))]))
 
