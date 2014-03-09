@@ -108,6 +108,21 @@
       (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
 
 
+    (test-below -Symbol tc-any-results
+      #:result -Symbol)
+    (test-below (ret -Symbol) tc-any-results
+      #:result (ret -Symbol))
+    (test-below (ret -Symbol -true-filter -empty-obj) tc-any-results
+      #:result (ret -Symbol -true-filter -empty-obj))
+    (test-below (ret (list -Symbol -String)) tc-any-results
+      #:result (ret (list -Symbol -String)))
+    (test-below
+      (ret (list -Symbol -String) (list -true-filter -false-filter) (list -empty-obj -empty-obj))
+      tc-any-results
+      #:result (ret (list -Symbol -String) (list -true-filter -false-filter) (list -empty-obj -empty-obj)))
+    (test-below (ret -Symbol -true-filter -empty-obj Univ 'B) tc-any-results
+      #:result (ret -Symbol -true-filter -empty-obj Univ 'B))
+
     ;; Enable these once check-below is fixed
     #;
     (test-below #:fail

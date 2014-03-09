@@ -93,7 +93,8 @@
     [((or (== -Bottom) (tc-result1: (== -Bottom))) (tc-results: ts2 fs2 os2 dty dbound))
      (ret ts2 (map fix-filter fs2) (map fix-object os2) dty dbound)]
 
-    [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
+    ;; Handle tc-any-results as an expected value
+    [((or (? Type/c?) (tc-any-results:) (tc-results: _) (tc-results: _ _ _ _ _)) (tc-any-results:)) tr1]
 
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))
@@ -169,7 +170,6 @@
      (ret t2 f o)]
 
 
-    [((? Type/c? t1) (tc-any-results:)) t1]
     [((? Type/c? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
      (unless (subtype t1 t2)
        (expected-but-got t2 t1))
