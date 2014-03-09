@@ -104,6 +104,10 @@
     [((tc-any-results:) (tc-results: t2 fs os))
      (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
      expected]
+    [((tc-any-results:) (tc-results: ts2 fs os dty dbound))
+     (type-mismatch (format "~a values and `~a ...'" (length ts2) dty)
+                    "unknown-number" "mismatch in number of values")
+     expected]
 
     ;; Handle simple single value case
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))

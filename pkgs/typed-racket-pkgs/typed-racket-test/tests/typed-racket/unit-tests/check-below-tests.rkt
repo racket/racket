@@ -166,6 +166,15 @@
       Univ
       #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
 
+    (test-below #:fail
+      tc-any-results
+      -Symbol)
+    (test-below #:fail
+      tc-any-results
+      (ret -Symbol))
+    (test-below #:fail
+      tc-any-results
+      (ret -Symbol -no-obj -empty-obj Univ 'B))
 
     ;; Enable these once check-below is fixed
     #;
