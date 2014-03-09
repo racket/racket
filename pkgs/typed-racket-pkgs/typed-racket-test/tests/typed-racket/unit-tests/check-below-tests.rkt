@@ -131,6 +131,27 @@
       (ret -Symbol -true-filter -empty-obj Univ 'B)
       (ret -Symbol -true-filter -empty-obj))
 
+    (test-below
+      (ret -Symbol)
+      (ret -Symbol -top-filter -no-obj)
+      #:result (ret -Symbol -top-filter -empty-obj))
+    (test-below
+      (ret -Symbol)
+      (ret -Symbol -no-filter -empty-obj)
+      #:result (ret -Symbol -top-filter -empty-obj))
+
+    (test-below
+      -Symbol
+      (ret -Symbol -top-filter -no-obj)
+      #:result -Symbol)
+    (test-below
+      -Symbol
+      (ret -Symbol -no-filter -empty-obj)
+      #:result -Symbol)
+    (test-below #:fail
+      -Symbol
+      (ret -Symbol -true-filter -no-obj))
+
     ;; Enable these once check-below is fixed
     #;
     (test-below #:fail
