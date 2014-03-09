@@ -315,7 +315,7 @@
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
 @strong{Racket} is a full-spectrum programming language that inherits from Lisp
 and Scheme but also provides dialects that support objects, types,
-laziness, and many other paradigms. Racket's module system allows
+laziness, and more. Racket's module system allows
 programmers to write and link together components written in different
 dialects.  Racket's libraries support applications from web servers to distributed
 computing and from databases to charts.
