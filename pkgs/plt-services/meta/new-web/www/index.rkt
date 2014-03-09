@@ -132,10 +132,10 @@
      @code{#lang racket ; Simple web scraper
            (require net/url net/uri-codec)
            (define (let-me-google-that-for-you str)
-             (let* ([g "http://www.google.com/search?q="]
-                    [u (string-append g (uri-encode str))]
-                    [rx #rx"(?<=<h3 class=\"r\">).*?(?=</h3>)"])
-               (regexp-match* rx (get-pure-port (string->url u)))))}
+             (define g "http://www.google.com/search?q=")
+             (define u (string-append g (uri-encode str)))
+             (define rx #rx"(?<=<h3 class=\"r\">).*?(?=</h3>)")
+             (regexp-match* rx (get-pure-port (string->url u))))}
      @desc{Add a call to @elemcode{let-me-google-that-for-you} to get a list of
        search results.})
     (cmdline-example #:title "Command Line Dice"; -----------------------------------------------
