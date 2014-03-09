@@ -2448,6 +2448,9 @@
        ;; make sure no-binding cases like the middle expression are checked
        [tc-err (let () (define r "r") (string-append r 'foo) (define x "x") "y")
                #:msg "expected: String.*given: 'foo"]
+
+       [tc-err (ann (lambda () (let ([my-values values]) (my-values)))
+                 (All (A ...) (-> (Values Symbol ... A))))]
         )
   (test-suite
    "tc-literal tests"

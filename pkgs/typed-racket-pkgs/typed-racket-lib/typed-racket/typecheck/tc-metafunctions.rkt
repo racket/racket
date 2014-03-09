@@ -174,7 +174,8 @@
 (define (tc-results->values tc)
   (match tc
     [(tc-any-results:) ManyUniv]
-    [(tc-results: ts) (-values ts)]))
+    [(tc-results: ts) (-values ts)]
+    [(tc-results: ts _ _ dty dbound) (-values-dots ts dty dbound)]))
 
 (define/cond-contract (resolve atoms prop)
   ((listof Filter/c)

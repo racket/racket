@@ -209,4 +209,9 @@
     [(tc-results: ts _ _)
      (ret ts
           (for/list ([f (in-list ts)]) -no-filter)
-          (for/list ([f (in-list ts)]) -no-obj))]))
+          (for/list ([f (in-list ts)]) -no-obj))]
+    [(tc-results: ts _ _ dty dbound)
+     (ret ts
+          (for/list ([f (in-list ts)]) -no-filter)
+          (for/list ([f (in-list ts)]) -no-obj)
+          dty dbound)]))
