@@ -97,6 +97,13 @@
 
     ;; Handle tc-any-results as an expected value
     [((or (? Type/c?) (tc-any-results:) (tc-results: _) (tc-results: _ _ _ _ _)) (tc-any-results:)) tr1]
+    ;; Handle tc-any-results as an actual value
+    [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
+     (type-mismatch "1 value" "unknown number" "mismatch in number of values")
+     expected]
+    [((tc-any-results:) (tc-results: t2 fs os))
+     (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
+     expected]
 
     ;; Handle simple single value case
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
@@ -155,12 +162,6 @@
        (type-mismatch (length t2) (length t1) "mismatch in number of values"))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
-     expected]
-    [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
-     (type-mismatch "1 value" "unknown number" "mismatch in number of values")
-     expected]
-    [((tc-any-results:) (tc-results: t2 fs os))
-     (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
      expected]
 
     [((tc-result1: t1 f o) (? Type/c? t2))
