@@ -152,6 +152,21 @@
       -Symbol
       (ret -Symbol -true-filter -no-obj))
 
+    (test-below #:fail
+      -Symbol
+      (ret -Symbol -no-obj -empty-obj Univ 'B))
+    (test-below #:fail
+      -Symbol
+      (ret (list -Symbol -Symbol) (list -top-filter -no-filter) (list -no-obj -empty-obj)))
+    (test-below #:fail
+      (ret (list Univ) (list -true-filter) (list -empty-obj) Univ 'B)
+      Univ)
+    (test-below
+      (ret (list Univ) (list -true-filter) (list -empty-obj))
+      Univ
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
+
+
     ;; Enable these once check-below is fixed
     #;
     (test-below #:fail

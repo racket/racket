@@ -136,7 +136,7 @@
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
      (type-mismatch (format "~a values" (length t2))
-                    (format "~a values and `~a'" (length t1) dty)
+                    (format "~a values and `~a ...'" (length t1) dty)
                     "mismatch in number of values")
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
@@ -157,16 +157,21 @@
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
     [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
-     (type-mismatch "1 value" "unknown number")
+     (type-mismatch "1 value" "unknown number" "mismatch in number of values")
      expected]
     [((tc-any-results:) (tc-results: t2 fs os))
-     (type-mismatch (format "~a values" (length t2)) "unknown number")
+     (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
      expected]
 
     [((tc-result1: t1 f o) (? Type/c? t2))
      (unless (subtype t1 t2)
        (expected-but-got t2 t1))
      (ret t2 f o)]
+    [((tc-results: t1 f o dty dbound) (? Type/c? t2))
+     (type-mismatch "1 value"
+                    (format "~a values and `~a ...'" (length t1) dty)
+                    "mismatch in number of values")
+      tr1]
 
     [((? Type/c? t1) (tc-result1: t2 f o))
      (unless (subtype t1 t2)
@@ -176,7 +181,11 @@
                       "mismatch in filter"))
      t1]
     [((? Type/c? t1) (tc-results: ts2 fs os))
-     (type-mismatch "1 value" (length ts2) "mismatch in number of values")
+     (type-mismatch (format "~a values" (length ts2)) "1 value" "mismatch in number of values")
+     t1]
+    [((? Type/c? t1) (tc-results: ts2 fs os dty dbound))
+     (type-mismatch (format "~a values and `~a ...'" (length ts2) dty)
+                    "1 value" "mismatch in number of values")
      t1]
     [((? Type/c? t1) (? Type/c? t2))
      (unless (subtype t1 t2)
