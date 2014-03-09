@@ -98,12 +98,12 @@
 ;; refail-check : exn:test:check -> (exception raised)
 ;;
 ;; Raises an exn:test:check with the contents of the
-;; given parameter.  Useful for propogating internal
+;; given exception.  Useful for propogating internal
 ;; errors to the outside world.
 (define (refail-check exn)
   (test-log! #f)
   (raise
-   (make-exn:test:check "Check failure"
+   (make-exn:test:check (exn-message exn)
                         (exn-continuation-marks exn)
                         (exn:test:check-stack exn))))
 

@@ -317,6 +317,32 @@
                    #t
                    found?))
              #f names))))
+
+   (test-case
+    "check-exn has check failure message"
+    (let* ([case (delay-test
+                  (test-case "check-exn"
+                             (check-exn #rx"ZZZZZ"
+                              (lambda () (fail-check "The Message")))))]
+           [result (test-failure-result (car (run-test case)))]
+           [names (map check-info-name
+                       (exn:test:check-stack result))])
+      (check-equal?
+        "The Message"
+        (exn-message result))))
+
+   (test-case
+    "check-not-exn has check failure message"
+    (let* ([case (delay-test
+                  (test-case "check-not-exn"
+                             (check-not-exn
+                              (lambda () (fail-check "The Message")))))]
+           [result (test-failure-result (car (run-test case)))]
+           [names (map check-info-name
+                       (exn:test:check-stack result))])
+      (check-equal?
+        "The Message"
+        (exn-message result))))
    
    ;; Verify that check-exn and check-not-exn raise errors (not check
    ;; failures) if not given thunks.
