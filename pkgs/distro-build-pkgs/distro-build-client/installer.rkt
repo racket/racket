@@ -30,11 +30,13 @@
    [("--mac-pkg") "Create a \".pkg\" installer on Mac OS X"
     (set! mac-pkg? #t)]
    [("--upload") url "Upload installer"
-    (set! upload-to url)]
+    (unless (string=? url "")
+      (set! upload-to url))]
    [("--desc") desc "Description to accompany upload"
     (set! upload-desc desc)]
    [("--readme") readme "URL for README.txt to include"
-    (set! download-readme readme)]
+    (unless (string=? readme "")
+      (set! download-readme readme))]
    #:args
    (human-name base-name dir-name dist-suffix sign-identity)
    (values human-name
@@ -81,7 +83,7 @@
   (printf "Upload ~a to ~a\n" installer-file upload-to)
   (define i
     (put-pure-port
-     (string->url (format "~aupload/~a"
+     (string->url (format "~a~a"
                           upload-to
                           (path->string (file-name-from-path installer-file))))
      (file->bytes installer-file)

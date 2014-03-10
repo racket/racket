@@ -338,7 +338,8 @@
                               (q "--source --no-setup")
                               (q ""))
       " MAC_PKG_MODE=" (if mac-pkg? "--mac-pkg" (q ""))
-      " README=" (q (file-name-from-path readme))))
+      " UPLOAD=http://" server ":" server-port "/upload/"
+      " README=http://" server ":" server-port "/" (q (file-name-from-path readme))))
 
 (define (unix-build c platform host port user server server-port repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build/plt" #:localhost (current-directory)))

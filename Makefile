@@ -120,6 +120,11 @@ DOC_SEARCH =
 SERVER = localhost
 SERVER_PORT = 9440
 
+# Paths on the server to reach catalog content and "collects.tgz",
+# if not the root:
+SERVER_CATALOG_PATH =
+SERVER_COLLECTS_PATH =
+
 # Set `SERVER_HOSTS` to a comma-delimited set of server addresses
 # that determine the interfaces on which the server listens; the
 # default, "localhost", listens only on the loopback device, while
@@ -151,7 +156,7 @@ DIST_DIR = racket
 # a variant of an OS:
 DIST_SUFFIX = 
 # A human-readable description (spaces allowed) of the generated
-# installer, usually describing a platform:
+# installer, usually describing a platform, used for upload:
 DIST_DESC =
 
 # Package catalog URLs (individually quoted as needed, separated by
@@ -172,8 +177,14 @@ INSTALL_NAME =
 # installer:
 SIGN_IDENTITY = 
 
-# A README file to download from the server for the client:
-README = README.txt
+# URL for a README file to include in an installer (empty for none,
+# spaces allowed):
+README = http://$(SVR_PRT)/README.txt
+
+# URL destination to upload an installer file after it is created
+# (empty for no upload, spaces allowed); the file name is added to the
+# end of the URL, and DIST_DESC is passed as a "Description:" header:
+UPLOAD = 
 
 # Configuration module that describes a build, normally implemented
 # with `#lang distro-build/config':
@@ -210,6 +221,8 @@ DISTBLD = pkgs/distro-build-pkgs/distro-build-server
 
 SVR_PRT = $(SERVER):$(SERVER_PORT)
 
+SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
+
 # Helper macros:
 USER_CONFIG = -G build/user/config -A build/user
 RACKET = racket/bin/racket $(USER_CONFIG)
@@ -220,8 +233,8 @@ X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
-REMOTE_USER_AUTO = --catalog http://$(SVR_PRT)/ $(USER_AUTO_OPTIONS)
-REMOTE_INST_AUTO = --catalog http://$(SVR_PRT)/ --scope installation $(X_AUTO_OPTIONS)
+REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
+REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 BUNDLE_RACO_FLAGS = -A bundle/user -l raco
@@ -382,24 +395,29 @@ binary-catalog-server:
 # keep the "build/user" directory on the grounds that the
 # client is the same as the server.
 
-COPY_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
+PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
-            DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
+            DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)"\
             JOB_OPTIONS="$(JOB_OPTIONS)"
+
+COPY_ARGS = $(PROP_ARGS) \
+            SERVER_CATALOG_PATH=$(SERVER_CATALOG_PATH) SERVER_COLLECTS_PATH=$(SERVER_COLLECTS_PATH)
+
+# Not copied, because used only immediately: DOC_SEARCH and DIST_CATALOGS_q
+
+SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
 	$(MAKE) base $(COPY_ARGS)
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) bundle-from-server $(COPY_ARGS)
-	$(MAKE) bundle-config $(COPY_ARGS)
+	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
-
-SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
@@ -425,15 +443,12 @@ bundle-from-server:
 	rm -rf bundle
 	mkdir -p bundle/racket
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
-	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
+	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
-bundle-config:
-	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
-
-UPLOAD_q = --readme http://$(SVR_PRT)/$(README) --upload http://$(SVR_PRT)/ --desc "$(DIST_DESC)"
+UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(MAC_PKG_MODE) \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)"
@@ -455,12 +470,31 @@ win32-bundle:
 
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/
+	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
+
+# ------------------------------------------------------------
+# On a supported platform (for an installer build) after a `make site'
+# has completed; SERVER, SERVER_PORT (usually 80), and SITE_PATH
+# should be set, and other configurations are propagated; normally,
+# README should be set (possibly to empty), because a site doesn't
+# provide a generic "README.txt".
+
+# Relative path on server for the site; include a trailing "/"
+# if non-empty:
+SITE_PATH =
+
+FROM_SITE_ARGS = SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ \
+                 DIST_CATALOGS_q='http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' \
+                 DOC_SEARCH="http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
+                 $(PROP_ARGS)
+
+client-from-site: 
+	make client $(FROM_SITE_ARGS)
 
 # ------------------------------------------------------------
 # Drive installer build across server and clients:

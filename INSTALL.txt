@@ -205,7 +205,7 @@ that act as client machines.
 
 See
 
- pkgs/distro-build/doc.txt
+ pkgs/distro-build-pkgs/distro-build-client/doc.txt
 
 for a description of the site-configuration module and requirements on
 client hosts.
@@ -224,7 +224,9 @@ configuration file there and omit the `CONFIG' argument to
 `make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
 your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default `#:clean?'
-configuration for a client #t instead of #f.
+configuration for a client #t instead of #f, and supply
+`RELEASE_MODE=--release' to make thde default `#:release?'
+configuration #t.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
@@ -354,15 +356,20 @@ Roughly, the steps are
 
     Add `DIST_DESC="..."' to the `client' line to set the installer's
     description, which is used as a key in the generated table of
-    installer files.
+    uploaded installer files (when UPLOAD is set).
 
     Add `DIST_CATALOGS_q='...'' to the `client' line to declare a
     space-separated sequence of catalog URLs to set an installation's
     initial package catalog URLs. Use the empty string in place of a
     URL to indicate that the default path should be spliced.
 
-    Add `README="..."' to specify a file to download from the server
-    to use as the "README" file in the generated installer.
+    Add `README="..."' to specify a URL for a file to use as the
+    "README" file in the generated installer, or leave as empty for no
+    "README".
+
+    Add `UPLOAD="..."` to specify a URL to use as an upload
+    destination for the created installed, where the installer's name
+    is added to the end of the URL, or leave as empty for no upload.
 
 In more detail:
 
@@ -397,7 +404,7 @@ In more detail:
 
      The server provides README files from the "build/readmes"
      directory. If "README.txt" does not exist when the sever is
-     started, when a default file is created (and clients download
+     started, a default file is created (and clients download
      "README.txt" by default).
 
      If you stop the server and want to restart it, use the
@@ -470,6 +477,19 @@ In more detail:
      `make'. The `README' value is used as a file name to download
      from the server.
 
+     For a Mac OS X installer, set `SIGN_IDENTITY' to sign the
+     installer, where the value of `SIGN_IDENTITY' is the name to
+     which the signing certificate is associated. Set `MAC_PKG_MODE'
+     to "--mac-pkg" to create a ".pkg" installer instead of a ".dmg"
+     image.
+
+     The `SERVER_CATALOG_PATH' and `SERVER_COLLECTS_PATH' makefile
+     variables specify paths at `SERVER' plus `SERVER_PORT' to access
+     the package catalog and pre-built "collects" tree needed for a
+     client, but those paths should be empty for a server started with
+     `make server', and they are used mainly by `make
+     client-from-site' (described below).
+
 On each client, step 2b produces a "bundle/installer.txt" file that
 contains the path to the generated installer on one line, followed by
 the description on a second line. The installer is also uploaded to
@@ -480,3 +500,23 @@ its filename in "build/installers/table.rktd".
 If you provide `JOB_OPTIONS=...' for either a client or server build,
 the options are used both for `raco setup' and `raco pkg
 install'. Normally, `JOB_OPTIONS' is used to control parallelism.
+
+Creating a Client from an Installer Web Site
+--------------------------------------------
+
+If you (or someone else) previously created an installer site with
+`make site', then `make client-from-site` in a clean repository
+creates an installer for the current platform drawing packages
+from the site.
+
+At a minimum, provide `SERVER', `SERVER_PORT' (usually 80), and
+`SITE_PATH' (if not empty, include a trailing "/") makefile variables
+to access a site at
+
+  http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)
+
+The `client-from-site' makefile target chains to `make client' while
+passing suitable values for `DIST_CATALOGS_q`, `DOC_SEARCH`,
+`SERVER_CATALOG_PATH', and `SERVER_COLLECTS_PATH'. Supply any other
+suitable variables, such as `DIST_NAME' or `RELEASE_MODE', the same as
+for `make client'.
