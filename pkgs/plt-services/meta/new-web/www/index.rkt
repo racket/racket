@@ -313,13 +313,14 @@
 
 @columns[8 #:center? #t #:row? #t
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
-@strong{Racket} is a full-spectrum programming language that inherits from Lisp
-and Scheme but also provides dialects that support objects, types,
-laziness, and more. Racket's module system allows
-programmers to write and link together components written in different
-dialects.  Racket's libraries support applications from web servers to distributed
-computing and from databases to charts.
-}
+@strong{Racket} is a full-spectrum programming language in the Lisp family.
+It inherits many ideas from its direct parent, Scheme, and improves on it
+in many mays, especially in its ability to mix and match existing and
+project-specific dialects; the existence of a safe, typed dialect that
+soundly interacts with the untyped one; a lazy dialect; and support for
+many other common programming idioms. Racket's rich set of libraries
+supports application development from web servers to distributed computing
+and from databases to charts.}
                                                                             
 @(apply slideshow-explain (force examples))
 
@@ -354,14 +355,15 @@ computing and from databases to charts.
 
 @columns[2 style: "text-color: black"]{
   @h2[style: "font-size: 144%; margin-bottom: 6pt;"]{News}
-  @p[style: "font-size: 80%;"]{Racket version 6.0 has been released.}
-  @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} will be in September in St.@|nbsp|Louis.}}}
+  @p[style: "font-size: 80%;"]{Racket version 6.0 is out!}
+  @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} will take place
+  in St.@|nbsp|Louis on September 19.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
 @a[href: (docs-path "quick/")]{Draw more pictures} or
 @a[href: (docs-path "more/")]{build a web server from scratch}.  Racket includes both
-@a[href: (docs-path)]{batteries} and a 
+@a[href: (docs-path)]{batteries} and a full-featured 
 @a[href: (docs-path "drracket/")]{programming environment},
 so @a[href: (docs-path "getting-started/")]{get started}!
 }}
