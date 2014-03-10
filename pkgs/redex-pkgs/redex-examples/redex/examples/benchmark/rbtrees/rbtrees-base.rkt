@@ -291,3 +291,10 @@
 
 (define (generate-enum-term)
   (generate-term rbtrees t #:i-th (pick-an-index 0.2)))
+
+(define (ordered-enum-generator)
+  (let ([index 0])
+    (λ ()
+      (begin0
+        (generate-term rbtrees t #:i-th index)
+        (set! index (add1 index))))))

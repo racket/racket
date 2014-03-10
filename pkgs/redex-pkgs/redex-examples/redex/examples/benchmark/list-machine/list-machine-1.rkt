@@ -435,3 +435,11 @@
 
 (define (generate-enum-term)
   (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index 0.0001)))
+
+(define (ordered-enum-generator)
+  (let ([index 0])
+    (λ ()
+      (begin0
+        (generate-term list-machine-typing (l0 : ι p) #:i-th index)
+        (set! index (add1 index))))))
+

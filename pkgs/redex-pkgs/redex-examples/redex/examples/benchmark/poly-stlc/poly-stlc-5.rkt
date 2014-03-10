@@ -282,3 +282,10 @@
 
 (define (generate-enum-term)
   (generate-term poly-stlc M #:i-th (pick-an-index 0.001)))
+
+(define (ordered-enum-generator)
+  (let ([index 0])
+    (λ ()
+      (begin0
+        (generate-term poly-stlc M #:i-th index)
+        (set! index (add1 index))))))

@@ -938,3 +938,10 @@
 
 (define (generate-enum-term)
   (generate-term abort-lang e #:i-th (pick-an-index 0.0001)))
+
+(define (ordered-enum-generator)
+  (define index 0)
+  (λ ()
+    (begin0
+      (generate-term abort-lang e #:i-th index)
+      (set! index (add1 index)))))

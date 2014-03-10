@@ -33,7 +33,7 @@
    [("-f" "--file") fname "Run tests for a single file"
                     (set! files (list fname))]
    #:multi
-   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref"
+   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered"
                     (set! gen-types (cons (string->symbol t) gen-types))])
 
 (define-runtime-path here ".")
@@ -78,7 +78,8 @@
                                             (string-append "-m " (number->string minutes))
                                             (string-append "-o " output-name)
                                             (string-append "-t "
-                                                           (symbol->string type)))
+                                                           (symbol->string type))
+                                            (if (equal? type 'ordered) "-f" ""))
                                       " ")))
      (define command (apply string-append 
                             (add-between (list "racket" (path->string (build-path here "test-file.rkt"))

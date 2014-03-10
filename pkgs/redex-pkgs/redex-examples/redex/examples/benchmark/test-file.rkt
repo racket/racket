@@ -6,15 +6,19 @@
          racket/set
          racket/match
          racket/path
+         racket/system
+         (only-in redex/reduction-semantics caching-enabled?)
          math/statistics)
 
 (define minutes 1)
 (define verbose #f)
 (define output-file #f)
+(define n-procs #f)
+(define first-only #f)
 
 (define all-types '(search grammar search-gen search-gen-ref 
                            search-gen-enum search-gen-enum-ref
-                           enum))
+                           enum ordered))
 (define types '())
 
 (define (set-type! arg)
@@ -31,8 +35,12 @@
                        (set! verbose #t)]
    [("-o" "--output") out-file "Output file name"
                       (set! output-file out-file)]
+   [("-n" "--num-processes") nps "Number of parallel processes to use"
+                                  (set! n-procs (string->number nps))]
+   [("-f" "--first-only") "Find the first counterexample only"
+                          (set! first-only #t)]
    #:multi
-   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum"
+   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered"
                     (set-type! t)]
    #:args filenames
    (match filenames
@@ -74,6 +82,30 @@
    (handle-evt res-chan
                (λ (result-of-thunk) result-of-thunk))))
 
+(define (run/spawn-generations fname verbose? no-errs? get-gen check seconds type)
+  (if n-procs
+      (spawn-parallel fname verbose? no-errs? get-gen check seconds type)
+      (run-generations fname verbose? no-errs? get-gen check seconds type)))
+
+(define (spawn-parallel fname verbose? no-errs? get-gen check seconds type)
+  (define (make-cmd n)
+    (define oname (string-append
+                   (first 
+                      (regexp-split #rx"\\."
+                                    (last (regexp-split #rx"/" (path->string fname)))))
+                   "-"
+                   (symbol->string type)
+                   "-results-" (number->string n) ".rktd"))
+    (format "racket test-file.rkt -m ~s -t ~s -o ~s ~a"
+            (/ seconds 60)
+            type
+            oname
+            fname))
+  (map thread-wait
+       (for/list ([n n-procs])
+         (thread 
+          (λ () (system (make-cmd n)))))))
+
 (define (run-generations fname verbose? no-errs? get-gen check seconds type)
   (collect-garbage)
   (define s-time (current-process-milliseconds))
@@ -102,15 +134,16 @@
          (cond
            [(not ok?)
             (when verbose?
-              (printf "~s: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
+              (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
                       fname term i me-time))
             (when no-errs?
               (printf "!---------------------------------------------------!\n")
-              (error 'run-generations "~s: unexpected error on ~s" 
+              (error 'run-generations "~a: unexpected error on ~s" 
                      fname term))
             (define continue? (update-results me-time fname type verbose?))
-            (if (or continue?
-                    (t . < . 5))
+            (if (and (not first-only)
+                     (or continue?
+                         (t . < . 5)))
                 (begin
                   (set! terms (+ i terms))
                   (trials-loop (add1 t)))
@@ -140,6 +173,7 @@
   (define gen-typed-term (dynamic-require fpath 'generate-typed-term))
   (define typed-generator (dynamic-require fpath 'typed-generator))
   (define gen-enum (dynamic-require fpath 'generate-enum-term))
+  (define ordered-generator (dynamic-require fpath 'ordered-enum-generator))
   (define err (dynamic-require fpath 'the-error))
   (printf "\n-------------------------------------------------------------------\n")
   (printf "~a has the error: ~a\n\n" fpath err)
@@ -147,22 +181,26 @@
   (printf "Using generator: ~s\n" gen-type)
   (define (gen-and-type gen)
     (λ ()
-      (λ ()
-        (define t (gen))
-        (and (tc t)
-             t))))
+      (define t (gen))
+      (and (tc t)
+           t)))
   (cond
     [(equal? gen-type 'grammar)
-     (run-generations fpath verbose? no-errs? (gen-and-type gen-term) 
+     (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-term))
                       check seconds gen-type)]
     [(equal? gen-type 'enum)
-     (run-generations fpath verbose? no-errs? (gen-and-type gen-enum) 
+     (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-enum))
+                      check seconds gen-type)]
+    [(equal? gen-type 'ordered)
+     (run/spawn-generations fpath verbose? no-errs? (λ ()
+                                                      (define g (ordered-generator))
+                                                      (gen-and-type g))
                       check seconds gen-type)]
     [(equal? gen-type 'search)
-     (run-generations fpath verbose? no-errs? (λ () gen-typed-term)
+     (run/spawn-generations fpath verbose? no-errs? (λ () gen-typed-term)
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen)
-     (run-generations fpath verbose? no-errs? typed-generator
+     (run/spawn-generations fpath verbose? no-errs? typed-generator
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen-ref)
      (define t (current-process-milliseconds))
@@ -172,11 +210,11 @@
          (set! t (current-process-milliseconds))
          (set! g (typed-generator)))
        (g))
-     (run-generations fpath verbose? no-errs? (λ () gen)
+     (run/spawn-generations fpath verbose? no-errs? (λ () gen)
                       check seconds gen-type)]
     [(equal? gen-type 'search-gen-enum)
      (parameterize ([gen-state (set-remove (gen-state) 'shuffle-clauses)])
-       (run-generations fpath verbose? no-errs? typed-generator
+       (run/spawn-generations fpath verbose? no-errs? typed-generator
                         check seconds gen-type))]
     [(equal? gen-type 'search-gen-enum-ref)
      (parameterize ([gen-state (set-remove (gen-state) 'shuffle-clauses)])
@@ -187,11 +225,12 @@
            (set! t (current-process-milliseconds))
            (set! g (typed-generator)))
          (g))
-       (run-generations fpath verbose? no-errs? (λ () gen)
+       (run/spawn-generations fpath verbose? no-errs? (λ () gen)
                         check seconds gen-type))])) 
 
-(for ([gen-type (in-list types)])
-  (test-file filename verbose #f gen-type (* minutes 60)))
+(parameterize ([caching-enabled? #f])
+  (for ([gen-type (in-list types)])
+    (test-file filename verbose #f gen-type (* minutes 60))))
 
 (call-with-output-file output-file
   (λ (out)
