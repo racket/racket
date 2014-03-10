@@ -334,8 +334,8 @@ local-build:
 fresh-user:
 	rm -rf build/user
 
-set-config:
-	$(RACKET) -l distro-build/set-config build/user/config/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
+set-server-config:
+	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -344,7 +344,7 @@ set-config:
 # from it):
 packages-from-local:
 	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
-	$(MAKE) set-config
+	$(MAKE) set-server-config
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
@@ -354,7 +354,7 @@ packages-from-local:
 build-from-catalog:
 	$(MAKE) fresh-user
 	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
-	$(MAKE) set-config
+	$(MAKE) set-server-config
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
@@ -409,7 +409,7 @@ COPY_ARGS = $(PROP_ARGS) \
 
 # Not copied, because used only immediately: DOC_SEARCH and DIST_CATALOGS_q
 
-SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi

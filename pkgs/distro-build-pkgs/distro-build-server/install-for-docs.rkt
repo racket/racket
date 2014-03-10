@@ -5,7 +5,7 @@
          racket/system
          compiler/find-exe
          (only-in "config.rkt" extract-options)
-         "display-time.rkt")
+         distro-build/display-time)
 
 (module test racket/base)
 
