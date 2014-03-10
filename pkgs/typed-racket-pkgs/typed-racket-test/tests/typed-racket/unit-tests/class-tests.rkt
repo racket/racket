@@ -993,7 +993,7 @@
              (: m (Integer -> Integer))
              (define/pubment (m x)
                (inner 3 m)))
-           #:msg #rx"Wrong number of arguments, expected 2"]
+           #:msg #rx"wrong number of arguments provided.*expected: 2"]
    ;; Fail, bad augment type
    [tc-err (let ()
              (define c%

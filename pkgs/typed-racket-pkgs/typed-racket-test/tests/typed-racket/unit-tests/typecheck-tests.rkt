@@ -2109,7 +2109,7 @@
        [tc-err (let () (tr:define (f x #:y y) (string-append x "foo")) (void))
                #:msg #rx"expected: String.*given: Any"]
        [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
-               #:msg #rx"Required keyword not supplied"]
+               #:msg #rx"required keyword was not supplied"]
 
        ;; test lambdas with mixed type expressions, typed keywords, typed
        ;; optional arguments
