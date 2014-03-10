@@ -9575,6 +9575,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   int fork_errno = 0;
   char *env;
   int need_free;
+  Scheme_Object *current_dir;
 #else
   void *sc = 0;
 #endif
@@ -9842,6 +9843,17 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   {
+    /* Prepare CWD and environment variables */
+    Scheme_Object *envvar;
+    Scheme_Config *config;
+    
+    config = scheme_current_config();
+    
+    envvar = scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS);
+    env = scheme_environment_variables_to_block(envvar, &need_free);
+    
+    current_dir = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
+
 #if !defined(MZ_PLACES_WAITPID)
     init_sigchld();
 
@@ -9997,21 +10009,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 #endif
       }
 
-      /* Set real CWD and get envrionment variables */
-      {
-	Scheme_Object *dir, *envvar;
-        Scheme_Config *config;
-
-        config = scheme_current_config();
-        
-	envvar = scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS);
-        env = scheme_environment_variables_to_block(envvar, &need_free);
-
-	dir = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
-	if (!scheme_os_setcwd(SCHEME_PATH_VAL(dir), 1)) {
-          scheme_console_printf("racket: chdir failed to: %s\n", SCHEME_BYTE_STR_VAL(dir));
-          _exit(1);
-        }
+      /* Set real CWD: */
+      if (!scheme_os_setcwd(SCHEME_PATH_VAL(current_dir), 1)) {
+        scheme_console_printf("racket: chdir failed to: %s\n", SCHEME_BYTE_STR_VAL(current_dir));
+        _exit(1);
       }
 
       /* Exec new process */
