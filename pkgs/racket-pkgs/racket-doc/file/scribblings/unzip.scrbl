@@ -8,19 +8,27 @@
 a function to extract items from a @exec{zip} archive.}
 
 @defproc[(unzip [in (or/c path-string? input-port)]
-                [entry-reader (bytes? boolean? input-port? . -> . any)
-                              (make-filesystem-entry-reader)])
+                [entry-reader (if preserve-timestamps?
+                                  (bytes? boolean? input-port? (or/c #f exact-integer?)
+                                   . -> . any)
+                                  (bytes? boolean? input-port? . -> . any))
+                              (make-filesystem-entry-reader)]
+                [#:preserve-timestamps? preserve-timestamps? any/c #f])
          void?]{
 
 Unzips an entire @exec{zip} archive from @racket[in].
 
 For each entry in the archive, the @racket[entry-reader] procedure is
-called with three arguments: the byte string representing the entry
+called with three or four arguments: the byte string representing the entry
 name, a boolean flag indicating whether the entry represents a
-directory, and an input port containing the inflated contents of the
-entry. The default @racket[entry-reader] unpacks entries to the
+directory, an input port containing the inflated contents of the
+entry, and (if @racket[preserve-timestamps?]) @racket[#f] or a timestamp
+for a file. The default @racket[entry-reader] unpacks entries to the
 filesystem; call @racket[make-filesystem-entry-reader] to configure
-aspects of the unpacking, such as  the destination directory.}
+aspects of the unpacking, such as  the destination directory.
+
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
+
 
 @defproc[(make-filesystem-entry-reader
           [#:dest dest-path (or/c path-string? #f) #f]
@@ -29,7 +37,8 @@ aspects of the unpacking, such as  the destination directory.}
                                  'truncate/replace 'append 'update
                                  'can-update 'must-truncate)
                            'error])
-         (bytes? boolean? input-port? . -> . any)]{
+         ((bytes? boolean? input-port?) ((or/c #f exact-integer?))
+          . ->* . any)]{
 
 Creates a @exec{zip} entry reader that can be used with either
 @racket[unzip] or @racket[unzip-entry] and whose behavior is to save
@@ -49,7 +58,10 @@ contains @racket[strip-count] elements, then it is not extracted.
 If @racket[exists] is @racket['skip] and the file for an entry already
 exists, then the entry is skipped. Otherwise, @racket[exists] is
 passed on to @racket[open-output-file] for writing the entry's
-inflated content.}
+inflated content.
+
+@history[#:changed "6.0.0.3"
+         @elem{Added support for the optional timestamp argument in the result function.}]}
 
 
 @defproc[(read-zip-directory [in (or/c path-string? input-port?)]) zip-directory?]{
@@ -99,8 +111,12 @@ itself or as the containing directory of other entries. If
 @defproc[(unzip-entry [in (or/c path-string? input-port?)]
                       [zipdir zip-directory?]
                       [entry (or/c bytes? path-string?)]
-                      [entry-reader (bytes? boolean? input-port? . -> . any)
-                                    (make-filesystem-entry-reader)])
+                      [entry-reader (if preserve-timestamps?
+                                        (bytes? boolean? input-port? (or/c #f exact-integer?)
+                                         . -> . any)
+                                        (bytes? boolean? input-port? . -> . any))
+                                    (make-filesystem-entry-reader)]
+                      [#:preserve-timestamps? preserve-timestamps? any/c #f])
          void?]{
 
 Unzips a single entry from a @exec{zip} archive based on a previously
@@ -116,7 +132,9 @@ The @racket[read-entry] argument is used to read the contents of the zip entry
 in the same way as for @racket[unzip].
 
 If @racket[entry] is not in @racket[zipdir], an
-@racket[exn:fail:unzip:no-such-entry] exception is raised.}
+@racket[exn:fail:unzip:no-such-entry] exception is raised.
+
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
 
 
 @defproc[(path->zip-path [path path-string?]) bytes?]{
