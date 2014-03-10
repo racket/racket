@@ -39,12 +39,12 @@
   (define *zip64-end-of-central-directory-locator* #x07064b50)
   (define *end-of-central-directory-record*        #x06054b50)
 
-  (define *system*
-    (case (system-type)
-      [(unix oskit) 3]
+  (define (get-system-id type)
+    (case type
       [(windows)    0]
       [(macos)      7]
-      [(macosx)    19]))
+      [(macosx)    19]
+      [else        3]))
   (define *os-specific-separator-regexp*
     (case (system-type)
       [(unix macosx oskit) #rx"/"]
@@ -142,8 +142,8 @@
       (write-int comment-length 2)
       (write-bytes *zip-comment*)))
 
-  ;; write-central-directory : (listof header) (or/c #f exact-integer?) ->
-  (define (write-central-directory headers timestamp)
+  ;; write-central-directory : (listof header) symbol? ->
+  (define (write-central-directory headers sys-type)
     (let ([count (length headers)])
       (let loop ([headers headers] [offset 0] [size 0])
         (if (null? headers)
@@ -155,9 +155,7 @@
                  [attributes (metadata-attributes metadata)]
                  [compression (metadata-compression metadata)]
                  [version (bitwise-ior *spec-version*
-                                       (arithmetic-shift (if timestamp
-                                                             3
-                                                             *system*)
+                                       (arithmetic-shift (get-system-id sys-type)
                                                          8))])
             (write-int #x02014b50                   4)
             (write-int version                      2)
@@ -227,10 +225,9 @@
   (define (with-slash-separator bytes)
     (regexp-replace* *os-specific-separator-regexp* bytes #"/"))
 
-  ;; build-metadata : relative-path (or/c #f exact-integer?) -> metadata
-  (define (build-metadata path timestamp)
-    (let* ([mod  (seconds->date (or timestamp
-                                    (file-or-directory-modify-seconds path)))]
+  ;; build-metadata : relative-path (relative-path . -> . exact-integer?) -> metadata
+  (define (build-metadata path get-timestamp)
+    (let* ([mod  (seconds->date (get-timestamp path))]
            [dir? (directory-exists? path)]
            [path (cond [(path? path)   path]
                        [(string? path) (string->path path)]
@@ -251,26 +248,36 @@
   ;; writes a zip file to current-output-port
   (provide zip->output)
   (define (zip->output files [out (current-output-port)]
-                       #:timestamp [timestamp #f])
+                       #:timestamp [timestamp #f]
+                       #:get-timestamp [get-timestamp (if timestamp
+                                                          (lambda (p) timestamp)
+                                                          file-or-directory-modify-seconds)]
+                       #:system-type [sys-type (system-type)])
     (parameterize ([current-output-port out])
       (let* ([seekable? (seekable-port? (current-output-port))]
              [headers ; note: Racket's `map' is always left-to-right
               (map (lambda (file)
-                     (zip-one-entry (build-metadata file timestamp) seekable?))
+                     (zip-one-entry (build-metadata file get-timestamp) seekable?))
                    files)])
         (when (zip-verbose)
           (eprintf "zip: writing headers...\n"))
-        (write-central-directory headers timestamp))
+        (write-central-directory headers get-timestamp))
       (when (zip-verbose)
         (eprintf "zip: done.\n"))))
 
   ;; zip : output-file paths ->
   (provide zip)
-  (define (zip zip-file #:timestamp [timestamp #f]
+  (define (zip zip-file
+               #:timestamp [timestamp #f]
+               #:get-timestamp [get-timestamp (if timestamp
+                                                  (lambda (p) timestamp)
+                                                  file-or-directory-modify-seconds)]
+               #:system-type [sys-type (system-type)]
                . paths)
     ;; (when (null? paths) (error 'zip "no paths specified"))
     (with-output-to-file zip-file
-      (lambda () (zip->output (pathlist-closure paths) 
-                              #:timestamp timestamp))))
-
+      (lambda () (zip->output (pathlist-closure paths)
+                              #:get-timestamp get-timestamp
+                              #:system-type sys-type))))
+  
   )

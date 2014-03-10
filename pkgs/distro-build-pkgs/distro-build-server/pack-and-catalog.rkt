@@ -100,7 +100,8 @@
         (apply zip dest-zip (directory-list)
                ;; Use a constant timestamp so that the checksum does
                ;; not depend on timestamps:
-               #:timestamp 1359788400))
+               #:timestamp 1359788400
+               #:system-type 'unix))
       (delete-directory/files tmp-dir)
       (call-with-output-file*
        dest-sum

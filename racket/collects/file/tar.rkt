@@ -43,7 +43,7 @@
 
 (define 0-byte (char->integer #\0))
 
-(define ((tar-one-entry buf prefix) path)
+(define ((tar-one-entry buf prefix get-timestamp) path)
   (let* ([link?   (link-exists? path)]
          [dir?    (and (not link?) (directory-exists? path))]
          [size    (if (or dir? link?) 0 (file-size path))]
@@ -82,7 +82,7 @@
     (write-octal   8 0)          ; always root (uid)
     (write-octal   8 0)          ; always root (gid)
     (write-octal  12 size)
-    (write-octal  12 (file-or-directory-modify-seconds path))
+    (write-octal  12 (get-timestamp path))
     ;; set checksum later, consider it "all blanks" for cksum
     (set! cksum-p p) (set! cksum (+ cksum (* 8 32))) (advance 8)
     (write-block*  1 (if link? #"2" (if dir? #"5" #"0"))) ; type-flag: dir/file (no symlinks)
@@ -130,9 +130,10 @@
 ;; writes a tar file to current-output-port
 (provide tar->output)
 (define (tar->output files [out (current-output-port)]
+                     #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
                      #:path-prefix [prefix #f])
   (parameterize ([current-output-port out])
-    (let* ([buf (new-block)] [entry (tar-one-entry buf prefix)])
+    (let* ([buf (new-block)] [entry (tar-one-entry buf prefix get-timestamp)])
       (for-each entry files)
       ;; two null blocks end-marker
       (write-bytes buf) (write-bytes buf))))
@@ -141,16 +142,19 @@
 (provide tar)
 (define (tar tar-file
              #:path-prefix [prefix #f]
+             #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
              . paths)
   (when (null? paths) (error 'tar "no paths specified"))
   (with-output-to-file tar-file
     (lambda () (tar->output (pathlist-closure paths #:follow-links? #f)
+                            #:get-timestamp get-timestamp
                             #:path-prefix prefix))))
 
 ;; tar-gzip : output-file paths ->
 (provide tar-gzip)
 (define (tar-gzip tgz-file
                   #:path-prefix [prefix #f]
+                  #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
                   . paths)
   (when (null? paths) (error 'tar-gzip "no paths specified"))
   (with-output-to-file tgz-file
@@ -158,7 +162,8 @@
       (let-values ([(i o) (make-pipe (* 1024 1024 32))])
         (thread (lambda ()
                   (tar->output (pathlist-closure paths #:follow-links? #f) o
-                               #:path-prefix prefix)
+                               #:path-prefix prefix
+                               #:get-timestamp get-timestamp)
                   (close-output-port o)))
         (gzip-through-ports
          i (current-output-port)

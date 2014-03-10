@@ -9,7 +9,13 @@ with both Windows and Unix (including Mac OS X) unpacking. The actual
 compression is implemented by @racket[deflate].}
 
 @defproc[(zip [zip-file path-string?] [path path-string?] ...
-              [#:timestamp timestamp (or/c #f exact-integer?) #f])
+              [#:timestamp timestamp (or/c #f exact-integer?) #f]
+              [#:get-timestamp get-timestamp
+                               (path? . -> . exact-integer?)
+                               (if timestamp
+                                   (lambda (p) timestamp)
+                                   file-or-directory-modify-seconds)]
+              [#:system-type sys-type symbol? (system-type)])
          void?]{
 
 Creates @racket[zip-file], which holds the complete content of all
@@ -29,21 +35,33 @@ Files are packaged as usual for
 distinction between owner/group/other permissions. Also, symbolic
 links are always followed.
 
-If @racket[timestamp] is not @racket[#f], it is used as the
-modification date for each file, instead of the result of
-@racket[file-or-directory-modify-seconds].}
+The @racket[get-timestamp] function is used to obtain the modification
+date to record in the archive for a file or directory, while
+@racket[sys-type] determines the system type recorded in the archive.
+
+@history[#:changed "6.0.0.3"
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
 
 
 @defproc[(zip->output [paths (listof path-string?)]
                       [out output-port? (current-output-port)]
-                      [#:timestamp timestamp (or/c #f exact-integer?) #f])
+                      [#:timestamp timestamp (or/c #f exact-integer?) #f]
+                      [#:get-timestamp get-timestamp
+                                       (path? . -> . exact-integer?)
+                                       (if timestamp
+                                           (lambda (p) timestamp)
+                                           file-or-directory-modify-seconds)]
+                      [#:system-type sys-type symbol? (system-type)])
          void?]{
 
 Zips each of the given @racket[paths], and packages it as a zip
 ``file'' that is written directly to @racket[out].  Unlike
 @racket[zip], the specified @racket[paths] are included as-is; if a
 directory is specified, its content is not automatically added, and
-nested directories are added without parent directories.}
+nested directories are added without parent directories.
+
+@history[#:changed "6.0.0.3"
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
 
 
 @defboolparam[zip-verbose on?]{
