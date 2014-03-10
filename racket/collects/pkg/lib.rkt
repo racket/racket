@@ -1200,7 +1200,8 @@
              [#"gz" ; assuming .tar.gz
               (untar pkg pkg-dir)]
              [#"zip"
-              (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
+              (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir)
+                     #:preserve-timestamps? #t)]
              [#"plt"
               (make-directory* pkg-dir)
               (unpack pkg pkg-dir
@@ -2496,6 +2497,22 @@
                                       [(path? base) (path->complete-path base)]
                                       [else (current-directory)]))))
        (define pkg/complete (path->complete-path pkg actual-dest-dir))
+       ;; To make checksums more consistent, set a directory's timestamp to
+       ;; the latest time of any of its source files.
+       (define (use-real-timestamp? p)
+         (and (file-exists? p)
+              (regexp-match? #rx"[.](?:rkt|ss|scrbl|txt)$" p)))
+       (define latest-timestamp
+         (for/fold ([ts #f]) ([f (in-directory dir)])
+           (define fts (and (use-real-timestamp? f)
+                            (file-or-directory-modify-seconds f)))
+           (if (and fts (or (not ts) (fts . > . ts)))
+               fts
+               ts)))
+       (define (file-or-directory-timestamp p)
+         (or (and (not (use-real-timestamp? p))
+                  latest-timestamp)
+             (file-or-directory-modify-seconds p)))
        (unless quiet?
          (printf/flush "packing~a into ~a\n"
                        (if hide-src? "" (format " ~a" dir))
@@ -2511,7 +2528,8 @@
                                     (when (file-exists? pkg/complete)
                                       (delete-file pkg/complete))
                                     (raise exn))])
-              (apply tar-gzip pkg/complete (directory-list))))]
+              (apply tar-gzip pkg/complete (directory-list)
+                     #:get-timestamp file-or-directory-timestamp)))]
          ['zip
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
@@ -2520,7 +2538,8 @@
                                     (when (file-exists? pkg/complete)
                                       (delete-file pkg/complete))
                                     (raise exn))])
-              (apply zip pkg/complete (directory-list))))]
+              (apply zip pkg/complete (directory-list)
+                     #:get-timestamp file-or-directory-timestamp)))]
          ['plt
           (define dest pkg/complete)
           (when (pkg-single-collection #:name pkg-name dir)
