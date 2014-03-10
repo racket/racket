@@ -602,7 +602,7 @@ glance, this appears to suggest a contract that assigns a
 @italic{variable-arity} to @racket[proc]: 
 @racketblock[
 (->* () 
-     (listof any/c)
+     #:rest (listof any/c)
      (or/c number? false/c))
 ]
 This contract, however, says that the function must accept @emph{any}
