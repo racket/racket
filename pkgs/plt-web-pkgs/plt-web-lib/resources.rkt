@@ -59,13 +59,6 @@
           null)
     ,@(if meta?
           (list
-           ;; the following resources are not used directly, so their names are
-           ;; irrelevant
-           @writefile["google5b2dc47c0b1b15cb.html"]{
-             google-site-verification: google5b2dc47c0b1b15cb.html}
-           @writefile["BingSiteAuth.xml"]{
-             <?xml version="1.0"?>
-             <users><user>140BE58EEC31CB97382E1016E21C405A</user></users>}
            ;; #t (the default) => no-op file, good to avoid error-log lines
            (let* ([t (if (eq? #t robots) "Disallow:" robots)]
                   [t (and t (list "User-agent: *\n" t))])

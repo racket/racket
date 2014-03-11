@@ -3,11 +3,14 @@
 (require plt-web/style
          "resources.rkt"
          "utils.rkt"
+         "../identity.rkt"
          (prefix-in 2011: "2011/all.rkt")
          (prefix-in 2012: "2012/all.rkt")
          (prefix-in 2013: "2013/all.rkt"))
 
 (provide index)
+
+(register-identity con-site)
 
 (define index
   @page[#:site con-site

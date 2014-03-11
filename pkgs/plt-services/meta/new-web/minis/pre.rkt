@@ -1,13 +1,17 @@
 #lang plt-web
 (require "../www/resources.rkt"
          "../testing.rkt"
+         "../identity.rkt"
          plt-web/style)
 
 (provide installers)
 
 (define pre-site (site "pre"
                        #:url (rewrite-for-testing "http://pre.racket-lang.org/")
+                       #:page-headers (identity-headers)
                        #:share-from www-site))
+
+(register-identity pre-site)
 
 (define (main id)
   @page[#:site pre-site

@@ -4,7 +4,9 @@
          "irc.rkt"
          (prefix-in pre: "../minis/pre.rkt")
          (only-in "../stubs/docs.rkt" docs-path)
-         (only-in "../rcon/resources.rkt" rcon))
+         (only-in "../rcon/resources.rkt" rcon)
+         "../identity.rkt"
+         (only-in "../stubs/pkgs.rkt"))
 
 ;; TODO
 ;; -- add links in top paragraph
@@ -14,6 +16,8 @@
 
 (require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt" "people.rkt"
          "community.rkt")
+
+(register-identity www-site)
 
 (define-runtime-path img-dir "img")
 (define-runtime-path js-dir "js")

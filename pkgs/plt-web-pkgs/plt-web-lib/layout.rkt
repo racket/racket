@@ -223,7 +223,7 @@
          null)
     })
 
-(define (make-resources files navigation page-style? sharing-site)
+(define (make-resources files navigation page-style? extra-headers sharing-site)
   (define (recur/share what)
     (if sharing-site
         ((site-resources sharing-site) what)
@@ -253,7 +253,7 @@
                   [sharing-site (recur/share what)]
                   [else (error 'resource "unknown resource: ~e" what)])]))
   (define icon-headers   (html-icon-headers (resources 'icon-path)))
-  (define headers        (html-headers resources icon-headers page-style?))
+  (define headers        (list (html-headers resources icon-headers page-style?) extra-headers))
   (define make-navbar    (navbar-maker (resources 'logo-path) navigation page-style?))
   (define make-navbar-content (navbar-content (resources 'logo-path) navigation page-style?))
   (define preamble (cons @doctype['html]
@@ -280,6 +280,7 @@
                   #:robots [robots #t]
                   #:htaccess [htaccess #t]
                   #:navigation [navigation null]
+                  #:page-headers [headers null]
                   #:page-style? [page-style? #t]
                   #:meta? [meta? page-style?]
                   #:share-from [given-sharing-site #f])
@@ -304,12 +305,13 @@
                                          #:site the-site
                                          content))
                                 dir robots htaccess
-                               page-style?
+                                page-style?
                                 meta?
                                 (and sharing-site
                                      #t))
                                navigation
                                page-style?
+                               headers
                                sharing-site))))
            the-site)])
     site))

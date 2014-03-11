@@ -1,16 +1,20 @@
 #lang plt-web
 
-(require "../www/resources.rkt")
+(require "../www/resources.rkt"
+         "../identity.rkt")
 
 (define drracket-site (site "drracket"
                             #:url "http://drracket.org/"
                             #:share-from www-site
+                            #:page-headers (identity-headers)
                             #:page-style? #f
                             #:meta? #t))
 
 ;; This just shows an ascii logo and redirects to the main page.  Thanks
 ;; to Can Burak Cilingir for both the logo and the drracket.org domain
 ;; name.
+
+(register-identity drracket-site)
 
 (define index
   (page #:site drracket-site

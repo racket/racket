@@ -1,5 +1,6 @@
 #lang plt-web
 (require plt-web/style
+         "../identity.rkt"
          "../testing.rkt")
 
 (provide www-site)
@@ -7,6 +8,7 @@
 (define www-site
   (site "www"
         #:url (rewrite-for-testing "http://www.racket-lang.org/")
+        #:page-headers (identity-headers)
         #:navigation
         (list
          @a[href: (resource "stubs/pkgs/" #f)]{Packages}

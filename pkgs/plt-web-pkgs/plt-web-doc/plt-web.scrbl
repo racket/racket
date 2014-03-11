@@ -38,6 +38,7 @@ relative directory is mapped to a destination URL via
                [#:always-abs-url? always-abs-url? any/c #t]
                [#:share-from share-from (or/c site? #f) #f]
                [#:page-style? page-style? any/c #t]
+               [#:page-headers page-headers outputable/c null]
                [#:meta? meta? any/c page-style?]
                [#:robots robots (or/c #f #t outputable/c) #t]
                [#:htaccess htaccess (or/c #f #t outputable/c) #t]
@@ -64,6 +65,9 @@ If @racket[page-style?] is true, HTML pages generated for the site
 include content to set the style of the overall page. Otherwise, only
 sufficient resources and content are included to specify the style of
 the PLT web-page header (i.e., a bar with the Racket logo).
+
+The @racket[page-headers] argument provides content for the header of
+any HTML page generated at the site via @racket[page] or @racket[page*].
 
 If @racket[meta?] is true, then @filepath{.htaccess},
 @filepath{robots.txt}, and similar files are generated for the site.
