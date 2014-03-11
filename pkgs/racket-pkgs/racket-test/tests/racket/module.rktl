@@ -50,6 +50,11 @@
 (syntax-test #'(module n+ racket/base (#%module-begin) (define n+ 'n+) (provide n+)))
 (module n+ racket/base (#%module-begin (define n+ 'n+) (provide n+)))
 
+(syntax-test #'(#%declare))
+(syntax-test #'(module m racket/base (#%declare something)))
+(syntax-test #'(module m racket/base (#%declare "something")))
+(syntax-test #'(module m racket/base (#%declare #:something)))
+
 (syntax-test #'(#%provide))
 (syntax-test #'(#%provide . x))
 (syntax-test #'(#%provide y . x))

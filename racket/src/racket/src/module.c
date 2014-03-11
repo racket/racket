@@ -9082,6 +9082,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               } else {
                 scheme_wrong_syntax(who, kw, e, "unrecognized keyword");
               }
+            } else {
+              scheme_wrong_syntax(who, kw, e, "expected a keyword");
             }
             kws = SCHEME_STX_CDR(kws);
           }
