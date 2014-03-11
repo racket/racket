@@ -98,18 +98,7 @@
         @(render-download-page rel pkg)})
     (define style
       @style/inline[type: 'text/css]{
-        .version-row {
-          background-color: #ffffc0;
-        }
-        .version-row:hover {
-          background-color: #e0e0a0;
-        }
-        .version-row a {
-          text-decoration: none;
-        }
-        .version-row a:hover {
-          background-color: #eeee22;
-        }})
+       })
     (define-values (main-package alt-packages)
       (cond [(null? all-packages)
              (eprintf "Warning: all-packages is empty\n")
@@ -120,15 +109,15 @@
           #:id 'all-versions #:title "All Versions" #:part-of 'download
           #:extra-headers style #:width 'full]{
      @columns[10 #:center? #t #:row? #t]{
-      @table[align: 'center cellspacing: 0 cellpadding: 4 frame: 'box
-             rules: 'groups]{
+      @table[class: "striped rounded"]{
         @thead{
-          @tr{@td{@nbsp @strong{Version & Announcement}}
-              @th[align: 'center]{@(package->name main-package)}
-              @th[align: 'center]{Alternative Distributions}
-              @td{@strong{Documentation}}}}
-        @(let ([sep (tr style: "height: 4px; margin: 0; padding: 0;"
-                        (td) (map (λ (_) (td)) all-packages))])
+          @tr{@th{Version}
+              @th{Announcement}
+              @th{Download}
+              @th{Alternative}
+              @th{Documentation}}}
+       @tbody{
+        @(let ([sep null])
            ;; release=>packages : hash[release => (listof package)]
            ;; Indicates what packages actually exist (have installers) for a given release.
            (define release=>packages (make-hash))
@@ -139,37 +128,33 @@
                (hash-set! release=>packages r (cons (installer-package i) prev-packages))))
            (define (cell rel pkg)
              @td[align: 'center]{
-               @nbsp @(make-page rel pkg){[download]} @nbsp})
-           @tbody{
+               @(make-page rel pkg){@(package->name main-package)}})
              @sep
              @(for/list ([r (in-list all-releases)])
                 (define ver (release-version r))
                   @list{
                     @tr[class: 'version-row]{
-                      @td{@|nbsp nbsp| @strong{Version @ver},
-                          @(release-page r){@release-date-string[r]} @nbsp}
+                      @td{@strong{Version @ver}}
+                      @td{@span[style: "font-size: 80%"]{@(release-page r){@release-date-string[r]}}}
                       @(if (member main-package (hash-ref release=>packages r))
                            (cell r main-package)
                            @td[])
                       @td[align: 'center]{
-                        @nbsp
                         @(add-between
                           (for/list ([p (in-list alt-packages)]
                                      #:when (member p (hash-ref release=>packages r)))
-                            ((make-page r p) (format "[download ~a]" (package->name p))))
-                          @nbsp)
-                        @nbsp}
-                      @td{@nbsp @a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
-                          @nbsp @a[href: @list{@|docs|/@|ver|/pdf}]{[PDF]} @;
-                          @nbsp}}
-                    @sep})})
-        @tfoot{
+                            ((make-page r p) (package->name p)))
+                          " ")}
+                      @td{@a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
+                          @nbsp @;
+                          @a[href: @list{@|docs|/@|ver|/pdf}]{[PDF]}}}
+                    @sep}))
           @tr[class: 'version-row]{
-            @td[]{Snapshots}
-            @td[align: 'center colspan: 2]{@pre:installers}
-            @td{@; @nbsp @pre:docs[#:sub 'html]{[HTML]} @;
-                @; @nbsp @pre:docs[#:sub 'pdf]{[PDF]}
-                @nbsp}}}}}}))
+            @td{Development}
+            @td{}
+            @td{@pre:installers{Snapshots}}
+            @td{}
+            @td{}}}}}}))
 
 (define license
   @page[#:site download-site
