@@ -11,10 +11,11 @@
 
 
 (define types (make-parameter '()))
-(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref enum))
+(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref enum ordered))
 (define names '("grammar" "search" "backjumping" "backjumping, ordered space" "backjumping, with refresh"
-                          "backjumping, ordered space with refresh" "enumeration"))
-(define symbols '(circle triangle square asterisk diamond plus 5star))
+                          "backjumping, ordered space with refresh" "enumeration"
+                          "in-order enumeration"))
+(define symbols '(circle triangle square asterisk diamond plus 5star diamond))
 (define type-names
   (for/hash ([t all-types] [n names])
     (values t n)))
@@ -109,18 +110,22 @@
                                          (λ () '())))))]
         ['()
          (for/list ([(name/type times) (in-hash sorted-times)]
-                    #:unless ((length times) . < . (min-trials)))
-           (when (or
-                  (and (not (order-by))
-                       (empty? (types))
-                       (member (cdr name/type) (types)))
-                  (equal? (cdr name/type) (order-by)))
-             (hash-set! name-avgs (last (regexp-split #rx"/" (car name/type)))
-                        (cons (mean times) (hash-ref name-avgs (last (regexp-split #rx"/" (car name/type))) '()))))
+                    #:unless (and ((length times) . < . (min-trials))
+                                  (not (equal? (cdr name/type) 'ordered))))
+           (define name (last (regexp-split #rx"/" (car name/type))))
+           (cond 
+             [(equal? (cdr name/type) (order-by))
+              (hash-set! name-avgs name (mean times))]
+             [(list? (hash-ref name-avgs name '()))
+              (hash-set! name-avgs 
+                        name
+                        (cons (mean times) (hash-ref name-avgs name '())))]) 
            (list (car name/type)
                  (cdr name/type)
                  (mean times)
-                 (error-bar times)))])))
+                 (if (equal? (cdr name/type) 'ordered)
+                     0
+                     (error-bar times))))])))
   
   
   (plot-x-tick-label-angle 75)
@@ -139,8 +144,11 @@
        (λ (n) (equal? n name))
        (sort (hash-keys name-avgs)
              >
-             #:key (λ (k) 
-                     (mean (hash-ref name-avgs k)))))
+             #:key (λ (k)
+                     (define val (hash-ref name-avgs k))
+                     (if (number? val)
+                         val
+                         (mean val)))))
       '())))
   
   (define (get-name-num name n)
