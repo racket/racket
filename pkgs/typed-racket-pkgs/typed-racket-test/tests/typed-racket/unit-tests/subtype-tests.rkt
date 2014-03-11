@@ -299,7 +299,7 @@
     (-object #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))]
    [(-object #:method ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((m (-> -Nat))))]
-   [(-object #:method ((f -Nat)) #:augment ((m (-> -Nat)) (n (-> -Nat))))
+   [(-object #:method ((f (-> -Nat))) #:augment ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((m (-> -Nat))))]
    [(-object #:field ((a -Nat)) #:method ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((m (-> -Nat))))]
