@@ -52,19 +52,21 @@
         (~optional (~seq #:result expected-result:expr)
                      #:defaults [(expected-result #'t2)]))
      #`(test-case (~a 't1 " !<: " 't2)
-         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
-            (define result
-              (parameterize ([delay-errors? #t])
-                (check-below t1 t2)))
-            (define exn
-              (let/ec exit
-                (with-handlers [(exn:fail? exit)]
-                  (report-all-errors)
-                  (fail-check "Check below did not fail."))))
-            (check-result result)
-            (unless (equal? expected-result result)
-              (fail-check "Check below did not return expected result."))
-            (check-regexp-match message (exn-message exn))))]))
+         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))]
+                           ['expected expected-result])
+           (define result
+             (parameterize ([delay-errors? #t])
+               (check-below t1 t2)))
+           (with-check-info (['actual result])
+             (define exn
+               (let/ec exit
+                 (with-handlers [(exn:fail? exit)]
+                   (report-all-errors)
+                   (fail-check "Check below did not fail."))))
+             (check-result result)
+             (unless (equal? expected-result result)
+               (fail-check "Check below did not return expected result."))
+             (check-regexp-match message (exn-message exn)))))]))
 
 
 (define tests
@@ -82,10 +84,13 @@
     ;; Bottom is not below everything if the number of values doesn't match up.
     (test-below #:fail
       (ret (list -Bottom -Bottom))
-      (ret (list Univ) (list -true-filter) (list -no-obj)))
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
+
     (test-below #:fail
       (ret (list))
-      (ret (list Univ) (list -true-filter) (list -no-obj)))
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
 
 
 
@@ -97,15 +102,18 @@
 
     (test-below #:fail
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
-      (ret (list Univ) (list -true-filter) (list -no-obj)))
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
 
     (test-below #:fail #rx"no object"
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
-      (ret (list Univ) (list -top-filter) (list (make-Path empty #'x))))
+      (ret (list Univ) (list -top-filter) (list (make-Path empty #'x)))
+      #:result (ret (list Univ) (list -top-filter) (list (make-Path empty #'x))))
 
     (test-below #:fail #rx"no object"
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
-      (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
+      (ret (list Univ) (list -true-filter) (list (make-Path empty #'x)))
+      #:result (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
 
 
     (test-below (ret -Symbol) tc-any-results
@@ -140,14 +148,18 @@
 
     (test-below #:fail
       (ret -Symbol)
-      (ret -Symbol -true-filter -no-obj))
+      (ret -Symbol -true-filter -no-obj)
+      #:result (ret -Symbol -true-filter -empty-obj))
 
     (test-below #:fail
       (ret -Symbol)
-      (ret -Symbol -no-obj -empty-obj Univ 'B))
+      (ret -Symbol -no-filter -empty-obj Univ 'B)
+      #:result (ret -Symbol -top-filter -empty-obj Univ 'B))
     (test-below #:fail
       (ret -Symbol)
-      (ret (list -Symbol -Symbol) (list -top-filter -no-filter) (list -no-obj -empty-obj)))
+      (ret (list -Symbol -Symbol) (list -top-filter -no-filter) (list -no-obj -empty-obj))
+      #:result (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj)))
+
     (test-below #:fail
       (ret (list Univ) (list -true-filter) (list -empty-obj) Univ 'B)
       (ret Univ))
@@ -167,13 +179,14 @@
       (ret -Symbol))
     (test-below #:fail
       tc-any-results
-      (ret -Symbol -no-filter -empty-obj Univ 'B))
+      (ret -Symbol -no-filter -empty-obj Univ 'B)
+      #:result (ret (list -Symbol) (list -top-filter) (list -empty-obj) Univ 'B))
 
 
     (test-below #:fail
       (ret -Symbol -true-filter)
       (ret (list Univ -Symbol) (list -no-filter -top-filter))
-      #:result (ret (list Univ -Symbol) (list -true-filter -top-filter)))
+      #:result (ret (list Univ -Symbol) (list -top-filter -top-filter)))
 
     #;
     (test-below

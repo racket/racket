@@ -70,6 +70,16 @@
     [(NoObject:) o2]
     [else o]))
 
+;; fix-results: tc-results -> tc-results
+;; Turns NoObject/NoFilter into the Empty/TopFilter
+(define (fix-results r)
+  (match r
+    [(tc-results: ts fs os)
+     (ret ts (map fix-filter fs) (map fix-object os))]
+    [(tc-results: ts fs os dty dbound)
+     (ret ts (map fix-filter fs) (map fix-object os) dty dbound)]))
+
+
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
 ;;                   (Type Results -> Type)
@@ -96,27 +106,25 @@
      expected]
 
     ;; tc-results cases
-    ;; These two cases have to be first so that bottom (exceptions, etc.) can be allowed in cases
+    ;; This case has to be first so that bottom (exceptions, etc.) can be allowed in cases
     ;; where multiple values are expected.
     ;; We can ignore the filters and objects in the actual value because they would never be about a value
-    [((tc-result1: (== -Bottom)) (tc-results: ts2 fs2 os2))
-     (ret ts2 (map fix-filter fs2) (map fix-object os2))]
-    [((tc-result1: (== -Bottom)) (tc-results: ts2 fs2 os2 dty dbound))
-     (ret ts2 (map fix-filter fs2) (map fix-object os2) dty dbound)]
+    [((tc-result1: (== -Bottom)) _)
+     (fix-results expected)]
 
     ;; Handle tc-any-results as an expected value
-    [((or (? Type/c?) (tc-any-results:) (tc-results: _) (tc-results: _ _ _ _ _)) (tc-any-results:)) tr1]
+    [(_ (tc-any-results:)) tr1]
     ;; Handle tc-any-results as an actual value
-    [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
+    [((tc-any-results:) (tc-result1: t _ _))
      (type-mismatch "1 value" "unknown number" "mismatch in number of values")
-     expected]
+     (fix-results expected)]
     [((tc-any-results:) (tc-results: t2 fs os))
      (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
-     expected]
+     (fix-results expected)]
     [((tc-any-results:) (tc-results: ts2 fs os dty dbound))
      (type-mismatch (format "~a values and `~a ...'" (length ts2) dty)
                     "unknown-number" "mismatch in number of values")
-     expected]
+     (fix-results expected)]
 
     ;; Handle simple single value case
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
@@ -152,24 +160,27 @@
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
+     (tc-error/expr "Different filters/objects.")
+     (fix-results expected)]
 
 
     ;; case where expected is like (Values a ... a) but got something else
-    [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2 dty dbound))
      (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
                     (format "~a values" (length t1))
                     "mismatch in number of values")
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
-     expected]
+     (fix-results expected)]
     ;; case where you have (Values a ... a) but expected something else
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
+    [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
      (type-mismatch (format "~a values" (length t2))
                     (format "~a values and `~a ...'" (length t1) dty)
                     "mismatch in number of values")
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
-     expected]
+     (fix-results expected)]
 
     ;; Handle the polydotted cases
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
@@ -179,7 +190,7 @@
        (expected-but-got (stringify t2) (stringify t1)))
      (unless (subtype dty1 dty2)
        (type-mismatch dty2 dty1 "mismatch in ... argument"))
-     expected]
+     (fix-results expected)]
 
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
      (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
