@@ -203,13 +203,16 @@ returning a value that can be used to reference the resource.}
 
 @defproc[(make-indexes [s site?]
                        [dir (or/c 'same relative-path?)]
-                       [#:depth depth (or/c #f exact-nonnegative-integer?)])
+                       [#:depth depth (or/c #f exact-nonnegative-integer?) #f]
+                       [#:use-dir? use-dir? ((or/c 'same relative-path?) . -> . any/c) (lambda (dir) #t)])
          void?]{
 
 Registers an @filepath{index.html} file for every directory within
 @racket[dir] (relative to the current directory) that does not have an
 @filepath{index.html} file already. If @racket[depth] is not @racket[#f],
 then subdirectories are explored at most @racket[depth] layers deep.
+The @racket[use-dir?] predicate is called for each directory to determine
+whether the directory's subdirectories are traversed.
 
 The generated index files are registered for the site @racket[s] at
 destinations that correspond to treating the current directory as the

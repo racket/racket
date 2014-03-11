@@ -1,4 +1,6 @@
-#lang plt-web
+#lang at-exp racket/base
+
+(require (except-in scribble/html/lang #%module-begin))
 
 (provide (all-defined-out))
 

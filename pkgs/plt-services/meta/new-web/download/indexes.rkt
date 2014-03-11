@@ -18,4 +18,10 @@
                             #:url "http://download.racket-lang.org/"
                             #:always-abs-url? #t))
 
-(make-indexes download-site)
+(make-indexes download-site
+              #:use-dir? (lambda (d)
+                           (or (not (path? d))
+                               (let-values ([(base name dir) (split-path d)])
+                                 ;; Don't go into documentation "HTML" directories:
+                                 (not (equal? "html" (path->string name)))))))
+
