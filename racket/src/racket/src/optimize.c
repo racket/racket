@@ -53,9 +53,13 @@ struct Optimize_Info
   int original_frame, new_frame;
   Scheme_Object *consts;
   Comp_Prefix *cp;
+  int init_kclock;
 
   /* Propagated up and down the chain: */
-  int size, vclock, psize;
+  int size;
+  int vclock; /* virtual clock that ticks for a side effect */
+  int kclock; /* virtual clock that ticks for a potential continuation capture */
+  int psize;
   short inline_fuel;
   char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
@@ -78,6 +82,7 @@ struct Optimize_Info
 };
 
 #define OPT_IS_MUTATED           0x1
+#define OPT_ESCAPES_AFTER_K_TICK 0x2
 #define OPT_LOCAL_TYPE_ARG_SHIFT 2
 #define OPT_LOCAL_TYPE_VAL_SHIFT (OPT_LOCAL_TYPE_ARG_SHIFT + SCHEME_MAX_LOCAL_TYPE_BITS)
 
@@ -103,10 +108,12 @@ static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_local_type(Optimize_Info *info, int pos, int ct);
+static int produces_local_type(Scheme_Object *rator, int argc);
 static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_mutated, int disrupt_single_use);
 static int optimize_is_used(Optimize_Info *info, int pos);
 static int optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
 static int optimize_is_mutated(Optimize_Info *info, int pos);
+static int optimize_escapes_after_k_tick(Optimize_Info *info, int pos);
 static int optimize_is_local_type_arg(Optimize_Info *info, int pos, int depth);
 static int optimize_is_local_type_valued(Optimize_Info *info, int pos);
 static int env_uses_toplevel(Optimize_Info *frame);
@@ -132,6 +139,7 @@ typedef struct Scheme_Once_Used {
   Scheme_Object *expr;
   int pos;
   int vclock;
+  int kclock;
 
   int used;
   int delta;
@@ -141,7 +149,7 @@ typedef struct Scheme_Once_Used {
   struct Scheme_Once_Used *next;
 } Scheme_Once_Used;
 
-static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos, int vclock, Scheme_Once_Used *prev);
+static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos, int vclock, int kclock, Scheme_Once_Used *prev);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -931,7 +939,7 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
  return 0;
 }
 
-static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
+static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda, int cross_k, Optimize_Info *info)
 /* A -1 return means that the arguments must be movable without
    changing space complexity. */
 {
@@ -941,6 +949,11 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
          doing so risks duplicating a computation if the relevant `lambda'
          is later inlined. */
       if (cross_lambda) return 0;
+      if (cross_k
+          && !(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONALLOCATE)
+          && (produces_local_type(rator, n) != SCHEME_LOCAL_TYPE_FIXNUM)) {
+        return 0;
+      }
       return -1;
     }
   }
@@ -949,6 +962,7 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
     return -1;
 
   if (!cross_lambda
+      && !cross_k /* because all calls below allocate */
       /* Note that none of these have space-safety issues, since they
          return values that contain all arguments: */
       && (SAME_OBJ(scheme_list_proc, rator)
@@ -965,7 +979,8 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
   return 0;
 }
 
-static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, int cross_lambda, 
+static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, 
+                              int cross_lambda, int cross_k, 
                               int check_space, int fuel)
 /* An expression that can't necessarily be constant-folded,
    but can be delayed because it has no side-effects (or is unsafe);
@@ -999,11 +1014,12 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
     }
     break;
   case scheme_application_type:
-    can_move = is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args, cross_lambda);
+    can_move = is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args, 
+                               cross_lambda, cross_k, info);
     if (can_move) {
       int i;
       for (i = ((Scheme_App_Rec *)expr)->num_args; i--; ) {
-        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, cross_lambda, 
+        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, cross_lambda, cross_k,
                                 check_space || (can_move < 0), fuel - 1))
           return 0;
       }
@@ -1011,19 +1027,19 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
     }
     break;
   case scheme_application2_type:
-    can_move = is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda);
+    can_move = is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda, cross_k, info);
     if (can_move) {
-      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, cross_lambda, 
+      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, cross_lambda, cross_k,
                              check_space || (can_move < 0), fuel - 1))
         return 1;
     }
     break;
   case scheme_application3_type:
-    can_move = is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda);
+    can_move = is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda, cross_k, info);
     if (can_move) {
-      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, cross_lambda, 
+      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, cross_lambda, cross_k,
                              check_space || (can_move < 0), fuel - 1)
-          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, 
+          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, cross_k,
                                 check_space || (can_move < 0), fuel - 1))
         return 1;
     }
@@ -1527,6 +1543,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         if (nested_count) {
           sub_info = optimize_info_add_frame(info, nested_count, nested_count, 0);
           sub_info->vclock++;
+          sub_info->kclock++;
           /* We could propagate bound values in sub_info, but relevant inlining
              and propagatation has probably already happened when the rator was
              optimized. */
@@ -1876,6 +1893,24 @@ static int is_nonmutating_primitive(Scheme_Object *rator, int n)
   return 0;
 }
 
+static int is_noncapturing_primitive(Scheme_Object *rator, int n)
+{
+  if (SCHEME_PRIMP(rator)) {
+    int opt;
+    opt = ((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_OPT_MASK;
+    if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
+      return 1;
+    if (opt >= SCHEME_PRIM_OPT_NONCM) {
+      if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_ALWAYS_ESCAPES) {
+        /* even if a continuation is captured, it won't get back */
+        return 1;
+      }
+    }
+  }
+  
+  return 0;
+}
+
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
 static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
@@ -2214,6 +2249,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   info->size += 1;
   if (!is_nonmutating_primitive(app->args[0], app->num_args))
     info->vclock += 1;
+  if (!is_noncapturing_primitive(app->args[0], app->num_args))
+    info->kclock += 1;
 
   if (all_vals) {
     le = try_optimize_fold(app->args[0], (Scheme_Object *)app, info);
@@ -2396,6 +2433,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   if (!is_nonmutating_primitive(app->rator, 1))
     info->vclock += 1;
+  if (!is_noncapturing_primitive(app->rator, 1))
+    info->kclock += 1;
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
@@ -2606,6 +2645,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
   if (!is_nonmutating_primitive(app->rator, 2))
     info->vclock += 1;
+  if (!is_noncapturing_primitive(app->rator, 2))
+    info->kclock += 1;
 
   /* Check for (call-with-values (lambda () M) N): */
   if (SAME_OBJ(app->rator, scheme_call_with_values_proc)) {
@@ -3018,7 +3059,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   Scheme_Branch_Rec *b;
   Scheme_Object *t, *tb, *fb;
   Scheme_Hash_Tree *old_types;
-  int preserves_marks = 1, single_result = 1;
+  int preserves_marks = 1, single_result = 1, init_kclock, then_kclock;
 
   b = (Scheme_Branch_Rec *)o;
 
@@ -3059,6 +3100,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   }
 
   info->vclock += 1; /* model branch as clock increment */
+  init_kclock = info->kclock;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
     info->size -= 1;
@@ -3087,6 +3129,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     single_result = -1;
 
   info->types = old_types;
+  then_kclock = info->kclock;
+  info->kclock = init_kclock;
 
   fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
 
@@ -3098,6 +3142,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     single_result = 0;
   else if (single_result && (info->single_result < 0))
     single_result = -1;
+
+  if (then_kclock > info->kclock)
+    info->kclock = then_kclock;
 
   info->vclock += 1;  /* model join as clock increment */
   info->preserves_marks = preserves_marks;
@@ -3352,6 +3399,7 @@ apply_values_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   info->size += 1;
   info->vclock += 1;
+  info->kclock += 1;
 
   return scheme_optimize_apply_values(f, e, info, info->single_result, context);
 }
@@ -3599,20 +3647,26 @@ static Scheme_Object *begin_for_syntax_optimize(Scheme_Object *data, Optimize_In
 /*                    let, let-values, letrec, etc.                       */
 /*========================================================================*/
 
-static int is_liftable_prim(Scheme_Object *v)
+static int is_liftable_prim(Scheme_Object *v, int or_escape)
 {
   if (SCHEME_PRIMP(v)) {
-    if ((((Scheme_Primitive_Proc *)v)->pp.flags & SCHEME_PRIM_OPT_MASK)
-        >= SCHEME_PRIM_OPT_IMMEDIATE)
+    int opt = (((Scheme_Primitive_Proc *)v)->pp.flags & SCHEME_PRIM_OPT_MASK);
+    if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
       return 1;
+    if (or_escape && (opt >= SCHEME_PRIM_OPT_NONCM)) {
+      if (SCHEME_PRIM_PROC_OPT_FLAGS(v) & SCHEME_PRIM_ALWAYS_ESCAPES)
+        return 1;
+    }
   }
 
   return 0;
 }
 
-int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
+int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator, int or_escape)
 {
   Scheme_Type t = SCHEME_TYPE(o);
+
+  if (!fuel) return 0;
 
   switch (t) {
   case scheme_compiled_unclosed_procedure_type:
@@ -3626,11 +3680,11 @@ int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
       return 1;
     break;
   case scheme_branch_type:
-    if (fuel) {
+    {
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)o;
-      if (scheme_is_liftable(b->test, bind_count, fuel - 1, 0)
-	  && scheme_is_liftable(b->tbranch, bind_count, fuel - 1, as_rator)
-	  && scheme_is_liftable(b->fbranch, bind_count, fuel - 1, as_rator))
+      if (scheme_is_liftable(b->test, bind_count, fuel - 1, 0, or_escape)
+	  && scheme_is_liftable(b->tbranch, bind_count, fuel - 1, as_rator, or_escape)
+	  && scheme_is_liftable(b->fbranch, bind_count, fuel - 1, as_rator, or_escape))
 	return 1;
     }
     break;
@@ -3638,13 +3692,13 @@ int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)o;
       int i;
-      if (!is_liftable_prim(app->args[0]))
+      if (!is_liftable_prim(app->args[0], or_escape))
         return 0;
       if (0) /* not resolved, yet */
         if (bind_count >= 0)
           bind_count += app->num_args;
       for (i = app->num_args + 1; i--; ) {
-	if (!scheme_is_liftable(app->args[i], bind_count, fuel - 1, 1))
+	if (!scheme_is_liftable(app->args[i], bind_count, fuel - 1, 1, or_escape))
 	  return 0;
       }
       return 1;
@@ -3653,27 +3707,27 @@ int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
-      if (!is_liftable_prim(app->rator))
+      if (!is_liftable_prim(app->rator, or_escape))
         return 0;
       if (0) /* not resolved, yet */
         if (bind_count >= 0)
           bind_count += 1;
-      if (scheme_is_liftable(app->rator, bind_count, fuel - 1, 1)
-	  && scheme_is_liftable(app->rand, bind_count, fuel - 1, 1))
+      if (scheme_is_liftable(app->rator, bind_count, fuel - 1, 1, or_escape)
+	  && scheme_is_liftable(app->rand, bind_count, fuel - 1, 1, or_escape))
 	return 1;
     }
     break;
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
-      if (!is_liftable_prim(app->rator))
+      if (!is_liftable_prim(app->rator, or_escape))
         return 0;
       if (0) /* not resolved, yet */
         if (bind_count >= 0)
           bind_count += 2;
-      if (scheme_is_liftable(app->rator, bind_count, fuel - 1, 1)
-	  && scheme_is_liftable(app->rand1, bind_count, fuel - 1, 1)
-	  && scheme_is_liftable(app->rand2, bind_count, fuel - 1, 1))
+      if (scheme_is_liftable(app->rator, bind_count, fuel - 1, 1, or_escape)
+	  && scheme_is_liftable(app->rand1, bind_count, fuel - 1, 1, or_escape)
+	  && scheme_is_liftable(app->rand2, bind_count, fuel - 1, 1, or_escape))
 	return 1;
     }
     break;
@@ -3686,11 +3740,11 @@ int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
       if (post_bind) {
         o = lh->body;
         for (i = lh->num_clauses; i--; ) {
-          if (!scheme_is_liftable(((Scheme_Compiled_Let_Value *)o)->value, bind_count, fuel - 1, as_rator))
+          if (!scheme_is_liftable(((Scheme_Compiled_Let_Value *)o)->value, bind_count, fuel - 1, as_rator, or_escape))
             return 0;
           o = ((Scheme_Compiled_Let_Value *)o)->body;
         }
-        if (scheme_is_liftable(o, bind_count + lh->count, fuel - 1, as_rator))
+        if (scheme_is_liftable(o, bind_count + lh->count, fuel - 1, as_rator, or_escape))
           return 1;
       }
       break;
@@ -4007,7 +4061,7 @@ static int expr_size(Scheme_Object *o, Optimize_Info *info)
 
 int scheme_might_invoke_call_cc(Scheme_Object *value)
 {
-  return !scheme_is_liftable(value, -1, 10, 0);
+  return !scheme_is_liftable(value, -1, 10, 0, 1);
 }
 
 static int worth_lifting(Scheme_Object *v)
@@ -4498,7 +4552,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           if (cnt == 1) {
             /* used only once; we may be able to shift the expression to the use
                site, instead of binding to a temporary */
-            once_used = make_once_used(value, pos, rhs_info->vclock, NULL);
+            once_used = make_once_used(value, pos, rhs_info->vclock, rhs_info->kclock, NULL);
             if (!last_once_used)
               first_once_used = once_used;
             else
@@ -4518,7 +4572,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           cnt = ((pre_body->flags[i] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
           if (cnt == 1) {
             /* Need to register as once-used, in case of copy propagation */
-            once_used = make_once_used(NULL, pos+i, rhs_info->vclock, NULL);
+            once_used = make_once_used(NULL, pos+i, rhs_info->vclock, rhs_info->kclock, NULL);
             if (!last_once_used)
               first_once_used = once_used;
             else
@@ -4540,7 +4594,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	&& !body_info->letrec_not_twice
 	&& ((i < 1)
 	    || (!scheme_is_compiled_procedure(((Scheme_Compiled_Let_Value *)pre_body->body)->value, 1, 1)
-		&& !scheme_is_liftable(((Scheme_Compiled_Let_Value *)pre_body->body)->value, head->count, 5, 1)))) {
+		&& !scheme_is_liftable(((Scheme_Compiled_Let_Value *)pre_body->body)->value, head->count, 5, 1, 0)))) {
       Scheme_Object *prop_later = NULL;
 
       if (did_set_value) {
@@ -4711,6 +4765,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   info->single_result = body_info->single_result;
   info->preserves_marks = body_info->preserves_marks;
   info->vclock = body_info->vclock;
+  info->kclock = body_info->kclock;
 
   /* Clear used flags where possible */
   body = head->body;
@@ -4754,8 +4809,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
         pre_body->flags[j] |= SCHEME_WAS_USED;
         ct = optimize_is_local_type_arg(body_info, pos+j, 0);
-        if (ct)
-          pre_body->flags[j] |= (ct << SCHEME_WAS_TYPED_ARGUMENT_SHIFT);
+        if (ct) {
+          if (ALWAYS_PREFER_UNBOX_TYPE(ct)
+              || !optimize_escapes_after_k_tick(body_info, pos+j))
+            pre_body->flags[j] |= (ct << SCHEME_WAS_TYPED_ARGUMENT_SHIFT);
+        }
+          
 
         if (first_once_used && (first_once_used->pos == (pos+j))) {
           if (first_once_used->vclock < 0) {
@@ -4865,6 +4924,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
                                  SCHEME_LAMBDA_FRAME);
 
   info->vclock += 1; /* model delayed evaluation as vclock increment */
+  info->kclock += 1;
 
   /* For reporting warnings: */
   if (info->context && SCHEME_PAIRP(info->context))
@@ -4883,7 +4943,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
 
     cnt = ((cl->local_flags[i] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
     if (cnt == 1) {
-      last_once_used = make_once_used(NULL, i, info->vclock, last_once_used);
+      last_once_used = make_once_used(NULL, i, info->vclock, info->kclock, last_once_used);
       if (!first_once_used) first_once_used = last_once_used;
       optimize_propagate(info, i, (Scheme_Object *)last_once_used, 1);
     }
@@ -5856,7 +5916,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           if (((o->vclock == info->vclock)
                && single_valued_noncm_expression(o->expr, 5))
               || ((o->vclock != info->vclock)
-                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 0, 5))) {
+                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 
+                                        o->kclock != info->kclock,
+                                        0, 5))) {
             val = optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;
@@ -6621,7 +6683,7 @@ static void optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *valu
   info->consts = p;
 }
 
-static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos, int vclock, Scheme_Once_Used *prev)
+static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos, int vclock, int kclock, Scheme_Once_Used *prev)
 {
   Scheme_Once_Used *o;
 
@@ -6631,6 +6693,7 @@ static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos, int vclock,
   o->expr = val;
   o->pos = pos;
   o->vclock = vclock;
+  o->kclock = kclock;
 
   if (prev)
     prev->next = o;
@@ -6740,6 +6803,12 @@ static int optimize_is_mutated(Optimize_Info *info, int pos)
   return check_use(info, pos, OPT_IS_MUTATED, 0);
 }
 
+static int optimize_escapes_after_k_tick(Optimize_Info *info, int pos)
+/* pos is in new-frame counts */
+{
+  return check_use(info, pos, OPT_ESCAPES_AFTER_K_TICK, 0);
+}
+
 static int optimize_is_local_type_arg(Optimize_Info *info, int pos, int depth)
 /* pos is in new-frame counts */
 {
@@ -6785,7 +6854,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
                                               int disrupt_single_use, int *is_mutated, int just_test)
 {
   Scheme_Object *p, *n;
-  int delta = 0, orig_j = j;
+  int delta = 0, orig_j = j, kclock = info->kclock;
 
   while (info) {
     if (info->flags & SCHEME_LAMBDA_FRAME)
@@ -6799,6 +6868,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
   if (OPT_CONTEXT_TYPE(context))
     register_use(info, pos, OPT_CONTEXT_TYPE(context) << OPT_LOCAL_TYPE_ARG_SHIFT);
+  else if (!just_test && (kclock > info->init_kclock))
+    register_use(info, pos, OPT_ESCAPES_AFTER_K_TICK);
 
   if (is_mutated)
     if (info->use && (info->use[pos] & OPT_IS_MUTATED))
@@ -6964,6 +7035,8 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->top_level_consts = info->top_level_consts;
   naya->context = info->context;
   naya->vclock = info->vclock;
+  naya->kclock = info->kclock;
+  naya->init_kclock = info->kclock;
   naya->use_psize = info->use_psize;
   naya->logger = info->logger;
 
@@ -6994,6 +7067,7 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
 
   parent->size += info->size;
   parent->vclock = info->vclock;
+  parent->kclock = info->kclock;
   parent->psize += info->psize;
   if (info->has_nonleaf)
     parent->has_nonleaf = 1;

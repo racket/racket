@@ -684,8 +684,15 @@ static intptr_t scheme_sprintf(char *s, intptr_t maxlen, const char *msg, ...)
   return len;
 }
 
+#define ESCAPING_NONCM_PRIM(name, func, a1, a2, env) \
+  p = scheme_make_noncm_prim(func, name, a1, a2); \
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_ALWAYS_ESCAPES); \
+  scheme_add_global_constant(name, p, env);
+
 void scheme_init_error(Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   if (!scheme_console_printf)
     scheme_console_printf = default_printf;
   if (!scheme_console_output)
@@ -694,15 +701,15 @@ void scheme_init_error(Scheme_Env *env)
   REGISTER_SO(scheme_raise_arity_error_proc);
 
   /* errors */
-  GLOBAL_NONCM_PRIM("error",                      error,                 1, -1, env);
-  GLOBAL_NONCM_PRIM("raise-user-error",           raise_user_error,      1, -1, env);
-  GLOBAL_NONCM_PRIM("raise-syntax-error",         raise_syntax_error,    2,  5, env);
-  GLOBAL_NONCM_PRIM("raise-type-error",           raise_type_error,      3, -1, env);
-  GLOBAL_NONCM_PRIM("raise-argument-error",       raise_argument_error,  3, -1, env);
-  GLOBAL_NONCM_PRIM("raise-result-error",         raise_result_error,    3, -1, env);
-  GLOBAL_NONCM_PRIM("raise-arguments-error",      raise_arguments_error, 2, -1, env);
-  GLOBAL_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3, -1, env);
-  GLOBAL_NONCM_PRIM("raise-range-error",          raise_range_error,     7, 8, env);
+  ESCAPING_NONCM_PRIM("error",                      error,                 1, -1, env);
+  ESCAPING_NONCM_PRIM("raise-user-error",           raise_user_error,      1, -1, env);
+  ESCAPING_NONCM_PRIM("raise-syntax-error",         raise_syntax_error,    2,  5, env);
+  ESCAPING_NONCM_PRIM("raise-type-error",           raise_type_error,      3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-argument-error",       raise_argument_error,  3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-result-error",         raise_result_error,    3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-arguments-error",      raise_arguments_error, 2, -1, env);
+  ESCAPING_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-range-error",          raise_range_error,     7, 8, env);
 
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_add_global_constant("raise-arity-error",  scheme_raise_arity_error_proc, env);

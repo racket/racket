@@ -768,25 +768,29 @@ scheme_init_unsafe_list (Scheme_Env *env)
   REGISTER_SO(scheme_unsafe_car_proc);
   p = scheme_make_folding_prim(unsafe_car, "unsafe-car", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-car", p, env);
   scheme_unsafe_car_proc = p;
 
   REGISTER_SO(scheme_unsafe_cdr_proc);
   p = scheme_make_folding_prim(unsafe_cdr, "unsafe-cdr", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-cdr", p, env);
   scheme_unsafe_cdr_proc = p;
 
   p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-ref", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-list-ref", p, env);
 
   p = scheme_make_folding_prim(unsafe_list_tail, "unsafe-list-tail", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-list-tail", p, env);
 
   REGISTER_SO(scheme_unsafe_mcar_proc);

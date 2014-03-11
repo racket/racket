@@ -772,19 +772,6 @@ scheme_make_prim_w_arity(Scheme_Prim *fun, const char *name,
 }
 
 Scheme_Object *
-scheme_make_folding_prim(Scheme_Prim *fun, const char *name,
-			 mzshort mina, mzshort maxa,
-			 short folding)
-{
-  return make_prim_closure(fun, 1, name, mina, maxa,
-			   (folding 
-			    ? SCHEME_PRIM_OPT_FOLDING
-			    : 0),
-			   1, 1,
-			   0, 0, NULL);
-}
-
-Scheme_Object *
 scheme_make_noncm_prim(Scheme_Prim *fun, const char *name,
 		       mzshort mina, mzshort maxa)
 {
@@ -802,10 +789,26 @@ scheme_make_immed_prim(Scheme_Prim *fun, const char *name,
 		       mzshort mina, mzshort maxa)
 {
   /* An immediate primitive is a non-cm primitive, and it doesn't
-     extend the continuation in a way that interacts with space safety, except
-     maybe to raise an exception. */
+     capture a continuation or extend the continuation in a way that
+     interacts with space safety (which implies no interposition via
+     chaperones), except maybe to raise an exception. */
   return make_prim_closure(fun, 1, name, mina, maxa,
 			   SCHEME_PRIM_OPT_IMMEDIATE,
+			   1, 1,
+			   0, 0, NULL);
+}
+
+Scheme_Object *
+scheme_make_folding_prim(Scheme_Prim *fun, const char *name,
+			 mzshort mina, mzshort maxa,
+			 short folding)
+{
+  /* A folding primitive is an immediate primitive, and for constant
+     arguments the result must be the same on all runs and platforms. */
+  return make_prim_closure(fun, 1, name, mina, maxa,
+			   (folding 
+			    ? SCHEME_PRIM_OPT_FOLDING
+			    : 0),
 			   1, 1,
 			   0, 0, NULL);
 }

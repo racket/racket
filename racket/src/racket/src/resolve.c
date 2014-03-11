@@ -999,7 +999,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         else if (SCHEME_CLV_FLAGS(clv) & SCHEME_CLV_NO_GROUP_USES)
           is_lift = 1;
         else
-          is_lift = scheme_is_liftable(clv->value, head->count, 5, 1);
+          is_lift = scheme_is_liftable(clv->value, head->count, 5, 1, 0);
       
         if (!is_proc && !is_lift) {
           recbox = 1;

@@ -49,7 +49,10 @@
 
 /* Flonum unboxing is only useful if a value is going to flow to a
    function that wants it, otherwise we'll have to box the flonum anyway.
-   Fixnum unboxing is always fine, since it's easy to box. */
+   Also, we can only leave flonums unboxed if they don't escape
+   before a potential continuation capture.
+   Fixnum unboxing is always fine, since it's easy to box and doesn't
+   involve allocation. */
 #define ALWAYS_PREFER_UNBOX_TYPE(ty) ((ty) == SCHEME_LOCAL_TYPE_FIXNUM)
 
 #define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
@@ -68,8 +71,10 @@
 #define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST   512
 #define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND  1024
 #define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD   2048
+#define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE   4096
+#define SCHEME_PRIM_ALWAYS_ESCAPES          8192
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           12
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           13
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
 
@@ -3068,7 +3073,7 @@ int scheme_used_ever(Scheme_Comp_Env *env, int which);
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                           Optimize_Info *opt_info, Optimize_Info *warn_info, int deeper_than, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
-int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
+int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator, int or_escape);
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
 
 typedef struct {

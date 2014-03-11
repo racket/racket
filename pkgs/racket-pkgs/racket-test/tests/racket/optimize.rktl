@@ -1031,10 +1031,11 @@
               (error "bad")
               (equal? (list* w z) (list* z w))))
 
-;; Ok to move `box' past a side effect:
+;; Ok to move `box' past a side effect (that can't capture a
+;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])
-              (list (printf "hi\n") h))
-           '(list (printf "hi\n") (box 0.0)))
+              (list (random) h))
+           '(list (random) (box 0.0)))
 
 ;; Don't move `box' past a `lambda':
 (test-comp '(let ([h (box 0.0)])
@@ -1394,6 +1395,19 @@
                               [(p) (q)])
                 (list x y z))))
 
+(test-comp '(lambda (f a)
+              (letrec ([y (if (zero? a)
+                              (error "no")
+                              8)]
+                       [f (lambda (x) (f x))])
+                f))
+           '(lambda (f a)
+              (let ([y (if (zero? a)
+                           (error "no")
+                           8)])
+                (letrec ([f (lambda (x) (f x))])
+                  f))))
+
 (test-comp '(procedure? add1)
            #t)
 (test-comp '(procedure? (lambda (x) x))
@@ -1586,31 +1600,60 @@
   (test-bin 'eq?)
   (test-bin 'eqv?))
 
-(let ([test-move
-       (lambda (expr [same? #t])
-         (test-comp `(lambda (z)
-                       (let ([x ,expr])
-                         (let ([y (read)])
-                           (list y x))))
-                    `(lambda (z)
-                       (list (read) ,expr))
-                    same?))])
-  (test-move '(cons 1 2))
-  (test-move '(mcons 1 2))
-  (test-move '(list 1))
-  (test-move '(list 1 2))
-  (test-move '(list 1 2 3))
-  (test-move '(list* 1 2))
-  (test-move '(list* 1 2 3))
-  (test-move '(vector 1))
-  (test-move '(vector 1 2))
-  (test-move '(vector 1 2 3))
-  (test-move '(box 2))
-  (test-move '(box-immutable 2))
-  (test-move '(cons 1 2 3) #f)
-  (test-move '(mcons 1 2 3) #f)
-  (test-move '(box 1 2) #f)
-  (test-move '(box-immutable 1 2) #f))
+(for ([middle (in-list (list '(random) ; known immediate
+                             '(read)))] ; could capture continuation?
+      [default-same? (in-list (list #t
+                                    #f))])
+  (let ([test-move
+         (lambda (expr [same? default-same?])
+           (test-comp `(lambda (z)
+                         (let ([x ,expr])
+                           (let ([y ,middle])
+                             (list y x))))
+                      `(lambda (z)
+                         (list ,middle ,expr))
+                      same?))])
+    (test-move '(cons 1 2))
+    (test-move '(mcons 1 2))
+    (test-move '(list 1))
+    (test-move '(list 1 2))
+    (test-move '(list 1 2 3))
+    (test-move '(list* 1 2))
+    (test-move '(list* 1 2 3))
+    (test-move '(vector 1))
+    (test-move '(vector 1 2))
+    (test-move '(vector 1 2 3))
+    (test-move '(box 2))
+    (test-move '(box-immutable 2))
+    (test-move '(cons 1 2 3) #f)
+    (test-move '(mcons 1 2 3) #f)
+    (test-move '(box 1 2) #f)
+    (test-move '(box-immutable 1 2) #f)))
+
+;; Check move in to `else` branch where `then`
+;; branch might capture a continuation
+(test-comp `(lambda (z)
+              (let ([x (cons 1 2)])
+                (if z
+                    (read)
+                    x)))
+           `(lambda (z)
+              (if z
+                  (read)
+                  (cons 1 2))))
+;; But not after the merge:
+(test-comp `(lambda (z)
+              (let ([x (cons 1 2)])
+                (if z
+                    (read)
+                    (void))
+                x))
+           `(lambda (z)
+              (if z
+                  (read)
+                  (void))
+              (cons 1 2))
+           #f)
 
 (let ([test-use-unsafe
        (lambda (pred op unsafe-op)
@@ -1711,13 +1754,22 @@
               (unsafe-car x))
            #f)
 
-;; it's ok to delay `list', because there's no space-safety issue
+;; It would be ok to delay `list', because there's no space-safety issue
+;; ... except that an arbitrary function might capture a continuation:
 (test-comp '(lambda (f x)
               (let ([y (list x)])
                 (f)
                 y))
            '(lambda (f x)
               (f)
+              (list x))
+           #f)
+(test-comp '(lambda (f x)
+              (let ([y (list x)])
+                (random)
+                y))
+           '(lambda (f x)
+              (random)
               (list x)))
 
 ;; don't duplicate formerly once-used variable due to inlining
@@ -3294,6 +3346,36 @@
   (test '(0.5e7 yep) (lambda () (even 1e7 0.0))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Double-check that allocation is not moved
+;; across continuation capture:
 
+(let ()
+  (define g #f)
+  (define p (make-continuation-prompt-tag))
+  (define (t)
+    (let ([a (cons 1 2)])
+      (call-with-composable-continuation (λ (k) (set! g k)) p)
+      a))
+  (call-with-continuation-prompt t p)
+  (test #t eq?
+        (call-with-continuation-prompt g p)
+        (call-with-continuation-prompt g p)))
+
+(let ()
+  (define g #f)
+  (define p (make-continuation-prompt-tag))
+  (define (t)
+    (let ([a (fl+ (random) 1.0)])
+      (call-with-composable-continuation (λ (k) (set! g k)) p)
+      (if (fl= a 0.0) ; encourage unboxing of `a` (if not for the continuation capture)
+          #f
+          a))) ; must not delay flnonum allocation to here
+  (call-with-continuation-prompt t p)
+  (test #t eq?
+        (call-with-continuation-prompt g p)
+        (call-with-continuation-prompt g p)))
+  
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
