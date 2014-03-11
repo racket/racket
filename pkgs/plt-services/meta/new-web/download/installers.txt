@@ -421,6 +421,7 @@
 89160136	6.0/racket-6.0-src-builtpkgs-unix.tgz
 18850536	6.0/racket-6.0-src-unix.tgz
 87418969	6.0/racket-6.0-x86_64-linux-ubuntu-precise.sh
+87422594	6.0/racket-6.0-x86_64-linux-debian-squeeze.sh
 82648682	6.0/racket-6.0-x86_64-macosx.dmg
 58074859	6.0/racket-6.0-x86_64-win32.exe
 7103247	6.0/racket-minimal-6.0-i386-linux-ubuntu-precise.sh
@@ -430,5 +431,6 @@
 9033437	6.0/racket-minimal-6.0-src-builtpkgs.tgz
 5709676	6.0/racket-minimal-6.0-src.tgz
 7287938	6.0/racket-minimal-6.0-x86_64-linux-ubuntu-precise.sh
+7278075	6.0/racket-minimal-6.0-x86_64-linux-debian-squeeze.sh
 7594094	6.0/racket-minimal-6.0-x86_64-macosx.dmg
 6052567	6.0/racket-minimal-6.0-x86_64-win32.exe
