@@ -156,6 +156,12 @@
       tc-any-results
       (ret -Symbol -no-filter -empty-obj Univ 'B))
 
+    #;
+    (test-below
+      (ret (list -Symbol -Symbol) (list -true-filter -true-filter))
+      (ret (list Univ -Symbol) (list -no-filter -top-filter)) 
+      #:result (ret (list Univ -Symbol) (list -true-filter -top-filter)))
+
     ;; Enable these once check-below is fixed
     #;
     (test-below #:fail
