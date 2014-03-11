@@ -138,11 +138,15 @@
     (test-below #:fail
       (ret (list Univ) (list -true-filter) (list -empty-obj) Univ 'B)
       (ret Univ))
-    ;; Fix filter better check
-    #;
+
     (test-below
       (ret (list Univ) (list -true-filter) (list -empty-obj))
       (ret Univ)
+      #:result (ret (list Univ) (list -top-filter) (list -empty-obj)))
+    #;
+    (test-below
+      (ret (list Univ) (list -true-filter) (list -empty-obj))
+      (ret Univ -no-filter)
       #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
 
     (test-below #:fail

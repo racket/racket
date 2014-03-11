@@ -39,6 +39,8 @@
   (if (filter-equal? f1 f2)
       #t
       (match* (f1 f2)
+              [((Top:) _) #t]
+              [(_ (Bot:)) #t]
               [((OrFilter: fs) f2)
                (memf (lambda (f) (filter-equal? f f2)) fs)]
               [((TypeFilter: t1 p1 i1)
