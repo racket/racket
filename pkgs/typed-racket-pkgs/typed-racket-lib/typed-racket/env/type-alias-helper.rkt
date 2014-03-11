@@ -3,7 +3,7 @@
 ;; This module provides helper functions for type aliases
 
 (require "../utils/utils.rkt"
-         (utils tc-utils)
+         (utils tarjan tc-utils)
          (env type-alias-env type-name-env)
          (rep type-rep)
          (private parse-type)
@@ -26,18 +26,13 @@
          register-all-type-aliases
          parse-type-alias)
 
-;; A Vertex is a
-;;   (vertex Identifier Boolean Option<Integer> Option<Integer> Listof<Id>)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; interp. a vertex in a graph, we only use this for Tarjan's algorithm
-;;   id       - identifier (labels vertices)
-;;   stack?   - whether this vertex is on the stack (for speed)
-;;   index    - index tracked in Tarjan's algorithm
-;;   lowlink  - see index
-;;   adjacent - list of adjacent vertices
-(struct vertex (id [stack? #:mutable] [index #:mutable]
-                   [lowlink #:mutable] adjacent)
-        #:transparent)
+;; Data definitions for aliases
+;;
+;; A TypeAliasInfo is a (list Syntax (Listof Identifier))
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Dict<Id, (List Type Listof<Id>)> -> Listof<Listof<Id>>
 ;; Find strongly connected type aliases in order to
@@ -47,54 +42,12 @@
 (define (find-strongly-connected-type-aliases dep-map)
   (define vertex-map (make-free-id-table))
   (for ([(id adjacent) (in-dict dep-map)])
-    (free-id-table-set! vertex-map id (vertex id #f #f #f adjacent)))
-  ;; Implements Tarjan's algorithm. See Wikipedia
-  ;; http://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm
-  (define (tarjan vertices)
-    (define (strongly-connected vtx)
-      (set-vertex-index! vtx index)
-      (set-vertex-lowlink! vtx index)
-      (set! index (add1 index))
-      (enqueue-front! stack vtx)
-      (set-vertex-stack?! vtx #t)
-      (for ([successor-id (in-list (vertex-adjacent vtx))])
-        (define successor (free-id-table-ref vertices successor-id))
-        (cond [(not (vertex-index successor))
-               (strongly-connected successor)
-               (set-vertex-lowlink! vtx
-                                    (min (vertex-lowlink vtx)
-                                         (vertex-lowlink successor)))]
-              [(vertex-stack? successor)
-               (set-vertex-lowlink! vtx
-                                    (min (vertex-lowlink vtx)
-                                         (vertex-index successor)))]))
-      ;; sets a result component if this was a root vertex
-      (when (= (vertex-lowlink vtx) (vertex-index vtx))
-        (define new-scc
-          (for/list ([elem (in-queue stack)]
-                     #:final (equal? vtx elem))
-            (dequeue! stack)
-            (set-vertex-stack?! elem #f)
-            (vertex-id elem)))
-        (set! sccs (cons new-scc sccs))))
-
-    ;; the body
-    (define index 0)
-    (define stack (make-queue))
-    (define sccs '())
-    (for ([(id vtx) (in-dict vertices)]
-          #:unless (vertex-index vtx))
-      (strongly-connected vtx))
-    sccs)
-  (tarjan vertex-map))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Data definitions for aliases
-;;
-;; A TypeAliasInfo is a (list Syntax (Listof Identifier))
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    (free-id-table-set! vertex-map id (make-vertex id adjacent)))
+  (define components (tarjan vertex-map))
+  ;; extract the identifiers out of the results since we
+  ;; don't need the whole vertex
+  (for/list ([component components])
+    (map vertex-data component)))
 
 ;; check-type-alias-contractive : Id Type -> Void
 ;;
