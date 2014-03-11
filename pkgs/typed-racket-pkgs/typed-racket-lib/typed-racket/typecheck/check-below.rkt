@@ -136,6 +136,7 @@
                        "mismatch in filter and object")])
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
 
+    ;; Handle the multi value cases
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))
        (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
@@ -144,6 +145,14 @@
      (if (= (length ts) (length ts2))
          (ret ts2 fs os)
          (ret ts2))]
+
+    [((tc-results: t1 fs os) (tc-results: t2 fs os))
+     (unless (= (length t1) (length t2))
+       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
+     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
+       (expected-but-got (stringify t2) (stringify t1)))
+     expected]
+
 
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
@@ -162,6 +171,7 @@
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
 
+    ;; Handle the polydotted cases
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
      (unless (= (length t1) (length t2))
        (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
@@ -170,14 +180,9 @@
      (unless (subtype dty1 dty2)
        (type-mismatch dty2 dty1 "mismatch in ... argument"))
      expected]
-    [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
-     expected]
-
 
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
      (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
+
+    ;; Handle the broken cases
     [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
