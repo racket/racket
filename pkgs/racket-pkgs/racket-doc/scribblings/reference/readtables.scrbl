@@ -271,7 +271,7 @@ character and the @racket[#f] readtable.}
   ;;  (except those in sub-expressions)
   (letrec ([misplaced-delimiter 
             (case-lambda
-             [(ch port) (unexpected-delimiter ch port #f #f #f #f)]
+             [(ch port) (misplaced-delimiter ch port #f #f #f #f)]
              [(ch port src line col pos)
               (raise-read-error 
                (format "misplaced `~a' in tuple" ch) 
