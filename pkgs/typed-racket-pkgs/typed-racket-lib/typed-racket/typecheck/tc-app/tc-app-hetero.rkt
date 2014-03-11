@@ -30,8 +30,8 @@
    [_
     (match (tc-expr expr)
      [(tc-result1: (Value: (? number? i))) i]
-     [type
-       (check-below type -Integer)
+     [tc-results
+       (check-below tc-results (ret -Integer))
        #f])]))
 
 (define (index-error i-val i-bound expr type expected name)
@@ -70,7 +70,7 @@
     [(not i-val)
      (define val-t (single-value val-e))
      (for ((es-type (in-list es-t)))
-       (check-below val-t es-type))
+       (check-below val-t (ret es-type)))
      (cond-check-below (ret -Void) expected)]
     [else
      (single-value val-e)

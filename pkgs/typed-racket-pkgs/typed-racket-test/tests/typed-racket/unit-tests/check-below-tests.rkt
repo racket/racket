@@ -57,24 +57,10 @@
 (define tests
   (test-suite "Check Below"
     (test-below -Bottom Univ)
-    (test-below -Bottom tc-any-results
-      #:result -Bottom)
-    (test-below
-      -Bottom
-      (ret (list Univ) (list -true-filter) (list -no-obj))
-      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
-    (test-below
-      -Bottom
-      (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
-      #:result (ret (list Univ Univ) (list -true-filter -top-filter) (list -empty-obj -empty-obj)))
     (test-below
       (ret -Bottom)
       (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
       #:result (ret (list Univ Univ) (list -true-filter -top-filter) (list -empty-obj -empty-obj)))
-    (test-below
-      -Bottom
-      (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
-      #:result (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B))
     (test-below
       (ret -Bottom)
       (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
@@ -109,8 +95,6 @@
       (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
 
 
-    (test-below -Symbol tc-any-results
-      #:result -Symbol)
     (test-below (ret -Symbol) tc-any-results
       #:result (ret -Symbol))
     (test-below (ret -Symbol -true-filter -empty-obj) tc-any-results
@@ -141,41 +125,32 @@
       (ret -Symbol -no-filter -empty-obj)
       #:result (ret -Symbol -top-filter -empty-obj))
 
-    (test-below
-      -Symbol
-      (ret -Symbol -top-filter -no-obj)
-      #:result -Symbol)
-    (test-below
-      -Symbol
-      (ret -Symbol -no-filter -empty-obj)
-      #:result -Symbol)
     (test-below #:fail
-      -Symbol
+      (ret -Symbol)
       (ret -Symbol -true-filter -no-obj))
 
     (test-below #:fail
-      -Symbol
+      (ret -Symbol)
       (ret -Symbol -no-obj -empty-obj Univ 'B))
     (test-below #:fail
-      -Symbol
+      (ret -Symbol)
       (ret (list -Symbol -Symbol) (list -top-filter -no-filter) (list -no-obj -empty-obj)))
     (test-below #:fail
       (ret (list Univ) (list -true-filter) (list -empty-obj) Univ 'B)
-      Univ)
+      (ret Univ))
+    ;; Fix filter better check
+    #;
     (test-below
       (ret (list Univ) (list -true-filter) (list -empty-obj))
-      Univ
+      (ret Univ)
       #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
 
-    (test-below #:fail
-      tc-any-results
-      -Symbol)
     (test-below #:fail
       tc-any-results
       (ret -Symbol))
     (test-below #:fail
       tc-any-results
-      (ret -Symbol -no-obj -empty-obj Univ 'B))
+      (ret -Symbol -no-filter -empty-obj Univ 'B))
 
     ;; Enable these once check-below is fixed
     #;

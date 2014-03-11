@@ -8,10 +8,12 @@
          (only-in (types printer) pretty-format-type))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()
-                    [_ (if (Type/c? s) Type/c tc-results/c)])]
- [cond-check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c #f Type/c tc-results/c)]) ()
-                         [_ (if (Type/c? s) Type/c tc-results/c)])]
+ [check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                     [t (s) (if (Type/c? s) Type/c tc-results/c)])
+                    [_ (s) (if (Type/c? s) Type/c tc-results/c)])]
+ [cond-check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                          [t (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])
+                         [_ (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])]
  [type-mismatch (-->* ((-or/c Type/c string?) (-or/c Type/c string?))
                       ((-or/c string? #f))
                       -any)])
@@ -87,12 +89,19 @@
       [(o (or (NoObject:) (Empty:))) #t]
       [(_ _) #f]))
   (match* (tr1 expected)
+    ;; Type case
+    [((? Type/c? t1) (? Type/c? t2))
+     (unless (subtype t1 t2)
+       (expected-but-got t2 t1))
+     expected]
+
+    ;; tc-results cases
     ;; These two cases have to be first so that bottom (exceptions, etc.) can be allowed in cases
     ;; where multiple values are expected.
     ;; We can ignore the filters and objects in the actual value because they would never be about a value
-    [((or (== -Bottom) (tc-result1: (== -Bottom))) (tc-results: ts2 fs2 os2))
+    [((tc-result1: (== -Bottom)) (tc-results: ts2 fs2 os2))
      (ret ts2 (map fix-filter fs2) (map fix-object os2))]
-    [((or (== -Bottom) (tc-result1: (== -Bottom))) (tc-results: ts2 fs2 os2 dty dbound))
+    [((tc-result1: (== -Bottom)) (tc-results: ts2 fs2 os2 dty dbound))
      (ret ts2 (map fix-filter fs2) (map fix-object os2) dty dbound)]
 
     ;; Handle tc-any-results as an expected value
@@ -168,34 +177,7 @@
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
 
-    [((tc-result1: t1 f o) (? Type/c? t2))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     (ret t2 f o)]
-    [((tc-results: t1 f o dty dbound) (? Type/c? t2))
-     (type-mismatch "1 value"
-                    (format "~a values and `~a ...'" (length t1) dty)
-                    "mismatch in number of values")
-      tr1]
 
-    [((? Type/c? t1) (tc-result1: t2 f o))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     (unless (and (filter-better? -top-filter f) (object-better? -empty-obj o))
-       (type-mismatch (format "`~a' and `~a'" f (print-object o)) t1
-                      "mismatch in filter"))
-     t1]
-    [((? Type/c? t1) (tc-results: ts2 fs os))
-     (type-mismatch (format "~a values" (length ts2)) "1 value" "mismatch in number of values")
-     t1]
-    [((? Type/c? t1) (tc-results: ts2 fs os dty dbound))
-     (type-mismatch (format "~a values and `~a ...'" (length ts2) dty)
-                    "1 value" "mismatch in number of values")
-     t1]
-    [((? Type/c? t1) (? Type/c? t2))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     expected]
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
      (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
     [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
