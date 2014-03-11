@@ -313,14 +313,12 @@
 
 @columns[8 #:center? #t #:row? #t
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
-@strong{Racket} is a full-spectrum programming language in the Lisp family.
-It inherits many ideas from its direct parent, Scheme, and improves on it
-in many mays, especially in its ability to mix and match existing and
-project-specific dialects; the existence of a safe, typed dialect that
-soundly interacts with the untyped one; a lazy dialect; and support for
-many other common programming idioms. Racket's rich set of libraries
-supports application development from web servers to distributed computing
-and from databases to charts.}
+@strong{Racket} is a full-spectrum programming language. It goes
+beyond Lisp and Scheme with dialects that support objects, types,
+laziness, and more. Racket enables programmers to link components
+written in different dialects, and it empowers programmers to create
+new, project-specific dialects. Racket's libraries support
+applications from web servers and databases to GUIs and charts.}
                                                                             
 @(apply slideshow-explain (force examples))
 
