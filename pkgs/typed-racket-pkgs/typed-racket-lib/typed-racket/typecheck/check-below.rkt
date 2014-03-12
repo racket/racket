@@ -203,8 +203,6 @@
         (value-mismatch tr1 expected)
         (fix-results expected)])]
 
-    [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
-     (int-err "dotted types with different bounds in check-below nyi: ~a ~a" tr1 expected)]
-
-    ;; Handle the broken cases
-    [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
+    [((tc-results: t1 f1 o1 dty1 dbound1) (tc-results: t2 f2 o2 dty2 dbound2))
+     (type-mismatch (~a "a bound of " dbound2) (~a "a bound of " dbound1) "mismatch in bound")
+     (fix-results expected)]))
