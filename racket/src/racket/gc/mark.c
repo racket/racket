@@ -34,7 +34,7 @@
 /* Single argument version, robust against whole program analysis. */
 void GC_noop1(word x)
 {
-    static volatile word sink;
+    __attribute__ ((used)) static volatile word sink;
 
     sink = x;
 }
