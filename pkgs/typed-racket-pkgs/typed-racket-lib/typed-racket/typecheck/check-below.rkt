@@ -158,22 +158,18 @@
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
 
     ;; Handle the multi value cases
-
-    ;; Error case where number of values is wrong
     [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
-     (=> continue)
-     (when (= (length t1) (length t2))
-       (continue))
-     (type-mismatch (length t2) (length t1) "mismatch in number of values")
-     (fix-results expected)]
-
-    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
-     (and
-       (check-types t1 t2)
-       (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
-                 [o1 (in-list o1)] [o2 (in-list o2)])
-         (check-filter+object f1 f2 o1 o2)))
-     (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1))]
+     (cond
+       [(= (length t1) (length t2))
+        (and
+          (check-types t1 t2)
+          (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
+                    [o1 (in-list o1)] [o2 (in-list o2)])
+            (check-filter+object f1 f2 o1 o2)))
+        (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1))]
+       [else
+        (type-mismatch (length t2) (length t1) "mismatch in number of values")
+        (fix-results expected)])]
 
 
     ;; case where expected is like (Values a ... a) but got something else
