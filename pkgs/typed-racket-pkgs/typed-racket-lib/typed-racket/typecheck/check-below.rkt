@@ -179,12 +179,10 @@
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2 dty dbound))
      (value-mismatch tr1 expected)
-     (check-types t1 t2)
      (fix-results expected)]
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
      (value-mismatch tr1 expected)
-     (check-types t1 t2)
      (fix-results expected)]
 
     ;; Handle the polydotted cases
