@@ -39,7 +39,7 @@
                         "expected" t1* "given" t2*)
   #f)
 
-;; expected-but-got : (U Type String) (U Type String) -> Void
+;; expected-but-got : (U Type String) (U Type String) -> False
 ;;
 ;; Helper to print messages of the form
 ;;   "Expected a, but got b"
@@ -58,7 +58,22 @@
                     "type variables bound in different scopes")]
     [(_ _) (type-mismatch t1 t2)]))
 
-;; fix-filter: Filter [Filter] -> Filter
+;; value-mismatch : tc-results/c tc-results/c -> false?
+;; Helper to print messages of the form
+;;   "Expecte n values, but got m values"
+(define (value-mismatch expected actual)
+  (define (value-string ty)
+    (match ty
+      [(tc-result1: _) "1 values"]
+      [(tc-results: ts) (~a (length ts) " values")]
+      [(tc-results: ts _ _ dty _) (~a (length ts) " values and `" dty " ...'")]
+      [(tc-any-results:) "unknown number"]))
+  (type-mismatch
+    (value-string expected) (value-string actual)
+    "mismatch in number of values"))
+
+
+;; fix-filter: FilterSet [FilterSet] -> FilterSet
 ;; Turns NoFilter into the actual filter; leaves other filters alone.
 (define (fix-filter f [f2 -top-filter])
   (match f
@@ -81,10 +96,17 @@
     [(tc-results: ts fs os dty dbound)
      (ret ts (map fix-filter fs) (map fix-object os) dty dbound)]))
 
+;; check-types: tc-results tc-results -> Boolean
+;; If the types are not compatible: records an error and returns false
+;; Else: returns true
+;; TODO figure out what would break this
 (define (check-types ts1 ts2)
   (unless (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
     (expected-but-got (stringify ts2) (stringify ts1))))
 
+;; check-filter+object: FilterSet FilterSet Object Object -> Boolean
+;; If the filters or objects are not compatible: records an error and returns false
+;; Else: returns true
 (define (check-filter+object f1 f2 o1 o2)
   (define filter-better 
     (match* (f1 f2)
@@ -110,6 +132,9 @@
                     "mismatch in filter and object")]
     [else #t]))
 
+;; check-type: Type Type -> Boolean
+;; If the types are not compatible: records an error and returns false
+;; Else: returns true
 (define (check-type t1 t2)
   (cond
     [(not (subtype t1 t2))
@@ -117,27 +142,16 @@
      #f]
     [else #t]))
 
-
+;; check-filters+objects: (Listof FilterSet) (Listof FilterSet) (Listof Object) (Listof Object) -> Boolean
+;; If the filters or objects are not compatible: records an error and returns false
+;; Else: returns true
 (define (check-filters+objects f1 f2 o1 o2)
   (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
             [o1 (in-list o1)] [o2 (in-list o2)])
     (check-filter+object f1 f2 o1 o2)))
 
 
-(define (value-mismatch expected actual)
-  (define (value-string ty)
-    (match ty
-      [(tc-result1: _) "1 values"]
-      [(tc-results: ts) (~a (length ts) " values")]
-      [(tc-results: ts _ _ dty _) (~a (length ts) " values and `" dty " ...'")]
-      [(tc-any-results:) "unknown number"]))
-  (type-mismatch
-    (value-string expected) (value-string actual)
-    "mismatch in number of values"))
-
-;; check-below : (/\ (Results Type -> Result)
-;;                   (Results Results -> Result)
-;;                   (Type Results -> Type)
+;; check-below : (/\ (Results Results -> Result)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
   (match* (tr1 expected)
