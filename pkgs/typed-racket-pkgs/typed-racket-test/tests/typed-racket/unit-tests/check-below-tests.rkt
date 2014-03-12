@@ -189,6 +189,11 @@
       #:result (ret (list Univ -Symbol) (list -top-filter -top-filter)))
 
     #;
+    (test-below #:fail
+      (ret -Symbol -top-filter -empty-obj Univ 'B)
+      (ret (list -Symbol -Symbol) (list -top-filter -top-filter)  (list -empty-obj -empty-obj) Univ 'B))
+
+    #;
     (test-below
       (ret (list -Symbol -Symbol) (list -true-filter -true-filter))
       (ret (list Univ -Symbol) (list -no-filter -top-filter))

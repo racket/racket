@@ -79,6 +79,9 @@
     [(tc-results: ts fs os dty dbound)
      (ret ts (map fix-filter fs) (map fix-object os) dty dbound)]))
 
+(define (check-types ts1 ts2)
+  (unless (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
+    (expected-but-got (stringify ts2) (stringify ts1))))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
@@ -155,13 +158,11 @@
      (fix-results expected)]
 
     [((tc-results: ts fs os) (tc-results: ts2 (list (NoFilter:) ...) (list (NoObject:) ...)))
-     (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
-       (expected-but-got (stringify ts2) (stringify ts)))
+     (check-types ts ts2)
      (ret ts2 fs os)]
 
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
+     (check-types t1 t2)
      expected]
     [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
      (tc-error/expr "Different filters/objects.")
@@ -173,24 +174,21 @@
      (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
                     (format "~a values" (length t1))
                     "mismatch in number of values")
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
+     (check-types t1 t2)
      (fix-results expected)]
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
      (type-mismatch (format "~a values" (length t2))
                     (format "~a values and `~a ...'" (length t1) dty)
                     "mismatch in number of values")
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
+     (check-types t1 t2)
      (fix-results expected)]
 
     ;; Handle the polydotted cases
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
      (unless (= (length t1) (length t2))
        (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
-     (unless (andmap subtype t1 t2)
-       (expected-but-got (stringify t2) (stringify t1)))
+     (check-types t1 t2)
      (unless (subtype dty1 dty2)
        (type-mismatch dty2 dty1 "mismatch in ... argument"))
      (fix-results expected)]
