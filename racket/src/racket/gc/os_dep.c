@@ -3033,7 +3033,6 @@ void GC_remove_protection(struct hblk *h, word nblocks, GC_bool is_ptrfree)
     struct hblk * h_trunc;  /* Truncated to page boundary */
     struct hblk * h_end;    /* Page boundary following block end */
     struct hblk * current;
-    GC_bool found_clean;
     
 #   if defined(GWW_VDB)
       if (GC_GWW_AVAILABLE()) return;
@@ -3042,7 +3041,6 @@ void GC_remove_protection(struct hblk *h, word nblocks, GC_bool is_ptrfree)
     h_trunc = (struct hblk *)((word)h & ~(GC_page_size-1));
     h_end = (struct hblk *)(((word)(h + nblocks) + GC_page_size-1)
 	                    & ~(GC_page_size-1));
-    found_clean = FALSE;
     for (current = h_trunc; current < h_end; ++current) {
         size_t index = PHT_HASH(current);
             
