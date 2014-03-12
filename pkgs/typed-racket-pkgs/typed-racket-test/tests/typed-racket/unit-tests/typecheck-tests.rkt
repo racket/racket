@@ -2439,12 +2439,12 @@
        [tc-err (letrec-values ([(a b) (values x "b")]
                                [(x y) (values a b)])
                  a)
-               #:msg "no type information"]
+               #:msg "type information"]
        [tc-err (letrec-values ([(a) (values x)]
                                [(x) (values z)]
                                [(z) (values a)])
                  a)
-               #:msg "no type information"]
+               #:msg "type information"]
        ;; make sure no-binding cases like the middle expression are checked
        [tc-err (let () (define r "r") (string-append r 'foo) (define x "x") "y")
                #:msg "expected: String.*given: 'foo"]
