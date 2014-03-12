@@ -370,10 +370,11 @@ applications from @a[class: "introlink" href: (docs-path "web-server/")]{web ser
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
-@a[href: (docs-path "quick/")]{Draw more pictures} or
-@a[href: (docs-path "more/")]{build a web server from scratch}.  Racket includes both
-@a[href: (docs-path)]{batteries} and a full-featured 
-@a[href: (docs-path "drracket/")]{programming environment},
+@a[href: (docs-path "quick/")]{Learn Racket with pictures} or
+@a[href: (docs-path "more/")]{build a web server from scratch}.  Racket comes with
+@a[href: (docs-path)]{batteries included} and a full-featured 
+@a[href: (docs-path "drracket/")]{programming environment}, 
+plus lots of @a[href: "http://pkgs.racket-lang.org"]{packages},
 so @a[href: (docs-path "getting-started/")]{get started}!
 }}
 
