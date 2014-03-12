@@ -189,8 +189,9 @@
 (struct lr-clause (names expr clause) #:transparent)
 
 ;; get-non-recursive-clauses : (Listof lr-clause) (Listof Identifier) ->
-;;                             (Listof lr-clause) (Listof )
-;; Find letrec-values clauses that do not create variable cycles
+;;                             (Listof lr-clause) (Listof lr-clause)
+;; Find letrec-values clauses that do not create variable cycles. Return
+;; both the non-recursive clauses and the remaining recursive ones.
 (define (get-non-recursive-clauses clauses flat-names)
 
   ;; Set up vertices for Tarjan's algorithm, where each letrec-values
@@ -215,7 +216,8 @@
       (andmap (λ (id2) (not (bound-identifier=? id id2)))
               (vertex-adjacent vertex))))
 
-  ;; The components with only one entry are non-recursive
+  ;; The components with only one entry are non-recursive if they also
+  ;; contain no self-cycles.
   (for/fold ([non-recursive '()]
              [remaining '()])
             ([component components])

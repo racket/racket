@@ -35,6 +35,10 @@
 ;; tarjan : (Dict K (Vertex K V)) -> (Listof (Listof (Vertex K V)))
 ;; Implements Tarjan's algorithm. See Wikipedia
 ;; http://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm
+;;
+;; Note that because this accumulates the result with `cons`, the components
+;; are actually output in topological order rather than *reverse* topological order.
+;; If you want reverse topological order, reverse the result.
 (define (tarjan vertices)
   (define (strongly-connected vtx)
     (set-vertex-index! vtx index)
