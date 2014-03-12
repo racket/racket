@@ -148,8 +148,9 @@
          @a[class: "toggle" gumby-trigger: "#nav1 > .row > ul" href: "#"]{
             @icon{icon-menu}}
          '())
-   @a[class: "five columns logo" href: (url-of main-promise)]{
+   @a[class: "four columns logo" href: (url-of main-promise)]{
      @img[class: "logo" src: logo width: "198" height: "60" alt: "Racket"]}
+   @span[class: "one colums"]{} @; just spacing
    @ul[class: "five columns"]{
      @li{@(list-ref* columns 0 "")}
      @li{@(list-ref* columns 1 "")}
