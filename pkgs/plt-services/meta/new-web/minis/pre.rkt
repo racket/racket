@@ -13,9 +13,10 @@
 
 (register-identity pre-site)
 
-(define (main id)
+(define (main path)
   @page[#:site pre-site
-        #:id id
+        #:file path
+        #:title "Racket Snapshots"
         #:width 'full]{
   @columns[10 #:center? #t #:row? #t #:center-text? #f]{
    @h3{Snapshot Builds}}
@@ -25,7 +26,7 @@
           @li{@a[href: "http://plt.eecs.northwestern.edu/snapshots/"]{
                 Northwestern University}}}}})
 
-;; Generate at both "installers.html" (traditional path)
+;; Generate at both "installers/" (traditional path)
 ;; and "index.html" (old entry point, now subsumed)
-(define installers (main 'installers))
-(void (main 'index))
+(define installers (main "installers/index.html"))
+(void (main "index.html"))

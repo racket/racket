@@ -36,3 +36,11 @@ To build:
 * Set the $GIT_DIR environment variable to point to the ".git"
   directory of a Racket repository if you want to extract release
   information from a repository other than the enclosing one.
+
+To upload:
+==========
+
+* You'll need credentials to upload to S3, and those credentials
+  should be in "~/.aws-keys".
+
+* Run the "sync.rkt" script: racket -l meta/new-web/sync

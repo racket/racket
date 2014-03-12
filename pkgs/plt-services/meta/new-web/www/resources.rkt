@@ -7,7 +7,7 @@
 
 (define www-site
   (site "www"
-        #:url (rewrite-for-testing "http://www.racket-lang.org/")
+        #:url (rewrite-for-testing "http://racket-lang.org/")
         #:page-headers (identity-headers)
         #:navigation
         (list
