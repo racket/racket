@@ -2,6 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match (prefix-in - (contract-req))
+         racket/format
          (types utils union subtype filter-ops abbrev)
          (utils tc-utils)
          (rep type-rep object-rep filter-rep)
@@ -117,6 +118,16 @@
     [else #t]))
 
 
+(define (value-mismatch expected actual)
+  (define (value-string ty)
+    (match ty
+      [(tc-result1: _) "1 values"]
+      [(tc-results: ts) (~a (length ts) " values")]
+      [(tc-results: ts _ _ dty _) (~a (length ts) " values and `" dty " ...'")]
+      [(tc-any-results:) "unknown number"]))
+  (type-mismatch
+    (value-string expected) (value-string actual)
+    "mismatch in number of values"))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
@@ -139,15 +150,8 @@
     ;; Handle tc-any-results as an expected value
     [(_ (tc-any-results:)) tr1]
     ;; Handle tc-any-results as an actual value
-    [((tc-any-results:) (tc-result1: t _ _))
-     (type-mismatch "1 value" "unknown number" "mismatch in number of values")
-     (fix-results expected)]
-    [((tc-any-results:) (tc-results: t2 fs os))
-     (type-mismatch (format "~a values" (length t2)) "unknown number" "mismatch in number of values")
-     (fix-results expected)]
-    [((tc-any-results:) (tc-results: ts2 fs os dty dbound))
-     (type-mismatch (format "~a values and `~a ...'" (length ts2) dty)
-                    "unknown-number" "mismatch in number of values")
+    [((tc-any-results:) _)
+     (value-mismatch tr1 expected)
      (fix-results expected)]
 
     ;; Handle simple single value case
@@ -174,23 +178,19 @@
 
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2 dty dbound))
-     (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
-                    (format "~a values" (length t1))
-                    "mismatch in number of values")
+     (value-mismatch tr1 expected)
      (check-types t1 t2)
      (fix-results expected)]
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
-     (type-mismatch (format "~a values" (length t2))
-                    (format "~a values and `~a ...'" (length t1) dty)
-                    "mismatch in number of values")
+     (value-mismatch tr1 expected)
      (check-types t1 t2)
      (fix-results expected)]
 
     ;; Handle the polydotted cases
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
      (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
+       (value-mismatch tr1 expected))
      (check-types t1 t2)
      (unless (subtype dty1 dty2)
        (type-mismatch dty2 dty1 "mismatch in ... argument"))
