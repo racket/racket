@@ -70,7 +70,7 @@
      @desc{The @elemcode{in-directory} function constructs a sequence that
        walks a directory tree (starting with the current directory, by default)
        and generates paths in the tree.  The @elemcode{for} form binds
-       @elemcode{p} to each path in the sequence, and @elemcode{regexp-match?}
+       @elemcode{path} to each path in the sequence, and @elemcode{regexp-match?}
        applies a pattern to the path.})
     (generic-example #:title "Simple Web Server" ; -----------------------------------------------
      @code{#lang web-server/insta
