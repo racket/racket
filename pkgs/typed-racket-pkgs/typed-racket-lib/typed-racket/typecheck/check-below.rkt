@@ -101,8 +101,8 @@
 ;; Else: returns true
 ;; TODO figure out what would break this
 (define (check-types ts1 ts2)
-  (unless (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
-    (expected-but-got (stringify ts2) (stringify ts1))))
+  (or (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
+      (expected-but-got (stringify ts2) (stringify ts1))))
 
 ;; check-filter+object: FilterSet FilterSet Object Object -> Boolean
 ;; If the filters or objects are not compatible: records an error and returns false

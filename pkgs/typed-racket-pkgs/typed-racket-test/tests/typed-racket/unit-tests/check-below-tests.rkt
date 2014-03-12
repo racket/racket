@@ -213,6 +213,10 @@
       (ret (list Univ Univ) (list -false-filter -false-filter) (list -empty-obj -empty-obj)))
 
     (test-below #:fail
+      (ret (list Univ Univ) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+      (ret (list -Symbol -Symbol) (list -false-filter -false-filter) (list -empty-obj -empty-obj)))
+
+    (test-below #:fail
       (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'A)
       (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B)
       #:result (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B))
