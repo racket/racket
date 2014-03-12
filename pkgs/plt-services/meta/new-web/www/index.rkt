@@ -64,9 +64,9 @@
     (generic-example #:title "Find Racket files" ; -----------------------------------------------
      @code{#lang racket
            ;; Finds Racket sources in all subdirs
-           (for ([path (in-directory)])
-             (when (regexp-match? #rx"[.]rkt$" path)
-               (printf "source file: ~a\n" path)))}
+           (for ([path (in-directory)]
+		 #:when (regexp-match? #rx"[.]rkt$" path))
+	     (printf "source file: ~a\n" path))}
      @desc{The @elemcode{in-directory} function constructs a sequence that
        walks a directory tree (starting with the current directory, by default)
        and generates paths in the tree.  The @elemcode{for} form binds
@@ -97,11 +97,11 @@
     (generic-example #:title "Unique Lines"; -----------------------------------------------
      @code{#lang racket
            ;; Report each unique line from stdin
-           (let ([saw (make-hash)])
-             (for ([line (in-lines)])
-               (unless (hash-ref saw line #f)
-                 (displayln line))
-               (hash-set! saw line #t)))}
+	   (define seen (make-hash))
+	   (for ([line (in-lines)])
+	     (unless (hash-ref seen line #f)
+	       (displayln line))
+	     (hash-set! seen line #t))}
      @desc{Uses a hash table to record previously seen lines.  You can run this
        program in DrRacket, but it makes more sense from the command line.}))
    @; Additional examples: -------------------------------------------
@@ -109,11 +109,11 @@
     (graphical-example #:title "Sierpinski Triangle"; ---------------------------------------------
      @code{#lang racket  ; A picture
            (require 2htdp/image)
-           (let sierpinski ([n 8])
-             (if (zero? n)
-                 (triangle 2 'solid 'red)
-                 (let ([t (sierpinski (- n 1))])
-                   (freeze (above t (beside t t))))))}
+	   (let sierpinski ([n 8])
+             (cond
+	       [(zero? n) (triangle 2 'solid 'red)]
+	       [else (define t (sierpinski (- n 1)))
+   		     (freeze (above t (beside t t)))]))}
      @desc{The @elemcode{2htdp/image} library provides easy-to-use functions
        for constructing images, and DrRacket can display an image result as
        easily as it can display a number result.  In this case, a
