@@ -145,18 +145,21 @@
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
 
     ;; Handle the multi value cases
+
+    ;; Error case where number of values is wrong
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
+     (=> continue)
+     (when (= (length t1) (length t2))
+       (continue))
+     (type-mismatch (length t2) (length t1) "mismatch in number of values")
+     (fix-results expected)]
+
     [((tc-results: ts fs os) (tc-results: ts2 (list (NoFilter:) ...) (list (NoObject:) ...)))
-     (unless (= (length ts) (length ts2))
-       (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
      (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
        (expected-but-got (stringify ts2) (stringify ts)))
-     (if (= (length ts) (length ts2))
-         (ret ts2 fs os)
-         (ret ts2))]
+     (ret ts2 fs os)]
 
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
