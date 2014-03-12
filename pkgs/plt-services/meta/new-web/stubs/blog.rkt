@@ -6,6 +6,7 @@
 (define blog-site (site "stubs/blog"
                         #:url "http://blog.racket-lang.org/"
                         #:always-abs-url? #t
+                        #:page-style? #f
                         #:share-from www-site))
 
 (define racket-css
@@ -18,14 +19,11 @@
     ;}
     #navbar-iframe {
       position: absolute;
-      top: 160px; right: 0px;
-      opacity: 0.33; filter: alpha(opacity=33);
+      top: 60px; right: 0px;
     }
     #navbar-iframe:hover {
-      opacity: 1.0; filter: alpha(opacity=100);
     }
     /* --- navbar styles --- */
-    @"@"import url("@(site-css-path www-site)");
   })
 
 (define font-family
@@ -33,16 +31,16 @@
     font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
   })
 
-(define (get-resource-text what #:args [args #f])
-  (define r   (what www-site))
+(define (get-resource-text what site #:args [args #f])
+  (define r   (what site))
   (define xml (if args (apply r args) r))
   (define str (xml->string xml))
   ;; due to some obscure xml issue the `nbsp' entity is not recognized
   ;; in blogger pages
   (regexp-replace* #rx"&nbsp;" str "\\&#160;"))
 
-(define (racket-navbar)  (get-resource-text site-navbar))
-(define (racket-favicon) (get-resource-text site-favicon-path))
+(define (racket-navbar)  (get-resource-text site-navbar blog-site))
+(define (racket-favicon) (get-resource-text site-favicon-path www-site))
 
 (provide blog)
 (define blog
@@ -492,7 +490,9 @@ body#layout #header {
 
 ]]></b:skin>
 
-@racket-favicon
+
+@link[rel: "stylesheet" href: @(site-css-path blog-site) type: "text/css"]
+@link[rel: "icon" href: @racket-favicon type: "image/ico"]
 
 </head>
 
@@ -501,6 +501,44 @@ body#layout #header {
 <!-- Racket navbar begin -->
 @racket-navbar
 <!-- Racket navbar end -->
+
+  <b:section class='bloggernavbar' id='navbar' maxwidgets='1' showaddelement='no'>
+    <b:widget id='Navbar1' locked='true' title='Navbar' type='Navbar'>
+      <b:includable id='main'>&lt;script type=&quot;text/javascript&quot;&gt;
+    function setAttributeOnload(object, attribute, val) {
+      if(window.addEventListener) {
+        window.addEventListener(&#39;load&#39;,
+          function(){ object[attribute] = val; }, false);
+      } else {
+        window.attachEvent(&#39;onload&#39;, function(){ object[attribute] = val; });
+      }
+    }
+  &lt;/script&gt;
+&lt;div id=&quot;navbar-iframe-container&quot;&gt;&lt;/div&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;https://apis.google.com/js/plusone.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+        gapi.load(&quot;gapi.iframes:gapi.iframes.style.bubble&quot;, function() {
+          if (gapi.iframes &amp;&amp; gapi.iframes.getContext) {
+            gapi.iframes.getContext().openChild({
+                url: &#39;https://www.blogger.com/navbar.g?targetBlogID\0752080885971644496896\46blogName\75The+Racket+Blog\46publishMode\75PUBLISH_MODE_HOSTED\46navbarType\75LIGHT\46layoutType\75LAYOUTS\46searchRoot\75http://blog.racket-lang.org/search\46blogLocale\75en\46v\0752\46homepageUrl\75http://blog.racket-lang.org/\46blogFollowUrl\75https://plus.google.com/103883747126741038443\46vt\0755151180936093146796&#39;,
+                where: document.getElementById(&quot;navbar-iframe-container&quot;),
+                id: &quot;navbar-iframe&quot;
+            });
+          }
+        });
+      &lt;/script&gt;&lt;script type=&quot;text/javascript&quot;&gt;
+(function() {
+var script = document.createElement(&#39;script&#39;);
+script.type = &#39;text/javascript&#39;;
+script.src = &#39;//pagead2.googlesyndication.com/pagead/js/google_top_exp.js&#39;;
+var head = document.getElementsByTagName(&#39;head&#39;)[0];
+if (head) {
+head.appendChild(script);
+}})();
+&lt;/script&gt;
+</b:includable>
+    </b:widget>
+  </b:section>
 
 <div id="outer-wrapper"><div id="wrap2">
 
