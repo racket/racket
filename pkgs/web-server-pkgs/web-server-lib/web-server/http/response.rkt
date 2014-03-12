@@ -116,23 +116,17 @@
               ((response-output bresp) to-chunker)
               (close-output-port to-chunker))))
   (define buffer (make-bytes 1024))
-  (define total-size
-    (let loop ([total-size 0])
-      (define bytes-read-or-eof
-        (read-bytes-avail! buffer from-servlet))
-      (if (eof-object? bytes-read-or-eof)
-        total-size
-        (begin 
-          (fprintf to-client "~a\r\n" (number->string bytes-read-or-eof 16))
-          (write-bytes buffer to-client 0 bytes-read-or-eof)
-          (fprintf to-client "\r\n")
-          (loop (+ total-size bytes-read-or-eof))))))
+  (let loop ()
+    (define bytes-read-or-eof
+      (read-bytes-avail! buffer from-servlet))
+    (unless (eof-object? bytes-read-or-eof)
+      (fprintf to-client "~a\r\n" (number->string bytes-read-or-eof 16))
+      (write-bytes buffer to-client 0 bytes-read-or-eof)
+      (fprintf to-client "\r\n")
+      (loop)))
   (thread-wait to-chunker-t)
   (fprintf to-client "0\r\n")
-  (print-headers 
-   to-client
-   (list (header #"Content-Length" 
-                 (string->bytes/utf-8 (number->string total-size)))))
+  (fprintf to-client "\r\n")
   (flush-output to-client))
 
 ; seconds->gmt-string : Nat -> String
