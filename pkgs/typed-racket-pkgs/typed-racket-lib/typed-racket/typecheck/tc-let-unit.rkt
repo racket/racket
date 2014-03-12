@@ -9,8 +9,10 @@
          (rep type-rep filter-rep)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst internal-forms)
+         (utils tarjan)
          racket/match (contract-req)
          syntax/parse syntax/stx
+         syntax/id-table
          ;; For internal type forms
          (for-template (only-in racket/base define-values)))
 
@@ -188,27 +190,43 @@
 
 ;; get-non-recursive-clauses : (Listof lr-clause) (Listof Identifier) ->
 ;;                             (Listof lr-clause) (Listof )
-;; Find an approximation of letrec clauses that do not create variable cycles
-;;
-;; Note: this is currently approximate, but using Tarjan's algorithm would yield
-;;       an optimal ordering for checking these clauses.
+;; Find letrec-values clauses that do not create variable cycles
 (define (get-non-recursive-clauses clauses flat-names)
-  (define-values (non-recursive remaining _ignore)
-    (for/fold ([non-recursive '()]
-               [remaining '()]
-               [flat-names flat-names])
-              ([clause clauses])
-      (match-define (lr-clause names expr _) clause)
-      (cond [(not (ormap (lambda (n) (member n flat-names bound-identifier=?))
-                         (free-vars expr)))
-             (values (cons clause non-recursive)
-                     remaining
-                     (remove* names flat-names bound-identifier=?))]
-            [else
-             (values non-recursive
-                     (cons clause remaining)
-                     flat-names)])))
-  (values (reverse non-recursive) remaining))
+
+  ;; Set up vertices for Tarjan's algorithm, where each letrec-values
+  ;; clause is a vertex but mapped in the table for each of the clause names
+  (define vertices (make-bound-id-table))
+  (for ([clause clauses])
+    (match-define (lr-clause names expr _) clause)
+    (define relevant-free-vars
+      (for/list ([var (in-list (free-vars expr))]
+                 #:when (member var flat-names bound-identifier=?))
+        var))
+    (define vertex (make-vertex clause relevant-free-vars))
+    (for ([name (in-list names)])
+      (bound-id-table-set! vertices name vertex)))
+
+  (define components (tarjan vertices))
+
+  ;; no-self-cycle? : (Vertex Id (Listof Id)) -> Boolean
+  (define (no-self-cycle? vertex)
+    (match-define (lr-clause names _ _) (vertex-data vertex))
+    (for/and ([id (in-list names)])
+      (andmap (λ (id2) (not (bound-identifier=? id id2)))
+              (vertex-adjacent vertex))))
+
+  ;; The components with only one entry are non-recursive
+  (for/fold ([non-recursive '()]
+             [remaining '()])
+            ([component components])
+    (cond [(and (= (length component) 1)
+                (no-self-cycle? (car component)))
+           (values (cons (vertex-data (car component)) non-recursive)
+                   remaining)]
+          [else
+           (values non-recursive
+                   (append (map vertex-data component)
+                           remaining))])))
 
 ;; check-non-recursive-clauses : (Listof lr-clause) ->
 ;;                               (Listof Identifier) (Listof Type)

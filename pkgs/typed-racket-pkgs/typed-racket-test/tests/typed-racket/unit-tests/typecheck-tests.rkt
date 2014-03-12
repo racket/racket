@@ -817,11 +817,6 @@
                   (define (y) (x))
                   1)]
 
-        [tc-err (let ()
-                  (define (x) (y))
-                  (define (y) 3)
-                  1)]
-
         [tc-e ((case-lambda:
                 [[x : Number *] (+ 1 (car x))])
                5)
@@ -2415,6 +2410,41 @@
                #:msg "Recursive #:implements clause not allowed"]
        [tc-err (let () (define-type-alias X (U X #f)) "dummy")
                #:msg "Recursive types are not allowed directly inside"]
+
+       ;; Check the more precise Tarjan's algorithm-based letrec-values type checking
+       [tc-e ;; An example from Eric Dobson (see gh372) that shows that precisely
+             ;; finding cycles is necessary for checking more letrecs.
+             (let ()
+               (: foo (-> String))
+               (define (foo)
+                 (: bn (Integer -> Integer))
+                 (define (bn n) (if (= n 0) 1 (bn (- n 1))))
+                 (define v (bn 0))
+                 "foo")
+               (foo))
+             -String]
+       [tc-e (letrec-values ([(a b) (values x y)]
+                             [(x y) (values "x" "y")])
+               a)
+             -String]
+       [tc-e (letrec-values ([(a b) (values x "b")]
+                             [(x y) (values "x" "y")])
+               a)
+             -String]
+       [tc-e (letrec-values ([(a b) (values "a" "b")]
+                             [(x y) (values z z)]
+                             [(z) a])
+               z)
+             -String]
+       [tc-err (letrec-values ([(a b) (values x "b")]
+                               [(x y) (values a b)])
+                 a)
+               #:msg "insufficient type information"]
+       [tc-err (letrec-values ([(a) (values x)]
+                               [(x) (values z)]
+                               [(z) (values a)])
+                 a)
+               #:msg "insufficient type information"]
         )
   (test-suite
    "tc-literal tests"
