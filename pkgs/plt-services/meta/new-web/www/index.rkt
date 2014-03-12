@@ -318,11 +318,18 @@
 @columns[8 #:center? #t #:row? #t
          style: "margin-bottom: 10pt; font-size: 120%; text-align:justify;"]{
 @strong{Racket} is a full-spectrum programming language. It goes
-beyond Lisp and Scheme with dialects that support objects, types,
-laziness, and more. Racket enables programmers to link components
-written in different dialects, and it empowers programmers to create
-new, project-specific dialects. Racket's libraries support
-applications from web servers and databases to GUIs and charts.}
+beyond Lisp and Scheme with dialects that support @a[class: "introlink" href: (docs-path "guide/classes.html")]{objects}, 
+@a[class: "introlink" href: (docs-path "ts-guide/")]{types},
+@a[class: "introlink" href: (docs-path "lazy/")]{laziness},
+ and more. Racket enables programmers to link components
+written in @a[class: "introlink" href: (docs-path "guide/dialects.html")]{different dialects},
+ and it empowers programmers to create
+new, @a[class: "introlink" href: (docs-path "guide/languages.html")]{project-specific dialects}. 
+Racket's libraries support
+applications from @a[class: "introlink" href: (docs-path "web-server/")]{web servers} and 
+@a[class: "introlink" href: (docs-path "db/")]{databases} to 
+@a[class: "introlink" href: (docs-path "gui/")]{GUIs} and 
+@a[class: "introlink" href: (docs-path "plot/")]{charts}.}
                                                                             
 @(apply slideshow-explain (force examples))
 
