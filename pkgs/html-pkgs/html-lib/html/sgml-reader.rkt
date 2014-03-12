@@ -4,6 +4,7 @@
 #lang racket/base
 (require xml
          racket/contract
+	 (only-in racket/string string-replace)
          (prefix-in racket: racket/base))
 
 ;; Kid-lister : (Symbol -> (U (listof Symbol) #f))
@@ -245,8 +246,36 @@
           (string<? (symbol->string (attribute-name a))
                     (symbol->string (attribute-name b))))))
 
+
+;; expand-html-attribute-entities : String -> String
+;; Replaces the entities in default-entity-table, if they're present
+;; in the string, and ignores all other occurrences of ampersand.
+(define (expand-html-attribute-entities s)
+  (let* ([s (string-replace s "&lt;" "<")]
+	 [s (string-replace s "&gt;" ">")]
+	 [s (string-replace s "&quot;" "\"")]
+	 [s (string-replace s "&apos;" "'")] ;; html5. the others are html4
+	 [s (string-replace s "&amp;" "&")])
+    ;; BUG: there are a plethora of other escaped entity reference
+    ;; syntaxes here we could support, but don't. For example, &#xx;,
+    ;; and &nbsp;, and the rest of the ISO-8859-1 escapes, and so on,
+    ;; and so on.
+    s))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (expand-html-attribute-entities "a&amp;b") "a&b")
+  (check-equal? (expand-html-attribute-entities "a&amp;lt;b") "a&lt;b")
+  (check-equal? (expand-html-attribute-entities "a&lt;amp;b") "a<amp;b")
+  (check-equal? (expand-html-attribute-entities "a&lt;&amp;b") "a<&b")
+  (check-equal? (expand-html-attribute-entities "a&b") "a&b")
+  (check-equal? (expand-html-attribute-entities "a&foo;b") "a&foo;b") ;; dicey
+  ;; ^ we don't have a means of warning about undefined entities,
+  ;; defining custom entities, or any of the other fancy things you
+  ;; can do with entities in SGML/XML systems. So we punt.
+  )
+
 ;; lex-attribute : Input-port -> Attribute
-;; Note: entities in attributes are ignored, since defacto html uses & in them for URL syntax
 (define (lex-attribute in)
   (let ([start (file-position in)]
         [name (lex-name in)])
@@ -256,15 +285,16 @@
        (read-char in)
        (skip-space in)
        (let* ([delimiter (read-char in)]
-              [value (list->string
-                      (case delimiter
-                        [(#\' #\")
-                         (let read-more ()
-                           (let ([c (read-char in)])
-                             (cond
+              [value (expand-html-attribute-entities
+		      (list->string
+		       (case delimiter
+			 [(#\' #\")
+			  (let read-more ()
+			    (let ([c (read-char in)])
+			      (cond
                                [(or (eq? c delimiter) (eof-object? c)) null]
                                [else (cons c (read-more))])))]
-                        [else (cons delimiter (read-up-to (lambda (c) (or (char-whitespace? c) (eq? c #\>))) in))]))])
+			 [else (cons delimiter (read-up-to (lambda (c) (or (char-whitespace? c) (eq? c #\>))) in))])))])
          (make-attribute start (file-position in) name value))]
       [else (make-attribute start (file-position in) name (symbol->string name))])))
 
