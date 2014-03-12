@@ -381,7 +381,7 @@ mode} encourages experimentation, and quick scripts easily compose
 into larger systems.  Small scripts and large systems both benefit
 from
 @a[href: (docs-path "guide/performance.html")]{native-code
-JIT compilation} When a system gets too big to keep in your head, you
+JIT compilation}. When a system gets too big to keep in your head, you
 can add
 @a[href: (docs-path "ts-guide/index.html")]{static
 types}.}
@@ -507,7 +507,7 @@ File, query, and maybe fix existing reports.}}}
   @a[href: "http://cs.brown.edu/~sk/Publications/Books/ProgLangs/2007-04-26/"]{
      @img[src: (copyfile #:site www-site (build-path img-dir "plai-cover.jpg"))]}}
 @columns[4]{@panetitle{PLAI}
-@p{Foundations of programming languages}
+@p{Foundations of programming languages.}
 @ul{
     @li{Understand the features that make languages tick.}
     @li{For undergraduates, graduate students, and experts.}}}
