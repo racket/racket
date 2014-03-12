@@ -193,7 +193,6 @@
       (ret -Symbol -top-filter -empty-obj Univ 'B)
       (ret (list -Symbol -Symbol) (list -top-filter -top-filter)  (list -empty-obj -empty-obj) Univ 'B))
 
-    #;
     (test-below
       (ret (list -Symbol -Symbol) (list -true-filter -true-filter))
       (ret (list Univ -Symbol) (list -no-filter -top-filter))
@@ -210,9 +209,8 @@
       (ret (list Univ) (list -no-filter) (list -no-obj))
       (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B))
 
-    #;
     (test-below #:fail
-      (ret (list Univ Univ) (list -no-filter -no-filter) (list -no-obj -no-obj))
-      (ret (list Univ Univ) (list -false-filter -false-filter) (list -no-obj -no-obj)))
+      (ret (list Univ Univ) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+      (ret (list Univ Univ) (list -false-filter -false-filter) (list -empty-obj -empty-obj)))
 
   ))
