@@ -158,8 +158,12 @@
      @li{@(list-ref* columns 3 "")}}})
 
 (define ((navbar-maker logo columns page-style?) this)
-  @div[class: "navbar gumby-content" gumby-fixed: "top" id: "nav1"]{
-    @((navbar-content logo columns page-style?))})
+  (list
+   @div[class: "navbar gumby-content"
+        style: (if page-style? "position: fixed;" "")
+        gumby-fixed: "top" id: "nav1"]{
+      @((navbar-content logo columns page-style?))}
+   (if page-style? @div[style: "height: 60px;"]{} null)))
 
 (define gumby-preamble
   @list{
