@@ -5,42 +5,63 @@
          "layout.rkt"
          "style.rkt")
 
-(provide make-indexes)
+(provide make-indexes
+         (rename-out [mk-index-site index-site])
+         index-site?
+         index-page)
 
 (define-runtime-path file-png "resources/file.png")
 (define-runtime-path folder-png "resources/folder.png")
 
-(define (build site p file-icon folder-icon)
-  (let ([dir (current-directory)])
-    (unless (file-exists? (build-path dir p "index.html"))
-      (page #:site site
-            #:file (if (eq? p 'same)
-                       "index.html"
-                       (path->string (build-path p "index.html")))
-            #:title "Index"
-            @columns[10 #:row? #t]{
-              @table{@(for/list ([i (in-list
-                                     (directory-list (build-path dir p)))])
-                        @tr{@td{@a[href: (path->string i)]{@;
-                                 @img[src: (if (file-exists? (build-path dir p i))
-                                              file-icon
-                                              folder-icon)
+(struct index-site (site file-icon folder-icon))
+
+(define (index-page is dir content)
+  (page #:site (index-site-site is)
+        #:file (if (eq? dir 'same)
+                   "index.html"
+                   (path->string (build-path dir "index.html")))
+        #:title "Index"
+        @columns[10 #:row? #t]{
+              @table{@(for/list ([p+k (in-list content)])
+                        (define p (let ([p (car p+k)])
+                                    (if (path? p)
+                                        (path->string p)
+                                        p)))
+                        (define k (cdr p+k))
+                        @tr{@td{@a[href: p]{@;
+                                 @img[src: (if (number? k)
+                                              (index-site-file-icon is)
+                                              (index-site-folder-icon is))
                                      width: "16" height: "16"] @;
                                  @nbsp @;
-                                 @(path->string i)}}
-                            @td{@(let ([i (build-path dir p i)])
-                                   (if (file-exists? i)
-                                       (let ([s (file-size i)])
-                                         (~a (ceiling (/ s 1024)) "k"))
-                                       ""))}})}}))))
+                                 @p}}
+                            @td{@(if (number? k)
+                                     (~a (ceiling (/ k 1024)) "k")
+                                     "")}})}}))
+
+(define mk-index-site
+  (let ([index-site
+         (lambda (site)
+           (define file-icon (copyfile #:site site file-png))
+           (define folder-icon (copyfile #:site site folder-png))
+           (index-site site file-icon folder-icon))])
+    index-site))
+
+(define (build is root-dir p)
+  (unless (file-exists? (build-path root-dir p "index.html"))
+    (index-page is p
+                (for/list ([i (in-list (directory-list (build-path root-dir p)))])
+                  (define f (build-path root-dir p i))
+                  (if (file-exists? f)
+                      (cons i (file-size f))
+                      (cons i 'dir))))))
 
 (define (make-indexes site [dir 'same] 
                       #:depth [depth #f]
                       #:use-dir? [use-dir? (lambda (p) #t)])
-  (define file-icon (copyfile #:site site file-png))
-  (define folder-icon (copyfile #:site site folder-png))
+  (define is (mk-index-site site))
   (let loop ([dir dir] [depth depth])
-    (build site dir file-icon folder-icon)
+    (build is (current-directory) dir)
     (when (and (or (not depth) (positive? depth))
                (use-dir? dir))
       (for ([d (in-list (directory-list (if (eq? dir 'same)

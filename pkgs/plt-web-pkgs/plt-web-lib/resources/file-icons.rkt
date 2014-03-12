@@ -14,6 +14,8 @@
 
   (define I 3)
 
+  (send dc set-smoothing 'smoothed)
+
   (send dc set-pen "black" 2 'solid)
   (send dc set-brush (make-color 200 200 200) 'solid)
   (send dc draw-polygon (list
@@ -41,7 +43,9 @@
   (define H 12)
   (define T (/ D 2))
 
-   (send dc set-pen "black" 2 'solid)
+  (send dc set-smoothing 'smoothed)
+
+  (send dc set-pen "black" 2 'solid)
   (send dc set-brush (make-color 200 200 200) 'solid)
 
   (define p (new dc-path%))
@@ -60,5 +64,5 @@
 
 (file)
 (folder)
-
 |#
+

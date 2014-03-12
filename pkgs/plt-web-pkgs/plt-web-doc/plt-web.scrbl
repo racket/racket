@@ -200,14 +200,14 @@ Like @racket[page*], but for a resource that is a plain file.}
 Registers a resource that is either a copy of a file or a symbolic link,
 returning a value that can be used to reference the resource.}
 
-
 @defproc[(make-indexes [s site?]
                        [dir (or/c 'same relative-path?)]
                        [#:depth depth (or/c #f exact-nonnegative-integer?) #f]
                        [#:use-dir? use-dir? ((or/c 'same relative-path?) . -> . any/c) (lambda (dir) #t)])
          void?]{
 
-Registers an @filepath{index.html} file for every directory within
+Uses @racket[index-site] and @racket[index-page] to register an
+@filepath{index.html} file for every directory within
 @racket[dir] (relative to the current directory) that does not have an
 @filepath{index.html} file already. If @racket[depth] is not @racket[#f],
 then subdirectories are explored at most @racket[depth] layers deep.
@@ -217,6 +217,24 @@ whether the directory's subdirectories are traversed.
 The generated index files are registered for the site @racket[s] at
 destinations that correspond to treating the current directory as the
 site root.}
+
+@deftogether[(
+@defproc[(index-site? [v any/c]) boolean?]
+@defproc[(index-site [site site?]) index-site?]
+@defproc[(index-page [isite index-site?]
+                     [path (or/c 'same relative-path?)]
+                     [content (listof (cons/c path-string? (or/c exact-integer? 'dir)))])
+         outputable/c]
+)]{
+
+The @racket[index-page] function registers an individual
+@filepath{index.html} file for the given index site, where an index
+site is created once for a given site (to register support
+resources, such as icons). The @filepath{index.html} file is
+generated for the subdirectory indicated by @racket[path]. The index
+file lists the content specified by @racket[content], where
+an integer corresponds to a file size and @racket['dir] indicates
+a directory.}
 
 @; ----------------------------------------
 
