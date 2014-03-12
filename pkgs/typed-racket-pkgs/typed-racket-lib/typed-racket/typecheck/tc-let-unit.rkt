@@ -194,10 +194,22 @@
 ;; both the non-recursive clauses and the remaining recursive ones.
 (define (get-non-recursive-clauses clauses flat-names)
 
+  ;; First, filter out clauses with no names. Don't do cycle checking on
+  ;; these because they trivially don't form any.
+  (define-values (*non-binding *other-clauses)
+    (for/fold ([non-binding '()] [other-clauses '()])
+              ([clause clauses])
+      (match-define (lr-clause names _ _) clause)
+      (if (null? names)
+          (values (cons clause non-binding) other-clauses)
+          (values non-binding (cons clause other-clauses)))))
+  (define-values (non-binding other-clauses)
+    (values (reverse *non-binding) (reverse *other-clauses)))
+
   ;; Set up vertices for Tarjan's algorithm, where each letrec-values
   ;; clause is a vertex but mapped in the table for each of the clause names
   (define vertices (make-bound-id-table))
-  (for ([clause clauses])
+  (for ([clause other-clauses])
     (match-define (lr-clause names expr _) clause)
     (define relevant-free-vars
       (for/list ([var (in-list (free-vars expr))]
@@ -218,17 +230,20 @@
 
   ;; The components with only one entry are non-recursive if they also
   ;; contain no self-cycles.
-  (for/fold ([non-recursive '()]
-             [remaining '()])
-            ([component components])
-    (cond [(and (= (length component) 1)
-                (no-self-cycle? (car component)))
-           (values (cons (vertex-data (car component)) non-recursive)
-                   remaining)]
-          [else
-           (values non-recursive
-                   (append (map vertex-data component)
-                           remaining))])))
+  (define-values (non-recursive remaining)
+    (for/fold ([non-recursive '()]
+               [remaining '()])
+              ([component components])
+      (cond [(and (= (length component) 1)
+                  (no-self-cycle? (car component)))
+             (values (cons (vertex-data (car component)) non-recursive)
+                     remaining)]
+            [else
+             (values non-recursive
+                     (append (map vertex-data component)
+                             remaining))])))
+  (values (append non-recursive non-binding)
+          remaining))
 
 ;; check-non-recursive-clauses : (Listof lr-clause) ->
 ;;                               (Listof Identifier) (Listof Type)
