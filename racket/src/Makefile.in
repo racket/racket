@@ -51,7 +51,7 @@ all:
 	$(MAKE) @MAIN_VARIANT@
 
 TAGS:
-	etags $$(find @srcdir@/racket -type f)
+	etags `find "@srcdir@/racket" -type f`
 
 3m:
 	cd racket; $(MAKE) 3m
