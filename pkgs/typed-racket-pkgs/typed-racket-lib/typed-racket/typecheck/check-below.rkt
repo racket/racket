@@ -118,6 +118,12 @@
     [else #t]))
 
 
+(define (check-filters+objects f1 f2 o1 o2)
+  (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
+            [o1 (in-list o1)] [o2 (in-list o2)])
+    (check-filter+object f1 f2 o1 o2)))
+
+
 (define (value-mismatch expected actual)
   (define (value-string ty)
     (match ty
@@ -167,9 +173,7 @@
        [(= (length t1) (length t2))
         (and
           (check-types t1 t2)
-          (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
-                    [o1 (in-list o1)] [o2 (in-list o2)])
-            (check-filter+object f1 f2 o1 o2)))
+          (check-filters+objects f1 f2 o1 o2))
         (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1))]
        [else
         (type-mismatch (length t2) (length t1) "mismatch in number of values")
@@ -186,20 +190,21 @@
      (fix-results expected)]
 
     ;; Handle the polydotted cases
-    [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
+    [((tc-results: t1 f1 o1 dty1 dbound) (tc-results: t2 f2 o2 dty2 dbound))
      (cond
        [(= (length t1) (length t2))
         (and
           (check-types t1 t2)
           (or (subtype dty1 dty2)
-              (type-mismatch dty2 dty1 "mismatch in ... argument")))
-        (fix-results expected)]
+              (type-mismatch dty2 dty1 "mismatch in ... argument"))
+          (check-filters+objects f1 f2 o1 o2))
+        (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1) dty2 dbound)]
        [else
         (value-mismatch tr1 expected)
         (fix-results expected)])]
 
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
-     (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
+     (int-err "dotted types with different bounds in check-below nyi: ~a ~a" tr1 expected)]
 
     ;; Handle the broken cases
     [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))

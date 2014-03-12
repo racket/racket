@@ -198,16 +198,15 @@
       (ret (list Univ -Symbol) (list -no-filter -top-filter))
       #:result (ret (list Univ -Symbol) (list -true-filter -top-filter)))
 
-    ;; Enable these once check-below is fixed
-    #;
     (test-below #:fail
-      (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
-      (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B))
+      (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B)
+      (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B)
+      #:result (ret (list Univ) (list -false-filter) (list -empty-obj) Univ 'B))
 
-    #;
     (test-below #:fail
-      (ret (list Univ) (list -no-filter) (list -no-obj))
-      (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B))
+      (ret (list Univ) (list -top-filter) (list -empty-obj))
+      (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B)
+      #:result (ret (list Univ) (list -false-filter) (list -empty-obj) Univ 'B))
 
     (test-below #:fail
       (ret (list Univ Univ) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
