@@ -187,12 +187,16 @@
 
     ;; Handle the polydotted cases
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
-     (unless (= (length t1) (length t2))
-       (value-mismatch tr1 expected))
-     (check-types t1 t2)
-     (unless (subtype dty1 dty2)
-       (type-mismatch dty2 dty1 "mismatch in ... argument"))
-     (fix-results expected)]
+     (cond
+       [(= (length t1) (length t2))
+        (and
+          (check-types t1 t2)
+          (or (subtype dty1 dty2)
+              (type-mismatch dty2 dty1 "mismatch in ... argument")))
+        (fix-results expected)]
+       [else
+        (value-mismatch tr1 expected)
+        (fix-results expected)])]
 
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
      (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
