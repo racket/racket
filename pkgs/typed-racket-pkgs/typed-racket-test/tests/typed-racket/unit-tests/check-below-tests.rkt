@@ -44,12 +44,13 @@
                (fail-check "Check below did not return expected result.")))))]
     [(_ #:fail (~optional message:expr #:defaults [(message #'#rx"type mismatch")]) t1:expr t2:expr)
      #`(test-case (~a 't1 " !<: " 't2)
-         (define exn
-           (let/ec exit
-             (with-handlers [(exn:fail? exit)]
-               (check-below t1 t2))
-             (fail-check "Check below did not fail.")))
-         (check-regexp-match message (exn-message exn)))]))
+         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
+           (define exn
+             (let/ec exit
+               (with-handlers [(exn:fail? exit)]
+                 (check-below t1 t2))
+               (fail-check "Check below did not fail.")))
+           (check-regexp-match message (exn-message exn))))]))
            
 
 
