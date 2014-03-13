@@ -23,6 +23,8 @@
      (and (name-ref=? i1 i2) (subtype t1 t2))]
     [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
      (and (name-ref=? i1 i2) (subtype t1 t2))]
+    [((Bot:) _) #t]
+    [(_ (Bot:)) #t]
     [(_ _) #f]))
 
 ;; complementary: Filter/c Filter/c -> boolean?
@@ -33,6 +35,7 @@
      (and (name-ref=? i1 i2) (subtype t2 t1))]
     [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
      (and (name-ref=? i1 i2) (subtype t2 t1))]
+    [((Top:) (Top:)) #t]
     [(_ _) #f]))
 
 (define (name-ref=? a b)
