@@ -79,14 +79,23 @@
        (cond
          [link 
           (define-values (base name dir?) (split-path link))
-          (if (file-exists? link)
-              (for/list ([link-ent (call-with-input-file link read)]
-                         #:when (if (= 3 (length link-ent))
-                                    (regexp-match (list-ref link-ent 2) (version))
-                                    #t))
-                `(,(list-ref link-ent 0)
-                  ,(simplify-path (build-path base (list-ref link-ent 1)))))
-              '())]
+          (cond
+            [(file-exists? link)
+             (define link-ents (with-handlers ([exn:fail? (λ (x) '())])
+                                 (call-with-input-file link read)))
+             (for/list ([link-ent (if (list? link-ents)
+                                      link-ents
+                                      '())]
+                        #:when (if (and (list? link-ent) (= 3 (length link-ent)))
+                                   (and (regexp? (list-ref link-ent 2))
+                                        (regexp-match (list-ref link-ent 2) (version)))
+                                   #t))
+               `(,(list-ref link-ent 0)
+                 ,(simplify-path 
+                   (if (relative-path? (list-ref link-ent 1))
+                       (build-path base (list-ref link-ent 1))
+                       (list-ref link-ent 1)))))]
+            [else '()])]
          [else
           (for/list ([clp (in-list library-collection-paths)])
             `(root ,(simplify-path clp)))]))))
