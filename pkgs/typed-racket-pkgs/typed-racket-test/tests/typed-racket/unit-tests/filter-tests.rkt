@@ -53,6 +53,19 @@
       (test-opposite #:not-complementary #:not-contradictory
         (-not-filter -Symbol 0)
         (-filter -String 0))
+
+      (test-opposite #:not-complementary #:contradictory
+        -bot
+        -bot)
+
+      (test-opposite #:not-complementary #:contradictory
+        -bot
+        -top)
+
+      (test-opposite #:complementary #:not-contradictory
+        -top
+        -top)
+
     )
 
     (test-suite "Implied Atomic"
