@@ -6,7 +6,9 @@ CC = @CC@
 
 LIBFFI_LOCAL_INCLUDE_ON = -Ilibffi/include
 LIBFFI_LOCAL_INCLUDE_OFF =
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ \
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ \
          -I$(builddir)/../racket \
          -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
          $(LIBFFI_LOCAL_INCLUDE_@OWN_LIBFFI@)
@@ -40,7 +42,7 @@ foreign.@LTO@: $(srcdir)/foreign.c \
            $(srcdir)/../racket/src/schemef.h \
            $(srcdir)/../racket/src/stypes.h \
            $(srcdir)/../racket/src/schpriv.h
-	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 
 clean:
 	rm -f foreign.@LTO@
