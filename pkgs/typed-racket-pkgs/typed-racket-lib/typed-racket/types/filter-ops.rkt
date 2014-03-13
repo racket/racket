@@ -15,18 +15,25 @@
   (or (TypeFilter? p) (NotTypeFilter? p)
       (Top? p) (Bot? p)))
 
-(define (opposite? f1 f2)
+;; contradictory: Filter/c Filter/c -> boolean?
+;; Returns true if the AND of the two filters is equivalent to Bot
+(define (contradictory? f1 f2)
   (match* (f1 f2)
-          [((TypeFilter: t1 p1 i1)
-            (NotTypeFilter: t2 p1 i2))
-           (and (name-ref=? i1 i2)
-                (subtype t1 t2))]
-          [((NotTypeFilter: t2 p1 i2)
-            (TypeFilter: t1 p1 i1))
-           (and (name-ref=? i1 i2)
-                (subtype t1 t2))]
-          [(_ _) #f]))
+    [((TypeFilter: t1 p1 i1) (NotTypeFilter: t2 p1 i2))
+     (and (name-ref=? i1 i2) (subtype t1 t2))]
+    [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
+     (and (name-ref=? i1 i2) (subtype t1 t2))]
+    [(_ _) #f]))
 
+;; complementary: Filter/c Filter/c -> boolean?
+;; Returns true if the OR of the two filters is equivalent to Top
+(define (complementary? f1 f2)
+  (match* (f1 f2)
+    [((TypeFilter: t1 p1 i1) (NotTypeFilter: t2 p1 i2))
+     (and (name-ref=? i1 i2) (subtype t2 t1))]
+    [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
+     (and (name-ref=? i1 i2) (subtype t2 t1))]
+    [(_ _) #f]))
 
 (define (name-ref=? a b)
   (or (equal? a b)
@@ -131,7 +138,7 @@
           [(Bot:) (loop (cdr fs) result)]
           [t
            (cond [(for/or ([f (in-list (append (cdr fs) result))])
-                    (opposite? f t))
+                    (complementary? f t))
                   -top]
                  [(let ([t-seq (Rep-seq t)])
                     (for/or ([f (in-list result)])
@@ -151,7 +158,7 @@
           [(list) -top]
           [(list f) f]
           ;; don't think this is useful here
-          [(list f1 f2) (if (opposite? f1 f2)
+          [(list f1 f2) (if (contradictory? f1 f2)
                             -bot
                             (if (filter-equal? f1 f2)
                                 f1
@@ -172,7 +179,7 @@
           [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
           [(Top:) (loop (cdr fs) result)]
           [t (cond [(for/or ([f (in-list (append (cdr fs) result))])
-                      (opposite? f t))
+                      (contradictory? f t))
                     -bot]
                    [(let ([t-seq (Rep-seq t)])
                       (for/or ([f (in-list result)])
