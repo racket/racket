@@ -1,38 +1,59 @@
 #lang racket/base
 
 (require "test-utils.rkt"
-         rackunit 
-         (types abbrev union filter-ops))
+         rackunit racket/format
+         (types abbrev union filter-ops)
+         (for-syntax racket/base syntax/parse))
 
 (provide tests)
 (gen-test-main)
 
-(define (not-opposite? x y) (not (opposite? x y)))
 (define (not-implied-atomic? x y) (not (implied-atomic? x y)))
+
+(define-syntax (test-opposite stx)
+  (define-syntax-class complementary
+     (pattern #:complementary #:with check #'check-true)
+     (pattern #:not-complementary #:with check #'check-false))
+  (define-syntax-class contradictory
+     (pattern #:contradictory #:with check #'check-true)
+     (pattern #:not-contradictory #:with check #'check-false))
+  (syntax-parse stx
+    [(_ comp:complementary contr:contradictory f1* f2*)
+     (syntax/loc stx
+       (test-case (~a '(opposite f1* f2*))
+         (define f1 f1*)
+         (define f2 f2*)
+         (comp.check (complementary? f1 f2) "Complementary")
+         (contr.check (contradictory? f1 f2) "Contradictory")))]))
+
 
 (define tests
   (test-suite "Filters"
     (test-suite "Opposite"
-      (check opposite?
-             (-filter -Symbol 0)
-             (-not-filter (Un -Symbol -String) 0))
-      
-      (check opposite?
-             (-not-filter -Symbol 0)
-             (-filter -Symbol 0))
+      (test-opposite #:not-complementary #:contradictory
+        (-filter -Symbol 0)
+        (-not-filter (Un -Symbol -String) 0))
 
-      (check not-opposite?
-             (-filter -Symbol 1)
-             (-not-filter -Symbol 0))
+      (test-opposite #:complementary #:not-contradictory
+        (-filter (Un -Symbol -String) 0)
+        (-not-filter -Symbol 0))
 
-      (check not-opposite?
-             (-filter -String 0)
-             (-not-filter -Symbol 0))
+      (test-opposite #:complementary #:contradictory
+        (-not-filter -Symbol 0)
+        (-filter -Symbol 0))
 
-      (check not-opposite?
-             (-not-filter -Symbol 0)
-             (-filter -String 0))
-      )
+      (test-opposite #:not-complementary #:not-contradictory
+        (-filter -Symbol 1)
+        (-not-filter -Symbol 0))
+
+      (test-opposite #:not-complementary #:not-contradictory
+        (-not-filter -Symbol 0)
+        (-filter -String 0))
+
+      (test-opposite #:not-complementary #:not-contradictory
+        (-not-filter -Symbol 0)
+        (-filter -String 0))
+    )
 
     (test-suite "Implied Atomic"
       (check implied-atomic?
@@ -68,6 +89,5 @@
       (check implied-atomic?
              (-or (-filter -Symbol 1) (-filter -Symbol #'x))
              (-filter -Symbol #'x))
-      )
-
+    )
   ))
