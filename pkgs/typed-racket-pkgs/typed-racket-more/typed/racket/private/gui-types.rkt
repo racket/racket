@@ -444,7 +444,9 @@
 (define-type GL-Context<%>
   (Class [call-as-current
           (case-> ((-> Any) -> Any)
+                  #;
                   ((-> Any) (Evtof Any) -> Any)
+                  #;
                   ((-> Any) (Evtof Any) Any -> Any))]
          ;; FIXME: a typed/ffi binding with Opaque cpointer type
          ;; would be better here
