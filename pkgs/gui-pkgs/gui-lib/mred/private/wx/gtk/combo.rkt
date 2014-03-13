@@ -85,7 +85,9 @@
               ext)
     (unless (= 1 (length all))
       (error "expected Gtk combobox to have one private child"))
-    (car all)))
+    (define combo-gtk (car all))
+    (gobject-ref combo-gtk)
+    combo-gtk))
 
 ;; More dependence on the implemenation of GtkComboBox:
 ;; The memnu-popup action is implemented by seeting a button-press-event
