@@ -190,7 +190,7 @@
          (if (null? ps)
              (apply -and result)
              (let ([p (car ps)])
-               (cond [(opposite? a p) -bot]
+               (cond [(contradictory? a p) -bot]
                      [(implied-atomic? p a) (loop (cdr ps) result)]
                      [else (loop (cdr ps) (cons p result))]))))]
       [_ prop])))
@@ -229,7 +229,7 @@
                       (cond
                         [(null? ps) (apply -or result)]
                         [(for/or ([other-p (in-list (append derived-props derived-atoms))])
-                             (opposite? (car ps) other-p))
+                             (complementary? (car ps) other-p))
                          (or-loop (cdr ps) result)]
                         [(for/or ([other-p (in-list derived-atoms)])
                              (implied-atomic? (car ps) other-p))
