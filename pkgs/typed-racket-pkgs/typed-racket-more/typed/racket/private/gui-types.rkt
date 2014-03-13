@@ -23,12 +23,14 @@
          Font-List%
          GL-Config%
          GL-Context<%>
+         Linear-Gradient%
          Pen%
          Pen-List%
          Pen-Style
          Pen-Cap-Style
          Pen-Join-Style
          Point%
+         Radial-Gradient%
          Region%)
 
 (define-type LoadFileKind
@@ -41,6 +43,20 @@
 
 (define-type Bitmap%
   (Class
+   (init-rest (U (List Integer Integer)
+                 (List Integer Integer Any)
+                 (List Integer Integer Any Any)
+                 (List Integer Integer Any Any Real)
+                 (List (U Path-String Input-Port))
+                 (List (U Path-String Input-Port) Any)
+                 (List (U Path-String Input-Port)
+                       Any (Option (Instance Color%)))
+                 (List (U Path-String Input-Port)
+                       Any (Option (Instance Color%)) Any)
+                 (List (U Path-String Input-Port)
+                       Any (Option (Instance Color%)) Any
+                       Real)
+                 (List Bytes Integer Integer)))
    [get-argb-pixels
     (case-> (Real Real
                   Exact-Nonnegative-Integer Exact-Nonnegative-Integer
@@ -53,9 +69,9 @@
                   Bytes Any Any -> Void))]
    [get-depth (-> Exact-Nonnegative-Integer)]
    [get-handle (-> Any)]
-   [get-height (-> Natural)]
+   [get-height (-> Exact-Positive-Integer)]
    [get-loaded-mask (-> (Option (Instance Bitmap%)))]
-   [get-width (-> Natural)]
+   [get-width (-> Exact-Positive-Integer)]
    [has-alpha-channel? (-> Boolean)]
    [is-color? (-> Boolean)]
    [load-file (case->
@@ -81,7 +97,11 @@
    [set-loaded-mask ((Instance Bitmap%) -> Void)]))
 
 (define-type Color%
-  (Class [red (-> Byte)]
+  (Class (init-rest (U (List)
+                       (List Byte Byte Byte)
+                       (List Byte Byte Byte Real)
+                       (List String)))
+         [red (-> Byte)]
          [green (-> Byte)]
          [blue (-> Byte)]
          [alpha (-> Real)]
@@ -116,14 +136,15 @@
   (Class (init [color (U String (Instance Color%)) #:optional]
                [style Brush-Style #:optional]
                [stipple (Option (Instance Bitmap%)) #:optional]
-               ;; FIXME
-               [gradient (Option Any) #:optional]
+               [gradient (Option (U (Instance Radial-Gradient%)
+                                    (Instance Linear-Gradient%))) #:optional]
                [transformation (Option (Vector (Vector Real Real Real
                                                        Real Real Real)
                                                Real Real Real Real Real))
                                #:optional])
          [get-color (-> (Instance Color%))]
-         [get-gradient (-> (Option Any))] ;; FIXME
+         [get-gradient (-> (Option (U (Instance Radial-Gradient%)
+                                      (Instance Linear-Gradient%))))]
          [get-handle (-> (Option Any))]
          [get-stipple (-> (Option (Instance Bitmap%)))]
          [get-style (-> Brush-Style)]
@@ -145,8 +166,7 @@
 (define-type Brush-List%
   (Class [find-or-create-brush
           (case->
-           ((Instance Color%) Brush-Style -> (Instance Brush%))
-           (String Brush-Style -> (Option (Instance Brush%))))]))
+           ((U (Instance Color%) String) Brush-Style -> (Option (Instance Brush%))))]))
 
 (define-type Pen%
   (Class (init [color (U String (Instance Color%)) #:optional]
@@ -181,6 +201,20 @@
             Pen-Cap-Style Pen-Join-Style
             -> (Instance Pen%)))]))
 
+(define-type Linear-Gradient%
+  (Class (init [x0 Real] [y0 Real]
+               [x1 Real] [y1 Real]
+               [stops (Listof (List Real (Instance Color%)))])
+         [get-line (-> (values Real Real Real Real))]
+         [get-stops (-> (Listof (List Real (Instance Color%))))]))
+
+(define-type Radial-Gradient%
+  (Class (init [x0 Real] [y0 Real] [r0 Real]
+               [x1 Real] [y1 Real] [r1 Real]
+               [stops (Listof (List Real (Instance Color%)))])
+         [get-circles (-> (values Real Real Real Real Real Real))]
+         [get-stops (-> (Listof (List Real (Instance Color%))))]))
+
 (define-type DC<%>
   (Class [cache-font-metrics-key (-> Integer)]
          [clear (-> Void)]
@@ -214,10 +248,18 @@
             (Option (Instance Bitmap%)) -> Boolean))]
          [draw-ellipse (Real Real Nonnegative-Real Nonnegative-Real -> Void)]
          [draw-line (Real Real Real Real -> Void)]
-         ;; draw-lines
-         ;; draw-path
+         [draw-lines (->* ((U (Listof (Instance Point%))
+                              (Listof (Pairof Real Real))))
+                          (Real Real)
+                          Void)]
+         [draw-path (->* ((Instance DC-Path%))
+                         (Real Real (U 'odd-even 'winding))
+                         Void)]
          [draw-point (Real Real -> Void)]
-         ;; draw-polygon
+         [draw-polygon (->* ((U (Listof (Instance Point%))
+                                (Listof (Pairof Real Real))))
+                            (Real Real (U 'odd-even 'winding))
+                            Void)]
          [draw-rectangle (Real Real Nonnegative-Real Nonnegative-Real -> Void)]
          [draw-rounded-rectangle
           (case-> (Real Real Nonnegative-Real Nonnegative-Real -> Void)
@@ -243,7 +285,9 @@
          [get-initial-matrix (-> (Vector Real Real Real Real Real Real))]
          [get-origin (-> (Values Real Real))]
          [get-pen (-> (Instance Pen%))]
-         ;; get-path-bounding-box
+         [get-path-bounding-box (-> (Instance DC-Path%)
+                                    (U 'path 'stroke 'fill)
+                                    (values Real Real Real Real))]
          [get-rotation (-> Real)]
          [get-scale (-> (Values Real Real))]
          [get-size (-> (Values Nonnegative-Real Nonnegative-Real))]
@@ -280,7 +324,6 @@
                      ((U (Instance Color%) String) Brush-Style -> Void))]
          [set-clipping-rect
           (Real Real Nonnegative-Real Nonnegative-Real -> Void)]
-         ;; set-clipping-region
          [set-clipping-region ((Option (Instance Region%)) -> Void)]
          [set-font ((Instance Font%) -> Void)]
          [set-initial-matrix ((Vector Real Real Real Real Real Real) -> Void)]
@@ -305,6 +348,37 @@
          [translate (Real Real -> Void)]
          [try-color ((Instance Color%) (Instance Color%) -> Void)]))
 
+(define-type DC-Path%
+  (Class [append (-> (Instance DC-Path%) Void)]
+         [arc (->* (Real Real Real Real Real Real)
+                   (Any)
+                   Void)]
+         [close (-> Void)]
+         [curve-to (-> Real Real Real Real Real Real Void)]
+         [ellipse (-> Real Real Real Real Void)]
+         [get-bounding-box (-> (values Real Real Real Real))]
+         [line-to (-> Real Real Void)]
+         [lines (->* ((U (Listof (Instance Point%))
+                         (Listof (Pairof Real Real))))
+                     (Real Real)
+                     Void)]
+         [move-to (-> Real Real Void)]
+         [open? (-> Boolean)]
+         [rectangle (-> Real Real Real Real Void)]
+         [reset (-> Void)]
+         [reverse (-> Void)]
+         [rotate (-> Real Void)]
+         [rounded-rectangle
+          (->* (Real Real Real Real)
+               (Real)
+               Void)]
+         [scale (-> Real Real Void)]
+         [text-outline (->* ((Instance Font%) String Real Real)
+                            (Any)
+                            Void)]
+         [transform (-> (Vector Real Real Real Real Real Real) Void)]
+         [translate (-> Real Real Void)]))
+
 (define-type Region%
   (Class (init [dc (Option (Instance DC<%>))])
          [get-bounding-box (-> (Values Real Real Real Real))]
@@ -317,16 +391,10 @@
            Real Real -> Void)]
          [set-ellipse
           (Real Real Nonnegative-Real Nonnegative-Real -> Void)]
-         ;; FIXME: DC-Path% type
-         #|
          [set-path
-          (case->
-           ((Instance DC-Path%) -> Void)
-           ((Instance DC-Path%) Real -> Void)
-           ((Instance DC-Path%) Real Real -> Void)
-           ((Instance DC-Path%) Real Real (U 'odd-even 'winding)
-            -> Void))]
-         |#
+          (->* ((Instance DC-Path%))
+               (Real Real (U 'odd-even 'winding))
+               Void)]
          [set-polygon
           (case->
            ((U (Listof (Instance Point%)) (Listof (Pairof Real Real)))
@@ -651,10 +719,9 @@
          [on-paint (-> Void)]
          [on-scroll (Any -> Void)]
          [refresh-now
-          (case-> (-> Void)
-                  (((Instance DC<%>) -> Any) -> Void)
-                  ;; FIXME: keyword case left out
-                  )]
+          (->* ()
+               ((-> (Instance DC<%>) Any) #:flush? Any)
+               Void)]
          [scroll ((Option Real) (Option Real) -> Void)]
          [set-scroll-page
           ((U 'horizontal 'vertical) Exact-Positive-Integer -> Void)]
@@ -2624,7 +2691,7 @@
             (Option (Boxof Nonnegative-Real)) (Option (Boxof Nonnegative-Real))
             (Option (Boxof Nonnegative-Real)) (Option (Boxof Nonnegative-Real))
             -> Void))]
-         [get-flags (-> (List Symbol))]
+         [get-flags (-> (Listof Symbol))]
          [get-num-scroll-steps (-> Natural)]
          [get-scroll-step-offset (Natural -> Nonnegative-Real)]
          [get-snipclass (-> (Option Snip-Class%))]

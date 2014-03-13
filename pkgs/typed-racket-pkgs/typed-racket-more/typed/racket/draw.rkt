@@ -10,6 +10,7 @@
           racket/draw/private/color
           racket/draw/private/font
           racket/draw/private/gl-config
+          racket/draw/private/gradient
           racket/draw/private/pen
           racket/draw/private/region
           (for-syntax (only-in (rep type-rep) make-Instance))
@@ -41,12 +42,14 @@
           Font-List%
           GL-Config%
           GL-Context<%>
+          Linear-Gradient%
           Pen%
           Pen-List%
           Pen-Style
           Pen-Cap-Style
           Pen-Join-Style
           Point%
+          Radial-Gradient%
           Region%))
 
 (type-environment
@@ -74,5 +77,7 @@
  [font% (parse-type #'Font%)]
  [font-list% (parse-type #'Font-List%)]
  [gl-config% (parse-type #'GL-Config%)]
+ [linear-gradient% (parse-type #'Linear-Gradient%)]
  [pen% (parse-type #'Pen%)]
+ [radial-gradient% (parse-type #'Radial-Gradient%)]
  [region% (parse-type #'Region%)])
