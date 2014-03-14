@@ -251,12 +251,14 @@
                                       (recursive-sc-use both-dep)))))
                 (define resolved-name (resolve-once type))
                 (define resolved-deps
-                  (map (λ (dep) (lookup-type-alias dep values)) dep-ids))
+                  (for/list ([dep (in-list dep-ids)])
+                    (resolve-once (lookup-type-alias dep values))))
 
                 ;; resolved-deps->scs : (U 'untyped 'typed 'both)
                 ;;                      -> (Listof Static-Contract)
                 (define (resolved-deps->scs typed-side)
-                  (for/list ([resolved-dep resolved-deps])
+                  (for/list ([resolved-dep (in-list resolved-deps)]
+                             [dep (in-list deps)])
                     (loop resolved-dep typed-side rv)))
 
                 ;; Now actually generate the static contracts
