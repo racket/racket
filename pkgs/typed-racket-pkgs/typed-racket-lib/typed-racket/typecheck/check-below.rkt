@@ -91,6 +91,7 @@
 ;; Turns NoObject/NoFilter into the Empty/TopFilter
 (define (fix-results r)
   (match r
+    [(tc-any-results:) tc-any-results]
     [(tc-results: ts fs os)
      (ret ts (map fix-filter fs) (map fix-object os))]
     [(tc-results: ts fs os dty dbound)

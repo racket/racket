@@ -72,6 +72,7 @@
 (define tests
   (test-suite "Check Below"
     (test-below -Bottom Univ)
+    (test-below (ret -Bottom) tc-any-results)
     (test-below
       (ret -Bottom)
       (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
