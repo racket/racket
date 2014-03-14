@@ -15,13 +15,14 @@ across documents.
 @;----------------------------------------
 @section[#:tag "setting-up"]{Setting Up Library Documentation}
 
-To document a collection or @|PLaneT| package:
+To document a collection or Racket
+@seclink["getting-started" #:doc '(lib "pkg/scribblings/pkg.scrbl") "package"]:
 
 @itemize[
 
-  @item{Create a file in your collection or planet package with the
+  @item{Create a file in your collection or package with the
         file extension @filepath{.scrbl}. Beware that the file name
-        you choose will determine the output directory's name. The
+        you choose will determine the output file's name. The
         remainder of these instructions assume that the file is called
         @filepath{manual.scrbl}.}
 
@@ -63,13 +64,11 @@ To document a collection or @|PLaneT| package:
   @item{Run @exec{raco setup} to build your documentation. For a
         collection, optionally supply @Flag{l} followed by the
         collection name to limit the build process to that
-        collection. For a @|PLaneT| package, optionally supply
-        @Flag{P} followed by the package information to limit the
-        build process to that package.}
+        collection.}
 
   @item{The generated documentation is normally
         @filepath{doc/manual/index.html} within the collection or
-        @|PLaneT| package directory. If the collection is in
+        package directory. If the collection is in
         Racket's main @filepath{collects} directory, however, then the
         documentation is generated as @filepath{manual/index.html} in
         the installation's main @filepath{doc} directory.}
