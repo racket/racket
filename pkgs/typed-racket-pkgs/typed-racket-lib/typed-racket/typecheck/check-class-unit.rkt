@@ -200,7 +200,7 @@
                          (#%plain-app values))])
              (#%plain-app void))))
 
-;; Syntax TCResults -> Type
+;; Syntax Option<TCResults> -> TCResults
 ;; Type-check a class form by trawling its innards
 ;;
 ;; Assumptions:
@@ -213,12 +213,12 @@
 (define (check-class form [expected #f])
   (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _ _)))
-     (parse-and-check form self-class-type)]
+     (ret (parse-and-check form self-class-type))]
     [(tc-result1: (Poly-names: ns body-type))
      ;; FIXME: this case probably isn't quite right
      (check-class form (ret body-type))]
-    [#f (parse-and-check form #f)]
-    [_ (check-below (parse-and-check form #f) expected)]))
+    [#f (ret (parse-and-check form #f))]
+    [_ (check-below (ret (parse-and-check form #f)) expected)]))
 
 ;; Syntax Option<Type> -> Type
 ;; Parse the syntax and extract useful information to pass to the
