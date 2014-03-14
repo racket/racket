@@ -43,4 +43,6 @@ To upload:
 * You'll need credentials to upload to S3, and those credentials
   should be in "~/.aws-keys".
 
+ * You'll need the "s3-sync" Racket package installed.
+
 * Run the "sync.rkt" script: racket -l meta/new-web/sync
