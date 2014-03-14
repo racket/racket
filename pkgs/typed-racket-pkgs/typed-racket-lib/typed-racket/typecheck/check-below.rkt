@@ -99,7 +99,6 @@
 ;; check-types: tc-results tc-results -> Boolean
 ;; If the types are not compatible: records an error and returns false
 ;; Else: returns true
-;; TODO figure out what would break this
 (define (check-types ts1 ts2)
   (or (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
       (expected-but-got (stringify ts2) (stringify ts1))))
