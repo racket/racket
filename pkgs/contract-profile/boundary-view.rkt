@@ -151,7 +151,7 @@
   (define total-contract-time
     (max 1e-20 (for/sum ([b (in-list all-boundaries)]) (boundary-time b))))
   (define max-self%
-    (/ (for/fold ([m 0]) ([b (in-list all-boundaries)])
+    (/ (for/fold ([m 1e-20]) ([b (in-list all-boundaries)])
          (max m (boundary-time b)))
        total-contract-time))
 
