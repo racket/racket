@@ -110,22 +110,30 @@
 (define (check-get-field meth obj)
   (define maybe-meth-sym
     (syntax-parse meth [(quote m:id) (syntax-e #'m)] [_ #f]))
-  (define obj-type (tc-expr obj))
+  (define obj-type (tc-expr/t obj))
   (unless maybe-meth-sym
     (tc-error/expr #:return (ret (Un))
                    "expected a symbolic method name, but got ~a" meth))
-  (match obj-type
-    ;; FIXME: handle unions and mu?
-    [(tc-result1: (and ty (Instance: (Class: _ _ (list fields ...) _ _ _))))
-     (cond [(assq maybe-meth-sym fields) =>
-            (λ (field-entry) (ret (cadr field-entry)))]
-           [else
-            (tc-error/expr #:return (ret (Un))
-                           "expected an object with field ~a, but got ~a"
-                           maybe-meth-sym ty)])]
-    [(tc-result1: t)
-     (tc-error/expr #:return (ret (Un))
-                    "expected an object value for get-field, got ~a" t)]))
+  (define (check obj-type)
+    (match (resolve obj-type)
+      ;; FIXME: handle unions and mu?
+      [(and ty (Instance: (Class: _ _ (list fields ...) _ _ _)))
+       (cond [(assq maybe-meth-sym fields) =>
+              (λ (field-entry) (ret (cadr field-entry)))]
+             [else
+              (tc-error/expr/fields "type mismatch"
+                                    #:return (ret (Un))
+                                    #:more "the object is missing an expected field"
+                                    "field" maybe-meth-sym
+                                    "object type" ty)])]
+      [(Instance: (? needs-resolving? type))
+       (check (make-Instance (resolve type)))]
+      [type
+       (tc-error/expr/fields "type mismatch"
+                             #:more "expected an object value for get-field"
+                             #:return (ret (Un))
+                             "given" type)]))
+  (check obj-type))
 
 ;; check-set-field : Syntax Syntax Syntax -> TCResult
 ;; type-check the `set-field!` operation on objects
@@ -156,7 +164,7 @@
                                                maybe-field-sym)
                                     #:return (ret (Un))
                                     "given" ty)])]
-      [(Instance: type)
+      [(Instance: (? needs-resolving? type))
        (check (make-Instance (resolve type)))]
       [type
        (tc-error/expr/fields "type mismatch"

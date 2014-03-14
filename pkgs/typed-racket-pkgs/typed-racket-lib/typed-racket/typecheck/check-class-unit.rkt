@@ -211,11 +211,16 @@
 ;;  we know by this point that #'form is an actual typed
 ;;  class produced by `class` due to the syntax property
 (define (check-class form [expected #f])
-  (match (and expected (resolve expected))
-    [(tc-result1: (and self-class-type (Class: _ _ _ _ _ _)))
-     (ret (parse-and-check form self-class-type))]
-    [(tc-result1: (Poly-names: ns body-type))
-     ;; FIXME: this case probably isn't quite right
+  (define expected-type
+    (match expected
+      [(tc-result1: type) (resolve type)]
+      [_ #f]))
+  (match expected-type
+    [(? Class? class-type)
+     (ret (parse-and-check form class-type))]
+    [(Poly-names: ns body-type)
+     ;; FIXME: make sure this case is correct, does it
+     ;; introduce the right names in scope?
      (check-class form (ret body-type))]
     [#f (ret (parse-and-check form #f))]
     [_ (check-below (ret (parse-and-check form #f)) expected)]))

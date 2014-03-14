@@ -132,7 +132,7 @@
                           (super-new)
                           (define/public (m) (get-field n this))))
              (void))
-           #:msg #rx"expected an object with field n"]
+           #:msg #rx"missing an expected field.*field: n"]
    ;; Fail, conflict with parent field
    [tc-err (let ()
              (: j% (Class (field [n Integer])
@@ -1276,6 +1276,19 @@
            (class object% (super-new)
              (: m (-> Integer * Integer))
              (define/public (m . xs) (apply + xs)))
+           (void))
+         -Void]
+   ;; test that Name types are ok with get-field and as an
+   ;; expected type for class type-checking
+   [tc-e (let ()
+           (define-type-alias Foo%
+             (Class (init-field [x String])
+                                [m (-> (Instance Foo%) String)]))
+           (: foo% Foo%)
+           (define foo%
+             (class object% (super-new)
+               (init-field x)
+               (define/public (m a-foo) (get-field x a-foo))))
            (void))
          -Void]
    ))
