@@ -16,15 +16,21 @@
    (match rcvr-type
      [(tc-result1: (Instance: (? needs-resolving? type)))
       (do-check (ret (make-Instance (resolve type))))]
-     [(tc-result1: (Instance: (and c (Class: _ _ _ methods _ _))))
+     [(tc-result1: (and obj (Instance: (Class: _ _ _ methods _ _))))
       (match (tc-expr method)
         [(tc-result1: (Value: (? symbol? s)))
          (let* ([ftype (cond [(assq s methods) => cadr]
-                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
+                             [else (tc-error/expr/fields "send: method not understood by object"
+                                                         "method name" s
+                                                         "object type" obj)])]
                 [retval (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected)])
            (add-typeof-expr form retval)
            retval)]
         [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]
-     [(tc-result1: t) (tc-error/expr #:return (or expected (ret -Bottom)) "send: expected a class instance, got ~a" t)]))
+     [(tc-result1: t) (tc-error/expr/fields
+                       #:return (or expected (ret -Bottom))
+                       "send: type mismatch"
+                       "expected" "an object"
+                       "given" t)]))
   (do-check (tc-expr rcvr)))
 
