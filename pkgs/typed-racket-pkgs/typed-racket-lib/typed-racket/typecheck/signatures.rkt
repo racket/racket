@@ -20,7 +20,7 @@
    [cond-contracted check-subforms/with-handlers/check (syntax? tc-results/c . -> . any)]))
 
 (define-signature check-class^
-  ([cond-contracted check-class (syntax? (or/c tc-results/c #f) . -> . any)]))
+  ([cond-contracted check-class (syntax? (or/c tc-results/c #f) . -> . tc-results/c)]))
 
 (define-signature tc-if^
   ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results/c) . ->* . tc-results/c)]))

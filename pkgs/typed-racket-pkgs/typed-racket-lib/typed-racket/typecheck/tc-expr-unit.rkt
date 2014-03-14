@@ -374,7 +374,7 @@
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
       [stx:tr:class^
-       (ret (check-class form #f))]
+       (check-class form #f)]
       ;;
       [stx:exn-handlers^
        (register-ignored! form)
