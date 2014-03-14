@@ -140,7 +140,7 @@
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
-  (--> identifier? tc-results/c)
+  (--> identifier? full-tc-results/c)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
@@ -226,7 +226,7 @@
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
-  (--> syntax? tc-results/c tc-results/c)
+  (--> syntax? tc-results/c full-tc-results/c)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax

@@ -21,6 +21,22 @@
   (or (tc-results? v)
       (tc-any-results? v)))
 
+;; Contract to check that values are tc-results/c and do not contain -no-filter or -no-obj.
+;; Used to contract the return values of typechecking functions.
+(define (full-tc-results/c r)
+  (match r
+    [(tc-any-results:) #t]
+    [(tc-results: _ fs os)
+     (and
+       (not (member -no-filter fs))
+       (not (member -no-obj os)))]
+    [(tc-results: _ fs os _ _)
+     (and
+       (not (member -no-filter fs))
+       (not (member -no-obj os)))]
+    [else #f]))
+
+
 (define-match-expander tc-result:
   (syntax-rules ()
    [(_ tp fp op) (struct tc-result (tp fp op))]
@@ -139,4 +155,5 @@
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
- [tc-results/c c:flat-contract?])
+ [tc-results/c c:flat-contract?]
+ [full-tc-results/c c:flat-contract?])

@@ -16,7 +16,7 @@
   [tc/funapp1
     ((syntax? stx-list? arr? (listof tc-results/c) (or/c #f tc-results/c))
      (#:check boolean?)
-     . ->* . tc-results/c)])
+     . ->* . full-tc-results/c)])
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
