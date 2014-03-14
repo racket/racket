@@ -75,7 +75,7 @@
                           (init [x 0])
                           (define/public (m x) (send this z))))
              (void))
-           #:msg #rx"method z not understood"]
+           #:msg #rx"method not understood.*method name: z"]
    ;; Send to other methods
    [tc-e (let ()
            (: h% (Class [n (-> Integer)]
