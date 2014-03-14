@@ -2,16 +2,19 @@
 
 (require "../utils/utils.rkt"
          racket/match (prefix-in - (contract-req))
-         (types utils union subtype filter-ops)
+         racket/format
+         (types utils union subtype filter-ops abbrev)
          (utils tc-utils)
          (rep type-rep object-rep filter-rep)
          (only-in (types printer) pretty-format-type))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()
-                    [_ (if (Type/c? s) Type/c tc-results/c)])]
- [cond-check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c #f Type/c tc-results/c)]) ()
-                         [_ (if (Type/c? s) Type/c tc-results/c)])]
+ [check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                     [t (s) (if (Type/c? s) Type/c tc-results/c)])
+                    [_ (s) (if (Type/c? s) Type/c tc-results/c)])]
+ [cond-check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                          [t (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])
+                         [_ (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])]
  [type-mismatch (-->* ((-or/c Type/c string?) (-or/c Type/c string?))
                       ((-or/c string? #f))
                       -any)])
@@ -26,16 +29,17 @@
 (define (cond-check-below tr1 expected)
   (if expected (check-below tr1 expected) tr1))
 
-;; type-mismatch : Any Any [String] -> Void
+;; type-mismatch : Any Any [String] -> False
 ;; Type errors with "type mismatch", arguments may be types or other things
 ;; like the length of a list of types
 (define (type-mismatch t1 t2 [more #f])
   (define t1* (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1))
   (define t2* (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))
   (tc-error/expr/fields "type mismatch" #:more more
-                        "expected" t1* "given" t2*))
+                        "expected" t1* "given" t2*)
+  #f)
 
-;; expected-but-got : (U Type String) (U Type String) -> Void
+;; expected-but-got : (U Type String) (U Type String) -> False
 ;;
 ;; Helper to print messages of the form
 ;;   "Expected a, but got b"
@@ -54,123 +58,164 @@
                     "type variables bound in different scopes")]
     [(_ _) (type-mismatch t1 t2)]))
 
-;; check-below : (/\ (Results Type -> Result)
-;;                   (Results Results -> Result)
-;;                   (Type Results -> Type)
-;;                   (Type Type -> Type))
-(define (check-below tr1 expected)
-  (define (filter-better? f1 f2)
+;; value-mismatch : tc-results/c tc-results/c -> false?
+;; Helper to print messages of the form
+;;   "Expecte n values, but got m values"
+(define (value-mismatch expected actual)
+  (define (value-string ty)
+    (match ty
+      [(tc-result1: _) "1 values"]
+      [(tc-results: ts) (~a (length ts) " values")]
+      [(tc-results: ts _ _ dty _) (~a (length ts) " values and `" dty " ...'")]
+      [(tc-any-results:) "unknown number"]))
+  (type-mismatch
+    (value-string expected) (value-string actual)
+    "mismatch in number of values"))
+
+
+;; fix-filter: FilterSet [FilterSet] -> FilterSet
+;; Turns NoFilter into the actual filter; leaves other filters alone.
+(define (fix-filter f [f2 -top-filter])
+  (match f
+    [(NoFilter:) f2]
+    [else f]))
+
+;; fix-object: Object [Object] -> Object
+;; Turns NoObject into the actual abject; leaves other objects alone.
+(define (fix-object o [o2 -empty-obj])
+  (match o
+    [(NoObject:) o2]
+    [else o]))
+
+;; fix-results: tc-results -> tc-results
+;; Turns NoObject/NoFilter into the Empty/TopFilter
+(define (fix-results r)
+  (match r
+    [(tc-results: ts fs os)
+     (ret ts (map fix-filter fs) (map fix-object os))]
+    [(tc-results: ts fs os dty dbound)
+     (ret ts (map fix-filter fs) (map fix-object os) dty dbound)]))
+
+;; check-types: tc-results tc-results -> Boolean
+;; If the types are not compatible: records an error and returns false
+;; Else: returns true
+(define (check-types ts1 ts2)
+  (or (for/and ([t (in-list ts1)] [s (in-list ts2)]) (subtype t s))
+      (expected-but-got (stringify ts2) (stringify ts1))))
+
+;; check-filter+object: FilterSet FilterSet Object Object -> Boolean
+;; If the filters or objects are not compatible: records an error and returns false
+;; Else: returns true
+(define (check-filter+object f1 f2 o1 o2)
+  (define filter-better 
     (match* (f1 f2)
       [(f f) #t]
+      [(f (NoFilter:)) #t]
       [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-))
        (and (implied-atomic? f2+ f1+)
             (implied-atomic? f2- f1-))]
       [(_ _) #f]))
-  (define (object-better? o1 o2)
+  (define object-better
     (match* (o1 o2)
       [(o o) #t]
       [(o (or (NoObject:) (Empty:))) #t]
       [(_ _) #f]))
+  (cond
+    [(and (not filter-better) object-better)
+     (type-mismatch f2 f1 "mismatch in filter")]
+    [(and filter-better (not object-better))
+     (type-mismatch (print-object o2) (print-object o1) "mismatch in object")]
+    [(and (not filter-better) (not object-better))
+     (type-mismatch (format "`~a' and `~a'" f2 (print-object o2))
+                    (format "`~a' and `~a'" f1 (print-object o1))
+                    "mismatch in filter and object")]
+    [else #t]))
+
+;; check-type: Type Type -> Boolean
+;; If the types are not compatible: records an error and returns false
+;; Else: returns true
+(define (check-type t1 t2)
+  (cond
+    [(not (subtype t1 t2))
+     (expected-but-got t2 t1)
+     #f]
+    [else #t]))
+
+;; check-filters+objects: (Listof FilterSet) (Listof FilterSet) (Listof Object) (Listof Object) -> Boolean
+;; If the filters or objects are not compatible: records an error and returns false
+;; Else: returns true
+(define (check-filters+objects f1 f2 o1 o2)
+  (for/and ([f1 (in-list f1)] [f2 (in-list f2)]
+            [o1 (in-list o1)] [o2 (in-list o2)])
+    (check-filter+object f1 f2 o1 o2)))
+
+
+;; check-below : (/\ (Results Results -> Result)
+;;                   (Type Type -> Type))
+(define (check-below tr1 expected)
   (match* (tr1 expected)
-    ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (ret ts2)]
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
-     expected]
-    [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
-
-    [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (unless (= (length ts) (length ts2))
-       (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
-     (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
-       (expected-but-got (stringify ts2) (stringify ts)))
-     (if (= (length ts) (length ts2))
-         (ret ts2 fs os)
-         (ret ts2))]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
-     (cond
-       [(not (subtype t1 t2))
-        (expected-but-got t2 t1)])
-     expected]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
-     (cond
-       [(not (subtype t1 t2))
-        (expected-but-got t2 t1)]
-       [(and (not (filter-better? f1 f2))
-             (object-better? o1 o2))
-        (type-mismatch f2 f1 "mismatch in filter")]
-       [(and (filter-better? f1 f2)
-             (not (object-better? o1 o2)))
-        (type-mismatch (print-object o2) (print-object o1) "mismatch in object")]
-       [(and (not (filter-better? f1 f2))
-             (not (object-better? o1 o2)))
-        (type-mismatch (format "`~a' and `~a'" f2 (print-object o2))
-                       (format "`~a' and `~a'" f1 (print-object o1))
-                       "mismatch in filter and object")])
-     expected]
-    ;; case where expected is like (Values a ... a) but got something else
-    [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
-                      (format "~a values" (length t1))
-                      "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
-     expected]
-    ;; case where you have (Values a ... a) but expected something else
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values" (length t2))
-                      (format "~a values and `~a'" (length t1) dty)
-                      "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
-     expected]
-    [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
-     (unless (andmap subtype t1 t2)
-       (expected-but-got (stringify t2) (stringify t1)))
-     (unless (subtype dty1 dty2)
-       (type-mismatch dty2 dty1 "mismatch in ... argument"))
-     expected]
-    [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
-     expected]
-    [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
-     (type-mismatch "1 value" "unknown number")
-     expected]
-    [((tc-any-results:) (tc-results: t2 fs os))
-     (type-mismatch (format "~a values" (length t2)) "unknown number")
-     expected]
-
-    [((tc-result1: t1 f o) (? Type/c? t2))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     (ret t2 f o)]
-
-
-    [((? Type/c? t1) (tc-any-results:)) t1]
-    [((? Type/c? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     t1]
-    [((? Type/c? t1) (tc-result1: t2 f o))
-     (if (subtype t1 t2)
-         (type-mismatch (format "`~a' and `~a'" f (print-object o)) t1
-                        "mismatch in filter")
-         (expected-but-got t2 t1))
-     t1]
-    [((? Type/c? t1) (tc-results: ts2 fs os))
-     (type-mismatch "1 value" (length ts2) "mismatch in number of values")
-     t1]
+    ;; Type case
     [((? Type/c? t1) (? Type/c? t2))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
+     (check-type t1 t2)
      expected]
-    [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
-     (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
-    [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
+
+    ;; tc-results cases
+    ;; This case has to be first so that bottom (exceptions, etc.) can be allowed in cases
+    ;; where multiple values are expected.
+    ;; We can ignore the filters and objects in the actual value because they would never be about a value
+    [((tc-result1: (== -Bottom)) _)
+     (fix-results expected)]
+
+    ;; Handle tc-any-results as an expected value
+    [(_ (tc-any-results:)) tr1]
+    ;; Handle tc-any-results as an actual value
+    [((tc-any-results:) _)
+     (value-mismatch tr1 expected)
+     (fix-results expected)]
+
+    ;; Handle simple single value case
+    [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
+     (and
+       (check-type t1 t2)
+       (check-filter+object f1 f2 o1 o2))
+     (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
+
+    ;; Handle the multi value cases
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2))
+     (cond
+       [(= (length t1) (length t2))
+        (and
+          (check-types t1 t2)
+          (check-filters+objects f1 f2 o1 o2))
+        (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1))]
+       [else
+        (type-mismatch (length t2) (length t1) "mismatch in number of values")
+        (fix-results expected)])]
+
+
+    ;; case where expected is like (Values a ... a) but got something else
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2 dty dbound))
+     (value-mismatch tr1 expected)
+     (fix-results expected)]
+    ;; case where you have (Values a ... a) but expected something else
+    [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
+     (value-mismatch tr1 expected)
+     (fix-results expected)]
+
+    ;; Handle the polydotted cases
+    [((tc-results: t1 f1 o1 dty1 dbound) (tc-results: t2 f2 o2 dty2 dbound))
+     (cond
+       [(= (length t1) (length t2))
+        (and
+          (check-types t1 t2)
+          (or (subtype dty1 dty2)
+              (type-mismatch dty2 dty1 "mismatch in ... argument"))
+          (check-filters+objects f1 f2 o1 o2))
+        (ret t2 (map fix-filter f2 f1) (map fix-object o2 o1) dty2 dbound)]
+       [else
+        (value-mismatch tr1 expected)
+        (fix-results expected)])]
+
+    [((tc-results: t1 f1 o1 dty1 dbound1) (tc-results: t2 f2 o2 dty2 dbound2))
+     (type-mismatch (~a "a bound of " dbound2) (~a "a bound of " dbound1) "mismatch in bound")
+     (fix-results expected)]))

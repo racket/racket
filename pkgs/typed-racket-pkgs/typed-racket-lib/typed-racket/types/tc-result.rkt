@@ -26,17 +26,18 @@
    [(_ tp fp op) (struct tc-result (tp fp op))]
    [(_ tp) (struct tc-result (tp _ _))]))
 
+;; expand-tc-results: (Listof tc-result) -> (Values (Listof Type) (Listof FilterSet) (Listof Object))
+(define (expand-tc-results results)
+  (values (map tc-result-t results) (map tc-result-f results) (map tc-result-o results)))
+
 (define-match-expander tc-results:
   (syntax-rules ()
    [(_ tp fp op)
-    (struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          #f))]
+    (struct tc-results ((app expand-tc-results tp fp op) #f))]
    [(_ tp fp op dty dbound)
-    (struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          (cons dty dbound)))]
+    (struct tc-results ((app expand-tc-results tp fp op) (cons dty dbound)))]
    [(_ tp)
-    (struct tc-results ((list (struct tc-result (tp _ _)) (... ...))
-                          #f))]))
+    (struct tc-results ((app expand-tc-results tp _ _) #f))]))
 
 (define-match-expander tc-any-results:
   (syntax-rules ()
