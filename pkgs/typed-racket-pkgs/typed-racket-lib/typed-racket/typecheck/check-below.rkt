@@ -2,16 +2,18 @@
 
 (require "../utils/utils.rkt"
          racket/match (prefix-in - (contract-req))
-         (types utils union subtype filter-ops)
+         (types utils union subtype filter-ops abbrev)
          (utils tc-utils)
          (rep type-rep object-rep filter-rep)
          (only-in (types printer) pretty-format-type))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()
-                    [_ (if (Type/c? s) Type/c tc-results/c)])]
- [cond-check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c #f Type/c tc-results/c)]) ()
-                         [_ (if (Type/c? s) Type/c tc-results/c)])]
+ [check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                     [t (s) (if (Type/c? s) Type/c tc-results/c)])
+                    [_ (s) (if (Type/c? s) Type/c tc-results/c)])]
+ [cond-check-below (-->i ([s (-or/c Type/c tc-results/c)]
+                          [t (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])
+                         [_ (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])]
  [type-mismatch (-->* ((-or/c Type/c string?) (-or/c Type/c string?))
                       ((-or/c string? #f))
                       -any)])
@@ -72,10 +74,12 @@
       [(o (or (NoObject:) (Empty:))) #t]
       [(_ _) #f]))
   (match* (tr1 expected)
-    ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
+    ;; These two cases have to be first so that bottom (exceptions, etc.) can be allowed in cases
+    ;; where multiple values are expected.
+    ;; We can ignore the filters and objects in the actual value because they would never be about a value
+    [((tc-result1: (== -Bottom)) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (ret ts2)]
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
+    [((tc-result1: (== -Bottom)) _)
      expected]
     [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
 
@@ -140,33 +144,13 @@
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      expected]
-    [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))
+    [((tc-any-results:) (tc-result1: t _ _))
      (type-mismatch "1 value" "unknown number")
      expected]
     [((tc-any-results:) (tc-results: t2 fs os))
      (type-mismatch (format "~a values" (length t2)) "unknown number")
      expected]
 
-    [((tc-result1: t1 f o) (? Type/c? t2))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     (ret t2 f o)]
-
-
-    [((? Type/c? t1) (tc-any-results:)) t1]
-    [((? Type/c? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
-     (unless (subtype t1 t2)
-       (expected-but-got t2 t1))
-     t1]
-    [((? Type/c? t1) (tc-result1: t2 f o))
-     (if (subtype t1 t2)
-         (type-mismatch (format "`~a' and `~a'" f (print-object o)) t1
-                        "mismatch in filter")
-         (expected-but-got t2 t1))
-     t1]
-    [((? Type/c? t1) (tc-results: ts2 fs os))
-     (type-mismatch "1 value" (length ts2) "mismatch in number of values")
-     t1]
     [((? Type/c? t1) (? Type/c? t2))
      (unless (subtype t1 t2)
        (expected-but-got t2 t1))
