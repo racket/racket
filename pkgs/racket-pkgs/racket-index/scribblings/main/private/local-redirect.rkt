@@ -115,11 +115,15 @@
          (fprintf o "//  This script is included by generated documentation to rewrite\n")
          (fprintf o "//  links expressed as tag queries into local-filesystem links.\n")
          (newline o)
-         (fprintf o "link_target_prefix = ~s;\n" (url->string
-                                                  (path->url
-                                                   (path->directory-path
-                                                    (build-path (find-doc-dir) "local-redirect")))))
-         (newline o)
+         (when user?
+           ;; If not user, link_target_prefix is declared  in the output
+           ;; of `rewrite-code` (and we don't want to include a build-time path
+           ;; that would end up in a distribution)
+           (fprintf o "link_target_prefix = ~s;\n" (url->string
+                                                    (path->url
+                                                     (path->directory-path
+                                                      (build-path (find-doc-dir) "local-redirect")))))
+           (newline o))
          (fprintf o "var ~alink_targets = [" (if user? "user_" ""))
          (for ([e (in-list db)]
                [i (in-naturals)])
