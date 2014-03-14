@@ -14,7 +14,7 @@
   [tc/funapp
    (syntax? stx-list? tc-results/c (c:listof tc-results/c)
     (c:or/c #f tc-results/c)
-    . c:-> . tc-results/c)])
+    . c:-> . tc-results/no-expected/c)])
 
 (define-syntax (handle-clauses stx)
   (syntax-parse stx

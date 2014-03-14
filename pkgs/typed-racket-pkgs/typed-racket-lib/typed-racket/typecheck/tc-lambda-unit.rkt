@@ -520,6 +520,7 @@
 ;; name : the name of the loop
 ;; args : the types of the actual arguments to the loop
 ;; ret : the expected return type of the whole expression
+;; Returns both the tc-results of the function and of the body
 (define (tc/rec-lambda/check formals body name args return)
   (with-lexical-env/extend
    (syntax->list formals) args
@@ -528,4 +529,4 @@
           [ft (make-Function (list t))])
      (with-lexical-env/extend
       (list name) (list ft)
-      (begin (tc-body/check body return) (ret ft))))))
+      (values (ret ft) (tc-body/check body return))))))

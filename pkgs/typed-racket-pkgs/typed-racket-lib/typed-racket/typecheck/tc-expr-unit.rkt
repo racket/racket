@@ -140,7 +140,7 @@
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
-  (--> identifier? tc-results/c)
+  (--> identifier? tc-results/no-expected/c)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
@@ -226,7 +226,7 @@
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
-  (--> syntax? tc-results/c tc-results/c)
+  (--> syntax? tc-results/c tc-results/no-expected/c)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
@@ -237,6 +237,7 @@
       ;; a TR-annotated class
       [stx:tr:class^
        (check-class form expected)
+       ;; This is wrong
        expected]
       [stx:exn-handlers^
        (register-ignored! form)
@@ -245,7 +246,8 @@
        (register-ignored! form)
        (check-subforms/ignore form)
        ;; We trust ignore to be only on syntax objects objects that are well typed
-       expected]
+       ;; Still call check-below to fix expected filters and objects
+       (check-below (ret -Bottom) expected)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
