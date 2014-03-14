@@ -4,6 +4,7 @@
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse
          (only-in (private type-contract) type->contract)
+         (types printer)
          (typecheck renamer def-binding)
          (utils tc-utils)
          (for-syntax racket/base)
@@ -133,13 +134,13 @@
 
   ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
   (define (mk-value-triple internal-id new-id ty)
-    (define contract (type->contract ty (λ (#:reason [reason #f]) #f)))
+    (define contract (type->contract ty (λ (#:reason [reason #f]) reason)))
 
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
                    [export-id new-id])
       (define/with-syntax definitions
-        (if contract
+        (if (syntax? contract)
             (with-syntax* ([module-source pos-blame-id]
                            [the-contract (generate-temporary 'generated-contract)])
               #`(define-module-boundary-contract untyped-id 
@@ -150,8 +151,12 @@
                                    #,(syntax-column #'id)
                                    #,(syntax-position #'id)
                                    #,(syntax-span #'id))))
-            #'(define-syntax (untyped-id stx)
-                (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
+            #`(define-syntax (untyped-id stx)
+                (tc-error/fields #:stx stx
+                                 "could not convert type to a contract"
+                                 #:more #,contract
+                                 "for identifier" #,(symbol->string (syntax-e #'id))
+                                 "type" #,(pretty-format-type ty #:indent 8)))))
       (values
         #'(begin
             definitions
