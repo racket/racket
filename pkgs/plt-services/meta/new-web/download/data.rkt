@@ -51,18 +51,23 @@
     ["sit" "StuffIt Archive"]))
 
 (define -mirrors-
-  '(["USA, East"
+  '(#;
+    ["USA, East"
      main
+     "Matthew Flatt"
+     "mflatt@cs.utah.edu"]
+    ["USA, Massachusetts (Northeastern University)"
+     "http://mirror.racket-lang.org/installers/"
+     "Eli Barzilay"
+     "eli@barzilay.org"]
+    ["USA, Utah (University of Utah)"
+     "http://www.cs.utah.edu/plt/installers/"
      "Matthew Flatt"
      "mflatt@cs.utah.edu"]
     ["USA, Illinois (Northwestern University)"
      "http://www.eecs.northwestern.edu/racket/"
      "Robby Findler"
      "robby@eecs.northwestern.edu"]
-    ["USA, Utah (University of Utah)"
-     "http://www.cs.utah.edu/plt/installers/"
-     "Matthew Flatt"
-     "mflatt@cs.utah.edu"]
     ["Canada, Ontario (University of Waterloo)"
      "http://mirror.csclub.uwaterloo.ca/racket/racket-installers/"
      "Systems Committee"
