@@ -117,19 +117,21 @@
   (define-values (path p b) (split-path p*))
   (define f
     (let ([dir (path->string path)])
-      (cond [(equal? dir "fail/")
+      (cond [(regexp-match? #rx"fail/$" dir )
              (lambda (p thnk)
                (define-values (pred info) (exn-pred p))
                (parameterize ([error-display-handler void])
                  (with-check-info
                   (['predicates info])
                   (check-exn pred thnk))))]
-            [(equal? dir "succeed/")
+            [(regexp-match? #rx"succeed/$" dir)
              (lambda (p thnk) (check-not-exn thnk))]
-            [(equal? dir "optimizer/tests/")
+            [(regexp-match? #rx"optimizer/tests/$" dir)
              (lambda (p* thnk) (test-opt p))]
-            [(equal? dir "optimizer/missed-optimizations/")
-             (lambda (p* thnk) (test-missed-optimization p))])))
+            [(regexp-match? #rx"optimizer/missed-optimizations/$" dir)
+             (lambda (p* thnk) (test-missed-optimization p))]
+            [else
+              (error 'just-one "Unknown test kind for test: ~a" p*)])))
   (test-suite
    (path->string p)
    (f
