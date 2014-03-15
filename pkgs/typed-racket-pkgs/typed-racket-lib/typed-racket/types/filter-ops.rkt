@@ -36,20 +36,21 @@
 
 ;; is f1 implied by f2?
 (define (implied-atomic? f1 f2)
-  (if (filter-equal? f1 f2)
-      #t
-      (match* (f1 f2)
-              [((OrFilter: fs) f2)
-               (memf (lambda (f) (filter-equal? f f2)) fs)]
-              [((TypeFilter: t1 p1 i1)
-                (TypeFilter: t2 p1 i2))
-               (and (name-ref=? i1 i2)
-                    (subtype t2 t1))]
-              [((NotTypeFilter: t2 p1 i2)
-                (NotTypeFilter: t1 p1 i1))
-               (and (name-ref=? i1 i2)
-                    (subtype t2 t1))]
-              [(_ _) #f])))
+  (match* (f1 f2)
+    [(f f) #t]
+    [((Top:) _) #t]
+    [(_ (Bot:)) #t]
+    [((OrFilter: fs) f2)
+     (memf (lambda (f) (filter-equal? f f2)) fs)]
+    [((TypeFilter: t1 p1 i1)
+      (TypeFilter: t2 p1 i2))
+     (and (name-ref=? i1 i2)
+          (subtype t2 t1))]
+    [((NotTypeFilter: t2 p1 i2)
+      (NotTypeFilter: t1 p1 i1))
+     (and (name-ref=? i1 i2)
+          (subtype t2 t1))]
+    [(_ _) #f]))
 
 (define (hash-name-ref i)
   (if (identifier? i) (hash-id i) i))

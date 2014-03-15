@@ -39,8 +39,14 @@
              -top -top)
       (check implied-atomic?
              -bot -bot)
+      (check implied-atomic?
+             -top -bot)
       (check not-implied-atomic?
              -bot -top)
+      (check implied-atomic?
+             -top (-filter -Symbol 0))
+      (check implied-atomic?
+             (-filter -Symbol 0) -bot)
       (check implied-atomic?
              (-filter (Un -String -Symbol) 0)
              (-filter -Symbol 0))
