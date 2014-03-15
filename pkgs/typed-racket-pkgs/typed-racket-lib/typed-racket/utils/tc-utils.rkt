@@ -24,6 +24,8 @@ don't depend on any other portion of the system
          locate-stx
          warn-unreachable
 
+         reset-errors!
+         report-first-error
          report-all-errors
          tc-error/fields
          tc-error/delayed
@@ -102,13 +104,21 @@ don't depend on any other portion of the system
     (values (lambda () (set-box! v delayed-errors))
             (lambda () (set! delayed-errors (unbox v))))))
 
+(define (reset-errors!) (set! delayed-errors null))
+
+(define (report-first-error)
+  (match (reverse delayed-errors)
+    [(list) (void)]
+    [(cons (struct err (msg stx)) _)
+     (reset-errors!)
+     (raise-typecheck-error msg stx)]))
+
 (define (report-all-errors)
-  (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
     [(list) (void)]
     ;; if there's only one, we don't need multiple-error handling
     [(list (struct err (msg stx)))
-     (reset!)
+     (reset-errors!)
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
@@ -117,7 +127,7 @@ don't depend on any other portion of the system
                                (λ (e) ((error-display-handler) (exn-message e) e))])
                 (raise-typecheck-error (err-msg e) (err-stx e)))
               (err-stx e))])
-       (reset!)
+       (reset-errors!)
        (unless (null? stxs)
          (raise-typecheck-error (format "Summary: ~a errors encountered"
                                         (length stxs))
