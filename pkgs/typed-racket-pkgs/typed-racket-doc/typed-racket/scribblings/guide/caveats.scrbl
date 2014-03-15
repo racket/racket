@@ -90,10 +90,13 @@ of type precision at use sites:
   (object-name #rx"a regexp")
 ]
 
-@section{Classes and units}
+@section{Unsupported features}
 
-Classes and units are not currently supported in Typed Racket. Support
-for classes is under development and will be in a future release.
+Units are not currently supported at all in Typed Racket, but they
+will potentially be supported in a future version.
+
+Most structure type properties do not work in Typed Racket, including
+support for generic interfaces.
 
 @section{Type generalization}
 
