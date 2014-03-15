@@ -964,6 +964,10 @@
       =>
       (ellipse (* 30 3) (* 60 4) 'outline 'purple))
 
+;shall not scale sector with differient width and height
+(test (scale/xy 1/2 3 (sector 10 30 40 'solid 'yellow))
+      =>
+      (error "Scale sector with width/height not equal to 1 not allowed"))
 
 ;; test scaling of bitmaps with alpha (in this case, a completely blank one)
 (let ()

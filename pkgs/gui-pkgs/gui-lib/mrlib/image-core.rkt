@@ -134,6 +134,9 @@ has been moved out).
 ;;  - (make-ellipse width height angle mode color)
 (define-struct/reg-mk ellipse (width height angle mode color) #:transparent #:omit-define-syntaxes)
 ;;
+;;  - (make-sector radius start-theta end-theta mode color)
+(define-struct/reg-mk sector (radius start-theta end-theta mode color) #:transparent #:omit-define-syntaxes)
+;;
 ;;  - (make-text string angle number color
 ;;               number (or/c #f string) family (or/c 'normal 'italic) (or/c 'normal 'light 'bold) boolean)
 ;;    NOTE: font can't be the raw mred font or else copy & paste won't work
@@ -552,6 +555,7 @@ has been moved out).
 
 (define (np-atomic-shape? shape)
   (or (ellipse? shape)
+      (sector? shape)
       (text? shape)
       (and (flip? shape)
            (boolean? (flip-flipped? shape))
@@ -654,6 +658,8 @@ has been moved out).
                    (ellipse-angle shape)
                    (ellipse-mode shape)
                    (scale-color (ellipse-color shape) x-scale y-scale))]
+    [(sector? shape)
+     (error "Sector not defined yet")];;TODO
     [(text? shape)
      ;; should probably do something different here so that
      ;; the y-scale is always greater than 1
@@ -946,6 +952,8 @@ has been moved out).
          (send dc set-brush (mode-color->brush mode color))
          (send dc set-smoothing (mode-color->smoothing mode color))
          (send dc draw-path path dx dy)))]
+    [(sector? np-atomic-shape)
+     (error "Sector not defined yet")];;TODO
     [(flip? np-atomic-shape) 
      (cond
        [(flip-flipped? np-atomic-shape)
@@ -1378,4 +1386,3 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)
 
 (provide np-atomic-shape? atomic-shape? simple-shape? cn-or-simple-shape? normalized-shape?)
-

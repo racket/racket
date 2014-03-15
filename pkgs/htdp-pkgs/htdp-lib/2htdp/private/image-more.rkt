@@ -1295,6 +1295,13 @@
               (make-bb width height height)
               #f))
 
+(define/chk (sector radius start-theta end-theta mode color)
+  (check-mode/color-combination sector 5 mode color)
+  (let ([w/h (* 2 radius)])
+    (make-image (make-translate radius radius (make-ellipse w/h w/h 0 mode color))
+                (make-bb w/h w/h w/h)
+                #f)));;TODO
+
 (define/chk (circle radius mode color)
   (check-mode/color-combination 'circle 3 mode color)
   (let ([w/h (* 2 radius)])
