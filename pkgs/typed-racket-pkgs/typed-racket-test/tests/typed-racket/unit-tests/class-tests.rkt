@@ -51,6 +51,7 @@
                           (init x)
                           (define/public (m x) 0)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"superclass expression should produce a class"]
    ;; Method using argument type
    [tc-e (let ()
@@ -81,6 +82,7 @@
                           (init [x 0])
                           (define/public (m x) (send this z))))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"method not understood.*method name: z"]
    ;; Send to other methods
    [tc-e (let ()
@@ -125,11 +127,13 @@
                     (super-new)
                     (field [x : String "foo"])))
              'not-string)
+           #:ret (ret -Void)
            #:msg #rx"set-field! only allowed with"]
    ;; fails, field's default value has wrong type
    [tc-err (class object% (super-new)
              (: x Symbol)
              (field [x "foo"]))
+           #:ret (ret (-class #:field ([x -Symbol])))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; Fail, field access to missing field
    [tc-err (let ()
@@ -138,6 +142,7 @@
                           (super-new)
                           (define/public (m) (get-field n this))))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"missing an expected field.*field: n"]
    ;; Fail, conflict with parent field
    [tc-err (let ()
@@ -153,6 +158,7 @@
                           (field [n 17])
                           (super-new)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"defines conflicting public field n"]
    ;; Fail, conflict with parent method
    [tc-err (let ()
@@ -165,6 +171,7 @@
                           (super-new)
                           (define/public (m) 17)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"defines conflicting public method m"]
    ;; Inheritance
    [tc-e (let ()
@@ -181,6 +188,7 @@
          -Void]
    ;; fail, superclass expression is not a class with no expected type
    [tc-err (class "foo" (super-new))
+           #:ret (ret (-class))
            #:msg "expected: a class"]
    ;; should fail, too many methods
    [tc-err (let ()
@@ -189,6 +197,7 @@
                           (super-new)
                           (define/public (m) 0)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"public method m that is not in the expected type"]
    ;; same as previous
    [tc-err (let ()
@@ -197,6 +206,7 @@
                           (define/public (m x) (add1 x))
                           (define/public (n) 0)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"public method n that is not in the expected type"]
    ;; fails, too many inits
    [tc-err (let ()
@@ -204,6 +214,7 @@
              (define c% (class object% (super-new)
                           (init x)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"initialization argument x that is not in the expected type"]
    ;; fails, init should be optional but is mandatory
    [tc-err (let ()
@@ -211,6 +222,7 @@
              (define c% (class object% (super-new)
                           (init str)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"missing optional init argument str"]
    ;; fails, too many fields
    [tc-err (let ()
@@ -218,6 +230,7 @@
              (define c% (class object% (super-new)
                           (field [str "foo"] [x 0])))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"public field x that is not in the expected type"]
    ;; test that an init with no annotation still type-checks
    ;; (though it will have the Any type)
@@ -262,6 +275,7 @@
                  (define/public (m) 0)))
 
              (mixin arg-class%))
+           #:ret (ret (-class #:method ([m (t:-> -Integer)] [n (t:-> -String)])))
            #:msg #rx"missing public method n"]
    ;; Fail, bad mixin argument
    [tc-err (let ()
@@ -282,6 +296,7 @@
 
              (mixin arg-class%)
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: \\(Class \\(m \\(-> Symbol\\)\\)\\)"]
    ;; classes that don't use define/public directly
    [tc-e (let ()
@@ -316,6 +331,7 @@
              (: c% (Class (init [x Integer])))
              (define c% (class object% (init x)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"typed classes must call super-new"]
    ;; fails, non-top-level super-new
    ;; FIXME: this case also spits out additional untyped identifier
@@ -324,6 +340,7 @@
              (: c% (Class (init [x Integer])))
              (define c% (class object% (let () (super-new)) (init x)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"typed classes must call super-new"]
    ;; fails, bad super-new argument
    [tc-err (let ()
@@ -332,6 +349,7 @@
              (: d% (Class))
              (define d% (class c% (super-new [x "bad"])))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: Symbol.*given: String"]
    ;; test override
    [tc-e (let ()
@@ -361,7 +379,8 @@
              (define d% (class object% (super-new)
                           (define/override (m y)
                             (string-append (assert y string?) "foo"))))
-             (void))]
+             (void))
+           #:ret (ret -Void)]
    ;; local field access and set!
    [tc-e (let ()
            (: c% (Class (field [x Integer])
@@ -403,6 +422,7 @@
                           (define/public (m y) 'a)
                           (string-append (string->symbol "a") "a")))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: String.*given: Symbol"]
    ;; fails, ill-typed method call
    [tc-err (let ()
@@ -411,6 +431,7 @@
                           (define/public (m y) 'a)
                           (m "foo")))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: Symbol.*given: String"]
    ;; fails, ill-typed field access
    [tc-err (let ()
@@ -419,6 +440,7 @@
                           (field [f "foo"])
                           (set! f 'a)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: String.*given: 'a"]
    ;; test private field
    [tc-e (let ()
@@ -444,12 +466,14 @@
              (: x Symbol)
              (define x 'a)
              (set! x "foo"))
+           #:ret (ret (-class))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; fails, bad private field default
    [tc-err (class object%
              (super-new)
              (: x Symbol)
              (define x "foo"))
+           #:ret (ret (-class))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; ok, synthesis works on private fields
    [tc-e (class object% (super-new)
@@ -470,17 +494,20 @@
              (define/private (x) 'a)
              (: m (-> String))
              (define/public (m) (x)))
+           #:ret (ret (-class #:method ([m (t:-> -String)])))
            #:msg #rx"expected: String.*given: Symbol"]
    ;; fails, not enough annotation on private
    [tc-err (class object% (super-new)
              (define/private (x) 3)
              (: m (-> Integer))
              (define/public (m) (x)))
+           #:ret (ret (-class #:method ([m (t:-> -Integer)])))
            #:msg #rx"Cannot apply expression of type Any"]
    ;; fails, ill-typed private method implementation
    [tc-err (class object% (super-new)
              (: x (-> Symbol))
              (define/private (x) "bad result"))
+           #:ret (ret (-class))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; test optional init arg
    [tc-e (let ()
@@ -508,6 +535,7 @@
                           (: x Integer)
                           (init [x 0])))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"optional init argument x that is not in the expected type"]
    ;; fails, mandatory init not provided
    [tc-err (let ()
@@ -515,6 +543,7 @@
                           (: x Integer)
                           (init x)))
              (new d%))
+           #:ret (ret (-object #:init ([x -Integer #f])))
            #:msg #rx"value not provided for named init arg x"]
    ;; test that provided super-class inits don't count
    ;; towards the type of current class
@@ -532,9 +561,11 @@
                                  (: x Integer)
                                  (init x))
                           (super-new [x 3])))
-             (new c% [x 5]))]
+             (new c% [x 5]))
+           #:ret (ret (-object))]
    ;; fails, super-new can only be called once per class
-   [tc-err (class object% (super-new) (super-new))]
+   [tc-err (class object% (super-new) (super-new))
+           #:ret (ret (-class))]
    ;; test passing an init arg to super-new
    [tc-e (let ()
            (define c% (class (class object% (super-new)
@@ -552,9 +583,11 @@
                     (init x))
              (: x String)
              (init x)
-             (super-new [x x]))]
+             (super-new [x x]))
+           #:ret (ret (-class #:init ([x -String #f])))]
    ;; fails, superclass does not accept this init arg
    [tc-err (class object% (super-new [x 3]))
+           #:ret (ret (-class))
            #:msg "not accepted by superclass"]
    ;; test inherit method
    [tc-e (let ()
@@ -597,16 +630,19 @@
    [tc-err (class (class object% (super-new))
              (super-new)
              (inherit-field [y x]))
+           #:ret (ret (-class))
            #:msg #rx"superclass missing field"]
    ;; fails, missing super method for inherit
-   [tc-err (class (class object% (super-new)) (super-new) (inherit z))]
+   [tc-err (class (class object% (super-new)) (super-new) (inherit z))
+           #:ret (ret (-class))]
    ;; fails, bad argument type to inherited method
    [tc-err (class (class object% (super-new)
                     (: m (Integer -> Integer))
                     (define/public (m x) (add1 x)))
              (super-new)
              (inherit m)
-             (m "foo"))]
+             (m "foo"))
+           #:ret (ret (-class #:method ([m (t:-> -Integer -Integer)])))]
    ;; test that keyword methods type-check
    ;; FIXME: send with keywords does not work yet
    [tc-e (let ()
@@ -745,7 +781,8 @@
              (define c% (class object% (super-new)
                           (: i Integer)
                           (init ([i j]))))
-             (new c% [i 5]))]
+             (new c% [i 5]))
+           #:ret (ret (-object #:init ([j -Integer #f])))]
    ;; test init default values
    [tc-e (let ()
            (class object% (super-new)
@@ -756,7 +793,8 @@
    ;; fails, bad default init value
    [tc-err (class object% (super-new)
              (: z Integer)
-             (init [z "foo"]))]
+             (init [z "foo"]))
+           #:ret (ret (-class #:init ([z -Integer #t])))]
    ;; test init field default value
    [tc-e (let ()
            (define c% (class object% (super-new)
@@ -767,7 +805,8 @@
    ;; fails, wrong init-field default
    [tc-err (class object% (super-new)
              (: x Integer)
-             (init-field ([x y] "foo")))]
+             (init-field ([x y] "foo")))
+           #:ret (ret (-class #:init ([y -Integer #t]) #:field ([y -Integer])))]
    ;; test type-checking method with internal/external
    [tc-err (let ()
              (: c% (Class [n (Integer -> Integer)]))
@@ -786,6 +825,7 @@
    [tc-err (class object% (super-new)
              (define/public (m) (n))
              (define/public (n x) 0))
+           #:ret (ret (-class #:method ([m (t:-> -Bottom)] [n (t:-> Univ -Zero : -true-filter)])))
            #:msg #rx"since it is not a function type"]
    ;; test type-checking for classes without any
    ;; internal type annotations on methods
@@ -834,7 +874,12 @@
              (define (f cls)
                (class cls (super-new)
                  (field [x 5])))
-             (inst f #:row (field [x Integer])))]
+             (inst f #:row (field [x Integer])))
+           #:ret (ret (t:-> (-class 
+                              #:row (make-Row null `([x ,-Integer]) null null #f))
+                            (-class
+                              #:row (make-Row null `([x ,-Integer]) null null #f)
+                              #:field ([x -Integer]))))]
    ;; fails, mixin argument is missing required field
    [tc-err (let ()
              (: f (All (A #:row (field x))
@@ -847,7 +892,10 @@
              (define instantiated
                (inst f #:row (field [y Integer])))
              (instantiated
-              (class object% (super-new))))]
+              (class object% (super-new))))
+           #:ret (ret (-class
+                        #:row (make-Row null (list (list 'y -Integer)) null null #f)
+                        #:field ([x -Integer])))]
    ;; fails, the argument object lacks required fields (with inference)
    [tc-err (let ()
              (: mixin (All (r #:row)
@@ -855,6 +903,8 @@
                              (Class (field [x Any]) #:row-var r))))
              (define (mixin cls) cls)
              (mixin object%))
+           #:ret (ret (-class #:row (make-Row null null null null #f)
+                              #:field ([x Univ])))
            #:msg (regexp-quote "expected: (Class (field (x Any)))")]
    ;; mixin application succeeds
    [tc-e (let ()
@@ -894,7 +944,12 @@
              (define (f cls)
                (class cls (super-new)
                  (field [x 5])))
-             (inst f #:row (field [x Integer])))]
+             (inst f #:row (field [x Integer])))
+           #:ret (ret (t:-> (-class 
+                              #:row (make-Row null `([x ,-Integer]) null null #f))
+                            (-class
+                              #:row (make-Row null `([x ,-Integer]) null null #f)
+                              #:field ([x -Integer]))))]
    ;; Check simple use of pubment
    [tc-e (let ()
            (define c%
@@ -985,6 +1040,7 @@
                  (define/augment (m x)
                    (string-append x "bar"))))
              (send (new c%) m 'b))
+           #:ret (ret -Symbol)
            #:msg #rx"expected: String.*given: Symbol"]
    ;; Fail, bad inner default
    [tc-err (class object%
@@ -992,6 +1048,8 @@
              (: m (Symbol -> Symbol))
              (define/pubment (m x)
                (inner "foo" m x)))
+           #:ret (ret (-class #:method ([m (t:-> -Symbol -Symbol)])
+                              #:augment ([m (t:-> -Symbol -Symbol)])))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; Fail, wrong number of arguments to inner
    [tc-err (class object%
@@ -999,6 +1057,8 @@
              (: m (Integer -> Integer))
              (define/pubment (m x)
                (inner 3 m)))
+           #:ret (ret (-class #:method ([m (t:-> -Integer -Integer)])
+                              #:augment ([m (t:-> -Integer -Integer)])))
            #:msg #rx"wrong number of arguments provided.*expected: 2"]
    ;; Fail, bad augment type
    [tc-err (let ()
@@ -1013,6 +1073,7 @@
                  (super-new)
                  (define/augment (m x) "bad type")))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: Symbol.*given: String"]
    ;; Fail, cannot augment non-augmentable method
    [tc-err (let ()
@@ -1026,6 +1087,7 @@
                  (super-new)
                  (define/augment (m x) 1)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"superclass missing augmentable method m"]
    ;; Pubment with separate internal/external names
    ;; FIXME: broken right now due to : macro changes
@@ -1059,6 +1121,7 @@
                  (: x Symbol)
                  (init-field x)))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: String"]
    ;; test polymorphic class
    [tc-e (let ()
@@ -1079,6 +1142,7 @@
                  (init-field x)
                  (set! x "a")))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: A.*given: String"]
    ;; test polymorphism with keyword
    [tc-e (let ()
@@ -1118,18 +1182,21 @@
              (super-new)
              (: m (X -> X))
              (define/public (m x) "a"))
+           #:ret (ret (-poly (X) (-class #:method ([m (t:-> X X)]))))
            #:msg #rx"expected: X.*given: String"]
    ;; fails because default init value cannot be polymorphic
    [tc-err (class object%
              #:forall (Z)
              (super-new)
              (init-field [x : Z] [y : Z 0]))
+           #:ret (ret (-poly (Z) (-class #:init-field ([x Z #f] [y Z #t]))))
            #:msg #rx"Default init value has wrong type"]
    ;; fails because default field value cannot be polymorphic
    [tc-err (class object%
              #:forall (Z)
              (super-new)
              (field [x : Z "a"]))
+           #:ret (ret (-poly (Z) (-class #:field ([x Z]))))
            #:msg #rx"expected: Z.*given: String"]
    ;; test in-clause type annotations (next several tests)
    [tc-e (let ()
@@ -1174,6 +1241,7 @@
              (super-new)
              (: x String)
              (field [x : Symbol 0]))
+           #:ret (ret (-class #:field ([x -Symbol])))
            #:msg #rx"duplicate type annotation.*new type: String"]
    ;; fails, expected type and annotation don't match
    [tc-err (let ()
@@ -1181,11 +1249,15 @@
              (define c% (class object% (super-new)
                           (field [x : Symbol 'a])))
              (void))
+           #:ret (ret -Void)
            #:msg #rx"expected: \\(Class \\(field \\(x String"]
    ;; fails, but make sure it's not an internal error
    [tc-err (class object% (super-new)
              (define/pubment (foo x) 0)
              (define/public (g x) (foo 3)))
+           #:ret (ret (-class #:method ([g (t:-> Univ -Bottom)]
+                                        [foo (t:-> Univ -Zero : -true-filter)])
+                              #:augment ([foo top-func])))
            #:msg #rx"Cannot apply expression of type Any"]
    ;; the next several tests are for positional init arguments
    [tc-e (let ()
@@ -1250,6 +1322,7 @@
                           (super-new)
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
+           #:ret (ret (make-Instance (make-Class #f null null null null (-Tuple (list -Symbol)))))
            #:msg #rx"expected: Symbol.*given: String"]
    ;; PR 14408, test init-field order
    [tc-e (let ()
@@ -1272,6 +1345,7 @@
          -Void]
    ;; fail, too many positional arguments to superclass
    [tc-err (class object% (super-make-object "foo"))
+           #:ret (ret (-class))
            #:msg #rx"too many positional init arguments"]
    ;; check that case-lambda methods work
    [tc-e (let ()
@@ -1295,6 +1369,7 @@
              (: m (case-> (Any -> Integer)))
              (public m)
              (define m (case-lambda [(x) "bad"])))
+           #:ret (ret (-class #:method [(m (t:-> Univ -Integer))]))
            #:msg #rx"expected: Integer.*given: String"]
    ;; test that rest args work
    [tc-e (let ()
