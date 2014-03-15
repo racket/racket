@@ -109,14 +109,18 @@
                 (tc-expr/check e (ret t))
                 t)))]
       [(tc-result1: (app resolve (HeterogeneousVector: ts)))
-       (unless (= (length ts) (syntax-length #'(args ...)))
-         (tc-error/expr "expected vector with ~a elements, but got ~a"
-                        (length ts)
-                        (make-HeterogeneousVector (stx-map tc-expr/t #'(args ...)))))
-       (for ([e (in-syntax #'(args ...))]
-             [t (in-list ts)])
-         (tc-expr/check e (ret t)))
-       expected]
+       (cond
+         [(= (length ts) (syntax-length #'(args ...)))
+          (ret
+            (make-HeterogeneousVector
+              (for/list ([e (in-syntax #'(args ...))]
+                         [t (in-list ts)])
+                (tc-expr/check/t e (ret t))))
+            -true-filter)]
+         [else
+          (tc-error/expr #:return (ret -Bottom)
+            "expected vector with ~a elements, but got ~a"
+            (length ts) (make-HeterogeneousVector (stx-map tc-expr/t #'(args ...))))])]
       ;; If the expected type is a union, then we examine just the parts
       ;; of the union that are vectors.  If there's only one of those,
       ;; we re-run this whole algorithm with that.  Otherwise, we treat

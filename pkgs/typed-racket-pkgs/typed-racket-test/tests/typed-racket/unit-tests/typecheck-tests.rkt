@@ -2593,6 +2593,11 @@
        [tc-e (reverse (list 'x 'y))
              #:ret (ret (-Tuple (list (-val 'y) (-val 'x))))
              #:expected (ret (-Tuple (list (-val 'y) (-val 'x))) -no-filter -no-obj)]
+
+       [tc-err (vector 1 2)
+         #:ret (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -empty-obj)
+         #:expected (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -no-obj)]
+
         )
   (test-suite
    "tc-literal tests"
