@@ -25,7 +25,8 @@ by @racket[load-xref], @racket[#f] otherwise.}
                                      (lambda (_tag) #f)]
                     [#:render% using-render% (implementation?/c render<%>)
                                (render-mixin render%)]
-                    [#:root root-path (or/c path-string? false/c) #f])
+                    [#:root root-path (or/c path-string? false/c) #f]
+                    [#:doc-id doc-id-str (or/c path-string? false/c) #f])
          xref?]{
 
 Creates a cross-reference record given a list of functions,
@@ -38,9 +39,11 @@ serialize-info]. The result of @racket[_source] can optionally be
 another function, which is in turn responsible for returning a list of
 @racket[_info]s. Finally, each @racket[_info] can be either serialized
 information, a @racket[#f] to be ignored, or a value produced by
-@racket[make-data+root] from which @racket[_data] part is used as
-serialized information and the @racket[_root] part overrides
-@racket[root-path] for deserialization.
+@racket[make-data+root] or @racket[make-data+root+doc-id], from which
+@racket[_data] part is used as serialized information, the
+@racket[_root] part overrides @racket[root-path] for deserialization,
+and the @racket[_doc-id] part (if any) overrides
+@racket[doc-id-string] to identify the source document.
 
 The @racket[demand-source] function can effectively add a new source
 to @racket[sources] in response to a search for information on the
@@ -60,8 +63,16 @@ but a @racket[make-data+root] result for any @racket[_info] supplies
 an alternate path for deserialization of the @racket[_info]'s
 @racket[_data].
 
+If @racket[doc-id-str] is not @racket[#f], it identifies each
+cross-reference entry as originating from @racket[doc-id-str]. This
+identification is used when a rendering link to the cross-reference
+entry as an external query; see the @racket[set-external-tag-path]
+method of @racket[render-mixin].
+
 Use @racket[load-collections-xref] from @racketmodname[setup/xref] to
-get all cross-reference information for installed documentation.}
+get all cross-reference information for installed documentation.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:doc-id] argument.}]}
 
 
 @defproc[(xref-binding->definition-tag [xref xref?]
@@ -213,3 +224,13 @@ the destination for the index link into the main document.}
 A value constructed by @racket[make-data+root] can be returned by a
 source procedure for @racket[load-xref] to specify a path used for
 deserialization.}
+
+@deftogether[(
+@defproc[(data+root+doc-id? [v any/c]) boolean?]
+@defproc[(make-data+root+doc-id [data any/c] [root (or/c #f path-string?)] [doc-id string?]) data+root+doc-id?]
+)]{
+
+Extends @racket[make-data+root+doc-id] to support an
+document-identifying string (see @racket[load-xref]).
+
+@history[#:added "1.1"]}

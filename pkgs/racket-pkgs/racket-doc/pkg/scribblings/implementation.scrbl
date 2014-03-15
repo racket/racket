@@ -6,6 +6,7 @@
                      setup/main-collects
                      setup/path-to-relative
                      setup/dirs
+                     (only-in scribble/manual secref)
                      (only-in scribble/base-render render%)
                      (only-in scribble/html-render render-mixin)
                      (only-in scribble/xref load-xref make-data+root)))
@@ -176,10 +177,15 @@ are not available, the query link is left unmodified to go through a
 server.
 
 The @filepath{local-redirect.js} and @filepath{local-user-redirect.js}
-files embed a copy of the cross-reference database, where the copy is
-specialized and compacted. These JavaScript files are generated as
-part of the special @filepath{local-redirect} document that is
-implemented by the @pkgname{racket-index} package.
+files map documentation-directory names to specific paths. Most query
+references contain a documentation-directory name and a relative path
+within the directory, in which case the mapping from directory names
+to paths is sufficient. Indirect links, such as those created by
+@racket[(seclink #:indirect? #t ...)], embed a cross-reference key, and
+so @filepath{local-redirect.js} and @filepath{local-user-redirect.js}
+must also embed a part of the cross-reference database. The JavaScript
+files are generated as part of the special @filepath{local-redirect}
+document that is implemented by the @pkgname{racket-index} package.
 
 The indirection through @filepath{local-redirect.js} and
 @filepath{local-user-redirect.js} reduces the problem of relative
@@ -187,7 +193,7 @@ links to the problem of referencing those two files. They are
 referenced as absolute paths in a user-specific document build. To
 create a @tech{built package} or @tech{binary package} that includes
 documentation, each @filepath{.html} file must be modified to remove
-the absolute path, and then each @filepath{.html} file must be
+the absolute paths, and then each @filepath{.html} file must be
 modified again on installation to put the target installation's paths
 in path.
 

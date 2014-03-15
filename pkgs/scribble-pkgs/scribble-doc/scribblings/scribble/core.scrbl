@@ -1354,6 +1354,16 @@ whether the resulting information originated from an external source
 (i.e., a different document).}
 
 
+@defproc[(resolve-get/ext-id [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
+         (values any/c (or/c boolean? string?))]{
+
+Like @racket[render-get/ext?], but the second result can be a string
+to indicate the source document's identification as established via
+@racket[load-xref] and a @racket[#:doc-id] argument.
+
+@history[#:added "1.1"]}
+
+
 @defproc[(resolve-search [dep-key any/c] [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
          void?]{
 

@@ -3,9 +3,11 @@
          racket/serialize
          racket/class
          racket/match
+         racket/set
          setup/dirs
          net/url
          scribble/html-properties
+         setup/xref
          "index-scope.rkt")
 
 (provide make-local-redirect)
@@ -13,17 +15,17 @@
 (define (rewrite-code user?)
   (define prefix (if user? "user_" ""))
   @string-append|{
-    function |@|prefix|bsearch(str, start, end) {
+    function |@|prefix|bsearch(str, a, start, end) {
        if (start >= end)
          return false;
        else {
          var mid = Math.floor((start + end) / 2);
-         if (|@|prefix|link_targets[mid][0] == str)
+         if (a[mid][0] == str)
            return mid;
-         else if (|@|prefix|link_targets[mid][0] < str)
-           return |@|prefix|bsearch(str, mid+1, end);
+         else if (a[mid][0] < str)
+           return |@|prefix|bsearch(str, a, mid+1, end);
          else
-           return |@|prefix|bsearch(str, start, mid);
+           return |@|prefix|bsearch(str, a, start, mid);
        }
     }
 
@@ -33,9 +35,26 @@
        var elements = document.getElementsByClassName("Sq");
        for (var i = 0; i < elements.length; i++) {
          var elem = elements[i];
-         var n = elem.href.match(/tag=[^&]*/);
-         if (n) {
-           var pos = |@|prefix|bsearch(decodeURIComponent(n[0].substring(4)),
+         var doc = elem.href.match(/doc=[^&]*/);
+         var rel = elem.href.match(/rel=[^&]*/);
+         var tag = elem.href.match(/tag=[^&]*/);
+         if (doc && rel) {
+           var pos = |@|prefix|bsearch(decodeURIComponent(doc[0].substring(4)),
+                                       |@|prefix|link_dirs,
+                                       0,
+                                       |@|prefix|link_dirs.length);
+           if (pos) {
+             var p = |@|prefix|link_dirs[pos][1];
+             if (|@|prefix|link_target_prefix) {
+               p = |@|prefix|link_target_prefix + p;
+             }
+             elem.href = p + "/" + decodeURIComponent(rel[0].substring(4));
+             tag = false;
+           }
+         }
+         if (tag) {
+           var pos = |@|prefix|bsearch(decodeURIComponent(tag[0].substring(4)),
+                                       |@|prefix|link_targets,
                                        0,
                                        |@|prefix|link_targets.length);
            if (pos) {
@@ -43,7 +62,6 @@
              if (|@|prefix|link_target_prefix) {
                p = |@|prefix|link_target_prefix + p;
              }
-             elem.href = p;
            }
          }
        }
@@ -82,11 +100,18 @@
     #f
     null
     (lambda (renderer p ri)
+      (define doc-dirs (get-rendered-doc-directories (not user?) user?))
       (define keys (if (and main-at-user? (not user?))
                        ;; If there's no installation-scope "doc", then
                        ;; the "main" redirection table is useless.
                        null
-                       (resolve-get-keys #f ri (lambda (v) #t))))
+                       (resolve-get-keys #f ri
+                                         (lambda (v)
+                                           ;; Support key-based indirect only on sections
+                                           ;; and module names:
+                                           (define t (car v))
+                                           (or (eq? t 'part)
+                                               (eq? t 'mod-path))))))
       (define (target? v) (and (vector? v) (= 5 (vector-length v))))
       (define dest-dir (send renderer get-dest-directory #t))
       (define (make-dest user?)
@@ -124,13 +149,26 @@
                                                      (path->directory-path
                                                       (build-path (find-doc-dir) "local-redirect")))))
            (newline o))
+         (fprintf o "var ~alink_dirs = [" (if user? "user_" ""))
+         (define (extract-name e)
+           (let-values ([(base name dir?) (split-path e)])
+             (path->string name)))
+         (for ([e (in-list (sort doc-dirs string<? #:key extract-name))]
+               [i (in-naturals)])
+           (define name (extract-name e))
+           (fprintf o (if (zero? i) "\n" ",\n"))
+           (fprintf o " [~s, ~s]" name (if user?
+                                           (url->string (path->url e))
+                                           (format "../~a" name))))
+         (fprintf o "];\n\n")
          (fprintf o "var ~alink_targets = [" (if user? "user_" ""))
          (for ([e (in-list db)]
                [i (in-naturals)])
            (fprintf o (if (zero? i) "\n" ",\n"))
            (fprintf o " [~s, ~s]" (car e) (cadr e)))
          (fprintf o "];\n\n")
-         (fprintf o (rewrite-code user?))))
+         (fprintf o (rewrite-code user?))
+         (newline o)))
       (unless (file-exists? alt-dest)
         ;; make empty alternate file; in `user?` mode, this
         ;; file will get used only when "racket-index" is not
