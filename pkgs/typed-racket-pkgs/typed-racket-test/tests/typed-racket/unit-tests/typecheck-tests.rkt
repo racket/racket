@@ -37,7 +37,7 @@
     syntax/parse
     (for-template (only-in typed-racket/typed-racket do-standard-inits))
     (typecheck typechecker)
-    (utils mutated-vars)
+    (utils mutated-vars tc-utils)
     (env mvar-env))
   (provide
     test-literal test-literal/fail
@@ -79,21 +79,34 @@
                #:expected golden
                "tc-expr did not return the expected value"))))
 
-  ;; test/fail syntax? (or/c string? regexp?) (option/c tc-results?) -> void?
-  ;; Checks that the expression doesn't typecheck using the expected type and the golden message
-  (define (test/fail code message expected)
-    (with-handlers ([exn:fail:syntax?
-                     (lambda (exn)
-                       (when message
-                         (unless (regexp-match? message (exn-message exn))
-                           (raise (cross-phase-failure
-                                    #:actual (exn-message exn)
-                                    #:expected message
-                                    "tc-expr raised the wrong error message")))))])
-      (define result (tc (tr-expand code) expected))
-      (raise (cross-phase-failure
-               #:actual result
-               "tc-expr did not raise an error"))))
+  ;; test/fail syntax? tc-results? (or/c string? regexp?) (option/c tc-results?) -> void?
+  ;; Checks that the expression doesn't typecheck using the expected type, returns the golden type,
+  ;; and raises an error message matching the golden message
+  (define (test/fail code golden message expected)
+    (dynamic-wind
+      void
+      (λ ()
+        (with-handlers ([exn:fail:syntax?
+                         (lambda (exn)
+                           (when message
+                             (unless (regexp-match? message (exn-message exn))
+                               (raise (cross-phase-failure
+                                        #:actual (exn-message exn)
+                                        #:expected message
+                                        "tc-expr raised the wrong error message")))))])
+          (define result
+            (parameterize ([delay-errors? #t])
+              (tc (tr-expand code) expected)))
+          (unless (equal? golden result)
+            (raise (cross-phase-failure
+                     #:actual result
+                     #:expected golden
+                     "tc-expr did not return the expected value")))
+          (report-first-error)
+          (raise (cross-phase-failure
+                   #:actual result
+                   "tc-expr did not raise an error"))))
+      (λ () (reset-errors!))))
 
 
   ;; test-literal syntax? tc-results? (option/c tc-results?) -> void?
@@ -153,6 +166,10 @@
     (pattern ty:expr #:attr v #'(ret ty))
     (pattern (~seq #:ret r:expr) #:attr v #'r))
 
+  (define-splicing-syntax-class err-return
+    (pattern (~seq #:ret r:expr) #:attr v #'r)
+    (pattern (~seq) #:attr v #'(ret -Bottom)))
+
   (define-splicing-syntax-class expected
     (pattern (~seq #:expected v:expr))
     (pattern (~seq) #:attr v #'#f))
@@ -205,10 +222,10 @@
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
   (syntax-parse stx
-    [(_ code:expr ex:expected msg:expected-msg)
+    [(_ code:expr ret:err-return ex:expected msg:expected-msg)
      (quasisyntax/loc stx
         (test-phase1 #,(syntax/loc #'code (FAIL code))
-           (test/fail (quote-syntax code) msg.v ex.v)))]))
+           (test/fail (quote-syntax code) ret.v msg.v ex.v)))]))
 
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
@@ -256,7 +273,7 @@
   ;; Needed for constructing TR types in expected values
   (for-syntax
     (rep type-rep filter-rep object-rep)
-    (rename-in (types abbrev union numeric-tower filter-ops utils)
+    (rename-in (types abbrev union numeric-tower filter-ops utils resolve)
                [Un t:Un]
                [-> t:->])))
 
@@ -392,8 +409,12 @@
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
         [tc-e/t #() (make-HeterogeneousVector (list))]
-        [tc-err #(3) #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
-        [tc-err #(3 4 5) #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
+        [tc-err #(3) 
+           #:ret (ret (make-HeterogeneousVector (list -Integer -Integer)))
+           #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
+        [tc-err #(3 4 5)
+           #:ret (ret (make-HeterogeneousVector (list -Integer -Integer)))
+           #:expected (ret (make-HeterogeneousVector (list -Integer -Integer)))]
         [tc-e/t #(3 4 5) (make-HeterogeneousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e/t '(2 3 #t) (-lst* -PosByte -PosByte (-val #t))]
@@ -401,7 +422,9 @@
         [tc-e (vector 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
         [tc-e (vector) (make-HeterogeneousVector (list))]
         [tc-e (vector) (make-HeterogeneousVector (list)) #:expected tc-any-results]
-        [tc-err (vector) #:expected (ret -Integer)]
+        [tc-err (vector)
+           #:ret (ret -Integer)
+           #:expected (ret -Integer)]
         [tc-e (vector-immutable 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
         [tc-e (make-vector 4 1) (-vec -Integer)]
         [tc-e (build-vector 4 (lambda (x) 1)) (-vec -Integer)]
@@ -619,7 +642,8 @@
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
                           "foo"
-                          x))]
+                          x))
+          #:ret (ret (t:Un -String (-val 'foo)))]
 
         [tc-e (let: ([x : (U String 5) 5])
                       (if (eq? x 5)
@@ -770,15 +794,19 @@
                   (lambda: ([x : Any]) (if (p? x) x 12)))
                 (t:-> Univ Univ)]
 
-        [tc-e (not 1) #:ret (ret -Boolean -false-filter)]
+        [tc-e (not 1)
+          #:ret (ret -Boolean -false-filter)]
 
-        [tc-err ((lambda () 1) 2)]
+        [tc-err ((lambda () 1) 2)
+          #:ret (ret (-val 1) -true-filter)]
         [tc-err (apply (lambda () 1) '(2))]
-        [tc-err ((lambda: ([x : Any] [y : Any]) 1) 2)]
+        [tc-err ((lambda: ([x : Any] [y : Any]) 1) 2)
+          #:ret (ret (-val 1) -true-filter)]
         [tc-err (map map '(2))]
         [tc-err ((plambda: (a) ([x : (a -> a)] [y : a]) (x y)) 5)]
         [tc-err ((plambda: (a) ([x : a] [y : a]) x) 5)]
-        [tc-err (ann 5 : String)]
+        [tc-err (ann 5 : String)
+          #:ret (ret -String -true-filter)]
 
         ;; these don't work because the type annotation gets lost in marshalling
         #|
@@ -801,7 +829,8 @@
 
         [tc-err (let ([x (add1 5)])
                   (set! x "foo")
-                  x)]
+                  x)
+          #:ret (ret -Integer)]
         ;; w-c-m
         [tc-e/t (with-continuation-mark
                   ((inst make-continuation-mark-key Symbol)) 'mark
@@ -824,12 +853,15 @@
                                 (lambda: ([x : Number]) (+ x 1)))
               -Number]
         [tc-err (call-with-values (lambda () 1)
-                                  (lambda: () 2))]
+                                  (lambda: () 2))
+          #:ret (ret -PosByte -true-filter)]
 
         [tc-err (call-with-values (lambda () (values 2))
-                                  (lambda: ([x : Number] [y : Number]) (+ x y)))]
+                                  (lambda: ([x : Number] [y : Number]) (+ x y)))
+          #:ret (ret -Number)]
         [tc-err (call-with-values 5
-                                  (lambda: ([x : Number] [y : Number]) (+ x y)))]
+                                  (lambda: ([x : Number] [y : Number]) (+ x y)))
+          #:ret (ret -Number)]
         [tc-err (call-with-values (lambda () (values 2))
                                   5)]
         [tc-err (call-with-values (lambda () (values 2 1))
@@ -916,13 +948,15 @@
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PosByte)]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -PosByte))]
-        [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))]
+        [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))
+         #:ret (ret (-polydots (b) (->... (list) (b b) -Bottom)) -true-filter)]
         [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
                 (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
 
         [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
                           (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
-                                 1 1 1 1 w))]
+                                 1 1 1 1 w))
+         #:ret (ret (-polydots (a) (->... (list -String) (-Number a) -Bottom)) -true-filter)]
 
         [tc-err (plambda: (a ...) ([z : String] . [w : Number])
                           (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
@@ -962,21 +996,25 @@
 
         ;; error tests
         [tc-err (+ 3 #f)]
-        [tc-err (let: ([x : Number #f]) x)]
-        [tc-err (let: ([x : Number #f]) (+ 1 x))]
+        [tc-err (let: ([x : Number #f]) x)
+          #:ret (ret -Number)]
+        [tc-err (let: ([x : Number #f]) (+ 1 x))
+          #:ret (ret -Number)]
 
         [tc-err
          (let: ([x : Any '(foo)])
                (if (null? x) 1
                    (if (list? x)
                        (add1 x)
-                       12)))]
+                       12)))
+         #:ret (ret -PosByte)]
 
         [tc-err (let*: ([x : Any 1]
                         [f : (-> Void) (lambda () (set! x 'foo))])
                        (if (number? x)
                            (begin (f) (add1 x))
-                           12))]
+                           12))
+          #:ret (ret -PosByte)]
 
         [tc-err (ann 3 (Rec a a))]
         [tc-err (ann 3 (Rec a (U a 3)))]
@@ -1077,9 +1115,11 @@
         [tc-e (hash-has-key? (make-hash '((1 . 2))) 1) -Boolean]
 
         [tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
-                        (fact 20))]
+                        (fact 20))
+          #:ret (ret -Number)]
 
-        [tc-err (ann (lambda: ([x : Any]) #f) (Any -> Boolean : String))]
+        [tc-err (ann (lambda: ([x : Any]) #f) (Any -> Boolean : String))
+          #:ret (ret (make-pred-ty -String) -true-filter)]
 
 
         [tc-e (time (+ 3 4)) -PosIndex]
@@ -1139,11 +1179,13 @@
                 (vector-ref #("a" "b") (sub1 x))
                 (vector-ref #("a" "b") (- x 1)))
               -String]
-        [tc-err (string-append "bar" (if (zero? (ann 0.0 Float)) #f "foo"))]
+        [tc-err (string-append "bar" (if (zero? (ann 0.0 Float)) #f "foo"))
+          #:ret (ret -String)]
         [tc-err (do: : Void
                      ([j : Natural (+ i 'a) (+ j i)])
                      ((>= j 10))
-                     #f)]
+                     #f)
+          #:ret (ret -Void -no-filter -no-obj)]
         [tc-err (apply +)]
         [tc-e/t
          (let ([x eof])
@@ -1153,7 +1195,8 @@
          (make-pred-ty (-val eof))]
         [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
               (-lst -Number)]
-        [tc-err (list (values 1 2))]
+        [tc-err (list (values 1 2))
+          #:ret (ret (-Tuple (list -Bottom)))]
 
 
         ;;Path tests
@@ -1298,13 +1341,16 @@
         (tc-e (regexp-match "foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
         (tc-e (regexp-match #"foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
-        (tc-err (regexp-try-match "foo" "foobar"))
+        (tc-err (regexp-try-match "foo" "foobar")
+          #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
         (tc-e (regexp-try-match "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
-        (tc-err (regexp-match-peek "foo" "foobar"))
+        (tc-err (regexp-match-peek "foo" "foobar")
+          #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
         (tc-e (regexp-match-peek "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
-        (tc-err (regexp-match-peek-immediate "foo" "foobar"))
+        (tc-err (regexp-match-peek-immediate "foo" "foobar")
+          #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
         (tc-e (regexp-match-peek-immediate "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
 
@@ -1316,7 +1362,8 @@
         (tc-e (regexp-split #"foo" "foobar") (-pair -Bytes (-lst -Bytes)))
         (tc-e (regexp-split #"foo" #"foobar") (-pair -Bytes (-lst -Bytes)))
 
-        (tc-err (regexp-split "foo" (path->string "foobar")))
+        (tc-err (regexp-split "foo" (path->string "foobar"))
+          #:ret (ret (-pair -String (-lst -String))))
 
         (tc-e (regexp-replace "foo" "foobar" "rep") -String)
         (tc-e (regexp-replace #"foo" "foobar" "rep") -Bytes)
@@ -1619,11 +1666,14 @@
         (tc-e (guard-evt (inst make-channel String))
               (make-Evt -String))
         (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
-                  (if (handle-evt? a) a (string->symbol a))))
+                  (if (handle-evt? a) a (string->symbol a)))
+          #:ret (ret (t:Un -Symbol (make-Evt Univ))))
         (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
-                  (if (channel-put-evt? a) a (string->symbol a))))
+                  (if (channel-put-evt? a) a (string->symbol a)))
+          #:ret (ret (t:Un -Symbol (make-Evt (-mu x (make-Evt x))))))
         (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
-                  (if (semaphore-peek-evt? a) a (string->symbol a))))
+                  (if (semaphore-peek-evt? a) a (string->symbol a)))
+          #:ret (ret (t:Un -Symbol (make-Evt (-mu x (make-Evt x))))))
 
         ;Semaphores
         (tc-e (make-semaphore) -Semaphore)
@@ -1686,7 +1736,8 @@
                     srcloc)
               -Void)
         [tc-e (raise (exn:fail:contract "1" (current-continuation-marks))) (t:Un)]
-        [tc-err (exn:fail:contract)]
+        [tc-err (exn:fail:contract)
+          #:ret (ret (resolve (make-Name #'exn:fail:contract null #f #t)))]
         [tc-e (#%variable-reference) -Variable-Reference]
         [tc-e (#%variable-reference x) -Variable-Reference]
         [tc-e (#%variable-reference +) -Variable-Reference]
@@ -1777,7 +1828,8 @@
               Univ]
         [tc-e ((inst vector Index) 0)
               (-vec -Index)]
-        [tc-err ((inst list Void) 1 2 3)]
+        [tc-err ((inst list Void) 1 2 3)
+          #:ret (ret (-lst -Void))]
         [tc-e ((inst list Any) 1 2 3)
               (-lst Univ)]
 
@@ -1795,7 +1847,8 @@
                   (define (g x) 2))]
         [tc-err
           (let ((s (ann (set 2) Any)))
-            (if (set? s) (ann s (Setof String)) ((inst set String))))]
+            (if (set? s) (ann s (Setof String)) ((inst set String))))
+          #:ret (ret (-set -String))]
 
         [tc-e (split-at (list 0 2 3 4 5 6) 3)
               (list (-lst -Byte) (-lst -Byte))]
@@ -1816,7 +1869,8 @@
         [tc-err
           (ann
             ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
-            (Listof Symbol))]
+            (Listof Symbol))
+          #:ret (ret (-lst -Symbol) -no-filter -no-obj)]
         [tc-e (filter values empty)
               (-lst -Bottom)]
         [tc-e (lambda lst (map (plambda: (b) ([x : b]) x) lst))
@@ -1835,9 +1889,11 @@
         [tc-e/t (ann (ann 'x Symbol) Symbol) -Symbol]
 
         [tc-err (lambda (x) x)
-                #:expected (ret (-poly (a) (cl->* (t:-> a a) (t:-> a a a))))]
+          #:ret (ret (-poly (a) (cl->* (t:-> a a) (t:-> a a a))))
+          #:expected (ret (-poly (a) (cl->* (t:-> a a) (t:-> a a a))))]
         [tc-err (plambda: (A) ((x : A)) x)
-                #:expected (ret (list -Symbol -Symbol))]
+          #:ret (ret (list -Symbol -Symbol))
+          #:expected (ret (list -Symbol -Symbol))]
 
         [tc-e/t
           (case-lambda
@@ -2033,8 +2089,10 @@
              (make-StructTypeTop)]
        [tc-err (let-values ([(name _1 _2 getter setter _3 _4 _5)
                              (struct-type-info struct:arity-at-least)])
-                 (getter 'bad 0))]
-       [tc-err (struct-type-make-constructor 'bad)]
+                 (getter 'bad 0))
+         #:ret (ret Univ)]
+       [tc-err (struct-type-make-constructor 'bad)
+         #:ret (ret top-func)]
        [tc-err (struct-type-make-predicate 'bad)]
 
        [tc-e
@@ -2176,9 +2234,11 @@
        [tc-e ((tr:lambda (x #:y y . args) y) 'a #:y 'b) Univ]
        [tc-e ((tr:lambda (x #:y [y 'y] . args) y) 'a #:y 'b) Univ]
        [tc-err (let () (tr:define (f x #:y y) (string-append x "foo")) (void))
-               #:msg #rx"expected: String.*given: Any"]
+         #:ret (ret -Void)
+         #:msg #rx"expected: String.*given: Any"]
        [tc-err (let () (tr:define (f x #:y y) y) (f "a"))
-               #:msg #rx"required keyword was not supplied"]
+         #:ret (ret Univ)
+         #:msg #rx"required keyword was not supplied"]
 
        ;; test lambdas with mixed type expressions, typed keywords, typed
        ;; optional arguments
@@ -2199,7 +2259,8 @@
        [tc-e (tr:lambda (x z [y : String]) : String (string-append y "b"))
              #:ret (ret (t:-> Univ Univ -String -String) -true-filter)]
        [tc-err (tr:lambda (x [y : String]) : Symbol (string-append y "b"))
-               #:msg "expected: Symbol.*given: String"]
+         #:ret (ret (t:-> Univ -String -Symbol) -true-filter)
+         #:msg "expected: Symbol.*given: String"]
        [tc-err (tr:lambda (x [y : String "a"] z) (string-append y "b"))
                #:msg "expected optional lambda argument"]
        [tc-e (tr:lambda (x [y : String "a"]) (string-append y "b"))
@@ -2521,10 +2582,14 @@
                #:msg "type information"]
        ;; make sure no-binding cases like the middle expression are checked
        [tc-err (let () (define r "r") (string-append r 'foo) (define x "x") "y")
-               #:msg "expected: String.*given: 'foo"]
+         #:ret (ret -String -true-filter)
+         #:msg "expected: String.*given: 'foo"]
 
+       ;; Polydotted types are not checking equality correctly
        [tc-err (ann (lambda () (let ([my-values values]) (my-values)))
-                 (All (A ...) (-> (Values Symbol ... A))))]
+                 (All (A ...) (-> (Values Symbol ... A))))
+         #:ret (ret (-polydots (A) (t:-> (-values-dots null -Symbol 'A))) -true-filter)]
+
         )
   (test-suite
    "tc-literal tests"
