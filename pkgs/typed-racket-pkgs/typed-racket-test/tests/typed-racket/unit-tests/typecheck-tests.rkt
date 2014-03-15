@@ -1,8 +1,23 @@
 #lang racket/base
 
+(module test-structs racket/base
+  (module internal racket/kernel
+    (#%declare #:cross-phase-persistent)
+    (#%provide cross-phase-failure cross-phase-failure? cross-phase-failure-acc)
+    (define-values
+      (cross-phase-failure-struct-type cross-phase-failure cross-phase-failure?
+                                       cross-phase-failure-acc cross-phase-failure-mut)
+      (make-struct-type 'cross-phase-failure #f 1 0 #f null #f #f (list 0))))
+  (require 'internal)
+  (provide cross-phase-failure cross-phase-failure? cross-phase-failure-message)
+
+  (define-values (cross-phase-failure-message)
+    (make-struct-field-accessor cross-phase-failure-acc 0 'message)))
+
 ;; Functions for testing correct behavior of typechecking
 (module tester racket/base
   (require
+    (submod ".." test-structs)
     typed-racket/utils/utils
     racket/base
     syntax/parse
@@ -10,7 +25,7 @@
     (typecheck typechecker)
     (utils mutated-vars)
     (env mvar-env))
-  (provide test-literal test test/proc tc tc-literal tr-expand)
+  (provide test-literal test-literal/fail test test/proc tc tc-literal tr-expand)
 
 
   (do-standard-inits)
@@ -45,18 +60,29 @@
     (unless (equal? golden result)
       (error 'test "failed: ~a != ~a" golden result)))
 
-  ;; test/literal syntax? tc-results? [(option/c tc-results?)] -> void?
+  ;; test-literal syntax? tc-results? (option/c tc-results?) -> void?
   ;; Checks that the literal typechecks using the expected type to the golden result.
   (define (test-literal literal golden expected)
     (define result (tc-literal literal expected))
     (unless (equal? golden result)
-      (error 'test "failed: ~a != ~a" golden result))))
+      (raise (cross-phase-failure (format "~a != ~a" golden result)))))
+
+  ;; test-literal/fail syntax? (or/c string? regexp?) (option/c tc-results?) -> void?
+  ;; Checks that the literal doesn't typecheck using the expected type and the golden message
+  (define (test-literal/fail literal message expected)
+    (with-handlers ([exn:fail:syntax?
+                     (lambda (exn)
+                       (unless (regexp-match? message (exn-message exn))
+                         (raise (cross-phase-failure "tc-literal raised the wrong error message"))))])
+      (tc-literal literal expected)
+      (raise (cross-phase-failure "tc-literal didn't raise an error")))))
 
 
 (require
+  'test-structs
   "evaluator.rkt"
   (except-in "test-utils.rkt" private)
-  syntax/location
+  syntax/location syntax/srcloc
   (for-syntax
     racket/base
     syntax/parse
@@ -106,6 +132,15 @@
                           (regexp-match? #,msg (exn-message exn)))))
         (lambda () #,body)))))
 
+(define-syntax (test-phase1 stx)
+  (syntax-parse stx
+    ([_ name:expr body:expr ...]
+     (quasisyntax/loc stx
+       (test-case (format "~a ~a" (quote-line-number name) 'name)
+         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
+           (with-handlers ([cross-phase-failure? (λ (tf) (fail-check (cross-phase-failure-message tf)))])
+             (phase1-eval body ...))))))))
+
 
 ;;Constructs the syntax that calls eval and returns the answer to the user
 (define-syntax (tc-e stx)
@@ -125,8 +160,9 @@
 (define-syntax (tc-l stx)
   (syntax-parse stx
     [(_ lit ty exp:expected)
-     (test-no-error stx (syntax/loc #'lit (LITERAL lit))
-       #'(phase1-eval (test-literal #'lit ty exp.v)))]))
+     (quasisyntax/loc stx
+       (test-phase1 #,(syntax/loc #'lit (LITERAL lit))
+         (test-literal #'lit ty exp.v)))]))
 
 
 ;; check that typechecking this expression fails
@@ -139,9 +175,9 @@
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
     [(_ lit:expr ex:expected msg:expected-msg)
-     (test-syntax-error stx #'(syntax/loc #'lit (LITERAL/FAIL lit)) #'msg.v
-       #'(phase1-eval (tc-literal #'lit ex.v)))]))
-
+     (quasisyntax/loc stx
+       (test-phase1 #,(syntax/loc #'lit (LITERAL/FAIL lit))
+         (test-literal/fail #'lit msg.v ex.v)))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
