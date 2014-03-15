@@ -320,10 +320,16 @@ Specializes a @racket[render<%>] class for generating HTML output.
 
 @defmethod[(set-external-tag-path [url string?]) void?]{
 
-Configures the renderer to redirect links to external via
-@racket[url], adding a @racket[tag] query element to the end of the
+Configures the renderer to redirect links to external documents via
+@racket[url], adding a @tt{tag} query element to the end of the
 URL that contains the Base64-encoded, @racket[print]ed, serialized
-original tag (in the sense of @racket[link-element]) for the link.}
+original tag (in the sense of @racket[link-element]) for the link.
+
+If the link is based on a cross-reference entry that has a
+document-identifying string (see @racket[load-xref] and its
+@racket[#:doc-id] argument), the document identifier is added as a
+@tt{doc} query element, and a path to the target within the
+document is added as a @tt{rel} query element.}
 
 @defmethod[(set-external-root-url [url string?]) void?]{
 

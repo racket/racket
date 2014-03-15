@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scribble/struct
+         (only-in scribble/core known-doc? known-doc-v)
          scribble/base-render
          scribble/search
          (prefix-in html: scribble/html-render)
@@ -17,7 +18,9 @@
          xref-transfer-info
          (struct-out entry)
          make-data+root
-         data+root?)
+         data+root?
+         make-data+root+doc-id
+         data+root+doc-id?)
 
 (define-struct entry
   (words    ; list of strings: main term, sub-term, etc.
@@ -26,6 +29,7 @@
    desc))   ; further info that depends on the kind of index entry
 
 (define-struct data+root (data root))
+(define-struct (data+root+doc-id data+root) (doc-id))
 
 ;; Private:
 (define-struct xrefs (renderer ri))
@@ -40,7 +44,8 @@
 (define (load-xref sources
                    #:demand-source [demand-source (lambda (key) #f)]
                    #:render% [render% (html:render-mixin render%)]
-                   #:root [root-path #f])
+                   #:root [root-path #f]
+                   #:doc-id [doc-id-str #f])
   (let* ([renderer (new render% [dest-dir (find-system-path 'temp-dir)])]
          [fp (send renderer traverse null null)]
          [load-source (lambda (src ci)
@@ -51,7 +56,11 @@
                               (when v
                                 (define data (if (data+root? v) (data+root-data v) v))
                                 (define root (if (data+root? v) (data+root-root v) root-path))
-                                (send renderer deserialize-info data ci #:root root))))))]
+                                (define doc-id (or (and (data+root+doc-id? v) (data+root+doc-id-doc-id v))
+                                                   doc-id-str))
+                                (send renderer deserialize-info data ci
+                                      #:root root
+                                      #:doc-id doc-id))))))]
          [ci (send renderer collect null null fp
                    (lambda (key ci)
                      (define src (demand-source key))
@@ -73,7 +82,10 @@
              #:when
              (and (pair? k)
                   (eq? (car k) 'index-entry)))
-    (make-entry (car v) (cadr v) (cadr k) (caddr v))))
+    (let ([v (if (known-doc? v)
+                 (known-doc-v v)
+                 v)])
+      (make-entry (car v) (cadr v) (cadr k) (caddr v)))))
 
 ;; dest-file can be #f, which will make it return a string holding the
 ;; resulting html
@@ -151,8 +163,11 @@
             (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
             `(index-entry ,tag)
             #f)])
-    (cond [v (make-entry (car v) (cadr v) (cadr tag) (caddr v))]
-          [(and (pair? tag) (eq? 'form (car tag)))
-           ;; Try again with 'def:
-           (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
-          [else #f])))
+    (let ([v (if (known-doc? v)
+                 (known-doc-v v)
+                 v)])
+      (cond [v (make-entry (car v) (cadr v) (cadr tag) (caddr v))]
+            [(and (pair? tag) (eq? 'form (car tag)))
+             ;; Try again with 'def:
+             (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
+            [else #f]))))

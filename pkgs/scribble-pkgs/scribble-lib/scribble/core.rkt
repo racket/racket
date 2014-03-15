@@ -37,31 +37,37 @@
          (define ci (resolve-info-ci ri))
          (define (try-ext)
            (hash-ref (collect-info-ext-ht ci) key #f))
-         (values
-          (or (try-ext)
-              (and ((collect-info-ext-demand ci) key ci)
-                   (try-ext)))
-          #t)]))))
+         (define v
+           (or (try-ext)
+               (and ((collect-info-ext-demand ci) key ci)
+                    (try-ext))))
+         (if (known-doc? v)
+             (values (known-doc-v v) (known-doc-id v))
+             (values v #t))]))))
 
 (define (resolve-get/ext? part ri key)
-  (resolve-get/ext?* part ri key #f))
+  (define-values (v ext-id) (resolve-get/ext-id* part ri key #f))
+  (values v (and ext-id #t)))
 
-(define (resolve-get/ext?* part ri key search-key)
-  (let-values ([(v ext?) (resolve-get/where part ri key)])
-    (when ext?
+(define (resolve-get/ext-id part ri key)
+  (resolve-get/ext-id* part ri key #f))
+
+(define (resolve-get/ext-id* part ri key search-key)
+  (let-values ([(v ext-id) (resolve-get/where part ri key)])
+    (when ext-id
       (hash-set! (resolve-info-undef ri) (tag-key key ri) 
                  (if v 'found search-key)))
-    (values v ext?)))
+    (values v ext-id)))
 
 (define (resolve-get part ri key)
   (resolve-get* part ri key #f))
 
 (define (resolve-get* part ri key search-key)
-  (let-values ([(v ext?) (resolve-get/ext?* part ri key search-key)])
+  (let-values ([(v ext-id) (resolve-get/ext-id* part ri key search-key)])
     v))
 
 (define (resolve-get/tentative part ri key)
-  (let-values ([(v ext?) (resolve-get/where part ri key)])
+  (let-values ([(v ext-id) (resolve-get/where part ri key)])
     v))
 
 (define (resolve-search search-key part ri key)
@@ -215,7 +221,10 @@
 
  [collected-info ([number (listof (or/c false/c exact-nonnegative-integer? string?))]
                   [parent (or/c false/c part?)]
-                  [info any/c])])
+                  [info any/c])]
+
+ [known-doc ([v any/c]
+             [id string?])])
 
 (provide plain)
 (define plain (make-style #f null))
@@ -715,5 +724,6 @@
  [resolve-get ((or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-get/tentative ((or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-get/ext? ((or/c part? false/c) resolve-info? info-key? . -> . any)]
+ [resolve-get/ext-id ((or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-search (any/c (or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-get-keys ((or/c part? false/c) resolve-info? (info-key? . -> . any/c) . -> . any/c)])

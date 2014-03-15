@@ -10,11 +10,16 @@
          setup/doc-db)
 
 (provide load-collections-xref
-         make-collections-xref)
+         make-collections-xref
+         get-rendered-doc-directories)
 
 (define cached-xref #f)
 
-(define (get-dests tag no-user? no-main?)
+(define (get-rendered-doc-directories no-user? no-main?)
+  (append (get-dests 'scribblings no-user? no-main? #f)
+          (get-dests 'rendered-scribblings no-user? no-main? #f)))
+
+(define (get-dests tag no-user? no-main? sxrefs?)
   (define main-dirs
     (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-user))])
       (values k #t)))
@@ -42,10 +47,12 @@
                               (if no-user? 'never 'false-if-missing)
                               #:main? (not no-main?))])
              (if d
-                 (for*/list ([i (in-range (add1 out-count))]
-                             [p (in-value (build-path d (format "out~a.sxref" i)))]
-                             #:when (file-exists? p))
-                   p)
+                 (if sxrefs?
+                     (for*/list ([i (in-range (add1 out-count))]
+                                 [p (in-value (build-path d (format "out~a.sxref" i)))]
+                                 #:when (file-exists? p))
+                       p)
+                     (list d))
                  null))
            null)))))
 
@@ -62,11 +69,19 @@
                                             (exn-message exn)
                                             (format "~e" exn))))
                                      #f)])
-          (make-data+root
+          (make-data+root+doc-id
            ;; data to deserialize:
            (cadr (call-with-input-file* dest fasl->s-exp))
            ;; provide a root for deserialization:
-           (path-only dest))))))
+           (path-only dest)
+           ;; Use the destination directory's name as an identifier,
+           ;; which allows a faster and more compact indirection
+           ;; for installation-scaoped documentation:
+           (let-values ([(base name dir?) (split-path dest)])
+             (and (path? base)
+                  (let-values ([(base name dir?) (split-path base)])
+                    (and (path? name)
+                         (path->string name))))))))))
 
 (define (make-key->source db-path no-user? no-main? quiet-fail? register-shutdown!)
   (define main-db (and (not no-main?)
@@ -132,8 +147,8 @@
 
 (define (get-reader-thunks no-user? no-main? quiet-fail? done-ht)
   (map (dest->source done-ht quiet-fail?)
-       (filter values (append (get-dests 'scribblings no-user? no-main?)
-                              (get-dests 'rendered-scribblings no-user? no-main?)))))
+       (filter values (append (get-dests 'scribblings no-user? no-main? #t)
+                              (get-dests 'rendered-scribblings no-user? no-main? #t)))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref

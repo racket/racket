@@ -353,13 +353,13 @@
            (when rp
              (set-mobile-root-path! root rp))))))
 
-    (define/public (deserialize-info v ci #:root [root-path #f])
+    (define/public (deserialize-info v ci #:root [root-path #f] #:doc-id [doc-id #f])
       (let ([root+ht (deserialize v)]
             [in-ht (collect-info-ext-ht ci)])
         (when root-path
           (set-mobile-root-path! (car root+ht) root-path))
         (for ([(k v) (cdr root+ht)])
-          (hash-set! in-ht k v))))
+          (hash-set! in-ht k (if doc-id (known-doc v doc-id) v)))))
 
     (define/public (get-defined ci)
       (hash-map (collect-info-ht ci) (lambda (k v) k)))

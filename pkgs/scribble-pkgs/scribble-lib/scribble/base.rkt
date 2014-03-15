@@ -729,7 +729,8 @@
          (collect-info-ext-ht ci))))
    (lambda (k v)
      (when (and (pair? k) (eq? 'index-entry (car k)))
-       (set! l (cons (cons (cadr k) v) l)))))
+       (let ([v (if (known-doc? v) (known-doc-v v) v)])
+         (set! l (cons (cons (cadr k) v) l))))))
   (sort l entry<?))
 
 (define (index-block)

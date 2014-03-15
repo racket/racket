@@ -508,6 +508,19 @@
                            (anchor-name (dest-anchor dest))))))
           "???"))
 
+    (define/private (dest->url-in-doc dest)
+      (and dest
+           (not (dest-redirect dest))
+           (format "~a~a~a"
+                   (let-values ([(base name dir?) (split-path
+                                                   (relative->path (dest-path dest)))])
+                     name)
+                   (if (dest-page? dest) "" "#")
+                   (if (dest-page? dest)
+                       ""
+                       (uri-unreserved-encode
+                        (anchor-name (dest-anchor dest)))))))
+
     (define/public (render-toc-view d ri)
       (define has-sub-parts?
         (pair? (part-parts d)))
@@ -1239,15 +1252,15 @@
         [(and (link-element? e) (not (current-no-links)))
          (parameterize ([current-no-links #t])
            (define indirect-link? (link-element-indirect? e))
-           (let-values ([(dest ext?)
+           (let-values ([(dest ext-id)
                          (if (and indirect-link?
                                   external-tag-path)
                              (values #f #f)
-                             (resolve-get/ext? part ri (link-element-tag e)))])
+                             (resolve-get/ext-id part ri (link-element-tag e)))])
              (if (or indirect-link? dest)
-               `((a [(href
+                 `((a ([href
                       ,(cond
-                        [(and ext? external-root-url
+                        [(and ext-id external-root-url
                               (let ([rel (find-relative-path
                                           (find-doc-dir)
                                           (relative->path (dest-path dest)))])
@@ -1270,7 +1283,7 @@
                                  (and (not (dest-page? dest))
                                       (anchor-name (dest-anchor dest)))])))]
                         [(or indirect-link?
-                             (and ext? external-tag-path))
+                             (and ext-id external-tag-path))
                          ;; Redirected to search:
                          (url->string*
                           (let ([u (string->url (or external-tag-path
@@ -1279,16 +1292,20 @@
                              url
                              u
                              [query
-                              (cons (cons 'tag (tag->query-string (link-element-tag e)))
-                                    (url-query u))])))]
+                              (if (string? ext-id)
+                                  (list* (cons 'doc ext-id)
+                                         (cons 'rel (or (dest->url-in-doc dest) "???"))
+                                         (url-query u))
+                                  (cons (cons 'tag (tag->query-string (link-element-tag e)))
+                                        (url-query u)))])))]
                         [else
                          ;; Normal link:
-                         (dest->url dest)]))
+                         (dest->url dest)])]
                      ,@(attribs (if (or indirect-link?
-                                        (and ext? external-tag-path))
-                                    '((class "Sq"))
+                                        (and ext-id external-tag-path))
+                                    '([class "Sq"])
                                     null))
-                     [data-pltdoc "x"]]
+                     [data-pltdoc "x"])
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
                           (render-content (element-content e) part ri))))
