@@ -78,8 +78,6 @@
       (ret (list Univ) (list -no-filter) (list -no-obj))
       #:result (ret (list Univ) (list -top-filter) (list -empty-obj)))
 
-    ;; Currently returns -no-obj instead of empty-obj
-    #;
     (test-below #:fail
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
       (ret (list Univ) (list -true-filter) (list -no-obj))
@@ -95,25 +93,25 @@
 
 
     ;; Enable these once check-below is fixed
-    ;; Currently returns -no-obj instead of empty-obj
+    ;; Currently does not fail
     #;
     (test-below #:fail
       (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B)
       (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B)
       #:result (ret (list Univ) (list -false-filter) (list -empty-obj) Univ 'B))
 
-    ;; Currently returns -no-obj instead of empty-obj
+    ;; Currently does not fail
     #;
     (test-below #:fail
       (ret (list Univ) (list -top-filter) (list -empty-obj))
       (ret (list Univ) (list -false-filter) (list -no-obj) Univ 'B)
       #:result (ret (list Univ) (list -false-filter) (list -empty-obj) Univ 'B))
 
-    ;; Currently returns -no-obj instead of empty-obj
+    ;; Currently does not fail
     #;
     (test-below #:fail
       (ret (list Univ Univ) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
       (ret (list Univ Univ) (list -false-filter -false-filter) (list -no-obj -no-obj))
-      #:result (ret (list Univ Univ) (list -false-filter -false-filter) (list -no-obj -no-obj)))
+      #:result (ret (list Univ Univ) (list -false-filter -false-filter) (list -empty-obj -empty-obj)))
 
   ))
