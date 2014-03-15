@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/bnf "utils.rkt")
 
+@(define pkg-doc '(lib "pkg/scribblings/pkg.scrbl"))
+
 @title[#:tag "how-to-doc"]{Getting Started with Documentation}
 
 Although the @exec{scribble} command-line utility generates output
@@ -15,16 +17,17 @@ across documents.
 @;----------------------------------------
 @section[#:tag "setting-up"]{Setting Up Library Documentation}
 
-To document a collection or Racket
-@seclink["getting-started" #:doc '(lib "pkg/scribblings/pkg.scrbl") "package"]:
+To document a collection, including a collection implemented by a
+@seclink["getting-started" #:doc pkg-doc]{package}:
 
 @itemize[
 
-  @item{Create a file in your collection or package with the
+  @item{Create a file in your collection with the
         file extension @filepath{.scrbl}. Beware that the file name
-        you choose will determine the output file's name. The
+        you choose will determine the output directory's name, and
+        the directory name must be unique across all installed documents. The
         remainder of these instructions assume that the file is called
-        @filepath{manual.scrbl}.}
+        @filepath{manual.scrbl} (but pick a more specific name in practice).}
 
   @item{Start @filepath{manual.scrbl} like this:
           @verbatim[#:indent 2]|{
@@ -40,7 +43,7 @@ To document a collection or Racket
         It also introduces bindings like @racket[title] and
         @racket[racket] for writing Racket documentation.}
 
-  @item{Add the following entry to your collect or package's
+  @item{Add the following entry to your collection's
         @filepath{info.rkt}:
 
         @racketblock[
@@ -66,12 +69,13 @@ To document a collection or Racket
         collection name to limit the build process to that
         collection.}
 
-  @item{The generated documentation is normally
-        @filepath{doc/manual/index.html} within the collection or
-        package directory. If the collection is in
-        Racket's main @filepath{collects} directory, however, then the
-        documentation is generated as @filepath{manual/index.html} in
-        the installation's main @filepath{doc} directory.}
+  @item{For a collection that is installed as user-specific
+        (e.g., the user @tech[#:doc pkg-doc]{package scope}), the generated
+        documentation is @filepath{doc/manual/index.html} within the
+        collection directory. If the collection is installation-wide,
+        however, then the documentation
+        is generated as @filepath{manual/index.html} in the
+        installation's @filepath{doc} directory.}
 
 ]
 
