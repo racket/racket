@@ -78,6 +78,10 @@
       (ret (list Univ) (list -no-filter) (list -no-obj))
       #:result (ret (list Univ) (list -top-filter) (list -empty-obj)))
 
+    (test-below
+      (ret (list -Symbol) (list -true-filter) (list -empty-obj))
+      (ret (list Univ) (list -top-filter) (list -empty-obj)))
+
     (test-below #:fail
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
       (ret (list Univ) (list -true-filter) (list -no-obj))

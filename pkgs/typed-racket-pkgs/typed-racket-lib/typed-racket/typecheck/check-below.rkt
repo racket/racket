@@ -113,11 +113,6 @@
      (if (= (length ts) (length ts2))
          (ret ts2 fs os)
          (ret ts2))]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
-     (cond
-       [(not (subtype t1 t2))
-        (expected-but-got t2 t1)])
-     expected]
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
      (cond
        [(not (subtype t1 t2))
