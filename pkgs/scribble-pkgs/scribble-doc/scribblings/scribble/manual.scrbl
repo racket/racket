@@ -608,7 +608,7 @@ when you want to provide a more specific list of modules (e.g., to
 name both a specific module and one that combines several modules) via
 your own @racket[declare-exporting] declaration
 
-When @racket[#:link-target?] is specified with an expression that
+When @racket[#:link-target?] is omitted or specified with an expression that
 produces a true value, then the @racket[module-path]s are also
 declared as link targets though a @racket[part-tag-decl] (which means
 that the @racket[defmodule] form must appear before any
@@ -617,7 +617,7 @@ sub-parts). These link targets are referenced via
 rather than the individual @racket[module-path]s.
 
 Specifying @racket[#:indirect] normally makes sense only when
-@racket[#:link-target?] is specified with a true value. Specifying
+@racket[#:link-target?] is specified with a @racket[#f] value. Specifying
 @racket[#:indirect] makes the module path that is displayed (and that
 normally refers to some other declaration of the module) use
 @racket[racketmodname] with @racket[#:indirect].
