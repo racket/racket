@@ -1134,3 +1134,7 @@ poll for package updates periodically and if when it was first started
 it would display available, popular packages.}
 
 ]
+
+@; ----------------------------------------
+
+@include-section["implementation.scrbl"]
