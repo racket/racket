@@ -83,7 +83,7 @@
 (define (get-cgc-suffix) (force config:cgc-suffix))
 (define (get-3m-suffix) (force config:3m-suffix))
 (define (get-doc-search-url) (or (force config:doc-search-url)
-                                 "http://docs.racket-lang.org"))
+                                 "http://docs.racket-lang.org/local-redirect/index.html"))
 (define (get-installation-name) (or (force config:installation-name)
                                     (version)))
 (define (get-build-stamp) (force config:build-stamp))
