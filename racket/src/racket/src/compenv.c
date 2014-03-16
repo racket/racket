@@ -1777,7 +1777,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
               *_lexical_binding_id = val;
             }
 	    if (flags & SCHEME_DONT_MARK_USE)
-	      return scheme_make_local(scheme_local_type, 0, 0);
+	      return scheme_make_local(scheme_local_type, p+i, 0);
 	    else
 	      return (Scheme_Object *)get_frame_loc(frame, i, j, p, flags);
 	  }
