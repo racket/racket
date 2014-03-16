@@ -181,9 +181,12 @@ files map documentation-directory names to specific paths. Most query
 references contain a documentation-directory name and a relative path
 within the directory, in which case the mapping from directory names
 to paths is sufficient. Indirect links, such as those created by
-@racket[(seclink #:indirect? #t ...)], embed a cross-reference key, and
-so @filepath{local-redirect.js} and @filepath{local-user-redirect.js}
-must also embed a part of the cross-reference database. The JavaScript
+@racket[(seclink #:indirect? #t ...)], embed a cross-reference key,
+and so @filepath{local-redirect.js} and
+@filepath{local-user-redirect.js} must also embed a part of the
+cross-reference database. (This copy of the database is broken into
+multiple files, each of which is loaded on demand.) The
+@filepath{local-redirect.js} and @filepath{local-user-redirect.js}
 files are generated as part of the special @filepath{local-redirect}
 document that is implemented by the @pkgname{racket-index} package.
 
