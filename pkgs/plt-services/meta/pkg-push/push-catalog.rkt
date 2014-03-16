@@ -62,10 +62,12 @@
           (loop (set-add pkgs a)
                 (set-union
                  r
-                 (apply set (map (lambda (p) (if (pair? p) (car p) p)) 
-                                 (hash-ref (hash-ref new-pkgs a)
-                                           'dependencies
-                                           '()))))))])))
+                 (set-remove
+                  (apply set (map (lambda (p) (if (pair? p) (car p) p)) 
+                                  (hash-ref (hash-ref new-pkgs a)
+                                            'dependencies
+                                            '())))
+                  "racket"))))])))
 
 (printf "Getting current S3 content...\n")
 (define old-content (list->set (ls (string-append bucket "/pkgs"))))
