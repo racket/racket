@@ -3375,6 +3375,20 @@
         (call-with-continuation-prompt g p)
         (call-with-continuation-prompt g p)))
   
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler isn't confused by
+;; throwaway internal-definition expansion:
+
+(test #t procedure?
+      (eval '(lambda (db)
+               (if #f
+                   (let ()
+                     (define matches
+                       (let loop ()
+                         (define s db)
+                         null))
+                     5)
+                   (void)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
