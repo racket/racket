@@ -146,7 +146,7 @@
 (define (object->sexp object)
   (match object
     [(NoObject:) '-]
-    [(Empty:) '-]
+    [(Empty:) 'NoObject]
     [(Path: pes i) (append (map pathelem->sexp pes) (list i))]
     [else `(Unknown Object: ,(struct->vector object))]))
 
