@@ -7,12 +7,36 @@
     (define-values
       (cross-phase-failure-struct-type cross-phase-failure cross-phase-failure?
                                        cross-phase-failure-acc cross-phase-failure-mut)
-      (make-struct-type 'cross-phase-failure #f 1 0 #f null #f #f (list 0))))
-  (require 'internal)
-  (provide cross-phase-failure cross-phase-failure? cross-phase-failure-message)
+      (make-struct-type 'cross-phase-failure #f 2 0 #f null #f #f (list 0 1))))
+  (require
+    'internal
+    rackunit
+    racket/contract)
 
-  (define-values (cross-phase-failure-message)
-    (make-struct-field-accessor cross-phase-failure-acc 0 'message)))
+  (provide
+
+    (contract-out
+      [rename cross-phase-failure* cross-phase-failure
+        (->* (string?) (#:actual any/c #:expected any/c) cross-phase-failure?)]
+      [cross-phase-failure? predicate/c]
+      [cross-phase-failure-message (-> cross-phase-failure? string?)]
+      [cross-phase-failure-check-infos (-> cross-phase-failure? (listof check-info?))]))
+
+  (define no-arg (gensym 'no-arg))
+
+  (define (cross-phase-failure* message #:actual [actual no-arg] #:expected [expected no-arg])
+    (cross-phase-failure
+      message
+      (append
+        (if (eq? actual no-arg) null (list (list 'actual actual)))
+        (if (eq? expected no-arg) null (list (list 'expected expected))))))
+
+  (define cross-phase-failure-message
+    (make-struct-field-accessor cross-phase-failure-acc 0 'message))
+  (define raw-cross-phase-failure-check-infos
+    (make-struct-field-accessor cross-phase-failure-acc 1 'check-infos))
+  (define (cross-phase-failure-check-infos cpf)
+    (map (λ (args) (apply check-info args)) (raw-cross-phase-failure-check-infos cpf))))
 
 ;; Functions for testing correct behavior of typechecking
 (module tester racket/base
@@ -65,7 +89,10 @@
   (define (test-literal literal golden expected)
     (define result (tc-literal literal expected))
     (unless (equal? golden result)
-      (raise (cross-phase-failure (format "~a != ~a" golden result)))))
+      (raise (cross-phase-failure
+               #:actual result
+               #:expected golden
+               "tc-literal did not return the expected value"))))
 
   ;; test-literal/fail syntax? (or/c string? regexp?) (option/c tc-results?) -> void?
   ;; Checks that the literal doesn't typecheck using the expected type and the golden message
@@ -73,9 +100,14 @@
     (with-handlers ([exn:fail:syntax?
                      (lambda (exn)
                        (unless (regexp-match? message (exn-message exn))
-                         (raise (cross-phase-failure "tc-literal raised the wrong error message"))))])
-      (tc-literal literal expected)
-      (raise (cross-phase-failure "tc-literal didn't raise an error")))))
+                         (raise (cross-phase-failure
+                                  #:actual (exn-message exn)
+                                  #:expected message
+                                  "tc-literal raised the wrong error message"))))])
+      (define result (tc-literal literal expected))
+      (raise (cross-phase-failure
+               #:actual result
+               "tc-literal did not raise an error")))))
 
 
 (require
@@ -138,7 +170,12 @@
      (quasisyntax/loc stx
        (test-case (format "~a ~a" (quote-line-number name) 'name)
          (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
-           (with-handlers ([cross-phase-failure? (λ (tf) (fail-check (cross-phase-failure-message tf)))])
+           (with-handlers ([cross-phase-failure?
+                            (λ (tf)
+                              (with-check-info*
+                                (cross-phase-failure-check-infos tf)
+                                (lambda ()
+                                  (fail-check (cross-phase-failure-message tf)))))])
              (phase1-eval body ...))))))))
 
 
