@@ -1,21 +1,20 @@
 #lang racket/base
 
+(define the-error "app rule the range of the function is matched to the argument")
+
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
-         racket/list
          racket/match
+         racket/list
          racket/contract
-         math/base)
+         "tut-subst.rkt")
 
 (provide (all-defined-out))
-(define the-error "swaps the bound var when recurring inside λ")
-
 
 (define-language stlc
   (M N ::= 
      (λ (x σ) M)
      (M N)
-     number
      x
      c)
   (Γ (x σ Γ)
@@ -24,14 +23,14 @@
      int
      (list int)
      (σ → τ))
-  (c d ::= cons nil hd tl)
+  (c d ::= cons nil hd tl + integer)
   ((x y) variable-not-otherwise-mentioned)
   
   (v (λ (x τ) M)
      c
-     number
-     (cons number)
-     ((cons number) v))
+     (cons v)
+     ((cons v) v)
+     (+ v))
   (E hole
      (E M)
      (v E)))
@@ -39,9 +38,6 @@
 (define-judgment-form stlc
   #:mode (typeof I I O)
   #:contract (typeof Γ M σ)
-  
-  [---------------------
-   (typeof Γ number int)]
   
   [---------------------------
    (typeof Γ c (const-type c))]
@@ -55,7 +51,7 @@
    (typeof Γ (λ (x σ) M) (σ → σ_2))]
   
   [(typeof Γ M (σ → σ_2))
-   (typeof Γ M_2 σ)
+   (typeof Γ M_2 σ_2)
    ----------------------
    (typeof Γ (M M_2) σ_2)])
 
@@ -68,7 +64,11 @@
   [(const-type hd)
    ((list int) → int)]
   [(const-type tl)
-   ((list int) → (list int))])
+   ((list int) → (list int))]
+  [(const-type +)
+   (int → (int → int))]
+  [(const-type integer)
+   int])
 
 (define-metafunction stlc
   lookup : Γ x -> σ or #f
@@ -96,35 +96,10 @@
         "hd-err")
    (--> (in-hole E (tl nil))
         "error"
-        "tl-err")))
-
-
-(define-metafunction stlc
-  subst : M x M -> M
-  [(subst x x M)
-   M]
-  [(subst y x M)
-   y]
-  [(subst (λ (x τ) M) x M_x)
-   (λ (x τ) M)]
-  [(subst (λ (x_1 τ) M) x_2 v)
-   (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
-   (where x_new ,(variable-not-in (term (x_1 e x_2))
-                                  (term x_1)))]
-  [(subst (c M) x M_x)
-   (c (subst M x M_x))]
-  [(subst (M N) x M_x)
-   ((subst M x M_x) (subst N x M_x))]
-  [(subst M x M_x)
-   M])
-
-(define-metafunction stlc
-  [(replace (any_1 ...) x_1 x_new)
-   ((replace any_1 x_1 x_new) ...)]
-  [(replace x_1 x_1 x_new)
-   x_new]
-  [(replace any_1 x_1 x_new)
-   any_1])
+        "tl-err")
+   (--> (in-hole E ((+ integer_1) integer_2))
+        (in-hole E ,(+ (term integer_1) (term integer_2)))
+        "+")))
 
 (define M? (redex-match stlc M))
 (define/contract (Eval M)
@@ -144,6 +119,10 @@
         ans)))
 
 (define x? (redex-match stlc x))
+(define-metafunction stlc
+  subst : M x M -> M
+  [(subst M x N) 
+   ,(subst/proc x? (term (x)) (term (N)) (term M))])
 
 (define v? (redex-match stlc v))
 (define τ? (redex-match stlc τ))
@@ -239,20 +218,21 @@
     [#f #f]))
 
 (define (generate-typed-term-from-red)
-  (match (case (random 5)
-           [(0)
-            (generate-term stlc #:satisfying (typeof • ((λ (x τ_x) M) v) ((list int) → (list int))) 5)]
-           [(1)
-            (generate-term stlc #:satisfying (typeof • (hd ((cons v_1) v_2)) ((list int) → (list int))) 5)]
-           [(2)
-            (generate-term stlc #:satisfying (typeof • (tl ((cons v_1) v_2)) ((list int) → (list int))) 5)]
-           [(3)
-            (generate-term stlc #:satisfying (typeof • (hd nil) ((list int) → (list int))) 5)]
-           [(4)
-            (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)])
+  (define candidate
+    (case (random 5)
+      [(0)
+       (generate-term stlc #:satisfying (typeof • ((λ (x τ_x) M) v) ((list int) → (list int))) 5)]
+      [(1)
+       (generate-term stlc #:satisfying (typeof • (hd ((cons v_1) v_2)) ((list int) → (list int))) 5)]
+      [(2)
+       (generate-term stlc #:satisfying (typeof • (tl ((cons v_1) v_2)) ((list int) → (list int))) 5)]
+      [(3)
+       (generate-term stlc #:satisfying (typeof • (hd nil) ((list int) → (list int))) 5)]
+      [(4)
+       (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)]))
+  (match candidate
     [`(typeof • ,M ,τ)
      M]
-
     [#f #f]))
 (define (typed-generator)
   (let ([g (redex-generator stlc 
@@ -269,14 +249,12 @@
       (v? term)
       (let ([red-res (apply-reduction-relation red term)]
             [t-type (type-check term)])
-        ;; xxx should this also be t-type IMPLIES?
+        ;; xxx shouldn't this be t-type IMPLIES this?
         (and
          (= (length red-res) 1)
-         (let ([red-t (car red-res)])
-           (or 
-            (equal? red-t "error")
-            (let ([red-type (type-check red-t)])
-              (equal? t-type red-type))))))))
+         (or 
+          (equal? (car red-res) "error")
+          (equal? t-type (type-check (car red-res))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.0001)))
@@ -290,33 +268,22 @@
 
 (define fixed
   (term
-   (;; 1
-    ((λ (x int) x) 1)
-
-    ;; 9
-    ((λ (x (list int)) (tl x)) ((cons 1) nil))
-
-    ;; 2 -- xxx I don't think this is really an error because the (M
-    ;; N) case does everything that (c M) does since M can equal
-    ;; c. Otherwise the previous test case would work, because (tl x)
-    ;; would not be subst'd and it has no type
-
+   (;; 2
+    ((cons 1) nil)
     ;; 3
-    ((λ (x int) ((λ (y int) y) x)) 1)
-
-    ;; 4 -- xxx I don't think this is really an error because the
-    ;; normal λ rule always does renaming so this test below works
-    ;; fine and ends up with x1 in both places.
-
-    #;((λ (x int) ((λ (x (list int)) x) ((cons x) nil))) 1)
-
-    ;; 5 & 6 --- xxx These diffs are bogus because they don't actually
-    ;; make a change to any of the program.
-
+    ((λ (x (list int)) 1) 
+     7)
+    ;; 4 (if we hadn't changed number->v in cons)
+    (cons ((cons 0) nil))
+    ;; 5
+    (tl ((cons 1) nil))
+    ;; 6
+    (hd ((cons 1) nil))
     ;; 7
-    ((λ (x int) (hd ((cons x) nil))) 1)
-
-    ;; 8 -- xxx This isn't an error for the same reason 4 isn't.
-    
-    )))
-
+    ((λ (x int) x) (hd ((cons 1) nil)))
+    ;; 8
+    ((λ (x (list int)) (cons x)) nil)
+    ;; 9
+    ((λ (x int) (λ (y (list int)) x)) 1)
+    ;; 10
+    (hd 0))))

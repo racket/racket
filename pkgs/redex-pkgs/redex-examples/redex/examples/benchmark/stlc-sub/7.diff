@@ -8,9 +8,9 @@
 12a11,12
 > (define the-error "swaps to/from expressions when recurring inside a constant")
 > 
-115c115
+117c117
 <    (c (subst M x M_x))]
 ---
 >    (c (subst M_x x M))]
-255a256
+257a258
 > 

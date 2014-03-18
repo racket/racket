@@ -8,11 +8,11 @@
 12a11,12
 > (define the-error "the order of the variable clauses is swapped")
 > 
-104,105d103
+106,107d105
 <   [(subst x x M)
 <    M]
-107a106,107
+109a108,109
 >   [(subst x x M)
 >    M]
-255a256
+257a258
 > 

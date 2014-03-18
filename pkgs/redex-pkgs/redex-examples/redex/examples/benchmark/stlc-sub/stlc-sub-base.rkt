@@ -15,7 +15,6 @@
   (M N ::= 
      (λ (x σ) M)
      (M N)
-     number
      x
      c)
   (Γ (x σ Γ)
@@ -24,14 +23,14 @@
      int
      (list int)
      (σ → τ))
-  (c d ::= cons nil hd tl)
+  (c d ::= cons nil hd tl + integer)
   ((x y) variable-not-otherwise-mentioned)
   
   (v (λ (x τ) M)
      c
-     number
-     (cons number)
-     ((cons number) v))
+     (cons v)
+     ((cons v) v)
+     (+ v))
   (E hole
      (E M)
      (v E)))
@@ -39,9 +38,6 @@
 (define-judgment-form stlc
   #:mode (typeof I I O)
   #:contract (typeof Γ M σ)
-  
-  [---------------------
-   (typeof Γ number int)]
   
   [---------------------------
    (typeof Γ c (const-type c))]
@@ -68,7 +64,11 @@
   [(const-type hd)
    ((list int) → int)]
   [(const-type tl)
-   ((list int) → (list int))])
+   ((list int) → (list int))]
+  [(const-type +)
+   (int → (int → int))]
+  [(const-type integer)
+   int])
 
 (define-metafunction stlc
   lookup : Γ x -> σ or #f
@@ -96,8 +96,10 @@
         "hd-err")
    (--> (in-hole E (tl nil))
         "error"
-        "tl-err")))
-
+        "tl-err")
+   (--> (in-hole E ((+ integer_1) integer_2))
+        (in-hole E ,(+ (term integer_1) (term integer_2)))
+        "+")))
 
 (define-metafunction stlc
   subst : M x M -> M
@@ -239,20 +241,23 @@
     [#f #f]))
 
 (define (generate-typed-term-from-red)
-  (match (case (random 5)
-           [(0)
-            (generate-term stlc #:satisfying (typeof • ((λ (x τ_x) M) v) ((list int) → (list int))) 5)]
-           [(1)
-            (generate-term stlc #:satisfying (typeof • (hd ((cons v_1) v_2)) ((list int) → (list int))) 5)]
-           [(2)
-            (generate-term stlc #:satisfying (typeof • (tl ((cons v_1) v_2)) ((list int) → (list int))) 5)]
-           [(3)
-            (generate-term stlc #:satisfying (typeof • (hd nil) ((list int) → (list int))) 5)]
-           [(4)
-            (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)])
+  (define candidate
+    (case (random 5)
+      [(0)
+       (generate-term stlc #:satisfying (typeof • ((λ (x τ_x) M) v) ((list int) → (list int))) 5)]
+      [(1)
+       (generate-term stlc #:satisfying (typeof • (hd ((cons v_1) v_2)) ((list int) → (list int))) 5)]
+      [(2)
+       (generate-term stlc #:satisfying (typeof • (tl ((cons v_1) v_2)) ((list int) → (list int))) 5)]
+      [(3)
+       (generate-term stlc #:satisfying (typeof • (hd nil) ((list int) → (list int))) 5)]
+      [(4)
+       (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)]))
+  (match candidate
     [`(typeof • ,M ,τ)
      M]
     [#f #f]))
+
 (define (typed-generator)
   (let ([g (redex-generator stlc 
                             (typeof • M τ)
@@ -318,4 +323,3 @@
     ;; 8 -- xxx This isn't an error for the same reason 4 isn't.
     
     )))
-

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "stlc-base.rkt" "tests-lib.rkt")
+(require "stlc-sub-base.rkt" "../stlc/tests-lib.rkt")
 (stlc-tests uses-bound-var?
             typeof
             red

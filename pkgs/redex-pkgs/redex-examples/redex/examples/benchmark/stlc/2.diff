@@ -1,9 +1,6 @@
 3c3
-< (define the-error "no error")
+< (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "the ((cons number) v) value has been omitted")
-33,34c33
-<      (cons v)
-<      ((cons v) v))
----
->      (cons v))
+31a32
+>      ((cons v) v)
