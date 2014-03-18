@@ -67,7 +67,7 @@ It has the contract
 
 The function bound to @racket[citet-id] generates an element suitable
 for use as a noun---referring to a document or its author---for one
-or more bibliography entries which share an author. It has the contract
+or more bibliography entries which have the same authors. It has the contract
 
 @racketblock[
 (->* (bib?) () #:rest (listof bib?) element?)
