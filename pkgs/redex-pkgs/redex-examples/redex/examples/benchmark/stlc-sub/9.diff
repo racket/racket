@@ -1,18 +1,8 @@
-3,4d2
+3c3
 < (define the-error "no error")
-< 
-7d4
-<          racket/match
-8a6
->          racket/match
-12a11,12
+---
 > (define the-error "swaps to/from expressions when recurring in the rhs of app")
-> 
-113a114,115
->   [(subst (M N) x M_x)
->    ((subst M_x x M) (subst N x M_x))]
-118,119d119
-<   [(subst (M N) x M_x)
+119c119
 <    ((subst M x M_x) (subst N x M_x))]
-257a258
-> 
+---
+>    ((subst M_x x M) (subst N x M_x))]
