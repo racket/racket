@@ -39,7 +39,9 @@
     (typecheck typechecker)
     (utils mutated-vars)
     (env mvar-env))
-  (provide test-literal test-literal/fail test test/proc tc tc-literal tr-expand)
+  (provide
+    test-literal test-literal/fail
+    test test/proc test/fail)
 
 
   (do-standard-inits)
@@ -72,7 +74,27 @@
     (define result (tc expanded-expr expected))
     (define golden (golden-fun expanded-expr))
     (unless (equal? golden result)
-      (error 'test "failed: ~a != ~a" golden result)))
+      (raise (cross-phase-failure
+               #:actual result
+               #:expected golden
+               "tc-expr did not return the expected value"))))
+
+  ;; test/fail syntax? (or/c string? regexp?) (option/c tc-results?) -> void?
+  ;; Checks that the expression doesn't typecheck using the expected type and the golden message
+  (define (test/fail code message expected)
+    (with-handlers ([exn:fail:syntax?
+                     (lambda (exn)
+                       (when message
+                         (unless (regexp-match? message (exn-message exn))
+                           (raise (cross-phase-failure
+                                    #:actual (exn-message exn)
+                                    #:expected message
+                                    "tc-expr raised the wrong error message")))))])
+      (define result (tc (tr-expand code) expected))
+      (raise (cross-phase-failure
+               #:actual result
+               "tc-expr did not raise an error"))))
+
 
   ;; test-literal syntax? tc-results? (option/c tc-results?) -> void?
   ;; Checks that the literal typechecks using the expected type to the golden result.
@@ -138,21 +160,7 @@
   ;; for specifying the error message in a test
   (define-splicing-syntax-class expected-msg
     (pattern (~seq #:msg v:expr))
-    (pattern (~seq) #:attr v #'#f))
-
-
-  (define (test-no-error stx name body)
-    (quasisyntax/loc stx
-      (test-not-exn (format "~a ~a" (quote-line-number #,name) '#,name)
-        (lambda () #,body))))
-
-  (define (test-syntax-error stx name msg body)
-    (quasisyntax/loc stx
-      (test-exn (format "~a ~a" (quote-line-number #,name) '#,name)
-        (λ (exn) (and (exn:fail:syntax? exn)
-                      (or (not #,msg)
-                          (regexp-match? #,msg (exn-message exn)))))
-        (lambda () #,body)))))
+    (pattern (~seq) #:attr v #'#f)))
 
 (define-syntax (test-phase1 stx)
   (syntax-parse stx
@@ -173,11 +181,13 @@
 (define-syntax (tc-e stx)
   (syntax-parse stx
     [(_ code:expr #:proc p)
-     (test-no-error stx #'code
-       #'(phase1-eval (test/proc (quote-syntax code) p)))]
-    [(_ code:expr return:return x:expected)
-     (test-no-error stx #'code
-       #'(phase1-eval (test (quote-syntax code) return.v x.v)))]))
+     (quasisyntax/loc stx
+       (test-phase1 code
+         (test/proc (quote-syntax code) p)))]
+    [(_ code:expr return:return ex:expected)
+     (quasisyntax/loc stx
+       (test-phase1 code
+         (test (quote-syntax code) return.v ex.v)))]))
 
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
@@ -189,22 +199,23 @@
     [(_ lit ty exp:expected)
      (quasisyntax/loc stx
        (test-phase1 #,(syntax/loc #'lit (LITERAL lit))
-         (test-literal #'lit ty exp.v)))]))
+         (test-literal (quote-syntax lit) ty exp.v)))]))
 
 
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
   (syntax-parse stx
     [(_ code:expr ex:expected msg:expected-msg)
-     (test-syntax-error stx (syntax/loc #'code (FAIL code)) #'msg.v
-       #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
+     (quasisyntax/loc stx
+        (test-phase1 #,(syntax/loc #'code (FAIL code))
+           (test/fail (quote-syntax code) msg.v ex.v)))]))
 
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
     [(_ lit:expr ex:expected msg:expected-msg)
      (quasisyntax/loc stx
        (test-phase1 #,(syntax/loc #'lit (LITERAL/FAIL lit))
-         (test-literal/fail #'lit msg.v ex.v)))]))
+         (test-literal/fail (quote-syntax lit) msg.v ex.v)))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
