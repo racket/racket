@@ -31,4 +31,10 @@
 (module+ main
   (command-line
    #:args ([dir #f])
-   (void (make-diffs dir))))
+   (begin
+     (when dir
+       (unless (member dir directories)
+         (raise-user-error 'make-diffs.rkt 
+                           "expected one of the following directories: ~s" 
+                           directories)))
+     (void (make-diffs dir)))))

@@ -1,8 +1,10 @@
 3c3
-< (define the-error "no error")
+< (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "the order of the types in the function position of application has been swapped")
-57c57
+31a32
+>      ((cons v) v)
+52c53
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ))

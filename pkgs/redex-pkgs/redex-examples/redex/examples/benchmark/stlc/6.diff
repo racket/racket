@@ -1,10 +1,12 @@
 3c3
-< (define the-error "no error")
+< (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "hd reduction acts on partially applied cons")
-88c88
+31a32
+>      ((cons v) v)
+87c88
 <    (--> (in-hole E (hd ((cons v_1) v_2)))
 ---
 >    (--> (in-hole E (hd (cons v_1)))
-232d231
+236d236
 < 

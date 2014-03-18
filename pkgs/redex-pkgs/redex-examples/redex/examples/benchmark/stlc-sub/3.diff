@@ -8,9 +8,9 @@
 12a11,12
 > (define the-error "substitutes rator into rand in application")
 > 
-117c117
+119c119
 <    ((subst M x M_x) (subst N x M_x))]
 ---
 >    ((subst M x M_x) (subst N x M))]
-255a256
+257a258
 > 

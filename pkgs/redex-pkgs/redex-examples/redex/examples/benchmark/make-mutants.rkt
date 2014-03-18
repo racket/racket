@@ -46,4 +46,10 @@
 (module+ main
   (command-line
    #:args ([dir #f])
-   (void (make-mutants dir))))
+   (begin
+     (when dir
+       (unless (member dir directories)
+         (raise-user-error 'make-mutants.rkt 
+                           "expected one of the following directories: ~s" 
+                           directories)))
+     (void (make-mutants dir)))))

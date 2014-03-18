@@ -1,8 +1,10 @@
 3c3
-< (define the-error "no error")
+< (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "the type of cons is incorrect")
-67c67
+31a32
+>      ((cons v) v)
+62c63
 <    (int → ((list int) → (list int)))]
 ---
 >    (int → ((list int) → int))]

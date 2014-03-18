@@ -1,10 +1,12 @@
 3c3
-< (define the-error "no error")
+< (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "lookup always returns int")
-76c76
+31a32
+>      ((cons v) v)
+75c76
 <    σ]
 ---
 >    int]
-232d231
+236d236
 < 
