@@ -2,15 +2,7 @@
 < (define the-error "no error")
 ---
 > (define the-error "the order of the types in the function position of application has been swapped")
-8d7
-<          racket/contract
-9a9
->          racket/contract
 57c57
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ))
-249c249
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)

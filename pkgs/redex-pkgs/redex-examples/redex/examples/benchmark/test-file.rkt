@@ -189,7 +189,7 @@
     [(equal? gen-type 'fixed)
      (define some-failed?
        (for/or ([t (in-list fixed)])
-         (define ok? (check t))
+         (define ok? (check (and (tc t) t)))
          (not ok?)))
      (unless some-failed?
        (error 'fixed "Expected some term to fail, but didn't find one in ~a" fixed))]
@@ -240,13 +240,14 @@
   (for ([gen-type (in-list types)])
     (test-file filename verbose #f gen-type (* minutes 60))))
 
-(call-with-output-file output-file
-  (λ (out)
-    (write
-     (apply append
-            (for/list ([(type times) (in-hash results)])
-              (apply append
-                     (for/list ([t times])
-                       (list filename type t)))))
+(unless (member 'fixed types)
+  (call-with-output-file output-file
+    (λ (out)
+      (write
+       (apply append
+              (for/list ([(type times) (in-hash results)])
+                (apply append
+                       (for/list ([t times])
+                         (list filename type t)))))
      out))
-  #:exists 'replace)
+    #:exists 'replace))

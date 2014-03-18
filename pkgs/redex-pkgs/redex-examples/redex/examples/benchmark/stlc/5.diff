@@ -2,17 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "the tail reduction returns the wrong value")
-8d7
-<          racket/contract
-9a9
->          racket/contract
 92c92
 <         (in-hole E v_2)
 ---
 >         (in-hole E v_1)
 232d231
 < 
-249c248
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)

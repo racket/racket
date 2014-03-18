@@ -2,17 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "variables aren't required to match in lookup")
-8d7
-<          racket/contract
-9a9
->          racket/contract
 75c75
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
 232d231
 < 
-249c248
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)
