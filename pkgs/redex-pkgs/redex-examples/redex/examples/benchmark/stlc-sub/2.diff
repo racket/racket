@@ -1,0 +1,8 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "wrong order of arguments to replace call")
+113c113
+<    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
+---
+>    (λ (x_new τ) (subst (replace M x_new x_1) x_2 v))

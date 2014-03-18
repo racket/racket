@@ -1,0 +1,8 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "variable not fresh enough")
+114c114
+<    (where x_new ,(variable-not-in (term (x_1 e x_2))
+---
+>    (where x_new ,(variable-not-in (term e)
