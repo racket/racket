@@ -1961,7 +1961,9 @@ static int produces_local_type(Scheme_Object *rator, int argc)
 }
 
 static int expr_produces_local_type(Scheme_Object *expr, int fuel)
-/* can be called by the JIT */
+/* can be called by the JIT; beware that the validator must be
+   able to reconstruct the result in a shallow way, so don't
+   make the result of a function call depend on its arguments */
 {
   if (fuel <= 0) return 0;
 
@@ -1983,26 +1985,19 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
       {
         Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
 
-
         if (SCHEME_PRIMP(app->rator)
-            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
-          /* Recognize combinations of bitwise operations as generating fixnums */
-          if (IS_NAMED_PRIM(app->rator, "bitwise-and")) {
-            if ((expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM)
-                || (expr_produces_local_type(app->rand2, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
-              return SCHEME_LOCAL_TYPE_FIXNUM;
-          } else if (IS_NAMED_PRIM(app->rator, "bitwise-ior")
-                     || IS_NAMED_PRIM(app->rator, "bitwise-xor")) {
-            if ((expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM)
-                && (expr_produces_local_type(app->rand2, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
-              return SCHEME_LOCAL_TYPE_FIXNUM;
-          } else if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
-            if (SCHEME_INTP(app->rand2) && (SCHEME_INT_VAL(app->rand2) <= 0)
-                && (expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
-              return SCHEME_LOCAL_TYPE_FIXNUM;
-          }
+            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+            && IS_NAMED_PRIM(app->rator, "bitwise-and")) {
+          /* Assume that a fixnum argument to bitwise-and will never get lost,
+             and so the validator will be able to confirm that a `bitwise-and`
+             combination produces a fixnum. */
+          if ((SCHEME_INTP(app->rand1)
+               && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))
+              || (SCHEME_INTP(app->rand2)
+                  && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand2))))
+            return SCHEME_LOCAL_TYPE_FIXNUM;
         }
-
+        
         return produces_local_type(app->rator, 2);
       }
       break;
@@ -2038,7 +2033,7 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
       if (SCHEME_LONG_DBLP(expr))
         return SCHEME_LOCAL_TYPE_EXTFLONUM;
 #endif
-      if (SCHEME_INTP(expr) 
+      if (SCHEME_INTP(expr)
           && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
         return SCHEME_LOCAL_TYPE_FIXNUM;
       return 0;
@@ -2801,6 +2796,28 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return app->rand1;
     }
 #endif
+  } else if (SCHEME_PRIMP(app->rator)
+             && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
+    /* Recognize combinations of bitwise operations as generating fixnums */
+    if (IS_NAMED_PRIM(app->rator, "bitwise-and")
+        || IS_NAMED_PRIM(app->rator, "bitwise-ior")
+        || IS_NAMED_PRIM(app->rator, "bitwise-xor")) {
+      if ((scheme_expr_produces_local_type(app->rand1) == SCHEME_LOCAL_TYPE_FIXNUM)
+          && (scheme_expr_produces_local_type(app->rand2) == SCHEME_LOCAL_TYPE_FIXNUM)) {
+        if (IS_NAMED_PRIM(app->rator, "bitwise-and"))
+          app->rator = scheme_unsafe_fxand_proc;
+        else if (IS_NAMED_PRIM(app->rator, "bitwise-ior"))
+          app->rator = scheme_unsafe_fxior_proc;
+        else
+          app->rator = scheme_unsafe_fxxor_proc;
+      }
+    } else if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
+      if (SCHEME_INTP(app->rand2) && (SCHEME_INT_VAL(app->rand2) <= 0)
+          && (scheme_expr_produces_local_type(app->rand1) == SCHEME_LOCAL_TYPE_FIXNUM)) {
+        app->rator = scheme_unsafe_fxrshift_proc;
+        app->rand2 = scheme_make_integer(-(SCHEME_INT_VAL(app->rand2)));
+      }
+    }
   }
 
   register_local_argument_types(NULL, NULL, app, info);

@@ -221,6 +221,11 @@ static Scheme_Object *exact_to_extfl(int argc, Scheme_Object *argv[]);
 #endif
 
 /* globals */
+READ_ONLY Scheme_Object *scheme_unsafe_fxand_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fxior_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fxxor_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fxrshift_proc;
+
 READ_ONLY double scheme_infinity_val;
 READ_ONLY double scheme_minus_infinity_val;
 READ_ONLY double scheme_floating_point_zero = 0.0;
@@ -1287,18 +1292,24 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxand", p, env);
+  REGISTER_SO(scheme_unsafe_fxand_proc);
+  scheme_unsafe_fxand_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fx_or, "unsafe-fxior", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxior", p, env);
+  REGISTER_SO(scheme_unsafe_fxior_proc);
+  scheme_unsafe_fxior_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fx_xor, "unsafe-fxxor", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxxor", p, env);
+  REGISTER_SO(scheme_unsafe_fxxor_proc);
+  scheme_unsafe_fxxor_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fx_not, "unsafe-fxnot", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -1317,6 +1328,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxrshift", p, env);
+  REGISTER_SO(scheme_unsafe_fxrshift_proc);
+  scheme_unsafe_fxrshift_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fx_to_fl, "unsafe-fx->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())

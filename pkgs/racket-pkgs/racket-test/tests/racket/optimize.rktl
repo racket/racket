@@ -3391,5 +3391,22 @@
                    (void)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that bytecode validator is consistent with respect to the
+;; optimizer and special-casing of bitwise operators:
+
+(let ([o (open-output-bytes)])
+  (write (compile
+          #'(module function racket/base
+              (lambda (x)
+                (let ([v (bitwise-xor 0
+                                      (let ([v (random)])
+                                        (begin
+                                          (bitwise-and x 2))))])
+                  (list (bitwise-and v 2) v)))))
+         o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
