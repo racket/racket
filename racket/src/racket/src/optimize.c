@@ -2802,8 +2802,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     if (IS_NAMED_PRIM(app->rator, "bitwise-and")
         || IS_NAMED_PRIM(app->rator, "bitwise-ior")
         || IS_NAMED_PRIM(app->rator, "bitwise-xor")) {
-      if ((scheme_expr_produces_local_type(app->rand1) == SCHEME_LOCAL_TYPE_FIXNUM)
-          && (scheme_expr_produces_local_type(app->rand2) == SCHEME_LOCAL_TYPE_FIXNUM)) {
+      if ((is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)
+          && (is_local_type_expression(app->rand2, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
         if (IS_NAMED_PRIM(app->rator, "bitwise-and"))
           app->rator = scheme_unsafe_fxand_proc;
         else if (IS_NAMED_PRIM(app->rator, "bitwise-ior"))
@@ -2813,7 +2813,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       }
     } else if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
       if (SCHEME_INTP(app->rand2) && (SCHEME_INT_VAL(app->rand2) <= 0)
-          && (scheme_expr_produces_local_type(app->rand1) == SCHEME_LOCAL_TYPE_FIXNUM)) {
+          && (is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
         app->rator = scheme_unsafe_fxrshift_proc;
         app->rand2 = scheme_make_integer(-(SCHEME_INT_VAL(app->rand2)));
       }
