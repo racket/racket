@@ -37,9 +37,9 @@
 (define-judgment-form rbtrees
   #:mode (rbtree I O)
   [(rbtree E O)]
-  [(rbtree (R (B t_l1 n_l t_l2) 
-              n 
-              (B t_r1 n_r t_r2)) 
+  [(rbtree (R (B t_l1 n_l t_l2)
+              n
+              (B t_r1 n_r t_r2))
            n_bd)
    (rbtree (B t_l1 n_l t_l2) n_bd)
    (rbtree (B t_r1 n_r t_r2) n_bd)]
@@ -59,8 +59,8 @@
   #:mode (rbt I O O O)
   [(rbt (R E n E) n n O)]
   [(rbt (B E n E) n n (s O))]
-  [(rbt (R (B t_l1 n_l t_l2) 
-           n 
+  [(rbt (R (B t_l1 n_l t_l2)
+           n
            (B t_r1 n_r t_r2))
         n_1min n_2max n_bd)
    (rbt (B t_l1 n_l t_l2) n_1min n_1max n_bd)
@@ -128,7 +128,7 @@
    (s (num->n ,(sub1 (term number))))])
 
 (define-metafunction rbtrees
-  [(numt->t E) 
+  [(numt->t E)
    E]
   [(numt->t (c any_1 number any_2))
    (c (numt->t any_1) (num->n number) (numt->t any_2))])
@@ -179,35 +179,35 @@
   (for/list ([_ (in-range num)])
     (rand-rb-tree depth)))
 
-(module+ 
- test
- (require rackunit)
- (check-true (judgment-holds
-              (ordered?
-               (B (R E (s O) E)
-                  (s (s (s O)))
-                  E)
-               n_1 n_2)))
- (check-true (judgment-holds
-              (rbtree (B (R E (s O) E)
-                         (s (s (s O)))
-                         E)
-                      n_1)))
- (check-true (judgment-holds
-              (rbst (B (R E (s O) E)
-                       (s (s (s O)))
-                       E))))
- (check-true (judgment-holds
-              (rbst (R (B E (s O) E)
-                       (s (s (s O)))
-                       (B E
-                          (s (s (s (s (s O)))))
-                          E)))))
- (check-false (judgment-holds
-               (rbst (R (B E (s (s O)) E)
-                        (s O)
-                        (R E O E)))))
- )
+(module+
+    test
+  (require rackunit)
+  (check-true (judgment-holds
+               (ordered?
+                (B (R E (s O) E)
+                   (s (s (s O)))
+                   E)
+                n_1 n_2)))
+  (check-true (judgment-holds
+               (rbtree (B (R E (s O) E)
+                          (s (s (s O)))
+                          E)
+                       n_1)))
+  (check-true (judgment-holds
+               (rbst (B (R E (s O) E)
+                        (s (s (s O)))
+                        E))))
+  (check-true (judgment-holds
+               (rbst (R (B E (s O) E)
+                        (s (s (s O)))
+                        (B E
+                           (s (s (s (s (s O)))))
+                           E)))))
+  (check-false (judgment-holds
+                (rbst (R (B E (s (s O)) E)
+                         (s O)
+                         (R E O E)))))
+  )
 
 (define (ins-preserves-rb-tree t)
   (or (not (judgment-holds (rb-tree ,t)))
@@ -221,50 +221,50 @@
              (insert (num->n ,n) ,t))))])))
 
 (module+
- test
- (define (check-rbsts n)
-   (for ([_ (in-range n)])
-     (match (generate-term rbtrees
-                           #:satisfying
-                           (rbst t)
-                           8)
-       [#f (void)]
-       [`(rbst ,t)
-        (check-not-false (or (ins-preserves-rb-tree t)
-                             (printf "~s\n" t)))])))
- 
- (define (check-rbst/rb-tree tries)
-   (for ([_ tries])
-     (match (generate-term rbtrees
-                           #:satisfying
-                           (rbst t)
-                           8)
-       [#f (void)]
-       [`(rbst ,t)
-        (define res
-          (judgment-holds
-           (rb-tree ,t)))
-        (unless res (displayln t))
-        (check-not-false res)]))
-   (for ([_ tries])
-     (match (generate-term rbtrees
-                           #:satisfying
-                           (rb-tree t)
-                           8)
-       [#f (void)]
-       [`(rb-tree ,t)
-        (define res
-          (judgment-holds
-           (rb-tree ,t)))
-        (unless res (displayln t))
-        (check-not-false res)])))
- )
+    test
+  (define (check-rbsts n)
+    (for ([_ (in-range n)])
+      (match (generate-term rbtrees
+                            #:satisfying
+                            (rbst t)
+                            8)
+        [#f (void)]
+        [`(rbst ,t)
+         (check-not-false (or (ins-preserves-rb-tree t)
+                              (printf "~s\n" t)))])))
+
+  (define (check-rbst/rb-tree tries)
+    (for ([_ tries])
+      (match (generate-term rbtrees
+                            #:satisfying
+                            (rbst t)
+                            8)
+        [#f (void)]
+        [`(rbst ,t)
+         (define res
+           (judgment-holds
+            (rb-tree ,t)))
+         (unless res (displayln t))
+         (check-not-false res)]))
+    (for ([_ tries])
+      (match (generate-term rbtrees
+                            #:satisfying
+                            (rb-tree t)
+                            8)
+        [#f (void)]
+        [`(rb-tree ,t)
+         (define res
+           (judgment-holds
+            (rb-tree ,t)))
+         (unless res (displayln t))
+         (check-not-false res)])))
+  )
 
 (define (generate-M-term)
   (generate-term rbtrees t 5))
 
 (define (generate-typed-term)
-  (match (generate-term rbtrees 
+  (match (generate-term rbtrees
                         #:satisfying
                         (rb-tree t)
                         5)
@@ -276,10 +276,10 @@
   (judgment-holds (rb-tree ,t)))
 
 (define (typed-generator)
-  (let ([g (redex-generator rbtrees 
+  (let ([g (redex-generator rbtrees
                             (rb-tree t)
                             5)])
-    (λ () 
+    (λ ()
       (match (g)
         [`(rb-tree ,t)
          t]
@@ -298,3 +298,22 @@
       (begin0
         (generate-term rbtrees t #:i-th index)
         (set! index (add1 index))))))
+
+(define fixed
+  (term
+   (;; 1 and 2
+    (B (R E (num->n 1) E)
+       (num->n 3)
+       E)
+    ;; 3
+    (B
+     ;;; size should be 1, but in 3 it's 0
+     (B 
+      ;; size is 0
+      (R E (num->n 1) E)
+      (num->n 2)
+      ;; size is 0
+      (R E (num->n 3) E))
+     (num->n 5)
+     ;; size is 0
+     (R E (num->n 10) E)))))

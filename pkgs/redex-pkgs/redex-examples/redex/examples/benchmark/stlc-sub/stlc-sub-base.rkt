@@ -268,11 +268,14 @@
       (v? term)
       (let ([red-res (apply-reduction-relation red term)]
             [t-type (type-check term)])
+        ;; xxx should this also be t-type IMPLIES?
         (and
          (= (length red-res) 1)
-	 (or 
-          (equal? (car red-res) "error")
-          (equal? t-type (type-check (car red-res))))))))
+         (let ([red-t (car red-res)])
+           (or 
+            (equal? red-t "error")
+            (let ([red-type (type-check red-t)])
+              (equal? t-type red-type))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.0001)))
@@ -283,3 +286,36 @@
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define fixed
+  (term
+   (;; 1
+    ((λ (x int) x) 1)
+
+    ;; 9
+    ((λ (x (list int)) (tl x)) ((cons 1) nil))
+
+    ;; 2 -- xxx I don't think this is really an error because the (M
+    ;; N) case does everything that (c M) does since M can equal
+    ;; c. Otherwise the previous test case would work, because (tl x)
+    ;; would not be subst'd and it has no type
+
+    ;; 3
+    ((λ (x int) ((λ (y int) y) x)) 1)
+
+    ;; 4 -- xxx I don't think this is really an error because the
+    ;; normal λ rule always does renaming so this test below works
+    ;; fine and ends up with x1 in both places.
+
+    #;((λ (x int) ((λ (x (list int)) x) ((cons x) nil))) 1)
+
+    ;; 5 & 6 --- xxx These diffs are bogus because they don't actually
+    ;; make a change to any of the program.
+
+    ;; 7
+    ((λ (x int) (hd ((cons x) nil))) 1)
+
+    ;; 8 -- xxx This isn't an error for the same reason 4 isn't.
+    
+    )))
+
