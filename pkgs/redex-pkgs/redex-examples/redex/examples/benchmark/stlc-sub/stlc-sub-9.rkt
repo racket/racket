@@ -1,15 +1,15 @@
 #lang racket/base
 
+(define the-error "swaps to/from expressions when recurring in the rhs of app")
+
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
-         racket/list
          racket/match
+         racket/list
          racket/contract
          math/base)
 
 (provide (all-defined-out))
-(define the-error "swaps to/from expressions when recurring in the rhs of app")
-
 
 (define-language stlc
   (M N ::= 
@@ -111,12 +111,12 @@
    (λ (x τ) M)]
   [(subst (λ (x_1 τ) M) x_2 v)
    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
-  [(subst (M N) x M_x)
-   ((subst M_x x M) (subst N x M_x))]
    (where x_new ,(variable-not-in (term (x_1 e x_2))
                                   (term x_1)))]
   [(subst (c M) x M_x)
    (c (subst M x M_x))]
+  [(subst (M N) x M_x)
+   ((subst M_x x M) (subst N x M_x))]
   [(subst M x M_x)
    M])
 
@@ -255,7 +255,6 @@
        (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)]))
   (match candidate
     [`(typeof • ,M ,τ)
-
      M]
     [#f #f]))
 
