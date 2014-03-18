@@ -18,7 +18,7 @@
 
 (define all-types '(search grammar search-gen search-gen-ref 
                            search-gen-enum search-gen-enum-ref
-                           enum ordered))
+                           enum ordered fixed))
 (define types '())
 
 (define (set-type! arg)
@@ -40,7 +40,7 @@
    [("-f" "--first-only") "Find the first counterexample only"
                           (set! first-only #t)]
    #:multi
-   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered"
+   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered, fixed"
                     (set-type! t)]
    #:args filenames
    (match filenames
@@ -174,6 +174,7 @@
   (define typed-generator (dynamic-require fpath 'typed-generator))
   (define gen-enum (dynamic-require fpath 'generate-enum-term))
   (define ordered-generator (dynamic-require fpath 'ordered-enum-generator))
+  (define fixed (dynamic-require fpath 'fixed))
   (define err (dynamic-require fpath 'the-error))
   (printf "\n-------------------------------------------------------------------\n")
   (printf "~a has the error: ~a\n\n" fpath err)
@@ -185,6 +186,13 @@
       (and (tc t)
            t)))
   (cond
+    [(equal? gen-type 'fixed)
+     (define some-failed?
+       (for/or ([t (in-list fixed)])
+         (define ok? (check t))
+         (not ok?)))
+     (unless some-failed?
+       (error 'fixed "Expected some term to fail, but didn't find one in ~a" fixed))]
     [(equal? gen-type 'grammar)
      (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-term))
                       check seconds gen-type)]

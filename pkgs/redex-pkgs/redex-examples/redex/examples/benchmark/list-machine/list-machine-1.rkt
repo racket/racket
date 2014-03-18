@@ -443,3 +443,11 @@
         (generate-term list-machine-typing (l0 : ι p) #:i-th index)
         (set! index (add1 index))))))
 
+(define fixed
+  (term
+   ;; 1, 2, and 3 [but designed for 3]
+   ((l0 : (begin (cons x y z)
+                 (begin (branch-if-nil z loop)
+                        halt))
+        (loop : (jump loop)
+              end)))))

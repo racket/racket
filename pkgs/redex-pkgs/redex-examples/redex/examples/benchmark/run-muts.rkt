@@ -33,7 +33,7 @@
    [("-f" "--file") fname "Run tests for a single file"
                     (set! files (list fname))]
    #:multi
-   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered"
+   [("-t" "--type") t "Generation type to run, one of: search, grammar, search-gen, search-gen-ref, search-gen-enum, search-gen-enum-ref, enum, ordered, fixed"
                     (set! gen-types (cons (string->symbol t) gen-types))])
 
 (define-runtime-path here ".")
@@ -67,33 +67,39 @@
      (set! worklist (cdr worklist))
      (semaphore-post work-sem)
      (define path (simplify-path (build-path here file)))
-     (define output-name (string-append (first 
-                                         (regexp-split #rx"\\."
-                                                       (last (regexp-split #rx"/" file))))
-                                        "-"
-                                        (symbol->string type)
-                                        "-results.rktd"))
-     (define args (apply string-append 
-                         (add-between (list (if verbose? "-v" "")
-                                            (string-append "-m " (number->string minutes))
-                                            (string-append "-o " output-name)
-                                            (string-append "-t "
-                                                           (symbol->string type))
-                                            (if (equal? type 'ordered) "-f" ""))
-                                      " ")))
-     (define command (apply string-append 
-                            (add-between (list "racket" (path->string (build-path here "test-file.rkt"))
-                                               args (path->string path)) " ")))
-     (printf "running: ~s\n" command)
+     (define output-name 
+       (string-append (first 
+                       (regexp-split #rx"\\."
+                                     (last (regexp-split #rx"/" file))))
+                      "-"
+                      (symbol->string type)
+                      "-results.rktd"))
+     (define args 
+       (apply string-append 
+              (add-between (list (if verbose? "-v" "")
+                                 (string-append "-m " (number->string minutes))
+                                 (string-append "-o " output-name)
+                                 (string-append "-t "
+                                                (symbol->string type))
+                                 (if (equal? type 'ordered) "-f" ""))
+                           " ")))
+     (define command 
+       (apply string-append 
+              (add-between 
+               (list "racket" (path->string (build-path here "test-file.rkt"))
+                     args (path->string path)) " ")))
+     (when verbose?
+       (printf "running: ~s\n" command))
      (system command)
      (do-next)]))
 
 (define (do-work)
-  (printf "worklist:\n~a\n" (apply string-append
-                                   (add-between (for/list ([w (in-list worklist)])
-                                                  (match-define (work f t) w)
-                                                  (string-append f ": " (symbol->string t)))
-                                                ", ")))
+  (printf "worklist:\n~a\n"
+          (apply string-append
+                 (add-between (for/list ([w (in-list worklist)])
+                                (match-define (work f t) w)
+                                (string-append f ": " (symbol->string t)))
+                              ", ")))
   (for/list ([_ (in-range num-procs)])
     (thread do-next)))
 

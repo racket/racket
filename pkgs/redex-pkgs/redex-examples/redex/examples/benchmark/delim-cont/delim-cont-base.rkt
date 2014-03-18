@@ -945,3 +945,9 @@
     (begin0
       (generate-term abort-lang e #:i-th index)
       (set! index (add1 index)))))
+
+(define fixed
+  (term
+   (;; 1, 2 & 3 [designed for 1]
+    (ccm (MG (flat (λ (x : Num) #t)) key:test "k" "l" "j") Num)
+    )))

@@ -274,11 +274,14 @@
       (v? term)
       (let ([red-res (apply-reduction-relation red term)]
             [t-type (type-check term)])
+        ;; xxx should this also be t-type IMPLIES?
         (and
          (= (length red-res) 1)
-	 (or 
-          (equal? (car red-res) "error")
-          (equal? t-type (type-check (car red-res))))))))
+         (let ([red-t (car red-res)])
+           (or 
+            (equal? red-t "error")
+            (let ([red-type (type-check red-t)])
+              (equal? t-type red-type))))))))
 
 (define (generate-enum-term)
   (generate-term poly-stlc M #:i-th (pick-an-index 0.001)))
@@ -289,3 +292,21 @@
       (begin0
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define fixed
+  (term
+   (;; 2
+    (([cons @ int] 1) nil)
+
+    ;; 3 & 10 [designed for 3]
+    ((λ (x int) [nil @ int]) 1)
+
+    ;; 5, 6, 7, 8 & 9 [designed for 4]
+    ((λ (x int) x)
+     (([cons @ int] 1) [nil @ int]))
+
+    ;; 4
+    ([tl @ int]
+     (([cons @ int] 1) [nil @ int]))
+
+    )))

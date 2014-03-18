@@ -245,6 +245,7 @@
       (v? term)
       (let ([red-res (apply-reduction-relation red term)]
             [t-type (type-check term)])
+        ;; xxx shouldn't this be t-type IMPLIES this?
         (and
          (= (length red-res) 1) 
          (or 
@@ -260,3 +261,19 @@
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define fixed
+  (term
+   (;; 2
+    ((cons 1) 2)
+    ;; 3
+    ((λ (x int) (hd x))
+     7)
+    ;; 10
+    ((λ (x (list int)) (hd x))
+     7)
+    ;; 5, 6, 7, 8, 9
+    ((λ (x int) (hd x))
+     ((cons 1) nil))
+    ;; 4
+    (hd ((cons ((cons 1) nil)) nil)))))
