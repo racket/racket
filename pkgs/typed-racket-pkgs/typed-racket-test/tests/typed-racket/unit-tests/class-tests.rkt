@@ -4,10 +4,16 @@
 
 (require (submod "typecheck-tests.rkt" test-helpers)
          (except-in "test-utils.rkt" private)
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     typed-racket/tc-setup
+                     typed-racket/utils/tc-utils))
 
 (provide tests)
 (gen-test-main)
+
+(begin-for-syntax
+  ;; for checking the printing of type aliases
+  (current-type-names (init-current-type-names)))
 
 ;; see typecheck-tests.rkt for rationale on imports
 (require rackunit
