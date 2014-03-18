@@ -2,15 +2,7 @@
 < (define the-error "no error")
 ---
 > (define the-error "the type of cons is incorrect")
-8d7
-<          racket/contract
-9a9
->          racket/contract
 67c67
 <    (int → ((list int) → (list int)))]
 ---
 >    (int → ((list int) → int))]
-249c249
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)

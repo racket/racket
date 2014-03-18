@@ -5,8 +5,8 @@
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
          racket/list
-         racket/contract
          racket/match
+         racket/contract
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -264,15 +264,21 @@
 (define fixed
   (term
    (;; 2
-    ((cons 1) 2)
+    ((cons 1) nil)
     ;; 3
-    ((λ (x int) (hd x))
+    ((λ (x (list int)) 1) 
      7)
+    ;; 4 (if we hadn't changed number->v in cons)
+    (cons ((cons 0) nil))
+    ;; 5
+    (tl ((cons 1) nil))
+    ;; 6
+    (hd ((cons 1) nil))
+    ;; 7
+    ((λ (x int) x) (hd ((cons 1) nil)))
+    ;; 8
+    ((λ (x (list int)) (cons x)) nil)
+    ;; 9
+    ((λ (x int) (λ (y (list int)) x)) 1)
     ;; 10
-    ((λ (x (list int)) (hd x))
-     7)
-    ;; 5, 6, 7, 8, 9
-    ((λ (x int) (hd x))
-     ((cons 1) nil))
-    ;; 4
-    (hd ((cons ((cons 1) nil)) nil)))))
+    (hd 0))))

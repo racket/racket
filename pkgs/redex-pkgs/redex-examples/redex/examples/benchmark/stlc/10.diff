@@ -2,17 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "app rule the range of the function is matched to the argument")
-8d7
-<          racket/contract
-9a9
->          racket/contract
 58c58
 <    (typeof Γ M_2 σ)
 ---
 >    (typeof Γ M_2 σ_2)
 232d231
 < 
-249c248
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)

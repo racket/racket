@@ -7,7 +7,3 @@
 <      ((cons v) v))
 ---
 >      (cons v))
-249c248
-<          (= (length red-res) 1) 
----
->          (= (length red-res) 1)
