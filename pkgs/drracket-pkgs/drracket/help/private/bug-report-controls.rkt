@@ -237,17 +237,7 @@
           (make-object text-field% #f panel void ""))))
      #f
      #:top-panel synthesized-panel))
-  
-  (define links-ctrl
-    (build/label
-     (string-constant bug-report-field-links)
-     (lambda (panel)
-       (keymap:call/text-keymap-initializer
-        (lambda ()
-          (make-object text-field% #f panel void ""))))
-     #f
-     #:top-panel synthesized-panel))
-  
+    
   (define pkg-info
     (make-big-text
      (string-constant bug-report-field-pkg)
@@ -327,7 +317,6 @@
                    "\n"
                    (format "Human Language: ~a\n" (send human-language get-value))
                    (format "(current-memory-use) ~a\n" (send memory-use get-value))
-                   (format "Links: ~a\n" (send links-ctrl get-value))
                    (format "raco pkg (show):\n~a\n" (send (send pkg-info get-editor) get-text))
                    "\n"
                    "\nCollections:\n"
@@ -427,24 +416,6 @@
                    (if (directory-exists? d)
                        (map path->string (directory-list d))
                        '(non-existent-path))))))
-  
-  (define-syntax (links-calls stx)
-    (syntax-case stx ()
-      [(_ calls ...)
-       (let ([str 
-              (apply 
-               string-append
-               (add-between (map (λ (x) "~s = ~s")
-                                 (syntax->list #'(calls ...)))
-                            "; "))])
-         #`(format #,str #,@(apply append (map (λ (x) (list #`'#,x x))
-                                               (syntax->list #'(calls ...))))))]))
-  (send (send links-ctrl get-editor)
-        insert
-        (links-calls (links)
-                     (links #:user? #f)
-                     (links #:root? #t)
-                     (links #:user? #f #:root? #t)))
   
   (define pkg-info-sp (open-output-string))
   (parameterize ([current-output-port pkg-info-sp])
