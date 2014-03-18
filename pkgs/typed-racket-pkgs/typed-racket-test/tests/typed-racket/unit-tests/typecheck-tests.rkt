@@ -1,26 +1,20 @@
 #lang racket/base
 
-(module test-structs racket/base
-  (module internal racket/kernel
-    (#%declare #:cross-phase-persistent)
-    (#%provide cross-phase-failure cross-phase-failure? cross-phase-failure-acc)
-    (define-values
-      (cross-phase-failure-struct-type cross-phase-failure cross-phase-failure?
-                                       cross-phase-failure-acc cross-phase-failure-mut)
-      (make-struct-type 'cross-phase-failure #f 2 0 #f null #f #f (list 0 1))))
+(module cross-phase-failure racket/base
   (require
-    'internal
     rackunit
     racket/contract)
 
   (provide
-
     (contract-out
       [rename cross-phase-failure* cross-phase-failure
         (->* (string?) (#:actual any/c #:expected any/c) cross-phase-failure?)]
       [cross-phase-failure? predicate/c]
       [cross-phase-failure-message (-> cross-phase-failure? string?)]
-      [cross-phase-failure-check-infos (-> cross-phase-failure? (listof check-info?))]))
+      [rename cross-phase-failure-check-infos* cross-phase-failure-check-infos
+        (-> cross-phase-failure? (listof check-info?))]))
+
+  (struct cross-phase-failure (message check-infos) #:prefab)
 
   (define no-arg (gensym 'no-arg))
 
@@ -31,17 +25,13 @@
         (if (eq? actual no-arg) null (list (list 'actual actual)))
         (if (eq? expected no-arg) null (list (list 'expected expected))))))
 
-  (define cross-phase-failure-message
-    (make-struct-field-accessor cross-phase-failure-acc 0 'message))
-  (define raw-cross-phase-failure-check-infos
-    (make-struct-field-accessor cross-phase-failure-acc 1 'check-infos))
-  (define (cross-phase-failure-check-infos cpf)
-    (map (λ (args) (apply check-info args)) (raw-cross-phase-failure-check-infos cpf))))
+  (define (cross-phase-failure-check-infos* cpf)
+    (map (λ (args) (apply check-info args)) (cross-phase-failure-check-infos cpf))))
 
 ;; Functions for testing correct behavior of typechecking
 (module tester racket/base
   (require
-    (submod ".." test-structs)
+    (submod ".." cross-phase-failure)
     typed-racket/utils/utils
     racket/base
     syntax/parse
@@ -111,7 +101,7 @@
 
 
 (require
-  'test-structs
+  'cross-phase-failure
   "evaluator.rkt"
   (except-in "test-utils.rkt" private)
   syntax/location syntax/srcloc
