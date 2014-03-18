@@ -1,0 +1,16 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "bug 4")
+155c155,156
+<    (side-condition (< (term n_p) (term n_l)))]
+---
+>    ;; bug 4
+>    #;(side-condition (< (term n_p) (term n_l)))]
+474a476,481
+> 
+> (test-equal
+>  (bytecode-ok?
+>   '(let-one 'x
+>             (branch #f (boxenv 0 'y) (loc-box 0))))
+>  #t)

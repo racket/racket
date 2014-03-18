@@ -1,0 +1,25 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "bug 3")
+100c100
+<    (where s_1 (abs-push n not s))
+---
+>    (where s_1 (abs-push n uninit s))
+105c105
+<    (verify* (e_0 e_1 ...) (abs-push n not s) n_l* #f γ η)
+---
+>    (verify* (e_0 e_1 ...) (abs-push n uninit s) n_l* #f γ η)
+237c237
+<    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n not s) n_l* #f γ η))
+---
+>    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n uninit s) n_l* #f γ η))
+474a475,482
+> 
+> (test-equal
+>  (bytecode-ok?
+>   '(application
+>     (proc-const (val val) (branch (loc-noclr 0) 'a 'b))
+>     'x
+>     (install-value 0 'y (boxenv 0 'z))))
+>  #t)

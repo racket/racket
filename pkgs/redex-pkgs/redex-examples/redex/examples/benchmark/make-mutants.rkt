@@ -13,7 +13,8 @@
                           "poly-stlc"
                           "rbtrees"
                           "delim-cont"
-                          "list-machine"))
+                          "list-machine"
+                          "rvm"))
   
 (define-runtime-path here ".")
 

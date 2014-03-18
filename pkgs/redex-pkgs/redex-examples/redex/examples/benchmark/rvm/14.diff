@@ -1,0 +1,27 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "bug 14")
+142c142,143
+<    (where uninit (stack-ref n s_2))]
+---
+>    ;; bug 14
+>    #;(where uninit (stack-ref n s_2))]
+162c163,164
+<    (side-condition (term (AND (same? ṽ_0 uninit) ...)))
+---
+>    ;; bug 14
+>    ;;(side-condition (term (AND (same? ṽ_0 uninit) ...)))
+249a252,254
+>   ;; bug 14
+>   [(closure-intact? (box-nc ṽ_1 ...) (imm ṽ_2 ...))
+>    (closure-intact? (ṽ_1 ...) (ṽ_2 ...))]
+474a480,486
+> 
+> (test-equal
+>  (bytecode-ok?
+>    '(let-one 'x 
+>              (let-rec ((lam () (0) (application (loc-noclr 0)))) 
+>                       'x)))
+>  #t)
+\ No newline at end of file

@@ -1,0 +1,25 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "bug 15")
+125c125,126
+<   [(verify (case-lam (name l (lam (val ...) (n ...) e)) ...) s n_l b γ η f)
+---
+>   ;; bug 15
+>   [(verify (case-lam (name l (lam (τ ...) (n ...) e)) ...) s n_l b γ η f)
+397a399
+>       ;;bug 15
+420c422
+<        `(case-lam ,@(map (curry recur depth #f) ls))]
+---
+>        `(case-lam ,@(map (curry recur depth #t) ls))]
+474a477,484
+> 
+> (test-equal
+>  (bytecode-ok?
+>    '(let-one 42 
+>              (boxenv 0 
+>                      (application (case-lam (lam (ref) () (loc-box 0))) 
+>                                   (loc-box 1)))))
+>  #t)
+\ No newline at end of file

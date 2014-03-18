@@ -1,0 +1,19 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "bug 5")
+163c163,164
+<    (side-condition (<= (term n) (term n_l)))
+---
+>    ;;bug 5
+>    ;;(side-condition (<= (term n) (term n_l)))
+474a476,483
+> 
+> (test-equal
+>  (bytecode-ok? 
+>   '(let-void 1 
+>              (branch #f 
+>                      (let-rec ((lam () (0) 'x)) 'y) 
+>                      (loc-noclr 0))))
+>  #t)
+\ No newline at end of file
