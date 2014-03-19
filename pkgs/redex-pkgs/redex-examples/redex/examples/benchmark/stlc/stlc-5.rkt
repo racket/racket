@@ -267,3 +267,7 @@
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define small-counter-example
+  (term (tl ((cons 1) nil))))
+(test-equal (check small-counter-example) #f)
