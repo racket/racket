@@ -6,3 +6,9 @@
 <   [(typeof Γ M (σ → σ_2))
 ---
 >   [(typeof Γ M (σ_2 → σ_2))
+293a294,298
+> 
+> (define small-counter-example
+>   (term ((λ (x (list int)) x) 
+>          1)))
+> (test-equal (check small-counter-example) #f)

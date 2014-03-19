@@ -291,3 +291,9 @@
       (begin0
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define small-counter-example
+  (term ((λ (x (list int)) x) 
+         1)))
+(test-equal (check small-counter-example) #f)
+
