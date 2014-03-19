@@ -1,16 +1,8 @@
-3,4d2
+3c3
 < (define the-error "no error")
-< 
-7d4
-<          racket/match
-8a6
->          racket/match
-12a11,12
-> (define the-error "substitutes rator into rand in application")
-> 
-119c119
-<    ((subst M x M_x) (subst N x M_x))]
 ---
->    ((subst M x M_x) (subst N x M))]
-257a258
-> 
+> (define the-error "swaps function and argument position in application")
+115c115
+<    ((subst M x v) (subst N x v))]
+---
+>    ((subst N x v) (subst M x v))]

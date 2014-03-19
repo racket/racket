@@ -1,8 +1,0 @@
-3c3
-< (define the-error "no error")
----
-> (define the-error "swaps to/from expressions when recurring in the rhs of app")
-119c119
-<    ((subst M x M_x) (subst N x M_x))]
----
->    ((subst M_x x M) (subst N x M_x))]
