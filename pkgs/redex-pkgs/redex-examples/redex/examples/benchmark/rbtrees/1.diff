@@ -10,3 +10,10 @@
 <    (balance (c t_1 n_2 (ins n_1 t_2)))
 ---
 >    (c t_1 n_2 (ins n_1 t_2))
+301a302,307
+> (define small-counter-example
+>   (term (B (R E (num->n 0) E)
+>            (num->n 2)
+>            E)))
+> (test-equal (check small-counter-example) #f)
+> 

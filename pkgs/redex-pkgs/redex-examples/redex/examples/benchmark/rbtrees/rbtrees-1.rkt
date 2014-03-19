@@ -299,6 +299,12 @@
         (generate-term rbtrees t #:i-th index)
         (set! index (add1 index))))))
 
+(define small-counter-example
+  (term (B (R E (num->n 0) E)
+           (num->n 2)
+           E)))
+(test-equal (check small-counter-example) #f)
+
 (define fixed
   (term
    (;; 1 and 2
