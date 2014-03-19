@@ -13,8 +13,7 @@
 <        `(case-lam ,@(map (curry recur depth #f) ls))]
 ---
 >        `(case-lam ,@(map (curry recur depth #t) ls))]
-474a477,484
-> 
+478a481,488
 > (test-equal
 >  (bytecode-ok?
 >    '(let-one 42 
@@ -22,4 +21,4 @@
 >                      (application (case-lam (lam (ref) () (loc-box 0))) 
 >                                   (loc-box 1)))))
 >  #t)
-\ No newline at end of file
+> 
