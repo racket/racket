@@ -292,20 +292,3 @@
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
 
-(define fixed
-  (term
-   (;; 2
-    (([cons @ int] 1) nil)
-
-    ;; 3 & 10 [designed for 3]
-    ((λ (x int) [nil @ int]) 1)
-
-    ;; 5, 6, 7, 8 & 9 [designed for 4]
-    ((λ (x int) x)
-     (([cons @ int] 1) [nil @ int]))
-
-    ;; 4
-    ([tl @ int]
-     (([cons @ int] 1) [nil @ int]))
-
-    )))
