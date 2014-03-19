@@ -1,7 +1,8 @@
 3c3
 < (define the-error "no error")
 ---
-> (define the-error "forget to do the replacement")
-108,109d107
-<   [(subst y x M)
-<    y]
+> (define the-error "replace all variables")
+106c106
+<   [(subst x x v)
+---
+>   [(subst x y v)

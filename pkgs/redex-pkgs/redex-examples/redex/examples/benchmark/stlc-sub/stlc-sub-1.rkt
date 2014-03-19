@@ -1,15 +1,15 @@
 #lang racket/base
 
+(define the-error "forgot the variable case")
+
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
-         racket/list
          racket/match
+         racket/list
          racket/contract
          racket/bool)
 
 (provide (all-defined-out))
-(define the-error "the order of the variable clauses is swapped")
-
 
 (define-language stlc
   (M N ::= 
@@ -102,22 +102,16 @@
         "+")))
 
 (define-metafunction stlc
-  subst : M x M -> M
-  [(subst y x M)
-   y]
-  [(subst x x M)
-   M]
-  [(subst (λ (x τ) M) x M_x)
+  subst : M x v -> M
+  [(subst (λ (x τ) M) x v)
    (λ (x τ) M)]
   [(subst (λ (x_1 τ) M) x_2 v)
    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
    (where x_new ,(variable-not-in (term (x_1 e x_2))
                                   (term x_1)))]
-  [(subst (c M) x M_x)
-   (c (subst M x M_x))]
-  [(subst (M N) x M_x)
-   ((subst M x M_x) (subst N x M_x))]
-  [(subst M x M_x)
+  [(subst (M N) x v)
+   ((subst M x v) (subst N x v))]
+  [(subst M x v)
    M])
 
 (define-metafunction stlc
@@ -255,7 +249,6 @@
        (generate-term stlc #:satisfying (typeof • (tl nil) ((list int) → (list int))) 5)]))
   (match candidate
     [`(typeof • ,M ,τ)
-
      M]
     [#f #f]))
 

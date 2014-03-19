@@ -1,8 +1,0 @@
-3c3
-< (define the-error "no error")
----
-> (define the-error "replace all variables, not just substituted one")
-109c109
-<    y]
----
->    x]

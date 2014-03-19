@@ -1,8 +1,0 @@
-3c3
-< (define the-error "no error")
----
-> (define the-error "accidentally use the same metavariable name twice")
-110c110
-<   [(subst (λ (x τ) M) x M_x)
----
->   [(subst (λ (x τ) M) x M)
