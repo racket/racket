@@ -1,7 +1,11 @@
 #lang racket/base
 
 ;;TODO use contract-req
-(require "rep-utils.rkt" "free-variance.rkt" racket/contract/base)
+(require "rep-utils.rkt" "free-variance.rkt" racket/contract/base
+         racket/lazy-require)
+
+;; TODO use something other than lazy-require.
+(lazy-require ["type-rep.rkt" (Type/c Univ? Bottom?)])
 
 (provide Filter/c FilterSet/c name-ref/c hash-name filter-equal?)
 
@@ -20,17 +24,19 @@
 (define name-ref/c (or/c identifier? (list/c integer? integer?)))
 (define (hash-name v) (if (identifier? v) (hash-id v) (list v)))
 
+(define ((length>=/c len) l)
+  (and (list? l)
+       (>= (length l) len)))
+
 (def-filter Bot () [#:fold-rhs #:base])
 (def-filter Top () [#:fold-rhs #:base])
 
-;; TODO: t should only be a Type/c, but that leads to circular dependencies
-(def-filter TypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
+(def-filter TypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p (listof PathElem?)] [v name-ref/c])
   [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
   [#:frees (λ (f) (combine-frees (map f (cons t p))))]
   [#:fold-rhs (*TypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
-;; TODO: t should only be a Type/c, but that leads to circular dependencies
-(def-filter NotTypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
+(def-filter NotTypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p (listof PathElem?)] [v name-ref/c])
   [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
   [#:frees (λ (f) (combine-frees (map f (cons t p))))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
@@ -38,12 +44,14 @@
 ;; implication
 (def-filter ImpFilter ([a Filter/c] [c Filter/c]))
 
-(def-filter AndFilter ([fs (non-empty-listof Filter/c)])
-  [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
+(def-filter OrFilter ([fs (and/c (length>=/c 2)
+                                 (listof (or/c TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
-(def-filter OrFilter ([fs (non-empty-listof Filter/c)])
-  [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
+(def-filter AndFilter ([fs (and/c (length>=/c 2)
+                                  (listof (or/c OrFilter? TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
 (def-filter FilterSet ([thn Filter/c] [els Filter/c])

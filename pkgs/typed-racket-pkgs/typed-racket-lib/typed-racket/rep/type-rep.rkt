@@ -24,6 +24,7 @@
          Filter? Object?
          Type/c Type/c?
          Values/c SomeValues/c
+         Bottom?
          Poly-n
          PolyDots-n
          Class? Row? Row:
@@ -80,6 +81,10 @@
 
 (define Type/c (flat-named-contract 'Type Type/c?))
 (define Values/c (flat-named-contract 'Values Values/c?))
+(define Bottom?
+  (match-lambda
+    [(Union: (list)) #t]
+    [else #f]))
 
 ;; Name = Symbol
 
