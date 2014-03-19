@@ -2,5 +2,3 @@
 < (define the-error "no error")
 ---
 > (define the-error "the ((cons number) v) value has been omitted")
-32a33
->      ((cons v) v)

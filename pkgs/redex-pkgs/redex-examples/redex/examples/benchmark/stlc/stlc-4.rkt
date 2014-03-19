@@ -31,7 +31,6 @@
      c
      (cons v)
      ((cons v) v)
-     ((cons v) v)
      (+ v))
   (E hole
      (E M)

@@ -2,11 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "variables aren't required to match in lookup")
-32a33
->      ((cons v) v)
-75c76
+76c76
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
-237d237
+238d237
 < 

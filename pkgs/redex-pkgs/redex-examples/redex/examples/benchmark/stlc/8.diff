@@ -2,11 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "lookup always returns int")
-32a33
->      ((cons v) v)
-76c77
+77c77
 <    σ]
 ---
 >    int]
-237d237
+238d237
 < 
