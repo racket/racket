@@ -6,3 +6,8 @@
 <    (int → ((list int) → (list int)))]
 ---
 >    (int → ((list int) → int))]
+270a271,274
+> 
+> (define small-counter-example
+>   (term ((+ 1) ((cons 1) nil))))
+> (test-equal (check small-counter-example) #f)
