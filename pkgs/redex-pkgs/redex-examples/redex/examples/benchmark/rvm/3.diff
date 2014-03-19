@@ -14,7 +14,7 @@
 <    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n not s) n_l* #f γ η))
 ---
 >    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n uninit s) n_l* #f γ η))
-478a479,486
+475a476,483
 > (test-equal
 >  (bytecode-ok?
 >   '(application

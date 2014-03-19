@@ -13,7 +13,7 @@
 <        `(case-lam ,@(map (curry recur depth #f) ls))]
 ---
 >        `(case-lam ,@(map (curry recur depth #t) ls))]
-478a481,488
+475a478,485
 > (test-equal
 >  (bytecode-ok?
 >    '(let-one 42 

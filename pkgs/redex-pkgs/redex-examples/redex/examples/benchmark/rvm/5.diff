@@ -7,7 +7,7 @@
 ---
 >    ;;bug 5
 >    ;;(side-condition (<= (term n) (term n_l)))
-478a480,487
+475a477,484
 > (test-equal
 >  (bytecode-ok? 
 >   '(let-void 1 

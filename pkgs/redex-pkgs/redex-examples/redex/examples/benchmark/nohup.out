@@ -1,0 +1,93 @@
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-1.rkt has the error: forgot the variable case
+
+Running stlc-sub/stlc-sub-1.rkt....
+Using generator: ordered
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-1.rkt has the error: forgot the variable case
+
+Running stlc-sub/stlc-sub-1.rkt....
+Using generator: grammar
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-1.rkt has the error: forgot the variable case
+
+Running stlc-sub/stlc-sub-1.rkt....
+Using generator: enum
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-2.rkt has the error: wrong order of arguments to replace call
+
+Running stlc-sub/stlc-sub-2.rkt....
+Using generator: ordered
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-2.rkt has the error: wrong order of arguments to replace call
+
+Running stlc-sub/stlc-sub-2.rkt....
+Using generator: grammar
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-2.rkt has the error: wrong order of arguments to replace call
+
+Running stlc-sub/stlc-sub-2.rkt....
+Using generator: enum
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-3.rkt has the error: swaps function and argument position in application
+
+Running stlc-sub/stlc-sub-3.rkt....
+Using generator: ordered
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-3.rkt has the error: swaps function and argument position in application
+
+Running stlc-sub/stlc-sub-3.rkt....
+Using generator: grammar
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-3.rkt has the error: swaps function and argument position in application
+
+Running stlc-sub/stlc-sub-3.rkt....
+Using generator: enum
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-4.rkt has the error: variable not fresh enough
+
+Running stlc-sub/stlc-sub-4.rkt....
+Using generator: ordered
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-4.rkt has the error: variable not fresh enough
+
+Running stlc-sub/stlc-sub-4.rkt....
+Using generator: grammar
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-4.rkt has the error: variable not fresh enough
+
+Running stlc-sub/stlc-sub-4.rkt....
+Using generator: enum
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-5.rkt has the error: replace all variables
+
+Running stlc-sub/stlc-sub-5.rkt....
+Using generator: ordered
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-5.rkt has the error: replace all variables
+
+Running stlc-sub/stlc-sub-5.rkt....
+Using generator: grammar
+
+-------------------------------------------------------------------
+stlc-sub/stlc-sub-5.rkt has the error: replace all variables
+
+Running stlc-sub/stlc-sub-5.rkt....
+Using generator: enum
+worklist:
+stlc-sub/stlc-sub-1.rkt: ordered, stlc-sub/stlc-sub-1.rkt: grammar, stlc-sub/stlc-sub-1.rkt: enum, stlc-sub/stlc-sub-2.rkt: ordered, stlc-sub/stlc-sub-2.rkt: grammar, stlc-sub/stlc-sub-2.rkt: enum, stlc-sub/stlc-sub-3.rkt: ordered, stlc-sub/stlc-sub-3.rkt: grammar, stlc-sub/stlc-sub-3.rkt: enum, stlc-sub/stlc-sub-4.rkt: ordered, stlc-sub/stlc-sub-4.rkt: grammar, stlc-sub/stlc-sub-4.rkt: enum, stlc-sub/stlc-sub-5.rkt: ordered, stlc-sub/stlc-sub-5.rkt: grammar, stlc-sub/stlc-sub-5.rkt: enum
+all tests finished
