@@ -1,5 +1,5 @@
 3c3
-< (define the-error "the ((cons v) v) value has been omitted")
+< (define the-error "no error")
 ---
 > (define the-error "app rule the range of the function is matched to the argument")
 32a33
