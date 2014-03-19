@@ -800,9 +800,19 @@
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
-  (foldr cons/e
-         (const/e '())
-         es))
+  (define l (length es))
+  (cond
+    [(= l 0) (const/e '())]
+    [(= l 1) (map/e list car (car es))]
+    [else
+     (define split-point (quotient l 2))
+     (define-values (left right) (split-at es split-point))
+     (map/e
+      (λ (pr) (append (car pr) (cdr pr)))
+      (λ (lst)
+        (define-values (left right) (split-at lst split-point))
+        (cons left right))
+      (cons/e (list/e left) (list/e right)))]))
 
 (define (nats+/e n)
   (map/e (λ (k)
