@@ -2,5 +2,5 @@
 < (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "the ((cons number) v) value has been omitted")
-31a32
+32a33
 >      ((cons v) v)

@@ -2,11 +2,11 @@
 < (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "app rule the range of the function is matched to the argument")
-31a32
+32a33
 >      ((cons v) v)
-53c54
+54c55
 <    (typeof Γ M_2 σ)
 ---
 >    (typeof Γ M_2 σ_2)
-236d236
+237d237
 < 

@@ -2,12 +2,12 @@
 < (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "evaluation isn't allowed on the rhs of applications")
-31a32
+32a33
 >      ((cons v) v)
-34,35c35
+35,36c36
 <      (E M)
 <      (v E)))
 ---
 >      (E M)))
-236d235
+237d236
 < 

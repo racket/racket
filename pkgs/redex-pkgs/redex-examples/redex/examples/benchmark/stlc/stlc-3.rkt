@@ -30,6 +30,7 @@
      c
      (cons v)
      ((cons v) v)
+     ((cons v) v)
      (+ v))
   (E hole
      (E M)
@@ -124,8 +125,8 @@
   [(subst M x N) 
    ,(subst/proc x? (term (x)) (term (N)) (term M))])
 
-(define v? (redex-match stlc v))
-(define τ? (redex-match stlc τ))
+(define v? (redex-match? stlc v))
+(define τ? (redex-match? stlc τ))
 (define/contract (type-check M)
   (-> M? (or/c τ? #f))
   (define M-t (judgment-holds (typeof • ,M τ) τ))
