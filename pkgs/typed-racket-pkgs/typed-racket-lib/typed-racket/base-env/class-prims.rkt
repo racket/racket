@@ -31,18 +31,10 @@
          class
          ;; for use in ~literal clauses
          class-internal
-         optional-init
-         private-field
          :-augment)
 
 ;; give it a binding, but it shouldn't be used directly
 (define-syntax (class-internal stx)
-  (raise-syntax-error 'class "should only be used internally"))
-
-(define-syntax (optional-init stx)
-  (raise-syntax-error 'class "should only be used internally"))
-
-(define-syntax (private-field stx)
   (raise-syntax-error 'class "should only be used internally"))
 
 (define-syntax (:-augment stx)
@@ -485,19 +477,19 @@
     #`(class-internal
        (#:forall #,@foralls)
        (#:all-inits #,@ordered-inits)
-       (init #,@(dict-ref name-dict #'init '()))
-       (init-field #,@(dict-ref name-dict #'init-field '()))
-       (init-rest #,@(dict-ref name-dict #'init-rest '()))
-       (optional-init #,@optional-inits)
-       (field #,@(dict-ref name-dict #'field '()))
-       (public #,@(dict-ref name-dict #'public '()))
-       (override #,@(dict-ref name-dict #'override '()))
-       (private #,@(dict-ref name-dict #'private '()))
-       (private-field #,@private-fields)
-       (inherit #,@(dict-ref name-dict #'inherit '()))
-       (inherit-field #,@(dict-ref name-dict #'inherit-field '()))
-       (augment #,@(dict-ref name-dict #'augment '()))
-       (pubment #,@(dict-ref name-dict #'pubment '()))))
+       (#:init #,@(dict-ref name-dict #'init '()))
+       (#:init-field #,@(dict-ref name-dict #'init-field '()))
+       (#:init-rest #,@(dict-ref name-dict #'init-rest '()))
+       (#:optional-init #,@optional-inits)
+       (#:field #,@(dict-ref name-dict #'field '()))
+       (#:public #,@(dict-ref name-dict #'public '()))
+       (#:override #,@(dict-ref name-dict #'override '()))
+       (#:private #,@(dict-ref name-dict #'private '()))
+       (#:private-field #,@private-fields)
+       (#:inherit #,@(dict-ref name-dict #'inherit '()))
+       (#:inherit-field #,@(dict-ref name-dict #'inherit-field '()))
+       (#:augment #,@(dict-ref name-dict #'augment '()))
+       (#:pubment #,@(dict-ref name-dict #'pubment '()))))
 
   ;; This is a neat/horrible trick
   ;;
