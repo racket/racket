@@ -8,3 +8,8 @@
 >    int]
 238d237
 < 
+270a270,273
+> 
+> (define small-counter-example
+>   (term ((λ (x (list int)) (cons x)) nil)))
+> (test-equal (check small-counter-example) #f)
