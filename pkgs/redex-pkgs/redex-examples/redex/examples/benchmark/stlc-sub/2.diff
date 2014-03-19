@@ -6,3 +6,7 @@
 <    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
 ---
 >    (λ (x_new τ) (subst (replace M x_new x_1) x_2 v))
+290a291,293
+> (define small-counter-example
+>   (term ((λ (x int) (λ (y int) y)) 1)))
+> (test-equal (check small-counter-example) #f)
