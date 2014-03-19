@@ -2,7 +2,7 @@
 
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
-         racket/list
+         racket/bool
          racket/match
          racket/contract
          "tut-subst.rkt")
@@ -209,13 +209,13 @@
   [(subst M x N) 
    ,(subst/proc x? (term (x)) (term (N)) (term M))])
 
-(define v? (redex-match poly-stlc v))
-(define τ? (redex-match poly-stlc τ))
+(define v? (redex-match? poly-stlc v))
+(define τ? (redex-match? poly-stlc τ))
 (define/contract (type-check M)
   (-> M? (or/c τ? #f))
   (define M-t (judgment-holds (typeof • ,M τ) τ))
   (cond
-    [(empty? M-t)
+    [(null? M-t)
      #f]
     [(null? (cdr M-t))
      (car M-t)]
@@ -266,19 +266,19 @@
          M]
         [#f #f]))))
 
+;; check : (or/c #f M[from poly-stlc language]) -> boolean[#f = counterexample found!]
 (define (check term)
   (or (not term)
       (v? term)
-      (let ([red-res (apply-reduction-relation red term)]
-            [t-type (type-check term)])
-        ;; xxx should this also be t-type IMPLIES?
-        (and
-         (= (length red-res) 1)
-         (let ([red-t (car red-res)])
-           (or 
-            (equal? red-t "error")
-            (let ([red-type (type-check red-t)])
-              (equal? t-type red-type))))))))
+      (let ([t-type (type-check term)])
+        (implies 
+         t-type
+         (let ([red-res (apply-reduction-relation red term)])
+           (and (= (length red-res) 1)
+                (let ([red-t (car red-res)])
+                  (or (equal? red-t "error")
+                      (let ([red-type (type-check red-t)])
+                        (equal? t-type red-type))))))))))
 
 (define (generate-enum-term)
   (generate-term poly-stlc M #:i-th (pick-an-index 0.065)))
@@ -289,6 +289,9 @@
       (begin0
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
+
+(define small-counter-example (term (([cons @ int] 1) [nil @ int])))
+(test-equal (check small-counter-example) #f)
 
 (define fixed
   (term
