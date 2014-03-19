@@ -181,7 +181,6 @@
   (define typed-generator (dynamic-require fpath 'typed-generator))
   (define gen-enum (dynamic-require fpath 'generate-enum-term))
   (define ordered-generator (dynamic-require fpath 'ordered-enum-generator))
-  (define fixed (dynamic-require fpath 'fixed))
   (define err (dynamic-require fpath 'the-error))
   (printf "\n-------------------------------------------------------------------\n")
   (printf "~a has the error: ~a\n\n" fpath err)
@@ -194,12 +193,18 @@
            t)))
   (cond
     [(equal? gen-type 'fixed)
-     (define some-failed?
-       (for/or ([t (in-list fixed)])
-         (define ok? (check (and (tc t) t)))
-         (not ok?)))
-     (unless some-failed?
-       (error 'fixed "Expected some term to fail, but didn't find one in ~a" fixed))]
+     (define small-counter-example
+       (dynamic-require 
+        fpath 'small-counter-example 
+        (λ ()
+          (error 'fixed "contains no small counter example"))))
+     (unless (tc small-counter-example)
+       (error 'fixed "The counter example doesn't type-check: ~e"
+              small-counter-example))
+     (define ok? (check small-counter-example))
+     (when ok?
+       (error 'fixed "Expected ~e to fail on check, but it didn't"
+              small-counter-example))]
     [(equal? gen-type 'grammar)
      (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-term))
                       check seconds gen-type)]

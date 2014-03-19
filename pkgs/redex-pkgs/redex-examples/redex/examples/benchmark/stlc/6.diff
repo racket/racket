@@ -2,11 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "hd reduction acts on partially applied cons")
-32a33
->      ((cons v) v)
-88c89
+89c89
 <    (--> (in-hole E (hd ((cons v_1) v_2)))
 ---
 >    (--> (in-hole E (hd (cons v_1)))
-237d237
+238d237
 < 

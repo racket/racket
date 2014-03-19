@@ -2,12 +2,10 @@
 < (define the-error "no error")
 ---
 > (define the-error "evaluation isn't allowed on the rhs of applications")
-32a33
->      ((cons v) v)
-35,36c36
+36,37c36
 <      (E M)
 <      (v E)))
 ---
 >      (E M)))
-237d236
+238d236
 < 

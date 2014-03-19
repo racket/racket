@@ -2,11 +2,9 @@
 < (define the-error "no error")
 ---
 > (define the-error "the tail reduction returns the wrong value")
-32a33
->      ((cons v) v)
-92c93
+93c93
 <         (in-hole E v_2)
 ---
 >         (in-hole E v_1)
-237d237
+238d237
 < 
