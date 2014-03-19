@@ -1,0 +1,11 @@
+127c127,128
+<    (side-condition (term (AND (lam-verified? l s ?) ...)))]
+---
+>    ;; bug 6
+>    #;(side-condition (term (AND (lam-verified? l s ?) ...)))]
+474a476,480
+> (test-equal
+>  (bytecode-ok?
+>   '(let-one 'x (case-lam (lam (val) () (loc-noclr 34)))))
+>  #t)
+> 

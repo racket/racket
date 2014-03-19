@@ -16,7 +16,7 @@
 >   ;; bug 14
 >   [(closure-intact? (box-nc ṽ_1 ...) (imm ṽ_2 ...))
 >    (closure-intact? (ṽ_1 ...) (ṽ_2 ...))]
-478a484,490
+475a481,487
 > (test-equal
 >  (bytecode-ok?
 >    '(let-one 'x 
