@@ -288,3 +288,11 @@
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
 
+(define small-counter-example
+  ;; XXX I don't think this actually has an error because if x_1 !=
+  ;; x_2 and v is a closed term, then what could go wrong? If we
+  ;; remove the other special case of subst for λs that match, then it
+  ;; would be bad, though.
+  (term ((λ (x int) (λ (y int) (λ (y int) ((+ x) y))))
+         1)))
+(test-equal (check small-counter-example) #f)
