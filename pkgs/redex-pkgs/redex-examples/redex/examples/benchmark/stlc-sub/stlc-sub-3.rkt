@@ -279,7 +279,7 @@
                         (equal? t-type red-type))))))))))
 
 (define (generate-enum-term)
-  (generate-term stlc M #:i-th (pick-an-index 0.0001)))
+  (generate-term stlc M #:i-th (pick-an-index 0.035)))
 
 (define (ordered-enum-generator)
   (let ([index 0])

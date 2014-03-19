@@ -290,7 +290,7 @@
       (ins-preserves-rb-tree t)))
 
 (define (generate-enum-term)
-  (generate-term rbtrees t #:i-th (pick-an-index 0.2)))
+  (generate-term rbtrees t #:i-th (pick-an-index 0.25)))
 
 (define (ordered-enum-generator)
   (let ([index 0])
