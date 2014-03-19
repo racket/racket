@@ -16,7 +16,7 @@
      (λ (x σ) M)
      (M N)
      C
-     number
+     integer
      x)
   (C ::=
      [C @ σ]
@@ -38,11 +38,12 @@
      γ)
   (x y ::= variable-not-otherwise-mentioned)
   (α β ::= variable-not-otherwise-mentioned)
-  (c d ::= map nil cons hd tl)
+  (c d ::= map nil cons hd tl +)
   
   (v (λ (x τ) M)
      C
-     number
+     integer
+     (+ v)
      ([cons @ τ] v)
      (([cons @ τ] v) v)
      ([[map @ τ_1] @ τ_2] v))
@@ -93,7 +94,10 @@
   ; (where σ (t-subst2 γ α τ_1 β τ_2))
   ; ------------------------------
   ; (typeof-C [[c @ τ_1] @ τ_2] σ)]
-  )
+  
+  [(where γ (const-type c))
+   ------------------------------
+   (typeof-C c γ)])
 
 (define-extended-judgment-form poly-stlc typeof
   #:mode (typ-ind I I O)
@@ -123,7 +127,9 @@
   [(const-type tl)
    (∀ a ((list a) → (list a)))]
   [(const-type map)
-   (∀ α (∀ β ((α → β) → ((list α) → (list β)))))])
+   (∀ α (∀ β ((α → β) → ((list α) → (list β)))))]
+  [(const-type +)
+   (int → (int → int))])
 
 (define-metafunction poly-stlc
   t-subst : γ α τ -> γ
@@ -176,7 +182,10 @@
         "hd-err")
    (--> (in-hole E ((tl @ τ) (nil @ τ)))
         "error"
-        "tl-err")))
+        "tl-err")
+   (--> (in-hole E ((+ integer_1) integer_2))
+        (in-hole E ,(+ (term integer_1) (term integer_2)))
+        "+")))
 
 (define M? (redex-match poly-stlc M))
 (define/contract (Eval M)
@@ -213,16 +222,6 @@
      (car M-t)]
     [else
      (error 'type-check "non-unique type: ~s : ~s" M M-t)]))
-
-
-(define (interesting-term? M)
-  (and (type-check M)
-       (term (uses-bound-var? () ,M))))
-
-
-(define (really-interesting-term? M)
-  (and (interesting-term? M)
-       (term (applies-bv? () ,M))))
 
 (define (generate-M-term)
   (generate-term poly-stlc M 5))

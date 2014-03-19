@@ -92,10 +92,6 @@
             (term 3))
 
 
-
-#|
-;; tests for arithmetic; not yet added to the model.
-
 (test-equal (judgment-holds (typeof • ((+ ((+ 1) 2)) ((+ 3) 4)) τ) τ)
             (list (term int)))
 (test-->> red
@@ -107,6 +103,5 @@
 (test-->> red
           (term ((λ (f (int → int)) (f 3)) (+ 1)))
           (term 4))
-|#
 
 (test-results)
