@@ -1,12 +1,13 @@
 #lang racket/base
 
-(define the-error "the ((cons v) v) value has been omitted")
+(define the-error "no error")
 
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
          racket/match
          racket/list
          racket/contract
+         racket/bool
          "tut-subst.rkt")
 
 (provide (all-defined-out))
@@ -248,14 +249,15 @@
 (define (check term)
   (or (not term)
       (v? term)
-      (let ([red-res (apply-reduction-relation red term)]
-            [t-type (type-check term)])
-        ;; xxx shouldn't this be t-type IMPLIES this?
-        (and
-         (= (length red-res) 1)
-         (or 
-          (equal? (car red-res) "error")
-          (equal? t-type (type-check (car red-res))))))))
+      (let ([t-type (type-check term)])
+        (implies
+         t-type
+         (let ([red-res (apply-reduction-relation red term)])
+           (and (= (length red-res) 1)
+                (let ([red-t (car red-res)])
+                  (or (equal? red-t "error")
+                      (let ([red-type (type-check red-t)])
+                        (equal? t-type red-type))))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.035)))
@@ -266,25 +268,3 @@
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
-
-(define fixed
-  (term
-   (;; 2
-    ((cons 1) nil)
-    ;; 3
-    ((λ (x (list int)) 1) 
-     7)
-    ;; 4 (if we hadn't changed number->v in cons)
-    (cons ((cons 0) nil))
-    ;; 5
-    (tl ((cons 1) nil))
-    ;; 6
-    (hd ((cons 1) nil))
-    ;; 7
-    ((λ (x int) x) (hd ((cons 1) nil)))
-    ;; 8
-    ((λ (x (list int)) (cons x)) nil)
-    ;; 9
-    ((λ (x int) (λ (y (list int)) x)) 1)
-    ;; 10
-    (hd 0))))
