@@ -940,11 +940,11 @@
   (generate-term abort-lang e #:i-th (pick-an-index 0.125)))
 
 (define (ordered-enum-generator)
-  (define index 0)
+  (define index -1)
   (λ ()
-    (begin0
-      (generate-term abort-lang e #:i-th index)
-      (set! index (add1 index)))))
+    (begin
+      (set! index (add1 index))
+      (generate-term abort-lang e #:i-th index))))
 
 (define fixed
   (term
