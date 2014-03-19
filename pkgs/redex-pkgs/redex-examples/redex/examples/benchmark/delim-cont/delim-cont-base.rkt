@@ -937,7 +937,7 @@
   (judgment-holds (tc · · ,e t)))
 
 (define (generate-enum-term)
-  (generate-term abort-lang e #:i-th (pick-an-index 0.0001)))
+  (generate-term abort-lang e #:i-th (pick-an-index 0.125)))
 
 (define (ordered-enum-generator)
   (define index 0)
