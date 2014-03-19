@@ -445,7 +445,8 @@
                                   (regexp-match?
                                    #rx"domain"
                                    (exn-message exc)))
-                               (printf "exception on ~s\n" e))
+                               (printf "exception on ~s\n~s\n" e
+                                       (exn-message exc)))
                              #f)])
              (run e '() 100))
          [(cutoff) #t]

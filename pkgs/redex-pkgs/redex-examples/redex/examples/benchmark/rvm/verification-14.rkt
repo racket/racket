@@ -450,7 +450,8 @@
                                   (regexp-match?
                                    #rx"domain"
                                    (exn-message exc)))
-                               (printf "exception on ~s\n" e))
+                               (printf "exception on ~s\n~s\n" e
+                                       (exn-message exc)))
                              #f)])
              (run e '() 100))
          [(cutoff) #t]
@@ -477,6 +478,8 @@
   (let ([index 0])
     (λ ()
       (begin0
+        (generate-term bytecode e #:i-th index)
+        (set! index (add1 index))))))
 
 (test-equal
  (bytecode-ok?
@@ -484,7 +487,5 @@
              (let-rec ((lam () (0) (application (loc-noclr 0)))) 
                       'x)))
  #t)
-        (generate-term bytecode e #:i-th index)
-        (set! index (add1 index))))))
 
 (define fixed '())
