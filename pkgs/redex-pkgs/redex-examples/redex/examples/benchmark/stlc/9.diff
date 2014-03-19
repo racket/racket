@@ -8,3 +8,8 @@
 >   [(lookup (x σ Γ) x_2)
 238d237
 < 
+270a270,273
+> 
+> (define small-counter-example
+>   (term ((λ (x int) (λ (y (list int)) x)) 1)))
+> (test-equal (check small-counter-example) #f)
