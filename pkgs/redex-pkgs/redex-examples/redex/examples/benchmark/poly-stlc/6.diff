@@ -6,3 +6,7 @@
 <    (--> (in-hole E ((hd @ τ) (((cons @ τ) v_1) v_2)))
 ---
 >    (--> (in-hole E ((hd @ τ) ((cons @ τ) v_1)))
+294a295,297
+> (define small-counter-example
+>   (term ([hd @ int] (([cons @ int] 1) [nil @ int]))))
+> (test-equal (check small-counter-example) #f)
