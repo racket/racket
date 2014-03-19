@@ -6,3 +6,9 @@
 <    σ]
 ---
 >    int]
+293a294,298
+> 
+> (define small-counter-example
+>   (term ((λ (x (list int)) (+ x))
+>          [nil @ int])))
+> (test-equal (check small-counter-example) #f)
