@@ -291,4 +291,3 @@
       (begin0
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
-

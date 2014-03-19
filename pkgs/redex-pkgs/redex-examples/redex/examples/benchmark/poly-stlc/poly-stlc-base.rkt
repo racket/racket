@@ -258,7 +258,7 @@
             (generate-term poly-stlc #:satisfying 
                            (typeof • ((((map @ τ_1) @ τ_2) v) (((cons @ τ_1) v_1) v_2)) τ) 5)])
     [`(typeof • ,M ,τ)
-      M]
+     M]
     [#f #f]))
 (define (typed-generator)
   (let ([g (redex-generator poly-stlc (typeof • M τ) 5)])
