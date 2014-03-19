@@ -110,6 +110,7 @@
   (collect-garbage)
   (define s-time (current-process-milliseconds))
   (define terms 0)
+  (define counterexamples 0)
   (let trials-loop ([t 0]
                     [g (get-gen)])
     (define t-time (current-process-milliseconds))
@@ -117,10 +118,7 @@
       (define tot-time (- (current-process-milliseconds) s-time))
       (cond
         [((/ tot-time 1000) . > . seconds)
-         (when verbose?
-           (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
-                   (+ i terms) tot-time (exact->inexact (/ (+ i terms) (/ tot-time 1000)))))
-         (void)]
+         (exit-message fname type (+ i terms) tot-time counterexamples)]
         [else
          (define term (with-timeout (* 5 60 1000) g 
                                     (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
@@ -133,6 +131,7 @@
                                      (trials-loop t g))))
          (cond
            [(not ok?)
+            (set! counterexamples (add1 counterexamples))
             (when verbose?
               (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
                       fname term i me-time))
@@ -147,9 +146,17 @@
                 (begin
                   (set! terms (+ i terms))
                   (trials-loop (add1 t) (get-gen)))
-                (void))]
+                (exit-message fname type (+ i terms) tot-time counterexamples))]
            [else
             (loop (add1 i))])]))))
+
+(define (exit-message file type terms time countxmps)
+  (printf "----------\n~a, ~s\n" file type)
+  (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
+          terms time (exact->inexact (/ terms (/ time 1000))))
+  (printf "~s counterexamples, ~s tries... ratio: ~s\n-----------------\n"
+          countxmps terms (exact->inexact (/ terms countxmps))))
+
 
 (define (update-results time fname type verbose?)
   (set! results (hash-set results type (cons time (hash-ref results type))))
