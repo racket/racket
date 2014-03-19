@@ -74,6 +74,7 @@
   (pattern (begin (quote-syntax
                    (class-internal
                     (#:forall type-parameter:id ...)
+                    (#:all-inits all-init-names:id ...)
                     (c:init init-names:name-pair ...)
                     (c:init-field init-field-names:name-pair ...)
                     (c:init-rest (~optional init-rest-name:id))
@@ -89,6 +90,7 @@
                     (c:pubment pubment-names:name-pair ...)))
                   (#%plain-app values))
            #:with type-parameters #'(type-parameter ...)
+           #:with all-init-internals #'(all-init-names ...)
            #:with init-internals #'(init-names.internal ...)
            #:with init-externals #'(init-names.external ...)
            #:with init-field-internals #'(init-field-names.internal ...)
@@ -160,6 +162,7 @@
   #:literals (let-values letrec-syntaxes+values #%plain-app)
   #:attributes (superclass-expr
                 type-parameters
+                all-init-internals
                 init-internals init-externals
                 init-field-internals init-field-externals
                 init-rest-name
@@ -252,9 +255,9 @@
              'optional-inits      (syntax->datum #'cls.optional-inits)
              'only-init-internals (syntax->datum #'cls.init-internals)
              'only-init-names     (syntax->datum #'cls.init-externals)
-             'init-internals
-             (set-union (syntax->datum #'cls.init-internals)
-                        (syntax->datum #'cls.init-field-internals))
+             ;; the order of these names reflect the order in the class,
+             ;; so use this list when retaining the order is important
+             'init-internals      (syntax->datum #'cls.all-init-internals)
              'init-rest-name     (and (attribute cls.init-rest-name)
                                       (syntax-e (attribute cls.init-rest-name)))
              'public-internals   (syntax->datum #'cls.public-internals)
