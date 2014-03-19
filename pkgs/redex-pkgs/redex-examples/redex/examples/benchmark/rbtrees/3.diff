@@ -6,7 +6,7 @@
 <   [(rbt (B (c_1 t_11 n_1 t_12) n (c_2 t_21 n_2 t_22)) n_1min n_2max (s n_bd))
 ---
 >   [(rbt (B (c_1 t_11 n_1 t_12) n (c_2 t_21 n_2 t_22)) n_1min n_2max n_bd)
-301a302,311
+301a302,310
 > (define small-counter-example
 >   (term (B 
 >          (B 
@@ -16,4 +16,3 @@
 >          (num->n 4)
 >          (R E (num->n 5) E))))
 > (test-equal (check small-counter-example) #f)
-> 
