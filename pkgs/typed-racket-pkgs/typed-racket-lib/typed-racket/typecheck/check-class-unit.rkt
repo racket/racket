@@ -16,7 +16,6 @@
          "tc-metafunctions.rkt"
          "tc-funapp.rkt"
          "tc-subst.rkt"
-         (prefix-in c: racket/class)
          (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
          (env lexical-env tvar-env)
@@ -26,7 +25,6 @@
          (rep type-rep)
          (for-syntax racket/base)
          (for-template racket/base
-                       (prefix-in c: racket/class)
                        (base-env class-prims)
                        (typecheck internal-forms)))
 
@@ -67,27 +65,25 @@
   (pattern (internal:id external:id)))
 
 (define-syntax-class internal-class-data
-  #:literals (#%plain-app quote-syntax class-internal begin
-              values c:init c:init-field c:init-rest optional-init c:field
-              c:public c:override c:private c:inherit c:inherit-field
-              private-field c:augment c:pubment)
+  #:literal-sets (kernel-literals)
+  #:literals (class-internal values)
   (pattern (begin (quote-syntax
                    (class-internal
                     (#:forall type-parameter:id ...)
                     (#:all-inits all-init-names:id ...)
-                    (c:init init-names:name-pair ...)
-                    (c:init-field init-field-names:name-pair ...)
-                    (c:init-rest (~optional init-rest-name:id))
-                    (optional-init optional-names:id ...)
-                    (c:field field-names:name-pair ...)
-                    (c:public public-names:name-pair ...)
-                    (c:override override-names:name-pair ...)
-                    (c:private privates:id ...)
-                    (private-field private-fields:id ...)
-                    (c:inherit inherit-names:name-pair ...)
-                    (c:inherit-field inherit-field-names:name-pair ...)
-                    (c:augment augment-names:name-pair ...)
-                    (c:pubment pubment-names:name-pair ...)))
+                    (#:init init-names:name-pair ...)
+                    (#:init-field init-field-names:name-pair ...)
+                    (#:init-rest (~optional init-rest-name:id))
+                    (#:optional-init optional-names:id ...)
+                    (#:field field-names:name-pair ...)
+                    (#:public public-names:name-pair ...)
+                    (#:override override-names:name-pair ...)
+                    (#:private privates:id ...)
+                    (#:private-field private-fields:id ...)
+                    (#:inherit inherit-names:name-pair ...)
+                    (#:inherit-field inherit-field-names:name-pair ...)
+                    (#:augment augment-names:name-pair ...)
+                    (#:pubment pubment-names:name-pair ...)))
                   (#%plain-app values))
            #:with type-parameters #'(type-parameter ...)
            #:with all-init-internals #'(all-init-names ...)
