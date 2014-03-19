@@ -539,6 +539,40 @@
                      (term (number_1 6) #:lang L))
           '(5 6)))
     
+(let ()
+  ;; test to make sure that reasonable short-circuiting is happening
+  ;; when matching lists of differing length to avoid exponential behavior
+  
+  ;; this test is fragile because it is based on cpu times.
+  ;; on my machine, with the bug in place it takes 2000+ msec
+  ;; to run and with the fix it takes 200 or so msec.
+  
+  (define-language abort-core-lang
+    (e integer
+       (- e)
+       (- e e)))
+  
+  (define (add-minuses t count)
+    (let loop ([i count])
+      (cond
+        [(zero? i) t]
+        [else `(- ,(loop (- i 1)))])))
+  
+  
+  (define-values (answer cpu real gc) 
+    (time-apply
+     (λ ()
+       (parameterize ([caching-enabled? #f])
+         (for ([count (in-range 20)])
+           (redex-match abort-core-lang
+                        e
+                        (add-minuses 11 count)))))
+     '()))
+  (test (< cpu 1000) #t))
+                  
+    
+
+
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        

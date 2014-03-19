@@ -1397,22 +1397,29 @@ See match-a-pattern.rkt for more details
 
 ;; match-list/boolean : (listof (union repeat (any hole-info -> boolean))) sexp hole-info -> boolean
 (define (match-list/boolean patterns exp)
-  (let loop ([exp exp]
-             [patterns patterns])
-    (cond
-      [(null? exp)
-       (let loop ([patterns patterns])
-         (or (null? patterns)
-             (and (repeat? (car patterns))
-                  (loop (cdr patterns)))))]
-      [(null? patterns) #f]
-      [(repeat? (car patterns)) 
-       (or (loop exp (cdr patterns))
-           (and ((repeat-pat (car patterns)) (car exp))
-                (loop (cdr exp) patterns)))]
-      [else
-       (and ((car patterns) (car exp))
-            (loop (cdr exp) (cdr patterns)))])))
+  (define has-repeats? (ormap repeat? patterns))
+  (cond
+    [(not (list? exp)) #f]
+    [(and (not has-repeats?)
+          (not (= (length patterns) (length exp))))
+     #f]
+    [else
+     (let loop ([exp exp]
+                [patterns patterns])
+       (cond
+         [(null? exp)
+          (let loop ([patterns patterns])
+            (or (null? patterns)
+                (and (repeat? (car patterns))
+                     (loop (cdr patterns)))))]
+         [(null? patterns) #f]
+         [(repeat? (car patterns)) 
+          (or (loop exp (cdr patterns))
+              (and ((repeat-pat (car patterns)) (car exp))
+                   (loop (cdr exp) patterns)))]
+         [else
+          (and ((car patterns) (car exp))
+               (loop (cdr exp) (cdr patterns)))]))]))
 
 ;; match-list : (listof (union repeat compiled-pattern)) sexp hole-info -> (union #f (listof bindings))
 (define (match-list patterns exp hole-info)
