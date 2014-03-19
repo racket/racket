@@ -38,6 +38,7 @@
          
          fail/e
          
+         approximate
          to-list
          take/e
          fold-enum
@@ -131,6 +132,10 @@
   (foldr except1/e
          e
          excepts))
+
+(define (approximate e n)
+  (for/list ([i (in-range n)])
+    (decode e i)))
 
 ;; to-list : enum a -> listof a
 ;; better be finite
