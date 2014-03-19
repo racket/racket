@@ -9,7 +9,7 @@
 <     [#f #f]))
 ---
 >      M]))
-294a293,295
+293a292,294
+> 
 > (define small-counter-example (term (([cons @ int] 1) [nil @ int])))
 > (test-equal (check small-counter-example) #f)
-> 
