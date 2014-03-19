@@ -299,21 +299,3 @@
         (generate-term rbtrees t #:i-th index)
         (set! index (add1 index))))))
 
-(define fixed
-  (term
-   (;; 1 and 2
-    (B (R E (num->n 1) E)
-       (num->n 3)
-       E)
-    ;; 3
-    (B
-     ;;; size should be 1, but in 3 it's 0
-     (B 
-      ;; size is 0
-      (R E (num->n 1) E)
-      (num->n 2)
-      ;; size is 0
-      (R E (num->n 3) E))
-     (num->n 5)
-     ;; size is 0
-     (R E (num->n 10) E)))))
