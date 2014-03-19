@@ -110,9 +110,9 @@
   (collect-garbage)
   (define s-time (current-process-milliseconds))
   (define terms 0)
-  (let trials-loop ([t 0])
+  (let trials-loop ([t 0]
+                    [g (get-gen)])
     (define t-time (current-process-milliseconds))
-    (define g (get-gen))
     (let loop ([i 0])
       (define tot-time (- (current-process-milliseconds) s-time))
       (cond
@@ -125,12 +125,12 @@
          (define term (with-timeout (* 5 60 1000) g 
                                     (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
                                                   fname type)
-                                      (trials-loop t))))
+                                      (trials-loop t g))))
          (define me-time (- (current-process-milliseconds) t-time))
          (define ok? (with-timeout (* 5 60 1000) (λ () (check term))
                                    (λ () (printf "\nIn ~a, ~a, timed out checking the term:~a\n"
                                                  fname type term)
-                                     (trials-loop t))))
+                                     (trials-loop t g))))
          (cond
            [(not ok?)
             (when verbose?
@@ -146,7 +146,7 @@
                          (t . < . 5)))
                 (begin
                   (set! terms (+ i terms))
-                  (trials-loop (add1 t)))
+                  (trials-loop (add1 t) (get-gen)))
                 (void))]
            [else
             (loop (add1 i))])]))))
