@@ -341,12 +341,14 @@
         (define-values (annotated-methods other-top-level private-fields)
           (process-class-contents others name-dict))
         (define annotated-super (tr:class:super-property #'super #t))
+        (define ordered-inits (get-all-init-names clauses))
         (define optional-inits (get-optional-inits clauses))
         (ignore
          (tr:class
           #`(let-values ()
               #,(internal (make-class-name-table (attribute forall.type-variables)
                                                  private-fields
+                                                 ordered-inits
                                                  optional-inits
                                                  name-dict))
               (untyped-class #,annotated-super
@@ -450,6 +452,14 @@
                   #:when optional?)
          (stx-car id-pair)))))
 
+  ;; get-all-init-names : Listof<Clause> -> Listof<Id>
+  ;; Get a list of all the (internal) init names in order
+  (define (get-all-init-names clauses)
+    (flatten
+     (for/list ([clause clauses]
+                #:when (init-clause? clause))
+       (stx-map stx-car (clause-ids clause)))))
+
   ;; check-unsupported-features : Dict<Identifier, Names> -> Void
   ;; Check if features that are not supported were used and
   ;; raise an error if they are present
@@ -462,14 +472,19 @@
          "unsupported class clause: ~a"
          (syntax-e form)))))
 
-  ;; make-class-name-table : Listof<Id> Listof<Id> Listof<Id> Dict<Id, Id> -> Stx
+  ;; make-class-name-table : Listof<Id> Listof<Id> Listof<Id>
+  ;;                         Listof<Id> Dict<Id, Id> -> Stx
   ;; construct syntax used by the class type-checker as a reliable source
   ;; for the member names that are in a given class, plus any type
   ;; variables that are bound
-  (define (make-class-name-table foralls private-fields
-                                 optional-inits name-dict)
+  (define (make-class-name-table foralls
+                                 private-fields
+                                 ordered-inits
+                                 optional-inits
+                                 name-dict)
     #`(class-internal
        (#:forall #,@foralls)
+       (#:all-inits #,@ordered-inits)
        (init #,@(dict-ref name-dict #'init '()))
        (init-field #,@(dict-ref name-dict #'init-field '()))
        (init-rest #,@(dict-ref name-dict #'init-rest '()))

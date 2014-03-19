@@ -1251,6 +1251,25 @@
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
            #:msg #rx"expected: Symbol.*given: String"]
+   ;; PR 14408, test init-field order
+   [tc-e (let ()
+           (define c%
+             (class object%
+               (super-new)
+               (init-field [x : String] [y : Symbol])))
+           (make-object c% "str" 'sym)
+           (void))
+         -Void]
+   ;; a variant of the last, but testing that init and init-field
+   ;; interleave correctly in the class type
+   [tc-e (let ()
+           (define c%
+             (class object%
+               (super-new)
+               (init [a : 'a]) (init-field [x : 'x] [y : 'y]) (init [b 'b])))
+           (make-object c% 'a 'x 'y 'b)
+           (void))
+         -Void]
    ;; fail, too many positional arguments to superclass
    [tc-err (class object% (super-make-object "foo"))
            #:msg #rx"too many positional init arguments"]
