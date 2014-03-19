@@ -8,3 +8,8 @@
 >    (typeof Γ M_2 σ_2)
 238d237
 < 
+270a270,273
+> 
+> (define small-counter-example
+>   (term (hd 0)))
+> (test-equal (check small-counter-example) #f)
