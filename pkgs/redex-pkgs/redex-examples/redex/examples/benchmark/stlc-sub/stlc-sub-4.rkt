@@ -7,7 +7,7 @@
          racket/match
          racket/list
          racket/contract
-         math/base)
+         racket/bool)
 
 (provide (all-defined-out))
 
@@ -147,8 +147,8 @@
 
 (define x? (redex-match stlc x))
 
-(define v? (redex-match stlc v))
-(define τ? (redex-match stlc τ))
+(define v? (redex-match? stlc v))
+(define τ? (redex-match? stlc τ))
 (define/contract (type-check M)
   (-> M? (or/c τ? #f))
   (define M-t (judgment-holds (typeof • ,M τ) τ))
@@ -268,19 +268,19 @@
          M]
         [#f #f]))))
 
+;; check : (or/c #f term) -> boolean[#f = counterexample found!]
 (define (check term)
   (or (not term)
       (v? term)
-      (let ([red-res (apply-reduction-relation red term)]
-            [t-type (type-check term)])
-        ;; xxx should this also be t-type IMPLIES?
-        (and
-         (= (length red-res) 1)
-         (let ([red-t (car red-res)])
-           (or 
-            (equal? red-t "error")
-            (let ([red-type (type-check red-t)])
-              (equal? t-type red-type))))))))
+      (let ([t-type (type-check term)])
+        (implies
+         t-type
+         (let ([red-res (apply-reduction-relation red term)])
+           (and (= (length red-res) 1)
+                (let ([red-t (car red-res)])
+                  (or (equal? red-t "error")
+                      (let ([red-type (type-check red-t)])
+                        (equal? t-type red-type))))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.0001)))
