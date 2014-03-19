@@ -443,13 +443,9 @@
            (with-handlers
                ([exn:fail? (λ (exc)
                              (unless
-                                 (or
-                                  (regexp-match?
-                                   #rx"^counterexample"
-                                   (exn-message exc))
-                                  (regexp-match?
-                                   #rx"domain"
-                                   (exn-message exc)))
+                                 (regexp-match?
+                                  #"counterexample|domain|clauses"
+                                  (exn-message exc))
                                (printf "exception on ~s\n~s\n" e
                                        (exn-message exc)))
                              #f)])
@@ -481,6 +477,7 @@
         (generate-term bytecode e #:i-th index)
         (set! index (add1 index))))))
 
+(define fixed '())
 (test-equal
  (bytecode-ok?
    '(let-one 'x 
@@ -488,4 +485,3 @@
                       'x)))
  #t)
 
-(define fixed '())
