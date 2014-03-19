@@ -5,3 +5,7 @@
 106,107d105
 <   [(subst x x v)
 <    v]
+290a289,291
+> (define small-counter-example
+>   (term ((λ (x int) x) 1)))
+> (test-equal (check small-counter-example) #f)
