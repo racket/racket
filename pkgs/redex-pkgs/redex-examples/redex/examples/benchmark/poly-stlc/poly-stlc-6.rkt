@@ -292,3 +292,6 @@
         (generate-term poly-stlc M #:i-th index)
         (set! index (add1 index))))))
 
+(define small-counter-example
+  (term ([hd @ int] (([cons @ int] 1) [nil @ int]))))
+(test-equal (check small-counter-example) #f)
