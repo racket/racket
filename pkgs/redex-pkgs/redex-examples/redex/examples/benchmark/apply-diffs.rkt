@@ -24,7 +24,7 @@
 (define (get-directories names)
   (map get-directory names))
 
-(define (make-mutants directory)
+(define (apply-diffs directory)
   (cond 
     [directory
      (define files
@@ -39,7 +39,7 @@
        (copy-file base name #t)
        (system* (find-executable-path "patch") name (path->string f)))]
     [else
-     (map make-mutants (get-directories directories))]))
+     (for-each apply-diffs (get-directories directories))]))
 
 (define (get-base-stem files)
   (car (filter-map (λ (f) (regexp-match #rx"^(.*)-base\\.rkt$" (path->string f))) files)))
@@ -50,7 +50,7 @@
    (begin
      (when dir
        (unless (member dir directories)
-         (raise-user-error 'make-mutants.rkt 
-                           "expected one of the following directories: ~s" 
-                           directories)))
-     (void (make-mutants dir)))))
+         (raise-user-error 'apply-diffs.rkt 
+                           "expected one of the following directories: ~s, got ~a"  
+                           dir directories)))
+     (apply-diffs dir))))
