@@ -1,7 +1,7 @@
 #lang racket
 
 (require racket/cmdline
-         "make-mutants.rkt")
+         "apply-diffs.rkt")
 
 (define (make-diffs directory)
   (cond 
