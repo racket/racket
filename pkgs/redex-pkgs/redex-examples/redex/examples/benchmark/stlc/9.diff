@@ -2,11 +2,11 @@
 < (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "variables aren't required to match in lookup")
-31a32
+32a33
 >      ((cons v) v)
-74c75
+75c76
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
-236d236
+237d237
 < 

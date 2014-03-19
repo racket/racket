@@ -2,11 +2,11 @@
 < (define the-error "the ((cons v) v) value has been omitted")
 ---
 > (define the-error "lookup always returns int")
-31a32
+32a33
 >      ((cons v) v)
-75c76
+76c77
 <    σ]
 ---
 >    int]
-236d236
+237d237
 < 
