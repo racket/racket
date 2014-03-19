@@ -7,8 +7,7 @@
 ---
 >    ;;bug 5
 >    ;;(side-condition (<= (term n) (term n_l)))
-474a476,483
-> 
+478a480,487
 > (test-equal
 >  (bytecode-ok? 
 >   '(let-void 1 
@@ -16,4 +15,4 @@
 >                      (let-rec ((lam () (0) 'x)) 'y) 
 >                      (loc-noclr 0))))
 >  #t)
-\ No newline at end of file
+> 

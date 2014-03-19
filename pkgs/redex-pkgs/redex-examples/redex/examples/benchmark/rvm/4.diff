@@ -7,10 +7,10 @@
 ---
 >    ;; bug 4
 >    #;(side-condition (< (term n_p) (term n_l)))]
-474a476,481
-> 
+478a480,485
 > (test-equal
 >  (bytecode-ok?
 >   '(let-one 'x
 >             (branch #f (boxenv 0 'y) (loc-box 0))))
 >  #t)
+> 

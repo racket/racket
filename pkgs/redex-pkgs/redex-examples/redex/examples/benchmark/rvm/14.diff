@@ -16,12 +16,11 @@
 >   ;; bug 14
 >   [(closure-intact? (box-nc ṽ_1 ...) (imm ṽ_2 ...))
 >    (closure-intact? (ṽ_1 ...) (ṽ_2 ...))]
-474a480,486
-> 
+478a484,490
 > (test-equal
 >  (bytecode-ok?
 >    '(let-one 'x 
 >              (let-rec ((lam () (0) (application (loc-noclr 0)))) 
 >                       'x)))
 >  #t)
-\ No newline at end of file
+> 

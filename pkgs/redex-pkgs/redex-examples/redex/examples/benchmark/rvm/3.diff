@@ -14,8 +14,7 @@
 <    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n not s) n_l* #f γ η))
 ---
 >    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n uninit s) n_l* #f γ η))
-474a475,482
-> 
+478a479,486
 > (test-equal
 >  (bytecode-ok?
 >   '(application
@@ -23,3 +22,4 @@
 >     'x
 >     (install-value 0 'y (boxenv 0 'z))))
 >  #t)
+> 
