@@ -7,15 +7,11 @@
          racket/format
          racket/list
          racket/match
-         racket/pretty ;; DEBUG ONLY
          racket/set
          racket/syntax
          syntax/id-table
          syntax/parse
          "signatures.rkt"
-         "tc-metafunctions.rkt"
-         "tc-funapp.rkt"
-         "tc-subst.rkt"
          (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
          (env lexical-env tvar-env)
@@ -1449,10 +1445,3 @@
     (tc-error/expr (~a "class definition contains ~a ~a "
                        "that is not in the expected type")
                    msg too-many)))
-
-;; I wish I could write this
-#;
-(module+ test
-  (check-equal? (function->method (parse-type #'(Integer -> Integer)))
-                (parse-type #'(Any Integer -> Integer))))
-
