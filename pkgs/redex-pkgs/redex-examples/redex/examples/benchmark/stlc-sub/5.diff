@@ -6,3 +6,7 @@
 <   [(subst x x v)
 ---
 >   [(subst x y v)
+290a291,293
+> (define small-counter-example
+>   (term ((λ (x int) (λ (y (list int)) (hd y))) 1)))
+> (test-equal (check small-counter-example) #f)
