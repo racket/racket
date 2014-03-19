@@ -4,4 +4,5 @@
             typeof
             red
             reduction-step-count
-            Eval)
+            Eval
+            subst)

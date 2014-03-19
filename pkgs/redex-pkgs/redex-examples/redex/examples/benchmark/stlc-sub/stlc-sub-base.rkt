@@ -102,22 +102,18 @@
         "+")))
 
 (define-metafunction stlc
-  subst : M x M -> M
-  [(subst x x M)
-   M]
-  [(subst y x M)
-   y]
-  [(subst (λ (x τ) M) x M_x)
+  subst : M x v -> M
+  [(subst x x v)
+   v]
+  [(subst (λ (x τ) M) x v)
    (λ (x τ) M)]
   [(subst (λ (x_1 τ) M) x_2 v)
    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
    (where x_new ,(variable-not-in (term (x_1 e x_2))
                                   (term x_1)))]
-  [(subst (c M) x M_x)
-   (c (subst M x M_x))]
-  [(subst (M N) x M_x)
-   ((subst M x M_x) (subst N x M_x))]
-  [(subst M x M_x)
+  [(subst (M N) x v)
+   ((subst M x v) (subst N x v))]
+  [(subst M x v)
    M])
 
 (define-metafunction stlc

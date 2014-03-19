@@ -2,12 +2,34 @@
 (require redex/reduction-semantics)
 (provide stlc-tests)
 
+(define (consistent-with? t1 t2)
+  (define table (make-hash))
+  (let loop ([t1 t1]
+             [t2 t2])
+    (cond
+      [(and (pair? t1) (pair? t2))
+       (and (consistent-with? (car t1) (car t2))
+            (consistent-with? (cdr t1) (cdr t2)))]
+      [(and (symbol? t1) (symbol? t2))
+       (cond
+         [(equal? t1 t2) #t]
+         [else
+          (define bound (hash-ref table t1 #f))
+          (cond
+            [bound (equal? bound t2)]
+            [else 
+             (hash-set! table t1 t2)
+             #t])])]
+      [else (equal? t1 t2)])))
+          
+
 (define-syntax-rule
   (stlc-tests uses-bound-var?
               typeof
               red
               reduction-step-count
-              Eval)
+              Eval
+              subst)
   (begin
     
     (test-equal (term (uses-bound-var? () 5))
@@ -22,6 +44,26 @@
                 #t)
     (test-equal (term (uses-bound-var? () ((λ (x int) xy) 5)))
                 #f)
+    
+    (test-equal (term (subst ((+ 1) 1) x 2))
+                (term ((+ 1) 1)))
+    (test-equal (term (subst ((+ x) x) x 2))
+                (term ((+ 2) 2)))
+    (test-equal (term (subst ((+ y) x) x 2))
+                (term ((+ y) 2)))
+    (test-equal (term (subst ((+ y) z) x 2))
+                (term ((+ y) z)))
+    (test-equal (term (subst ((λ (x int) x) x) x 2))
+                (term ((λ (x int) x) 2)))
+    (test-equal (consistent-with? (term (subst ((λ (y int) x) x) x 2))
+                                  (term ((λ (y int) 2) 2)))
+                #t)
+    (test-equal (consistent-with? (term (subst ((λ (y int) x) x) x (λ (q int) z)))
+                                  (term ((λ (y int) (λ (q int) z)) (λ (q int) z))))
+                #t)
+    (test-equal (consistent-with? (term (subst ((λ (y int) x) x) x (λ (q int) y)))
+                                  (term ((λ (y2 int) (λ (q int) y)) (λ (q int) y))))
+                #t)
     
     (test-equal (judgment-holds (typeof • 5 τ) τ)
                 (list (term int)))
