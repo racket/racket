@@ -4,3 +4,8 @@
 > (define the-error "the ((cons number) v) value has been omitted")
 33d32
 <      ((cons v) v)
+270a270,273
+> 
+> (define small-counter-example
+>   (term ((cons 0) nil)))
+> (test-equal (check small-counter-example) #f)
