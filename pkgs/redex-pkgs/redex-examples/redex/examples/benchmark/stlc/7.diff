@@ -9,3 +9,8 @@
 >      (E M)))
 238d236
 < 
+270a269,272
+> 
+> (define small-counter-example
+>   (term ((λ (x int) x) (hd ((cons 1) nil)))))
+> (test-equal (check small-counter-example) #f)
