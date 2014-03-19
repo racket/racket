@@ -6,3 +6,7 @@
 <    ((subst M x v) (subst N x v))]
 ---
 >    ((subst N x v) (subst M x v))]
+290a291,293
+> (define small-counter-example
+>   (term ((λ (x int) (+ 1)) 1)))
+> (test-equal (check small-counter-example) #f)
