@@ -7,7 +7,7 @@
          racket/match
          racket/system
          racket/runtime-path
-         "make-mutants.rkt")
+         "apply-diffs.rkt")
 
 (define names '())
 (define verbose? #f)
@@ -18,7 +18,7 @@
 
 (command-line
    #:once-each
-   [("-a" "--all") "Run all mutation tests and gather results"
+   [("-a" "--all") "Run all broken models and gather results"
                    (set! names
                          directories)]
    [("-v" "--verbose") "Also report counterexamples as they are found"
