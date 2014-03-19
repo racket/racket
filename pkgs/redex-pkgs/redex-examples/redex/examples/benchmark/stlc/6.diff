@@ -8,3 +8,8 @@
 >    (--> (in-hole E (hd (cons v_1)))
 238d237
 < 
+270a270,273
+> 
+> (define small-counter-example
+>   (term (hd ((cons 1) nil))))
+> (test-equal (check small-counter-example) #f)
