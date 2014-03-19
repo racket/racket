@@ -6,3 +6,8 @@
 <   [(lookup (x σ Γ) x)
 ---
 >   [(lookup (x σ Γ) x_2)
+294a295,298
+> (define small-counter-example
+>   (term ((λ (y (list int)) ([hd @ int] x))
+>          [nil @ int])))
+> (test-equal (check small-counter-example) #f)
