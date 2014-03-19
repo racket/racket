@@ -1,5 +1,5 @@
 3c3
-< (define the-error "the ((cons v) v) value has been omitted")
+< (define the-error "no error")
 ---
 > (define the-error "lookup always returns int")
 32a33

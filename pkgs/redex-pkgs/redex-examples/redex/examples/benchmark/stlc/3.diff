@@ -1,5 +1,5 @@
 3c3
-< (define the-error "the ((cons v) v) value has been omitted")
+< (define the-error "no error")
 ---
 > (define the-error "the order of the types in the function position of application has been swapped")
 32a33
