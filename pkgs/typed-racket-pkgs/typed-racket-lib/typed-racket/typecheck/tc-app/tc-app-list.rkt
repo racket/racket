@@ -79,14 +79,15 @@
       [(tc-result1: (Listof: elem-ty))
        (for ([i (in-syntax #'args)])
          (tc-expr/check i (ret elem-ty)))
-       expected]
+       (ret (-lst elem-ty))]
       [(tc-result1: (List: (? (lambda (ts) (= (syntax-length #'args)
                                               (length ts)))
                               ts)))
-       (for ([ac (in-syntax #'args)]
-             [exp (in-list ts)])
-         (tc-expr/check ac (ret exp)))
-       expected]
+       (match (for/list ([ac (in-syntax #'args)]
+                         [exp (in-list ts)])
+                (tc-expr/check ac (ret exp)))
+         [(list (tc-result1: t) ...)
+          (ret (-Tuple t))])]
       [_
        (let ([tys (stx-map tc-expr/t #'args)])
          (ret (apply -lst* tys)))]))
@@ -101,7 +102,7 @@
        (tc-expr/check #'arg expected)]
       [(tc-result1: (List: ts))
        (tc-expr/check #'arg (ret (-Tuple (reverse ts))))
-       expected]
+       (ret (-Tuple ts))]
       [_
        (match (single-value #'arg)
          [(tc-result1: (List: ts))

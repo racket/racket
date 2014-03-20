@@ -2519,6 +2519,16 @@
 
        [tc-err (ann (lambda () (let ([my-values values]) (my-values)))
                  (All (A ...) (-> (Values Symbol ... A))))]
+
+       [tc-e (list 'x)
+             #:ret (ret (-Tuple (list -Symbol)))
+             #:expected (ret (-Tuple (list -Symbol)) -no-filter -no-obj)]
+       [tc-e (list 'y)
+             #:ret (ret (-lst -Symbol))
+             #:expected (ret (-lst -Symbol) -no-filter -no-obj)]
+       [tc-e (reverse (list 'x 'y))
+             #:ret (ret (-Tuple (list (-val 'y) (-val 'x))))
+             #:expected (ret (-Tuple (list (-val 'y) (-val 'x))) -no-filter -no-obj)]
         )
   (test-suite
    "tc-literal tests"
