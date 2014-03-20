@@ -15,12 +15,14 @@
 
 (struct index-site (site file-icon folder-icon))
 
-(define (index-page is dir content)
+(define (index-page is dir content
+                    #:html-only? [html-only? #f])
   (page #:site (index-site-site is)
         #:file (if (eq? dir 'same)
                    "index.html"
                    (path->string (build-path dir "index.html")))
         #:title "Index"
+        #:html-only? html-only?
         @columns[10 #:row? #t]{
               @table{@(for/list ([p+k (in-list content)])
                         (define p (let ([p (car p+k)])
