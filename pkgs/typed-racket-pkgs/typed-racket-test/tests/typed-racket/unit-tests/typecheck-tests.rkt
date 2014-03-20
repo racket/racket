@@ -933,7 +933,7 @@
            (do: : Number ((x : (Listof Number) x (cdr x))
                           (sum : Number 0 (+ sum (car x))))
                 ((null? x) sum)))
-         #:ret (ret -Number -top-filter -no-obj)]
+         #:ret (ret -Number -top-filter -empty-obj)]
 
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
 
@@ -1179,7 +1179,7 @@
                      ([j : Natural (+ i 'a) (+ j i)])
                      ((>= j 10))
                      #f)
-          #:ret (ret -Void -no-filter -no-obj)]
+          #:ret (ret -Void -top-filter -empty-obj)]
         [tc-err (apply +)]
         [tc-e/t
          (let ([x eof])
@@ -1748,7 +1748,7 @@
         [tc-e (let ([my-pred (λ () #f)])
                 (for/and: : Any ([i (in-range 4)])
                           (my-pred)))
-              #:ret (ret Univ -top-filter -no-obj)]
+              #:ret (ret Univ -top-filter -empty-obj)]
         [tc-e
          (let ()
            (define: long : (List 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 Integer)
@@ -1864,7 +1864,7 @@
           (ann
             ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
             (Listof Symbol))
-          #:ret (ret (-lst -Symbol) -no-filter -no-obj)]
+          #:ret (ret (-lst -Symbol) -top-filter -empty-obj)]
         [tc-e (filter values empty)
               (-lst -Bottom)]
         [tc-e (lambda lst (map (plambda: (b) ([x : b]) x) lst))
@@ -2150,7 +2150,7 @@
                (values x y))
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
-                        -no-obj)]
+                        -empty-obj)]
        [tc-e (for*/hash: : (HashTable Symbol String)
                ([k (in-list '(x y z))]
                 [v (in-list '("a" "b"))]
@@ -2158,7 +2158,7 @@
                (values k v))
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
-                        -no-obj)]
+                        -empty-obj)]
 
        ;; PR 13937
        [tc-e (let ()
@@ -2399,9 +2399,9 @@
        [tc-e (let/ec k : String (k "foo")) -String]
        [tc-e (ann (do ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
                   Integer)
-             #:ret (ret -Integer -no-filter -no-obj)]
+             #:ret (ret -Integer -top-filter -empty-obj)]
        [tc-e (do : Integer ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
-             #:ret (ret -Integer -no-filter -no-obj)]
+             #:ret (ret -Integer -top-filter -empty-obj)]
        [tc-e (tr:case-lambda [(x [y : String]) x])
              #:ret (ret (t:-> Univ -String Univ
                               : (-FS (-not-filter (-val #f) (list 0 0))
