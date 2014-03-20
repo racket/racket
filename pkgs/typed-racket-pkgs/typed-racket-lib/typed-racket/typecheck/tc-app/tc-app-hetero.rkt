@@ -34,8 +34,8 @@
        (check-below tc-results (ret -Integer))
        #f])]))
 
-(define (index-error i-val i-bound expr type expected name)
-  (define return (or expected (ret (Un))))
+(define (index-error i-val i-bound expr type name)
+  (define return (ret -Bottom))
   (cond 
     [(not (and (integer? i-val) (exact? i-val)))
      (tc-error/expr #:stx expr #:return return "expected exact integer for ~a index, but got ~a" name i-val)]
@@ -49,7 +49,7 @@
 
 
 ;; FIXME - Do something with paths in the case that a structure/vector is not mutable
-(define (tc/hetero-ref i-e es-t vec-t expected name)
+(define (tc/hetero-ref i-e es-t vec-t name)
   (define i-val (tc/index i-e))
   (define i-bound (length es-t))
   (cond
@@ -58,9 +58,9 @@
     [(not i-val)
      (ret (apply Un es-t))]
     [else
-     (index-error i-val i-bound i-e vec-t expected name)]))
+     (index-error i-val i-bound i-e vec-t name)]))
 
-(define (tc/hetero-set! i-e es-t val-e vec-t expected name)
+(define (tc/hetero-set! i-e es-t val-e vec-t name)
   (define i-val (tc/index i-e))
   (define i-bound (length es-t))
   (cond 
@@ -71,35 +71,35 @@
      (define val-t (single-value val-e))
      (for ((es-type (in-list es-t)))
        (check-below val-t (ret es-type)))
-     (cond-check-below (ret -Void) expected)]
+     (ret -Void)]
     [else
      (single-value val-e)
-     (index-error i-val i-bound i-e vec-t expected name)]))
+     (index-error i-val i-bound i-e vec-t name)]))
 
 (define-tc/app-syntax-class (tc/app-hetero expected)
   #:literal-sets (hetero-literals)
   (pattern (~and form ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr))
     (match (single-value #'struct)
       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _))))
-       (tc/hetero-ref #'index flds struct-t expected "struct")]
+       (tc/hetero-ref #'index flds struct-t "struct")]
       [s-ty (tc/app-regular #'form expected)]))
   ;; vector-ref on het vectors
   (pattern (~and form ((~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr))
     (match (single-value #'vec)
       [(tc-result1: (and vec-t (app resolve (HeterogeneousVector: es))))
-       (tc/hetero-ref #'index es vec-t expected "vector")]
+       (tc/hetero-ref #'index es vec-t "vector")]
       [v-ty (tc/app-regular #'form expected)]))
   ;; unsafe struct-set! 
   (pattern (~and form ((~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr))
     (match (single-value #'s)
       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _))))
-       (tc/hetero-set! #'index flds #'val struct-t expected "struct")]
+       (tc/hetero-set! #'index flds #'val struct-t "struct")]
       [s-ty (tc/app-regular #'form expected)]))
   ;; vector-set! on het vectors
   (pattern (~and form ((~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr))
     (match (single-value #'v)
       [(tc-result1: (and vec-t (app resolve (HeterogeneousVector: es))))
-       (tc/hetero-set! #'index es #'val vec-t expected "vector")]
+       (tc/hetero-set! #'index es #'val vec-t "vector")]
       [v-ty (tc/app-regular #'form expected)]))
   (pattern (~and form ((~or vector-immutable vector) args:expr ...))
     (match expected
