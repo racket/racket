@@ -118,7 +118,7 @@ which defines the @racket[deposit] function with the contract from earlier.
 Note that this has two potentially important impacts on the use of
 @racket[deposit]:
 
-@itemlist[#:style "ordered"
+@itemlist[#:style 'ordered
   @item{Since the contract will always be checked on calls to @racket[deposit],
         even inside the module in which it is defined, this may increase
         the number of times the contract is checked. This could lead to
