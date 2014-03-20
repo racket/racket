@@ -236,6 +236,11 @@ file lists the content specified by @racket[content], where
 an integer corresponds to a file size and @racket['dir] indicates
 a directory.}
 
+@defproc[(call-with-registered-roots [thunk (-> any)]) any]{
+
+Calls @racket[thunk] with @racket[url-roots] set to a mapping for
+registered sites.}
+
 @; ----------------------------------------
 
 @section{Generating Site Content}
