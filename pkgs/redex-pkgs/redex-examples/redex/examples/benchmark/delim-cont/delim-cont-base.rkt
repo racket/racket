@@ -931,7 +931,8 @@
 
 (define (check term)
   (or (not term)
-      (soundness-holds? term)))
+      (implies (type-check term)
+               (soundness-holds? term))))
 
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
