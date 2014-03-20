@@ -932,7 +932,8 @@
 
 (define (check term)
   (or (not term)
-      (soundness-holds? term)))
+      (implies (type-check term)
+               (soundness-holds? term))))
 
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
@@ -949,3 +950,9 @@
       (set! index (add1 index))
       (generate-term abort-lang e #:i-th index))))
 
+(define small-counter-example
+  '(monitor (list/c (flat (λ (k : Bool) #t))) 
+            (cons #t (null Bool)) 
+            "" "" ""))
+
+(test-equal (check small-counter-example) #f)

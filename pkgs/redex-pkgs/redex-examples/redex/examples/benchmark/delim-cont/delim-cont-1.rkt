@@ -935,7 +935,8 @@
 
 (define (check term)
   (or (not term)
-      (soundness-holds? term)))
+      (implies (type-check term)
+               (soundness-holds? term))))
 
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
@@ -951,29 +952,17 @@
       (set! index (add1 index))
       (generate-term abort-lang e #:i-th index))))
 
-(define small-counter-example
-  (term
-   ;; (List Num)
-   (ccm 
-    ;; (Mark Num)
-    (MG ;; (Con Num)
-        (flat (λ (x : Num) (number? x)))
-        ;; (Mark Num)
-        (make-cm-key Num)
-        "k" "l" "j")
-    Num)))
 
-(local 
- ()
- (define ctc-fun (term (λ (x : Num) (number? x))))
- (test-equal (judgment-holds (tc · · ,ctc-fun (→ Num Bool))) #t)
- (define ctc (term (flat ,ctc-fun)))
- (test-equal (judgment-holds (tcc · · ,ctc (Con Num))) #t)
- (define v (term (make-cm-key Num)))
- (test-equal (judgment-holds (tc · · ,v (Mark Num))) #t)
- (test-equal (redex-match? abort-lang l "k") #t)
- (test-equal (redex-match? abort-lang l "l") #t)
- (test-equal (redex-match? abort-lang l "j") #t)
- ;; XXX This makes no sense, given the definition on line 495
- (test-equal (judgment-holds (tc · · (MG ,ctc ,v "k" "l" "j") (Mark Num))) #t))
+(define small-counter-example
+  '(ccm 
+    (monitor 
+     (mark/c 
+      (mark/c (flat (λ (p : Num) #t)) 
+              Num)
+      (Mark Num)) 
+     (make-cm-key (Mark Num))
+     "" "" "") 
+    (Mark Num)))
+
 (test-equal (check small-counter-example) #f)
+

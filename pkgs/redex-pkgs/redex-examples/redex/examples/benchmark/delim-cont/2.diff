@@ -8,6 +8,14 @@
 >    (--> (monitor ctc (cons v_1 v_2) k l j)
 326a327
 > 
-937a939,940
+939a941,942
 > 
 > 
+949a953,958
+> (define small-counter-example
+>   '(monitor (list/c (flat (λ (k : Bool) #t))) 
+>             (cons #t (null Bool)) 
+>             "" "" ""))
+> 
+> (test-equal (check small-counter-example) #f)
+\ No newline at end of file
