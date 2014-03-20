@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match unstable/sequence unstable/syntax
          (typecheck signatures tc-funapp)
-         (types utils)
+         (types utils abbrev)
 
          (for-label racket/base))
 
@@ -33,13 +33,13 @@
       (single-value #'arg expected)]
      [(tc-results: ts)
       (single-value #'arg) ;Type check the argument, to find other errors
-      (tc-error/expr #:return expected
+      (tc-error/expr #:return (ret -Bottom)
         "wrong number of values: expected ~a but got one"
          (length ts))]
      ;; match polydots case and error
      [(tc-results: ts _ _ dty dbound)
       (single-value #'arg)
-      (tc-error/expr #:return expected
+      (tc-error/expr #:return (ret -Bottom)
         "Expected ~a ..., but got only one value" dty)]))
   ;; handle `values' specially
   (pattern (values . args)
@@ -53,7 +53,7 @@
                       (single-value arg (ret et ef eo)))])
          (if (= (length ts) (length ets) (syntax-length #'args))
              (ret ts fs os)
-             (tc-error/expr #:return expected "wrong number of values: expected ~a but got ~a"
+             (tc-error/expr #:return (ret -Bottom) "wrong number of values: expected ~a but got ~a"
                             (length ets) (syntax-length #'args))))]
       [_ (match-let ([(list (tc-result1: ts fs os) ...)
                       (for/list ([arg (in-syntax #'args)])

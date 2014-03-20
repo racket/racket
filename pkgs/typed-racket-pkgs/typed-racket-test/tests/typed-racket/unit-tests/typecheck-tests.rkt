@@ -2598,6 +2598,18 @@
          #:ret (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -empty-obj)
          #:expected (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -no-obj)]
 
+       [tc-err (values 'x)
+         #:ret (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+         #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
+
+       [tc-err (values 'x 'y 'z)
+         #:ret (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+         #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
+
+       [tc-err (values 'y)
+         #:ret (ret (list -Symbol) (list -top-filter ) (list -empty-obj) Univ 'B)
+         #:expected (ret (list -Symbol) (list -no-filter ) (list -no-obj) Univ 'B)]
+
         )
   (test-suite
    "tc-literal tests"
