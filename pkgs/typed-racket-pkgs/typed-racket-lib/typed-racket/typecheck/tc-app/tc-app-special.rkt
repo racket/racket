@@ -5,6 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match
          unstable/list syntax/stx
+         unstable/sequence
          (typecheck signatures tc-funapp)
          (types abbrev utils)
          (private type-annotation)
@@ -23,20 +24,17 @@
 (define-tc/app-syntax-class (tc/app-special expected)
   #:literal-sets (kernel-literals special-literals)
   ;; parameterize
-  (pattern (extend-parameterization pmz args ...)
-    (let loop ([args (syntax->list #'(args ...))])
-      (if (null? args) (ret Univ)
-          (let* ([p (car args)]
-                 [pt (single-value p)]
-                 [v (cadr args)])
-            (match pt
-              [(tc-result1: (Param: a b))
-               (tc-expr/check v (ret a))
-               (loop (cddr args))]
-              [(tc-result1: t)
-               (single-value v)
-               (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
-               (loop (cddr args))])))))
+  (pattern (extend-parameterization pmz (~seq params args) ...)
+    (begin
+      (for ([param (in-syntax #'(params ...))]
+            [arg (in-syntax #'(args ...))])
+        (match (single-value param)
+          [(tc-result1: (Param: a b))
+           (tc-expr/check arg (ret a))]
+          [(tc-result1: t)
+           (single-value arg)
+           (tc-error/delayed "expected Parameter, but got ~a" t)]))
+      (ret Univ)))
   ;; use the additional but normally ignored first argument to make-sequence
   ;; to provide a better instantiation
   (pattern ((~var op (id-from 'make-sequence 'racket/private/for))
