@@ -214,11 +214,10 @@
     [(? Class? class-type)
      (ret (parse-and-check form class-type))]
     [(Poly-names: ns body-type)
-     ;; FIXME: make sure this case is correct, does it
-     ;; introduce the right names in scope?
-     (check-class form (ret body-type))]
-    [#f (ret (parse-and-check form #f))]
-    [_ (check-below (ret (parse-and-check form #f)) expected)]))
+     (match (check-class form (ret body-type))
+       [(tc-result1: t f o)
+        (ret (make-Poly ns t) f o)])]
+    [_ (ret (parse-and-check form #f))]))
 
 ;; Syntax Option<Type> -> Type
 ;; Parse the syntax and extract useful information to pass to the

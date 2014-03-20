@@ -236,8 +236,7 @@
       #:literal-sets (kernel-literals tc-expr-literals)
       ;; a TR-annotated class
       [stx:tr:class^
-       (check-class form expected)
-       expected]
+       (check-class form expected)]
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers/check form expected)]
