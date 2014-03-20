@@ -64,7 +64,7 @@
     [else f]))
 
 ;; fix-object: Object [Object] -> Object
-;; Turns NoObject into the actual abject; leaves other objects alone.
+;; Turns NoObject into the actual object; leaves other objects alone.
 (define (fix-object o [o2 -empty-obj])
   (match o
     [(NoObject:) o2]
