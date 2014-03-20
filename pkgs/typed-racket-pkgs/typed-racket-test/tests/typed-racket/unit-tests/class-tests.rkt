@@ -1316,4 +1316,11 @@
                (define/public (m a-foo) (get-field x a-foo))))
            (void))
          -Void]
+   ;; test that filters are correctly handled for polymorphic classes
+   [tc-e (let ()
+           (class object%
+             (super-new)
+             (init x)))
+         #:ret (ret (-poly (A) (-class #:init ([x A #f]))))
+         #:expected (ret (-poly (A) (-class #:init ([x A #f]))) -no-filter -no-obj)]
    ))
