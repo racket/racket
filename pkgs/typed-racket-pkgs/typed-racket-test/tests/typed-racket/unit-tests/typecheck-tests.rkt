@@ -901,7 +901,7 @@
            (do: : Number ((x : (Listof Number) x (cdr x))
                           (sum : Number 0 (+ sum (car x))))
                 ((null? x) sum)))
-         #:ret (ret -Number -top-filter -no-obj)]
+         #:ret (ret -Number -top-filter -empty-obj)]
 
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
 
@@ -1697,7 +1697,7 @@
         [tc-e (let ([my-pred (λ () #f)])
                 (for/and: : Any ([i (in-range 4)])
                           (my-pred)))
-              #:ret (ret Univ -top-filter -no-obj)]
+              #:ret (ret Univ -top-filter -empty-obj)]
         [tc-e
          (let ()
            (define: long : (List 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 Integer)
@@ -2092,7 +2092,7 @@
                (values x y))
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
-                        -no-obj)]
+                        -empty-obj)]
        [tc-e (for*/hash: : (HashTable Symbol String)
                ([k (in-list '(x y z))]
                 [v (in-list '("a" "b"))]
@@ -2100,7 +2100,7 @@
                (values k v))
              #:ret (ret (-HT -Symbol -String)
                         (-FS -top -top)
-                        -no-obj)]
+                        -empty-obj)]
 
        ;; PR 13937
        [tc-e (let ()
@@ -2338,9 +2338,9 @@
        [tc-e (let/ec k : String (k "foo")) -String]
        [tc-e (ann (do ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
                   Integer)
-             #:ret (ret -Integer -no-filter -no-obj)]
+             #:ret (ret -Integer -top-filter -empty-obj)]
        [tc-e (do : Integer ([x : Integer 0 (add1 x)]) ((> x 10) x) (displayln x))
-             #:ret (ret -Integer -no-filter -no-obj)]
+             #:ret (ret -Integer -top-filter -empty-obj)]
        [tc-e (tr:case-lambda [(x [y : String]) x])
              #:ret (ret (t:-> Univ -String Univ
                               : (-FS (-not-filter (-val #f) (list 0 0))

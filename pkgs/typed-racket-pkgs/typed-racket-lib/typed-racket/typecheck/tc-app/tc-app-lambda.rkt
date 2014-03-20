@@ -3,6 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
+         (prefix-in - (contract-req))
          syntax/parse racket/match racket/list
          unstable/sequence unstable/syntax
          (typecheck signatures find-annotation)
@@ -53,7 +54,9 @@
                       expected)))))
 
 
-(define (let-loop-check lam lp actuals args body expected)
+(define/cond-contract
+  (let-loop-check lam lp actuals args body expected)
+  (syntax? syntax? syntax? syntax? syntax? tc-results/c . --> . tc-results/c)
   (syntax-parse #`(#,args #,body #,actuals)
     #:literal-sets (kernel-literals lambda-literals)
     [((val acc ...)
@@ -76,8 +79,10 @@
                   [t (in-list ann-ts)])
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
-       (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
-       expected)]
+       (define-values (fun-results body-results)
+         (tc/rec-lambda/check args body lp ts expected))
+       (add-typeof-expr lam fun-results)
+       body-results)]
     ;; special case `for/list'
     [((val acc ...)
       ((~and inner-body (if e1 e2 e3:id)))
@@ -95,8 +100,10 @@
                       [(tc-result1: (and t (Listof: _))) t]
                       [_ #f])
                     (generalize (-val '())))])
-       (add-typeof-expr lam (tc/rec-lambda/check args body lp (cons acc-ty ts) expected))
-       expected)]
+       (define-values (fun-results body-results)
+         (tc/rec-lambda/check args body lp (cons acc-ty ts) expected))
+       (add-typeof-expr lam fun-results)
+       body-results)]
     ;; special case when argument needs inference
     [(_ body* _)
      (let ([ts (for/list ([ac (in-syntax actuals)]
@@ -106,6 +113,8 @@
                    (if infer-t
                        (tc-expr/check/t ac (ret infer-t))
                        (generalize (tc-expr/t ac)))))])
-       (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
-       expected)]))
+       (define-values (fun-results body-results)
+         (tc/rec-lambda/check args body lp ts expected))
+       (add-typeof-expr lam fun-results)
+       body-results)]))
 

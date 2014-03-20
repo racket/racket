@@ -5,9 +5,11 @@
          (except-in (types abbrev union utils filter-ops)
                     -> ->* one-of/c)
          (rep type-rep filter-rep object-rep rep-utils)
+         (typecheck tc-subst)
          (contract-req))
 
 (provide abstract-results
+         erase-names/results
          combine-props
          tc-results->values)
 
@@ -100,19 +102,12 @@
            ;; the scope count in the keys so that names are
            ;; substituted with the correct level of nesting
            (λ (type)
-             (abstract-type ids (add-scope keys) type))])
+             (abstract-type ids (map add-scope keys) type))])
       (make-arr (map at dom)
                 (at* rng) ; only increase scope in range
                 (and rest (at rest))
                 (and drest (cons (at (car drest)) (cdr drest)))
                 (map at kws)))]))
-
-;; add-scope : Listof<name-ref/c> -> Listof<name-ref/c>
-;; Add a scope to the index object
-(define (add-scope keys)
-  (for/list ([depth+arg keys])
-    (match-define (list depth arg) depth+arg)
-    (list (+ 1 depth) arg)))
 
 ;; Abstract all given id objects into index objects (keys) in
 ;; the given object
@@ -246,3 +241,19 @@
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
 
+;; erase-names/results: (listof identifier?) tc-results? -> tc-results?
+;; Maps all of the given names in the results to the empty object.
+;; This is used so that names do not escape the scope of their definitions
+;; TODO support mapping names to other objects.
+(define (erase-names/results names res)
+  (define (subber proc lst)
+    (for/list ([i (in-list lst)])
+      (for/fold ([s i])
+        ([nm (in-list names)])
+        (proc s nm -empty-obj #t))))
+  (match res
+    [(tc-any-results:) res]
+    [(tc-results: ts fs os)
+     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
+    [(tc-results: ts fs os dt db)
+     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))

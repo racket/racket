@@ -8,7 +8,7 @@
               global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
          syntax/free-vars
-         (typecheck signatures tc-metafunctions tc-subst internal-forms)
+         (typecheck signatures tc-metafunctions internal-forms)
          (utils tarjan)
          racket/match (contract-req)
          syntax/parse syntax/stx
@@ -64,31 +64,19 @@
              clauses
              exprs
              expected-results)
-   (let ([subber (lambda (proc lst)
-                   (for/list ([i (in-list lst)])
-                     (for/fold ([s i])
-                       ([nm (in-list (apply append abstract namess))])
-                       (proc s nm -empty-obj #t))))])
-     (define (run res)
-       (match res
-         [(tc-any-results:) res]
-         [(tc-results: ts fs os)
-          (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
-         [(tc-results: ts fs os dt db)
-          (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
-     (with-lexical-env/extend/props
-      ;; we typechecked the rhss with the lhss having types that potentially contain undefined
-      ;; if undefined can actually show up, a type error will have been triggered
-      ;; it is therefore safe to typecheck the body with the original types the user gave us
-      ;; any undefined-related problems have been caught already
-      namess
-      expected-types ; types w/o undefined
-      (append p1 p2)
-      ;; typecheck the body
-      (run
-        (if expected
-          (tc-body/check body (erase-filter expected))
-          (tc-body body)))))))
+   (with-lexical-env/extend/props
+    ;; we typechecked the rhss with the lhss having types that potentially contain undefined
+    ;; if undefined can actually show up, a type error will have been triggered
+    ;; it is therefore safe to typecheck the body with the original types the user gave us
+    ;; any undefined-related problems have been caught already
+    namess
+    expected-types ; types w/o undefined
+    (append p1 p2)
+    ;; typecheck the body
+    (erase-names/results (apply append abstract namess)
+      (if expected
+        (tc-body/check body (erase-filter expected))
+        (tc-body body))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names
