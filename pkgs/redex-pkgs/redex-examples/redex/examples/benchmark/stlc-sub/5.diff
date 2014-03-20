@@ -3,10 +3,11 @@
 ---
 > (define the-error "replace all variables")
 106c106
-<   [(subst x x v)
+<   [(subst x x M_x)
 ---
->   [(subst x y v)
-290a291,293
+>   [(subst x y M_x)
+298a299,302
 > (define small-counter-example
 >   (term ((λ (x int) (λ (y (list int)) (hd y))) 1)))
 > (test-equal (check small-counter-example) #f)
+> 
