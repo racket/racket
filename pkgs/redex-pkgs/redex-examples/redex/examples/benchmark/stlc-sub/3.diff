@@ -3,10 +3,11 @@
 ---
 > (define the-error "swaps function and argument position in application")
 115c115
-<    ((subst M x v) (subst N x v))]
+<    ((subst M x M_x) (subst N x M_x))]
 ---
->    ((subst N x v) (subst M x v))]
-290a291,293
+>    ((subst N x M_x) (subst M x M_x))]
+297a298,301
+>   
 > (define small-counter-example
 >   (term ((λ (x int) (+ 1)) 1)))
 > (test-equal (check small-counter-example) #f)

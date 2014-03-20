@@ -3,10 +3,13 @@
 ---
 > (define the-error "wrong order of arguments to replace call")
 111c111
-<    (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
+<    (λ (x_new τ) (subst (replace M y x_new) x M_x))
 ---
->    (λ (x_new τ) (subst (replace M x_new x_1) x_2 v))
-290a291,293
+>    (λ (x_new τ) (subst (replace M x_new y) x M_x))
+147a148
+> 
+298a300,303
 > (define small-counter-example
 >   (term ((λ (x int) (λ (y int) y)) 1)))
 > (test-equal (check small-counter-example) #f)
+> 

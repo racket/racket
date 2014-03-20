@@ -3,15 +3,11 @@
 ---
 > (define the-error "variable not fresh enough")
 112c112
-<    (where x_new ,(variable-not-in (term (x_1 e x_2))
+<    (where x_new ,(variable-not-in (term (x y M))
 ---
->    (where x_new ,(variable-not-in (term e)
-290a291,298
+>    (where x_new ,(variable-not-in (term M)
+298a299,302
 > (define small-counter-example
->   ;; XXX I don't think this actually has an error because if x_1 !=
->   ;; x_2 and v is a closed term, then what could go wrong? If we
->   ;; remove the other special case of subst for λs that match, then it
->   ;; would be bad, though.
->   (term ((λ (x int) (λ (y int) (λ (y int) ((+ x) y))))
->          1)))
+>   (term ((λ (z int) (((λ (y1 int) (λ (y int) y)) z) 1)) 0)))
 > (test-equal (check small-counter-example) #f)
+> 

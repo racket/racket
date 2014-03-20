@@ -8,20 +8,29 @@
              [t2 t2])
     (cond
       [(and (pair? t1) (pair? t2))
-       (and (consistent-with? (car t1) (car t2))
-            (consistent-with? (cdr t1) (cdr t2)))]
-      [(and (symbol? t1) (symbol? t2))
+       (and (loop (car t1) (car t2))
+            (loop (cdr t1) (cdr t2)))]
+      [(and (symbol? t1) 
+            (symbol? t2)
+            (not (equal? t1 t2))
+            (same-first-char? t1 t2))
        (cond
          [(equal? t1 t2) #t]
          [else
           (define bound (hash-ref table t1 #f))
           (cond
             [bound (equal? bound t2)]
-            [else 
+            [else
              (hash-set! table t1 t2)
              #t])])]
       [else (equal? t1 t2)])))
-          
+
+(define (same-first-char? t1 t2)
+  (define (first-char s) (string-ref (symbol->string s) 0))
+  (and (not (equal? t1 '||))
+       (not (equal? t2 '||))
+       (equal? (first-char t1)
+               (first-char t2))))
 
 (define-syntax-rule
   (stlc-tests uses-bound-var?
@@ -45,6 +54,13 @@
     (test-equal (term (uses-bound-var? () ((λ (x int) xy) 5)))
                 #f)
     
+    (test-equal (consistent-with? '(λ (z1 int) (λ (z2 int) z2))
+                                  '(λ (z int) (λ (z1 int) z)))
+                #f)
+    (test-equal (consistent-with? '(λ (z1 int) (λ (z2 int) z2))
+                                  '(λ (z int) (λ (z1 int) z1)))
+                #t)
+    
     (test-equal (term (subst ((+ 1) 1) x 2))
                 (term ((+ 1) 1)))
     (test-equal (term (subst ((+ x) x) x 2))
@@ -63,6 +79,9 @@
                 #t)
     (test-equal (consistent-with? (term (subst ((λ (y int) x) x) x (λ (q int) y)))
                                   (term ((λ (y2 int) (λ (q int) y)) (λ (q int) y))))
+                #t)
+    (test-equal (consistent-with? (term (subst (λ (z int) (λ (z1 int) z)) q 1))
+                                  (term (λ (z int) (λ (z1 int) z))))
                 #t)
     
     (test-equal (judgment-holds (typeof • 5 τ) τ)

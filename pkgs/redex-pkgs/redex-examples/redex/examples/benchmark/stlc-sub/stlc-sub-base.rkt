@@ -102,18 +102,18 @@
         "+")))
 
 (define-metafunction stlc
-  subst : M x v -> M
-  [(subst x x v)
-   v]
-  [(subst (λ (x τ) M) x v)
+  subst : M x M -> M
+  [(subst x x M_x)
+   M_x]
+  [(subst (λ (x τ) M) x M_x)
    (λ (x τ) M)]
-  [(subst (λ (x_1 τ) M) x_2 v)
-   (λ (x_new τ) (subst (replace M x_1 x_new) x_2 v))
-   (where x_new ,(variable-not-in (term (x_1 e x_2))
-                                  (term x_1)))]
-  [(subst (M N) x v)
-   ((subst M x v) (subst N x v))]
-  [(subst M x v)
+  [(subst (λ (y τ) M) x M_x)
+   (λ (x_new τ) (subst (replace M y x_new) x M_x))
+   (where x_new ,(variable-not-in (term (x y M))
+                                  (term y)))]
+  [(subst (M N) x M_x)
+   ((subst M x M_x) (subst N x M_x))]
+  [(subst M x M_z)
    M])
 
 (define-metafunction stlc
@@ -126,20 +126,24 @@
 
 (define M? (redex-match stlc M))
 (define/contract (Eval M)
-  (-> M? (or/c M? "error"))
+  (-> M? (or/c M? string? 'error))
   (define M-t (judgment-holds (typeof • ,M τ) τ))
-  (unless (pair? M-t)
-    (error 'Eval "doesn't typecheck: ~s" M))
-  (define res (apply-reduction-relation* red M))
-  (unless (= 1 (length res))
-    (error 'Eval "internal error: not exactly 1 result ~s => ~s" M res))
-  (define ans (car res))
-  (if (equal? "error" ans)
-      "error"
-      (let ([ans-t (judgment-holds (typeof • ,ans τ) τ)])
-        (unless (equal? M-t ans-t)
-          (error 'Eval "internal error: type soundness fails for ~s" M))
-        ans)))
+  (cond
+    [(pair? M-t)
+     (define res (apply-reduction-relation* red M))
+     (cond
+       [(= 1 (length res))
+        (define ans (car res))
+        (if (equal? "error" ans)
+            'error
+            (let ([ans-t (judgment-holds (typeof • ,ans τ) τ)])
+              (cond
+                [(equal? M-t ans-t) ans]
+                [else (format "internal error: type soundness fails for ~s" M)])))]
+       [else
+        (format "internal error: not exactly 1 result ~s => ~s" M res)])]
+    [else 
+     (error 'Eval "argument doesn't typecheck: ~s" M)]))
 
 (define x? (redex-match stlc x))
 
@@ -264,19 +268,30 @@
          M]
         [#f #f]))))
 
-;; check : (or/c #f term) -> boolean[#f = counterexample found!]
-(define (check term)
-  (or (not term)
-      (v? term)
-      (let ([t-type (type-check term)])
-        (implies
-         t-type
-         (let ([red-res (apply-reduction-relation red term)])
-           (and (= (length red-res) 1)
-                (let ([red-t (car red-res)])
-                  (or (equal? red-t "error")
-                      (let ([red-type (type-check red-t)])
-                        (equal? t-type red-type))))))))))
+
+;; rewrite all βv redexes already in the term
+;; (but not any new ones that might appear)
+(define-metafunction stlc
+  βv-> : M -> M
+  [(βv-> ((λ (x τ) M) v))  (subst (βv-> M) x (βv-> v))]
+  [(βv-> ((λ (x τ) M) y))  (subst (βv-> M) x y)]
+  [(βv-> (λ (x τ) M))      (λ (x τ) (βv-> M))]
+  [(βv-> (M N))            ((βv-> M) (βv-> N))]
+  [(βv-> M)                M])
+
+;; check : (or/c #f M) -> boolean[#f = counterexample found!]
+(define (check M)
+  (or (not M)
+      (let ([M-type (type-check M)])
+        (implies M-type
+                 (let* ([N (term (βv-> ,M))][N-type (type-check N)])
+                   (and (equal? N-type M-type)
+                        (let ([a1 (Eval M)] [a2 (Eval N)])
+                          (and (not (string? a1)) (not (string? a2)) 
+                               (equal? a1 a2)
+                               (or (equal? a1 'error)
+                                   (and (equal? (type-check a1) M-type)
+                                        (equal? (type-check a2) M-type)))))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.035)))
@@ -287,4 +302,3 @@
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
-
