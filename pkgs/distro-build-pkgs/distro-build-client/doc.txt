@@ -253,16 +253,13 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     clients typically have no native-library packages; the default is
     the value of `#:source?'
 
-  #:source-pkgs? --- if true, then packages are included in the
-    installer/archive only in source form; a true value works best
+  #:source-pkgs? <boolean> --- if true, then packages are included in
+    th installer/archive only in source form; a true value works best
     when the `#:source-runtime?' value is also #t; the default is the
     value of `#:source?'
 
-  #:mac-pkg? --- if true, creates a ".pkg" for Mac OS X (in
+  #:mac-pkg? <boolean> --- if true, creates a ".pkg" for Mac OS X (in
     single-file format) instead of a ".dmg"; the default is #f
-
-  #:max-snapshots <number> --- number of snapshots to keep, used by
-    the `snapshot-site' makefile target
 
   #:pause-before <nonnegative-number> --- a pause in seconds to
     wait before starting a machine, which may help a virtual machine
@@ -312,6 +309,16 @@ Top keywords (recognized only in the configuration top-level):
     row labels in the download table (after splitting on "|" and
     removing "{...}"), and the values are X-expressions for the help
     content
+
+  #:site-title <string> --- title for the main page generated
+    by the `site' or `snapshot-site' makefile target; the default
+    is "Racket Downloads"
+
+  #:max-snapshots <number> --- number of snapshots to keep, used by
+    the `snapshot-site' makefile target
+
+  #:plt-web-style? <boolean> --- indicates whether `plt-web` should
+    be used to generate a site or snapshot page; the default is #t
 
 More precisely, the `distro-build/config' language is like
 `racket/base' except that the module body must have exactly one
