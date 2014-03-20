@@ -36,6 +36,7 @@ relative directory is mapped to a destination URL via
 @defproc[(site [dir path-string?]
                [#:url url (or/c string? #f) #f]
                [#:always-abs-url? always-abs-url? any/c #t]
+               [#:generate? generate? any/c #t]
                [#:share-from share-from (or/c site? #f) #f]
                [#:page-style? page-style? any/c #t]
                [#:page-headers page-headers outputable/c null]
@@ -56,6 +57,9 @@ If @racket[always-abs-url?] is true (the default), then @racket[url]
 is registered with a @racket['abs] flag, so that (in @tech{deployment
 mode}) references within a site are relative to the site root, as
 opposed to relative to the referencing resource.
+
+If @racket[generate?] is @racket[#f], then resources for the site
+(such as icons or CSS files) are not generated.
 
 If @racket[share-from] is a site, then resources generated for the
 site (such as icons or CSS files) are used when as possible for the
@@ -223,12 +227,14 @@ site root.}
 @defproc[(index-site [site site?]) index-site?]
 @defproc[(index-page [isite index-site?]
                      [path (or/c 'same relative-path?)]
-                     [content (listof (cons/c path-string? (or/c exact-integer? 'dir)))])
+                     [content (listof (cons/c path-string? (or/c exact-integer? 'dir)))]
+                     [#:html-only? html-only? any/c #f])
          outputable/c]
 )]{
 
 The @racket[index-page] function registers an individual
-@filepath{index.html} file for the given index site, where an index
+@filepath{index.html} file (or returns its content if
+@racket[html-only?] is true) for the given index site, where an index
 site is created once for a given site (to register support
 resources, such as icons). The @filepath{index.html} file is
 generated for the subdirectory indicated by @racket[path]. The index

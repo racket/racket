@@ -19,17 +19,24 @@
 ;; they can be #t (the default) for the standard ones, or some text that gets
 ;; added to the standard contents -- which is the user-agent line and the
 ;; ErrorDocument respectively.
-(define (make-resource-files page dir robots htaccess page-style? meta? sharing?)
+(define (make-resource-files generate? page dir robots htaccess page-style? meta? sharing?)
   ;; the default target argument duplicate the behavior in "utils.rkt"
   (define (copyfile file [target (basename file)])
-    (list target (copyfile-resource (build-path resources-dir file) (web-path dir target))))
+    (list target 
+          (if generate?
+              (copyfile-resource (build-path resources-dir file) (web-path dir target))
+              (resource (web-path dir target) #f))))
   (define (writefile file . contents)
-    (list file (resource (web-path dir file)
-                         (file-writer output (list contents "\n")))))
+    (list file
+          (resource (web-path dir file)
+                    (and generate?
+                         (file-writer output (list contents "\n"))))))
   (define (pagefile file . contents)
     (list file
-          (apply page (string->symbol (regexp-replace #rx"[.]html$" file ""))
-                 contents)))
+          (if generate?
+              (apply page (string->symbol (regexp-replace #rx"[.]html$" file ""))
+                     contents)
+              (resource (web-path dir file) #f))))
   `(,@(if (not sharing?)
           (list (copyfile "logo-and-text.png" "logo-and-text.png"))
           null)

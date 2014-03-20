@@ -289,7 +289,8 @@
                   #:page-headers [headers null]
                   #:page-style? [page-style? #t]
                   #:meta? [meta? page-style?]
-                  #:share-from [given-sharing-site #f])
+                  #:share-from [given-sharing-site #f]
+                  #:generate? [generate? #t])
            (when url
              (registered-url-roots (cons (list* dir
                                                 url
@@ -305,7 +306,8 @@
            (define the-site
              (make-site dir (delay
                               (make-resources
-                               (make-resource-files
+                               (make-resource-files 
+                                generate?
                                 (λ (id . content)
                                   (page* #:id id
                                          #:site the-site
