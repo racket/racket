@@ -13,7 +13,8 @@
          site-css-path
          site-favicon-path
          site-navbar
-         site-navbar-dynamic-js)
+         site-navbar-dynamic-js
+         call-with-registered-roots)
 
 (define-for-syntax (process-contents who layouter stx xs)
   (let loop ([xs xs] [kws '()] [id? #f])
@@ -70,7 +71,7 @@
                ;; if this is true, return only the html -- don't create
                ;; a resource -- therefore no file is made, and no links
                ;; to it can be made (useful only for stub templates)
-               #:html-only [html-only? #f]
+               #:html-only? [html-only? #f]
                #:title [label (if id
                                 (let* ([id (format "~a" (force id))]
                                        [id (regexp-replace #rx"^.*/" id "")]
@@ -344,3 +345,7 @@
      }
   })
 
+
+(define (call-with-registered-roots proc)
+  (parameterize ([url-roots (registered-url-roots)])
+    (proc)))
