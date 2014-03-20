@@ -735,13 +735,7 @@
                             (boolean? x))
                         (if (boolean? x) 1 x)
                         4))
-              #:proc (get-let-name
-                      x 0
-                      (ret Univ
-                           (-FS
-                            -top
-                            (-and (make-NotTypeFilter -Boolean null #'x) (make-TypeFilter (-val #f) null #'x)))))]
-
+              #:ret (ret Univ -true-filter)]
         ;; T-AbsPred
         [tc-e/t (let ([p? (lambda: ([x : Any]) (number? x))])
                   (lambda: ([x : Any]) (if (p? x) (add1 x) (add1 12))))
