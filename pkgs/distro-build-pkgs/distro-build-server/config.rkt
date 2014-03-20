@@ -148,8 +148,10 @@
     [(#:mac-pkg?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
     [(#:site-help) (hash? val)]
+    [(#:site-title) (string? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
+    [(#:plt-web-style?) (boolean? val)]
     [(#:pause-before) (and (real? val) (not (negative? val)))]
     [(#:pause-after) (and (real? val) (not (negative? val)))]
     [(#:readme) (or (string? val)

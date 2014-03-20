@@ -3,7 +3,9 @@
          racket/file
          net/url
          "download-page.rkt"
-         (only-in distro-build/config extract-options))
+         "indexes.rkt"
+         (only-in distro-build/config extract-options)
+         (only-in plt-web site))
 
 (module test racket/base)
 
@@ -31,6 +33,15 @@
 (define dest-dir (hash-ref config
                            '#:site-dest
                            (build-path build-dir "site")))
+
+(define site-title (hash-ref config
+                             '#:site-title
+                             "Racket Downloads"))
+
+(define www-site (and (hash-ref config '#:plt-web-style? #t)
+                      (site "www"
+                            #:url "http://racket-lang.org/"
+                            #:generate? #f)))
 
 (printf "Assembling site as ~a\n" dest-dir)
 
@@ -100,21 +111,26 @@
      (newline o))))
 
 (copy log-dir)
+(generate-index-html dest-dir log-dir www-site)
 
 (copy installers-dir)
+(generate-index-html dest-dir installers-dir www-site)
 
 (define doc-path (build-path docs-dir doc-dir))
 (when (directory-exists? doc-path)
   (copy doc-dir docs-dir))
 (define pdf-doc-path (build-path build-dir pdf-doc-dir))
 (when (directory-exists? pdf-doc-path)
-  (copy pdf-doc-dir))
+  (copy pdf-doc-dir)
+  (generate-index-html dest-dir pdf-doc-dir www-site))
 (copy "stamp.txt")
 (copy (build-path "origin" "collects.tgz"))
 
 (make-download-page (build-path build-dir
                                 installers-dir
                                 "table.rktd")
+                    #:plt-www-site www-site
+                    #:title site-title
                     #:installers-url "installers/"
                     #:log-dir-url "log/"
                     #:docs-url (and (directory-exists? doc-path)

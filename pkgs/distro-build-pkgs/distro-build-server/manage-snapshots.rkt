@@ -2,6 +2,7 @@
 (require racket/cmdline
          racket/file
          net/url
+         scribble/html
          "download-page.rkt"
          (only-in distro-build/config extract-options))
 
@@ -21,6 +22,10 @@
 (define site-dir (hash-ref config
                            '#:site-dest
                            (build-path build-dir "site")))
+
+(define site-title (hash-ref config
+                             '#:site-title
+                             "Racket Downloads"))
 
 (define current-snapshot
   (let-values ([(base name dir?) (split-path site-dir)])
@@ -100,6 +105,8 @@
 
 (printf "Generating web page\n")
 (make-download-page table-file
+                    #:title site-title
+                    #:plt-web-style? (hash-ref config '#:plt-web-style? #t)
                     #:past-successes past-successes
                     #:installers-url "current/installers/"
                     #:log-dir (build-path site-dir "log")
@@ -113,19 +120,20 @@
                     #:current-rx current-rx
                     #:git-clone (current-directory)
                     #:help-table (hash-ref config '#:site-help (hash))
-                    #:post-content `((p "Snapshot ID: " 
-                                        (a ((href ,(string-append current-snapshot
-                                                                  "/index.html")))
-                                           ,current-snapshot))
-                                     ,@(let ([snapshots (get-snapshots)])
-                                         (if ((length snapshots) . < . 2)
-                                             null
-                                             `((div ([class "detail"]) 
-                                                  "Other available snapshots:"
-                                                  ,@(for/list ([s (remove "current"
-                                                                          (remove current-snapshot
-                                                                                  (sort snapshots string>?)))])
-                                                      `(span ([class "detail"])
-                                                             nbsp
-                                                             (a ([href ,(string-append s "/index.html")])
-                                                                ,s)))))))))
+                    #:post-content (list
+                                    (p "Snapshot ID: " 
+                                       (a href: (string-append current-snapshot
+                                                               "/index.html")
+                                          current-snapshot))
+                                    (let ([snapshots (get-snapshots)])
+                                      (if ((length snapshots) . < . 2)
+                                          null
+                                          (div class: "detail"
+                                               "Other available snapshots:"
+                                               (for/list ([s (remove "current"
+                                                                     (remove current-snapshot
+                                                                             (sort snapshots string>?)))])
+                                                 (span class: "detail"
+                                                       nbsp
+                                                       (a href: (string-append s "/index.html")
+                                                          s))))))))

@@ -6,7 +6,9 @@
                "distro-build-client"
                "web-server-lib"
                "ds-store-lib"
-               "net-lib"))
+               "net-lib"
+               "scribble-html-lib"
+               "plt-web-lib"))
 (define build-deps '("at-exp-lib"))
 
 (define pkg-desc "server-side part of \"distro-build\"")
