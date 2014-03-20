@@ -81,8 +81,7 @@
             (check-named-inits other-inits given-names name-assoc)])
      (ret (make-Instance c))]
     [t
-     (tc-error/expr #:return (ret (Un))
-                    "expected a class value for object creation, got: ~a" t)]))
+     (tc-error/expr "expected a class value for object creation, got: ~a" t)]))
 
 (define (check-named-inits inits names name-assoc)
   (define init-names (map car inits))
@@ -112,8 +111,7 @@
     (syntax-parse meth [(quote m:id) (syntax-e #'m)] [_ #f]))
   (define obj-type (tc-expr/t obj))
   (unless maybe-meth-sym
-    (tc-error/expr #:return (ret (Un))
-                   "expected a symbolic method name, but got ~a" meth))
+    (tc-error/expr "expected a symbolic method name, but got ~a" meth))
   (define (check obj-type)
     (match (resolve obj-type)
       ;; FIXME: handle unions and mu?
@@ -122,7 +120,6 @@
               (λ (field-entry) (ret (cadr field-entry)))]
              [else
               (tc-error/expr/fields "type mismatch"
-                                    #:return (ret (Un))
                                     #:more "the object is missing an expected field"
                                     "field" maybe-meth-sym
                                     "object type" ty)])]
@@ -131,7 +128,6 @@
       [type
        (tc-error/expr/fields "type mismatch"
                              #:more "expected an object value for get-field"
-                             #:return (ret (Un))
                              "given" type)]))
   (check obj-type))
 
@@ -141,8 +137,7 @@
   (define maybe-field-sym
     (syntax-parse field [(quote f:id) (syntax-e #'f)] [_ #f]))
   (unless maybe-field-sym
-    (tc-error/expr #:return (ret (Un))
-                   "expected a symbolic field name, but got ~a" field))
+    (tc-error/expr "expected a symbolic field name, but got ~a" field))
   (define obj-type (tc-expr/t obj))
   (define val-type (tc-expr/t val))
   (define (check obj-type)
@@ -163,14 +158,12 @@
               (tc-error/expr/fields "type mismatch"
                                     #:more (~a "expected an object with field "
                                                maybe-field-sym)
-                                    #:return (ret (Un))
                                     "given" ty)])]
       [(Instance: (? needs-resolving? type))
        (check (make-Instance (resolve type)))]
       [type
        (tc-error/expr/fields "type mismatch"
                              #:more "expected an object value for set-field!"
-                             #:return (ret (Un))
                              "given" type)]))
   (check obj-type))
 

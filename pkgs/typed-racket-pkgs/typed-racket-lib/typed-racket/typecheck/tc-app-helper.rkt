@@ -348,8 +348,7 @@
                            "function")])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
-           (tc-error/expr #:return (ret (Un))
-                          (string-append
+           (tc-error/expr (string-append
                            "Could not infer types for applying polymorphic "
                            fcn-string
                            "\n"))
@@ -372,8 +371,7 @@
                            "function with keywords")])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
-           (tc-error/expr #:return (ret (Un))
-                          (string-append
+           (tc-error/expr (string-append
                            "Could not infer types for applying polymorphic "
                            fcn-string
                            "\n"))

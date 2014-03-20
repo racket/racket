@@ -126,7 +126,7 @@
              (check-row-constraints
               row constraints
               (λ (name)
-                (tc-error/expr
+                (tc-error/delayed
                  (~a "Cannot instantiate row with member " name
                      " that the given row variable requires to be absent"))))
              (instantiate-poly ty (list row))]))]
@@ -210,10 +210,10 @@
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
          =>
          (λ (t)
-           (tc-error/expr #:return (ret (Un)) #:stx stx
+           (tc-error/expr #:stx stx
                           (string-append (syntax-e msg) "; missing coverage of ~a")
                           t))]
-         [else (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
+         [else (tc-error/expr #:stx stx (syntax-e msg))]))
 
 ;; check that `expr` doesn't evaluate any references 
 ;; to `name` that aren't under `lambda`
@@ -288,11 +288,10 @@
           ;(check-below key-t -Symbol)
           ;; FIXME -- would need to protect `e2` with any-wrap/c contract
           ;; instead, just fail
-          
+
           ;(tc-expr/check/type #'e2 Univ)
           ;(tc-expr/check #'e3 expected)
-          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
-                         #:return (ret -Bottom))])]
+          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t)])]
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
@@ -355,7 +354,7 @@
          [(tc-result1: t)
           (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
          [(tc-results: ts)
-          (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
+          (tc-error/expr "Expected ~a values, but got only 1" (length ts))])]
       [(letrec-values ([(name ...) expr] ...) . body)
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body expected)]
       ;; other
@@ -406,8 +405,7 @@
           (tc-expr #'e3)]
          [(tc-result1: key-t)
           ;; see comments in the /check variant
-          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
-                         #:return (ret (Un)))])]
+          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t)])]
       ;; lambda
       [(#%plain-lambda formals . body)
        (tc/lambda form #'(formals) #'(body))]
@@ -519,8 +517,7 @@
     [(tc-result1: _ _ _) t]
     [_ (tc-error/expr
           #:stx form
-          #:return (ret (Un))
-     "expected single value, got multiple (or zero) values")]))
+          "expected single value, got multiple (or zero) values")]))
 
 ;; type-check a body of exprs, producing the type of the last one.
 ;; if the body is empty, the type is Void.

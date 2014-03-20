@@ -108,10 +108,9 @@
            (let ([ty (tc-expr expr)])
              (match ty
                [(tc-any-results:)
-                (ret
-                  (tc-error/expr
-                    "Expression should produce ~a values, but produces an unknown number of values"
-                    (length stxs)))]
+                (tc-error/expr
+                  "Expression should produce ~a values, but produces an unknown number of values"
+                  (length stxs))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
                     (tc-error/expr #:return (ret (map (lambda _ (Un)) stxs))

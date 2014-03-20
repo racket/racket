@@ -38,8 +38,7 @@
     [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...))))
      ;; special case for (case-lambda)
      (when (null? doms)
-       (tc-error/expr #:return (ret (Un))
-                      "empty case-lambda given as argument to apply"))
+       (tc-error/expr "empty case-lambda given as argument to apply"))
      (match-let* ([arg-tres (map tc-expr fixed-args)]
                   [arg-tys (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
                   [(tc-result1: tail-ty) (single-value tail)])
@@ -138,8 +137,7 @@
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result1: (Poly: vars (Function: '())))
-     (tc-error/expr #:return (ret (Un))
-                    "Function has no cases")]
+     (tc-error/expr "Function has no cases")]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tres) (map tc-expr fixed-args)]
@@ -221,7 +219,6 @@
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result1: (PolyDots: vars (Function: '())))
-     (tc-error/expr #:return (ret (Un))
-                    "Function has no cases")]
-    [(tc-result1: f-ty) (tc-error/expr #:return (ret (Un))
-                         "Type of argument to apply is not a function type: \n~a" f-ty)]))
+     (tc-error/expr "Function has no cases")]
+    [(tc-result1: f-ty)
+     (tc-error/expr "Type of argument to apply is not a function type: \n~a" f-ty)]))

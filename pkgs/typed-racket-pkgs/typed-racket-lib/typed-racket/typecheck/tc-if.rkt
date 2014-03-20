@@ -99,6 +99,5 @@
                    (ret us fs3 os3)]
                   ;; otherwise, error
                [else
-                (tc-error/expr #:return (ret -Bottom)
-                               "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
+                (tc-error/expr "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
                                (length ts) (length us))])])))]))

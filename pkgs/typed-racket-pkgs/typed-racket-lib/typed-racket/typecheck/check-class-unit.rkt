@@ -1352,7 +1352,7 @@
      (make-PolyDots ns (method->function type))]
     [(PolyRow-names: ns constraints body)
      (make-PolyRow ns constraints (method->function type))]
-    [_ (tc-error/expr "expected a function type for method")]))
+    [_ (tc-error/expr #:return -Bottom "expected a function type for method")]))
 
 ;; annotate-method : Syntax Type -> Syntax
 ;; Adds a self type annotation for the first argument and annotated

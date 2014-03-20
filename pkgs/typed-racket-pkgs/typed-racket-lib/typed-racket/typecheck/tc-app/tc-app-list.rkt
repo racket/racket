@@ -53,8 +53,7 @@
                            expected-elem-type))
          [(tc-result1: t) (ret (make-ListDots t bound0))]
          [(tc-results: ts)
-          (tc-error/expr #:return (ret (Un))
-                         "Expected one value, but got ~a" (-values ts))])]
+          (tc-error/expr "Expected one value, but got ~a" (-values ts))])]
       ;; otherwise, if it's not a ListDots, defer to the regular function typechecking
       ;; TODO fix double typechecking
       [(res0 res) (tc/app-regular #'form expected)]))

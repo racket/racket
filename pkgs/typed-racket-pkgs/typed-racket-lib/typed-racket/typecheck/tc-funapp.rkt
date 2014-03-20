@@ -166,7 +166,6 @@
           in t))]
     [((tc-result1: (Param: _ _)) _)
      (tc-error/expr
-      #:return (ret (Un))
       "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
       (length argtys))]
     ;; resolve names, polymorphic apps, mu, etc
@@ -182,12 +181,10 @@
     ;; otherwise fail
     [((tc-result1: (and f-ty (Poly: ns (Function: arrs)))) _)
      (tc-error/expr
-      #:return (ret (Un))
       (string-append "Cannot infer type instantiation for type ~a. Please add "
                      "more type annotations")
       f-ty)]
     [((tc-result1: f-ty) _)
      (tc-error/expr
-      #:return (ret (Un))
       "Cannot apply expression of type ~a, since it is not a function type"
       f-ty)]))

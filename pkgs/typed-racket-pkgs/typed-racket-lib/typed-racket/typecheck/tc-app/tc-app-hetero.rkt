@@ -36,14 +36,13 @@
        #f])]))
 
 (define (index-error i-val i-bound expr type name)
-  (define return (ret -Bottom))
   (cond 
     [(not (and (integer? i-val) (exact? i-val)))
-     (tc-error/expr #:stx expr #:return return "expected exact integer for ~a index, but got ~a" name i-val)]
+     (tc-error/expr #:stx expr "expected exact integer for ~a index, but got ~a" name i-val)]
     [(< i-val 0)
-     (tc-error/expr #:stx expr #:return return "index ~a too small for ~a ~a" i-val name type)]
+     (tc-error/expr #:stx expr "index ~a too small for ~a ~a" i-val name type)]
     [(not (< i-val i-bound))
-     (tc-error/expr #:stx expr #:return return "index ~a too large for ~a ~a" i-val name type)]))
+     (tc-error/expr #:stx expr "index ~a too large for ~a ~a" i-val name type)]))
 
 (define (valid-index? i bound)
  (and (integer? i) (exact? i) (<= 0 i (sub1 bound))))
@@ -119,7 +118,7 @@
                 (tc-expr/check/t e (ret t))))
             -true-filter)]
          [else
-          (tc-error/expr #:return (ret -Bottom)
+          (tc-error/expr
             "expected vector with ~a elements, but got ~a"
             (length ts) (make-HeterogeneousVector (stx-map tc-expr/t #'(args ...))))])]
       ;; If the expected type is a union, then we examine just the parts

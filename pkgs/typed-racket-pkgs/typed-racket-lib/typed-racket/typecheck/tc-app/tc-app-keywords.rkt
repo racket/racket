@@ -46,11 +46,9 @@
        (tc-keywords #'(#%plain-app . form) arities (type->list (tc-expr/t #'kws))
                     #'kw-arg-list #'pos-args expected)]
       [(tc-result1: (Poly: _ (Function: _)))
-       (tc-error/expr #:return (ret (Un))
-                      "Inference for polymorphic keyword functions not supported")]
+       (tc-error/expr "Inference for polymorphic keyword functions not supported")]
       [(tc-result1: t) 
-       (tc-error/expr #:return (ret (Un))
-                      "Cannot apply expression of type ~a, since it is not a function type" t)])))
+       (tc-error/expr "Cannot apply expression of type ~a, since it is not a function type" t)])))
 
 (define (tc-keywords/internal arity kws kw-args error?)
   (match arity
@@ -64,15 +62,13 @@
           (void)]
          [(_ '())
           (if error?
-              (tc-error/expr #:return (ret (Un))
-                             "Unexpected keyword argument ~a" (car actual-kws))
+              (tc-error/delayed "Unexpected keyword argument ~a" (car actual-kws))
               #f)]
          [('() (cons fst rst))
           (match fst
             [(Keyword: k _ #t)
              (if error?
-                 (tc-error/expr #:return (ret (Un))
-                                "Missing keyword argument ~a" k)
+                 (tc-error/delayed "Missing keyword argument ~a" k)
                  #f)]
             [_ (loop actual-kws actuals rst)])]
          [((cons k kws-rest) (cons (Keyword: k* t req?) form-rest))
