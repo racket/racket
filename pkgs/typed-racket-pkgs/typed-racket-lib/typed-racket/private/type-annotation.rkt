@@ -31,7 +31,7 @@
       (define t2 (lookup-type stx (lambda () #f)))      
       (when (and t2 (not (type-equal? t1 t2)))
         (maybe-finish-register-type stx)
-        (tc-error/expr #:stx stx "Duplicate type annotation of ~a for ~a, previous was ~a" t1 (syntax-e stx) t2)))
+        (tc-error/delayed #:stx stx "Duplicate type annotation of ~a for ~a, previous was ~a" t1 (syntax-e stx) t2)))
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))
@@ -114,11 +114,9 @@
                     (length stxs)))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
-                    (begin
-                      (tc-error/delayed
-                                      "Expression should produce ~a values, but produces ~a values of types ~a"
-                                      (length stxs) (length tys) (stringify tys))
-                      (ret (map (lambda _ (Un)) stxs)))
+                    (tc-error/expr #:return (ret (map (lambda _ (Un)) stxs))
+                                   "Expression should produce ~a values, but produces ~a values of types ~a"
+                                   (length stxs) (length tys) (stringify tys))
                     (combine-results
                      (for/list ([stx (in-list stxs)] [ty (in-list tys)]
                                 [a (in-list anns)] [f (in-list fs)] [o (in-list os)])

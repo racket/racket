@@ -153,10 +153,11 @@
               (λ (field-entry)
                 (define field-type (cadr field-entry))
                 (unless (subtype val-type field-type)
-                  (tc-error/expr/fields "type mismatch"
-                                        #:more "set-field! only allowed with compatible types"
-                                        "expected" field-type
-                                        "given" val-type))
+                  (tc-error/fields "type mismatch"
+                                   #:more "set-field! only allowed with compatible types"
+                                   "expected" field-type
+                                   "given" val-type
+                                   #:delayed? #t))
                 (ret -Void))]
              [else
               (tc-error/expr/fields "type mismatch"

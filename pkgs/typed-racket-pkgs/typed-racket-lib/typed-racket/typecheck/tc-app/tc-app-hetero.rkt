@@ -4,6 +4,7 @@
          syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
          "signatures.rkt"
          "utils.rkt"
+         (utils tc-utils)
          (types utils abbrev numeric-tower union resolve type-table generalize)
          (typecheck signatures check-below)
          (rep type-rep rep-utils)

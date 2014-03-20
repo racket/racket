@@ -34,8 +34,7 @@
 (define (type-mismatch t1 t2 [more #f])
   (define t1* (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1))
   (define t2* (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))
-  (tc-error/expr/fields "type mismatch" #:more more
-                        "expected" t1* "given" t2*))
+  (tc-error/fields "type mismatch" #:more more "expected" t1* "given" t2* #:delayed? #t))
 
 ;; expected-but-got : (U Type String) (U Type String) -> Void
 ;;

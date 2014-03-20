@@ -330,11 +330,12 @@
           (values super-row super-inits super-fields
                   super-methods super-augments super-init-rest)]
          [t
-          (tc-error/expr/fields "type mismatch"
-                                #:more "superclass expression should produce a class"
-                                #:stx (hash-ref parse-info 'superclass-expr)
-                                "expected" "a class"
-                                "given" t)
+          (tc-error/fields "type mismatch"
+                           #:more "superclass expression should produce a class"
+                           #:stx (hash-ref parse-info 'superclass-expr)
+                           #:delayed? #t
+                           "expected" "a class"
+                           "given" t)
           (values #f null null null null #f)])]
       [_ (int-err "Unhandled result")]))
   (define super-init-names    (dict-keys super-inits))
@@ -526,7 +527,7 @@
          other-exprs]
         [:tr:class:super-new^
          (when super-new
-           (tc-error/expr "typed classes must only call super-new a single time"))
+           (tc-error/delayed "typed classes must only call super-new a single time"))
          (set! super-new (find-provided-inits expr))
          other-exprs]
         [(~and t:class-type-declaration :tr:class:type-annotation^)
@@ -544,7 +545,7 @@
          other-exprs]
         [_ (cons expr other-exprs)])))
   (unless super-new
-    (tc-error/expr "typed classes must call super-new at the class top-level")
+    (tc-error/delayed "typed classes must call super-new at the class top-level")
     (set! super-new (super-init-stxs null null)))
   (values super-new
           initializers
@@ -924,7 +925,7 @@
               ;; type error instead.
               (with-handlers
                   ([exn:fail:syntax?
-                    (λ (e) (tc-error/expr "Default init value has wrong type"))])
+                    (λ (e) (tc-error/delayed "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
                   (unless (equal? (syntax->datum #'init-val) '(quote #f))
                     (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
@@ -935,8 +936,8 @@
              ;;        should it be caught earlier so that this function
              ;;        can be simpler?
              [else
-              (tc-error/expr "Init argument ~a has no type annotation"
-                             init-name)])]
+              (tc-error/delayed "Init argument ~a has no type annotation"
+                                init-name)])]
       ;; init-field with default
       [(let-values (((obj1:id) self:id))
          (let-values (((x:id)
@@ -954,13 +955,13 @@
               (with-handlers
                   ([exn:fail:syntax?
                     ;; FIXME: produce a better error message
-                    (λ (e) (tc-error/expr "Default init value has wrong type"))])
+                    (λ (e) (tc-error/delayed "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
                   (unless (equal? (syntax->datum #'init-val) '(quote #f))
                     (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
              [else
-              (tc-error/expr "Init argument ~a has no type annotation"
-                             init-name)])]
+              (tc-error/delayed "Init argument ~a has no type annotation"
+                                init-name)])]
       ;; any field or init-field without default
       ;; FIXME: could use the local table to make sure the
       ;;        setter is known as a sanity check
@@ -1157,12 +1158,12 @@
   (match-define (super-init-stxs _ by-name) init-stxs)
   (for ([(name _) (in-dict by-name)])
     (unless (dict-ref super-inits name #f)
-      (tc-error/expr/fields
+      (tc-error/fields
        "invalid `super-new' or `super-instantiate'"
        #:more "init argument not accepted by superclass"
        "init name" name
        #:stx #`#,name
-       #:return #f))))
+       #:delayed? #t))))
 
 ;; check-super-new : super-init-stxs Dict Type -> Void
 ;; Check if the super-new call is well-typed
@@ -1413,9 +1414,9 @@
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/expr (~a "superclass missing ~a ~a "
-                       "that the current class requires")
-                   msg missing)))
+    (tc-error/delayed (~a "superclass missing ~a ~a "
+                          "that the current class requires")
+                      msg missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that names are absent when they should be
@@ -1424,8 +1425,8 @@
     (for/or ([m (in-set should-be-absent)])
       (and (set-member? actual m) m)))
   (when present
-    (tc-error/expr "superclass defines conflicting ~a ~a"
-                   msg present)))
+    (tc-error/delayed "superclass defines conflicting ~a ~a"
+                      msg present)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that the names are exactly the same as expected
@@ -1434,13 +1435,13 @@
     (for/or ([m (in-set expected)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/expr (~a "class definition missing ~a ~a "
-                       "that is required by the expected type")
-                   msg missing))
+    (tc-error/delayed (~a "class definition missing ~a ~a "
+                          "that is required by the expected type")
+                      msg missing))
   (define too-many
     (for/or ([m (in-set actual)])
       (and (not (set-member? expected m)) m)))
   (when too-many
-    (tc-error/expr (~a "class definition contains ~a ~a "
-                       "that is not in the expected type")
-                   msg too-many)))
+    (tc-error/delayed (~a "class definition contains ~a ~a "
+                          "that is not in the expected type")
+                      msg too-many)))

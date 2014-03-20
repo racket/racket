@@ -23,27 +23,18 @@
       (list (tc-result1: t-a phi-a o-a) ...))
 
      (when check?
-       (define error-ret
-         (match rng
-          ((AnyValues:) tc-any-results)
-          ((Values: (list (Result: t-r _ _) ...)) (ret t-r))
-          ((ValuesDots: (list (Result: t-r _ _) ...) dty dbound)
-           (ret t-r
-                (make-list (length t-r) -top-filter)
-                (make-list (length t-r) -empty-obj)
-                dty dbound))))
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
-              (tc-error/expr/fields "could not apply function"
-                                    #:more "wrong number of arguments provided"
-                                    "expected" (length dom)
-                                    "given" (length t-a)
-                                    #:return error-ret)]
+              (tc-error/fields "could not apply function"
+                               #:more "wrong number of arguments provided"
+                               "expected" (length dom)
+                               "given" (length t-a)
+                               #:delayed? #t)]
              [(and rest (< (length t-a) (length dom)))
-              (tc-error/expr/fields "could not apply function"
-                                    #:more "wrong number of arguments provided"
-                                    "expected at least" (length dom)
-                                    "given" (length t-a)
-                                    #:return error-ret)])
+              (tc-error/fields "could not apply function"
+                               #:more "wrong number of arguments provided"
+                               "expected at least" (length dom)
+                               "given" (length t-a)
+                               #:delayed? #t)])
        (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))]
              [a (in-syntax args-stx)]
              [arg-t (in-list t-a)])
