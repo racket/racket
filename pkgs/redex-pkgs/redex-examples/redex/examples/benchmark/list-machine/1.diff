@@ -26,3 +26,11 @@
 <   [(:lookup-Γ Γ v_0 τ_0) (:lookup-Γ Γ v_1 τ_1)
 ---
 >   [(:lookup-Γ Γ v_0 τ_0) (:lookup-Γ Γ v_0 τ_1)
+449a454,460
+> 
+> (define small-counter-example
+>   (term (l0 : (begin (cons v0 Z v0) halt) end)))
+> (test-equal (check small-counter-example) #f)
+> (test-equal (judgment-holds (check-program ,small-counter-example
+>                                            (l0 : (v0 : nil empty) empty)))
+>             #t)

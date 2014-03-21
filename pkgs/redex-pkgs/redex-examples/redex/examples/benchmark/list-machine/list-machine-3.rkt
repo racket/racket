@@ -447,3 +447,10 @@
                         halt))
         (loop : (jump loop)
               end)))))
+
+(define small-counter-example
+  (term (l0 : (begin (cons v0 v0 v0) (begin (fetch-field v0 1 v0) halt)) end)))
+(test-equal (check small-counter-example) #f)
+(test-equal (judgment-holds (check-program ,small-counter-example
+                                           (l0 : (v0 : nil empty) empty)))
+            #t)
