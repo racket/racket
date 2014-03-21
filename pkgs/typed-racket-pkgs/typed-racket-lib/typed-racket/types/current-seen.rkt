@@ -2,11 +2,16 @@
 (require "../utils/utils.rkt" racket/unsafe/ops)
 (require (rep type-rep) (contract-req))
 
-(provide (except-out (all-defined-out) current-seen))
-(provide/cond-contract [current-seen (parameter/c list?)])
+(provide (except-out (all-defined-out) current-seen-mark))
 
-(define current-seen (make-parameter null))
-(define (currently-subtyping?) (not (null? (current-seen))))
+(define current-seen-mark (make-continuation-mark-key 'current-seen))
+(define (current-seen)
+  (continuation-mark-set-first #f current-seen-mark null))
+(define (currently-subtyping?)
+  (and (continuation-mark-set-first #f current-seen-mark) #t))
+(define-syntax-rule (update-current-seen new-value body)
+  (with-continuation-mark current-seen-mark new-value body))
+
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 
 (define (remember s t A) 
