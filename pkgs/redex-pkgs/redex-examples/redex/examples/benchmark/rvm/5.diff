@@ -7,12 +7,14 @@
 ---
 >    ;;bug 5
 >    ;;(side-condition (<= (term n) (term n_l)))
-475a477,484
-> (test-equal
->  (bytecode-ok? 
+475a477,486
+> 
+> (define small-counter-example
 >   '(let-void 1 
 >              (branch #f 
 >                      (let-rec ((lam () (0) 'x)) 'y) 
 >                      (loc-noclr 0))))
->  #t)
+> 
+> (test-equal (check small-counter-example) #f)
+> 
 > 

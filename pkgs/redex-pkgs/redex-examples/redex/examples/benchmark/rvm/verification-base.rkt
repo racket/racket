@@ -430,46 +430,52 @@
       [`(quote ,_) expr]
       [(? boolean?) expr])))
 
-(define (check e0)
-  (define e (fix e0))
-  (or (not e)
-      (not (bytecode-ok? e))
-       (match 
-           (with-handlers
-               ([exn:fail? (λ (exc)
-                             (unless
-                                 (regexp-match?
-                                  #"counterexample|domain|clauses"
-                                  (exn-message exc))
-                               (printf "exception on ~s\n~s\n" e
-                                       (exn-message exc)))
-                             #f)])
-             (run e '() 100))
-         [(cutoff) #t]
-         [(answer _) #t]
-         [_ #f])))
+(define (check e)
+  (let/ec fail
+    (or (not e)
+        (implies (with-handlers ([exn:fail? (λ (exc)
+                                              (maybe-log-exn exc e)
+                                              (fail #f))])
+                   (bytecode-ok? e))
+                 (match 
+                     (with-handlers
+                         ([exn:fail? (λ (exc)
+                                       (maybe-log-exn exc e)
+                                       #f)])
+                       (run e '() 100))
+                   [(cutoff) #t]
+                   [(answer _) #t]
+                   [_ #f])))))
+
+(define (maybe-log-exn exc e)
+  (unless
+      (regexp-match?
+       #"counterexample|domain|clauses"
+       (exn-message exc))
+    (printf "exception on ~s\n~s\n" e
+            (exn-message exc))))
 
 
 (define (generate-M-term)
-  (generate-term bytecode e 5))
+  (fix (generate-term bytecode e 5)))
 
 (define (generate-typed-term)
   (error "not currently implemented for rvm in the benchmark"))
 
 (define (type-check e)
-  (bytecode-ok? (fix e)))
+  (bytecode-ok? e))
 
 (define (typed-generator)
   (error "not currently implemented for rvm in the benchmark"))
 
 (define (generate-enum-term)
-    (generate-term bytecode e #:i-th (pick-an-index 0.03)))
+    (fix (generate-term bytecode e #:i-th (pick-an-index 0.03))))
 
 (define (ordered-enum-generator)
   (let ([index 0])
     (λ ()
       (begin0
-        (generate-term bytecode e #:i-th index)
+        (fix (generate-term bytecode e #:i-th index))
         (set! index (add1 index))))))
 
 (define fixed '())
