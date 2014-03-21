@@ -11,18 +11,11 @@
 
 (provide resolve-name resolve-app needs-resolving?
          resolve resolve-app-check-error
-         current-cache-resolve?
+         resolver-cache-remove!
          current-check-polymorphic-recursion)
 (provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])
 
 (define-struct poly (name vars) #:prefab)
-
-;; This parameter allows other parts of the typechecker to
-;; request that the resolve cache isn't updated. This is needed
-;; by the setup for recursive type aliases, since certain Name
-;; types should not be cached while their mapping is still being
-;; computed.
-(define current-cache-resolve? (make-parameter #f))
 
 ;; Parameter<Option<Listof<Symbol>>>
 ;; This parameter controls whether or not the resolving process
@@ -146,11 +139,17 @@
                    (resolve-app r r* s)]
                   [(Name: _ _ _ _) (resolve-name t)])])
         (when (and r*
-                   (not (currently-subtyping?))
-                   (current-cache-resolve?))
+                   (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))
 
+;; resolver-cache-remove! : (Listof Type) -> Void
+;; Removes the given types from the resolver cache. This is
+;; only used by recursive type alias set-up, which sometimes needs to
+;; undo certain resolutions.
+(define (resolver-cache-remove! keys)
+  (for ([key (in-list keys)])
+    (hash-remove! resolver-cache (Rep-seq key))))
 
 ;; Repeatedly unfolds Mu, App, and Name constructors until the top type
 ;; constructor is not one of them.
