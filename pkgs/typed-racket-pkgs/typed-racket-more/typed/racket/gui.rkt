@@ -8,7 +8,6 @@
                       racket/draw
                       (except-in racket/snip get-the-snip-class-list))
          (for-syntax (only-in (rep type-rep)
-                              make-Evt
                               make-Instance
                               make-Opaque))
          "draw.rkt"
@@ -236,8 +235,8 @@
  [current-eventspace (-Param -Eventspace -Eventspace)]
  [event-dispatch-handler (-Param (-> -Eventspace Univ) (-> -Eventspace Univ))]
  [eventspace-event-evt
-  (cl->* (-> (make-Evt -Eventspace))
-         (-> -Eventspace (make-Evt -Eventspace)))]
+  (cl->* (-> (-evt -Eventspace))
+         (-> -Eventspace (-evt -Eventspace)))]
  [eventspace-shutdown? (-> -Eventspace -Boolean)]
  [eventspace-handler-thread (-> -Eventspace (-opt -Thread))]
  [check-for-break (-> -Boolean)]
@@ -261,7 +260,7 @@
   (-poly (a)
     (cl->* (-> -Boolean)
            (-> (-val 'wait) (-val #t))
-           (-> (make-Evt a) a)))]
+           (-> (-evt a) a)))]
  [sleep/yield (-> -NonNegReal -Void)]
  ;; 4.4 Global Graphics
  [flush-display (-> -Void)]

@@ -55,6 +55,7 @@
 (define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)
+(define -evt make-Evt)
 
 (define (-seq . args) (make-Sequence args))
 

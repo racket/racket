@@ -161,7 +161,7 @@
 [Channelof (-poly (a) (make-Channel a))]
 [Ephemeronof (-poly (a) (make-Ephemeron a))]
 [Setof (-poly (e) (make-Set e))]
-[Evtof (-poly (r) (make-Evt r))]
+[Evtof (-poly (r) (-evt r))]
 [Continuation-Mark-Set -Cont-Mark-Set]
 [False (-val #f)]
 [True (-val #t)]
