@@ -270,5 +270,5 @@
         (set! index (add1 index))))))
 
 (define small-counter-example
-  (term ((λ (x (list int)) 1) 7)))
+  (term ((λ (x int) cons) cons)))
 (test-equal (check small-counter-example) #f)
