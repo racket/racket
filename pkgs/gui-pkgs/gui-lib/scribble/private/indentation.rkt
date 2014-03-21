@@ -345,6 +345,14 @@
   
   ;test start-skip-spaces
   (check-equal? (let ([t (new racket:text%)])
+                  (send t insert "test1 test2\n @test3\n")
+                  (start-skip-spaces t 1 'forward)) 13)
+  
+  (check-equal? (let ([t (new racket:text%)])
+                  (send t insert "{abcd\n@efgh\n}")
+                  (start-skip-spaces t 1 'forward)) 6)
+  
+  (check-equal? (let ([t (new racket:text%)])
                   (send t insert "{abcd\n  efgh\n}")
                   (start-skip-spaces t 1 'forward)) 8)
   
@@ -509,6 +517,12 @@
                 "#lang scribble/base\ntest1 test2 test3\n")
   
   ;;paragraph indentation
+  (check-equal? (let ([t (new racket:text%)])
+                  (send t insert "#lang scribble/base\naaa bbb\n @ccc ddd")
+                  (adjust-para-width t 22 12) 
+                  (send t get-text))
+                "#lang scribble/base\naaa bbb\n @ccc ddd")
+  
   (check-equal? (let ([t (new racket:text%)])
                   (send t insert "#lang scribble/base\n\ntest1\n     test2\n\t\ttest3\n")
                   (paragraph-indentation t 22 6)
