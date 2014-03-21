@@ -8,7 +8,7 @@
 (define (current-seen)
   (continuation-mark-set-first #f current-seen-mark null))
 (define (currently-subtyping?)
-  (and (continuation-mark-set-first #f current-seen-mark) #t))
+  (continuation-mark-set-first #f current-seen-mark))
 (define-syntax-rule (update-current-seen new-value body)
   (with-continuation-mark current-seen-mark new-value body))
 
