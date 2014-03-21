@@ -2617,6 +2617,11 @@
          #:ret (ret (-val 'x))
          #:expected (ret (-val 'x) -no-filter -no-obj)]
 
+       [tc-err (if (random) (values 1 2) 3)
+         #:ret (ret (-val 3) -top-filter)
+         #:expected (ret (-val 3) -no-filter -no-obj)]
+
+
         )
   (test-suite
    "tc-literal tests"

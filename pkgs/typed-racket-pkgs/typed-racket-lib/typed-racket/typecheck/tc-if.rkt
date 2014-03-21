@@ -99,12 +99,6 @@
                    (ret us fs3 os3)]
                   ;; otherwise, error
                [else
-                (tc-error/expr #:return (or expected (ret Err))
+                (tc-error/expr #:return (ret -Bottom)
                                "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
-                               (length ts) (length us))])])))]
-    [(tc-any-results:)
-     (tc-error/expr #:return (or expected (ret Err))
-                    "Test expression expects one value, given unknown amount")]
-    [(tc-results: t _ _)
-     (tc-error/expr #:return (or expected (ret Err))
-                    "Test expression expects one value, given ~a" t)]))
+                               (length ts) (length us))])])))]))
