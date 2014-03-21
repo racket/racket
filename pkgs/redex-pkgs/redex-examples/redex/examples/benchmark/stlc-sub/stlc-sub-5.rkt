@@ -297,7 +297,7 @@
   (generate-term stlc M #:i-th (pick-an-index 0.035)))
 
 (define small-counter-example
-  (term ((λ (x int) (λ (y (list int)) (hd y))) 1)))
+  (term (λ (x int) ((λ (x int) x) x))))
 (test-equal (check small-counter-example) #f)
 
 (define (ordered-enum-generator)

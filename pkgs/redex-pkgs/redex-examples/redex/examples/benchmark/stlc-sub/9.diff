@@ -45,6 +45,6 @@
 >                         (equal? t-type red-type))))))))))
 298a288,291
 > (define small-counter-example
->   (term ((λ (x int) (λ (y (list int)) (hd y))) 1)))
+>   (term ((λ (a (list int)) (λ (x int) x)) nil)))
 > (test-equal (check small-counter-example) #f)
 > 
