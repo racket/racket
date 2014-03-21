@@ -1,6 +1,7 @@
 #lang racket/base
 (require redex/reduction-semantics)
-(provide stlc-tests)
+(provide stlc-tests
+         consistent-with?)
 
 (define (consistent-with? t1 t2)
   (define table (make-hash))
