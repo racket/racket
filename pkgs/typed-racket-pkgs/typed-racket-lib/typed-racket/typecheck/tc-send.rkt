@@ -28,7 +28,7 @@
            retval)]
         [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]
      [(tc-result1: t) (tc-error/expr/fields
-                       #:return (or expected (ret -Bottom))
+                       #:return (ret -Bottom)
                        "send: type mismatch"
                        "expected" "an object"
                        "given" t)]))
