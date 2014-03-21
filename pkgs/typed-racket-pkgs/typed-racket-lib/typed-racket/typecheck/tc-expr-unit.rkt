@@ -519,7 +519,7 @@
     [(tc-result1: _ _ _) t]
     [_ (tc-error/expr
           #:stx form
-          #:return (or expected (ret (Un)))
+          #:return (ret (Un))
      "expected single value, got multiple (or zero) values")]))
 
 ;; type-check a body of exprs, producing the type of the last one.

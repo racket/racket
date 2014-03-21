@@ -2613,6 +2613,10 @@
          #:ret (ret (list -Symbol) (list -top-filter ) (list -empty-obj) Univ 'B)
          #:expected (ret (list -Symbol) (list -no-filter ) (list -no-obj) Univ 'B)]
 
+       [tc-err (values (values 'x 'y))
+         #:ret (ret (-val 'x))
+         #:expected (ret (-val 'x) -no-filter -no-obj)]
+
         )
   (test-suite
    "tc-literal tests"
