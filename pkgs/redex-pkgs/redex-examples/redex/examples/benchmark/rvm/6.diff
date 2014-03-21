@@ -3,9 +3,12 @@
 ---
 >    ;; bug 6
 >    #;(side-condition (term (AND (lam-verified? l s ?) ...)))]
-474a476,480
-> (test-equal
->  (bytecode-ok?
->   '(let-one 'x (case-lam (lam (val) () (loc-noclr 34)))))
->  #t)
+475a477,483
 > 
+> (define small-counter-example
+>   '(application
+>                (case-lam (lam (val) () (loc-noclr 34)))
+>                'x))
+> 
+> (test-equal (check small-counter-example) #f)
+\ No newline at end of file

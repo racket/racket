@@ -7,10 +7,12 @@
 ---
 >    ;; bug 4
 >    #;(side-condition (< (term n_p) (term n_l)))]
-475a477,482
-> (test-equal
->  (bytecode-ok?
+475a477,484
+> 
+> (define small-counter-example
 >   '(let-one 'x
 >             (branch #f (boxenv 0 'y) (loc-box 0))))
->  #t)
+> 
+> (test-equal (check small-counter-example) #f)
+> 
 > 
