@@ -836,6 +836,9 @@
                   3)]
         [tc-err (with-continuation-mark 1 2 (5 4))]
 
+        [tc-err (with-continuation-mark 'x 'y 'z)
+          #:ret (ret (-val 'z))
+          #:expected (ret (-val 'z) -no-filter -no-obj)]
 
 
         ;; call-with-values

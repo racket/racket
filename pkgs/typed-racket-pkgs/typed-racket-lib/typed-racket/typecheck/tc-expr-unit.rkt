@@ -292,7 +292,7 @@
           ;(tc-expr/check/type #'e2 Univ)
           ;(tc-expr/check #'e3 expected)
           (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
-                         #:return expected)])]
+                         #:return (ret -Bottom))])]
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
