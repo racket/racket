@@ -264,7 +264,7 @@
    (define A0 (remember s t A))
    (define r
      ;; FIXME -- make this go into only the places that need it -- slows down new-metrics.rkt significantly
-     (parameterize ([current-seen A0]) 
+     (update-current-seen A0
        (match* (s t)
          ;; these cases are above as special cases
          ;; [((Union: (list)) _) A0] ;; this is extremely common, so it goes first
