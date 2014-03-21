@@ -29,7 +29,6 @@
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
-          make-Evt
           make-HeterogeneousVector
           make-Continuation-Mark-Keyof
           make-Continuation-Mark-KeyTop
@@ -1147,9 +1146,9 @@
 
 ;; Section 11.1.3
 [thread-wait (-Thread . -> . -Void)]
-[thread-dead-evt (-> -Thread (-mu x (make-Evt x)))]
-[thread-resume-evt (-> -Thread (-mu x (make-Evt x)))]
-[thread-suspend-evt (-> -Thread (-mu x (make-Evt x)))]
+[thread-dead-evt (-> -Thread (-mu x (-evt x)))]
+[thread-resume-evt (-> -Thread (-mu x (-evt x)))]
+[thread-suspend-evt (-> -Thread (-mu x (-evt x)))]
 
 ;; Section 11.1.4
 [thread-send
@@ -1158,40 +1157,40 @@
                    (-> -Thread Univ (-> a) (Un -Void a))))]
 [thread-receive (-> Univ)]
 [thread-try-receive (-> Univ)]
-[thread-receive-evt (-> (-mu x (make-Evt x)))]
+[thread-receive-evt (-> (-mu x (-evt x)))]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
 
 ;; Section 11.2.1
-[evt? (make-pred-ty (make-Evt Univ))]
-[sync (-poly (a) (->* '() (make-Evt a) a))]
+[evt? (make-pred-ty (-evt Univ))]
+[sync (-poly (a) (->* '() (-evt a) a))]
 [sync/timeout
  (-poly (a b)
    (cl->*
-    (->* (list (-val #f)) (make-Evt a) a)
-    (->* (list -NonNegReal) (make-Evt a) (-opt a))
-    (->* (list (-> b)) (make-Evt a) (Un a b))))]
-[sync/enable-break (-poly (a) (->* '() (make-Evt a) a))]
+    (->* (list (-val #f)) (-evt a) a)
+    (->* (list -NonNegReal) (-evt a) (-opt a))
+    (->* (list (-> b)) (-evt a) (Un a b))))]
+[sync/enable-break (-poly (a) (->* '() (-evt a) a))]
 [sync/timeout/enable-break
  (-poly (a b)
    (cl->*
-    (->* (list (-val #f)) (make-Evt a) a)
-    (->* (list -NonNegReal) (make-Evt a) (-opt a))
-    (->* (list (-> b)) (make-Evt a) (Un a b))))]
-[choice-evt (-poly (a) (->* '() (make-Evt a) (make-Evt a)))]
-[wrap-evt (-poly (a b) (-> (make-Evt a) (-> a b) (make-Evt b)))]
-[handle-evt (-poly (a b) (-> (make-Evt a) (-> a b) (make-Evt b)))]
-[guard-evt (-poly (a) (-> (-> (make-Evt a)) (make-Evt a)))]
+    (->* (list (-val #f)) (-evt a) a)
+    (->* (list -NonNegReal) (-evt a) (-opt a))
+    (->* (list (-> b)) (-evt a) (Un a b))))]
+[choice-evt (-poly (a) (->* '() (-evt a) (-evt a)))]
+[wrap-evt (-poly (a b) (-> (-evt a) (-> a b) (-evt b)))]
+[handle-evt (-poly (a b) (-> (-evt a) (-> a b) (-evt b)))]
+[guard-evt (-poly (a) (-> (-> (-evt a)) (-evt a)))]
 [nack-guard-evt
  (-poly (a)
-   (-> (-> (make-Evt -Void) (make-Evt a))
-       (make-Evt a)))]
+   (-> (-> (-evt -Void) (-evt a))
+       (-evt a)))]
 [poll-guard-evt
- (-poly (a) (-> (-> -Boolean (make-Evt a)) (make-Evt a)))]
-[always-evt (-mu x (make-Evt x))]
-[never-evt (make-Evt (Un))]
-[system-idle-evt (-> (make-Evt -Void))]
-[alarm-evt (-> -Real (-mu x (make-Evt x)))]
-[handle-evt? (asym-pred Univ B (-FS (-filter (make-Evt Univ) 0) -top))]
+ (-poly (a) (-> (-> -Boolean (-evt a)) (-evt a)))]
+[always-evt (-mu x (-evt x))]
+[never-evt (-evt (Un))]
+[system-idle-evt (-> (-evt -Void))]
+[alarm-evt (-> -Real (-mu x (-evt x)))]
+[handle-evt? (asym-pred Univ B (-FS (-filter (-evt Univ) 0) -top))]
 [current-evt-pseudo-random-generator
  (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 
@@ -1201,8 +1200,8 @@
 [channel-get (-poly (a) ((-channel a) . -> . a))]
 [channel-try-get (-poly (a) ((-channel a) . -> . (Un a (-val #f))))]
 [channel-put (-poly (a) ((-channel a) a . -> . -Void))]
-[channel-put-evt (-poly (a) (-> (-channel a) a (-mu x (make-Evt x))))]
-[channel-put-evt? (asym-pred Univ B (-FS (-filter (-mu x (make-Evt x)) 0) -top))]
+[channel-put-evt (-poly (a) (-> (-channel a) a (-mu x (-evt x))))]
+[channel-put-evt? (asym-pred Univ B (-FS (-filter (-mu x (-evt x)) 0) -top))]
 
 ;; Section 11.2.3 (Semaphores)
 [semaphore? (make-pred-ty -Semaphore)]
@@ -1211,8 +1210,8 @@
 [semaphore-wait (-> -Semaphore -Void)]
 [semaphore-try-wait? (-> -Semaphore B)]
 [semaphore-wait/enable-break (-> -Semaphore -Void)]
-[semaphore-peek-evt (-> -Semaphore (-mu x (make-Evt x)))]
-[semaphore-peek-evt? (asym-pred Univ B (-FS (-filter (-mu x (make-Evt x)) 0) -top))]
+[semaphore-peek-evt (-> -Semaphore (-mu x (-evt x)))]
+[semaphore-peek-evt? (asym-pred Univ B (-FS (-filter (-mu x (-evt x)) 0) -top))]
 ;[call-with-semaphore ???]
 ;[call-with-semaphore/enable-break ???]
 
@@ -1267,7 +1266,7 @@
                                      (-opt -Input-Port)
                                      (-opt -Input-Port))))]
 [place-wait (-> -Place -Int)]
-[place-dead-evt (-> -Place (-mu x (make-Evt x)))]
+[place-dead-evt (-> -Place (-mu x (-evt x)))]
 [place-break (->opt -Place [(-opt (one-of/c 'hang-up 'terminate))] -Void)]
 [place-kill (-> -Place -Void)]
 [place-channel (-> (-values (list -Place-Channel -Place-Channel)))]
@@ -1505,7 +1504,7 @@
 [close-output-port (-> -Output-Port -Void)]
 
 [port-closed? (-> -Port B)]
-[port-closed-evt (-> -Port (-mu x (make-Evt x)))]
+[port-closed-evt (-> -Port (-mu x (-evt x)))]
 
 [current-input-port (-Param -Input-Port -Input-Port)]
 [current-output-port (-Param -Output-Port -Output-Port)]
@@ -1605,15 +1604,15 @@
 ;; Section 13.1.9
 [make-input-port
  (->opt Univ
-        (Un (-> -Bytes (Un -Nat (-val eof) top-func (make-Evt Univ)))
+        (Un (-> -Bytes (Un -Nat (-val eof) top-func (-evt Univ)))
             -Input-Port)
-        (Un (-> -Bytes -Nat (-opt (make-Evt Univ))
-                (Un -Nat (-val eof) top-func (make-Evt Univ) (-val #f)))
+        (Un (-> -Bytes -Nat (-opt (-evt Univ))
+                (Un -Nat (-val eof) top-func (-evt Univ) (-val #f)))
             -Input-Port
             (-val #f))
         (-> Univ)
-        [(-opt (-> (make-Evt Univ)))
-         (-opt (-> -PosInt (make-Evt Univ) (make-Evt Univ) Univ))
+        [(-opt (-> (-evt Univ)))
+         (-opt (-> -PosInt (-evt Univ) (-evt Univ) Univ))
          (-opt (-> (-values (list (-opt -Integer)
                                   (-opt -Integer)
                                   (-opt -Integer)))))
@@ -1624,14 +1623,14 @@
         -Input-Port)]
 [make-output-port
  (->opt Univ
-        (make-Evt Univ)
+        (-evt Univ)
         (Un (-> -Bytes -Nat -Nat -Boolean -Boolean
-                (Un -Integer (-val #f) (make-Evt Univ)))
+                (Un -Integer (-val #f) (-evt Univ)))
             -Output-Port)
         (-> Univ)
         [(-opt (Un -Output-Port (-> Univ -Boolean -Boolean Univ)))
-         (-opt (-> -Bytes -Nat -Nat (make-Evt Univ)))
-         (-opt (-> Univ (make-Evt Univ)))
+         (-opt (-> -Bytes -Nat -Nat (-evt Univ)))
+         (-opt (-> Univ (-evt Univ)))
          (-opt (-> (-values (list (-opt -Integer)
                                   (-opt -Integer)
                                   (-opt -Integer)))))
@@ -1715,20 +1714,20 @@
 [transplant-output-port (->opt -Output-Port (-opt (-> (-values (list (-opt -PosInt) (-opt -Nat) (-opt -PosInt))))) -PosInt [Univ (-> ManyUniv)] -Output-Port)]
 
 ;; Section 13.1.10.3
-[eof-evt (-> -Input-Port (make-Evt (-val eof)))]
-[read-bytes-evt (-> -Nat -Input-Port (make-Evt (Un -Bytes (-val eof))))]
+[eof-evt (-> -Input-Port (-evt (-val eof)))]
+[read-bytes-evt (-> -Nat -Input-Port (-evt (Un -Bytes (-val eof))))]
 ;read-bytes!-evt (need progress event support)
 [read-bytes-avail!-evt
- (-> -Bytes -Input-Port (make-Evt (Un -Nat (-val eof))))]
-[read-string-evt (-> -Nat -Input-Port (make-Evt (Un -String (-val eof))))]
-[read-string!-evt (-> -String -Input-Port (make-Evt (Un -Nat (-val eof))))]
+ (-> -Bytes -Input-Port (-evt (Un -Nat (-val eof))))]
+[read-string-evt (-> -Nat -Input-Port (-evt (Un -String (-val eof))))]
+[read-string!-evt (-> -String -Input-Port (-evt (Un -Nat (-val eof))))]
 [read-line-evt (-> -Input-Port
                    (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
-                   (make-Evt (Un -String (-val eof))))]
+                   (-evt (Un -String (-val eof))))]
 [read-bytes-line-evt
  (-> -Input-Port
      (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
-     (make-Evt (Un -Bytes (-val eof))))]
+     (-evt (Un -Bytes (-val eof))))]
 ;peek-bytes-evt (ditto progress event)
 ;peek-bytes!-evt
 ;peek-bytes-avail!-evt
@@ -2400,7 +2399,7 @@
 
 [tcp-accept-evt
  (-> -TCP-Listener
-     (make-Evt (-pair -Input-Port (-pair -Output-Port (-val '())))))]
+     (-evt (-pair -Input-Port (-pair -Output-Port (-val '())))))]
 
 [tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
@@ -2430,15 +2429,15 @@
 [udp-bound? (-> -UDP-Socket B)]
 [udp-connected? (-> -UDP-Socket B)]
 
-[udp-send-ready-evt (-> -UDP-Socket (-mu x (make-Evt x)))]
-[udp-receive-ready-evt (-> -UDP-Socket (-mu x (make-Evt x)))]
+[udp-send-ready-evt (-> -UDP-Socket (-mu x (-evt x)))]
+[udp-receive-ready-evt (-> -UDP-Socket (-mu x (-evt x)))]
 [udp-send-to-evt (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat]
-                        (make-Evt -Void))]
+                        (-evt -Void))]
 [udp-send-evt (->opt -UDP-Socket -Bytes [-Nat -Nat]
-                     (make-Evt -Void))]
+                     (-evt -Void))]
 [udp-receive!-evt
  (->opt -UDP-Socket -Bytes [-Nat -Nat]
-        (make-Evt (-pair -Nat (-pair -String (-pair -Nat (-val null))))))]
+        (-evt (-pair -Nat (-pair -String (-pair -Nat (-val null))))))]
 
 [udp-addresses
  (cl->*
