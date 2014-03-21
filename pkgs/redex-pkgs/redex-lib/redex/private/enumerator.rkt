@@ -20,6 +20,7 @@
          empty/e
          const/e
          from-list/e
+         fin/e
          disj-sum/e
          disj-append/e
          cons/e
@@ -198,6 +199,8 @@
                (list-ref l n))
             (λ (x)
                (hash-ref rev-map x)))))
+
+(define (fin/e . args) (from-list/e (remove-duplicates args)))
 
 (define nats/e
   (enum +inf.0
@@ -554,12 +557,9 @@
          [(not (infinite? (size e)))
           (enum +inf.0
                 (λ (n)
-                   (call-with-values
-                       (λ ()
-                          (quotient/remainder n (size e)))
-                     (λ (q r)
-                        (cons (decode e r)
-                              (decode (f (decode e r)) q)))))
+                  (define-values (q r) (quotient/remainder n (size e)))
+                  (cons (decode e r)
+                        (decode (f (decode e r)) q)))
                 (λ (ab)
                    (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                       (encode e (car ab)))))]
@@ -679,12 +679,9 @@
        [(not (infinite? (size e)))
         (enum +inf.0
               (λ (n)
-                 (call-with-values
-                     (λ ()
-                        (quotient/remainder n (size e)))
-                   (λ (q r)
-                      (cons (decode e r)
-                            (decode (f (decode e r)) q)))))
+                (define-values (q r) (quotient/remainder n (size e)))
+                (cons (decode e r)
+                      (decode (f (decode e r)) q)))
               (λ (ab)
                  (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                     (encode e (car ab)))))]
@@ -769,14 +766,17 @@
         (λ (x)
            (encode (force promise/e) x))))
 
-;; fix/e : size (enum a -> enum a) -> enum a
-(define (fix/e size f/e)
-  (define self (delay (f/e (fix/e size f/e))))
-  (enum size
-        (λ (n)
-           (decode (force self) n))
-        (λ (x)
-           (encode (force self) x))))
+;; fix/e : [size] (enum a -> enum a) -> enum a
+(define fix/e
+  (case-lambda
+    [(f/e) (fix/e +inf.0 f/e)]
+    [(size f/e)
+     (define self (delay (f/e (fix/e size f/e))))
+     (enum size
+           (λ (n)
+             (decode (force self) n))
+           (λ (x)
+             (encode (force self) x)))]))
 
 ;; many/e : enum a -> enum (listof a)
 ;;       or : enum a, #:length natural -> enum (listof a)
