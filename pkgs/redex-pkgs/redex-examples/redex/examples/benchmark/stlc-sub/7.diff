@@ -1,0 +1,52 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "wrong order of arguments to replace call")
+111c111
+<    (λ (x_new τ) (subst (replace M y x_new) x M_x))
+---
+>    (λ (x_new τ) (subst (replace M x_new y) x M_x))
+147a148
+> 
+272,294c273,284
+< ;; rewrite all βv redexes already in the term
+< ;; (but not any new ones that might appear)
+< (define-metafunction stlc
+<   βv-> : M -> M
+<   [(βv-> ((λ (x τ) M) v))  (subst (βv-> M) x (βv-> v))]
+<   [(βv-> ((λ (x τ) M) y))  (subst (βv-> M) x y)]
+<   [(βv-> (λ (x τ) M))      (λ (x τ) (βv-> M))]
+<   [(βv-> (M N))            ((βv-> M) (βv-> N))]
+<   [(βv-> M)                M])
+< 
+< ;; check : (or/c #f M) -> boolean[#f = counterexample found!]
+< (define (check M)
+<   (or (not M)
+<       (let ([M-type (type-check M)])
+<         (implies M-type
+<                  (let* ([N (term (βv-> ,M))][N-type (type-check N)])
+<                    (and (equal? N-type M-type)
+<                         (let ([a1 (Eval M)] [a2 (Eval N)])
+<                           (and (not (string? a1)) (not (string? a2)) 
+<                                (equal? a1 a2)
+<                                (or (equal? a1 'error)
+<                                    (and (equal? (type-check a1) M-type)
+<                                         (equal? (type-check a2) M-type)))))))))))
+---
+> (define (check term)
+>   (or (not term)
+>       (v? term)
+>       (let ([t-type (type-check term)])
+>         (implies
+>          t-type
+>          (let ([red-res (apply-reduction-relation red term)])
+>            (and (= (length red-res) 1)
+>                 (let ([red-t (car red-res)])
+>                   (or (equal? red-t "error")
+>                       (let ([red-type (type-check red-t)])
+>                         (equal? t-type red-type))))))))))
+298a289,292
+> (define small-counter-example
+>   (term ((λ (x int) (λ (y int) y)) 1)))
+> (test-equal (check small-counter-example) #f)
+> 
