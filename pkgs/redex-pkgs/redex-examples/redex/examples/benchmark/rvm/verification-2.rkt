@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "bug 5")
+(define the-error "no-error")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 
@@ -160,8 +160,7 @@
    (where n ,(length (term (l ...))))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (term (AND (same? ṽ_0 uninit) ...)))
-   ;;bug 5
-   ;;(side-condition (<= (term n) (term n_l)))
+   (side-condition (<= (term n) (term n_l)))
    (where s_1 (abs-push n imm (ṽ_n ...)))
    (where (n_i ...) (count-up ,(length (term (l ...)))))
    (side-condition (term (AND (lam-verified? l s_1 n_i) ...)))]
@@ -336,7 +335,8 @@
   [(redo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
    (redo-clrs ((n_1 ṽ_1) ...) (set not ,(- (- (term n_h) (term n_0)) (term 1)) s))
    (where n_h ,(length (term s)))
-   (side-condition (< (term n_0) (term n_h)))]
+   ;; bug 2
+   #;(side-condition (< (term n_0) (term n_h)))]
   [(redo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
    (redo-clrs ((n_1 ṽ_1) ...) s)])
 
@@ -476,11 +476,12 @@
 (define fixed '())
 
 (define small-counter-example
-  '(let-void 1 
-             (branch #f 
-                     (let-rec ((lam () (0) 'x)) 'y) 
-                     (loc-noclr 0))))
+  '(proc-const (val)
+                (branch (loc 0)
+                        (let-one 'x
+                                 (branch (loc 1)
+                                         (loc-clr 0)
+                                         void))
+                        void)))
 
 (test-equal (check small-counter-example) #f)
-
-

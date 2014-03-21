@@ -475,11 +475,11 @@
         (set! index (add1 index))))))
 
 (define fixed '())
-(test-equal
- (bytecode-ok?
-   '(let-one 42 
+
+(define small-counter-example
+  '(let-one 42 
              (boxenv 0 
                      (application (case-lam (lam (ref) () (loc-box 0))) 
                                   (loc-box 1)))))
- #t)
 
+(test-equal (check small-counter-example) #f)
