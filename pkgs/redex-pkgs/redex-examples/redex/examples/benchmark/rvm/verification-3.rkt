@@ -473,11 +473,12 @@
         (set! index (add1 index))))))
 
 (define fixed '())
-(test-equal
- (bytecode-ok?
+
+(define small-counter-example
   '(application
     (proc-const (val val) (branch (loc-noclr 0) 'a 'b))
     'x
     (install-value 0 'y (boxenv 0 'z))))
- #t)
+
+(test-equal (check small-counter-example) #f)
 

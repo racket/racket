@@ -478,10 +478,12 @@
         (set! index (add1 index))))))
 
 (define fixed '())
-(test-equal
- (bytecode-ok?
-   '(let-one 'x 
-             (let-rec ((lam () (0) (application (loc-noclr 0)))) 
-                      'x)))
- #t)
+
+(define small-counter-example
+  '(let-one 'x
+            (application (proc-const (val val) (loc 0))
+                         (loc-noclr 2)
+                         (install-value 2 'y 'z))))
+
+(test-equal (check small-counter-example) #f)
 

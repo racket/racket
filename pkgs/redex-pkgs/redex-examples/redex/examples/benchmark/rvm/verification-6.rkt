@@ -473,9 +473,11 @@
         (generate-term bytecode e #:i-th index)
         (set! index (add1 index))))))
 
-(test-equal
- (bytecode-ok?
-  '(let-one 'x (case-lam (lam (val) () (loc-noclr 34)))))
- #t)
-
 (define fixed '())
+
+(define small-counter-example
+  '(application
+               (case-lam (lam (val) () (loc-noclr 34)))
+               'x))
+
+(test-equal (check small-counter-example) #f)
