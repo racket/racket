@@ -503,7 +503,7 @@
 
 ;; Supertype of all Class types, cannot instantiate
 ;; or subclass these
-(def-type ClassTop () [#:fold-rhs #:base])
+(def-type ClassTop () [#:fold-rhs #:base] [#:key 'class])
 
 ;; row-ext : Option<(U F B Row)>
 ;; row     : Row
