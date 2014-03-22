@@ -33,10 +33,11 @@
   (require
     (submod ".." cross-phase-failure)
     typed-racket/utils/utils
-    racket/base
+    racket/base racket/match
+    (types tc-result printer)
     syntax/parse
     (for-template (only-in typed-racket/typed-racket do-standard-inits))
-    (typecheck typechecker)
+    (typecheck typechecker check-below)
     (utils mutated-vars tc-utils)
     (env mvar-env))
   (provide
@@ -45,6 +46,7 @@
 
 
   (do-standard-inits)
+  (print-complex-filters? #t)
   
   ;; tr-expand: syntax? -> syntax?
   ;; Expands out a form and annotates it with necesarry TR machinery.
@@ -61,6 +63,36 @@
         (tc-expr/check expr expected)
         (tc-expr expr)))
 
+
+  (define (check-tc-results result golden #:name name)
+    (unless (equal? golden result)
+      (define base-message (format "~a did not return the expected value." name))
+
+      (define extra-message1
+        (if (parameterize ([delay-errors? #f])
+              (with-handlers ([exn:fail? (lambda (_) #f)])
+                (check-below result golden)
+                #t))
+            " It returned a more precise value."
+            ""))
+
+      (define extra-message2
+        (match* (result golden)
+          [((tc-result1: rt rf ro) (tc-result1: gt gf go))
+           (cond
+             [(not (equal? rt gt))
+              " The types don't match."]
+             [(not (equal? rf gf))
+              " The filters don't match."]
+             [(not (equal? ro go))
+              " They objects don't match."])]
+          [(_ _) ""]))
+
+      (raise (cross-phase-failure
+               #:actual result
+               #:expected golden
+               (string-append base-message extra-message1 extra-message2)))))
+
   ;; test: syntax? tc-results? [(option/c tc-results?)] -> void?
   ;; Checks that the expression typechecks using the expected type to the golden result.
   (define (test expr golden (expected #f))
@@ -73,11 +105,8 @@
     (define expanded-expr (tr-expand expr))
     (define result (tc expanded-expr expected))
     (define golden (golden-fun expanded-expr))
-    (unless (equal? golden result)
-      (raise (cross-phase-failure
-               #:actual result
-               #:expected golden
-               "tc-expr did not return the expected value"))))
+    (check-tc-results result golden #:name "tc-expr"))
+
 
   ;; test/fail syntax? tc-results? (or/c string? regexp?) (option/c tc-results?) -> void?
   ;; Checks that the expression doesn't typecheck using the expected type, returns the golden type,
@@ -97,11 +126,7 @@
           (define result
             (parameterize ([delay-errors? #t])
               (tc (tr-expand code) expected)))
-          (unless (equal? golden result)
-            (raise (cross-phase-failure
-                     #:actual result
-                     #:expected golden
-                     "tc-expr did not return the expected value")))
+          (check-tc-results result golden #:name "tc-expr")
           (report-first-error)
           (raise (cross-phase-failure
                    #:actual result
@@ -113,11 +138,7 @@
   ;; Checks that the literal typechecks using the expected type to the golden result.
   (define (test-literal literal golden expected)
     (define result (tc-literal literal expected))
-    (unless (equal? golden result)
-      (raise (cross-phase-failure
-               #:actual result
-               #:expected golden
-               "tc-literal did not return the expected value"))))
+    (check-tc-results result golden #:name "tc-literal"))
 
   ;; test-literal/fail syntax? (or/c string? regexp?) (option/c tc-results?) -> void?
   ;; Checks that the literal doesn't typecheck using the expected type and the golden message
