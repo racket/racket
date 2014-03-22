@@ -244,7 +244,7 @@
        (register-ignored! form)
        (check-subforms/ignore form)
        ;; We trust ignore to be only on syntax objects objects that are well typed
-       expected]
+       (ret -Bottom)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
