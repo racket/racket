@@ -20,10 +20,10 @@
 (import tc-expr^)
 (export tc-let^)
 
-(define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
-     (((syntax? syntax? tc-results/c . -> . any/c)
+(define/cond-contract (do-check expr->type namess results expected-results exprs body expected #:abstract [abstract null])
+     (((syntax? tc-results/c . -> . any/c)
        (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
-       syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results/c))
+       (listof syntax?) (listof syntax?) (or/c #f tc-results/c))
       (#:abstract any/c)
       . ->* .
       tc-results/c)
@@ -63,7 +63,6 @@
    types
    (append p1 p2)
    (for-each expr->type
-             clauses
              exprs
              expected-results)
    (with-lexical-env/extend/props
@@ -86,12 +85,10 @@
      (tc-expr/check e (-values (attribute i.type)))]
     [_ (tc-expr e)]))
 
-(define (tc/letrec-values namess exprs body form [expected #f])
+(define (tc/letrec-values namess exprs body [expected #f])
   (let* ([names (stx-map syntax->list namess)]
          [orig-flat-names (apply append names)]
-         [exprs (syntax->list exprs)]
-         ;; the clauses for error reporting
-         [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
+         [exprs (syntax->list exprs)])
     ;; Collect the declarations, which are represented as expression.
     ;; We put them back into definitions to reuse the existing machinery
     (define-values (type-aliases declarations)
@@ -121,16 +118,16 @@
 
     ;; First look at the clauses that do not bind the letrec names
     (define all-clauses
-      (for/list ([name-lst names] [expr exprs] [clause clauses])
-        (lr-clause name-lst expr clause)))
+      (for/list ([name-lst names] [expr exprs])
+        (lr-clause name-lst expr)))
 
     (define-values (ordered-clauses remaining)
       (get-non-recursive-clauses all-clauses orig-flat-names))
 
-    (define-values (remaining-names remaining-exprs remaining-clauses)
-      (for/lists (_1 _2 _3) ([remaining-clause remaining])
-        (match-define (lr-clause name expr clause) remaining-clause)
-        (values name expr clause)))
+    (define-values (remaining-names remaining-exprs)
+      (for/lists (_1 _2) ([remaining-clause remaining])
+        (match-define (lr-clause name expr) remaining-clause)
+        (values name expr)))
 
     ;; Check those and gather an environment for use below
     (define-values (env-names env-types)
@@ -140,10 +137,10 @@
       (cond
         ;; after everything, check the body expressions
         [(null? remaining-names)
-         (do-check void null null null form null body null expected #:abstract orig-flat-names)]
+         (do-check void null null null null body expected #:abstract orig-flat-names)]
         [else
          (define flat-names (apply append remaining-names))
-         (do-check (lambda (stx e t) (tc-expr/check e t))
+         (do-check tc-expr/check
                    remaining-names
                    ;; compute set of variables that can't be undefined. see below.
                    (let-values
@@ -151,8 +148,8 @@
                       (for/fold ([safe-bindings              '()] ; includes transitively-safe
                                  [transitively-safe-bindings '()])
                           ([names  (in-list remaining-names)]
-                           [clause (in-list remaining-clauses)])
-                        (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
+                           [expr (in-list remaining-exprs)])
+                        (case (safe-letrec-values-clause? expr transitively-safe-bindings flat-names)
                           ;; transitively safe -> safe to mention in a subsequent rhs
                           [(transitively-safe) (values (append names safe-bindings)
                                                        (append names transitively-safe-bindings))]
@@ -170,13 +167,13 @@
                          remaining-names))
                    ;; types the user gave. check against that to error if we could get undefined
                    (map (λ (l) (ret (map get-type l))) remaining-names)
-                   form remaining-exprs body remaining-clauses expected)]))))
+                   remaining-exprs body expected)]))))
 
 ;; An lr-clause is a
-;;   (lr-clause (Listof Identifier) Syntax Syntax)
+;;   (lr-clause (Listof Identifier) Syntax)
 ;;
 ;; interp. represents a letrec binding
-(struct lr-clause (names expr clause) #:transparent)
+(struct lr-clause (names expr) #:transparent)
 
 ;; get-non-recursive-clauses : (Listof lr-clause) (Listof Identifier) ->
 ;;                             (Listof lr-clause) (Listof lr-clause)
@@ -189,7 +186,7 @@
   (define-values (*non-binding *other-clauses)
     (for/fold ([non-binding '()] [other-clauses '()])
               ([clause clauses])
-      (match-define (lr-clause names _ _) clause)
+      (match-define (lr-clause names _) clause)
       (if (null? names)
           (values (cons clause non-binding) other-clauses)
           (values non-binding (cons clause other-clauses)))))
@@ -200,7 +197,7 @@
   ;; clause is a vertex but mapped in the table for each of the clause names
   (define vertices (make-bound-id-table))
   (for ([clause other-clauses])
-    (match-define (lr-clause names expr _) clause)
+    (match-define (lr-clause names expr) clause)
     (define relevant-free-vars
       (for/list ([var (in-list (free-vars expr))]
                  #:when (member var flat-names bound-identifier=?))
@@ -213,7 +210,7 @@
 
   ;; no-self-cycle? : (Vertex Id (Listof Id)) -> Boolean
   (define (no-self-cycle? vertex)
-    (match-define (lr-clause names _ _) (vertex-data vertex))
+    (match-define (lr-clause names _) (vertex-data vertex))
     (for/and ([id (in-list names)])
       (andmap (λ (id2) (not (bound-identifier=? id id2)))
               (vertex-adjacent vertex))))
@@ -243,7 +240,7 @@
   (let loop ([clauses clauses] [env-ids '()] [env-types '()])
     (cond [(null? clauses) (values env-ids env-types)]
           [else
-           (match-define (lr-clause names expr _) (car clauses))
+           (match-define (lr-clause names expr) (car clauses))
            (define results
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
@@ -274,19 +271,16 @@
 ;;  Fixing Letrec (reloaded) paper), we are more conservative than a fully-connected component
 ;;  based approach. On the other hand, our algorithm should cover most interesting cases and
 ;;  is much simpler than Tarjan's.
-(define (safe-letrec-values-clause? clause transitively-safe-bindings letrec-bound-ids)
-  (define clause-rhs
-    (syntax-parse clause
-      [(bindings . rhs) #'rhs]))
+(define (safe-letrec-values-clause? expr transitively-safe-bindings letrec-bound-ids)
   (cond [(andmap (lambda (fv)
                    (or (not (member fv letrec-bound-ids bound-identifier=?)) ; from outside
                        (member fv transitively-safe-bindings bound-identifier=?)))
-                 (apply append (stx-map free-vars clause-rhs)))
+                 (free-vars expr))
          'transitively-safe]
         [else
-         (syntax-parse clause-rhs #:literal-sets (kernel-literals)
-           [((#%plain-lambda _ ...)) 'safe]
-           [else                     'unsafe])]))
+         (syntax-parse expr #:literal-sets (kernel-literals)
+           [(#%plain-lambda _ ...) 'safe]
+           [else                   'unsafe])]))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
@@ -300,7 +294,7 @@
      (tc-expr/check e expected)]
     [_ (tc-expr e)]))
 
-(define (tc/let-values namess exprs body form [expected #f])
+(define (tc/let-values namess exprs body [expected #f])
   (let* (;; a list of each name clause
          [names (stx-map syntax->list namess)]
          ;; all the trailing expressions - the ones actually bound to the names
@@ -310,7 +304,5 @@
          ;; the annotated types of the name (possibly using the inferred types)
          [types (for/list ([name (in-list names)] [e (in-list exprs)])
                   (get-type/infer name e (tc-expr-t/maybe-expected expected)
-                                         tc-expr/check))]
-         ;; the clauses for error reporting
-         [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
-    (do-check void names types types form exprs body clauses expected)))
+                                         tc-expr/check))])
+    (do-check void names types types exprs body expected)))

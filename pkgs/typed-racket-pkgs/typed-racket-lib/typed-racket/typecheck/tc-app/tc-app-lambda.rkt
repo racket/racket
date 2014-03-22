@@ -34,9 +34,7 @@
    #:when (= (syntax-length #'(x ...))
              (syntax-length #'(args ...)))
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
-   (tc/let-values #'((x) ...) #'(args ...) #'body
-                  #'(let-values ([(x) args] ...) . body)
-                  expected))
+   (tc/let-values #'((x) ...) #'(args ...) #'body expected))
   ;; inference for ((lambda with dotted rest
   (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
    #:when (<= (syntax-length #'(x ...))
@@ -50,7 +48,6 @@
      (with-syntax ([(fixed-args ...) fixed-args]
                    [varg #`(#%plain-app list #,@varargs)])
        (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
-                      #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
                       expected)))))
 
 
