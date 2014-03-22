@@ -531,5 +531,5 @@
      (with-lexical-env/extend
       (list name) (list ft)
       (values
-        (erase-names/results formals (ret ft))
-        (erase-names/results formals (tc-body/check body return)))))))
+        (replace-names (map (λ (f) (list f -empty-obj)) formals) (ret ft))
+        (replace-names (map (λ (f) (list f -empty-obj)) formals) (tc-body/check body return)))))))
