@@ -3,10 +3,11 @@
 (require syntax/parse unstable/sequence racket/dict racket/flonum racket/promise
          syntax/parse/experimental/specialize
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
+         racket/match
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types numeric-tower union abbrev)
-         (optimizer utils numeric-utils logging fixnum))
+         (types numeric-tower union abbrev type-table tc-result)
+         (optimizer utils numeric-utils logging fixnum arithmetic))
 
 (provide float-opt-expr float-arg-expr int-expr)
 
@@ -16,6 +17,7 @@
 
 (define binary-float-ops
   (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
+
 (define binary-float-comps
   (dict-set*
     (mk-float-tbl (list #'= #'<= #'< #'> #'>=))
@@ -55,8 +57,16 @@
 (define-syntax-class/specialize int-expr (subtyped-expr -Integer))
 (define-syntax-class/specialize real-expr (subtyped-expr -Real))
 (define-syntax-class/specialize unary-float-op (float-op unary-float-ops))
-(define-syntax-class/specialize binary-float-op (float-op binary-float-ops))
 (define-syntax-class/specialize binary-float-comp (float-op binary-float-comps))
+
+(define-syntax-class binary-float-op
+  #:literals (+ - * / min max)
+  (pattern + #:attr lifted add-r)
+  (pattern - #:attr lifted sub-r)
+  (pattern * #:attr lifted mult-r)
+  (pattern / #:attr lifted div-r)
+  (pattern min #:attr lifted min-r)
+  (pattern max #:attr lifted max-r))
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
@@ -116,7 +126,7 @@
   (pattern (#%plain-app op:binary-float-op
                         ;; for now, accept anything that can be coerced to float
                         ;; finer-grained checking is done below
-                        (~between fs:float-arg-expr 2 +inf.0) ...)
+                        (~between fs:real-expr 2 +inf.0) ...)
            #:when (let* ([safe-to-opt?
                           ;; For it to be safe, we need:
                           ;; - the result to be a float, in which case coercing args to floats
@@ -191,7 +201,19 @@
                          this-syntax extra-precision-subexprs)))
                     safe-to-opt?)
            #:do [(log-fl-opt "binary float")]
-           #:with opt (n-ary->binary #'op.unsafe #'(fs.opt ...)))
+           #:with opt 
+             (with-syntax ([(names ...) (generate-temporaries #'(fs.opt ...))])
+                #`(let ([names fs.opt] ...)
+
+                    #,(typed-syntax-stx
+                        (expand-multiway
+                          (attribute op.lifted)
+                          (for/list ([name (in-syntax #'(names ...))]
+                                     [orig-arg (in-syntax #'(fs ...))])
+                            (typed-syntax name
+                                          (match (type-of orig-arg)
+                                            [(tc-result1: t) t]))))))))
+
   (pattern (#%plain-app op:binary-float-comp f1:float-expr f2:float-expr)
     #:do [(log-fl-opt "binary float comp")]
     #:with opt #'(op.unsafe f1.opt f2.opt))
