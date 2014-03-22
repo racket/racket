@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require plot/pict
+(require "apply-diffs.rkt"
+         plot/pict
          racket/cmdline
          racket/list
          racket/match
@@ -65,6 +66,21 @@
         29 2.045
         30 2.042))
 
+(define (bug-file? f)
+    (define m (regexp-match #rx"^.*/(.*-[0-9]\\.rkt)$"
+                            (path->string f)))
+    (and m
+        (second m)))
+
+(define (all-bug-files)
+  (sort
+   (flatten
+    (for/list ([d (in-list (get-directories directories))])
+      (for/list ([f (in-directory d)]
+                 #:when (bug-file? f))
+        (bug-file? f))))
+   string<?))
+
 (define (make-plot filenames)
   (parameterize ([plot-x-tick-label-angle 75]
                  [plot-x-tick-label-anchor 'right]
@@ -101,6 +117,9 @@
           (/ (stddev times #:bias #t) (sqrt (length times)))))
     
     (define name-avgs (make-hash))
+  
+    (for ([b (in-list (all-bug-files))])
+      (hash-set! name-avgs b '()))
     
     (define data-stats
       (let loop ([d data]
@@ -131,19 +150,30 @@
                        0
                        (error-bar times))))])))
     
-    (define (name-order name)
-      (length
-       (or
-        (memf
-         (λ (n) (equal? n name))
-         (sort (hash-keys name-avgs)
-               >
-               #:key (λ (k)
-                       (define val (hash-ref name-avgs k))
-                       (if (number? val)
-                           val
-                           (mean val)))))
-        '())))
+    
+  (define name-order 
+    ;; this function is mysteriously called a LOT...
+    (let ([memo (make-hash)])
+      (λ (name)
+        (hash-ref memo name
+                  (λ ()
+                    (define ans
+                      (length
+                       (or
+                        (memf
+                         (λ (n) (equal? n name))
+                         (sort (sort (hash-keys name-avgs)
+                                     string>?)
+                               >
+                               #:key (λ (k)
+                                       (define val (hash-ref name-avgs k))
+                                       (cond 
+                                         [(number? val) val]
+                                         [(empty? val) +inf.0]
+                                         [else (mean val)]))))
+                        '())))
+                    (hash-set! memo name ans)
+                    ans)))))
     
     (define (get-name-num name n)
       (+ (if (offset?)
@@ -162,7 +192,7 @@
                 (and (equal? type (list-ref l 1))
                      (list-ref l 2)))
               data-stats)))
-      (list
+      (define ps
        (points
         (map
          (λ (l)
@@ -173,16 +203,19 @@
         #:sym (hash-ref type-symbols type)
         #:size 20
         #:line-width 2
-        #:color (add1 n))
-       (error-bars
-        (map (λ (d)
-               (list (get-name-num (list-ref d 0) n) 
-                     (list-ref d 2)
-                     (list-ref d 3)))
-             this-type)
-        #:y-min 0.01
-        #:line-width 1
-        #:color (length (member type all-types)))))
+        #:color (add1 n)))
+      (if (equal? type 'ordered)
+          ps
+          (list ps
+                (error-bars
+                 (map (λ (d)
+                        (list (get-name-num (list-ref d 0) n) 
+                              (list-ref d 2)
+                              (list-ref d 3)))
+                      this-type)
+                 #:y-min 0.01
+                 #:line-width 1
+                 #:color (length (member type all-types))))))
     
     (define (zero->neg n)
       (if (zero? n)
