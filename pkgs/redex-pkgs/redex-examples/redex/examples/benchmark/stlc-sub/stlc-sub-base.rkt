@@ -145,6 +145,15 @@
     [else 
      (error 'Eval "argument doesn't typecheck: ~s" M)]))
 
+(define-metafunction stlc
+  answer : any -> any
+  [(answer (λ (x τ) M)) λ]
+  [(answer c) c]
+  [(answer (cons v)) λ]
+  [(answer ((cons v_1) v_2)) cons]
+  [(answer (+ v)) λ]
+  [(answer error) error])
+
 (define x? (redex-match stlc x))
 
 (define v? (redex-match? stlc v))
@@ -288,7 +297,7 @@
                    (and (equal? N-type M-type)
                         (let ([a1 (Eval M)] [a2 (Eval N)])
                           (and (not (string? a1)) (not (string? a2)) 
-                               (equal? a1 a2)
+                               (equal? (term (answer ,a1)) (term (answer ,a2)))
                                (or (equal? a1 'error)
                                    (and (equal? (type-check a1) M-type)
                                         (equal? (type-check a2) M-type)))))))))))

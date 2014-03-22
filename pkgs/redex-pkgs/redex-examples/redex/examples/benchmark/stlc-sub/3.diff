@@ -6,7 +6,7 @@
 <    ((subst M x M_x) (subst N x M_x))]
 ---
 >    ((subst N x M_x) (subst M x M_x))]
-297a298,301
+306a307,310
 >   
 > (define small-counter-example
 >   (term ((λ (x int) (+ 1)) 1)))

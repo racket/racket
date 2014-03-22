@@ -145,6 +145,15 @@
     [else 
      (error 'Eval "argument doesn't typecheck: ~s" M)]))
 
+(define-metafunction stlc
+  answer : any -> any
+  [(answer (λ (x τ) M)) λ]
+  [(answer c) c]
+  [(answer (cons v)) λ]
+  [(answer ((cons v_1) v_2)) cons]
+  [(answer (+ v)) λ]
+  [(answer error) error])
+
 
 (define x? (redex-match stlc x))
 
