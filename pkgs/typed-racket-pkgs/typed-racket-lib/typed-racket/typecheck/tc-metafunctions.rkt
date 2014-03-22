@@ -9,9 +9,12 @@
          (contract-req))
 
 (provide abstract-results
-         erase-names/results
          combine-props
          tc-results->values)
+
+(provide/cond-contract
+  [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
+
 
 ;; abstract-results
 ;;
@@ -236,16 +239,14 @@
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
 
-;; erase-names/results: (listof identifier?) tc-results? -> tc-results?
-;; Maps all of the given names in the results to the empty object.
+;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
+;; Maps all of the given names in the results to the objects in the corresponding tc-results.
 ;; This is used so that names do not escape the scope of their definitions
-;; TODO support mapping names to other objects.
-(define (erase-names/results names res)
+(define (replace-names names+objects res)
   (define (subber proc lst)
     (for/list ([i (in-list lst)])
-      (for/fold ([s i])
-        ([nm (in-list names)])
-        (proc s nm -empty-obj #t))))
+      (for/fold ([s i]) ([name/object (in-list names+objects)])
+        (proc s (first name/object) (second name/object) #t))))
   (match res
     [(tc-any-results:) res]
     [(tc-results: ts fs os)

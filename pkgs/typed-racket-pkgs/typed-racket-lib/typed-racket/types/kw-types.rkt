@@ -2,6 +2,7 @@
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
          "../utils/tc-utils.rkt"
+         "tc-result.rkt"
          racket/list racket/set racket/dict racket/match
          syntax/parse)
 
@@ -67,6 +68,20 @@
           (list (make-arr* ts/true rng #:drest drest)
                 (make-arr* ts/false rng #:drest drest)))
         (list (make-arr* ts rng #:rest rest #:drest drest)))))
+
+
+;; This is used to fix the filters of keyword types.
+;; TODO: This should also explore deeper into the actual types and remove filters in there as well.
+;; TODO: This should not remove the filters but instead make them refer to the actual arguments after
+;; keyword conversion.
+(define (erase-filter/Values values)
+  (match values
+    [(AnyValues:) values]
+    [(Results: ts fs os)
+     (-values ts)]
+    [(Results: ts fs os dty dbound)
+     (-values-dots ts dty dbound)]))
+
 
 (define (prefix-of a b)
   (define (rest-equal? a b)
@@ -176,7 +191,7 @@
               (and rest? (last other-args)))
             (make-Function
              (list (make-arr* (take other-args non-kw-argc)
-                              rng
+                              (erase-filter/Values rng)
                               #:kws actual-kws
                               #:rest rest-type)))]
            [(and (even? (length arrs)) ; had optional args
@@ -198,7 +213,7 @@
             (make-Function
              (for/list ([to-take (in-range (add1 (length opt-types)))])
                (make-arr* (append mand-args (take opt-types to-take))
-                          rng
+                          (erase-filter/Values rng)
                           #:kws actual-kws
                           #:rest rest-type)))]
            [else (int-err "unsupported arrs in keyword function type")])]

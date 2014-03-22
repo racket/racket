@@ -11,6 +11,7 @@
          (typecheck signatures tc-metafunctions internal-forms)
          (utils tarjan)
          racket/match (contract-req)
+         racket/list
          syntax/parse syntax/stx
          syntax/id-table
          ;; For internal type forms
@@ -20,12 +21,19 @@
 (import tc-expr^)
 (export tc-let^)
 
-(define/cond-contract (do-check expr->type namess results expected-results exprs body expected #:abstract [abstract null])
-     (((syntax? tc-results/c . -> . any/c)
-       (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
-       (listof syntax?) (listof syntax?) (or/c #f tc-results/c))
-      (#:abstract any/c)
-      . ->* .
+;; get-names+objects (listof (listof identifier?)) (listof tc-results?) -> (listof (list/c identifier Object?))
+(define (get-names+objects namess results)
+  (append*
+    (for/list ([names namess] [results results])
+      (match results
+        [(tc-results: _ _ os)
+         (map list names os)]))))
+
+(define/cond-contract (do-check expr->type namess results expected-results exprs body expected)
+     ((syntax? tc-results/c . -> . any/c)
+      (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
+      (listof syntax?) syntax? (or/c #f tc-results/c)
+      . -> .
       tc-results/c)
      (with-cond-contract t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
                               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
@@ -74,7 +82,7 @@
     expected-types ; types w/o undefined
     (append p1 p2)
     ;; typecheck the body
-    (erase-names/results (apply append abstract namess)
+    (replace-names (get-names+objects namess expected-results)
       (if expected
         (tc-body/check body (erase-filter expected))
         (tc-body body))))))
@@ -130,44 +138,47 @@
         (values name expr)))
 
     ;; Check those and gather an environment for use below
-    (define-values (env-names env-types)
+    (define-values (env-names env-results)
       (check-non-recursive-clauses ordered-clauses))
 
-    (with-lexical-env/extend env-names env-types
-      (cond
-        ;; after everything, check the body expressions
-        [(null? remaining-names)
-         (do-check void null null null null body expected #:abstract orig-flat-names)]
-        [else
-         (define flat-names (apply append remaining-names))
-         (do-check tc-expr/check
-                   remaining-names
-                   ;; compute set of variables that can't be undefined. see below.
-                   (let-values
-                    ([(safe-bindings _)
-                      (for/fold ([safe-bindings              '()] ; includes transitively-safe
-                                 [transitively-safe-bindings '()])
-                          ([names  (in-list remaining-names)]
-                           [expr (in-list remaining-exprs)])
-                        (case (safe-letrec-values-clause? expr transitively-safe-bindings flat-names)
-                          ;; transitively safe -> safe to mention in a subsequent rhs
-                          [(transitively-safe) (values (append names safe-bindings)
-                                                       (append names transitively-safe-bindings))]
-                          ;; safe -> safe by itself, but may not be safe to use in a subsequent rhs
-                          [(safe)              (values (append names safe-bindings)
-                                                       transitively-safe-bindings)]
-                          ;; unsafe -> could be undefined
-                          [(unsafe)            (values safe-bindings transitively-safe-bindings)]))])
-                    (map (λ (l) (let ([types-from-user (map get-type l)])
-                                  (ret (if (andmap (λ (x) ; are all the lhs vars safe?
-                                                      (member x safe-bindings bound-identifier=?))
-                                                   l)
-                                           types-from-user
-                                           (map (λ (x) (Un x -Undefined)) types-from-user)))))
-                         remaining-names))
-                   ;; types the user gave. check against that to error if we could get undefined
-                   (map (λ (l) (ret (map get-type l))) remaining-names)
-                   remaining-exprs body expected)]))))
+    (replace-names (get-names+objects env-names env-results)
+      (with-lexical-env/extend env-names (map tc-results-t env-results)
+        (cond
+          ;; after everything, check the body expressions
+          [(null? remaining-names)
+             (if expected
+               (tc-body/check body (erase-filter expected))
+               (tc-body body))]
+          [else
+           (define flat-names (apply append remaining-names))
+           (do-check tc-expr/check
+                     remaining-names
+                     ;; compute set of variables that can't be undefined. see below.
+                     (let-values
+                      ([(safe-bindings _)
+                        (for/fold ([safe-bindings              '()] ; includes transitively-safe
+                                   [transitively-safe-bindings '()])
+                            ([names  (in-list remaining-names)]
+                             [expr (in-list remaining-exprs)])
+                          (case (safe-letrec-values-clause? expr transitively-safe-bindings flat-names)
+                            ;; transitively safe -> safe to mention in a subsequent rhs
+                            [(transitively-safe) (values (append names safe-bindings)
+                                                         (append names transitively-safe-bindings))]
+                            ;; safe -> safe by itself, but may not be safe to use in a subsequent rhs
+                            [(safe)              (values (append names safe-bindings)
+                                                         transitively-safe-bindings)]
+                            ;; unsafe -> could be undefined
+                            [(unsafe)            (values safe-bindings transitively-safe-bindings)]))])
+                      (map (λ (l) (let ([types-from-user (map get-type l)])
+                                    (ret (if (andmap (λ (x) ; are all the lhs vars safe?
+                                                        (member x safe-bindings bound-identifier=?))
+                                                     l)
+                                             types-from-user
+                                             (map (λ (x) (Un x -Undefined)) types-from-user)))))
+                           remaining-names))
+                     ;; types the user gave. check against that to error if we could get undefined
+                     (map (λ (l) (ret (map get-type l))) remaining-names)
+                     remaining-exprs body expected)])))))
 
 ;; An lr-clause is a
 ;;   (lr-clause (Listof Identifier) Syntax)
@@ -233,7 +244,7 @@
           remaining))
 
 ;; check-non-recursive-clauses : (Listof lr-clause) ->
-;;                               (Listof Identifier) (Listof Type)
+;;                               (Listof (Listof Identifier)) (Listof tc-results)
 ;; Given a list of non-recursive clauses, check the clauses in order and
 ;; build up a type environment for use in the second pass.
 (define (check-non-recursive-clauses clauses)
@@ -245,11 +256,10 @@
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
                              tc-expr/check))
-           (match-define (tc-results: types) results)
-           (with-lexical-env/extend names types
+           (with-lexical-env/extend names (tc-results-t results)
              (loop (cdr clauses)
                    (cons names env-ids)
-                   (cons types env-types)))])))
+                   (cons results env-types)))])))
 
 ;; determines whether any of the variables bound in the given clause can have an undefined value
 ;; in this case, we cannot trust the type the user gave us and must union it with undefined
