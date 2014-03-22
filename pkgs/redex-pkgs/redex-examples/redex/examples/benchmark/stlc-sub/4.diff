@@ -6,7 +6,7 @@
 <    (where x_new ,(variable-not-in (term (x y M))
 ---
 >    (where x_new ,(variable-not-in (term M)
-298a299,302
+307a308,311
 > (define small-counter-example
 >   (term ((λ (z int) (((λ (y1 int) (λ (y int) y)) z) 1)) 0)))
 > (test-equal (check small-counter-example) #f)

@@ -6,9 +6,9 @@
 <    (λ (x_new τ) (subst (replace M y x_new) x M_x))
 ---
 >    (λ (x_new τ) (subst (replace M x_new y) x M_x))
-147a148
+156a157
 > 
-272,294c273,284
+281,303c282,293
 < ;; rewrite all βv redexes already in the term
 < ;; (but not any new ones that might appear)
 < (define-metafunction stlc
@@ -28,7 +28,7 @@
 <                    (and (equal? N-type M-type)
 <                         (let ([a1 (Eval M)] [a2 (Eval N)])
 <                           (and (not (string? a1)) (not (string? a2)) 
-<                                (equal? a1 a2)
+<                                (equal? (term (answer ,a1)) (term (answer ,a2)))
 <                                (or (equal? a1 'error)
 <                                    (and (equal? (type-check a1) M-type)
 <                                         (equal? (type-check a2) M-type)))))))))))
@@ -45,7 +45,7 @@
 >                   (or (equal? red-t "error")
 >                       (let ([red-type (type-check red-t)])
 >                         (equal? t-type red-type))))))))))
-298a289,292
+307a298,301
 > (define small-counter-example
 >   (term ((λ (x int) (λ (y int) y)) 1)))
 > (test-equal (check small-counter-example) #f)
