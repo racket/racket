@@ -46,8 +46,8 @@
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results/c)]))
 
 (define-signature tc-let^
-  ([cond-contracted tc/let-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results/c)) . ->* . tc-results/c)]
-   [cond-contracted tc/letrec-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results/c)) . ->* . tc-results/c)]))
+  ([cond-contracted tc/let-values ((syntax? syntax? syntax?) ((or/c #f tc-results/c)) . ->* . tc-results/c)]
+   [cond-contracted tc/letrec-values ((syntax? syntax? syntax?) ((or/c #f tc-results/c)) . ->* . tc-results/c)]))
 
 (define-signature tc-dots^
   ([cond-contracted tc/dots (syntax? . -> . (values Type/c symbol?))]))
