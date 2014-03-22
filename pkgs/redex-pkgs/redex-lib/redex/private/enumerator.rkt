@@ -785,7 +785,7 @@
     [(e)
      (define fix-size
        (if (= 0 (size e))
-           0
+           1
            +inf.0))
      (fix/e fix-size
             (λ (self)

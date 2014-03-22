@@ -419,3 +419,8 @@
   (many/e nats/e))
 (check-bijection? natss)
 
+(define emptys/e
+  (many/e empty/e))
+(check-equal? (decode emptys/e 0) '())
+(check-bijection? emptys/e)
+
