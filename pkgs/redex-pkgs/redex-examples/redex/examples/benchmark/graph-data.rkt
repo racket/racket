@@ -88,7 +88,10 @@
                  [error-bar-line-width 3]
                  [error-bar-width 12]
                  [plot-line-width 3]
-                 [plot-y-transform (axis-transform-bound log-transform 0.00001 +inf.0)])
+                 [plot-y-transform (axis-transform-bound log-transform 0.00001 +inf.0)]
+                 [plot-width 1600]
+                 [plot-height 800]
+                 [plot-legend-anchor 'bottom-right])
     
     (define data
       (let ([raw-data
@@ -260,9 +263,6 @@
                      (* 60 (max-t))
                      (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
          #:x-max (+ 0.5 (length (hash-keys name-avgs)))
-         #:legend-anchor 'top-left
-         #:width 1024
-         #:height 768
          #:out-file (output-file)
          #:out-kind 'jpeg)
         (plot-pict
@@ -276,10 +276,7 @@
          #:y-max (if (max-t)
                      (* 60 (max-t))
                      (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-         #:x-max (+ 0.5 (length (hash-keys name-avgs)))
-         #:legend-anchor 'top-left
-         #:width 1024
-         #:height 768))))
+         #:x-max (+ 0.5 (length (hash-keys name-avgs)))))))
 
 
 (module+
