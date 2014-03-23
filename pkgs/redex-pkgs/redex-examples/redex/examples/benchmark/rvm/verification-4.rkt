@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "mishandling branches when then branch needs more stack than else branch")
+(define the-error "mishandling branches when then branch needs more stack than else branch; bug in the boxenv case not checking a stack bound")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 
