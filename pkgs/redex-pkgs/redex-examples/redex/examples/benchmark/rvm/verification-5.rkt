@@ -474,6 +474,10 @@
 
 (define (ordered-enum-generator)
   (let ([index 0])
+    (λ ()
+      (begin0
+        (fix (generate-term bytecode e #:i-th index))
+        (set! index (add1 index))))))
 
 (define small-counter-example
   '(let-void 1 
@@ -482,11 +486,5 @@
                      (loc-noclr 0))))
 
 (test-equal (check small-counter-example) #f)
-
-
-    (λ ()
-      (begin0
-        (fix (generate-term bytecode e #:i-th index))
-        (set! index (add1 index))))))
 
 (define fixed '())

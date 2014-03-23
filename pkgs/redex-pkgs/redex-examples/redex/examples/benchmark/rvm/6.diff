@@ -3,12 +3,11 @@
 ---
 >    ;; bug 6
 >    #;(side-condition (term (AND (lam-verified? l s ?) ...)))]
-475a477,483
-> 
+480a482,488
 > (define small-counter-example
 >   '(application
 >                (case-lam (lam (val) () (loc-noclr 34)))
 >                'x))
 > 
 > (test-equal (check small-counter-example) #f)
-\ No newline at end of file
+> 

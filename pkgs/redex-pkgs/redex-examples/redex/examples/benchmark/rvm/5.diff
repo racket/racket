@@ -7,8 +7,7 @@
 ---
 >    ;;bug 5
 >    ;;(side-condition (<= (term n) (term n_l)))
-475a477,486
-> 
+480a482,489
 > (define small-counter-example
 >   '(let-void 1 
 >              (branch #f 
@@ -16,5 +15,4 @@
 >                      (loc-noclr 0))))
 > 
 > (test-equal (check small-counter-example) #f)
-> 
 > 

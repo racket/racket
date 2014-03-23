@@ -3,8 +3,7 @@
 ---
 >    ;; bug 2
 >    #;(side-condition (< (term n_0) (term n_h)))]
-475a477,487
-> 
+480a482,492
 > (define small-counter-example
 >   '(proc-const (val)
 >                 (branch (loc 0)
@@ -15,4 +14,4 @@
 >                         void)))
 > 
 > (test-equal (check small-counter-example) #f)
-\ No newline at end of file
+> 

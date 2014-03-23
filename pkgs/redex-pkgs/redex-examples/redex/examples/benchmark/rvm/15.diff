@@ -13,8 +13,7 @@
 <        `(case-lam ,@(map (curry recur depth #f) ls))]
 ---
 >        `(case-lam ,@(map (curry recur depth #t) ls))]
-475a478,485
-> 
+480a483,490
 > (define small-counter-example
 >   '(let-one 42 
 >              (boxenv 0 
@@ -22,3 +21,4 @@
 >                                   (loc-box 1)))))
 > 
 > (test-equal (check small-counter-example) #f)
+> 

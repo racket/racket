@@ -14,8 +14,7 @@
 <    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n not s) n_l* #f γ η))
 ---
 >    (where (s_1 γ_1 η_1) (verify* (e_0 e_1 ...) (abs-push n uninit s) n_l* #f γ η))
-475a476,484
-> 
+480a481,488
 > (define small-counter-example
 >   '(application
 >     (proc-const (val val) (branch (loc-noclr 0) 'a 'b))

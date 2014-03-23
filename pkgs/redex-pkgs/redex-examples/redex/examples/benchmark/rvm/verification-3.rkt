@@ -473,6 +473,10 @@
 
 (define (ordered-enum-generator)
   (let ([index 0])
+    (λ ()
+      (begin0
+        (fix (generate-term bytecode e #:i-th index))
+        (set! index (add1 index))))))
 
 (define small-counter-example
   '(application
@@ -481,10 +485,5 @@
     (install-value 0 'y (boxenv 0 'z))))
 
 (test-equal (check small-counter-example) #f)
-
-    (λ ()
-      (begin0
-        (fix (generate-term bytecode e #:i-th index))
-        (set! index (add1 index))))))
 
 (define fixed '())

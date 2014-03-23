@@ -16,8 +16,7 @@
 >   ;; bug 14
 >   [(closure-intact? (box-nc ṽ_1 ...) (imm ṽ_2 ...))
 >    (closure-intact? (ṽ_1 ...) (ṽ_2 ...))]
-475a481,489
-> 
+480a486,493
 > (define small-counter-example
 >   '(let-one 'x
 >             (application (proc-const (val val) (loc 0))
