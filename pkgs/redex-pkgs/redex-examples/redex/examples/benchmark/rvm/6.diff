@@ -1,3 +1,7 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "forgot to implement the case-lam branch in verifier")
 127c127,128
 <    (side-condition (term (AND (lam-verified? l s ?) ...)))]
 ---

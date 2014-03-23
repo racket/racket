@@ -1,7 +1,7 @@
 3c3
 < (define the-error "no-error")
 ---
-> (define the-error "bug 14")
+> (define the-error "certain updates to initialized slots could break optimizer assumptions")
 142c142,143
 <    (where uninit (stack-ref n s_2))]
 ---

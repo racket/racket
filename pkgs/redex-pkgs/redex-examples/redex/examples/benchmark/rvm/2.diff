@@ -1,3 +1,7 @@
+3c3
+< (define the-error "no-error")
+---
+> (define the-error "stack offset / pointer confusion")
 338c338,339
 <    (side-condition (< (term n_0) (term n_h)))]
 ---

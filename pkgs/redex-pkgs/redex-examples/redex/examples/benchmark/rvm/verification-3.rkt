@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "bug 3")
+(define the-error "application slots not initialized properly")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 

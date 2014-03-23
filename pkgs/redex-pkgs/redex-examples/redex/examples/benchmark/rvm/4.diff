@@ -1,7 +1,7 @@
 3c3
 < (define the-error "no-error")
 ---
-> (define the-error "bug 4")
+> (define the-error "mishandling branches when then branch needs more stack than else branch")
 155c155,156
 <    (side-condition (< (term n_p) (term n_l)))]
 ---

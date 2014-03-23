@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "bug 15")
+(define the-error "neglected to restict case-lam to accept only 'val' arguments")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 

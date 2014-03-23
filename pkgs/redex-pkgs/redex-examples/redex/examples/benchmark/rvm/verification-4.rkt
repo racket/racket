@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "bug 4")
+(define the-error "mishandling branches when then branch needs more stack than else branch")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 

@@ -1,7 +1,7 @@
 3c3
 < (define the-error "no-error")
 ---
-> (define the-error "bug 15")
+> (define the-error "neglected to restict case-lam to accept only 'val' arguments")
 125c125,126
 <   [(verify (case-lam (name l (lam (val ...) (n ...) e)) ...) s n_l b γ η f)
 ---

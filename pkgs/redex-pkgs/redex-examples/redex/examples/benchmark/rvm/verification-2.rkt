@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "no-error")
+(define the-error "stack offset / pointer confusion")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 

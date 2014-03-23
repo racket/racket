@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "no-error")
+(define the-error "forgot to implement the case-lam branch in verifier")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 

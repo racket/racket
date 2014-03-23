@@ -1,6 +1,6 @@
 #lang racket
 
-(define the-error "bug 14")
+(define the-error "certain updates to initialized slots could break optimizer assumptions")
 
 (require redex/reduction-semantics)
 (require "../../racket-machine/grammar.rkt" 
