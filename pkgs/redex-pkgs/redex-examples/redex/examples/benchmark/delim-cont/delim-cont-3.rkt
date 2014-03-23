@@ -950,3 +950,11 @@
       (set! index (add1 index))
       (generate-term abort-lang e #:i-th index))))
 
+(define small-counter-example
+  (term ((λ (tg : (Prompt Num Bool))
+           (% (call/comp (λ (x : Bool) (if x #f #t))
+                         tg)
+              tg
+              (λ (x : Num) #t)))
+         (make-prompt-tag Num Bool))))
+(test-equal (check small-counter-example) #f)
