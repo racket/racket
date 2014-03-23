@@ -34,7 +34,8 @@
 (define-signature tc-lambda^
   ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . tc-results/c)]
    [cond-contracted tc/lambda/check (syntax? syntax? syntax? tc-results/c . -> . tc-results/c)]
-   [cond-contracted tc/rec-lambda/check (syntax? syntax? syntax? (listof Type/c) tc-results/c . -> . tc-results/c)]))
+   [cond-contracted tc/rec-lambda/check (syntax? syntax? syntax? (listof Type/c) tc-results/c . -> .
+                                                 (values tc-results/c tc-results/c))]))
 
 (define-signature tc-app^
   ([cond-contracted tc/app (syntax? . -> . tc-results/c)]
