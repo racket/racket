@@ -66,36 +66,46 @@
    [(_ tp fp op) (Values: (list (Result: tp fp op) (... ...)))]
    [(_ tp fp op dty dbound) (ValuesDots: (list (Result: tp fp op) (... ...)) dty dbound)]))
 
+;; make-tc-result*: Type/c FilterSet/c Object? -> tc-result?
+;; Smart constructor for a tc-result.
+(define (-tc-result type filter object)
+  (cond
+    [(or (equal? type -Bottom) (equal? filter -bot-filter))
+     (make-tc-result -Bottom -bot-filter object)]
+    [else
+     (make-tc-result type filter object)]))
+
+
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t)
                 (make-tc-results
                  (cond [(Type/c? t)
-                        (list (make-tc-result t -top-filter -empty-obj))]
+                        (list (-tc-result t -top-filter -empty-obj))]
                        [else
                         (for/list ([i (in-list t)])
-                          (make-tc-result i -top-filter -empty-obj))])
+                          (-tc-result i -top-filter -empty-obj))])
                  #f)]
                [(t f)
                 (make-tc-results
                  (if (Type/c? t)
-                     (list (make-tc-result t f -empty-obj))
+                     (list (-tc-result t f -empty-obj))
                      (for/list ([i (in-list t)] [f (in-list f)])
-                       (make-tc-result i f -empty-obj)))
+                       (-tc-result i f -empty-obj)))
                  #f)]
                [(t f o)
                 (make-tc-results
                  (if (and (list? t) (list? f) (list? o))
-                     (map make-tc-result t f o)
-                     (list (make-tc-result t f o)))
+                     (map -tc-result t f o)
+                     (list (-tc-result t f o)))
                  #f)]
                [(t f o dty)
                 (int-err "ret used with dty without dbound")]
                [(t f o dty dbound)
                 (make-tc-results
                  (if (and (list? t) (list? f) (list? o))
-                     (map make-tc-result t f o)
-                     (list (make-tc-result t f o)))
+                     (map -tc-result t f o)
+                     (list (-tc-result t f o)))
                  (cons dty dbound))]))
 
 ;(trace ret)
