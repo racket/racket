@@ -161,11 +161,6 @@
                                (? values i)))
            i)])))
 
-(define (merge-filter-sets fs)
-  (match fs
-    [(list (FilterSet: f+ f-) ...)
-     (-FS (make-AndFilter f+) (make-AndFilter f-))]))
-
 (define (tc-results->values tc)
   (match tc
     [(tc-any-results:) ManyUniv]
