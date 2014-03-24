@@ -2667,6 +2667,34 @@
            (number? x))
          -Boolean]
 
+       [tc-e
+         (let ()
+           (: g (Any -> Boolean : #:+ (Number @ 0) #:- Bot))
+           (define (g x)
+             (or (number? x)
+                 (g x)))
+           (: x Any)
+           (define x 0)
+           (g x)
+           (add1 x))
+         -Number]
+
+       [tc-e
+         (let: ([x : Any 1])
+           (unless (number? x)
+             (error 'foo))
+           (add1 x))
+         -Number]
+
+       [tc-e
+         (let: ([x : Any 1])
+           (let ()
+             (unless (number? x)
+               (error 'foo))
+             #t)
+           (add1 x))
+         -Number]
+
        [tc-e/t
          (let ()
            (: f (Number -> Number))

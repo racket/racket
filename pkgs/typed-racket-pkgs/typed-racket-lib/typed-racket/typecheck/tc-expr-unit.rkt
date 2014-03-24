@@ -5,17 +5,17 @@
          racket/match (prefix-in - (contract-req))
          "signatures.rkt"
          "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev union subtype type-table classes)
+         (types utils abbrev union subtype type-table classes filter-ops)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
          (env lexical-env tvar-env index-env)
-         racket/format
+         racket/format racket/list
          racket/private/class-internal
          syntax/parse syntax/stx
          unstable/syntax
          (only-in racket/list split-at)
-         (typecheck internal-forms)
+         (typecheck internal-forms tc-envops)
          ;; Needed for current implementation of typechecking letrec-syntax+values
          (for-template (only-in racket/base letrec-values))
 
@@ -519,6 +519,23 @@
           #:stx form
           "expected single value, got multiple (or zero) values")]))
 
+
+;; check-body-form: (All (A) (syntax? (-> A) -> A))
+;; Checks an expression and then calls the function in a context with an extended lexical environment.
+;; The environment is extended with the propositions that are true if the expression returns
+;; (e.g. instead of raising an error).
+(define (check-body-form e k)
+  (define results (tc-expr/check e tc-any-results))
+  (define props
+    (match results
+      [(tc-any-results:) empty]
+      [(tc-results: _ (FilterSet: f+ f-) _)
+       (map -or f+ f-)]
+      [(tc-results: _ (FilterSet: f+ f-) _ _ _)
+       (map -or f+ f-)]))
+  (with-lexical-env (env+ (lexical-env) props (box #t))
+    (add-unconditional-prop (k) (apply -and props))))
+
 ;; type-check a body of exprs, producing the type of the last one.
 ;; if the body is empty, the type is Void.
 ;; syntax[list[expr]] -> tc-results/c
@@ -526,14 +543,18 @@
   (match (syntax->list body)
     [(list) (ret -Void)]
     [(list es ... e-final)
-     (for ((e es))
-       (tc-expr/check e tc-any-results))
-     (tc-expr e-final)]))
+     (define ((continue es))
+       (if (empty? es)
+           (tc-expr e-final)
+           (check-body-form (first es) (continue (rest es)))))
+     ((continue es))]))
 
 (define (tc-body/check body expected)
   (match (syntax->list body)
     [(list) (check-below (ret -Void) expected)]
     [(list es ... e-final)
-     (for ((e es))
-       (tc-expr/check e tc-any-results))
-     (tc-expr/check e-final expected)]))
+     (define ((continue es))
+       (if (empty? es)
+           (tc-expr/check e-final expected)
+           (check-body-form (first es) (continue (rest es)))))
+     ((continue es))]))
