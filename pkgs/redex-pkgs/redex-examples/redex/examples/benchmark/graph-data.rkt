@@ -11,14 +11,21 @@
 (provide (all-defined-out))
 
 (define types (make-parameter '()))
-(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref enum ordered))
-(define names '("grammar" "search" "backjumping" "backjumping, ordered space" "backjumping, with refresh"
-                          "backjumping, ordered space with refresh" "enumeration"
-                          "in-order enumeration"))
+(define all-types '(grammar search search-gen search-gen-enum search-gen-ref search-gen-enum-ref 
+                            enum ordered))
+(define names '("Ad Hoc Random Generation"
+                "search" 
+                "backjumping"
+                "backjumping, ordered space"
+                "backjumping, with refresh"
+                "backjumping, ordered space with refresh" 
+                "Random Selection from Uniform Distribution"
+                "In-order Enumeration"))
 (define symbols '(circle triangle square asterisk diamond plus 5star diamond))
 (define type-names
   (for/hash ([t all-types] [n names])
     (values t n)))
+
 (define type-symbols
   (for/hash ([t all-types] [s symbols])
     (values t s)))
@@ -84,13 +91,8 @@
 (define (make-plot filenames)
   (parameterize ([plot-x-tick-label-angle 75]
                  [plot-x-tick-label-anchor 'right]
-                 [plot-font-size 20]
-                 [error-bar-line-width 3]
                  [error-bar-width 12]
-                 [plot-line-width 3]
                  [plot-y-transform (axis-transform-bound log-transform 0.00001 +inf.0)]
-                 [plot-width 1600]
-                 [plot-height 800]
                  [plot-legend-anchor 'bottom-right])
     
     (define data
@@ -204,21 +206,19 @@
         #:label (string-append (hash-ref type-names type)
                                (format " (~s successes)" (length this-type)))
         #:sym (hash-ref type-symbols type)
-        #:size 20
-        #:line-width 2
+        #:size (* (point-size) 1.5)
         #:color (add1 n)))
       (if (equal? type 'ordered)
           ps
-          (list ps
-                (error-bars
+          (list (error-bars
                  (map (λ (d)
                         (list (get-name-num (list-ref d 0) n) 
                               (list-ref d 2)
                               (list-ref d 3)))
                       this-type)
                  #:y-min 0.01
-                 #:line-width 1
-                 #:color (length (member type all-types))))))
+                 #:color "dark gray")
+                ps)))
     
     (define (zero->neg n)
       (if (zero? n)
@@ -235,48 +235,38 @@
           ""
           (car label-list)))
     
-    (plot-x-ticks (ticks (linear-ticks-layout #:number 30 #:base 10
-                                              #:divisors '(1))
-                         (λ (_1 _2 pts) (map tlabel pts))))
-    
-    (define (loggy-ticks _1 _2)
-      (for*/list
-          ([f (in-list '(1 10 100 1000 10000))]
-           [n (in-range 1 10)])
-        (pre-tick (* f n) (or
-                           (= n 5)
-                           (= n 1)))))
-    
-    (plot-y-ticks 
-     (log-ticks #:number 20 #:base 10))
-    
-    (if (output-file)
-        (plot
-         (for/list ([t (if (empty? (types)) all-types (types))]
-                    [n (in-naturals)])
-           (plot-type t n))
-         #:y-label "avg. seconds to find bug"
-         #:x-label "file"
-         #:x-min 0
-         #:y-min (min-y)
-         #:y-max (if (max-t)
-                     (* 60 (max-t))
-                     (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-         #:x-max (+ 0.5 (length (hash-keys name-avgs)))
-         #:out-file (output-file)
-         #:out-kind 'jpeg)
-        (plot-pict
-         (for/list ([t (if (empty? (types)) all-types (types))]
-                    [n (in-naturals)])
-           (plot-type t n))
-         #:y-label "avg. seconds to find bug"
-         #:x-label "file"
-         #:x-min 0
-         #:y-min (min-y)
-         #:y-max (if (max-t)
-                     (* 60 (max-t))
-                     (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-         #:x-max (+ 0.5 (length (hash-keys name-avgs)))))))
+    (parameterize ([plot-x-ticks 
+                    (ticks (linear-ticks-layout #:number 30 #:base 10
+                                                #:divisors '(1))
+                           (λ (_1 _2 pts) (map tlabel pts)))]
+                   [plot-y-ticks 
+                    (log-ticks #:number 20 #:base 10)]
+                   [plot-y-label "Average Number of Seconds to Find Each Bug"]
+                   [plot-x-label ""])
+      
+      (if (output-file)
+          (plot
+           (for/list ([t (if (empty? (types)) all-types (types))]
+                      [n (in-naturals)])
+             (plot-type t n))
+           #:x-min 0
+           #:y-min (min-y)
+           #:y-max (if (max-t)
+                       (* 60 (max-t))
+                       (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
+           #:x-max (+ 0.5 (length (hash-keys name-avgs)))
+           #:out-file (output-file)
+           #:out-kind 'jpeg)
+          (plot-pict
+           (for/list ([t (if (empty? (types)) all-types (types))]
+                      [n (in-naturals)])
+             (plot-type t n))
+           #:x-min 0
+           #:y-min (min-y)
+           #:y-max (if (max-t)
+                       (* 60 (max-t))
+                       (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
+           #:x-max (+ 0.5 (length (hash-keys name-avgs))))))))
 
 
 (module+
