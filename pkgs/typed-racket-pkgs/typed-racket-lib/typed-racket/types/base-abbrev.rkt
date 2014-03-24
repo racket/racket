@@ -123,18 +123,24 @@
 (define/cond-contract (-filter t i [p null])
   (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
   (define i* (if (integer? i) (list 0 i) i))
-  (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
-      -top
-      (make-TypeFilter t p i*)))
+  (cond
+    [(and (identifier? i) (is-var-mutated? i)) -top]
+    [(equal? Univ t) -top]
+    [(equal? -Bottom t) -bot]
+    [else (make-TypeFilter t p i*)]))
+
 
 ;; Abbreviation for not filters
 ;; `i` can be an integer for backwards compatibility
 (define/cond-contract (-not-filter t i [p null])
   (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
   (define i* (if (integer? i) (list 0 i) i))
-  (if (or (type-equal? -Bottom t) (and (identifier? i) (is-var-mutated? i)))
-      -top
-      (make-NotTypeFilter t p i*)))
+  (cond
+    [(and (identifier? i) (is-var-mutated? i)) -top]
+    [(equal? -Bottom t) -top]
+    [(equal? Univ t) -bot]
+    [else (make-NotTypeFilter t p i*)]))
+
 
 (define (-filter-at t o)
   (match o
