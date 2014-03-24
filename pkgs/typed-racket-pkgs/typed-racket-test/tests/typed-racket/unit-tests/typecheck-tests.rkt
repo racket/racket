@@ -807,7 +807,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ Univ)]
+                (t:-> Univ Univ : (-FS (-not-filter (-val #f) 0) (-filter (-val #f) 0)))]
 
         [tc-e (not 1)
           #:ret (ret -Boolean -false-filter)]
@@ -1025,14 +1025,14 @@
                    (if (list? x)
                        (add1 x)
                        12)))
-         #:ret (ret -PosByte)]
+         #:ret (ret -PosByte -true-filter)]
 
         [tc-err (let*: ([x : Any 1]
                         [f : (-> Void) (lambda () (set! x 'foo))])
                        (if (number? x)
                            (begin (f) (add1 x))
                            12))
-          #:ret (ret -PosByte)]
+          #:ret (ret -PosByte -true-filter)]
 
         [tc-err (ann 3 (Rec a a))]
         [tc-err (ann 3 (Rec a (U a 3)))]
@@ -1168,7 +1168,7 @@
         (tc-e (or (string->number "7") 7)
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x)))
-              #:ret (ret -One -top-filter)]
+              #:ret (ret -One -true-filter)]
         [tc-e (let: ([x : (U (Vectorof Integer) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
          -Integer]
@@ -2102,9 +2102,9 @@
                            (struct-type-info struct:arity-at-least)])
                (getter (arity-at-least 3) 0))
              Univ]
-       [tc-e (assert (let-values ([(type _) (struct-info (arity-at-least 3))])
+       [tc-e/t (assert (let-values ([(type _) (struct-info (arity-at-least 3))])
                        type))
-             (make-StructTypeTop)]
+               (make-StructTypeTop)]
        [tc-err (let-values ([(name _1 _2 getter setter _3 _4 _5)
                              (struct-type-info struct:arity-at-least)])
                  (getter 'bad 0))
@@ -2123,7 +2123,7 @@
        [tc-e (touch (future (λ () "foo"))) -String]
        [tc-e (current-future) (-opt (-future Univ))]
        [tc-e (add1 (processor-count)) -PosInt]
-       [tc-e (assert (current-future) future?) (-future Univ)]
+       [tc-e/t (assert (current-future) future?) (-future Univ)]
        [tc-e (futures-enabled?) -Boolean]
        [tc-e (place-enabled?) -Boolean]
        [tc-e (dynamic-place "a.rkt" 'a #:at #f) -Place]
@@ -2666,6 +2666,12 @@
            (define x 0)
            (number? x))
          -Boolean]
+
+       [tc-e/t
+         (lambda (x)
+           (unless (number? x)
+             (error 'foo)))
+         (t:-> Univ -Void : (-FS (-filter -Number 0) (-filter -Number 0)))]
 
         )
   (test-suite

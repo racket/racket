@@ -77,16 +77,16 @@
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result (abstract-type arg-names keys t)
-                     (abstract-filter arg-names keys f)
-                     (abstract-object arg-names keys o)))
+        (-result (abstract-type arg-names keys t)
+                 (abstract-filter arg-names keys f)
+                 (abstract-object arg-names keys o)))
       dty dbound)]
     [(tc-results: ts fs os)
      (make-Values
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
-        (make-Result (abstract-type arg-names keys t)
-                     (abstract-filter arg-names keys f)
-                     (abstract-object arg-names keys o))))]))
+        (-result (abstract-type arg-names keys t)
+                 (abstract-filter arg-names keys f)
+                 (abstract-object arg-names keys o))))]))
 
 ;; Abstract all given id objects into index objects (keys) in
 ;; the given type
