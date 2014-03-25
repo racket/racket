@@ -2642,6 +2642,14 @@
          #:ret (ret (-val 3) -top-filter)
          #:expected (ret (-val 3) -no-filter -no-obj)]
 
+       [tc-err
+         (let* ([x 42]
+                [n x])
+           (set! n 43)
+           (if #t
+               (add1 "")
+               0))
+         #:ret (ret -Bottom)]
 
         )
   (test-suite
