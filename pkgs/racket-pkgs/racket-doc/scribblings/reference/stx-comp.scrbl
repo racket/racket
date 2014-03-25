@@ -32,7 +32,7 @@ suitable expression context at the @tech{phase level} indicated by
 ]}
 
 
-@defproc[(free-identifier=? [a-id syntax?] [b-id syntax?]
+@defproc[(free-identifier=? [a-id identifier?] [b-id identifier?]
                             [a-phase-level (or/c exact-integer? #f)
                                            (syntax-local-phase-level)]
                             [b-phase-level (or/c exact-integer? #f)
@@ -70,15 +70,15 @@ results with @racket[syntax-e].
 (check kar)
 ]}
 
-@defproc[(free-transformer-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
+@defproc[(free-transformer-identifier=? [a-id identifier?] [b-id identifier?]) boolean?]{
 
 Same as @racket[(free-identifier=? a-id b-id (add1 (syntax-local-phase-level)))].}
 
-@defproc[(free-template-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
+@defproc[(free-template-identifier=? [a-id identifier?] [b-id identifier?]) boolean?]{
 
 Same as @racket[(free-identifier=? a-id b-id (sub1 (syntax-local-phase-level)))].}
 
-@defproc[(free-label-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
+@defproc[(free-label-identifier=? [a-id identifier?] [b-id identifier?]) boolean?]{
 
 Same as @racket[(free-identifier=? a-id b-id #f)].}
 
@@ -93,7 +93,7 @@ first one in @racket[ids] that is a duplicate), otherwise the result
 is @racket[#f].}
 
 
-@defproc[(identifier-binding [id-stx syntax?]
+@defproc[(identifier-binding [id-stx identifier?]
                              [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)])
          (or/c 'lexical
@@ -177,7 +177,7 @@ transformer, so that @racket[identifier-binding] is consistent with
 @racket[free-identifier=?].}
 
 
-@defproc[(identifier-transformer-binding [id-stx syntax?])
+@defproc[(identifier-transformer-binding [id-stx identifier?])
          (or/c 'lexical
                #f
                (listof module-path-index?
@@ -191,7 +191,7 @@ transformer, so that @racket[identifier-binding] is consistent with
 Same as @racket[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
 
 
-@defproc[(identifier-template-binding [id-stx syntax?])
+@defproc[(identifier-template-binding [id-stx identifier?])
          (or/c 'lexical
                #f
                (listof module-path-index?
@@ -205,7 +205,7 @@ Same as @racket[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
 Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 
 
-@defproc[(identifier-label-binding [id-stx syntax?])
+@defproc[(identifier-label-binding [id-stx identifier?])
          (or/c 'lexical
                #f
                (listof module-path-index?
@@ -219,7 +219,7 @@ Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 Same as @racket[(identifier-binding id-stx #f)].}
 
 
-@defproc[(identifier-binding-symbol [id-stx syntax?]
+@defproc[(identifier-binding-symbol [id-stx identifier?]
                                     [phase-level (or/c exact-integer? #f)
                                                  (syntax-local-phase-level)])
          symbol?]{
