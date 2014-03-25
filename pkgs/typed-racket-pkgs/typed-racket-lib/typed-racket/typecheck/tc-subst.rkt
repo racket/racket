@@ -109,7 +109,7 @@
              [else f])]))
   (match f
     [(ImpFilter: ant consq)
-     (make-ImpFilter (subst-filter ant k o (not polarity)) (ap consq))]
+     (-imp (subst-filter ant k o (not polarity)) (ap consq))]
     [(AndFilter: fs) (apply -and (map ap fs))]
     [(OrFilter: fs) (apply -or (map ap fs))]
     [(Bot:) -bot]

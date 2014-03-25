@@ -114,7 +114,10 @@
 (define (-imp p1 p2)
   (match* (p1 p2)
     [((Bot:) _) -top]
+    [(_ (Top:)) -top]
     [((Top:) _) p2]
+    [((TypeFilter: t p o) (Bot:)) (-not-filter t o p)]
+    [((NotTypeFilter: t p o) (Bot:)) (-filter t o p)]
     [(_ _) (make-ImpFilter p1 p2)]))
 
 (define (-or . args)

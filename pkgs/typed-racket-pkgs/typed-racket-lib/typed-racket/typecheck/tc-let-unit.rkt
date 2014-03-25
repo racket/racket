@@ -45,8 +45,8 @@
                                 (for/list ([n (in-list names)]
                                            [f+ (in-list fs+)]
                                            [f- (in-list fs-)])
-                                  (list (make-ImpFilter (-not-filter (-val #f) n) f+)
-                                        (make-ImpFilter (-filter (-val #f) n) f-)))))]
+                                  (list (-imp (-not-filter (-val #f) n) f+)
+                                        (-imp (-filter (-val #f) n) f-)))))]
                 [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
                  (values ts e-ts null)]))))
      (with-cond-contract append-region ([p1 (listof Filter?)]
