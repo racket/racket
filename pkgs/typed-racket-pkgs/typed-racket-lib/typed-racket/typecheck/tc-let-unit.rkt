@@ -4,7 +4,7 @@
          (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
-         (env lexical-env type-alias-env type-alias-helper
+         (env lexical-env type-alias-env type-alias-helper mvar-env
               global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
          syntax/free-vars
@@ -45,8 +45,10 @@
                                 (for/list ([n (in-list names)]
                                            [f+ (in-list fs+)]
                                            [f- (in-list fs-)])
-                                  (list (-imp (-not-filter (-val #f) n) f+)
-                                        (-imp (-filter (-val #f) n) f-)))))]
+                                  (if (is-var-mutated? n)
+                                      (list)
+                                      (list (-imp (-not-filter (-val #f) n) f+)
+                                            (-imp (-filter (-val #f) n) f-))))))]
                 [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
                  (values ts e-ts null)]))))
      (with-cond-contract append-region ([p1 (listof Filter?)]
