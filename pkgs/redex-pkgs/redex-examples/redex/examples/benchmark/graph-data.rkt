@@ -74,10 +74,10 @@
         30 2.042))
 
 (define (bug-file? f)
-    (define m (regexp-match #rx"^.*/(.*-[0-9]\\.rkt)$"
-                            (path->string f)))
-    (and m
-        (second m)))
+  (define m (regexp-match #rx"^.*/(.*-[0-9]\\.rkt)$"
+                          (path->string f)))
+  (and m
+       (second m)))
 
 (define (all-bug-files)
   (sort
@@ -123,8 +123,11 @@
     
     (define name-avgs (make-hash))
   
+    (define (rewrite-name n)
+      (regexp-replace #rx"verification-" n "rvm-"))
+    
     (for ([b (in-list (all-bug-files))])
-      (hash-set! name-avgs b '()))
+      (hash-set! name-avgs (rewrite-name b) '()))
     
     (define data-stats
       (let loop ([d data]
@@ -140,7 +143,7 @@
            (for/list ([(name/type times) (in-hash sorted-times)]
                       #:unless (and ((length times) . < . (min-trials))
                                     (not (equal? (cdr name/type) 'ordered))))
-             (define name (last (regexp-split #rx"/" (car name/type))))
+             (define name (rewrite-name (last (regexp-split #rx"/" (car name/type)))))
              (cond 
                [(equal? (cdr name/type) (order-by))
                 (hash-set! name-avgs name (mean times))]
@@ -190,7 +193,7 @@
     (define (plot-type type n)
       (define this-type
         (map (λ (d)
-               (define name (last (regexp-split #rx"/" (car d))))
+               (define name (rewrite-name (last (regexp-split #rx"/" (car d)))))
                (cons name (cdr d)))
              (filter
               (λ (l)
@@ -198,16 +201,16 @@
                      (list-ref l 2)))
               data-stats)))
       (define ps
-       (points
-        (map
-         (λ (l)
-           (list (get-name-num (list-ref l 0) n) (list-ref l 2)))
-         this-type)
-        #:label (string-append (hash-ref type-names type)
-                               (format " (~s successes)" (length this-type)))
-        #:sym (hash-ref type-symbols type)
-        #:size (* (point-size) 1.5)
-        #:color (add1 n)))
+        (points
+         (map
+          (λ (l)
+            (list (get-name-num (list-ref l 0) n) (list-ref l 2)))
+          this-type)
+         #:label (string-append (hash-ref type-names type)
+                                (format " (~s successes)" (length this-type)))
+         #:sym (hash-ref type-symbols type)
+         #:size (* (point-size) 1.5)
+         #:color (add1 n)))
       (if (equal? type 'ordered)
           ps
           (list (error-bars
