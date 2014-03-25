@@ -27,8 +27,8 @@ Reads (X)HTML from a port, producing an @racket[html] instance.}
 @defproc[(read-html-as-xml [port input-port?])
          (listof content/c)]{
  
-Reads HTML from a port, producing an @xexpr compatible with the
-@racketmodname[xml] library (which defines @racket[content/c]).}
+Reads HTML from a port, producing a list of XML content, each of which could be
+turned into an @|xexpr|, if necessary, with @racket[xml->xexpr].}
 
 @defboolparam[read-html-comments v]{
  If @racket[v] is not @racket[#f], then comments are read and returned. Defaults to @racket[#f].
