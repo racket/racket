@@ -88,6 +88,31 @@
                                             (regexp-replace #rx"\n$" (get-output-string o) "")))))
                                    flows))
                             flowss)]
+                 [alignss
+                  (cond
+                   [(ormap (lambda (v) (and (table-cells? v) v)) (style-properties (table-style i)))
+                    => (lambda (tc)
+                         (for/list ([l (in-list (table-cells-styless tc))])
+                           (for/list ([s (in-list l)])
+                             (define p (style-properties s))
+                             (cond
+                              [(member 'right p) 'right]
+                              [(member 'center p) 'center]
+                              [else 'left]))))]
+                   [(ormap (lambda (v) (and (table-columns? v) v)) (style-properties (table-style i)))
+                    => (lambda (tc)
+                         (make-list
+                          (length flowss)
+                          (for/list ([s (in-list (table-columns-styles tc))])
+                            (define p (style-properties s))
+                            (cond
+                             [(member 'right p) 'right]
+                             [(member 'center p) 'center]
+                             [else 'left]))))]
+                   [else
+                    (if (null? flowss)
+                        null
+                        (make-list (length flowss) (make-list (length (car flowss)) 'left)))])]
                  [widths (map (lambda (col)
                                 (for/fold ([d 0]) ([i (in-list col)])
                                   (if (eq? i 'cont)
@@ -95,7 +120,8 @@
                                       (apply max d (map string-length i)))))
                               (apply map list strs))]
                  [x-length (lambda (col) (if (eq? col 'cont) 0 (length col)))])
-            (for/fold ([indent? #f]) ([row (in-list strs)])
+            (for/fold ([indent? #f]) ([row (in-list strs)]
+                                      [aligns (in-list alignss)])
               (let ([h (apply max 0 (map x-length row))])
                 (let ([row* (for/list ([i (in-range h)])
                               (for/list ([col (in-list row)])
@@ -106,11 +132,18 @@
                     (when indent? (indent))
                     (for/fold ([space? #f])
                               ([col (in-list sub-row)]
-                               [w (in-list widths)])
+                               [w (in-list widths)]
+                               [align (in-list aligns)])
                       ;; (when space? (display " "))
                       (let ([col (if (eq? col 'cont) "" col)])
+                        (define gap (max 0 (- w (string-length col))))
+                        (case align
+                          [(right) (display (make-string gap #\space))]
+                          [(center) (display (make-string (quotient gap 2) #\space))])
                         (display col)
-                        (display (make-string (max 0 (- w (string-length col))) #\space)))
+                        (case align
+                          [(left) (display (make-string gap #\space))]
+                          [(center) (display (make-string (- gap (quotient gap 2)) #\space))]))
                       #t)
                     (newline)
                     #t)))

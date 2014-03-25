@@ -324,6 +324,13 @@
 
 ;; ----------------------------------------
 
+(define (cell-spec/c c)
+  (define rc
+    (recursive-contract (or/c c
+                              empty
+                              (cons/c rc rc))))
+  rc)
+
 (provide/contract
  [para (->* ()
             (#:style (or/c style? string? symbol? #f ))
@@ -339,7 +346,10 @@
                 compound-paragraph?)]
  [tabular (->* ((listof (listof (or/c 'cont block? content?))))
                (#:style (or/c style? string? symbol? #f)
-                #:sep (or/c content? block? #f))
+                #:sep (or/c content? block? #f)
+                #:column-properties (listof any/c)
+                #:row-properties (listof any/c)
+                #:cell-properties (listof (listof any/c)))
                table?)])
 
 (define (convert-block-style style)
@@ -360,7 +370,12 @@
   (make-compound-paragraph (convert-block-style style)
                            (decode-flow c)))
 
-(define (tabular #:style [style #f] #:sep [sep #f] cells)
+(define (tabular #:style [style #f]
+                 #:sep [sep #f]
+                 #:column-properties [column-properties null]
+                 #:row-properties [row-properties null]
+                 #:cell-properties [cell-properties null]
+                 cells)
   (define (nth-str pos)
     (case (modulo pos 10)
       [(1) "st"]
@@ -387,7 +402,148 @@
        'tabular
        (format "~a~a row starts with 'cont: " pos (nth-str pos))
        row)))
-  (make-table (convert-block-style style)
+  (make-table (let ([s (convert-block-style style)])
+                (define n-orig-cols (if (null? cells)
+                                        0
+                                        (length (car cells))))
+                (define n-cols (if sep
+                                   (max 0 (sub1 (* n-orig-cols 2)))
+                                   n-orig-cols))
+                (define n-rows (length cells))
+                (unless (null? cells)
+                  (when ((length column-properties) . > . n-orig-cols)
+                    (raise-mismatch-error
+                     'tabular
+                     "column properties list is too long: "
+                     column-properties)))
+                (when ((length row-properties) . > . n-rows)
+                  (raise-mismatch-error
+                   'tabular
+                   "row properties list is too long: "
+                   row-properties))
+                (when ((length cell-properties) . > . n-rows)
+                  (raise-mismatch-error
+                   'tabular
+                   "cell properties list is too long: "
+                   cell-properties))
+                (unless (null? cells)
+                  (for ([row (in-list cell-properties)])
+                    (when ((length row) . > . n-orig-cols)
+                      (raise-mismatch-error
+                       'tabular
+                       "row list within cell properties list is too long: "
+                       row))))
+                ;; Expand given column and cell properties lists to match
+                ;; the dimensions of the given `cells` by duplicating
+                ;; the last element of a list as needed (and ignoring
+                ;; extra elements):
+                (define (make-full-column-properties column-properties)
+                  (let loop ([column-properties column-properties]
+                             [n 0]
+                             [prev null])
+                    (cond
+                     [(= n n-cols) null]
+                     [(null? column-properties)
+                      (if (or (zero? n) (not sep))
+                          (cons prev (loop null (add1 n) prev))
+                          (list* prev prev (loop null (+ n 2) prev)))]
+                     [else
+                      (define (to-list v) (if (list? v) v (list v)))
+                      (define props (to-list (car column-properties)))
+                      (define rest (loop (cdr column-properties)
+                                         (if (or (zero? n) (not sep))
+                                             (add1 n)
+                                             (+ n 2))
+                                         props))
+                      (if (or (zero? n) (not sep))
+                          (cons props rest)
+                          (list* null props rest))])))
+                (define full-column-properties
+                  (make-full-column-properties column-properties))
+                (define (make-full-cell-properties cell-properties)
+                  (let loop ([cell-properties cell-properties]
+                             [n 0]
+                             [prev (make-list n-cols null)])
+                    (cond
+                     [(= n n-rows) null]
+                     [(null? cell-properties)
+                      (cons prev (loop null (add1 n) prev))]
+                     [else
+                      (define props (make-full-column-properties (car cell-properties)))
+                      (cons props
+                            (loop (cdr cell-properties)
+                                  (add1 n)
+                                  props))])))
+                (define full-cell-properties
+                  (for/list ([c-row (in-list (make-full-cell-properties cell-properties))]
+                             [r-row (in-list (make-full-cell-properties (map list row-properties)))])
+                    (for/list ([c (in-list c-row)]
+                               [r (in-list r-row)])
+                      (append c r))))
+                (define all-cell-properties
+                  (and (or (pair? row-properties)
+                           (pair? cell-properties))
+                       (if (null? column-properties)
+                           full-cell-properties
+                           (for/list ([row (in-list full-cell-properties)])
+                             (for/list ([cell (in-list row)]
+                                        [col (in-list full-column-properties)])
+                               (append cell col))))))
+                (define all-column-properties
+                  (and (pair? column-properties)
+                       full-column-properties))
+                ;; Will werge `cell-properties` and `column-properties` into
+                ;; `s`. Start by finding any existing `table-columns`
+                ;; and `table-cells` properties with the right number of
+                ;; styles:
+                (define props (style-properties s))
+                (define tc (and all-column-properties
+                                (let ([tc (ormap (lambda (v) (and (table-columns? v) v))
+                                                 props)])
+                                  (if (and tc
+                                           (= (length (table-columns-styles tc))
+                                              n-cols))
+                                      tc
+                                      #f))))
+                (define tl (and all-cell-properties
+                                (let ([tl (ormap (lambda (v) (and (table-cells? v) v))
+                                                 props)])
+                                  (if (and tl
+                                           (= (length (table-cells-styless tl))
+                                              n-rows)
+                                           (andmap (lambda (cl)
+                                                     (= (length cl) n-cols))
+                                                   (table-cells-styless tl)))
+                                      tl
+                                      #f))))
+                ;; Merge:
+                (define (cons-maybe v l) (if v (cons v l) l))
+                (make-style (style-name s)
+                            (cons-maybe
+                             (and all-column-properties
+                                  (table-columns
+                                   (if tc
+                                       (for/list ([ps (in-list all-column-properties)]
+                                                  [cs (in-list (table-columns-styles tc))])
+                                         (make-style (style-name cs)
+                                                     (append ps (style-properties cs))))
+                                       (for/list ([ps (in-list all-column-properties)])
+                                         (make-style #f ps)))))
+                             (cons-maybe
+                              (and all-cell-properties
+                                   (table-cells
+                                    (if tl
+                                        (for/list ([pss (in-list all-cell-properties)]
+                                                   [css (in-list (table-cells-styless tl))])
+                                          (for/list ([ps (in-list pss)]
+                                                     [cs (in-list css)])
+                                            (make-style (style-name cs)
+                                                        (append ps (style-properties cs)))))
+                                        (for/list ([pss (in-list all-cell-properties)])
+                                          (for/list ([ps (in-list pss)])
+                                            (make-style #f ps))))))
+                              (remq tc (remq tl props))))))
+              ;; Process cells:
               (map (lambda (row)
                      (define (cvt cell)
                        (cond

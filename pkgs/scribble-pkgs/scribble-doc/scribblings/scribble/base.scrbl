@@ -241,22 +241,87 @@ Returns @racket[#t] if @racket[v] is an item produced by
 
 @defproc[(tabular [cells (listof (listof (or/c block? content? 'cont)))]
                   [#:style style (or/c style? string? symbol? #f) #f]
-                  [#:sep sep (or/c block? content? #f) #f])
+                  [#:sep sep (or/c block? content? #f) #f]
+                  [#:column-properties column-properties (listof any/c) '()]
+                  [#:row-properties row-properties (listof any/c) '()]
+                  [#:cell-properties cell-properties (listof (listof any/c)) '()])
          table?]{
 
-Creates a @tech{table} with the given content, which is supplies as a
-list of rows, where each row has a list of cells. The length of all
-rows must match.
+Creates a @tech{table} with the given @racket[cells] content, which is
+supplied as a list of rows, where each row has a list of cells. The
+length of all rows must match.
 
-If @racket[sep] is not @racket[#f], it is inserted between every
-column in the table. Otherwise, the default style places no space
-between table columns.
-
-Use @racket['cont] as a cell to continue the content of the preceding
-cell in a row in the space that would otherwise be used for a new
-cell. A @racket['cont] must not appear as the first cell in a row.
+Use @racket['cont] in @racket[cells] as a cell to continue the content
+of the preceding cell in a row in the space that would otherwise be
+used for a new cell. A @racket['cont] must not appear as the first
+cell in a row.
 
 The @racket[style] argument is handled the same as @racket[para].
+
+If @racket[sep] is not @racket[#f], it is inserted as a new column
+between every column in the table; note that any
+@racket[table-columns] or @racket[table-cells] property in
+@racket[style] must take the added columns into account. Otherwise,
+the default style places no space between table columns.
+
+The @racket[column-properties], @racket[row-properties], and
+@racket[cell-properties] arguments specify @tech{style properties} for
+the columns and cells of a table; see @racket[table-columns] and
+@racket[table-cells] for a description of recognized properties. The
+lists do not contain entries for columns potentially introduced for
+@racket[sep], and when non-empty, they are extended as needed to match
+the table size determined by @racket[cells]:
+
+@itemlist[
+
+ @item{If the length of @racket[column-properties] is less than the
+       length of each row in @racket[cells], the last item of the list
+       is duplicated to make the list long enough.}
+
+ @item{If the length of @racket[row-properties] is less than the
+       length of @racket[cells], the last item of the list is
+       duplicated to make the list long enough.}
+
+ @item{If the length of @racket[cell-properties] is less than the
+        number of rows in @racket[cells], then the last element is
+        duplicated to make the list long enough. Each list within
+        @racket[cell-properties] is treated like a
+        @racket[column-properties] list---expanded as needed to match
+        the number of columns in each row.}
+
+]
+
+Each element of @racket[column-properties] or @racket[row-properties]
+is either a list of @tech{style property} values or a non-list element
+that is wrapped as a list. Similarly, for each list that is an element
+of @racket[cell-properties], the list's non-list elements are wrapped
+as nested lists.
+
+If @racket[column-properties] is non-empty, then its list of property
+lists is converted into a @racket[table-columns] @tech{style property}
+that is added to the style specified by @racket[style]---or merged
+with an existing @racket[table-columns] @tech{style property} that
+matches the column shape of @racket[cells]. In addition, if either
+@racket[row-properties] or @racket[cell-properties] is non-empty, the
+property lists of @racket[column-properties] are merged
+with the property lists of @racket[row-properties] and
+@racket[cell-properties]. If @racket[row-properties] or
+@racket[cell-properties] is non-empty, the merged lists are
+converted into a @racket[table-cells] @tech{style property} that is
+added to the style specified by @racket[style]---or merged with an
+existing @racket[table-cells] @tech{style property} that matches the
+shape of @racket[cells].
+
+@margin-note{If the style lists for @racket[column-properties] are
+both merged with @racket[cell-properties] and converted to
+@racket[table-columns], then @racket[style] will contain some
+redundant information. In that case, @racket[column-attributes]
+properties will be used from @racket[table-columns], while other
+properties will be used from the merger into @racket[table-cells].}
+
+@history[#:changed "1.1" @elem{Added the @racket[#:column-properties],
+                               @racket[#:row-properties],
+                               and @racket[#:cell-properties] arguments.}]
 
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
@@ -266,6 +331,7 @@ Examples:
                (list "soup" "tonjiru"))]
 
 @tabular[#:style 'boxed
+         #:column-properties '(left right)
          (list (list @bold{recipe}   @bold{vegetable})
                (list "caldo verde"   "kale")
                (list "kinpira gobō"  "burdock")
@@ -277,6 +343,7 @@ Examples:
                  (list "soup" "tonjiru"))]
 
   @tabular[#:style 'boxed
+           #:column-properties '(left right)
            (list (list @bold{recipe}   @bold{vegetable})
                  (list "caldo verde"   "kale")
                  (list "kinpira gobō"  "burdock")

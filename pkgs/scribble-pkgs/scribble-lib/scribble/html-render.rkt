@@ -1490,7 +1490,10 @@
                                     (pair? (style-properties column-style)))
                                (style->attribs (make-style
                                                 #f
-                                                (filter attributes? 
+                                                (filter (lambda (a)
+                                                          (or (attributes? a)
+                                                              (color-property? a)
+                                                              (background-color-property? a)))
                                                         (style-properties column-style))))
                                null)
                          ,@(if (and (pair? (cdr ds))

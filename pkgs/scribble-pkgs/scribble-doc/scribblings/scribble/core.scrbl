@@ -469,7 +469,7 @@ The recognized @tech{style properties} are as follows:
        to the part title.}
 
  @item{@racket[background-color-property] structure --- For HTML,
-       Applies a color to the background of the part title.}
+       applies a color to the background of the part title.}
 
  @item{@racket[hover-property] structure --- For HTML, adds a text
        label to the title to be shown when the mouse hovers over
@@ -588,10 +588,12 @@ The following @tech{style properties} are currently recognized:
  @item{@racket[table-columns] structure --- Provides column-specific
        styles, but only @racket[column-attributes] properties (if any)
        are used if a @racket[table-cells] structure is included as a
-       @tech{style property}.}
+       @tech{style property}. See @racket[table-cells] for information
+       about how a column style is used for each cell.}
 
  @item{@racket[table-cells] structure --- Provides cell-specific
-       styles.}
+       styles. See @racket[table-cells] for information about how the
+       styles are used.}
 
  @item{@racket[attributes] structure --- Provides additional HTML
        attributes for the @tt{<table>} tag.}
@@ -1109,8 +1111,8 @@ renderer, but at the recognized set includes at least
 are used as RGB levels.
 
 When rendering to HTML, a @racket[color-property] is also recognized
-for a @tech{block} or @racket[part] (and used for the title in the
-latter case).}
+for a @tech{block}, @racket[part] (and used for the title in the
+latter case)or cell in a @racket[table].}
 
 
 @defstruct[background-color-property ([color (or/c string? (list/c byte? byte? byte?))])]{
@@ -1126,7 +1128,7 @@ styles.
 If a cell style has a string name, it is used as an HTML class for the
 @tt{<td>} tag or as a Latex command name.
 
-The following symbols are recognized as cell-@tech{style properties}:
+The following are recognized as cell-@tech{style properties}:
 
 @itemize[
 
@@ -1144,11 +1146,19 @@ The following symbols are recognized as cell-@tech{style properties}:
 
  @item{@racket['vcenter] --- Center the cell content vertically.}
 
+ @item{@racket[color-property] structure --- For HTML, applies a color
+       to the cell content.}
+
+ @item{@racket[background-color-property] structure --- For HTML,
+       applies a color to the background of the cell.}
+
+ @item{@racket[attributes] --- Provides additional HTML attributes
+       for the cell's @tt{<td>} tag.}
+
 ]
 
-In addition, for HTML output, @racket[attributes] structures as
-@tech{style properties} can add arbitrary attributes to a cell's
-@tt{<td>} tag.}
+@history[#:changed "1.1" @elem{Added @racket[color-property] and 
+                               @racket[background-color-property] support.}]}
 
 
 @defstruct[table-columns ([styles (listof style?)])]{

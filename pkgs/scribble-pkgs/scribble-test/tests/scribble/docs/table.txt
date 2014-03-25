@@ -1,0 +1,9 @@
+A    -  B   -      C-    D
+apple-banana-coconut-donut
+
+    A-  B   -C      -D    
+apple-banana-coconut-donut
+a    -b     -c      -d    
+
+    A-  B   -C      -D    
+apple-banana-coconut-donut
