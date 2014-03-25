@@ -120,8 +120,8 @@
       [else
        (define base-rest-type
          (cond
-          [rest-ty rest-ty]
           [(type-annotation rest) (get-type rest #:default Univ)]
+          [rest-ty rest-ty]
           [else Univ]))
        (define extra-types
          (if (<= arg-len tys-len)
