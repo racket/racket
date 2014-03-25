@@ -80,6 +80,7 @@
               (t (-polydots (a) (->... (list) (a a) -Symbol)))
 
               (t (-mu x (-Syntax x)))
+              (t (-> (-> Univ -Bottom : -bot-filter) -Bottom : -bot-filter))
 
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)

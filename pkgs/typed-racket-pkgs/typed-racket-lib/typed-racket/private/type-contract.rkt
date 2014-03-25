@@ -17,6 +17,7 @@
  racket/dict
  unstable/list
  unstable/sequence
+ (types abbrev)
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
  (prefix-in c: racket/contract)
@@ -513,6 +514,9 @@
          (match a
            ;; functions with no filters or objects
            [(arr: dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst drst kws)
+            (convert-arr a)]
+           ;; Functions that don't return
+           [(arr: dom (Values: (list (Result: (== -Bottom) _ _) ...)) rst drst kws)
             (convert-arr a)]
            ;; functions with filters or objects
            [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst drst kws)
