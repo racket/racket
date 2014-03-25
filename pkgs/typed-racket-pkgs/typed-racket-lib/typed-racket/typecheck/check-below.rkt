@@ -101,9 +101,9 @@
     ;; These two cases have to be first so that bottom (exceptions, etc.) can be allowed in cases
     ;; where multiple values are expected.
     ;; We can ignore the filters and objects in the actual value because they would never be about a value
+    [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
     [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
      (fix-results expected)]
-    [((or (tc-any-results:) (tc-results: _)) (tc-any-results:)) tr1]
 
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))

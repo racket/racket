@@ -95,6 +95,8 @@
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
       (ret (list Univ) (list -true-filter) (list (make-Path empty #'x))))
 
+    (test-below (ret -Bottom) tc-any-results #:result (ret -Bottom))
+    (test-below (ret Univ) tc-any-results #:result (ret Univ))
 
     ;; Enable these once check-below is fixed
     ;; Currently does not fail
