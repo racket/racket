@@ -124,8 +124,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"
           "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
-          "../types/utils.rkt"
-          "../types/classes.rkt"
+          ;"../types/utils.rkt"
+          ;"../types/classes.rkt"
           "for-clauses.rkt"
           'struct-extraction)
          "../types/numeric-predicates.rkt"
@@ -137,6 +137,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; of loading by not having them when they are unneeded
 (begin-for-syntax 
   (lazy-require ["../rep/type-rep.rkt" (make-Opaque Error?)]
+                ["../types/utils.rkt" (fv)]
                 [syntax/define (normalize-definition)]
                 [typed-racket/private/parse-type (parse-type)]
                 [typed-racket/private/type-contract (type->contract type->contract-fail)]
