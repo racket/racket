@@ -287,15 +287,16 @@
        (values (enum-ith enum (random-natural the-size))
                'ignored))]))
 
+;; pick-an-index : ([0,1] -> Nat) ∪ (-> Nat)
 (define (pick-an-index [prob-of-zero 0.01])
   (max (random-natural/no-mean prob-of-zero)
        (random-natural/no-mean prob-of-zero)
        (random-natural/no-mean prob-of-zero)))
 
-;; (: random-natural/no-mean (-> Real Natural))
+;; random-natural/no-mean : [0,1] -> Nat
 (define (random-natural/no-mean prob-zero)
-  (define n (exact-floor (sample (geometric-dist prob-zero))))
-  (define m1 (expt 2 n))
+  (define x (sample (geometric-dist prob-zero)))
+  (define m1 (expt 2 (exact-floor x)))
   (define m0 (quotient m1 2))
   (random-integer m0 m1))
 
