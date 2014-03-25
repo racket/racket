@@ -287,7 +287,7 @@
        (values (enum-ith enum (random-natural the-size))
                'ignored))]))
 
-;; pick-an-index : ([0,1] -> Nat) ∪ (-> Nat)
+;; pick-an-index : ([0,1] -> Nat) ∩ (-> Nat)
 (define (pick-an-index [prob-of-zero 0.01])
   (max (random-natural/no-mean prob-of-zero)
        (random-natural/no-mean prob-of-zero)
