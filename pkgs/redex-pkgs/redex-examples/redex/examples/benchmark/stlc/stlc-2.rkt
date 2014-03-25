@@ -1,6 +1,6 @@
 #lang racket/base
 
-(define the-error "the ((cons number) v) value has been omitted")
+(define the-error "the ((cons v) v) value has been omitted")
 
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
