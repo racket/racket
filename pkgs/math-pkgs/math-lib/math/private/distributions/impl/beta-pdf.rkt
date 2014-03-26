@@ -17,6 +17,12 @@
          (if (fl= x 1.0) +inf.0 -inf.0)]
         [(or (x . fl< . 0.0) (x . fl> . 1.0))
          -inf.0]
+        ;; Avoid (* 0.0 -inf.0) by taking a limit from the right
+        [(and (fl= a 1.0) (fl= x 0.0))
+         (- (fllog-beta 1.0 b))]
+        ;; Avoid (* 0.0 -inf.0) by taking a limit from the left
+        [(and (fl= b 1.0) (fl= x 1.0))
+         (- (fllog-beta a 1.0))]
         [else
          (flsum (list (fl* (fl- a 1.0) (fllog x))
                       (fl* (fl- b 1.0) (fllog1p (- x)))

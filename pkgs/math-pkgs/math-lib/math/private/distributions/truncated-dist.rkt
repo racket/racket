@@ -4,6 +4,7 @@
          racket/promise
          "../../flonum.rkt"
          "dist-struct.rkt"
+         "dist-functions.rkt"
          "utils.rkt")
 
 (provide Truncated-Dist
