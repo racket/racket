@@ -30,7 +30,7 @@
  ***********************************************************************/
 
 
-#ifndef __lightning_asm_common_h
+#ifndef __lightning_asm_common_h_
 #define __lightning_asm_common_h_
 
 

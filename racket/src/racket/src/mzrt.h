@@ -85,6 +85,11 @@ int mzrt_sema_destroy(mzrt_sema *sema);
 
 /****************** Compare and Swap *******************************/
 
+#ifdef __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 #define mz_CAS_T uintptr_t
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define mz_CAS_64
@@ -121,6 +126,11 @@ static MZ_INLINE void mzrt_ensure_max_cas(uintptr_t *atomic_val, uintptr_t len) 
     }
   }
 }
+
+#ifdef __clang__
+# pragma clang diagnostic pop
+#endif
+
 #endif
 
 #endif

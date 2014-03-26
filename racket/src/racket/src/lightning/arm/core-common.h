@@ -29,7 +29,7 @@
  *
  ***********************************************************************/
 
-#ifndef __lightning_core_common_h
+#ifndef __lightning_core_common_h_
 #define __lightning_core_common_h_
 
 #define JIT_NOREG			(-1)

@@ -2360,6 +2360,7 @@ static MZ_INLINE rxpos l_strchr_ci(char *str, rxpos a, int l, int c)
   return -1;
 }
 
+#if 0
 static MZ_INLINE int in_ranges(char *str, rxpos a, int l, int c)
 {
   int i;
@@ -2389,6 +2390,7 @@ static MZ_INLINE int in_ranges_ci(char *str, rxpos a, int l, int c)
 
   return 0;
 }
+#endif
 
 /*
  * regexec and friends

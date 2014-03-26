@@ -30,7 +30,7 @@
  ***********************************************************************/
 
 
-#ifndef __lightning_core_common_h
+#ifndef __lightning_core_common_h_
 #define __lightning_core_common_h_
 
 /* jit_code: could be a union of many possible function 
