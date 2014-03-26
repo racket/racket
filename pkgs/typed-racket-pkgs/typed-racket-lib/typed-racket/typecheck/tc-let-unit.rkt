@@ -22,6 +22,9 @@
 (export tc-let^)
 
 ;; get-names+objects (listof (listof identifier?)) (listof tc-results?) -> (listof (list/c identifier Object?))
+;; Given a list of bindings and the tc-results for the corresponding expressions, return a list of
+;; tuples of the binding-name and corresponding objects from the results.
+;; This is used to replace the names with the objects after the names go out of scope.
 (define (get-names+objects namess results)
   (append*
     (for/list ([names namess] [results results])
@@ -29,6 +32,9 @@
         [(tc-results: _ _ os)
          (map list names os)]))))
 
+;; Checks that the body has the expected type when names are bound to the types spcified by results.
+;; The exprs are also typechecked by using expr->type.
+;; TODO: make this function sane.
 (define/cond-contract (do-check expr->type namess results expected-results exprs body expected)
      ((syntax? tc-results/c . -> . any/c)
       (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
