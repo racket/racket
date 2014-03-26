@@ -209,46 +209,62 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; the following has been added by stamourv
+;; the following has been added by stamourv, then replaced with implementations
+;; adapted from Ian Johnson
 
-;; borders may be of slightly uneven width, sadly
-(define-values (ellipse/border
-                rectangle/border)
-  (let ()
-    (define ((mk shape) w h
-             #:color (color "white")
-             #:border-color (border-color "black")
-             #:border-width (border-width 2))
-      (cc-superimpose
-       (colorize (shape w h) border-color)
-       (colorize (shape (- w (* 2 border-width))
-                        (- h (* 2 border-width)))
-                 color)))
-    (values (mk filled-ellipse)
-            (mk filled-rectangle))))
+(define (draw-shape/border dc-path color border-color border-width)
+  (define-values (color* style)
+    (if color
+        (values color 'solid)
+        (values "white" 'transparent)))
+  (let-values ([(x y w h) (send dc-path get-bounding-box)])
+    (dc (λ (dc dx dy)
+          (define old-brush (send dc get-brush))
+          (define old-pen   (send dc get-pen))
+          (send dc set-brush
+                (send the-brush-list find-or-create-brush color* style))
+          (send dc set-pen (send the-pen-list
+                                 find-or-create-pen
+                                 border-color
+                                 border-width
+                                 'solid))
+          (send dc draw-path dc-path (- dx x) (- dy y))
+          (send dc set-brush old-brush)
+          (send dc set-pen   old-pen))
+        w h)))
 
-(define (rounded-rectangle/border
-             w h
-             #:color (color "white")
-             #:border-color (border-color "black")
-             #:border-width (border-width 2)
-             #:corner-radius (radius -0.25)
-             #:angle (angle 0))
-  (cc-superimpose
-    (colorize (filled-rounded-rectangle w h radius #:angle angle) border-color)
-    (colorize (filled-rounded-rectangle 
-                (- w (* 2 border-width))
-                (- h (* 2 border-width)) radius #:angle angle)
-              color)))
-
+(define (ellipse/border ew eh
+                        #:color [color #f]
+                        #:border-color [border-color "black"]
+                        #:border-width [border-width 2])
+  (define dc-path (new dc-path%))
+  (send dc-path ellipse 0 0 ew eh)
+  (draw-shape/border dc-path color border-color border-width))
 (define (circle/border d
-                       #:color (color "white")
-                       #:border-color (border-color "black")
-                       #:border-width (border-width 2))
-  (cc-superimpose
-   (colorize (disk d) border-color)
-   (colorize (disk (- d (* 2 border-width)))
-             color)))
+                       #:color [color #f]
+                       #:border-color [border-color "black"]
+                       #:border-width [border-width 2])
+  (ellipse/border d d
+                  #:color color #:border-color border-color
+                  #:border-width border-width))
+(define (rounded-rectangle/border w h
+                                  #:color [color #f]
+                                  #:border-color [border-color "black"]
+                                  #:border-width [border-width 2]
+                                  #:corner-radius [corner-radius -0.25]
+                                  #:angle [angle 0])
+  (define dc-path (new dc-path%))
+  (send dc-path rounded-rectangle 0 0 w h corner-radius)
+  (send dc-path rotate angle)
+  (draw-shape/border dc-path color border-color border-width))
+(define (rectangle/border w h
+                          #:color [color #f]
+                          #:border-color [border-color "black"]
+                          #:border-width [border-width 2]
+                          #:corner-radius [corner-radius -0.25])
+  (define dc-path (new dc-path%))
+  (send dc-path rectangle 0 0 w h)
+  (draw-shape/border dc-path color border-color border-width))
 
 (define shape/border-contract
   (->* [real? real?]

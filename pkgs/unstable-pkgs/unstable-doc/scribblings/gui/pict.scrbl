@@ -296,8 +296,10 @@ Sets @racket[pict-combine] to refer to @racket[combine-id] within each of the
 These functions create shapes with border of the given color and width.
 
 @examples[#:eval the-eval
-(ellipse/border 40 20 #:border-color "blue")
-(rounded-rectangle/border 40 20 #:color "red")
+(ellipse/border 80 40 #:border-color "blue")
+(rounded-rectangle/border 60 60 #:color "red" #:angle 1 #:border-width 3)
+(circle/border 40 #:color "green" #:border-color "purple")
+(rectangle/border 200 20 #:border-width 5)
 ]
 }
 
