@@ -2667,6 +2667,18 @@
            (number? x))
          -Boolean]
 
+       [tc-e/t
+         (let ()
+           (: f (Number -> Number))
+           (define (f x)
+             (cond
+               ((zero? x) x)
+               (else (add1 (f (sub1 x))))))
+
+           (define y (f 7))
+           4)
+         -PosByte]
+
         )
   (test-suite
    "tc-literal tests"

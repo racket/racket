@@ -81,6 +81,7 @@
 
               (t (-mu x (-Syntax x)))
               (t (-> (-> Univ -Bottom : -bot-filter) -Bottom : -bot-filter))
+              (t (-poly (A B) (-> A B (Un A B))))
 
 
               (t/fail ((-poly (a) (-vec a)) . -> . -Symbol)
