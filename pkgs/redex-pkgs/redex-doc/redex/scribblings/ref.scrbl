@@ -2027,8 +2027,15 @@ using the @racket[match-bindings] produced by @racket[match]ing
 @math{t} against @racket[pattern]. The form of @racket[template] controls
 how @math{t} is generated:
 @itemlist[@item{@racket[language @#,ttpattern]:
-                 In this case, @racket[redex-check] randomly generates terms that match
-                 @racket[_pattern].}
+                 In this case, @racket[redex-check] uses an ad hoc strategy for 
+                 generating @racket[_pattern]. For the first 10 seconds, it uses 
+                 in-order enumeration to pick terms. After that, it
+                 alternates back and forth between in-order enumeration
+                 and the ad hoc random generator. After the 10 minute mark,
+                 it switches over to using just the ad hoc random generator.}
+          @item{@racket[language @#,ttpattern #:ad-hoc]:
+                 In this case, @racket[redex-check] uses an ad hoc random generator
+                 to generate terms that match @racket[_pattern].}
           @item{@racket[language @#,ttpattern #:in-order]:
                  In this case, @racket[redex-check] uses an enumeration
                  of @racket[_pattern], checking each @math{t} one at a time}

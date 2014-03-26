@@ -93,6 +93,7 @@
 (define-syntax (redex-check stx)
   (define valid-kws 
     (list* '#:satisfying
+           '#:ad-hoc
            '#:enum
            '#:uniform-at-random
            '#:in-order
@@ -126,13 +127,15 @@
     [(form lang #:satisfying . rest)
      (raise-syntax-error 'redex-check "#:satisfying expected judgment form or metafunction syntax followed by a property" stx #'rest)]
     [(form lang pat #:enum biggest-e property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #'biggest-e #f #f #'kw-args)]
+     (redex-check/pat stx #'form #'lang #'pat #'property #'biggest-e #f #f #f #'kw-args)]
     [(form lang pat #:uniform-at-random p-value property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #f #'p-value #f #'kw-args)]
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #'p-value #f #f #'kw-args)]
     [(form lang pat #:in-order property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #t #'kw-args)]
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #t #f #'kw-args)]
+    [(form lang pat #:ad-hoc property . kw-args)
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #f #t #'kw-args)]
     [(form lang pat property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #f #'kw-args)]))
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #f #f #'kw-args)]))
 
 (define-struct gen-fail ())
 
@@ -217,7 +220,7 @@
                          #,keep-going-stx)))))))
 
 (define-for-syntax (redex-check/pat orig-stx form lang pat property 
-                                    enum-bound-e enum-p-value in-order?
+                                    enum-bound-e enum-p-value in-order? ad-hoc?
                                     kw-args)
   (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
                  (rewrite-side-conditions/check-errs 
@@ -290,11 +293,58 @@
                        (ith-generator #,lang `pattern #,enum-bound-e #,enum-p-value)
                        property att ret (and print? show) (or fix (λ (x) x)) term-match
                        keep-going?)]
-                   [else
+                   [ad-hoc?
                     #`(check-one
                        #,(term-generator lang #'pattern 'redex-check)
                        property att ret (and print? show) fix (and fix term-match)
+                       keep-going?)]
+                   [else
+                    #`(check-one
+                       (default-generator #,lang `pattern)
+                       property att ret (and print? show) (or fix (λ (x) x)) term-match
                        keep-going?)])])))))))
+
+(define (default-generator lang pat)
+  (define ad-hoc-generator ((compile lang 'redex-check) pat))
+  (define enum (with-handlers ([exn:fail? (λ (x) #f)])
+                 ;; would be better if the pat-enumerator were to
+                 ;; return something to indicate failure instead of
+                 ;; raising an exception so that bugs in there wouldn't 
+                 ;; turn into #f here
+                 (pat-enumerator (compiled-lang-enum-table lang) pat)))
+  (cond
+    [enum
+     (define in-bounds (if (= +inf.0 (enum-size enum))
+                           (λ (x) x)
+                           (λ (x) (modulo x (enum-size enum)))))
+     (define start-time (current-inexact-milliseconds))
+     (define interleave-start-attempt #f)
+     (define interleave-time (+ start-time (* 1000 10))) ;; 10 seconds later
+     (define pure-random-start-attempt #f)
+     (define pure-random-time (+ start-time (* 1000 60 10))) ;; 10 minutes later
+     (λ (_size _attempt _retries)
+       (define now (current-inexact-milliseconds))
+       (cond
+         [(<= now interleave-time)
+          (values (enum-ith enum (in-bounds (- _attempt 1))) 'ignored)]
+         [(<= now pure-random-time)
+          (unless interleave-start-attempt (set! interleave-start-attempt _attempt))
+          (define interleave-attempt (- _attempt interleave-start-attempt))
+          (cond
+            [(odd? interleave-attempt) 
+             (ad-hoc-generator _size (/ (- interleave-attempt 1) 2) _retries)]
+            [else
+             (define enum-id (in-bounds (+ interleave-start-attempt (/ interleave-attempt 2) -1)))
+             (values (enum-ith enum enum-id) 'ignored)])]
+         [else
+          (unless pure-random-start-attempt (set! pure-random-start-attempt _attempt))
+          (ad-hoc-generator _size
+                            (+ (- _attempt pure-random-start-attempt)
+                               (quotient (- pure-random-start-attempt pure-random-start-attempt)
+                                         2))
+                            _retries)]))]
+    [else
+     ad-hoc-generator]))
 
 (define (ith-generator lang pat enum-bound enum-p-value)
   (define enum-lang (compiled-lang-enum-table lang))

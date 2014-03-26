@@ -803,7 +803,7 @@
   (test (let/ec k
           (parameterize ([generation-decisions 
                           (decisions #:nt (list (λ _ (k #t))))])
-            (redex-check lang d #t #:attempts 1 #:print? #f #:attempt-size add1)
+            (redex-check lang d #:ad-hoc #t #:attempts 1 #:print? #f #:attempt-size add1)
             #f))
         #t)
   
@@ -892,6 +892,13 @@
        (--> (side-condition any #f) any impossible)
        #rx"^redex-check: unable to generate LHS of impossible in 42")))
   
+  
+  (test (let ([checked 0])
+          (redex-check lang n #:ad-hoc (set! checked (add1 checked)) 
+                       #:print? #f
+                       #:attempts 10)
+          checked)
+        10)
   
   (test (let ([checked 0])
           (redex-check lang n #:enum 100 (set! checked (add1 checked)) 
