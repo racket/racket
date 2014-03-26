@@ -161,7 +161,13 @@
 ;; Redex can't generate reals, so we convert ints to reals.
 (define (exp->real-exp E) ; numbers or symbols or lists
   (cond [(number? E)
-         (random-integer->random-real (exact-round E))]
+         (random-integer->random-real
+          (exact-round
+           ;; doesn't handle non-rationals
+           ;; not a problem, we generate those specially
+           (if (rational? E)
+               E
+               0)))] ; arbitrary
         [(list? E)
          (map exp->real-exp E)]
         [else
