@@ -7,6 +7,10 @@ v6.1
   * added the #:enum-p keyword
     (based on statistics help from Neil Toronto)
 
+  * change the default strategy of redex-check to do enumeration first,
+    then interleave random generation and enumeration and then just
+    do random generation
+
 v6.0
 
   * Added an enumerator for patterns. For example, here's how to get
