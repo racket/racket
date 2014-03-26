@@ -110,14 +110,26 @@
            (loop (cdr props) others)]
           [p (loop (cdr props) (cons p others))]))))
 
+;; invert-filter: Filter/c -> Filter/c
+;; Logically inverts a filter.
+(define (invert-filter p)
+  (match p
+    [(Bot:) -top]
+    [(Top:) -bot]
+    [(TypeFilter: t p o) (-not-filter t o p)]
+    [(NotTypeFilter: t p o) (-filter t o p)]
+    [(AndFilter: fs) (apply -or (map invert-filter fs))]
+    [(OrFilter: fs) (apply -and (map invert-filter fs))]
+    [(ImpFilter: f1 f2) (-and f1 (invert-filter f2))]))
 
+;; -imp: Filter/c Filter/c -> Filter/c
+;; Smart constructor for make-ImpFilter
 (define (-imp p1 p2)
   (match* (p1 p2)
     [((Bot:) _) -top]
     [(_ (Top:)) -top]
     [((Top:) _) p2]
-    [((TypeFilter: t p o) (Bot:)) (-not-filter t o p)]
-    [((NotTypeFilter: t p o) (Bot:)) (-filter t o p)]
+    [(_ (Bot:)) (invert-filter p1)]
     [(_ _) (make-ImpFilter p1 p2)]))
 
 (define (-or . args)
