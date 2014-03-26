@@ -65,6 +65,9 @@ typedef unsigned long uintptr_t;
 /* When mmap() and mprotect() are available: */
 #undef HAVE_MMAP_MPROTECT
 
+/* To enable 2^16 page size instead of 2^14: */
+#undef MZ_USE_LARGE_PAGE_SIZE
+
 /* Enable futures: */
 #undef MZ_USE_FUTURES
 

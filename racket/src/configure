@@ -3114,6 +3114,7 @@ enable_strip_by_default=yes
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
+check_page_size=yes
 
 ###### OSKit stuff #######
 
@@ -5471,6 +5472,38 @@ $as_echo "$use_mprotect" >&6; }
   if test "${use_mprotect}" = "yes" ; then
 
 $as_echo "#define HAVE_MMAP_MPROTECT 1" >>confdefs.h
+
+  fi
+fi
+
+if test "${check_page_size}" = "yes" ; then
+   msg="for large page size"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+  if test "$cross_compiling" = yes; then :
+  use_large_page_size=no
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+     #include <unistd.h>
+     int main() {
+      return !(getpagesize() > (1 << 14));
+     }
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  use_large_page_size=yes
+else
+  use_large_page_size=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_large_page_size" >&5
+$as_echo "$use_large_page_size" >&6; }
+  if test "${use_large_page_size}" = "yes" ; then
+
+$as_echo "#define MZ_USE_LARGE_PAGE_SIZE 1" >>confdefs.h
 
   fi
 fi

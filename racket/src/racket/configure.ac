@@ -415,6 +415,7 @@ enable_strip_by_default=yes
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
+check_page_size=yes
 
 ###### OSKit stuff #######
 
@@ -1079,6 +1080,20 @@ if test "${check_for_mprotect}" = "yes" ; then
   AC_MSG_RESULT($use_mprotect)
   if test "${use_mprotect}" = "yes" ; then
      AC_DEFINE(HAVE_MMAP_MPROTECT,1,[Have mmap and mprotect])
+  fi
+fi
+
+if test "${check_page_size}" = "yes" ; then
+  [ msg="for large page size" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+[     #include <unistd.h>]
+     int main() {
+      return !(getpagesize() > (1 << 14));
+     }, use_large_page_size=yes, use_large_page_size=no, use_large_page_size=no)
+  AC_MSG_RESULT($use_large_page_size)
+  if test "${use_large_page_size}" = "yes" ; then
+     AC_DEFINE(MZ_USE_LARGE_PAGE_SIZE,1,[Use large page size])
   fi
 fi
 

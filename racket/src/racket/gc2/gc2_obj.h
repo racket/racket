@@ -3,7 +3,7 @@
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(MZ_USE_LARGE_PAGE_SIZE)
 # define LOG_APAGE_SIZE 16
 #else
 # define LOG_APAGE_SIZE 14
