@@ -2026,17 +2026,23 @@ on @racket[template] and then evaluating @racket[property-expr]
 using the @racket[match-bindings] produced by @racket[match]ing
 @math{t} against @racket[pattern]. The form of @racket[template] controls
 how @math{t} is generated:
-@itemlist[
-          @item{@racket[language @#,ttpattern]:
+@itemlist[@item{@racket[language @#,ttpattern]:
                  In this case, @racket[redex-check] randomly generates terms that match
                  @racket[_pattern].}
-           @item{@racket[language @#,ttpattern #:enum]:
-                 In this case, @racket[redex-check] picks a random natural number
-                 and then uses that to index into an enumeration of @racket[_pattern].
+          @item{@racket[language @#,ttpattern #:in-order]:
+                 In this case, @racket[redex-check] uses an enumeration
+                 of @racket[_pattern], checking each @math{t} one at a time}
+          @item{@racket[language @#,ttpattern #:uniform-at-random p-value]:
+                 that to index into an enumeration of @racket[_pattern].
                  If the enumeration is finite, @racket[redex-check] picks a natural number
                  uniformly at random; if it isn't, @racket[redex-check] uses a geometric
-                 distribution to pick the number of bits in the index and then picks a
+                 distribution with @racket[p-value] as its probability of zero 
+                 to pick the number of bits in the index and then picks a
                  number uniformly at random with that number of bits.}
+          @item{@racket[language @#,ttpattern #:enum bound]:
+                 This is similar to @racket[#:uniform-at-random], except
+                 that Redex always picks a random natural number less than @racket[bound]
+                 to index into the enumeration}
           @item{@racket[language #:satisfying (judgment-form-id @#,ttpattern ...)]:
                   Generates terms that match @racket[pattern] and satisfy 
                   the judgment form.}

@@ -4,7 +4,7 @@ v6.1
 
   * added default-equiv
 
-  * changed the meaning of the redex-check #:enum keyword
+  * added the #:enum-p keyword
     (based on statistics help from Neil Toronto)
 
 v6.0

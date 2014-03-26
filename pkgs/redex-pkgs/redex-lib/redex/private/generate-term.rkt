@@ -94,6 +94,8 @@
   (define valid-kws 
     (list* '#:satisfying
            '#:enum
+           '#:uniform-at-random
+           '#:in-order
            (map car (list attempts-keyword
                           source-keyword
                           retries-keyword
@@ -123,10 +125,14 @@
      (redex-check/jf stx #'form #'lang #'jform-id #'pats #'property #'kw-args)]
     [(form lang #:satisfying . rest)
      (raise-syntax-error 'redex-check "#:satisfying expected judgment form or metafunction syntax followed by a property" stx #'rest)]
-    [(form lang pat #:enum property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #t #'kw-args)]
+    [(form lang pat #:enum biggest-e property . kw-args)
+     (redex-check/pat stx #'form #'lang #'pat #'property #'biggest-e #f #f #'kw-args)]
+    [(form lang pat #:uniform-at-random p-value property . kw-args)
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #'p-value #f #'kw-args)]
+    [(form lang pat #:in-order property . kw-args)
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #t #'kw-args)]
     [(form lang pat property . kw-args)
-     (redex-check/pat stx #'form #'lang #'pat #'property #f #'kw-args)]))
+     (redex-check/pat stx #'form #'lang #'pat #'property #f #f #f #'kw-args)]))
 
 (define-struct gen-fail ())
 
@@ -210,7 +216,9 @@
                          property #,attempts-stx 0 (and #,print?-stx show) #,fix-stx term-match
                          #,keep-going-stx)))))))
 
-(define-for-syntax (redex-check/pat orig-stx form lang pat property enum? kw-args)
+(define-for-syntax (redex-check/pat orig-stx form lang pat property 
+                                    enum-bound-e enum-p-value in-order?
+                                    kw-args)
   (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
                  (rewrite-side-conditions/check-errs 
                   lang
@@ -237,10 +245,20 @@
           (parameterize ([attempt->size #,size-stx])
             #,(cond
                 [source-stx
-                 (when enum? 
+                 (when enum-bound-e
                    (raise-syntax-error
                     #f
                     "#:enum cannot be used with the #:source keyword"
+                    orig-stx))
+                 (when enum-p-value
+                   (raise-syntax-error
+                    #f
+                    "#:uniform-at-random cannot be used with the #:source keyword"
+                    orig-stx))
+                 (when in-order?
+                   (raise-syntax-error
+                    #f
+                    "#:in-order cannot be used with the #:source keyword"
                     orig-stx))
                  #`(let-values ([(metafunc/red-rel num-cases) 
                                   #,(cond [(metafunc source-stx)
@@ -262,9 +280,14 @@
                        #:term-match term-match))]
                 [else
                  (cond
-                   [enum?
+                   [in-order?
                     #`(check-one
-                       (ith-generator #,lang `pattern)
+                       (in-order-generator #,lang `pattern)
+                       property att ret (and print? show) (or fix (λ (x) x)) term-match
+                       keep-going?)]
+                   [(or enum-bound-e enum-p-value)
+                    #`(check-one
+                       (ith-generator #,lang `pattern #,enum-bound-e #,enum-p-value)
                        property att ret (and print? show) (or fix (λ (x) x)) term-match
                        keep-going?)]
                    [else
@@ -273,19 +296,38 @@
                        property att ret (and print? show) fix (and fix term-match)
                        keep-going?)])])))))))
 
-(define (ith-generator lang pat)
+(define (ith-generator lang pat enum-bound enum-p-value)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
   (define the-size (enum-size enum))
   (cond
-    [(equal? the-size +inf.0)
+    [enum-bound
+     (define bound (if (equal? the-size +inf.0)
+                       enum-bound
+                       (min enum-bound the-size)))
      (λ (_size _attempt _retries)
-       (values (enum-ith enum (pick-an-index))
+       (values (enum-ith enum (random-natural bound))
                'ignored))]
     [else
-     (λ (_size _attempt _retries)
-       (values (enum-ith enum (random-natural the-size))
-               'ignored))]))
+     (cond
+       [(equal? the-size +inf.0)
+        (λ (_size _attempt _retries)
+          (values (enum-ith enum (pick-an-index enum-p-value))
+                  'ignored))]
+       [else
+        (λ (_size _attempt _retries)
+          (values (enum-ith enum (random-natural the-size))
+                  'ignored))])]))
+
+(define (in-order-generator lang pat)
+  (define enum-lang (compiled-lang-enum-table lang))
+  (define enum (pat-enumerator enum-lang pat))
+  (define the-size (enum-size enum))
+  (λ (_size _attempt _retries)
+    (values (enum-ith enum (if (= +inf.0 the-size)
+                               (- _attempt 1)
+                               (modulo (- _attempt 1) the-size)))
+            'ignored)))
 
 ;; pick-an-index : ([0,1] -> Nat) ∩ (-> Nat)
 (define (pick-an-index [prob-of-zero 0.01])

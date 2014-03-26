@@ -894,11 +894,26 @@
   
   
   (test (let ([checked 0])
-          (redex-check lang n #:enum (set! checked (add1 checked)) 
+          (redex-check lang n #:enum 100 (set! checked (add1 checked)) 
                        #:print? #f
                        #:attempts 10)
           checked)
-        10))
+        10)
+  
+  (test (let ([checked 0])
+          (redex-check lang n #:uniform-at-random 0.1 (set! checked (add1 checked)) 
+                       #:print? #f
+                       #:attempts 10)
+          checked)
+        10)
+  
+  (test (let ([checked '()])
+          (redex-check lang natural #:in-order 
+                       (set! checked (cons (term natural) checked)) 
+                       #:print? #f
+                       #:attempts 5)
+          checked)
+        '(4 3 2 1 0)))
 
 ;; check-reduction-relation
 (let ()
