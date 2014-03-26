@@ -254,8 +254,8 @@ the two endpoints are swapped first.) The @racket[log?] and @racket[1-p?] argume
 meaning of the return value in the same way as the corresponding arguments to @racket[cdf].
 }
 
-@defproc[(real-dist-hpd-interval [d Real-Dist] [α Real]) (Values Flonum Flonum)]{
-Finds the smallest interval for which @racket[d] assigns probability @racket[α], if one exists.
+@defproc[(real-dist-hpd-interval [d Real-Dist] [p Real]) (Values Flonum Flonum)]{
+Finds the smallest interval for which @racket[d] assigns probability @racket[p], if one exists.
 @examples[#:eval untyped-eval
                  (define d (beta-dist 3 2))
                  (define-values (x0 x1) (real-dist-hpd-interval d 0.8))

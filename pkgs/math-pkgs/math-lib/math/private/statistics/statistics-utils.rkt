@@ -105,7 +105,7 @@
 ;; bias = #t   Assume sum of weights is the count and correct for bias normally
 ;; bias = n    Assume n actual samples; correct for bias
 
-(: get-bias-adjustment (Nonnegative-Real (U #t Real) Positive-Real -> Positive-Real))
+(: get-bias-adjustment (Nonnegative-Real (U #t Real) Nonnegative-Real -> Positive-Real))
 (define (get-bias-adjustment c bias mn)
   (define n (if (real? bias) bias c))
   (if (n . > . mn) n +nan.0))

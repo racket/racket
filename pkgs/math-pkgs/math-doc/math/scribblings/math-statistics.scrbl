@@ -2,7 +2,9 @@
 
 @(require scribble/eval
           racket/sandbox
-          (for-label racket/base racket/promise
+          (for-label racket/base
+                     racket/promise
+                     racket/sequence
                      (except-in racket/list permutations) ; FIXME
                      math plot
                      (only-in typed/racket/base
@@ -96,28 +98,28 @@ If @racket[ws] is not @racket[#f], they compute weighted variations of the same.
 See @secref{stats:expected-values} for the meaning of the @racket[bias] keyword argument.
 }
 
-@deftogether[(@defproc[(variance/mean [mean Real]
+@deftogether[(@defproc[(variance/mean [m Real]
                                       [xs (Sequenceof Real)]
                                       [ws (U #f (Sequenceof Real)) #f]
                                       [#:bias bias (U #t #f Real) #f])
                        Nonnegative-Real]
-              @defproc[(stddev/mean [mean Real]
+              @defproc[(stddev/mean [m Real]
                                     [xs (Sequenceof Real)]
                                     [ws (U #f (Sequenceof Real)) #f]
                                     [#:bias bias (U #t #f Real) #f])
                        Nonnegative-Real]
-              @defproc[(skewness/mean [mean Real]
+              @defproc[(skewness/mean [m Real]
                                       [xs (Sequenceof Real)]
                                       [ws (U #f (Sequenceof Real)) #f]
                                       [#:bias bias (U #t #f Real) #f])
                        Real]
-              @defproc[(kurtosis/mean [mean Real]
+              @defproc[(kurtosis/mean [m Real]
                                       [xs (Sequenceof Real)]
                                       [ws (U #f (Sequenceof Real)) #f]
                                       [#:bias bias (U #t #f Real) #f])
                        Nonnegative-Real])]{
 Like @racket[variance], @racket[stddev], @racket[skewness] and @racket[kurtosis], but computed
-using known mean @racket[mean].
+using known mean @racket[m].
 }
 
 @section[#:tag "stats:running"]{Running Expected Values}
@@ -226,22 +228,22 @@ Removing the correlation using importance weights:
 See @secref{stats:expected-values} for the meaning of the @racket[bias] keyword argument.
 }
 
-@deftogether[(@defproc[(covariance/means [μx Real]
-                                         [μy Real]
+@deftogether[(@defproc[(covariance/means [mx Real]
+                                         [my Real]
                                          [xs (Sequenceof Real)]
                                          [ys (Sequenceof Real)]
                                          [ws (U #f (Sequenceof Real)) #f]
                                          [#:bias bias (U #t #f Real) #f])
                        Real]
-              @defproc[(correlation/means [μx Real]
-                                          [μy Real]
+              @defproc[(correlation/means [mx Real]
+                                          [my Real]
                                           [xs (Sequenceof Real)]
                                           [ys (Sequenceof Real)]
                                           [ws (U #f (Sequenceof Real)) #f]
                                           [#:bias bias (U #t #f Real) #f])
                        Real])]{
 Like @racket[covariance] and @racket[correlation], but computed using known means
-@racket[μx] and @racket[μy].
+@racket[mx] and @racket[my].
 }
 
 @section{Counting and Binning}
@@ -392,5 +394,126 @@ Computes the average absolute difference between the elements in @racket[xs] and
          Nonnegative-Real]{
 Like @racket[(absdev xs ws)], but computed using known median @racket[median].
 }
-         
+
+@deftogether[(@defproc[(hpd-interval [lt? (A A -> Any)]
+                                     [δ (A A -> Real)]
+                                     [p Real]
+                                     [xs (Sequenceof A)]
+                                     [ws (U #f (Sequenceof Real)) #f])
+                       (Values A A)]
+              @defproc[(hpd-interval/sorted [δ (A A -> Real)]
+                                            [p Real]
+                                            [xs (Sequenceof A)]
+                                            [ws (U #f (Sequenceof Real)) #f])
+                       (Values A A)])]{
+Estimates the smallest interval for which the distribution that produced @racket[xs] (optionally
+weighted by @racket[ws]) assigns probability @racket[p], which must be positive.
+The type @racket[A] represents an ordered metric space with order @racket[lt?] and metric @racket[δ].
+
+To compute an HPD interval from sorted samples, use @racket[hpd-interval/sorted].
+
+You almost certainly want to use @racket[real-hpd-interval] or @racket[real-hpd-interval/sorted]
+instead, which are defined in terms of these.
+}
+
+@deftogether[(@defproc[(real-hpd-interval [p Real]
+                                          [xs (Sequenceof Real)]
+                                          [ws (U #f (Sequenceof Real)) #f])
+                       (Values Real Real)]
+              @defproc[(real-hpd-interval/sorted [p Real]
+                                                 [xs (Sequenceof Real)]
+                                                 [ws (U #f (Sequenceof Real)) #f])
+                       (Values Real Real)])]{
+Equivalent to @racket[(hpd-interval < - p xs ws)] and @racket[(hpd-interval/sorted - p xs ws)].
+@examples[#:eval typed-eval
+                 (define beta32 (beta-dist 3 2))
+                 (real-dist-hpd-interval beta32 0.8)
+                 (real-hpd-interval 0.8 (sample beta32 10000))]
+}
+
+@section{Simulations}
+
+The functions in this section support Monte Carlo simulation; for example, quantifying uncertainty
+about statistics estimated from samples.
+
+@deftogether[(@defproc[(mc-variance [xs (Sequenceof Real)]
+                                    [ws (U #f (Sequenceof Real)) #f]
+                                    [#:bias bias (U #t #f Real) #f])
+                       Nonnegative-Real]
+              @defproc[(mc-stddev [xs (Sequenceof Real)]
+                                  [ws (U #f (Sequenceof Real)) #f]
+                                  [#:bias bias (U #t #f Real) #f])
+                       Nonnegative-Real])]{
+Estimate the variance and standard deviation of expected values computed from random samples.
+
+If @racket[xs] are random variable samples, then
+@racketblock[(define θ (mean xs ws))]
+is also a random variable sample.
+These two values:
+@racketblock[(mc-variance xs ws #:bias bias)
+             (mc-stddev xs ws #:bias bias)]
+estimate the variance and standard deviation of @racket[θ].
+The latter is simply the square root of the variance, and bias correction is applied as described in
+@secref{stats:expected-values}.
+
+
+Two different ways to estimate the standard deviation of a mean computed from 1000 samples are
+@interaction[#:eval typed-eval
+                    (mc-stddev (sample (normal-dist 0 1) 1000))
+                    (stddev (for/list : (Listof Real) ([_  (in-range 100)])
+                              (mean (sample (normal-dist 0 1) 1000))))]
+Using @racket[mc-stddev] is 100 times faster in this case, and in most statistical applications,
+replicating a sampling process 100 times is infeasible.
+}
+
+@deftogether[(@defproc[(mc-stddev/mean [m Real]
+                                       [xs (Sequenceof Real)]
+                                       [ws (U #f (Sequenceof Real)) #f]
+                                       [#:bias bias (U #t #f Real) #f])
+                       Nonnegative-Real]
+              @defproc[(mc-variance/mean [m Real]
+                                         [xs (Sequenceof Real)]
+                                         [ws (U #f (Sequenceof Real)) #f]
+                                         [#:bias bias (U #t #f Real) #f])
+                       Nonnegative-Real]
+              )]{
+Use these in the exceedingly rare cases in which you know the mean @racket[m] but are estimating
+uncertainty in an estimate of the mean anyway.
+}
+
+@defproc[(indicator [pred? (A -> Any)]) (A -> (U 0 1))]{
+Converts a predicate into an indicator function.
+@examples[#:eval typed-eval                 
+                 (fl (mean (map (indicator (λ ([x : Real]) (< -inf.0 x -1)))
+                                (sample (normal-dist 0 1) 5000))))
+                 (real-dist-prob (normal-dist 0 1) -inf.0 -1)]
+}
+
+@defproc[(mc-probability [pred? (A -> Any)]
+                         [xs (Sequenceof A)]
+                         [ws (U #f (Sequenceof Real)) #f])
+         Nonnegative-Real]{
+Estimates the probability of @racket[pred?] from possibly weighted samples.
+Equivalent to @racket[(mean (sequence-map (indicator pred?) xs) ws)].
+@examples[#:eval typed-eval
+                 (fl (mc-probability (λ ([x : Real]) (< -inf.0 x -1))
+                                     (sample (normal-dist 0 1) 5000)))]
+}
+
+@defproc[(mc-prob-dist [pred? (A -> Any)]
+                       [xs (Sequenceof A)]
+                       [ws (U #f (Sequenceof Real)) #f])
+         Beta-Dist]{
+Returns a beta distribution estimated from possibly weighted samples whose mean is
+@racket[(mc-probability pred? xs ws)].
+
+Computing a confidence interval for a probability whose endpoints are guaranteed to be
+between @racket[0] and @racket[1]:
+@interaction[#:eval typed-eval
+                    (real-dist-hpd-interval
+                     (mc-prob-dist (λ ([x : Real]) (< -inf.0 x -1))
+                                   (sample (normal-dist 0 1) 5000))
+                     0.95)]
+}
+
 @(close-eval typed-eval)
