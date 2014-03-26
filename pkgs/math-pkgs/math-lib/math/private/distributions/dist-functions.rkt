@@ -82,7 +82,7 @@
 ;; ===================================================================================================
 ;; Highest probability density (HPD) regions
 
-(: real-dist-hpd-interval (-> Real-Dist Real (Values Real Real)))
+(: real-dist-hpd-interval (-> Real-Dist Real (Values Flonum Flonum)))
 (define (real-dist-hpd-interval d α)
   (when (or (α . <= . 0) (α . > . 1))
     (raise-argument-error 'real-dist-hpd-interval "Real in (0,1]" 1 d α))
