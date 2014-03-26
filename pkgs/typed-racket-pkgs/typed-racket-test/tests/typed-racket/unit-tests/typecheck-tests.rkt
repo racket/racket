@@ -1205,12 +1205,12 @@
                      #f)
           #:ret (ret -Void -top-filter -empty-obj)]
         [tc-err (apply +)]
-        [tc-e/t
+        [tc-e
          (let ([x eof])
            (if (procedure? x)
                x
                (lambda (z) (eq? x z))))
-         (make-pred-ty (-val eof))]
+         #:ret (ret (make-pred-ty (-val eof)) (-FS (-not-filter top-func #'eof) -bot))]
         [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
               (-lst -Number)]
         [tc-err (list (values 1 2))
@@ -2650,6 +2650,22 @@
                (add1 "")
                0))
          #:ret (ret -Bottom)]
+
+       [tc-e
+         (let: ([x : Any 4])
+           (if (let: ([y x]) (number? y))
+               (add1 x)
+               4))
+         -Number]
+
+       [tc-e
+         (let ()
+           (: g (-> Boolean))
+           (define (g) (g))
+           (: x Any)
+           (define x 0)
+           (number? x))
+         -Boolean]
 
         )
   (test-suite

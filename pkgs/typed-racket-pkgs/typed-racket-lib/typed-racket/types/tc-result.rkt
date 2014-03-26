@@ -63,7 +63,8 @@
 (define-match-expander Results:
   (syntax-rules ()
    [(_ tp) (Values: (list (Result: tp _ _) (... ...)))]
-   [(_ tp fp op) (Values: (list (Result: tp fp op) (... ...)))]))
+   [(_ tp fp op) (Values: (list (Result: tp fp op) (... ...)))]
+   [(_ tp fp op dty dbound) (ValuesDots: (list (Result: tp fp op) (... ...)) dty dbound)]))
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
@@ -125,6 +126,7 @@
 (provide/cond-contract
  [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
+ [tc-results-t (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
  [tc-results/c c:flat-contract?])
