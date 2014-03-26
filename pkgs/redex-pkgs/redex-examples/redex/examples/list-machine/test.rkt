@@ -75,10 +75,13 @@
 (redex-check
  list-machine-typing
  τ
- (for* ([τ_1 (in-list (judgment-holds (⊂ τ_1 τ) τ_1))]
-        [τ_2 (in-list (judgment-holds (⊂ τ_2 τ) τ_2))])
-   (for/and ([τ_3 (judgment-holds (⊔ ,τ_1 ,τ_2 τ_3) τ_3)])
-     (judgment-holds (⊂ τ_3 τ))))
+ (let ()
+   (define subtypes (judgment-holds (⊂ τ_s τ) τ_s))
+   (or (null? subtypes)
+       (let ([τ_1 (list-ref subtypes (random (length subtypes)))]
+             [τ_2 (list-ref subtypes (random (length subtypes)))])
+         (for/and ([τ_3 (judgment-holds (⊔ ,τ_1 ,τ_2 τ_3) τ_3)])
+           (judgment-holds (⊂ τ_3 τ))))))
  #:attempts 100)
 
 (test-equal (judgment-holds (Γ-⊂ (x : nil empty) (x : nil empty)))
