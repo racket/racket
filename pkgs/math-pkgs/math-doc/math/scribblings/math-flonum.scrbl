@@ -286,6 +286,31 @@ identities hold:
 Further, choosing @racket[0.0] does not ensure that any additional identities hold.
 }
 
+@defproc[(flbracketed-root [f (Flonum -> Flonum)] [a Flonum] [b Flonum]) Flonum]{
+Uses the @hyperlink["http://en.wikipedia.org/wiki/Brent%27s_method"]{Brent-Dekker method} to
+find a floating-point root of @racket[f] (an @racket[x : Flonum] for which @racket[(f x)] is
+very near a zero crossing) between @racket[a] and @racket[b].
+The values @racket[(f a)] and @racket[(f b)] must have opposite signs, but @racket[a] and @racket[b]
+may be in any order.
+@examples[#:eval untyped-eval
+                 (define (f x) (+ 1.0 (* (+ x 3.0) (sqr (- x 1.0)))))
+                 (define x0 (flbracketed-root f -4.0 2.0))
+                 (plot (list (x-axis)
+                             (function f -4 2)
+                             (function-label f x0))
+                       #:y-min -10)
+                 (f (flprev x0))
+                 (f x0)
+                 (flbracketed-root f -1.0 2.0)]
+Caveats:
+@(itemlist
+  @item{There is no guarantee that @racket[flbracketed-root] will find any @emph{particular} root.
+        Moreover, future updates to its implementation could make it find different ones.}
+  @item{There is currently no guarantee that it will find the @emph{closest} @racket[x] to an exact root.}
+  @item{It currently runs for at most 5000 iterations.})
+It usually requires far fewer iterations, especially if the initial bounds @racket[a] and @racket[b] are tight.
+}
+
 @defproc[(make-flexpt [x Real]) (Flonum -> Flonum)]{
 Equivalent to @racket[(λ (y) (flexpt x y))] when @racket[x] is a flonum, but much more
 accurate for large @racket[y] when @racket[x] cannot be exactly represented
