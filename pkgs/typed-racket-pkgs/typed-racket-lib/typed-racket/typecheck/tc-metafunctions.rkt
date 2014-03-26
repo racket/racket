@@ -240,7 +240,7 @@
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
 
 ;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
-;; Maps all of the given names in the results to the objects in the corresponding tc-results.
+;; For each name replaces all uses of it in res with the corresponding object.
 ;; This is used so that names do not escape the scope of their definitions
 (define (replace-names names+objects res)
   (define (subber proc lst)
