@@ -110,7 +110,6 @@
             arities doms rests drests rngs
             (stx-map tc-expr pos-args)
             #f #f #:expected expected
-            #:return (ret (Un))
             #:msg-thunk
             (lambda (dom)
               (string-append "No function domains matched in function application:\n"

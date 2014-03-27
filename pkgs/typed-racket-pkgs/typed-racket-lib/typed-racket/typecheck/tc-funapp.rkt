@@ -53,7 +53,7 @@
       ;; if nothing matched, error
       (domain-mismatches
        f-stx args-stx t doms rests drests rngs argtys #f #f
-       #:expected expected #:return (ret (Un))
+       #:expected expected
        #:msg-thunk (lambda (dom)
                      (string-append
                       "No function domains matched in function application:\n"

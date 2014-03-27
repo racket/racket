@@ -109,7 +109,7 @@
      #:msg-thunk (-> string? string?))
     . ->* . tc-results/c)])
 (define (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
-                           #:expected [expected #f] #:return [return -Bottom]
+                           #:expected [expected #f] #:return [return (ret -Bottom)]
                            #:msg-thunk [msg-thunk (lambda (dom) dom)])
   (define arguments-str
     (stringify-domain arg-tys
@@ -354,7 +354,6 @@
                            "\n"))
            (domain-mismatches f-stx args-stx t msg-doms msg-rests msg-drests
                               msg-rngs argtypes #f #f #:expected expected
-                              #:return (ret (Un))
                               #:msg-thunk (lambda (dom)
                                             (string-append
                                              "Polymorphic " fcn-string " could not be applied to arguments:\n"
@@ -377,7 +376,6 @@
                            "\n"))
            (domain-mismatches f-stx args-stx t msg-doms msg-rests msg-drests
                               msg-rngs argtypes #f #f #:expected expected
-                              #:return (ret (Un))
                               #:msg-thunk (lambda (dom)
                                             (string-append
                                              "Polymorphic " fcn-string " could not be applied to arguments:\n"
