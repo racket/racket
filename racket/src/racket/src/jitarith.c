@@ -360,7 +360,7 @@ int can_unbox_directly(Scheme_Object *obj, int extfl, int bfuel)
       obj = ((Scheme_Sequence *)obj)->array[((Scheme_Sequence *)obj)->count - 1];
       break;
     default:
-      return 0;
+      return is_unboxing_immediate(obj, 0, extfl);
     }
   }
 }
