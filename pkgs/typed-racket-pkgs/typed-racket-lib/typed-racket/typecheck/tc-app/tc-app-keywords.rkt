@@ -29,7 +29,7 @@
     #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
     #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
     (match (tc-expr #'fn)
-      [(tc-result1: 
+      [(tc-result1:
         (Poly: vars
                (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
        (=> fail)
@@ -47,7 +47,7 @@
                     #'kw-arg-list #'pos-args expected)]
       [(tc-result1: (Poly: _ (Function: _)))
        (tc-error/expr "Inference for polymorphic keyword functions not supported")]
-      [(tc-result1: t) 
+      [(tc-result1: t)
        (tc-error/expr "Cannot apply expression of type ~a, since it is not a function type" t)])))
 
 (define (tc-keywords/internal arity kws kw-args error?)
@@ -110,7 +110,7 @@
             arities doms rests drests rngs
             (stx-map tc-expr pos-args)
             #f #f #:expected expected
-            #:return (or expected (ret (Un)))
+            #:return (ret (Un))
             #:msg-thunk
             (lambda (dom)
               (string-append "No function domains matched in function application:\n"

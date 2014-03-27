@@ -2688,6 +2688,17 @@
          #:ret (ret -String)
          #:expected (ret -String -no-filter -no-obj)]
 
+       [tc-err
+         (let ()
+           (: z (case->
+                  (-> Number #:b Symbol Number)
+                  (-> Symbol #:b Symbol Symbol)))
+           (define z (lambda (a #:b b) a))
+           (z "y" #:b "y"))
+         #:ret (ret -String)
+         #:expected (ret -String -no-filter -no-obj)]
+
+
         )
   (test-suite
    "tc-literal tests"
