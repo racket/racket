@@ -26,11 +26,12 @@ intended as a convenient tool for profiling code.
                             (profile? . -> . any/c)))
            #f]
           [#:use-errortrace? use-errortrace? any/c #f])
-         void?]{
+         any/c]{
 
 Executes the given @racket[thunk] and collect profiling data during
-execution, eventually analyzing and rendering this.  Keyword arguments
-can customize the profiling:
+execution, eventually analyzing and rendering this. Returns the value
+of the profiled expression.
+Keyword arguments can customize the profiling:
 @itemize[
 
 @item{The profiler works by starting a ``sampler'' thread to
@@ -69,12 +70,7 @@ can customize the profiling:
 @item{Once the computation is done and the sampler is stopped, the
   accumulated data is analyzed (by @racket[analyze-samples]) and the
   resulting profile value is sent to the @racket[renderer] function.
-  See @secref["renderers"] for available renderers.  You can also use
-  @racket[values] as a ``renderer''---in this case
-  @racket[profile-thunk] returns the analyzed information which can
-  now be rendered multiple times, or saved for rendering directly
-  using one of the renderers, perhaps multiple times for different
-  views.}
+  See @secref["renderers"] for available renderers.}
 
 @item{To provide feedback information during execution, specify a
   @racket[periodic-renderer].  This should be a list holding a delay

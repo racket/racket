@@ -7,4 +7,4 @@
 
 (define pkg-desc "implementation (no documentation) part of \"profile\"")
 
-(define pkg-authors '(eli))
+(define pkg-authors '(eli stamourv))

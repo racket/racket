@@ -28,17 +28,17 @@
              (renderer (analyze-samples (sampler 'get-snapshots)))
              (loop))
            (thread loop))))
-  (define (run) (for ([i (in-range rpt)]) (thunk)))
-  (with-handlers ([void (λ (e) (eprintf "profiled thunk error: ~a\n"
-                                        (if (exn? e)
-                                          (exn-message e)
-                                          (format "~e" e))))])
-    (if threads?
-      (parameterize ([current-custodian cust]) (run))
-      (run)))
-  (when periodic-thread (kill-thread periodic-thread))
-  (sampler 'stop)
-  (renderer (analyze-samples (sampler 'get-snapshots))))
+  (define (run) (for/last ([i (in-range rpt)]) (thunk)))
+  (begin0 (with-handlers ([void (λ (e) (eprintf "profiled thunk error: ~a\n"
+                                                (if (exn? e)
+                                                    (exn-message e)
+                                                    (format "~e" e))))])
+            (if threads?
+                (parameterize ([current-custodian cust]) (run))
+                (run)))
+    (when periodic-thread (kill-thread periodic-thread))
+    (sampler 'stop)
+    (renderer (analyze-samples (sampler 'get-snapshots)))))
 
 (define-syntax (profile stx)
   (syntax-case stx ()
@@ -85,3 +85,16 @@
          (list 0.5 text:render)
          )
 |#
+
+(module+ test
+  (require rackunit racket/string racket/list)
+  ;; `profile' and `profile-thunk' should return the value of the
+  ;; profiled expression
+  (check-equal?
+   (profile (for/last ([i (in-range 1000 5 -1)])
+              (string-join (map number->string (range i)))))
+   "0 1 2 3 4 5")
+  (check-equal?
+   (profile-thunk (lambda () (for/last ([i (in-range 1000 5 -1)])
+                               (string-join (map number->string (range i))))))
+   "0 1 2 3 4 5"))
