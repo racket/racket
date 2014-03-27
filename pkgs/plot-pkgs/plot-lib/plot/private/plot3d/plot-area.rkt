@@ -2,6 +2,7 @@
 
 (require racket/class racket/match racket/list racket/math racket/contract racket/vector racket/flonum
          unstable/flonum
+         (only-in math/flonum vector->flvector flvector->vector flvector+ flvector-scale)
          "../common/math.rkt"
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
@@ -13,7 +14,8 @@
          "../common/utils.rkt"
          "matrix.rkt"
          "shape.rkt"
-         "clip.rkt")
+         "clip.rkt"
+         "bsp3d.rkt")
 
 (provide (all-defined-out)
          plot3d-back-layer
@@ -632,6 +634,110 @@
     (define (add-shape! shape) (set! render-list (cons shape render-list)))
     (define (add-shapes! shapes) (set! render-list (append shapes render-list)))
     
+    (define (shape->bsp-shapes s)
+      (match s
+        ;; shapes
+        [(shapes alpha _ _ ss)  (map shape->bsp-shapes ss)]
+        ;; polygon
+        [(polygon alpha center _ vs normal pen-color pen-width pen-style brush-color brush-style)
+         (polygon-shape
+          (map vector->flvector vs)
+          (λ (vs)
+            (define-values (diff spec) (get-light-values center (norm->view normal)))
+            (let ([pen-color  (map (λ (v) (+ (* v diff) spec)) pen-color)]
+                  [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)])
+              (send pd set-pen pen-color pen-width pen-style)
+              (send pd set-brush brush-color brush-style)
+              (send pd draw-polygon (map (λ (v) (view->dc (flvector->vector v))) vs)))))]
+        ;; rectangle
+        [(rectangle alpha _ _ r pen-color pen-width pen-style brush-color brush-style)
+         empty]
+        ;; line
+        [(line alpha _ _ v1 v2 pen-color pen-width pen-style)
+         empty
+         #;
+         (line-shape
+          (vector->flvector v1)
+          (vector->flvector v2)
+          (λ (v1 v2)
+            (send pd set-pen pen-color pen-width pen-style)
+            (send pd draw-line
+                  (view->dc (flvector->vector v1))
+                  (view->dc (flvector->vector v2)))))]
+        ;; text
+        [(text alpha _ _ anchor angle dist str font-size font-family color outline?)
+         empty]
+        ;; glyph
+        [(glyph alpha _ _ symbol size pen-color pen-width pen-style brush-color brush-style)
+         empty]
+        ;; tick glyph
+        [(tick-glyph alpha _ _ radius angle pen-color pen-width pen-style)
+         empty]
+        ;; arrow glyph
+        [(arrow-glyph alpha _ _ v1 v2 pen-color pen-width pen-style)
+         empty]
+        [_  (error 'draw-shapes "shape not implemented: ~e" s)]))
+    
+    (define (bsp-shape-norm->view s)
+      (match s
+        [(point-shape v draw)  (point-shape (vector->flvector (norm->view (flvector->vector v)))
+                                            draw)]
+        [(line-shape v1 v2 draw)  (line-shape (vector->flvector (norm->view (flvector->vector v1)))
+                                              (vector->flvector (norm->view (flvector->vector v2)))
+                                              draw)]
+        [(polygon-shape vs draw)  (polygon-shape (map (compose vector->flvector
+                                                               norm->view
+                                                               flvector->vector)
+                                                      vs)
+                                                 draw)]))
+    
+    (define bsp #f)
+    
+    (define (bsp-shape-center s)
+      (match s
+        [(point-shape v draw)  v]
+        [(line-shape v1 v2 draw)  (flvector-scale (flvector+ v1 v2) 0.5)]
+        [(polygon-shape vs draw)
+         (define xs (map (λ (v) (flvector-ref v 0)) vs))
+         (define ys (map (λ (v) (flvector-ref v 1)) vs))
+         (define zs (map (λ (v) (flvector-ref v 2)) vs))
+         (flvector (* 0.5 (+ (apply min xs) (apply max xs)))
+                   (* 0.5 (+ (apply min ys) (apply max ys)))
+                   (* 0.5 (+ (apply min zs) (apply max zs))))]))
+    
+    (define (bsp-shape<? s1 s2)
+      (> (flvector-ref (bsp-shape-center s1) 1) (flvector-ref (bsp-shape-center s2) 1)))
+    
+    (define (draw-shapes ss)
+      (unless bsp
+        (set! bsp (build-bsp3d (flatten (map shape->bsp-shapes ss)))))
+      
+      (let loop ([bsp bsp])
+        (match bsp
+          [(? list?)
+           (for ([s  (in-list (sort (map bsp-shape-norm->view bsp)
+                                    bsp-shape<?))])
+             (match s
+               [(point-shape v draw)  (draw v)]
+               [(line-shape v1 v2 draw)  (draw v1 v2)]
+               [(polygon-shape vs draw)  (draw vs)]))]
+          [(bsp-node plane ss left right)
+           (define plane-x (flvector-ref plane 0))
+           (define plane-y (flvector-ref plane 1))
+           (define plane-z (flvector-ref plane 2))
+           (define plane-dir (norm->view (vector plane-x plane-y plane-z)))
+           (cond [((vector-ref plane-dir 1) . < . 0)
+                  (loop left)
+                  (loop ss)
+                  (loop right)]
+                 [else
+                  (loop right)
+                  (loop ss)
+                  (loop left)])]
+          [(bsp-leaf ss)
+           (loop ss)])))
+    
+    #;
     (define (draw-shapes ss)
       (define s+cs (map (λ (s) (cons s (norm->view/no-rho (shape-center s)))) ss))
       (for ([s+c  (in-list (depth-sort (reverse s+cs)))])
@@ -866,6 +972,17 @@
                         vs)]
                [vs  (if identity-transforms? vs (subdivide-polygon plot->dc vs))])
           (when (empty? vs) (return lst))
+          #;
+          (let ([vs  (map plot->norm vs)]
+                [c   (plot->norm c)])
+            (append
+             (for/list ([v1  (in-list (cons (last vs) vs))]
+                        [v2  (in-list vs)])
+               (line alpha c plot3d-area-layer v1 v2 pen-color pen-width pen-style))
+             (cons (polygon alpha c plot3d-area-layer vs
+                            normal pen-color pen-width 'transparent brush-color brush-style)
+                   lst)))
+          
           (cons (polygon alpha (plot->norm c) plot3d-area-layer (map plot->norm vs)
                          normal pen-color pen-width pen-style brush-color brush-style)
                 lst))))
