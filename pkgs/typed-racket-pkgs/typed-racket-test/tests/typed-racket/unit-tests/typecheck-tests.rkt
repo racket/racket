@@ -2679,6 +2679,15 @@
            4)
          -PosByte]
 
+       [tc-err
+         (let ()
+           (: z (case-> (Symbol -> Symbol)
+                        (Number -> Number)))
+           (define z (lambda (a) a))
+           (z "y"))
+         #:ret (ret -String)
+         #:expected (ret -String -no-filter -no-obj)]
+
         )
   (test-suite
    "tc-literal tests"
