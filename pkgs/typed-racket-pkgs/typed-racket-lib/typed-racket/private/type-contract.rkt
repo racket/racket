@@ -17,7 +17,7 @@
  racket/dict
  unstable/list
  unstable/sequence
- (types abbrev)
+ (only-in (types abbrev) -Bottom)
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
  (prefix-in c: racket/contract)
