@@ -220,7 +220,9 @@
   (-> bit-vector? any)]
  (rename bit-vector-copy*
          bit-vector-copy
-         (-> bit-vector? bit-vector?))
+         (case-> (-> bit-vector? bit-vector?)
+                 (-> bit-vector? exact-nonnegative-integer? bit-vector?)
+                 (-> bit-vector? exact-nonnegative-integer? exact-nonnegative-integer? bit-vector?)))
  [bit-vector->list
   (-> bit-vector? (listof boolean?))]
  [list->bit-vector
