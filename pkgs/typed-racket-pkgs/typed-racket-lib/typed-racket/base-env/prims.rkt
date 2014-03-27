@@ -32,6 +32,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          define-type-expander
          (for-syntax prop:type-expander)
          class
+         Mixin
          :
          (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct define-struct]
@@ -1414,3 +1415,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax-rule (for*/flvector: e ...)
   (base-for/flvector: for*: e ...))
+
+;; type expanders
+(define-type-expander Mixin
+  (λ (stx)
+    (syntax-parse stx
+      [(_ in out)
+       #'(All (r #:row)
+           (-> (Class #:row-var r #:implements in)
+               (Class #:row-var r #:implements out)))])))
