@@ -12,6 +12,7 @@
          syntax/parse unstable/sequence
          (env tvar-env type-name-env type-alias-env
               lexical-env index-env row-constraint-env)
+         (private type-expander)
          (only-in racket/list flatten)
          racket/dict
          racket/format
@@ -294,6 +295,9 @@
       [t
        #:declare t (3d Type/c?)
        (attribute t.datum)]
+      [(~or (~var expander (static type-expander? #f))
+            ((~var expander (static type-expander? #f)) . _))
+       (parse-type (apply-type-expander (attribute expander.value) stx))]
       [(fst . rst)
        #:fail-unless (not (syntax->list #'rst)) #f
        (-pair (parse-type #'fst) (parse-type #'rst))]

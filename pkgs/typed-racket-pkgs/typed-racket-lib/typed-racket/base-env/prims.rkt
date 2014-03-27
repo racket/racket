@@ -29,7 +29,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
          (all-from-out "case-lambda.rkt")
+         define-type-expander
+         (for-syntax prop:type-expander)
          class
+         Mixin
          :
          (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct define-struct]
@@ -107,6 +110,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "case-lambda.rkt"
          'struct-extraction
          "class-prims.rkt"
+         "define-type-expander.rkt"
          racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
           racket/lazy-require
@@ -124,6 +128,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"
           "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
+          (only-in "../private/type-expander.rkt" prop:type-expander)
           ;"../types/utils.rkt"
           ;"../types/classes.rkt"
           "for-clauses.rkt"
@@ -1410,3 +1415,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax-rule (for*/flvector: e ...)
   (base-for/flvector: for*: e ...))
+
+;; built-in type expanders
+(define-type-expander Mixin
+  (λ (stx)
+    (syntax-parse stx
+      [(_ in:id out:id)
+       (syntax/loc stx
+         (All (r #:row)
+              (-> (Class #:row-var r #:implements in)
+                  (Class #:row-var r #:implements out))))])))
