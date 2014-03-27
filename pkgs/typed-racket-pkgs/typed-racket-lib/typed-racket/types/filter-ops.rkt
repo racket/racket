@@ -207,6 +207,25 @@
                    [else
                     (loop (cdr fs) (cons t result))])]))))
 
+;; add-unconditional-prop: tc-results? Filter/c? -> tc-results?
+;; Ands the given proposition to the filters in the tc-results.
+;; Useful to express properties of the form: if this expressions returns at all, we learn this
+(define (add-unconditional-prop results prop)
+  (match results
+    ;; TODO add support for filters on tc-any-results
+    [(tc-any-results:) results] 
+    [(tc-results: ts (FilterSet: fs+ fs-) os)
+     (ret ts
+          (for/list ([f+ fs+] [f- fs-])
+            (-FS (-and prop f+) (-and prop f-)))
+          os)]
+    [(tc-results: ts (FilterSet: fs+ fs-) os dty dbound)
+     (ret ts
+          (for/list ([f+ fs+] [f- fs-])
+            (-FS (-and prop f+) (-and prop f-)))
+          os)]))
+
+
 ;; ands the given type filter to both sides of the given arr for each argument
 ;; useful to express properties of the form: if this function returns at all,
 ;; we learn this about its arguments (like fx primitives, or car/cdr, etc.)

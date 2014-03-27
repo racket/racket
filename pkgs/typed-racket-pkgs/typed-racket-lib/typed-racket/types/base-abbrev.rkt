@@ -103,7 +103,11 @@
 ;; Results
 (define/cond-contract (-result t [f -top-filter] [o -empty-obj])
   (c:->* (Type/c) (FilterSet? Object?) Result?)
-  (make-Result t f o))
+  (cond
+    [(or (equal? t -Bottom) (equal? f -bot-filter))
+     (make-Result -Bottom -bot-filter -empty-obj)]
+    [else
+     (make-Result t f o)]))
 
 ;; Filters
 (define/decl -top (make-Top))
