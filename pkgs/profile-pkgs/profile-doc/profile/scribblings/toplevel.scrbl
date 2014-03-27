@@ -42,14 +42,6 @@ Keyword arguments can customize the profiling:
   be close, but not identical to, the frequency in which data is
   actually sampled.  (The @racket[delay] value is passed on to
   @racket[create-sampler], which creates the sampler thread.)}
- 
-@item{When @racket[use-errortrace?] is not @racket[#f], more accurate stack
-  snapshots are captured using @seclink["top" #:doc '(lib
-  "errortrace/scribblings/errortrace.scrbl")]{Errortrace}. Note that when this
-  is provided, it will only profile uncompiled files and files compiled while
-  using @racket[errortrace-compile-handler], and the profiled program must be
-  run using @commandline{racket -l errortrace -t program.rkt} Removing compiled
-  files (with extension @tt{.zo}) is sufficient to enable this.}
 
 @item{Due to the statistical nature of the profiler, longer executions
   result in more accurate analysis.  You can specify a number of
@@ -79,6 +71,13 @@ Keyword arguments can customize the profiling:
   than the sampler delay (usually much larger since it can involve
   more noticeable overhead, and it is intended for a human observer).}
 
+@item{When @racket[use-errortrace?] is not @racket[#f], more accurate stack
+  snapshots are captured using @seclink["top" #:doc '(lib
+  "errortrace/scribblings/errortrace.scrbl")]{Errortrace}. Note that when this
+  is provided, it will only profile uncompiled files and files compiled while
+  using @racket[errortrace-compile-handler], and the profiled program must be
+  run using @commandline{racket -l errortrace -t program.rkt} Removing compiled
+  files (with extension @tt{.zo}) is sufficient to enable this.}
 ]}
 
 @defform[(profile expr keyword-arguments ...)]{
