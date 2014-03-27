@@ -15,36 +15,43 @@
 (define temme-iters (make-parameter 32))
 
 (define num-fs 100)
-(define fs
-  (let ()
-    (define: start-fs : (Vectorof Real)  (vector 1 -1/3 1/12 -2/135))
-    (define: fs : (Vectorof Real)  (make-vector num-fs 0))
-    (vector-copy! fs 0 start-fs)
-    ;; DP algorithm to compute f coefficients
-    (for ([m  (in-range 4 num-fs)])
-      (vector-set!
-       fs m
-       (* (- (/ (+ m 1) (+ m 2)))
-          (+ (* (/ (- m 1) (* 3 m)) (vector-ref fs (- m 1)))
-             (for/fold: ([sum : Real  0]) ([j  (in-range 3 m)])
-               (+ sum (/ (* (vector-ref fs (- j 1)) (vector-ref fs (+ m 1 (- j))))
-                         (+ m 2 (- j)))))))))
-    (vector->flvector fs)))
+(define: fs : (U #f FlVector)  #f)
+
+(: build-fs (-> FlVector))
+(define (build-fs)
+  (define: start-fs : (Vectorof Real)  (vector 1 -1/3 1/12 -2/135))
+  (define: vec-fs : (Vectorof Real)  (make-vector num-fs 0))
+  (vector-copy! vec-fs 0 start-fs)
+  ;; DP algorithm to compute f coefficients
+  (for ([m  (in-range 4 num-fs)])
+    (vector-set!
+     vec-fs m
+     (* (- (/ (+ m 1) (+ m 2)))
+        (+ (* (/ (- m 1) (* 3 m)) (vector-ref vec-fs (- m 1)))
+           (for/fold: ([sum : Real  0]) ([j  (in-range 3 m)])
+             (+ sum (/ (* (vector-ref vec-fs (- j 1))
+                          (vector-ref vec-fs (+ m 1 (- j))))
+                       (+ m 2 (- j)))))))))
+  (define new-fs (vector->flvector vec-fs))
+  (set! fs new-fs)
+  new-fs)
 
 (: R-sum (Float Flonum -> Flonum))
 (define (R-sum k n)
   (define num-fs (temme-iters))
-  ;; This originally filled a vector of bs, because imperative programmers don't know how to do
-  ;; anything else besides bang an array full of values (sheesh)
-  (define-values (sum b2 b1)
-    (for/fold: ([sum : Flonum  0.0]
-                [b2 : Flonum  (unsafe-flvector-ref fs (- num-fs 1))]
-                [b1 : Flonum  (unsafe-flvector-ref fs (- num-fs 2))]
-                ) ([m  (in-range (- num-fs 3) 0 -1)])
-      (define c (unsafe-flvector-ref fs m))
-      (define b0 (fl+ c (fl/ (fl* (fl+ (fl m) 1.0) b2) k)))
-      (values (fl+ (fl* n sum) b0) b1 b0)))
-  sum)
+  (let* ([fs  fs]
+         [fs  (if fs fs (build-fs))])
+    ;; This originally filled a vector of bs, because imperative programmers don't know how to do
+    ;; anything else besides bang an array full of values (sheesh)
+    (define-values (sum b2 b1)
+      (for/fold: ([sum : Flonum  0.0]
+                  [b2 : Flonum  (unsafe-flvector-ref fs (- num-fs 1))]
+                  [b1 : Flonum  (unsafe-flvector-ref fs (- num-fs 2))]
+                  ) ([m  (in-range (- num-fs 3) 0 -1)])
+        (define c (unsafe-flvector-ref fs m))
+        (define b0 (fl+ c (fl/ (fl* (fl+ (fl m) 1.0) b2) k)))
+        (values (fl+ (fl* n sum) b0) b1 b0)))
+    sum))
 
 (: R-log (Float Float -> (Values Float Float)))
 ;; Log-space version of `R' above

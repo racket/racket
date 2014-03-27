@@ -35,8 +35,14 @@
                     (fl* x (fl/ (expm1-poly-numer x) (expm1-poly-denom x))))]))
 
 ;; Integer arguments for flexp2
-(: flexp2s (Vectorof Nonnegative-Flonum))
-(define flexp2s (build-vector (- 1024 -1074) (λ: ([n : Index]) (fl (expt 2 (- n 1074))))))
+(: flexp2s (U #f (Vectorof Nonnegative-Flonum)))
+(define flexp2s #f)
+
+(define (build-flexp2s)
+  (: new-flexp2s (Vectorof Nonnegative-Flonum))
+  (define new-flexp2s (build-vector (- 1024 -1074) (λ: ([n : Index]) (fl (expt 2 (- n 1074))))))
+  (set! flexp2s new-flexp2s)
+  new-flexp2s)
 
 (begin-encourage-inline
   
@@ -89,10 +95,14 @@
                  [else  (fl* (flexp x) (flexp 1.0))])]))
   
   (: flexp2 (Flonum -> Nonnegative-Flonum))
+  ;; Computes 2^x
   (define (flexp2 x)
     (cond [(fl<= x -1075.0)  0.0]
           [(fl>= x 1024.0)  +inf.0]
-          [(fl= x (flround x))  (unsafe-vector-ref flexp2s (fl->exact-integer (fl+ x 1074.0)))]
+          [(fl= x (flround x))
+           (let* ([flexp2s  flexp2s]
+                  [flexp2s  (if flexp2s flexp2s (build-flexp2s))])
+             (unsafe-vector-ref flexp2s (fl->exact-integer (fl+ x 1074.0))))]
           [else  (flexpt 2.0 x)]))
   
   )  ; begin-encourage-inline

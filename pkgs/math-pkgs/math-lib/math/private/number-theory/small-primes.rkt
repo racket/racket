@@ -69,6 +69,8 @@
          (clear-bit! y)
          (loop (cdr ds))]))))
 
+(define: sieve-done? : Boolean  #f)
+
 (define: (sieve) : Void
   (define x 1)
   (let loop ([ds deltas])
@@ -85,9 +87,11 @@
            (mark-composites x))
          (loop (cdr ds))]))))
 
-(sieve)
-
 (define: (small-prime? [x : Integer]) : Boolean
+  (unless sieve-done?
+    (sieve)
+    (set! sieve-done? #t))
+  
   (or (= x 2) (= x 3) (= x 5)
       (and (mod60->bit (modulo x 60))
            (bit x))))
