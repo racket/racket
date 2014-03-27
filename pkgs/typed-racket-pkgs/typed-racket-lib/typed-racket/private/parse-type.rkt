@@ -19,6 +19,7 @@
          racket/syntax
          (only-in unstable/list check-duplicate)
          "parse-classes.rkt"
+         (for-template (types type-expander))
          (for-label
            (except-in racket/base case-lambda)
            "../base-env/colon.rkt"
@@ -294,6 +295,9 @@
       [t
        #:declare t (3d Type/c?)
        (attribute t.datum)]
+      [(~or expander:id (expander:id . _))
+       #:when (type-expander? (syntax-local-value #'expander (λ () #f)))
+       (parse-type (apply-type-expander #'expander stx))]
       [(fst . rst)
        #:fail-unless (not (syntax->list #'rst)) #f
        (-pair (parse-type #'fst) (parse-type #'rst))]

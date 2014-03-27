@@ -29,6 +29,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
          (all-from-out "case-lambda.rkt")
+         define-type-expander
+         (for-syntax prop:type-expander)
          class
          :
          (rename-out [define-typed-struct define-struct:]
@@ -107,6 +109,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "case-lambda.rkt"
          'struct-extraction
          "class-prims.rkt"
+         (only-in "../types/type-expander.rkt"
+                  define-type-expander prop:type-expander)
          racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
           racket/lazy-require
