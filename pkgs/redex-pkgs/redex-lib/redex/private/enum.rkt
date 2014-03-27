@@ -21,14 +21,14 @@
   [lang-enumerators (-> (listof nt?) (promise/c (listof nt?)) lang-enum?)]
   [pat-enumerator (-> lang-enum?
                       any/c ;; pattern
-                      enum?)]
+                      (or/c #f enum?))]
   [enum-ith (-> enum? exact-nonnegative-integer? any/c)]
   [enum-size (-> enum? (or/c +inf.0 exact-nonnegative-integer?))]
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-;; nt-enums : hash[sym -o> enum]
-;; cc-enums : promise/c (hash[sym -o> enum])
+;; nt-enums : hash[sym -o> (or/c #f enum)]
+;; cc-enums : promise/c (hash[sym -o> (or/c #f enum)])
 ;; unused-var/e : enum
 (struct lang-enum (nt-enums delayed-cc-enums unused-var/e))
 (struct production (n term) #:transparent)
@@ -49,14 +49,14 @@
 
 (define (lang-enumerators lang cc-lang)
   (define (make-lang-table! ht lang)
+    (define-values (fin-lang rec-lang cant-enumerate-table) (sep-lang lang))
     (define (enumerate-lang! cur-lang enum-f)
       (for ([nt (in-list cur-lang)])
         (hash-set! ht
                    (nt-name nt)
-                   (with-handlers ([exn:fail:redex? fail/e])
-                     (enum-f (nt-rhs nt)
-                             nt-enums)))))
-    (define-values (fin-lang rec-lang) (sep-lang lang))
+                   (if (hash-ref cant-enumerate-table (nt-name nt))
+                       #f
+                       (enum-f (nt-rhs nt) nt-enums)))))
     (enumerate-lang! fin-lang
                      (λ (rhs enums)
                         (enumerate-rhss rhs l-enum)))
@@ -82,11 +82,14 @@
   (struct-copy lang-enum l-enum [delayed-cc-enums filled-cc-enums]))
 
 (define (pat-enumerator l-enum pat)
-  (map/e
-   to-term
-   (λ (_)
-      (redex-error 'pat-enum "Enumerator is not a  bijection"))
-   (pat/e pat l-enum)))
+  (cond
+    [(can-enumerate? pat (lang-enum-nt-enums l-enum) (lang-enum-delayed-cc-enums l-enum))
+     (map/e
+      to-term
+      (λ (_)
+        (redex-error 'pat-enum "Enumerator is not a  bijection"))
+      (pat/e pat l-enum))]
+    [else #f]))
 
 (define (enumerate-rhss rhss l-enum)
   (define (with-index i e)
@@ -284,10 +287,10 @@
      (for/list ([f (in-list fs)])
        (f x))))
 
-;; lang-enum-get-nt-enum : lang-enum Symbol -> Enum 
+;; lang-enum-get-nt-enum : lang-enum Symbol -> (or/c Enum #f)
 (define (lang-enum-get-nt-enum l-enum s)
   (hash-ref (lang-enum-nt-enums l-enum) s))
 
-;; lang-enum-get-cross-enum : lang-enum Symbol -> Enum
+;; lang-enum-get-cross-enum : lang-enum Symbol -> (or/c Enum #f)
 (define (lang-enum-get-cross-enum l-enum s)
   (hash-ref (force (lang-enum-delayed-cc-enums l-enum)) s))

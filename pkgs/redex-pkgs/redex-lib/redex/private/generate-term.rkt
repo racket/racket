@@ -306,12 +306,7 @@
 
 (define (default-generator lang pat)
   (define ad-hoc-generator ((compile lang 'redex-check) pat))
-  (define enum (with-handlers ([exn:fail? (λ (x) #f)])
-                 ;; would be better if the pat-enumerator were to
-                 ;; return something to indicate failure instead of
-                 ;; raising an exception so that bugs in there wouldn't 
-                 ;; turn into #f here
-                 (pat-enumerator (compiled-lang-enum-table lang) pat)))
+  (define enum (pat-enumerator (compiled-lang-enum-table lang) pat))
   (cond
     [enum
      (define in-bounds (if (= +inf.0 (enum-size enum))
@@ -349,6 +344,7 @@
 (define (ith-generator lang pat enum-bound enum-p-value)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
+  (unless enum (error 'redex-check "cannot enumerate the pattern ~s" pat))
   (define the-size (enum-size enum))
   (cond
     [enum-bound
@@ -372,6 +368,7 @@
 (define (in-order-generator lang pat)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
+  (unless enum (error 'redex-check "cannot enumerate the pattern ~s" pat))
   (define the-size (enum-size enum))
   (λ (_size _attempt _retries)
     (values (enum-ith enum (if (= +inf.0 the-size)
@@ -698,6 +695,7 @@
 (define (generate-ith/proc lang pat)
   (define enum-lang (compiled-lang-enum-table lang))
   (define enum (pat-enumerator enum-lang pat))
+  (unless enum (error 'generate-term "cannot enumerate ~s" pat))
   (define the-size (enum-size enum))
   (λ (i)
     (unless (exact-nonnegative-integer? i)

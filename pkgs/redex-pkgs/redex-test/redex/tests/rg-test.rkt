@@ -922,6 +922,18 @@
           checked)
         '(4 3 2 1 0)))
 
+(let ()
+  ;; just make sure no errors
+  ;(redex-check (side-condition any #t) cap-x #t #:attempts 10)
+  
+  (define-language L
+    (cap-x := (side-condition 
+               variable_1 
+               (regexp-match #rx"^[A-Z]" (symbol->string (term variable_1))))))
+  
+  ;; just make sure no errors
+  (redex-check L cap-x #t #:attempts 10))
+
 ;; check-reduction-relation
 (let ()
   (define-language L

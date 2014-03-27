@@ -7,6 +7,7 @@
          racket/math
          racket/match
          racket/set
+         racket/promise
          "build-nt-property.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt")
@@ -15,9 +16,14 @@
  (contract-out
   [sep-lang (-> (listof nt?)
                 (values (listof nt?)
-                        (listof nt?)))]
+                        (listof nt?)
+                        (hash/c symbol? boolean?)))]
   [used-vars (-> (listof nt?)
-                 (listof symbol?))]))
+                 (listof symbol?))]
+  [can-enumerate? (-> any/c 
+                      (hash/c symbol? any/c) 
+                      (promise/c (hash/c symbol? any/c))
+                      boolean?)]))
 
 ;; sep-lang : lang -> lang lang
 ;; topologically sorts non-terminals by dependency
@@ -42,8 +48,10 @@
   (define sorted-right
     (sort-productions cyclic
                    cyclic-nts))
+  
   (values sorted-left
-          sorted-right))
+          sorted-right
+          (build-cant-enumerate-table lang edges)))
 
 ;; find-edges : lang -> (hash[symbol] -o> (setof (listof symbol)))
 (define (find-edges lang)
@@ -324,3 +332,75 @@
            (my-max current-max
                    (let () . defs+exprs))))]))
 
+
+(define (build-cant-enumerate-table lang edges)
+  ;; cant-enumerate-table : hash[sym[nt] -o> boolean]
+  (define cant-enumerate-table (make-hash))
+  
+  ;; fill in base cases
+  (for ([nt (in-list lang)])
+    (define name (nt-name nt))
+    (unless (for/and ([rhs (in-list (nt-rhs nt))])
+              (can-enumerate? (rhs-pattern rhs) #f #f))
+      (hash-set! cant-enumerate-table name #t)))
+  
+  ;; short-circuiting graph traversal
+  (define visited (make-hash))
+  (define (cant-enumerate-nt/fill-table nt-sym)
+    (hash-ref 
+     cant-enumerate-table
+     nt-sym
+     (λ ()
+       (define ans
+         (cond
+           [(hash-ref visited nt-sym #f) #f]
+           [else 
+            (hash-set! visited nt-sym #t)
+            ;; the '() in the next line is supicious; take it out and see tests fail
+            ;; that probably should be fixed not by putting it back....
+            (for/or ([next (in-set (hash-ref edges nt-sym '()))])
+              (cant-enumerate-nt/fill-table next))]))
+       (hash-set! cant-enumerate-table nt-sym ans)
+       ans)))
+  
+  ;; fill in the entire table
+  (for ([nt (in-list lang)])
+    (cant-enumerate-nt/fill-table (nt-name nt)))
+  
+  cant-enumerate-table)
+    
+;; can-enumerate? : any/c hash[sym -o> any[boolean]] (promise hash[sym -o> any[boolean]])
+(define (can-enumerate? pat can-enumerate-ht cross-can-enumerate-ht)
+  (let loop ([pat pat])
+    (match-a-pattern
+     pat
+     [`any #t]
+     [`number #t]
+     [`string #t]
+     [`natural #t]
+     [`integer #t]
+     [`real #t]
+     [`boolean #t]
+     [`variable #t]
+     [`(variable-except ,s ...) #t]
+     [`(variable-prefix ,s) #t]
+     [`variable-not-otherwise-mentioned #t]
+     [`hole #t]
+     [`(nt ,id) 
+      (or (not can-enumerate-ht)
+          (and (hash-ref can-enumerate-ht id) #t))]
+     [`(name ,n ,pat) (loop pat)]
+     [`(mismatch-name ,n ,pat) (loop pat)]
+     [`(in-hole ,p1 ,p2) (and (loop p1) (loop p2))]
+     [`(hide-hole ,p) (loop p)]
+     [`(side-condition ,p ,g ,e) #f]
+     [`(cross ,id) 
+      (or (not cross-can-enumerate-ht) 
+          (and (hash-ref (force cross-can-enumerate-ht) id)
+               #t))]
+     [`(list ,sub-pats ...)
+      (for/and ([sub-pat (in-list sub-pats)])
+        (match sub-pat
+          [`(repeat ,pat ,_ ,_) (loop pat)]
+          [else (loop sub-pat)]))]
+     [(? (compose not pair?)) #t])))
