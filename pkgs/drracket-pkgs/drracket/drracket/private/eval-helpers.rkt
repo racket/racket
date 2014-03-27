@@ -71,10 +71,11 @@
   
   (compile-context-preservation-enabled (prefab-module-settings-full-trace? settings))
   (compile-enforce-module-constants (prefab-module-settings-enforce-module-constants settings))
+  (define path->pkg-cache (make-hash))
   (when (prefab-module-settings-compilation-on? settings)
     (define open-pkgs
       (for/fold ([s (set)]) ([path (in-list currently-open-files)])
-        (define pkg (path->pkg path))
+        (define pkg (path->pkg path #:cache path->pkg-cache))
         (if (and pkg
                  (memq 'write
                        (file-or-directory-permissions (pkg-directory pkg))))
@@ -85,13 +86,12 @@
     (define skip-path?
       (let* ([cd (find-collects-dir)]
              [sd (find-share-dir)]
-             [path->pkg-cache (make-hash)]
              [no-dirs (append
                        (list (CACHE-DIR))
                        (if cd (list cd) null)
                        (if sd (list sd) null))])
         (λ (p) (or (file-stamp-in-paths p no-dirs)
-                   (let ([pkg (path->pkg p path->pkg-cache)])
+                   (let ([pkg (path->pkg p #:cache path->pkg-cache)])
                      (and pkg
                           (not (set-member? open-pkgs pkg))
                           (file-stamp-in-paths p (list (pkg-directory pkg)))))))))
