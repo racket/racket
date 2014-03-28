@@ -1461,7 +1461,13 @@
                 (* s CY-factor))
               (lambda (s)
                 (/ s CY-factor))))
-              
+
+(define _bool16
+  (make-ctype _uint16
+	      (lambda (s)
+		(if s #xFFFF #x0000))
+	      (lambda (s)
+		(positive? s))))
 
 (define (unsigned-int? v n)
   (and (exact-integer? v)
@@ -1761,7 +1767,7 @@
       [(string) (_system-string/utf-16 mode)]
       [(currency) _currency]
       [(date) _date]
-      [(boolean) _bool]
+      [(boolean) _bool16]
       [(scode) _SCODE]
       [(iunknown) (_IUnknown-pointer-or-com-object mode)]
       [(com-object) (_com-object mode)]
