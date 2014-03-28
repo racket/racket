@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
-         (only-in (types abbrev) (-> t:->))
+         (only-in (types abbrev) (-> t:->) [->* t:->*])
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env type-alias-helper mvar-env
               global-env type-env-structs scoped-tvar-env)
@@ -302,9 +302,10 @@
 ;; say that this binding is only called in tail position
 (define ((tc-expr-t/maybe-expected expected) e)
   (syntax-parse e #:literal-sets (kernel-literals)
-    [(~and (#%plain-lambda () _) _:tail-position^)
+    [(~and (#%plain-lambda (fmls:type-annotation^ ...) _) _:tail-position^)
      #:when expected
-     (tc-expr/check e (ret (t:-> (tc-results->values expected))))]
+     (define arg-tys (attribute fmls.type))
+     (tc-expr/check e (ret (t:->* arg-tys (tc-results->values expected))))]
     [_:tail-position^
      #:when expected
      (tc-expr/check e expected)]
