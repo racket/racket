@@ -19,7 +19,8 @@
 (require rackunit
          (except-in racket/class class)
          (except-in typed-racket/utils/utils private)
-         (except-in (base-env extra-procs prims base-types base-types-extra)
+         (except-in (base-env extra-procs prims class-prims
+                              base-types base-types-extra)
                     define lambda λ case-lambda)
          (prefix-in tr: (only-in (base-env prims) define lambda λ case-lambda))
          (for-syntax (rep type-rep filter-rep object-rep)
