@@ -3,7 +3,7 @@
 (provide start-timing do-time)
 
 ;; some macros to do some timing, only when `timing?' is #t
-(define-for-syntax timing? #f)
+(define-for-syntax timing? #t)
 
 (define-logger tr-timing)
 
@@ -20,25 +20,25 @@
       (values
        (syntax-rules ()
          [(_ msg)
-          (begin
-            (when last-time
-              (error 'start-timing "Timing already started"))
-            (set!-last-time (current-process-milliseconds))
-            (set!-initial-time last-time)
-            (log-tr-timing-debug
+          (log-tr-timing-debug
+           (let ()
+             (when last-time
+               (error 'start-timing "Timing already started"))
+             (set!-last-time (current-process-milliseconds))
+             (set!-initial-time last-time)
              (format "~a at ~a"
                      (pad "Starting" 32 #\space) initial-time)))])
        (syntax-rules ()
          [(_ msg)
-          (begin
-            (unless last-time
-              (start-timing msg))
-            (let* ([t (current-process-milliseconds)]
-                   [old last-time]
-                   [diff (- t old)]
-                   [new-msg (pad msg 32 #\space)])
-              (set!-last-time t)
-              (log-tr-timing-debug
+          (log-tr-timing-debug
+           (begin
+             (unless last-time
+               (start-timing msg))
+             (let* ([t (current-process-milliseconds)]
+                    [old last-time]
+                    [diff (- t old)]
+                    [new-msg (pad msg 32 #\space)])
+               (set!-last-time t)
                (format "~a at ~a\tlast step: ~a\ttotal: ~a"
                        new-msg t diff (- t initial-time)))))]))
       (values (lambda _ #'(void)) (lambda _ #'(void)))))
