@@ -29,7 +29,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (all-from-out "base-contracted.rkt")
          (all-from-out "top-interaction.rkt")
          (all-from-out "case-lambda.rkt")
-         class
          :
          (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct define-struct]
@@ -106,7 +105,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "base-types-extra.rkt"
          "case-lambda.rkt"
          'struct-extraction
-         "class-prims.rkt"
          racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
           racket/lazy-require
@@ -125,7 +123,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
           ;"../types/utils.rkt"
-          ;"../types/classes.rkt"
           "for-clauses.rkt"
           'struct-extraction)
          "../types/numeric-predicates.rkt"
