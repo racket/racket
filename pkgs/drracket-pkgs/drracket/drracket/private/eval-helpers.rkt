@@ -3,7 +3,6 @@
          racket/draw
          racket/list
          racket/set
-         racket/path
          compiler/cm
          setup/dirs
          planet/config
@@ -74,44 +73,28 @@
   (compile-enforce-module-constants (prefab-module-settings-enforce-module-constants settings))
   (define path->pkg-cache (make-hash))
   (when (prefab-module-settings-compilation-on? settings)
-    (define-values (open-pkg-exploded-dirs open-pkgs)
-      (for/fold ([exploded-dirs (set)] [pkgs (set)]) ([path (in-list currently-open-files)])
+    (define open-pkgs
+      (for/fold ([s (set)]) ([path (in-list currently-open-files)])
         (define pkg (path->pkg path #:cache path->pkg-cache))
-        (cond
-          [pkg 
-           (define dir (pkg-directory pkg))
-           (if (memq 'write
-                     (file-or-directory-permissions dir))
-               (values (set-add exploded-dirs (explode-path (simple-form-path dir)))
-                       (set-add pkgs pkg))
-               (values exploded-dirs pkgs))]
-          [else (values exploded-dirs pkgs)])))
+        (if (and pkg
+                 (memq 'write
+                       (file-or-directory-permissions (pkg-directory pkg))))
+            (set-add s pkg)
+            s)))
     (for ([pkg (in-set open-pkgs)])
       (log-info "DrRacket: enabling bytecode-file compilation for package ~s" pkg))
-    (define (in-open-pkg? p)
-      (cond
-        [(set-empty? open-pkg-exploded-dirs) #f]
-        [else
-         (define exp-p (explode-path (simple-form-path p)))
-         (define exp-p-len (length exp-p))
-         (for/or ([exploded-dir (in-set open-pkg-exploded-dirs)])
-           (and (<= (length exploded-dir) exp-p-len)
-                (for/and ([pkg-ele (in-list exploded-dir)]
-                          [p-ele (in-list exp-p)])
-                  (equal? pkg-ele p-ele))))]))
     (define skip-path?
       (let* ([cd (find-collects-dir)]
              [sd (find-share-dir)]
              [no-dirs (append
-                       (list (CACHE-DIR)
-                             (find-user-pkgs-dir))
+                       (list (CACHE-DIR))
                        (if cd (list cd) null)
-                       (if sd (list sd) null)
-                       (filter directory-exists?
-                               (get-pkgs-search-dirs)))])
-        (λ (p) 
-          (and (not (in-open-pkg? p))
-               (file-stamp-in-paths p no-dirs)))))
+                       (if sd (list sd) null))])
+        (λ (p) (or (file-stamp-in-paths p no-dirs)
+                   (let ([pkg (path->pkg p #:cache path->pkg-cache)])
+                     (and pkg
+                          (not (set-member? open-pkgs pkg))
+                          (file-stamp-in-paths p (list (pkg-directory pkg)))))))))
     (define extra-compiled-file-path
       (case (prefab-module-settings-annotations settings)
         [(none) (build-path "compiled" "drracket")]
