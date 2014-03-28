@@ -26,6 +26,12 @@
      (parameterize ([orig-stx stx])
        (unless (syntax->list es)
          (raise-syntax-error 'match* "expected a sequence of expressions to match" es)))
+     (define/with-syntax form-name
+       (syntax-case stx ()
+         [(fname . _)
+          (identifier? #'fname)
+          (syntax-e #'fname)]
+         [_ 'match]))
      (define len (length (syntax->list es)))
      (define srcloc-list (list #`(quote #,(syntax-source stx))
                                #`(quote #,(syntax-line stx))
@@ -36,7 +42,7 @@
      (define/with-syntax (exprs ...) es)
      (define/with-syntax outer-fail (generate-temporary #'fail))
      (define/with-syntax orig-expr (if (= 1 len) (stx-car #'(xs ...)) #'(list xs ...)))
-     (define/with-syntax raise-error (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)))))
+     (define/with-syntax raise-error (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)) 'form-name)))
      (define parsed-clauses
        (for/list ([clause (syntax->list clauses)]
                   [pats (syntax->list #'(pats ...))]
