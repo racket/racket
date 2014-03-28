@@ -24,8 +24,7 @@
           syntax/stx
           unstable/list
           "../private/syntax-properties.rkt"
-          "../utils/tc-utils.rkt"
-          "../types/utils.rkt"))
+          "../utils/tc-utils.rkt"))
 
 (provide ;; Typed class macro that coordinates with TR
          class
