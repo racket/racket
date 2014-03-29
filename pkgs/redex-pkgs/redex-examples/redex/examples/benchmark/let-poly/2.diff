@@ -1,0 +1,25 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "the classic polymorphic let + references bug")
+114c114
+<   [(where N_2 (subst N x v))
+---
+>   [(where N_2 (subst N x M))
+116c116
+<    (tc-down Γ ((λ y N_2) v) κ σ_2)
+---
+>    (tc-down Γ ((λ y N_2) M) κ σ_2)
+118,122d117
+<    (tc-down Γ (let ([x v]) N) κ σ_2)]
+< 
+<   [(where #t (not-v? M))
+<    (tc-down Γ ((λ x N) M) κ σ_2)
+<    ---------------------------------
+496a492,497
+> 
+> (define small-counter-example '(let ([x (new nil)])
+>                                  ((λ ignore
+>                                     ((hd (get x)) 1))
+>                                   ((set x) ((cons 5) nil)))))
+> (test-equal (check small-counter-example) #f)

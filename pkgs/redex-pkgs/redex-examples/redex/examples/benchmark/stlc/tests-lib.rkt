@@ -14,7 +14,7 @@
       [(and (symbol? t1) 
             (symbol? t2)
             (not (equal? t1 t2))
-            (same-first-char? t1 t2))
+            (same-first-char-or-empty-and-numbers? t1 t2))
        (cond
          [(equal? t1 t2) #t]
          [else
@@ -26,12 +26,16 @@
              #t])])]
       [else (equal? t1 t2)])))
 
-(define (same-first-char? t1 t2)
+(define (same-first-char-or-empty-and-numbers? t1 t2)
   (define (first-char s) (string-ref (symbol->string s) 0))
-  (and (not (equal? t1 '||))
-       (not (equal? t2 '||))
-       (equal? (first-char t1)
-               (first-char t2))))
+  (cond
+    [(equal? t1 '||)
+     (regexp-match #rx"[^[0-9]*$" (symbol->string t2))]
+    [(equal? t2 '||)
+     (regexp-match #rx"[^[0-9]*$" (symbol->string t1))]
+    [else
+     (equal? (first-char t1)
+             (first-char t2))]))
 
 (define-syntax-rule
   (stlc-tests uses-bound-var?

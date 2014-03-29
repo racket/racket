@@ -1,5 +1,5 @@
 #lang racket/base
-(require "let-poly-stlc-base.rkt" 
+(require "let-poly-base.rkt" 
          (only-in "../stlc/tests-lib.rkt" consistent-with?)
          redex/reduction-semantics)
 
@@ -38,8 +38,9 @@
 (test-equal (consistent-with? (term (subst (let ([z 11]) (let ([z1 12]) z)) q 1))
                               (term (let ([z 11]) (let ([z1 12]) z))))
             #t)
-
-
+(test-equal (consistent-with? (term (subst (let ((|| +)) ||) |1| (λ x1 x1)))
+                              (term (let ((|| +)) ||)))
+            #t)
 
 (test-equal (term (unify x int))
             (term (x int ·)))

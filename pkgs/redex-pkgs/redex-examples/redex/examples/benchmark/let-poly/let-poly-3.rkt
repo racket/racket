@@ -1,6 +1,6 @@
 #lang racket/base
 
-(define the-error "no error")
+(define the-error "mix up types in the function case")
 
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
@@ -60,6 +60,22 @@
 (define M? (redex-match? stlc M))
 (define Σ-M? (redex-match? stlc (Σ M)))
 
+#|
+
+The typing judgment has no rule with multiple 
+(self-referential) premises. Instead, it explicitly
+manipulates a continuation so that it can, when it
+discovers a type equality, simply do the substitution
+through the continuation. This also makes it possible
+to easily generate fresh variables by picking ones
+that aren't in the expression or the continuation.
+
+The 'tc-down' rules recur thru the term to find a type
+of the left-most subexpression and the 'tc-up' rules
+bring that type back, recurring on the continuation.
+
+|#
+
 (define-judgment-form stlc
   #:mode (typeof I O)
   #:contract (typeof M σ)
@@ -87,7 +103,7 @@
    (tc-down Γ x κ σ_ans)]
   
   [(where y ,(variable-not-in (term (x Γ M κ)) 'α2-))
-   (tc-down (x y Γ) M (λ y κ) σ_ans)  ;; BUG: the continuation had 'x' not 'y' in it
+   (tc-down (x y Γ) M (λ y κ) σ_ans)
    ------------------------------------------------
    (tc-down Γ (λ x M) κ σ_ans)]
   
@@ -95,25 +111,10 @@
    --------------------------
    (tc-down Γ (M_1 M_2) κ σ_2)]
 
-#|
-  ;; BUG: this is the classic bug -- it replaces the last two rules below
-  [(where y ,(variable-not-in (term (x M N κ)) 'l))
-   (tc-down Γ ((λ y (subst N x M)) M) κ σ_2)
-   -----------------------------------------
-   (tc-down Γ (let ([x M]) N) κ σ_2)]
-|#
-  
-#|
-;; BUG: doesn't type check 'v' when x doesn't occur free in N
-;; I knew about this and yet STILL forgot to do it properly!
-  [(tc-down Γ (subst N x v) κ σ_2)
-   ----------------------------------
-   (tc-down Γ (let ([x v]) N) κ σ_2)]
-|#
-  
-  [(where y ,(variable-not-in (term (x v N κ)) 'l))
-   (tc-down Γ ((λ y (subst N x v)) v) κ σ_2)
-   ----------------------------------
+  [(where N_2 (subst N x v))
+   (where y ,(variable-not-in (term N_2) 'l))
+   (tc-down Γ ((λ y N_2) v) κ σ_2)
+   ------------------------------------------
    (tc-down Γ (let ([x v]) N) κ σ_2)]
 
   [(where #t (not-v? M))
@@ -133,28 +134,37 @@
    (tc-up τ (1 Γ M κ) σ_ans)]
   
   [(where x ,(variable-not-in (term (τ_1 τ_2 κ)) 'α1-))
-   (where G (unify τ_2 (τ_1 → x)))  ;; BUG: swap τ_2 and τ_1 in this line
+   (where G (unify τ_1 (τ_2 → x)))
    (tc-up (apply-subst-τ G x)
           (apply-subst-κ G κ)
           σ_ans)
    ---------------------------------------------------
    (tc-up τ_1 (2 τ_2 κ) σ_ans)]
   
-#|  
-  ;; BUG: this case was written assuming that τ_2 was 
-  ;; already an arrow type (which is wrong only when it is
-  ;; a variable:
-  [(where G (unify τ_1 τ_2))
-   (tc-up (apply-subst-τ G τ_3)
-          (apply-subst-κ G κ)
-          σ_ans)
-   -----------------------------------
-   (tc-up τ_1 (2 (τ_2 → τ_3) κ) σ_ans)]
-|#  
-  
   [(tc-up (τ_1 → τ_2) κ σ_ans)
    ---------------------------
    (tc-up τ_2 (λ τ_1 κ) σ_ans)])
+
+(define-metafunction stlc
+  const-type0 : c0 -> σ
+  [(const-type0 +) (int → (int → int))]
+  [(const-type0 integer) int])
+
+(define-metafunction stlc
+  const-type1 : x c1 -> σ
+  [(const-type1 x nil) (list x)]
+  [(const-type1 x cons) (x → ((list x) → (list x)))]
+  [(const-type1 x hd) ((list x) → x)]
+  [(const-type1 x tl) ((list x) → (list x))]
+  [(const-type1 x new) (x → (ref x))]
+  [(const-type1 x get) ((ref x) → x)]
+  [(const-type1 x set) ((ref x) → (x → x))])
+
+(define-metafunction stlc
+  lookup-Γ : Γ x -> σ or #f
+  [(lookup-Γ (x σ Γ) x) σ]
+  [(lookup-Γ (x σ Γ) y) (lookup-Γ Γ y)]
+  [(lookup-Γ · x) #f])
 
 (define-metafunction stlc
   unify : τ τ -> Gx or ⊥
@@ -166,17 +176,21 @@ Algorithm copied from _An Efficient Unification Algorithm_ by
 Alberto Martelli and Ugo Montanari (section 2).
 http://www.nsl.com/misc/papers/martelli-montanari.pdf
 
-The two iterate and the terminate rule are just how this code
-searches for places to apply the rules; they are not from that 
-section in the paper.
+This isn't the eponymous algorithm; it is an earlier one
+in the paper that's simpler.
+
+The 'uh' function iterates over a set of equations applying the
+rules from the paper, moving them from the first argument to
+the second argument and tracking when something changes.
+It runs until there are no more changes. The (a), (b),
+(c), and (d) are the rule labels from the paper.
 
 |#
 
 (define-metafunction stlc
   uh : G G boolean -> Gx or ⊥
-  ;; iterate
+
   [(uh · G #t) (uh G · #f)]
-  ;; terminate
   [(uh · G #f) G]
   
   ;; (a)
@@ -195,7 +209,6 @@ section in the paper.
   [(uh (τ σ G) G_r boolean) ⊥ (where #t (not-var? τ)) (where #t (not-var? σ))]
   
   ;; (d) -- x occurs in τ case
-  ;; BUG: had (in-vars? x τ) not (in-vars-τ? x τ)
   [(uh (x τ G) G_r boolean) ⊥ (where #t (in-vars-τ? x τ))]
   
   ;; (d) -- x does not occur in τ case
@@ -203,7 +216,7 @@ section in the paper.
    (uh (eliminate-G x τ G) (x τ (eliminate-G x τ G_r)) #t)
    (where #t (∨ (in-vars-G? x G) (in-vars-G? x G_r)))]
   
-  ;; iterate
+  ;; no rules applied; try next equation, if any.
   [(uh (τ σ G) G_r boolean) (uh G (τ σ G_r) boolean)])
 
 (define-metafunction stlc
@@ -211,17 +224,6 @@ section in the paper.
   [(eliminate-G x τ ·) ·]
   [(eliminate-G x τ (σ_1 σ_2 G))
    ((eliminate-τ x τ σ_1) (eliminate-τ x τ σ_2) (eliminate-G x τ G))])
-
-#|
-;; BUG: eliminate-G was written as if it was getting a Gx as input:
-(define-metafunction stlc
-  eliminate-G : x τ G -> G
-  [(eliminate-G x τ ·) ·]
-  [(eliminate-G x τ (x σ G))
-   (τ (eliminate-τ x τ σ) (eliminate-G x τ G))]
-  [(eliminate-G x τ (y σ G))
-   (y (eliminate-τ x τ σ) (eliminate-G x τ G))])
-|#
 
 (define-metafunction stlc
   eliminate-τ : x τ σ -> σ
@@ -235,9 +237,6 @@ section in the paper.
 (define-metafunction stlc
   ∨ : boolean boolean -> boolean
   [(∨ #f #f) #f]
-  
-  ;; BUG: this case was [(∨ boolean boolean) #t]
-  ;; (which, of course, means that the two bools have to be the same)
   [(∨ boolean_1 boolean_2) #t])
 
 (define-metafunction stlc
@@ -285,30 +284,18 @@ section in the paper.
   [(apply-subst-Γ Gx ·) ·])
 
 (define-metafunction stlc
-  const-type0 : c -> σ
-  [(const-type0 +) (int → (int → int))]
-  [(const-type0 integer) int])
-
-(define-metafunction stlc
-  const-type1 : x c -> σ
-  [(const-type1 x nil) (list x)]
-  [(const-type1 x cons) (x → ((list x) → (list x)))]
-  [(const-type1 x hd) ((list x) → x)]
-  [(const-type1 x tl) ((list x) → (list x))]
-  [(const-type1 x new) (x → (ref x))]
-  [(const-type1 x get) ((ref x) → x)]
-  [(const-type1 x set) ((ref x) → (x → x))])
-
-(define-metafunction stlc
-  lookup-Γ : Γ x -> σ or #f
-  [(lookup-Γ (x σ Γ) x) σ]
-  [(lookup-Γ (x σ Γ) y) (lookup-Γ Γ y)]
-  [(lookup-Γ · x) #f])
-
-(define-metafunction stlc
   not-v? : M -> boolean
   [(not-v? v) #f]
   [(not-v? M) #t])
+
+#|
+
+The reduction relation rewrites a pair of
+a store and an expression to a new store
+and a new expression or into the string
+ "error" (for hd and tl of the empty list)
+
+|#
 
 (define red
   (reduction-relation
@@ -319,15 +306,6 @@ section in the paper.
    (--> (Σ (in-hole E (let ([x v]) M)))
         (Σ (in-hole E (subst M x v)))
         "let")
-   #|
-;; BUG: this rule in place of the one above,
-;; plus no evaluation contexts of 'let'
-;; this bug is D because it only fails due to polymorphism -- subtle
-   (--> (Σ (in-hole E (let ([x M]) N)))
-        (Σ (in-hole E ((λ x N) M)))
-        "let")
-   |#
-   
    (--> (Σ (in-hole E (hd ((cons v_1) v_2))))
         (Σ (in-hole E v_1))
         "hd")
@@ -354,6 +332,13 @@ section in the paper.
         (Σ (in-hole E (lookup-Σ Σ x)))
         "get")))
    
+#|
+
+Capture avoiding substitution
+
+|#
+
+
 (define-metafunction stlc
   subst : M x M -> M
   [(subst x x M_x)
@@ -393,6 +378,12 @@ section in the paper.
   [(update-Σ (x v_1 Σ) x v_2) (x v_2 Σ)]
   [(update-Σ (x v_1 Σ) y v_2) (x v_1 (update-Σ Σ y v_2))])
 
+#|
+
+A top-level evaluator
+
+|#
+
 (define/contract (Eval M)
   (-> M? (or/c "error" 'list 'λ 'ref number?))
   (define M-t (judgment-holds (typeof ,M τ) τ))
@@ -425,6 +416,12 @@ section in the paper.
   [(Σ->lets · M) M]
   [(Σ->lets (x v Σ) M) (let ([x (new v)]) (Σ->lets Σ M))])
 
+#|
+
+A top-level type checker.
+
+|#
+
 (define/contract (type-check M)
   (-> M? (or/c τ? #f))
   (define M-t (judgment-holds (typeof ,M τ) τ))
@@ -436,11 +433,11 @@ section in the paper.
     [else
      (error 'type-check "non-unique type: ~s : ~s" M M-t)]))
 
-(define (progress-holds? M)
-  (if (type-check M)
-      (or (v? M)
-          (not (null? (apply-reduction-relation red (term (· ,M))))))
-      #t))
+#|
+
+Random generators
+
+|#
 
 (define (generate-M-term)
   (generate-term stlc M 5))
@@ -448,36 +445,21 @@ section in the paper.
 (define (generate-typed-term)
   (match (generate-term stlc 
                         #:satisfying
-                        (typeof · M τ)
+                        (typeof M τ)
                         5)
-    [`(typeof · ,M ,τ)
+    [`(typeof ,M ,τ)
      M]
     [#f #f]))
 
 (define (typed-generator)
   (let ([g (redex-generator stlc 
-                            (typeof · M τ)
+                            (typeof M τ)
                             5)])
     (λ () 
       (match (g)
-        [`(typeof · ,M ,τ)
+        [`(typeof ,M ,τ)
          M]
         [#f #f]))))
-
-(define (check M)
-  (or (not M)
-      (v? M)
-      (let ([t-type (type-check M)])
-        (implies
-         t-type
-         (let ([red-res (apply-reduction-relation red `(· ,M))])
-           (and (= (length red-res) 1)
-                (let ([red-t (car red-res)])
-                  (or (equal? red-t "error")
-                      (match red-t
-                        [`(,Σ ,N)
-                         (let ([red-type (type-check (term (Σ->lets ,Σ ,N)))])
-                           (consistent-with? t-type red-type))])))))))))
 
 (define (generate-enum-term)
   (generate-term stlc M #:i-th (pick-an-index 0.035)))
@@ -489,4 +471,30 @@ section in the paper.
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
 
-;(time (redex-check stlc M (check (term M)) #:attempts 100000))
+#|
+
+Check to see if a combination of preservation
+and progress holds for every single term reachable
+from the given term.
+
+|#
+
+(define (check M)
+  (or (not M)
+      (let ([t-type (type-check M)])
+        (implies
+         t-type
+         (let loop ([Σ+M `(· ,M)])
+           (define new-type 
+             (type-check (term (Σ->lets ,(list-ref Σ+M 0) ,(list-ref Σ+M 1)))))
+           (and (consistent-with? t-type new-type)
+                (or (v? (list-ref Σ+M 1))
+                    (let ([red-res (apply-reduction-relation red Σ+M)])
+                      (and (= (length red-res) 1)
+                           (let ([red-t (car red-res)])
+                             (or (equal? red-t "error")
+                                 (loop red-t))))))))))))
+
+
+(define small-counter-example (term (1 cons)))
+(test-equal (check small-counter-example) #f)

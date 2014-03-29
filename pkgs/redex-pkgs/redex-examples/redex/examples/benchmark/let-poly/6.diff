@@ -1,0 +1,14 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "∨ has an incorrect duplicated variable, leading to an uncovered case")
+240c240
+<   [(∨ boolean_1 boolean_2) #t])
+---
+>   [(∨ boolean boolean) #t])
+496a497,501
+> 
+> (define small-counter-example (term ((λ x x) 1)))
+> (test-equal (with-handlers ([exn:fail? (λ (x) #f)])
+>                (check small-counter-example))
+>             #f)

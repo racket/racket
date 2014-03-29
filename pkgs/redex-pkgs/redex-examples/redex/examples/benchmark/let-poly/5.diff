@@ -1,0 +1,18 @@
+3c3
+< (define the-error "no error")
+---
+> (define the-error "eliminate-G was written as if it always gets a Gx as input")
+225,226c225,228
+<   [(eliminate-G x τ (σ_1 σ_2 G))
+<    ((eliminate-τ x τ σ_1) (eliminate-τ x τ σ_2) (eliminate-G x τ G))])
+---
+>   [(eliminate-G x τ (x σ G))
+>    (τ (eliminate-τ x τ σ) (eliminate-G x τ G))]
+>   [(eliminate-G x τ (y σ G))
+>    (y (eliminate-τ x τ σ) (eliminate-G x τ G))])
+496a499,503
+> 
+> (define small-counter-example (term (cons 1)))
+> (test-equal (with-handlers ([exn:fail? (λ (x) #f)])
+>               (check small-counter-example))
+>             #f)

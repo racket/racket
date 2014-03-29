@@ -11,6 +11,7 @@
 (define directories (list "stlc"
                           "stlc-sub"
                           "poly-stlc"
+                          "let-poly"
                           "rbtrees"
                           "delim-cont"
                           "list-machine"
