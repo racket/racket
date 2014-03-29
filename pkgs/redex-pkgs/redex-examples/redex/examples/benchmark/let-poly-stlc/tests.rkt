@@ -3,26 +3,6 @@
          (only-in "../stlc/tests-lib.rkt" consistent-with?)
          redex/reduction-semantics)
 
-(test-equal (term (uses-bound-var? () 5))
-            #f)
-(test-equal (term (uses-bound-var? () nil))
-            #f)
-(test-equal (term (uses-bound-var? () (λ x x)))
-            #t)
-(test-equal (term (uses-bound-var? () (λ x y)))
-            #f)
-(test-equal (term (uses-bound-var? () ((λ x x) 5)))
-            #t)
-(test-equal (term (uses-bound-var? () ((λ x xy) 5)))
-            #f)
-
-(test-equal (consistent-with? '(λ z1 (λ z2 z2))
-                              '(λ z (λ z1 z)))
-            #f)
-(test-equal (consistent-with? '(λ z1 (λ z2 z2))
-                              '(λ z (λ z1 z1)))
-            #t)
-
 (test-equal (term (subst ((+ 1) 1) x 2))
             (term ((+ 1) 1)))
 (test-equal (term (subst ((+ x) x) x 2))
@@ -44,6 +24,19 @@
             #t)
 (test-equal (consistent-with? (term (subst (λ z (λ z1 z)) q 1))
                               (term (λ z (λ z1 z))))
+            #t)
+
+(test-equal (consistent-with? (term (subst (let ([y x]) x) x 2))
+                              (term (let ([y 2]) 2)))
+            #t)
+(test-equal (consistent-with? (term (subst (let ([y x]) x) x (λ q z)))
+                              (term (let ([y (λ q z)]) (λ q z))))
+            #t)
+(test-equal (consistent-with? (term (subst (let ([y x]) x) x (λ q y)))
+                              (term (let ([y (λ q y)]) (λ q y))))
+            #t)
+(test-equal (consistent-with? (term (subst (let ([z 11]) (let ([z1 12]) z)) q 1))
+                              (term (let ([z 11]) (let ([z1 12]) z))))
             #t)
 
 
@@ -80,17 +73,20 @@
 (test-equal (judgment-holds (typeof 5 τ) τ)
             (list (term int)))
 (test-equal (judgment-holds (typeof nil τ) τ)
-            (list (term (list int))))
+            (list (term (list γ))))
 (test-equal (judgment-holds (typeof (cons 1) τ) τ)
             (list (term ((list int) → (list int)))))
 (test-equal (judgment-holds (typeof ((cons 1) nil) τ) τ)
             (list (term (list int))))
-(test-equal (judgment-holds (typeof (λ x x) τ) τ)
-            (list (term (α → α))))
-(test-equal (judgment-holds (typeof (λ x (λ y x)) τ) τ)
-            (list (term (α → (α1 → α)))))
-(test-equal (judgment-holds (typeof (λ f (λ x (f ((+ x) 1)))) τ) τ)
-            (list (term ((int → β) → (int → β)))))
+(test-equal (consistent-with? (judgment-holds (typeof (λ x x) τ) τ)
+                              (list (term (α → α))))
+            #t)
+(test-equal (consistent-with? (judgment-holds (typeof (λ x (λ y x)) τ) τ)
+                              (list (term (α → (α1 → α)))))
+            #t)
+(test-equal (consistent-with? (judgment-holds (typeof (λ f (λ x (f ((+ x) 1)))) τ) τ)
+                              (list (term ((int → α) → (int → α)))))
+            #t)
 (test-equal (judgment-holds (typeof (λ f (λ x ((+ (f ((+ x) 1))) 2))) τ) τ)
             (list (term ((int → int) → (int → int)))))
 (test-equal (judgment-holds (typeof (λ f (λ x ((+ x) (f 1)))) τ) τ)
@@ -99,75 +95,99 @@
             (list))
 (test-equal (judgment-holds (typeof ((+ ((+ 1) 2)) ((+ 3) 4)) τ) τ)
             (list (term int)))
-
-(test-->> red (term ((λ x x) 7)) (term 7))
-(test-->> red (term (((λ x (λ x x)) 2) 1)) (term 1))
-(test-->> red (term (((λ x (λ y x)) 2) 1)) (term 2))
-(test-->> red 
-          (term ((λ x ((cons x) nil)) 11))
-          (term ((cons 11) nil)))
-(test-->> red 
-          (term ((λ x ((cons x) nil)) 11))
-          (term ((cons 11) nil)))
-(test-->> red 
-          (term ((cons ((λ x x) 11)) nil))
-          (term ((cons 11) nil)))
-(test-->> red
-          (term (cons ((λ x x) 1)))
-          (term (cons 1)))
-(test-->> red
-          (term ((cons ((λ x x) 1)) nil))
-          (term ((cons 1) nil)))
-(test-->> red
-          (term (hd ((λ x ((cons x) nil)) 11)))
-          (term 11))
-(test-->> red
-          (term (tl ((λ x ((cons x) nil)) 11)))
-          (term nil))
-(test-->> red
-          (term (tl nil))
-          "error")
-(test-->> red
-          (term (hd nil))
-          "error")
-(test-->> red
-          (term ((+ 1) (hd nil)))
-          "error")
-(test-->> red
-          (term ((+ ((+ 1) 2)) ((+ 3) 4)))
-          (term 10))
-(test-->> red
-          (term ((λ f (f 3)) (cons 1)))
-          (term ((cons 1) 3)))
-(test-->> red
-          (term ((λ f (f 3)) (+ 1)))
-          (term 4))
-
-(test-equal (Eval (term ((λ x x) 3)))
-            (term 3))
-
-(test-equal (reduction-step-count (term (λ x x)))
-            0)
-(test-equal (reduction-step-count (term ((λ x x) 1)))
-            1)
-(test-equal (reduction-step-count (term ((λ x x) 1)))
-            1)
-(test-equal (reduction-step-count (term ((cons 1) nil)))
-            0)
-(test-equal (reduction-step-count (term (hd ((cons 1) nil))))
-            1)
-(test-equal (reduction-step-count (term (hd nil)))
-            1)
-(test-equal (reduction-step-count (term ((λ x x) (hd ((cons 1) nil)))))
-            2)
-
-(test-equal (type-check (term 5))
-            (term int))
-(test-equal (type-check (term (5 5)))
-            #f)
-
+(test-equal (judgment-holds (typeof ((cons ((cons 1) nil)) nil) τ) τ)
+            (list (term (list (list int)))))
+(test-equal (judgment-holds (typeof ((cons nil) nil) τ) τ)
+            (list (term (list (list γ1)))))
+(test-equal (judgment-holds (typeof ((set (new 1)) 2) τ) τ)
+            (list (term int)))
+(test-equal (judgment-holds (typeof (get (new 1)) τ) τ)
+            (list (term int)))
 (test-equal (judgment-holds (typeof (let ([id (λ y y)])
                                       ((id id) 1))
                                     τ)
                             τ)
             (list (term int)))
+(test-equal (judgment-holds (typeof (let ([r (new nil)])
+                                      (let ([n ((set r) ((cons 5) nil))])
+                                        ((hd (get r)) 1)))
+                                    τ)
+                            τ)
+            (list))
+
+(test-->> red (term (· ((λ x x) 7))) (term (· 7)))
+(test-->> red (term (· (((λ x (λ x x)) 2) 1))) (term (· 1)))
+(test-->> red (term (· (((λ x (λ y x)) 2) 1))) (term (· 2)))
+(test-->> red 
+          (term (· ((λ x ((cons x) nil)) 11)))
+          (term (· ((cons 11) nil))))
+(test-->> red 
+          (term (· ((λ x ((cons x) nil)) 11)))
+          (term (· ((cons 11) nil))))
+(test-->> red 
+          (term (· ((cons ((λ x x) 11)) nil)))
+          (term (· ((cons 11) nil))))
+(test-->> red
+          (term (· (cons ((λ x x) 1))))
+          (term (· (cons 1))))
+(test-->> red
+          (term (· ((cons ((λ x x) 1)) nil)))
+          (term (· ((cons 1) nil))))
+(test-->> red
+          (term (· (hd ((λ x ((cons x) nil)) 11))))
+          (term (· 11)))
+(test-->> red
+          (term (· (tl ((λ x ((cons x) nil)) 11))))
+          (term (· nil)))
+(test-->> red
+          (term (· (tl nil)))
+          "error")
+(test-->> red
+          (term (· (hd nil)))
+          "error")
+(test-->> red
+          (term (· ((+ 1) (hd nil))))
+          "error")
+(test-->> red
+          (term (· ((+ ((+ 1) 2)) ((+ 3) 4))))
+          (term (· 10)))
+(test-->> red
+          (term (· ((λ f (f 3)) (cons 1))))
+          (term (· ((cons 1) 3))))
+(test-->> red
+          (term (· ((λ f (f 3)) (+ 1))))
+          (term (· 4)))
+(test-->> red
+          (term (· (let ([f (+ 2)]) ((+ (f 3)) (f 4)))))
+          (term (· 11)))
+(test-->> red
+          (term (· (get (new 1))))
+          (term ((r 1 ·) 1)))
+(test-->> red
+          (term (· ((set (new 1)) 2)))
+          (term ((r 2 ·) 1)))
+(test-->> red
+          #:equiv consistent-with?
+          (term (· (let ([r (new 1)])
+                     (let ([o ((set r) 2)])
+                       (get r)))))
+          (term ((r 2 ·) 2)))
+(test-->> red
+          #:equiv consistent-with?
+          (term (· (let ([r (new nil)])
+                     (let ([n ((set r) ((cons 5) nil))])
+                       ((hd (get r)) 1)))))
+          (term ((r ((cons 5) nil) ·) (5 1))))
+
+(test-equal (Eval (term ((λ x x) 3)))
+            3)
+(test-equal (Eval (term ((cons 1) nil)))
+            'list)
+(test-equal (Eval (term (cons 1)))
+            'λ)
+(test-equal (Eval (term (λ x x)))
+            'λ)
+(test-equal (type-check (term 5))
+            (term int))
+(test-equal (type-check (term (5 5)))
+            #f)

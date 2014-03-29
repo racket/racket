@@ -3,13 +3,12 @@
 (define the-error "no error")
 
 (require redex/reduction-semantics
-         ;(only-in redex/private/generate-term pick-an-index)
+         (only-in redex/private/generate-term pick-an-index)
          racket/match
          racket/list
          racket/contract
          racket/bool
-         redex/tut-subst
-         data/union-find)
+         (only-in "../stlc/tests-lib.rkt" consistent-with?))
 
 (provide (all-defined-out))
 
@@ -21,23 +20,30 @@
      c
      (let ([x M]) N))
   (Γ (x σ Γ)
-     •)
+     ·)
   (σ τ ::=
      int
-     (list τ)
      (σ → τ)
+     (list τ)
+     (ref τ)
      x)
-  (c d ::= cons nil hd tl + integer)
-  ((x y) variable-not-otherwise-mentioned)
+  (c d ::= c0 c1)
+  (c0 ::= + integer)
+  (c1 ::= cons nil hd tl new get set)
+  (x y r ::= variable-not-otherwise-mentioned)
   
   (v (λ x M)
      c
-     (cons v)
      ((cons v) v)
-     (+ v))
+     (cons v)
+     (+ v)
+     (set v)
+     r)
   (E hole
      (E M)
-     (v E))
+     (v E)
+     (let ([x E]) M))
+  (Σ ::= · (r v Σ))
 
   (κ ::= 
      · 
@@ -51,12 +57,14 @@
 (define v? (redex-match? stlc v))
 (define τ? (redex-match? stlc τ))
 (define x? (redex-match? stlc x))
+(define M? (redex-match? stlc M))
+(define Σ-M? (redex-match? stlc (Σ M)))
 
 (define-judgment-form stlc
   #:mode (typeof I O)
   #:contract (typeof M σ)
   
-  [(tc-down • M · σ)
+  [(tc-down · M · σ)
    -------------
    (typeof M σ)])
 
@@ -64,16 +72,21 @@
   #:mode (tc-down I I I O)
   #:contract (tc-down Γ M κ σ)
   
-  [(tc-up (const-type c) κ σ_ans)
+  [(tc-up (const-type0 c0) κ σ_ans)
    ------------------------------
-   (tc-down Γ c κ σ_ans)]
+   (tc-down Γ c0 κ σ_ans)]
   
-  [(where τ (lookup Γ x))
+  [(where x ,(variable-not-in (term (Γ κ)) 'γ))
+   (tc-up (const-type1 x c1) κ σ_ans)
+   ------------------------------
+   (tc-down Γ c1 κ σ_ans)]
+  
+  [(where τ (lookup-Γ Γ x))
    (tc-up τ κ σ_ans)
    ---------------------------
    (tc-down Γ x κ σ_ans)]
   
-  [(where y ,(variable-not-in (term (x Γ M κ)) 'α))
+  [(where y ,(variable-not-in (term (x Γ M κ)) 'α2-))
    (tc-down (x y Γ) M (λ y κ) σ_ans)  ;; BUG: the continuation had 'x' not 'y' in it
    ------------------------------------------------
    (tc-down Γ (λ x M) κ σ_ans)]
@@ -82,8 +95,30 @@
    --------------------------
    (tc-down Γ (M_1 M_2) κ σ_2)]
 
-  [(tc-down Γ (subst N x M) κ σ_2)
+#|
+  ;; BUG: this is the classic bug -- it replaces the last two rules below
+  [(where y ,(variable-not-in (term (x M N κ)) 'l))
+   (tc-down Γ ((λ y (subst N x M)) M) κ σ_2)
+   -----------------------------------------
+   (tc-down Γ (let ([x M]) N) κ σ_2)]
+|#
+  
+#|
+;; BUG: doesn't type check 'v' when x doesn't occur free in N
+;; I knew about this and yet STILL forgot to do it properly!
+  [(tc-down Γ (subst N x v) κ σ_2)
    ----------------------------------
+   (tc-down Γ (let ([x v]) N) κ σ_2)]
+|#
+  
+  [(where y ,(variable-not-in (term (x v N κ)) 'l))
+   (tc-down Γ ((λ y (subst N x v)) v) κ σ_2)
+   ----------------------------------
+   (tc-down Γ (let ([x v]) N) κ σ_2)]
+
+  [(where #t (not-v? M))
+   (tc-down Γ ((λ x N) M) κ σ_2)
+   ---------------------------------
    (tc-down Γ (let ([x M]) N) κ σ_2)])
 
 (define-judgment-form stlc
@@ -97,7 +132,7 @@
    ---------------------------
    (tc-up τ (1 Γ M κ) σ_ans)]
   
-  [(where x ,(variable-not-in (term (τ_1 τ_2 κ)) 'β))
+  [(where x ,(variable-not-in (term (τ_1 τ_2 κ)) 'α1-))
    (where G (unify τ_2 (τ_1 → x)))  ;; BUG: swap τ_2 and τ_1 in this line
    (tc-up (apply-subst-τ G x)
           (apply-subst-κ G κ)
@@ -153,6 +188,7 @@ section in the paper.
   ;; (c) -- term reduction
   [(uh ((τ_1 → τ_2) (σ_1 → σ_2) G) G_r boolean) (uh (τ_1 σ_1 (τ_2 σ_2 G)) G_r #t)]
   [(uh ((list τ)    (list σ)    G) G_r boolean) (uh (τ σ G)               G_r #t)]
+  [(uh ((ref τ)     (ref σ)     G) G_r boolean) (uh (τ σ G)               G_r #t)]
   [(uh (int         int         G) G_r boolean) (uh G                     G_r #t)]
   
   ;; (c) -- failure
@@ -191,6 +227,7 @@ section in the paper.
   eliminate-τ : x τ σ -> σ
   [(eliminate-τ x τ (σ_1 → σ_2)) ((eliminate-τ x τ σ_1) → (eliminate-τ x τ σ_2))]
   [(eliminate-τ x τ (list σ)) (list (eliminate-τ x τ σ))]
+  [(eliminate-τ x τ (ref σ)) (ref (eliminate-τ x τ σ))]
   [(eliminate-τ x τ int) int]
   [(eliminate-τ x τ x) τ]
   [(eliminate-τ x τ y) y])
@@ -212,6 +249,7 @@ section in the paper.
   in-vars-τ? : x τ -> boolean
   [(in-vars-τ? x (τ_1 → τ_2)) (∨ (in-vars-τ? x τ_1) (in-vars-τ? x τ_2))]
   [(in-vars-τ? x (list τ)) (in-vars-τ? x τ)]
+  [(in-vars-τ? x (ref τ)) (in-vars-τ? x τ)]
   [(in-vars-τ? x int) #f]
   [(in-vars-τ? x x) #t]
   [(in-vars-τ? x y) #f])
@@ -243,78 +281,149 @@ section in the paper.
 
 (define-metafunction stlc
   apply-subst-Γ : Gx Γ -> Γ
-  [(apply-subst-Γ Gx (y σ Γ))
-   (y (apply-subst-τ Gx σ)
-      (apply-subst-Γ Gx Γ))]
-  [(apply-subst-Γ Gx •) •])
+  [(apply-subst-Γ Gx (y σ Γ)) (y (apply-subst-τ Gx σ) (apply-subst-Γ Gx Γ))]
+  [(apply-subst-Γ Gx ·) ·])
 
 (define-metafunction stlc
-  const-type : c -> σ
-  [(const-type nil)
-   (list int)]
-  [(const-type cons)
-   (int → ((list int) → (list int)))]
-  [(const-type hd)
-   ((list int) → int)]
-  [(const-type tl)
-   ((list int) → (list int))]
-  [(const-type +)
-   (int → (int → int))]
-  [(const-type integer)
-   int])
+  const-type0 : c -> σ
+  [(const-type0 +) (int → (int → int))]
+  [(const-type0 integer) int])
 
 (define-metafunction stlc
-  lookup : Γ x -> σ or #f
-  [(lookup (x σ Γ) x)
-   σ]
-  [(lookup (x σ Γ) y) 
-   (lookup Γ y)]
-  [(lookup • x)
-   #f])
+  const-type1 : x c -> σ
+  [(const-type1 x nil) (list x)]
+  [(const-type1 x cons) (x → ((list x) → (list x)))]
+  [(const-type1 x hd) ((list x) → x)]
+  [(const-type1 x tl) ((list x) → (list x))]
+  [(const-type1 x new) (x → (ref x))]
+  [(const-type1 x get) ((ref x) → x)]
+  [(const-type1 x set) ((ref x) → (x → x))])
+
+(define-metafunction stlc
+  lookup-Γ : Γ x -> σ or #f
+  [(lookup-Γ (x σ Γ) x) σ]
+  [(lookup-Γ (x σ Γ) y) (lookup-Γ Γ y)]
+  [(lookup-Γ · x) #f])
+
+(define-metafunction stlc
+  not-v? : M -> boolean
+  [(not-v? v) #f]
+  [(not-v? M) #t])
 
 (define red
   (reduction-relation
    stlc
-   (--> (in-hole E ((λ x M) v))
-        (in-hole E (subst M x v))
+   (--> (Σ (in-hole E ((λ x M) v)))
+        (Σ (in-hole E (subst M x v)))
         "βv")
-   (--> (in-hole E (hd ((cons v_1) v_2)))
-        (in-hole E v_1)
+   (--> (Σ (in-hole E (let ([x v]) M)))
+        (Σ (in-hole E (subst M x v)))
+        "let")
+   #|
+;; BUG: this rule in place of the one above,
+;; plus no evaluation contexts of 'let'
+;; this bug is D because it only fails due to polymorphism -- subtle
+   (--> (Σ (in-hole E (let ([x M]) N)))
+        (Σ (in-hole E ((λ x N) M)))
+        "let")
+   |#
+   
+   (--> (Σ (in-hole E (hd ((cons v_1) v_2))))
+        (Σ (in-hole E v_1))
         "hd")
-   (--> (in-hole E (tl ((cons v_1) v_2)))
-        (in-hole E v_2)
+   (--> (Σ (in-hole E (tl ((cons v_1) v_2))))
+        (Σ (in-hole E v_2))
         "tl")
-   (--> (in-hole E (hd nil))
+   (--> (Σ (in-hole E (hd nil)))
         "error"
         "hd-err")
-   (--> (in-hole E (tl nil))
+   (--> (Σ (in-hole E (tl nil)))
         "error"
         "tl-err")
-   (--> (in-hole E ((+ integer_1) integer_2))
-        (in-hole E ,(+ (term integer_1) (term integer_2)))
-        "+")))
+   (--> (Σ (in-hole E ((+ integer_1) integer_2)))
+        (Σ (in-hole E ,(+ (term integer_1) (term integer_2))))
+        "+")
+   (--> (Σ (in-hole E (new v)))
+        ((r v Σ) (in-hole E r))
+        (fresh r)
+        "ref")
+   (--> (Σ (in-hole E ((set x) v)))
+        ((update-Σ Σ x v) (in-hole E (lookup-Σ Σ x)))
+        "set")
+   (--> (Σ (in-hole E (get x)))
+        (Σ (in-hole E (lookup-Σ Σ x)))
+        "get")))
+   
+(define-metafunction stlc
+  subst : M x M -> M
+  [(subst x x M_x)
+   M_x]
+  [(subst (λ x M) x M_x)
+   (λ x M)]
+  [(subst (let ([x M]) N) x M_x)
+   (let ([x (subst M x M_x)]) N)]
+  [(subst (λ y M) x M_x)
+   (λ x_new (subst (replace M y x_new) x M_x))
+   (where x_new ,(variable-not-in (term (x y M))
+                                  (term y)))]
+  [(subst (let ([y N]) M) x M_x)
+   (let ([x_new (subst N x M_x)]) (subst (replace M y x_new) x M_x))
+   (where x_new ,(variable-not-in (term (x y M))
+                                  (term y)))]
+  [(subst (M N) x M_x)
+   ((subst M x M_x) (subst N x M_x))]
+  [(subst M x M_z)
+   M])
 
-(define M? (redex-match stlc M))
+(define-metafunction stlc
+  [(replace (any_1 ...) x_1 x_new)
+   ((replace any_1 x_1 x_new) ...)]
+  [(replace x_1 x_1 x_new)
+   x_new]
+  [(replace any_1 x_1 x_new)
+   any_1])
+
+(define-metafunction stlc
+  lookup-Σ : Σ x -> v
+  [(lookup-Σ (x v Σ) x) v]
+  [(lookup-Σ (x v Σ) y) (lookup-Σ Σ y)])
+
+(define-metafunction stlc
+  update-Σ : Σ x v -> Σ
+  [(update-Σ (x v_1 Σ) x v_2) (x v_2 Σ)]
+  [(update-Σ (x v_1 Σ) y v_2) (x v_1 (update-Σ Σ y v_2))])
+
 (define/contract (Eval M)
-  (-> M? (or/c M? "error"))
+  (-> M? (or/c "error" 'list 'λ 'ref number?))
   (define M-t (judgment-holds (typeof ,M τ) τ))
   (unless (pair? M-t)
     (error 'Eval "doesn't typecheck: ~s" M))
-  (define res (apply-reduction-relation* red M))
+  (define res (apply-reduction-relation* red (term (· ,M))))
   (unless (= 1 (length res))
     (error 'Eval "internal error: not exactly 1 result ~s => ~s" M res))
   (define ans (car res))
-  (if (equal? "error" ans)
-      "error"
-      (let ([ans-t (judgment-holds (typeof ,ans τ) τ)])
-        (unless (equal? M-t ans-t)
-          (error 'Eval "internal error: type soundness fails for ~s" M))
-        ans)))
+  (match (car res)
+    ["error" "error"]
+    [`(,Σ ,N)
+     (define ans-t (judgment-holds (typeof (Σ->lets ,Σ ,N) τ) τ))
+     (unless (equal? M-t ans-t)
+       (error 'Eval "internal error: type soundness fails for ~s" M))
+     (match N
+       [(? x?) (cond
+                 [(term (in-dom? ,Σ ,N))
+                  'ref]
+                 [else
+                  (error 'Eval "internal error: reduced to a free variable ~s"
+                         M)])]
+       [(or `((cons ,_) ,_) `nil) 'list]
+       [(or `(λ ,_ ,_) `(cons ,_) `(set ,_) `(+ ,_)) 'λ]
+       [(? number?) N]
+       [_ (error 'Eval "internal error: didn't reduce to a value ~s" M)])]))
 
 (define-metafunction stlc
-  subst : M x M -> M
-  [(subst M x N) 
-   ,(subst/proc x? (term (x)) (term (N)) (term M))])
+  Σ->lets : Σ M -> M
+  [(Σ->lets · M) M]
+  [(Σ->lets (x v Σ) M) (let ([x (new v)]) (Σ->lets Σ M))])
 
 (define/contract (type-check M)
   (-> M? (or/c τ? #f))
@@ -330,82 +439,48 @@ section in the paper.
 (define (progress-holds? M)
   (if (type-check M)
       (or (v? M)
-          (not (null? (apply-reduction-relation red (term ,M)))))
+          (not (null? (apply-reduction-relation red (term (· ,M))))))
       #t))
-
-(define-metafunction stlc   ;; LOC SKIP START
-  [(uses-bound-var? (x_0 ... x_1 x_2 ...) x_1)
-   #t]
-  [(uses-bound-var? (x_0 ...) (λ x M))
-   (uses-bound-var? (x x_0 ...) M)]
-  [(uses-bound-var? (x ...) (M N))
-   ,(or (term (uses-bound-var? (x ...) M))
-        (term (uses-bound-var? (x ...) N)))]
-  [(uses-bound-var? (x ...) (cons M))
-   (uses-bound-var? (x ...) M)]
-  [(uses-bound-var? (x ...) any)
-   #f])
-
-(define (reduction-step-count/func red v?)
-  (λ (term)
-    (let loop ([t term]
-               [n 0])
-      (define res (apply-reduction-relation red t))
-      (cond 
-        [(and (empty? res)
-              (v? t))
-         n]
-        [(and (empty? res)
-              (equal? t "error"))
-         n]
-        [(= (length res) 1)
-         (loop (car res) (add1 n))]
-        [else
-         (error 'reduction-step-count "failed reduction: ~s\n~s\n~s" term t res)]))))
-
-(define reduction-step-count
-  (reduction-step-count/func red v?))
 
 (define (generate-M-term)
   (generate-term stlc M 5))
 
-(define (generate-M-term-from-red)
-  (generate-term #:source red 5))
-
 (define (generate-typed-term)
   (match (generate-term stlc 
                         #:satisfying
-                        (typeof • M τ)
+                        (typeof · M τ)
                         5)
-    [`(typeof • ,M ,τ)
+    [`(typeof · ,M ,τ)
      M]
     [#f #f]))
 
 (define (typed-generator)
   (let ([g (redex-generator stlc 
-                            (typeof • M τ)
+                            (typeof · M τ)
                             5)])
     (λ () 
       (match (g)
-        [`(typeof • ,M ,τ)
+        [`(typeof · ,M ,τ)
          M]
         [#f #f]))))
 
-(define (check term)
-  (or (not term)
-      (v? term)
-      (let ([t-type (type-check term)])
+(define (check M)
+  (or (not M)
+      (v? M)
+      (let ([t-type (type-check M)])
         (implies
          t-type
-         (let ([red-res (apply-reduction-relation red term)])
+         (let ([red-res (apply-reduction-relation red `(· ,M))])
            (and (= (length red-res) 1)
                 (let ([red-t (car red-res)])
                   (or (equal? red-t "error")
-                      (let ([red-type (type-check red-t)])
-                        (equal? t-type red-type))))))))))
+                      (match red-t
+                        [`(,Σ ,N)
+                         (let ([red-type (type-check (term (Σ->lets ,Σ ,N)))])
+                           (consistent-with? t-type red-type))])))))))))
 
 (define (generate-enum-term)
-  '(generate-term stlc M #:i-th (pick-an-index 0.035)))
+  (generate-term stlc M #:i-th (pick-an-index 0.035)))
 
 (define (ordered-enum-generator)
   (let ([index 0])
@@ -413,3 +488,5 @@ section in the paper.
       (begin0
         (generate-term stlc M #:i-th index)
         (set! index (add1 index))))))
+
+;(time (redex-check stlc M (check (term M)) #:attempts 100000))
