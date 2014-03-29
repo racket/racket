@@ -58,7 +58,10 @@
 	       [vec (read p)])
 	  (for-each
 	   queue-file-event
-	   (map string->path (vector->list vec))))))
+	   (map (lambda (s) (if (bytes? s)
+                                (bytes->path s)
+                                (string->path s)))
+                (vector->list vec))))))
     UNIQUE_RESPONSE_OK))
 
 (define-mz gethostname (_fun _pointer _long -> _int)
@@ -89,7 +92,12 @@
   (let ([msg (unique_message_data_new)]
         [b (let ([o (open-output-bytes)])
              (write (for/vector ([p (in-vector (current-command-line-arguments))])
-                      (path->string (path->complete-path p)))
+                      (define cp (path->complete-path p))
+                      (define s (path->string cp))
+                      (if (equal? cp (string->path s))
+                          s
+                          ;; can't represent as string; use bytes
+                          (path->bytes cp)))
                     o)
              (get-output-bytes o))])
     (unique_message_data_set msg b (bytes-length b))
