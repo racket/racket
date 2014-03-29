@@ -88,7 +88,9 @@
 (define (send-command-line app)
   (let ([msg (unique_message_data_new)]
         [b (let ([o (open-output-bytes)])
-             (write (current-command-line-arguments) o)
+             (write (for/vector ([p (in-vector (current-command-line-arguments))])
+                      (path->string (path->complete-path p)))
+                    o)
              (get-output-bytes o))])
     (unique_message_data_set msg b (bytes-length b))
     (unique_app_send_message app 42 msg)))
