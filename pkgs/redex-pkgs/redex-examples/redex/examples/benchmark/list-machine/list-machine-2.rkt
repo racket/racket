@@ -134,7 +134,7 @@
 
 (define (check p)
   (or (not p)
-      (check-progress p)))
+      (implies (type-check p) (check-progress p))))
   
 (define-metafunction list-machine
   different : any any -> any

@@ -186,11 +186,6 @@
   (printf "~a has the error: ~a\n\n" fpath err)
   (printf "Running ~a....\n" fpath)
   (printf "Using generator: ~s\n" gen-type)
-  (define (gen-and-type gen)
-    (λ ()
-      (define t (gen))
-      (and (tc t)
-           t)))
   (cond
     [(equal? gen-type 'fixed)
      (define small-counter-example
@@ -206,15 +201,13 @@
        (error 'fixed "Expected ~e to fail on check, but it didn't"
               small-counter-example))]
     [(equal? gen-type 'grammar)
-     (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-term))
+     (run/spawn-generations fpath verbose? no-errs? (λ () gen-term)
                       check seconds gen-type)]
     [(equal? gen-type 'enum)
-     (run/spawn-generations fpath verbose? no-errs? (λ () (gen-and-type gen-enum))
+     (run/spawn-generations fpath verbose? no-errs? (λ () gen-enum)
                       check seconds gen-type)]
     [(equal? gen-type 'ordered)
-     (run/spawn-generations fpath verbose? no-errs? (λ ()
-                                                      (define g (ordered-generator))
-                                                      (gen-and-type g))
+     (run/spawn-generations fpath verbose? no-errs? (λ () (ordered-generator))
                       check seconds gen-type)]
     [(equal? gen-type 'search)
      (run/spawn-generations fpath verbose? no-errs? (λ () gen-typed-term)

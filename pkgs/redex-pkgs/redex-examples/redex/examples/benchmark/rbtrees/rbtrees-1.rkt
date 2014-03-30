@@ -287,7 +287,7 @@
 
 (define (check t)
   (or (not t)
-      (ins-preserves-rb-tree t)))
+      (implies (type-check t) (ins-preserves-rb-tree t))))
 
 (define (generate-enum-term)
   (generate-term rbtrees t #:i-th (pick-an-index 0.25)))
