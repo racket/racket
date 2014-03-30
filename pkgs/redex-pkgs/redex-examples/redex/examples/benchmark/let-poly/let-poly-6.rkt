@@ -557,20 +557,19 @@ from the given term.
 
 (define (check M)
   (or (not M)
-      (let ([t-type (type-check M)])
-        (implies
-         t-type
-         (let loop ([Σ+M `(· ,M)])
-           (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
-           (and (consistent-with? t-type new-type)
-                (or (v? (list-ref Σ+M 1))
-                    (let ([red-res (apply-reduction-relation red Σ+M)])
-                      (and (= (length red-res) 1)
-                           (let ([red-t (car red-res)])
-                             (or (equal? red-t "error")
-                                 (loop red-t))))))))))))
+      (with-handlers ([exn:fail? (λ (x) #f)])
+        (let ([t-type (type-check M)])
+          (implies
+           t-type
+           (let loop ([Σ+M `(· ,M)])
+             (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
+             (and (consistent-with? t-type new-type)
+                  (or (v? (list-ref Σ+M 1))
+                      (let ([red-res (apply-reduction-relation red Σ+M)])
+                        (and (= (length red-res) 1)
+                             (let ([red-t (car red-res)])
+                               (or (equal? red-t "error")
+                                   (loop red-t)))))))))))))
 
 (define small-counter-example (term ((λ x x) 1)))
-(test-equal (with-handlers ([exn:fail? (λ (x) #f)])
-               (check small-counter-example))
-            #f)
+(test-equal (check small-counter-example) #f)
