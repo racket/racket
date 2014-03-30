@@ -152,6 +152,7 @@
 (define layer-bitmap%
   (class quartz-bitmap%
     (init w h win trans? flipped?)
+    (inherit get-backing-scale)
 
     (define layer (make-layer win w h))
     (define layer-w w)
@@ -236,7 +237,7 @@
                       (let ([bm (make-object quartz-bitmap%
                                              layer-w layer-h 
                                              is-trans?
-                                             1.0)])
+                                             (get-backing-scale))])
                         (define dc (send bm make-dc))
                         ;; For some reason, we must touch the DC
                         ;; to make transarent work right. It works
