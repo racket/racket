@@ -4,7 +4,7 @@
 
 (require redex/reduction-semantics
          (only-in redex/private/generate-term pick-an-index)
-         racket/match)
+         racket/match racket/bool)
 
 (provide (all-defined-out))
 
