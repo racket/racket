@@ -7,7 +7,7 @@
          racket/match
          racket/list
          racket/contract
-         racket/bool
+         racket/bool racket/set
          (only-in "../stlc/tests-lib.rkt" consistent-with?))
 
 (provide (all-defined-out))
@@ -386,8 +386,8 @@ A top-level evaluator
 
 (define/contract (Eval M)
   (-> M? (or/c "error" 'list 'λ 'ref number?))
-  (define M-t (judgment-holds (typeof ,M τ) τ))
-  (unless (pair? M-t)
+  (define M-t (type-check M))
+  (unless M-t
     (error 'Eval "doesn't typecheck: ~s" M))
   (define res (apply-reduction-relation* red (term (· ,M))))
   (unless (= 1 (length res))
@@ -396,7 +396,7 @@ A top-level evaluator
   (match (car res)
     ["error" "error"]
     [`(,Σ ,N)
-     (define ans-t (judgment-holds (typeof (Σ->lets ,Σ ,N) τ) τ))
+     (define ans-t (type-check N Σ))
      (unless (equal? M-t ans-t)
        (error 'Eval "internal error: type soundness fails for ~s" M))
      (match N
@@ -411,31 +411,107 @@ A top-level evaluator
        [(? number?) N]
        [_ (error 'Eval "internal error: didn't reduce to a value ~s" M)])]))
 
-(define-metafunction stlc
-  Σ->lets : Σ M -> M
-  [(Σ->lets · M) M]
-  [(Σ->lets (x v Σ) M) (let ([x (new v)]) (Σ->lets Σ M))])
-
 #|
 
-A top-level type checker.
+A type checker; the optional argument is a store to use
+for type checking free variables in M.
 
 |#
 
-(define/contract (type-check M)
-  (-> M? (or/c τ? #f))
-  (define M-t (judgment-holds (typeof ,M τ) τ))
+(define/contract (type-check M [Σ (term ·)])
+  (->* (M?) (any/c) (or/c τ? #f))
+  (define M-ts (judgment-holds (typeof ,(Σ+M->M Σ M) τ) τ))
   (cond
-    [(empty? M-t)
+    [(null? M-ts)
      #f]
-    [(null? (cdr M-t))
-     (car M-t)]
+    [(null? (cdr M-ts))
+     (car M-ts)]
     [else
-     (error 'type-check "non-unique type: ~s : ~s" M M-t)]))
+     (error 'type-check "non-unique type: ~s : ~s" M M-ts)]))
+
+;; building an expression out of a store can be done in this model
+;; with just topological sort because there are no recursive types,
+;; so the store will not contain any cycles
+(define (Σ+M->M Σ M)
+  ;; nodes : edges[r -o> v]
+  (define nodes (make-hash))
+  (define edges (make-hash))
+  (let loop ([Σ Σ])
+    (match Σ
+      [`· (void)]
+      [`(,r ,v ,Σ) 
+       (hash-set! nodes r v)
+       (loop Σ)]))
+  
+  (for ([(n rhs) (in-hash nodes)]) (hash-set! edges n (set)))
+  (for ([(n-src rhs) (in-hash nodes)])
+    (for ([(n-dest _) (in-hash nodes)])
+      (when (mentions-node? n-dest rhs)
+        (hash-set! edges n-src (set-add (hash-ref edges n-src) n-dest)))))
+  (define rev-sorted (reverse-topo-sort (for/list ([(k v) (in-hash nodes)]) k)
+                                        edges))
+  (let loop ([sorted rev-sorted])
+    (cond
+      [(empty? sorted) M]
+      [else
+       (define r (car sorted))
+       (term (let ([,r (new ,(hash-ref nodes r))])
+               ,(loop (cdr sorted))))])))
+
+(define (mentions-node? v r)
+  (let loop ([v v])
+    (cond
+      [(symbol? v) (equal? r v)]
+      [(pair? v) (or (loop (car v)) (loop (cdr v)))]
+      [else #f])))
 
 #|
 
-Random generators
+The first algorithm from this page:
+http://en.wikipedia.org/wiki/Topological_sorting#Algorithms
+
+|#
+(define/contract (reverse-topo-sort nodes edges)
+  (-> (listof any/c) (hash/c any/c (set/c any/c)) (listof any/c))
+  
+  (for ([node (in-list nodes)])
+    (unless (hash-ref edges node #f)
+      (error 'topo-sort "no edge entry for ~s" node)))
+  
+  (define incoming-counts (build-incoming-counts nodes edges))
+  (define (remove-edge src dest)
+    (hash-set! edges src (set-remove (hash-ref edges src) dest))
+    (hash-set! incoming-counts dest (- (hash-ref incoming-counts dest) 1)))
+  
+  (define l '())
+  (define s (for/set ([(n c) (in-hash incoming-counts)]
+                      #:when (zero? c))
+              n))
+  (let loop ()
+    (unless (set-empty? s)
+      (define n (set-first s))
+      (set! s (set-remove s n))
+      (set! l (cons n l))
+      (for ([m (in-set (hash-ref edges n))])
+        (remove-edge n m)
+        (when (zero? (hash-ref incoming-counts m))
+          (set! s (set-add s m))))
+      (loop)))
+  
+  l)
+        
+(define (build-incoming-counts nodes edges)
+  (define incoming-counts (make-hash))
+  (for ([n (in-list nodes)]) (hash-set! incoming-counts n 0))
+  (for ([(n neighbors) (in-hash edges)])
+    (for ([neighbor (in-set neighbors)])
+      (hash-set! incoming-counts neighbor (+ (hash-ref incoming-counts neighbor) 1))))
+  incoming-counts)
+  
+
+#|
+
+Generators
 
 |#
 
@@ -485,8 +561,7 @@ from the given term.
         (implies
          t-type
          (let loop ([Σ+M `(· ,M)])
-           (define new-type 
-             (type-check (term (Σ->lets ,(list-ref Σ+M 0) ,(list-ref Σ+M 1)))))
+           (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
            (and (consistent-with? t-type new-type)
                 (or (v? (list-ref Σ+M 1))
                     (let ([red-res (apply-reduction-relation red Σ+M)])

@@ -6,7 +6,7 @@
 <   [(∨ boolean_1 boolean_2) #t])
 ---
 >   [(∨ boolean boolean) #t])
-496a497,501
+571a572,576
 > 
 > (define small-counter-example (term ((λ x x) 1)))
 > (test-equal (with-handlers ([exn:fail? (λ (x) #f)])

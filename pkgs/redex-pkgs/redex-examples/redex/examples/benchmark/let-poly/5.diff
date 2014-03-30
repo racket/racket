@@ -10,7 +10,7 @@
 >    (τ (eliminate-τ x τ σ) (eliminate-G x τ G))]
 >   [(eliminate-G x τ (y σ G))
 >    (y (eliminate-τ x τ σ) (eliminate-G x τ G))])
-496a499,503
+571a574,578
 > 
 > (define small-counter-example (term (cons 1)))
 > (test-equal (with-handlers ([exn:fail? (λ (x) #f)])

@@ -15,7 +15,7 @@
 ---
 >    (--> (Σ (in-hole E (let ([x M]) N)))
 >         (Σ (in-hole E ((λ x N) M)))
-496a498,500
+571a573,575
 > 
 > (define small-counter-example (term (let ((x (λ y y))) (x x))))
 > (test-equal (check small-counter-example) #f)
