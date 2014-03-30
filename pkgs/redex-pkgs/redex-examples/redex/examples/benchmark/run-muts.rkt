@@ -18,9 +18,6 @@
 
 (command-line
    #:once-each
-   [("-a" "--all") "Run all broken models and gather results"
-                   (set! names
-                         directories)]
    [("-v" "--verbose") "Also report counterexamples as they are found"
                        (set! verbose? #t)]
    [("-m" "--minutes") mins "Minutes to run each instance for"
@@ -28,6 +25,8 @@
    [("-n" "--num-processes") n "Number of processes to run in parallel"
                                (set! num-procs (string->number n))]
    #:once-any
+   [("-a" "--all") "Run all broken models and gather results"
+                   (set! names directories)]
    [("-d" "--dir") dirname "Run tests for a single prefix"
                     (set! names (list dirname))]
    [("-f" "--file") fname "Run tests for a single file"
