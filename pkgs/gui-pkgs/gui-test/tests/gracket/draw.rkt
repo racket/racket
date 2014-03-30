@@ -262,6 +262,7 @@
 	    (define c-xscale 1)
 	    (define c-yscale 1)
 	    (define c-offset 0)
+	    (define c-rotate 0)
             (define c-gray? #f)
 	    (public*
 	     [set-bitmaps (lambda (on?) (set! no-bitmaps? (not on?)) (refresh))]
@@ -275,6 +276,7 @@
 	     [set-scale (lambda (xs ys) (set! xscale xs) (set! yscale ys) (refresh))]
 	     [set-offset (lambda (o) (set! offset o) (refresh))]
 	     [set-canvas-offset (lambda (o) (set! c-offset o) (refresh))]
+	     [set-canvas-rotation (lambda (r) (set! c-rotate r) (refresh))]
 	     [set-canvas-gray (lambda (g?) (set! c-gray? g?) (refresh))])
 	    (override*
 	     [on-paint
@@ -1042,6 +1044,7 @@
                                   (send can-dc set-brush b)
                                   (send can-dc set-pen p)))
                               (send can-dc set-origin c-offset c-offset)
+                              (send can-dc set-rotation c-rotate)
                               (send can-dc set-scale c-xscale c-yscale)
                               (send can-dc set-alpha current-c-alpha)
                               (when c-clip
@@ -1415,6 +1418,9 @@
     (make-object check-box% "Cvs +10" hp3
 		 (lambda (self event)
 		   (send canvas set-canvas-offset (if (send self get-value) 10 0))))
+    (make-object check-box% "Cvs rot" hp3
+		 (lambda (self event)
+		   (send canvas set-canvas-rotation (if (send self get-value) (* pi -1/5) 0))))
     (make-object choice% "Cvs Clip" '("None" "Empty" "Square" "Squares" "Octagon") hp3
 		 (lambda (self event)
 		   (send canvas set-canvas-clip (case (send self get-selection)

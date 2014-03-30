@@ -1,0 +1,12 @@
+diff -r -u old/harfbuzz-0.9.27/src/Makefile.in new/harfbuzz-0.9.27/src/Makefile.in
+--- old/harfbuzz-0.9.27/src/Makefile.in	2014-03-31 09:23:00.000000000 -0600
++++ new/harfbuzz-0.9.27/src/Makefile.in	2014-03-31 09:23:27.000000000 -0600
+@@ -2234,7 +2234,7 @@
+ 	"$<" \
+ 	> "$@.tmp" && mv "$@.tmp" "$@" || ( $(RM) "$@.tmp"; false )
+ harfbuzz.def: $(HBHEADERS) $(HBNODISTHEADERS)
+-	$(AM_V_GEN) (echo EXPORTS; \
++	$(AM_V_GEN) ( \
+ 	(cat $^ || echo 'hb_ERROR ()' ) | \
+ 	$(EGREP) '^hb_.* \(' | \
+ 	sed -e 's/ (.*//' | \

@@ -45,17 +45,19 @@ cpus-in-place:
 
 # Explicitly propagate variables for non-GNU `make's:
 PKG_LINK_COPY_ARGS = PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
+LIBSETUP = -N raco -l- raco setup
 
 plain-in-place:
 	$(MAKE) base
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
-	$(PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
-	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) racket
+	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 again:
 	$(MAKE) LINK_MODE="--restore"
@@ -86,9 +88,18 @@ base:
 	cd racket/src/build; $(MAKE) install $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
 win32-base:
+	$(MAKE) win32-remove-setup-dlls
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+
+# Start by removing DLLs that may be loaded by `raco setup`
+win32-remove-setup-dlls:
+	IF EXIST racket\lib\longdouble.dll cmd /c del racket\lib\longdouble.dll
+	IF EXIST racket\lib\libiconv-2.dll cmd /c del racket\lib\libiconv-2.dll
+	IF EXIST racket\lib\iconv.dll cmd /c del racket\lib\iconv.dll
+	IF EXIST racket\lib\libeay32.dll cmd /c del racket\lib\libeay32.dll
+	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
@@ -420,7 +431,6 @@ client:
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 win32-client:
-	IF EXIST build\user cmd /c rmdir /S /Q build\user
 	$(MAKE) win32-base $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)

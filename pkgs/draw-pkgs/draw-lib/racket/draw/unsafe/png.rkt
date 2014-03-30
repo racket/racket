@@ -18,10 +18,10 @@
       [else (apply ffi-lib (car alts)
                    #:fail (lambda ()
                             (loop (cdr alts))))]))]
-  [(macosx) (ffi-lib "libpng15.15.dylib")]
+  [(macosx) (ffi-lib "libpng16.16.dylib")]
   [(windows)
    (ffi-lib "zlib1.dll")
-   (ffi-lib "libpng14-14.dll")])
+   (ffi-lib "libpng16-16.dll")])
 
 (define-ffi-definer define-png png-lib
   #:provide provide)

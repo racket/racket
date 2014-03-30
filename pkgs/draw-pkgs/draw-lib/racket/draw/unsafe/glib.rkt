@@ -13,8 +13,8 @@
   [(macosx)
    (ffi-lib "libintl.8.dylib")
    (ffi-lib "libglib-2.0.0.dylib")]
-  [(win32) (ffi-lib "libglib-2.0-0.dll")]
-  [(win64) 
+  [(windows)
+   (ffi-lib "libiconv-2.dll")
    (ffi-lib "libintl-8.dll")
    (ffi-lib "libglib-2.0-0.dll")])
 
@@ -23,18 +23,18 @@
   [(macosx)
    (ffi-lib "libgthread-2.0.0.dylib")
    (ffi-lib "libgmodule-2.0.0.dylib")]
-  [(win32)
-   (ffi-lib "libgmodule-2.0-0.dll")]
-  [(win64)
+  [(windows)
    (ffi-lib "libgthread-2.0-0.dll")
    (ffi-lib "libgmodule-2.0-0.dll")])
 
 (define-runtime-lib gobj-lib
   [(unix) (ffi-lib "libgobject-2.0" '("0" ""))]
   [(macosx)
-   (ffi-lib "libffi.5.dylib")
+   (ffi-lib "libffi.6.dylib")
    (ffi-lib "libgobject-2.0.0.dylib")]
-  [(windows) (ffi-lib "libgobject-2.0-0.dll")])
+  [(windows) 
+   (ffi-lib "libffi-6.dll")
+   (ffi-lib "libgobject-2.0-0.dll")])
 
 (define-ffi-definer define-glib glib-lib)
 (define-ffi-definer define-gmodule gmodule-lib)

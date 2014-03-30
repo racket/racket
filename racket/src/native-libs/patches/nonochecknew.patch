@@ -1,0 +1,13 @@
+diff -u -r old/poppler-0.24.5/configure new/poppler-0.24.5/configure
+--- old/poppler-0.24.5/configure	2014-04-01 04:55:51.000000000 -0600
++++ new/poppler-0.24.5/configure	2014-04-01 04:56:11.000000000 -0600
+@@ -24905,7 +24905,7 @@
+ fi
+ case "$enable_compile_warnings" in
+   no)	;;
+-  yes)	CXXFLAGS="-Wall -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-align -fno-exceptions -fno-check-new -fno-common $CXXFLAGS";
++  yes)	CXXFLAGS="-Wall -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-align -fno-exceptions -fno-common $CXXFLAGS";
+         CFLAGS="-Wall $CFLAGS" ;;
+   kde)	CXXFLAGS="-Wnon-virtual-dtor -Wno-long-long -Wundef \
+ 		-D_XOPEN_SOURCE=600 -D_BSD_SOURCE -Wcast-align \
+Only in new/poppler-0.24.5: configure~

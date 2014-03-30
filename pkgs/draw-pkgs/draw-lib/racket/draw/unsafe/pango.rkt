@@ -22,19 +22,13 @@
   [(unix) (ffi-lib "libpangocairo-1.0" '("0" ""))]
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
-  [(win32)
-   (ffi-lib "libpangowin32-1.0-0.dll")
-   (ffi-lib "libexpat-1.dll")
-   (ffi-lib "freetype6.dll")
-   (ffi-lib "libfontconfig-1.dll")
-   (ffi-lib "libpangoft2-1.0-0.dll")
-   (ffi-lib "libpangocairo-1.0-0.dll")]
-  [(win64)
+  [(windows)
    (ffi-lib "libintl-8.dll")
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")
    (ffi-lib "libfreetype-6.dll")
    (ffi-lib "libfontconfig-1.dll")
+   (ffi-lib "libharfbuzz-0.dll")
    (ffi-lib "libpangoft2-1.0-0.dll")
    (ffi-lib "libpangocairo-1.0-0.dll")])
 

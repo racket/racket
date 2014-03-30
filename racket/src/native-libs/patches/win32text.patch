@@ -1,0 +1,33 @@
+diff -r -u old/pango-1.36.3/modules/basic/basic-win32.c new/pango-1.36.3/modules/basic/basic-win32.c
+--- old/pango-1.36.3/modules/basic/basic-win32.c	2014-04-01 09:45:50.000000000 -0600
++++ new/pango-1.36.3/modules/basic/basic-win32.c	2014-04-01 09:49:32.000000000 -0600
+@@ -468,7 +468,7 @@
+     g_print (G_STRLOC ": ScriptItemize: uDefaultLanguage:%04x uBidiLevel:%d\n",
+ 	     control.uDefaultLanguage, state.uBidiLevel);
+ #endif
+-  if (ScriptItemize (wtext, wlen, G_N_ELEMENTS (items), &control, NULL,
++  if (ScriptItemize (wtext, wlen, G_N_ELEMENTS (items) - 1, &control, NULL,
+ 		     items, &nitems))
+     {
+ #ifdef BASIC_WIN32_DEBUGGING
+Only in new/pango-1.36.3/modules/basic: basic-win32.c~
+diff -r -u old/pango-1.36.3/pango/pangowin32-fontmap.c new/pango-1.36.3/pango/pangowin32-fontmap.c
+--- old/pango-1.36.3/pango/pangowin32-fontmap.c	2014-04-01 09:45:50.000000000 -0600
++++ new/pango-1.36.3/pango/pangowin32-fontmap.c	2014-04-01 09:49:32.000000000 -0600
+@@ -1501,6 +1501,7 @@
+ 	 ff_name (lfp->lfPitchAndFamily & 0xF0, tmp_for_ff_name),
+ 	 is_synthetic ? " synthetic" : ""));
+ 
++#if 0
+   /* Ignore Symbol fonts (which don't have any Unicode mapping
+    * table). We could also be fancy and use the PostScript glyph name
+    * table for such if present, and build a Unicode map by mapping
+@@ -1508,6 +1509,7 @@
+    */
+   if (lfp->lfCharSet == SYMBOL_CHARSET)
+     return;
++#endif
+ 
+   if (g_hash_table_lookup (win32fontmap->fonts, lfp))
+     {
+Only in new/pango-1.36.3/pango: pangowin32-fontmap.c~

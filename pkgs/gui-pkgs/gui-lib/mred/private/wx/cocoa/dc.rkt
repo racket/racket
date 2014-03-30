@@ -204,6 +204,13 @@
                                        (cairo_matrix_t-y0 m)))
              (cairo_surface_flush s)
              (define cg (cairo_quartz_surface_get_cg_context s))
+             (begin
+               ;; A Cairo flush doesn't reset the clipping region. The
+               ;; implementation of clipping is that there's a saved
+               ;; GState that we can use to get back to the original
+               ;; clipping region, so restore (and save again) that state:
+               (CGContextRestoreGState cg)
+               (CGContextSaveGState cg))
              (CGContextSaveGState cg)
              (CGContextConcatCTM cg trans)
              (let ([n (cairo_rectangle_list_t-num_rectangles rs)])

@@ -8,11 +8,8 @@
 
 (define-runtime-lib jpeg-lib
   [(unix) (ffi-lib "libjpeg" '("62" "8" "9" ""))]
-  [(macosx) 
-   ;; for PPC, it's actually version 8!
-   (ffi-lib "libjpeg.62.dylib")]
-  [(win32) (ffi-lib "libjpeg-7.dll")]
-  [(win64) (ffi-lib "libjpeg-8.dll")])
+  [(macosx) (ffi-lib "libjpeg.9.dylib")]
+  [(windows) (ffi-lib "libjpeg-9.dll")])
 
 (define-ffi-definer define-jpeg jpeg-lib
   #:provide provide)
@@ -26,10 +23,8 @@
 (define _J_DITHER_MODE _int)
 (define _J_COLOR_TRANSFORM _int)
 
-(define _jbool (if win64? 
-                   (make-ctype _byte
-                               (lambda (v) (if v 1 0))
-                               (lambda (v) (not (zero? v))))
+(define _jbool (if (eq? (system-type) 'windows)
+                   _stdbool
                    _bool))
 (define-enum
   0

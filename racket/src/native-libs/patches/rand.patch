@@ -1,0 +1,13 @@
+diff -u -r old/glib-2.39.92/glib/grand.c new/glib-2.39.92/glib/grand.c
+--- old/glib-2.39.92/glib/grand.c	2014-03-31 08:42:11.000000000 -0600
++++ new/glib-2.39.92/glib/grand.c	2014-03-31 08:42:56.000000000 -0600
+@@ -264,7 +264,7 @@
+   gint i;
+ 
+   for (i = 0; i < G_N_ELEMENTS (seed); i++)
+-    rand_s (&seed[i]);
++    seed[i] = rand();
+ #endif
+ 
+   return g_rand_new_with_seed_array (seed, 4);
+

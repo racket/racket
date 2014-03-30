@@ -56,6 +56,7 @@ AC_ARG_ENABLE(dynlib,  [  --enable-libs           install Racket static librarie
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
 AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
@@ -324,10 +325,19 @@ show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
 
 if test "${enable_sdk}" != "" ; then
+   if test "${enable_sdk5}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk5"
+   fi
    if test "${enable_sdk6}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
    fi
    echo "=== Using Mac OS X 10.4 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk5}" != "" ; then
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
+   fi
+   echo "=== Using Mac OS X 10.5 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk6}" != "" ; then
    echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
@@ -727,6 +737,14 @@ case "$host_os" in
       if test "$ORIG_CC_FOR_BUILD" = "" ; then
         CC_FOR_BUILD="$CC"
       fi
+    fi
+    
+    if test "${enable_sdk5}" != "" ; then 
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
     fi
     
     if test "${enable_sdk6}" != "" ; then 

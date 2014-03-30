@@ -1,0 +1,127 @@
+diff -r -u old/pango-1.36.3/modules/basic/basic-coretext.c new/pango-1.36.3/modules/basic/basic-coretext.c
+--- old/pango-1.36.3/modules/basic/basic-coretext.c	2014-03-05 21:33:55.000000000 -0700
++++ new/pango-1.36.3/modules/basic/basic-coretext.c	2014-03-30 09:52:46.000000000 -0600
+@@ -55,7 +55,8 @@
+ 	   PangoGlyphString *glyphs,
+ 	   int               i,
+ 	   int               offset,
+-	   PangoGlyph        glyph)
++	   PangoGlyph        glyph,
++           CGSize            *adv)
+ {
+   PangoRectangle logical_rect;
+ 
+@@ -65,8 +66,13 @@
+   glyphs->glyphs[i].geometry.y_offset = 0;
+ 
+   glyphs->log_clusters[i] = offset;
+-  pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
+-  glyphs->glyphs[i].geometry.width = logical_rect.width;
++  if (adv) {
++    /* by using the advances array, we get kerning */
++    glyphs->glyphs[i].geometry.width = adv->width * PANGO_SCALE;
++  } else {
++    pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
++    glyphs->glyphs[i].geometry.width = logical_rect.width;
++  }
+ }
+ 
+ 
+@@ -92,6 +98,7 @@
+   CTRunRef current_run;
+   CFIndex *current_indices;
+   const CGGlyph *current_cgglyphs;
++  const CGSize *current_cgadvs;
+   CTRunStatus current_run_status;
+ };
+ 
+@@ -118,6 +125,7 @@
+   iter->current_run = CFArrayGetValueAtIndex (iter->runs, run_number);
+   iter->current_run_status = CTRunGetStatus (iter->current_run);
+   iter->current_cgglyphs = CTRunGetGlyphsPtr (iter->current_run);
++  iter->current_cgadvs = CTRunGetAdvancesPtr (iter->current_run);
+ 
+   ct_glyph_count = CTRunGetGlyphCount (iter->current_run);
+   iter->current_indices = malloc (sizeof (CFIndex *) * ct_glyph_count);
+@@ -175,6 +183,12 @@
+   return iter->current_cgglyphs[iter->ct_i];
+ }
+ 
++static CGSize
++run_iterator_get_cgadv (struct RunIterator *iter)
++{
++  return iter->current_cgadvs[iter->ct_i];
++}
++
+ static CFIndex
+ run_iterator_get_index (struct RunIterator *iter)
+ {
+@@ -297,6 +311,7 @@
+ {
+   CFIndex index;
+   CGGlyph cgglyph;
++  CGSize cgadv;
+   gunichar wc;
+ };
+ 
+@@ -338,6 +353,7 @@
+       gi = g_slice_new (struct GlyphInfo);
+       gi->index = run_iterator_get_index (&riter);
+       gi->cgglyph = run_iterator_get_cgglyph (&riter);
++      gi->cgadv = run_iterator_get_cgadv (&riter);
+       gi->wc = run_iterator_get_character (&riter);
+ 
+       glyph_list = g_slist_prepend (glyph_list, gi);
+@@ -426,7 +442,7 @@
+       if (gi == NULL || gi->index > gs_i)
+         {
+           /* gs_i is behind, insert empty glyph */
+-          set_glyph (font, glyphs, gs_i, p - text, PANGO_GLYPH_EMPTY);
++          set_glyph (font, glyphs, gs_i, p - text, PANGO_GLYPH_EMPTY, NULL);
+           continue;
+         }
+       else if (gi->index < gs_i)
+@@ -457,7 +473,7 @@
+ 
+           if (result != PANGO_COVERAGE_NONE)
+             {
+-              set_glyph (font, glyphs, gs_i, p - text, gi->cgglyph);
++              set_glyph (font, glyphs, gs_i, p - text, gi->cgglyph, &gi->cgadv);
+ 
+               if (g_unichar_type (gi->wc) == G_UNICODE_NON_SPACING_MARK)
+                 {
+@@ -480,7 +496,7 @@
+                 }
+             }
+           else
+-            set_glyph (font, glyphs, gs_i, p - text, PANGO_GET_UNKNOWN_GLYPH (gi->wc));
++            set_glyph (font, glyphs, gs_i, p - text, PANGO_GET_UNKNOWN_GLYPH (gi->wc), NULL);
+ 
+           glyph_iter = g_slist_next (glyph_iter);
+         }
+diff -r -u old/pango-1.36.3/pango/pangocairo-coretextfont.c new/pango-1.36.3/pango/pangocairo-coretextfont.c
+--- old/pango-1.36.3/pango/pangocairo-coretextfont.c	2014-03-05 21:33:55.000000000 -0700
++++ new/pango-1.36.3/pango/pangocairo-coretextfont.c	2014-03-30 09:52:46.000000000 -0600
+@@ -147,6 +147,12 @@
+   metrics->strikethrough_position = metrics->ascent / 3;
+   metrics->strikethrough_thickness = CTFontGetUnderlineThickness (ctfont) * PANGO_SCALE;
+ 
++  metrics->underline_position = -metrics->underline_position;
++  pango_quantize_line_geometry (&metrics->underline_thickness,
++                                &metrics->underline_position);
++  metrics->underline_position = -(metrics->underline_position 
++                                  + metrics->underline_thickness);
++
+   layout = pango_layout_new (context);
+   font_desc = pango_font_describe_with_absolute_size ((PangoFont *) font);
+   pango_layout_set_font_description (layout, font_desc);
+diff -r -u old/pango-1.36.3/pango/pangocairo-coretextfontmap.c new/pango-1.36.3/pango/pangocairo-coretextfontmap.c
+--- old/pango-1.36.3/pango/pangocairo-coretextfontmap.c	2014-03-05 21:33:55.000000000 -0700
++++ new/pango-1.36.3/pango/pangocairo-coretextfontmap.c	2014-03-30 09:52:46.000000000 -0600
+@@ -186,5 +186,5 @@
+ pango_cairo_core_text_font_map_init (PangoCairoCoreTextFontMap *cafontmap)
+ {
+   cafontmap->serial = 1;
+-  cafontmap->dpi = 96.;
++  cafontmap->dpi = 72.;
+ }

@@ -1,0 +1,34 @@
+diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
+--- old/poppler-0.24.5/libtool	2014-04-01 07:00:21.000000000 -0600
++++ new/poppler-0.24.5/libtool	2014-04-01 07:00:07.000000000 -0600
+@@ -10167,14 +10167,14 @@
+ old_archive_from_expsyms_cmds=""
+ 
+ # Commands used to build a shared archive.
+-archive_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
++archive_cmds="\$CC -shared \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+ archive_expsym_cmds="if test \\\"x\\\`\$SED 1q \$export_symbols\\\`\\\" = xEXPORTS; then
+ 	      cp \$export_symbols \$output_objdir/\$soname.def;
+ 	    else
+ 	      echo EXPORTS > \$output_objdir/\$soname.def;
+ 	      cat \$export_symbols >> \$output_objdir/\$soname.def;
+ 	    fi~
+-	    \$CC -shared -nostdlib \$output_objdir/\$soname.def \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
++	    \$CC -shared \$output_objdir/\$soname.def \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+ 
+ # Commands used to build a loadable module if different from building
+ # a shared archive.
+@@ -10256,10 +10256,10 @@
+ 
+ # Dependencies to place before and after the objects being linked to
+ # create a shared library.
+-predep_objects="/usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/../../../../i686-w64-mingw32/lib/../lib/dllcrt2.o /usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtbegin.o"
+-postdep_objects="/usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtend.o"
++predep_objects=""
++postdep_objects=""
+ predeps=""
+-postdeps="-lstdc++ -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lmsvcrt -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lmsvcrt"
++postdeps=""
+ 
+ # The library search path used internally by the compiler when linking
+ # a shared library.
