@@ -2820,6 +2820,7 @@
         (term x4))
   (test (variable-not-in (term (x x1 x1 x2 x2)) 'x)
         (term x3))
+  (test (variable-not-in (term (|| |1|)) '||) '|2|)
   
   (test (variables-not-in (term (x y z)) '(x))
         '(x1))
