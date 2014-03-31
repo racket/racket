@@ -551,8 +551,8 @@ Generators
 #|
 
 Check to see if a combination of preservation
-and progress holds for every single term reachable
-from the given term.
+and progress holds for the first 100 terms
+reachable from the given term.
 
 |#
 
@@ -561,7 +561,7 @@ from the given term.
       (let ([t-type (type-check M)])
         (implies
          t-type
-         (let loop ([Σ+M `(· ,M)])
+         (let loop ([Σ+M `(· ,M)] [n 100])
            (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
            (and (consistent-with? t-type new-type)
                 (or (v? (list-ref Σ+M 1))
@@ -569,7 +569,7 @@ from the given term.
                       (and (= (length red-res) 1)
                            (let ([red-t (car red-res)])
                              (or (equal? red-t "error")
-                                 (loop red-t))))))))))))
+                                 (zero? n) (loop red-t (- n 1)))))))))))))
 
 (define small-counter-example (term (let ((x (λ y y))) (x x))))
 (test-equal (check small-counter-example) #f)

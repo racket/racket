@@ -10,7 +10,7 @@
 <       (let ([t-type (type-check M)])
 <         (implies
 <          t-type
-<          (let loop ([Σ+M `(· ,M)])
+<          (let loop ([Σ+M `(· ,M)] [n 100])
 <            (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
 <            (and (consistent-with? t-type new-type)
 <                 (or (v? (list-ref Σ+M 1))
@@ -18,13 +18,13 @@
 <                       (and (= (length red-res) 1)
 <                            (let ([red-t (car red-res)])
 <                              (or (equal? red-t "error")
-<                                  (loop red-t))))))))))))
+<                                  (zero? n) (loop red-t (- n 1)))))))))))))
 ---
 >       (with-handlers ([exn:fail? (λ (x) #f)])
 >         (let ([t-type (type-check M)])
 >           (implies
 >            t-type
->            (let loop ([Σ+M `(· ,M)])
+>            (let loop ([Σ+M `(· ,M)] [n 100])
 >              (define new-type (type-check (list-ref Σ+M 1) (list-ref Σ+M 0)))
 >              (and (consistent-with? t-type new-type)
 >                   (or (v? (list-ref Σ+M 1))
@@ -32,7 +32,7 @@
 >                         (and (= (length red-res) 1)
 >                              (let ([red-t (car red-res)])
 >                                (or (equal? red-t "error")
->                                    (loop red-t)))))))))))))
+>                                    (zero? n) (loop red-t (- n 1))))))))))))))
 > 
 > (define small-counter-example (term ((λ x x) 1)))
 > (test-equal (check small-counter-example) #f)
