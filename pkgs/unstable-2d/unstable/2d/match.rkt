@@ -100,20 +100,18 @@
              (for ([cell (in-list cells)])
                (hash-set! coord-to-content cell app))
              (set! let-bindings
-                   (cons #`[id (λ (#,@horizontal-vars #,@vertical-vars) #,@rhses)]
+                   (cons #`[id #,(syntax-property
+                                  #`(λ (#,@horizontal-vars #,@vertical-vars) #,@rhses)
+                                  'typechecker:called-in-tail-position
+                                  #t)]
                          let-bindings)))))
        
        (define num-of-cols (length (syntax->list #'widths)))
        (define num-of-rows (length (syntax->list #'heights)))
        #`(let #,(reverse let-bindings)
-           (match* #,main-args
+           (match*/derived #,main-args #,stx
              #,@(for*/list ([x (in-range 1 num-of-cols)]
                             [y (in-range 1 num-of-rows)])
                   #`[(#,(hash-ref coord-to-content (list x 0))
                       #,(hash-ref coord-to-content (list 0 y)))
-                     #,(hash-ref coord-to-content (list x y))])
-             [(_ _)
-              (2dmatch-error #,@main-args)])))]))
-
-(define (2dmatch-error a b)
-  (error '2dmatch "no matching clauses for ~e and ~e" a b))
+                     #,(hash-ref coord-to-content (list x y))]))))]))
