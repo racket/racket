@@ -156,6 +156,35 @@
        (set-heap-vec! h (shrink-vector vec)))
      (set-heap-count! h (sub1 size))]))
 
+(define (heap-get-index h v same?)
+  (match h
+    [(heap vec size <=?)
+     (and (not (eq? 0 size))
+          (let search ([n 0] [n-key (vector-ref vec 0)])
+            (cond
+             [(same? n-key v) n]
+             ;; The heap property ensures n-key <= all its children
+             [else
+              (define (search-right)
+                (define right (vt-rightchild n))
+                (and (< right size)
+                     (let ([right-key (vector-ref vec right)])
+                       (and (<=? right-key v)
+                            (search right right-key)))))
+              ;; Try going left if the left child is <= v
+              (define left (vt-leftchild n))
+              (and (< left size) ;; if no left, there can't be a right.
+                   (let ([left-key (vector-ref vec left)])
+                     ;; If left <= v, try left side.
+                     (if (<=? left-key v)
+                         (or (search left left-key) (search-right))
+                         (search-right))))])))]))
+
+(define (heap-remove! h v #:same? [same? equal?])
+  (match (heap-get-index h v same?)
+    [#f (void)]
+    [n (heap-remove-index! h n)]))
+
 (define (in-heap h)
   (in-heap/consume! (heap-copy h)))
 
@@ -211,6 +240,7 @@
  [heap-add-all! (-> heap? (or/c list? vector? heap?) void?)]
  [heap-min (-> heap? any/c)]
  [heap-remove-min! (-> heap? void?)]
+ [heap-remove! (->* (heap? any/c) [#:same? (-> any/c any/c any/c)] void?)]
 
  [vector->heap (-> (-> any/c any/c any/c) vector? heap?)]
  [heap->vector (-> heap? vector?)]

@@ -109,6 +109,15 @@ empty, an exception is raised.
   (heap-min a-heap)]
 }
 
+@defproc[(heap-remove! [h heap?] [v any/c] [#:same? same? (-> any/c any/c any/c) equal?]) void?]{
+Removes @racket[v] from the heap @racket[h] if it exists. 
+@examples[#:eval the-eval
+  (define a-heap (make-heap string<=? string=?))
+  (heap-add! a-heap "a" "b" "c")
+  (heap-remove! a-heap "b")
+  (for/list ([a (in-heap a-heap)]) a)]
+}
+
 @defproc[(vector->heap [<=? (-> any/c any/c any/c)] [items vector?]) heap?]{
 
 Builds a heap with the elements from @racket[items]. The vector is not
