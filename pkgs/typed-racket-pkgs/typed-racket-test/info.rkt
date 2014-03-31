@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 (define deps '("typed-racket" "typed-racket-more" "typed-racket-compatibility"
-               "unstable"))
+               "unstable" "unstable-2d"))
 (define build-deps '("scheme-lib"
                      "base"
                      "racket-benchmarks"
