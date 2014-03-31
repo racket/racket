@@ -294,7 +294,7 @@ subtypes of @racket[Boolean], @racket[Symbol] and @racket[Keyword], respectively
 @section{Containers}
 
 
-The following base types are parameteric in their type arguments.
+The following base types are parametric in their type arguments.
 
 @defform[(Pairof s t)]{is the @rtech{pair} containing @racket[s] as the @racket[car]
   and @racket[t] as the @racket[cdr]}

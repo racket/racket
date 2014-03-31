@@ -328,7 +328,7 @@
              (let ((recursive-values (for/fold ([rv recursive-values]) ([v vs])
                                        (hash-set rv v (same any/sc)))))
                (t->sc b #:recursive-values recursive-values))
-             ;; in negative position, use parameteric contracts.
+             ;; in negative position, use parametric contracts.
              (match-let ([(Poly-names: vs-nm b) type])
                (define function-type?
                  (let loop ([ty b])
@@ -352,7 +352,7 @@
              (let ((recursive-values (for/fold ([rv recursive-values]) ([v vs])
                                        (hash-set rv v (same any/sc)))))
                (t->sc b #:recursive-values recursive-values))
-             ;; in negative position, use parameteric contracts.
+             ;; in negative position, use parametric contracts.
              (fail #:reason "cannot generate contract for variable arity polymorphic type"))]
 
         [(Mu: n b)
