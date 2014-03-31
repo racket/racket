@@ -126,7 +126,7 @@
                                       (trials-loop t g))))
          (define me-time (- (current-process-milliseconds) t-time))
          (define ok? (with-timeout (* 5 60 1000) (λ () (check term))
-                                   (λ () (printf "\nIn ~a, ~a, timed out checking the term:~a\n"
+                                   (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
                                                  fname type term)
                                      (trials-loop t g))))
          (cond
