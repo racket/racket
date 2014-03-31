@@ -199,6 +199,8 @@
                              (car ms))
                           (= (cdr ns)
                              (cdr ms)))))
+;; Make sure they are layered correctly, but don't care about the
+;; exact order
 
 ;; prod tests
 (test-begin
@@ -258,6 +260,31 @@
         (decode nats*nats 4)
         (cons 1 1))
  (check-bijection? nats*nats))
+
+;; fair product tests
+(define-simple-check (check-range? e l u approx)
+  (let ([actual (for/set ([i (in-range l u)])
+                  (decode e i))]
+        [expected (list->set approx)])
+    (equal? actual expected)))
+(test-begin
+ (define n*n     (vec/e nats/e nats/e))
+ (check-range? n*n  0  1 '(#(0 0)))
+ (check-range? n*n  1  3 '(#(0 1) #(1 0)))
+ (check-range? n*n  3  6 '(#(0 2) #(1 1) #(2 0)))
+ (check-range? n*n  6 10 '(#(0 3) #(1 2) #(2 1) #(3 0)))
+ (check-range? n*n 10 15 '(#(0 4) #(1 3) #(2 2) #(3 1) #(4 0))))
+(test-begin
+ (define n*n*n   (vec/e nats/e nats/e nats/e))
+ (define n*n*n*n (vec/e nats/e nats/e nats/e nats/e))
+ 
+
+ (check-range? n*n*n  0  1 '(#(0 0 0)))
+ (check-range? n*n*n  1  4 '(#(0 0 1) #(0 1 0) #(1 0 0)))
+ (check-range? n*n*n  4 10 '(#(0 0 2) #(1 1 0) #(0 1 1) #(1 0 1) #(0 2 0) #(2 0 0)))
+ (check-range? n*n*n 10 20 '(#(0 0 3) #(0 3 0) #(3 0 0)
+                             #(0 1 2) #(1 0 2) #(0 2 1) #(1 2 0) #(2 0 1) #(2 1 0)
+                             #(1 1 1))))
 
 ;; multi-arg map/e test
 (define sums/e

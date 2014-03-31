@@ -34,6 +34,7 @@
          many/e
          many1/e
          list/e
+         vec/e
          traverse/e
          hash-traverse/e
          
@@ -797,6 +798,12 @@
 ;; many1/e : enum a -> enum (nonempty listof a)
 (define (many1/e e)
   (except/e (many/e e) '()))
+
+;; vec/e : listof (enum any) -> enum (vectorof any)
+(define (vec/e . es)
+  (map/e list->vector
+         vector->list
+         (list/e es)))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
