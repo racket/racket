@@ -10,5 +10,5 @@
 >   [(uh (x τ G) G_r boolean) ⊥ (where #t (in-vars? x τ))]
 571a574,576
 > 
-> (define small-counter-example (term ((λ x (x x)) (λ x x))))
+> (define small-counter-example (term ((λ x (x x)) hd)))
 > (test-equal (check small-counter-example) #f)

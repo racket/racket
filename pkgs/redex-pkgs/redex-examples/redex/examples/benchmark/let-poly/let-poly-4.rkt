@@ -572,5 +572,5 @@ from the given term.
                              (or (equal? red-t "error")
                                  (loop red-t))))))))))))
 
-(define small-counter-example (term ((λ x (x x)) (λ x x))))
+(define small-counter-example (term ((λ x (x x)) hd)))
 (test-equal (check small-counter-example) #f)
