@@ -1218,15 +1218,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (-define stx)
   (syntax-parse stx #:literals (:)
-    ;; the first two cases are actually subsumed by the last,
+    ;; the first three cases are actually subsumed by the last,
     ;; but manually expanding to using the : annotation form
     ;; produces better error messages on duplicate annotations
+    ;;
+    ;; note, these first two cases can be collapsed into one
+    ;; but we keep them separate because in some cases it ruins
+    ;; typechecking performance to merge them.
+    [(-define nm:id body)
+     (syntax/loc stx (define nm body))]
     [(-define nm:id return:return-ann body)
-     (define/with-syntax maybe-ann
-       (if (attribute return.type)
-           #'(: nm return.type)
-           #'(void)))
-     (syntax/loc stx (begin maybe-ann (define nm body)))]
+     (quasisyntax/loc stx
+       (begin (: nm #,(attribute return.type)) (define nm body)))]
     [(-define vars:lambda-type-vars nm:id : ty body)
      (define/with-syntax type
        (syntax/loc #'ty (All vars.type-vars ty)))
