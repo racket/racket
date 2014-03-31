@@ -795,20 +795,19 @@
                                                 stx
                                                 an)]))
                        ans)
+             (define info-v (syntax-local-value #'info (lambda () #f)))
+             (unless (struct-info? info-v)
+               (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
+             (define info-list (extract-struct-info info-v))
              (let-values ([(construct pred accessors parent)
-                           (let ([v (syntax-local-value #'info (lambda () #f))])
-                             (unless (struct-info? v)
-                               (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
-                             (let ([v (extract-struct-info v)])
-                               (values (cadr v)
-                                       (caddr v)
-                                       (cadddr v)
-                                       (list-ref v 5))))])
-               
+                           (values (cadr info-list)
+                                   (caddr info-list)
+                                   (cadddr info-list)
+                                   (list-ref info-list 5))])
                (let* ([ensure-really-parent
                        (λ (id)
-                         (let loop ([parent parent])
-                           (cond
+                          (let loop ([parent parent])
+                            (cond
                              [(eq? parent #t)
                               (raise-syntax-error #f "identifier not bound to a parent struct" stx id)]
                              [(not parent)
@@ -820,27 +819,38 @@
                                   (raise-syntax-error #f "unknown parent struct" stx id)) ;; probably won't happen(?)
                                 (let ([v (extract-struct-info v)])
                                   (loop (list-ref v 5))))])))]
+                      [get-accessor
+                       (λ (struct-info field)
+                          ;; Since we don't have the field/accessor relationship represented in struct-info,
+                          ;; we assume that if the accessor ends in (format "-~a" (syntax-e field)), then
+                          ;; it is the accessor we mean to get.
+                          (define accessors (cadddr struct-info))
+                          (define field-suffix (format "-~a" (syntax-e field)))
+                          (define suffix-length (string-length field-suffix))
+                          (let loop ([accessors accessors])
+                            (if (null? accessors)
+                                (raise-syntax-error #f "field not present in struct" stx field)
+                                (let* ([accessor (car accessors)]
+                                       [accessor-str (symbol->string (syntax-e accessor))]
+                                       [accessor-len (string-length accessor-str)])
+                                  (cond
+                                   [(or (< accessor-len suffix-length)
+                                        (not (string=? field-suffix
+                                                       (substring accessor-str (- accessor-len suffix-length)))))
+                                    (loop (cdr accessors))]
+                                   [else accessor])))))]
                       [new-fields
                        (map (lambda (an)
                               (syntax-case an ()
                                 [(field expr)
-                                 (list (datum->syntax #'field
-                                                      (string->symbol
-                                                       (format "~a-~a"
-                                                               (syntax-e #'info)
-                                                               (syntax-e #'field)))
-                                                      #'field)
+                                 (list (get-accessor info-list #'field)
                                        #'expr
                                        (car (generate-temporaries (list #'field))))]
                                 [(field #:parent id expr)
                                  (begin
                                    (ensure-really-parent #'id)
-                                   (list (datum->syntax #'field
-                                                        (string->symbol
-                                                         (format "~a-~a"
-                                                                 (syntax-e #'id)
-                                                                 (syntax-e #'field)))
-                                                        #'field)
+                                   (list (get-accessor (extract-struct-info (syntax-local-value parent))
+                                                       #'field)
                                          #'expr
                                          (car (generate-temporaries (list #'field)))))]))
                             ans)]
