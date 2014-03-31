@@ -8,12 +8,13 @@
                      (only-in racket/list flatten)
                      "keyword-macros.rkt"
                      "matcher.rkt")
+         "term-fn.rkt"
          syntax/datum
          "error.rkt"
          "lang-struct.rkt"
          "matcher.rkt")
 
-(provide term term-let define-term
+(provide term term-let define-term caching-poisoned? term-nested?
          hole in-hole
          term-let/error-name term-let-fn term-define-fn
          (for-syntax term-rewrite
@@ -81,13 +82,27 @@
 (define-syntax (mf-apply stx)
   (syntax-case stx ()
     [(_ mf)
-     #'(λ (x) (mf x))]))
+     #'(λ (x) 
+         (begin
+           ;; The test macro used in redex-test causes mf-apply to be used on an ordinary procedure
+           ;; (not a metafunction), so we must check whether it is a metafunction before checking
+           ;; whether it poisons the cache.
+           (when (and (metafunc-proc? mf)
+                      (metafunc-proc-cache-poison? mf))
+             (set-box! (caching-poisoned?) #t))
+           (let [(ans (mf x))]
+             ans)))]))
 
 (define-syntax (jf-apply stx)
   (syntax-case stx ()
     [(_ jf)
      (judgment-form-id? #'jf)
      (judgment-form-term-proc (syntax-local-value #'jf (λ () #f)))]))
+
+;; Track whether a cache-poisoning metafunction has been used during evaluation of the current term
+(define caching-poisoned? (make-parameter (box #f)))
+;; Track whether the current term expression is nested inside another term expression
+(define term-nested? (make-parameter #f))
 
 (define-syntax (mf-map stx)
   (syntax-case stx ()
@@ -284,8 +299,18 @@
                  [(null? bs) (syntax t)]
                  [else (with-syntax ([rec (loop (cdr bs))]
                                      [fst (car bs)])
-                         (syntax (with-datum (fst)
-                                             rec)))]))))]))
+                         (syntax
+                          ;; If this is the outermost term, we reset the cache to non-poisoned and
+                          ;; remember that any terms we encounter during this are nested terms.
+                          (if (not (term-nested?))
+                              (parameterize [(caching-poisoned? (box #f))
+                                             (term-nested? #t)]
+                                (with-datum (fst)
+                                            rec))
+                              ;; Otherwise, this is a nested term. It inherits the poison tracking
+                              ;; from its enclosing term, so we do not need to re-parameterize.
+                              (with-datum (fst)
+                                          rec))))]))))]))
 
 (define-for-syntax (term-temp->pat t-t names)
   (syntax-case t-t (term-template)

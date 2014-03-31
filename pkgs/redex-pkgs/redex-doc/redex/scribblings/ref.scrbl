@@ -1097,9 +1097,12 @@ reduce it further).
                ...)
              ([metafunction-contract (code:line) 
                                      (code:line id : @#,ttpattern-sequence ... -> range
-                                                maybe-pre-condition)]
+                                                maybe-pre-condition
+                                                maybe-cache-poison)]
               [maybe-pre-condition (code:line #:pre @#,tttterm)
                                    (code:line)]
+              [maybe-cache-poison (code:line #:cache-poison)
+                                  (code:line)]
               [range @#,ttpattern
                      (code:line @#,ttpattern or range)
                      (code:line @#,ttpattern ∨ range)

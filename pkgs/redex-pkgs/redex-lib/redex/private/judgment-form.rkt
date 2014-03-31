@@ -407,7 +407,8 @@
      (begin
        (unless (identifier? #'lang)
          (raise-syntax-error #f "expected an identifier in the language position" stx #'lang))
-       (define-values (contract-name dom-ctcs codom-contracts pats)
+       ;; cache-poison? is not necessary for relations
+       (define-values (contract-name dom-ctcs codom-contracts pats _)
          (split-out-contract stx (syntax-e #'def-form-id) #'body #t))
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
@@ -421,11 +422,37 @@
 ;; if relation? is true, then the contract is a list of redex patterns
 ;; if relation? is false, then the contract is a single redex pattern
 ;;   (meant to match the actual argument as a sequence)
+;; returns:
+;; * contract-name
+;; * domain contracts
+;; * codomain contracts
+;; * clauses
+;; * cache-poison?
 (define-for-syntax (split-out-contract stx syn-error-name rest relation?)
+  ;; extracts keywords (currently just #:cache-poison) from the rest of the syntax list
+  ;; returns (values raw-clauses cache-poison?))
+  ;; (Note that after keywords, all that must be left is clauses, hence "raw-clauses")
+  ;; If you wish to add more keywords, make this a loop which goes that extracts them all,
+  ;; then construct a list/struct of keywords and associated arguments (if any) and return
+  ;; that instead of "cache-poison?".  Also change the uses of extract-keywords accordingly.
+  (define (extract-keywords more)
+    (cond
+      ;; first thing is #:cache-poison
+      [(and (not (empty? more))
+            (equal? (syntax-e (car more)) '#:cache-poison))
+       (values (cdr more) #t)]
+      [else
+       (values more #f)]))
   ;; initial test determines if a contract is specified or not
   (cond
+    ;; If we don't have a contract, it must be the case that we have at least one clause;
+    ;; this is guaranteed by the use of split-out-contract in reduction-semantics.rkt
+    ;; Also, in this case we have no keywords
     [(pair? (syntax-e (car (syntax->list rest))))
-     (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
+     (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?) #f)]
+    ;; This is not a viable way of matching anything more than the one keyword we have at the moment
+    [(equal? (syntax-e (car (syntax->list rest))) '#:cache-poison)
+     (values #f #f (list #'any) (check-clauses stx syn-error-name (cdr (syntax->list rest)) relation?) #t)]
     [else
      (syntax-case rest ()
        [(id separator more ...)
@@ -438,47 +465,53 @@
                (raise-syntax-error syn-error-name 
                                    "expected clause definitions to follow domain contract"
                                    stx))
-             (values #'id contract (list #'any) (check-clauses stx syn-error-name clauses #t)))]
+             (values #'id contract (list #'any) (check-clauses stx syn-error-name clauses #t) #f))]
+          ;; We're not dealing with a relation
           [else
            (unless (eq? ': (syntax-e #'separator))
              (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
+           ;; Loop collecting the domain patterns
            (let loop ([more (syntax->list #'(more ...))]
                       [dom-pats '()])
              (cond
                [(null? more)
                 (raise-syntax-error syn-error-name "expected an ->" stx)]
+               ;; Split domain from codomain by ->
                [(eq? (syntax-e (car more)) '->)
-                (define-values (raw-clauses rev-codomains pre-condition)
-                  (let loop ([prev (car more)]
-                             [more (cdr more)]
-                             [codomains '()])
+                (when (null? (cdr more))
+                  (raise-syntax-error syn-error-name "expected a range contract to follow" stx (car more)))
+                ;; Process codomains
+                (define-values (after-codomains rev-codomains)
+                  (let loop ([more (cddr more)]
+                             [codomains (list (cadr more))])
                     (cond
                       [(null? more)
-                       (raise-syntax-error syn-error-name "expected a range contract to follow" stx prev)]
+                       (values null codomains)]
+                      ;; first thing is OR (i.e. this is a union pattern)
+                      [(member (syntax-e (car more)) '(or ∨ ∪))
+                       ; TODO: make sure there is a pattern after the OR symbol
+                       (loop (cddr more) ;; skip this pattern and the OR
+                             (cons (cadr more) codomains))]
                       [else
-                       (define after-this-one (cdr more))
-                       (cond
-                         [(null? after-this-one)
-                          (values null (cons (car more) codomains) #t)]
-                         [else
-                          (define kwd (cadr more))
-                          (cond
-                            [(member (syntax-e kwd) '(or ∨ ∪))
-                             (loop kwd 
-                                   (cddr more)
-                                   (cons (car more) codomains))]
-                            [(and (not relation?) (equal? (syntax-e kwd) '#:pre))
-                             (when (null? (cddr more)) 
-                               (raise-syntax-error 'define-metafunction 
-                                                   "expected an expression to follow #:pre keyword"
-                                                   kwd))
-                             (values (cdddr more)
-                                     (cons (car more) codomains)
-                                     (caddr more))]
-                            [else
-                             (values (cdr more)
-                                     (cons (car more) codomains)
-                                     #t)])])])))
+                       (values more codomains)])))
+                ;; Process the #:pre keyword if it's there
+                (define-values (after-pre pre-condition)
+                  (cond
+                    ;; first thing is #:pre
+                    [(and (not (empty? after-codomains))
+                          (equal? (syntax-e (car after-codomains)) '#:pre))
+                     (when (null? (cddr after-codomains)) 
+                       (raise-syntax-error 'define-metafunction 
+                                           "expected an expression to follow #:pre keyword"
+                                           (car after-codomains)))
+                     (values (cddr after-codomains)
+                             (cadr after-codomains))]
+                    [else
+                     (values after-codomains #t)]))
+                ;; Anything after #:cache-poison (if it exists) must be a clause
+                (define-values (raw-clauses cache-poison?)
+                  (extract-keywords after-pre))
+                ;; Finally, clean up components for return from split-out-contract
                 (let ([doms (reverse dom-pats)]
                       [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
                   (values #'id 
@@ -486,7 +519,9 @@
                               doms
                               #`(side-condition #,doms (term #,pre-condition)))
                           (reverse rev-codomains)
-                          clauses))]
+                          clauses
+                          cache-poison?))]
+               ;; Continue processing the contract
                [else
                 (loop (cdr more) (cons (car more) dom-pats))]))])]
        [_

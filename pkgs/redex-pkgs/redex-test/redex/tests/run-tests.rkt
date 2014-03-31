@@ -39,7 +39,8 @@
      "tut-subst-test.rkt"
      "enumerator-test.rkt"
      "enum-test.rkt"
-     "bitmap-test.rkt")
+     "bitmap-test.rkt"
+     "cache-poisoning-test.rkt")
    (if test-examples?
        '("<redex-examples>/redex/examples/cbn-letrec.rkt"
          "<redex-examples>/redex/examples/stlc.rkt"

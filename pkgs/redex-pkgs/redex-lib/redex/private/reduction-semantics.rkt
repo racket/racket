@@ -1187,7 +1187,7 @@
           prev-metafunction
           (λ ()
             (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctcs codom-contracts pats)
+       (let*-values ([(contract-name dom-ctcs codom-contracts pats cache-poison?)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1206,6 +1206,7 @@
                                                             name-predicate
                                                             #,dom-ctcs
                                                             #,codom-contracts
+                                                            #,cache-poison?
                                                             #,pats
                                                             #,syn-error-name))
                                    (term-define-fn name name2))])
@@ -1248,12 +1249,13 @@
 
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
-    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats syn-error-name)
+    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts cache-poison? pats syn-error-name)
      (let ([prev-metafunction (and (syntax-e #'prev-metafunction) #'prev-metafunction)]
            [dom-ctcs (syntax-e #'dom-ctcs)]
            [codom-contracts (syntax-e #'codom-contracts)]
            [pats (syntax-e #'pats)]
-           [syn-error-name (syntax-e #'syn-error-name)])
+           [syn-error-name (syntax-e #'syn-error-name)]
+           [cache-poison? (syntax-e #'cache-poison?)])
        (define lang-nts
          (definition-nts #'lang #'orig-stx syn-error-name))
        (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
@@ -1395,9 +1397,11 @@
                                    [else
                                     #`(memoize0
                                        (λ ()
-                                         (add-mf-dqs #,(check-pats #'(list gen-clause ...)))))])))
+                                         (add-mf-dqs #,(check-pats #'(list gen-clause ...)))))])
+                               #,cache-poison?))
                             #,(if dom-ctcs #'dsc #f)
                             `(codom-side-conditions-rewritten ...)
+                            #,cache-poison?
                             'name))))
                     'disappeared-use
                     (map syntax-local-introduce 
@@ -1557,7 +1561,7 @@
    (syntax->list extras)))
 
 
-(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name)
+(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats cache-poison? name)
   (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
          [codom-compiled-patterns (map (λ (codom-contract-pat) (compile-pattern lang codom-contract-pat #f))
                                        codom-contract-pats)]
@@ -1571,7 +1575,8 @@
                [cache-entries 0]
                [not-in-cache (gensym)]
                [cache-result (λ (arg res case)
-                               (when (caching-enabled?)
+                               (when (and (caching-enabled?)
+                                          (not (unbox (caching-poisoned?))))
                                  (when (>= cache-entries cache-size)
                                    (set! cache (make-hash))
                                    (set! cache-entries 0))
@@ -1590,8 +1595,12 @@
                [metafunc
                 (λ (exp)
                   (let ([cache-ref (hash-ref cache exp not-in-cache)])
+                    (when cache-poison?
+                      (set-box! (caching-poisoned?) #t))
                     (cond
-                      [(or (not (caching-enabled?)) (eq? cache-ref not-in-cache))
+                      [(or (not (caching-enabled?))
+                           (unbox (caching-poisoned?))
+                           (eq? cache-ref not-in-cache))
                        (when dom-compiled-pattern
                          (unless (match-pattern dom-compiled-pattern exp)
                            (redex-error name
@@ -1655,6 +1664,7 @@
                                       (parameterize ([current-trace-print-args
                                                       (λ (name args kws kw-args level)
                                                         (if (or (not (caching-enabled?))
+                                                                (unbox (caching-poisoned?))
                                                                 (eq? not-in-cache (hash-ref cache exp not-in-cache)))
                                                             (display " ")
                                                             (display "c"))
@@ -1664,6 +1674,8 @@
                                                         (display " ")
                                                         (otr name results level))]
                                                      [print-as-expression #f])
+                                        (when cache-poison?
+                                          (set-box! (caching-poisoned?) #t))
                                         (trace-call name metafunc exp))
                                       (metafunc exp)))])
         traced-metafunc))
