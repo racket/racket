@@ -19,6 +19,13 @@ library.
 
 @section{Special forms}
 
+@defmodule[typed/racket/class]
+
+The special forms below are provided by the @racketmodname[typed/racket/class]
+and @racketmodname[typed/racket] modules but not by
+@racketmodname[typed/racket/base]. The @racketmodname[typed/racket/class] module
+additional provides all other bindings from @racketmodname[racket/class].
+
 @;; This uses a trick to link to racket/class's class identifier
 @;; in certain cases rather than the class defined here
 @(module id-holder racket/base
