@@ -49,7 +49,7 @@
     (define-values (x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks)
       (get-ticks renderer-list bounds-rect))
     
-    (define render-list-hash (make-hash))
+    (define render-tasks-hash (make-hash))
     (define legend-entries-hash (make-hash))
     
     (define (make-bm anim? angle altitude width height)
@@ -64,7 +64,7 @@
                           dc 0 0 width height))
            (send area start-plot)
            
-           (cond [(not (hash-ref render-list-hash (plot-animating?) #f))
+           (cond [(not (hash-ref render-tasks-hash (plot-animating?) #f))
                   (hash-set!
                    legend-entries-hash (plot-animating?)
                    (flatten (for/list ([rend  (in-list renderer-list)])
@@ -74,9 +74,9 @@
                                                             (unknown-rect 3)))
                               (if render-proc (render-proc area) empty))))
                   
-                  (hash-set! render-list-hash (plot-animating?) (send area get-render-list))]
+                  (hash-set! render-tasks-hash (plot-animating?) (send area get-render-tasks))]
                  [else
-                  (send area put-render-list (hash-ref render-list-hash (plot-animating?)))])
+                  (send area set-render-tasks (hash-ref render-tasks-hash (plot-animating?)))])
            
            (send area end-renderers)
            

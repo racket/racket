@@ -2,25 +2,29 @@
 
 ;; A small rotation matrix library, used to transform plot coordinates into view coordinates.
 
-(require racket/match racket/flonum
-         "../common/math.rkt")
+(require racket/match
+         (only-in math/flonum fl)
+         racket/flonum)
 
-(provide m3-apply m3-transpose m3* m3-rotate-z m3-rotate-x m3-scale)
+(provide m3-apply m3-transpose m3* m3-rotate-z m3-rotate-x m3-scale
+         fl3-dot)
 
 (define-syntax-rule (dot x1 y1 z1 x2 y2 z2) (fl+ (fl+ (fl* x1 x2) (fl* y1 y2)) (fl* z1 z2)))
 
 (define (m3-apply m v)
-  (match-define (vector (vector v11 v12 v13) (vector v21 v22 v23) (vector v31 v32 v33)) m)
-  (match-define (vector x y z) v)
-  (vector (dot x y z v11 v12 v13) (dot x y z v21 v22 v23) (dot x y z v31 v32 v33)))
+  (match-define (vector v1 v2 v3) m)
+  (define x (flvector-ref v 0))
+  (define y (flvector-ref v 1))
+  (define z (flvector-ref v 2))
+  (flvector (dot x y z (flvector-ref v1 0) (flvector-ref v1 1) (flvector-ref v1 2))
+            (dot x y z (flvector-ref v2 0) (flvector-ref v2 1) (flvector-ref v2 2))
+            (dot x y z (flvector-ref v3 0) (flvector-ref v3 1) (flvector-ref v3 2))))
 
 (define (m3-transpose m)
-  (match-define (vector (vector m11 m12 m13)
-                        (vector m21 m22 m23)
-                        (vector m31 m32 m33)) m)
-  (vector (vector m11 m21 m31)
-          (vector m12 m22 m32)
-          (vector m13 m23 m33)))
+  (match-define (vector v1 v2 v3) m)
+  (vector (flvector (flvector-ref v1 0) (flvector-ref v2 0) (flvector-ref v3 0))
+          (flvector (flvector-ref v1 1) (flvector-ref v2 1) (flvector-ref v3 1))
+          (flvector (flvector-ref v1 2) (flvector-ref v2 2) (flvector-ref v3 2))))
 
 (define (m3* m1 m2)
   (match-define (vector v1 v2 v3) m1)
@@ -28,22 +32,30 @@
   (vector (m3-apply m v1) (m3-apply m v2) (m3-apply m v3)))
 
 (define (m3-rotate-z theta)
-  (let ([theta  (exact->inexact theta)])
+  (let ([theta  (fl theta)])
     (define cos-theta (flcos theta))
     (define sin-theta (flsin theta))
-    (vector (vector cos-theta (- sin-theta) 0.0)
-            (vector sin-theta cos-theta 0.0)
-            (vector 0.0 0.0 1.0))))
+    (vector (flvector cos-theta (- sin-theta) 0.0)
+            (flvector sin-theta cos-theta 0.0)
+            (flvector 0.0 0.0 1.0))))
 
 (define (m3-rotate-x rho)
-  (let ([rho  (exact->inexact rho)])
+  (let ([rho  (fl rho)])
     (define cos-rho (flcos rho))
     (define sin-rho (flsin rho))
-    (vector (vector 1.0 0.0 0.0)
-            (vector 0.0 cos-rho (- sin-rho))
-            (vector 0.0 sin-rho cos-rho))))
+    (vector (flvector 1.0 0.0 0.0)
+            (flvector 0.0 cos-rho (- sin-rho))
+            (flvector 0.0 sin-rho cos-rho))))
 
 (define (m3-scale x-scale y-scale z-scale)
-  (vector (vector (exact->inexact x-scale) 0.0 0.0)
-          (vector 0.0 (exact->inexact y-scale) 0.0)
-          (vector 0.0 0.0 (exact->inexact z-scale))))
+  (vector (flvector (fl x-scale) 0.0 0.0)
+          (flvector 0.0 (fl y-scale) 0.0)
+          (flvector 0.0 0.0 (fl z-scale))))
+
+(define (fl3-dot v1 v2)
+  (fl+ (fl* (flvector-ref v1 0)
+            (flvector-ref v2 0))
+       (fl+ (fl* (flvector-ref v1 1)
+                 (flvector-ref v2 1))
+            (fl* (flvector-ref v1 2)
+                 (flvector-ref v2 2)))))

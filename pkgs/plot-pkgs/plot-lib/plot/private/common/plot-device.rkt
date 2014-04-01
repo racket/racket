@@ -157,9 +157,10 @@
         pen-color)
       (set! pen-style (->pen-style style))
       (set! pen-width width)
-      (let ([style  (if (eq? style 'transparent) 'transparent 'solid)])
-        (send dc set-pen (hash-ref! pen-hash (vector r g b width style)
-                                    (λ () (make-pen% r g b width style))))))
+      (if (eq? style 'transparent)
+          (send dc set-pen transparent-pen)
+          (send dc set-pen (hash-ref! pen-hash (vector r g b width 'solid)
+                                      (λ () (make-pen% r g b width 'solid))))))
     
     ;; Sets the pen used to draw major ticks.
     (define/public (set-major-pen [style 'solid])

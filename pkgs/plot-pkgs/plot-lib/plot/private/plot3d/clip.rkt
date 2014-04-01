@@ -5,7 +5,7 @@
 (require racket/match racket/list racket/unsafe/ops
          "../common/utils.rkt")
 
-(provide point-in-bounds? clip-line clip-polygon
+(provide point-in-bounds? clip-line clip-polygon clip-lines
          clip-polygon-x-min clip-polygon-x-max
          clip-polygon-y-min clip-polygon-y-max
          clip-polygon-z-min clip-polygon-z-max)
@@ -18,7 +18,7 @@
   (and (<= x-min x x-max) (<= y-min y y-max) (<= z-min z z-max)))
 
 ;; ===================================================================================================
-;; Lines
+;; Line clipping
 
 (define (clip-line-x start-in-bounds? x x1 y1 z1 x2 y2 z2)
   (let-map
@@ -93,20 +93,31 @@
       (values (vector x1 y1 z1) (vector x2 y2 z2)))))
 
 ;; ===================================================================================================
-;; Polygons
+;; Polygon clipping
 
 (define-syntax-rule (make-clip-polygon idx test? clip-line)
-  (λ (val vs)
-    (for/fold ([res empty]) ([v1  (in-list (cons (last vs) vs))] [v2  (in-list vs)])
-      (define v1-in-bounds? (test? (unsafe-vector-ref v1 idx) val))
-      (define v2-in-bounds? (test? (unsafe-vector-ref v2 idx) val))
-      (cond [(and v1-in-bounds? v2-in-bounds?)              (cons v2 res)]
-            [(and (not v1-in-bounds?) (not v2-in-bounds?))  res]
-            [else  (match-define (vector x1 y1 z1) v1)
-                   (match-define (vector x2 y2 z2) v2)
-                   (let-values ([(x1 y1 z1 x2 y2 z2) (clip-line v1-in-bounds? val x1 y1 z1 x2 y2 z2)])
-                     (cond [v2-in-bounds?  (list* (vector x2 y2 z2) (vector x1 y1 z1) res)]
-                           [else           (cons (vector x2 y2 z2) res)]))]))))
+  (λ (val vs ls)
+    (define-values (new-vs new-ls)
+      (for/fold ([vs empty] [ls empty]) ([v1  (in-list (cons (last vs) vs))]
+                                         [v2  (in-list vs)]
+                                         [l   (in-list ls)])
+        (define v1-in-bounds? (test? (unsafe-vector-ref v1 idx) val))
+        (define v2-in-bounds? (test? (unsafe-vector-ref v2 idx) val))
+        (cond [(and v1-in-bounds? v2-in-bounds?)
+               (values (cons v2 vs) (cons l ls))]
+              [(and (not v1-in-bounds?) (not v2-in-bounds?))
+               (values vs ls)]
+              [else
+               (match-define (vector x1 y1 z1) v1)
+               (match-define (vector x2 y2 z2) v2)
+               (let-values ([(x1 y1 z1 x2 y2 z2) (clip-line v1-in-bounds? val x1 y1 z1 x2 y2 z2)])
+                 (cond [v2-in-bounds?
+                        (values (list* (vector x2 y2 z2) (vector x1 y1 z1) vs)
+                                (list* l #t ls))]
+                       [else
+                        (values (cons (vector x2 y2 z2) vs)
+                                (cons l ls))]))])))
+    (values (reverse new-vs) (reverse new-ls))))
 
 (define clip-polygon-x-min (make-clip-polygon 0 >= clip-line-x))
 (define clip-polygon-x-max (make-clip-polygon 0 <= clip-line-x))
@@ -115,7 +126,69 @@
 (define clip-polygon-z-min (make-clip-polygon 2 >= clip-line-z))
 (define clip-polygon-z-max (make-clip-polygon 2 <= clip-line-z))
 
-(define (clip-polygon vs x-min x-max y-min y-max z-min z-max)
+(define (clip-polygon vs ls x-min x-max y-min y-max z-min z-max)
+  (let/ec return
+    ;; early reject: no polygon
+    (when (empty? vs) (return empty empty))
+    (match-define (list (vector xs ys zs) ...) vs)
+    ;; early accept: all endpoints in bounds
+    (when (and (andmap (λ (x) (<= x-min x x-max)) xs)
+               (andmap (λ (y) (<= y-min y y-max)) ys)
+               (andmap (λ (z) (<= z-min z z-max)) zs))
+      (return vs ls))
+    ;; early reject: all endpoints on the outside of the same plane
+    (when (or (andmap (λ (x) (x . < . x-min)) xs) (andmap (λ (x) (x . > . x-max)) xs)
+              (andmap (λ (y) (y . < . y-min)) ys) (andmap (λ (y) (y . > . y-max)) ys)
+              (andmap (λ (z) (z . < . z-min)) zs) (andmap (λ (z) (z . > . z-max)) zs))
+      (return empty empty))
+    (let*-values ([(vs ls)  (clip-polygon-x-min x-min vs ls)]
+                  [(_)      (when (empty? vs) (return empty empty))]
+                  [(vs ls)  (clip-polygon-x-max x-max vs ls)]
+                  [(_)      (when (empty? vs) (return empty empty))]
+                  [(vs ls)  (clip-polygon-y-min y-min vs ls)]
+                  [(_)      (when (empty? vs) (return empty empty))]
+                  [(vs ls)  (clip-polygon-y-max y-max vs ls)]
+                  [(_)      (when (empty? vs) (return empty empty))]
+                  [(vs ls)  (clip-polygon-z-min z-min vs ls)]
+                  [(_)      (when (empty? vs) (return empty empty))]
+                  [(vs ls)  (clip-polygon-z-max z-max vs ls)])
+      (values vs ls))))
+
+;; ===================================================================================================
+;; Connected lines clipping
+
+(define-syntax-rule (make-clip-lines idx test? clip-line)
+  (λ (val vs)
+    (define v1 (first vs))
+    (define v1? (test? (unsafe-vector-ref v1 idx) val))
+    
+    (define-values (vss _v1 _v1?)
+      (for/fold ([vss (if v1? (list (list v1)) (list empty))]
+                 [v1 v1]
+                 [v1? v1?]
+                 ) ([v2  (in-list (rest vs))])
+        (define v2? (test? (unsafe-vector-ref v2 idx) val))
+        (cond [(and v1? v2?)       (values (cons (cons v2 (first vss)) (rest vss)) v2 v2?)]
+              [(not (or v1? v2?))  (values vss v2 v2?)]
+              [else
+               (match-define (vector x1 y1 z1) v1)
+               (match-define (vector x2 y2 z2) v2)
+               (let-values ([(x1 y1 z1 x2 y2 z2) (clip-line v1? val x1 y1 z1 x2 y2 z2)])
+                 (cond [v2?
+                        (values (cons (list (vector x2 y2 z2) (vector x1 y1 z1)) vss) v2 v2?)]
+                       [else
+                        (values (cons (cons (vector x2 y2 z2) (first vss)) (rest vss)) v2 v2?)]))])))
+    
+    (filter (compose not empty?) vss)))
+
+(define clip-lines-x-min (make-clip-lines 0 >= clip-line-x))
+(define clip-lines-x-max (make-clip-lines 0 <= clip-line-x))
+(define clip-lines-y-min (make-clip-lines 1 >= clip-line-y))
+(define clip-lines-y-max (make-clip-lines 1 <= clip-line-y))
+(define clip-lines-z-min (make-clip-lines 2 >= clip-line-z))
+(define clip-lines-z-max (make-clip-lines 2 <= clip-line-z))
+
+(define (clip-lines vs x-min x-max y-min y-max z-min z-max)
   (let/ec return
     ;; early reject: no polygon
     (when (empty? vs) (return empty))
@@ -124,77 +197,21 @@
     (when (and (andmap (λ (x) (<= x-min x x-max)) xs)
                (andmap (λ (y) (<= y-min y y-max)) ys)
                (andmap (λ (z) (<= z-min z z-max)) zs))
-      (return vs))
+      (return (list vs)))
     ;; early reject: all endpoints on the outside of the same plane
     (when (or (andmap (λ (x) (x . < . x-min)) xs) (andmap (λ (x) (x . > . x-max)) xs)
               (andmap (λ (y) (y . < . y-min)) ys) (andmap (λ (y) (y . > . y-max)) ys)
               (andmap (λ (z) (z . < . z-min)) zs) (andmap (λ (z) (z . > . z-max)) zs))
       (return empty))
-    (let* ([vs  (clip-polygon-x-min x-min vs)]
-           [_   (when (empty? vs) (return empty))]
-           [vs  (clip-polygon-x-max x-max vs)]
-           [_   (when (empty? vs) (return empty))]
-           [vs  (clip-polygon-y-min y-min vs)]
-           [_   (when (empty? vs) (return empty))]
-           [vs  (clip-polygon-y-max y-max vs)]
-           [_   (when (empty? vs) (return empty))]
-           [vs  (clip-polygon-z-min z-min vs)]
-           [_   (when (empty? vs) (return empty))]
-           [vs  (clip-polygon-z-max z-max vs)])
-      vs)))
-
-
-;; ===================================================================================================
-
-#|
-(define (chop-polygon-x vs)
-  (cond [(empty? vs)  empty]
-        [else
-         (match-define (vector (ivl vx-min vx-max) y-ivl z-ivl) (bounding-rect vs))
-         (define n (animated-samples (plot3d-samples)))
-         (define xs (rest (nonlinear-seq x-min x-max n (plot-x-transform))))
-         (let-values ([(vss vs)
-                       (for/fold ([vss empty] [vs vs]) ([x  (in-list xs)])
-                         (cond [(empty? vs)  (values vss vs)]
-                               #;[(vx-max . <= . x)  (values vss vs)]
-                               #;[(vx-min . >= . x)  (values vss vs)]
-                               [else  (values (cons (clip-polygon-x-max x vs) vss)
-                                              (clip-polygon-x-min x vs))]))])
-           vss)]))
-
-(define (chop-polygon-y vs)
-  (cond [(empty? vs)  empty]
-        [else
-         (match-define (vector x-ivl (ivl vy-min vy-max) z-ivl) (bounding-rect vs))
-         (define n (animated-samples (plot3d-samples)))
-         (define ys (rest (nonlinear-seq y-min y-max n (plot-y-transform))))
-         (let-values ([(vss vs)
-                       (for/fold ([vss empty] [vs vs]) ([y  (in-list ys)])
-                         (cond [(empty? vs)  (values vss vs)]
-                               #;[(vx-max . <= . x)  (values vss vs)]
-                               #;[(vx-min . >= . x)  (values vss vs)]
-                               [else  (values (cons (clip-polygon-y-max y vs) vss)
-                                              (clip-polygon-y-min y vs))]))])
-           vss)]))
-
-(define (chop-polygon-z vs)
-  (cond [(empty? vs)  empty]
-        [else
-         (match-define (vector x-ivl y-ivl (ivl vz-min vz-max)) (bounding-rect vs))
-         (define n (animated-samples (plot3d-samples)))
-         (define zs (rest (nonlinear-seq z-min z-max n (plot-z-transform))))
-         (let-values ([(vss vs)
-                       (for/fold ([vss empty] [vs vs]) ([z  (in-list zs)])
-                         (cond [(empty? vs)  (values vss vs)]
-                               #;[(vx-max . <= . x)  (values vss vs)]
-                               #;[(vx-min . >= . x)  (values vss vs)]
-                               [else  (values (cons (clip-polygon-z-max z vs) vss)
-                                              (clip-polygon-z-min z vs))]))])
-           vss)]))
-
-(define (chop-polygon vs)
-  (let* ([vss  (chop-polygon-x vs)]
-         [vss  (append* (map chop-polygon-y vss))]
-         [vss  (append* (map chop-polygon-z vss))])
-    vss))
-|#
+    (let* ([vss  (clip-lines-x-min x-min vs)]
+           [_    (when (empty? vss) (return empty))]
+           [vss  (append* (map (λ (vs) (clip-lines-x-max x-max vs)) vss))]
+           [_    (when (empty? vss) (return empty))]
+           [vss  (append* (map (λ (vs) (clip-lines-y-min y-min vs)) vss))]
+           [_    (when (empty? vss) (return empty))]
+           [vss  (append* (map (λ (vs) (clip-lines-y-max y-max vs)) vss))]
+           [_    (when (empty? vss) (return empty))]
+           [vss  (append* (map (λ (vs) (clip-lines-z-min z-min vs)) vss))]
+           [_    (when (empty? vss) (return empty))]
+           [vss  (append* (map (λ (vs) (clip-lines-z-max z-max vs)) vss))])
+      vss)))

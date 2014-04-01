@@ -29,10 +29,8 @@
          [d           (if flonum-ok? (exact->inexact d) d)])
     (for-3d-sample
      (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-     (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-     (when (not (empty? polys))
-       (send area put-polygons polys
-             (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
+     (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
+       (send area put-polygon vs))))
   
   (cond [label  (rectangle-legend-entry
                  label color style line-color line-width line-style)]
@@ -103,10 +101,8 @@
         (send area put-pen line-color line-width line-style)
         (for-3d-sample
          (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-         (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-         (when (not (empty? polys))
-           (send area put-polygons polys
-                 (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))))
+         (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
+           (send area put-polygon vs))))))
   
   (cond
     [(and label (not (empty? ds)))  (rectangle-legend-entries
@@ -151,10 +147,8 @@
   (match-define (3d-sample xs ys zs dsss d-min d-max) sample)
   
   (define (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
-    (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-    (when (not (empty? polys))
-      (send area put-polygons polys
-            (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
+    (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
+      (send area put-polygon vs)))
   
   (send area put-alpha alpha)
   (send area put-brush color style)

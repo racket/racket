@@ -10,9 +10,11 @@
  (define xs (build-list 10000 (λ _ (random))))
  (plot (density xs 1/2)))
 
+(printf "Plot should be empty:~n")
 (time
  (plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1))
 
+(printf "Plot should be empty:~n")
 (time
  (plot (points empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1))
 
@@ -155,6 +157,7 @@
                              (function sqr 1 #f)))))
 
 ; draws both functions with x in [-1,2] (meaning nothing is drawn)
+(printf "Plot should be empty:~n")
 (plot (list (function sqr #f -1)
             (function sqr 2 #f)))
 
@@ -308,7 +311,7 @@
                             #:widths '(2) #:styles '(dot)))
             #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5))
 
-;; Both plots should be blank
+(printf "These two plots should be empty:~n")
 (plot (contours f2 -5 0) #:x-min 1 #:x-max 3 #:y-min 1 #:y-max 3)
 (plot (contour-intervals f2 -5 0) #:x-min 1 #:x-max 3 #:y-min 1 #:y-max 3)
 

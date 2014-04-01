@@ -1,8 +1,10 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list racket/math racket/contract racket/vector racket/flonum
+(require racket/class racket/match racket/list racket/math racket/contract racket/vector
+         racket/flonum
+         (only-in math fl flvector->vector vector->flvector)
+         racket/promise
          unstable/flonum
-         (only-in math/flonum vector->flvector flvector->vector flvector+ flvector-scale)
          "../common/math.rkt"
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
@@ -13,9 +15,9 @@
          "../common/sample.rkt"
          "../common/utils.rkt"
          "matrix.rkt"
-         "shape.rkt"
          "clip.rkt"
-         "bsp3d.rkt")
+         "bsp-trees.rkt"
+         "bsp.rkt")
 
 (provide (all-defined-out)
          plot3d-back-layer
@@ -28,6 +30,26 @@
 (define plot3d-front-layer 0)
 
 (define plot3d-subdivisions (make-parameter 0))
+
+(struct render-tasks (structural-shapes detail-shapes bsp-trees))
+
+(struct data (alpha) #:transparent)
+(struct poly-data data (center normal pen-color pen-width pen-style brush-color brush-style face)
+  #:transparent)
+(struct line-data data (pen-color pen-width pen-style)
+  #:transparent)
+(struct text-data data (anchor angle dist str font-size font-family color outline?)
+  #:transparent)
+(struct glyph-data data (symbol size pen-color pen-width pen-style brush-color brush-style)
+  #:transparent)
+(struct arrow-data data (start end outline-color pen-color pen-width pen-style)
+  #:transparent)
+
+;(: structural-shape? (shape -> Boolean))
+;; Determines whether a shape is view-independent, and thus used to *create* BSP trees
+;; Other shapes are view-dependent, so they are inserted into BSP trees before each refresh
+(define (structural-shape? s)
+  (poly? s))
 
 (define 3d-plot-area%
   (class object%
@@ -128,34 +150,35 @@
     (define plot->norm
       (if flonum-ok?
           (let-map
-           (x-mid y-mid z-mid x-size y-size z-size) exact->inexact
+           (x-mid y-mid z-mid x-size y-size z-size) fl
            (if identity-transforms?
                (match-lambda
                  [(vector x y z)
-                  (vector (fl/ (fl- (exact->inexact x) x-mid) x-size)
-                          (fl/ (fl- (exact->inexact y) y-mid) y-size)
-                          (fl/ (fl- (exact->inexact z) z-mid) z-size))])
+                  (flvector (fl/ (fl- (fl x) x-mid) x-size)
+                            (fl/ (fl- (fl y) y-mid) y-size)
+                            (fl/ (fl- (fl z) z-mid) z-size))])
                (match-lambda
                  [(vector (? rational? x) (? rational? y) (? rational? z))
-                  (vector (fl/ (fl- (exact->inexact (fx x)) x-mid) x-size)
-                          (fl/ (fl- (exact->inexact (fy y)) y-mid) y-size)
-                          (fl/ (fl- (exact->inexact (fz z)) z-mid) z-size))]
-                 [(vector x y z)  (vector +nan.0 +nan.0 +nan.0)])))
+                  (flvector (fl/ (fl- (fl (fx x)) x-mid) x-size)
+                            (fl/ (fl- (fl (fy y)) y-mid) y-size)
+                            (fl/ (fl- (fl (fz z)) z-mid) z-size))]
+                 [(vector x y z)
+                  (flvector +nan.0 +nan.0 +nan.0)])))
           (if identity-transforms?
               (match-lambda
                 [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (vector (exact->inexact (/ (- (inexact->exact x) x-mid) x-size))
-                         (exact->inexact (/ (- (inexact->exact y) y-mid) y-size))
-                         (exact->inexact (/ (- (inexact->exact z) z-mid) z-size)))]
+                 (flvector (fl (/ (- (inexact->exact x) x-mid) x-size))
+                           (fl (/ (- (inexact->exact y) y-mid) y-size))
+                           (fl (/ (- (inexact->exact z) z-mid) z-size)))]
                 [(vector x y z)
-                 (vector +nan.0 +nan.0 +nan.0)])
+                 (flvector +nan.0 +nan.0 +nan.0)])
               (match-lambda
                 [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (vector (exact->inexact (/ (- (inexact->exact (fx x)) x-mid) x-size))
-                         (exact->inexact (/ (- (inexact->exact (fy y)) y-mid) y-size))
-                         (exact->inexact (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
+                 (flvector (fl (/ (- (inexact->exact (fx x)) x-mid) x-size))
+                           (fl (/ (- (inexact->exact (fy y)) y-mid) y-size))
+                           (fl (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
                 [(vector x y z)
-                 (vector +nan.0 +nan.0 +nan.0)]))))
+                 (flvector +nan.0 +nan.0 +nan.0)]))))
     
     (define rotate-theta-matrix (m3-rotate-z theta))
     (define rotate-rho-matrix (m3-rotate-x rho))
@@ -167,6 +190,9 @@
     (define (norm->view/no-rho v) (m3-apply rotate-theta-matrix v))
     (define (rotate/rho v) (m3-apply rotate-rho-matrix v))
     
+    (define unrotation-matrix (m3-transpose rotation-matrix))
+    (define (view->norm v) (m3-apply unrotation-matrix v))
+    
     (define view->dc #f)
     (define (plot->dc v) (view->dc (plot->view v)))
     (define (norm->dc v) (view->dc (norm->view v)))
@@ -174,10 +200,11 @@
     (define-values (view-x-size view-y-size view-z-size)
       (match-let ([(vector view-x-ivl view-y-ivl view-z-ivl)
                    (bounding-rect
-                    (map plot->view (list (vector x-min y-min z-min) (vector x-min y-min z-max)
-                                          (vector x-min y-max z-min) (vector x-min y-max z-max)
-                                          (vector x-max y-min z-min) (vector x-max y-min z-max)
-                                          (vector x-max y-max z-min) (vector x-max y-max z-max))))])
+                    (map (compose flvector->vector plot->view)
+                         (list (vector x-min y-min z-min) (vector x-min y-min z-max)
+                               (vector x-min y-max z-min) (vector x-min y-max z-max)
+                               (vector x-max y-min z-min) (vector x-max y-min z-max)
+                               (vector x-max y-max z-min) (vector x-max y-max z-max))))])
         (values (ivl-length view-x-ivl) (ivl-length view-y-ivl) (ivl-length view-z-ivl))))
     
     (define (make-view->dc left right top bottom)
@@ -190,9 +217,10 @@
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
       (define area-per-view-z (/ (- area-y-max area-y-min) view-z-size))
       (let-map
-       (area-x-mid area-y-mid area-per-view-x area-per-view-z) exact->inexact
+       (area-x-mid area-y-mid area-per-view-x area-per-view-z) fl
        (λ (v)
-         (match-define (vector x _ z) v)
+         (define x (flvector-ref v 0))
+         (define z (flvector-ref v 2))
          (vector (fl+ area-x-mid (fl* x area-per-view-x))
                  (fl- area-y-mid (fl* z area-per-view-z))))))
     
@@ -201,22 +229,22 @@
     (set! view->dc (make-view->dc 0 0 init-top-margin 0))
     
     (define (x-axis-angle)
-      (match-define (vector dx dy) (v- (norm->dc (vector 0.5 0.0 0.0))
-                                       (norm->dc (vector -0.5 0.0 0.0))))
+      (match-define (vector dx dy) (v- (norm->dc (flvector 0.5 0.0 0.0))
+                                       (norm->dc (flvector -0.5 0.0 0.0))))
       (- (atan2 (- dy) dx)))
     
     (define (y-axis-angle)
-      (match-define (vector dx dy) (v- (norm->dc (vector 0.0 0.5 0.0))
-                                       (norm->dc (vector 0.0 -0.5 0.0))))
+      (match-define (vector dx dy) (v- (norm->dc (flvector 0.0 0.5 0.0))
+                                       (norm->dc (flvector 0.0 -0.5 0.0))))
       (- (atan2 (- dy) dx)))
     
     (define (x-axis-dir)
-      (vnormalize (v- (norm->dc (vector 0.5 0.0 0.0))
-                      (norm->dc (vector -0.5 0.0 0.0)))))
+      (vnormalize (v- (norm->dc (flvector 0.5 0.0 0.0))
+                      (norm->dc (flvector -0.5 0.0 0.0)))))
     
     (define (y-axis-dir)
-      (vnormalize (v- (norm->dc (vector 0.0 0.5 0.0))
-                      (norm->dc (vector 0.0 -0.5 0.0)))))
+      (vnormalize (v- (norm->dc (flvector 0.0 0.5 0.0))
+                      (norm->dc (flvector 0.0 -0.5 0.0)))))
     
     ;; ===============================================================================================
     ;; Tick and label constants
@@ -343,7 +371,7 @@
     (define draw-z-far-tick-labels? (not (and (plot-z-axis?) (equal? z-ticks z-far-ticks))))
     
     (define (sort-ticks ticks tick-value->view)
-      (sort ticks > #:key (λ (t) (vector-ref (tick-value->view (pre-tick-value t)) 2))
+      (sort ticks > #:key (λ (t) (flvector-ref (tick-value->view (pre-tick-value t)) 2))
             #:cache-keys? #t))
     
     (define (opposite-anchor a)
@@ -477,13 +505,13 @@
           0))
     
     (define (get-x-label-params)
-      (define v0 (norm->dc (vector 0.0 x-axis-norm-y -0.5)))
+      (define v0 (norm->dc (flvector 0.0 x-axis-norm-y -0.5)))
       (define dist (+ max-x-tick-offset (max-x-tick-label-diag) half-char-height))
       (list (plot-x-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? (- dist) dist)))
             'top (- (if x-axis-y-min? 0 pi) (x-axis-angle))))
     
     (define (get-y-label-params)
-      (define v0 (norm->dc (vector y-axis-norm-x 0.0 -0.5)))
+      (define v0 (norm->dc (flvector y-axis-norm-x 0.0 -0.5)))
       (define dist (+ max-y-tick-offset (max-y-tick-label-diag) half-char-height))
       (list (plot-y-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? (- dist) dist)))
             'top (- (if y-axis-x-min? pi 0) (y-axis-angle))))
@@ -494,13 +522,13 @@
             'bottom-left 0))
     
     (define (get-x-far-label-params)
-      (define v0 (norm->dc (vector 0.0 x-far-axis-norm-y -0.5)))
+      (define v0 (norm->dc (flvector 0.0 x-far-axis-norm-y -0.5)))
       (define dist (+ max-x-far-tick-offset (max-x-far-tick-label-diag) half-char-height))
       (list (plot-x-far-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? dist (- dist))))
             'bottom (- (if x-axis-y-min? 0 pi) (x-axis-angle))))
     
     (define (get-y-far-label-params)
-      (define v0 (norm->dc (vector y-far-axis-norm-x 0.0 -0.5)))
+      (define v0 (norm->dc (flvector y-far-axis-norm-x 0.0 -0.5)))
       (define dist (+ max-y-far-tick-offset (max-y-far-tick-label-diag) half-char-height))
       (list (plot-y-far-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? dist (- dist))))
             'bottom (- (if y-axis-x-min? pi 0) (y-axis-angle))))
@@ -542,7 +570,6 @@
                   (if (plot-x-axis?) (get-x-tick-params) empty)
                   (if (plot-y-axis?) (get-y-tick-params) empty))
           empty))
-    
     
     (define (get-front-tick-params)
       (if (plot-decorations?)
@@ -590,32 +617,32 @@
         (send pd set-minor-pen)
         (when (plot-x-axis?)
           (send pd draw-line
-                (norm->dc (vector -0.5 x-axis-norm-y -0.5))
-                (norm->dc (vector 0.5 x-axis-norm-y -0.5))))
+                (norm->dc (flvector -0.5 x-axis-norm-y -0.5))
+                (norm->dc (flvector 0.5 x-axis-norm-y -0.5))))
         (when (plot-x-far-axis?)
           (send pd draw-line
-                (norm->dc (vector -0.5 x-far-axis-norm-y -0.5))
-                (norm->dc (vector 0.5 x-far-axis-norm-y -0.5))))
+                (norm->dc (flvector -0.5 x-far-axis-norm-y -0.5))
+                (norm->dc (flvector 0.5 x-far-axis-norm-y -0.5))))
         (when (plot-y-axis?)
           (send pd draw-line
-                (norm->dc (vector y-axis-norm-x -0.5 -0.5))
-                (norm->dc (vector y-axis-norm-x 0.5 -0.5))))
+                (norm->dc (flvector y-axis-norm-x -0.5 -0.5))
+                (norm->dc (flvector y-axis-norm-x 0.5 -0.5))))
         (when (plot-y-far-axis?)
           (send pd draw-line
-                (norm->dc (vector y-far-axis-norm-x -0.5 -0.5))
-                (norm->dc (vector y-far-axis-norm-x 0.5 -0.5))))))
+                (norm->dc (flvector y-far-axis-norm-x -0.5 -0.5))
+                (norm->dc (flvector y-far-axis-norm-x 0.5 -0.5))))))
     
     (define (draw-front-axes)
       (when (plot-decorations?)
         (send pd set-minor-pen)
         (when (plot-z-axis?)
           (send pd draw-line
-                (norm->dc (vector z-axis-norm-x z-axis-norm-y -0.5))
-                (norm->dc (vector z-axis-norm-x z-axis-norm-y 0.5))))
+                (norm->dc (flvector z-axis-norm-x z-axis-norm-y -0.5))
+                (norm->dc (flvector z-axis-norm-x z-axis-norm-y 0.5))))
         (when (plot-z-far-axis?)
           (send pd draw-line
-                (norm->dc (vector z-far-axis-norm-x z-far-axis-norm-y -0.5))
-                (norm->dc (vector z-far-axis-norm-x z-far-axis-norm-y 0.5))))))
+                (norm->dc (flvector z-far-axis-norm-x z-far-axis-norm-y -0.5))
+                (norm->dc (flvector z-far-axis-norm-x z-far-axis-norm-y 0.5))))))
     
     (define (draw-ticks tick-params)
       (for ([params  (in-list tick-params)])
@@ -628,190 +655,134 @@
         (send/apply pd draw-text params #:outline? #t)))
     
     ;; ===============================================================================================
-    ;; Delayed drawing
+    ;; Render list and its BSP representation
     
-    (define render-list empty)
-    (define (add-shape! shape) (set! render-list (cons shape render-list)))
-    (define (add-shapes! shapes) (set! render-list (append shapes render-list)))
+    ;; (: structural-shapes (HashTable Integer shape))
+    ;; View-independent shapes, used to built initial BSP trees
+    (define structural-shapes (hasheq))
     
-    (define (shape->bsp-shapes s)
-      (match s
-        ;; shapes
-        [(shapes alpha _ _ ss)  (map shape->bsp-shapes ss)]
-        ;; polygon
-        [(polygon alpha center _ vs normal pen-color pen-width pen-style brush-color brush-style)
-         (polygon-shape
-          (map vector->flvector vs)
-          (λ (vs)
-            (define-values (diff spec) (get-light-values center (norm->view normal)))
-            (let ([pen-color  (map (λ (v) (+ (* v diff) spec)) pen-color)]
-                  [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)])
-              (send pd set-pen pen-color pen-width pen-style)
-              (send pd set-brush brush-color brush-style)
-              (send pd draw-polygon (map (λ (v) (view->dc (flvector->vector v))) vs)))))]
-        ;; rectangle
-        [(rectangle alpha _ _ r pen-color pen-width pen-style brush-color brush-style)
-         empty]
-        ;; line
-        [(line alpha _ _ v1 v2 pen-color pen-width pen-style)
-         empty
-         #;
-         (line-shape
-          (vector->flvector v1)
-          (vector->flvector v2)
-          (λ (v1 v2)
-            (send pd set-pen pen-color pen-width pen-style)
-            (send pd draw-line
-                  (view->dc (flvector->vector v1))
-                  (view->dc (flvector->vector v2)))))]
-        ;; text
-        [(text alpha _ _ anchor angle dist str font-size font-family color outline?)
-         empty]
-        ;; glyph
-        [(glyph alpha _ _ symbol size pen-color pen-width pen-style brush-color brush-style)
-         empty]
-        ;; tick glyph
-        [(tick-glyph alpha _ _ radius angle pen-color pen-width pen-style)
-         empty]
-        ;; arrow glyph
-        [(arrow-glyph alpha _ _ v1 v2 pen-color pen-width pen-style)
-         empty]
-        [_  (error 'draw-shapes "shape not implemented: ~e" s)]))
+    ;; (: detail-shapes (HashTable Integer shape))
+    ;; View-dependent shapes, inserted into BSP trees before each refresh
+    (define detail-shapes (hasheq))
     
-    (define (bsp-shape-norm->view s)
-      (match s
-        [(point-shape v draw)  (point-shape (vector->flvector (norm->view (flvector->vector v)))
-                                            draw)]
-        [(line-shape v1 v2 draw)  (line-shape (vector->flvector (norm->view (flvector->vector v1)))
-                                              (vector->flvector (norm->view (flvector->vector v2)))
-                                              draw)]
-        [(polygon-shape vs draw)  (polygon-shape (map (compose vector->flvector
-                                                               norm->view
-                                                               flvector->vector)
-                                                      vs)
-                                                 draw)]))
+    ;; (: bsp-trees (U #f (HashTable Integer BSP-Tree)))
+    ;; Structural shapes partitioned in BSP trees, indexed by drawing layer
+    ;; #f means not in sync with structural-shapes
+    (define bsp-trees #f)
     
-    (define bsp #f)
+    (define (add-shape! layer s)
+      (cond [(structural-shape? s)
+             (define ss structural-shapes)
+             (set! structural-shapes (hash-set ss layer (cons s (hash-ref ss layer empty))))
+             (set! bsp-trees #f)]
+            [else
+             (define ss detail-shapes)
+             (set! detail-shapes (hash-set ss layer (cons s (hash-ref ss layer empty))))]))
     
-    (define (bsp-shape-center s)
-      (match s
-        [(point-shape v draw)  v]
-        [(line-shape v1 v2 draw)  (flvector-scale (flvector+ v1 v2) 0.5)]
-        [(polygon-shape vs draw)
-         (define xs (map (λ (v) (flvector-ref v 0)) vs))
-         (define ys (map (λ (v) (flvector-ref v 1)) vs))
-         (define zs (map (λ (v) (flvector-ref v 2)) vs))
-         (flvector (* 0.5 (+ (apply min xs) (apply max xs)))
-                   (* 0.5 (+ (apply min ys) (apply max ys)))
-                   (* 0.5 (+ (apply min zs) (apply max zs))))]))
+    (define (add-shapes! layer ss)
+      (for ([s  (in-list ss)])
+        (add-shape! layer s)))
     
-    (define (bsp-shape<? s1 s2)
-      (> (flvector-ref (bsp-shape-center s1) 1) (flvector-ref (bsp-shape-center s2) 1)))
+    (define (clear-shapes!)
+      (set! structural-shapes (hasheq))
+      (set! detail-shapes (hasheq))
+      (set! bsp-trees #f))
     
-    (define (draw-shapes ss)
-      (unless bsp
-        (set! bsp (build-bsp3d (flatten (map shape->bsp-shapes ss)))))
+    (define/public (get-render-tasks)
+      (define bsp-trees (sync-bsp-trees))
+      (render-tasks structural-shapes detail-shapes bsp-trees))
+    
+    (define/public (set-render-tasks tasks)
+      (match-define (render-tasks sts dts bsps) tasks)
+      (set! structural-shapes sts)
+      (set! detail-shapes dts)
+      (set! bsp-trees bsps))
+    
+    (define (sync-bsp-trees)
+      (cond
+        [bsp-trees  bsp-trees]
+        [else
+         (define new-bsp-trees (build-bsp-trees structural-shapes))
+         (set! bsp-trees new-bsp-trees)
+         new-bsp-trees]))
+    
+    (define (draw-shapes shape-lists)
+      (for* ([ss  (in-list shape-lists)]
+             [s   (in-list ss)])
+        (draw-shape s)))
+    
+    (define (adjust-detail-shapes ss)
+      (define d (view->norm view-dir))
+      (define dx (flvector-ref d 0))
+      (define dy (flvector-ref d 1))
+      (define dz (flvector-ref d 2))
+      (define area-size (fl (min (- area-x-max area-x-min)
+                                 (- area-y-max area-y-min))))
       
-      (let loop ([bsp bsp])
-        (match bsp
-          [(? list?)
-           (for ([s  (in-list (sort (map bsp-shape-norm->view bsp)
-                                    bsp-shape<?))])
-             (match s
-               [(point-shape v draw)  (draw v)]
-               [(line-shape v1 v2 draw)  (draw v1 v2)]
-               [(polygon-shape vs draw)  (draw vs)]))]
-          [(bsp-node plane ss left right)
-           (define plane-x (flvector-ref plane 0))
-           (define plane-y (flvector-ref plane 1))
-           (define plane-z (flvector-ref plane 2))
-           (define plane-dir (norm->view (vector plane-x plane-y plane-z)))
-           (cond [((vector-ref plane-dir 1) . < . 0)
-                  (loop left)
-                  (loop ss)
-                  (loop right)]
-                 [else
-                  (loop right)
-                  (loop ss)
-                  (loop left)])]
-          [(bsp-leaf ss)
-           (loop ss)])))
+      (for/list ([s  (in-list ss)])
+        (match s
+          [(point data v)
+           ;; Bring point forward a smidge so if it's *on* a polygon it'll draw if on either side
+           (define frac #i1/10000)
+           (point data (flvector (+ (flvector-ref v 0) (* dx frac))
+                                 (+ (flvector-ref v 1) (* dy frac))
+                                 (+ (flvector-ref v 2) (* dz frac))))]
+          [(line data v1 v2)
+           ;; Bring line forward by about half its apparent thickness
+           (define frac (* 0.5 (/ pen-width area-size)))
+           (line data 
+                 (flvector (+ (flvector-ref v1 0) (* dx frac))
+                           (+ (flvector-ref v1 1) (* dy frac))
+                           (+ (flvector-ref v1 2) (* dz frac)))
+                 (flvector (+ (flvector-ref v2 0) (* dx frac))
+                           (+ (flvector-ref v2 1) (* dy frac))
+                           (+ (flvector-ref v2 2) (* dz frac))))]
+          [(lines data vs)
+           ;; Bring lines forward by about half its apparent thickness
+           (define frac (* 0.5 (/ pen-width area-size)))
+           (lines data (for/list ([v  (in-list vs)])
+                         (flvector (+ (flvector-ref v 0) (* dx frac))
+                                   (+ (flvector-ref v 1) (* dy frac))
+                                   (+ (flvector-ref v 2) (* dz frac)))))]
+          [_  s])))
     
-    #;
-    (define (draw-shapes ss)
-      (define s+cs (map (λ (s) (cons s (norm->view/no-rho (shape-center s)))) ss))
-      (for ([s+c  (in-list (depth-sort (reverse s+cs)))])
-        (match-define (cons s c) s+c)
-        (draw-shape s (rotate/rho c))))
+    (define (draw-all-shapes)
+      (define bsp-trees (sync-bsp-trees))
+      
+      (define adj-detail-shapes
+        (for/hasheq ([(layer ss)  (in-hash detail-shapes)])
+          (values layer (adjust-detail-shapes ss))))
+      
+      (define all-shapes (walk-bsp-trees bsp-trees (view->norm view-dir) adj-detail-shapes))
+      
+      (for ([layer  (in-list (sort (hash-keys all-shapes) >))])
+        (draw-shapes (hash-ref all-shapes layer))))
     
-    (define (draw-polygon alpha center vs normal
-                          pen-color pen-width pen-style brush-color brush-style)
-      (define-values (diff spec) (get-light-values center (norm->view normal)))
-      (let ([pen-color  (map (λ (v) (+ (* v diff) spec)) pen-color)]
-            [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)])
-        (send pd set-pen pen-color pen-width pen-style)
-        (send pd set-brush brush-color brush-style)
-        (send pd draw-polygon (map (λ (v) (norm->dc v)) vs))))
-    
-    (define (draw-shape s center)
-      (send pd set-alpha (shape-alpha s))
-      (match s
-        ;; shapes
-        [(shapes alpha _ _ ss)  (draw-shapes ss)]
-        ;; polygon
-        [(polygon alpha _ _ vs normal pen-color pen-width pen-style brush-color brush-style)
-         (draw-polygon alpha center vs normal pen-color pen-width pen-style brush-color brush-style)]
-        ;; rectangle
-        [(rectangle alpha _ _ r pen-color pen-width pen-style brush-color brush-style)
-         (for ([face  (in-list (rect-visible-faces r theta))])
-           (match face
-             [(list normal vs ...)  (draw-polygon alpha center vs
-                                                  normal pen-color pen-width pen-style
-                                                  brush-color brush-style)]
-             [_  (void)]))]
-        ;; line
-        [(line alpha _ _ v1 v2 pen-color pen-width pen-style)
-         (send pd set-pen pen-color pen-width pen-style)
-         (send pd draw-line (norm->dc v1) (norm->dc v2))]
-        ;; text
-        [(text alpha _ _ anchor angle dist str font-size font-family color outline?)
-         (send pd set-font font-size font-family)
-         (send pd set-text-foreground color)
-         (send pd draw-text str (view->dc center) anchor angle dist #:outline? outline?)]
-        ;; glyph
-        [(glyph alpha _ _ symbol size pen-color pen-width pen-style brush-color brush-style)
-         (send pd set-pen pen-color pen-width pen-style)
-         (send pd set-brush brush-color brush-style)
-         (send pd draw-glyphs (list (view->dc center)) symbol size)]
-        ;; tick glyph
-        [(tick-glyph alpha _ _ radius angle pen-color pen-width pen-style)
-         (send pd set-pen pen-color pen-width pen-style)
-         (send pd draw-tick (view->dc center) radius angle)]
-        ;; arrow glyph
-        [(arrow-glyph alpha _ _ v1 v2 pen-color pen-width pen-style)
-         (send pd set-pen pen-color pen-width pen-style)
-         (send pd draw-arrow (norm->dc v1) (norm->dc v2))]
-        [_  (error 'draw-shapes "shape not implemented: ~e" s)]))
+    ;; ===============================================================================================
+    ;; Lighting
     
     ;; Light position, in normalized view coordinates: 5 units up, ~3 units back and to the left
     ;; (simulates non-noon daylight conditions)
-    (define light (m3-apply rotate-rho-matrix (vector (- -0.5 2.0)
-                                                      (- -0.5 2.0)
-                                                      (+ 0.5 5.0))))
+    (define light (m3-apply rotate-rho-matrix (flvector (- -0.5 2.0)
+                                                        (- -0.5 2.0)
+                                                        (+ 0.5 5.0))))
     
     ;; Do lighting only by direction so we can precalculate light-dir and half-dir
     ;; Conceptually, the viewer and light are at infinity
     
     ;; Light direction
-    (define light-dir (vnormalize light))
+    (define light-dir (vector->flvector (vnormalize (flvector->vector light))))
     ;; View direction, in normalized view coordinates
-    (define view-dir (vector 0.0 -1.0 0.0))
+    (define view-dir (flvector 0.0 -1.0 0.0))
     ;; Blinn-Phong "half angle" direction
-    (define half-dir (vnormalize (v* (v+ light-dir view-dir) 0.5)))
+    (define half-dir (vector->flvector
+                      (vnormalize (v* (v+ (flvector->vector light-dir)
+                                          (flvector->vector view-dir))
+                                      0.5))))
     
     (define diffuse-light? (plot3d-diffuse-light?))
     (define specular-light? (plot3d-specular-light?))
-    (define ambient-light (exact->inexact (plot3d-ambient-light)))
+    (define ambient-light (fl (plot3d-ambient-light)))
     
     (define get-light-values
       (cond
@@ -821,15 +792,104 @@
            ;; Diffuse lighting: typical Lambertian surface model (using absolute value because we
            ;; can't expect surface normals to point the right direction)
            (define diff
-             (cond [diffuse-light?  (flabs (vdot normal light-dir))]
+             (cond [diffuse-light?  (flabs (fl3-dot normal light-dir))]
                    [else  1.0]))
            ;; Specular highlighting: Blinn-Phong model
            (define spec
-             (cond [specular-light?  (fl* 32.0 (expt (flabs (vdot normal half-dir)) 20.0))]
+             (cond [specular-light?  (fl* 32.0 (expt (flabs (fl3-dot normal half-dir)) 20.0))]
                    [else  0.0]))
            ;; Blend ambient light with diffuse light, return specular as it is
            ;; As ambient-light -> 1.0, contribution of diffuse -> 0.0
            (values (fl+ ambient-light (fl* (fl- 1.0 ambient-light) diff)) spec))]))
+    
+    ;; ===============================================================================================
+    ;; Drawing
+    
+    (define (draw-polygon s)
+      (match-define (poly (poly-data alpha center normal
+                                     pen-color pen-width pen-style
+                                     brush-color brush-style face)
+                          vs ls)
+        s)
+      (define view-normal (norm->view normal))
+      (define cos-view (fl3-dot view-dir view-normal))
+      (cond
+        [(and (cos-view . < . 0.0) (eq? face 'front))  (void)]
+        [(and (cos-view . > . 0.0) (eq? face 'back))   (void)]
+        [else
+         (send pd set-alpha alpha)
+         (define-values (diff spec) (get-light-values center view-normal))
+         (let ([pen-color    (map (λ (v) (+ (* v diff) spec)) pen-color)]
+               [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)]
+               [vs  (map norm->dc vs)])
+           ;(send pd set-pen "black" 0.5 'solid)
+           (send pd set-pen brush-color #i1/4 'transparent)
+           (send pd set-brush brush-color brush-style)
+           (send pd draw-polygon vs)
+           ;; Draw lines around polygon
+           (send pd set-pen pen-color pen-width pen-style)
+           (cond [(andmap values ls)
+                  ;; Fast path: all lines drawn
+                  (send pd draw-lines (cons (last vs) vs))]
+                 [else
+                  ;; Slow path: draw each as indicated by ls
+                  ;; TODO: draw contiguous lines using draw-lines
+                  (for ([v1  (in-list (cons (last vs) vs))]
+                        [v2  (in-list vs)]
+                        [l   (in-list ls)])
+                    (when l (send pd draw-line v1 v2)))]))]))
+    
+    (define (draw-line s)
+      (match-define (line (line-data alpha pen-color pen-width pen-style) v1 v2) s)
+      (send pd set-alpha alpha)
+      (send pd set-pen pen-color pen-width pen-style)
+      (send pd draw-line (norm->dc v1) (norm->dc v2)))
+    
+    (define (draw-lines s)
+      (match-define (lines (line-data alpha pen-color pen-width pen-style) vs) s)
+      (send pd set-alpha alpha)
+      (send pd set-pen pen-color pen-width pen-style)
+      (send pd draw-lines (map norm->dc vs)))
+    
+    (define (draw-glyph data v)
+      (match-define (glyph-data alpha symbol size
+                                pen-color pen-width pen-style
+                                brush-color brush-style)
+        data)
+      (send pd set-alpha alpha)
+      (send pd set-pen pen-color pen-width pen-style)
+      (send pd set-brush brush-color brush-style)
+      (send pd draw-glyphs (list (norm->dc v)) symbol size))
+    
+    (define (draw-text data v)
+      (match-define (text-data alpha anchor angle dist str font-size font-family color outline?) data)
+      (send pd set-alpha alpha)
+      (send pd set-font font-size font-family)
+      (send pd set-text-foreground color)
+      (send pd draw-text str (norm->dc v) anchor angle dist #:outline? outline?))
+    
+    (define (draw-arrow data v)
+      (match-define (arrow-data alpha v1 v2 outline-color pen-color pen-width pen-style) data)
+      (let ([v1  (norm->dc v1)]
+            [v2  (norm->dc v2)])
+        (send pd set-alpha alpha)
+        (send pd set-pen outline-color (+ 2 pen-width) 'solid)
+        (send pd draw-arrow v1 v2)
+        (send pd set-pen pen-color pen-width pen-style)
+        (send pd draw-arrow v1 v2)))
+    
+    (define (draw-point s)
+      (match-define (point data v) s)
+      (cond [(glyph-data? data)  (draw-glyph data v)]
+            [(text-data? data)   (draw-text data v)]
+            [(arrow-data? data)  (draw-arrow data v)]))
+    
+    (define (draw-shape s)
+      (cond [(poly? s)   (draw-polygon s)]
+            [(line? s)   (draw-line s)]
+            [(lines? s)  (draw-lines s)]
+            [(point? s)  (draw-point s)]
+            [else  (raise-argument-error 'draw-shape "known shape" s)]))
     
     ;; ===============================================================================================
     ;; Public drawing control (used by plot3d/dc)
@@ -844,7 +904,7 @@
       (send pd set-clipping-rect
             (vector (ivl (+ 1/2 (- area-x-min (plot-line-width))) (+ area-x-max (plot-line-width)))
                     (ivl (+ 1/2 (- area-y-min (plot-line-width))) (+ area-y-max (plot-line-width)))))
-      (set! render-list empty))
+      (clear-shapes!))
     
     (define/public (start-renderer rend-bounds-rect)
       (reset-drawing-params)
@@ -852,7 +912,7 @@
     
     (define/public (end-renderers)
       (clear-clip-rect)
-      (draw-shapes render-list)
+      (draw-all-shapes)
       (send pd reset-drawing-params)
       (draw-front-axes)
       (draw-ticks (get-front-tick-params))
@@ -871,9 +931,6 @@
     
     ;; ===============================================================================================
     ;; Public drawing interface (used by renderers)
-    
-    (define/public (get-render-list) render-list)
-    (define/public (put-render-list shapes) (add-shapes! shapes))
     
     ;; Drawing parameters
     
@@ -903,6 +960,7 @@
     
     (define/public (put-major-pen [style 'solid])
       (put-pen (plot-foreground) (plot-line-width) style))
+    
     (define/public (put-minor-pen [style 'solid])
       (put-pen (plot-foreground) (* 1/2 (plot-line-width)) style))
     
@@ -933,7 +991,7 @@
     
     ;; Drawing shapes
     
-    (define/public (put-line v1 v2 [c (v* (v+ v1 v2) 1/2)])
+    (define/public (put-line v1 v2)
       (let/ec return
         (unless (and (vrational? v1) (vrational? v2)) (return (void)))
         (let-values ([(v1 v2)  (if clipping?
@@ -943,97 +1001,141 @@
                                    (values v1 v2))])
           (unless (and v1 v2) (return (void)))
           (cond [identity-transforms?
-                 (add-shape! (line alpha (plot->norm c) plot3d-area-layer
-                                   (plot->norm v1) (plot->norm v2)
-                                   pen-color pen-width pen-style))]
+                 (add-shape! plot3d-area-layer
+                             (line (line-data alpha pen-color pen-width pen-style)
+                                   (plot->norm v1)
+                                   (plot->norm v2)))]
                 [else
                  (define vs (subdivide-line plot->dc v1 v2))
-                 (for ([v1  (in-list vs)] [v2  (in-list (rest vs))])
-                   (add-shape! (line alpha (plot->norm c) plot3d-area-layer
-                                     (plot->norm v1) (plot->norm v2)
-                                     pen-color pen-width pen-style)))]))))
+                 (add-shape! plot3d-area-layer
+                             (lines (line-data alpha pen-color pen-width pen-style)
+                                    (map plot->norm vs)))]))))
     
     (define/public (put-lines vs)
       (for ([vs  (vrational-sublists vs)])
-        (when (not (empty? vs))
-          (for ([v1  (in-list vs)] [v2  (in-list (rest vs))])
-            (put-line v1 v2)))))
-    
-    (define (add-polygon lst vs c)
-      (let/ec return
-        (when (or (empty? vs) (not (and (andmap vrational? vs) (vrational? c))))
-          (return lst))
-        
-        (define normal (vnormal (map plot->norm vs)))
-        (let* ([vs  (if clipping?
-                        (clip-polygon vs clip-x-min clip-x-max
+        (unless (empty? vs)
+          (let ([vss  (if clipping?
+                          (clip-lines vs clip-x-min clip-x-max
                                       clip-y-min clip-y-max
                                       clip-z-min clip-z-max)
-                        vs)]
-               [vs  (if identity-transforms? vs (subdivide-polygon plot->dc vs))])
-          (when (empty? vs) (return lst))
-          #;
-          (let ([vs  (map plot->norm vs)]
-                [c   (plot->norm c)])
-            (append
-             (for/list ([v1  (in-list (cons (last vs) vs))]
-                        [v2  (in-list vs)])
-               (line alpha c plot3d-area-layer v1 v2 pen-color pen-width pen-style))
-             (cons (polygon alpha c plot3d-area-layer vs
-                            normal pen-color pen-width 'transparent brush-color brush-style)
-                   lst)))
-          
-          (cons (polygon alpha (plot->norm c) plot3d-area-layer (map plot->norm vs)
-                         normal pen-color pen-width pen-style brush-color brush-style)
-                lst))))
+                          (list vs))])
+            (cond [identity-transforms?
+                   (for ([vs  (in-list vss)])
+                     (add-shape! plot3d-area-layer
+                                 (lines (line-data alpha pen-color pen-width pen-style)
+                                        (map plot->norm vs))))]
+                  [else
+                   (for ([vs  (in-list vss)])
+                     (define vs (subdivide-lines plot->dc vs))
+                     (add-shape! plot3d-area-layer
+                                 (lines (line-data alpha pen-color pen-width pen-style)
+                                        (map plot->norm vs))))])))))
     
-    (define/public (put-polygon vs [c (vcenter vs)])
-      (set! render-list (add-polygon render-list vs c)))
+    (define (add-polygon! vs face ls)
+      (let/ec return
+        (when (or (empty? vs) (not (andmap vrational? vs)))
+          (return empty))
+        
+        (define norm-vs (map (λ (v) (flvector->vector (plot->norm v))) vs))
+        (define normal (vector->flvector (vnormal norm-vs)))
+        (define center (vector->flvector (vcenter norm-vs)))
+        (let*-values
+            ([(vs ls)  (if clipping?
+                           (clip-polygon vs ls
+                                         clip-x-min clip-x-max
+                                         clip-y-min clip-y-max
+                                         clip-z-min clip-z-max)
+                           (values vs ls))]
+             [(vs ls)  (if identity-transforms?
+                           (values vs ls)
+                           (subdivide-polygon plot->dc vs ls))])
+          (when (empty? vs) (return empty))
+          (add-shape! plot3d-area-layer
+                      (poly (poly-data alpha center normal
+                                       pen-color pen-width pen-style
+                                       brush-color brush-style face)
+                            (map plot->norm vs) ls)))))
     
-    (define/public (put-polygons vss [c (vcenter (flatten vss))])
-      (define lst (for/fold ([lst empty]) ([vs  (in-list vss)]
-                                           #:when (not (empty? vs)))
-                    (add-polygon lst vs (vcenter vs))))
-      (when (not (empty? lst))
-        (add-shape! (shapes alpha (plot->norm c) plot3d-area-layer lst))))
+    (define/public (put-polygon vs [face 'both] [ls (make-list (length vs) #t)])
+      (add-polygon! vs face ls))
     
-    (define/public (put-rect r [c (rect-center r)])
+    (define/public (put-rect r)
       (when (rect-rational? r)
         (let ([r  (rect-meet r bounds-rect)])
           (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
-          (match-let ([(vector x-min y-min z-min)  (plot->norm (vector x-min y-min z-min))]
-                      [(vector x-max y-max z-max)  (plot->norm (vector x-max y-max z-max))])
-            (add-shape! (rectangle alpha (plot->norm c) plot3d-area-layer
-                                   (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                                   pen-color pen-width pen-style brush-color brush-style))))))
+          (define v-min (plot->norm (vector x-min y-min z-min)))
+          (define v-max (plot->norm (vector x-max y-max z-max)))
+          (let ()
+            (define x-min (flvector-ref v-min 0))
+            (define y-min (flvector-ref v-min 1))
+            (define z-min (flvector-ref v-min 2))
+            (define x-max (flvector-ref v-max 0))
+            (define y-max (flvector-ref v-max 1))
+            (define z-max (flvector-ref v-max 2))
+            (define x-mid (* 0.5 (+ x-max x-min)))
+            (define y-mid (* 0.5 (+ y-max y-min)))
+            (define z-mid (* 0.5 (+ z-max z-min)))
+            ;; Faces are a list of center, normal, then vertices
+            (define faces
+              (list 
+               ;; Bottom (z-min) face
+               (list (flvector x-mid y-mid z-min) (flvector 0.0 0.0 -1.0)
+                     (flvector x-min y-min z-min) (flvector x-max y-min z-min)
+                     (flvector x-max y-max z-min) (flvector x-min y-max z-min))
+               ;; Top (z-max) face
+               (list (flvector x-mid y-mid z-max) (flvector 0.0 0.0 1.0)
+                     (flvector x-min y-min z-max) (flvector x-max y-min z-max)
+                     (flvector x-max y-max z-max) (flvector x-min y-max z-max))
+               ;; Front (y-min) face
+               (list (flvector x-mid y-min z-mid) (flvector 0.0 -1.0 0.0)
+                     (flvector x-min y-min z-min) (flvector x-max y-min z-min)
+                     (flvector x-max y-min z-max) (flvector x-min y-min z-max))
+               ;; Back (y-max) face
+               (list (flvector x-mid y-max z-mid) (flvector 0.0 1.0 0.0)
+                     (flvector x-min y-max z-min) (flvector x-max y-max z-min)
+                     (flvector x-max y-max z-max) (flvector x-min y-max z-max))
+               ;; Left (x-min) face
+               (list (flvector x-min y-mid z-mid) (flvector -1.0 0.0 0.0)
+                     (flvector x-min y-min z-min) (flvector x-min y-max z-min)
+                     (flvector x-min y-max z-max) (flvector x-min y-min z-max))
+               ;; Right (x-max) face
+               (list (flvector x-max y-mid z-mid) (flvector 1.0 0.0 0.0)
+                     (flvector x-max y-min z-min) (flvector x-max y-max z-min)
+                     (flvector x-max y-max z-max) (flvector x-max y-min z-max))))
+            (define ls (list #t #t #t #t))
+            (for ([face  (in-list faces)])
+              (match-define (list center normal vs ...) face)
+              (add-shape! plot3d-area-layer
+                          (poly (poly-data alpha center normal
+                                           pen-color pen-width pen-style
+                                           brush-color brush-style 'front)
+                                vs ls)))))))
     
     (define/public (put-text str v [anchor 'center] [angle 0] [dist 0]
                              #:outline? [outline? #f]
                              #:layer [layer plot3d-area-layer])
       (when (and (vrational? v) (in-bounds? v))
-        (add-shape! (text alpha (plot->norm v) layer anchor angle dist str
-                          font-size font-family text-foreground outline?))))
+        (add-shape! layer (point (text-data alpha anchor angle dist str
+                                            font-size font-family text-foreground outline?)
+                                 (plot->norm v)))))
     
     (define/public (put-glyphs vs symbol size #:layer [layer plot3d-area-layer])
       (for ([v  (in-list vs)])
         (when (and (vrational? v) (in-bounds? v))
-          (add-shape!
-           (glyph alpha (plot->norm v) layer symbol size
-                  pen-color pen-width pen-style brush-color brush-style)))))
+          (add-shape! layer (point (glyph-data alpha symbol size
+                                               pen-color pen-width pen-style
+                                               brush-color brush-style)
+                                   (plot->norm v))))))
     
-    (define/public (put-arrow v1 v2 [c (v* (v+ v1 v2) 1/2)])
+    (define/public (put-arrow v1 v2)
       (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
         (cond [(in-bounds? v2)
-               (add-shape!
-                (arrow-glyph alpha (plot->norm c) plot3d-area-layer (plot->norm v1) (plot->norm v2)
-                             (->brush-color (plot-background)) (+ 2 pen-width) 'solid))
-               (add-shape!
-                (arrow-glyph alpha (plot->norm c) plot3d-area-layer (plot->norm v1) (plot->norm v2)
-                             pen-color pen-width pen-style))]
-              [else  (put-line v1 v2)])))
-    
-    (define/public (put-tick v radius angle #:layer [layer plot3d-area-layer])
-      (when (and (vrational? v) (in-bounds? v))
-        (add-shape! (tick-glyph alpha (plot->norm v) layer radius angle
-                                pen-color pen-width pen-style))))
+               (define c (v* (v+ v1 v2) 1/2))
+               (define outline-color (->brush-color (plot-background)))
+               (add-shape! plot3d-area-layer
+                           (point (arrow-data alpha (plot->norm v1) (plot->norm v2)
+                                              outline-color pen-color pen-width pen-style)
+                                  (plot->norm c)))]
+              [else
+               (put-line v1 v2)])))
     )) ; end class

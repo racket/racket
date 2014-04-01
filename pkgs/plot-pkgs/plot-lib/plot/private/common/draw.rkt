@@ -260,11 +260,27 @@
    (append*
     (for/list ([v1  (in-list vs)] [v2  (in-list (rest vs))])
       (define line-vs (subdivide-line transform v1 v2))
-      (take line-vs (sub1 (length line-vs)))))
+      (drop-right line-vs 1)))
    (list (last vs))))
 
-(define (subdivide-polygon transform vs)
-  (subdivide-lines transform (cons (last vs) vs)))
+(define subdivide-polygon
+  (case-lambda
+    [(transform vs)
+     (reverse
+      (for/fold ([vs empty]) ([v1  (in-list (cons (last vs) vs))]
+                              [v2  (in-list vs)])
+        (define line-vs (rest (subdivide-line transform v1 v2)))
+        (append (reverse line-vs) vs)))]
+    [(transform vs ls)
+     (define-values (new-vs new-ls)
+       (for/fold ([vs empty] [ls empty]) ([v1  (in-list (cons (last vs) vs))]
+                                          [v2  (in-list vs)]
+                                          [l   (in-list ls)])
+         (define line-vs (rest (subdivide-line transform v1 v2)))
+         (values (append (reverse line-vs) vs)
+                 (append (make-list (length line-vs) l) ls))))
+     (values (reverse new-vs)
+             (reverse new-ls))]))
 
 ;; ===================================================================================================
 ;; Fixpoint margin computation

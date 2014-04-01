@@ -28,9 +28,7 @@
        (xa xb ya yb z1 z2 z3 z4) sample
        (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
          (match-define (list v1 v2) line)
-         (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-         (send area put-line v1 v2 center)))))
+         (send area put-line v1 v2)))))
   
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
@@ -88,9 +86,7 @@
        (xa xb ya yb z1 z2 z3 z4) sample
        (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
          (match-define (list v1 v2) line)
-         (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-         (send area put-line v1 v2 center))))
+         (send area put-line v1 v2))))
     
     (cond [label  (line-legend-entries label zs labels colors widths styles)]
           [else   empty])))
@@ -162,11 +158,15 @@
       (send area put-brush color style)
       (for-2d-sample
        (xa xb ya yb z1 z2 z3 z4) sample
-       (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
-         (define center (vector (* 1/2 (+ xa xb))
-                                (* 1/2 (+ ya yb))
-                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-         (send area put-polygon poly center))))
+       (for ([vs  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+         (define ls
+           (for/list ([v1  (in-list (cons (last vs) vs))]
+                      [v2  (in-list vs)])
+             (define z1 (vector-ref v1 2))
+             (define z2 (vector-ref v2 2))
+             (not (or (and (= z1 za) (= z2 za))
+                      (and (= z1 zb) (= z2 zb))))))
+         (send area put-polygon vs 'both ls))))
     
     ((contours3d-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
      area)

@@ -144,13 +144,19 @@ Passing bounds to @(racket plot3d) that are smaller than [-1..1] × [-1..1] × [
 @section{Plotting Multiple 3D Renderers}
 
 Unlike with rendering 2D plots, rendering 3D plots is order-independent.
-Their constituent shapes (such as polygons) are sorted by view distance and drawn back-to-front.
+Their constituent shapes (such as polygons) are merged, sorted by view distance, and drawn back-to-front.
 
-@interaction[#:eval plot-eval (plot3d (list (surface3d (λ (x y) 1) #:color "LavenderBlush")
-                                            (surface3d (λ (x y) -1) #:color "LightSteelBlue"))
-                                      #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1)]
-
-Here, the top surface is first in the list, but the bottom surface is drawn first.
+@interaction[#:eval plot-eval (define ((dist cx cy cz) x y z)
+                                (sqrt (+ (sqr (- x cx)) (sqr (- y cy)) (sqr (- z cz)))))
+                    
+                    (plot3d (list (isosurface3d (dist  1/4 -1/4 -1/4) 0.995
+                                                #:color 4 #:alpha 0.8 #:samples 21)
+                                  (isosurface3d (dist -1/4  1/4  1/4) 0.995
+                                                #:color 6 #:alpha 0.8 #:samples 21))
+                            #:x-min -1 #:x-max 1
+                            #:y-min -1 #:y-max 1
+                            #:z-min -1 #:z-max 1
+                            #:altitude 25)]
 
 @section{Plotting to Files}
 
