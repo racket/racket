@@ -3,20 +3,17 @@
 (require racket/list
          racket/match
          racket/promise
-         racket/flonum
          math/flonum
-         math/matrix
-         math/array
          "split.rkt")
 
 (provide
  ;; BSP shapes
- (struct-out shape)
  (struct-out point)
  (struct-out line)
  (struct-out poly)
  (struct-out lines)
  BSP-Shape
+ (rename-out [shape? bsp-shape?])
  ;; BSP tree
  (struct-out bsp-node)
  (struct-out bsp-leaf)
@@ -28,13 +25,15 @@
 ;; ===================================================================================================
 ;; Shape types
 
+;; Parent type, not exported as a structure
 (struct shape ([data : Any]) #:transparent)
 
 (struct point shape ([vertex : FlVector])
   #:transparent)
 
 (struct poly shape ([vertices : (Listof FlVector)]
-                    [lines? : (Listof Boolean)])
+                    [lines? : (Listof Boolean)]
+                    [normal : FlVector])
   #:transparent)
 
 (struct line shape ([start : FlVector]
@@ -44,7 +43,7 @@
 (struct lines shape ([vertices : (Listof FlVector)])
   #:transparent)
 
-(define-type BSP-Shape (U point poly line lines))
+(define-type BSP-Shape shape)
 
 ;; ===================================================================================================
 ;; BSP tree type
@@ -115,20 +114,20 @@
                                           (Listof BSP-Shape)
                                           (Listof BSP-Shape))))
 (define (bin-bsp-poly s plane)
-  (match-define (poly data vs ls) s)
+  (match-define (poly data vs ls norm) s)
   (define ds (map (λ ([v : FlVector]) (point3d-plane-dist v plane)) vs))
   (cond [(andmap flzero?   ds)  (values empty (list s) empty)]
         [(andmap flnonpos? ds)  (values (list s) empty empty)]
         [(andmap flnonneg? ds)  (values empty empty (list s))]
         [else
          (define-values (vs1 ls1 vs2 ls2 ok?) (split-polygon3d vs ls plane))
-         (cond [ok?  (values (if ((length vs2) . < . 3) empty (list (poly data vs2 ls2)))
+         (cond [ok?  (values (if ((length vs2) . < . 3) empty (list (poly data vs2 ls2 norm)))
                              empty
-                             (if ((length vs1) . < . 3) empty (list (poly data vs1 ls1))))]
+                             (if ((length vs1) . < . 3) empty (list (poly data vs1 ls1 norm))))]
                [else
                 (define-values (vs1 ls1 vs2 ls2) (polygon3d-divide vs ls))
-                (define-values (los1 mids1 his1) (bin-bsp-poly (poly data vs1 ls1) plane))
-                (define-values (los2 mids2 his2) (bin-bsp-poly (poly data vs2 ls2) plane))
+                (define-values (los1 mids1 his1) (bin-bsp-poly (poly data vs1 ls1 norm) plane))
+                (define-values (los2 mids2 his2) (bin-bsp-poly (poly data vs2 ls2 norm) plane))
                 (values (append los1 los2) (append mids1 mids2) (append his1 his2))])]))
 
 (: bin-bsp-lines (-> lines FlVector (Values (Listof BSP-Shape)
@@ -163,7 +162,8 @@
       (cond [(point? s)  (bin-bsp-point s plane)]
             [(line? s)   (bin-bsp-line  s plane)]
             [(poly? s)   (bin-bsp-poly  s plane)]
-            [(lines? s)  (bin-bsp-lines s plane)]))
+            [(lines? s)  (bin-bsp-lines s plane)]
+            [else  (raise-argument-error 'bin-shapes "known shape" s)]))
     (values (append new-los los) (append new-mids mids) (append new-his his))))
 
 ;; ===================================================================================================
@@ -183,7 +183,7 @@
        (define x1 (flvector-ref v1 i))
        (define x2 (flvector-ref v2 i))
        (cons (min x1 x2) (max x1 x2))]
-      [(poly _ vs ls)
+      [(poly _data vs ls _norm)
        (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
        (cons (apply min xs) (apply max xs))]
       [(lines _ vs)
@@ -296,35 +296,46 @@
   (define n (flsqrt (+ (* a a) (* b b) (* c c))))
   (flvector (/ a n) (/ b n) (/ c n) (/ d n)))
 
-(: appx-separating-plane (-> (Listof FlVector) (Listof FlVector) (U #f FlVector)))
-(define (appx-separating-plane vs1 vs2)
-  (define n1 (length vs1))
-  (define n2 (length vs2))
-  (define A (list*->matrix (map (λ ([v : FlVector]) (cons 1.0 (flvector->list v)))
-                                (append vs1 vs2))))
-  (define A^T (matrix-transpose A))
-  (define Y (->col-matrix (append (build-list n1 (λ _ 1.0))
-                                  (build-list n2 (λ _ -1.0)))))
-  (define X (matrix-solve (matrix* A^T A) (matrix* A^T Y) (λ () #f)))
-  (cond [X  (match-define (vector d a b c) (array->vector X))
-            (define n (flsqrt (+ (* a a) (* b b) (* c c))))
-            (flvector (/ a n) (/ b n) (/ c n) (/ d n))]
-        [else  #f]))
+(: find-bounding-planes (-> (Listof FlVector) FlVector (Listof FlVector)))
+(define (find-bounding-planes vs normal)
+  (define n (length vs))
+  (cond [(n . < . 3)  empty]
+        [(n . = . 3)  (list (flvector-plane (first vs) (second vs) (third vs)))]
+        [else
+         (define a (flvector-ref normal 0))
+         (define b (flvector-ref normal 1))
+         (define c (flvector-ref normal 2))
+         ;; Pilot plane
+         (define v1 (first vs))
+         (define d1 (- (+ (* a (flvector-ref v1 0))
+                          (* b (flvector-ref v1 1))
+                          (* c (flvector-ref v1 2)))))
+         ;; Find min and max signed distances from pilot plane
+         (define-values (dmin dmax)
+           (for/fold ([dmin : Flonum  0.0] [dmax : Flonum  0.0]) ([v  (in-list (rest vs))])
+             (define d (+ (* a (flvector-ref v 0))
+                          (* b (flvector-ref v 1))
+                          (* c (flvector-ref v 2))
+                          d1))
+             (values (min dmin d) (max dmax d))))
+         ;; Return min and max plane
+         (list (flvector a b c (- d1 dmin))
+               (flvector a b c (- d1 dmax)))]))
 
 (: bsp-poly-triangulate (-> poly (Listof poly)))
 (define (bsp-poly-triangulate s)
-  (match-define (poly data vs ls) s)
+  (match-define (poly data vs ls norm) s)
   (define-values (vss lss) (polygon3d-triangulate vs ls))
-  (map (λ ([vs : (Listof FlVector)] [ls : (Listof Boolean)]) (poly data vs ls))
+  (map (λ ([vs : (Listof FlVector)] [ls : (Listof Boolean)]) (poly data vs ls norm))
        vss lss))
 
 (: bsp-poly-divide (-> poly (Listof poly)))
 (define (bsp-poly-divide s)
-  (match-define (poly data vs ls) s)
+  (match-define (poly data vs ls norm) s)
   (define-values (vs1 ls1 vs2 ls2) (polygon3d-divide vs ls))
   (cond [(empty? vs2)  (list s)]
-        [else  (list (poly data vs1 ls1)
-                     (poly data vs2 ls2))]))
+        [else  (list (poly data vs1 ls1 norm)
+                     (poly data vs2 ls2 norm))]))
 
 (: triangulate-polygons (-> (Listof BSP-Shape) (Listof BSP-Shape)))
 (define (triangulate-polygons ss)
@@ -360,9 +371,9 @@
        [(? point?)  (list s)]
        [(line _ v1 v2) 
         (if (equal? v1 v2) empty (list s))]
-       [(poly data vs ls)
+       [(poly data vs ls norm)
         (let-values ([(vs ls)  (canonical-polygon3d vs ls)])
-          (if ((length vs) . < . 3) empty (list (poly data vs ls))))]
+          (if ((length vs) . < . 3) empty (list (poly data vs ls norm))))]
        [(lines data vs)
         (let ([vs  (canonical-lines3d vs)])
           (if ((length vs) . < . 2) empty (list (lines data vs))))]))))
@@ -385,20 +396,21 @@
 
 (: build-bsp-tree* (-> (Listof BSP-Shape) BSP-Tree))
 (define (build-bsp-tree* ss)
-  #;
-  (printf "length ss = ~v~n" (length ss))
-  #;
-  (when (= 2 (length ss))
-    (printf "ss = ~v~n~n" ss))
   (define ps (filter poly? ss))
   (define vs (remove-duplicates (bsp-polys->vertices ps)))
   (cond [(empty? vs)  (bsp-leaf ss)]
         [(empty? (rest ss))  (bsp-leaf ss)]
         [else
          ;; Get axes sorted decreasing in size
-         
          (define axes* (vertices->axes vs))
          (define axes ((inst sort axis Flonum) axes* > #:key axis-size))
+         
+         ;; Center point of bounding box containing the shapes
+         (define center
+           (list->flvector
+            (map (λ ([a : axis]) (* 0.5 (+ (axis-min a) (axis-max a)))) axes*)))
+         
+         (define polygon-planes (delay (append* (map bsp-poly-planes ps))))
          
          (: try-disjoint-axial-planes (-> (U #f BSP-Tree)))
          (define (try-disjoint-axial-planes)
@@ -411,37 +423,38 @@
                                   (bsp-split ss plane #t (λ () (loop (rest axes))))]
                           [else  (loop (rest axes))])])))
          
-         (: try-appx-separating-plane (-> (U #f BSP-Tree)))
-         (define (try-appx-separating-plane)
-           (cond [(= 2 (length ps))
-                  (define vs1 (poly-vertices (first ps)))
-                  (define vs2 (poly-vertices (second ps)))
-                  (define plane (appx-separating-plane vs1 vs2))
-                  (if plane (bsp-split ss plane #t (λ () #f)) #f)]
-                 [else  #f]))
+         (: try-planes (-> Boolean (Listof FlVector) (U #f BSP-Tree)))
+         (define (try-planes disjoint? planes)
+           ;; Sort planes by absolute distance from center
+           (define sorted-planes
+             ((inst sort FlVector Flonum) planes <
+                                          #:key (λ ([plane : FlVector])
+                                                  (abs (point3d-plane-dist center plane)))
+                                          #:cache-keys? #t))
+           ;; Try each in order
+           (let loop ([planes  sorted-planes])
+             (cond [(empty? planes)  #f]
+                   [else  (bsp-split ss (first planes) disjoint? (λ () (loop (rest planes))))])))
          
-         (define polygon-planes (delay (append* (map bsp-poly-planes ps))))
+         (: try-bounding-planes (-> (U #f BSP-Tree)))
+         (define (try-bounding-planes)
+           ;; Bounding planes aren't necessarily coplanar with any triangle in a polygon, so
+           ;; we need to do a disjoint split or splitting won't necessarily make progress
+           (cond [((length ps) . > . 5)  #f]
+                 [else
+                  (define vss (map poly-vertices ps))
+                  (define norms (map poly-normal ps))
+                  (define planes
+                    (append* (map (λ ([vs : (Listof FlVector)] [norm : FlVector])
+                                    (find-bounding-planes vs norm))
+                                  vss norms)))
+                  (try-planes #t planes)]))
          
          (: try-polygon-planes (-> Boolean (U #f BSP-Tree)))
          (define (try-polygon-planes disjoint?)
            (define planes (force polygon-planes))
-           (cond
-             [(and disjoint? ((length planes) . > . 10))  #f]
-             [else
-              (define v (list->flvector
-                         (map (λ ([a : axis])
-                                (* 0.5 (+ (axis-min a) (axis-max a))))
-                              axes*)))
-              (define sorted-planes
-                ((inst sort FlVector Flonum)
-                 planes <
-                 #:key (λ ([plane : FlVector])
-                         (abs (point3d-plane-dist v plane)))
-                 #:cache-keys? #t))
-              (let loop ([planes  sorted-planes])
-                (cond [(empty? planes)  #f]
-                      [else 
-                       (bsp-split ss (first planes) disjoint? (λ () (loop (rest planes))))]))]))
+           (cond [(and disjoint? ((length planes) . > . 10))  #f]
+                 [else  (try-planes disjoint? planes)]))
          
          (: try-triangulating (-> (U #f BSP-Tree)))
          (define (try-triangulating)
@@ -451,7 +464,7 @@
          
          (let* ([bsp  #f]
                 [bsp  (if bsp bsp (try-disjoint-axial-planes))]
-                [bsp  (if bsp bsp (try-appx-separating-plane))]
+                [bsp  (if bsp bsp (try-bounding-planes))]
                 [bsp  (if bsp bsp (try-polygon-planes #t))]
                 [bsp  (if bsp bsp (try-polygon-planes #f))]
                 [bsp  (if bsp bsp (try-triangulating))]

@@ -34,7 +34,7 @@
 (struct render-tasks (structural-shapes detail-shapes bsp-trees))
 
 (struct data (alpha) #:transparent)
-(struct poly-data data (center normal pen-color pen-width pen-style brush-color brush-style face)
+(struct poly-data data (center pen-color pen-width pen-style brush-color brush-style face)
   #:transparent)
 (struct line-data data (pen-color pen-width pen-style)
   #:transparent)
@@ -806,10 +806,10 @@
     ;; Drawing
     
     (define (draw-polygon s)
-      (match-define (poly (poly-data alpha center normal
+      (match-define (poly (poly-data alpha center
                                      pen-color pen-width pen-style
                                      brush-color brush-style face)
-                          vs ls)
+                          vs ls normal)
         s)
       (define view-normal (norm->view normal))
       (define cos-view (fl3-dot view-dir view-normal))
@@ -1051,10 +1051,10 @@
                            (subdivide-polygon plot->dc vs ls))])
           (when (empty? vs) (return empty))
           (add-shape! plot3d-area-layer
-                      (poly (poly-data alpha center normal
+                      (poly (poly-data alpha center
                                        pen-color pen-width pen-style
                                        brush-color brush-style face)
-                            (map plot->norm vs) ls)))))
+                            (map plot->norm vs) ls normal)))))
     
     (define/public (put-polygon vs [face 'both] [ls (make-list (length vs) #t)])
       (add-polygon! vs face ls))
@@ -1106,10 +1106,10 @@
             (for ([face  (in-list faces)])
               (match-define (list center normal vs ...) face)
               (add-shape! plot3d-area-layer
-                          (poly (poly-data alpha center normal
+                          (poly (poly-data alpha center
                                            pen-color pen-width pen-style
                                            brush-color brush-style 'front)
-                                vs ls)))))))
+                                vs ls normal)))))))
     
     (define/public (put-text str v [anchor 'center] [angle 0] [dist 0]
                              #:outline? [outline? #f]
