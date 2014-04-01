@@ -114,48 +114,51 @@
   (let trials-loop ([t 0]
                     [g (get-gen)])
     (define t-time (current-process-milliseconds))
-    (let loop ([i 0])
-      (define tot-time (- (current-process-milliseconds) s-time))
-      (cond
-        [((/ tot-time 1000) . > . seconds)
-         (exit-message fname type (+ i terms) tot-time counterexamples)]
-        [else
-         (define term (with-timeout (* 5 60 1000) g 
-                                    (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
-                                                  fname type)
-                                      (trials-loop t g))))
-         (define me-time (- (current-process-milliseconds) t-time))
-         (define ok? (with-timeout (* 5 60 1000) (λ () (check term))
-                                   (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
-                                                 fname type term)
-                                     (trials-loop t g))))
-         (cond
-           [(not ok?)
-            (set! counterexamples (add1 counterexamples))
-            (when verbose?
-              (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
-                      fname term i me-time))
-            (when no-errs?
-              (printf "!---------------------------------------------------!\n")
-              (error 'run-generations "~a: unexpected error on ~s" 
-                     fname term))
-            (define continue? (update-results me-time fname type verbose?))
-            (if (and (not first-only)
-                     (or continue?
-                         (t . < . 5)))
-                (begin
-                  (set! terms (+ i terms))
-                  (trials-loop (add1 t) (get-gen)))
-                (exit-message fname type (+ i terms) tot-time counterexamples))]
-           [else
-            (loop (add1 i))])]))))
+    (let/ec break
+      (let loop ([i 0])
+        (define tot-time (- (current-process-milliseconds) s-time))
+        (cond
+          [((/ tot-time 1000) . > . seconds)
+           (exit-message fname type (+ i terms) tot-time counterexamples)]
+          [else
+           (define term (with-timeout (* 5 1000) g 
+                                      (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
+                                                    fname type)
+                                        (break (trials-loop t g)))))
+           (define me-time (- (current-process-milliseconds) t-time))
+           (define ok? (with-timeout (* 5 1000) (λ () (check term))
+                                     (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
+                                                   fname type term)
+                                       (break (trials-loop t g)))))
+           (cond
+             [(not ok?)
+              (set! counterexamples (add1 counterexamples))
+              (when verbose?
+                (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
+                        fname term i me-time))
+              (when no-errs?
+                (printf "!---------------------------------------------------!\n")
+                (error 'run-generations "~a: unexpected error on ~s" 
+                       fname term))
+              (define continue? (update-results me-time fname type verbose?))
+              (if (and (not first-only)
+                       (or continue?
+                           (t . < . 5)))
+                  (begin
+                    (set! terms (+ i terms))
+                    (trials-loop (add1 t) (get-gen)))
+                  (exit-message fname type (+ i terms) tot-time counterexamples))]
+             [else
+              (loop (add1 i))])])))))
 
 (define (exit-message file type terms time countxmps)
   (printf "----------\n~a, ~s\n" file type)
   (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
           terms time (exact->inexact (/ terms (/ time 1000))))
   (printf "~s counterexamples, ~s tries... ratio: ~s\n-----------------\n"
-          countxmps terms (exact->inexact (/ terms countxmps))))
+          countxmps terms (if (zero? countxmps)
+                              'N/A
+                              (exact->inexact (/ terms countxmps)))))
 
 
 (define (update-results time fname type verbose?)
@@ -165,7 +168,7 @@
   (define avg (statistics-mean new-stats))
   (define dev (/ (statistics-stddev new-stats #:bias #t) (sqrt (length (hash-ref results type)))))
   (when verbose?
-    (printf "new average for ~s, ~s: ~s +/- ~s\n" fname type (exact->inexact avg) dev))
+    (printf "new average for ~a, ~s: ~s +/- ~s\n" fname type (exact->inexact avg) dev))
   (or (= dev 0)
       ((/ dev avg) . > . 0.1)))
 
