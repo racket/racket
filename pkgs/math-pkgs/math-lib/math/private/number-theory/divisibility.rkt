@@ -37,8 +37,7 @@
 (define (bezout-binary a b)
   (: loop : Integer Integer Integer Integer Integer Integer -> (List Integer Integer))
   (define (loop a b ua va ub vb)  ; a>=b>0 , a = ua*a+ub*b,  b = ub*a+ub*b
-    (let ([r (remainder a b)]
-          [q (quotient a b)])
+    (let-values ([(q r) (quotient/remainder a b)])
       (if (= r 0)
           (list ub vb)
           (loop b r ub vb (- ua (* q ub)) (- va (* q vb))))))
