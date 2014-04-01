@@ -67,7 +67,11 @@
 (define (bitmap->image bm)
   (define w (send bm get-width))
   (define h (send bm get-height))
-  (define s (send bm get-backing-scale))
+  (define s (if (version-10.6-or-later?)
+                (send bm get-backing-scale)
+                ;; In 10.5, `NSImage setSize:` clips instead of
+                ;; scaling, so just use scale of 1:
+                1))
   (cond
    [(= s 1) (bitmap->image* bm w h w h)]
    [else 
