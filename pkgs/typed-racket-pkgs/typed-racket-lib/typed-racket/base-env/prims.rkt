@@ -1221,10 +1221,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     ;; the first three cases are actually subsumed by the last,
     ;; but manually expanding to using the : annotation form
     ;; produces better error messages on duplicate annotations
-    ;;
-    ;; note, these first two cases can be collapsed into one
-    ;; but we keep them separate because in some cases it ruins
-    ;; typechecking performance to merge them.
     [(-define nm:id body)
      (syntax/loc stx (define nm body))]
     [(-define nm:id return:return-ann body)

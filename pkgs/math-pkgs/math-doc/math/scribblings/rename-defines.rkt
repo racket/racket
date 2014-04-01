@@ -9,11 +9,13 @@
   (syntax-case stx ()
     [(_ e)
      (let ([expanded  (local-expand #'e (syntax-local-context) #f)])
-       (syntax-case expanded (define-values)
+       (syntax-case expanded (define-values begin)
          [(define-values (x ...) expr)
           (with-syntax ([(y ...)  (generate-temporaries #'(x ...))])
             (syntax/loc stx
               (begin
                 (define-syntax x (make-rename-transformer #'y)) ...
                 (define-values (y ...) expr))))]
+         [(begin e ...)
+          #'(begin (rename-defines e) ...)]
          [_  #'e]))]))
