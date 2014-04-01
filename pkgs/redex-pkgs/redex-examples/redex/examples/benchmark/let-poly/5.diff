@@ -2,7 +2,7 @@
 < (define the-error "no error")
 ---
 > (define the-error "eliminate-G was written as if it always gets a Gx as input")
-225,226c225,228
+214,215c214,217
 <   [(eliminate-G x τ (σ_1 σ_2 G))
 <    ((eliminate-τ x τ σ_1) (eliminate-τ x τ σ_2) (eliminate-G x τ G))])
 ---
@@ -10,7 +10,7 @@
 >    (τ (eliminate-τ x τ σ) (eliminate-G x τ G))]
 >   [(eliminate-G x τ (y σ G))
 >    (y (eliminate-τ x τ σ) (eliminate-G x τ G))])
-560,571c562,577
+541,552c543,558
 <       (let ([t-type (type-check M)])
 <         (implies
 <          t-type

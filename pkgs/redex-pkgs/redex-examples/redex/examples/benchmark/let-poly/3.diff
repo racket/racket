@@ -6,7 +6,7 @@
 <    (where G (unify τ_2 (τ_1 → x)))
 ---
 >    (where G (unify τ_1 (τ_2 → x)))
-571a572,574
+552a553,555
 > 
 > (define small-counter-example (term (1 cons)))
 > (test-equal (check small-counter-example) #f)

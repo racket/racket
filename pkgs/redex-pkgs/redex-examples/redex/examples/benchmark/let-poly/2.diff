@@ -16,7 +16,7 @@
 <   [(where #t (not-v? M))
 <    (tc-down Γ ((λ x N) M) κ σ_2)
 <    ---------------------------------
-571a567,572
+552a548,553
 > 
 > (define small-counter-example '(let ([x (new nil)])
 >                                  ((λ ignore

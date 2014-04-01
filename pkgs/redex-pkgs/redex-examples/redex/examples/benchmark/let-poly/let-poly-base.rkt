@@ -168,56 +168,45 @@ bring that type back, recurring on the continuation.
 
 (define-metafunction stlc
   unify : τ τ -> Gx or ⊥
-  [(unify τ σ) (uh (τ σ ·) · #f)])
+  [(unify τ σ) (uh (τ σ ·) ·)])
 
 #|
 
-Algorithm copied from _An Efficient Unification Algorithm_ by 
-Alberto Martelli and Ugo Montanari (section 2).
-http://www.nsl.com/misc/papers/martelli-montanari.pdf
-
-This isn't the eponymous algorithm; it is an earlier one
-in the paper that's simpler.
+Algorithm copied from Chapter 8 in _Handbook of Automated Reasoning_:
+Unification Theory by Franz Baader and Wayne Synder
+http://www.cs.bu.edu/~snyder/publications/UnifChapter.pdf
 
 The 'uh' function iterates over a set of equations applying the
-rules from the paper, moving them from the first argument to
-the second argument and tracking when something changes.
-It runs until there are no more changes. The (a), (b),
-(c), and (d) are the rule labels from the paper.
+rules from the paper, building up the result substitution in G_r.
 
 |#
 
 (define-metafunction stlc
-  uh : G G boolean -> Gx or ⊥
-
-  [(uh · G #t) (uh G · #f)]
-  [(uh · G #f) G]
+  uh : G Gx -> Gx or ⊥
   
-  ;; (a)
-  [(uh (τ x G) G_r boolean) (uh G (x τ G_r) #t) (where #t (not-var? τ))]
+  [(uh · Gx) Gx]
   
-  ;; (b)
-  [(uh (x x G) G_r boolean) (uh G G_r #t)]
+  ;; orient
+  [(uh (τ x G) Gx) (uh (x τ G) Gx) (where #t (not-var? τ))]
   
-  ;; (c) -- term reduction
-  [(uh ((τ_1 → τ_2) (σ_1 → σ_2) G) G_r boolean) (uh (τ_1 σ_1 (τ_2 σ_2 G)) G_r #t)]
-  [(uh ((list τ)    (list σ)    G) G_r boolean) (uh (τ σ G)               G_r #t)]
-  [(uh ((ref τ)     (ref σ)     G) G_r boolean) (uh (τ σ G)               G_r #t)]
-  [(uh (int         int         G) G_r boolean) (uh G                     G_r #t)]
+  ;; trivial (other cases are covered by decomposition rule)
+  [(uh (x x G) Gx) (uh G Gx)]
   
-  ;; (c) -- failure
-  [(uh (τ σ G) G_r boolean) ⊥ (where #t (not-var? τ)) (where #t (not-var? σ))]
+  ;; decomposition
+  [(uh ((τ_1 → τ_2) (σ_1 → σ_2) G) Gx) (uh (τ_1 σ_1 (τ_2 σ_2 G)) Gx)]
+  [(uh ((list τ)    (list σ)    G) Gx) (uh (τ σ G)               Gx)]
+  [(uh ((ref τ)     (ref σ)     G) Gx) (uh (τ σ G)               Gx)]
+  [(uh (int         int         G) Gx) (uh G                     Gx)]
   
-  ;; (d) -- x occurs in τ case
-  [(uh (x τ G) G_r boolean) ⊥ (where #t (in-vars-τ? x τ))]
+  ;; symbol clash
+  [(uh (τ σ G) Gx) ⊥ (where #t (not-var? τ)) (where #t (not-var? σ))]
   
-  ;; (d) -- x does not occur in τ case
-  [(uh (x τ G) G_r boolean)
-   (uh (eliminate-G x τ G) (x τ (eliminate-G x τ G_r)) #t)
-   (where #t (∨ (in-vars-G? x G) (in-vars-G? x G_r)))]
+  ;; occurs check
+  [(uh (x τ G) Gx) ⊥ (where #t (in-vars-τ? x τ))]
   
-  ;; no rules applied; try next equation, if any.
-  [(uh (τ σ G) G_r boolean) (uh G (τ σ G_r) boolean)])
+  ;; variable elimination
+  [(uh (x τ G) Gx)
+   (uh (eliminate-G x τ G) (x τ (eliminate-G x τ Gx)))])
 
 (define-metafunction stlc
   eliminate-G : x τ G -> G
@@ -252,14 +241,6 @@ It runs until there are no more changes. The (a), (b),
   [(in-vars-τ? x int) #f]
   [(in-vars-τ? x x) #t]
   [(in-vars-τ? x y) #f])
-
-(define-metafunction stlc
-  in-vars-G? : x G -> boolean
-  [(in-vars-G? x ·) #f]
-  [(in-vars-G? x (x τ G)) #t]
-  [(in-vars-G? x (σ τ G)) (∨ (in-vars-τ? x σ) 
-                             (∨ (in-vars-τ? x τ)
-                                (in-vars-G? x G)))])
 
 (define-metafunction stlc
   apply-subst-τ : Gx τ -> τ

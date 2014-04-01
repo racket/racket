@@ -4,11 +4,11 @@
 > (define the-error
 >   (string-append "misspelled the name of a metafunction in a side-condition, "
 >                  "causing the occurs check to not happen"))
-212c214
-<   [(uh (x τ G) G_r boolean) ⊥ (where #t (in-vars-τ? x τ))]
+205c207
+<   [(uh (x τ G) Gx) ⊥ (where #t (in-vars-τ? x τ))]
 ---
->   [(uh (x τ G) G_r boolean) ⊥ (where #t (in-vars? x τ))]
-571a574,576
+>   [(uh (x τ G) Gx) ⊥ (where #t (in-vars? x τ))]
+552a555,557
 > 
 > (define small-counter-example (term ((λ x (x x)) hd)))
 > (test-equal (check small-counter-example) #f)

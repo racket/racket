@@ -2,11 +2,11 @@
 < (define the-error "no error")
 ---
 > (define the-error "∨ has an incorrect duplicated variable, leading to an uncovered case")
-240c240
+229c229
 <   [(∨ boolean_1 boolean_2) #t])
 ---
 >   [(∨ boolean boolean) #t])
-560,571c560,575
+541,552c541,556
 <       (let ([t-type (type-check M)])
 <         (implies
 <          t-type
@@ -34,5 +34,5 @@
 >                                (or (equal? red-t "error")
 >                                    (zero? n) (loop red-t (- n 1))))))))))))))
 > 
-> (define small-counter-example (term ((λ x x) 1)))
+> (define small-counter-example (term (λ x (x x))))
 > (test-equal (check small-counter-example) #f)

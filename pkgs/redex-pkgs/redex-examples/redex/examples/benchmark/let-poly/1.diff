@@ -6,7 +6,7 @@
 <    (tc-down (x y Γ) M (λ y κ) σ_ans)
 ---
 >    (tc-down (x y Γ) M (λ x κ) σ_ans)
-571a572,574
+552a553,555
 > 
 > (define small-counter-example '(hd ((λ x x) 1)))
 > (test-equal (check small-counter-example) #f)
