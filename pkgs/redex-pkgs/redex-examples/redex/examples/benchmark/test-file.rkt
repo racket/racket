@@ -21,6 +21,8 @@
                            enum ordered fixed))
 (define types '())
 
+(define timeout-time (* 5 60 1000)) ;; 5 mins in ms
+
 (define (set-type! arg)
   (define t (string->symbol arg))
   (unless (list? (member t all-types))
@@ -106,50 +108,62 @@
          (thread 
           (λ () (system (make-cmd n)))))))
 
+(struct timeout ())
+(struct reached-limit (tries))
+
 (define (run-generations fname verbose? no-errs? get-gen check seconds type)
   (collect-garbage)
   (define s-time (current-process-milliseconds))
+  (define time-limit (+ s-time (* 1000 seconds)))
   (define terms 0)
   (define counterexamples 0)
+  (define (tot-time) (- (current-process-milliseconds) s-time))
   (let trials-loop ([t 0]
                     [g (get-gen)])
-    (define t-time (current-process-milliseconds))
-    (let/ec break
-      (let loop ([i 0])
-        (define tot-time (- (current-process-milliseconds) s-time))
-        (cond
-          [((/ tot-time 1000) . > . seconds)
-           (exit-message fname type (+ i terms) tot-time counterexamples)]
-          [else
-           (define term (with-timeout (* 5 1000) g 
-                                      (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
-                                                    fname type)
-                                        (break (trials-loop t g)))))
-           (define me-time (- (current-process-milliseconds) t-time))
-           (define ok? (with-timeout (* 5 1000) (λ () (check term))
-                                     (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
-                                                   fname type term)
-                                       (break (trials-loop t g)))))
-           (cond
-             [(not ok?)
-              (set! counterexamples (add1 counterexamples))
-              (when verbose?
-                (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
-                        fname term i me-time))
-              (when no-errs?
-                (printf "!---------------------------------------------------!\n")
-                (error 'run-generations "~a: unexpected error on ~s" 
-                       fname term))
-              (define continue? (update-results me-time fname type verbose?))
-              (if (and (not first-only)
-                       (or continue?
-                           (t . < . 5)))
-                  (begin
-                    (set! terms (+ i terms))
-                    (trials-loop (add1 t) (get-gen)))
-                  (exit-message fname type (+ i terms) tot-time counterexamples))]
-             [else
-              (loop (add1 i))])])))))
+    (define trial-start-time (current-process-milliseconds))
+    (define (me-time) (- (current-process-milliseconds) trial-start-time))
+    (match (one-counterexample trial-start-time time-limit 
+                               g check fname type)
+      [(timeout)
+       (trials-loop t g)]
+      [(reached-limit tries)
+       (exit-message fname type (+ tries terms) (tot-time) counterexamples)]
+      [(list tries term)
+       (define continue? (update-results (me-time) fname type verbose?))
+       (set! counterexamples (add1 counterexamples))
+       (when verbose?
+         (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
+                 fname term tries (me-time)))
+       (when no-errs?
+         (printf "!---------------------------------------------------!\n")
+         (error 'run-generations "~a: unexpected error on ~s" 
+                fname term))
+       (if (and (not first-only)
+                (or continue?
+                    (t . < . 5)))
+           (begin
+             (set! terms (+ tries terms))
+             (trials-loop (add1 t) (get-gen)))
+           (exit-message fname type (+ tries terms) (tot-time) counterexamples))])))
+
+(define (one-counterexample s-time time-limit generator check fname type)
+  (let/ec break
+    (let loop ([tries 0])
+      (when ((current-process-milliseconds) . > . time-limit)
+        (break (reached-limit tries))) 
+      (define term (with-timeout (* 5 1000) generator
+                                 (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
+                                               fname type)
+                                   (break (timeout)))))
+      (define ok? (with-timeout (* 5 1000) (λ () (check term))
+                                (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
+                                              fname type term)
+                                  (break (timeout)))))
+      (cond
+        [(not ok?)
+         (list tries term)]
+        [else
+         (loop (add1 tries))]))))
 
 (define (exit-message file type terms time countxmps)
   (printf "----------\n~a, ~s\n" file type)
