@@ -98,10 +98,17 @@
     (define data
       (let ([raw-data
              (apply append
-                    (for/list ([f filenames])
+                    (for/list ([f (in-list filenames)])
                       (call-with-input-file f
                         (λ (in)
-                          (read in)))))])
+                          (define ans (read in))
+                          (unless (list? ans)
+                            (error 'graph-data.rkt "expected a list in ~a, got ~v" f ans))
+                          (unless (zero? (modulo (length ans) 3))
+                            (error 'graph-data.rkt 
+                                   "expected ~a's content's length to be a multiple of 3, got ~s" 
+                                   f (length ans)))
+                          ans))))])
         (let loop ([fixed-data '()]
                    [rest raw-data])
           (cond
