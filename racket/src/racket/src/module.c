@@ -5870,6 +5870,40 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
         (void)_scheme_call_with_prompt_multi(body_one_expr, 
                                              scheme_make_raw_pair(save_prefix, body));
         scheme_resume_prefix(save_prefix);
+
+        /* Double-check that the definition-installing part of the
+           continuation was not skipped. Otherwise, the compiler would
+           not be able to assume that a variable reference that is
+           lexically later (incuding a reference to an imported
+           variable) always references a defined variable. Putting the
+           prompt around a definition's RHS might be a better
+           approach, but that would change the language (so mabe next
+           time). */
+        if (SAME_TYPE(SCHEME_TYPE(body), scheme_define_values_type)) {
+          int vcnt, j;
+          
+          vcnt = SCHEME_VEC_SIZE(body) - 1;
+          for (j = 0; j < vcnt; j++) {
+            Scheme_Object *var;
+            Scheme_Prefix *toplevels;
+            Scheme_Bucket *b;
+            
+            var = SCHEME_VEC_ELS(body)[j+1];
+            toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
+            b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
+            
+            if (!b->val) {
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, 
+                               b->key,
+                               "define-values: skipped variable definition;\n"
+                               " cannot continue without defining variable\n"
+                               "  variable: %S\n"
+                               "  in module: %D",
+                               (Scheme_Object *)b->key,
+                               menv->module->modsrc);
+            }
+          }
+        }
       } else
         scheme_ignore_result(_scheme_eval_linked_expr_multi(body));
     }

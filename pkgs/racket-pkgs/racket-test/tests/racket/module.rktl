@@ -1071,6 +1071,22 @@
              (namespace-require 'errortrace)
              (set! c (compile m))))))
   (write c (open-output-bytes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that skipping definitions (but continuing
+;; with the rest of a module body) is disallowed.
+
+(module disallowed-definition-avoider racket/base
+
+  (define fail
+    ((call-with-continuation-prompt
+      (lambda ()
+        (call/cc values)))))
+  
+  (error "no"))
+
+(err/rt-test (dynamic-require ''disallowed-definition-avoider #f)
+             exn:fail:contract:variable?)
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

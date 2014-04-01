@@ -245,8 +245,12 @@ its order within a given module). Then, expressions and definitions
 are evaluated in order as they appear within the module. Each
 evaluation of an expression or definition is wrapped with a
 continuation prompt (see @racket[call-with-continuation-prompt]) for
-the default continuation and using a prompt handler that re-aborts
-and propagates its argument to the next enclosing prompt.
+the default @tech{prompt tag} and using a prompt handler that re-aborts
+and propagates its argument to the next enclosing prompt. Each evaluation
+of a definition is followed, outside of the prompt, by a check that
+each of the definition's variables has a value; if the portion of the
+prompt-delimited continuation that installs values is skipped, then
+the @exnraise[exn:fail:contract:variable?].
 
 Accessing a @tech{module-level variable} before it is defined signals
 a run-time error, just like accessing an undefined global variable.
