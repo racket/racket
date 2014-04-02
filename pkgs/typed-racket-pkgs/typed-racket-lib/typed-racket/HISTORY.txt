@@ -1,3 +1,6 @@
+6.0.1
+- Generate more optimized contracts
+- Filters work better outside of if
 6.0
 - Support for `define-type', `struct:', `make-predicate', etc. at the REPL
 - Performance work: optimized subtyping
