@@ -706,11 +706,6 @@
          (set! bsp-trees new-bsp-trees)
          new-bsp-trees]))
     
-    (define (draw-shapes shape-lists)
-      (for* ([ss  (in-list shape-lists)]
-             [s   (in-list ss)])
-        (draw-shape s)))
-    
     (define (adjust-detail-shapes ss)
       (define d (view->norm view-dir))
       (define dx (flvector-ref d 0))
@@ -755,8 +750,9 @@
       
       (define all-shapes (walk-bsp-trees bsp-trees (view->norm view-dir) adj-detail-shapes))
       
-      (for ([layer  (in-list (sort (hash-keys all-shapes) >))])
-        (draw-shapes (hash-ref all-shapes layer))))
+      (for* ([layer  (in-list (sort (hash-keys all-shapes) >))]
+             [s      (in-list (hash-ref all-shapes layer))])
+        (draw-shape s)))
     
     ;; ===============================================================================================
     ;; Lighting
@@ -823,7 +819,7 @@
                [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)]
                [vs  (map norm->dc vs)])
            ;(send pd set-pen "black" 0.5 'solid)
-           (send pd set-pen brush-color #i1/4 'transparent)
+           (send pd set-pen "black" 0 'transparent)
            (send pd set-brush brush-color brush-style)
            (send pd draw-polygon vs)
            ;; Draw lines around polygon
@@ -1012,6 +1008,12 @@
                                     (map plot->norm vs)))]))))
     
     (define/public (put-lines vs)
+      #;
+      (for ([vs  (vrational-sublists vs)])
+        (for ([v1  (in-list vs)]
+              [v2  (in-list (rest vs))])
+          (put-line v1 v2)))
+      
       (for ([vs  (vrational-sublists vs)])
         (unless (empty? vs)
           (let ([vss  (if clipping?

@@ -37,6 +37,26 @@ slow parts
                               #:samples 2 #:color 2)
               ))
 
+(plot3d (list (parametric3d (λ (t)
+                              (list (* 0.5 (cos (* 2 pi (- t))))
+                                    (* 0.5 (sin (* 2 pi (- t))))
+                                    t))
+                            -1 1
+                            #:samples 53
+                            #:color "green"
+                            #:width 15
+                            #:alpha 0.6)
+              (parametric3d (λ (t)
+                              (list (* 0.75 (cos (* 2 pi t)))
+                                    (* 0.75 (sin (* 2 pi t)))
+                                    t))
+                            -1 1
+                            #:samples 53
+                            #:color "red"
+                            #:width 15
+                            #:alpha 0.6)
+              ))
+
 (plot3d (list (isosurface3d (λ (x y z) (+ x y z)) 0 -1 1 -1 1 -1 1
                             #:samples 2
                             #:line-width 2)
@@ -50,7 +70,7 @@ slow parts
                               (list (* 0.75 (cos (* 5 pi t)))
                                     (* 0.75 (sin (* 5 pi t)))
                                     t))
-                            -1 1)))
+                            -1 1 #:width 2 #:color 2)))
 
 (time
  (plot3d
@@ -66,7 +86,7 @@ slow parts
          ;#:line-styles '(transparent)
          #:contour-widths '(2)
          ;#:color 1
-         #:label ""
+         ;#:label ""
          )
         
         (surface3d
@@ -76,9 +96,9 @@ slow parts
                  0.7)
               0.4))
          -1 1 -1 1
-         #:samples 40
+         #:samples 41
          ;#:alphas '(0.75)
-         #:alpha 0.75
+         #:alpha 0.95
          #:color "plum"
          #:line-color 6
          ;#:line-style 'transparent
@@ -123,6 +143,7 @@ slow parts
                )
   (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y)))
                                -1 1 -1 1 #:samples 9
+                               #:contour-widths '(2)
                                #:line-widths '(2))))
 
 (define (saddle x y) (- (sqr x) (sqr y)))
