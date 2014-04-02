@@ -18,7 +18,7 @@
 ;; of a Result for function application. This matches up to the substitutions
 ;; in the T-App rule from the ICFP paper.
 (define/cond-contract (open-Result r objs [ts #f])
-  (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
+  (->* (Result? (listof Object?)) ((listof (or/c #f Type/c))) (values Type/c FilterSet? Object?))
   (match-define (Result: t fs old-obj) r)
   (for/fold ([t t] [fs fs] [old-obj old-obj])
             ([(o arg) (in-indexed (in-list objs))]
@@ -32,7 +32,7 @@
 ;; This is essentially ψ+|ψ- [o/x] from the paper
 (define/cond-contract (subst-filter-set fs k o polarity [t #f])
   (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
-  (define extra-filter (if t (make-TypeFilter t null k) -top))
+  (define extra-filter (if t (-filter t k) -top))
   (define (add-extra-filter f)
     (define f* (-and extra-filter f))
     (match f*
