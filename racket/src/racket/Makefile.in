@@ -153,6 +153,7 @@ no-cgc-needed:
 	cd src; $(MAKE) all
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) main.@LTO@
+	$(MAKE) mingw-other
 	cd dynsrc; $(MAKE) ../starter
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
@@ -211,6 +212,12 @@ rres.o : $(srcdir)/../worksp/racket/racket.rc
 
 racket@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
 	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp
+
+mingw-other@MINGW@: mzsj86g.o rres.o
+	$(NOOP)
+
+mingw-other@NOT_MINGW@:
+	$(NOOP)
 
 # OSKit ----------------------------------------
 
