@@ -58,13 +58,13 @@
   (define body-ty #f)
   (define body-stx #f)
   ;; tc-result1 -> tc-results
-  ;; The result of applying the function to a single argument of type (Un)
-  ;; FIXME: (Un) is the wrong type, see above fixme
+  ;; The result of applying the function to a single argument of the type of its first argument
+  ;; FIXME: This is the wrong type, see above fixme
   (define (get-result-ty t)
     (let loop ((t t))
       (match t
-        [(Function: _)
-         (tc/funapp #'here #'(here) (ret t) (list (ret (Un))) #f)]
+        [(Function: (cons (arr: (cons arg1 args) _ _ _ _) _))
+         (tc/funapp #'here #'(here) (ret t) (list (ret arg1)) #f)]
         [(? needs-resolving? t)
          (loop (resolve t))]
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
