@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         racket/match unstable/list unstable/sequence racket/set
+         racket/match unstable/list unstable/sequence racket/set racket/list
          syntax/stx
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (contract-req)
@@ -39,29 +39,29 @@
              [a (in-syntax args-stx)]
              [arg-t (in-list t-a)])
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
-     (let* ([dom-count (length dom)]
-            [arg-count (+ dom-count (if rest 1 0) (length kws))])
+     (let* ([dom-count (length dom)])
+       ;; Currently do nothing with rest args and keyword args as there are no support for them in
+       ;; objects yet.
        (let-values
            ([(o-a t-a) (for/lists (os ts)
-                         ([nm (in-range arg-count)]
+                         ([nm (in-range dom-count)]
                           [oa (in-sequence-forever (in-list o-a) -empty-obj)]
-                          [ta (in-sequence-forever (in-list t-a) -Bottom)])
-                         (values (if (>= nm dom-count) -empty-obj oa)
-                                 ta))])
+                          [ta (in-sequence-forever (in-list t-a) #f)])
+                         (values oa ta))])
            (match rng
-            ((AnyValues:) tc-any-results)
-            ((Values: results)
+            [(AnyValues:) tc-any-results]
+            [(Values: results)
              (define-values (t-r f-r o-r)
                (for/lists (t-r f-r o-r)
                  ([r (in-list results)])
                  (open-Result r o-a t-a)))
-             (ret t-r f-r o-r))
-            ((ValuesDots: results dty dbound)
+             (ret t-r f-r o-r)]
+            [(ValuesDots: results dty dbound)
              (define-values (t-r f-r o-r)
                (for/lists (t-r f-r o-r)
                  ([r (in-list results)])
                  (open-Result r o-a t-a)))
-             (ret t-r f-r o-r dty dbound)))))]
+             (ret t-r f-r o-r dty dbound)])))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _

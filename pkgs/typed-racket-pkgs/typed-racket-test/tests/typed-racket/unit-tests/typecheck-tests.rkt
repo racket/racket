@@ -879,7 +879,7 @@
           #:ret (ret -Number)]
         [tc-err (call-with-values 5
                                   (lambda: ([x : Number] [y : Number]) (+ x y)))
-          #:ret (ret -Number)]
+          #:ret (ret -Number -bot-filter)]
         [tc-err (call-with-values (lambda () (values 2))
                                   5)]
         [tc-err (call-with-values (lambda () (values 2 1))
@@ -2736,6 +2736,16 @@
          (let ([x : (U) (error 'fail)])
            (if (number? x) (add1 x) 0))
          -Bottom]
+
+       [tc-err
+         (let ([f (lambda (x y) y)])
+           (f 1))
+         #:ret (ret Univ -top-filter)]
+
+       [tc-err
+         (let ([f (lambda (x y) y)])
+           (f 1 2 3))
+         #:ret (ret Univ -true-filter)]
 
         )
   (test-suite
