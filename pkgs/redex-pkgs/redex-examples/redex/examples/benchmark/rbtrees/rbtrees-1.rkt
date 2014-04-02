@@ -289,8 +289,8 @@
   (or (not t)
       (implies (type-check t) (ins-preserves-rb-tree t))))
 
-(define (generate-enum-term)
-  (generate-term rbtrees t #:i-th (pick-an-index 0.25)))
+(define (generate-enum-term [p-value 0.25])
+  (generate-term rbtrees t #:i-th (pick-an-index p-value)))
 
 (define (ordered-enum-generator)
   (let ([index 0])

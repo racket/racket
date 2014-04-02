@@ -468,8 +468,8 @@
 (define (typed-generator)
   (error "not currently implemented for rvm in the benchmark"))
 
-(define (generate-enum-term)
-    (fix (generate-term bytecode e #:i-th (pick-an-index 0.03))))
+(define (generate-enum-term [p-value 0.03])
+    (fix (generate-term bytecode e #:i-th (pick-an-index p-value))))
 
 (define (ordered-enum-generator)
   (let ([index 0])

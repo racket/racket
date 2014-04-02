@@ -302,8 +302,8 @@
                                    (and (equal? (type-check a1) M-type)
                                         (equal? (type-check a2) M-type)))))))))))
 
-(define (generate-enum-term)
-  (generate-term stlc M #:i-th (pick-an-index 0.035)))
+(define (generate-enum-term [p-value 0.035])
+  (generate-term stlc M #:i-th (pick-an-index p-value)))
 
 (define (ordered-enum-generator)
   (let ([index 0])

@@ -937,8 +937,8 @@
 (define (type-check e)
   (judgment-holds (tc · · ,e t)))
 
-(define (generate-enum-term)
-  (generate-term abort-lang e #:i-th (pick-an-index 0.125)))
+(define (generate-enum-term [p-value 0.125])
+  (generate-term abort-lang e #:i-th (pick-an-index p-value)))
 
 (define (ordered-enum-generator)
   (define index -1)

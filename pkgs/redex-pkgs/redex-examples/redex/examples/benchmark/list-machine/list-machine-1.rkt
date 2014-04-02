@@ -433,8 +433,8 @@
      p]
     [#f #f]))
 
-(define (generate-enum-term)
-  (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index 0.5)))
+(define (generate-enum-term [p-value 0.5])
+  (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index p-value)))
 
 (define (ordered-enum-generator)
   (let ([index 0])
