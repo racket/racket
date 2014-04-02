@@ -15,6 +15,7 @@
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ syntax/id-table
  unstable/list
  unstable/sequence
  (only-in (types abbrev) -Bottom)
@@ -32,7 +33,8 @@
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
 (provide type->contract define/fixup-contract? change-contract-fixups
-         type->contract-fail any-wrap/sc)
+         type->contract-fail any-wrap/sc
+         ignore-for-contract-gen!)
 
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
@@ -96,10 +98,97 @@
                 (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
-  (for/list ((e (in-syntax forms)))
-    (if (not (define/fixup-contract? e))
-        e
-        (generate-contract-def e))))
+  (define alias-defs (fixup-type-aliases forms))
+  (define require-typed-defs
+    (for/list ([e (in-syntax forms)]
+               #:unless (contract-def/alias-property e))
+      (if (not (define/fixup-contract? e))
+          e
+          (generate-contract-def e))))
+  (append alias-defs require-typed-defs))
+
+;; fixup-type-aliases : (Listof Syntax) -> (Listof Syntax)
+;; Generate contracts for mutually recursive type aliases
+(define (fixup-type-aliases forms)
+  ;; run this twice to ensure that contract failures in mutually
+  ;; recursive type aliases are found and turned into failure syntaxes
+  (for ([e (in-syntax forms)]
+        #:when (contract-def/alias-property e)
+        #:unless (in-ignore-table? e))
+    (generate-contract-def/alias e))
+  (for/list ([e (in-syntax forms)]
+             #:when (contract-def/alias-property e)
+             #:unless (in-ignore-table? e))
+    (generate-contract-def/alias e)))
+
+;; failed-aliases : (Dict Id (U #f String))
+;;
+;; This table stores whether TR failed to generate a contract for the
+;; given identifier corresponding to a recursive type alias. When it does
+;; fail, the failure reason (a string) is stored. Otherwise it's #f.
+(define failed-aliases (make-free-id-table))
+
+;; generate-contract-def/alias : Syntax -> Syntax
+;; Generate a contract that goes with a type alias
+(define (generate-contract-def/alias stx)
+  (define prop (contract-def/alias-property stx))
+  (define typ (parse-type prop))
+  (define failed? #f)
+  (define failure-reason #f)
+  (syntax-parse stx #:literals (define-values)
+    [(define-values (n) _)
+     (define/with-syntax cnt
+       (type->contract typ
+                       #:typed-side #f
+                       #:kind 'impersonator
+                       (λ (#:reason [reason #f])
+                          (set! failed? #t)
+                          (set! failure-reason reason)
+                          (free-id-table-set! failed-aliases #'n reason))))
+     (ignore
+      ;; If the contract fails to generate, then turn this identifier
+      ;; into a macro that always raises a failure error. This delays the
+      ;; error until the type alias is actually used.
+      (if failed?
+          (quasisyntax/loc stx
+            (define-syntaxes (n)
+              (λ (stx)
+               (tc-error/stx
+                (quote-syntax #,prop)
+                (format "Type ~a could not be converted to a contract ~a"
+                        (quote #,(~a typ))
+                        (if #,failure-reason
+                            (format ": ~a" #,failure-reason)
+                            "."))))))
+          (quasisyntax/loc stx
+            (define-values (n)
+              (recursive-contract cnt #:impersonator)))))]
+    [_ (int-err "should never happen - not a define-values: ~a"
+                (syntax->datum stx))]))
+
+;; This table stores a mapping from Identifiers to Booleans
+;; that indicates if an identifier with a contract for fixup (via
+;; change-contract-fixups) should actually be ignored.
+;;
+;; One use for this is to avoid generating contracts for non-recursive
+;; type aliases, even though they have fixup properties.
+(define contract-ignore-table (make-free-id-table))
+
+;; ignore-for-contract-gen! : Identifier -> Void
+;; Set the given identifier as ignored for contract generation
+(define (ignore-for-contract-gen! id)
+  (free-id-table-set! contract-ignore-table id #t))
+
+;; in-ignore-table? : Syntax -> Boolean
+;; Check if the identifier in the given definition syntax should be
+;; ignored for contract generation
+(define (in-ignore-table? stx)
+  (syntax-parse stx
+    #:literals (define-values)
+    [(define-values (name:id) . body)
+     (free-id-table-ref contract-ignore-table #'name #f)]
+    [_ (int-err "should never happen - not a define-values: ~a"
+                (syntax->datum stx))]))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
@@ -200,7 +289,7 @@
         ;; We special case this rather than just resorting to standard
         ;; App resolution (see case below) because the resolution process
         ;; will make type->static-contract infinite loop.
-        [(App: (Name: name _ _ #f) rands _)
+        [(App: (Name: name _ _ _ #f) rands _)
          ;; Key with (cons name 'app) instead of just name because the
          ;; application of the Name is not necessarily the same as the
          ;; Name type alone
@@ -216,75 +305,14 @@
                                                 (recursive-sc-use name*))))
                               (recursive-sc-use name*))])]
         ;; Implicit recursive aliases
-        [(Name: name-id dep-ids args #f)
-         ;; FIXME: this may not be correct for different aliases that have
-         ;;        the same name that are somehow used together, if that's
-         ;;        possible
-         (define name (syntax-e name-id))
-         (define deps (map syntax-e dep-ids))
-         (cond [;; recursive references are looked up, see F case
-                (hash-ref recursive-values name #f) =>
-                (λ (rv) (triple-lookup rv typed-side))]
-               [else
-                ;; see Mu case, which uses similar machinery
-                (match-define (and n*s (list untyped-n* typed-n* both-n*))
-                              (generate-temporaries (list name name name)))
-                (define-values (untyped-deps typed-deps both-deps)
-                  (values (generate-temporaries deps)
-                          (generate-temporaries deps)
-                          (generate-temporaries deps)))
-                ;; Set recursive references for the `name` itself
-                (define *rv
-                  (hash-set recursive-values name
-                            (triple (recursive-sc-use untyped-n*)
-                                    (recursive-sc-use typed-n*)
-                                    (recursive-sc-use both-n*))))
-                ;; Add in references for the dependency aliases
-                (define rv
-                  (for/fold ([rv *rv])
-                            ([dep (in-list deps)]
-                             [untyped-dep (in-list untyped-deps)]
-                             [typed-dep (in-list typed-deps)]
-                             [both-dep (in-list both-deps)])
-                    (hash-set rv dep
-                              (triple (recursive-sc-use untyped-dep)
-                                      (recursive-sc-use typed-dep)
-                                      (recursive-sc-use both-dep)))))
-                (define resolved-name (resolve-once type))
-                (define resolved-deps
-                  (for/list ([dep (in-list dep-ids)])
-                    (resolve-once (lookup-type-alias dep values))))
-
-                ;; resolved-deps->scs : (U 'untyped 'typed 'both)
-                ;;                      -> (Listof Static-Contract)
-                (define (resolved-deps->scs typed-side)
-                  (for/list ([resolved-dep (in-list resolved-deps)]
-                             [dep (in-list deps)])
-                    (loop resolved-dep typed-side rv)))
-
-                ;; Now actually generate the static contracts
-                (case typed-side
-                 [(both) (recursive-sc
-                          (append (list both-n*) both-deps)
-                          (cons (loop resolved-name 'both rv)
-                                (resolved-deps->scs 'both))
-                          (recursive-sc-use both-n*))]
-                 [(typed untyped)
-                  (define untyped (loop resolved-name 'untyped rv))
-                  (define typed (loop resolved-name 'typed rv))
-                  (define both (loop resolved-name 'both rv))
-                  (define-values (untyped-dep-scs typed-dep-scs both-dep-scs)
-                    (values
-                     (resolved-deps->scs 'untyped)
-                     (resolved-deps->scs 'typed)
-                     (resolved-deps->scs 'both)))
-                  (recursive-sc
-                   (append n*s untyped-deps typed-deps both-deps)
-                   (append (list untyped typed both)
-                           untyped-dep-scs typed-dep-scs both-dep-scs)
-                   (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])])]
+        [(Name: name-id _ _ ctc-id #f)
+         ;; FIXME: not sure if always chaperone is correct
+         (define alias-failed? (free-id-table-ref failed-aliases ctc-id #f))
+         (if alias-failed?
+             (fail #:reason alias-failed?)
+             (chaperone/sc ctc-id))]
         ;; Ordinary type applications or struct type names, just resolve
-        [(or (App: _ _ _) (Name: _ _ _ #t)) (t->sc (resolve-once type))]
+        [(or (App: _ _ _) (Name: _ _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]

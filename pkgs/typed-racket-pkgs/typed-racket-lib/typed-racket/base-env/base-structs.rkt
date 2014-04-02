@@ -35,11 +35,11 @@
          ...)
        ...)]))
 
-(define -Srcloc (make-Name #'srcloc null #f #t))
-(define -Date (make-Name #'date null #f #t))
+(define -Srcloc (make-Name #'srcloc null #f #f #t))
+(define -Date (make-Name #'date null #f #f #t))
 (define -Arity-At-Least
-  (make-Name #'arity-at-least null #f #t))
-(define -Exn (make-Name #'exn null #f #t))
+  (make-Name #'arity-at-least null #f #f #t))
+(define -Exn (make-Name #'exn null #f #f #t))
 
 
 (define (initialize-structs)

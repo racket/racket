@@ -551,10 +551,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
             "type name used out of context"
             stx
             (and (stx-pair? stx) (stx-car stx)))))
+     ;; identifier used to bind a contract matching this type alias,
+     ;; for use if the alias ends up being recursive
+     (define/with-syntax ctc (generate-temporary))
      #`(begin
          #,(if (not (attribute omit))
                (ignore #'(define-syntax tname stx-err-fun))
                #'(begin))
+         ;; mark `ctc` for contract generation in a later phase of TR
+         ;; (unless it's a polymorphic alias, since contract generation
+         ;;  treats those differently)
+         #,(ignore (contract-def/alias-property #'(define ctc #f) #'type))
          #,(internal (syntax/loc stx
                        (define-type-alias-internal tname type poly-vars))))]))
 

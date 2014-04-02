@@ -178,9 +178,9 @@
   (lambda (stx)
     (syntax-case stx ()
       [(_ i)
-       #'(or (and (Name: _ _ _ #t)
+       #'(or (and (Name: _ _ _ _ #t)
                   (app resolve-once (? Struct? i)))
-             (App: (and (Name: _ _ _ #t)
+             (App: (and (Name: _ _ _ _ #t)
                         (app resolve-once (Poly: _ (? Struct? i))))
                    _ _))])))
 
@@ -210,7 +210,7 @@
     (or (free-identifier=? s-name p-name)
         (match s
           [(Poly: _ (? Struct? s*)) (in-hierarchy? s* par)]
-          [(Struct: _ (and (Name: _ _ _ #t) p) _ _ _ _)
+          [(Struct: _ (and (Name: _ _ _ _ #t) p) _ _ _ _)
            (in-hierarchy? (resolve-once p) par)]
           [(Struct: _ (? Struct? p) _ _ _ _) (in-hierarchy? p par)]
           [(Struct: _ (Poly: _ p) _ _ _ _) (in-hierarchy? p par)]

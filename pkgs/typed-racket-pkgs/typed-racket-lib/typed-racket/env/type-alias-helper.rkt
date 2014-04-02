@@ -6,7 +6,7 @@
          (utils tarjan tc-utils)
          (env type-alias-env type-name-env)
          (rep type-rep)
-         (private parse-type)
+         (private parse-type type-contract)
          (typecheck internal-forms)
          (types resolve base-abbrev)
 	 data/queue
@@ -30,7 +30,7 @@
 ;;
 ;; Data definitions for aliases
 ;;
-;; A TypeAliasInfo is a (list Syntax (Listof Identifier))
+;; A TypeAliasInfo is a (list Syntax (Listof Identifier) Identifier)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +60,7 @@
 (define (check-type-alias-contractive id type)
   (define/match (check type)
     [((Union: elems)) (andmap check elems)]
-    [((Name: name-id _ _ _))
+    [((Name: name-id _ _ _ _))
      (and (not (free-identifier=? name-id id))
           (check (resolve-once type)))]
     [((App: rator rands stx))
@@ -82,7 +82,7 @@
 ;; the information needed to register them later
 (define (get-type-alias-info type-aliases)
   (for/lists (_1 _2) ([type-alias (in-list type-aliases)])
-    (define-values (id type-stx args) (parse-type-alias type-alias))
+    (define-values (id type-stx args ctc-id) (parse-type-alias type-alias))
     ;; Register type alias names with a dummy value so that it's in
     ;; scope for the registration later.
     ;;
@@ -94,7 +94,7 @@
      (if args
          (make-Poly (map syntax-e args) (make-Value (gensym)))
          (make-Value (gensym))))
-    (values id (list id type-stx args))))
+    (values id (list id type-stx args ctc-id))))
 
 ;; register-all-type-aliases : Listof<Id> Dict<Id, TypeAliasInfo> -> Void
 ;;
@@ -227,9 +227,9 @@
   (define name-types
     (for/list ([id (in-list recursive-aliases)])
       (define record (dict-ref type-alias-map id))
-      (match-define (list _ args) record)
+      (match-define (list _ args ctc-id) record)
       (define deps (dict-ref new-dependency-map id))
-      (define name-type (make-Name id deps args #f))
+      (define name-type (make-Name id deps args ctc-id #f))
       (register-resolved-type-alias id name-type)
       name-type))
 
@@ -239,7 +239,11 @@
   ;; in topologically sorted order, so we want to go through in the
   ;; reverse order of that to avoid unbound type aliases.
   (for ([id (in-list acyclic-singletons)])
-    (define type-stx (car (dict-ref type-alias-map id)))
+    (match-define (list type-stx _ ctc-id) (dict-ref type-alias-map id))
+    ;; Non-recursive aliases don't require contract generation at the
+    ;; module level, so set them to be ignored in that pass to avoid
+    ;; doing extra work.
+    (ignore-for-contract-gen! ctc-id)
     (register-resolved-type-alias id (parse-type type-stx)))
 
   ;; Clear the resolver cache of Name types from this block
@@ -254,7 +258,7 @@
     (for/lists (_1 _2 _3)
       ([id (in-list (append other-recursive-aliases class-aliases))])
       (define record (dict-ref type-alias-map id))
-      (match-define (list type-stx args) record)
+      (match-define (list type-stx args _) record)
       (define type
         ;; make sure to reject the type if it uses polymorphic
         ;; recursion (see resolve.rkt)
@@ -275,12 +279,12 @@
   (kernel-syntax-case* form #f
     (define-type-alias-internal values)
     [(define-values ()
-       (begin (quote-syntax (define-type-alias-internal nm ty args))
+       (begin (quote-syntax (define-type-alias-internal nm ty args ctc))
               (#%plain-app values)))
-     (values #'nm #'ty (syntax-e #'args))]
+     (values #'nm #'ty (syntax-e #'args) #'ctc)]
     ;; this version is for `let`-like bodies
-    [(begin (quote-syntax (define-type-alias-internal nm ty args))
+    [(begin (quote-syntax (define-type-alias-internal nm ty args ctc))
             (#%plain-app values))
-     (values #'nm #'ty (syntax-e #'args))]
+     (values #'nm #'ty (syntax-e #'args) #'ctc)]
     [_ (int-err "not define-type-alias")]))
 
