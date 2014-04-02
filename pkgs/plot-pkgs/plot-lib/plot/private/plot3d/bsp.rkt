@@ -10,7 +10,7 @@
 
 (provide
  ;; BSP shapes
- (struct-out point)
+ (struct-out points)
  (struct-out line)
  (struct-out poly)
  (struct-out lines)
@@ -30,7 +30,7 @@
 ;; Parent type, not exported as a structure
 (struct shape ([data : Any]) #:transparent)
 
-(struct point shape ([vertex : FlVector])
+(struct points shape ([vertices : (Listof FlVector)])
   #:transparent)
 
 (struct poly shape ([vertices : (Listof FlVector)]
@@ -81,11 +81,20 @@
 ;; ===================================================================================================
 ;; Bin shapes: on the negative side of a plane, on the plane, or on the positive side
 
-(: bin-bsp-point (-> point FlVector (Values (Listof BSP-Shape) (Listof BSP-Shape))))
-(define (bin-bsp-point s plane)
-  (define d (point3d-plane-dist (point-vertex s) plane))
-  (cond [(flnonneg? d)  (values empty (list s))]
-        [else           (values (list s) empty)]))
+(: bin-bsp-points (-> points FlVector (Values (Listof BSP-Shape) (Listof BSP-Shape))))
+(define (bin-bsp-points s plane)
+  (match-define (points data vs) s)
+  (define ds (map (λ ([v : FlVector]) (point3d-plane-dist v plane)) vs))
+  (define-values (neg-vs pos-vs)
+    (for/fold ([neg-vs : (Listof FlVector)  empty]
+               [pos-vs : (Listof FlVector)  empty]
+               ) ([v  (in-list vs)])
+      (define d (point3d-plane-dist v plane))
+      (if (d . >= . 0.0)
+          (values neg-vs (cons v pos-vs))
+          (values (cons v neg-vs) pos-vs))))
+  (values (if (empty? neg-vs) empty (list (points data neg-vs)))
+          (if (empty? pos-vs) empty (list (points data pos-vs)))))
 
 (: bin-bsp-line (-> line FlVector Boolean (Values (Listof BSP-Shape) (Listof BSP-Shape))))
 (define (bin-bsp-line s plane disjoint?)
@@ -127,11 +136,14 @@
         [(andmap flnonpos? ds)  (values (list s) empty)]
         [disjoint?  (values empty empty)]
         [else
-         (: vertices->lines (-> (Listof (Listof FlVector)) (Listof lines)))
+         (: vertices->lines (-> (Listof (Listof FlVector)) (Listof BSP-Shape)))
          (define (vertices->lines vss)
            (append*
             (map (λ ([vs : (Listof FlVector)])
-                   (if ((length vs) . < . 2) empty (list (lines data vs))))
+                   (define n (length vs))
+                   (cond [(n . < . 2)  empty]
+                         [(n . = . 2)  (list (line data (first vs) (second vs)))]
+                         [else  (list (lines data vs))]))
                  vss)))
          
          (define-values (vss1 vss2) (split-lines3d vs plane))
@@ -146,10 +158,10 @@
           [else
            (define s (first ss))
            (define-values (new-neg-ss new-pos-ss)
-             (cond [(point? s)  (bin-bsp-point s plane)]
-                   [(line? s)   (bin-bsp-line  s plane disjoint?)]
-                   [(poly? s)   (bin-bsp-poly  s plane disjoint?)]
-                   [(lines? s)  (bin-bsp-lines s plane disjoint?)]
+             (cond [(points? s)  (bin-bsp-points s plane)]
+                   [(line? s)    (bin-bsp-line   s plane disjoint?)]
+                   [(poly? s)    (bin-bsp-poly   s plane disjoint?)]
+                   [(lines? s)   (bin-bsp-lines  s plane disjoint?)]
                    [else  (raise-argument-error 'bin-shapes "known shape" s)]))
            (cond [(and (empty? new-neg-ss) (empty? new-pos-ss))  (values #f #f)]
                  [else  (loop (rest ss)
@@ -171,8 +183,9 @@
 (define (shapes->intervals ss i)
   (for/list: ([s  (in-list ss)])
     (match s
-      [(point _ v)
-       (cons (flvector-ref v i) (flvector-ref v i))]
+      [(points _ vs)
+       (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
+       (cons (apply min xs) (apply max xs))]
       [(line _ v1 v2)
        (define x1 (flvector-ref v1 i))
        (define x2 (flvector-ref v2 i))
@@ -386,12 +399,13 @@
                    plane]
                   [else  #f])))]))
 
-(: remove-null-shapes (-> (Listof BSP-Shape) (Listof BSP-Shape)))
-(define (remove-null-shapes ss)
+(: canonicalize-shapes (-> (Listof BSP-Shape) (Listof BSP-Shape)))
+(define (canonicalize-shapes ss)
   (append*
    (for/list : (Listof (Listof BSP-Shape)) ([s  (in-list ss)])
      (match s
-       [(? point?)  (list s)]
+       [(points _ vs)
+        (if (empty? vs) empty (list s))]
        [(line _ v1 v2) 
         (if (equal? v1 v2) empty (list s))]
        [(poly data vs ls norm)
@@ -399,13 +413,16 @@
           (if ((length vs) . < . 3) empty (list (poly data vs ls norm))))]
        [(lines data vs)
         (let ([vs  (canonical-lines3d vs)])
-          (if ((length vs) . < . 2) empty (list (lines data vs))))]))))
+          (define n (length vs))
+          (cond [(n . < . 2)  empty]
+                [(n . = . 2)  (list (line data (first vs) (second vs)))]
+                [else  (list (lines data vs))]))]))))
 
 ;; ===================================================================================================
 
 (: build-bsp-tree (-> (Listof BSP-Shape) BSP-Tree))
 (define (build-bsp-tree ss)
-  (let* ([ss  (remove-null-shapes ss)])
+  (let* ([ss  (canonicalize-shapes ss)])
     (build-bsp-tree* ss)))
 
 (: try-bsp-split (-> (Listof BSP-Shape) FlVector Boolean (-> (U #f BSP-Tree)) (U #f BSP-Tree)))
@@ -534,17 +551,17 @@
        bsp)]))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Phase 3: build by splitting on axis-aligned planes using lines and point vertices
+;; Phase 3: build by splitting on axis-aligned planes using lines and points vertices
 
 (: build-bsp-tree*/axial (-> (Listof BSP-Shape) (U #f BSP-Tree)))
 (define (build-bsp-tree*/axial ss)
   (define ls (filter lines? ss))
-  (define ps (filter point? ss))
+  (define ps (filter points? ss))
   (cond
     [(and (empty? ls) (empty? ps))  #f]
     [else
      (define vs (remove-duplicates (append (append* (map lines-vertices ls))
-                                           (map point-vertex ps))))
+                                           (append* (map points-vertices ps)))))
      (define axes (vertices->axes vs))
      (define center (list->flvector (map axis-mid axes)))
      
@@ -566,7 +583,7 @@
 
 (: bsp-tree-insert (-> BSP-Tree (Listof BSP-Shape) BSP-Tree))
 (define (bsp-tree-insert bsp ss)
-  (bsp-tree-insert* bsp (remove-null-shapes ss)))
+  (bsp-tree-insert* bsp (canonicalize-shapes ss)))
 
 (: bsp-tree-insert* (-> BSP-Tree (Listof BSP-Shape) BSP-Tree))
 (define (bsp-tree-insert* bsp ss)

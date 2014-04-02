@@ -72,6 +72,22 @@ slow parts
                                     t))
                             -1 1 #:width 2 #:color 2)))
 
+(let* ([xs  (sample (uniform-dist -1 1) 10000)]
+       [ys  (sample (uniform-dist -1 1) 10000)]
+       [zs  (sample (uniform-dist -1 1) 10000)]
+       [xyzs  (map list xs ys zs)])
+  (time
+   (plot3d (list (isosurface3d (λ (x y z) (+ x y z)) 0 -1 1 -1 1 -1 1
+                               #:samples 2
+                               #:line-width 2)
+                 (isosurface3d (λ (x y z) x) 0 #:samples 2
+                               #:color "red"
+                               #:line-width 2)
+                 (isosurface3d (λ (x y z) (+ x (- y) z)) 0
+                               #:samples 2
+                               #:line-width 2)
+                 (points3d xyzs #:sym 'dot)))))
+
 (time
  (plot3d
   (list (contour-intervals3d

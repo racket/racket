@@ -716,12 +716,13 @@
       
       (for/list ([s  (in-list ss)])
         (match s
-          [(point data v)
-           ;; Bring point forward a smidge so if it's *on* a polygon it'll draw if on either side
+          [(points data vs)
+           ;; Bring points forward a smidge so any *on* a polygon will draw on either side
            (define frac #i1/10000)
-           (point data (flvector (+ (flvector-ref v 0) (* dx frac))
-                                 (+ (flvector-ref v 1) (* dy frac))
-                                 (+ (flvector-ref v 2) (* dz frac))))]
+           (points data (for/list ([v  (in-list vs)])
+                          (flvector (+ (flvector-ref v 0) (* dx frac))
+                                    (+ (flvector-ref v 1) (* dy frac))
+                                    (+ (flvector-ref v 2) (* dz frac)))))]
           [(line data v1 v2)
            ;; Bring line forward by about half its apparent thickness
            (define frac (* 0.5 (/ pen-width area-size)))
@@ -847,7 +848,7 @@
       (send pd set-pen pen-color pen-width pen-style)
       (send pd draw-lines (map norm->dc vs)))
     
-    (define (draw-glyph data v)
+    (define (draw-glyph data vs)
       (match-define (glyph-data alpha symbol size
                                 pen-color pen-width pen-style
                                 brush-color brush-style)
@@ -855,16 +856,17 @@
       (send pd set-alpha alpha)
       (send pd set-pen pen-color pen-width pen-style)
       (send pd set-brush brush-color brush-style)
-      (send pd draw-glyphs (list (norm->dc v)) symbol size))
+      (send pd draw-glyphs (map norm->dc vs) symbol size))
     
-    (define (draw-text data v)
+    (define (draw-text data vs)
       (match-define (text-data alpha anchor angle dist str font-size font-family color outline?) data)
       (send pd set-alpha alpha)
       (send pd set-font font-size font-family)
       (send pd set-text-foreground color)
-      (send pd draw-text str (norm->dc v) anchor angle dist #:outline? outline?))
+      (for ([v  (in-list vs)])
+        (send pd draw-text str (norm->dc v) anchor angle dist #:outline? outline?)))
     
-    (define (draw-arrow data v)
+    (define (draw-arrow data vs)
       (match-define (arrow-data alpha v1 v2 outline-color pen-color pen-width pen-style) data)
       (let ([v1  (norm->dc v1)]
             [v2  (norm->dc v2)])
@@ -874,17 +876,17 @@
         (send pd set-pen pen-color pen-width pen-style)
         (send pd draw-arrow v1 v2)))
     
-    (define (draw-point s)
-      (match-define (point data v) s)
-      (cond [(glyph-data? data)  (draw-glyph data v)]
-            [(text-data? data)   (draw-text data v)]
-            [(arrow-data? data)  (draw-arrow data v)]))
+    (define (draw-points s)
+      (match-define (points data vs) s)
+      (cond [(glyph-data? data)  (draw-glyph data vs)]
+            [(text-data? data)   (draw-text data vs)]
+            [(arrow-data? data)  (draw-arrow data (first vs))]))
     
     (define (draw-shape s)
-      (cond [(poly? s)   (draw-polygon s)]
-            [(line? s)   (draw-line s)]
-            [(lines? s)  (draw-lines s)]
-            [(point? s)  (draw-point s)]
+      (cond [(poly? s)    (draw-polygon s)]
+            [(line? s)    (draw-line s)]
+            [(lines? s)   (draw-lines s)]
+            [(points? s)  (draw-points s)]
             [else  (raise-argument-error 'draw-shape "known shape" s)]))
     
     ;; ===============================================================================================
@@ -1008,12 +1010,6 @@
                                     (map plot->norm vs)))]))))
     
     (define/public (put-lines vs)
-      #;
-      (for ([vs  (vrational-sublists vs)])
-        (for ([v1  (in-list vs)]
-              [v2  (in-list (rest vs))])
-          (put-line v1 v2)))
-      
       (for ([vs  (vrational-sublists vs)])
         (unless (empty? vs)
           (let ([vss  (if clipping?
@@ -1117,17 +1113,17 @@
                              #:outline? [outline? #f]
                              #:layer [layer plot3d-area-layer])
       (when (and (vrational? v) (in-bounds? v))
-        (add-shape! layer (point (text-data alpha anchor angle dist str
-                                            font-size font-family text-foreground outline?)
-                                 (plot->norm v)))))
+        (add-shape! layer (points (text-data alpha anchor angle dist str
+                                             font-size font-family text-foreground outline?)
+                                  (list (plot->norm v))))))
     
     (define/public (put-glyphs vs symbol size #:layer [layer plot3d-area-layer])
-      (for ([v  (in-list vs)])
-        (when (and (vrational? v) (in-bounds? v))
-          (add-shape! layer (point (glyph-data alpha symbol size
-                                               pen-color pen-width pen-style
-                                               brush-color brush-style)
-                                   (plot->norm v))))))
+      (let ([vs  (filter (λ (v) (and (vrational? v) (in-bounds? v))) vs)])
+        (unless (empty? vs)
+          (add-shape! layer (points (glyph-data alpha symbol size
+                                                pen-color pen-width pen-style
+                                                brush-color brush-style)
+                                    (map plot->norm vs))))))
     
     (define/public (put-arrow v1 v2)
       (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
@@ -1135,9 +1131,9 @@
                (define c (v* (v+ v1 v2) 1/2))
                (define outline-color (->brush-color (plot-background)))
                (add-shape! plot3d-area-layer
-                           (point (arrow-data alpha (plot->norm v1) (plot->norm v2)
-                                              outline-color pen-color pen-width pen-style)
-                                  (plot->norm c)))]
+                           (points (arrow-data alpha (plot->norm v1) (plot->norm v2)
+                                               outline-color pen-color pen-width pen-style)
+                                   (list (plot->norm c))))]
               [else
                (put-line v1 v2)])))
     )) ; end class
