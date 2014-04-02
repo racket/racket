@@ -1024,10 +1024,10 @@
                                         (map plot->norm vs))))]
                   [else
                    (for ([vs  (in-list vss)])
-                     (define vs (subdivide-lines plot->dc vs))
-                     (add-shape! plot3d-area-layer
-                                 (lines (line-data alpha pen-color pen-width pen-style)
-                                        (map plot->norm vs))))])))))
+                     (let ([vs  (subdivide-lines plot->dc vs)])
+                       (add-shape! plot3d-area-layer
+                                   (lines (line-data alpha pen-color pen-width pen-style)
+                                          (map plot->norm vs)))))])))))
     
     (define (add-polygon! vs face ls)
       (let/ec return

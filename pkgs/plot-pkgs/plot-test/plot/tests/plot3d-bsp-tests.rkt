@@ -24,6 +24,12 @@ slow parts
          profile
          contract-profile)
 
+#;; Test under crazy transformation
+(begin
+  (plot-x-transform cbrt-transform)
+  (plot-y-transform cbrt-transform)
+  (plot-z-transform cbrt-transform))
+
 #;
 (plot3d (contour-intervals3d * -1 1 -1 1 #:samples 3 #:line-widths '(2)))
 
@@ -112,7 +118,7 @@ slow parts
                  0.7)
               0.4))
          -1 1 -1 1
-         #:samples 41
+         #:samples 40
          ;#:alphas '(0.75)
          #:alpha 0.95
          #:color "plum"
