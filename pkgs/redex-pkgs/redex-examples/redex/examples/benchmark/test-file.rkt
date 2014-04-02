@@ -68,7 +68,7 @@
                                     (last (regexp-split #rx"/" filename))))
                      "-results.rktd")))
 
-(define (with-timeout time thunk fail-thunk)
+(define (with-timeout time thunk fail-thunk [on-exn raise])
   (define res-chan (make-channel))
   (define exn-chan (make-channel))
   (define thd (thread (λ () 
@@ -80,7 +80,7 @@
                  (break-thread thd)
                  (fail-thunk)))
    (handle-evt exn-chan
-               (λ (exn) (raise exn)))
+               (λ (exn) (on-exn exn)))
    (handle-evt res-chan
                (λ (result-of-thunk) result-of-thunk))))
 
@@ -158,7 +158,10 @@
       (define ok? (with-timeout (* 5 1000) (λ () (check term))
                                 (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
                                               fname type term)
-                                  (break (timeout)))))
+                                  (break (timeout)))
+                                (λ (exn)
+                                  (printf "\nException when calling check with:\n~s\n" term)
+                                  (raise exn))))
       (cond
         [(not ok?)
          (list tries term)]
