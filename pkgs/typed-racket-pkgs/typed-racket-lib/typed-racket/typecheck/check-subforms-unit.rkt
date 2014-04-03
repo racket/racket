@@ -63,7 +63,7 @@
   (define (get-result-ty t)
     (let loop ((t t))
       (match t
-        [(Function: (cons (arr: (cons arg1 args) _ _ _ _) _))
+        [(Function: (list _ ... (arr: (list arg1) _ _ #f (list (Keyword: _ _ #f) ...)) _ ...))
          (tc/funapp #'here #'(here) (ret t) (list (ret arg1)) #f)]
         [(? needs-resolving? t)
          (loop (resolve t))]
