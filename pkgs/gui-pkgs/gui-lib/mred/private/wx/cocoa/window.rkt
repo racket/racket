@@ -461,6 +461,10 @@
                 cocoa
                 [no-show? #f])
 
+    (define is-on? #f)
+    (define accept-drag? #f)
+    (define accept-parent-drag? #f)
+
     (super-new)
 
     (queue-autorelease-flush)
@@ -522,7 +526,6 @@
 
     (define/public (get-eventspace) eventspace)
 
-    (define is-on? #f)
     (define/public (show on?)
       (atomically
        (unless (eq? (and on? #t) is-on?)
@@ -673,9 +676,6 @@
       (set-size x y (get-width) (get-height)))
     (define/public (move x y)
       (internal-move x y))
-
-    (define accept-drag? #f)
-    (define accept-parent-drag? #f)
 
     (define/public (on-drop-file f) (void))
     (define/public (do-on-drop-file f)

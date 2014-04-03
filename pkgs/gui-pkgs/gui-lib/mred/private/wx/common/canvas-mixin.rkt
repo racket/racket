@@ -116,8 +116,6 @@
 ;; methods:
 (define (canvas-mixin %)
   (class %
-    (super-new)
-
     (inherit request-canvas-flush-delay
              cancel-canvas-flush-delay
              queue-canvas-refresh-event
@@ -131,6 +129,8 @@
     ;; Avoid multiple queued paints, and also allow cancel
     ;; of queued paint:
     (define paint-queued #f) ; #f or (box #t)
+
+    (super-new)
 
     (define/override (queue-paint)
       ;; can be called from any thread, including the event-pump thread

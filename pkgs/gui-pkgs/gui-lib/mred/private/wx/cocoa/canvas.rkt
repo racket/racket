@@ -366,6 +366,10 @@
      (define is-gl? (and (not is-combo?) (memq 'gl style)))
      (define/public (can-gl?) is-gl?)
 
+     (define dc #f)
+     (define blits null)
+     (define reg-blits null)
+
      (super-new 
       [parent parent]
       [cocoa
@@ -421,7 +425,7 @@
        (tellv content-cocoa setDelegate: content-cocoa)
        (install-control-font content-cocoa #f))
 
-     (define dc (make-object dc% this (memq 'transparent canvas-style)))
+     (set! dc (make-object dc% this (memq 'transparent canvas-style)))
 
      (send dc start-backing-retained)
 
@@ -863,9 +867,6 @@
 
      (define/public (is-flipped?)
        (tell #:type _BOOL (get-cocoa-content) isFlipped))
-
-     (define blits null)
-     (define reg-blits null)
 
      (define/private (suspend-all-reg-blits)
        (let ([cocoa-win (get-cocoa-window)])
