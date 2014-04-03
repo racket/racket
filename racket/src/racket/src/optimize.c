@@ -2577,7 +2577,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   app = (Scheme_App3_Rec *)o;
 
-  if (SAME_OBJ(app->rator, scheme_check_not_undefined)
+  if (SAME_OBJ(app->rator, scheme_check_not_undefined_proc)
       && SCHEME_SYMBOLP(app->rand2)) {
     scheme_log(info->logger,
                SCHEME_LOG_WARNING,

@@ -435,7 +435,7 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
-extern Scheme_Object *scheme_check_not_undefined;
+extern Scheme_Object *scheme_check_not_undefined_proc;
 extern Scheme_Object *scheme_pair_p_proc;
 extern Scheme_Object *scheme_mpair_p_proc;
 extern Scheme_Object *scheme_unsafe_cons_list_proc;
@@ -3986,6 +3986,8 @@ Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[
 Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_char_to_integer (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_integer_to_char (int argc, Scheme_Object *argv[]);
+
+Scheme_Object *scheme_check_not_undefined (int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);

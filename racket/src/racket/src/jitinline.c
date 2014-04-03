@@ -3527,6 +3527,45 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_movr_p(dest, JIT_R0);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "check-not-undefined")) {
+      if (SCHEME_SYMBOLP(app->rand2)) {
+        GC_CAN_IGNORE jit_insn *ref, *ref2;
+
+        LOG_IT(("inlined check-not-undefined\n"));
+
+        mz_runstack_skipped(jitter, 2);
+        scheme_generate_non_tail(app->rand1, jitter, 0, 1, 0); /* no sync... */
+        mz_runstack_unskipped(jitter, 2);
+        CHECK_LIMIT();
+
+        mz_rs_sync_fail_branch();
+
+        __START_TINY_JUMPS__(1);
+        ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+        ref2 = mz_bnei_t(jit_forward(), JIT_R0, scheme_undefined_type, JIT_R2);
+        __END_TINY_JUMPS__(1);
+
+        scheme_mz_load_retained(jitter, JIT_R1, app->rand2);
+        (void)jit_calli(sjc.call_check_not_defined_code);
+        /* never returns */
+
+        __START_TINY_JUMPS__(1);
+        mz_patch_branch(ref);
+        mz_patch_branch(ref2);
+        __END_TINY_JUMPS__(1);
+        CHECK_LIMIT();
+      } else {
+        scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+        CHECK_LIMIT();
+
+        mz_rs_sync();
+
+        (void)jit_calli(sjc.call_check_not_defined_code);
+      }
+
+      jit_movr_p(dest, JIT_R0);
+
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "values")) {
       Scheme_Object *args[3];
 

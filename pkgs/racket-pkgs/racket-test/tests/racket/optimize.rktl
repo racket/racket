@@ -6,6 +6,7 @@
 (require racket/flonum
          racket/extflonum
          racket/fixnum
+         racket/undefined
          racket/unsafe/ops
          compiler/zo-parse
          compiler/zo-marshal)
@@ -18,6 +19,7 @@
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
+  (namespace-require 'racket/undefined)
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -99,11 +101,11 @@
                      (test v name ((eval `(lambda (y) (let ([x1 (fx+ (random 1) ',arg1)])
                                                         (,op x1 y))))
                                    arg2)))))]
-	 [bin-exact (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f])
-		      (check-error-message op (eval `(lambda (x) (,op x ',arg2))))
-		      (check-error-message op (eval `(lambda (x) (,op ',arg1 x))))
-		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:first-arg arg1)
-		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:second-arg arg2)
+	 [bin-exact (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f] #:bad-value [bad-value 'bad])
+		      (check-error-message op (eval `(lambda (x) (,op x ',arg2))) #:bad-value bad-value)
+		      (check-error-message op (eval `(lambda (x) (,op ',arg1 x))) #:bad-value bad-value)
+		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:first-arg arg1 #:bad-value bad-value)
+		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:second-arg arg2 #:bad-value bad-value)
                       (when check-fixnum-as-bad?
                         (check-error-message op (eval `(lambda (x) (,op x ',arg2))) #t)
                         (check-error-message op (eval `(lambda (x) (,op x 10))) #t)
@@ -790,6 +792,8 @@
       (bin-exact 1.1t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 0 #t)
       (bin-exact 3.3t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 2)
       (un-exact 3 'extflvector-length (extflvector 1.1t0 2.2t0 3.3t0) #t)
+
+      (bin-exact 5 'check-not-undefined 5 'check-not-undefined #:bad-value undefined)
       )
     
     (let ([test-setter

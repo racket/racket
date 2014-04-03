@@ -86,7 +86,7 @@ READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' *
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
-READ_ONLY Scheme_Object *scheme_check_not_undefined;
+READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
@@ -161,7 +161,6 @@ static Scheme_Object *extract_one_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
-static Scheme_Object *check_not_undefined (int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
 #ifdef TIME_SYNTAX
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
@@ -494,9 +493,11 @@ scheme_init_fun (Scheme_Env *env)
 
   /* adds the new primitive check-undefined to the kernel langauge
      check-undefined has an arity of 1 and no flags */
-  REGISTER_SO(scheme_check_not_undefined);
-  scheme_check_not_undefined = scheme_make_prim_w_arity(check_not_undefined, "check-not-undefined", 2, 2);
-  scheme_add_global_constant("check-not-undefined", scheme_check_not_undefined, env);
+  REGISTER_SO(scheme_check_not_undefined_proc);
+  o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-undefined", 2, 2);
+  scheme_check_not_undefined_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("check-not-undefined", o, env);
 
   scheme_add_global_constant("undefined", scheme_undefined, env);
 
@@ -2533,8 +2534,8 @@ void_p (int argc, Scheme_Object *argv[])
   return SAME_OBJ(argv[0], scheme_void) ? scheme_true : scheme_false;
 }
 
-static Scheme_Object *
-check_not_undefined (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_check_not_undefined (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_SYMBOLP(argv[1]))
     scheme_wrong_contract("check-not-undefined", "symbol?", 1, argc, argv);

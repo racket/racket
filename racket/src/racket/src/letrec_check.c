@@ -737,7 +737,7 @@ Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
         
         app3 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
         app3->iso.so.type = scheme_application3_type;
-        app3->rator = scheme_check_not_undefined;
+        app3->rator = scheme_check_not_undefined_proc;
         app3->rand1 = o;
         app3->rand2 = name;
         

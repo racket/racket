@@ -3225,6 +3225,42 @@ static int common11(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common12(mz_jit_state *jitter, void *_data)
+{
+  /* call_check_not_defined_code */
+  /* ares are in R0 and R1 */
+  {
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
+
+    sjc.call_check_not_defined_code = jit_get_ip();
+
+    mz_prolog(JIT_R2);
+
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 2);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    mz_finish_prim_lwe(ts_scheme_check_not_undefined, refr);
+
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+
+    mz_epilog(JIT_R2);
+
+    scheme_jit_register_sub_func(jitter, sjc.call_check_not_defined_code, scheme_false);
+    CHECK_LIMIT();
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -3243,6 +3279,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common9(jitter, _data)) return 0;
   if (!common10(jitter, _data)) return 0;
   if (!common11(jitter, _data)) return 0;
+  if (!common12(jitter, _data)) return 0;
   return 1;
 }
 
