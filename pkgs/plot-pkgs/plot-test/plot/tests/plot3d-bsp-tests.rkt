@@ -1,23 +1,5 @@
 #lang racket
 
-#|
-TODO
-
-BSP
- - deal better with polygon + many non-polygon shapes
- - avoid more recomputation in build-bsp3d (i.e. precompute bounding and central planes)
- - make middle shapes in bsp-node a BSP-Tree
- - speed up disjoint splitting
-
-insert line segments into BSP as polygonal clipping regions?
-
-slow parts
- - 22.3: build-bsp-tree
- - 15.6: contour renderer proc
- - 12.7: clip-polygon
- -  6.0: bin-shapes
-|#
-
 (require plot
          (except-in plot/utils sum flsum sample)
          math
@@ -95,41 +77,42 @@ slow parts
                  (points3d xyzs #:sym 'dot)))))
 
 (time
- (plot3d
-  (list (contour-intervals3d
-         (λ (x y)
-           (* x (+ 0.1 y)))
-         -1 1 -1 1
-         #:samples 41
-         #:alphas '(0.85)
-         ;#:alpha 0.75
-         ;#:line-width 2
-         ;#:line-widths '(2)
-         ;#:line-styles '(transparent)
-         #:contour-widths '(2)
-         ;#:color 1
-         ;#:label ""
-         )
-        
-        (surface3d
-         (λ (x y)
-           (* (- (* (flnormal-pdf 0.0 0.2 (fl x) #f)
-                    (flnormal-pdf 0.0 0.2 (fl y) #f))
-                 0.7)
-              0.4))
-         -1 1 -1 1
-         #:samples 40
-         ;#:alphas '(0.75)
-         #:alpha 0.95
-         #:color "plum"
-         #:line-color 6
-         ;#:line-style 'transparent
-         ;#:line-width 2
-         ))
-  #:x-min -1 #:x-max 1
-  #:y-min -1 #:y-max 1
-  ;#:out-file "test.pdf"
-  ))
+ (for/last ([_  (in-range 1)])
+   (plot3d
+    (list (contour-intervals3d
+           (λ (x y)
+             (* x (+ 0.1 y)))
+           -1 1 -1 1
+           #:samples 41
+           #:alphas '(0.85)
+           ;#:alpha 0.75
+           ;#:line-width 2
+           ;#:line-widths '(2)
+           ;#:line-styles '(transparent)
+           #:contour-widths '(2)
+           ;#:color 1
+           ;#:label ""
+           )
+          
+          (surface3d
+           (λ (x y)
+             (* (- (* (flnormal-pdf 0.0 0.2 (fl x) #f)
+                      (flnormal-pdf 0.0 0.2 (fl y) #f))
+                   0.7)
+                0.4))
+           -1 1 -1 1
+           #:samples 40
+           ;#:alphas '(0.75)
+           #:alpha 0.95
+           #:color "plum"
+           #:line-color 6
+           ;#:line-style 'transparent
+           ;#:line-width 2
+           ))
+    #:x-min -1 #:x-max 1
+    #:y-min -1 #:y-max 1
+    ;#:out-file "test.pdf"
+    )))
 
 (plot3d (list (surface3d * -1 1 -1 1 #:samples 6 #:alpha 0.75 #:color 1)
               (surface3d (λ (x y) (+ 0.1 (* x y))) -1 1 -1 1 #:samples 6 #:alpha 0.75 #:color 2)
@@ -140,7 +123,7 @@ slow parts
 (plot3d (list
          (isosurface3d (λ (x y z) (+ (- 1 x) (- 1 y) (- z 1.5))) 0
                        #:alpha 0.85 #:color 2 #:line-color 2
-                       #:samples 2)
+                       #:samples 4)
          (discrete-histogram3d (list (vector 'a 'a 1)
                                      (vector 'a 'b 2)
                                      (vector 'b 'b 3))

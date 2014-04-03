@@ -499,8 +499,7 @@
   (cond
     [(empty? ps)  #f]
     [else
-     (define vs (remove-duplicates (bsp-polys->vertices ps)))
-     (define axes (vertices->axes vs))
+     (define axes (vertices->axes (bsp-polys->vertices ps)))
      (define center (list->flvector (map axis-mid axes)))
      
      ;; Planes defined by neighboring polygon vertices
@@ -530,8 +529,7 @@
   (cond
     [(empty? ls)  #f]
     [else
-     (define vs (remove-duplicates (bsp-lines->vertices ls)))
-     (define axes (vertices->axes vs))
+     (define axes (vertices->axes (bsp-lines->vertices ls)))
      (define center (list->flvector (map axis-mid axes)))
      
      ;; Planes defined by line segments and basis vectors (i.e. one basis in normal is zero)
@@ -560,9 +558,8 @@
   (cond
     [(and (empty? ls) (empty? ps))  #f]
     [else
-     (define vs (remove-duplicates (append (append* (map lines-vertices ls))
-                                           (append* (map points-vertices ps)))))
-     (define axes (vertices->axes vs))
+     (define axes (vertices->axes (append (append* (map lines-vertices ls))
+                                          (append* (map points-vertices ps)))))
      (define center (list->flvector (map axis-mid axes)))
      
      (: try-nondisjoint-split (-> (U #f BSP-Tree)))
