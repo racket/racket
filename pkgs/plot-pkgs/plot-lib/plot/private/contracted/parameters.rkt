@@ -28,7 +28,7 @@
   plot3d-samples
   plot3d-angle plot3d-altitude
   plot3d-ambient-light plot3d-diffuse-light? plot3d-specular-light?
-  plot-new-window? plot-jpeg-quality plot-ps/pdf-interactive?
+  plot-new-window? plot-jpeg-quality plot-ps/pdf-interactive? plot-ps-setup
   plot-title
   plot-x-label plot-y-label plot-z-label
   plot-x-far-label plot-y-far-label plot-z-far-label

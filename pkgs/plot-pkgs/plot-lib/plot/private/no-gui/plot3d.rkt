@@ -129,12 +129,14 @@
     [(ps pdf svg)
      (define dc
        (case real-kind
-         [(ps)  (new post-script-dc%
-                     [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
-                     [as-eps #t] [width width] [height height] [output output])]
-         [(pdf)  (new pdf-dc%
-                      [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
-                      [width width] [height height] [output output])]
+         [(ps)   (parameterize ([current-ps-setup  (plot-ps-setup)])
+                   (new post-script-dc%
+                        [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                        [as-eps #t] [width width] [height height] [output output]))]
+         [(pdf)  (parameterize ([current-ps-setup  (plot-ps-setup)])
+                   (new pdf-dc%
+                        [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                        [width width] [height height] [output output]))]
          [(svg)  (new svg-dc%
                       [width width] [height height] [output output] [exists 'truncate/replace])]))
      (define-values (x-scale y-scale) (send dc get-device-scale))

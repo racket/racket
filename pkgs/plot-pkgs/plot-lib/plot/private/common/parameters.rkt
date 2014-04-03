@@ -3,6 +3,7 @@
 ;; Parameters that control the look and behavior of plots.
 
 (require racket/contract unstable/parameter-group unstable/latent-contract/defthing
+         racket/class racket/draw
          "contract.rkt"
          "draw.rkt"
          "axis-transform.rkt"
@@ -107,11 +108,17 @@
 
 ;; Output
 
+(define default-plot-ps-setup (new ps-setup%))
+(send default-plot-ps-setup set-margin 0 0)
+(send default-plot-ps-setup set-scaling 1 1)
+
 (defparam plot-new-window? boolean? #f)
 (defparam plot-jpeg-quality (integer-in 0 100) 100)
 (defparam plot-ps/pdf-interactive? boolean? #f)
+(defparam plot-ps-setup (is-a?/c ps-setup%) default-plot-ps-setup)
 
-(define-parameter-group plot-output (plot-new-window? plot-jpeg-quality plot-ps/pdf-interactive?))
+(define-parameter-group plot-output
+  (plot-new-window? plot-jpeg-quality plot-ps/pdf-interactive? plot-ps-setup))
 
 ;; Labels
 
