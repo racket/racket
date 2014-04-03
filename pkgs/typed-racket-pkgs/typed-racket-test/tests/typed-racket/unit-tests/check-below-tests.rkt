@@ -73,6 +73,28 @@
   (test-suite "Check Below"
     (test-below -Bottom Univ)
     (test-below #:fail -Symbol -String)
+
+    (test-below
+      (ret -Bottom)
+      (ret (list Univ Univ) (list -true-filter -no-filter) (list -no-obj -empty-obj))
+      #:result (ret (list Univ Univ) (list -true-filter -top-filter) (list -empty-obj -empty-obj)))
+
+    (test-below
+      (ret -Bottom)
+      (ret (list Univ) (list -no-filter) (list -no-obj) Univ 'B)
+      #:result (ret (list Univ) (list -top-filter) (list -empty-obj) Univ 'B))
+
+    ;; Bottom is not below everything if the number of values doesn't match up.
+    (test-below #:fail
+      (ret (list -Bottom -Bottom))
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
+
+    (test-below #:fail
+      (ret (list))
+      (ret (list Univ) (list -true-filter) (list -no-obj))
+      #:result (ret (list Univ) (list -true-filter) (list -empty-obj)))
+
     (test-below
       (ret (list -Symbol) (list -top-filter) (list -empty-obj))
       (ret (list Univ) (list -no-filter) (list -no-obj))
@@ -97,6 +119,25 @@
 
     (test-below (ret -Bottom) tc-any-results #:result (ret -Bottom))
     (test-below (ret Univ) tc-any-results #:result (ret Univ))
+
+    (test-below (ret -Symbol -true-filter -empty-obj) tc-any-results
+      #:result (ret -Symbol -true-filter -empty-obj))
+    (test-below (ret (list -Symbol -String)) tc-any-results
+      #:result (ret (list -Symbol -String)))
+    (test-below
+      (ret (list -Symbol -String) (list -true-filter -false-filter) (list -empty-obj -empty-obj))
+      tc-any-results
+      #:result (ret (list -Symbol -String) (list -true-filter -false-filter) (list -empty-obj -empty-obj)))
+
+
+    (test-below #:fail
+      (ret -Symbol)
+      (ret (list -Symbol -Symbol) (list -top-filter -no-filter) (list -no-obj -empty-obj))
+      #:result (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj)))
+
+    (test-below #:fail
+      tc-any-results
+      (ret -Symbol))
 
     ;; Enable these once check-below is fixed
     ;; Currently does not fail
