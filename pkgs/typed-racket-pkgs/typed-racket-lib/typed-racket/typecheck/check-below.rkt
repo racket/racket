@@ -2,6 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match (prefix-in - (contract-req))
+         racket/format
          (types utils union subtype filter-ops abbrev)
          (utils tc-utils)
          (rep type-rep object-rep filter-rep)
@@ -35,6 +36,22 @@
   (define t1* (if (Type/c? t1) (pretty-format-type t1 #:indent 12) t1))
   (define t2* (if (Type/c? t2) (pretty-format-type t2 #:indent 9) t2))
   (tc-error/fields "type mismatch" #:more more "expected" t1* "given" t2* #:delayed? #t))
+
+;; value-mismatch : tc-results/c tc-results/c -> void?
+;; Helper to print messages of the form
+;;   "Expecte n values, but got m values"
+(define (value-mismatch expected actual)
+  (define (value-string ty)
+    (match ty
+      [(tc-result1: _) "1 value"]
+      [(tc-results: ts) (~a (length ts) " values")]
+      ;; TODO simplify this case
+      [(tc-results: ts _ _ dty _) (~a (length ts) " " (if (= (length ts) 1) "value" "values")
+                                      " and `" dty " ...'")]
+      [(tc-any-results:) "unknown number"]))
+  (type-mismatch
+    (value-string expected) (value-string actual)
+    "mismatch in number of values"))
 
 ;; expected-but-got : (U Type String) (U Type String) -> Void
 ;;
@@ -105,8 +122,9 @@
      (fix-results expected)]
 
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
+
      (unless (= (length ts) (length ts2))
-       (type-mismatch (length ts2) (length ts) "mismatch in number of values"))
+       (value-mismatch tr1 expected))
      (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
        (expected-but-got (stringify ts2) (stringify ts)))
      (if (= (length ts) (length ts2))
@@ -128,43 +146,39 @@
                        (format "`~a' and `~a'" f1 (print-object o1))
                        "mismatch in filter and object")])
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
+
     ;; case where expected is like (Values a ... a) but got something else
     [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values and `~a ...'" (length t2) dty)
-                      (format "~a values" (length t1))
-                      "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
+     (value-mismatch expected tr1)
      (fix-results expected)]
+
     ;; case where you have (Values a ... a) but expected something else
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (format "~a values" (length t2))
-                      (format "~a values and `~a'" (length t1) dty)
-                      "mismatch in number of values"))
-     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
-       (expected-but-got (stringify t2) (stringify t1)))
+     (value-mismatch expected tr1)
      (fix-results expected)]
+
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
-     (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of non-dotted values"))
-     (unless (andmap subtype t1 t2)
-       (expected-but-got (stringify t2) (stringify t1)))
-     (unless (subtype dty1 dty2)
-       (type-mismatch dty2 dty1 "mismatch in ... argument"))
+     (cond
+       [(= (length t1) (length t2))
+        (unless (andmap subtype t1 t2)
+          (expected-but-got (stringify t2) (stringify t1)))
+        (unless (subtype dty1 dty2)
+          (type-mismatch dty2 dty1 "mismatch in ... argument"))]
+       [else
+         (value-mismatch expected tr1)])
      (fix-results expected)]
+
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
      (unless (= (length t1) (length t2))
-       (type-mismatch (length t2) (length t1) "mismatch in number of values"))
+       (value-mismatch expected tr1))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      (fix-results expected)]
-    [((tc-any-results:) (tc-result1: t _ _))
-     (type-mismatch "1 value" "unknown number")
+    [((tc-any-results:) (tc-results: ts fs os))
+     (value-mismatch expected tr1)
      (fix-results expected)]
-    [((tc-any-results:) (tc-results: t2 fs os))
-     (type-mismatch (format "~a values" (length t2)) "unknown number")
+    [((tc-any-results:) (tc-results: ts fs os dty dbound))
+     (value-mismatch expected tr1)
      (fix-results expected)]
 
     [((? Type/c? t1) (? Type/c? t2))

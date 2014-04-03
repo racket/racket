@@ -139,6 +139,30 @@
       tc-any-results
       (ret -Symbol))
 
+
+    (test-below #:fail
+      (ret -Symbol -true-filter -empty-obj)
+      (ret -Symbol -true-filter -empty-obj Univ 'B))
+
+    (test-below #:fail
+      (ret -Symbol -true-filter -empty-obj Univ 'B)
+      (ret -Symbol -true-filter -empty-obj))
+
+    (test-below #:fail
+      (ret -Symbol)
+      (ret -Symbol -no-filter -empty-obj Univ 'B)
+      #:result (ret -Symbol -top-filter -empty-obj Univ 'B))
+
+    (test-below #:fail
+      tc-any-results
+      (ret -Symbol -no-filter -empty-obj Univ 'B)
+      #:result (ret (list -Symbol) (list -top-filter) (list -empty-obj) Univ 'B))
+
+    (test-below #:fail
+      (ret -Symbol -top-filter -empty-obj Univ 'B)
+      (ret (list -Symbol -Symbol) (list -top-filter -top-filter)  (list -empty-obj -empty-obj) Univ 'B))
+
+
     ;; Enable these once check-below is fixed
     ;; Currently does not fail
     #;
