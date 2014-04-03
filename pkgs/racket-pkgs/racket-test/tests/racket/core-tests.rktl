@@ -8,6 +8,7 @@
 (load-relative "print.rktl")
 (load-relative "macro.rktl")
 (load-relative "syntax.rktl")
+(load-relative "letrec.rktl")
 (load-relative "procs.rktl")
 (load-relative "stx.rktl")
 (load-relative "module.rktl")
