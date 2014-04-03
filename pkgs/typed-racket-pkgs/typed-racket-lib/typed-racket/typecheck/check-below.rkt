@@ -104,6 +104,7 @@
   (define (filter-better? f1 f2)
     (match* (f1 f2)
       [(f f) #t]
+      [(f (NoFilter:)) #t]
       [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-))
        (and (implied-atomic? f2+ f1+)
             (implied-atomic? f2- f1-))]
@@ -121,15 +122,6 @@
     [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
      (fix-results expected)]
 
-    [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
-
-     (unless (= (length ts) (length ts2))
-       (value-mismatch tr1 expected))
-     (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
-       (expected-but-got (stringify ts2) (stringify ts)))
-     (if (= (length ts) (length ts2))
-         (ret ts2 fs os)
-         (ret ts2))]
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
      (cond
        [(not (subtype t1 t2))
