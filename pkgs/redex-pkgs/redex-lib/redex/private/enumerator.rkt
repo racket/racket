@@ -6,9 +6,12 @@
          racket/math
          racket/match
          racket/promise
+         racket/vector
 
          data/gvector
+         
          math/flonum
+         (only-in math/number-theory binomial)
 
          "error.rkt")
 
@@ -24,6 +27,7 @@
          disj-sum/e
          disj-append/e
          cons/e
+         elegant-cons/e
          dep/e
          dep2/e ;; requires size (eventually should replace dep/e with this)
          map/e
@@ -429,6 +433,7 @@
                  r)])           
            (enum size dec enc)]
           [else
+           ;; based on http://en.wikipedia.org/wiki/Pairing_function
            (define (dec n)
              (define k (floor-untri n))
              (define t (tri k))
@@ -447,6 +452,38 @@
                  l)])
            (enum size dec enc)]))
   (foldr1 cons/e2 (cons e es)))
+
+(define (elegant-cons/e e1 e2)
+  (define s1 (size e1))
+  (define s2 (size e2))
+  (cond [(not (and (infinite? s1)
+                   (infinite? s2)))
+         (error 'finite-sets-are-inelegant)]
+        [else
+         (define (dec n)
+           (define fl-root (integer-sqrt n))
+           (define root-sq (fl-root . * . fl-root))
+           (define-values
+             (n1 n2)
+             (cond [((n . - . root-sq) . < . fl-root)
+                  (define n1 (n . - . root-sq))
+                  (define n2 fl-root)
+                  (values n1 n2)]
+                 [else
+                  (define n1 fl-root)
+                  (define n2 (- n root-sq fl-root))
+                  (values n1 n2)]))
+           (cons (decode e1 n1)
+                 (decode e2 n2)))
+         (define/match (enc p)
+           [((cons x1 x2))
+            (define n1 (encode e1 x1))
+            (define n2 (encode e2 x2))
+            (cond [(n1 . < . n2)
+                   ((n2 . * . n2) . + . n1)]
+                  [else
+                   (+ (n1 . * . n1) n1 n2)])])
+         (enum +inf.0 dec enc)]))
 
 ;; Traversal (maybe come up with a better name
 ;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
@@ -801,9 +838,52 @@
 
 ;; vec/e : listof (enum any) -> enum (vectorof any)
 (define (vec/e . es)
-  (map/e list->vector
-         vector->list
-         (list/e es)))
+  (define all-inf?
+    (for/and ([e (in-list es)])
+      (infinite? (size e))))
+  (cond [(not all-inf?)
+         (map/e list->vector
+                vector->list
+                (list/e es))]
+        [else
+         (define n (length es))
+         (define dec (cantor-untuple es))
+         (define enc (cantor-tuple es))
+         (enum +inf.0 dec enc)]))
+
+(define (cantor-untuple es)
+  ;; Slow exhaustive search for now, see
+  ;; Paul Tarau Deriving a Fast Inverse of the Generalized Cantor N-tupling Bijection
+  ;; for efficient version
+  (define enc (cantor-tuple es))
+  (λ (n)
+     (define less-than-n/e (take/e nats/e (add1 n)))
+     (define search-space
+       (apply vec/e
+              (for/list ([_ (in-list es)])
+                less-than-n/e)))
+     (let/ec ret
+       (for ([tup (in-list (approximate search-space (size search-space)))])
+         (when (equal? (enc tup) n)
+           (ret tup))))))
+
+(define (cantor-tuple es)
+  (λ (vec-xs)
+     (unless ((vector-length vec-xs) . = . (length es))
+       (error 'bad-vector))
+     (define xs (vector->list vec-xs))
+     (define is (map decode es xs))
+     ;; Stolen from fl-vector-sums docs
+     (define sums
+       (rest
+        (reverse
+         (foldl (λ (x xs) (cons (+ x (first xs)) xs))
+                (list 0)
+                is))))
+     (for/sum ([sum_i (in-list sums)]
+               [n     (in-naturals)])
+       (binomial (n . + . sum_i)
+                 (add1 n)))))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
