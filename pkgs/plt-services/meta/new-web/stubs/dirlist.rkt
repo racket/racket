@@ -13,7 +13,7 @@
   (lazy (regexp-split #rx"{{{BODY}}}"
                       (xml->string @page[#:site dirlist-site
                                          #:id 'browse-downloads
-                                         #:html-only #t
+                                         #:html-only? #t
                                          #:part-of 'download
                                          "{{{BODY}}}"]))))
 

@@ -64,7 +64,7 @@
           title       = {|@title},
           author      = {|@(add-between author-strings " and ")},
           number      = {|@tr-name},
-          institution = {PLT Inc.},
+          institution = {PLT Design Inc.},
           year        = {2010},
           note        = {\url{|@(url-of cite-page #t)}}
         }}|
@@ -73,7 +73,7 @@
           (make-bib #:title    "|@title"
                     #:author   |@(format "~s" (cons 'authors author-strings))
                     #:date     "2010"
-                    #:location (techrpt-location #:institution "PLT Inc."
+                    #:location (techrpt-location #:institution "PLT Design Inc."
                                                  #:number "|@tr-name")
                     #:url      "|@(url-of cite-page #t)"))}|
       @h4{Specific Versions}

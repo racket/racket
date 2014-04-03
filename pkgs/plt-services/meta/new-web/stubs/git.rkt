@@ -21,7 +21,7 @@
   (lazy (cdr (or (regexp-match
                   ;; extract just the meat between the <body>...</body>
                   #rx"<body[^<>]*>(.*?){{{BODY}}}(.*?)</body>"
-                  (xml->string @page[#:site git-site #:id 'git #:html-only #t "{{{BODY}}}"]))
+                  (xml->string @page[#:site git-site #:id 'git #:html-only? #t "{{{BODY}}}"]))
                  (error 'gitweb-skeleton "internal error")))))
 (define header @plain[#:site git-site #:file "header.html" (car  (force header+footer))])
 (define footer @plain[#:site git-site #:file "footer.html" (cadr (force header+footer))])

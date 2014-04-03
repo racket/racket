@@ -51,7 +51,7 @@
 
 (define generic-templates
   (split-template @page[#:site mailman-site
-                        #:html-only #t #:title HOLE
+                        #:html-only? #t #:title HOLE
                         #:extra-headers style-header #:part-of 'community
                         HOLE]
                   "header1.html" "header2.html" "footer.html"))
@@ -401,14 +401,14 @@
 (require (for-syntax racket/base))
 (define-syntax (page%% stx)
   (syntax-case stx ()
-    [(page%% #:html-only #t x ...)
-     #`(lazy (encode-%s (page #:site mailman-site #:html-only #t x ...)))]
+    [(page%% #:html-only? #t x ...)
+     #`(lazy (encode-%s (page #:site mailman-site #:html-only? #t x ...)))]
     [(page%% x ...)
      (let ([id (or (syntax-property stx 'inferred-name)
                    (syntax-local-name))])
        #`(plain #:site mailman-site
                 #,@(if id #`(#:id '#,id) #`()) #:suffix "html" #:newline #f
-                (page%% #:html-only #t x ...)))]))
+                (page%% #:html-only? #t x ...)))]))
 
 (define private
   @page%%[#:title @list{%(realname)s private archives authentication}
@@ -544,7 +544,7 @@
 
 (define archiveidx-templates
   (split-template
-   @page%%[#:html-only #t
+   @page%%[#:html-only? #t
            #:title "%(listname)s %(archive)s archives by %(archtype)s"
            #:part-of 'community
            #:extra-headers @list{@style-header
