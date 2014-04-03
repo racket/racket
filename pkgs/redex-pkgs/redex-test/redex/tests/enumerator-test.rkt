@@ -286,6 +286,11 @@
                              #(0 1 2) #(1 0 2) #(0 2 1) #(1 2 0) #(2 0 1) #(2 1 0)
                              #(1 1 1))))
 
+;; helper
+(test-begin
+ (check-equal? (list->inc-set '(2 0 1 2)) '(2 3 5 8))
+ (check-equal? (inc-set->list '(2 3 5 8)) '(2 0 1 2)))
+
 ;; multi-arg map/e test
 (define sums/e
   (map/e

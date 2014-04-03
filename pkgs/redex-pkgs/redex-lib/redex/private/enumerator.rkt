@@ -846,44 +846,70 @@
                 vector->list
                 (list/e es))]
         [else
-         (define n (length es))
-         (define dec (cantor-untuple es))
+         (define k (length es))
+         (define dec (cantor-untuple k))
          (define enc (cantor-tuple es))
          (enum +inf.0 dec enc)]))
 
-(define (cantor-untuple es)
-  ;; Slow exhaustive search for now, see
+(define (cantor-untuple k)
   ;; Paul Tarau Deriving a Fast Inverse of the Generalized Cantor N-tupling Bijection
-  ;; for efficient version
-  (define enc (cantor-tuple es))
   (λ (n)
-     (define less-than-n/e (take/e nats/e (add1 n)))
-     (define search-space
-       (apply vec/e
-              (for/list ([_ (in-list es)])
-                less-than-n/e)))
-     (let/ec ret
-       (for ([tup (in-list (approximate search-space (size search-space)))])
-         (when (equal? (enc tup) n)
-           (ret tup))))))
+     (apply vector (inc-set->list (combinatorial-number-decode k n)))))
+
+(define (combinatorial-number-decode k n)
+  (define (loop k n acc)
+    (cond [(k . < . 0) (error 'combinatorial-number-decode-bug)]
+          [(k . = . 0) acc]
+          [else
+           (define k2 (sub1 k))
+           (define i  (k . + . n))
+           (define d
+             (let/ec kont
+               (for ([j (in-range k2 (add1 i))])
+                 (define b (binomial j k))
+                 (when (b . > . n)
+                   (kont (sub1 j))))
+               (error 'ididntfindit)))
+           (define n2 (n . - . (binomial d k)))
+           (loop k2 n2 (cons d acc))]))
+  (loop k n '()))
 
 (define (cantor-tuple es)
   (λ (vec-xs)
      (unless ((vector-length vec-xs) . = . (length es))
-       (error 'bad-vector))
+       (error 'bad-vector))68
      (define xs (vector->list vec-xs))
      (define is (map decode es xs))
-     ;; Stolen from fl-vector-sums docs
+     ;; Section 6 of Tarau Cantor n-tupling inverse
      (define sums
-       (rest
-        (reverse
-         (foldl (λ (x xs) (cons (+ x (first xs)) xs))
-                (list 0)
-                is))))
+       (list->inc-set is))
      (for/sum ([sum_i (in-list sums)]
                [n     (in-naturals)])
-       (binomial (n . + . sum_i)
-                 (add1 n)))))
+       (binomial sum_i (add1 n)))))
+
+(define (list->inc-set xs)
+  (define (loop xs count acc)
+    (match xs
+      ['() (reverse acc)]
+      [(cons hd tl)
+       (define acc-hd
+         (+ hd count 1))
+       (loop tl
+             acc-hd
+             (cons acc-hd acc))]))
+  (loop xs -1 '()))
+
+(define (inc-set->list xs)
+  (define (loop xs count acc)
+    (match xs
+      ['() (reverse acc)]
+      [(cons hd tl)
+       (define acc-hd
+         (- hd count 1))
+       (loop tl
+             hd
+             (cons acc-hd acc))]))
+  (loop xs -1 '()))
 
 ;; list/e : listof (enum any) -> enum (listof any)
 (define (list/e es)
@@ -923,7 +949,9 @@
  (require rackunit)
  (provide check-bijection?
           ints/e
-          find-size)
+          find-size
+          list->inc-set
+          inc-set->list)
  (define confidence 1000)
 
  (define-simple-check (check-bijection? e)
