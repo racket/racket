@@ -920,6 +920,7 @@
 
 ;; Don't optimize away use before definition:
 (test-comp '(letrec ([x (begin x 5)]) x) '5 #f)
+(test-comp '(letrec ([x (letrec ([y 5]) x 6)]) x) '6 #f)
 
 (test-comp '(let ([x 5]) (set! x 2)) '(let ([x 5]) (set! x x) (set! x 2)))
 
