@@ -529,9 +529,9 @@
   (define props
     (match results
       [(tc-any-results:) empty]
-      [(tc-results: _ (FilterSet: f+ f-) _)
+      [(tc-results: _ (list (FilterSet: f+ f-) ...) _)
        (map -or f+ f-)]
-      [(tc-results: _ (FilterSet: f+ f-) _ _ _)
+      [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)
        (map -or f+ f-)]))
   (with-lexical-env (env+ (lexical-env) props (box #t))
     (add-unconditional-prop (k) (apply -and props))))

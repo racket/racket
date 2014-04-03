@@ -48,7 +48,7 @@
         ([e-r   (in-list expected-results)]
          [names (in-list namess)])
         (match e-r
-          [(tc-results: e-ts (FilterSet: fs+ fs-) os)
+          [(tc-results: e-ts (list (FilterSet: fs+ fs-) ...) os)
            (values e-ts
                    (apply append
                           (for/list ([n (in-list names)]
@@ -58,7 +58,7 @@
                                 (list)
                                 (list (-imp (-not-filter (-val #f) n) f+)
                                       (-imp (-filter (-val #f) n) f-))))))]
-          [(tc-results: e-ts (NoFilter:) _)
+          [(tc-results: e-ts (list (NoFilter:) ...) _)
            (values e-ts null)]))))
   (with-cond-contract append-region ([p1 (listof Filter?)]
                                      [p2 (listof Filter?)])
