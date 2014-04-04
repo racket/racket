@@ -18,11 +18,15 @@
 
 (define dot.exe (if (eq? (system-type) 'windows) "dot.exe" "dot"))
 (define dot
-  (or (find-executable-path dot.exe)
-      (ormap (λ (x)
-               (define candidate (build-path x dot.exe))
-               (and (file-exists? candidate) candidate))
-             dot-paths)))
+  (with-handlers ([(lambda (e) ; may not have permission
+                     (and (exn:fail? e)
+                          (regexp-match "access denied" (exn-message e))))
+                   (lambda _ #f)])
+    (or (find-executable-path dot.exe)
+        (ormap (λ (x)
+                 (define candidate (build-path x dot.exe))
+                 (and (file-exists? candidate) candidate))
+               dot-paths))))
 
 (define (render-dot input-file)
   (when (and dot (not (dry-run?)))
