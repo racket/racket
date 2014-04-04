@@ -121,4 +121,6 @@
 (define kCGImageAlphaNoneSkipLast 5)
 (define kCGImageAlphaNoneSkipFirst 6)
 
-
+(define NSWindowCollectionBehaviorFullScreenPrimary   128)
+(define NSWindowCollectionBehaviorFullScreenAuxiliary 256)
+(define NSFullScreenWindowMask (1 . << . 14))

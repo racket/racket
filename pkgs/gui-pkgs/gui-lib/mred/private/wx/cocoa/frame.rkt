@@ -253,6 +253,14 @@
                                   defer: #:type _BOOL NO))])
                     ;; use init rect as frame size, not content size
                     (tellv c setFrame: #:type _NSRect init-rect display: #:type _BOOL #f)
+                    ;; fullscreen variants:
+                    (when (version-10.7-or-later?)
+                      (cond
+                       [(memq 'fullscreen-button style)
+                        (tellv c setCollectionBehavior: #:type _int NSWindowCollectionBehaviorFullScreenPrimary)]
+                       [(memq 'fullscreen-aux style)
+                        (tellv c setCollectionBehavior: #:type _int NSWindowCollectionBehaviorFullScreenAuxiliary)]
+                       [else (void)]))
                     c))]
                [no-show? #t])
     (define cocoa (get-cocoa))
@@ -660,9 +668,14 @@
           (tellv cocoa miniaturize: cocoa)
           (tellv cocoa deminiaturize: cocoa)))
 
+    (define/public (fullscreened?)
+      (positive? (bitwise-and (tell #:type _NSUInteger cocoa styleMask) NSFullScreenWindowMask)))
+    (define/public (fullscreen on?)
+      (unless (eq? (and on? #t) (fullscreened?))
+        (tellv cocoa toggleFullScreen: #f)))
+
     (define/public (set-title s)
       (tellv cocoa setTitle: #:type _NSString s))
-
 
     (define color-callback void)
     (define/public (set-color-callback cb)

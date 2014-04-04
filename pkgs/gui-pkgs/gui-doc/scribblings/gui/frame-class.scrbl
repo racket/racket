@@ -15,7 +15,9 @@ A frame is a top-level container window. It has a title bar (which
                  [y (or/c position-integer? #f) #f]
                  [style (listof (or/c 'no-resize-border 'no-caption 
                                       'no-system-menu 'hide-menu-bar 
-                                      'toolbar-button 'float 'metal)) null]
+                                      'toolbar-button 'float 'metal
+                                      'fullscreen-button 'fullscreen-aux))
+                        null]
                  [enabled any/c #t]
                  [border spacing-integer? 0]
                  [spacing spacing-integer? 0]
@@ -84,6 +86,12 @@ some platforms:
 
  @item{@racket['metal] --- ignored (formerly supported for Mac OS X)}
 
+ @item{@racket['fullscreen-button] --- includes a button on the
+ frame's title bar to put the frame in fullscreen mode (Mac OS X)}
+
+ @item{@racket['fullscreen-aux] --- allows the frame to accompany
+ another that is in fullscreen mode (Mac OS X)}
+
 ]
 
 Even if the frame is not shown, a few notification events may be
@@ -92,6 +100,10 @@ Even if the frame is not shown, a few notification events may be
  handled, or the frame's eventspace is shut down.
 
 @WindowKWs[@racket[enabled]] @AreaContKWs[] @AreaKWs[]
+
+@history[#:changed "6.0.0.6" @elem{Added @racket['fullscreen-button]
+                                   and @racket['fullscreen-aux] options 
+                                   for @racket[style].}]
 
 }
 
@@ -104,6 +116,19 @@ Creates a status line at the bottom of the frame. The width of the
  when resizing), and the height and text size are platform-specific.
 
 See also @method[frame% set-status-text].
+
+}
+
+@defmethod[(fullscreen [fullscreen? any/c])
+           void?]{
+
+Puts the frame in fullscreen mode or restores the frame to
+ non-fullscreen mode (Mac OS X).
+
+@Unmonitored[@elem{A frame's mode} @elem{the user} @elem{a
+frame has been put in fullscreen mode} @elem{@method[frame% is-fullscreened?]}]
+
+@history[#:added "6.0.0.6"]
 
 }
 
@@ -132,6 +157,15 @@ Iconizes (@as-index{minimizes}) or deiconizes (restores) the
 @Unmonitored[@elem{A frame's iconization} @elem{the user} @elem{a
 frame has been iconized} @elem{@method[frame% is-iconized?]}]
 
+}
+
+@defmethod[(is-fullscreened?)
+           boolean?]{
+
+Returns @racket[#t] if the frame is in fullscreen mode (Mac OS X), @racket[#f]
+otherwise.
+
+@history[#:added "6.0.0.6"]
 }
 
 @defmethod[(is-iconized?)

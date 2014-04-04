@@ -523,6 +523,9 @@
       (if on?
           (gtk_window_iconify gtk)
           (gtk_window_deiconify gtk)))
+
+    (define/public (fullscreened?) #f)
+    (define/public (fullscreen on?) (void))
       
     (def/public-unimplemented get-menu-bar)
 

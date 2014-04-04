@@ -575,6 +575,9 @@
       (unless (eq? (and on? #t) (iconized?))
         (ShowWindow hwnd (if on? SW_MINIMIZE SW_RESTORE)))))
 
+  (define/public (fullscreened?) #f)
+  (define/public (fullscreen on?) (void))
+
   (define/private (get-placement)
     (let ([wp (make-WINDOWPLACEMENT 
                (ctype-sizeof _WINDOWPLACEMENT)

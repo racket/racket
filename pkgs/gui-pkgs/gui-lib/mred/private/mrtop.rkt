@@ -171,7 +171,8 @@
       (check-init-position cwho x)
       (check-init-position cwho y)
       (check-style cwho #f '(no-resize-border no-caption no-system-menu
-                                              toolbar-button hide-menu-bar float metal)
+                                              toolbar-button hide-menu-bar float metal
+                                              fullscreen-button fullscreen-aux)
                    style))
     (rename-super [super-on-subwindow-char on-subwindow-char])
     (define wx #f)
@@ -196,6 +197,8 @@
      [is-iconized? (entry-point (lambda () (send wx iconized?)))]
      [maximize (entry-point (lambda (on?) (send wx position-for-initial-show) (send wx maximize on?)))]
      [is-maximized? (entry-point (lambda () (send wx is-maximized?)))]
+     [fullscreen (entry-point (lambda (on?) (send wx fullscreen on?)))]
+     [is-fullscreened? (entry-point (lambda () (send wx fullscreened?)))]
      [get-menu-bar (entry-point (lambda () (let ([mb (send wx get-the-menu-bar)])
                                              (and mb (wx->mred mb)))))]
      [modified (entry-point
