@@ -1,16 +1,4 @@
 #lang at-exp racket/base
-(require "common.rkt"
-         scribble/decode
-         scribble/struct
-         scribble/racket
-         scribble/eval
-	 racket/sandbox
-         racket/list
-         racket/pretty
-         syntax/docprovide
-         (for-syntax racket/base)
-         )
-
 (provide prim-variables
          prim-forms
          define-forms/normal
@@ -20,13 +8,17 @@
          prim-ops
          prim-op-defns)
 
-(define-syntax-rule (mk-eval defs ...)
-  ;; ==> 
-  (let ([me (make-base-eval)])
-    (call-in-sandbox-context me (lambda () (error-print-source-location #f)))
-    (interaction-eval #:eval me defs) 
-    ...
-    me))
+(require "common.rkt"
+         scribble/decode
+         scribble/struct
+         scribble/racket
+         scribble/eval
+	 racket/sandbox
+         racket/list
+         racket/pretty
+         syntax/docprovide
+	 (for-label lang/htdp-intermediate)
+         (for-syntax racket/base))
 
 (define (maybe-make-table l t)
   (if (paragraph? t)
@@ -38,6 +30,19 @@
        (list (list (make-flow (list (make-paragraph l)))
                    (make-flow (list t)))))))
 
+(define-syntax-rule
+  (mk-eval defs ...)
+  ;; ==> 
+  (let ([me (make-base-eval)])
+    (call-in-sandbox-context me (lambda () (error-print-source-location #f) (sandbox-output 'string)))
+    (interaction-eval #:eval me defs) 
+    ...
+    (lambda (x)
+      (if (eq? x 'test)
+	  (me '(test))
+	  (me x)))))
+
+@(define e1 (mk-eval (require test-engine/racket-tests) (define (fahrenheit->celsius f) (* 5/9 (- f 32)))))
 
 (define (typeset-type type)
   (let-values ([(in out) (make-pipe)])
@@ -314,7 +319,34 @@
             [(check-expect expression expected-expression)]]{
 
    Checks that the first @racket[expression] evaluates to the same value as the
-   @racket[expected-expression].}
+   @racket[expected-expression].
+
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+  
+(check-expect (fahrenheit->celsius 212) 100)
+(check-expect (fahrenheit->celsius -40) -40)
+
+(define (fahrenheit->celsius f)
+  (* 5/9 (- f 32)))
+))
+@;%
+A @racket[check-expect] expression must be placed at the top-level of a
+ student program. Also it may show up anywhere in the program, including
+ ahead of the tested function definition. By placing @racket[check-expect]s
+ there, a programmer conveys to a future reader the intention behind the
+ program with working examples, thus making it often superfluous to read
+ the function definition proper. 
+
+It is an error for @racket[expr] or @racket[expected-expr] to produce an
+inexact number or a function value. As for inexact numbers, it is
+@italic{morally} wrong to compare them for plain equality. Instead one
+tests whether they are both within a small interval; see
+@racket[check-within]. As for functions (see Intermediate and up), it is
+provably impossible to compare functions. 
+}
 
   @defform*[#:id [check-random check-random-id]
             [(check-random expression expected-expression)]]{
@@ -326,32 +358,48 @@ The form supplies the same random-number generator to both parts. If both
 parts request @racket[random] numbers from the same interval in the same
 order, they receive the same random numbers. 
 
-@examples[#:eval (mk-eval (require test-engine/racket-tests))
+Here is a simple example of where @racket[check-random] is useful: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+(define WIDTH 100)
+(define HEIGHT (* 2 WIDTH))
 
-(check-random (random 10) (random 10))
+(define-struct player (name x y))
+;; A @italic{Player} is @racket[(make-player String Nat Nat)]
 
-(check-random 
-  (begin (random 100) (random 200))
-  (begin (random 100) (random 200)))
+;; String -> Player 
 
-(test)
-]
+(check-random (create-randomly-placed-player "David Van Horn")
+	      (make-player "David Van Horn" (random WIDTH) (random HEIGHT)))
 
-If the two parts call @racket[random] for different intervals, they are
-likely to fail: 
+(define (create-randomly-placed-player name)
+  (make-player name (random WIDTH) (random HEIGHT)))
+))
+@;%
+Note how @racket[random] is called on the same numbers in the same order in
+ both parts of @racket[check-random]. If the two parts call @racket[random]
+  for different intervals, they are likely to fail: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+;; String -> @italic{Player}
 
-@examples[#:eval (mk-eval (require test-engine/racket-tests))
-(check-random 
-  (begin (random 100) (random 200))
-  (begin (random 200) (random 100)))
+(check-random (create-randomly-placed-player "David Van Horn")
+	      (make-player "David Van Horn" (random WIDTH) (random HEIGHT)))
 
-(test)
-]
+(define (create-randomly-placed-player name)
+  (local ((define h (random HEIGHT))
+          (define w (random WIDTH)))
+    (make-player name w h)))
+))
+@;%
 
 It is an error for @racket[expr] or @racket[expected-expr] to produce a function
-value or an inexact number.
-
-   }
+value or an inexact number; see note on @racket[check-expect] for details.
+}
 
 
   @defform*[#:id [check-within check-within-id]
@@ -364,10 +412,9 @@ value or an inexact number.
   the second expression.
 
   It is an error for @racket[expressions] or @racket[expected-expression]
-  to produce a function value.
+  to produce a function value; see note on @racket[check-expect] for details.
 
   If @racket[delta] is not a number, @check-within-elem reports an error.} 
-
 
   @defform*[#:id [check-error check-error-id]
             [(check-error expression expected-error-message)
@@ -382,15 +429,22 @@ value or an inexact number.
             [(check-member-of expression expression expression ...)]]{
 
    Checks that the value of the first @racket[expression] as that of
-   one of the following @racket[expression]s.}
+   one of the following @racket[expression]s.
 
+  It is an error for any of @racket[expressions] 
+  to produce a function value; see note on @racket[check-expect] for details.
+   }
 
   @defform*[#:id [check-range check-range-id]
             [(check-range expression low-expression high-expression)]]{
 
    Checks that the value of the first @racket[expression] is a number in
    between the value of the @racket[low-expression] and the
-   @racket[high-expression], inclusive.}
+   @racket[high-expression], inclusive.
+
+It is an error for @racket[expression], @racket[low-expression], or
+@racket[high-expression] to produce a function value or an inexact number;
+see note on @racket[check-expect] for details.  }
 
   @; ----------------------------------------------------------------------
 
