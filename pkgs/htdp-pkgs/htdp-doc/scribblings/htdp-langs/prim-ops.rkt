@@ -3,6 +3,8 @@
          scribble/decode
          scribble/struct
          scribble/racket
+         scribble/eval
+	 racket/sandbox
          racket/list
          racket/pretty
          syntax/docprovide
@@ -17,6 +19,14 @@
          intermediate-forms
          prim-ops
          prim-op-defns)
+
+(define-syntax-rule (mk-eval defs ...)
+  ;; ==> 
+  (let ([me (make-base-eval)])
+    (call-in-sandbox-context me (lambda () (error-print-source-location #f)))
+    (interaction-eval #:eval me defs) 
+    ...
+    me))
 
 (define (maybe-make-table l t)
   (if (paragraph? t)
@@ -137,6 +147,7 @@
                      and 
                      or
                      check-expect
+                     check-random
                      check-within
                      check-error
                      check-member-of
@@ -152,6 +163,7 @@
                   #'or @racket[or]
                   #'and @racket[and]
                   #'check-expect @racket[check-expect]
+                  #'check-random @racket[check-random]
                   #'check-within @racket[check-within]
                   #'check-error @racket[check-error]
                   #'check-member-of @racket[check-member-of]
@@ -167,6 +179,7 @@
                         or-id or-elem
                         and-id and-elem
                         check-expect-id check-expect-elem
+                        check-random-id check-random-elem
                         check-within-id check-within-elem
                         check-error-id check-error-elem
                         check-member-of-id check-member-of-elem
@@ -297,12 +310,48 @@
 
   @; ----------------------------------------------------------------------
 
-
   @defform*[#:id [check-expect check-expect-id]
             [(check-expect expression expected-expression)]]{
 
    Checks that the first @racket[expression] evaluates to the same value as the
    @racket[expected-expression].}
+
+  @defform*[#:id [check-random check-random-id]
+            [(check-random expression expected-expression)]]{
+
+   Checks that the first @racket[expression] evaluates to the same value as the
+   @racket[expected-expression].
+
+The form supplies the same random-number generator to both parts. If both
+parts request @racket[random] numbers from the same interval in the same
+order, they receive the same random numbers. 
+
+@examples[#:eval (mk-eval (require test-engine/racket-tests))
+
+(check-random (random 10) (random 10))
+
+(check-random 
+  (begin (random 100) (random 200))
+  (begin (random 100) (random 200)))
+
+(test)
+]
+
+If the two parts call @racket[random] for different intervals, they are
+likely to fail: 
+
+@examples[#:eval (mk-eval (require test-engine/racket-tests))
+(check-random 
+  (begin (random 100) (random 200))
+  (begin (random 200) (random 100)))
+
+(test)
+]
+
+It is an error for @racket[expr] or @racket[expected-expr] to produce a function
+value or an inexact number.
+
+   }
 
 
   @defform*[#:id [check-within check-within-id]

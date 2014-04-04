@@ -8,8 +8,8 @@
 
 @racketgrammar*+qq[
 #:literals (define define-struct lambda cond else if and or require lib planet
-            check-expect check-within check-error)
-(check-expect check-within check-member-of check-range check-error require)
+            check-expect check-random check-within check-error)
+(check-expect check-random check-within check-member-of check-range check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
@@ -68,6 +68,7 @@ Abbreviations} level as they did in the @secref["beginner"] level.
             and 
             or
             check-expect
+            check-random
             check-within
             check-error
             check-member-of

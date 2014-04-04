@@ -56,6 +56,7 @@
           [advanced-delay delay]
           [advanced-module-begin #%module-begin])
          check-expect
+         check-random
          check-within
          check-error
          check-member-of

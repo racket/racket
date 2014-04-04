@@ -43,6 +43,7 @@
           [beginner-false false]
           )
          check-expect
+	 check-random 
          check-within
          check-error
          check-member-of

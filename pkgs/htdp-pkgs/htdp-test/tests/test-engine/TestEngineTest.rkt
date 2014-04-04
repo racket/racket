@@ -1,6 +1,6 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
 ;;Expect 37 checks, 17 failures
 
 (define (count f)
@@ -55,3 +55,31 @@
 (check-range 0.0 0 10.5)
 (check-range 10.5 0 10.5)
 (check-range 10.5001 0 10.5) ;fails
+
+;; ---------------------------------------------------------------------------------------------------
+;; MF: from DVH 
+
+(define (random-elt ls) (list-ref ls (random (length ls))))
+
+(check-random (random-elt (build-list 100 identity))
+              (list-ref (build-list 100 identity) (random 100)))
+
+
+(define (f _x)
+  (list (random 10) (random 20)))
+
+(define (g _x)
+  (list (random 10) (random 20)))
+
+(check-random (f 0) (list (random 10) (random 20)))
+
+(check-random (g 0)
+              (let ((x2 (random 20))
+                    (x1 (random 10)))
+                (list x1 x2)))
+
+(define (h _x) (first (list (random 50) (random 20))))
+
+(check-random (h) (begin (random 50) (random 20)))
+
+(check-random (h) (begin (random 20) (random 50))) ;; fails 

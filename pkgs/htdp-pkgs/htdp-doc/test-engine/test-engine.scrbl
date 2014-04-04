@@ -1,8 +1,15 @@
 #lang scribble/doc
-@(require scribble/manual
-          (for-label racket/base
-                     test-engine/racket-tests
-                     (prefix-in gui: test-engine/racket-gui)))
+
+@(require (for-label racket/base test-engine/racket-tests (prefix-in gui: test-engine/racket-gui)))
+
+@(require scribble/manual scribble/eval racket/sandbox)
+@(define-syntax-rule (mk-eval defs ...)
+  ;; ==> 
+  (let ([me (make-base-eval)])
+    (call-in-sandbox-context me (lambda () (error-print-source-location #f)))
+    (interaction-eval #:eval me defs) 
+    ...
+    me))
 
 @title{Test Support}
 
@@ -27,6 +34,39 @@ register checks to be performed.  The checks are actually run by the
 @defform[(check-expect expr expected-expr)]{
 Checks whether the value of the @racket[expr] expression is
 @racket[equal?] to the value produced by the @racket[expected-expr].
+
+It is an error for @racket[expr] or @racket[expected-expr] to produce a function
+value or an inexact number.}
+
+@defform[(check-random expr expected-expr)]{
+Checks whether the value of the @racket[expr] expression is
+@racket[equal?] to the value produced by the @racket[expected-expr].
+
+The form supplies the same random-number generator to both parts. If both
+parts request @racket[random] numbers from the same interval in the same
+order, they receive the same random numbers. 
+
+@examples[#:eval (mk-eval (require test-engine/racket-tests))
+
+(check-random (random 10) (random 10))
+
+(check-random 
+  (begin (random 100) (random 200))
+  (begin (random 100) (random 200)))
+
+(test)
+]
+
+If the two parts call @racket[random] for different intervals, they are
+likely to fail: 
+
+@examples[#:eval (mk-eval (require test-engine/racket-tests))
+(check-random 
+  (begin (random 100) (random 200))
+  (begin (random 200) (random 100)))
+
+(test)
+]
 
 It is an error for @racket[expr] or @racket[expected-expr] to produce a function
 value or an inexact number.} 
