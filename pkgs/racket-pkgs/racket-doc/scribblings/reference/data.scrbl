@@ -184,6 +184,8 @@ not normally produce an @racket[undefined] value.
 
 The @racket[undefined] value is always @racket[eq?] to itself.
 
+@history[#:added "6.0.0.6"]
+
 @defproc[(undefined? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is the
  constant @racket[undefined], @racket[#f] otherwise.}
 
@@ -195,6 +197,6 @@ The @racket[undefined] value is always @racket[eq?] to itself.
 Checks whether @racket[v] is @racket[undefined], and raises
 @racket[exn:fail:contract:variable] in that case with an error message
 along the lines of ``@racket[sym]: variable used before its definition.''
-If @racket[v] is not @racket[undefined], then it is returned.
+If @racket[v] is not @racket[undefined], then @racket[v] is returned.
 
 }
