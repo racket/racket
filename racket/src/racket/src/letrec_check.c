@@ -32,11 +32,6 @@ void scheme_init_letrec_check()
 #endif
 }
 
-#define DEBUG_LEVEL 0
-#define DEBUG(stmt) if (DEBUG_LEVEL) { stmt; }
-#define VERBOSE_DEBUG(stmt) if (DEBUG_LEVEL > 1) { stmt; }
-#define MODNAME_DEBUG(stmt) if (0 || (DEBUG_LEVEL > 1)) { stmt; }
-
 #define LET_RHS_EXPR   0x1
 #define LET_BODY_EXPR (0x1 << 1)
 #define LET_NO_EXPR   (0x1 << 2)
@@ -118,18 +113,6 @@ typedef struct {
 
 } Scheme_Deferred_Expr;
 
-void print_frame(Letrec_Check_Frame *frame)
-{
-    fflush(stdout);
-
-    printf("frame: [ ");
-    while(frame != NULL) {
-      printf("[%d %d %d] ", frame->frame_type, frame->count, (int)SCHEME_INT_VAL(frame->subexpr));
-        frame = frame->next;
-    }
-    printf("]");
-}
-
 /* initializes a Letrec_Check_Frame */
 Letrec_Check_Frame *init_letrec_check_frame(int frame_type, 
                                             mzshort count, 
@@ -185,23 +168,6 @@ Letrec_Check_Frame *init_letrec_check_frame(int frame_type,
     frame->deferred_with_body_ref = scheme_false;
     frame->deferred_with_no_ref = scheme_false;
 
-    if (DEBUG_LEVEL > 1) {
-        printf("init_letrec_check_frame: type: %d; ", frame->frame_type);
-        print_frame(frame->next);
-        printf(" -> ");
-        print_frame(frame);
-        printf("\n"); 
-    }
-
-#ifdef MZTAG_REQUIRED
-        if (frame->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("init_letrec_check_frame: frame is not a frame");
-        }
-        if ((prev != NULL) && (prev->type != scheme_rt_letrec_check_frame)) {
-            scheme_signal_error("init_letrec_check_frame: frame is not a frame");
-        }
-#endif
-        
     return frame;
 }
 
@@ -225,12 +191,6 @@ Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame) {
    changes pos to be relative to that frame */
 Letrec_Check_Frame *get_relative_frame(int *pos, Letrec_Check_Frame *frame)
 {
-    if (DEBUG_LEVEL > 1) {
-        printf("get_relative_frame\n pos_int: %d\n ", *pos);
-        print_frame(frame);
-        printf("\n");
-    }
-
     /* we've gone wrong if pos_int is negative or if the frame has
        become NULL because pos should have be a valid LHS variable
        reference */
@@ -284,15 +244,6 @@ void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
 {
     Scheme_Object *prev_def;
 
-    DEBUG(printf("deferring closure at position %d\n", position));
-    if (DEBUG_LEVEL > 1) {
-        printf(" outer: ");
-        print_frame(outer);
-        printf("\n inner: ");
-        print_frame(inner);
-        printf("\n");
-    }
-
     if (position >= outer->count) {
         scheme_signal_error("update_frame: position exceeds binding count");
     }
@@ -317,8 +268,6 @@ Scheme_Object *frame_to_subexpr_ls(Letrec_Check_Frame *frame) {
 
     for (; frame != NULL; frame = frame->next) {
         if (frame->subexpr < 0) {
-            print_frame(frame);
-            printf("\n");
             scheme_signal_error("frame_to_subexpr_ls: frame->subexpr is negative");
         }
         ls = scheme_make_pair(scheme_make_integer(frame->subexpr), ls);
@@ -377,18 +326,7 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
     Scheme_Let_Header *head;
     int was_checked;
 
-    DEBUG(printf("letrec_check_lets_resume\n "));
-
-#ifdef MZTAG_REQUIRED
-    if (frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("letrec_check_lets_resume: frame is not a frame");
-    }
-#endif
-
     head = frame->head;
-
-    DEBUG(print_frame(frame));
-    DEBUG(printf("\n attempting to resume, waiting is %d\n", frame->waiting));
 
     if (frame->waiting != 0) { 
         return; 
@@ -396,7 +334,6 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
 
     frame->subexpr = LET_BODY_EXPR;
     process_deferred_bindings(frame);
-    frame->subexpr = -1;
     
     frame->subexpr = LET_NO_EXPR;
     process_deferred_bindings(frame);
@@ -404,7 +341,6 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
 
     body = head->body;
     if (frame->frame_type == FRAME_TYPE_LETREC) {
-        DEBUG(printf("updating flags\n"));
         /* loops through every right hand side again to update the flags
            that we have invalidated; i.e., adding check-undefineds around
            references means there is one (more) instance where the LHS
@@ -417,7 +353,6 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
             for (j = 0; j < clv->count; j++) {
                 was_checked = frame->checked[k + j];
                 if (was_checked) {
-                    DEBUG(printf("%d had check inserted\n", k));
                     clv_flags[j] -= (clv_flags[j] & SCHEME_WAS_ONLY_APPLIED);
                     clv_flags[j] -= (clv_flags[j] & SCHEME_WAS_APPLIED_EXCEPT_ONCE);
                 } 
@@ -427,15 +362,6 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
             body = clv->body;
         }
     }
-
-    return;
-}
-
-void print_vars(Scheme_Object *vars)
-{
-    fflush(stdout);
-    scheme_display(vars, scheme_orig_stdout_port);
-    scheme_flush_output(scheme_orig_stdout_port);
 
     return;
 }
@@ -482,20 +408,6 @@ void check_inner_vars(Scheme_Object *ls) {
     return;
 }
 
-void check_vars(Scheme_Object *vars) {
-    DEBUG(printf("check_vars\n"));
-
-    while(!SCHEME_NULLP(vars)) {
-        if (!SCHEME_PAIRP(vars)) {
-            scheme_signal_error("check_vars: vars is not a list");
-        }
-        check_inner_vars(SCHEME_CAR(vars));
-        vars = SCHEME_CDR(vars);
-    }
-
-    return;
-}
-
 /* looks up an absolute position in a nested list of vars, where we
    only care about the outermost dimension; e.x.:
 
@@ -507,19 +419,9 @@ int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame)
 {
     Scheme_Object *vars_car, *caar;
     
-    check_vars(vars);
-
     if (frame == NULL) {
         scheme_signal_error("lookup_var: frame == NULL");
         return 0;
-    }
-
-    if (DEBUG_LEVEL > 1) {
-        printf("lookup_var: %d in ", position);
-        print_vars(vars);
-        printf(" and ");
-        print_frame(frame);
-        printf("\n");
     }
 
     if (SCHEME_NULLP(vars)) {
@@ -557,7 +459,6 @@ int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame)
 
     if (frame->frame_type == FRAME_TYPE_LETREC) {
         if (frame->subexpr & LET_BODY_EXPR) {
-            VERBOSE_DEBUG(printf(" didn't find %d in vars\n", position));
             return 0;
         }
 
@@ -571,14 +472,12 @@ int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame)
         while(!SCHEME_NULLP(vars_car)) {
             caar = SCHEME_CAR(vars_car);
             if (SCHEME_INT_VAL(caar) == position) {
-                VERBOSE_DEBUG(printf(" found %d in vars\n", position));
                 return 1;
             }
             vars_car = SCHEME_CDR(vars_car);
         }
     }
 
-    VERBOSE_DEBUG(printf(" didn't find %d in vars\n", position));
     return 0;
 }
 
@@ -589,12 +488,9 @@ void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
     Letrec_Check_Frame *inner;
     int position = SCHEME_LOCAL_POS(loc);
 
-    DEBUG(printf("recording reference for %d\n", position));
-
     inner = frame;
     frame = get_relative_frame(&position, frame);
 
-    DEBUG(printf(" checking for LET_NO_EXPR\n"));
     for(; inner != frame; inner = inner->next) {
         if (inner->subexpr < 0) {
             scheme_signal_error("record_ref: subexpr is negative");
@@ -615,8 +511,6 @@ void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
         !SCHEME_FALSEP(deferred_with_body_ref)) {
         Scheme_Object **def, *defls, *tmp;
 
-        DEBUG(printf("record_ref: adding something to a frame deferred list\n"));
-
         def = frame->def;
         defls = def[position];
         
@@ -628,9 +522,6 @@ void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
             tmp = scheme_append(defls, deferred_with_body_ref);
             frame->deferred_with_body_ref = tmp;
         }
-
-        DEBUG(printf("adding %d existing deferred expression(s) to deferred list\n",
-                     scheme_list_length(def[position])));
 
         (frame->def)[position] = scheme_null;
     }
@@ -645,15 +536,7 @@ Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
     Scheme_Object *obj;
 
     frame = get_relative_frame(&position, frame);
-    DEBUG(printf("recording check for (relative position) %d\n", position));
-    DEBUG(print_frame(frame));
-    DEBUG(printf("\n"));
-
-    DEBUG(printf(" old value: %d\n", (frame->checked)[position]));
-
     (frame->checked)[position] = 1;
-
-    DEBUG(printf(" new value: %d\n", (frame->checked)[position]));
 
     obj = frame->head->body;
     k = frame->head->count;
@@ -682,7 +565,6 @@ Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
 Scheme_Object *rem_vars(Scheme_Object *vars)
 {
     Scheme_Object *tmp, *new;
-    DEBUG(printf("rem_vars: removing vars from a list of vars\n"));
 
     new = scheme_null;
     tmp = vars;
@@ -704,19 +586,7 @@ Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
     Scheme_Local *loc = (Scheme_Local *)o;
     int position;
 
-    DEBUG(printf("letrec_check_local\n"));
-
     position = SCHEME_LOCAL_POS(loc);
-
-    if (DEBUG_LEVEL > 1) { 
-        printf(" position: %d\n ", position);
-        print_frame(frame);
-        printf("\n uvars: ");
-        print_vars(uvars);
-        printf("\n pvars: ");
-        print_vars(pvars);
-        printf("\n");
-    }
 
     /* record that we saw this local in the frame, so later we know to
        process its deferred bindings if there are any */
@@ -732,7 +602,6 @@ Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
         Scheme_App3_Rec *app3;
         Scheme_Object *name;
         
-        DEBUG(printf("adding a check around this reference because loc is %d\n", position));
         name = record_checked(loc, frame);
         
         app3 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
@@ -745,7 +614,6 @@ Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
     }
 
     /* our reference is protected, so we're fine */
-    DEBUG(printf("local was neither unprotected nor protectable\n"));
     return o;
 }
 
@@ -896,15 +764,6 @@ Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_F
         num_params = data->num_params;
         new_frame = init_letrec_check_frame(FRAME_TYPE_CLOSURE, num_params, frame, NULL);
 
-#ifdef MZTAG_REQUIRED
-        if ((frame != NULL) && (frame->type != scheme_rt_letrec_check_frame)) {
-            scheme_signal_error("letrec_check_closure_compilation: frame is not a frame");
-        }
-        if (new_frame->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_closure_compilation: frame is not a frame");
-        }
-#endif
-
         if (num_params < 0) {
             scheme_signal_error("lambda has negative arguments what do");
         }
@@ -912,13 +771,6 @@ Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_F
         pvars = new_pvars;
         val = letrec_check_expr(data->code, new_frame, uvars, pvars, pos);
         data->code = val;
-        if (DEBUG_LEVEL > 1) {
-            printf("letrec_check_closure_compilation: ");
-            print_frame(new_frame);
-            printf(" <- ");
-            print_frame(frame);
-            printf("\n");
-        }
 
     }
     else {
@@ -934,7 +786,7 @@ Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_F
         int position = SCHEME_INT_VAL(pos);
         clos = make_deferred_expr_closure(data, frame, position, uvars, pvars);
 
-        /* get the correct frame and stick it up there */
+        /* get the correct frame and stick the deferred_expr_closure up there */
         outer_frame = get_nearest_rhs(frame);
         update_frame(outer_frame, frame, position, clos);
 
@@ -967,19 +819,10 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
 
     subexpr_ls_to_frame(subexpr_ls, inner);
     
-#ifdef MZTAG_REQUIRED
-        if (outer->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-        }
-#endif
-
     if (scheme_proper_list_length(uvars) !=
         scheme_proper_list_length(pvars)) {
         scheme_signal_error("letrec_check_deferred_expr: vars different lengths");
     }
-
-    DEBUG(printf(" preparing to process deferred expression for %d in subexpr %d\n", 
-                 position, outer->subexpr));
 
     after_i = scheme_null;
     for (i = position - 1; i >= 0; i--) {
@@ -998,11 +841,9 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
         }
 
         if (type & LET_NO_EXPR) {
-            /* otherwise, it is not referenced anywhere in an unsafe context,
-               so we're pretty much good.  still have to check it for letrecs
-               in its sub-expressions */
-            DEBUG(printf(" building NO environment\n"));
-
+            /* variable is not referenced anywhere in an unsafe
+               context, so we're pretty much good.  still have to
+               check for troublesome letrecs in its sub-expressions */
             deferred_uvars = scheme_make_pair(scheme_null, SCHEME_CDR(uvars));
             tmp = rem_vars(SCHEME_CDR(pvars));
             deferred_pvars = scheme_make_pair(scheme_null, tmp);
@@ -1015,10 +856,8 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
                we treat 1 thru i as protected, because this reference must
                occur in a binding after i (and therefore 1 thru i have
                values).  the rest of the LHS variables and those LHS
-               variables from outer letrecs are considered unprotected.
+               variables from outer letrecs are unprotected.
             */
-            DEBUG(printf(" building RHS environment\n"));
-
             deferred_uvars = merge_vars(uvars, pvars);
             tmp = scheme_make_pair(after_i, SCHEME_CDR(deferred_uvars));
             deferred_uvars = tmp;
@@ -1030,11 +869,10 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
                is referenced during the body, where a variable from an
                outer letrec might appear.
                
-               all LHS variables of the current letrec are protected, but
-               the LHS variables from outer letrecs are unprotected.
+               all LHS variables of the current letrec are protected
+               (since we got through the RHS okay already), but the
+               LHS variables from outer letrecs are unprotected.
             */
-            DEBUG(printf(" building BODY environment\n"));
-
             tmp = scheme_make_pair(scheme_null, SCHEME_CDR(uvars));
             deferred_uvars = tmp;
             
@@ -1066,7 +904,8 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
        until (and including) it's own LHS variables, and then we
        switch over to the deferred expression's environment.  so, we
        compute the length difference of the two lists and chop off
-       what we need to */
+       what we need to from the uvars/pvars we currently have, then
+       append the lists together */
     length_diff = scheme_list_length(uvars) - scheme_list_length(deferred_uvars);
     
     tmp_uvars = scheme_null;
@@ -1086,28 +925,14 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
     uvars = scheme_append(tmp_uvars, deferred_uvars);
     pvars = scheme_append(tmp_pvars, deferred_pvars);
 
-    DEBUG(printf(" calculated: uvars: "));
-    DEBUG(print_vars(uvars);)
-    DEBUG(printf(" pvars: "));
-    DEBUG(print_vars(pvars);)
-    DEBUG(printf("\n"));
-    
     /* establish that we actually get a lambda back */
     if (SCHEME_TYPE(data) != scheme_compiled_unclosed_procedure_type) {
-        printf("SCHEME_TYPE(data): %d\n", SCHEME_TYPE(data));
         scheme_signal_error("deferred expression does not contain a lambda");
     }
 
-    /* hopefully we know how to deal with this lambda */
     num_params = data->num_params;
-    if (num_params < 0) {
-        scheme_signal_error("process_deferred_bindings: lambda has negative arguments");
-    }
 
-    if (outer->subexpr < 0) {
-        scheme_signal_error("letrec_check_deferred_expr: subexpr is negative");
-    }
-    if (inner->subexpr < 0) {
+    if ((outer->subexpr < 0) || (inner->subexpr < 0)) {
         scheme_signal_error("letrec_check_deferred_expr: subexpr is negative");
     }
 
@@ -1119,53 +944,18 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
         new_frame->subexpr |= LET_NO_EXPR;
     }
 
-#ifdef MZTAG_REQUIRED
-        if (new_frame->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-        }
-        if (inner->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-        }
-#endif
-
     val = letrec_check_expr(data->code, new_frame, uvars, pvars, scheme_false);
     data->code = val;
 
     outer->subexpr = old_subexpr;
 
-#ifdef MZTAG_REQUIRED
-    if (outer->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-    }
-    if (new_frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-    }
-#endif
-
     /* decrement the waiting count between the current frame and the
        outer frame */
-    DEBUG(printf(" expression processed, checking between %p and %p\n", outer, inner));
     for (; outer != inner; inner = inner->next) {
-        DEBUG(printf(" %p decrementing waiting and resuming letrecs\n", inner));
-        if (inner == NULL) {
-            scheme_signal_error("letrec_check_deferred_expr: inner is null");
-        }
-        if (outer == NULL) {
-            scheme_signal_error("letrec_check_deferred_expr: outer is null");
-        }
-#ifdef MZTAG_REQUIRED
-        if (inner->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-        }
-        if (outer->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_deferred_expr: frame is not a frame");
-        }
-#endif
         (inner->waiting)--;
         letrec_check_lets_resume(inner);
     }
 
-    DEBUG(printf("done waking things up\n"));
     return;
 }
 
@@ -1220,45 +1010,27 @@ void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
     def = frame->def;
     for (i = 0; i < count; i++) {
         if (!SCHEME_NULLP(def[i]) && pos_has_ref(i, frame, subexpr)) {
-            DEBUG(printf(" adding bindings for %d\n", i));
             tmp = scheme_append(def[i], frame->deferred_with_rhs_ref);
             frame->def[i] = scheme_null;
             frame->deferred_with_rhs_ref = tmp;
         }
         else if (SCHEME_NULLP(def[i])) {
-            DEBUG(printf(" bindings for %d are null\n", i));
         }
         else if (!(pos_has_ref(i, frame, subexpr))) {
-            DEBUG(printf(" no ref to %d\n", i));
         }
     }
-    VERBOSE_DEBUG(printf(" %d expressions to be processed initially\n", 
-                         scheme_list_length(frame->deferred_with_rhs_ref)));
     while (!SCHEME_NULLP(frame->deferred_with_rhs_ref)) {
-        DEBUG(printf(" checking one expr\n"));
         if (!SCHEME_PAIRP(frame->deferred_with_rhs_ref)) {
             scheme_signal_error("process_deferred_bindings_rhs: ls is not a ls");
         }
         tmp = SCHEME_CAR(frame->deferred_with_rhs_ref);
         frame->deferred_with_rhs_ref = SCHEME_CDR(frame->deferred_with_rhs_ref);
-        VERBOSE_DEBUG(printf(" popping one expression (%d left to be processed)\n",
-                             scheme_list_length(frame->deferred_with_rhs_ref)));
         letrec_check_deferred_expr(tmp, frame, subexpr);
     }
-
-    DEBUG(printf(" putting ls to false\n"));
-
-#ifdef MZTAG_REQUIRED
-    if (frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("process_deferred_bindings_rhs: frame is not a frame");
-    }
-#endif
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_rhs_ref = scheme_false;
 
-    DEBUG(printf(" done processing deferred bindings\n"));
-    
     return;
 }
 
@@ -1277,47 +1049,23 @@ void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
     def = frame->def;
     for (i = 0; i < count; i++) {
         if (!SCHEME_NULLP(def[i]) && pos_has_ref(i, frame, subexpr)) {
-            DEBUG(printf(" adding bindings for %d\n", i));
             tmp = scheme_append(def[i], frame->deferred_with_body_ref);
             frame->def[i] = scheme_null;
             frame->deferred_with_body_ref = tmp;
         }
-        else if (SCHEME_NULLP(def[i])) {
-            DEBUG(printf(" bindings for %d are null\n", i));
-        }
-        else if (!(pos_has_ref(i, frame, subexpr))) {
-            DEBUG(printf(" no ref to %d\n", i));
-        }
     }
-    VERBOSE_DEBUG(printf(" %d expressions to be processed initially\n", 
-                         scheme_list_length(frame->deferred_with_body_ref)));
     while (!SCHEME_NULLP(frame->deferred_with_body_ref)) {
-        DEBUG(printf(" checking one expr\n"));
-        DEBUG(print_frame(frame));
-        DEBUG(printf("\n"));
         if (!SCHEME_PAIRP(frame->deferred_with_body_ref)) {
             scheme_signal_error("process_deferred_bindings_body: ls is not a ls");
         }
         tmp = SCHEME_CAR(frame->deferred_with_body_ref);
         frame->deferred_with_body_ref = SCHEME_CDR(frame->deferred_with_body_ref);
-        VERBOSE_DEBUG(printf(" popping one expression (%d left to be processed)\n",
-                             scheme_list_length(frame->deferred_with_body_ref)));
         letrec_check_deferred_expr(tmp, frame, subexpr);
     }
-
-    DEBUG(printf(" putting ls to false\n"));
-
-#ifdef MZTAG_REQUIRED
-    if (frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("process_deferred_bindings_body: frame is not a frame");
-    }
-#endif
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_body_ref = scheme_false;
 
-    DEBUG(printf(" done processing deferred bindings\n"));
-    
     return;
 }
 
@@ -1336,72 +1084,38 @@ void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
     def = frame->def;
     for (i = 0; i < count; i++) {
         if (!SCHEME_NULLP(def[i]) && pos_has_ref(i, frame, subexpr)) {
-            DEBUG(printf(" adding bindings for %d\n", i));
             tmp = scheme_append(def[i], frame->deferred_with_no_ref);
             frame->def[i] = scheme_null;
             frame->deferred_with_no_ref = tmp;
         }
-        else if (SCHEME_NULLP(def[i])) {
-            DEBUG(printf(" bindings for %d are null\n", i));
-        }
-        else if (!(pos_has_ref(i, frame, subexpr))) {
-            DEBUG(printf(" no ref to %d\n", i));
-        }
     }
-    VERBOSE_DEBUG(printf(" %d expressions to be processed initially\n", 
-                         scheme_list_length(frame->deferred_with_no_ref)));
     while (!SCHEME_NULLP(frame->deferred_with_no_ref)) {
-        DEBUG(printf(" checking one expr\n"));
         if (!SCHEME_PAIRP(frame->deferred_with_no_ref)) {
             scheme_signal_error("process_deferred_bindings_no: ls is not a ls");
         }
         tmp = SCHEME_CAR(frame->deferred_with_no_ref);
         frame->deferred_with_no_ref = SCHEME_CDR(frame->deferred_with_no_ref);
-        VERBOSE_DEBUG(printf(" popping one expression (%d left to be processed)\n",
-                             scheme_list_length(frame->deferred_with_no_ref)));
         letrec_check_deferred_expr(tmp, frame, subexpr);
     }
-
-    DEBUG(printf(" putting ls to false\n"));
-
-#ifdef MZTAG_REQUIRED
-    if (frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("process_deferred_bindings_no: frame is not a frame");
-    }
-#endif
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_no_ref = scheme_false;
 
-    DEBUG(printf(" done processing deferred bindings\n"));
-    
     return;
 }
 
 void process_deferred_bindings(Letrec_Check_Frame *frame) {
     int subexpr;
 
-    DEBUG(printf("processing deferred bindings\n"));
-    if (DEBUG_LEVEL > 1) {
-        printf(" ");
-        print_frame(frame);
-        printf("\n");
-    }
-
     subexpr = frame->subexpr;
 
-    VERBOSE_DEBUG(printf(" subexpr: %d\n", subexpr));
-    
     if (subexpr & LET_NO_EXPR) {
-        VERBOSE_DEBUG(printf(" checking deferred bindings with NO reference\n"));
         return process_deferred_bindings_no(frame);
     }
     else if (subexpr & LET_RHS_EXPR) {
-        VERBOSE_DEBUG(printf(" checking deferred bindings with RHS reference\n"));
         return process_deferred_bindings_rhs(frame);
     } 
     else if (subexpr & LET_BODY_EXPR) {
-        VERBOSE_DEBUG(printf(" checking deferred bindings with BODY reference\n"));
         return process_deferred_bindings_body(frame);
     }
     else {
@@ -1441,15 +1155,12 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
 
     /* compute and record the type, either let let* or letrec */
     if (header_flags & SCHEME_LET_RECURSIVE) { 
-        DEBUG(printf("LETREC_CHECK_LETREC\n"));
         frame_type = FRAME_TYPE_LETREC; 
     }
     else if (header_flags & SCHEME_LET_STAR) { 
-        DEBUG(printf("LETREC_CHECK_LETSTAR\n"));
         frame_type = FRAME_TYPE_LETSTAR; 
     }
     else { 
-        DEBUG(printf("LETREC_CHECK_LET\n"));
         frame_type = FRAME_TYPE_LET; 
     }
 
@@ -1457,14 +1168,6 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
        this is ok because get_relative_frame knows how to look up
        variables properly given the subexpr */
     frame = init_letrec_check_frame(frame_type, count, old_frame, head);
-#ifdef MZTAG_REQUIRED
-    if (frame->type != scheme_rt_letrec_check_frame) {
-        scheme_signal_error("letrec_check_lets: frame is not a frame");
-    }
-    if ((old_frame != NULL) && (old_frame->type != scheme_rt_letrec_check_frame)) {
-        scheme_signal_error("letrec_check_lets: frame is not a frame");
-    }
-#endif
 
     /* add a new level to our uvars and pvars if this is a letrec */
     if (frame_type == FRAME_TYPE_LETREC) {
@@ -1543,7 +1246,6 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
 
     /* body is already the right value thanks to the for */
     frame->subexpr = LET_BODY_EXPR;
-    DEBUG(printf("processing let body\n"));
     val = letrec_check_expr(body, frame, uvars, pvars, pos);
 
     /* put the new body in the right place: after the last RHS if the
@@ -1552,19 +1254,7 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
     if (num_clauses > 0) clv->body = val;
     else head->body = val;
 
-#ifdef MZTAG_REQUIRED
-        if (frame->type != scheme_rt_letrec_check_frame) {
-            scheme_signal_error("letrec_check_lets: frame is not a frame");
-        }
-#endif
-
     letrec_check_lets_resume(frame);
-
-    DEBUG(printf("letrec_check_lets: "));
-    DEBUG(print_frame(old_frame));
-    DEBUG(printf(" <- "));
-    DEBUG(print_frame(frame));
-    DEBUG(printf("\n"));
 
     return o;
 }
@@ -1581,20 +1271,7 @@ Scheme_Object *letrec_check_define_values(Scheme_Object *data, Letrec_Check_Fram
     else {
         Scheme_Object *vars = SCHEME_VEC_ELS(data)[0];
         Scheme_Object *val = SCHEME_VEC_ELS(data)[1];
-        DEBUG(printf("letrec_check_define_values\n"));
-
-        DEBUG(printf(" size: %d\n position 0: ", (int)SCHEME_VEC_SIZE(data)));
-        DEBUG(fflush(stdout));
-        DEBUG(scheme_display(vars, scheme_orig_stdout_port));
-        DEBUG(scheme_flush_output(scheme_orig_stdout_port));
-        DEBUG(printf("\n position 1: ")); 
-        DEBUG(fflush(stdout));
-        DEBUG(scheme_display(val, scheme_orig_stdout_port));
-        DEBUG(scheme_flush_output(scheme_orig_stdout_port));
-        DEBUG(printf("\n"));
-
         if(!SCHEME_PAIRP(vars) && !SCHEME_NULLP(vars)) {
-            printf("vars: %d, val: %d\n", SCHEME_TYPE(vars), SCHEME_TYPE(val));
             scheme_signal_error("letrec_check_define_values: processing resolved code");
         }
 
@@ -1724,12 +1401,6 @@ Scheme_Object *letrec_check_module(Scheme_Object *o, Letrec_Check_Frame *frame,
         return (Scheme_Object *)m;
     }
     
-    DEBUG(printf("letrec_check_module:\n "));
-    MODNAME_DEBUG(fflush(stdout));
-    MODNAME_DEBUG(scheme_display(m->modname, scheme_orig_stdout_port));
-    MODNAME_DEBUG(scheme_flush_output(scheme_orig_stdout_port));
-    MODNAME_DEBUG(printf("\n"));
-
     cnt = SCHEME_VEC_SIZE(m->bodies[0]);
     for(i = 0; i < cnt; i++) {
         val = SCHEME_VEC_ELS(m->bodies[0])[i];
@@ -1762,8 +1433,6 @@ Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame *frame,
     type = SCHEME_TYPE(expr);
 
     SCHEME_USE_FUEL(1);
-
-    VERBOSE_DEBUG(printf ("letrec_check_expr: type %d\n", type));
 
     switch (type) {
     case scheme_local_type:
@@ -1825,11 +1494,7 @@ Scheme_Object *scheme_letrec_check_expr(Scheme_Object *expr)
     Scheme_Object *init_pvars = scheme_null;
     Scheme_Object *init_pos = scheme_false;
 
-    DEBUG(printf("Entry\n"));
     val = letrec_check_expr(expr, NULL, init_uvars, init_pvars, init_pos);
-    DEBUG(printf("Exit\n"));
-
-    DEBUG(fflush(stdout));
     return val;
 }
 
