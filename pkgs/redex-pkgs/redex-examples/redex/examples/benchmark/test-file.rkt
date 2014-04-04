@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require redex/private/search
+(require "logging.rkt"
+         redex/private/search
          racket/cmdline
          racket/list
          racket/set
@@ -68,6 +69,18 @@
                                     (last (regexp-split #rx"/" filename))))
                      "-results.rktd")))
 
+(define (log-file-name gen-type)
+  (string-append 
+   (first 
+    (regexp-split #rx"\\."
+                  (last (regexp-split #rx"/" filename))))
+   "-" (symbol->string gen-type)
+   ".log"))
+
+(define (print-and-log str)
+  (display str)
+  (log-info str))
+
 (define (with-timeout time thunk fail-thunk [on-exn raise])
   (define res-chan (make-channel))
   (define exn-chan (make-channel))
@@ -131,9 +144,8 @@
       [(list tries term)
        (define continue? (update-results (me-time) fname type verbose?))
        (set! counterexamples (add1 counterexamples))
-       (when verbose?
-         (printf "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
-                 fname term tries (me-time)))
+       (log-info (format "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
+                         fname term tries (me-time)))
        (when no-errs?
          (printf "!---------------------------------------------------!\n")
          (error 'run-generations "~a: unexpected error on ~s" 
@@ -152,12 +164,14 @@
       (when ((current-process-milliseconds) . > . time-limit)
         (break (reached-limit tries))) 
       (define term (with-timeout (* 5 1000) generator
-                                 (λ () (printf "\nTimed out generating a test term in: ~a, ~a\n"
-                                               fname type)
+                                 (λ () (log-info
+                                        (format "\nTimed out generating a test term in: ~a, ~a\n"
+                                                fname type))
                                    (break (timeout)))))
       (define ok? (with-timeout (* 5 1000) (λ () (check term))
-                                (λ () (printf "\nIn ~a, ~a, timed out checking the term: ~s\n"
-                                              fname type term)
+                                (λ () (log-info
+                                       (format "\nIn ~a, ~a, timed out checking the term: ~s\n"
+                                               fname type term))
                                   (break (timeout)))
                                 (λ (exn)
                                   (printf "\nException when calling check with:\n~s\n" term)
@@ -169,13 +183,16 @@
          (loop (add1 tries))]))))
 
 (define (exit-message file type terms time countxmps)
-  (printf "----------\n~a, ~s\n" file type)
-  (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
-          terms time (exact->inexact (/ terms (/ time 1000))))
-  (printf "~s counterexamples, ~s tries... ratio: ~s\n-----------------\n"
-          countxmps terms (if (zero? countxmps)
-                              'N/A
-                              (exact->inexact (/ terms countxmps)))))
+  (printf "-----------------\n~a, ~s\n" file type)
+  (print-and-log
+   (format "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
+           terms time (exact->inexact (/ terms (/ time 1000)))))
+  (print-and-log
+   (format "~s counterexamples, ~s tries... ratio: ~s\n"
+           countxmps terms (if (zero? countxmps)
+                               'N/A
+                               (exact->inexact (/ terms countxmps)))))
+  (printf "-----------------\n"))
 
 
 (define (update-results time fname type verbose?)
@@ -184,8 +201,8 @@
   (set! stats (hash-set stats type new-stats))
   (define avg (statistics-mean new-stats))
   (define dev (/ (statistics-stddev new-stats #:bias #t) (sqrt (length (hash-ref results type)))))
-  (when verbose?
-    (printf "new average for ~a, ~s: ~s +/- ~s\n" fname type (exact->inexact avg) dev))
+  (log-info
+   (format "new average for ~a, ~s: ~s +/- ~s\n" fname type (exact->inexact avg) dev))
   (or (= dev 0)
       ((/ dev avg) . > . 0.1)))
 
@@ -194,6 +211,7 @@
   (define fpath (if (relative-path? maybe-fpath)
                     maybe-fpath
                     (find-relative-path (current-directory) maybe-fpath)))
+  (displayln fpath)
   (define tc (dynamic-require fpath 'type-check))
   (define check (dynamic-require fpath 'check))
   (define gen-term (dynamic-require fpath 'generate-M-term))
@@ -263,7 +281,8 @@
 
 (parameterize ([caching-enabled? #f])
   (for ([gen-type (in-list types)])
-    (test-file filename verbose #f gen-type (* minutes 60))))
+    (with-logging-to (log-file-name gen-type)
+                     (λ () (test-file filename verbose #f gen-type (* minutes 60))))))
 
 (unless (member 'fixed types)
   (call-with-output-file output-file
