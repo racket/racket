@@ -34,13 +34,12 @@
   (mk-eval defs ...)
   ;; ==> 
   (let ([me (make-base-eval)])
+    (define run? #f)
     (call-in-sandbox-context me (lambda () (error-print-source-location #f) (sandbox-output 'string)))
+    (interaction-eval #:eval me '(require test-engine/racket-tests))
     (interaction-eval #:eval me defs) 
     ...
-    (lambda (x)
-      (if (eq? x 'test)
-	  (me '(test))
-	  (me x)))))
+    (lambda (x) (begin0 (me x) (unless run? (set! run? #t) (me '(test)))))))
 
 @(define e1 (mk-eval (require test-engine/racket-tests) (define (fahrenheit->celsius f) (* 5/9 (- f 32)))))
 
@@ -411,6 +410,49 @@ value or an inexact number; see note on @racket[check-expect] for details.
   expression must be within @racket[delta] of the corresponding number in
   the second expression.
 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+(define-struct roots (x sqrt))
+;; RT is [List-of (make-roots Number Number)]
+
+(define (roots-table xs)
+  (map (lambda (a) (make-roots a (sqrt a))) xs))
+))
+@;%
+
+Due to the presence of inexact numbers in nested data, @racket[check-within] is the
+correct choice for testing, and the test succeeds if @racket[delta] is reasonably
+large: 
+@examples[
+#:eval 
+(mk-eval
+ (require test-engine/racket-tests)
+ (define-struct roots (x sqrt) #:transparent)
+ (define (roots-table xs) (map (lambda (a) (make-roots a (sqrt a))) xs)))
+
+(check-within (roots-table (list 1. 2. 3.))
+              (list 
+	        (make-roots 1. 1.)
+	        (make-roots 2  1.414)
+	        (make-roots 3  1.713))
+              .1)
+]
+In contrast, when @racket[delta] is small, the test fails: 
+@examples[
+#:eval 
+(mk-eval
+ (require test-engine/racket-tests)
+ (define-struct roots (x sqrt) #:transparent)
+ (define (roots-table xs) (map (lambda (a) (make-roots a (sqrt a))) xs)))
+
+(check-within (roots-table (list 2.))
+              (list 
+	        (make-roots 2  1.414))
+              .00001)
+]
+
   It is an error for @racket[expressions] or @racket[expected-expression]
   to produce a function value; see note on @racket[check-expect] for details.
 
@@ -420,9 +462,72 @@ value or an inexact number; see note on @racket[check-expect] for details.
             [(check-error expression expected-error-message)
              (#,check-error-elem expression)]]{
 
-   Checks that the @racket[expression] reports an error,
-   where the error messages matches the
-   value of @racket[expected-error-message], if it is present.}
+   Checks that the @racket[expression] reports an error, where the error messages
+   matches the value of @racket[expected-error-message], if it is present.
+
+Here is a typical beginner example that calls for a use of @racket[check-error]: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+(define sample-table
+  '(("matthias" 10)
+    ("matthew"  20)
+    ("robby"    -1)
+    ("shriram"  18)))
+
+;; [List-of [list String Number]] String -> Number 
+;; determine the number associated with @racket[s] in @racket[table] 
+
+(define (lookup table s)
+  (cond
+    [(empty? table) (error (string-append s " not found"))]
+    [else (if (string=? (first (first table)) s)
+              (second (first table))
+              (lookup (rest table)))]))
+))
+@;%
+
+Consider the following two examples in this context: 
+
+@examples[
+#:eval (mk-eval
+ (require test-engine/racket-tests racket/list)
+(define sample-table
+  '(("matthias" 10)
+    ("matthew"  20)
+    ("robby"    -1)
+    ("shriram"  18)))
+
+(define (lookup table s)
+  (cond
+    [(empty? table) (error (string-append s " not found"))]
+    [else (if (string=? (first (first table)) s)
+              (second (first table))
+              (lookup (rest table) s))]))
+)
+(check-expect (lookup sample-table "matthew") 20)
+]
+
+@examples[
+#:eval (mk-eval
+ (require test-engine/racket-tests racket/list)
+(define sample-table
+  '(("matthias" 10)
+    ("matthew"  20)
+    ("robby"    -1)
+    ("shriram"  18)))
+
+(define (lookup table s)
+  (cond
+    [(empty? table) (error (string-append s " not found"))]
+    [else (if (string=? (first (first table)) s)
+              (second (first table))
+              (lookup (rest table) s))]))
+)
+(check-error (lookup sample-table "kathi") "kathi not found")
+]
+} 
 
 
   @defform*[#:id [check-member-of check-member-of-id]
