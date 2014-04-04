@@ -22,6 +22,9 @@
 /* The size of a `void *', as computed by sizeof. */
 #undef SIZEOF_VOID_P
 
+/* The size of a `bool' with <stdbool.h>, as computed by sizeof. */
+#undef SIZEOF_BOOL
+
 /* Whether `intptr_t' is available. */
 #undef HAVE_INTPTR_T
 

@@ -229,10 +229,20 @@ values.}
 
 @section{Other Atomic Types}
 
+@defthing[_stdbool ctype?]{
+
+The @racket[_stdbool] type represents the C99 @cpp{bool} type from
+@cpp{<stdbool.h>}. It translates @racket[#f] to a @racket[0]
+@cpp{bool} and any other value to a @racket[1] @cpp{bool}.
+
+@history[#:added "6.0.0.6"]}
+
 @defthing[_bool ctype?]{
 
-Translates @racket[#f] to a @racket[0] @racket[_int], and any other
-value to @racket[1].}
+Translates @racket[#f] to a @racket[0] @cpp{int} and any other
+value to a @racket[1] @cpp{int}, reflecting one of many
+traditional (i.e., pre-C99) encodings of booleans. See also
+@racket[_stdbool].}
 
 @defthing[_void ctype?]{
 

@@ -16,7 +16,7 @@
          _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
          _fixint _ufixint _fixnum _ufixnum
          _float _double _longdouble _double*
-         _bool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
+         _bool _stdbool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
          memcpy memmove memset
          malloc-immobile-cell free-immobile-cell
          make-late-weak-box make-late-weak-hasheq)

@@ -12,6 +12,13 @@
 
 #include <errno.h>
 
+#ifndef SIZEOF_BOOL
+# define SIZEOF_BOOL 0
+#endif /* SIZEOF_BOOL */
+#if SIZEOF_BOOL != 0
+# include <stdbool.h>
+#endif /* SIZEOF_BOOL != 0 */
+
 #ifndef WINDOWS_DYNAMIC_LOAD
 # include <dlfcn.h>
 #else /* WINDOWS_DYNAMIC_LOAD defined */
@@ -868,11 +875,47 @@ static Scheme_Object *unsupported_make_long_double() {
  * C->Racket:   (<C>?scheme_true:scheme_false)
  */
 
+#if SIZEOF_BOOL == 0
+typedef signed char stdbool;
+# define ffi_type_stdbool ffi_type_sint8
+#else /* SIZEOF_BOOL == 0  */
+typedef bool stdbool;
+#if SIZEOF_BOOL == 1
+# define ffi_type_stdbool ffi_type_sint8
+#else /* SIZEOF_BOOL == 1  */
+#if SIZEOF_BOOL == 2
+# define ffi_type_stdbool ffi_type_sint16
+#else /* SIZEOF_BOOL == 2  */
+#if SIZEOF_BOOL == 4
+# define ffi_type_stdbool ffi_type_sint32
+#else /* SIZEOF_BOOL == 4  */
+#if SIZEOF_BOOL == 8
+# define ffi_type_stdbool ffi_type_sint64
+#else /* SIZEOF_BOOL == 8  */
+/* ??? Pick something */
+# define ffi_type_stdbool ffi_type_int
+#endif /* SIZEOF_BOOL == 8 */
+#endif /* SIZEOF_BOOL == 4 */
+#endif /* SIZEOF_BOOL == 2 */
+#endif /* SIZEOF_BOOL == 1 */
+#endif /* SIZEOF_BOOL == 0 */
+
+/* Booleans -- implemented as an int which is 1 or 0: */
+#define FOREIGN_stdbool (19)
+/* Type Name:   stdbool
+ * LibFfi type: ffi_type_stdbool
+ * C type:      stdbool
+ * Predicate:   1
+ * Racket->C:   SCHEME_TRUEP(<Scheme>)
+ * S->C offset: 0
+ * C->Racket:   (<C>?scheme_true:scheme_false)
+ */
+
 /* Strings -- no copying is done (when possible).
  * #f is not NULL only for byte-strings, for other strings it is
  * meaningless to use NULL. */
 
-#define FOREIGN_string_ucs_4 (19)
+#define FOREIGN_string_ucs_4 (20)
 /* Type Name:   string/ucs-4 (string_ucs_4)
  * LibFfi type: ffi_type_gcpointer
  * C type:      mzchar*
@@ -882,7 +925,7 @@ static Scheme_Object *unsupported_make_long_double() {
  * C->Racket:   scheme_make_char_string_without_copying(<C>)
  */
 
-#define FOREIGN_string_utf_16 (20)
+#define FOREIGN_string_utf_16 (21)
 /* Type Name:   string/utf-16 (string_utf_16)
  * LibFfi type: ffi_type_gcpointer
  * C type:      unsigned short*
@@ -895,7 +938,7 @@ static Scheme_Object *unsupported_make_long_double() {
 /* Byte strings -- not copying C strings, #f is NULL.
  * (note: these are not like char* which is just a pointer) */
 
-#define FOREIGN_bytes (21)
+#define FOREIGN_bytes (22)
 /* Type Name:   bytes
  * LibFfi type: ffi_type_gcpointer
  * C type:      char*
@@ -905,7 +948,7 @@ static Scheme_Object *unsupported_make_long_double() {
  * C->Racket:   (<C>==NULL)?scheme_false:scheme_make_byte_string_without_copying(<C>)
  */
 
-#define FOREIGN_path (22)
+#define FOREIGN_path (23)
 /* Type Name:   path
  * LibFfi type: ffi_type_gcpointer
  * C type:      char*
@@ -915,7 +958,7 @@ static Scheme_Object *unsupported_make_long_double() {
  * C->Racket:   (<C>==NULL)?scheme_false:scheme_make_path_without_copying(<C>)
  */
 
-#define FOREIGN_symbol (23)
+#define FOREIGN_symbol (24)
 /* Type Name:   symbol
  * LibFfi type: ffi_type_pointer
  * C type:      char*
@@ -928,7 +971,7 @@ static Scheme_Object *unsupported_make_long_double() {
 /* This is for any C pointer: #f is NULL, cpointer values as well as
  * ffi-obj and string values pass their pointer.  When used as a return
  * value, either a cpointer object or #f is returned. */
-#define FOREIGN_pointer (24)
+#define FOREIGN_pointer (25)
 /* Type Name:   pointer
  * LibFfi type: ffi_type_pointer
  * C type:      void*
@@ -938,7 +981,7 @@ static Scheme_Object *unsupported_make_long_double() {
  * C->Racket:   scheme_make_foreign_external_cpointer(<C>)
  */
 
-#define FOREIGN_gcpointer (25)
+#define FOREIGN_gcpointer (26)
 /* Type Name:   gcpointer
  * LibFfi type: ffi_type_gcpointer
  * C type:      void*
@@ -950,7 +993,7 @@ static Scheme_Object *unsupported_make_long_double() {
 
 /* This is used for passing and Scheme_Object* value as is.  Useful for
  * functions that know about Scheme_Object*s, like Racket's. */
-#define FOREIGN_scheme (26)
+#define FOREIGN_scheme (27)
 /* Type Name:   scheme
  * LibFfi type: ffi_type_gcpointer
  * C type:      Scheme_Object*
@@ -963,7 +1006,7 @@ static Scheme_Object *unsupported_make_long_double() {
 /* Special type, not actually used for anything except to mark values
  * that are treated like pointers but not referenced.  Used for
  * creating function types. */
-#define FOREIGN_fpointer (27)
+#define FOREIGN_fpointer (28)
 /* Type Name:   fpointer
  * LibFfi type: ffi_type_pointer
  * C type:      void*
@@ -991,6 +1034,7 @@ typedef union _ForeignAny {
   mz_long_double x_longdouble;
   double x_doubleS;
   int x_bool;
+  stdbool x_stdbool;
   mzchar* x_string_ucs_4;
   unsigned short* x_string_utf_16;
   char* x_bytes;
@@ -1003,9 +1047,9 @@ typedef union _ForeignAny {
 } ForeignAny;
 
 /* This is a tag that is used to identify user-made struct types. */
-#define FOREIGN_struct (28)
-#define FOREIGN_array (29)
-#define FOREIGN_union (30)
+#define FOREIGN_struct (29)
+#define FOREIGN_array (30)
+#define FOREIGN_union (31)
 
 XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
   if (SCHEME_FFIOBJP(o)) return 0;
@@ -1139,6 +1183,7 @@ XFORM_NONGCING static intptr_t ctype_sizeof(Scheme_Object *type)
   case FOREIGN_longdouble: return sizeof(mz_long_double);
   case FOREIGN_doubleS: return sizeof(double);
   case FOREIGN_bool: return sizeof(int);
+  case FOREIGN_stdbool: return sizeof(stdbool);
   case FOREIGN_string_ucs_4: return sizeof(mzchar*);
   case FOREIGN_string_utf_16: return sizeof(unsigned short*);
   case FOREIGN_bytes: return sizeof(char*);
@@ -1746,6 +1791,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *already_ptr, Scheme_Object *type, 
     case FOREIGN_longdouble: return scheme_make_maybe_long_double(REF_CTYPE(mz_long_double));
     case FOREIGN_doubleS: return scheme_make_double(REF_CTYPE(double));
     case FOREIGN_bool: return (REF_CTYPE(int)?scheme_true:scheme_false);
+    case FOREIGN_stdbool: return (REF_CTYPE(stdbool)?scheme_true:scheme_false);
     case FOREIGN_string_ucs_4: return scheme_make_char_string_without_copying(REF_CTYPE(mzchar*));
     case FOREIGN_string_utf_16: return utf16_pointer_to_ucs4_string(REF_CTYPE(unsigned short*));
     case FOREIGN_bytes: return (REF_CTYPE(char*)==NULL)?scheme_false:scheme_make_byte_string_without_copying(REF_CTYPE(char*));
@@ -2116,6 +2162,27 @@ static void* SCHEME2C(const char *who,
         (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_bool", val);;
+        return NULL; /* hush the compiler */
+      }
+    case FOREIGN_stdbool:
+#     ifdef SCHEME_BIG_ENDIAN
+      if (sizeof(stdbool)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(intptr_t)-sizeof(stdbool));
+      }
+#     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(stdbool)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
+
+      if (1) {
+        stdbool tmp;
+        tmp = MZ_TYPE_CAST(stdbool, SCHEME_TRUEP(val));
+        (((stdbool*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
+      } else {
+        wrong_value(who, "_stdbool", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_string_ucs_4:
@@ -4369,6 +4436,13 @@ void scheme_init_foreign(Scheme_Env *env)
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_bool);
   scheme_add_global_constant("_bool", (Scheme_Object*)t, menv);
+  s = scheme_intern_symbol("stdbool");
+  t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
+  t->so.type = ctype_tag;
+  t->basetype = (s);
+  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_stdbool));
+  t->c_to_scheme = ((Scheme_Object*)FOREIGN_stdbool);
+  scheme_add_global_constant("_stdbool", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("string/ucs-4");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4603,6 +4677,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("_longdouble", scheme_false, menv);
   scheme_add_global_constant("_double*", scheme_false, menv);
   scheme_add_global_constant("_bool", scheme_false, menv);
+  scheme_add_global_constant("_stdbool", scheme_false, menv);
   scheme_add_global_constant("_string/ucs-4", scheme_false, menv);
   scheme_add_global_constant("_string/utf-16", scheme_false, menv);
   scheme_add_global_constant("_bytes", scheme_false, menv);

@@ -15,6 +15,13 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 
 #include <errno.h>
 
+@@IFNDEF{SIZEOF_BOOL}{
+# define SIZEOF_BOOL 0
+}
+@@IF{SIZEOF_BOOL != 0}{
+# include <stdbool.h>
+}
+
 @@@IFNDEF{WINDOWS_DYNAMIC_LOAD}{
 # include <dlfcn.h>
 }{
@@ -812,6 +819,34 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Booleans -- implemented as an int which is 1 or 0: */
 @(defctype 'bool
    'ftype "int"
+   'pred (lambda (x aux) "1")
+   's->c "SCHEME_TRUEP"
+   'c->s (lambda (x) @list{(@|x|?scheme_true:scheme_false)}))
+
+@@@IF{SIZEOF_BOOL == 0}{
+typedef signed char stdbool;
+# define ffi_type_stdbool ffi_type_sint8
+}{
+typedef bool stdbool;
+@@@IF{SIZEOF_BOOL == 1}{
+# define ffi_type_stdbool ffi_type_sint8
+}{
+@@@IF{SIZEOF_BOOL == 2}{
+# define ffi_type_stdbool ffi_type_sint16
+}{
+@@@IF{SIZEOF_BOOL == 4}{
+# define ffi_type_stdbool ffi_type_sint32
+}{
+@@@IF{SIZEOF_BOOL == 8}{
+# define ffi_type_stdbool ffi_type_sint64
+}{
+/* ??? Pick something */
+# define ffi_type_stdbool ffi_type_int
+}}}}}
+
+/* Booleans -- implemented as an int which is 1 or 0: */
+@(defctype 'stdbool
+   'ftype "stdbool"
    'pred (lambda (x aux) "1")
    's->c "SCHEME_TRUEP"
    'c->s (lambda (x) @list{(@|x|?scheme_true:scheme_false)}))
