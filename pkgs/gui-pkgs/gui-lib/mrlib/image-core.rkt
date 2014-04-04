@@ -37,7 +37,6 @@ has been moved out).
          racket/math
          racket/contract
          "private/image-core-bitmap.rkt"
-         "image-core-wxme.rkt"
          "private/image-core-snipclass.rkt"
          "private/regmk.rkt"
          racket/snip
@@ -440,20 +439,22 @@ has been moved out).
 (define racket/base:read read)
 (define image-snipclass% 
   (class snip-class%
-    (define/override (read f)
-      (let ([lst (parse (fetch (send f get-unterminated-bytes)))])
-        (cond
-          [(not lst)
-           (make-image (make-translate 50 50 (make-ellipse 100 100 0 'solid "black"))
-                       (make-bb 100 100 100)
-                       #f
-                       #f)]
-          [else
-           (make-image (list-ref lst 0)
-                       (list-ref lst 1)
-                       #f
-                       (list-ref lst 2))])))
+    (define/override (read f) (snipclass-bytes->image (send f get-unterminated-bytes)))
     (super-new)))
+
+(define (snipclass-bytes->image bytes)
+  (define lst (parse (fetch bytes)))
+  (cond
+    [(not lst)
+     (make-image (make-translate 50 50 (make-ellipse 100 100 0 'solid "black"))
+                 (make-bb 100 100 100)
+                 #f
+                 #f)]
+    [else
+     (make-image (list-ref lst 0)
+                 (list-ref lst 1)
+                 #f
+                 (list-ref lst 2))]))
 
 (provide snip-class) 
 (define snip-class (new image-snipclass%))
@@ -1372,7 +1373,9 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          image-snip%
          
          curve-segment->path
-         mode-color->pen)
+         mode-color->pen
+         
+         snipclass-bytes->image)
 
 ;; method names
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)
