@@ -62,6 +62,8 @@
 (define-bitwise-syntax-class (and ior xor not))
 
 (define-unsafe-syntax-class exact->inexact^ (exact->inexact) unsafe-fx->fl)
+(define-unsafe-syntax-class fx->fl^         (fx->fl)         unsafe-fx->fl)
+(define-merged-syntax-class fixnum-coercion-op (exact->inexact^ fx->fl^))
 (define-literal-syntax-class add1)
 (define-literal-syntax-class sub1)
 (define-literal-syntax-class zero?)
@@ -158,7 +160,7 @@
     #:do [(log-fx-opt "unary fixnum")]
     #:with opt #'(op.unsafe 0 f.opt))
 
-  (pattern (op:exact->inexact^ n:fixnum-expr)
+  (pattern (op:fixnum-coercion-op n:fixnum-expr)
     #:do [(log-fx-opt "fixnum to float")]
     #:with opt #'(op.unsafe n.opt))
 
