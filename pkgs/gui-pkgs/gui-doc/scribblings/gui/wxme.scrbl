@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt"
           (for-label wxme wxme/editor wxme/image racket/snip
+                     racket/gui/dynamic
                      (except-in wxme/comment reader)
                      (except-in wxme/xml reader)
                      (except-in wxme/scheme reader)
