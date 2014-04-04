@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require racket/match
-         racket/list
+(require racket/list
          racket/flonum)
 
 (provide point3d-plane-dist

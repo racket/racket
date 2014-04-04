@@ -2,7 +2,7 @@
 
 ;; Renderers for intervals between functions.
 
-(require racket/contract racket/class racket/match racket/math racket/list racket/sequence
+(require racket/contract racket/class racket/match racket/math racket/list
          unstable/latent-contract/defthing
          unstable/contract
          plot/utils

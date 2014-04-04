@@ -42,29 +42,6 @@
     [xs  (cond [(not (andmap flonum? xs))  (raise-type-error 'fldistance "flonums" xs)]
                [else  (unsafe-flsqrt (flsum (λ (x) (unsafe-fl* x x)) xs))])]))
 
-(defproc (flonum-ok-for-range? [x-min rational?] [x-max rational?]
-                               [size exact-positive-integer?]) boolean?
-  (let/ec return
-    (let ([x-min  (inexact->exact (min x-min x-max))]
-          [x-max  (inexact->exact (max x-min x-max))])
-      (define step-size (/ (- x-max x-min) size))
-      
-      (define inexact-x-min (exact->inexact x-min))
-      (unless (rational? inexact-x-min) (return #f))
-      
-      (define inexact-x-max (exact->inexact x-max))
-      (unless (rational? inexact-x-max) (return #f))
-      
-      (define inexact-x-max-prev (flprev inexact-x-max))
-      (unless (rational? inexact-x-max-prev) (return #f))
-      
-      (define inexact-x-min-next (flnext inexact-x-min))
-      (unless (rational? inexact-x-min-next) (return #f))
-      
-      (define max-diff (- x-max (inexact->exact inexact-x-max-prev)))
-      (define min-diff (- (inexact->exact inexact-x-min-next) x-min))
-      (and (max-diff . < . step-size) (min-diff . < . step-size)))))
-
 ;; ===================================================================================================
 ;; Reals
 

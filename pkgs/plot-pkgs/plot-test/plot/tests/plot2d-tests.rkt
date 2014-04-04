@@ -89,6 +89,7 @@
  (plot (list (points (map vector ys xs) #:sym 'full6star #:color 1)
              (points (map vector xs ys) #:sym "B" #:color 3))))
 
+(printf "This plot should be blank:~n")
 (time
  (plot (vector-field (λ (x y) (vector +nan.0 +nan.0)))
        #:x-min -2 #:x-max 2 #:y-min -2 #:y-max 2))

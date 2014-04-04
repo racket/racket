@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list racket/flonum racket/contract
+(require racket/class racket/match racket/list racket/contract
          unstable/latent-contract/defthing
          plot/utils)
 
@@ -22,12 +22,10 @@
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (let* ([flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
-         [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)])
-    (for-2d-sample
-     (xa xb ya yb z1 z2 z3 z4) sample
-     (define vs (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4)))
-     (send area put-polygon vs)))
+  (for-2d-sample
+   (xa xb ya yb z1 z2 z3 z4) sample
+   (define vs (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4)))
+   (send area put-polygon vs))
   
   (cond [label  (rectangle-legend-entry label color style line-color line-width line-style)]
         [else   empty]))

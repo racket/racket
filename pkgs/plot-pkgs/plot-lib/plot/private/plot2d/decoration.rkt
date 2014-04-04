@@ -7,9 +7,6 @@
          unstable/contract
          plot/utils
          "../common/utils.rkt"
-         "line.rkt"
-         "interval.rkt"
-         "point.rkt"
          "clip.rkt")
 
 (provide (all-defined-out))
@@ -98,8 +95,8 @@
   (define-values (r-mins r-maxs)
     (for/lists (r-mins r-maxs) ([θ  (in-list θs)])
       (define-values (v1 v2)
-        (clip-line (vector 0 0) (vector (* max-r (cos θ)) (* max-r (sin θ)))
-                   x-min x-max y-min y-max))
+        (clip-line/bounds (vector 0 0) (vector (* max-r (cos θ)) (* max-r (sin θ)))
+                          x-min x-max y-min y-max))
       (values (if v1 (vmag v1) #f)
               (if v2 (vmag v2) #f))))
   (for/lists (θs r-mins r-maxs) ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)]

@@ -14,7 +14,8 @@
                         (list (ivl 1 2) (ivl 1 2)))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; The following two plots should be the same
+
+(printf "The following two plots should be the same:~n")
 
 (contour-colors (λ (n) '((255 0 0) (0 0 255))))
 (contour-widths (λ (n) '(.25 .5 .75)))
@@ -33,7 +34,8 @@
 (plot (contour-intervals + 0 1 0 1))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; The following two plots should be the same
+
+(printf "The following two plots should be the same:~n")
 
 (stacked-histogram-alphas (λ (n) '(0.25 0.5 0.75)))
 (stacked-histogram-colors (λ (n) '(1 2 3)))
@@ -50,7 +52,8 @@
                                (list 'c '()) (list 'd '(1/2)))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; The following two plots should be the same
+
+(printf "The following two plots should be the same:~n")
 
 (contour-interval-line-colors (λ (n) '(1 2 3)))
 (contour-interval-line-widths (λ (n) '(0.25 0.5 0.75)))
@@ -63,7 +66,8 @@
 (plot3d (contour-intervals3d + 0 1 0 1))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; The following two plots should be the same
+
+(printf "The following two plots should be the same:~n")
 
 (isosurface-colors (λ (n) '(1 2 3)))
 (isosurface-styles (λ (n) '(0 1 2)))

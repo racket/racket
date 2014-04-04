@@ -6,18 +6,20 @@
   (module config info
     (define timeout 150)))
 
+(printf "Point at 0,0:~n")
 (plot (points '(#(0 0)))
       #:x-min +min.0 #:x-max (flstep +min.0 1000)
       #:y-min 0 #:y-max 1)
 
+(printf "Point at 0,0,0:~n")
 (plot3d (points3d '(#(0 0 0)))
       #:x-min +min.0 #:x-max (flstep +min.0 1000)
       #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1)
 
-;; this should go all the way from the bottom to the top
+(printf "Steps should appear all the way from the bottom to the top:~n")
 (plot (function exact->inexact (flstep 0.0 -1) (flstep 0.0 2)))
 
-;; this should go all the way from the bottom to the top
+(printf "Steps should appear all the way from the bottom to the top:~n")
 (plot3d (surface3d (λ (x y) (exact->inexact x))
                    (flstep 0.0 -1) (flstep 0.0 2)
                    (flstep 0.0 -1) (flstep 0.0 2)))

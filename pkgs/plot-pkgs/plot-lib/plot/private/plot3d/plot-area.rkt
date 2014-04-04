@@ -1,20 +1,15 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list racket/math racket/contract racket/vector
-         racket/flonum
+(require racket/class racket/match racket/list racket/math racket/flonum
          (only-in math fl flvector->vector vector->flvector)
-         racket/promise
-         unstable/flonum
          "../common/math.rkt"
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
          "../common/draw.rkt"
-         "../common/contract.rkt"
          "../common/axis-transform.rkt"
          "../common/parameters.rkt"
-         "../common/sample.rkt"
          "../common/utils.rkt"
-         "matrix.rkt"
+         "vector.rkt"
          "clip.rkt"
          "bsp-trees.rkt"
          "bsp.rkt")
@@ -104,7 +99,8 @@
     (define/public (clear-clip-rect) (set! clipping? #f))
     
     (define (in-bounds? v)
-      (or (not clipping?) (point-in-bounds? v clip-x-min clip-x-max
+      (or (not clipping?) (point-in-bounds? v
+                                            clip-x-min clip-x-max
                                             clip-y-min clip-y-max
                                             clip-z-min clip-z-max)))
     
@@ -132,7 +128,7 @@
     ;; There are four coordinate systems:
     ;;  1. Plot coordinates (original, user-facing coordinate system)
     ;;  2. Normalized coordinates (from plot coordinates: for each axis: transform, center, and scale
-    ;;     to [-1/2,1/2]) - these are always vectors of flonum
+    ;;     to [-0.5,0.5]) - these are always flvectors
     ;;  3. View coordinates (from normalized coordinates: rotate)
     ;;  4. Device context coordinates (from view coordinates: project to 2D)
     
@@ -145,40 +141,22 @@
            (equal? (plot-y-transform) id-transform)
            (equal? (plot-z-transform) id-transform)))
     
-    (define flonum-ok? (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max))
-    
     (define plot->norm
-      (if flonum-ok?
-          (let-map
-           (x-mid y-mid z-mid x-size y-size z-size) fl
-           (if identity-transforms?
-               (match-lambda
-                 [(vector x y z)
-                  (flvector (fl/ (fl- (fl x) x-mid) x-size)
-                            (fl/ (fl- (fl y) y-mid) y-size)
-                            (fl/ (fl- (fl z) z-mid) z-size))])
-               (match-lambda
-                 [(vector (? rational? x) (? rational? y) (? rational? z))
-                  (flvector (fl/ (fl- (fl (fx x)) x-mid) x-size)
-                            (fl/ (fl- (fl (fy y)) y-mid) y-size)
-                            (fl/ (fl- (fl (fz z)) z-mid) z-size))]
-                 [(vector x y z)
-                  (flvector +nan.0 +nan.0 +nan.0)])))
-          (if identity-transforms?
-              (match-lambda
-                [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (flvector (fl (/ (- (inexact->exact x) x-mid) x-size))
-                           (fl (/ (- (inexact->exact y) y-mid) y-size))
-                           (fl (/ (- (inexact->exact z) z-mid) z-size)))]
-                [(vector x y z)
-                 (flvector +nan.0 +nan.0 +nan.0)])
-              (match-lambda
-                [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (flvector (fl (/ (- (inexact->exact (fx x)) x-mid) x-size))
-                           (fl (/ (- (inexact->exact (fy y)) y-mid) y-size))
-                           (fl (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
-                [(vector x y z)
-                 (flvector +nan.0 +nan.0 +nan.0)]))))
+      (if identity-transforms?
+          (match-lambda
+            [(vector (? rational? x) (? rational? y) (? rational? z))
+             (flvector (fl (/ (- x x-mid) x-size))
+                       (fl (/ (- y y-mid) y-size))
+                       (fl (/ (- z z-mid) z-size)))]
+            [(vector x y z)
+             (flvector +nan.0 +nan.0 +nan.0)])
+          (match-lambda
+            [(vector (? rational? x) (? rational? y) (? rational? z))
+             (flvector (fl (/ (- (inexact->exact (fx x)) x-mid) x-size))
+                       (fl (/ (- (inexact->exact (fy y)) y-mid) y-size))
+                       (fl (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
+            [(vector x y z)
+             (flvector +nan.0 +nan.0 +nan.0)])))
     
     (define rotate-theta-matrix (m3-rotate-z theta))
     (define rotate-rho-matrix (m3-rotate-x rho))
@@ -789,11 +767,11 @@
            ;; Diffuse lighting: typical Lambertian surface model (using absolute value because we
            ;; can't expect surface normals to point the right direction)
            (define diff
-             (cond [diffuse-light?  (flabs (fl3-dot normal light-dir))]
+             (cond [diffuse-light?  (flabs (flv3-dot normal light-dir))]
                    [else  1.0]))
            ;; Specular highlighting: Blinn-Phong model
            (define spec
-             (cond [specular-light?  (fl* 32.0 (expt (flabs (fl3-dot normal half-dir)) 20.0))]
+             (cond [specular-light?  (fl* 32.0 (expt (flabs (flv3-dot normal half-dir)) 20.0))]
                    [else  0.0]))
            ;; Blend ambient light with diffuse light, return specular as it is
            ;; As ambient-light -> 1.0, contribution of diffuse -> 0.0
@@ -809,7 +787,7 @@
                           vs ls normal)
         s)
       (define view-normal (norm->view normal))
-      (define cos-view (fl3-dot view-dir view-normal))
+      (define cos-view (flv3-dot view-dir view-normal))
       (cond
         [(and (cos-view . < . 0.0) (eq? face 'front))  (void)]
         [(and (cos-view . > . 0.0) (eq? face 'back))   (void)]
@@ -819,7 +797,7 @@
          (let ([pen-color    (map (λ (v) (+ (* v diff) spec)) pen-color)]
                [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)]
                [vs  (map norm->dc vs)])
-           ;(send pd set-pen "black" 0.5 'solid)
+           ;(send pd set-pen "black" 0.5 'solid)  ; for BSP debugging
            (send pd set-pen "black" 0 'transparent)
            (send pd set-brush brush-color brush-style)
            (send pd draw-polygon vs)
@@ -990,79 +968,79 @@
     ;; Drawing shapes
     
     (define/public (put-line v1 v2)
-      (let/ec return
-        (unless (and (vrational? v1) (vrational? v2)) (return (void)))
-        (let-values ([(v1 v2)  (if clipping?
-                                   (clip-line v1 v2 clip-x-min clip-x-max
-                                              clip-y-min clip-y-max
-                                              clip-z-min clip-z-max)
-                                   (values v1 v2))])
-          (unless (and v1 v2) (return (void)))
-          (cond [identity-transforms?
-                 (add-shape! plot3d-area-layer
-                             (line (line-data alpha pen-color pen-width pen-style)
-                                   (plot->norm v1)
-                                   (plot->norm v2)))]
-                [else
-                 (define vs (subdivide-line plot->dc v1 v2))
-                 (add-shape! plot3d-area-layer
-                             (lines (line-data alpha pen-color pen-width pen-style)
-                                    (map plot->norm vs)))]))))
-    
-    (define/public (put-lines vs)
-      (for ([vs  (vrational-sublists vs)])
-        (unless (empty? vs)
-          (let ([vss  (if clipping?
-                          (clip-lines vs clip-x-min clip-x-max
-                                      clip-y-min clip-y-max
-                                      clip-z-min clip-z-max)
-                          (list vs))])
-            (cond [identity-transforms?
-                   (for ([vs  (in-list vss)])
+      (let ([v1  (exact-vector3d v1)]
+            [v2  (exact-vector3d v2)])
+        (when (and v1 v2)
+          (let-values ([(v1 v2)  (if clipping?
+                                     (clip-line/bounds v1 v2
+                                                       clip-x-min clip-x-max
+                                                       clip-y-min clip-y-max
+                                                       clip-z-min clip-z-max)
+                                     (values v1 v2))])
+            (when (and v1 v2)
+              (cond [identity-transforms?
+                     (add-shape! plot3d-area-layer
+                                 (line (line-data alpha pen-color pen-width pen-style)
+                                       (plot->norm v1)
+                                       (plot->norm v2)))]
+                    [else
+                     (define vs (subdivide-line plot->dc v1 v2))
                      (add-shape! plot3d-area-layer
                                  (lines (line-data alpha pen-color pen-width pen-style)
-                                        (map plot->norm vs))))]
-                  [else
-                   (for ([vs  (in-list vss)])
-                     (let ([vs  (subdivide-lines plot->dc vs)])
-                       (add-shape! plot3d-area-layer
-                                   (lines (line-data alpha pen-color pen-width pen-style)
-                                          (map plot->norm vs)))))])))))
+                                        (map plot->norm vs)))]))))))
     
-    (define (add-polygon! vs face ls)
-      (let/ec return
-        (when (or (empty? vs) (not (andmap vrational? vs)))
-          (return empty))
-        
-        (define norm-vs (map (λ (v) (flvector->vector (plot->norm v))) vs))
-        (define normal (vector->flvector (vnormal norm-vs)))
-        (define center (vector->flvector (vcenter norm-vs)))
-        (let*-values
-            ([(vs ls)  (if clipping?
-                           (clip-polygon vs ls
-                                         clip-x-min clip-x-max
-                                         clip-y-min clip-y-max
-                                         clip-z-min clip-z-max)
-                           (values vs ls))]
-             [(vs ls)  (if identity-transforms?
-                           (values vs ls)
-                           (subdivide-polygon plot->dc vs ls))])
-          (when (empty? vs) (return empty))
-          (add-shape! plot3d-area-layer
-                      (poly (poly-data alpha center
-                                       pen-color pen-width pen-style
-                                       brush-color brush-style face)
-                            (map plot->norm vs) ls normal)))))
+    (define/public (put-lines vs)
+      (for ([vs  (in-list (exact-vector3d-sublists vs))])
+        (let ([vss  (if clipping?
+                        (clip-lines/bounds vs
+                                           clip-x-min clip-x-max
+                                           clip-y-min clip-y-max
+                                           clip-z-min clip-z-max)
+                        (list vs))])
+          (cond [identity-transforms?
+                 (for ([vs  (in-list vss)])
+                   (add-shape! plot3d-area-layer
+                               (lines (line-data alpha pen-color pen-width pen-style)
+                                      (map plot->norm vs))))]
+                [else
+                 (for ([vs  (in-list vss)])
+                   (let ([vs  (subdivide-lines plot->dc vs)])
+                     (add-shape! plot3d-area-layer
+                                 (lines (line-data alpha pen-color pen-width pen-style)
+                                        (map plot->norm vs)))))]))))
     
     (define/public (put-polygon vs [face 'both] [ls (make-list (length vs) #t)])
-      (add-polygon! vs face ls))
+      (let-values ([(vs ls)  (exact-polygon3d vs ls)])
+        (unless (empty? vs)
+          (let*-values ([(vs ls)  (if clipping?
+                                      (clip-polygon/bounds vs ls
+                                                           clip-x-min clip-x-max
+                                                           clip-y-min clip-y-max
+                                                           clip-z-min clip-z-max)
+                                      (values vs ls))]
+                        [(vs ls)  (if identity-transforms?
+                                      (values vs ls)
+                                      (subdivide-polygon plot->dc vs ls))])
+            (unless (empty? vs)
+              (define norm-vs (map plot->norm vs))
+              (define normal (flv3-normal norm-vs))
+              (define center (flv3-center norm-vs))
+              (add-shape! plot3d-area-layer
+                          (poly (poly-data alpha center
+                                           pen-color pen-width pen-style
+                                           brush-color brush-style face)
+                                norm-vs ls normal)))))))
     
     (define/public (put-rect r)
       (when (rect-rational? r)
         (let ([r  (rect-meet r bounds-rect)])
           (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
-          (define v-min (plot->norm (vector x-min y-min z-min)))
-          (define v-max (plot->norm (vector x-max y-max z-max)))
+          (define v-min (plot->norm (vector (inexact->exact x-min)
+                                            (inexact->exact y-min)
+                                            (inexact->exact z-min))))
+          (define v-max (plot->norm (vector (inexact->exact x-max)
+                                            (inexact->exact y-max)
+                                            (inexact->exact z-max))))
           (let ()
             (define x-min (flvector-ref v-min 0))
             (define y-min (flvector-ref v-min 1))
@@ -1112,13 +1090,14 @@
     (define/public (put-text str v [anchor 'center] [angle 0] [dist 0]
                              #:outline? [outline? #f]
                              #:layer [layer plot3d-area-layer])
-      (when (and (vrational? v) (in-bounds? v))
-        (add-shape! layer (points (text-data alpha anchor angle dist str
-                                             font-size font-family text-foreground outline?)
-                                  (list (plot->norm v))))))
+      (let ([v  (exact-vector3d v)])
+        (when (and v (in-bounds? v))
+          (add-shape! layer (points (text-data alpha anchor angle dist str
+                                               font-size font-family text-foreground outline?)
+                                    (list (plot->norm v)))))))
     
     (define/public (put-glyphs vs symbol size #:layer [layer plot3d-area-layer])
-      (let ([vs  (filter (λ (v) (and (vrational? v) (in-bounds? v))) vs)])
+      (let ([vs  (filter (λ (v) (and v (in-bounds? v))) (map exact-vector3d vs))])
         (unless (empty? vs)
           (add-shape! layer (points (glyph-data alpha symbol size
                                                 pen-color pen-width pen-style
@@ -1126,14 +1105,16 @@
                                     (map plot->norm vs))))))
     
     (define/public (put-arrow v1 v2)
-      (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
-        (cond [(in-bounds? v2)
-               (define c (v* (v+ v1 v2) 1/2))
-               (define outline-color (->brush-color (plot-background)))
-               (add-shape! plot3d-area-layer
-                           (points (arrow-data alpha (plot->norm v1) (plot->norm v2)
-                                               outline-color pen-color pen-width pen-style)
-                                   (list (plot->norm c))))]
-              [else
-               (put-line v1 v2)])))
+      (let ([v1  (exact-vector3d v1)]
+            [v2  (exact-vector3d v2)])
+        (when (and v1 v2 (in-bounds? v1))
+          (cond [(in-bounds? v2)
+                 (define c (v* (v+ v1 v2) 1/2))
+                 (define outline-color (->brush-color (plot-background)))
+                 (add-shape! plot3d-area-layer
+                             (points (arrow-data alpha (plot->norm v1) (plot->norm v2)
+                                                 outline-color pen-color pen-width pen-style)
+                                     (list (plot->norm c))))]
+                [else
+                 (put-line v1 v2)]))))
     )) ; end class

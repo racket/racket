@@ -2,7 +2,6 @@
 
 (require racket/class racket/match racket/list racket/flonum racket/contract racket/math
          unstable/latent-contract/defthing
-         unstable/flonum
          plot/utils)
 
 (provide (all-defined-out))
@@ -24,13 +23,10 @@
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (let* ([flonum-ok?  (flonum-ok-for-4d? x-min x-max y-min y-max z-min z-max d-min d-max)]
-         [sample      (if flonum-ok? (3d-sample-exact->inexact sample) sample)]
-         [d           (if flonum-ok? (exact->inexact d) d)])
-    (for-3d-sample
-     (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-     (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
-       (send area put-polygon vs))))
+  (for-3d-sample
+   (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+   (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
+     (send area put-polygon vs)))
   
   (cond [label  (rectangle-legend-entry
                  label color style line-color line-width line-style)]
@@ -85,10 +81,7 @@
            [alphas  (maybe-apply alphas ds)]
            [line-colors  (maybe-apply line-colors ds)]
            [line-widths  (maybe-apply line-widths ds)]
-           [line-styles  (maybe-apply line-styles ds)]
-           [flonum-ok?  (flonum-ok-for-4d? x-min x-max y-min y-max z-min z-max d-min d-max)]
-           [sample      (if flonum-ok? (3d-sample-exact->inexact sample) sample)]
-           [ds          (if flonum-ok? (map exact->inexact ds) ds)])
+           [line-styles  (maybe-apply line-styles ds)])
       (for ([d      (in-list ds)]
             [color  (in-cycle colors)]
             [style  (in-cycle styles)]
@@ -153,26 +146,24 @@
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (let* ([flonum-ok?  (flonum-ok-for-4d? x-min x-max y-min y-max z-min z-max d-min d-max)]
-         [sample      (if flonum-ok? (3d-sample-exact->inexact sample) sample)]
-         [d           (if flonum-ok? 0.0 0)])
-    (for-3d-sample
-     (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-     (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
-            (let* ([yb  -0.00001]
-                   [d3  (f xb yb za)]
-                   [d4  (f xa yb za)]
-                   [d7  (f xb yb zb)]
-                   [d8  (f xa yb zb)])
-              (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-            (let* ([ya  0.00001]
-                   [d1  (f xa ya za)]
-                   [d2  (f xb ya za)]
-                   [d5  (f xa ya zb)]
-                   [d6  (f xb ya zb)])
-              (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))]
-           [else
-            (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)])))
+  (define d 0)
+  (for-3d-sample
+   (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+   (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
+          (let* ([yb  -0.00001]
+                 [d3  (f xb yb za)]
+                 [d4  (f xa yb za)]
+                 [d7  (f xb yb zb)]
+                 [d8  (f xa yb zb)])
+            (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
+          (let* ([ya  0.00001]
+                 [d1  (f xa ya za)]
+                 [d2  (f xb ya za)]
+                 [d5  (f xa ya zb)]
+                 [d6  (f xb ya zb)])
+            (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))]
+         [else
+          (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)]))
   
   (cond [label  (rectangle-legend-entry
                  label color style line-color line-width line-style)]

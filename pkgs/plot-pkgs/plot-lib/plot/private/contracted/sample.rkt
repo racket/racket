@@ -24,12 +24,6 @@
                                 make-function->sampler
                                 make-2d-function->sampler
                                 make-3d-function->sampler
-                                sample-exact->inexact
-                                2d-sample-exact->inexact
-                                3d-sample-exact->inexact
-                                flonum-ok-for-2d?
-                                flonum-ok-for-3d?
-                                flonum-ok-for-4d?
                                 )
          (contract-out (struct mapped-function ([f (any/c . -> . any/c)]
                                                 [fmap ((listof any/c) . -> . (listof any/c))])))

@@ -3,9 +3,7 @@
 (require racket/list
          racket/match
          racket/promise
-         racket/math
          math/flonum
-         math/statistics
          "split.rkt")
 
 (provide

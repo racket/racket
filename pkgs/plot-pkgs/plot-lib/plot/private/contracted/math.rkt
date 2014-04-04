@@ -5,7 +5,7 @@
 (require "../common/math.rkt")
 (provide equal?*
          ;; Flonums
-         flblend flsum fldistance (activate-contract-out flonum-ok-for-range?)
+         flblend flsum fldistance
          ;; Reals
          maybe-inexact->exact
          min* max* blend atan2 sum real-modulo distance

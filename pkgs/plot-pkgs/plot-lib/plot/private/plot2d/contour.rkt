@@ -2,7 +2,7 @@
 
 ;; Renderers for contour lines and contour intervals
 
-(require racket/contract racket/class racket/match racket/list racket/flonum racket/vector racket/math
+(require racket/contract racket/class racket/match racket/list racket/vector
          unstable/latent-contract/defthing
          plot/utils
          "../common/utils.rkt")
@@ -23,13 +23,10 @@
   (when (<= z-min z z-max)
     (send area put-alpha alpha)
     (send area put-pen color width style)
-    (let* ([flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
-           [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
-           [z           (if flonum-ok? (exact->inexact z) z)])
-      (for-2d-sample
-       (xa xb ya yb z1 z2 z3 z4) sample
-       (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-         (send/apply area put-line (map (λ (v) (vector-take v 2)) line))))))
+    (for-2d-sample
+     (xa xb ya yb z1 z2 z3 z4) sample
+     (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+       (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
   
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
@@ -72,10 +69,7 @@
       (let* ([colors  (maybe-apply colors zs)]
              [widths  (maybe-apply widths zs)]
              [styles  (maybe-apply styles zs)]
-             [alphas  (maybe-apply alphas zs)]
-             [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
-             [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
-             [zs          (if flonum-ok? (map exact->inexact zs) zs)])
+             [alphas  (maybe-apply alphas zs)])
         (for ([z      (in-list zs)]
               [color  (in-cycle colors)]
               [width  (in-cycle widths)]
@@ -138,10 +132,7 @@
     (send area put-pen 0 1 'transparent)
     (let* ([colors  (map ->brush-color (maybe-apply colors z-ivls))]
            [styles  (map ->brush-style (maybe-apply styles z-ivls))]
-           [alphas  (maybe-apply alphas z-ivls)]
-           [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
-           [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
-           [zs          (if flonum-ok? (map exact->inexact zs) zs)])
+           [alphas  (maybe-apply alphas z-ivls)])
       (for ([za     (in-list zs)]
             [zb     (in-list (rest zs))]
             [color  (in-cycle colors)]

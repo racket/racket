@@ -12,18 +12,10 @@
   (plot-y-transform cbrt-transform)
   (plot-z-transform cbrt-transform))
 
-#;
-(plot3d (contour-intervals3d * -1 1 -1 1 #:samples 3 #:line-widths '(2)))
-
-(plot3d (list (surface3d * -1 1 -1 1 #:samples 2)
+(plot3d (list (contour-intervals3d * -1 1 -1 1 #:samples 2)
               (isosurface3d (λ (x y z) z)
                               0 -1 1 -1 1 -1 1
-                              #:samples 2 #:color 3)
-              #;
-              (isosurface3d (λ (x y z) (+ x y -0.5))
-                              0 -1 1 -1 1 -1 1
-                              #:samples 2 #:color 2)
-              ))
+                              #:samples 2 #:color 3)))
 
 (plot3d (list (parametric3d (λ (t)
                               (list (* 0.5 (cos (* 2 pi (- t))))
@@ -42,8 +34,7 @@
                             #:samples 53
                             #:color "red"
                             #:width 15
-                            #:alpha 0.6)
-              ))
+                            #:alpha 0.6)))
 
 (plot3d (list (isosurface3d (λ (x y z) (+ x y z)) 0 -1 1 -1 1 -1 1
                             #:samples 2
@@ -113,6 +104,10 @@
     #:y-min -1 #:y-max 1
     ;#:out-file "test.pdf"
     )))
+
+(define (f2 x y)
+  (let ([x  (fl x)] [y  (fl y)])
+    (- (sqrt (+ (abs y) (abs x))))))
 
 (plot3d (list (surface3d * -1 1 -1 1 #:samples 6 #:alpha 0.75 #:color 1)
               (surface3d (λ (x y) (+ 0.1 (* x y))) -1 1 -1 1 #:samples 6 #:alpha 0.75 #:color 2)

@@ -1,18 +1,16 @@
 #lang racket/base
 
-(require racket/draw racket/class racket/contract racket/match racket/math racket/list racket/string
-         racket/flonum
+(require racket/class racket/match racket/math racket/list racket/flonum
+         (only-in math/flonum fl)
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
-         "../common/contract.rkt"
          "../common/math.rkt"
          "../common/draw.rkt"
          "../common/axis-transform.rkt"
-         "../common/sample.rkt"
-         "../common/legend.rkt"
          "../common/parameters.rkt"
          "../common/utils.rkt"
-         "clip.rkt")
+         "clip.rkt"
+         "vector.rkt")
 
 (provide (all-defined-out))
 
@@ -87,45 +85,20 @@
       (and (equal? (plot-x-transform) id-transform)
            (equal? (plot-y-transform) id-transform)))
     
-    (define flonum-ok? (flonum-ok-for-2d? x-min x-max y-min y-max))
-    (when flonum-ok?
-      (set! x-min (exact->inexact x-min))
-      (set! x-max (exact->inexact x-max))
-      (set! y-min (exact->inexact y-min))
-      (set! y-max (exact->inexact y-max))
-      (set! x-size (exact->inexact x-size))
-      (set! y-size (exact->inexact y-size))
-      (set! x-mid (exact->inexact x-mid))
-      (set! y-mid (exact->inexact y-mid)))
-    
     (define plot->view
-      (if flonum-ok?
-          (let-map
-           (x-min y-min x-size y-size) exact->inexact
-           (if identity-transforms?
-               (match-lambda
-                 [(vector x y)
-                  (vector (fl/ (fl- (exact->inexact x) x-min) x-size)
-                          (fl/ (fl- (exact->inexact y) y-min) y-size))])
-               (match-lambda
-                 [(vector (? rational? x) (? rational? y))
-                  (vector (fl/ (fl- (exact->inexact (fx x)) x-min) x-size)
-                          (fl/ (fl- (exact->inexact (fy y)) y-min) y-size))]
-                 [(vector x y)
-                  (vector +nan.0 +nan.0)])))
-          (if identity-transforms?
-              (match-lambda
-                [(vector (? rational? x) (? rational? y))
-                 (vector (exact->inexact (/ (- (inexact->exact x) x-min) x-size))
-                         (exact->inexact (/ (- (inexact->exact y) y-min) y-size)))]
-                [(vector x y)
-                 (vector +nan.0 +nan.0)])
-              (match-lambda
-                [(vector (? rational? x) (? rational? y))
-                 (vector (exact->inexact (/ (- (inexact->exact (fx x)) x-min) x-size))
-                         (exact->inexact (/ (- (inexact->exact (fy y)) y-min) y-size)))]
-                [(vector x y)
-                 (vector +nan.0 +nan.0)]))))
+      (if identity-transforms?
+          (match-lambda
+            [(vector (? rational? x) (? rational? y))
+             (vector (fl (/ (- (inexact->exact x) x-min) x-size))
+                     (fl (/ (- (inexact->exact y) y-min) y-size)))]
+            [(vector x y)
+             (vector +nan.0 +nan.0)])
+          (match-lambda
+            [(vector (? rational? x) (? rational? y))
+             (vector (fl (/ (- (inexact->exact (fx x)) x-min) x-size))
+                     (fl (/ (- (inexact->exact (fy y)) y-min) y-size)))]
+            [(vector x y)
+             (vector +nan.0 +nan.0)])))
     
     (define view->dc #f)
     (define (plot->dc v) (view->dc (plot->view v)))
@@ -144,7 +117,7 @@
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
       (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
       (let-map
-       (area-x-min area-y-max area-per-view-x area-per-view-y) exact->inexact
+       (area-x-min area-y-max area-per-view-x area-per-view-y) fl
        (λ (v)
          (match-define (vector x y) v)
          (vector (fl+ area-x-min (fl* x area-per-view-x))
@@ -503,61 +476,69 @@
     ;; Shapes
     
     (define/public (put-lines vs)
-      (for ([vs  (vrational-sublists vs)])
-        (for ([vs  (if clipping?
-                       (in-list (clip-lines vs clip-x-min clip-x-max
-                                            clip-y-min clip-y-max))
-                       (in-value vs))])
-          (when (not (empty? vs))
-            (let* ([vs  (if identity-transforms? vs (subdivide-lines plot->dc vs))]
-                   [vs  (map (λ (v) (plot->dc v)) vs)])
-              (send pd draw-lines vs))))))
+      (for ([vs  (in-list (exact-vector2d-sublists vs))])
+        (let ([vss  (if clipping?
+                        (clip-lines/bounds vs
+                                           clip-x-min clip-x-max
+                                           clip-y-min clip-y-max)
+                        (list vs))])
+          (for ([vs  (in-list vss)])
+            (unless (empty? vs)
+              (let* ([vs  (if identity-transforms? vs (subdivide-lines plot->dc vs))]
+                     [vs  (map plot->dc vs)])
+                (send pd draw-lines vs)))))))
     
     (define/public (put-line v1 v2)
-      (when (and (vrational? v1) (vrational? v2))
-        (let-values ([(v1 v2)  (if clipping?
-                                   (clip-line v1 v2 clip-x-min clip-x-max
-                                              clip-y-min clip-y-max)
-                                   (values v1 v2))])
-          (when (and v1 v2)
-            (if identity-transforms?
-                (send pd draw-line (plot->dc v1) (plot->dc v2))
-                (send pd draw-lines (map (λ (v) (plot->dc v))
-                                         (subdivide-line plot->dc v1 v2))))))))
+      (let ([v1  (exact-vector2d v1)]
+            [v2  (exact-vector2d v2)])
+        (when (and v1 v2)
+          (let-values ([(v1 v2)  (if clipping?
+                                     (clip-line/bounds v1 v2
+                                                       clip-x-min clip-x-max
+                                                       clip-y-min clip-y-max)
+                                     (values v1 v2))])
+            (when (and v1 v2)
+              (if identity-transforms?
+                  (send pd draw-line (plot->dc v1) (plot->dc v2))
+                  (send pd draw-lines (map plot->dc (subdivide-line plot->dc v1 v2)))))))))
     
     (define/public (put-polygon vs)
-      (when (andmap vrational? vs)
-        (let* ([vs  (if clipping?
-                        (clip-polygon vs clip-x-min clip-x-max
-                                      clip-y-min clip-y-max)
-                        vs)])
-          (when (not (empty? vs))
-            (if identity-transforms?
-                (send pd draw-polygon (map (λ (v) (plot->dc v)) vs))
-                (send pd draw-polygon (map (λ (v) (plot->dc v))
-                                           (subdivide-polygon plot->dc vs))))))))
+      (define ls (make-list (length vs) #t))
+      (let-values ([(vs ls)  (exact-polygon2d vs ls)])
+        (unless (empty? vs)
+          (let-values ([(vs ls)  (if clipping?
+                                     (clip-polygon/bounds vs ls
+                                                          clip-x-min clip-x-max
+                                                          clip-y-min clip-y-max)
+                                     (values vs ls))])
+            (unless (empty? vs)
+              (if identity-transforms?
+                  (send pd draw-polygon (map plot->dc vs))
+                  (send pd draw-polygon (map plot->dc (subdivide-polygon plot->dc vs)))))))))
     
     (define/public (put-rect r)
       (when (rect-rational? r)
         (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
         (put-polygon (list (vector x1 y1) (vector x2 y1) (vector x2 y2) (vector x1 y2)))))
     
-    (define/public (put-text str v [anchor 'top-left] [angle 0] [dist 0]
-                             #:outline? [outline? #f])
-      (when (and (vrational? v) (in-bounds? v))
-        (send pd draw-text str (plot->dc v) anchor angle dist #:outline? outline?)))
+    (define/public (put-text str v [anchor 'top-left] [angle 0] [dist 0] #:outline? [outline? #f])
+      (let ([v  (exact-vector2d v)])
+        (when (and v (in-bounds? v))
+          (send pd draw-text str (plot->dc v) anchor angle dist #:outline? outline?))))
     
     (define/public (put-glyphs vs symbol size)
-      (send pd draw-glyphs (map (λ (v) (plot->dc v))
-                                (filter (λ (v) (and (vrational? v) (in-bounds? v)))
-                                        vs))
-            symbol size))
-    
+      (let ([vs  (filter (λ (v) (and v (in-bounds? v))) (map exact-vector2d vs))])
+        (unless (empty? vs)
+          (send pd draw-glyphs (map plot->dc vs) symbol size))))
+      
     (define/public (put-arrow v1 v2)
-      (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
-        (send pd draw-arrow (plot->dc v1) (plot->dc v2))))
+      (let ([v1  (exact-vector2d v1)]
+            [v2  (exact-vector2d v2)])
+        (when (and v1 v2 (in-bounds? v1))
+          (send pd draw-arrow (plot->dc v1) (plot->dc v2)))))
     
     (define/public (put-tick v r angle)
-      (when (and (vrational? v) (in-bounds? v))
-        (send pd draw-tick (plot->dc v) r angle)))
+      (let ([v  (exact-vector2d v)])
+        (when (and v (in-bounds? v))
+          (send pd draw-tick (plot->dc v) r angle))))
     ))
