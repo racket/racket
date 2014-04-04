@@ -155,20 +155,44 @@ Sets the content of @racket[box] to @racket[v].}
 @include-section["procedures.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "void"]{Void and Undefined}
+@section[#:tag "void"]{Void}
 
 The constant @|void-const| is returned by most forms and procedures
-that have a side-effect and no useful result. The constant
-@|undefined-const| is used as the initial value for @racket[letrec]
-bindings. 
+that have a side-effect and no useful result.
 
-The @|void-const| value is always @racket[eq?] to itself, and the
-@|undefined-const| value is also @racket[eq?] to itself.
+The @|void-const| value is always @racket[eq?] to itself.
 
-@defproc[(void? [v any/c]) void?]{Returns @racket[#t] if @racket[v] is the
+@defproc[(void? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is the
  constant @|void-const|, @racket[#f] otherwise.}
 
 
 @defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
  @racket[v] argument is ignored.}
 
+
+@; ----------------------------------------------------------------------
+@section[#:tag "undefined"]{Undefined}
+
+The constant @|undefined-const| is used as the initial value for
+@racket[letrec] bindings.
+
+The @|undefined-const| value is always @racket[eq?] to itself.
+
+@note-lib[racket/undefined]
+
+@history[#:added "6.0.0.6"]
+
+@defproc[(undefined? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is the
+ constant @|undefined-const|, @racket[#f] otherwise.}
+
+
+@defthing[undefined undefined?]{The @|undefined-const| constant.}
+
+@defproc[(check-not-undefined [v any/c] [sym symbol?]) (and/c any/c (not/c undefined?))]{
+
+Checks whether @racket[v] is @|undefined-const|, and raises
+@racket[exn:fail:contract:variable] in that case with an error message
+along the lines of ``@racket[sym]: variable used before its definition.''
+If @racket[v] is not @|undefined-const|, then @racket[v] is returned.
+
+}
