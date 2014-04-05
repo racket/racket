@@ -266,12 +266,13 @@
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
 
-    (when (memq 'toolbar-button style)
-      (atomically
-       (let ([tb (tell (tell NSToolbar alloc) initWithIdentifier: #:type _NSString "Ok")])
-         (tellv cocoa setToolbar: tb)
-         (tellv tb setVisible: #:type _BOOL #f)
-         (tellv tb release))))
+    (unless (version-10.7-or-later?)
+      (when (memq 'toolbar-button style)
+        (atomically
+         (let ([tb (tell (tell NSToolbar alloc) initWithIdentifier: #:type _NSString "Ok")])
+           (tellv cocoa setToolbar: tb)
+           (tellv tb setVisible: #:type _BOOL #f)
+           (tellv tb release)))))
 
     (internal-move #f (or y 0))
 

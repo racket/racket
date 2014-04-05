@@ -70,8 +70,9 @@ some platforms:
  (Windows)}
 
  @item{@racket['toolbar-button] --- includes a toolbar button on the
- frame's title bar (Mac OS X); a click on the toolbar button triggers
+ frame's title bar (Mac OS X 10.6 and earlier); a click on the toolbar button triggers
  a call to @method[frame% on-toolbar-button-click]}
+
  @item{@racket['hide-menu-bar] --- hides the menu bar and dock when
  the frame is active (Mac OS X) or asks the window manager to make
  the frame fullscreen (Unix)}
@@ -87,10 +88,10 @@ some platforms:
  @item{@racket['metal] --- ignored (formerly supported for Mac OS X)}
 
  @item{@racket['fullscreen-button] --- includes a button on the
- frame's title bar to put the frame in fullscreen mode (Mac OS X)}
+ frame's title bar to put the frame in fullscreen mode (Mac OS X 10.7 and later)}
 
  @item{@racket['fullscreen-aux] --- allows the frame to accompany
- another that is in fullscreen mode (Mac OS X)}
+ another that is in fullscreen mode (Mac OS X 10.7 and later)}
 
 ]
 
