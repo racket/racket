@@ -4405,6 +4405,7 @@
       ;                          
       ;                          
       
+      (define definitions-canvas #f)
       (define definitions-text (new (drracket:get/extend:get-definitions-text)))
       
       ;; tabs : (listof tab)
@@ -4491,7 +4492,6 @@
                                    (unit-frame this)
                                    (parent panel-with-tabs))]
       
-      [define definitions-canvas #f]
       (initialize-definitions-canvas)
       [define definitions-canvases (list definitions-canvas)]
       [define interactions-canvas (new (drracket:get/extend:get-interactions-canvas)
