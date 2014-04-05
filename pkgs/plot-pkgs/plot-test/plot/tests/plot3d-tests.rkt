@@ -11,6 +11,10 @@
 (time
  (plot3d (points3d empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
 
+(printf "This plot should be empty:~n")
+(plot3d (rectangles3d (list (list (ivl 0 1) (ivl 0 1) (ivl 0 1))))
+      #:x-min 2 #:x-max 3)
+
 (parameterize ([plot-background  "black"]
                [plot-foreground  "white"]
                [plot-background-alpha  1/2]

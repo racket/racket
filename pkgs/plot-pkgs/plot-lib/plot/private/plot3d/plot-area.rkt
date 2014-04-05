@@ -1033,8 +1033,8 @@
                                 norm-vs ls normal)))))))
     
     (define/public (put-rect r)
-      (when (rect-rational? r)
-        (let ([r  (rect-meet r bounds-rect)])
+      (let ([r  (if (rect-rational? r) (rect-meet r bounds-rect) r)])
+        (when (rect-rational? r)
           (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
           (define v-min (plot->norm (vector (inexact->exact x-min)
                                             (inexact->exact y-min)

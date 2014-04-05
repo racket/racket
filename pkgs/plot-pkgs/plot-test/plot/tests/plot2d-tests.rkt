@@ -18,6 +18,10 @@
 (time
  (plot (points empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1))
 
+(printf "Plot should be empty:~n")
+(plot (rectangles (list (list (ivl 0 1) (ivl 0 1))))
+      #:x-min 2 #:x-max 3)
+
 (plot (list (function values -4 4) (axes 1 2)))
 
 (time (plot (function values 0 1000)))
