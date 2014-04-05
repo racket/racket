@@ -174,13 +174,13 @@
                           (ivl z1 z2))))
       (define max-num (apply max (map length zss)))
       (for/list ([z-ivls  (in-list (transpose z-ivlss))]
-                 [color   (in-cycle (maybe-apply colors max-num))]
-                 [style   (in-cycle (maybe-apply styles max-num))]
-                 [line-color  (in-cycle (maybe-apply line-colors max-num))]
-                 [line-width  (in-cycle (maybe-apply line-widths max-num))]
-                 [line-style  (in-cycle (maybe-apply line-styles max-num))]
-                 [alpha   (in-cycle (maybe-apply alphas max-num))]
-                 [label   (in-cycle (maybe-apply labels max-num))])
+                 [color   (in-cycle* (maybe-apply colors max-num))]
+                 [style   (in-cycle* (maybe-apply styles max-num))]
+                 [line-color  (in-cycle* (maybe-apply line-colors max-num))]
+                 [line-width  (in-cycle* (maybe-apply line-widths max-num))]
+                 [line-style  (in-cycle* (maybe-apply line-styles max-num))]
+                 [alpha   (in-cycle* (maybe-apply alphas max-num))]
+                 [label   (in-cycle* (maybe-apply labels max-num))])
         (discrete-histogram3d
          (map vector cat1s cat2s z-ivls)
          #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max #:gap gap

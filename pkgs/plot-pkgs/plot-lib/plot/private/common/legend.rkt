@@ -34,9 +34,9 @@
   (define hash
     (for/fold ([hash  empty]) ([z        (in-list zs)]
                                [z-label  (in-list z-labels)]
-                               [color    (in-cycle (maybe-apply colors zs))]
-                               [width    (in-cycle (maybe-apply widths zs))]
-                               [style    (in-cycle (maybe-apply styles zs))])
+                               [color    (in-cycle* (maybe-apply colors zs))]
+                               [width    (in-cycle* (maybe-apply widths zs))]
+                               [style    (in-cycle* (maybe-apply styles zs))])
       (assoc-cons hash (list color width style) z-label)))
   
   (reverse
@@ -72,11 +72,11 @@
   (define digits (digits-for-range z-min z-max))
   (define hash
     (for/fold ([hash  empty]) ([z           (in-list zs)]
-                               [color       (in-cycle (maybe-apply colors zs))]
-                               [style       (in-cycle (maybe-apply styles zs))]
-                               [line-color  (in-cycle (maybe-apply line-colors zs))]
-                               [line-width  (in-cycle (maybe-apply line-widths zs))]
-                               [line-style  (in-cycle (maybe-apply line-styles zs))])
+                               [color       (in-cycle* (maybe-apply colors zs))]
+                               [style       (in-cycle* (maybe-apply styles zs))]
+                               [line-color  (in-cycle* (maybe-apply line-colors zs))]
+                               [line-width  (in-cycle* (maybe-apply line-widths zs))]
+                               [line-style  (in-cycle* (maybe-apply line-styles zs))])
       (define entry-label (real->plot-label z digits))
       (assoc-cons hash (list color style line-color line-width line-style) entry-label)))
   
@@ -126,17 +126,17 @@
                                   ) (listof legend-entry?)
   (define hash
     (for/fold ([hash  empty]) ([ivl-label    (in-list ivl-labels)]
-                               [color        (in-cycle (maybe-apply colors ivls))]
-                               [style        (in-cycle (maybe-apply styles ivls))]
-                               [line-color   (in-cycle (maybe-apply line-colors ivls))]
-                               [line-width   (in-cycle (maybe-apply line-widths ivls))]
-                               [line-style   (in-cycle (maybe-apply line-styles ivls))]
-                               [line1-color  (in-cycle (maybe-apply line1-colors ivls))]
-                               [line1-width  (in-cycle (maybe-apply line1-widths ivls))]
-                               [line1-style  (in-cycle (maybe-apply line1-styles ivls))]
-                               [line2-color  (in-cycle (maybe-apply line2-colors ivls))]
-                               [line2-width  (in-cycle (maybe-apply line2-widths ivls))]
-                               [line2-style  (in-cycle (maybe-apply line2-styles ivls))])
+                               [color        (in-cycle* (maybe-apply colors ivls))]
+                               [style        (in-cycle* (maybe-apply styles ivls))]
+                               [line-color   (in-cycle* (maybe-apply line-colors ivls))]
+                               [line-width   (in-cycle* (maybe-apply line-widths ivls))]
+                               [line-style   (in-cycle* (maybe-apply line-styles ivls))]
+                               [line1-color  (in-cycle* (maybe-apply line1-colors ivls))]
+                               [line1-width  (in-cycle* (maybe-apply line1-widths ivls))]
+                               [line1-style  (in-cycle* (maybe-apply line1-styles ivls))]
+                               [line2-color  (in-cycle* (maybe-apply line2-colors ivls))]
+                               [line2-width  (in-cycle* (maybe-apply line2-widths ivls))]
+                               [line2-style  (in-cycle* (maybe-apply line2-styles ivls))])
       (assoc-cons hash
                   (list color style line-color line-width line-style
                         line1-color line1-width line1-style

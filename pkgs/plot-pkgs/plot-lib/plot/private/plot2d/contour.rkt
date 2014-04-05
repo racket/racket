@@ -64,24 +64,22 @@
     
     (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
     
-    ;; need to check this or in-cycle below does an infinite loop (I think it's an in-cycle bug)
-    (unless (empty? zs)
-      (let* ([colors  (maybe-apply colors zs)]
-             [widths  (maybe-apply widths zs)]
-             [styles  (maybe-apply styles zs)]
-             [alphas  (maybe-apply alphas zs)])
-        (for ([z      (in-list zs)]
-              [color  (in-cycle colors)]
-              [width  (in-cycle widths)]
-              [style  (in-cycle styles)]
-              [alpha  (in-cycle alphas)])
-          (send area put-alpha alpha)
-          (send area put-pen color width style)
-          (for-2d-sample
-           (xa xb ya yb z1 z2 z3 z4) sample
-           (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-             (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
-             (send area put-line v1 v2))))))
+    (let* ([colors  (maybe-apply colors zs)]
+           [widths  (maybe-apply widths zs)]
+           [styles  (maybe-apply styles zs)]
+           [alphas  (maybe-apply alphas zs)])
+      (for ([z      (in-list zs)]
+            [color  (in-cycle* colors)]
+            [width  (in-cycle* widths)]
+            [style  (in-cycle* styles)]
+            [alpha  (in-cycle* alphas)])
+        (send area put-alpha alpha)
+        (send area put-pen color width style)
+        (for-2d-sample
+         (xa xb ya yb z1 z2 z3 z4) sample
+         (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+           (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
+           (send area put-line v1 v2)))))
     
     (cond [(and label (not (empty? zs)))  (line-legend-entries label zs labels colors widths styles)]
           [else  empty])))
@@ -135,9 +133,9 @@
            [alphas  (maybe-apply alphas z-ivls)])
       (for ([za     (in-list zs)]
             [zb     (in-list (rest zs))]
-            [color  (in-cycle colors)]
-            [style  (in-cycle styles)]
-            [alpha  (in-cycle alphas)])
+            [color  (in-cycle* colors)]
+            [style  (in-cycle* styles)]
+            [alpha  (in-cycle* alphas)])
         (send area put-brush color style)
         (send area put-alpha alpha)
         (for-2d-sample
@@ -150,11 +148,11 @@
       
       (define n (- (length zs) 2))
       (define contour-colors*
-        (append (list 0) (sequence-take (in-cycle (maybe-apply contour-colors zs)) 0 n) (list 0)))
+        (append (list 0) (sequence-take (in-cycle* (maybe-apply contour-colors zs)) 0 n) (list 0)))
       (define contour-widths*
-        (append (list 0) (sequence-take (in-cycle (maybe-apply contour-widths zs)) 0 n) (list 0)))
+        (append (list 0) (sequence-take (in-cycle* (maybe-apply contour-widths zs)) 0 n) (list 0)))
       (define contour-styles*
-        (append '(transparent) (sequence-take (in-cycle (maybe-apply contour-styles zs)) 0 n)
+        (append '(transparent) (sequence-take (in-cycle* (maybe-apply contour-styles zs)) 0 n)
                 '(transparent)))
       
       (cond [label  (interval-legend-entries

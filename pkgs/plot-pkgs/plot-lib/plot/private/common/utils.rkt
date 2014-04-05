@@ -6,6 +6,10 @@
 
 (provide (all-defined-out))
 
+(define (in-cycle* s)
+  (define n (sequence-length s))
+  (if (zero? n) empty-sequence (in-cycle s)))
+
 (define (sequence-take seq start end)
   (for/list ([e  (sequence-tail seq start)] 
              [_  (in-range (- end start))])

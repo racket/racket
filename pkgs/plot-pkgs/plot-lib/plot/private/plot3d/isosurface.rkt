@@ -2,7 +2,8 @@
 
 (require racket/class racket/match racket/list racket/flonum racket/contract racket/math
          unstable/latent-contract/defthing
-         plot/utils)
+         plot/utils
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -74,28 +75,26 @@
     (cond [(and d-min d-max)  (contour-ticks (plot-d-ticks) d-min d-max levels #f)]
           [else  empty]))
   
-  ;; need to check this or in-cycle below does an infinite loop (I think it's an in-cycle bug)
-  (unless (empty? ds)
-    (let* ([colors  (maybe-apply colors ds)]
-           [styles  (maybe-apply styles ds)]
-           [alphas  (maybe-apply alphas ds)]
-           [line-colors  (maybe-apply line-colors ds)]
-           [line-widths  (maybe-apply line-widths ds)]
-           [line-styles  (maybe-apply line-styles ds)])
-      (for ([d      (in-list ds)]
-            [color  (in-cycle colors)]
-            [style  (in-cycle styles)]
-            [alpha  (in-cycle alphas)]
-            [line-color  (in-cycle line-colors)]
-            [line-width  (in-cycle line-widths)]
-            [line-style  (in-cycle line-styles)])
-        (send area put-alpha alpha)
-        (send area put-brush color style)
-        (send area put-pen line-color line-width line-style)
-        (for-3d-sample
-         (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-         (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
-           (send area put-polygon vs))))))
+  (let* ([colors  (maybe-apply colors ds)]
+         [styles  (maybe-apply styles ds)]
+         [alphas  (maybe-apply alphas ds)]
+         [line-colors  (maybe-apply line-colors ds)]
+         [line-widths  (maybe-apply line-widths ds)]
+         [line-styles  (maybe-apply line-styles ds)])
+    (for ([d      (in-list ds)]
+          [color  (in-cycle* colors)]
+          [style  (in-cycle* styles)]
+          [alpha  (in-cycle* alphas)]
+          [line-color  (in-cycle* line-colors)]
+          [line-width  (in-cycle* line-widths)]
+          [line-style  (in-cycle* line-styles)])
+      (send area put-alpha alpha)
+      (send area put-brush color style)
+      (send area put-pen line-color line-width line-style)
+      (for-3d-sample
+       (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+       (for ([vs  (in-list (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))])
+         (send area put-polygon vs)))))
   
   (cond
     [(and label (not (empty? ds)))  (rectangle-legend-entries

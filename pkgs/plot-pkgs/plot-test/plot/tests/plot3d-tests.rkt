@@ -4,6 +4,7 @@
 
 ;(plot-new-window? #t)
 
+(printf "The following two plots should be empty:~n")
 (time
  (plot3d empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
 

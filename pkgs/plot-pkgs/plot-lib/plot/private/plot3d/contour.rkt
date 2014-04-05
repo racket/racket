@@ -70,10 +70,10 @@
          [styles  (maybe-apply styles zs)]
          [alphas  (maybe-apply alphas zs)])
     (for ([z  (in-list zs)]
-          [color  (in-cycle colors)]
-          [width  (in-cycle widths)]
-          [style  (in-cycle styles)]
-          [alpha  (in-cycle alphas)])
+          [color  (in-cycle* colors)]
+          [width  (in-cycle* widths)]
+          [style  (in-cycle* styles)]
+          [alpha  (in-cycle* alphas)])
       (send area put-alpha alpha)
       (send area put-pen color width style)
       (for-2d-sample
@@ -138,12 +138,12 @@
          [line-styles  (maybe-apply line-styles z-ivls)])
     (for ([za  (in-list zs)]
           [zb  (in-list (rest zs))]
-          [color  (in-cycle colors)]
-          [style  (in-cycle styles)]
-          [alpha  (in-cycle alphas)]
-          [line-color  (in-cycle line-colors)]
-          [line-width  (in-cycle line-widths)]
-          [line-style  (in-cycle line-styles)])
+          [color  (in-cycle* colors)]
+          [style  (in-cycle* styles)]
+          [alpha  (in-cycle* alphas)]
+          [line-color  (in-cycle* line-colors)]
+          [line-width  (in-cycle* line-widths)]
+          [line-style  (in-cycle* line-styles)])
       (send area put-alpha alpha)
       (send area put-pen line-color line-width line-style)
       (send area put-brush color style)
@@ -164,11 +164,11 @@
     
     (define n (- (length zs) 2))
     (define contour-colors*
-      (append (list 0) (sequence-take (in-cycle (maybe-apply contour-colors zs)) 0 n) (list 0)))
+      (append (list 0) (sequence-take (in-cycle* (maybe-apply contour-colors zs)) 0 n) (list 0)))
     (define contour-widths*
-      (append (list 0) (sequence-take (in-cycle (maybe-apply contour-widths zs)) 0 n) (list 0)))
+      (append (list 0) (sequence-take (in-cycle* (maybe-apply contour-widths zs)) 0 n) (list 0)))
     (define contour-styles*
-      (append '(transparent) (sequence-take (in-cycle (maybe-apply contour-styles zs)) 0 n)
+      (append '(transparent) (sequence-take (in-cycle* (maybe-apply contour-styles zs)) 0 n)
               '(transparent)))
     
     (cond [label  (interval-legend-entries
