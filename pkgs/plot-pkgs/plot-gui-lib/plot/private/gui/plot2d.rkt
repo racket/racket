@@ -17,7 +17,7 @@
 
 ;; Require lazily, in case someone wants to just (require plot) in a headless setup
 (lazy-require ["snip2d.rkt" (make-2d-plot-snip)]
-              ["gui.rkt" (make-snip-frame with-new-eventspace)])
+              ["gui.rkt" (make-snip-frame)])
 
 (provide plot-snip plot-frame plot)
 
@@ -128,7 +128,7 @@
     (when out-file
       (call plot-file out-file out-kind))
     
-    (cond [(plot-new-window?)  (define frame (with-new-eventspace (λ () (call plot-frame))))
+    (cond [(plot-new-window?)  (define frame (call plot-frame))
                                (send frame show #t)
                                (void)]
           [else  (call plot-snip)])))

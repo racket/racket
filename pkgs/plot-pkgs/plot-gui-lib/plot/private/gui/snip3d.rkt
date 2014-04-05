@@ -131,7 +131,7 @@
         (when (not (update-thread-running?))
           (start-update-thread #t))
         (set-update #t))
-      #f)
+      (super resize w h))
     ))
 
 (define (make-3d-plot-snip

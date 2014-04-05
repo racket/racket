@@ -205,7 +205,7 @@
         (when (not (update-thread-running?))
           (start-update-thread #t))
         (set-update #t))
-      #f)
+      (super resize w h))
     ))
 
 (define (make-2d-plot-snip

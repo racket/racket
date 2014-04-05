@@ -20,8 +20,7 @@
   (define (make-snip w h) snip)
   
   (define frame
-    (parameterize ([current-eventspace  (make-eventspace)])
-      (new snip-frame% [label label] [width (+ 20 width)] [height (+ 20 height)])))
+    (new snip-frame% [label label] [width (+ 20 width)] [height (+ 20 height)]))
   
   (new snip-canvas%
        [parent frame]
@@ -30,7 +29,3 @@
        [horizontal-inset 5] [vertical-inset 5])
   
   frame)
-
-(define (with-new-eventspace thnk)
-  (parameterize ([current-eventspace  (make-eventspace)])
-    (thnk)))
