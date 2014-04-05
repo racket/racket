@@ -520,12 +520,6 @@ table.tocsublist {
     font-size: 110%
 }
 
-/* hack to add space around .toptoclink because markup is all td */
-.toptoclink:after {
-    content: " ";
-    font-size: 3rem;
-}
-
 .toclink {
     font-size: inherit;
 }
