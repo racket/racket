@@ -22,7 +22,7 @@
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
 
-(defproc (lines [vs  (sequence/c (sequence/c real?))]
+(defproc (lines [vs  (sequence/c (sequence/c #:min-count 2 real?))]
                 [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
                 [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                 [#:color color plot-color/c (line-color)]

@@ -35,8 +35,8 @@
         [else  empty]))
 
 (defproc (lines-interval
-          [v1s (sequence/c (sequence/c real?))]
-          [v2s (sequence/c (sequence/c real?))]
+          [v1s (sequence/c (sequence/c #:min-count 2 real?))]
+          [v2s (sequence/c (sequence/c #:min-count 2 real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (interval-color)]

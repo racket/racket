@@ -21,7 +21,7 @@
   
   (if label (point-legend-entry label sym color fill-color size line-width) empty))
 
-(defproc (points [vs  (sequence/c (sequence/c real?))]
+(defproc (points [vs  (sequence/c (sequence/c #:min-count 2 real?))]
                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
                  [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
@@ -131,7 +131,7 @@
   empty)
 
 (defproc (error-bars
-          [bars (sequence/c (sequence/c real?))]
+          [bars (sequence/c (sequence/c #:min-count 3 real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (error-bar-color)]

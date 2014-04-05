@@ -25,7 +25,7 @@
         [else  empty]))
 
 (defproc (rectangles3d
-          [rects  (sequence/c (sequence/c ivl?))]
+          [rects  (sequence/c (sequence/c #:min-count 3 ivl?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
