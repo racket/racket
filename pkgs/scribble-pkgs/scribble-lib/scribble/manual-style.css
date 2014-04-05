@@ -518,6 +518,9 @@ table.tocsublist {
 .toptoclink {
     font-weight: bold;
     font-size: 110%
+    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+    display: inline-block;
 }
 
 .toclink {
