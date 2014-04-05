@@ -244,10 +244,17 @@ typedef struct FSSpec mzFSSpec;
    uses __extension__. This breaks the 3m xform. */
 #if defined(MZ_XFORM) && defined(strcpy)
 START_XFORM_SKIP;
+# ifdef __clang__
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunused-function"
+# endif
 static inline void _mzstrcpy(char *a, const char *b)
 {
   strcpy(a, b);
 }
+# ifdef __clang__
+#  pragma clang diagnostic pop
+# endif
 END_XFORM_SKIP;
 # undef strcpy
 # define strcpy _mzstrcpy
