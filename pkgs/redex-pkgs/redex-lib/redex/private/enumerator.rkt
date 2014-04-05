@@ -39,6 +39,13 @@
          many1/e
          list/e
          vec/e
+
+         cantor-vec/e
+         cantor-list/e
+
+         box-vec/e
+         box-list/e
+         
          traverse/e
          hash-traverse/e
          
@@ -836,25 +843,23 @@
 (define (many1/e e)
   (except/e (many/e e) '()))
 
+(define (cantor-vec/e . es)
+  (map/e list->vector
+         vector->list
+         (apply cantor-list/e es)))
+
 ;; vec/e : listof (enum any) -> enum (vectorof any)
-(define (vec/e . es)
-  (define all-inf?
-    (for/and ([e (in-list es)])
-      (infinite? (size e))))
-  (cond [(not all-inf?)
-         (map/e list->vector
-                vector->list
-                (list/e es))]
-        [else
-         (define k (length es))
-         (define dec (cantor-untuple k))
-         (define enc (cantor-tuple es))
-         (enum +inf.0 dec enc)]))
+(define vec/e cantor-vec/e)
+
+(define (box-vec/e . es)
+  (map/e list->vector
+         vector->list
+         (apply box-list/e es)))
 
 (define (cantor-untuple k)
   ;; Paul Tarau Deriving a Fast Inverse of the Generalized Cantor N-tupling Bijection
   (λ (n)
-     (apply vector (inc-set->list (combinatorial-number-decode k n)))))
+     (inc-set->list (combinatorial-number-decode k n))))
 
 (define (combinatorial-number-decode k n)
   (define (loop k n acc)
@@ -874,15 +879,13 @@
            (loop k2 n2 (cons d acc))]))
   (loop k n '()))
 
-(define (cantor-tuple es)
-  (λ (vec-xs)
-     (unless ((vector-length vec-xs) . = . (length es))
-       (error 'bad-vector))68
-     (define xs (vector->list vec-xs))
-     (define is (map decode es xs))
+(define (cantor-tuple k)
+  (λ (xs)
+     (unless ((length xs) . = . k)
+       (error 'bad-length-cantor-tuple))
      ;; Section 6 of Tarau Cantor n-tupling inverse
      (define sums
-       (list->inc-set is))
+       (list->inc-set xs))
      (for/sum ([sum_i (in-list sums)]
                [n     (in-naturals)])
        (binomial sum_i (add1 n)))))
@@ -926,6 +929,49 @@
         (define-values (left right) (split-at lst split-point))
         (cons left right))
       (cons/e (list/e left) (list/e right)))]))
+
+(define/contract (all-infinite? es)
+  ((listof enum?) . -> . boolean?)
+  (for/and ([e (in-list es)])
+    (infinite? (size e))))
+
+;; Fair tupling via generalized cantor n-tupling
+;; ordering is monotonic in the sum of the elements of the list
+(define (cantor-list/e . es)
+  (define all-inf? (all-infinite? es))
+  (cond [(not all-inf?)
+         ;; TODO: improve mixed finite/infinite
+         (list/e es)]
+        [else
+         (define k (length es))
+         (define dec
+           (compose
+            (λ (xs) (map decode es xs))
+            (cantor-untuple k)))
+         (define enc
+           (compose
+            (cantor-tuple k)
+            (λ (xs) (map encode es xs))))
+         (enum +inf.0 dec enc)]))
+
+;; Fair tupling via generalized
+;; ordering is monotonic in the max of the elements of the list
+(define (box-list/e . es)
+  (define all-inf? (all-infinite? es))
+  (cond [(not all-inf?) (list/e es)]
+        [else
+         (define k (length es))
+         (define dec (box-untuple k))
+         (define enc (box-tuple   k))
+         (enum +inf.0 dec enc)]))
+
+(define (box-untuple k)
+  (λ (xs)
+     (error 'unimpl)))
+
+(define (box-tuple k)
+  (λ (n)
+     (error 'unimpl)))
 
 (define (nats+/e n)
   (map/e (λ (k)
