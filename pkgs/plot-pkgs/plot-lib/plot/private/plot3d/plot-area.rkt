@@ -152,9 +152,10 @@
              (flvector +nan.0 +nan.0 +nan.0)])
           (match-lambda
             [(vector (? rational? x) (? rational? y) (? rational? z))
-             (flvector (fl (/ (- (inexact->exact (fx x)) x-mid) x-size))
-                       (fl (/ (- (inexact->exact (fy y)) y-mid) y-size))
-                       (fl (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
+             (let ([x  (fx x)] [y  (fy y)] [z  (fz z)])
+               (flvector (if (rational? x) (fl (/ (- (inexact->exact x) x-mid) x-size)) +nan.0)
+                         (if (rational? y) (fl (/ (- (inexact->exact y) y-mid) y-size)) +nan.0)
+                         (if (rational? z) (fl (/ (- (inexact->exact z) z-mid) z-size)) +nan.0)))]
             [(vector x y z)
              (flvector +nan.0 +nan.0 +nan.0)])))
     

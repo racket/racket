@@ -89,14 +89,15 @@
       (if identity-transforms?
           (match-lambda
             [(vector (? rational? x) (? rational? y))
-             (vector (fl (/ (- (inexact->exact x) x-min) x-size))
-                     (fl (/ (- (inexact->exact y) y-min) y-size)))]
+             (vector (fl (/ (- x x-min) x-size))
+                     (fl (/ (- y y-min) y-size)))]
             [(vector x y)
              (vector +nan.0 +nan.0)])
           (match-lambda
             [(vector (? rational? x) (? rational? y))
-             (vector (fl (/ (- (inexact->exact (fx x)) x-min) x-size))
-                     (fl (/ (- (inexact->exact (fy y)) y-min) y-size)))]
+             (let ([x  (fx x)] [y  (fy y)])
+               (vector (if (rational? x) (fl (/ (- (inexact->exact x) x-min) x-size)) +nan.0)
+                       (if (rational? y) (fl (/ (- (inexact->exact y) y-min) y-size)) +nan.0)))]
             [(vector x y)
              (vector +nan.0 +nan.0)])))
     

@@ -149,9 +149,7 @@ above.
 (defproc (heights->lines [xa real?] [xb real?] [ya real?] [yb real?]
                          [z real?] [z1 real?] [z2 real?] [z3 real?] [z4 real?]
                          ) (listof (list/c (vector/c real? real? real?) (vector/c real? real? real?)))
-  (cond [(and (z . < . z1) (z . < . z2) (z . < . z3) (z . < . z4))  empty]
-        [(and (z . > . z1) (z . > . z2) (z . > . z3) (z . > . z4))  empty]
-        [(= z z1 z2 z3 z4)  empty]
+  (cond [(= z z1 z2 z3 z4)  empty]
         [else
          (define lines (do-heights->lines z z1 z2 z3 z4))
          (for/list ([line  (in-list lines)])
@@ -591,8 +589,6 @@ above.
                          [z1 real?] [z2 real?] [z3 real?] [z4 real?]
                          ) (listof (listof (vector/c real? real? real?)))
   (cond
-    [(and (zb . < . z1) (zb . < . z2) (zb . < . z3) (zb . < . z4))  empty]
-    [(and (za . > . z1) (za . > . z2) (za . > . z3) (za . > . z4))  empty]
     [(= za zb z1 z2 z3 z4)  (list (list (vector xa ya z1) (vector xb ya z2)
                                         (vector xb yb z3) (vector xa yb z4)))]
     [else
