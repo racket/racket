@@ -4434,7 +4434,7 @@
         
       (super-new
        [filename filename]
-       [style '(toolbar-button)]
+       [style '(toolbar-button fullscreen-button)]
        [size-preferences-key 'drracket:window-size]
        [position-preferences-key 'drracket:window-position])
       
