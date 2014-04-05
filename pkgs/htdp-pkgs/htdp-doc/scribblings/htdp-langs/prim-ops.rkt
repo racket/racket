@@ -444,7 +444,11 @@ In contrast, when @racket[delta] is small, the test fails:
 #:eval 
 (mk-eval
  (require test-engine/racket-tests)
- (define-struct roots (x sqrt) #:transparent)
+(define-struct roots (x sqrt) 
+  #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc x port mode)
+     (display `(make-roots ,(roots-x x) ,(roots-sqrt x)) port))])
  (define (roots-table xs) (map (lambda (a) (make-roots a (sqrt a))) xs)))
 
 (check-within (roots-table (list 2.))
@@ -536,8 +540,26 @@ Consider the following two examples in this context:
    Checks that the value of the first @racket[expression] as that of
    one of the following @racket[expression]s.
 
-  It is an error for any of @racket[expressions] 
-  to produce a function value; see note on @racket[check-expect] for details.
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+;; [List-of X] -> X 
+;; pick a random element from the given list @racket[l]
+(define (pick-one l)
+  (list-ref l (random (length l))))
+))
+@;%
+
+@examples[#:eval
+(mk-eval (require test-engine/racket-tests)
+(define (pick-one l) (list-ref l (random (length l)))))
+
+(check-member-of (pick-one '("a" "b" "c")) "a" "b" "c")
+]
+
+  It is an error for any of @racket[expressions] to produce a function value; see
+  note on @racket[check-expect] for details. 
    }
 
   @defform*[#:id [check-range check-range-id]
@@ -546,6 +568,27 @@ Consider the following two examples in this context:
    Checks that the value of the first @racket[expression] is a number in
    between the value of the @racket[low-expression] and the
    @racket[high-expression], inclusive.
+
+A @racket[check-range] form is best used to delimit the possible results of
+functions that compute inexact numbers: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+;; [Real -> Real] Real -> Real 
+;; what is the slope of @racket[f] at @racket[x]?
+(define (differentiate f x)
+  (local ((define epsilon .001)
+          (define left (- x epsilon))
+          (define right (+ x epsilon))
+          (define slope 
+            (/ (- (f right) (f left))
+               2 epsilon)))
+    slope))
+
+(check-range (differentiate sin 0) 0.99 1.00)
+))
+@;%
 
 It is an error for @racket[expression], @racket[low-expression], or
 @racket[high-expression] to produce a function value or an inexact number;
