@@ -16,6 +16,7 @@
                      "pict-lib"
                      "typed-racket-lib"
                      "typed-racket-compatibility"
+                     "typed-racket-more"
                      "racket-doc"))
 (define deps '("base"))
 

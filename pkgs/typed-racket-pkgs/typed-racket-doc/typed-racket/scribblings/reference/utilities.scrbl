@@ -105,7 +105,7 @@ with language @racketmodname[typed/racket/base]. Identifiers used in
 @racket[subtype] expressions must be either in Typed Racket's base type
 environment (e.g. @racket[Integer] and @racket[Listof]) or defined by an
 expression in the @racket[maybe-begin] form, which is spliced into the
-submodule. For example, the @racketmodname[math/matrix] module imports and
+submodule. For example, the @racketmodname[math/matrix #:indirect] module imports and
 reexports @racket[matrix-expt], which has a @racket[case->] type,
 for untyped use in this way:
 @racketblock[(provide matrix-expt)
