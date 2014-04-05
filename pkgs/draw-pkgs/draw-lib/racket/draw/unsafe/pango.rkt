@@ -53,6 +53,10 @@
               (path->string (system-library-subpath)))
   (void (ffi-lib (format "/System/Library/Frameworks/AppKit.framework/AppKit"))))
 
+;; ALLOCATION NOTE: since Pango calls into Cairo, it has the same
+;; allocation constraints on arguments as Cairo functions; see
+;; "cairo.rkt".
+
 (define PangoContext (_cpointer 'PangoContext))
 (define PangoLayout (_cpointer 'PangoLayout))
 (define PangoFontDescription (_cpointer 'PangoFontDescription))
@@ -71,7 +75,8 @@
 (define-cstruct _PangoRectangle ([x _int]
                                  [y _int]
                                  [width _int]
-                                 [height _int]))
+                                 [height _int])
+  #:malloc-mode 'atomic-interior)
 (provide make-PangoRectangle
          PangoRectangle-x
          PangoRectangle-y
@@ -109,7 +114,8 @@
 (define-cstruct _PangoGlyphString
   ([num_glyphs _int]
    [glyphs _pointer]
-   [log_clusters _pointer]))
+   [log_clusters _pointer])
+  #:malloc-mode 'atomic-interior)
 
 (provide (struct-out PangoGlyphString)
          _PangoGlyphString)

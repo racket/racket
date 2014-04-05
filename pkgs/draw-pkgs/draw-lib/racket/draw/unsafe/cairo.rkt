@@ -13,6 +13,12 @@
          _cairo_surface_t
          _cairo_font_options_t)
 
+;; ALLOCATION NOTE: drawing to a Cairo surface might call back to
+;; Racket, because a drawing suface might be a PDF or SVG file
+;; that is written through a callback to Racket. Consequently,
+;; all GC-allocated arguments to Cairo functions must be allocated
+;; a 'atomic-interior, so that they do not move in case of a GC.
+
 (define _cairo_surface_t (_cpointer 'cairo_surface_t))
 (define _cairo_surface_t/null (_cpointer/null 'cairo_surface_t))
 (define _cairo_t (_cpointer 'cairo_t))
@@ -25,12 +31,19 @@
                                  [xy _double*]
                                  [yy _double*]
                                  [x0 _double*]
-                                 [y0 _double*]))
+                                 [y0 _double*])
+  #:malloc-mode 'atomic-interior)
 (provide (struct-out cairo_matrix_t))
 
 (define-cstruct _cairo_glyph_t ([index _long] [x _double*] [y _double*]))
 (provide make-cairo_glyph_t)
 
+(define-fun-syntax _ptr/immobile
+  (syntax-id-rules (_ptr/immobile o)
+    [(_ptr/immobile o t) (type: _pointer
+                                pre:  (malloc t 'atomic-interior)
+                                post: (x => (ptr-ref x t)))]))
+ 
 ;; Cairo is supposed to be thread-safe, but concurrent use seems
 ;; to cause trouble right now. (Try rendering the "plot" document
 ;; in multiple places at once.) For now, treat Cairo as non-thread
@@ -113,10 +126,10 @@
 (define-cairo cairo_in_fill (_cfun _cairo_t _double* _double* -> _bool))
 
 (define-cairo cairo_clip_extents (_cfun _cairo_t 
-                                       (x1 : (_ptr o _double)) 
-                                       (y1 : (_ptr o _double)) 
-                                       (x2 : (_ptr o _double)) 
-                                       (y2 : (_ptr o _double)) 
+                                       (x1 : (_ptr/immobile o _double)) 
+                                       (y1 : (_ptr/immobile o _double)) 
+                                       (x2 : (_ptr/immobile o _double)) 
+                                       (y2 : (_ptr/immobile o _double)) 
                                        -> _void
                                        -> (values x1 y1 x2 y2))
   ;; cairo_clip_extents is in version 1.4 and later
@@ -147,18 +160,18 @@
   #:fail (lambda () (lambda (c) (make-cairo_rectangle_list_t -1 #f 0))))
 
 (define-cairo cairo_fill_extents (_cfun _cairo_t 
-                                        (x1 : (_ptr o _double)) 
-                                        (y1 : (_ptr o _double)) 
-                                        (x2 : (_ptr o _double)) 
-                                        (y2 : (_ptr o _double)) 
+                                        (x1 : (_ptr/immobile o _double)) 
+                                        (y1 : (_ptr/immobile o _double)) 
+                                        (x2 : (_ptr/immobile o _double)) 
+                                        (y2 : (_ptr/immobile o _double)) 
                                         -> _void
                                         -> (values x1 y1 x2 y2)))
 
 (define-cairo cairo_stroke_extents (_cfun _cairo_t 
-                                          (x1 : (_ptr o _double)) 
-                                          (y1 : (_ptr o _double)) 
-                                          (x2 : (_ptr o _double)) 
-                                          (y2 : (_ptr o _double)) 
+                                          (x1 : (_ptr/immobile o _double)) 
+                                          (y1 : (_ptr/immobile o _double)) 
+                                          (x2 : (_ptr/immobile o _double)) 
+                                          (y2 : (_ptr/immobile o _double)) 
                                           -> _void
                                           -> (values x1 y1 x2 y2)))
 
@@ -204,7 +217,10 @@
 (define-cairo cairo_font_options_set_hint_metrics (_cfun _cairo_font_options_t _int -> _void))
 (define-cairo cairo_font_options_set_hint_style (_cfun _cairo_font_options_t _int -> _void))
 
-(define-cairo cairo_show_glyphs (_cfun _cairo_t _cairo_glyph_t-pointer _int -> _void))
+(define-cairo cairo_show_glyphs (_cfun _cairo_t
+                                       _cairo_glyph_t-pointer ; must be immobile
+                                       _int
+                                       -> _void))
 
 ;; Paths
 (define-cairo cairo_rectangle (_cfun _cairo_t _double* _double* _double* _double* -> _void))
