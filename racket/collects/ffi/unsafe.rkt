@@ -1317,7 +1317,9 @@
 
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
-(define* (_list-struct #:alignment [alignment #f] type . types)
+(define* (_list-struct #:alignment [alignment #f]
+                       #:malloc-mode [malloc-mode 'atomic]
+                       type . types)
   (let* ([types   (cons type types)]
          [stype   (make-cstruct-type types #f alignment)]
          [offsets (compute-offsets types alignment)]
@@ -1331,7 +1333,7 @@
                                  "expected length" len
                                  "list length" (length vals)
                                  "list" vals))
-        (let ([block (malloc stype)])
+        (let ([block (malloc stype malloc-mode)])
           (for-each (lambda (type ofs val) (ptr-set! block type 'abs ofs val))
                     types offsets vals)
           block))
@@ -1359,7 +1361,7 @@
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
   (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx 
-                       alignment-stx property-stxes property-binding-stxes
+                       alignment-stx malloc-mode-stx property-stxes property-binding-stxes
                        no-equal?)
     (define name
       (cadr (regexp-match #rx"^_(.+)$" (symbol->string (syntax-e _TYPE-stx)))))
@@ -1410,7 +1412,8 @@
          [(set-TYPE-SLOT! ...) (ids (lambda (s) `("set-",name"-",s"!")))]
          [(offset ...) (generate-temporaries
                                (ids (lambda (s) `(,s"-offset"))))]
-         [alignment            alignment-stx])
+         [alignment            alignment-stx]
+         [malloc-mode          (or malloc-mode-stx #'(quote atomic))])
       (with-syntax ([get-super-info
                      ;; the 1st-type might be a pointer to this type
                      (if (or (safe-id=? 1st-type #'_TYPE-pointer/null)
@@ -1524,7 +1527,7 @@
                       ;; init using all slots
                       (lambda vals
                         (if (= (length vals) (length all-types))
-                            (let ([block (make-wrap-TYPE (malloc _TYPE*))])
+                            (let ([block (make-wrap-TYPE (malloc _TYPE* malloc-mode))])
                               (set-cpointer-tag! block all-tags)
                               (for-each (lambda (type ofs value)
                                           (ptr-set! block type 'abs ofs value))
@@ -1534,7 +1537,7 @@
                                    (length all-types) (length vals) vals)))
                       ;; normal initializer
                       (lambda (slot ...)
-                        (let ([block (make-wrap-TYPE (malloc _TYPE*))])
+                        (let ([block (make-wrap-TYPE (malloc _TYPE* malloc-mode))])
                           (set-cpointer-tag! block all-tags)
                           (ptr-set! block stype 'abs offset slot)
                           ...
@@ -1545,7 +1548,7 @@
                   (cond
                    [(TYPE? vals) vals]
                    [(= (length vals) (length all-types))
-                    (let ([block (malloc _TYPE*)])
+                    (let ([block (malloc _TYPE* malloc-mode)])
                       (set-cpointer-tag! block all-tags)
                       (for-each
                        (lambda (type ofs value)
@@ -1597,21 +1600,32 @@
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
                      [_ (values #'type #f)])]
-                  [(alignment properties property-bindings no-equal?)
+                  [(alignment malloc-mode properties property-bindings no-equal?)
                    (let loop ([more #'more] 
                               [alignment #f]
+                              [malloc-mode #f]
                               [properties null] 
                               [property-bindings null] 
                               [no-equal? #f])
                      (define (head) (syntax-case more () [(x . _) #'x]))
                      (syntax-case more ()
-                       [() (values alignment (reverse properties) (reverse property-bindings) no-equal?)]
+                       [() (values alignment
+                                   malloc-mode 
+                                   (reverse properties)
+                                   (reverse property-bindings)
+                                   no-equal?)]
                        [(#:alignment) (err "missing expression for #:alignment" (head))]
                        [(#:alignment a . rest) 
                         (not alignment)
-                        (loop #'rest #'a properties property-bindings no-equal?)]
+                        (loop #'rest #'a malloc-mode properties property-bindings no-equal?)]
                        [(#:alignment a . rest) 
                         (err "multiple specifications of #:alignment" (head))]
+                       [(#:malloc-mode) (err "missing expression for #:malloc-mode" (head))]
+                       [(#:malloc-mode m . rest) 
+                        (not malloc-mode)
+                        (loop #'rest alignment #'m properties property-bindings no-equal?)]
+                       [(#:alignment m . rest) 
+                        (err "multiple specifications of #:malloc-mode" (head))]
                        [(#:property) (err "missing property expression for #:property" (head))]
                        [(#:property prop) (err "missing value expression for #:property" (head))]
                        [(#:property prop val . rest)
@@ -1620,6 +1634,7 @@
                           (define val-id (car (generate-temporaries '(prop-val))))
                           (loop #'rest 
                                 alignment 
+                                malloc-mode
                                 (list* #`(cons #,prop-id #,val-id) properties)
                                 (list* (list (list val-id) #'val) 
                                        (list (list prop-id) #'(check-is-property prop))
@@ -1628,7 +1643,7 @@
                        [(#:no-equal . rest)
                         (if no-equal?
                             (err "multiple specifications of #:no-equal" (head))
-                            (loop #'rest alignment properties property-bindings #t))]
+                            (loop #'rest alignment malloc-mode properties property-bindings #t))]
                        [(x . _) (err (if (keyword? (syntax-e #'x))
                                          "unknown keyword" "unexpected form")
                                      #'x)]
@@ -1646,11 +1661,12 @@
                       #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
                       #`(#,_SUPER slot-type ...)
                       alignment
+                      malloc-mode
                       properties
                       property-bindings
                       no-equal?)
          (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) 
-                      alignment properties property-bindings no-equal?)))]
+                      alignment malloc-mode properties property-bindings no-equal?)))]
     [(_ type () . more)
      (identifier? #'type)
      (err "must have either a supertype or at least one field")]

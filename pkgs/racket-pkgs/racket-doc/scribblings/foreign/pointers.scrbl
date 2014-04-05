@@ -233,9 +233,9 @@ see @|InsideRacket|.
                                       ctype?) 
                                 @#,elem{absent}]
                  [cptr cpointer? @#,elem{absent}]
-                 [mode (one-of/c 'nonatomic 'stubborn 'uncollectable
-                                 'eternal 'interior 'atomic-interior
-                                 'raw)
+                 [mode (one-of/c 'raw 'atomic 'nonatomic
+                                 'atomic-interior 'interior
+                                 'stubborn 'uncollectable 'eternal)
                        @#,elem{absent}]
                  [fail-mode (one-of/c 'failok) @#,elem{absent}])
          cpointer?]{

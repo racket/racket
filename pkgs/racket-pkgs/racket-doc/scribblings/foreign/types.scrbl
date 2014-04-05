@@ -976,24 +976,37 @@ members.}
 
 
 @defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
+                       [#:malloc-mode malloc-mode
+                                      (one-of/c 'raw 'atomic 'nonatomic
+                                                 'atomic-interior 'interior
+                                                 'stubborn 'uncollectable 'eternal)
+                                      'atomic]
                        [type ctype?] ...+)
          ctype?]{
 
 A type constructor that builds a struct type using
 @racket[make-cstruct-type] function and wraps it in a type that
 marshals a struct as a list of its components.  Note that space for
-structs must to be allocated; the converter for a
+structs must to be allocated using @racket[malloc] with @racket[malloc-mode]; the converter for a
 @racket[_list-struct] type immediately allocates and uses a list from
 the allocated space, so it is inefficient. Use @racket[define-cstruct]
-below for a more efficient approach.}
+below for a more efficient approach.
+
+@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]}
 
 
-@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) property ...)
-              [(id/sup _id
-                       (_id _super-id))
-               (property (code:line #:alignment alignment-expr)
-                         (code:line #:property prop-expr val-expr)
-                         #:no-equal)]]{
+@defform[(define-cstruct id/sup ([field-id type-expr] ...) property ...)
+         #:grammar [(id/sup _id
+                            (_id _super-id))
+                    (property (code:line #:alignment alignment-expr)
+                              (code:line #:malloc-mode malloc-mode-expr)
+                              (code:line #:property prop-expr val-expr)
+                              #:no-equal)]
+         #:contracts ([alignment-expr (or/c #f 1 2 4 8 16)]
+                      [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic
+                                                  'atomic-interior 'interior
+                                                  'stubborn 'uncollectable 'eternal)]
+                      [prop-expr struct-type-property?])]{
 
 Defines a new C struct type, but unlike @racket[_list-struct], the
 resulting type deals with C structs in binary form, rather than
@@ -1001,8 +1014,8 @@ marshaling them to Racket values.  The syntax is similar to
 @racket[define-struct], providing accessor functions for raw struct
 values (which are pointer objects); the @racket[_id]
 must start with @litchar{_}, and at most one @racket[#:alignment]
-can be supplied. If no @racket[_super-id] is provided, then at least one
-field must be specified.
+or @racket[#:malloc-mode] can be supplied. If no @racket[_super-id]
+is provided, then at least one field must be specified.
 
 The resulting bindings are as follows:
 
@@ -1106,8 +1119,10 @@ arguments for each of @racketidfont{_}@racket[super-id]'s fields, in
 addition for the new fields.  This adjustment of the constructor is,
 again, in analogy to using a supertype with @racket[define-struct].
 
-Structs are allocated as atomic blocks, which means that the
-garbage collector ignores their content.  Thus, struct fields can hold
+Structs are allocated using @racket[malloc] with the result of
+@racket[malloc-mode-expr],  which default to @racket['atomic].
+The default allocation of @racket['atomic] means that the
+garbage collector ignores the content of a struct; thus, struct fields can hold
 only non-pointer values, pointers to memory outside the GC's control,
 and otherwise-reachable pointers to immobile GC-managed values (such
 as those allocated with @racket[malloc] and @racket['internal] or
@@ -1223,7 +1238,9 @@ expects arguments for both the super fields and the new ones:
 @racketblock[
  (define-cstruct (#,(racketidfont "_B") #,(racketidfont "_A")) ([z _int]))
  (define b (make-B 1 2 3))
-]}
+]
+
+@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]}
 
 @; ------------------------------------------------------------
 
