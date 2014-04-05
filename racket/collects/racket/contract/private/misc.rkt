@@ -295,18 +295,20 @@
                 [candidate-c-proj
                  ((candidate-c-proj blame-w-context) val)]
                 [else
-                 (raise-blame-error blame val 
-                                    '("none of the branches of the or/c matched" given: "~e")
-                                    val)])]
+                 (λ (neg-party)
+                   (raise-blame-error blame val #:missing-party neg-party
+                                      '("none of the branches of the or/c matched" given: "~e")
+                                      val))])]
              [((car checks) val)
               (if candidate-c-proj
-                  (raise-blame-error blame val
-                                     '("two of the clauses in the or/c might both match: ~s and ~s"
-                                       given:
-                                       "~e")
-                                     (contract-name candidate-contract)
-                                     (contract-name (car contracts))
-                                     val)
+                  (λ (neg-party)
+                    (raise-blame-error blame val #:missing-party neg-party
+                                       '("two of the clauses in the or/c might both match: ~s and ~s"
+                                         given:
+                                         "~e")
+                                       (contract-name candidate-contract)
+                                       (contract-name (car contracts))
+                                       val))
                   (loop (cdr checks)
                         (cdr c-projs)
                         (cdr contracts)

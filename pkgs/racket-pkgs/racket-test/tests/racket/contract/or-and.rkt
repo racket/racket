@@ -219,4 +219,23 @@
   
   (test/pos-blame
    'contract-flat2
-   '(contract not #t 'pos 'neg)))
+   '(contract not #t 'pos 'neg))
+  
+  
+  (test/neg-blame
+   'ho-or/c-val-first1
+   '((contract (-> (or/c (-> number?)
+                         (-> number? number?))
+                   number?)
+               (λ (x) 1)
+               'pos 'neg)
+     (lambda (x y z) 1)))
+  
+  (test/neg-blame
+   'ho-or/c-val-first2
+   '((contract (-> (or/c (-> number? number?)
+                         (-> number? number?))
+                   number?)
+               (λ (x) 1)
+               'pos 'neg)
+     (lambda (x) 1))))
