@@ -81,7 +81,7 @@
      (normal-case-path
       (simplify-path (path->complete-path p)))))
   (define (sub-path? < p d)
-    (and ((length d) . <= . (length p))
+    (and ((length d) . < . (length p))
          (for/and ([de (in-list d)]
                    [pe (in-list p)])
            (equal? de pe))))

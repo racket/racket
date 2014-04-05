@@ -21,8 +21,10 @@
 
   (check-equal? (path->pkg (build-path (find-pkgs-dir) "pkgs.rktd"))
                 #f)
+  (check-equal? (path->pkg (find-pkgs-dir))
+                #f)
 
   (check-equal? (call-with-values
                     (lambda () (path->pkg+subpath+collect (collection-file-path "serve-catalog.rkt" "distro-build")))
                   list)
-                (list "distro-build" (build-path "serve-catalog.rkt") "distro-build")))
+                (list "distro-build-server" (build-path "serve-catalog.rkt") "distro-build")))
