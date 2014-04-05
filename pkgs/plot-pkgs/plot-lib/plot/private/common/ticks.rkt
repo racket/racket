@@ -540,19 +540,26 @@
 (defparam currency-ticks-scales (listof string?) us-currency-scales)
 (defparam currency-ticks-formats (list/c string? string? string?) us-currency-formats)
 
-(struct amount-data (sign whole fractional unit suffix) #:transparent)
+(struct amount-data (sign amount unit suffix) #:transparent)
 
 (define (currency-formatter x-min x-max)
   (λ (fmt data)
     (case fmt
       [(~$)  (amount-data-sign data)]
-      [(~w)  (number->string (amount-data-whole data))]
-      [(~f)  (match-define (amount-data _sign _whole f unit _suffix) data)
-             (define digits (digits-for-range (/ x-min unit) (/ x-max unit)))
-             (cond [(= 1 unit)  (substring (real->decimal-string* f 2 (max 2 digits)) 2)]
-                   [(zero? f)   "0"]
-                   [else        (substring (real->decimal-string* f 1 (max 1 digits)) 2)])]
       [(~s)  (amount-data-suffix data)]
+      [(~w ~f)
+       (match-define (amount-data _sign amt unit _suffix) data)
+       (define digits (digits-for-range (/ x-min unit) (/ x-max unit)))
+       (define n (max 2 digits))
+       (define 10^n (expt 10 n))
+       (define x (/ (round (* (inexact->exact amt) 10^n)) 10^n))
+       (define whole (floor x))
+       (case fmt
+         [(~w)  (number->string whole)]
+         [(~f)  (define frac (- x whole))
+                (cond [(= 1 unit)    (substring (real->decimal-string* frac 2 n) 2)]
+                      [(zero? frac)  "0"]
+                      [else          (substring (real->decimal-string* frac 1 n) 2)])])]
       [else  #f])))
 
 (defproc (currency-ticks-format [#:kind kind (or/c string? symbol?) 'USD]
@@ -587,11 +594,9 @@
                                  [(negative? x)  negative-format-list]
                                  [else           zero-format-list]))
        (define unit-x (/ (abs x) unit))
-       (define whole (inexact->exact (floor unit-x)))
-       (define frac (- unit-x whole))
        (string-append*
         (apply-formatter formatter format-list
-                         (amount-data sign whole frac unit suffix)))))))
+                         (amount-data sign unit-x unit suffix)))))))
 
 (defproc (currency-ticks [#:number number exact-positive-integer? (ticks-default-number)]
                          [#:kind kind (or/c string? symbol?) 'USD]
