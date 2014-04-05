@@ -41,8 +41,10 @@
         (raise-type-error 'set-snip "snip%" s))
       (set! snip s)
       (send text set-writable #t)
+      (send text begin-edit-sequence #f)
       (send text erase)
       (send text insert snip)
+      (send text end-edit-sequence)
       (send text set-writable #f))
     
     (super-new [parent parent]
