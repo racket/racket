@@ -62,7 +62,7 @@ These functions optimize the construction of dispatchers and launching of server
           [#:banner? banner? boolean? #f]
           [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
           [#:port port number? 8000]
-          [#:max-waiting exact-nonnegative-integer? 511]
+          [#:max-waiting max-waiting exact-nonnegative-integer? 511]
           [#:ssl-cert ssl-cert (or/c false/c path-string?) #f]
           [#:ssl-key ssl-key (or/c false/c path-string?) #f])
          void]{
