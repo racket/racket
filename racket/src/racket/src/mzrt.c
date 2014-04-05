@@ -187,7 +187,7 @@ DWORD WINAPI mzrt_win_thread_stub(void *data)
 
 mzrt_thread_id mz_proc_thread_self() {
 #ifdef WIN32
-  return GetCurrentThread();
+  return GetCurrentThreadId();
 #else
   return pthread_self();
 #endif

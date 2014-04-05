@@ -21,7 +21,7 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int));
 
 #if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))
 # include <winsock2.h>
-typedef HANDLE mzrt_thread_id;
+typedef DWORD mzrt_thread_id;
 #else
 #include <pthread.h>
 typedef pthread_t mzrt_thread_id;
