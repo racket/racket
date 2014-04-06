@@ -940,7 +940,9 @@ function for installing a single @filepath{.plt} file.
 
 @defproc[(run-single-installer
           (file path-string?)
-          (get-dir-proc (-> (or/c path-string? #f)))) void?]{
+          (get-dir-proc (-> (or/c path-string? #f)))
+          [#:show-beginning-of-file? show-beginning-of-file? any/c #f])
+         void?]{
    Creates a separate thread and namespace, runs the installer in that
    thread with the new namespace, and returns when the thread
    completes or dies. It also creates a custodian
@@ -952,8 +954,13 @@ function for installing a single @filepath{.plt} file.
    The @racket[get-dir-proc] procedure is called if the installer needs a
    target directory for installation, and a @racket[#f] result means that
    the user canceled the installation. Typically, @racket[get-dir-proc] is
-   @racket[current-directory].}
-v
+   @racket[current-directory].
+   
+   If @racket[show-beginning-of-file?] is a true value and the installation
+   fails, then @racket[run-single-installer] prints the first 1,000 characters
+   of the file (in an attempt to help debug the cause of failures).
+}
+
 @defproc[(install-planet-package [file path-string?] 
                                  [directory path-string?] 
                                  [spec (list/c string? string? 

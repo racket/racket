@@ -47,5 +47,6 @@
             (unless d
               (printf ">>> Cancelled <<<\n"))
             (begin-busy-cursor)
-            d))))
+            d))
+        #:show-beginning-of-file? #t))
      cleanup-thunk)))

@@ -41,7 +41,8 @@
   }
 
 @defproc[(run-single-installer (file path-string?)
-                               (get-dir-proc (-> (or/c path-string? #f))))
+                               (get-dir-proc (-> (or/c path-string? #f)))
+                               [#:show-beginning-of-file? show-beginning-of-file? any/c #f])
          void?]{
   The same as the export from @racketmodname[setup/plt-single-installer], 
   but with a GUI.}

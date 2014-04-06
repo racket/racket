@@ -230,7 +230,13 @@
          (let/ec k
            (parameterize ([current-output-port output-port]
                           [current-error-port error-port]
-                          [error-escape-handler (λ () (k (void)))]
+                          [error-escape-handler
+                           (let ([oh (error-escape-handler)]
+                                 [ct (current-thread)])
+                             (λ () 
+                               (if (equal? (current-thread) ct)
+                                   (k (void))
+                                   (oh))))]
                           [exit-handler
                            (λ (x)
                              (unless (equal? x 0)
