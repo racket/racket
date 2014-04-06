@@ -288,7 +288,35 @@
 
 (test-begin
  (check-bijection? (cantor-vec/e string/e nats/e real/e))
- (check-bijection? (cantor-list/e string/e nats/e real/e)))
+ (check-bijection? (cantor-list/e string/e nats/e real/e))
+ (check-bijection? (cantor-list/e)))
+
+(test-begin
+ (define n*n     (box-list/e nats/e nats/e))
+ (check-range? n*n  0  1 '((0 0)))
+ (check-range? n*n  1  4 '((0 1) (1 0) (1 1)))
+ (check-range? n*n  4  9 '((0 2) (1 2) (2 1) (2 0) (2 2))))
+(test-begin
+ (define n*n*n   (box-list/e nats/e nats/e nats/e))
+
+ (check-range? n*n*n  0  1 '((0 0 0)))
+ (check-range? n*n*n  1  8 '((0 0 1) (0 1 1) (0 1 0)
+                             
+                             (1 0 0) (1 0 1) (1 1 0) (1 1 1)))
+ (check-range? n*n*n  8 27 '((0 0 2) (0 1 2) (0 2 2)
+                             (0 2 0) (0 2 1)
+
+                             (1 0 2) (1 1 2) (1 2 2)
+                             (1 2 0) (1 2 1)
+
+                             (2 0 0) (2 0 1) (2 0 2)
+                             (2 1 0) (2 1 1) (2 1 2)
+                             (2 2 0) (2 2 1) (2 2 2))))
+
+(test-begin
+ (check-bijection? (box-vec/e string/e nats/e real/e))
+ (check-bijection? (box-list/e string/e nats/e real/e))
+ (check-bijection? (box-list/e)))
 
 ;; helper
 (test-begin
@@ -459,4 +487,3 @@
   (many/e empty/e))
 (check-equal? (decode emptys/e 0) '())
 (check-bijection? emptys/e)
-
