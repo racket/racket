@@ -152,15 +152,20 @@
     ;; the forseeable future) this is much faster than using a pen-list%, because it doesn't have to
     ;; synchronize access. It's also not thread-safe.
     (define/public (set-pen color width style)
-      (set! pen-color (->pen-color color))
-      (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
-        pen-color)
       (set! pen-style (->pen-style style))
-      (set! pen-width width)
-      (if (eq? style 'transparent)
-          (send dc set-pen transparent-pen)
-          (send dc set-pen (hash-ref! pen-hash (vector r g b width 'solid)
-                                      (λ () (make-pen% r g b width 'solid))))))
+      (cond [(eq? pen-style 'transparent)
+             (set! pen-color '(0 0 0))
+             (set! pen-width 1)
+             (send dc set-pen transparent-pen)]
+            [else
+             (set! pen-color (->pen-color color))
+             (set! pen-width width)
+             (match-define (list (app real->color-byte r)
+                                 (app real->color-byte g)
+                                 (app real->color-byte b))
+               pen-color)
+             (send dc set-pen (hash-ref! pen-hash (vector r g b width)
+                                         (λ () (make-pen% r g b width 'solid))))]))
     
     ;; Sets the pen used to draw major ticks.
     (define/public (set-major-pen [style 'solid])
@@ -171,17 +176,25 @@
       (set-pen (plot-foreground) (* 1/2 (plot-line-width)) style))
     
     (define brush-hash (make-hash))
+    (define transparent-brush (make-brush% 0 0 0 'transparent))
     
     (define brush-color (->brush-color (plot-background)))
+    (define brush-style 'solid)
     
     ;; Sets the brush. Same idea as set-pen.
     (define/public (set-brush color style)
-      (set! brush-color (->brush-color color))
-      (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
-        brush-color)
-      (let ([style  (->brush-style style)])
-        (send dc set-brush (hash-ref! brush-hash (vector r g b style)
-                                      (λ () (make-brush% r g b style))))))
+      (set! brush-style (->brush-style style))
+      (cond [(eq? brush-style 'transparent)
+             (set! brush-color '(0 0 0))
+             (send dc set-brush transparent-brush)]
+            [else
+             (set! brush-color (->brush-color color))
+             (match-define (list (app real->color-byte r)
+                                 (app real->color-byte g)
+                                 (app real->color-byte b))
+               brush-color)
+             (send dc set-brush (hash-ref! brush-hash (vector r g b brush-style)
+                                           (λ () (make-brush% r g b brush-style))))]))
     
     ;; Sets alpha.
     (define/public (set-alpha a)

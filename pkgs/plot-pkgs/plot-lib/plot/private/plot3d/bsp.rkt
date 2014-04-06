@@ -177,25 +177,31 @@
 (define (bsp-lines->vertices ss)
   (append (map line-start ss) (map line-end ss)))
 
-(: shapes->intervals (-> (Listof BSP-Shape) Index (Listof (Pair Flonum Flonum))))
+(: coordinate-min-max (-> (Listof FlVector) Index (Values Flonum Flonum)))
+(define (coordinate-min-max vs i)
+  (for/fold ([x-min : Flonum  +inf.0] [x-max : Flonum  -inf.0]) ([v  (in-list vs)])
+    (define x (flvector-ref v i))
+    (values (min x x-min) (max x x-max))))
+
+(struct: interval ([min : Flonum] [max : Flonum] [weight : Natural]) #:transparent)
+
+(: shapes->intervals (-> (Listof BSP-Shape) Index (Listof interval)))
 (define (shapes->intervals ss i)
   (for/list: ([s  (in-list ss)])
     (match s
       [(points _ vs)
-       (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
-       (cons (apply min xs) (apply max xs))]
+       (define-values (x-min x-max) (coordinate-min-max vs i))
+       (interval x-min x-max 1)]
       [(line _ v1 v2)
        (define x1 (flvector-ref v1 i))
        (define x2 (flvector-ref v2 i))
-       (cons (min x1 x2) (max x1 x2))]
+       (interval (min x1 x2) (max x1 x2) 1)]
       [(poly _data vs ls _norm)
-       (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
-       (cons (apply min xs) (apply max xs))]
+       (define-values (x-min x-max) (coordinate-min-max vs i))
+       (interval x-min x-max 1)]
       [(lines _ vs)
-       (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
-       (cons (apply min xs) (apply max xs))])))
-
-(struct: interval ([min : Flonum] [max : Flonum] [weight : Natural]) #:transparent)
+       (define-values (x-min x-max) (coordinate-min-max vs i))
+       (interval x-min x-max 1)])))
 
 (: interval-list-union (-> (Listof interval) (Listof interval) (Listof interval)))
 (define (interval-list-union I1 I2)
@@ -237,11 +243,11 @@
                (define I (interval a2 b2 (+ w1 w2)))
                (interval-list-union (rest I1) (cons I (rest I2)))])])]))
 
-(: interval-split (-> (Listof (Pair Flonum Flonum)) (Option Flonum)))
-(define (interval-split ps)
+(: interval-split (-> (Listof interval) (Option Flonum)))
+(define (interval-split all-ivls)
   (: ivls (Listof interval))
   (define ivls
-    (let loop ([ivls  (map (λ ([p : (Pair Flonum Flonum)]) (interval (car p) (cdr p) 1)) ps)])
+    (let loop ([ivls  all-ivls])
       (cond [(empty? ivls)  empty]
             [(empty? (rest ivls))  ivls]
             [else
@@ -252,10 +258,10 @@
   (cond [(empty? ivls)  #f]
         [(empty? (rest ivls))  #f]
         [else
-         (define total-w (length ps))
+         (define total-w (length all-ivls))
          (define-values (best-x best-w _)
            (for/fold ([best-x : Flonum  (interval-min (first ivls))]
-                      [best-w : Integer  (length ps)]
+                      [best-w : Integer  total-w]
                       [left-w : Integer  0]
                       ) ([ivl  (in-list ivls)])
              (define max-w (max left-w (- total-w left-w)))
@@ -272,9 +278,7 @@
 (: vertices->axes (-> (Listof FlVector) (Listof axis)))
 (define (vertices->axes vs)
   (for/list ([i  (in-list '(0 1 2))])
-    (define xs (map (λ ([v : FlVector]) (flvector-ref v i)) vs))
-    (define x-min (apply min xs))
-    (define x-max (apply max xs))
+    (define-values (x-min x-max) (coordinate-min-max vs i))
     (axis i (- x-max x-min) x-min x-max (* 0.5 (+ x-min x-max)))))
 
 (: axial-plane (-> Index Flonum FlVector))
