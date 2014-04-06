@@ -156,10 +156,9 @@
                       #:color "blue")
             (axes 1 0 #:y-ticks? #f)))
 
-;; error: could not determine x bounds
-(check-exn exn:fail?
-           (λ () (plot (list (function sqr #f -1)
-                             (function sqr 1 #f)))))
+(printf "Plot should be empty:~n")
+(plot (list (function sqr #f -1)
+            (function sqr 1 #f)))
 
 ; draws both functions with x in [-1,2] (meaning nothing is drawn)
 (printf "Plot should be empty:~n")

@@ -79,7 +79,7 @@
                         (format "~a.~a×10~a" fst rst (integer->superscript (- (add1 i))))])])))
 
 (define (zero-string n)
-  (list->string (build-list n (λ _ #\0))))
+  (make-string n #\0))
 
 (defproc (real->plot-label [x real?] [digits exact-integer?] [scientific? boolean? #t]) any
   (cond
