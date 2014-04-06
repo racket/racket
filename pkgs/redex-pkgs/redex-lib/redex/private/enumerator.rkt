@@ -11,7 +11,9 @@
          data/gvector
          
          math/flonum
-         (only-in math/number-theory binomial)
+         (only-in math/number-theory
+                  binomial
+                  integer-root)
 
          "error.rkt")
 
@@ -939,7 +941,8 @@
 ;; ordering is monotonic in the sum of the elements of the list
 (define (cantor-list/e . es)
   (define all-inf? (all-infinite? es))
-  (cond [(not all-inf?)
+  (cond [(empty? es) (const/e '())]
+        [(not all-inf?)
          ;; TODO: improve mixed finite/infinite
          (list/e es)]
         [else
@@ -958,20 +961,60 @@
 ;; ordering is monotonic in the max of the elements of the list
 (define (box-list/e . es)
   (define all-inf? (all-infinite? es))
-  (cond [(not all-inf?) (list/e es)]
+  (cond [(empty? es) (const/e '())]
+        [(not all-inf?) (list/e es)]
         [else
          (define k (length es))
-         (define dec (box-untuple k))
-         (define enc (box-tuple   k))
+         (define dec
+           (compose
+            (λ (xs) (map decode es xs))
+            (box-untuple k)))
+         (define enc
+           (compose
+            (box-tuple k)
+            (λ (xs) (map encode es xs))))
          (enum +inf.0 dec enc)]))
 
-(define (box-untuple k)
-  (λ (xs)
-     (error 'unimpl)))
+;; Tuples of length k with maximum bound
+(define (bounded-list/e len bound)
+  (define (loop len)
+    (match len
+      [0 (const/e '())]
+      [1 (const/e `(,bound))]
+      [_
+       (define smallers/e (loop (sub1 len)))
+       (define bounded/e (take/e nats/e (add1 bound)))
+       (define first-max/e
+         (map/e
+          (curry cons bound)
+          cdr
+          (list/e
+           (for/list ([_ (in-range (sub1 len))])
+             bounded/e))))
+       (define first-not-max/e
+         (match bound
+           [0 empty/e]
+           [_ (cons/e (take/e nats/e bound)
+                      smallers/e)]))
+       (define (first-max? l)
+         ((first l) . = . bound))
+       (disj-append/e (cons first-not-max/e (negate first-max?))
+                      (cons first-max/e     first-max?))]))
+  (loop len))
 
 (define (box-tuple k)
+  (λ (xs)
+     (define layer (apply max xs))
+     (define smallest (expt layer k))
+     (define layer/e (bounded-list/e k layer))
+     (smallest . + . (encode layer/e xs))))
+
+(define (box-untuple k)
   (λ (n)
-     (error 'unimpl)))
+     (define layer (integer-root n k))
+     (define smallest (expt layer k))
+     (define layer/e (bounded-list/e k layer))
+     (decode layer/e (n . - . smallest))))
 
 (define (nats+/e n)
   (map/e (λ (k)
