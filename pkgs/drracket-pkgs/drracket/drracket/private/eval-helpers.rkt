@@ -78,11 +78,12 @@
         (define pkg (path->pkg path #:cache path->pkg-cache))
         (if (and pkg
                  (memq 'write
-                       (file-or-directory-permissions (pkg-directory pkg))))
+                       (file-or-directory-permissions (pkg-directory/use-cache pkg))))
             (set-add s pkg)
             s)))
     (for ([pkg (in-set open-pkgs)])
       (log-info "DrRacket: enabling bytecode-file compilation for package ~s" pkg))
+    
     (define skip-path?
       (let* ([cd (find-collects-dir)]
              [sd (find-share-dir)]
@@ -94,7 +95,19 @@
                    (let ([pkg (path->pkg p #:cache path->pkg-cache)])
                      (and pkg
                           (not (set-member? open-pkgs pkg))
-                          (file-stamp-in-paths p (list (pkg-directory pkg)))))))))
+                          (file-stamp-in-paths p (list (pkg-directory/use-cache pkg)))))))))
+    
+    (define pkg-directory-cache (make-hash))
+    (define (pkg-directory/use-cache pkg)
+      (cond
+        [(hash-ref pkg-directory-cache pkg #f)
+         =>
+         values]
+        [else
+         (define ans (pkg-directory pkg))
+         (hash-set! pkg-directory-cache pkg ans)
+         ans]))
+    
     (define extra-compiled-file-path
       (case (prefab-module-settings-annotations settings)
         [(none) (build-path "compiled" "drracket")]
