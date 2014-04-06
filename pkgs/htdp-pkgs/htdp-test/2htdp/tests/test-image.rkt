@@ -2567,7 +2567,8 @@
   (test (equal? (image-baseline (list-ref washed 2))
                 (image-height (list-ref washed 2)))
         =>
-        #f))
+        #f)
+  (test washed => (list img1 img2 img3)))
 
 (test (convertible? (circle 20 "solid" "red")) => #t)
 (test (bytes? (convert (circle 20 "solid" "red") 'png-bytes)) => #t)
