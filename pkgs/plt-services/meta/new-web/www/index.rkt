@@ -114,13 +114,11 @@
 	       [(zero? n) (triangle 2 'solid 'red)]
 	       [else (define t (sierpinski (- n 1)))
    		     (freeze (above t (beside t t)))]))}
-     (list
      @desc{The @elemcode{2htdp/image} library provides easy-to-use functions
        for constructing images, and DrRacket can display an image result as
        easily as it can display a number result.  In this case, a
        @elemcode{sierpinski} function is defined and called (at the same time)
-       to generate a Sierpinski triangle of depth 8. It looks like}
-     @img[width: "50%" src: (copyfile #:site www-site (build-path img-dir "sierp.png"))]))
+       to generate a Sierpinski triangle of depth 8.})
     (graphical-example #:title "GUI Programming"; ---------------------------------------------
      @code{#lang racket/gui ; A GUI guessing game
            (define f (new frame% [label "Guess"]))
@@ -225,11 +223,9 @@
            (define (thrice f) (lambda (x) (f (f (f x)))))
            (plot (list (function ((thrice deriv) sin) -5 5)
                        (function cos -5 5 #:color 'blue)))}
-     (list
      @desc{This program uses the @elemcode{plot} library to draw plots of
-       functions.  Note that the plots are actual values, which DrRacket shows
-       in graphical form. It looks like}
-     @img[width: "50%" src: (copyfile #:site www-site (build-path img-dir "cos-deriv.png"))]))
+       functions.  Note that the plots are actual value, which DrRacket shows
+       in graphical form.})
     (generic-example #:title "Sending email"; -----------------------------------------------
      @code{#lang racket ; Sending email from racket
            (require net/sendmail)
