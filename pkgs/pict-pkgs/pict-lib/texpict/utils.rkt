@@ -1078,32 +1078,32 @@
        (scale main-pict (min (/ w (pict-width main-pict))
                              (/ h (pict-height main-pict))))]))
   
-  (define scale
-    (case-lambda
-     [(p x-factor y-factor)
-      (let ([drawer (make-pict-drawer p)])
-	(let ([new
-	       (dc
-		(lambda (dc x y)
-		  (let-values ([(xs ys) (send dc get-scale)])
-		    (send dc set-scale (* xs x-factor) (* ys y-factor))
-		    (drawer dc
-			    (/ x x-factor)
-			    (/ y y-factor))
-		    (send dc set-scale xs ys)))
-		(* (pict-width p) x-factor)
-		(* (pict-height p) y-factor)
-		(* (pict-ascent p) y-factor)
-		(* (pict-descent p) y-factor))])
-	  (make-pict (pict-draw new)
-		     (pict-width new)
-		     (pict-height new)
-		     (pict-ascent new)
-		     (pict-descent new)
-		     (list (make-child p 0 0 x-factor y-factor 0 0))
-		     #f
-                     (pict-last p))))]
-     [(p factor) (scale p factor factor)]))
+(define scale
+  (case-lambda
+    [(p x-factor y-factor)
+     (define drawer (make-pict-drawer p))
+     (define new
+       (dc
+        (λ (dc x y)
+          (define t (send dc get-transformation))
+          (send dc scale x-factor y-factor)
+          (drawer dc
+                  (/ x x-factor)
+                  (/ y y-factor))
+          (send dc set-transformation t))
+        (* (pict-width p) x-factor)
+        (* (pict-height p) y-factor)
+        (* (pict-ascent p) y-factor)
+        (* (pict-descent p) y-factor)))
+     (make-pict (pict-draw new)
+                (pict-width new)
+                (pict-height new)
+                (pict-ascent new)
+                (pict-descent new)
+                (list (make-child p 0 0 x-factor y-factor 0 0))
+                #f
+                (pict-last p))]
+    [(p factor) (scale p factor factor)]))
 
   (define (rotate p theta)
     (let ([w (pict-width p)]
