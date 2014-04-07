@@ -3527,11 +3527,11 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_movr_p(dest, JIT_R0);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "check-not-undefined")) {
+    } else if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined")) {
       if (SCHEME_SYMBOLP(app->rand2)) {
         GC_CAN_IGNORE jit_insn *ref, *ref2;
 
-        LOG_IT(("inlined check-not-undefined\n"));
+        LOG_IT(("inlined check-not-unsafe-undefined\n"));
 
         mz_runstack_skipped(jitter, 2);
         scheme_generate_non_tail(app->rand1, jitter, 0, 1, 0); /* no sync... */

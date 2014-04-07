@@ -93,6 +93,7 @@ READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
 READ_ONLY Scheme_Object *scheme_inferred_name_symbol;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
+READ_ONLY Scheme_Object *scheme_chaperone_undefined_property;
 
 /* READ ONLY SHARABLE GLOBALS */
 
@@ -190,6 +191,7 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *current_read(int, Scheme_Object **);
 static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
 
+static Scheme_Object *chaperone_not_undefined (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
@@ -491,16 +493,6 @@ scheme_init_fun (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("void?", o, env);
 
-  /* adds the new primitive check-undefined to the kernel langauge
-     check-undefined has an arity of 1 and no flags */
-  REGISTER_SO(scheme_check_not_undefined_proc);
-  o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-undefined", 2, 2);
-  scheme_check_not_undefined_proc = o;
-  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("check-not-undefined", o, env);
-
-  scheme_add_global_constant("undefined", scheme_undefined, env);
-
 #ifdef TIME_SYNTAX
   scheme_add_global_constant("time-apply",
 			     scheme_make_prim_w_arity2(time_apply,
@@ -675,6 +667,25 @@ scheme_init_fun (Scheme_Env *env)
   original_default_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
   original_default_prompt->so.type = scheme_prompt_type;
   original_default_prompt->tag = scheme_default_prompt_tag;
+}
+
+void
+scheme_init_unsafe_fun (Scheme_Env *env)
+{
+  Scheme_Object *o, *a[1];
+
+  REGISTER_SO(scheme_check_not_undefined_proc);
+  o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-unsafe-undefined", 2, 2);
+  scheme_check_not_undefined_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("check-not-unsafe-undefined", o, env);
+
+  scheme_add_global_constant("unsafe-undefined", scheme_undefined, env);
+
+  REGISTER_SO(scheme_chaperone_undefined_property);
+  o = scheme_make_struct_type_property(scheme_intern_symbol("chaperone-unsafe-undefined"));
+  scheme_chaperone_undefined_property = o;
+  scheme_add_global_constant("prop:chaperone-unsafe-undefined", o, env);
 }
 
 void
@@ -2538,7 +2549,7 @@ Scheme_Object *
 scheme_check_not_undefined (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_SYMBOLP(argv[1]))
-    scheme_wrong_contract("check-not-undefined", "symbol?", 1, argc, argv);
+    scheme_wrong_contract("check-not-unsafe-undefined", "symbol?", 1, argc, argv);
 
   if (SAME_OBJ(argv[0], scheme_undefined)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
@@ -2550,6 +2561,11 @@ scheme_check_not_undefined (int argc, Scheme_Object *argv[])
   return argv[0];
 }
 
+Scheme_Object *
+chaperone_not_undefined (int argc, Scheme_Object *argv[])
+{
+  return scheme_chaperone_not_undefined(argv[0]);
+}
 
 static Scheme_Object *
 procedure_p (int argc, Scheme_Object *argv[])

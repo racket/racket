@@ -163,7 +163,7 @@ scheme_init_type ()
   set_name(scheme_double_type, "<inexact-number>");
   set_name(scheme_long_double_type, "<extflonum>");
   set_name(scheme_float_type, "<inexact-number*>");
-  set_name(scheme_undefined_type, "<undefined>");
+  set_name(scheme_undefined_type, "<unsafe-undefined>");
   set_name(scheme_eof_type, "<eof>");
   set_name(scheme_input_port_type, "<input-port>");
   set_name(scheme_output_port_type, "<output-port>");

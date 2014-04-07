@@ -9,7 +9,8 @@
          (only-in "../contract/region.rkt" current-contract-region)
          "../contract/base.rkt"
          "../contract/combinator.rkt"
-         racket/undefined
+         racket/unsafe/undefined
+         "class-undef.rkt"
          (for-syntax racket/stxparam
                      syntax/kerncase
                      syntax/stx
@@ -1219,8 +1220,7 @@
                                                            [class-name class-name])
                                                (syntax-track-origin
                                                 (syntax/loc e 
-                                                  (begin 
-                                                    1 ; to ensure a non-empty body
+                                                  (begin
                                                     (set! id (extract-arg 'class-name `idpos init-args defval))
                                                     ...))
                                                 e
@@ -1232,7 +1232,6 @@
                                                           (map normalize-init/field (syntax->list #'(idp ...)))])
                                              (syntax-track-origin
                                               (syntax/loc e (begin 
-                                                              1 ; to ensure a non-empty body
                                                               (set! iid expr)
                                                               ...))
                                               e
@@ -1247,7 +1246,8 @@
                                                                  #'id/rename
                                                                  (stx-car #'id/rename))])
                                              (syntax-track-origin
-                                              (syntax/loc e (set! id (extract-rest-args n init-args)))
+                                              (syntax/loc e
+                                                (set! id (extract-rest-args n init-args)))
                                               e
                                               #'-i-r))]
                                           [(-i-r)
@@ -1271,7 +1271,7 @@
                           [definify (lambda (l)
                                       (map bind-local-id l)
                                       l)])
-                      
+
                       ;; ---- set up field and method mappings ----
                       (with-syntax ([(rename-super-orig ...) (definify (map car rename-supers))]
                                     [(rename-super-orig-localized ...) (map lookup-localize (map car rename-supers))]
@@ -1348,14 +1348,16 @@
                                      public-final-name ...
                                      pubment-name ...)
                                     (values
-                                     (make-field-map (quote-syntax the-finder)
+                                     (make-field-map #t
+                                                     (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
                                                      (quote-syntax inherit-field-mutator))
                                      ...
-                                     (make-field-map (quote-syntax the-finder)
+                                     (make-field-map #f
+                                                     (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
@@ -1486,18 +1488,22 @@
                                           [inspector (if (pair? inspect-decls)
                                                          (stx-car (stx-cdr (car inspect-decls)))
                                                          #'(current-inspector))]
-                                          [deserialize-id-expr deserialize-id-expr])
+                                          [deserialize-id-expr deserialize-id-expr]
+                                          [private-field-names private-field-names])
                               (add-decl-props
                               (quasisyntax/loc stx
-                                (let ([superclass super-expression]
-                                      [interfaces (list interface-expression ...)])
-                                  (compose-class 
-                                   'name superclass interfaces inspector deserialize-id-expr #,any-localized?
+                                (detect-field-unsafe-undefined
+                                 compose-class
+                                   'name 
+                                   super-expression
+                                   (list interface-expression ...)
+                                   inspector deserialize-id-expr #,any-localized?
                                    ;; Field count:
                                    num-fields
                                    ;; Field names:
                                    `field-names
                                    `inherit-field-names
+                                   `private-field-names ; for undefined-checking property
                                    ;; Method names:
                                    `(rename-super-name ... rename-super-extra-name ...)
                                    `(rename-inner-name ... rename-inner-extra-name ...)
@@ -1620,42 +1626,54 @@
                                                           (syntax-case stx () 
                                                             [(_ (arg (... ...)) (kw kwarg) (... ...))
                                                              (with-syntax ([stx stx])
-                                                               (syntax (-instantiate super-go stx #f (the-obj si_c si_inited? 
-                                                                                                           si_leftovers)
-                                                                                     (list arg (... ...)) 
-                                                                                     (kw kwarg) (... ...))))]))]
+                                                               (syntax
+                                                                (begin
+                                                                  `(declare-super-new)
+                                                                  (-instantiate super-go stx #f (the-obj si_c si_inited? 
+                                                                                                         si_leftovers)
+                                                                                (list arg (... ...)) 
+                                                                                (kw kwarg) (... ...)))))]))]
                                                        [super-new-param
                                                         (lambda (stx)
                                                           (syntax-case stx () 
                                                             [(_ (kw kwarg) (... ...))
                                                              (with-syntax ([stx stx])
-                                                               (syntax (-instantiate super-go stx #f (the-obj si_c si_inited? 
-                                                                                                           si_leftovers)
-                                                                                     null
-                                                                                     (kw kwarg) (... ...))))]))]
+                                                               (syntax
+                                                                (begin
+                                                                  `(declare-super-new)
+                                                                  (-instantiate super-go stx #f (the-obj si_c si_inited? 
+                                                                                                         si_leftovers)
+                                                                                null
+                                                                                (kw kwarg) (... ...)))))]))]
                                                        [super-make-object-param
                                                         (lambda (stx)
                                                           (let ([code 
                                                                  (quote-syntax
                                                                   (lambda args
                                                                     (super-go the-obj si_c si_inited? si_leftovers args null)))])
-                                                            (if (identifier? stx)
-                                                                code
-                                                                (datum->syntax
-                                                                 code
-                                                                 (cons code
-                                                                       (cdr (syntax-e stx)))))))])
+                                                            #`(begin
+                                                                `(declare-super-new)
+                                                                #,(if (identifier? stx)
+                                                                      code
+                                                                      (datum->syntax
+                                                                       code
+                                                                       (cons code
+                                                                             (cdr (syntax-e stx))))))))])
                                                       (letrec-syntaxes+values
                                                           ([(plain-init-name) (make-init-redirect 
                                                                                (quote-syntax set!)
                                                                                (quote-syntax #%plain-app)
                                                                                (quote-syntax local-plain-init-name)
                                                                                (quote-syntax plain-init-name-localized))] ...)
-                                                        ([(local-plain-init-name) undefined] ...)
+                                                        ([(local-plain-init-name) unsafe-undefined] ...)
                                                         (void) ; in case the body is empty
-                                                        . exprs)))))))))))))
+                                                        (begin
+                                                          '(declare-field-use-start) ; see "class-undef.rkt"
+                                                          . exprs))))))))))))))
+                                   ;; Extra argument added here by `detect-field-unsafe-undefined`
+                                   #; check-undef?
                                    ;; Not primitive:
-                                   #f)))))))))))))))))
+                                   #f))))))))))))))))
     
     ;; The class* and class entry points:
     (values
@@ -1745,7 +1763,6 @@
                                      super-expression
                                      ()
                                      defn-or-expr ...))]))
-
 
 (define-syntaxes (private* public* pubment* override* overment* augride* augment*
                            public-final* override-final* augment-final*)
@@ -1969,6 +1986,7 @@
                       field-pub-width ; total number of public fields
                       field-ht       ; maps public field names to field-infos (see make-field-info above)
                       field-ids      ; list of public field names
+                      all-field-ids  ; list of field names in reverse order, used for `undefined` error reporting
                       
                       [struct:object ; structure type for instances
                        #:mutable]
@@ -2000,6 +2018,8 @@
                        #:mutable]
                       [fixup         ; for deserialization
                        #:mutable]
+
+                      check-undef?   ; objects need an unsafe-undefined guarding chaperone?
                       
                       no-super-init?); #t => no super-init needed
   #:inspector insp)
@@ -2044,6 +2064,7 @@ last few projections.
                        num-fields          ; total fields (public & private)
                        public-field-names  ; list of symbols (shorter than num-fields)
                        inherit-field-names ; list of symbols (not included in num-fields)
+                       private-field-names ; list of symbols (the rest of num-fields)
                        
                        rename-super-names  ; list of symbols
                        rename-inner-names
@@ -2063,6 +2084,9 @@ last few projections.
                        init-mode           ; 'normal, 'stop, or 'list
                        
                        make-methods        ; takes field and method accessors
+                       
+                       check-undef?
+                       
                        make-struct:prim)   ; see "primitive classes", below
   (define (make-method proc meth-name)
     (procedure-rename
@@ -2288,11 +2312,15 @@ last few projections.
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs dynamic-idxs dynamic-projs
                                 field-width field-pub-width field-ht field-names
+                                (append (reverse private-field-names)
+                                        (reverse public-field-names)
+                                        (class-all-field-ids super))
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
                                 init-args
                                 init-mode
                                 'init
                                 #f #f #f ; serializer is set later
+                                (or check-undef? (class-check-undef? super))
                                 (and make-struct:prim #t))]
                  [obj-name (if name
                                (string->symbol (format "object:~a" name))
@@ -2347,10 +2375,14 @@ last few projections.
                                                  (add-properties (class-struct:object super) interfaces)
                                                  0 ;; No init fields
                                                  ;; Fields for new slots:
-                                                 num-fields undefined
+                                                 num-fields unsafe-undefined
                                                  ;; Map object property to class:
                                                  (append
                                                   (list (cons prop:object c))
+                                                  (if (class-check-undef? c)
+                                                      (list (cons prop:chaperone-unsafe-undefined
+                                                                  (class-all-field-ids c)))
+                                                      null)
                                                   (if deserialize-id
                                                       (list
                                                        (cons prop:serializable
@@ -3078,7 +3110,7 @@ An example
 
                  (vector) (vector) (vector)
                  
-                 0 0 (make-hasheq) null
+                 0 0 (make-hasheq) null null
                  
                  'struct:object object? 'make-object
                  'field-ref-not-needed 'field-set!-not-needed
@@ -3094,6 +3126,8 @@ An example
                  #f
                  (lambda (obj) #(()))        ; serialize
                  (lambda (obj args) (void))  ; deserialize-fixup
+
+                 #f   ; no chaperone to guard against unsafe-undefined
                  
                  #t)) ; no super-init
 
@@ -3242,6 +3276,7 @@ An example
                                field-pub-width
                                field-ht
                                (class-field-ids cls)
+                               (class-all-field-ids cls)
 
                                'struct:object 'object? 'make-object
                                'field-ref 'field-set!
@@ -3252,6 +3287,8 @@ An example
 
                                (class-orig-cls cls)
                                #f #f    ; serializer is never set
+
+                               (class-check-undef? cls)
                                #f)]
                 [obj-name (if name
                               (string->symbol (format "wrapper-object:~a" name))
@@ -3265,7 +3302,7 @@ An example
                                            (class-struct:object cls)
                                            0 ;; No init fields
                                            0 ;; No new fields in this class replacement
-                                           undefined
+                                           unsafe-undefined
                                            ;; Map object property to class:
                                            (list (cons prop:object c)))])
              (set-class-struct:object! c struct:object)
@@ -4261,7 +4298,7 @@ An example
                  #f
                  #f
                  
-                 0 null null ; no fields
+                 0 null null null ; no fields
                  
                  null ; no rename-supers
                  null ; no rename-inners
@@ -4289,6 +4326,8 @@ An example
                              (if init-arg-names
                                  (extract-primitive-args this name init-arg-names init-args)
                                  init-args)))))
+
+                 #f
                  
                  make-struct:prim))
 

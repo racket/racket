@@ -308,6 +308,7 @@ void scheme_init_promise(Scheme_Env *env);
 void scheme_init_struct(Scheme_Env *env);
 void scheme_init_reduced_proc_struct(Scheme_Env *env);
 void scheme_init_fun(Scheme_Env *env);
+void scheme_init_unsafe_fun(Scheme_Env *env);
 void scheme_init_compile(Scheme_Env *env);
 void scheme_init_symbol(Scheme_Env *env);
 void scheme_init_char(Scheme_Env *env);
@@ -526,6 +527,8 @@ extern Scheme_Object *scheme_impersonator_of_property;
 extern Scheme_Object *scheme_app_mark_impersonator_property;
 
 extern Scheme_Object *scheme_no_arity_property;
+
+extern Scheme_Object *scheme_chaperone_undefined_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
@@ -1002,6 +1005,8 @@ Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, in
 Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
 Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key, Scheme_Object **alt_key);
 void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
+
+Scheme_Object *scheme_chaperone_not_undefined(Scheme_Object *orig_val);
 
 /*========================================================================*/
 /*                         syntax objects                                 */

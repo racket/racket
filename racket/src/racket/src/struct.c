@@ -2002,7 +2002,38 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
       Scheme_Chaperone *px = (Scheme_Chaperone *)o;
       Scheme_Object *a[2], *red, *orig;
 
-      if (!SCHEME_VECTORP(px->redirects)
+      if (SCHEME_VECTORP(px->redirects)
+          && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+          && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
+        /* chaperone on every field: check that result is not undefined */
+        o = px->prev;
+        
+        if (!SCHEME_CHAPERONEP(o))
+          orig = ((Scheme_Structure *)o)->slots[i];
+        else
+          orig = chaperone_struct_ref(who, o, i);
+
+        if (SAME_OBJ(orig, scheme_undefined)) {
+          int len;
+          o = scheme_struct_type_property_ref(scheme_chaperone_undefined_property, px->val);
+          len = (o ? scheme_proper_list_length(o) : 0);
+          if (i < len) {
+            for (i = len - i; --i; ) {
+              o = SCHEME_CDR(o);
+            }
+            o = SCHEME_CAR(o);
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                             o,
+                             "%S: field used before its initialization",
+                             o);
+          } else {
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "field used before its initialization");
+          }
+        }
+
+        return orig;
+      } else if (!SCHEME_VECTORP(px->redirects)
           || (SCHEME_VEC_SIZE(px->redirects) & 1)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i])) {
         o = px->prev;
@@ -2065,7 +2096,8 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
 
       o = px->prev;
       if (SCHEME_VECTORP(px->redirects)
-          && !(SCHEME_VEC_SIZE(px->redirects) & 1)) {
+          && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+          && !SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         half = (SCHEME_VEC_SIZE(px->redirects) - PRE_REDIRECTS) >> 1;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + half + i];
         if (SCHEME_TRUEP(red)) {
@@ -2102,7 +2134,8 @@ void scheme_struct_set(Scheme_Object *sv, int pos, Scheme_Object *v)
   }
 }
 
-static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_Object **args)
+static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_Object **args,
+                                    int *_chaperone_undefined)
 {
   Scheme_Object **guard_argv = NULL, *v, *prev_guards = NULL, *guard;
   int p, gcount;
@@ -2131,7 +2164,9 @@ static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_
             guard = scheme_false;
         }
 
-        if (!SCHEME_FALSEP(guard)) {
+        if (SAME_OBJ(guard, scheme_undefined))
+          *_chaperone_undefined = 1;
+        else if (!SCHEME_FALSEP(guard)) {
           gcount = stype->parent_types[p]->num_islots;
           guard_argv[argc] = guard_argv[gcount];
           guard_argv[gcount] = stype->name;
@@ -2173,6 +2208,7 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
   Scheme_Structure *inst;
   Scheme_Struct_Type *stype;
   int p, i, j, nis, ns, c;
+  int chaperone_undefined = 0;
 
   stype = (Scheme_Struct_Type *)_stype;
 
@@ -2185,7 +2221,7 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
   inst->stype = stype;
 
   /* Apply guards, if any: */
-  args = apply_guards(stype, argc, args);
+  args = apply_guards(stype, argc, args, &chaperone_undefined);
   
   /* Fill in fields: */
   j = c;
@@ -2212,8 +2248,11 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
       inst->slots[--j] = args[--i];
     }
   }
-  
-  return (Scheme_Object *)inst;
+
+  if (chaperone_undefined)
+    return scheme_chaperone_not_undefined((Scheme_Object *)inst);
+  else
+    return (Scheme_Object *)inst;
 }
 
 Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *stype)
@@ -2609,7 +2648,7 @@ static Scheme_Object *struct_info_chaperone(Scheme_Object *o, Scheme_Object *si,
     if (SCHEME_VECTORP(px->redirects)
         && !(SCHEME_VEC_SIZE(px->redirects) & 1)) {
       proc = SCHEME_VEC_ELS(px->redirects)[1];
-      if (SCHEME_TRUEP(proc)) {
+      if (SCHEME_TRUEP(proc) && !SAME_OBJ(proc, scheme_undefined)) {
         if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
           proc = scheme_box(proc);
         procs = scheme_make_pair(proc, procs);
@@ -4289,7 +4328,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 					Scheme_Object *guard)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
-  int j, depth, checked_proc = 0;
+  int j, depth, checked_proc = 0, chaperone_undefined = 0;
   
   if (parent && SCHEME_NP_CHAPERONEP(parent))
     parent_type = (Scheme_Struct_Type *)SCHEME_CHAPERONE_VAL(parent);
@@ -4432,6 +4471,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 
         if (SAME_OBJ(prop, scheme_checked_proc_property))
           checked_proc = 1;
+        if (SAME_OBJ(prop, scheme_chaperone_undefined_property))
+          chaperone_undefined = 1;
 
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
         
@@ -4489,6 +4530,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 
         if (SAME_OBJ(prop, scheme_checked_proc_property))
           checked_proc = 1;
+        if (SAME_OBJ(prop, scheme_chaperone_undefined_property))
+          chaperone_undefined = 1;
 
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
 
@@ -4554,6 +4597,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
     }
     
     struct_type->guard = guard;
+  } else if (chaperone_undefined) {
+    struct_type->guard = scheme_undefined;
   }
 
   if (parent && SCHEME_NP_CHAPERONEP(parent)) {
@@ -5665,6 +5710,40 @@ static Scheme_Object *impersonate_struct(int argc, Scheme_Object **argv)
 {
   return do_chaperone_struct("impersonate-struct", 1, argc, argv);
 }
+
+
+Scheme_Object *scheme_chaperone_not_undefined (Scheme_Object *orig_val)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val, *redirects;
+  Scheme_Hash_Tree *props;
+
+  val = orig_val;
+
+  if (SCHEME_CHAPERONEP(val)) {
+    props = ((Scheme_Chaperone *)val)->props;
+    val = SCHEME_CHAPERONE_VAL(val);
+  } else
+    props = NULL;
+
+  redirects = scheme_make_vector(PRE_REDIRECTS, scheme_false);
+
+  SCHEME_VEC_ELS(redirects)[0] = scheme_false;
+  SCHEME_VEC_ELS(redirects)[1] = scheme_undefined; /* special handing in struct_ref */
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  if (SCHEME_PROCP(val))
+    px->iso.so.type = scheme_proc_chaperone_type;
+  else
+    px->iso.so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = orig_val;
+  px->props = props;
+  px->redirects = redirects;
+
+  return (Scheme_Object *)px;
+}
+
 
 static Scheme_Object *do_chaperone_struct_type(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 {

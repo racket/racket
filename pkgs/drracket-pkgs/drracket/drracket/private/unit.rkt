@@ -4496,7 +4496,6 @@
         (if (null? v)
             (send bug-icon show #f)
             (send bug-icon show #t)))
-      (set-bug-label (preferences:get 'drracket:saved-bug-reports))
       (define remove-bug-icon-callback
         (preferences:add-callback
          'drracket:saved-bug-reports
@@ -4608,6 +4607,7 @@
                         (λ (l)
                           (cons btn (remq* (list btn) l))))
                   btn))
+          (set-bug-label (preferences:get 'drracket:saved-bug-reports))
           
           (set! func-defs-canvas (new func-defs-canvas% 
                                       (parent name-panel)

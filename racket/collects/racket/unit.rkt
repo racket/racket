@@ -17,7 +17,7 @@
                      "private/unit-syntax.rkt"))
 
 (require racket/block
-         racket/undefined
+         racket/unsafe/undefined
          racket/contract/base
          racket/contract/region
          racket/stxparam
@@ -967,7 +967,7 @@
              (list (cons 'dept depr) ...)
              (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                (lambda ()
-                 (let ([eloc (box undefined)] ... ...)
+                 (let ([eloc (box unsafe-undefined)] ... ...)
                    (values 
                     (lambda (import-table)
                       (let-values ([(iloc ...)
@@ -1005,7 +1005,10 @@
                                                       (define-values (e-post-id ...) 
                                                         (letrec-syntaxes+values (post-renames ...) ()
                                                           e-post-rhs)) ... ...)))))
-                    (unit-export ((export-key ...) (vector-immutable (λ () (unbox eloc)) ...)) ...)))))))
+                    (unit-export ((export-key ...)
+                                  (vector-immutable (λ () (check-not-unsafe-undefined (unbox eloc) 'int-evar))
+                                                    ...))
+                                 ...)))))))
           import-tagged-sigids
           export-tagged-sigids
           dep-tagged-sigids))))))
@@ -1187,8 +1190,8 @@
         (lambda (int/ext-name index ctc)
           (bound-identifier-mapping-put! def-table
                                          (car int/ext-name)
-                                         #`(check-not-undefined (vector-ref #,v #,index)
-                                                                '#,(car int/ext-name)))
+                                         #`(check-not-unsafe-undefined (vector-ref #,v #,index)
+                                                                       '#,(car int/ext-name)))
           (bound-identifier-mapping-put! ctc-table
                                          (car int/ext-name)
                                          ctc)

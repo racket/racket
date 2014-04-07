@@ -418,3 +418,7 @@ Unchecked versions of @racket[extflvector-length], @racket[extflvector-ref], and
 @racket[extflvector-set!]. A @tech{extflvector}'s size can never be larger than a
 @tech{fixnum} (so even @racket[extflvector-length] always returns a
 fixnum).}
+
+@; ------------------------------------------------------------------------
+
+@include-section["unsafe-undefined.scrbl"]

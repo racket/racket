@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt"
-          (for-label racket/undefined))
+@(require "mz.rkt")
 
 @title[#:style 'toc #:tag "data"]{Datatypes}
 
@@ -170,33 +169,5 @@ The @|void-const| value is always @racket[eq?] to itself.
 @defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
  @racket[v] argument is ignored.}
 
-
 @; ----------------------------------------------------------------------
-@section[#:tag "undefined"]{Undefined}
-
-@note-lib[racket/undefined]
-
-The constant @racket[undefined] is conceptually used as a placeholder
-value for a binding, so that a reference to a binding before its
-definition can be detected. Such references are normally protected
-implicitly via @racket[check-not-undefined], so that an expression does
-not normally produce an @racket[undefined] value.
-
-The @racket[undefined] value is always @racket[eq?] to itself.
-
-@history[#:added "6.0.0.6"]
-
-@defproc[(undefined? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is the
- constant @racket[undefined], @racket[#f] otherwise.}
-
-
-@defthing[undefined undefined?]{The ``undefined'' constant.}
-
-@defproc[(check-not-undefined [v any/c] [sym symbol?]) (and/c any/c (not/c undefined?))]{
-
-Checks whether @racket[v] is @racket[undefined], and raises
-@racket[exn:fail:contract:variable] in that case with an error message
-along the lines of ``@racket[sym]: variable used before its definition.''
-If @racket[v] is not @racket[undefined], then @racket[v] is returned.
-
-}
+@include-section["undefined.scrbl"]

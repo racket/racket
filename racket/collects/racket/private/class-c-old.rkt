@@ -236,6 +236,7 @@
                             field-pub-width
                             field-ht
                             (class-field-ids cls)
+                            (class-all-field-ids cls)
                             
                             'struct:object 'object? 'make-object
                             'field-ref 'field-set!
@@ -247,6 +248,8 @@
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
+                            
+                            (class-check-undef? cls)
                             #f)]
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
@@ -500,6 +503,7 @@
                             field-pub-width
                             field-ht
                             (class-field-ids cls)
+                            (class-all-field-ids cls)
                             
                             'struct:object 'object? 'make-object
                             'field-ref 'field-set!
@@ -511,6 +515,9 @@
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
+
+                            (class-check-undef? cls)
+
                             #f)]
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
@@ -1249,6 +1256,7 @@
                         field-pub-width
                         field-ht
                         (class-field-ids cls)
+                        (class-all-field-ids cls)
                         
                         'struct:object 'object? 'make-object
                         'field-ref 'field-set!
@@ -1259,6 +1267,8 @@
                         
                         (class-orig-cls cls)
                         #f #f ; serializer is never set
+
+                        (class-check-undef? cls)
                         #f)]
          [obj-name (if name
                        (string->symbol (format "wrapper-object:~a" name))

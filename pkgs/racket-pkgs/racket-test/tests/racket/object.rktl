@@ -1923,5 +1923,121 @@
 (test 6 'send-generic-interface (send-generic (new c/i%) (generic i<%> m) 6))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check error reporting for variable use before assignment
+
+(let ()
+  (define c%
+    (class object%
+      (define x 7)
+      (field [h 10])
+      (super-new)))
+  
+  (define d%
+    (class c%
+      (define z z)
+      (super-new)))
+
+  (define e%
+    (class d%
+      (define q 1)
+      (field [s 1])
+      (super-new)))
+
+  (define d2%
+    (class c%
+      (define z 1)
+      (field [f f])
+      (super-new)))
+
+  (define e2%
+    (class d2%
+      (define q 1)
+      (field [s 1])
+      (super-new)))
+  
+  (err/rt-test (new d%) (lambda (exn)
+                          (and (exn:fail:contract:variable? exn)
+                               (eq? 'z (exn:fail:contract:variable-id exn)))))
+  (err/rt-test (new e%) (lambda (exn)
+                          (and (exn:fail:contract:variable? exn)
+                               (eq? 'z (exn:fail:contract:variable-id exn)))))
+  (err/rt-test (new d2%) (lambda (exn)
+                           (and (exn:fail:contract:variable? exn)
+                                (eq? 'f (exn:fail:contract:variable-id exn)))))
+  (err/rt-test (new e2%) (lambda (exn)
+                           (and (exn:fail:contract:variable? exn)
+                                (eq? 'f (exn:fail:contract:variable-id exn))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check optimization to omit use-before-definition chaperone:
+
+;; Relies on expansion where the next-to-last argument of `compose-class`
+;; is #t when the chaperone is needed.
+
+(let ()
+  (define (check-opt e opt?)
+    (test #t
+          `(,opt? ,e)
+          (let ([e (expand e)])
+            (let loop ([e e])
+              (cond
+               [(and (pair? e)
+                     (pair? (cdr e))
+                     (eq? (syntax-e (car e)) 'compose-class))
+                (eq? opt? (syntax-case (list-ref e (- (length e) 2)) (quote)
+                            [(quote #f) #t]
+                            [(quote #t) #f]
+                            [_ 'unknown]))]
+               [(syntax? e)
+                (loop (syntax-e e))]
+               [(pair? e)
+                (and (loop (car e)) (loop (cdr e)))]
+               [else #t])))))
+
+  (check-opt '(class object%) #t)
+  (check-opt '(class object% (super-new)) #t)
+
+  (check-opt '(class object% (define x 1)) #t)
+  (check-opt '(class object% (define x 1) (super-new)) #t)
+  (check-opt '(class object% (field [x 1]) (super-new)) #t)
+  (check-opt '(class object% (init-field [x 1]) (super-new)) #t)
+  (check-opt '(class object% (define x (+ 1 2))) #t)
+  (check-opt '(class object% (define x (free-var 1))) #t)
+
+  (check-opt '(class object% (define x x)) #f)
+  (check-opt '(class object% (field [x x])) #f)
+  (check-opt '(class object% (init-field [x x])) #f)
+  (check-opt '(class object% (super-new) (define x 1)) #f)
+  (check-opt '(class object% (super-make-object) (define x 1)) #f)
+  (check-opt '(class object% (super-instantiate ()) (define x 1)) #f)
+  (check-opt '(class object% (displayln this) (define x 1)) #f)
+  (check-opt '(class object% (inherit m) (m) (define x 1)) #f)
+  (check-opt '(class object% (define/override (m) x) (super m) (define x 1)) #f)
+
+  (check-opt '(class object% (define x 1) (define y 1) (super-new)) #t)
+  (check-opt '(class object% (define x 1) (define y x) (super-new)) #t)
+  (check-opt '(class object% (field [x 1] [y x]) (super-new)) #t)
+  (check-opt '(class object% (field [x 1] [y x]) (super-make-object)) #t)
+  (check-opt '(class object% (init-field [x 1] [y x]) (super-new)) #t)
+  (check-opt '(class object% (init-field [x 1]) (define y x) (super-new)) #t)
+  (check-opt '(class object% (define x 1) (define y (list x)) (super-new)) #t)
+  (check-opt '(class object% (define/public (m) x) (define x 1) (super-new)) #t)
+  (check-opt '(class object% (define/override (m) x) (define x 1) (super-new)) #t)
+
+  (check-opt '(class object% (define x y) (define y 1) (super-new)) #f)
+  (check-opt '(class object% (init-field [x y] [y 1])) #f)
+
+  (check-opt '(class object% (inherit-field f) (super-new) (displayln f)) #t)
+  (check-opt '(class object% (inherit-field f) (displayln f) (super-new)) #f)
+  (check-opt '(class object% (inherit-field f) (set! f 10) (super-new)) #t)
+
+  ;; Ok to use after explicit assignment that's before the decl:
+  (check-opt '(class object% (set! y 7) (define x y) (define y 1) (super-new)) #t)
+  ;; But not in a branch
+  (check-opt '(class object% (when ? (set! y 7)) (define x y) (define y 1) (super-new)) #f)
+
+  (void))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
