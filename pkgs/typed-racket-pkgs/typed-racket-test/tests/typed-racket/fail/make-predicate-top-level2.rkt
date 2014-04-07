@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:syntax? #rx".*Unbound type name.*")
+(exn-pred exn:fail:syntax? #rx".*is unbound.*")
 
 #lang racket/load
 (require typed/racket/base)

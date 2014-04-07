@@ -116,16 +116,20 @@
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx
     [(:All^ (vars:id ... v:id dd:ddd) . t:omit-parens)
-     (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
-       (tc-error "All: duplicate type variable or index"))
+     (define maybe-dup (check-duplicate-identifier (syntax->list #'(vars ... v))))
+     (when maybe-dup
+       (parse-error "duplicate type variable or index"
+                    "variable or index" (syntax-e maybe-dup)))
      (let* ([vars (stx-map syntax-e #'(vars ...))]
             [v (syntax-e #'v)])
        (extend-indexes v
          (extend-tvars vars
            (make-PolyDots (append vars (list v)) (parse-type #'t.type)))))]
     [(:All^ (vars:id ...) . t:omit-parens)
-     (when (check-duplicate-identifier (syntax->list #'(vars ...)))
-       (tc-error "All: duplicate type variable"))
+     (define maybe-dup (check-duplicate-identifier (syntax->list #'(vars ...))))
+     (when maybe-dup
+       (parse-error "duplicate type variable"
+                    "variable" (syntax-e maybe-dup)))
      (let* ([vars (stx-map syntax-e #'(vars ...))])
        (extend-tvars vars
          (make-Poly vars (parse-type #'t.type))))]
@@ -152,8 +156,8 @@
           (list var*)
           constraints
           (parse-type #'t.type))))]
-    [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
-    [(:All^ . rest) (tc-error "All: bad syntax")]))
+    [(:All^ (_:id ...) _ _ _ ...) (parse-error "too many forms in body of All type")]
+    [(:All^ . rest) (parse-error "bad syntax")]))
 
 ;; syntax class for standard keyword syntax (same as contracts), may be
 ;; optional or mandatory depending on where it's used
@@ -305,23 +309,30 @@
        (match (lookup-type/lexical #'p?)
          [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
           (make-Refinement dom #'p?)]
-         [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
+         [t (parse-error "expected a predicate for argument to Refinement"
+                         "given" t)])]
       [(:Struct^ t)
        (let ([v (parse-type #'t)])
          (match (resolve v)
            [(and s (? Struct?)) (make-StructTop s)]
-           [_ (tc-error/delayed "Argument to Struct must be a structure type, got ~a" v)
+           [_ (parse-error #:delayed? #t
+                           "expected a structure type for argument to Struct"
+                           "given" v)
               (Un)]))]
       [(:Struct-Type^ t)
        (define v (parse-type #'t))
        (match (resolve v)
          [(? Struct? s) (make-StructType s)]
-         [_ (tc-error/delayed "Argument to Struct-Type must be a structure type, got ~a" v)
+         [_ (parse-error #:delayed? #t
+                         "expected a structure type for argument to Struct-Type"
+                         "given" v)
             (Un)])]
       [(:Instance^ t)
        (let ([v (parse-type #'t)])
          (if (not (or (F? v) (Mu? v) (Name? v) (Class? v) (Error? v)))
-             (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
+             (begin (parse-error #:delayed? #t
+                                 "expected a class type for argument to Instance"
+                                 "given" v)
                     (make-Instance (Un)))
              (make-Instance v)))]
       [(:List^ ts ...)
@@ -340,9 +351,10 @@
           (let ([t (parse-type ty)])
             (match t
               [(Function: (list arr)) arr]
-              [_ (tc-error/stx
-                  ty
-                  "Component of case-lambda type was not a function clause")]))))]
+              [_ (parse-error
+                  #:stx ty
+                  "expected a function type for component of case-> type"
+                  "given" t)]))))]
       #;[(:Vectorof^ t)
        (make-Vector (parse-type #'t))]
       [(:Rec^ x:id t)
@@ -363,9 +375,9 @@
                   [(PolyDots: names body) (loop body)]
                   [else #t])))
              (unless productive
-               (tc-error/stx
-                stx
-                "Recursive types are not allowed directly inside their definition"))
+               (parse-error
+                #:stx stx
+                "recursive types are not allowed directly inside their definition"))
              (if (memq var (fv t*))
                  (make-Mu var t*)
                  t*))))]
@@ -417,9 +429,10 @@
             (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
-           (tc-error/stx #'bound
-                         "Used a type variable (~a) not bound with ... as a bound on a ..."
-                         bnd))
+           (parse-error
+            #:stx #'bound
+            "used a type variable not bound with ... as a bound on a ..."
+            "variable" bnd))
          (make-Function
           (list
            (make-arr-dots (parse-types #'(dom ...))
@@ -467,9 +480,8 @@
           (lookup-tvar (syntax-e #'id))]
          ;; if it was in current-indexes, produce a better error msg
          [(bound-index? (syntax-e #'id))
-          (tc-error
-           "Type variable ~a must be used with ..."
-           (syntax-e #'id))]
+          (parse-error "type variable must be used with ..."
+                       "variable" (syntax-e #'id))]
          ;; if it's a type alias, we expand it (the expanded type is stored in the HT)
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
@@ -481,23 +493,21 @@
             (add-disappeared-use (syntax-local-introduce #'id))
             t)]
          [(free-identifier=? #'id #'->)
-          (tc-error/delayed "Incorrect use of -> type constructor")
+          (parse-error #:delayed? #t "incorrect use of -> type constructor")
           Err]
          [else
-          (tc-error/delayed
-           "Unbound type name ~a"
-           (syntax-e #'id))
+          (parse-error #:delayed? #t (~a "type name `" (syntax-e #'id) "' is unbound"))
           Err])]
       [(:Opaque^ . rest)
-       (tc-error "Opaque: bad syntax")]
+       (parse-error "bad syntax in Opaque")]
       [(:U^ . rest)
-       (tc-error "Union: bad syntax")]
+       (parse-error "bad syntax in Union")]
       #;[(:Vectorof^ . rest)
-       (tc-error "Vectorof: bad syntax")]
+       (tc-error "bad syntax in Vectorof")]
       [(:Rec^ . rest)
-       (tc-error "Rec: bad syntax")]
+       (parse-error "bad syntax in Rec")]
       [(t ... :->^ . rest)
-       (tc-error "->: bad syntax")]
+       (parse-error "bad syntax in ->")]
       [(id arg args ...)
        (let loop
          ([rator (parse-type #'id)]
@@ -525,9 +535,11 @@
                         ;; (max-portable-index, max-64bit-fixnum]
                         (and (>  val (sub1 (expt 2 28)))
                              (<= val (sub1 (expt 2 62))))))
-           (tc-error "non-portable fixnum singleton types are not valid types: ~a" val))
+           (parse-error "non-portable fixnum singleton types are not valid types"
+                        "given" val))
          (-val val))]
-      [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
+      [_ (parse-error "expected a valid type"
+                      "given" (syntax->datum stx))])))
 
 ;; Syntax -> Type
 ;; Parse a (List ...) type
@@ -597,16 +609,16 @@
            (cond [;; if there is a duplicate, but the type is a subtype,
                   ;; then let it through and check for any other duplicates
                   (unless (subtype type super-type)
-                    ;; FIXME: this error message may need rewording
-                    (tc-error (~a "Type for member " maybe-dup
-                                  " in class type is not a subtype of the type"
-                                  " in the parent class type")))
+                    (parse-error "class member type not a subtype of parent member type"
+                                 "member" maybe-dup
+                                 "type" type
+                                 "parent type" super-type))
                   (check-duplicate-clause
                    names (remove maybe-dup super-names)
                    types (dict-remove super-types maybe-dup)
                    err-msg)]
                  [else
-                  (tc-error/stx parent-stx err-msg maybe-dup)])]
+                  (parse-error #:stx parent-stx err-msg "name" maybe-dup)])]
           [else (values types super-types)]))
 
   (define (match-parent-type parent-type)
@@ -614,8 +626,8 @@
     (match resolved
       [(Class: row-var _ fields methods augments _)
        (values row-var fields methods augments)]
-      [_ (tc-error "expected a class type for #:implements clause, got ~a"
-                   resolved)]))
+      [_ (parse-error "expected a class type for #:implements clause"
+                      "given" resolved)]))
   (define-values (super-row-var super-fields
                   super-methods super-augments)
     (match-parent-type parent-type))
@@ -633,23 +645,23 @@
     (check-duplicate-clause
      field-names super-field-names
      fields super-fields
-     "field or init-field name ~a conflicts with #:implements clause"))
+     "field or init-field name conflicts with #:implements clause"))
   (define-values (checked-methods checked-super-methods)
     (check-duplicate-clause
      method-names super-method-names
      methods super-methods
-     "method name ~a conflicts with #:implements clause"))
+     "method name conflicts with #:implements clause"))
   (define-values (checked-augments checked-super-augments)
     (check-duplicate-clause
      augment-names super-augment-names
      augments super-augments
-     "augmentable method name ~a conflicts with #:implements clause"))
+     "augmentable method name conflicts with #:implements clause"))
 
   ;; it is an error for both the extending type and extended type
   ;; to have row variables
   (when (and row-var super-row-var)
-    (tc-error (~a "class type with row variable cannot"
-                  " extend another type that has a row variable")))
+    (parse-error (~a "class type with row variable cannot"
+                     " extend another type that has a row variable")))
 
   ;; then append the super types if there were no errors
   (define merged-fields (append checked-super-fields checked-fields))
@@ -659,12 +671,11 @@
   ;; make sure augments and methods are disjoint
   (define maybe-dup-method (check-duplicate (dict-keys merged-methods)))
   (when maybe-dup-method
-    (tc-error (~a "method name " maybe-dup-method " conflicts with"
-                  " another method name")))
+    (parse-error "duplicate method name" "name" maybe-dup-method))
   (define maybe-dup-augment (check-duplicate (dict-keys merged-augments)))
   (when maybe-dup-augment
-    (tc-error (~a "augmentable method name " maybe-dup-augment " conflicts with"
-                  " another augmentable method name")))
+    (parse-error "duplicate augmentable method name"
+                 "name" maybe-dup-augment))
 
   (values (or row-var super-row-var) merged-fields
           merged-methods merged-augments))
@@ -708,11 +719,9 @@
            ;; delayed error should be raised from the recursive call to
            ;; `parse-type` so no additional error is needed here.
            [(Error? given-row-var) Err]
-           [(not (F? given-row-var))
-            (tc-error/fields "parse error in type"
-                             #:more "expected a type variable for #:row-var"
-                             "given" given-row-var
-                             #:delayed? #t)
+           [(and given-row-var (not (F? given-row-var)))
+            (parse-error "expected a type variable for #:row-var"
+                         "given" given-row-var)
             Err]
            ;; Only proceed to create a class type when the parsing
            ;; process isn't looking for recursive type alias references.
@@ -792,8 +801,9 @@
   (for ([(id pre-type) (in-dict method-types)])
     (define type (car pre-type))
     (unless (function-type? type)
-      (tc-error "method ~a must have a function type, given ~a"
-                id type))))
+      (parse-error "method must have a function type"
+                   "method name" id
+                   "given type" type))))
 
 ;; check-constraints : Dict<Name, _> Listof<Name> -> Void
 ;; helper to check if the constraints are consistent with the type
@@ -804,9 +814,8 @@
       (and (not (memq m constraint-names))
            m)))
   (when conflicting-name
-    (tc-error (~a "class type cannot contain member "
-                  conflicting-name
-                  " because it conflicts with the row variable constraints"))))
+    (parse-error "class member conflicts with row variable constraints"
+                 "conflicting name" conflicting-name)))
 
 (define (parse-tc-results stx)
   (syntax-parse stx
@@ -819,3 +828,14 @@
 (define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
+
+;; parse-error : String String String ... ... -> Void
+;; helper for parse-type error messages
+(define (parse-error reason
+                     #:delayed? [delayed? #f]
+                     #:stx [stx (current-orig-stx)]
+                     . rst)
+  (apply tc-error/fields "parse error in type"
+                         #:more reason
+                         #:delayed? delayed?
+                         rst))
