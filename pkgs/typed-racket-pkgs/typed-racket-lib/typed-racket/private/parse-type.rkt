@@ -704,10 +704,20 @@
        (and (attribute clause.init-rest)
             (parse-type (attribute clause.init-rest))))
 
-     ;; Only proceed to create a class type when the parsing
-     ;; process isn't looking for recursive type alias references.
-     ;; (otherwise the merging process will error)
-     (cond [(or (null? parent-stxs)
+     (cond ;; If an Error type flows into the #:row-var position, a
+           ;; delayed error should be raised from the recursive call to
+           ;; `parse-type` so no additional error is needed here.
+           [(Error? given-row-var) Err]
+           [(not (F? given-row-var))
+            (tc-error/fields "parse error in type"
+                             #:more "expected a type variable for #:row-var"
+                             "given" given-row-var
+                             #:delayed? #t)
+            Err]
+           ;; Only proceed to create a class type when the parsing
+           ;; process isn't looking for recursive type alias references.
+           ;; (otherwise the merging process will error)
+           [(or (null? parent-stxs)
                 (not (current-referenced-aliases)))
 
             (check-function-types given-methods)

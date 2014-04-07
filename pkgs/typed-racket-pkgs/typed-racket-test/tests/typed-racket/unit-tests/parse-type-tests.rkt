@@ -242,6 +242,7 @@
    [FAIL (All (r #:row) (Class #:implements (Class) #:row-var r))]
    [FAIL (Class #:row-var 5)]
    [FAIL (Class #:row-var (list 3))]
+   [FAIL (Class #:row-var x)]
    [FAIL (Class #:implements (Class #:row-var r) #:row-var x)]
    [FAIL (Class #:implements (Class #:row-var r) #:row-var r)]
    [FAIL (All (r #:row)
