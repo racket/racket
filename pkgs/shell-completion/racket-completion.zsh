@@ -36,6 +36,9 @@
 # the function since it's loaded on first use.)
 #
 
+# Identify zsh as the completion client
+export RACKET_COMPLETION_CLIENT=zsh
+
 ###############################################################################
 
 _racket_file_expander() {
@@ -60,8 +63,7 @@ _racket_call() {
 _racket_read_libfile_or_collect() {
   local -a dirs
   dirs=(
-    "${(f)$(_racket_call directories '
-             (for-each displayln (current-library-collection-paths))')}"
+    "${(f)$(_racket_call directories '(require (submod shell-completion/list-collects main))')}"
   )
   local -a ignored
   ignored=('*.dep' '*.zo' 'compiled' '*/compiled')

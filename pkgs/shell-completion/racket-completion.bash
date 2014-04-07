@@ -9,6 +9,9 @@
 # will need to make sure that you have bash completions enabled, usually
 # with "source /etc/bash_completion".
 
+# Identify bash as the completion client
+export RACKET_COMPLETION_CLIENT=bash
+
 # This completes only *.{rkt,ss,scm,scrbl} files unless there are none,
 # in which case it completes other things.
 _racket_filedir() {
@@ -116,7 +119,7 @@ _complete_collects() {
   local cur="$1"
   if [[ "${#_racket_collects[@]}" -eq 0 ]]; then
     _racket_collects=(
-      $( $_racket_cmd -e '(require shell-completion/list-collects)' )
+      $( $_racket_cmd -e '(require (submod shell-completion/list-collects main))' )
     )
   fi
   local wordlist=""
