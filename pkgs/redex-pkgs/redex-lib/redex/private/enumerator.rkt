@@ -104,7 +104,7 @@
                (λ (n)
                   (encode e (inv-f n))))]
         [else
-         (define es/e (list/e (cons e es)))
+         (define es/e (apply list/e (cons e es)))
          (map/e
           (λ (xs)
              (apply f xs))
@@ -497,7 +497,7 @@
 ;; Traversal (maybe come up with a better name
 ;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
 (define (traverse/e f xs)
-  (list/e (map f xs)))
+  (apply list/e (map f xs)))
 
 ;; Hash Traversal
 ;; hash-traverse/e : (a -> enum b), (hash[k] -o> a) -> enum (hash[k] -o> b)
@@ -839,7 +839,7 @@
                (disj-sum/e (cons (const/e '()) null?)
                            (cons (cons/e e self) pair?))))]
     [(e n)
-     (list/e (build-list n (const e)))]))
+     (apply list/e (build-list n (const e)))]))
 
 ;; many1/e : enum a -> enum (nonempty listof a)
 (define (many1/e e)
@@ -917,25 +917,113 @@
   (loop xs -1 '()))
 
 ;; list/e : listof (enum any) -> enum (listof any)
-(define (list/e es)
+(define (list/e . es)
   (define l (length es))
   (cond
     [(= l 0) (const/e '())]
     [(= l 1) (map/e list car (car es))]
+    [(all-infinite? es) (apply box-list/e es)]
+    [(all-finite?   es) (apply nested-cons-list/e es)]
     [else
-     (define split-point (quotient l 2))
-     (define-values (left right) (split-at es split-point))
-     (map/e
-      (λ (pr) (append (car pr) (cdr pr)))
-      (λ (lst)
-        (define-values (left right) (split-at lst split-point))
-        (cons left right))
-      (cons/e (list/e left) (list/e right)))]))
+     (define tagged-es
+       (for/list ([i (in-naturals)]
+                  [e (in-list es)])
+         (cons e i)))
+     (define-values (inf-eis fin-eis)
+       (partition (compose infinite?
+                           size
+                           car)
+                  tagged-es))
+     (define inf-es (map car inf-eis))
+     (define inf-is (map cdr inf-eis))
+     (define fin-es (map car fin-eis))
+     (define fin-is (map cdr fin-eis))
+     
+     (define inf-slots
+       (reverse
+        (let loop ([inf-is inf-is]
+                   [fin-is fin-is]
+                   [acc    '()])
+          (match* (inf-is fin-is)
+            [('() '()) acc]
+            [((cons _ _) '())
+             (append (for/list ([_ (in-list inf-is)]) #t) acc)]
+            [('() (cons _ _))
+             (append (for/list ([_ (in-list fin-is)]) #f) acc)]
+            [((cons ii rest-iis) (cons fi rest-fis))
+             (cond [(ii . < . fi)
+                    (loop rest-iis
+                          fin-is
+                          (cons #t acc))]
+                   [else
+                    (loop inf-is
+                          rest-fis
+                          (cons #f acc))])]))))
+     
+     (define/match (reconstruct infs-fins)
+       [((cons infs fins))
+        (let loop ([infs infs]
+                    [fins fins]
+                    [inf?s inf-slots]
+                    [acc '()])
+           (match inf?s
+             ['() (reverse acc)]
+             [(cons inf? rest)
+              (cond [inf?
+                     (loop (cdr infs)
+                           fins
+                           rest
+                           (cons (car infs) acc))]
+                    [else
+                     (loop infs
+                           (cdr fins)
+                           rest
+                           (cons (car fins) acc))])]))])
+     (define (deconstruct xs)
+       (let loop ([xs xs]
+                  [inf-acc '()]
+                  [fin-acc '()]
+                  [inf?s   inf-slots])
+         (match* (xs inf?s)
+           [('() '()) (cons (reverse inf-acc)
+                            (reverse fin-acc))]
+           [((cons x rest-xs) (cons inf? rest-inf?s))
+            (cond [inf?
+                   (loop rest-xs
+                         (cons x inf-acc)
+                         fin-acc
+                         rest-inf?s)]
+                  [else
+                   (loop rest-xs
+                         inf-acc
+                         (cons x fin-acc)
+                         rest-inf?s)])])))
+     (map/e reconstruct
+            deconstruct
+            (cons/e (apply list/e inf-es)
+                    (apply list/e fin-es)))]))
 
-(define/contract (all-infinite? es)
-  ((listof enum?) . -> . boolean?)
+(define (nested-cons-list/e . es)
+  (define l (length es))
+  (define split-point (quotient l 2))
+  (define-values (left right) (split-at es split-point))
+  (map/e
+   (λ (pr) (append (car pr) (cdr pr)))
+   (λ (lst)
+      (define-values (left right) (split-at lst split-point))
+      (cons left right))
+   (cons/e (apply list/e left) (apply list/e right))))
+
+
+(define (all-infinite? es)
+  (all-sizes-something? infinite? es))
+
+(define (all-finite? es)
+  (all-sizes-something? (negate infinite?) es))
+
+(define (all-sizes-something? p? es)
   (for/and ([e (in-list es)])
-    (infinite? (size e))))
+    (p? (size e))))
 
 ;; Fair tupling via generalized cantor n-tupling
 ;; ordering is monotonic in the sum of the elements of the list
@@ -943,8 +1031,7 @@
   (define all-inf? (all-infinite? es))
   (cond [(empty? es) (const/e '())]
         [(not all-inf?)
-         ;; TODO: improve mixed finite/infinite
-         (list/e es)]
+         (apply list/e es)]
         [else
          (define k (length es))
          (define dec
@@ -962,7 +1049,7 @@
 (define (box-list/e . es)
   (define all-inf? (all-infinite? es))
   (cond [(empty? es) (const/e '())]
-        [(not all-inf?) (list/e es)]
+        [(not all-inf?) (apply list/e es)]
         [else
          (define k (length es))
          (define dec
@@ -988,7 +1075,7 @@
          (map/e
           (curry cons bound)
           cdr
-          (list/e
+          (apply list/e
            (for/list ([_ (in-range (sub1 len))])
              bounded/e))))
        (define first-not-max/e
