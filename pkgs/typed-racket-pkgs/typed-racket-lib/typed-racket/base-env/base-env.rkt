@@ -1342,7 +1342,7 @@
           -Symbol
           -Module-Path-Index
           -Symbol
-          (Un (-val 0) (-val 1))
+          -Nat
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-transformer-binding
@@ -1352,7 +1352,7 @@
           -Symbol
           -Module-Path-Index
           -Symbol
-          (Un (-val 0) (-val 1))
+          -Nat
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-template-binding
@@ -1362,7 +1362,7 @@
           -Symbol
           -Module-Path-Index
           -Symbol
-          (Un (-val 0) (-val 1))
+          -Nat
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-label-binding
@@ -1372,7 +1372,7 @@
           -Symbol
           -Module-Path-Index
           -Symbol
-          (Un (-val 0) (-val 1))
+          -Nat
           (-opt -Integer)
           (-opt -Integer))))]
 

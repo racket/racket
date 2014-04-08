@@ -102,7 +102,7 @@ is @racket[#f].}
                        symbol?
                        module-path-index?
                        symbol?
-                       (or/c 0 1)
+                       exact-nonnegative-integer?
                        (or/c exact-integer? #f)
                        (or/c exact-integer? #f)))]{
 
@@ -152,8 +152,9 @@ Returns one of three kinds of values, depending on the binding of
         @racket[_source-mod] and @racket[_nominal-source-mod] are the
         same.}
 
-        @item{@racket[_source-phase] is @racket[1] if the source
-        definition is for-syntax, @racket[0] otherwise.}
+        @item{@racket[_source-phase] is an exact non-negative integer
+        representing the source phase. For example, it is @racket[1] if the source
+        definition is for-syntax.}
 
         @item{@racket[_import-phase] is @racket[0] if the binding
         import of @racket[_nominal-source-mode] is a plain
@@ -184,7 +185,7 @@ transformer, so that @racket[identifier-binding] is consistent with
                        symbol?
                        module-path-index?
                        symbol?
-                       (or/c 0 1)
+                       exact-nonnegative-integer?
                        (or/c exact-integer? #f)
                        (or/c exact-integer? #f)))]{
 
@@ -198,7 +199,7 @@ Same as @racket[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
                        symbol?
                        module-path-index?
                        symbol?
-                       (or/c 0 1)
+                       exact-nonnegative-integer?
                        (or/c exact-integer? #f)
                        (or/c exact-integer? #f)))]{
 
@@ -212,7 +213,7 @@ Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
                        symbol?
                        module-path-index?
                        symbol?
-                       (or/c 0 1)
+                       exact-nonnegative-integer?
                        (or/c exact-integer? #f)
                        (or/c exact-integer? #f)))]{
 
