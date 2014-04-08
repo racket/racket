@@ -21,6 +21,7 @@
              (namespace-require ''#%flfxnum)
              (namespace-require ''#%extfl)
              (namespace-require ''#%futures)
+             (namespace-require ''#%foreign)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
