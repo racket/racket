@@ -158,4 +158,32 @@
                       'pos
                       'neg)])
     (set-field! n pre-o #t)
-    (get-field n o))))
+    (get-field n o)))
+
+(test/spec-passed/result
+ 'object/c-field-existence
+ '(send (contract 
+         (object/c
+          (field foo bar)
+          (baz (->m integer? integer?)))
+         (new (class object%
+                (super-new)
+                (field (foo 0) (bar 0))
+                (define/public (baz n) n)))
+         'pos 'neg)
+        baz 1)
+ 1)
+
+(test/spec-passed/result
+ 'object/c-field-existence2
+ '(send (contract 
+         (object/c
+          (field foo bar)
+          (baz (->m integer? (listof integer?))))
+         (new (class object%
+                (super-new)
+                (field (foo 0) (bar 1))
+                (define/public (baz n) (list foo bar))))
+         'pos 'neg)
+        baz 1)
+ '(0 1)))

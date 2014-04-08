@@ -1307,7 +1307,7 @@
     (unless (null? fields)
       (for ([f (in-list fields)]
             [c (in-list field-contracts)])
-        (when c
+        (unless (just-check-existence? c)
           (define fi (hash-ref field-ht f))
           (define p-pos ((contract-projection c) (blame-add-field-context blame f #:swap? #f)))
           (define p-neg ((contract-projection c) (blame-add-field-context blame f #:swap? #t)))
