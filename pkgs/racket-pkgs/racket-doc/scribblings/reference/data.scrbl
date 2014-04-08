@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/undefined))
 
 @title[#:style 'toc #:tag "data"]{Datatypes}
 
@@ -174,25 +175,14 @@ The @|void-const| value is always @racket[eq?] to itself.
 @section[#:tag "undefined"]{Undefined}
 
 The constant @|undefined-const| is used as the initial value for
-@racket[letrec] bindings.
+@racket[letrec] bindings and in other places where a placeholder value
+is needed before a specific value can be assigned. Use
+@racket[undefined] (which is bound to @|undefined-const|) as a last resort.
 
 The @|undefined-const| value is always @racket[eq?] to itself.
 
-@note-lib[racket/undefined]
+@note-lib-only[racket/undefined]
+
+@defthing[undefined any/c]{The @|undefined-const| constant.}
 
 @history[#:added "6.0.0.6"]
-
-@defproc[(undefined? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is the
- constant @|undefined-const|, @racket[#f] otherwise.}
-
-
-@defthing[undefined undefined?]{The @|undefined-const| constant.}
-
-@defproc[(check-not-undefined [v any/c] [sym symbol?]) (and/c any/c (not/c undefined?))]{
-
-Checks whether @racket[v] is @|undefined-const|, and raises
-@racket[exn:fail:contract:variable] in that case with an error message
-along the lines of ``@racket[sym]: variable used before its definition.''
-If @racket[v] is not @|undefined-const|, then @racket[v] is returned.
-
-}
