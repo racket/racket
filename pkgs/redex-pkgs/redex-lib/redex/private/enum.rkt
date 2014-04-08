@@ -155,7 +155,7 @@
      [`(cross ,s)
       (lang-enum-get-cross-enum l-enum s)]
      [`(list ,sub-pats ...)
-      (list/e
+      (apply list/e
        (for/list ([sub-pat (in-list sub-pats)])
          (match sub-pat
            [`(repeat ,pat #f #f)

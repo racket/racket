@@ -323,6 +323,12 @@
  (check-equal? (list->inc-set '(2 0 1 2)) '(2 3 5 8))
  (check-equal? (inc-set->list '(2 3 5 8)) '(2 0 1 2)))
 
+;; mixed finite/infinite list/e tests
+(test-begin
+ (check-bijection? (list/e bool/e (cons/e bool/e bool/e) (fin/e 'foo 'bar 'baz)))
+ (check-bijection? (list/e nats/e string/e (many/e bool/e)))
+ (check-bijection? (list/e bool/e nats/e ints/e string/e (cons/e bool/e bool/e))))
+
 ;; multi-arg map/e test
 (define sums/e
   (map/e
