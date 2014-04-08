@@ -788,6 +788,14 @@
                           (init ([i j]))))
              (new c% [i 5]))
            #:ret (ret (-object #:init ([j -Integer #f])))]
+   ;; test that different internal names can map to the same external name
+   ;; and that the internal-external name mapping is set correctly.
+   [tc-e (class object%
+           (super-new)
+           (: x* String)
+           (init [(x* x)])
+           (field [x "x"]))
+         (-class #:init ([x -String #f]) #:field ([x Univ]))]
    ;; test init default values
    [tc-e (let ()
            (class object% (super-new)
