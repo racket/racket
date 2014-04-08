@@ -10,7 +10,7 @@
 
 (define (base-val? e)
   (or (number? e) (string? e) (char? e) (symbol? e)
-      (null? e) (regexp? e) (undefined? e) (path? e)
+      (null? e) (regexp? e) (eq? undefined e) (path? e)
       (regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e)
       ;; Base values because you can only store flonums/fixnums in these
       ;; and not any higher-order values. This isn't sound if we ever

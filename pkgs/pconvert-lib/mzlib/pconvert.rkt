@@ -124,7 +124,7 @@
                         (null? expr)
                         ;; #<undefined> test - yuck, and maybe not worth checking
                         ;; anymore, since undefined generally shouldn't escape
-                        (undefined? expr) 
+                        (eq? undefined expr) 
                         )
                     'atomic]
                    [(and (not (struct? expr))  ;; struct names are the wrong thing, here

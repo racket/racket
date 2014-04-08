@@ -25,6 +25,7 @@
          (for-template
            racket/base
            racket/contract/base
+           racket/undefined
            (only-in racket/pretty pretty-print-style-table?)
            (only-in racket/udp udp?)
            (only-in racket/tcp tcp-listener?)
@@ -92,8 +93,8 @@
 (define/decl -Boolean (Un -False -True))
 (define/decl -Undefined
   (make-Base 'Undefined
-             #'undefined? ; initial value of letrec bindings
-             undefined?))
+             #'(lambda (x) (eq? x undefined))
+             (lambda (x) (eq? x undefined))))
 (define/decl -Bytes (make-Base 'Bytes #'bytes? bytes?))
 (define/decl -Base-Regexp (make-Base 'Base-Regexp
                            #'(and/c regexp? (not/c pregexp?))

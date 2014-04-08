@@ -89,7 +89,7 @@
 
   ;; Wrapped around uses of local-bound variables:
   (define (teach-check-not-undefined name val)
-    (if (undefined? val)
+    (if (eq? undefined val)
       (raise
        (make-exn:fail:contract:variable
         (format "local variable used before its definition: ~a" name)

@@ -87,6 +87,9 @@
                 stx)]
               [_ (transfer-srcloc orig stx)]))))
 
+(define (undefined? x)
+  (eq? undefined x))
+
 (define-syntax (define-type stx)
   (syntax-parse
       stx

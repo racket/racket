@@ -4,7 +4,7 @@
 
 @title[#:tag "unsafe-undefined"]{Unsafe Undefined}
 
-@note-lib[racket/unsafe/undefined]
+@note-lib-only[racket/unsafe/undefined]
 
 The constant @racket[unsafe-undefined] is used internally as a
 placeholder value. For example, it is used by @racket[letrec] as a
@@ -20,19 +20,13 @@ The @racket[unsafe-undefined] value is always @racket[eq?] to itself.
 
 @history[#:added "6.0.0.6"]
 
-@defproc[(unsafe-undefined? [v any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[v] is the constant
-@racket[unsafe-undefined], @racket[#f] otherwise.}
-
-
-@defthing[unsafe-undefined unsafe-undefined?]{
+@defthing[unsafe-undefined any/c]{
 
 The unsafe ``undefined'' constant.}
 
 
 @defproc[(check-not-unsafe-undefined [v any/c] [sym symbol?])
-         (and/c any/c (not/c unsafe-undefined?))]{
+         (and/c any/c (not/c (one-of/c unsafe-undefined)))]{
 
 Checks whether @racket[v] is @racket[unsafe-undefined], and raises
 @racket[exn:fail:contract:variable] in that case with an error message
