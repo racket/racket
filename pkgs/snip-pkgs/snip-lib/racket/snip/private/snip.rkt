@@ -372,12 +372,13 @@
 
   (init-rest args)
 
-  (super-new)
-  (set! s-count 0)
-
   (field [str-metric #f] ; a number (in which case height, decsent, and space matches style) or a vector
          [s-dtext 0]
          [s-buffer ""])
+
+  (super-new)
+  (set! s-count 0)
+
   (define/public (set-str-w v) (set! str-metric v))
   (define/public (get-s-dtext) s-dtext)
 
@@ -910,8 +911,6 @@
 
   (init-rest args)
 
-  (super-new)
-
   (define filename #f)
   (define filetype 0) ; file != #f => type of file, otherwise loaded 1 => XBM and 2 => XPM
   (define bm #f)
@@ -925,6 +924,8 @@
   (define viewdx 0.0)
   (define viewdy 0.0)
   (define contents-changed? #f)
+
+  (super-new)
 
   (set-snipclass the-image-snip-class)
 
@@ -940,7 +941,7 @@
     (load-file name kind relative-path? inline? backing-scale)]
    (init-name 'bitmap%))
 
-  (define (size-cache-invalid)
+  (define/private (size-cache-invalid)
     (set! contents-changed? #t))
 
   (def/override (get-extent [dc<%> dc] [real? ex] [real? ey] 

@@ -65,6 +65,7 @@
   (define stipple #f)
   (define gradient #f)
   (define transformation #f)
+  (define surface-handle #f)
 
   (when _gradient
     (unless (or (_gradient . is-a? . linear-gradient%)
@@ -125,7 +126,6 @@
     (set! stipple s)
     (set! transformation (and s t)))
 
-  (define surface-handle #f)
   (define/public (get-surface-handle-info) surface-handle) ; local
   (def/public (get-handle) (and surface-handle
                                 (vector-ref surface-handle 0)))

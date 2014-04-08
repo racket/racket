@@ -39,6 +39,10 @@
   (define key #f)
   (define/public (s-set-key k) (set! key k))
 
+  (define immutable? #f)
+  (define lock-count 0)
+  (define stipple #f)
+
   (define color black)
   (properties #:check-immutable check-immutable 
               [[pen-cap-symbol? cap] 'round]
@@ -99,8 +103,6 @@
 
   (super-new)
 
-  (define immutable? #f)
-  (define lock-count 0)
   (define/public (set-immutable) (set! immutable? #t))
   (define/public (is-immutable?) (or immutable? (positive? lock-count)))
   (define/public (adjust-lock v) (set! lock-count (+ lock-count v)))
@@ -126,7 +128,6 @@
 
   (define/public (get-color) color)
 
-  (define stipple #f)
   (def/public (get-stipple) stipple)
   (define/public (set-stipple s)
     (check-immutable 'set-stipple)
