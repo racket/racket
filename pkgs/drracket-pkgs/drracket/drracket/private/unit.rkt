@@ -28,6 +28,7 @@
          "eval-helpers.rkt"
          "parse-logger-args.rkt"
          "get-module-path.rkt"
+         "named-undefined.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
          (prefix-in icons: images/compile-time)
          mred
@@ -1359,7 +1360,7 @@
   (define frame-mixin
     (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:size-pref<%>)
       (drracket:unit:frame<%>)
-      (init-field filename)
+      (init filename)
       (inherit set-label-prefix get-show-menu
                get-menu%
                get-area-container
@@ -1374,6 +1375,14 @@
                file-menu:get-revert-item
                file-menu:get-print-item
                set-delegated-text)
+      
+      (define resizable-panel (drr-named-undefined 'resizable-panel))
+      (define definitions-canvas (drr-named-undefined 'definitions-canvas))
+      (define definitions-canvases (drr-named-undefined 'definitions-canvases))
+      (define interactions-canvas (drr-named-undefined 'interactions-canvas))
+      (define interactions-canvases (drr-named-undefined 'interactions-canvases))
+      (define button-panel (drr-named-undefined 'button-panel))
+      
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;
@@ -2483,29 +2492,28 @@
             
             (update-shown)
             
-            (let ([new-percentages
-                   (let loop ([canvases orig-canvases]
-                              [percentages orig-percentages])
-                     (cond
-                       [(null? canvases)
-                        (error 'split "couldn't split; didn't find canvas")]
-                       [(null? percentages)
-                        (error 'split "wrong number of percentages: ~s ~s"
-                               orig-percentages
-                               (send resizable-panel get-children))]
-                       [else (let ([canvas (car canvases)])
-                               (if (eq? canvas-to-be-split canvas)
-                                   (list* (/ (car percentages) 2)
-                                          (/ (car percentages) 2)
-                                          (cdr percentages))
-                                   (cons
-                                    (car percentages)
-                                    (loop (cdr canvases)
-                                          (cdr percentages)))))]))])
-              ;; with-handlers prevents bad calls to set-percentages
-              ;; might still leave GUI in bad state, however.
-              (with-handlers ([exn:fail? (λ (x) (void))])
-                (send resizable-panel set-percentages new-percentages)))
+            ;; with-handlers prevents bad calls to set-percentages
+            ;; might still leave GUI in bad state, however.
+            (with-handlers ([exn:fail? (λ (x) (void))])
+              (send resizable-panel set-percentages
+                    (let loop ([canvases orig-canvases]
+                               [percentages orig-percentages])
+                      (cond
+                        [(null? canvases)
+                         (error 'split "couldn't split; didn't find canvas")]
+                        [(null? percentages)
+                         (error 'split "wrong number of percentages: ~s ~s"
+                                orig-percentages
+                                (send resizable-panel get-children))]
+                        [else (let ([canvas (car canvases)])
+                                (if (eq? canvas-to-be-split canvas)
+                                    (list* (/ (car percentages) 2)
+                                           (/ (car percentages) 2)
+                                           (cdr percentages))
+                                    (cons
+                                     (car percentages)
+                                     (loop (cdr canvases)
+                                           (cdr percentages)))))]))))
             
             (set-visible-region new-canvas ox oy ow oh cursor-y)
             (set-visible-region canvas-to-be-split ox oy ow oh cursor-y)
@@ -2890,8 +2898,17 @@
       
       (define/override (get-editor) definitions-text)
       (define/override (get-canvas)
-        (initialize-gui)
+        (initialize-definitions-canvas)
         definitions-canvas)
+      
+      (define (create-definitions-canvas)
+        (new (drracket:get/extend:get-definitions-canvas)
+             [parent resizable-panel]
+             [editor definitions-text]))
+      
+      (define/private (initialize-definitions-canvas)
+        (unless definitions-canvas
+          (set! definitions-canvas (create-definitions-canvas))))
       
       ;; wire the definitions text to the interactions text and initialize it.
       (define/private (init-definitions-text tab)
@@ -4397,29 +4414,6 @@
       ;                          
       ;                          
       
-      (define resizable-panel 'uninit-resizable-panel)
-      (define button-panel 'uninit-button-panel)
-      (define toolbar/rest-panel 'uninit-toolbar/rest-panel)
-      (define top-outer-panel 'uninit-top-outer-panel)
-      (define top-panel 'uninit-top-panel)
-      (define name-panel 'uninit-name-panel)
-      (define tabs-panel 'uninit-tabs-panel)
-      (define func-defs-canvas 'uninit-func-defs-canvas)
-      (define definitions-canvases 'uninit-definitions-canvases)
-      (define interactions-canvas 'uninit-interactions-canvas)
-      (define interactions-canvases 'uninit-interactions-canvases)
-      (define break-button 'unint-break-button)
-      (define execute-button 'unint-execute-button)
-      (define panel-with-tabs 'uninit-panel-with-tabs)
-      (define bug-icon 'uninit-bug-icon)
-      (define language-message 'uninit-language-message)
-      (define running-canvas 'uninit-running-canvas)
-      (define color-status-canvas 'uninit-color-status-canvas)
-      
-      (define teachpack-items null)
-
-      
-      (define definitions-canvas 'uninit-definitions-canvas)
       (define definitions-text (new (drracket:get/extend:get-definitions-text)))
       
       ;; tabs : (listof tab)
@@ -4447,6 +4441,13 @@
                    1
                    0))))
         
+      (super-new
+       [filename filename]
+       [style '(toolbar-button)]
+       [size-preferences-key 'drracket:window-size]
+       [position-preferences-key 'drracket:window-position])
+      
+      (initialize-menus)
       
       
       ;                                                                               
@@ -4467,12 +4468,47 @@
       ;   ;                                                 ;                         
       
       
+      (define toolbar/rest-panel (new vertical-panel% [parent (get-area-container)]))
       
-      (define color-valid? #t)
-      (define/public (set-color-status! v?)
-        (when color-status-canvas
-          (set! color-valid? v?) 
-          (send color-status-canvas refresh-now)))
+      ;; most contain only top-panel (or nothing)
+      (define top-outer-panel (new horizontal-panel% 
+                                   [parent toolbar/rest-panel]
+                                   [alignment '(right top)]
+                                   [stretchable-height #f]))
+      
+      [define top-panel (make-object horizontal-panel% top-outer-panel)]
+      [define name-panel (new horizontal-panel%
+                              (parent top-panel)
+                              (alignment '(left center))
+                              (stretchable-width #f)
+                              (stretchable-height #f))]
+      (define panel-with-tabs (new vertical-panel%
+                                   (parent (get-definitions/interactions-panel-parent))))
+      (define tabs-panel (new tab-panel% 
+                              (font small-control-font)
+                              (parent panel-with-tabs)
+                              (stretchable-height #f)
+                              (style '(deleted no-border))
+                              (choices '("first name"))
+                              (callback (λ (x y)
+                                          (let ([sel (send tabs-panel get-selection)])
+                                            (when sel
+                                              (change-to-nth-tab sel)))))))
+      (set! resizable-panel (new (if (preferences:get 'drracket:defs/ints-horizontal)
+                                       horizontal-dragable/def-int%
+                                       vertical-dragable/def-int%)
+                                   (unit-frame this)
+                                   (parent panel-with-tabs)))
+      
+      [set! definitions-canvas #f]
+      (initialize-definitions-canvas)
+      (set! definitions-canvases (list definitions-canvas))
+      
+      (set! interactions-canvas (new (drracket:get/extend:get-interactions-canvas)
+                                       (parent resizable-panel)
+                                       (editor interactions-text)))
+      (set! interactions-canvases (list interactions-canvas))
+      
       
       (define/public (get-definitions-canvases) 
         ;; before definition, just return null
@@ -4485,207 +4521,160 @@
             interactions-canvases
             null))
       
-      (define/public (get-definitions-canvas) 
-        (unless (object? definitions-canvas)
-          (error 'get-definitions-canvas 
-                 "cannot call this method too early in the class initialization process"))
-        definitions-canvas)
+      (define/public (get-definitions-canvas) definitions-canvas)
       (define/public (get-interactions-canvas) interactions-canvas)
       
+      (set! save-button
+            (new switchable-button%
+                 [parent top-panel]
+                 [callback (λ (x) (when definitions-text
+                                    (save)
+                                    (send definitions-canvas focus)))]
+                 [bitmap save-bitmap]
+                 [alternate-bitmap small-save-bitmap]
+                 [label (string-constant save-button-label)]))
+      (register-toolbar-button save-button)
+      
+      (set! name-message (new drs-name-message% [parent name-panel]))
+      (send name-message stretchable-width #t)
+      (send name-message set-allow-shrinking 160)
+      [define teachpack-items null]
+      [define break-button (void)]
+      [define execute-button (void)]
+      (set! button-panel (new panel:horizontal-discrete-sizes% 
+                              [parent top-panel]
+                              [stretchable-width #t]
+                              [alignment '(right center)]))
+      (define/public (get-execute-button) execute-button)
+      (define/public (get-break-button) break-button)
+      (define/public (get-button-panel) button-panel)
+      
+      (inherit get-info-panel)
+      
+      (define color-status-canvas 
+        (let ()
+          (define on-string "()")
+          (define color-status-canvas
+            (new canvas% 
+                 [parent (get-info-panel)]
+                 [style '(transparent)]
+                 [stretchable-width #f]
+                 [paint-callback
+                  (λ (c dc)
+                    (when (number? th)
+                      (unless color-valid?
+                        (let-values ([(cw ch) (send c get-client-size)])
+                          (send dc set-font small-control-font)
+                          (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
+          (define-values (tw th ta td) 
+            (send (send color-status-canvas get-dc) get-text-extent
+                  on-string small-control-font))
+          (send color-status-canvas min-width (inexact->exact (ceiling tw)))
+          color-status-canvas))
+      (define color-valid? #t)
+      (define/public (set-color-status! v?)
+        (when color-status-canvas
+          (set! color-valid? v?) 
+          (send color-status-canvas refresh-now)))
+      
+      (define running-canvas
+        (new running-canvas% [parent (get-info-panel)]))
+      
+      (define bug-icon
+        (let* ([info-panel (get-info-panel)]
+               [btn 
+                (new switchable-button%
+                     [parent info-panel]
+                     [callback (λ (x) (show-saved-bug-reports-window))]
+                     [bitmap very-small-planet-bitmap]
+                     [vertical-tight? #t]
+                     [label (string-constant show-planet-contract-violations)])])
+          (send btn set-label-visible #f)
+          (send info-panel change-children 
+                (λ (l)
+                  (cons btn (remq* (list btn) l))))
+          btn))
       (define/private (set-bug-label v)
         (if (null? v)
             (send bug-icon show #f)
             (send bug-icon show #t)))
+      (set-bug-label (preferences:get 'drracket:saved-bug-reports))
       (define remove-bug-icon-callback
         (preferences:add-callback
          'drracket:saved-bug-reports
          (λ (p v)
            (set-bug-label v))))
-
-      (define/public (get-execute-button) execute-button)
-      (define/public (get-break-button) break-button)
-      (define/public (get-button-panel) button-panel)
       
-
-      (inherit get-info-panel get-label)
+      [define func-defs-canvas (new func-defs-canvas% 
+                                    (parent name-panel)
+                                    (frame this))]
       
-      (define/private (initialize-gui)
-        (unless (object? top-outer-panel)
-          (set! toolbar/rest-panel (new vertical-panel% [parent (get-area-container)]))
-          
-          ;; most contain only top-panel (or nothing)
-          (set! top-outer-panel (new horizontal-panel% 
-                                     [parent toolbar/rest-panel]
-                                     [alignment '(right top)]
-                                     [stretchable-height #f]))
-          
-          (set! top-panel (make-object horizontal-panel% top-outer-panel))
-          (set! name-panel (new horizontal-panel%
-                                (parent top-panel)
-                                (alignment '(left center))
-                                (stretchable-width #f)
-                                (stretchable-height #f)))
-          (set! panel-with-tabs (new vertical-panel%
-                                     (parent (get-definitions/interactions-panel-parent))))
-          (set! tabs-panel (new tab-panel% 
-                                (font small-control-font)
-                                (parent panel-with-tabs)
-                                (stretchable-height #f)
-                                (style '(deleted no-border))
-                                (choices '("first name"))
-                                (callback (λ (x y)
-                                            (let ([sel (send tabs-panel get-selection)])
-                                              (when sel
-                                                (change-to-nth-tab sel)))))))
-          (set! resizable-panel (new (if (preferences:get 'drracket:defs/ints-horizontal)
-                                         horizontal-dragable/def-int%
-                                         vertical-dragable/def-int%)
-                                     (unit-frame this)
-                                     (parent panel-with-tabs)))
-          
-          (set! definitions-canvas (new (drracket:get/extend:get-definitions-canvas)
-                                        [parent resizable-panel]
-                                        [editor definitions-text]))
-          (set! definitions-canvases (list definitions-canvas))
-          (set! interactions-canvas (new (drracket:get/extend:get-interactions-canvas)
-                                         (parent resizable-panel)
-                                         (editor interactions-text)))
-          (set! interactions-canvases (list interactions-canvas))
-          
-          (set! save-button
-                (new switchable-button%
-                     [parent top-panel]
-                     [callback (λ (x) (when definitions-text
-                                        (save)
-                                        (send definitions-canvas focus)))]
-                     [bitmap save-bitmap]
-                     [alternate-bitmap small-save-bitmap]
-                     [label (string-constant save-button-label)]))
-          (register-toolbar-button save-button)
-          
-          (set! name-message (new drs-name-message% [parent name-panel]))
-          (send name-message stretchable-width #t)
-          (send name-message set-allow-shrinking 160)
-          (set! button-panel (new panel:horizontal-discrete-sizes% 
-                                  [parent top-panel]
-                                  [stretchable-width #t]
-                                  [alignment '(right center)]))
-          (set! color-status-canvas 
-                (let ()
-                  (define on-string "()")
-                  (define color-status-canvas
-                    (new canvas% 
-                         [parent (get-info-panel)]
-                         [style '(transparent)]
-                         [stretchable-width #f]
-                         [paint-callback
-                          (λ (c dc)
-                            (when (number? th)
-                              (unless color-valid?
-                                (let-values ([(cw ch) (send c get-client-size)])
-                                  (send dc set-font small-control-font)
-                                  (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
-                  (define-values (tw th ta td) 
-                    (send (send color-status-canvas get-dc) get-text-extent
-                          on-string small-control-font))
-                  (send color-status-canvas min-width (inexact->exact (ceiling tw)))
-                  color-status-canvas))
-          
-          (set! running-canvas (new running-canvas% [parent (get-info-panel)]))
-          
-          (set! bug-icon
-                (let* ([info-panel (get-info-panel)]
-                       [btn 
-                        (new switchable-button%
-                             [parent info-panel]
-                             [callback (λ (x) (show-saved-bug-reports-window))]
-                             [bitmap very-small-planet-bitmap]
-                             [vertical-tight? #t]
-                             [label (string-constant show-planet-contract-violations)])])
-                  (send btn set-label-visible #f)
-                  (send info-panel change-children 
-                        (λ (l)
-                          (cons btn (remq* (list btn) l))))
-                  btn))
-          (set-bug-label (preferences:get 'drracket:saved-bug-reports))
-          
-          (set! func-defs-canvas (new func-defs-canvas% 
-                                      (parent name-panel)
-                                      (frame this)))
-          
-          (set! execute-button
-                (new switchable-button%
-                     [parent button-panel]
-                     [callback (λ (x) (execute-callback))]
-                     [bitmap execute-bitmap]
-                     [label (string-constant execute-button-label)]))
-          (register-toolbar-button execute-button #:number 100)
-          
-          (set! break-button
-                (new switchable-button%
-                     [parent button-panel]
-                     [callback (λ (x) (send current-tab break-callback))]
-                     [bitmap break-bitmap]
-                     [label (string-constant break-button-label)]))
-          (register-toolbar-button break-button #:number 101)
-          
-          (send top-panel change-children
+      (set! execute-button
+            (new switchable-button%
+                 [parent button-panel]
+                 [callback (λ (x) (execute-callback))]
+                 [bitmap execute-bitmap]
+                 [label (string-constant execute-button-label)]))
+      (register-toolbar-button execute-button #:number 100)
+      
+      (set! break-button
+            (new switchable-button%
+                 [parent button-panel]
+                 [callback (λ (x) (send current-tab break-callback))]
+                 [bitmap break-bitmap]
+                 [label (string-constant break-button-label)]))
+      (register-toolbar-button break-button #:number 101)
+      
+      (send top-panel change-children
+            (λ (l)
+              (list name-panel save-button button-panel)))
+      
+      (send top-panel stretchable-height #f)
+      (inherit get-label)
+      (let ([m (send definitions-canvas get-editor)])
+        (set-save-init-shown?
+         (and m (send m is-modified?))))
+      
+      (define language-message
+        (let* ([info-panel (get-info-panel)]
+               [p (new vertical-panel% 
+                       [parent info-panel]
+                       [alignment '(left center)])]
+               [language-message (new language-label-message% [parent p] [frame this])])
+          (send info-panel change-children 
                 (λ (l)
-                  (list name-panel save-button button-panel)))
-          
-          (send top-panel stretchable-height #f)
-          (let ([m (send definitions-canvas get-editor)])
-            (set-save-init-shown?
-             (and m (send m is-modified?))))
-          
-          (set! language-message
-                (let* ([info-panel (get-info-panel)]
-                       [p (new vertical-panel% 
-                               [parent info-panel]
-                               [alignment '(left center)])]
-                       [language-message (new language-label-message% [parent p] [frame this])])
-                  (send info-panel change-children 
-                        (λ (l)
-                          (list* p
-                                 (remq* (list p)
-                                        l))))
-                  language-message))
-          
-          (update-save-message)
-          (update-save-button)
-          (language-changed)
-          (set-delegated-text definitions-text)
-          
-          (cond
-            [filename
-             (set! definitions-shown? #t)
-             (set! interactions-shown? #f)]
-            [else
-             (set! definitions-shown? #t)
-             (set! interactions-shown? #t)])
-          
-          (update-shown)
-          
-          (when (= 2 (length (send resizable-panel get-children)))
-            (send resizable-panel set-percentages
-                  (let ([p (preferences:get 'drracket:unit-window-size-percentage)])
-                    (list p (- 1 p)))))
-          
-          (set-label-prefix (string-constant drscheme))
-          (set! newest-frame this)
-          ;; a callback might have happened that initializes set-color-status! before the
-          ;; definitions text is connected to the frame, so we do an extra initialization
-          ;; now, once we know we have the right connection
-          (set-color-status! (send definitions-text is-lexer-valid?))
-          (send definitions-canvas focus)))
+                  (list* p
+                         (remq* (list p)
+                                l))))
+          language-message))
       
-      (super-new
-       [filename filename]
-       [style '(toolbar-button)]
-       [size-preferences-key 'drracket:window-size]
-       [position-preferences-key 'drracket:window-position])
+      (update-save-message)
+      (update-save-button)
+      (language-changed)
+      (set-delegated-text definitions-text)
       
-      (initialize-menus)))
+      (cond
+        [filename
+         (set! definitions-shown? #t)
+         (set! interactions-shown? #f)]
+        [else
+         (set! definitions-shown? #t)
+         (set! interactions-shown? #t)])
+      
+      (update-shown)
+      
+      (when (= 2 (length (send resizable-panel get-children)))
+        (send resizable-panel set-percentages
+              (let ([p (preferences:get 'drracket:unit-window-size-percentage)])
+                (list p (- 1 p)))))
+      
+      (set-label-prefix (string-constant drscheme))
+      (set! newest-frame this)
+      ;; a callback might have happened that initializes set-color-status! before the
+      ;; definitions text is connected to the frame, so we do an extra initialization
+      ;; now, once we know we have the right connection
+      (set-color-status! (send definitions-text is-lexer-valid?))
+      (send definitions-canvas focus)))
   
   ;; get-define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string))
   ;;                         boolean 
@@ -4857,7 +4846,6 @@
         
         (send t change-style sdb 0 between-pos)
         (send t change-style sd between-pos (send t last-position))
-        
         (define ec (new editor-canvas% 
                         [editor t]
                         [parent unlimited-warning-panel]
