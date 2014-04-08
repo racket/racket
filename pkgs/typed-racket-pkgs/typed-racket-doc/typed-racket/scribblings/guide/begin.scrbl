@@ -23,7 +23,7 @@ are provided as well; for example, the
 @racketmodname[typed/racket/base] language corresponds to
 @racketmodname[racket/base].
 
-@racketblock[(struct: pt ([x : Real] [y : Real]))]
+@racketblock+eval[#:eval the-eval (struct: pt ([x : Real] [y : Real]))]
 
 @margin-note{Many forms in Typed Racket have the same name as the
 untyped forms, with a @racket[:] suffix.}
@@ -36,7 +36,7 @@ form from @racketmodname[racket]---when porting a program from
 @racketmodname[racket] to @racketmodname[typed/racket], uses of
 @racket[struct] should be changed to @racket[struct:].
 
-@racketblock[(: distance (-> pt pt Real))]
+@racketblock+eval[#:eval the-eval (: distance (-> pt pt Real))]
 
 This declares that @racket[distance] has the type @racket[(-> pt pt Real)].
 @;{@racket[distance] must be defined at the top-level of the module containing
@@ -52,7 +52,7 @@ function type, in this case @racket[Real].
 If you are familiar with @rtech{contracts}, the notation for function
 types is similar to function contract combinators.
 
-@racketblock[
+@racketblock+eval[#:eval the-eval
 (define (distance p1 p2)
   (sqrt (+ (sqr (- (pt-x p2) (pt-x p1)))
            (sqr (- (pt-y p2) (pt-y p1))))))
@@ -66,6 +66,17 @@ the function has the type @racket[Real], under the assumption that
 from the earlier type declaration.  Since the body does have this type,
 the program is accepted.
 
+In the Typed Racket @gtech{REPL}, calling @racket[distance] will
+show the result as usual and will also print the result's type:
+
+@interaction[#:eval the-eval (distance (pt 0 0) (pt 3.1415 2.7172))]
+
+Just evaluating the function name will print the function value and its type,
+which can be useful for discovering the types that Typed Racket ascribes to
+Racket functions. Alternatively, the @racket[:print-type] command will just
+print the type:
+
+@interaction[#:eval the-eval distance string-length (:print-type string-ref)]
 
 @section{Datatypes and Unions}
 
