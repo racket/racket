@@ -1165,39 +1165,75 @@
 ;; ----------------------------------------------------------------------------
 ;; dynamic log output control
 
+;; defautoload doesn't seem to work with `~a` due to keyword args (?)
+;; so do a normal eager require (sorry).
+(require (only-in racket/format ~a))
+
 (define current-log-receiver-thread (make-parameter #f))
 (define global-logger (current-logger))
+(define other-level 'fatal) ;for "all other" loggers
 
-(defcommand log "<level>"
+;; Default some specific loggers one notch above their "noisy"
+;; level. That way, if someone sets "all other" loggers to e.g. debug,
+;; these won't get noisy. They need to be cranked up explicitly.
+(define logger-levels (make-hasheq '([cm-accomplice . warning]
+                                     [gc . info])))
+
+(defcommand log "<opt> ..."
   "control log output"
-  ["Starts (or stops) logging events at the given level.  The level should be"
-   "one of the valid racket logging levels, or #f for no logging.  For"
-   "convenience, the level can also be #t (maximum logging) or an integer"
-   "(with 0 for no logging, and larger numbers for more logging output)."]
-  (define levels '(#f fatal error warning info debug))
-  (define level
-    (let ([l (getarg 'sexpr)])
-      (cond [(memq l levels) l]
-            [(memq l '(#f none -)) #f]
-            [(memq l '(#t all +)) (last levels)]
-            [(not (integer? l))
-             (cmderror "bad level, expecting one of: ~s" levels)]
-            [(<= l 0) #f]
-            [(< l (length levels)) (list-ref levels l)]
-            [else (last levels)])))
-  (cond [(current-log-receiver-thread) => kill-thread])
-  (when level
-    (let ([r (make-log-receiver global-logger level)])
+  ["  ,log                  ;show the levels currently in effect."
+   "  ,log <logger> <level> ;set logger to show level"
+   "  ,log <logger> default ;set logger to use the default, 'all other' level."
+   "  ,log <level>          ;set the default level, for 'all other' loggers."
+   "  Valid levels: none, fatal, error, warning, info, debug."]
+  (define (update)
+    (show-logger-levels) ;handy to show new values
+    (cond [(current-log-receiver-thread) => kill-thread])
+    (let* ([args (append (list global-logger)
+                         (flatten (for/list ([(k v) logger-levels])
+                                    (list v k)))
+                         (list other-level))]
+           [r (apply make-log-receiver args)])
       (current-log-receiver-thread
        (thread
         (λ ()
-          (let loop ()
-            (match (sync r)
-              [(vector l m v name)
-               (display (format "; [~a] ~a~a\n"
-                                l m (if v (format " ~.s" v) "")))
-               (flush-output)])
-            (loop))))))))
+           (let loop ()
+             (match (sync r)
+               [(vector l m v _)
+                (display (format "; [~a] ~a~a\n"
+                                 l m
+                                 ;; Print v unless opaque/useless
+                                 ;; "#<continuation-mark-set>"
+                                 (if (and v (not (continuation-mark-set? v)))
+                                     (format " ~.s" v) "")))
+                (flush-output)])
+             (loop)))))))
+  (define (show-logger-levels)
+    (define wid 20)
+    (define (pr k v)
+      (printf "; ~a ~a\n"
+              (~a k
+                  #:min-width wid
+                  #:max-width wid
+                  #:limit-marker "...")
+              v))
+    (pr "Logger" "Level")
+    (pr (make-string wid #\-) "-------")
+    (for ([(k v) logger-levels])
+      (pr k v))
+    (pr "[all other]" other-level))
+  (match (getarg 'sexpr 'list)
+    [(list) (show-logger-levels)]
+    [(list (and level (or 'none 'fatal 'error 'warning 'info 'debug)))
+     (set! other-level level)
+     (update)]
+    [(list logger 'default)
+     (hash-remove! logger-levels logger)
+     (update)]
+    [(list logger (and level (or 'none 'fatal 'error 'warning 'info 'debug)))
+     (hash-set! logger-levels logger level)
+     (update)]
+    [_ (cmderror "Bad argument. Enter \",help log\" for usage.")]))
 
 ;; ----------------------------------------------------------------------------
 ;; meta evaluation hook
