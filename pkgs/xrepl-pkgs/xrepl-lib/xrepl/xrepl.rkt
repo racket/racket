@@ -1165,9 +1165,9 @@
 ;; ----------------------------------------------------------------------------
 ;; dynamic log output control
 
-;; defautoload doesn't seem to work with `~a` due to keyword args (?)
-;; so do a normal eager require (sorry).
-(require (only-in racket/format ~a))
+;; defautoload doesn't support keyword args
+(require racket/lazy-require)
+(lazy-require [racket/format (~a)])
 
 (define current-log-receiver-thread (make-parameter #f))
 (define global-logger (current-logger))
