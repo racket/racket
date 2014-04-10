@@ -73,6 +73,17 @@
   (compile-enforce-module-constants (prefab-module-settings-enforce-module-constants settings))
   (define path->pkg-cache (make-hash))
   (when (prefab-module-settings-compilation-on? settings)
+    (define pkg-directory-cache (make-hash))
+    (define (pkg-directory/use-cache pkg)
+      (cond
+        [(hash-ref pkg-directory-cache pkg #f)
+         =>
+         values]
+        [else
+         (define ans (pkg-directory pkg))
+         (hash-set! pkg-directory-cache pkg ans)
+         ans]))
+    
     (define open-pkgs
       (for/fold ([s (set)]) ([path (in-list currently-open-files)])
         (define pkg (path->pkg path #:cache path->pkg-cache))
@@ -96,17 +107,6 @@
                      (and pkg
                           (not (set-member? open-pkgs pkg))
                           (file-stamp-in-paths p (list (pkg-directory/use-cache pkg)))))))))
-    
-    (define pkg-directory-cache (make-hash))
-    (define (pkg-directory/use-cache pkg)
-      (cond
-        [(hash-ref pkg-directory-cache pkg #f)
-         =>
-         values]
-        [else
-         (define ans (pkg-directory pkg))
-         (hash-set! pkg-directory-cache pkg ans)
-         ans]))
     
     (define extra-compiled-file-path
       (case (prefab-module-settings-annotations settings)
