@@ -97,7 +97,8 @@
                                             ['stepper-hide-reduction #t])
                                            #'test-engine))))))))
              'stepper-skipto
-             (append skipto/third ;; let
+             (append skipto/third ;; first let* binding
+                     skipto/third ;; second let* binding
                      skipto/third skipto/second
                      ;; something funny going on here; I can't see how Mike's 
                      ;; fix could ever have worked.  Possibly related: this
