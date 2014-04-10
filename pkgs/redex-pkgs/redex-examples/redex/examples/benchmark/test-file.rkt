@@ -144,8 +144,7 @@
       [(list tries term)
        (define continue? (update-results (me-time) fname type verbose?))
        (set! counterexamples (add1 counterexamples))
-       (log-info (format "~a: counterexample: ~s\n  ~s iterations and ~s milliseconds\n"
-                         fname term tries (me-time)))
+       (log-counterexample fname type term tries (me-time))
        (when no-errs?
          (printf "!---------------------------------------------------!\n")
          (error 'run-generations "~a: unexpected error on ~s" 
@@ -164,14 +163,12 @@
       (when ((current-process-milliseconds) . > . time-limit)
         (break (reached-limit tries))) 
       (define term (with-timeout (* 5 1000) generator
-                                 (λ () (log-info
-                                        (format "\nTimed out generating a test term in: ~a, ~a\n"
-                                                fname type))
+                                 (λ () 
+                                   (log-gen-timeout fname type)
                                    (break (timeout)))))
       (define ok? (with-timeout (* 5 1000) (λ () (check term))
-                                (λ () (log-info
-                                       (format "\nIn ~a, ~a, timed out checking the term: ~s\n"
-                                               fname type term))
+                                (λ () 
+                                  (log-check-timeout fname type term)
                                   (break (timeout)))
                                 (λ (exn)
                                   (printf "\nException when calling check with:\n~s\n" term)
@@ -183,15 +180,14 @@
          (loop (add1 tries))]))))
 
 (define (exit-message file type terms time countxmps)
+  (log-finished file type time terms countxmps)
   (printf "-----------------\n~a, ~s\n" file type)
-  (print-and-log
-   (format "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
-           terms time (exact->inexact (/ terms (/ time 1000)))))
-  (print-and-log
-   (format "~s counterexamples, ~s tries... ratio: ~s\n"
-           countxmps terms (if (zero? countxmps)
-                               'N/A
-                               (exact->inexact (/ terms countxmps)))))
+  (printf "Quitting after ~s iterations and ~s milliseconds\n ~s terms/sec\n"
+          terms time (exact->inexact (/ terms (/ time 1000))))
+  (printf "~s counterexamples, ~s tries... ratio: ~s\n"
+          countxmps terms (if (zero? countxmps)
+                              'N/A
+                              (exact->inexact (/ terms countxmps))))
   (printf "-----------------\n"))
 
 
@@ -201,8 +197,7 @@
   (set! stats (hash-set stats type new-stats))
   (define avg (statistics-mean new-stats))
   (define dev (/ (statistics-stddev new-stats #:bias #t) (sqrt (length (hash-ref results type)))))
-  (log-info
-   (format "new average for ~a, ~s: ~s +/- ~s\n" fname type (exact->inexact avg) dev))
+  (log-new-avg fname type (exact->inexact avg) dev)
   (or (= dev 0)
       ((/ dev avg) . > . 0.1)))
 
@@ -223,6 +218,7 @@
   (printf "~a has the error: ~a\n\n" fpath err)
   (printf "Running ~a....\n" fpath)
   (printf "Using generator: ~s\n" gen-type)
+  (log-start fpath gen-type)
   (cond
     [(equal? gen-type 'fixed)
      (define small-counter-example
