@@ -258,8 +258,6 @@ void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
     for (; outer != inner; inner = inner->next) {
         (inner->waiting)++;
     }
-    
-    return;
 }
 
 /* records all the subexprs at the time of deferral */
@@ -288,8 +286,6 @@ void subexpr_ls_to_frame(Scheme_Object *ls, Letrec_Check_Frame *frame) {
         frame->subexpr = SCHEME_INT_VAL(SCHEME_CAR(ls));
         ls = SCHEME_CDR(ls);
     }
-    
-    return;
 }
 
 /* creates a deferred expression "closure" by closing over the frame,
@@ -362,8 +358,6 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
             body = clv->body;
         }
     }
-
-    return;
 }
 
 
@@ -405,7 +399,6 @@ void check_inner_vars(Scheme_Object *ls) {
         }
         ls = SCHEME_CDR(ls);
     }
-    return;
 }
 
 /* looks up an absolute position in a nested list of vars, where we
@@ -525,8 +518,6 @@ void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
 
         (frame->def)[position] = scheme_null;
     }
-
-    return;
 }
 
 /* records that we have seen a reference to loc */
@@ -955,8 +946,6 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
         (inner->waiting)--;
         letrec_check_lets_resume(inner);
     }
-
-    return;
 }
 
 /* PLAN:
@@ -1030,8 +1019,6 @@ void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_rhs_ref = scheme_false;
-
-    return;
 }
 
 void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
@@ -1065,8 +1052,6 @@ void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_body_ref = scheme_false;
-
-    return;
 }
 
 void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
@@ -1100,8 +1085,6 @@ void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
 
     /* put the accumulator back to false before leaving */
     frame->deferred_with_no_ref = scheme_false;
-
-    return;
 }
 
 void process_deferred_bindings(Letrec_Check_Frame *frame) {
@@ -1110,19 +1093,17 @@ void process_deferred_bindings(Letrec_Check_Frame *frame) {
     subexpr = frame->subexpr;
 
     if (subexpr & LET_NO_EXPR) {
-        return process_deferred_bindings_no(frame);
+        process_deferred_bindings_no(frame);
     }
     else if (subexpr & LET_RHS_EXPR) {
-        return process_deferred_bindings_rhs(frame);
+        process_deferred_bindings_rhs(frame);
     } 
     else if (subexpr & LET_BODY_EXPR) {
-        return process_deferred_bindings_body(frame);
+        process_deferred_bindings_body(frame);
     }
     else {
         scheme_signal_error("process_deferred_bindings: unknown subexpr");
     }
-
-    return; // dead
 }
 
 Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame, 
