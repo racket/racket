@@ -32,15 +32,18 @@
                 (make-string (+ (- width (string-length col)) 4) #\space))))
     (printf "\n")))
 
-(define (call/input-url+200 u fun #:headers [headers '()])
+(define (call/input-url+200 u fun
+                            #:headers [headers '()]
+                            #:failure [fail-k (lambda (s) #f)])
   #;(printf "\t\tReading ~a\n" (url->string u))
   (define-values (ip hs) (get-pure-port/headers u headers
                                                 #:redirections 25
                                                 #:status? #t))
-  (and (string=? "200" (substring hs 9 12))
-       (begin0
-        (fun ip)
-        (close-input-port ip))))
+  (if (string=? "200" (substring hs 9 12))
+      (begin0
+       (fun ip)
+       (close-input-port ip))
+      (fail-k hs)))
 
 (define (url-path/no-slash url)
   (define p (url-path url))

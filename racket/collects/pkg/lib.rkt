@@ -140,7 +140,14 @@
         (λ (op)
           (call/input-url+200
            url
-           (λ (ip) (copy-port ip op))))))
+           (λ (ip) (copy-port ip op))
+           #:failure
+           (lambda (reply-s)
+             (pkg-error (~a "error downloading package\n"
+                            "  URL: ~a\n"
+                            "  server response: ~a")
+                        (url->string url)
+                        (read-line (open-input-string reply-s))))))))
     (cond
      [(and checksum use-cache?)
       (cache-file file
