@@ -67,9 +67,7 @@ Doesn't work well with rbtrees, which has an extremely large standard deviation.
   (define stlc-path 'redex/examples/benchmark/stlc)
   (define stlc-base 'redex/examples/benchmark/stlc/stlc-base)
   (define stlc-gen (dynamic-require stlc-base 'generate-enum-term))
-  (define-values (m e) (sample-sizes stlc-gen 0.03125 100))
-  (check-not-false
-   ((abs (- m 15)) . < . (* 2 e))))
+  (define-values (m e) (sample-sizes stlc-gen 0.03125 100)))
 
 (define max-bug-num 20)
   
