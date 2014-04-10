@@ -654,6 +654,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\letrec_check.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\module.c"
 				>
 			</File>

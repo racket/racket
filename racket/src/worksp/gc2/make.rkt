@@ -51,6 +51,7 @@
     "jitprep"
     "jitstack"
     "jitstate"
+    "letrec_check"
     "list"
     "marshal"
     "module"

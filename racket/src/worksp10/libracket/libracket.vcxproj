@@ -209,6 +209,7 @@
     <ClCompile Include="..\..\Racket\Src\jitprep.c" />
     <ClCompile Include="..\..\Racket\Src\jitstack.c" />
     <ClCompile Include="..\..\Racket\Src\jitstate.c" />
+    <ClCompile Include="..\..\Racket\Src\letrec_check.c" />
     <ClCompile Include="..\..\Racket\Src\List.c" />
     <ClCompile Include="..\..\Racket\Src\marshal.c" />
     <ClCompile Include="..\..\Racket\Src\module.c" />
