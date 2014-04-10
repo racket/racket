@@ -405,23 +405,39 @@
                    [(both-r) (lambda (stx a b) b)]
                    [else (error 'up-mapping "unexpected symbol in up-mapping (2): ~v" fn)])]))
   
-  (define (down-mapping fn)
-    (case fn
-      [(car) car]
-      [(cdr) cdr]
-      [(syntax-e) syntax-e]
-      [else (error 'down-mapping "called on something other than 'car, 'cdr, & 'syntax-e: ~v" fn)]))
+;; like car, but provide a useful error message if given a non-pair
+(define (noisy-car arg)
+  (cond [(pair? arg) (car arg)]
+        [else (raise-argument-error 'noisy-car "pair in syntax traversal" 0 arg)]))
 
-  (define (update fn-list val fn traversal)
-    (if (null? fn-list)
-        (fn val)
-        (let ([up (up-mapping traversal (car fn-list))])
-          (case (car fn-list)
-            [(both-l both-r) (up val 
-                                 (update (cadr fn-list) (car val) fn traversal)
-                                 (update (caddr fn-list) (cdr val) fn traversal))]
-            [else (let ([down (down-mapping (car fn-list))])
-                    (up val (update (cdr fn-list) (down val) fn traversal)))]))))
+;; like cdr,  but provide a useful error message if given a non-pair
+(define (noisy-cdr arg)
+  (cond [(pair? arg) (cdr arg)]
+        [else (raise-argument-error 'noisy-car "pair in syntax traversal" 0 arg)]))
+
+;; like syntax-e,  but provide a useful error message if given a non-syntax-object
+(define (noisy-syntax-e arg)
+  (cond [(syntax? arg) (syntax-e arg)]
+        [else (raise-argument-error 'noisy-car "syntax object in syntax traversal" 0 arg)]))
+
+;; map a symbol in '(car cdr syntax-e) to the appropriate projector
+(define (down-mapping fn)
+  (case fn
+    [(car) noisy-car]
+    [(cdr) noisy-cdr]
+    [(syntax-e) noisy-syntax-e]
+    [else (error 'down-mapping "called on something other than 'car, 'cdr, & 'syntax-e: ~v" fn)]))
+
+(define (update fn-list val fn traversal)
+  (if (null? fn-list)
+      (fn val)
+      (let ([up (up-mapping traversal (car fn-list))])
+        (case (car fn-list)
+          [(both-l both-r) (up val 
+                               (update (cadr fn-list) (car val) fn traversal)
+                               (update (caddr fn-list) (cdr val) fn traversal))]
+          [else (let ([down (down-mapping (car fn-list))])
+                  (up val (update (cdr fn-list) (down val) fn traversal)))]))))
   
 
     #;(display (equal? (update '(cdr cdr car both-l (car) (cdr))
