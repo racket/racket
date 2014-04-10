@@ -814,23 +814,35 @@
           
           (define ec (make-object canvas:basic% vp pasteboard))
           
+          (define search-hp (new horizontal-panel% [parent vp] [stretchable-height #f]))
           (define search-tf
             (new text-field%
                  [label (string-constant module-browser-highlight)]
-                 [parent vp]
+                 [parent search-hp]
                  [callback
                   (λ (tf evt)
-                    (send pasteboard begin-edit-sequence)
                     (define val (send tf get-value))
                     (define reg (and (not (string=? val ""))
                                      (regexp (regexp-quote (send tf get-value)))))
-                    (let loop ([snip (send pasteboard find-first-snip)])
-                      (when snip
-                        (when (is-a? snip boxed-word-snip<%>)
-                          (send snip set-found! 
-                                (and reg (regexp-match reg (path->string (send snip get-filename))))))
-                        (loop (send snip next))))
-                    (send pasteboard end-edit-sequence))]))
+                    (update-found-and-search-hits reg))]))
+          (define search-hits (new message% [parent search-hp] [label ""] [auto-resize #t]))
+          (define (update-found-and-search-hits reg)
+            (send pasteboard begin-edit-sequence)
+            (define count 0)
+            (let loop ([snip (send pasteboard find-first-snip)])
+              (when snip
+                (when (is-a? snip boxed-word-snip<%>)
+                  (define found? 
+                    (and reg (regexp-match reg (path->string (send snip get-filename)))))
+                  (when (or (not reg) found?) (set! count (+ count 1)))
+                  (send snip set-found! found?))
+                (loop (send snip next))))
+            (send search-hits set-label 
+                  (if reg
+                      (format "~a found" count)
+                      (format "~a total" count)))
+            (send pasteboard end-edit-sequence))
+          (update-found-and-search-hits #f) ;; only to initialize search-hits
           
           (send lib-paths-checkbox set-value
                 (not (memq 'lib (preferences:get 'drracket:module-browser:hide-paths))))
