@@ -7599,6 +7599,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     menv->post_ex_rename_set = NULL;
   }
 
+  m->submodule_ancestry = NULL; /* ancestry no longer needed; NULL to avoid leak */
+
   LOG_END_EXPAND(m);
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);

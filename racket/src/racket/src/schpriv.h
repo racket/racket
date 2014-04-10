@@ -3367,7 +3367,7 @@ typedef struct Scheme_Module
   Scheme_Object *pre_submodules, *post_submodules; /* list of modules (when compiled or loaded as a group) */
   Scheme_Object *pre_submodule_names; /* list of symbols (in expand mode) */
   Scheme_Object *supermodule; /* supermodule for which this is in {pre,post}_submodules */
-  Scheme_Object *submodule_ancestry; /* se by compile/expand, temporary */
+  Scheme_Object *submodule_ancestry; /* set by compile/expand, temporary */
 } Scheme_Module;
 
 typedef struct Scheme_Module_Phase_Exports
