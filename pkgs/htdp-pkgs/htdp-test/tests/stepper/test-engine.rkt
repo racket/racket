@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (require stepper/private/shared
          stepper/private/model
@@ -8,6 +8,9 @@
          scheme/contract
          "language-level-model.rkt")
 
+
+(provide (contract-out [string->expanded-syntax-list (-> ll-model? string? (listof syntax?))]
+                       [run-one-test (-> symbol? model-or-models/c string? (listof step?) (listof (list/c string? string?)) boolean?)]))
 
 ;; A SIMPLE EXAMPLE OF USING THIS FRAMEWORK:
 
@@ -77,7 +80,7 @@
 
 ;; THE METHOD THAT RUNS A TEST:
 
-(provide/contract [run-one-test (symbol? model-or-models/c string? (listof step?) (listof (list/c string? string?)) . -> . boolean?)])
+
 ;; run-one-test : symbol? model-or-models? string? steps? extra-files -> boolean?
 
 ;; the ll-model determines the behavior of the stepper w.r.t. "language-level"-y things:
@@ -104,7 +107,8 @@
                #f)
         #t)))
 
-(provide/contract [string->expanded-syntax-list (-> ll-model? string? (listof syntax?))])
+
+
 (define (string->expanded-syntax-list ll-model exp-str)
   (define expander-thunk ((string->expander-thunk ll-model exp-str)))
   (let loop ()
