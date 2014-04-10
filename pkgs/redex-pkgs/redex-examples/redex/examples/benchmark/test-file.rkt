@@ -211,7 +211,6 @@
   (define fpath (if (relative-path? maybe-fpath)
                     maybe-fpath
                     (find-relative-path (current-directory) maybe-fpath)))
-  (displayln fpath)
   (define tc (dynamic-require fpath 'type-check))
   (define check (dynamic-require fpath 'check))
   (define gen-term (dynamic-require fpath 'generate-M-term))

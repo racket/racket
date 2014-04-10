@@ -5,17 +5,11 @@
 (provide with-logging-to)
 
 (define (with-logging-to filename thunk)
-  (call-with-output-file filename
-    (λ (out)
-      (thd-with-log thunk out))
-    #:exists 'append))
-
-(define (thd-with-log thunk log-port)
   (define benchmark-logger
     (make-logger #f (current-logger)))
   (define bmark-log-recv
     (make-log-receiver benchmark-logger 'info))
-  (define handler (log-handler bmark-log-recv log-port))
+  (define handler (log-handler bmark-log-recv filename))
   (parameterize ([current-logger benchmark-logger])
     (define body-thd
       (thread thunk))
@@ -34,13 +28,15 @@
                         (handler log-evt)
                         (loop)])))))))
 
-(define (log-handler recv log-port)
+(define (log-handler recv filename)
   (λ (log-evt)
     (define msg (vector-ref log-evt 1))
-    (unless
-        (regexp-match? #rx"cm-accomplice" msg)
-      (displayln (timestamp) log-port)
-      (displayln (vector-ref log-evt 1) log-port))))
+    (unless (regexp-match? #rx"cm-accomplice" msg)
+      (call-with-output-file filename
+        (λ (log-port)
+          (displayln (string-append (timestamp) " " msg)
+                     log-port))
+        #:exists 'append))))
 
 (define (timestamp)
   (parameterize ([date-display-format 'iso-8601])
