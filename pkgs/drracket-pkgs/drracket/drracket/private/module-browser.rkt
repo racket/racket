@@ -16,12 +16,15 @@
          "eval-helpers.rkt"
          racket/unit
          racket/async-channel
+         racket/match
          setup/private/lib-roots
          racket/port
          "rectangle-intersect.rkt")
 
-(define-struct req (filename key))
-;; type req = (make-req string[filename] (union symbol #f))
+(define-struct req (r-mpi key))
+;; type req = (make-req [result from resolve-module-path-index] -- except only when it has a path
+;;                      (or/c symbol? #f))
+
 
 (provide module-overview@
          process-program-unit
@@ -228,17 +231,15 @@
                       (loop child 
                             (and depth delta-depth (+ delta-depth depth))))))))))
         
-        ;; add-connection : string string (union symbol #f) number -> void
+        ;; add-connection : path/string/submod path/string/submod (union symbol #f) number -> void
         ;; name-original and name-require and the identifiers for those paths and
         ;; original-filename? and require-filename? are booleans indicating if the names
         ;; are filenames.
         (define/public (add-connection name-original name-require path-key require-depth)
           (unless max-lines
             (error 'add-connection "not in begin-adding-connections/end-adding-connections sequence"))
-          (let* ([original-filename? (file-exists? name-original)]
-                 [require-filename? (file-exists? name-require)]
-                 [original-snip (find/create-snip name-original original-filename?)]
-                 [require-snip (find/create-snip name-require require-filename?)]
+          (let* ([original-snip (find/create-snip name-original)]
+                 [require-snip (find/create-snip name-require)]
                  [original-level (send original-snip get-level)]
                  [require-level (send require-snip get-level)])
             (let ([require-depth-key (list original-snip require-snip)])
@@ -278,20 +279,33 @@
         ;; finds the snip with this key, or creates a new
         ;; ones. For the same key, always returns the same snip.
         ;; uses snip-table as a cache for this purpose.
-        (define/private (find/create-snip name is-filename?)
+        (define/private (find/create-snip name)
+          (define filename
+            (match name
+              [(? path-string?) (and (file-exists? name) name)]
+              [`(submod ,p ,_ ...) (and (file-exists? p) p)]
+              [else #f]))
           (hash-ref
            snip-table
            name
            (λ () 
-             (let* ([snip (instantiate word-snip/lines% ()
-                            (lines (if is-filename? (count-lines name) #f))
-                            (word (let-values ([(_1 name _2) (split-path name)])
-                                    (path->string name)))
-                            (pb this)
-                            (filename (if is-filename? name #f)))])
-               (insert snip)
-               (hash-set! snip-table name snip)
-               snip))))
+             (define snip
+               (new word-snip/lines%
+                    [lines (if filename (count-lines filename) #f)]
+                    [word 
+                     (if filename
+                         (let ([short-name (let-values ([(_1 name _2) (split-path filename)])
+                                             (path->string name))])
+                           (match name
+                             [(? path-string?) short-name]
+                             [`(submod ,p ,submods ...) 
+                              (format "~s" `(submod ,short-name ,@submods))]))
+                         (format "~a" name))]
+                    [pb this]
+                    [filename filename]))
+             (insert snip)
+             (hash-set! snip-table name snip)
+             snip)))
         
         ;; count-lines : string[filename] -> (union #f number)
         ;; effect: updates max-lines
@@ -1046,7 +1060,7 @@
   (define (add-connections filename/stx)
     (cond
       [(path-string? filename/stx)
-       (add-filename-connections filename/stx)]
+       (add-submod/filename-connections filename/stx)]
       [(syntax? filename/stx)
        (add-syntax-connections filename/stx)]))
   
@@ -1081,9 +1095,15 @@
         (try #"")
         pth))
   
-  ;; add-filename-connections : string -> void
-  (define (add-filename-connections filename)
-    (add-module-code-connections filename (get-module-code filename)))
+  ;; add-submod/filename-connections : string -> void
+  (define (add-submod/filename-connections fn/submod)
+    (match fn/submod
+      [(? path?) (add-module-code-connections fn/submod (get-module-code fn/submod))]
+      [`(submod ,filename ,sub-mods ...)
+       (printf "looking in submods: ~s\n" sub-mods)
+       (add-module-code-connections 
+        fn/submod
+        (get-module-code filename #:submodule-path sub-mods))]))
   
   (define (add-module-code-connections module-name module-code)
     (unless (hash-ref visited-hash-table module-name (λ () #f))
@@ -1096,10 +1116,10 @@
         (define requires (extract-filenames mpis module-name))
         (for ([require (in-list requires)])
           (add-connection module-name
-                          (req-filename require)
+                          (req-r-mpi require)
                           (req-key require)
                           level)
-          (add-filename-connections (req-filename require))))))
+          (add-submod/filename-connections (req-r-mpi require))))))
   
   ;; add-connection : string string (union symbol #f) number -> void
   ;; name-original and name-require and the identifiers for those paths and
@@ -1124,16 +1144,32 @@
         (hash-ref! t path (lambda () (path->library-root path))))))
 
   ;; extract-filenames :
-  ;;   (listof (union symbol module-path-index)) string[module-name]
+  ;;   (listof (union symbol module-path-index)) 
+  ;;   result-of-resolve-module-path-index/but-with-simplified-paths
   ;;   -> (listof req)
-  (define (extract-filenames direct-requires base)
+  (define (extract-filenames direct-requires base/submod)
+    (define base
+      (match base/submod
+        [`(submod ,p ,_ ...) p]
+        [else base/submod]))
     (define base-lib (get-lib-root base))
     (for*/list ([dr (in-list direct-requires)]
-                [rkt-path (in-value (and (module-path-index? dr)
-                                         (resolve-module-path-index dr base)))]
-                #:when (path? rkt-path))
-      (define path (build-module-filename rkt-path #t))
-      (make-req (simplify-path path) (get-key dr base-lib path))))
+                [r-mpi (in-value (and (module-path-index? dr)
+                                      (resolve-module-path-index dr base)))]
+                #:when (to-path r-mpi))
+      (define path (build-module-filename (to-path r-mpi) #t))
+      (make-req (match r-mpi
+                  [(? path?) (simplify-path r-mpi)]
+                  [`(submod ,p ,submods) `(submod ,(simplify-path p) ,submods)])
+                (get-key dr base-lib path))))
+  
+  (define (to-path r-mpi)
+    (match r-mpi
+      [(? path? p) p]
+      [`(submod ,(? path? p) ,_ ...) 
+       (printf "aha! ~s\n" p)
+       p]
+      [_ #f]))
 
   (define (get-key dr requiring-libroot required)
     (and (module-path-index? dr)
