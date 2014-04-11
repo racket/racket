@@ -5331,7 +5331,7 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
         scheme_signal_error("internal error: shouldn't instantiate module %s now",
                             scheme_write_to_string(m->modname, NULL));
 
-      /* printf("new %ld %s\n", env->phase, SCHEME_SYM_VAL(m->modname)); */
+      /* printf("new %ld %s\n", env->phase, scheme_write_to_string(m->modname, NULL)); */
       menv = scheme_new_module_env(env, m, 0);
       scheme_hash_set(MODCHAIN_TABLE(env->modchain), m->modname, (Scheme_Object *)menv);
 
@@ -6530,6 +6530,8 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
     }
   } else
     prefix = m->modname; /* used for submodules */
+
+  /* printf("declare %s\n", scheme_write_to_string(m->modname, NULL)); */
 
   src = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_SRC);
   if (!SCHEME_FALSEP(src)) {

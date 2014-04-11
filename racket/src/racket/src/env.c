@@ -950,11 +950,19 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
   }
 
   menv->module = m;
-
-  scheme_prepare_label_env(env);
-  menv->label_env = env->label_env;
-  menv->label_env->module_pre_registry = menv->module_pre_registry;
   menv->instance_env = env;
+
+  if (new_exp_module_tree) {
+    /* It would be nice to share the label env with `env`, but we need
+       to set `module_pre_registry` in `menv->label_env` and not shared
+       it with `env->label_env`: */
+    menv->label_env = NULL;
+    scheme_prepare_label_env(menv);
+    menv->instance_env = menv;
+  } else {
+    scheme_prepare_label_env(env);
+    menv->label_env = env->label_env;
+  }
 
   if (new_exp_module_tree) {
     Scheme_Object *p;
