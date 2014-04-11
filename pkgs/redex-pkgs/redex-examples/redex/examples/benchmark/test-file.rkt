@@ -97,6 +97,20 @@
    (handle-evt res-chan
                (λ (result-of-thunk) result-of-thunk))))
 
+(define (with-heartbeat name type thunk)
+  (define thd (thread (λ () (thunk))))
+  (define heartbeat-thd
+    (thread (λ () 
+              (let loop () 
+                (log-heartbeat name type) 
+                (sleep 10)
+                (loop)))))
+  (sync
+   (handle-evt thd
+               (λ (_) (kill-thread heartbeat-thd)))
+   (handle-evt heartbeat-thd
+               (λ (_) (error 'with-hearbeat "heartbeat thread ended")))))
+
 (define (run/spawn-generations fname verbose? no-errs? get-gen check seconds type)
   (if n-procs
       (spawn-parallel fname verbose? no-errs? get-gen check seconds type)
@@ -125,6 +139,11 @@
 (struct reached-limit (tries))
 
 (define (run-generations fname verbose? no-errs? get-gen check seconds type)
+  (log-start fname type)
+  (with-heartbeat fname type
+   (λ () (run-gens fname verbose? no-errs? get-gen check seconds type))))
+
+(define (run-gens fname verbose? no-errs? get-gen check seconds type)
   (collect-garbage)
   (define s-time (current-process-milliseconds))
   (define time-limit (+ s-time (* 1000 seconds)))
@@ -218,7 +237,6 @@
   (printf "~a has the error: ~a\n\n" fpath err)
   (printf "Running ~a....\n" fpath)
   (printf "Using generator: ~s\n" gen-type)
-  (log-start fpath gen-type)
   (cond
     [(equal? gen-type 'fixed)
      (define small-counter-example
@@ -274,10 +292,9 @@
        (run/spawn-generations fpath verbose? no-errs? (λ () gen)
                         check seconds gen-type))])) 
 
-(parameterize ([caching-enabled? #f])
-  (for ([gen-type (in-list types)])
-    (with-logging-to (log-file-name gen-type)
-                     (λ () (test-file filename verbose #f gen-type (* minutes 60))))))
+(for ([gen-type (in-list types)])
+  (with-logging-to (log-file-name gen-type)
+                   (λ () (test-file filename verbose #f gen-type (* minutes 60)))))
 
 (unless (member 'fixed types)
   (call-with-output-file output-file

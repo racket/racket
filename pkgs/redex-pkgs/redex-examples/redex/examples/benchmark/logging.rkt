@@ -8,7 +8,8 @@
          log-gen-timeout
          log-check-timeout
          log-start
-         log-finished)
+         log-finished
+         log-heartbeat)
 
 (struct bmark-log-data (data))
 (struct bmark-log-end ())
@@ -94,6 +95,11 @@
                #:attempts/cexp ,(if (zero? countxmps)
                                                 'N/A
                                                 (exact->inexact (/ tries countxmps))))))
+
+(define (log-heartbeat model gen)
+  (bmark-log 'heartbeat
+             `(#:model ,(path-format model)
+               #:type ,gen)))
 
 (define path-format (compose string->symbol path->string))
 
