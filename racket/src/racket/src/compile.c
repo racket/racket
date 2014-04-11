@@ -4783,8 +4783,13 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Syntax *f;
       rec[drec].pre_unwrapped = 1;
       f = (Scheme_Syntax *)SCHEME_SYNTAX(var);
-      if (can_recycle_stx && !quick_stx)
+      if (can_recycle_stx && !quick_stx) {
         quick_stx = can_recycle_stx;
+        ((Scheme_Stx *)quick_stx)->val = NULL;
+        ((Scheme_Stx *)quick_stx)->wraps = NULL;
+        ((Scheme_Stx *)quick_stx)->u.modinfo_cache = NULL;
+        ((Scheme_Stx *)quick_stx)->taints = NULL;
+      }
       return f(form, env, rec, drec);
     } else {
       name = scheme_stx_taint_disarm(form, NULL);
