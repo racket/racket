@@ -162,11 +162,11 @@
     (let loop ([tries 0])
       (when ((current-process-milliseconds) . > . time-limit)
         (break (reached-limit tries))) 
-      (define term (with-timeout (* 5 1000) generator
+      (define term (with-timeout timeout-time generator
                                  (λ () 
                                    (log-gen-timeout fname type)
                                    (break (timeout)))))
-      (define ok? (with-timeout (* 5 1000) (λ () (check term))
+      (define ok? (with-timeout timeout-time (λ () (check term))
                                 (λ () 
                                   (log-check-timeout fname type term)
                                   (break (timeout)))
