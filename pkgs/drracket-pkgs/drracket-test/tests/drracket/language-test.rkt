@@ -146,13 +146,18 @@ the settings above should match r5rs
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
     
     (test-expression "(list 1)" "'(1)")
-    (test-expression "(car (list))" #rx"{stop-multi.png} {stop-22x22.png} car: contract violation.*given: '[(][)]")
+    (test-expression "(car (list))" 
+                     #rx"{stop-multi.png} {stop-22x22.png} car: contract violation.*given: '[(][)]")
     
     (test-expression "(current-command-line-arguments)" "'#()")
-    (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
+    (test-expression "(define-syntax app syntax-case)"
+                     "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
     
     (test-expression "#lang racket" #rx"read: #lang not enabled in the current context" "")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
                      "a: b")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
@@ -217,13 +222,17 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" "#t")
-    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
+    (test-expression 
+     "mred^" 
+     #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
     (test-expression "(eq? 'a 'A)" "#f")
-    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
+    (test-expression "(set! x 1)"
+                     #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond [(= 1 2) 3])" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
-    (test-expression "(+ (list 1) 2)" #rx"{stop-multi.png} {stop-22x22.png} [+]: contract violation.*given: [(]1[)]")
+    (test-expression "(+ (list 1) 2)"
+                     #rx"{stop-multi.png} {stop-22x22.png} [+]: contract violation.*given: [(]1[)]")
     (test-expression "'(1)" "(1)")
     (test-expression "(define shrd (box 1)) (list shrd shrd)"
                      "(#&1 #&1)")
@@ -252,15 +261,20 @@ the settings above should match r5rs
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
     
     (test-expression "(list 1)" "(1)")
-    (test-expression "(car (list))" #rx"{stop-multi.png} {stop-22x22.png} car: contract violation.*given: [(][)]")
+    (test-expression "(car (list))"
+                     #rx"{stop-multi.png} {stop-22x22.png} car: contract violation.*given: [(][)]")
     
     (test-expression "(current-command-line-arguments)" "#()")
-    (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
+    (test-expression "(define-syntax app syntax-case)"
+                     "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
     
     (test-expression "#lang racket"
                      ""
                      #rx"read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
                      "a: b")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
@@ -307,8 +321,12 @@ the settings above should match r5rs
     
     (test-expression "(sqrt -1)" "0+1i")
     
-    (test-expression "class" #rx"{stop-multi.png} {stop-22x22.png} class:.*cannot reference undefined identifier")
-    (test-expression "shared" #rx"{stop-multi.png} {stop-22x22.png} shared:.*cannot reference undefined identifier")
+    (test-expression 
+     "class" 
+     #rx"{stop-multi.png} {stop-22x22.png} class:.*cannot reference undefined identifier")
+    (test-expression 
+     "shared"
+     #rx"{stop-multi.png} {stop-22x22.png} shared:.*cannot reference undefined identifier")
     
     (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of `\\.'")
     (test-expression "'(1 . 2)" "(1 . 2)")
@@ -317,22 +335,35 @@ the settings above should match r5rs
     (test-expression "(define (f car) 1)" "")
     (test-expression "(define (f empty) 1)" "")
     
-    (test-expression "call/cc" #rx"{stop-multi.png} {stop-22x22.png} call/cc:.*cannot reference undefined identifier")
+    (test-expression
+     "call/cc"
+     #rx"{stop-multi.png} {stop-22x22.png} call/cc:.*cannot reference undefined identifier")
     
-    (test-expression "(error 'a \"~a\" 1)" #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
-    (test-expression "(error \"a\" \"a\")" #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
+    (test-expression 
+     "(error 'a \"~a\" 1)"
+     #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
+    (test-expression 
+     "(error \"a\" \"a\")"
+     #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
     
-    (test-expression "(time 1)" 
-                     #rx"{stop-multi.png} {stop-22x22.png} time.*cannot reference undefined identifier")
+    (test-expression
+     "(time 1)" 
+     #rx"{stop-multi.png} {stop-22x22.png} time.*cannot reference undefined identifier")
     
-    (test-expression "true" #rx"{stop-multi.png} {stop-22x22.png} true.*cannot reference undefined identifier")
-    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
+    (test-expression 
+     "true"
+     #rx"{stop-multi.png} {stop-22x22.png} true.*cannot reference undefined identifier")
+    (test-expression 
+     "mred^"
+     #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
     (test-expression "(eq? 'a 'A)" "#t")
-    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
+    (test-expression "(set! x 1)"
+                     #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond ((= 1 2) 3))" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
-    (test-expression "(+ (list 1) 2)" #rx"{stop-multi.png} {stop-22x22.png} [+]: contract violation.*given: [(]1[)]")
+    (test-expression "(+ (list 1) 2)"
+                     #rx"{stop-multi.png} {stop-22x22.png} [+]: contract violation.*given: [(]1[)]")
     (test-expression "'(1)" "(1)")
     (test-expression "(define shrd (cons 1 1)) (list shrd shrd)"
                      "((1 . 1) (1 . 1))")
@@ -366,14 +397,21 @@ the settings above should match r5rs
     (test-expression "(car (list))"
                      #rx"{stop-multi.png} {stop-22x22.png} mcar: contract violation.*given: [(][)]")
     
-    (test-expression "argv" #rx"{stop-multi.png} {stop-22x22.png} argv:.*cannot reference undefined identifier")
-    (test-expression "(define-syntax app syntax-case)" 
-                     "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")
+    (test-expression 
+     "argv"
+     #rx"{stop-multi.png} {stop-22x22.png} argv:.*cannot reference undefined identifier")
+    (test-expression 
+     "(define-syntax app syntax-case)" 
+     "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")
     
-    (test-expression "#lang racket"
-                     (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
-                     #rx"read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+    (test-expression 
+     "#lang racket"
+     (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
+     #rx"read: #lang not enabled in the current context")
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
                      #rx"cannot reference undefined identifier")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
@@ -460,12 +498,14 @@ the settings above should match r5rs
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
                      "shrd: this name was defined previously and cannot be re-defined")
-    (test-expression "(local ((define x x)) 1)" 
-                     "local: this function is not defined" 
-                     "function call: expected a function after the open parenthesis, but found a part")
-    (test-expression "(letrec ([x x]) 1)" 
-                     "letrec: this function is not defined"
-                     "function call: expected a function after the open parenthesis, but found a part")
+  (test-expression 
+   "(local ((define x x)) 1)" 
+   "local: this function is not defined" 
+   "function call: expected a function after the open parenthesis, but found a part")
+  (test-expression 
+   "(letrec ([x x]) 1)" 
+   "letrec: this function is not defined"
+   "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "+: expects at least 2 arguments, but found only 1")
     
@@ -507,9 +547,10 @@ the settings above should match r5rs
     (test-expression "(exact? 1.5)" "true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
-    (test-expression "(let ([f (lambda (x) x)]) f)"
-                     "let: this function is not defined"
-                     "function call: expected a function after the open parenthesis, but found a part")
+  (test-expression
+   "(let ([f (lambda (x) x)]) f)"
+   "let: this function is not defined"
+   "function call: expected a function after the open parenthesis, but found a part")
     (test-expression ",1"
                      "read: illegal use of comma")
     
@@ -525,9 +566,12 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                       "define: expected at least one variable after the function name, but found none"
-                       #rx"define: function definitions are not allowed in the interactions window")
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
+                     "define: expected at least one variable after the function name, but found none"
+                     #rx"define: function definitions are not allowed in the interactions window")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
@@ -614,12 +658,14 @@ the settings above should match r5rs
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
                      "shrd: this name was defined previously and cannot be re-defined")
-    (test-expression "(local ((define x x)) 1)"
-                     "local: this function is not defined"
-                     "function call: expected a function after the open parenthesis, but found a part")
-    (test-expression "(letrec ([x x]) 1)"
-                     "letrec: this function is not defined"
-                     "function call: expected a function after the open parenthesis, but found a part")
+    (test-expression
+     "(local ((define x x)) 1)"
+     "local: this function is not defined"
+     "function call: expected a function after the open parenthesis, but found a part")
+    (test-expression
+     "(letrec ([x x]) 1)"
+     "letrec: this function is not defined"
+     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "+: expects at least 2 arguments, but found only 1")
     
@@ -661,9 +707,10 @@ the settings above should match r5rs
     (test-expression "(exact? 1.5)" "true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
-    (test-expression "(let ([f (lambda (x) x)]) f)" 
-                     "let: this function is not defined"
-                       "function call: expected a function after the open parenthesis, but found a part")
+    (test-expression 
+     "(let ([f (lambda (x) x)]) f)" 
+     "let: this function is not defined"
+     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression ",1"
                      "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
     
@@ -679,7 +726,10 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
                      "define: expected at least one variable after the function name, but found none"
                      #rx"define: function definitions are not allowed in the interactions window")
     
@@ -828,9 +878,13 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "define: expected at least one variable after the function name, but found none"
-                     #rx"define: expected at least one variable after the function name, but found none")
+    (test-expression
+     (string-append "(define (f)\n"
+                    "(+ (raise-user-error 'a \"b\")))\n"
+                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                    "(f)")
+     "define: expected at least one variable after the function name, but found none"
+     #rx"define: expected at least one variable after the function name, but found none")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
@@ -974,9 +1028,13 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                       "define: expected at least one variable after the function name, but found none"
-                     #rx"define: expected at least one variable after the function name, but found none")
+    (test-expression
+     (string-append "(define (f)\n"
+                    "(+ (raise-user-error 'a \"b\")))\n"
+                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                    "(f)")
+     "define: expected at least one variable after the function name, but found none"
+     #rx"define: expected at least one variable after the function name, but found none")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
@@ -1129,10 +1187,12 @@ the settings above should match r5rs
     (test-expression "#lang racket"
                      "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
-    (test-expression
-     "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-     #rx"raise-user-error"
-     #rx"raise-user-error")
+    (test-expression (string-append "(define (f)\n"
+                                    "(+ (raise-user-error 'a \"b\")))\n"
+                                    "(if (zero? (random 1)) (void) (set! f void))\n"
+                                    "(f)")
+                     #rx"raise-user-error"
+                     #rx"raise-user-error")
     
     (test-expression "(require racket/gui/base)(require racket/class)(make-object bitmap% 1 1)"
                      "{image}"
