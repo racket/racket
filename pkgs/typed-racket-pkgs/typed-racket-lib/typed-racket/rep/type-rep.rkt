@@ -124,12 +124,13 @@
 ;; id is the name stored in the environment
 ;; deps are the other aliases this depends on, if any
 ;; args are the type parameters for this type (or #f if none)
-;; ctc-id is an identifier for the corresponding contract (or #f if none)
+;; ctc-ids is a list of three identifiers for the corresponding contract
+;;   for typed, untyped, and both direction contracts (or #f if none)
 ;; struct? indicates if this maps to a struct type
 (def-type Name ([id identifier?]
                 [deps (listof identifier?)]
                 [args (or/c #f (listof identifier?))]
-                [ctc-id (or/c #f identifier?)]
+                [ctc-ids (or/c #f (list/c identifier? identifier? identifier?))]
                 [struct? boolean?])
   [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 

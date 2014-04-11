@@ -44,23 +44,23 @@
                      (parse-type t)))
   (define fv-cnts (for/list ([t (in-list fv-types)]
                              [stx (in-syntax fvtys)])
-                    (type->contract t #:typed-side #f (no-contract t))))
+                    (type->contract t #:typed-side 'untyped (no-contract t))))
   (define ex-types (for/list ([t (in-syntax extys)])
                      (parse-type t)))
   (define ex-cnts (for/list ([t (in-list ex-types)]
                              [stx (in-syntax extys)])
-                    (type->contract t #:typed-side #t (no-contract t))))
+                    (type->contract t #:typed-side 'typed (no-contract t))))
   (define region-tc-result
     (and expr? (parse-tc-results resty)))
   (define region-cnts
     (if region-tc-result
         (match region-tc-result
           [(tc-result1: t)
-           (list (type->contract t #:typed-side #t (no-contract t #'region-ty-stx)))]
+           (list (type->contract t #:typed-side 'typed (no-contract t #'region-ty-stx)))]
           [(tc-results: ts)
            (for/list ([t (in-list ts)])
              (type->contract
-              t #:typed-side #t
+              t #:typed-side 'typed
               (no-contract t #'region-ty-stx)))])
         null))
   (for ([i (in-syntax fvids)]

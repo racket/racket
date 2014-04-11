@@ -30,7 +30,11 @@
 ;;
 ;; Data definitions for aliases
 ;;
-;; A TypeAliasInfo is a (list Syntax (Listof Identifier) Identifier)
+;; A TypeAliasInfo is a (list Syntax (Listof Id) (list Id Id Id))
+;;
+;; interp. - the syntax representing the type to be aliased
+;;         - the list of type argument identifiers
+;;         - three identifiers that are bound to contracts at runtime
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,7 +86,7 @@
 ;; the information needed to register them later
 (define (get-type-alias-info type-aliases)
   (for/lists (_1 _2) ([type-alias (in-list type-aliases)])
-    (define-values (id type-stx args ctc-id) (parse-type-alias type-alias))
+    (define-values (id type-stx args ctc-ids) (parse-type-alias type-alias))
     ;; Register type alias names with a dummy value so that it's in
     ;; scope for the registration later.
     ;;
@@ -94,7 +98,7 @@
      (if args
          (make-Poly (map syntax-e args) (make-Value (gensym)))
          (make-Value (gensym))))
-    (values id (list id type-stx args ctc-id))))
+    (values id (list id type-stx args ctc-ids))))
 
 ;; register-all-type-aliases : Listof<Id> Dict<Id, TypeAliasInfo> -> Void
 ;;
@@ -227,9 +231,9 @@
   (define name-types
     (for/list ([id (in-list recursive-aliases)])
       (define record (dict-ref type-alias-map id))
-      (match-define (list _ args ctc-id) record)
+      (match-define (list _ args ctc-ids) record)
       (define deps (dict-ref new-dependency-map id))
-      (define name-type (make-Name id deps args ctc-id #f))
+      (define name-type (make-Name id deps args ctc-ids #f))
       (register-resolved-type-alias id name-type)
       name-type))
 
@@ -239,11 +243,11 @@
   ;; in topologically sorted order, so we want to go through in the
   ;; reverse order of that to avoid unbound type aliases.
   (for ([id (in-list acyclic-singletons)])
-    (match-define (list type-stx _ ctc-id) (dict-ref type-alias-map id))
+    (match-define (list type-stx _ ctc-ids) (dict-ref type-alias-map id))
     ;; Non-recursive aliases don't require contract generation at the
     ;; module level, so set them to be ignored in that pass to avoid
     ;; doing extra work.
-    (ignore-for-contract-gen! ctc-id)
+    (for-each ignore-for-contract-gen! ctc-ids)
     (register-resolved-type-alias id (parse-type type-stx)))
 
   ;; Clear the resolver cache of Name types from this block
@@ -279,12 +283,14 @@
   (kernel-syntax-case* form #f
     (define-type-alias-internal values)
     [(define-values ()
-       (begin (quote-syntax (define-type-alias-internal nm ty args ctc))
+       (begin (quote-syntax (define-type-alias-internal nm ty args
+                              (ctc-t ctc-u ctc-b)))
               (#%plain-app values)))
-     (values #'nm #'ty (syntax-e #'args) #'ctc)]
+     (values #'nm #'ty (syntax-e #'args) (list #'ctc-t #'ctc-u #'ctc-b))]
     ;; this version is for `let`-like bodies
-    [(begin (quote-syntax (define-type-alias-internal nm ty args ctc))
+    [(begin (quote-syntax (define-type-alias-internal nm ty args
+                            (ctc-t ctc-u ctc-b)))
             (#%plain-app values))
-     (values #'nm #'ty (syntax-e #'args) #'ctc)]
+     (values #'nm #'ty (syntax-e #'args) (list #'ctc-t #'ctc-u #'ctc-b))]
     [_ (int-err "not define-type-alias")]))
 

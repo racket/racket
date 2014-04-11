@@ -220,7 +220,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  typ
                  ;; this is for a `require/typed', so the value is not
                  ;; from the typed side
-                 #:typed-side #f
+                 #:typed-side 'untyped
                  (type->contract-fail typ #'ty))))
              ;; in the fix-up case, the contract is just an identifier
              ;; that is defined below
@@ -330,7 +330,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          ;; must be a flat contract
                          #:kind 'flat
                          ;; the value is not from the typed side
-                         #:typed-side #f
+                         #:typed-side 'untyped
                          (type->contract-fail typ #'ty #:ctc-str "predicate")))
                    #'(Any -> Boolean : ty))))))]))
 
@@ -377,7 +377,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (type->contract
                     typ
                     ;; the value is not from the typed side
-                    #:typed-side #f
+                    #:typed-side 'untyped
                     (type->contract-fail typ #'ty)))))])]))
 
 (define-syntax (require/opaque-type stx)
@@ -553,17 +553,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
             (and (stx-pair? stx) (stx-car stx)))))
      ;; identifier used to bind a contract matching this type alias,
      ;; for use if the alias ends up being recursive
-     (define/with-syntax ctc (generate-temporary))
+     (define/with-syntax (ctc-t ctc-u ctc-b) (generate-temporaries '(t u b)))
      #`(begin
          #,(if (not (attribute omit))
                (ignore #'(define-syntax tname stx-err-fun))
                #'(begin))
          ;; mark `ctc` for contract generation in a later phase of TR
-         ;; (unless it's a polymorphic alias, since contract generation
-         ;;  treats those differently)
-         #,(ignore (contract-def/alias-property #'(define ctc #f) #'type))
+         ;; to make contracts more manageable instead of generating the large
+         ;; recursive nest at once.
+         #,(ignore (contract-def/alias-property #'(define ctc-t #f) #'(typed type)))
+         #,(ignore (contract-def/alias-property #'(define ctc-u #f) #'(untyped type)))
+         #,(ignore (contract-def/alias-property #'(define ctc-b #f) #'(both type)))
          #,(internal (syntax/loc stx
-                       (define-type-alias-internal tname type poly-vars))))]))
+                       (define-type-alias-internal tname type poly-vars
+                         (ctc-t ctc-u ctc-b)))))]))
 
 (define-syntax (with-handlers: stx)
   (syntax-parse stx

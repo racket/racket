@@ -79,12 +79,16 @@
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) `(-result ,(sub t))]
     [(Union: elems) (split-union elems)]
     [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
-    [(Name: stx deps args ctc-id struct?)
+    [(Name: stx deps args ctc-ids struct?)
      `(make-Name (quote-syntax ,stx)
                  (list ,@(map (λ (x) `(quote-syntax ,x)) deps))
                  ,(and args
                        `(list ,@(map (λ (x) `(quote-syntax ,x)) args)))
-                 (quote-syntax ,ctc-id)
+                 ,(if (not ctc-ids)
+                      #f
+                      `(list (quote-syntax ,(car ctc-ids))
+                             (quote-syntax ,(cadr ctc-ids))
+                             (quote-syntax ,(caddr ctc-ids))))
                  ,struct?)]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id)

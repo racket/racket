@@ -89,7 +89,7 @@
          (with-syntax ([cnt (type->contract
                              typ
                              ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side #f
+                             #:typed-side 'untyped
                              #:kind kind
                              (type->contract-fail typ prop))])
            (ignore ; should be ignored by the optimizer
@@ -132,14 +132,17 @@
 ;; Generate a contract that goes with a type alias
 (define (generate-contract-def/alias stx)
   (define prop (contract-def/alias-property stx))
-  (define typ (parse-type prop))
+  (define-values (typed-side type-stx)
+    (syntax-case prop ()
+      [(typed-side type-stx) (values (syntax-e #'typed-side) #'type-stx)]))
+  (define typ (parse-type type-stx))
   (define failed? #f)
   (define failure-reason #f)
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
      (define/with-syntax cnt
        (type->contract typ
-                       #:typed-side #f
+                       #:typed-side typed-side
                        #:kind 'impersonator
                        (λ (#:reason [reason #f])
                           (set! failed? #t)
@@ -237,14 +240,14 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-(define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+(define (type->contract ty init-fail #:typed-side [typed-side 'typed] #:kind [kind 'impersonator])
   (let/ec escape
     (define (fail #:reason [reason #f]) (escape (init-fail #:reason reason)))
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
-        #:trusted-positive typed-side
-        #:trusted-negative (not typed-side))
+        #:trusted-positive (not (from-untyped? typed-side))
+        #:trusted-negative (not (from-typed? typed-side)))
       fail
       kind)))
 
@@ -266,10 +269,10 @@
   (triple sc sc sc))
 
 
-(define (type->static-contract type init-fail #:typed-side [typed-side #t])
+(define (type->static-contract type init-fail #:typed-side [typed-side 'typed])
   (let/ec return
     (define (fail #:reason reason) (return (init-fail #:reason reason)))
-    (let loop ([type type] [typed-side (if typed-side 'typed 'untyped)] [recursive-values (hash)])
+    (let loop ([type type] [typed-side typed-side] [recursive-values (hash)])
       (define (t->sc t #:recursive-values (recursive-values recursive-values))
         (loop t typed-side recursive-values))
       (define (t->sc/neg t #:recursive-values (recursive-values recursive-values))
@@ -305,12 +308,19 @@
                                                 (recursive-sc-use name*))))
                               (recursive-sc-use name*))])]
         ;; Implicit recursive aliases
-        [(Name: name-id _ _ ctc-id #f)
-         ;; FIXME: not sure if always chaperone is correct
+        [(Name: name-id _ _ (list ctc-t ctc-u ctc-b) #f)
+         (define ctc-id
+           (case typed-side
+             [(typed) ctc-t]
+             [(both) ctc-u]
+             [(untyped) ctc-b]))
+         ;; FIXME: More precision here would be good so that contracts are
+         ;;        valid in more cases. In some cases, we can be more precise
+         ;;        than impersonator even if it's sound to assume that.
          (define alias-failed? (free-id-table-ref failed-aliases ctc-id #f))
          (if alias-failed?
              (fail #:reason alias-failed?)
-             (chaperone/sc ctc-id))]
+             (impersonator/sc ctc-id))]
         ;; Ordinary type applications or struct type names, just resolve
         [(or (App: _ _ _) (Name: _ _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
