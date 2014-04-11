@@ -843,7 +843,7 @@
                                  (-seq a)
                                  . -> .
                                  (-seq b))
-                                ((a . -> . Univ) (-lst a) . -> . (-seq a))))]
+                                ((a . -> . Univ) (-seq a) . -> . (-seq a))))]
 [sequence-add-between (-poly (a) ((-seq a) a . -> . (-seq a)))]
 
 ;; Section 4.16 (Sets)
