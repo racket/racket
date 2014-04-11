@@ -165,6 +165,7 @@
                         (lambda ()
                           (apply
                            (if first-inst pkg-update-command pkg-install-command)
+                           #:deps 'search-auto
                            #:scope (and first-inst
                                         (car first-inst))
                            names)))
