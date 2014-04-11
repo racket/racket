@@ -13,35 +13,39 @@
 
 (struct bmark-log-data (data))
 (struct bmark-log-end ())
+(struct gc-info (major? pre-amount pre-admin-amount code-amount
+                        post-amount post-admin-amount
+                        start-process-time end-process-time
+                        start-time end-time)
+  #:prefab)
 
 (define (with-logging-to filename thunk)
-  (define benchmark-logger
-    (make-logger #f (current-logger)))
   (define bmark-log-recv
-    (make-log-receiver benchmark-logger 'info))
-  (define handler (log-handler bmark-log-recv filename))
-  (parameterize ([current-logger benchmark-logger])
-    (define body-thd
-      (thread thunk))
-    (let loop ()
-      (sync
-       (handle-evt body-thd
-                   (λ (_)
-                     (log-message (current-logger) 'info "STOP" (bmark-log-end))
-                     (loop)))
-       (handle-evt bmark-log-recv 
-                   (λ (log-evt) 
-                     (match (vector-ref log-evt 2)
-                       [(bmark-log-end)
-                        (void)]
-                       [else
-                        (handler log-evt)
-                        (loop)])))))))
+    (make-log-receiver (current-logger) 'debug))
+  (define handler (log-handler filename))
+  (define body-thd
+    (thread thunk))
+  (let loop ()
+    (sync
+     (handle-evt body-thd
+                 (λ (_)
+                   (log-message (current-logger) 'info "STOP" (bmark-log-end))
+                   (loop)))
+     (handle-evt bmark-log-recv 
+                 (λ (log-evt)
+                   (define data (vector-ref log-evt 2))
+                   (match data
+                     [(? gc-info? d)
+                      (handle-gc-log-evt d)
+                      (loop)]
+                     [(bmark-log-end)
+                      (void)]
+                     [else
+                      (handler data)
+                      (loop)]))))))
 
-(define (log-handler recv filename)
-  (λ (log-evt)
-    (define msg (vector-ref log-evt 1))
-    (define data (vector-ref log-evt 2))
+(define (log-handler filename)
+  (λ (data)
     (match data
       [(bmark-log-data data)
        (call-with-output-file filename
@@ -50,6 +54,12 @@
            (newline log-port))
          #:exists 'append)]
       [_ (void)])))
+
+(define (handle-gc-log-evt gci)
+  (when (gc-info-major? gci)
+    (bmark-log 'gc-major
+               `(#:amount ,(- (gc-info-pre-amount gci) (gc-info-post-amount gci))
+                 #:time ,(- (gc-info-end-process-time gci) (gc-info-start-process-time gci))))))
 
 (define (log-counterexample model gen cexp tries time)
   (bmark-log 'counterexample
