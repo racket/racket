@@ -257,7 +257,7 @@
 (define (check-input-file f t)
   (define d? (assq f *input-devices*))
   (check-arg t (or (string? f) d?) (error-message (map car *input-devices*)) "first" f)
-  (check-arg t (or d? (file-exists? f)) "name of file in program's folder" "first" f))
+  (check-arg t (or d? (file-exists? f)) "name of existing file in program's folder" "first" f))
 
 ;; effect: ensure that f is a file in current directory or report error for t
 (define (check-output-file f t)
