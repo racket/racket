@@ -121,7 +121,7 @@
      [`any any/e]
      [`number num/e]
      [`string string/e]
-     [`natural nats/e]
+     [`natural nat/e]
      [`integer integer/e]
      [`real real/e]
      [`boolean bool/e]

@@ -58,9 +58,9 @@
          take/e
          fold-enum
 
-         nats/e
+         nat/e
          range/e
-         nats+/e
+         nat+/e
 
          ;; Base type enumerators
          any/e
@@ -216,14 +216,11 @@
 
 (define (fin/e . args) (from-list/e (remove-duplicates args)))
 
-(define nats/e
+(define nat/e
   (enum +inf.0
         identity
-        (λ (n)
-           (unless (>= n 0)
-             (redex-error 'encode "Not a natural"))
-           n)))
-(define ints/e
+        identity))
+(define int/e
   (enum +inf.0
         (λ (n)
            (if (even? n)
@@ -785,24 +782,24 @@
   (cond [(> low high) (redex-error 'range/e "invalid range: ~s, ~s" low high)]
         [(infinite? high)
          (if (infinite? low)
-             ints/e
+             int/e
              (map/e
               (λ (n)
                  (+ n low))
               (λ (n)
                  (- n low))
-              nats/e))]
+              nat/e))]
         [(infinite? low)
          (map/e
           (λ (n)
              (- high n))
           (λ (n)
              (+ high n))
-          nats/e)]
+          nat/e)]
         [else
          (map/e (λ (n) (+ n low))
                 (λ (n) (- n low))
-                (take/e nats/e (+ 1 (- high low))))]))
+                (take/e nat/e (+ 1 (- high low))))]))
 
 ;; thunk/e : Nat or +-Inf, ( -> enum a) -> enum a
 (define (thunk/e s thunk)
@@ -1070,7 +1067,7 @@
       [1 (const/e `(,bound))]
       [_
        (define smallers/e (loop (sub1 len)))
-       (define bounded/e (take/e nats/e (add1 bound)))
+       (define bounded/e (take/e nat/e (add1 bound)))
        (define first-max/e
          (map/e
           (curry cons bound)
@@ -1081,7 +1078,7 @@
        (define first-not-max/e
          (match bound
            [0 empty/e]
-           [_ (cons/e (take/e nats/e bound)
+           [_ (cons/e (take/e nat/e bound)
                       smallers/e)]))
        (define (first-max? l)
          ((first l) . = . bound))
@@ -1103,12 +1100,12 @@
      (define layer/e (bounded-list/e k layer))
      (decode layer/e (n . - . smallest))))
 
-(define (nats+/e n)
+(define (nat+/e n)
   (map/e (λ (k)
             (+ k n))
          (λ (k)
             (- k n))
-         nats/e))
+         nat/e))
 
 ;; fail/e : exn -> enum ()
 ;; returns an enum that calls a thunk
@@ -1124,7 +1121,7 @@
  test
  (require rackunit)
  (provide check-bijection?
-          ints/e
+          int/e
           find-size
           list->inc-set
           inc-set->list)
@@ -1180,7 +1177,7 @@
 (define from-1/e
   (map/e add1
          sub1
-         nats/e))
+         nat/e))
 
 (define integer/e
   (disj-sum/e (cons (const/e 0) zero?)
