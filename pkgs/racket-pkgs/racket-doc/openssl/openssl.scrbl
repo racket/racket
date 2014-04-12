@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
+          racket/list
           (for-label openssl
                      racket
                      openssl/sha1
@@ -65,7 +66,9 @@ using the functions described in @secref["cert-procs"].
                              'sslv2-or-v3
                              'sslv2
                              'sslv3
-                             'tls)
+                             'tls
+                             'tls11
+                             'tls12)
                        'sslv2-or-v3])
          (values input-port? output-port?)]{
 
@@ -79,8 +82,9 @@ encryption protocol is used, whether the server's certificate is
 checked, etc. The argument can be either a client context created by
 @racket[ssl-make-client-context], or one of the following symbols:
 @racket['sslv2-or-v3] (the default), @racket['sslv2], @racket['sslv3],
-or @racket['tls]; see @racket[ssl-make-client-context] for further
-details (including the meanings of the protocol symbols).
+@racket['tls], @racket['tls11], or @racket['tls12]; see
+@racket[ssl-make-client-context] for further details (including the
+meanings of the protocol symbols).
 
 Closing the resulting output port does not send a shutdown message to
 the server. See also @racket[ports->ssl-ports].
@@ -110,7 +114,8 @@ whether the other end is supposed to be sending or reading data.
           [hostname string?]
 	  [port-no (integer-in 1 65535)]
 	  [client-protocol
-	   (or/c ssl-client-context? 'sslv2-or-v3 'sslv2 'sslv3 'tls)
+	   (or/c ssl-client-context?
+                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
            'sslv2-or-v3])
          (values input-port? output-port?)]{
 
@@ -149,7 +154,7 @@ The context is cached, so different calls to
 
 
 @defproc[(ssl-make-client-context
-          [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls) 'sslv2-or-v3])
+          [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12) 'sslv2-or-v3])
          ssl-client-context?]{
 
 Creates a context to be supplied to @racket[ssl-connect]. The context
@@ -166,6 +171,8 @@ The @racket[protocol] must be one of the following:
   @item{@racket['sslv2] : SSL protocol version 2}
   @item{@racket['sslv3] : SSL protocol version 3}
   @item{@racket['tls] : the TLS protocol version 1}
+  @item{@racket['tls11] : the TLS protocol version 1.1}
+  @item{@racket['tls12] : the TLS protocol version 1.2}
 ]
 
 Note that SSL protocol version 2 is deprecated on some platforms and may not be
@@ -190,7 +197,8 @@ Returns @racket[#t] if @racket[v] is a value produced by
 	  [reuse? any/c #f]
 	  [hostname-or-#f (or/c string? #f) #f]
 	  [server-protocol
-	   (or/c ssl-server-context? 'sslv2-or-v3 'sslv2 'sslv3 'tls)
+	   (or/c ssl-server-context? 
+                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
            'sslv2-or-v3])
 	 ssl-listener?]{
 
@@ -256,7 +264,7 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 @racket[ports->ssl-ports].}
 
 
-@defproc[(ssl-make-server-context [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls)])
+@defproc[(ssl-make-server-context [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)])
          ssl-server-context?]{
 
 Like @racket[ssl-make-client-context], but creates a server context.}
@@ -281,7 +289,7 @@ Returns @racket[#t] if @racket[v] is a value produced by
                            ssl-make-server-context 
                            ssl-make-client-context)
                        protocol)]
-	   [#:encrypt protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls) 'sslv2-or-v3]
+	   [#:encrypt protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12) 'sslv2-or-v3]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
@@ -521,6 +529,41 @@ roots loaded by @racket[ssl-load-verify-root-certificates!].
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes where the peer identifies itself using
 @filepath{test.pem}.}
+
+@deftogether[[
+@defproc[(ssl-server-context-enable-dhe!
+           [context ssl-server-context?]
+           [dh-param-path path-string? ssl-dh4096-param-path])
+         void?]
+@defproc[(ssl-server-context-enable-ecdhe!
+           [context ssl-server-context?]
+           [curve-name symbol? 'secp521r1])
+         void?]
+]]{
+
+Enables cipher suites that provide
+@hyperlink["http://en.wikipedia.org/wiki/Forward_secrecy"]{perfect
+forward secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral
+elliptic-curve Diffie-Hellman (ECDHE) key exchange, respectively.
+
+For DHE, the @racket[dh-param-path] must be a path to a PEM file
+containing DH parameters.
+
+For ECDHE, the @racket[curve-name] must be one of the following
+symbols naming a standard elliptic curve:
+@(add-between
+  (map (lambda (s) (racket '@#,(racketvalfont (symbol->string s))))
+       '(sect163k1 sect163r1 sect163r2 sect193r1 sect193r2 sect233k1 sect233r1
+         sect239k1 sect283k1 sect283r1 sect409k1 sect409r1 sect571k1 sect571r1
+         secp160k1 secp160r1 secp160r2 secp192k1 secp224k1 secp224r1 secp256k1
+         secp384r1 secp521r1 prime192v prime256v))
+  ", ").
+}
+
+@defthing[ssl-dh4096-param-path path?]{
+
+Path for 4096-bit Diffie-Hellman parameters.
+}
 
 
 @; ----------------------------------------------------------------------
