@@ -7,6 +7,9 @@
 
 (require mred
          racket/class
+         racket/set
+         racket/contract
+         racket/list
          syntax/moddep
          syntax/toplevel
          framework/framework
@@ -551,6 +554,7 @@
         (inherit get-admin)
         
         (define require-phases '())
+        (define/public (get-require-phases) require-phases)
         (define/public (add-require-phase d)
           (unless (member d require-phases)
             (set! last-name #f)
@@ -829,18 +833,25 @@
           (define (update-found-and-search-hits reg)
             (send pasteboard begin-edit-sequence)
             (define count 0)
+            (define phases (set))
             (let loop ([snip (send pasteboard find-first-snip)])
               (when snip
                 (when (is-a? snip boxed-word-snip<%>)
                   (define found? 
                     (and reg (regexp-match reg (path->string (send snip get-filename)))))
-                  (when (or (not reg) found?) (set! count (+ count 1)))
+                  (when (or (not reg) found?) 
+                    (for ([phase (in-list (send snip get-require-phases))])
+                      (set! phases (set-add phases phase)))
+                    (set! count (+ count 1)))
                   (send snip set-found! found?))
                 (loop (send snip next))))
+            
             (send search-hits set-label 
-                  (if reg
-                      (format "~a found" count)
-                      (format "~a total" count)))
+                  (string-append
+                   (if reg
+                       (format "~a found" count)
+                       (format "~a total" count))
+                   (render-phases phases)))
             (send pasteboard end-edit-sequence))
           (update-found-and-search-hits #f) ;; only to initialize search-hits
           
@@ -1032,7 +1043,65 @@
         (super on-size w h))
       (super-instantiate ()))))
 
+(define/contract (render-phases s)
+  (-> (set/c (or/c exact-integer? #f)) string?)
+  (define for-doc (set-member? s #f))
+  (define lst (sort (filter number? (set->list s)) <))
+  (define joined-lst
+    (cond
+      [(null? lst) '()]
+      [else
+       (let loop ([lst (cdr lst)]
+                  [pending-low (car lst)]
+                  [pending-high (car lst)])
+         (cond
+           [(null? lst) (list (cons pending-low pending-high))]
+           [else
+            (define fst (car lst))
+            (cond
+              [(equal? (- fst 1) pending-high)
+               (loop (cdr lst)
+                     pending-low
+                     fst)]
+              [else
+               (cons (cons pending-low pending-high)
+                     (loop (cdr lst) fst fst))])]))]))
+  (cond
+    [(and (null? joined-lst) (not for-doc))
+     ""]
+    [(and (null? joined-lst) for-doc)
+     " (phase: for-label)"]
+    [else
+     (define plural? (not (= 1 (set-count s))))
+     (define strings 
+       (append (for/list ([joined (in-list joined-lst)])
+                 (cond
+                   [(= (car joined) (cdr joined))
+                    (format "~a" (car joined))]
+                   [else
+                    (format "~a–~a" (car joined) (cdr joined))]))
+               (if for-doc
+                   '("for-label")
+                   '())))
+     (apply string-append
+            (if plural? " (phases: " " (phase: ")
+            (append (add-between strings ", ")
+                    '(")")))]))
 
+(module+ test
+  (require rackunit)
+  (check-equal? (render-phases (set)) "")
+  (check-equal? (render-phases (set #f)) " (phase: for-label)")
+  (check-equal? (render-phases (set 1)) " (phase: 1)")
+  (check-equal? (render-phases (set -1 1)) " (phases: -1, 1)")
+  (check-equal? (render-phases (set -3 -2 -1 0 1 2 3)) " (phases: -3–3)")
+  (check-equal? (render-phases (set -3 -2 -1)) " (phases: -3–-1)")
+  (check-equal? (render-phases (set 1 3)) " (phases: 1, 3)")
+  (check-equal? (render-phases (set 1 2 3)) " (phases: 1–3)")
+  (check-equal? (render-phases (set 1 2 3 7 8 9)) " (phases: 1–3, 7–9)")
+  (check-equal? (render-phases (set #f 1 2 3 7 8 9)) " (phases: 1–3, 7–9, for-label)")
+  (check-equal? (render-phases (set 1 3 5 7 9)) " (phases: 1, 3, 5, 7, 9)")
+  (check-equal? (render-phases (set #f 1 3 5 7 9)) " (phases: 1, 3, 5, 7, 9, for-label)"))
 
 ;                                                                                    
 ;                                                                                    
