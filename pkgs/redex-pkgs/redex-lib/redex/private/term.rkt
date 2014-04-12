@@ -122,11 +122,11 @@
     (make-free-identifier-mapping))
   
   (define (rewrite stx)
-    (let-values ([(rewritten _) (rewrite/max-depth stx 0)])
+    (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f)])
       rewritten))
   
   (define (rewrite-application fn args depth)
-    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth)])
+    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
           (let loop ([func (if (judgment-form-id? #'fn)
@@ -149,7 +149,7 @@
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
   
-  (define (rewrite/max-depth stx depth)
+  (define (rewrite/max-depth stx depth ellipsis-allowed?)
     (syntax-case stx (unquote unquote-splicing in-hole hole)
       [(metafunc-name arg ...)
        (and (identifier? (syntax metafunc-name))
@@ -193,7 +193,7 @@
          (define prefix-sym (if m
                                 (string->symbol (list-ref m 1))
                                 raw-sym))
-         (check-id (syntax->datum (term-id-id id)) stx)
+         (check-id (syntax->datum (term-id-id id)) stx ellipsis-allowed?)
          
          (define new-id
            (build-disappeared-use (current-id-stx-table) 
@@ -208,7 +208,7 @@
                    (defined-term-value (syntax-local-value #'x))
                    'disappeared-use 
                    (syntax-local-introduce #'x))])
-         (check-id (syntax->datum #'x) stx)
+         (check-id (syntax->datum #'x) stx ellipsis-allowed?)
          (with-syntax ([v #`(begin
                               #,(defined-check ref "term" #:external #'x)
                               #,ref)])
@@ -228,7 +228,7 @@
       [hole (values (syntax (undatum the-hole)) 0)]
       [x
        (and (identifier? (syntax x))
-            (check-id (syntax->datum #'x) stx))
+            (check-id (syntax->datum #'x) stx ellipsis-allowed?))
        (values stx 0)]
       [() (values stx 0)]
       [(x ... . y)
@@ -236,7 +236,7 @@
        (let-values ([(x-rewrite max-depth)
                      (let i-loop ([xs (syntax->list (syntax (x ...)))])
                        (cond
-                         [(null? xs) (rewrite/max-depth #'y depth)]
+                         [(null? xs) (rewrite/max-depth #'y depth #t)]
                          [else
                           (let ([new-depth (if (and (not (null? (cdr xs)))
                                                     (identifier? (cadr xs))
@@ -245,7 +245,7 @@
                                                (+ depth 1)
                                                depth)])
                             (let-values ([(fst fst-max-depth)
-                                          (rewrite/max-depth (car xs) new-depth)]
+                                          (rewrite/max-depth (car xs) new-depth #t)]
                                          [(rst rst-max-depth)
                                           (i-loop (cdr xs))])
                               (values (cons fst rst)
@@ -254,15 +254,30 @@
       
       [_ (values stx 0)]))
   
-  (define (check-id id stx)
-    (when lang-nts
-      (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
-      (when m
-        (unless (memq (string->symbol (list-ref m 1)) (append pattern-symbols lang-nts))
-          (raise-syntax-error 'term 
-                              "before underscore must be either a non-terminal or a built-in pattern"
-                              arg-stx stx)))))
-  
+  (define (check-id id stx ellipsis-allowed?)
+    (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
+    (cond
+      [m
+       (define before-underscore (string->symbol (list-ref m 1)))
+       (when (equal? before-underscore '...)
+         (raise-syntax-error 
+          'term
+          "ellipsis cannot have an underscore"
+          arg-stx stx))
+       (when lang-nts
+         (unless (memq before-underscore (append pattern-symbols lang-nts))
+           (raise-syntax-error
+            'term 
+            "before underscore must be either a non-terminal or a built-in pattern"
+            arg-stx stx)))]
+      [else
+       (unless ellipsis-allowed?
+         (when (equal? id '...) 
+           (raise-syntax-error
+            'term
+            "misplaced ellipsis"
+            arg-stx stx)))]))
+       
   (values
    (with-syntax ([rewritten (rewrite arg-stx)])
      (with-syntax ([(outer-bs ...) (reverse outer-bindings)])
