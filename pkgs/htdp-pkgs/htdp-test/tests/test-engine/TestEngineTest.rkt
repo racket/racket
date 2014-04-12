@@ -1,7 +1,7 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
-;;Expect 37 checks, 17 failures
+;;Expect 42 checks, 19 failures
 
 (define (count f)
   (cond
@@ -31,21 +31,25 @@
 (check-within "hello" "Hello" .03) ;fails
 
 (define-struct ball (point rad color))
+(define blue-ball (make-ball (make-posn 1 3) 3.4 "blue"))
 
 (check-expect (make-ball 4 5 'blue) (make-ball 4 5 'blue))
 (check-expect (make-ball (make-posn 1 2) 3.5 'blue) (make-ball (make-posn 1 2) 3.5 'blue))
 (check-expect (make-ball 3 (make-posn 1 2) "blue") (make-ball (make-posn 1 2) 3.3 "blue")) ;fails
-(check-within (make-ball (make-posn 1 3) 3.4 "blue") (make-ball (make-posn 1 3) 3.3 "blue") .1)
-(check-within (make-ball (make-posn 1 3) 3.4 "blue") (make-ball (make-posn 1 3) 3.3 "blue") .01) ;fails
+(check-within blue-ball (make-ball (make-posn 1 3) 3.3 "blue") .1)
+(check-within blue-ball (make-ball (make-posn 1 3) 3.3 "blue") .01) ;fails
 
 (check-error (error 'test "hi") "test: hi")
 (check-error (/ 1 0) "/: division by zero")
 (check-error 3 "some message") ;fails
 (check-error (first empty) "another message") ;fails
 
-(check-member-of (make-ball 1 1 'blue) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red)
+(define (create n)
+  (make-ball n n 'blue))
+
+(check-member-of (create 1) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red)
 (check-member-of 1 1 1 1 1)
-(check-member-of (make-ball 2 2 'blue) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red) ;fails
+(check-member-of (create 2) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'fails)
 
 (check-range 5 0 10)
 (check-range 0 0 10)
@@ -74,12 +78,12 @@
 (check-random (f 0) (list (random 10) (random 20)))
 
 (check-random (g 0)
-              (let ((x2 (random 20))
-                    (x1 (random 10)))
-                (list x1 x2)))
+              (let* ((x2 (random 20))
+                     (x1 (random 10)))
+                (list x1 x2))) ;; fails 
 
 (define (h _x) (first (list (random 50) (random 20))))
 
-(check-random (h) (begin (random 50) (random 20)))
+(check-random (h 0) (begin0 (random 50) (random 20)))
 
-(check-random (h) (begin (random 20) (random 50))) ;; fails 
+(check-random (h 0) (begin (random 20) (random 50))) ;; fails 

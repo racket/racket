@@ -153,18 +153,33 @@
     [_ (raise-syntax-error 'check-expect (argcount-error-message/stx 2 stx) stx)]))
 
 ;; checking random values 
-(define-syntax-rule 
-  (check-random e1 e2)
-  (begin
-    (define rng (make-pseudo-random-generator))
-    (define k (modulo (current-milliseconds) (sub1 (expt 2 31))))
-    (check-expect
-     (parameterize ((current-pseudo-random-generator rng))
-       (random-seed k)
-       e1)
-     (parameterize ((current-pseudo-random-generator rng))
-       (random-seed k)
-       e2))))
+(define-syntax (check-random stx)
+  (syntax-case stx ()
+    [(check-random e1 e2)
+     (let ([test
+	     #`(lambda (rng k)
+		 (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
+		   e1))]
+	   [actuals
+	     (list
+	       #`(lambda (rng k)
+		   (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
+		     e2)))])
+;; ---------------------------------------------------------------------------------------------------
+       (check-expect-maker stx #'check-random-values test actuals 'comes-from-check-expect))]))
+
+;; check-values-expected: (-> scheme-val) (-> nat scheme-val) src test-engine -> void
+(define (check-random-values test actual-maker src test-engine)
+  (define rng (make-pseudo-random-generator))
+  (define k (modulo (current-milliseconds) (sub1 (expt 2 31))))
+  (define actual (actual-maker rng k))
+  (error-check (lambda (v) (if (number? v) (exact? v) #t))
+               actual INEXACT-NUMBERS-FMT #t)
+  (error-check (lambda (v) (not (procedure? v))) actual FUNCTION-FMT #f)
+  (send (send test-engine get-info) add-check)
+  (run-and-check (lambda (v1 v2 _) (teach-equal? v1 v2))
+                 (lambda (src format v1 v2 _) (make-unequal src format v1 v2))
+                 (lambda () ((test) rng k)) actual #f src test-engine 'check-expect))
 
 ;; check-values-expected: (-> scheme-val) scheme-val src test-engine -> void
 (define (check-values-expected test actual src test-engine)
