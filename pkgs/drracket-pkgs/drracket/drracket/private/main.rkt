@@ -179,9 +179,6 @@
                            3/4
                            number-between-zero-and-one?))
 
-(drr:set-default 'drracket:module-browser:name-length 1 
-                         (λ (x) (memq x '(0 1 2 3))))
-
 (let ([frame-width 600]
       [frame-height 650]
       [window-trimming-upper-bound-width 20]
@@ -270,15 +267,6 @@
  'drracket:tools-configuration
  null
  list?)
-
-  (drr:set-default 'drracket:module-overview:label-font-size 12 number?)
-  (drr:set-default 'drracket:module-overview:window-height 500 number?)
-  (drr:set-default 'drracket:module-overview:window-width 500 number?)
-  (drr:set-default 'drracket:module-browser:hide-paths '(lib)
-                           (λ (x)
-                             (and (list? x)
-                                  (andmap symbol? x))))
-  
 
 (drracket:font:setup-preferences)
 (color-prefs:add-color-scheme-preferences-panel

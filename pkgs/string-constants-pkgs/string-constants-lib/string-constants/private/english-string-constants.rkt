@@ -1394,7 +1394,7 @@ please adhere to these guidelines:
  (module-browser-filename-format "Full Filename: ~a (~a lines)")
  (module-browser-root-filename "Root Filename: ~a")
  (module-browser-font-size-gauge-label "Font Size")
- (module-browser-progress-label "Module overview progress")
+ (module-browser-progress-label "Module Browser Progress")
  (module-browser-adding-file "Adding file: ~a...")
  (module-browser-laying-out-graph-label "Laying out graph")
  (module-browser-open-file-format "Open ~a")

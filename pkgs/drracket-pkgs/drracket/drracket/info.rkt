@@ -89,3 +89,8 @@
     'white-on-black-base? #t
     'colors tol-white-on-black-colors)))
 
+(define raco-commands
+  (list (list "dependencies-graph"
+              'drracket/private/standalone-module-browser
+              "opens a GUI window showing transitive module dependencies (aka `Module Browser')"
+              #f)))
