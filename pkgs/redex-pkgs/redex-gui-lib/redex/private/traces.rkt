@@ -421,46 +421,51 @@
   ;; =reduction thread=
   ;; updates frontier with the new snip after a single reduction
   (define (reduce-frontier)
-    (let ([col #f])
-      (let loop ([snips frontier]
-                 [new-frontier null]
-                 [y 0])
-        (cond
-          [(null? snips)
-           (set! frontier new-frontier)]
-          [else
-           (let* ([snip (car snips)]
-                  [new-snips 
-                   (filter 
-                    (lambda (x) x)
-                    (map (lambda (red+sexp)
-                           (let-values ([(name sexp) (apply values red+sexp)])
-                             (call-on-eventspace-main-thread
-                              (λ ()
-                                (and (term-filter sexp name)
-                                     (let-values ([(dark-arrow-color light-arrow-color dark-label-color light-label-color
-                                                                     dark-pen-color
-                                                                     light-pen-color) 
-                                                   (red->colors name)])
-                                       (build-snip snip-cache snip sexp pred pp name code-colors? 
-                                                   (get-user-char-width user-char-width sexp)
-                                                   light-arrow-color dark-arrow-color dark-label-color light-label-color
-                                                   dark-pen-color light-pen-color)))))))
-                         (reduce reductions (send snip get-expr))))]
-                  [new-y 
-                   (call-on-eventspace-main-thread
-                    (lambda () ; =eventspace main thread=
-                      (send graph-pb begin-edit-sequence)
-                      (unless col  ;; only compute col here, incase user moves snips
-                        (set! col (+ x-spacing (find-rightmost-x graph-pb))))
-                      (begin0
-                        (insert-into col y graph-pb new-snips y-spacing)
-                        (send graph-pb end-edit-sequence)
-                        (send status-message set-label
-                              (string-append (term-count (count-snips)) "...")))))])
-             (loop (cdr snips)
-                   (append new-frontier new-snips)
-                   new-y))]))))
+    (define col #f)
+    (let loop ([snips frontier]
+               [new-frontier null]
+               [y 0])
+      (cond
+        [(null? snips)
+         (set! frontier new-frontier)]
+        [else
+         (define snip (car snips))
+         (define new-snips 
+           (filter 
+            (lambda (x) x)
+            (for/list ([red+sexp (in-list (reduce reductions (send snip get-expr)))])
+              (define-values (name sexp) (apply values red+sexp))
+              (call-on-eventspace-main-thread
+               (λ ()
+                 (cond
+                   [(term-filter sexp name)
+                    (define-values (dark-arrow-color 
+                                    light-arrow-color 
+                                    dark-label-color 
+                                    light-label-color
+                                    dark-pen-color
+                                    light-pen-color)
+                      (red->colors name))
+                    (build-snip snip-cache snip sexp pred pp name code-colors? 
+                                (get-user-char-width user-char-width sexp)
+                                light-arrow-color dark-arrow-color 
+                                dark-label-color light-label-color
+                                dark-pen-color light-pen-color)]
+                   [else #f]))))))
+         (define new-y 
+           (call-on-eventspace-main-thread
+            (lambda () ; =eventspace main thread=
+              (send graph-pb begin-edit-sequence)
+              (unless col  ;; only compute col here, incase user moves snips
+                (set! col (+ x-spacing (find-rightmost-x graph-pb))))
+              (begin0
+                (insert-into col y graph-pb new-snips y-spacing)
+                (send graph-pb end-edit-sequence)
+                (send status-message set-label
+                      (string-append (term-count (count-snips)) "..."))))))
+         (loop (cdr snips)
+               (append new-frontier new-snips)
+               new-y)])))
   
   ;; count-snips : -> number
   ;; =eventspace main thread=
@@ -573,7 +578,9 @@
       (let loop ()
         (cond
           [(null? frontier) (void)]
-          [((call-on-eventspace-main-thread count-snips) . >= . (+ initial-size (reduction-steps-cutoff)))
+          [((call-on-eventspace-main-thread count-snips)
+            . >= . 
+            (+ initial-size (reduction-steps-cutoff)))
            (void)]
           [else
            (reduce-frontier)
@@ -625,7 +632,7 @@
               (list bottom-panel)
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
-  (set-font-size (initial-font-size)) ;; have to call this before 'insert-into' or else it triggers resizing
+  (set-font-size (initial-font-size)) ;; call this before 'insert-into' or it triggers resizing
   (insert-into init-rightmost-x 0 graph-pb frontier y-spacing)
   (cond
     [no-show-frame?
