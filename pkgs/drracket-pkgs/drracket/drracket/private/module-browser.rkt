@@ -125,15 +125,17 @@
   ;                                                                
   
   
-  (define (fill-pasteboard pasteboard filename show-status)
+  (define (fill-pasteboard pasteboard filename-or-text/pos show-status send-user-thread/eventspace)
     
     (define text/pos 
-      (let ([t (make-object text:basic%)])
-        (send t load-file filename)
-        (drracket:language:text/pos
-         t
-         0
-         (send t last-position))))
+      (if (drracket:language:text/pos? filename-or-text/pos)
+          filename-or-text/pos
+          (let ([t (make-object text:basic%)])
+            (send t load-file filename-or-text/pos)
+            (drracket:language:text/pos
+             t
+             0
+             (send t last-position)))))
     
     (define progress-channel (make-async-channel))
     (define connection-channel (make-async-channel))
@@ -232,6 +234,7 @@
      complete-program?)
     
     (semaphore-wait init-complete)
+    (send-user-thread/eventspace user-thread user-custodian)
     
     ;; this thread puts a "cap" on the end of the connection-channel
     ;; so that we know when we've gotten to the end.
@@ -551,7 +554,7 @@
                       #f
                       (λ (x) (update-label x))))
   
-  (let ([success? (fill-pasteboard pasteboard filename show-status)])
+  (let ([success? (fill-pasteboard pasteboard filename show-status void)])
     (kill-thread thd)
     (parameterize ([current-eventspace progress-eventspace])
       (queue-callback
@@ -1284,7 +1287,7 @@
                                    pasteboard:basic%)))
   (new draw-lines-pasteboard% [cache-arrow-drawing? #t]))
 
-(define (standalone-fill-pasteboard pasteboard filename show-status)
+(define (standalone-fill-pasteboard pasteboard filename show-status void)
   (define progress-channel (make-async-channel))
   (define connection-channel (make-async-channel))
   
