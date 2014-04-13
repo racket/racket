@@ -1,12 +1,11 @@
 #lang racket/base
-(require racket/contract
-         racket/class
+(require racket/class
          racket/gui/base
-         racket/system)
-(provide/contract [dot-positioning (-> (is-a?/c pasteboard%) string? boolean? void?)]
-                  [find-dot (-> (or/c path? false/c))])
+         racket/system
+         "graph.rkt")
 
-(provide dot-label neato-label neato-hier-label neato-ipsep-label)
+(provide dot-positioning find-dot
+         dot-label neato-label neato-hier-label neato-ipsep-label)
 (define dot-label "dot")
 (define neato-label "neato")
 (define neato-hier-label "neato – hier")
@@ -37,39 +36,31 @@
                         (build-path x (if neato? neato.exe dot.exe))))
             dot-paths)]))
 
-(define (dot-positioning pb option overlap?)
-  (let ([info (snip-info pb)])
-    (let-values ([(cb positions max-y) (run-dot info option overlap?)])
-      (send pb begin-edit-sequence)
-      (send pb set-dot-callback
-            (λ (pb dc left top right bottom dx dy)
-              (let ([sm (send dc get-smoothing)]
-                    [pen (send dc get-pen)]
-                    [brush (send dc get-brush)])
-                (send dc set-smoothing 'aligned)
-                (cb dc left top right bottom dx dy)
-                (send dc set-pen pen)
-                (send dc set-brush brush)
-                (send dc set-smoothing sm))))
-      (for-each
-       (λ (position-line)
-         (let* ([id (list-ref position-line 0)]
-                [x (list-ref position-line 1)]
-                [y (list-ref position-line 2)]
-                [snip (car (hash-ref info id))])
-           (send pb move-to snip x (- max-y y))))
-       positions)
-      (send pb invalidate-bitmap-cache)
-      (send pb end-edit-sequence))))
+(define (dot-positioning pb [option dot-label] [overlap? #f])
+  (define dot-path (find-dot (regexp-match #rx"neato" option)))
+  (when dot-path
+    (define info (snip-info pb))
+    (define-values (positions max-y) (run-dot dot-path info option overlap?))
+    (send pb begin-edit-sequence)
+    (for ([position-line (in-list positions)])
+      (define id (list-ref position-line 0))
+      (define x (list-ref position-line 1))
+      (define y (list-ref position-line 2))
+      (define snip (car (hash-ref info id)))
+      (send pb move-to snip x (- max-y y)))
+    (send pb invalidate-bitmap-cache)
+    (send pb end-edit-sequence)))
 
-;; with-snips : pasteboard% -> hash-table[snip -> (list i number[width] number[height] (listof number))]
+;; with-snips : pasteboard% 
+;;           -> hash-table[snip -> (list i number[width] number[height] (listof number))]
 (define (snip-info pb)
   (let ([num-ht (make-hasheq)]
         [children-ht (make-hasheq)])
     (let loop ([snip (send pb find-first-snip)]
                [i 0])
       (when snip
-        (hash-set! num-ht snip i)
+        (when (is-a? snip graph-snip<%>)
+          (hash-set! num-ht snip i))
         (loop (send snip next) (+ i 1))))
     (let ([lb (box 0)]
           [tb (box 0)]
@@ -91,12 +82,11 @@
       children-ht)))
 
 ;; run-dot : hash-table[snip -> (list i (listof number))] string -> void
-(define (run-dot ht option overlap?)
+(define (run-dot dot-path ht option overlap?)
   (define info (sort (hash-map ht (λ (k v) (cons k v)))
                      (λ (x y) (< (car x) (car y)))))
   (let-values ([(in1 out1) (make-pipe)]
                [(in2 out2) (make-pipe)])
-    ;;(graph->dot info option overlap?)
     (thread
      (λ ()
        (parameterize ([current-output-port out1])
@@ -106,11 +96,10 @@
      (λ ()
        (parameterize ([current-input-port in1]
                       [current-output-port out2])
-         (system (format "~a -Tplain" (path->string (find-dot (regexp-match #rx"neato" option))))))
+         (system (format "~a -Tplain" (path->string dot-path))))
        (close-output-port out2)
        (close-input-port in1)))
     (parse-plain in2)))
-
 
 ;; graph->dot (listof (list snip number (listof number)) -> void
 ;; prints out the dot input file based on `g'
@@ -249,7 +238,8 @@
         (draw-edges dc dx dy points))))
   
   ;; chomp : string -> (values string (union #f string))
-  ;; returns the first word at the beginning of the string and the remainder of the string (or #f is there is no more)
+  ;; returns the first word at the beginning of the string
+  ;; and the remainder of the string (or #f is there is no more)
   (define (chomp s)
     (let ([s (regexp-replace #rx"^ *" s "")])
       (cond
@@ -297,22 +287,9 @@
                           (list-ref p3 0) (- max-y (list-ref p3 1)))
                     (loop (cdddr points)))]))
         (send dc draw-path path dx dy))))
-  
-  (values (main)
-          positions
+  (main)
+  (values positions
           max-y))
-
-(define (draw-plain port)
-  
-  (define draw (parse-plain port))
-  
-  (define f (new frame% [label ""] [width 400] [height 400]))
-  (define c (new canvas% [parent f]
-                 [paint-callback
-                  (λ (c dc)
-                    (draw dc))]))
-  (send (send c get-dc) set-smoothing 'aligned)
-  (send f show #t))
 
 (define (pixels->inches x) (/ x 72))
 (define (inches->pixels x) (* x 72))

@@ -8,7 +8,6 @@
          redex/private/reduction-semantics
          redex/private/matcher
          "size-snip.rkt"
-         "dot.rkt"
          racket/gui/base
          racket/class
          racket/file
@@ -485,10 +484,13 @@
        (message-box "PLT Redex"
                     "Could not find the dot binary")]
       [dot?
+       (send graph-pb begin-edit-sequence)
        (dot-positioning graph-pb 
                         (send dot-mode get-string-selection)
                         (not (send dot-overlap get-value))) ;; refreshes the display
+       (send graph-pb set-dot-callback void)
        (send graph-pb immobilize)
+       (send graph-pb end-edit-sequence)
        (send dot set-label "Unlock")
        (send reduce-button enable #f)
        (send font-size enable #f)]

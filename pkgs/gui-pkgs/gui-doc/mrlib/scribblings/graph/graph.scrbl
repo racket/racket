@@ -88,3 +88,42 @@ Disconnects a parent snip from a child snip within a pasteboard.}
 Changes the label on the edge going from @racket[child] to
 @racket[parent] to be @racket[label].  If there is no existing edge
 between the two nodes, then nothing happens.}
+
+
+@defproc[(dot-positioning [pb (is-a?/c pasteboard%)]
+                          [option (or/c dot-label neato-label neato-hier-label neato-ipsep-label) 
+                                  dot-label]
+                          [overlap-or-horizontal? boolean? #f])
+         void?]{
+  This finds the sizes of the @racket[graph-snip<%>]s in @racket[pb] and their 
+  children and then passes that information to @tt{dot} or @tt{neato} (depending
+  on @racket[option]), extracting a layout and then applying it to the 
+  snips in @racket[pb].
+  
+  If @racket[option] is @racket[dot-label], then @racket[overlap-or-horizontal?]
+  controls whether @tt{dot} uses a horizontal or vertical alignment.
+  If @racket[option] is any of the other options, it controls whether or not
+  @tt{neato} is allowed to overlap nodes.
+  
+  If @racket[find-dot] returns @racket[#f], this function does nothing.
+}
+
+@defproc[(find-dot [neato? boolean? #f]) (or/c path? #f)]{
+  Tries to find the @tt{dot} or @tt{neato} binary and, if it succeeds,
+  returns the path to it. If it cannot find it, returns
+  @racket[#f].
+}
+
+@defthing[dot-label string?]{
+  A string describing the regular dot option for graph layout that @racket[dot-positioning] uses.
+}
+@defthing[neato-label string?]{
+  A string describing the neato option for graph layout that @racket[dot-positioning] uses.
+}
+@defthing[neato-hier-label string?]{
+  A string describing the neato hierarchical option for graph layout that 
+  @racket[dot-positioning] uses.
+}
+@defthing[neato-ipsep-label string?]{
+  A string describing the neato ipsep option for graph layout that @racket[dot-positioning] uses.
+}
