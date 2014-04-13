@@ -13,7 +13,6 @@
   [typed-racket/base-env/base-structs (initialize-structs)]
   [typed-racket/base-env/base-env-indexing (initialize-indexing)]
   [typed-racket/base-env/base-special-env (initialize-special)]
-  [typed-racket/base-env/base-contracted (initialize-contracted)]
   [(submod typed-racket/base-env/base-types initialize) (initialize-type-names)])
 
 (define initialized #f)
@@ -30,8 +29,6 @@
     (do-time "Finshed base-env-numeric")
     (initialize-special)
     (do-time "Finished base-special-env")
-    (initialize-contracted)
-    (do-time "Finished base-contracted")
     (initialize-type-names)
     (do-time "Finished base-types")
     (set! initialized #t))
