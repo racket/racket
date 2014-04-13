@@ -1287,7 +1287,7 @@
                                    pasteboard:basic%)))
   (new draw-lines-pasteboard% [cache-arrow-drawing? #t]))
 
-(define (standalone-fill-pasteboard pasteboard filename show-status void)
+(define (standalone-fill-pasteboard pasteboard filename show-status _void)
   (define progress-channel (make-async-channel))
   (define connection-channel (make-async-channel))
   
