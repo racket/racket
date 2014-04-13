@@ -6,6 +6,7 @@
          racket/math
          racket/match
          racket/promise
+         racket/stream
          racket/vector
 
          data/gvector
@@ -55,6 +56,7 @@
          
          approximate
          to-list
+         to-stream
          take/e
          fold-enum
 
@@ -147,6 +149,15 @@
   (foldr except1/e
          e
          excepts))
+
+(define (to-stream e)
+  (define (loop n)
+    (cond [(n . >= . (size e))
+           empty-stream]
+          [else
+           (stream-cons (decode e n)
+                        (loop (add1 n)))]))
+  (loop 0))
 
 (define (approximate e n)
   (for/list ([i (in-range n)])
@@ -241,6 +252,11 @@
         y))
   (foldl exact-min-2 +inf.0 xs))
 
+(struct fin-layer
+  (bound  ;; nat
+   enums) ;; Vectorof (Enum a, list-index)
+  #:transparent)
+
 (struct upper-bound
   (total-bound      ;; Nat
    individual-bound ;; Nat
@@ -248,8 +264,19 @@
    )
   #:transparent)
 
-;; layers : Listof Enum -> Listof Upper-Bound
-(define (mk-layers es)
+; scanl :: (a -> b -> b) -> b -> [a] -> [b]  
+(define (scanl f base xs)
+  (let loop ([cur base]
+             [xs   xs]
+             [acc  '()])
+    (match xs
+      ['() (cons base (reverse acc))]
+      [(cons x xs)
+       (define step (f x cur))
+       (loop step xs (cons step acc))])))
+
+(define/contract (mk-fin-layers es)
+  ((listof enum?) . -> . (listof fin-layer?))
   (define (loop eis prev)
     (define non-emptys (filter (negate (compose empty/e? car)) eis))
     (match non-emptys
@@ -263,18 +290,7 @@
          (filter not-min-size? non-emptys))
        (define veis
          (apply vector non-emptys))
-       (match-define (upper-bound prev-tb
-                                  prev-ib
-                                  prev-es)
-                     prev)
-       (define diff-min-size
-         (min-size . - . prev-ib))
-       (define total-bound
-         (prev-tb . + . (diff-min-size . * . (vector-length veis))))
-       (define cur-layer
-         (upper-bound total-bound
-                      min-size
-                      veis))
+       (define cur-layer (fin-layer min-size veis))
        (define remaining-layers
          (loop leftover cur-layer))
        (cons cur-layer
@@ -283,9 +299,40 @@
     (for/list [(i (in-naturals))
                (e (in-list es))]
       (cons e i)))
-  (apply vector
-         (loop eis
-               (upper-bound 0 0 eis))))
+  (loop eis (fin-layer 0 eis)))
+
+;; layers : Listof Enum -> Listof Upper-Bound
+(define/contract (disj-sum-layers es)
+  ((listof enum?) . -> . (vectorof upper-bound?))
+  (define fin-layers (mk-fin-layers es))
+  (define/contract (loop fin-layers prev)
+    (-> (listof fin-layer?)
+        upper-bound?
+        (listof upper-bound?))
+    (match fin-layers
+      ['() '()]
+      [(cons (fin-layer cur-bound eis) rest-fin-layers)
+       (match-define (upper-bound prev-tb
+                                  prev-ib
+                                  _)
+                     prev)
+       (define min-size cur-bound)
+       (define diff-min-size
+         (min-size . - . prev-ib))
+       (define total-bound
+         (prev-tb . + . (diff-min-size . * . (vector-length eis))))
+       (define cur-layer
+         (upper-bound total-bound
+                      cur-bound
+                      eis))
+       (define rest-layers (loop rest-fin-layers cur-layer))
+       (cons cur-layer
+             rest-layers)]))
+  (define eis
+    (for/list [(i (in-naturals))
+               (e (in-list es))]
+      (cons e i)))
+  (apply vector (loop fin-layers (upper-bound 0 0 eis))))
 
 ;; find-layer : Nat, Nonempty-Listof Upper-bound -> Upper-bound, Upper-bound
 ;; Given an index, find the first layer 
@@ -347,7 +394,7 @@
 ;; fairly interleave a list of enumerations
 (define (disj-sum/e . e-ps)
   (define layers
-    (mk-layers (map car e-ps)))
+    (disj-sum-layers (map car e-ps)))
   (define (empty-e-p? e-p)
     (= 0 (size (car e-p))))
   (match (filter (negate empty-e-p?) e-ps)
@@ -357,8 +404,8 @@
      (define (dec i)
        (define-values (prev-up-bound cur-up-bound)
          (find-dec-layer i layers))
-       (match-define (upper-bound so-far prev-ib es1) prev-up-bound)
-       (match-define (upper-bound ctb    cib     es)  cur-up-bound)
+       (match-define (upper-bound so-far prev-ib _)  prev-up-bound)
+       (match-define (upper-bound ctb    cib     es) cur-up-bound)
        (define this-i (i . - . so-far))
        (define len (vector-length es))
        (define-values (q r) (quotient/remainder this-i len))
@@ -410,54 +457,48 @@
     [(cons x '()) x]
     [(cons x  xs) (f x (foldr1 f xs))]))
 
+(define (fin-cons/e e1 e2)
+  (define s1 (enum-size e1))
+  (define s2 (enum-size e2))
+  (define size (* s1 s2))
+  (cond [(zero? size) empty/e]
+        [(or (not (infinite? s1))
+             (not (infinite? s2)))
+         (define fst-finite? (not (infinite? s1)))
+         (define fin-size
+           (cond [fst-finite? s1]
+                 [else        s2]))
+         (define (dec n)
+           (define-values (q r)
+             (quotient/remainder n fin-size))
+           (define-values (n1 n2)
+             (if fst-finite?
+                 (values r q)
+                 (values q r)))
+           (cons (decode e1 n1)
+                 (decode e2 n2)))
+         (define/match (enc p)
+           [((cons x1 x2))
+            (define n1 (encode e1 x1))
+            (define n2 (encode e2 x2))
+            (define-values (q r)
+              (if fst-finite?
+                  (values n2 n1)
+                  (values n1 n2)))
+            (+ (* fin-size q)
+               r)])           
+         (enum size dec enc)]
+        [else
+         (redex-error 'internal "fin-cons/e should only be called on finite enumerations")]))
+
 ;; cons/e : enum a, enum b ... -> enum (cons a b ...)
-(define (cons/e e . es)
-  (define (cons/e2 e1 e2)
-    (define s1 (enum-size e1))
-    (define s2 (enum-size e2))
-    (define size (* s1 s2))
-    (cond [(zero? size) empty/e]
-          [(or (not (infinite? s1))
-               (not (infinite? s2)))
-           (define fst-finite? (not (infinite? s1)))
-           (define fin-size
-             (cond [fst-finite? s1]
-                   [else        s2]))
-           (define (dec n)
-             (define-values (q r)
-               (quotient/remainder n fin-size))
-             (define x1 (decode e1 (if fst-finite? r q)))
-             (define x2 (decode e2 (if fst-finite? q r)))
-             (cons x1 x2))
-           (define/match (enc p)
-             [((cons x1 x2))
-              (define n1 (encode e1 x1))
-              (define n2 (encode e2 x2))
-              (define q (if fst-finite? n2 n1))
-              (define r (if fst-finite? n1 n2))
-              (+ (* fin-size q)
-                 r)])           
-           (enum size dec enc)]
-          [else
-           ;; based on http://en.wikipedia.org/wiki/Pairing_function
-           (define (dec n)
-             (define k (floor-untri n))
-             (define t (tri k))
-             (define l (- n t))
-             (define m (- k l))
-             (define x1 (decode e1 l))
-             (define x2 (decode e2 m))
-             (cons x1 x2))
-           (define/match (enc p)
-             [((cons x1 x2))
-              (define l (encode e1 x1))
-              (define m (encode e2 x2))
-              (+ (/ (* (+ l m)
-                       (+ l m 1))
-                    2)
-                 l)])
-           (enum size dec enc)]))
-  (foldr1 cons/e2 (cons e es)))
+(define (cons/e e1 e2)
+  (map/e (λ (x)
+            (cons (first  x)
+                  (second x)))
+         (λ (x-y)
+            (list (car x-y) (cdr x-y)))
+         (list/e e1 e2)))
 
 (define (elegant-cons/e e1 e2)
   (define s1 (size e1))
@@ -504,8 +545,9 @@
   ;; on-cdr : (cons k a) -> enum (cons k b)
   (define/match (on-cdr pr)
     [((cons k v))
-     (cons/e (const/e k)
-             (f v))])
+     (map/e (λ (x) (cons k x))
+            cdr
+            (f v))])
   ;; enum (listof (cons k b))
   (define assoc/e
     (traverse/e on-cdr as-list))
@@ -833,7 +875,7 @@
            +inf.0))
      (fix/e fix-size
             (λ (self)
-               (disj-sum/e (cons (const/e '()) null?)
+               (disj-sum/e (cons (fin/e '()) null?)
                            (cons (cons/e e self) pair?))))]
     [(e n)
      (apply list/e (build-list n (const e)))]))
@@ -977,6 +1019,7 @@
                            rest
                            (cons (car fins) acc))])]))])
      (define (deconstruct xs)
+       
        (let loop ([xs xs]
                   [inf-acc '()]
                   [fin-acc '()]
@@ -997,8 +1040,8 @@
                          rest-inf?s)])])))
      (map/e reconstruct
             deconstruct
-            (cons/e (apply list/e inf-es)
-                    (apply list/e fin-es)))]))
+            (fin-cons/e (apply list/e inf-es)
+                        (apply list/e fin-es)))]))
 
 (define (nested-cons-list/e . es)
   (define l (length es))
@@ -1009,7 +1052,7 @@
    (λ (lst)
       (define-values (left right) (split-at lst split-point))
       (cons left right))
-   (cons/e (apply list/e left) (apply list/e right))))
+   (fin-cons/e (apply list/e left) (apply list/e right))))
 
 
 (define (all-infinite? es)
@@ -1078,8 +1121,8 @@
        (define first-not-max/e
          (match bound
            [0 empty/e]
-           [_ (cons/e (take/e nat/e bound)
-                      smallers/e)]))
+           [_ (fin-cons/e (take/e nat/e bound)
+                          smallers/e)]))
        (define (first-max? l)
          ((first l) . = . bound))
        (disj-append/e (cons first-not-max/e (negate first-max?))

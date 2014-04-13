@@ -5,10 +5,6 @@
          redex/private/enumerator
          (submod redex/private/enumerator test))
 
-;; basic enums
-(define bools/e
-  (from-list/e (list #t #f)))
-
 ;; const/e tests
 (let ([e (const/e 17)])
   (test-begin
@@ -83,14 +79,14 @@
 
 (test-begin
  (define bool-or-num
-   (disj-sum/e (cons bools/e boolean?)
+   (disj-sum/e (cons bool/e boolean?)
                (cons (from-list/e '(0 1 2 3)) number?)))
  (define bool-or-nat
-   (disj-sum/e (cons bools/e boolean?)
+   (disj-sum/e (cons bool/e boolean?)
                (cons nat/e number?)))
  (define nat-or-bool
    (disj-sum/e (cons nat/e number?)
-               (cons bools/e boolean?)))
+               (cons bool/e boolean?)))
  (define odd-or-even
    (disj-sum/e (cons evens/e even?)
                (cons odds/e odd?)))
@@ -161,10 +157,10 @@
 
 (test-begin
  (define bool-or-num
-   (disj-append/e (cons bools/e boolean?)
+   (disj-append/e (cons bool/e boolean?)
                   (cons (from-list/e '(0 1 2 3)) number?)))
  (define bool-or-nat
-   (disj-append/e (cons bools/e boolean?)
+   (disj-append/e (cons bool/e boolean?)
                   (cons nat/e number?)))
  (check-equal? (size bool-or-num) 6)
    
@@ -188,11 +184,11 @@
  (check-bijection? bool-or-nat))
 
 ;; cons/e tests
-(define bool*bool (cons/e bools/e bools/e))
-(define 1*b (cons/e (const/e 1) bools/e))
-(define b*1 (cons/e bools/e (const/e 1)))
-(define bool*nats (cons/e bools/e nat/e))
-(define nats*bool (cons/e nat/e bools/e))
+(define bool*bool (cons/e bool/e bool/e))
+(define 1*b (cons/e (const/e 1) bool/e))
+(define b*1 (cons/e bool/e (const/e 1)))
+(define bool*nats (cons/e bool/e nat/e))
+(define nats*bool (cons/e nat/e bool/e))
 (define nats*nats (cons/e nat/e nat/e))
 (define ns-equal? (λ (ns ms)
                      (and (= (car ns)
@@ -211,55 +207,17 @@
  (check-bijection? 1*b)
  (check-bijection? b*1)
  (check-equal? (size bool*bool) 4)
- (check-equal? (decode bool*bool 0)
-               (cons #t #t))
- (check-equal? (decode bool*bool 1)
-               (cons #f #t))
- (check-equal? (decode bool*bool 2)
-               (cons #t #f))
- (check-equal? (decode bool*bool 3)
-               (cons #f #f))
  (check-bijection? bool*bool)
 
  (check-equal? (size bool*nats) +inf.0)
- (check-equal? (decode bool*nats 0)
-               (cons #t 0))
- (check-equal? (decode bool*nats 1)
-               (cons #f 0))
- (check-equal? (decode bool*nats 2)
-               (cons #t 1))
- (check-equal? (decode bool*nats 3)
-               (cons #f 1))
  (check-bijection? bool*nats)
 
  (check-equal? (size nats*bool) +inf.0)
- (check-equal? (decode nats*bool 0)
-               (cons 0 #t))
- (check-equal? (decode nats*bool 1)
-               (cons 0 #f))
- (check-equal? (decode nats*bool 2)
-               (cons 1 #t))
- (check-equal? (decode nats*bool 3)
-               (cons 1 #f))
  (check-bijection? nats*bool)
 
- (check-equal? (size nats*nats) +inf.0)
- (check ns-equal?
-        (decode nats*nats 0)
-        (cons 0 0))
- (check ns-equal?
-        (decode nats*nats 1)
-        (cons 0 1))
- (check ns-equal?
-        (decode nats*nats 2)
-        (cons 1 0))
- (check ns-equal?
-        (decode nats*nats 3)
-        (cons 0 2))
- (check ns-equal?
-        (decode nats*nats 4)
-        (cons 1 1))
- (check-bijection? nats*nats))
+ (check-bijection? nats*nats)
+ (check-bijection? (list/e integer/e integer/e)))
+
 
 ;; fair product tests
 (define-simple-check (check-range? e l u approx)
@@ -323,9 +281,55 @@
  (check-equal? (list->inc-set '(2 0 1 2)) '(2 3 5 8))
  (check-equal? (inc-set->list '(2 3 5 8)) '(2 0 1 2)))
 
+(define (below/e n)
+  (take/e nat/e n))
 
 ;; mixed finite/infinite list/e tests
 (test-begin
+
+ (check-equal?
+  (to-list (list/e (below/e 3) (below/e 3) (below/e 3)))
+  (to-list (take/e (list/e nat/e nat/e nat/e) 27)))
+
+ (define n*2 (list/e nat/e (below/e 2)))
+ (check-range? n*2 0 1 '((0 0)))
+ (check-range? n*2 1 3 '((0 1) (1 0) (1 1)))
+ (check-range? n*2 3 5 '((2 0) (2 1)))
+ (check-range? n*2 5 7 '((3 0) (3 1)))
+
+ (define n*1*2 (list/e nat/e (below/e 1) (below/e 2)))
+ (check-range? n*1*2 0 1 '((0 0 0)))
+ (check-range? n*1*2 1 4 '((0 0 1) (1 0 0) (1 0 1)))
+ (check-range? n*1*2 4 6 '((2 0 0) (2 0 1)))
+ (check-range? n*1*2 4 6 '((3 0 0) (3 0 1)))
+
+ (define n*2*4 (list/e nat/e (below/e 2) (below/e 4)))
+ (check-range? n*2*4 0 1 '((0 0 0)))
+ (check-range? n*2*4 1 8 '((0 0 1) (0 1 1) (0 1 0)
+                           (1 0 0) (1 0 1) (1 1 0) (1 1 1)))
+ (check-range? n*2*4 8 18 ;; (8 previous . + . (2 magnitude of exhausted enums
+               ;;             . * . (9 3^(number left) . - . 4 2^(number left)))
+
+               '((0 0 2) (0 1 2)
+                 (1 0 2) (1 1 2)
+                 (2 0 0) (2 1 0)
+                 (2 0 1) (2 1 1)
+                 (2 0 2) (2 1 2)))
+ (check-range? n*2*4 18 32 ;; 18 + (2 * (4^2 - 3^2))
+               '((0 0 3) (0 1 3)
+                 (1 0 3) (1 1 3)
+                 (2 0 3) (2 1 3)
+                 (3 0 0) (3 1 0)
+                 (3 0 1) (3 1 1)
+                 (3 0 2) (3 1 2)
+                 (3 0 3) (3 1 3)))
+ (check-range? n*2*4 32 38
+               '((4 0 0) (4 0 1) (4 0 2) (4 0 3)
+                 (4 1 0) (4 1 1) (4 1 2) (4 1 3)))
+ (check-range? n*2*4 38 46
+               '((5 0 0) (5 0 1) (5 0 2) (5 0 3)
+                 (5 1 0) (5 1 1) (5 1 2) (5 1 3)))
+ 
  (check-bijection? (list/e bool/e (cons/e bool/e bool/e) (fin/e 'foo 'bar 'baz)))
  (check-bijection? (list/e nat/e string/e (many/e bool/e)))
  (check-bijection? (list/e bool/e nat/e int/e string/e (cons/e bool/e bool/e))))
@@ -344,8 +348,7 @@
 
 ;; dep/e tests
 (define (up-to n)
-  (take/e nat/e (+ n 1)))
-
+  (below/e (add1 n)))
 (define 3-up
   (dep/e
    (from-list/e '(0 1 2))
