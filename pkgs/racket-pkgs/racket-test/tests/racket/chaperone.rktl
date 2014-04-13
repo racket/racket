@@ -98,6 +98,10 @@
    (test (void) set-box! b 'bad)
    (err/rt-test (unbox b2) (lambda (exn)
                              (test "bad get" exn-message exn)))
+   (err/rt-test (equal-hash-code b2) (lambda (exn)
+                                       (test "bad get" exn-message exn)))
+   (err/rt-test (equal-secondary-hash-code b2) (lambda (exn)
+                                                 (test "bad get" exn-message exn)))
    (test (void) set-box! b 'ok)
    (test 'ok unbox b2)
    (test (void) set-box! b2 'fine)
@@ -159,6 +163,10 @@
    (test 'bad vector-ref b 1)
    (err/rt-test (vector-ref b2 1) (lambda (exn)
                                     (test "bad get" exn-message exn)))
+   (err/rt-test (equal-hash-code b2) (lambda (exn)
+                                       (test "bad get" exn-message exn)))
+   (err/rt-test (equal-secondary-hash-code b2) (lambda (exn)
+                                                 (test "bad get" exn-message exn)))
    (test (void) vector-set! b 1 'ok)
    (test 'ok vector-ref b2 1)
    (test (void) vector-set! b2 1 'fine)
@@ -565,6 +573,37 @@
   (test "red" red-ref (impersonate-struct (make-a 1) red-ref (lambda (v f-v) f-v)))
   (test 5 red-ref (impersonate-struct (make-a 1) red-ref (lambda (v f-v) 5))))
 
+(as-chaperone-or-impersonator
+ ([chaperone-struct impersonate-struct]
+  [is-chaperone is-not-chaperone]
+  [chaperone?/impersonator impersonator?])
+ (struct c ([n #:mutable]) #:transparent)
+ (let* ([got? #f]
+        [c1 (chaperone-struct (c 1) c-n (lambda (b v) (set! got? #t) v))])
+   (void (equal-hash-code c1))
+   (test #t values got?)
+   (set! got? #f)
+   (void (equal-secondary-hash-code c1))
+   (test #t values got?))
+
+ (let ()
+   (define got? #f)
+   (define mine? #t)
+   (define check! (lambda (o) (set! mine? #t) (d-n o)))
+   (struct d ([n #:mutable])
+     #:transparent
+     #:property prop:equal+hash (list
+                                 (lambda (a b r) (r a b))
+                                 (lambda (a r) (check! a) 0)
+                                 (lambda (a r) (check! a) 0)))
+   (define d1 (chaperone-struct (d 1) d-n (lambda (b v) (set! got? #t) v)))
+   (void (equal-hash-code d1))
+   (test '(#t #t) list got? mine?)
+   (set! got? #f)
+   (set! mine? #f)
+   (void (equal-secondary-hash-code d1))
+   (test '(#t #t) list got? mine?)))
+
 ;; ----------------------------------------
 
 (as-chaperone-or-impersonator
@@ -769,6 +808,14 @@
       (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
       (hash-for-each h2 void)
       (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (set! get-k #f)
+      (set! get-v #f)
+      (void (equal-hash-code h2))
+      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (set! get-k #f)
+      (set! get-v #f)
+      (void (equal-secondary-hash-code h2))
+      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
       (void)))
   (list
    make-hash make-hasheq make-hasheqv
@@ -824,6 +871,14 @@
              (test #f hash-ref h2 'key2 #f)
              (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
              (hash-for-each h2 void)
+             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (set! get-k #f)
+             (set! get-v #f)
+             (void (equal-hash-code h2))
+             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (set! get-k #f)
+             (set! get-v #f)
+             (void (equal-secondary-hash-code h2))
              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
              (void)))))))
  (list #hash() #hasheq() #hasheqv()))
