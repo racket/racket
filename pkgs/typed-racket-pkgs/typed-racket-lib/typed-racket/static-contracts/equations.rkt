@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; Manages a set of mutually recursive equations, and provids functionality for finding a fix point.
 ;; An equation set has two components
