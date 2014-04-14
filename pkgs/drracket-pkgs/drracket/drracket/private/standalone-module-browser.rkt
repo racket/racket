@@ -8,3 +8,6 @@
   (dynamic-require module-browser.rkt 'standalone-module-overview/file))
 
 (standalone-module-overview/file file)
+
+;; so 'raco test' doesn't try to run the module browser
+(module test racket/base)
