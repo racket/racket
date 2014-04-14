@@ -3991,9 +3991,15 @@ Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 Scheme_Bucket_Table *scheme_make_weak_eqv_table(void);
 Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void);
 
-int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql);
-int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql);
-int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void *eql);
+int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
+                                Scheme_Hash_Table *t2, Scheme_Object *orig_t2,
+                                void *eql);
+int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t1,
+                                  Scheme_Bucket_Table *t2, Scheme_Object *orig_t2,
+                                  void *eql);
+int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
+                               Scheme_Hash_Tree *t2, Scheme_Object *orig_t2,
+                               void *eql);
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 

@@ -62,8 +62,12 @@ typedef struct Equal_Info {
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
-static int vector_equal (Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eql);
-static int struct_equal (Scheme_Object *s1, Scheme_Object *s2, Equal_Info *eql);
+static int vector_equal (Scheme_Object *vec1, Scheme_Object *orig_vec1,
+                         Scheme_Object *vec2, Scheme_Object *orig_vec2,
+                         Equal_Info *eql);
+static int struct_equal (Scheme_Object *s1, Scheme_Object *orig_s1, 
+                         Scheme_Object *s2, Scheme_Object *orig_s2, 
+                         Equal_Info *eql);
 static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
 
 void scheme_init_true_false(void)
@@ -435,8 +439,12 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 {
   Scheme_Type t1, t2;
   int cmp;
+  Scheme_Object *orig_obj1, *orig_obj2;
 
  top:
+  orig_obj1 = obj1;
+  orig_obj2 = obj2;
+
   if (eql->next_next) {
     if (eql->next) {
       Scheme_Object *a[2];
@@ -448,6 +456,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     eql->next = eql->next_next;
   }
 
+ top_after_next:
   cmp = is_eqv(obj1, obj2);
   if (cmp > -1)
     return cmp;
@@ -457,7 +466,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
           || (eql->for_chaperone > 1))) {
     obj1 = ((Scheme_Chaperone *)obj1)->prev;
-    goto top;
+    goto top_after_next;
   }
 
   t1 = SCHEME_TYPE(obj1);
@@ -467,11 +476,11 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     if (!eql->for_chaperone) {
       if (SCHEME_CHAPERONEP(obj1)) {
         obj1 = ((Scheme_Chaperone *)obj1)->val;
-        goto top;
+        goto top_after_next;
       }
       if (SCHEME_CHAPERONEP(obj2)) {
         obj2 = ((Scheme_Chaperone *)obj2)->val;
-        goto top;
+        goto top_after_next;
       }
     }
     return 0;
@@ -509,7 +518,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
-    return vector_equal(obj1, obj2, eql);
+    return vector_equal(obj1, orig_obj1, obj2, orig_obj2, eql);
   } else if (t1 == scheme_flvector_type) {
     intptr_t l1, l2, i;
     l1 = SCHEME_FLVEC_SIZE(obj1);
@@ -590,9 +599,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 
     if (procs1 || procs2) {
       /* impersonator-of property trumps other forms of checking */
-      if (procs1) obj1 = procs1;
-      if (procs2) obj2 = procs2;
-      goto top;
+      if (procs1) { obj1 = procs1; orig_obj1 = obj1; }
+      if (procs2) { obj2 = procs2; orig_obj2 = obj2; }
+      goto top_after_next;
     } else {
       procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
       if (procs1 && (st1 != st2)) {
@@ -626,8 +635,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         }
         memcpy(eql2, eql, sizeof(Equal_Info));
 
-        a[0] = obj1;
-        a[1] = obj2;
+        a[0] = orig_obj1;
+        a[1] = orig_obj2;
         a[2] = recur;
 
         procs1 = SCHEME_VEC_ELS(procs1)[1];
@@ -655,7 +664,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 #       include "mzeqchk.inc"
           if (union_check(obj1, obj2, eql))
             return 1;
-          return struct_equal(obj1, obj2, eql);
+          return struct_equal(obj1, orig_obj1, obj2, orig_obj2, eql);
         } else
           return 0;
       }
@@ -667,8 +676,14 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
-    obj1 = SCHEME_BOX_VAL(obj1);
-    obj2 = SCHEME_BOX_VAL(obj2);
+    if (SAME_OBJ(obj1, orig_obj1))
+      obj1 = SCHEME_BOX_VAL(obj1);
+    else
+      obj1 = scheme_unbox(orig_obj1);
+    if (SAME_OBJ(obj2, orig_obj2))
+      obj2 = SCHEME_BOX_VAL(obj2);
+    else
+      obj2 = scheme_unbox(orig_obj2);
     goto top;
   } else if (t1 == scheme_hash_table_type) {
 #   include "mzeqchk.inc"
@@ -676,24 +691,30 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
-    return scheme_hash_table_equal_rec((Scheme_Hash_Table *)obj1, (Scheme_Hash_Table *)obj2, eql);
+    return scheme_hash_table_equal_rec((Scheme_Hash_Table *)obj1, orig_obj1, 
+                                       (Scheme_Hash_Table *)obj2, orig_obj2,
+                                       eql);
   } else if (t1 == scheme_hash_tree_type) {
 #   include "mzeqchk.inc"
     if (union_check(obj1, obj2, eql))
       return 1;
-    return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)obj1, (Scheme_Hash_Tree *)obj2, eql);
+    return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)obj1, orig_obj1,
+                                      (Scheme_Hash_Tree *)obj2, orig_obj2,
+                                      eql);
   } else if (t1 == scheme_bucket_table_type) {
 #   include "mzeqchk.inc"
     if (eql->for_chaperone == 1) 
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
-    return scheme_bucket_table_equal_rec((Scheme_Bucket_Table *)obj1, (Scheme_Bucket_Table *)obj2, eql);
+    return scheme_bucket_table_equal_rec((Scheme_Bucket_Table *)obj1, orig_obj1,
+                                         (Scheme_Bucket_Table *)obj2, orig_obj2,
+                                         eql);
   } else if (t1 == scheme_cpointer_type) {
     return (((char *)SCHEME_CPTR_VAL(obj1) + SCHEME_CPTR_OFFSET(obj1))
             == ((char *)SCHEME_CPTR_VAL(obj2) + SCHEME_CPTR_OFFSET(obj2)));
   } else if (t1 == scheme_wrap_chunk_type) {
-    return vector_equal(obj1, obj2, eql);
+    return vector_equal(obj1, obj1, obj2, obj2, eql);
   } else if (t1 == scheme_resolved_module_path_type) {
     obj1 = SCHEME_PTR_VAL(obj1);
     obj2 = SCHEME_PTR_VAL(obj2);
@@ -720,7 +741,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     /* both chaperones */
     obj1 = ((Scheme_Chaperone *)obj1)->val;
     obj2 = ((Scheme_Chaperone *)obj2)->val;
-    goto top;
+    goto top_after_next;
   } else {
     Scheme_Equal_Proc eqlp = scheme_type_equals[t1];
     if (eqlp) {
@@ -732,9 +753,12 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   }
 }
 
-static int vector_equal(Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eql)
+static int vector_equal(Scheme_Object *vec1, Scheme_Object *orig_vec1,
+                        Scheme_Object *vec2, Scheme_Object *orig_vec2,
+                        Equal_Info *eql)
 {
   intptr_t i, len;
+  Scheme_Object *v1, *v2;
 
   len = SCHEME_VEC_SIZE(vec1);
   if (len != SCHEME_VEC_SIZE(vec2))
@@ -743,23 +767,40 @@ static int vector_equal(Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eq
   SCHEME_USE_FUEL(len);
 
   for (i = 0; i < len; i++) {
-    if (!is_equal(SCHEME_VEC_ELS(vec1)[i], SCHEME_VEC_ELS(vec2)[i], eql))
+    if (SAME_OBJ(vec1, orig_vec1))
+      v1 = SCHEME_VEC_ELS(vec1)[i];
+    else
+      v1 = scheme_chaperone_vector_ref(orig_vec1, i);
+    if (SAME_OBJ(vec2, orig_vec1))
+      v2 = SCHEME_VEC_ELS(vec2)[i];
+    else
+      v2 = scheme_chaperone_vector_ref(orig_vec2, i);
+
+    if (!is_equal(v1, v2, eql))
       return 0;
   }
 
   return 1;
 }
 
-int struct_equal(Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
+int struct_equal (Scheme_Object *s1, Scheme_Object *orig_s1, 
+                  Scheme_Object *s2, Scheme_Object *orig_s2, 
+                  Equal_Info *eql)
 {
-  Scheme_Structure *s1, *s2;
+  Scheme_Object *v1, *v2;
   int i;
 
-  s1 = (Scheme_Structure *)obj1;
-  s2 = (Scheme_Structure *)obj2;
+  for (i = SCHEME_STRUCT_NUM_SLOTS(((Scheme_Structure *)s1)); i--; ) {
+    if (SAME_OBJ(s1, orig_s1))
+      v1 = ((Scheme_Structure *)s1)->slots[i];
+    else
+      v1 = scheme_struct_ref(orig_s1, i);
+    if (SAME_OBJ(s2, orig_s2))
+      v2 = ((Scheme_Structure *)s2)->slots[i];
+    else
+      v2 = scheme_struct_ref(orig_s2, i);
 
-  for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
-    if (!is_equal(s1->slots[i], s2->slots[i], eql))
+    if (!is_equal(v1, v2, eql))
       return 0;
   }
 

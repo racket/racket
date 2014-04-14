@@ -485,9 +485,11 @@ void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme
   scheme_end_atomic_no_swap();
 }
 
-int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql)
+int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
+                                Scheme_Hash_Table *t2, Scheme_Object *orig_t2,
+                                void *eql)
 {
-  Scheme_Object **vals, **keys, *v;
+  Scheme_Object **vals, **keys, *val1, *val2, *key;
   int i;
 
   if ((t1->count != t2->count)
@@ -499,10 +501,21 @@ int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, vo
   vals = t1->vals;
   for (i = t1->size; i--; ) {
     if (vals[i]) {
-      v = scheme_hash_get(t2, keys[i]);
-      if (!v)
+      key = keys[i];
+
+      if (!SAME_OBJ((Scheme_Object *)t1, orig_t1))
+        val1 = scheme_chaperone_hash_traversal_get(orig_t1, key, &key);
+      else
+        val1 = vals[i];
+      
+      if (!SAME_OBJ((Scheme_Object *)t2, orig_t2))
+        val2 = scheme_chaperone_hash_get(orig_t2, key);
+      else
+        val2 = scheme_hash_get(t2, key);
+
+      if (!val2)
 	return 0;
-      if (!scheme_recur_equal(vals[i], v, eql))
+      if (!scheme_recur_equal(val1, val2, eql))
 	return 0;
     }
   }
@@ -846,11 +859,12 @@ scheme_change_in_table (Scheme_Bucket_Table *table, const char *key, void *naya)
     bucket->val = naya;
 }
 
-int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql)
+int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t1,
+                                  Scheme_Bucket_Table *t2, Scheme_Object *orig_t2,
+                                  void *eql)
 {
   Scheme_Bucket **buckets, *bucket;
-  void *v;
-  const char *key;
+  Scheme_Object *key, *val1, *val2;
   int i, weak, checked = 0;
 
   /* We can't compare the count values, because they're merely
@@ -868,16 +882,26 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *
     bucket = buckets[i];
     if (bucket) {
       if (weak) {
-	key = (const char *)HT_EXTRACT_WEAK(bucket->key);
+	key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
       } else {
-	key = bucket->key;
+	key = (Scheme_Object *)bucket->key;
       }
       if (key) {
+        if (!SAME_OBJ((Scheme_Object *)t1, orig_t1))
+          val1 = scheme_chaperone_hash_traversal_get(orig_t1, key, &key);
+        else
+          val1 = (Scheme_Object *)bucket->val;
+
 	checked++;
-	v = scheme_lookup_in_table(t2, key);
-	if (!v)
+      
+        if (!SAME_OBJ((Scheme_Object *)t2, orig_t2))
+          val2 = scheme_chaperone_hash_get(orig_t2, key);
+        else
+          val2 = (Scheme_Object *)scheme_lookup_in_table(t2, (const char *)key);
+
+	if (!val2)
 	  return 0;
-	if (!scheme_recur_equal((Scheme_Object *)bucket->val, (Scheme_Object *)v, eql))
+	if (!scheme_recur_equal(val1, val2, eql))
 	  return 0;
       }
     }
@@ -894,9 +918,9 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *
     bucket = buckets[i];
     if (bucket) {
       if (weak) {
-	key = (const char *)HT_EXTRACT_WEAK(bucket->key);
+	key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
       } else {
-	key = bucket->key;
+	key = (Scheme_Object *)bucket->key;
       }
       if (key) {
 	if (!checked)
@@ -2704,7 +2728,9 @@ int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object
   return path_find(tree->root, pos, _key, _val);
 }
 
-int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void *eql)
+int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
+                               Scheme_Hash_Tree *t2, Scheme_Object *orig_t2,
+                               void *eql)
 {
   Scheme_Object *k, *v, *v2;
   int i;
@@ -2715,7 +2741,15 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
     
   for (i = scheme_hash_tree_next(t1, -1); i != -1; i = scheme_hash_tree_next(t1, i)) {
     scheme_hash_tree_index(t1, i, &k, &v);
-    v2 = scheme_hash_tree_get(t2, k);
+
+    if (!SAME_OBJ((Scheme_Object *)t1, orig_t1))
+      v = scheme_chaperone_hash_traversal_get(orig_t1, k, &k);
+      
+    if (!SAME_OBJ((Scheme_Object *)t2, orig_t2))
+      v2 = scheme_chaperone_hash_get(orig_t2, k);
+    else
+      v2 = scheme_hash_tree_get(t2, k);
+
     if (!v2)
       return 0;
     if (!scheme_recur_equal(v, v2, eql))
