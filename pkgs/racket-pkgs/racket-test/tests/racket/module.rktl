@@ -1087,6 +1087,25 @@
 
 (err/rt-test (dynamic-require ''disallowed-definition-avoider #f)
              exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `syntax-local-lift-require` works interactively
+;; with a namespace from `module->namespace`:
+(let ()
+  (define ns (make-base-namespace))
+  (parameterize ([current-namespace ns])
+    (eval '(module m racket/base
+             (require (for-syntax racket/base))
+             (define-syntax (m stx)
+               (syntax-case stx ()
+                 [(_)
+                  (syntax-local-introduce
+                   (syntax-local-lift-require
+                    'racket/list
+                    (datum->syntax stx 'empty)))]))))
+    (eval '(require 'm))
+    (parameterize ([current-namespace (module->namespace ''m)])
+      (eval '(m)))))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
