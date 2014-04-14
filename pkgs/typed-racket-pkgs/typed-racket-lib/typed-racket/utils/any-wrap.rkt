@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/match racket/contract/base racket/contract/combinator
+(require racket/match racket/contract/combinator
          racket/fixnum racket/flonum
          racket/set
          (only-in (combine-in racket/private/promise)

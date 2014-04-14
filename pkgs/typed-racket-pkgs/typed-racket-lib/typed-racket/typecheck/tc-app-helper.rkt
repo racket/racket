@@ -2,7 +2,6 @@
 
 (require "../utils/utils.rkt"
          racket/match unstable/list unstable/sequence racket/set racket/list
-         syntax/stx
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (contract-req)
          (typecheck check-below tc-subst)

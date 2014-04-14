@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
+(require (for-syntax racket/base syntax/parse unstable/syntax
                      "../private/parse-classes.rkt"
                      "../utils/disappeared-use.rkt"
                      (only-in "../utils/tc-utils.rkt" tc-error/stx))
