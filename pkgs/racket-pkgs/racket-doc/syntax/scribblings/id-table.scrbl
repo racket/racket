@@ -137,12 +137,19 @@ Like @racket[hash-count].
 @defproc[(free-id-table-iterate-key [table free-id-table?]
                                     [position id-table-iter?])
          identifier?]
-@defproc[(free-id-table-iterate-value [table bound-it-table?]
+@defproc[(free-id-table-iterate-value [table free-id-table?]
                                       [position id-table-iter?])
-         identifier?]]]{
+         any/c]
+@defproc[(in-free-id-table [table free-id-table?])
+         sequence?]
+@defproc[(in-free-id-table-keys [table free-id-table?])
+         sequence?]
+@defproc[(in-free-id-table-values [table free-id-table?])
+         sequence?]]]{
 
 Like @racket[hash-iterate-first], @racket[hash-iterate-next],
-@racket[hash-iterate-key], and @racket[hash-iterate-value],
+@racket[hash-iterate-key], @racket[hash-iterate-value], @racket[in-hash],
+@racket[in-hash-keys], and @racket[in-hash-values]
 respectively.
 }
 
@@ -222,7 +229,13 @@ etc) can be used on bound-identifier tables.
          identifier?]
 @defproc[(bound-id-table-iterate-value [table bound-id-table?]
                                        [position id-table-position?])
-         identifier?]
+         any/c]
+@defproc[(in-bound-id-table [table bound-id-table?])
+         sequence?]
+@defproc[(in-bound-id-table-keys [table bound-id-table?])
+         sequence?]
+@defproc[(in-bound-id-table-values [table bound-id-table?])
+         sequence?]
 @defproc[(bound-id-table/c [key-ctc flat-contract?]
                            [val-ctc chaperone-contract?]
                            [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
