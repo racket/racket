@@ -2337,6 +2337,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
 {
   Scheme_Object *mark, *data, *pr;
   Scheme_Object *req_form;
+  int need_prepare = 0;
 
   data = NULL;
 
@@ -2363,8 +2364,10 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
 
   if (SCHEME_RPAIRP(data))
     form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data));
-  else
+  else {
     form = scheme_toplevel_require_for_expand(form, phase, env, mark);
+    need_prepare = 1;
+  }
   
   pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6]);
   SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6] = pr;
@@ -2379,7 +2382,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
   /* In a top-level context, may need to force compile-time evaluation: */
-  if (!env->genv->module)
+  if (need_prepare)
     scheme_prepare_compile_env(env->genv);
 
   return form;
