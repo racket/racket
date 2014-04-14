@@ -10667,6 +10667,8 @@ static void default_sleep(float v, void *fds)
 
       if (v <= 0.0)
         timeout = -1;
+      else if (v > 100000)
+        timeout = 100000000;
       else {
         timeout = (int)(v * 1000.0);
         if (timeout < 0) 
