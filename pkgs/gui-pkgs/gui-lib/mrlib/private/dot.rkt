@@ -11,6 +11,12 @@
 (define neato-hier-label "neato – hier")
 (define neato-ipsep-label "neato – ipsep")
 
+;; the code that finds the dot executable is the same as
+;; pkg/contract-profile/dot.rkt; please check the other 
+;; place if you find a bug here. the only reason it isn't
+;; shared is dependencies and lack of an obvious common
+;; place in between to put it.
+
 ;; these paths are explicitly checked (when find-executable-path
 ;; fails) because starting drracket from the finder (or the dock) 
 ;; under mac os x generally does not get the path right.
@@ -24,17 +30,20 @@
 (define neato.exe (if (eq? (system-type) 'windows) "neato.exe" "neato"))
 
 (define (find-dot [neato? #f])
-  (cond
-    [(and (find-executable-path dot.exe)
-          (find-executable-path neato.exe))
-     (if neato?
-         (find-executable-path neato.exe)
-         (find-executable-path dot.exe))]
-    [else
-     (ormap (λ (x) (and (file-exists? (build-path x dot.exe))
-                        (file-exists? (build-path x neato.exe))
-                        (build-path x (if neato? neato.exe dot.exe))))
-            dot-paths)]))
+  (with-handlers ([(lambda (e) ; may not have permission
+                     (and (exn:fail? e)
+                          (regexp-match "access denied" (exn-message e))))
+                   (λ (x) #f)])
+    (define dp (find-executable-path dot.exe))
+    (define np (find-executable-path neato.exe))
+    (cond
+      [(and dp np)
+       (if neato? np dp)]
+      [else
+       (ormap (λ (x) (and (file-exists? (build-path x dot.exe))
+                          (file-exists? (build-path x neato.exe))
+                          (build-path x (if neato? neato.exe dot.exe))))
+              dot-paths)])))
 
 (define (dot-positioning pb [option dot-label] [overlap? #f])
   (define dot-path (find-dot (regexp-match #rx"neato" option)))
