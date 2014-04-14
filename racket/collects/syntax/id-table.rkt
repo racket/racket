@@ -200,6 +200,7 @@
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
+          in-idtbl in-idtbl-keys in-idtbl-values
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods
           idtbl/c))
@@ -256,7 +257,8 @@
              (make-id-table/c 'idtbl/c
                               idtbl? mutable-idtbl? immutable-idtbl?
                               immutable-idtbl))
-
+           ;; Contracts destroy the benefits of define-sequence-syntax
+           (provide in-idtbl in-idtbl-keys in-idtbl-values)
            (provide/contract
             [make-idtbl
              (->* () (dict? #:phase (or/c #f exact-integer?)) mutable-idtbl?)]
