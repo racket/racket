@@ -1342,10 +1342,14 @@
                         prt))
                     p))))
            (current-load-relative-directory #f)
-           (current-directory init-dir)
-           (add-connections (if (string? filename)
-                                (string->path filename)
-                                filename))
+           (define relative? (eq? init-dir 'relative))
+           (unless relative? ; already there
+             (current-directory init-dir))
+           (define file-path (if (string? filename)
+                                 (string->path filename)
+                                 filename))
+           (add-connections
+            (if relative? (build-path (current-directory) file-path) file-path))
            (channel-put done-chan #t))))))
   
   (send pasteboard begin-adding-connections)
