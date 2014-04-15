@@ -9338,7 +9338,7 @@ static int VALID_TIME_RANGE(UNBUNDLE_TIME_TYPE lnow)
     sysctl(a, 2, vers, &len, NULL, 0);
 
     if ((vers[0] == '1') && (vers[1] == '0') && (vers[2] == '.')) {
-      /* localtime() in 10.7.x (= 10.x at the kernel layer) doesn't seem
+      /* localtime() in 10.6.x (= 10.x at the kernel layer) doesn't seem
          to work right with negative numbers that don't fit into 32 bits */
       return 0;
     }

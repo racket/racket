@@ -1,0 +1,79 @@
+diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo-quartz-font.c
+--- old/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 14:39:00.000000000 -0600
++++ new/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 14:49:16.000000000 -0600
+@@ -101,6 +101,10 @@
+ static cairo_bool_t _cairo_quartz_font_symbol_lookup_done = FALSE;
+ static cairo_bool_t _cairo_quartz_font_symbols_present = FALSE;
+ 
++# include <sys/param.h>
++# include <sys/sysctl.h>
++static int is_10_7_or_10_8;
++
+ static void
+ quartz_font_ensure_symbols(void)
+ {
+@@ -149,6 +153,22 @@
+ 	_cairo_quartz_font_symbols_present = TRUE;
+ 
+     _cairo_quartz_font_symbol_lookup_done = TRUE;
++
++    {
++	int a[2];
++	size_t len;
++	char *vers;
++	
++	a[0] = CTL_KERN;
++	a[1] = KERN_OSRELEASE;
++	sysctl(a, 2, NULL, &len, NULL, 0);
++        vers = malloc(len);
++	sysctl(a, 2, vers, &len, NULL, 0);
++        if ((vers[0] == '1') && ((vers[1] == '1') || (vers[1] == '2')) && (vers[2] == '.')) {
++	    is_10_7_or_10_8 = TRUE;
++	}
++        free(vers);
++    }
+ }
+ 
+ typedef struct _cairo_quartz_font_face cairo_quartz_font_face_t;
+@@ -156,6 +176,7 @@
+ 
+ struct _cairo_quartz_scaled_font {
+     cairo_scaled_font_t base;
++    int bbox_extend; /* Hack for Courier New on 10.7 and 10.8 */
+ };
+ 
+ struct _cairo_quartz_font_face {
+@@ -281,6 +302,22 @@
+     if (status)
+ 	goto FINISH;
+ 
++    if (is_10_7_or_10_8) {
++	CFStringRef name;
++	name = CGFontCopyFullName(font_face->cgFont);
++	if (name) {
++	    char buf[32];
++	    if (CFStringGetCString(name, buf, sizeof(buf), kCFStringEncodingUTF8)) {
++		if (!strcmp("Courier New", buf)) {
++		    /* The Courier New font on 10.{7,8} has bad
++		       bounding boxes. Correct it by extending the
++		       reported box by an em on each side. */
++		    font->bbox_extend = TRUE;
++		}
++	    }
++	}
++    }
++
+     ems = CGFontGetUnitsPerEmPtr (font_face->cgFont);
+ 
+     /* initialize metrics */
+@@ -467,6 +504,10 @@
+     ymin = CGRectGetMinY(bbox);
+     xmax = CGRectGetMaxX(bbox);
+     ymax = CGRectGetMaxY(bbox);
++    if (font->bbox_extend) { /* Hack for Courier New on 10.{7,8} */
++	xmax++;
++	xmin--;
++    }
+ 
+     extents.x_bearing = xmin;
+     extents.y_bearing = - ymax;

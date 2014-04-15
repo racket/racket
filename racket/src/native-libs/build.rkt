@@ -110,6 +110,9 @@
 ;; Fix a problem with glyph extents and clipped rendering:
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
+;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
+(define-runtime-path courier-new-patch "patches/courier-new.patch")
+
 ;; Enable kerning and set DPI to 72:
 (define-runtime-path coretext-patch "patches/coretext.patch")
 
@@ -308,7 +311,8 @@
     [("cairo") (config #:depends '("pixman" "fontconfig" "freetype" "libpng")
                        #:env path-flags
                        #:configure '("--enable-xlib=no")
-                       #:patches (list cairo-coretext-patch))]
+                       #:patches (list cairo-coretext-patch
+                                       courier-new-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
                           #:patches (if win?
