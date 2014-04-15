@@ -19,21 +19,31 @@
          (protect-out substitute-fonts?
                       install-alternate-face
                       font->pango-attrs
-                      font->hinting))
+                      font->hinting
+                      install-attributes!))
 
 (define-local-member-name 
   get-pango-attrs
   s-pango-attrs
   s-hinting)
 
-(define underlined-attrs (let ([l (pango_attr_list_new)])
-                           (pango_attr_list_insert l (pango_attr_underline_new
-                                                      PANGO_UNDERLINE_SINGLE))
-                           l))
-(define fallback-attrs (and xp? 
+(define fallback-attrs (and (or xp? (eq? 'macosx (system-type)))
 			    (let ([l (pango_attr_list_new)])
 			      (pango_attr_list_insert l (pango_attr_fallback_new #f))
 			      l)))
+(define underlined-attrs (let ([l (pango_attr_list_new)])
+                           (pango_attr_list_insert l (pango_attr_underline_new
+                                                      PANGO_UNDERLINE_SINGLE))
+                           (when (eq? 'macosx (system-type))
+                             (pango_attr_list_insert l (pango_attr_fallback_new #f)))
+                           l))
+
+(define always-attrs (and (eq? 'macosx (system-type)) fallback-attrs))
+
+(define (install-attributes! layout attrs)
+  (cond
+   [attrs (pango_layout_set_attributes layout attrs)]
+   [always-attrs (pango_layout_set_attributes layout always-attrs)]))
 
 (define (size? v) (and (exact-positive-integer? v)
                        (v . <= . 1024)))
@@ -74,7 +84,7 @@
        (and desc
             (let ([attrs (send font get-pango-attrs)])
               (pango_layout_set_font_description layout desc)
-              (when attrs (pango_layout_set_attributes layout attrs))
+              (install-attributes! layout attrs)
               (and (zero? (pango_layout_get_unknown_glyphs_count layout))
                    (begin
                      (hash-set! substitute-mapping (char->integer ch) face)
@@ -83,7 +93,7 @@
      (hash-set! substitute-mapping (char->integer ch) #t)
      ;; put old desc & attrs back
      (pango_layout_set_font_description layout desc)
-     (when attrs (pango_layout_set_attributes layout attrs)))))
+     (install-attributes! layout attrs))))
 
 (define (has-screen-glyph? c font desc for-label?)
   (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 1 1)]

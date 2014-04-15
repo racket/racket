@@ -1316,7 +1316,7 @@
 
     (define/private (do-text cr draw-mode s x y font combine? offset angle)
       (let* ([s (if (zero? offset) 
-                    s 
+                    s
                     (substring s offset))]
              [blank? (string=? s "")]
              [s (if (and (not draw-mode) blank?) " " s)]
@@ -1372,7 +1372,7 @@
                   (let ([layout (pango_layout_new context)]
                         [next-s #f])
                     (pango_layout_set_font_description layout desc)
-                    (when attrs (pango_layout_set_attributes layout attrs))
+                    (install-attributes! layout attrs)
                     (pango_layout_set_text layout s)
                     (let ([next-s
                            (if (or (not substitute-fonts?)
@@ -1460,7 +1460,7 @@
                           (or (hash-ref layouts (char->integer ch) #f)
                               (let ([layout (pango_layout_new context)])
                                 (pango_layout_set_font_description layout desc)
-                                (when attrs (pango_layout_set_attributes layout attrs))
+                                (install-attributes! layout attrs)
                                 (pango_layout_set_text layout (string ch))
                                 (unless (or (not substitute-fonts?)
                                             (zero? (pango_layout_get_unknown_glyphs_count layout)))
@@ -1497,7 +1497,6 @@
                             ;; loop directly affects the responsiveness of the DrRacket
                             ;; editor.
                             (let ([glyph-infos (malloc len _PangoGlyphInfo 'raw)] ;; assuming atomic until `free' below
-                                  [log-clusters (malloc len _int 'raw)]
                                   [first-font (vector-ref (hash-ref layouts (char->integer (string-ref s 0))) 3)]
                                   [first-ascent (and first-v (fl- (vector-ref first-v 1) (vector-ref first-v 2)))])
                               (and
@@ -1520,8 +1519,6 @@
                                             ;; Assume that the rect of the characters will pan out,
                                             ;; and start filling in the glyph-info array:
                                             (memcpy glyph-infos i glyphs 1 _PangoGlyphInfo)
-                                            ;; Every glyph is is own cluster:
-                                            (ptr-set! log-clusters _int i i)
                                             ;; Adjust width to be consistent with measured widths
                                             ;; used when drawing individual characters.
                                             ;; This is `set-PangoGlyphInfo-width!', but without
@@ -1531,7 +1528,7 @@
                                ;; If we get here, we can use the fast way:
                                (let ([glyph-string (make-PangoGlyphString len
                                                                           glyph-infos
-                                                                          log-clusters)])
+                                                                          #f)])
                                  ;; Move into position (based on the recorded Pango-units baseline)
                                  ;; and draw the glyphs
                                  (cairo_move_to cr 
@@ -1539,7 +1536,6 @@
                                                 (text-align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
                                  (pango_cairo_show_glyph_string cr first-font glyph-string)
                                  (free glyph-infos)
-                                 (free log-clusters)
                                  #t)))))
                    ;; We use the slower, per-layout way:
                    (let* ([query-and-cache

@@ -107,6 +107,9 @@
 ;; --------------------------------------------------
 ;; Patches:
 
+;; Fix a problem with glyph extents and clipped rendering:
+(define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
+
 ;; Enable kerning and set DPI to 72:
 (define-runtime-path coretext-patch "patches/coretext.patch")
 
@@ -304,7 +307,8 @@
                                       null))]
     [("cairo") (config #:depends '("pixman" "fontconfig" "freetype" "libpng")
                        #:env path-flags
-                       #:configure '("--enable-xlib=no"))]
+                       #:configure '("--enable-xlib=no")
+                       #:patches (list cairo-coretext-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
                           #:patches (if win?

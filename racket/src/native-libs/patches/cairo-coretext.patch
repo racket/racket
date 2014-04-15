@@ -1,0 +1,21 @@
+diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo-quartz-font.c
+--- old/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 11:04:35.000000000 -0600
++++ new/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 11:05:43.000000000 -0600
+@@ -461,10 +461,12 @@
+ 	     bbox.size.width / emscale, bbox.size.height / emscale);
+ #endif
+ 
+-    xmin = CGRectGetMinX(bbox);
+-    ymin = CGRectGetMinY(bbox);
+-    xmax = CGRectGetMaxX(bbox);
+-    ymax = CGRectGetMaxY(bbox);
++    /* add 1 to bounds to avoid round-off error that happens somewhere
++       in the path of rendering text (e.g., "-" vs. "-d" with 12-point Menlo) */
++    xmin = CGRectGetMinX(bbox)-1;
++    ymin = CGRectGetMinY(bbox)-1;
++    xmax = CGRectGetMaxX(bbox)+1;
++    ymax = CGRectGetMaxY(bbox)+1;
+ 
+     extents.x_bearing = xmin;
+     extents.y_bearing = - ymax;
+
