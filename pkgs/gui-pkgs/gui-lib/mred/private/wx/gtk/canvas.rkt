@@ -341,6 +341,8 @@
      (when for-gl?
        (prepare-widget-gl-context client-gtk gl-config))
 
+     (define dc #f)
+
      (super-new [parent parent]
                 [gtk gtk]
                 [client-gtk client-gtk]
@@ -363,7 +365,7 @@
        (super set-size x y w h)
        (on-size))
      
-     (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
+     (set! dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
 
      (gtk_widget_realize gtk)
      (gtk_widget_realize client-gtk)
