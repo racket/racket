@@ -191,8 +191,6 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *current_read(int, Scheme_Object **);
 static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
 
-static Scheme_Object *chaperone_not_undefined (int argc, Scheme_Object *argv[]);
-
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
 
@@ -672,7 +670,7 @@ scheme_init_fun (Scheme_Env *env)
 void
 scheme_init_unsafe_fun (Scheme_Env *env)
 {
-  Scheme_Object *o, *a[1];
+  Scheme_Object *o;
 
   REGISTER_SO(scheme_check_not_undefined_proc);
   o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-unsafe-undefined", 2, 2);
@@ -2559,12 +2557,6 @@ scheme_check_not_undefined (int argc, Scheme_Object *argv[])
   }
 
   return argv[0];
-}
-
-Scheme_Object *
-chaperone_not_undefined (int argc, Scheme_Object *argv[])
-{
-  return scheme_chaperone_not_undefined(argv[0]);
 }
 
 static Scheme_Object *
