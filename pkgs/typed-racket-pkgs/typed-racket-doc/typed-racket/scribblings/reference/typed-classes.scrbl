@@ -13,6 +13,11 @@
 
 @title{Typed Classes}
 
+@bold{Warning}: the features described in this section are experimental
+and may not work correctly. Some of the features will change by
+the next release. In particular, typed-untyped interaction for classes
+will not be backwards compatible so do not rely on the current semantics.
+
 Typed Racket provides support for object-oriented programming with
 the classes and objects provided by the @racketmodname[racket/class]
 library.
