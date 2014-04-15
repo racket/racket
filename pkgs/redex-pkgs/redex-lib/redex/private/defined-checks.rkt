@@ -1,11 +1,13 @@
 #lang racket/base
 
-(require "error.rkt")
+(require "error.rkt"
+         racket/undefined)
 (provide check-defined-lexical
          check-defined-module)
 
 (define (check-defined-lexical value name desc)
-  (when (eq? (letrec ([x x]) x) value)
+  ;; Needed?
+  (when (eq? undefined value)
     (report-undefined name desc)))
 
 (define (check-defined-module thunk name desc)
