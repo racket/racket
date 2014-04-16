@@ -114,10 +114,10 @@ typedef struct {
 } Scheme_Deferred_Expr;
 
 /* initializes a Letrec_Check_Frame */
-Letrec_Check_Frame *init_letrec_check_frame(int frame_type, 
-                                            mzshort count, 
-                                            Letrec_Check_Frame *prev,
-                                            Scheme_Let_Header *head)
+static Letrec_Check_Frame *init_letrec_check_frame(int frame_type,
+                                                   mzshort count,
+                                                   Letrec_Check_Frame *prev,
+                                                   Scheme_Let_Header *head)
 {
   Letrec_Check_Frame *frame;
   Scheme_Object **def;
@@ -173,7 +173,8 @@ Letrec_Check_Frame *init_letrec_check_frame(int frame_type,
 
 /* returns the frame that is the nearest enclosing let in the
    LET_RHS_EXPR */
-Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame) {
+static Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame)
+{
   for (; frame != NULL; frame = frame->next) {
     if (frame->subexpr < 0) {
       scheme_signal_error("get_nearest_rhs: subexpr is negative");
@@ -184,12 +185,12 @@ Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame) {
   }
     
   scheme_signal_error("get_nearest_rhs: not in a let RHS");
-  return frame; // dead
+  ESCAPED_BEFORE_HERE;
 }
 
 /* returns the frame that was created when pos was created, and
    changes pos to be relative to that frame */
-Letrec_Check_Frame *get_relative_frame(int *pos, Letrec_Check_Frame *frame)
+static Letrec_Check_Frame *get_relative_frame(int *pos, Letrec_Check_Frame *frame)
 {
   /* we've gone wrong if pos_int is negative or if the frame has
      become NULL because pos should have be a valid LHS variable
@@ -225,7 +226,7 @@ Letrec_Check_Frame *get_relative_frame(int *pos, Letrec_Check_Frame *frame)
 
 /* takes an absolute position and returns whether or not that position
    has a reference of the right type */
-int pos_has_ref(int position, Letrec_Check_Frame *frame, int type)
+static int pos_has_ref(int position, Letrec_Check_Frame *frame, int type)
 {
   int pos_ref = position;
 
@@ -239,8 +240,8 @@ int pos_has_ref(int position, Letrec_Check_Frame *frame, int type)
 }
 
 /* adds expr to the deferred bindings of lhs */
-void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner, 
-                  int position, Scheme_Deferred_Expr *clos)
+static void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
+                         int position, Scheme_Deferred_Expr *clos)
 {
   Scheme_Object *prev_def;
 
@@ -261,7 +262,7 @@ void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
 }
 
 /* records all the subexprs at the time of deferral */
-Scheme_Object *frame_to_subexpr_ls(Letrec_Check_Frame *frame) {
+static Scheme_Object *frame_to_subexpr_ls(Letrec_Check_Frame *frame) {
   Scheme_Object *ls = scheme_null;
 
   for (; frame != NULL; frame = frame->next) {
@@ -275,7 +276,7 @@ Scheme_Object *frame_to_subexpr_ls(Letrec_Check_Frame *frame) {
 }
 
 /* replaces all the subexprs to their state pre-deferral */
-void subexpr_ls_to_frame(Scheme_Object *ls, Letrec_Check_Frame *frame) {
+static void subexpr_ls_to_frame(Scheme_Object *ls, Letrec_Check_Frame *frame) {
   for (; frame != NULL; frame = frame->next) {
     if (SCHEME_CAR(ls) < 0) {
       scheme_signal_error("subexpr_ls_to_frame: negative subexpr in list");
@@ -290,8 +291,8 @@ void subexpr_ls_to_frame(Scheme_Object *ls, Letrec_Check_Frame *frame) {
 
 /* creates a deferred expression "closure" by closing over the frame,
    and uvars/pvars at the point of deferral */
-Scheme_Deferred_Expr *make_deferred_expr_closure(Scheme_Closure_Data *expr, Letrec_Check_Frame *frame, 
-                                                 int position, Scheme_Object *uvars, Scheme_Object *pvars)
+static Scheme_Deferred_Expr *make_deferred_expr_closure(Scheme_Closure_Data *expr, Letrec_Check_Frame *frame, 
+                                                        int position, Scheme_Object *uvars, Scheme_Object *pvars)
 {
   Scheme_Deferred_Expr *clos;
 
@@ -310,11 +311,11 @@ Scheme_Deferred_Expr *make_deferred_expr_closure(Scheme_Closure_Data *expr, Letr
   return clos;
 }
 
-Scheme_Object *letrec_check_expr(Scheme_Object *, Letrec_Check_Frame *, 
-                                 Scheme_Object *, Scheme_Object *, Scheme_Object *);
-void process_deferred_bindings(Letrec_Check_Frame *);
+static Scheme_Object *letrec_check_expr(Scheme_Object *, Letrec_Check_Frame *,
+                                        Scheme_Object *, Scheme_Object *, Scheme_Object *);
+static void process_deferred_bindings(Letrec_Check_Frame *);
 
-void letrec_check_lets_resume(Letrec_Check_Frame *frame)
+static void letrec_check_lets_resume(Letrec_Check_Frame *frame)
 {
   Scheme_Compiled_Let_Value *clv;
   Scheme_Object *body;
@@ -360,10 +361,9 @@ void letrec_check_lets_resume(Letrec_Check_Frame *frame)
   }
 }
 
-
 /* appends two nested lists of variables that are always the same length, e.x.
    merge_vars( ((1) () (0)) , (() (2) (1)) ) => ((1) (2) (0 1)) */
-Scheme_Object *merge_vars(Scheme_Object *vars1, Scheme_Object *vars2) {
+static Scheme_Object *merge_vars(Scheme_Object *vars1, Scheme_Object *vars2) {
   Scheme_Object *merged, *car1, *car2, *appended_cars, *tmp;
 
   /* make sure they are the same length */
@@ -392,15 +392,6 @@ Scheme_Object *merge_vars(Scheme_Object *vars1, Scheme_Object *vars2) {
   return tmp;
 }
 
-void check_inner_vars(Scheme_Object *ls) {
-  while(!SCHEME_NULLP(ls)) {
-    if (!SCHEME_PAIRP(ls)) {
-      scheme_signal_error("check_inner_vars: vars is not a list");
-    }
-    ls = SCHEME_CDR(ls);
-  }
-}
-
 /* looks up an absolute position in a nested list of vars, where we
    only care about the outermost dimension; e.x.:
 
@@ -408,7 +399,7 @@ void check_inner_vars(Scheme_Object *ls) {
    lookup_var(1, (() ...)) = 0
    lookup_var(2, ((1) ...)) = 0
 */
-int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame) 
+static int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame) 
 {
   Scheme_Object *vars_car, *caar;
     
@@ -475,7 +466,7 @@ int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *frame)
 }
 
 /* records that we have seen a reference to loc */
-void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
+static void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
 {
   Scheme_Object *deferred_with_rhs_ref, *deferred_with_body_ref;
   Letrec_Check_Frame *inner;
@@ -521,7 +512,7 @@ void record_ref(Scheme_Local *loc, Letrec_Check_Frame *frame)
 }
 
 /* records that we have seen a reference to loc */
-Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
+static Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
 {
   int position = SCHEME_LOCAL_POS(loc), k;
   Scheme_Object *obj;
@@ -553,7 +544,7 @@ Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
    empty lists
    
    rem_vars( ((1) (1 2) ) ) = (() ()) */
-Scheme_Object *rem_vars(Scheme_Object *vars)
+static Scheme_Object *rem_vars(Scheme_Object *vars)
 {
   Scheme_Object *tmp, *new;
 
@@ -570,9 +561,9 @@ Scheme_Object *rem_vars(Scheme_Object *vars)
   return new;
 }
 
-Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
-                                  Scheme_Object *uvars, Scheme_Object *pvars, 
-                                  Scheme_Object *pos)
+static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
+                                         Scheme_Object *uvars, Scheme_Object *pvars, 
+                                         Scheme_Object *pos)
 {
   Scheme_Local *loc = (Scheme_Local *)o;
   int position;
@@ -608,8 +599,8 @@ Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                               Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   int i,n;
   Scheme_App_Rec *app;
@@ -634,8 +625,8 @@ Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Frame *fr
   return o;
 }
 
-Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                         Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_App2_Rec *app;
   Scheme_Object *new_uvars, *new_pvars, *val;
@@ -656,8 +647,8 @@ Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_Frame *f
   return o;
 }
 
-Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                         Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_App3_Rec *app;
   Scheme_Object *new_uvars, *new_pvars, *val;
@@ -680,8 +671,8 @@ Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_Frame *f
   return o;
 }
 
-Scheme_Object *letrec_check_sequence(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                     Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_sequence(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                            Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Sequence *seq;
   Scheme_Object *val;
@@ -698,8 +689,8 @@ Scheme_Object *letrec_check_sequence(Scheme_Object *o, Letrec_Check_Frame *frame
   return o;
 }
 
-Scheme_Object *letrec_check_branch(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                   Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_branch(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                          Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Branch_Rec *br;
   Scheme_Object *val;
@@ -716,8 +707,8 @@ Scheme_Object *letrec_check_branch(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_wcm(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_wcm(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                       Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_With_Continuation_Mark *wcm;
   Scheme_Object *val;
@@ -734,8 +725,8 @@ Scheme_Object *letrec_check_wcm(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                                       Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Closure_Data *data;
   Letrec_Check_Frame *new_frame;
@@ -786,12 +777,13 @@ Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_Check_F
   return o;
 }
 
-void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int type)
+static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int type)
 {
   Scheme_Deferred_Expr *clos;
   Scheme_Closure_Data *data;
   Letrec_Check_Frame *inner, *new_frame;
-  Scheme_Object *tmp, *val, *uvars, *pvars, *tmp_uvars, *tmp_pvars, *deferred_uvars, *deferred_pvars, *after_i, *i_wrapped, *subexpr_ls;
+  Scheme_Object *tmp, *val, *uvars, *pvars, *tmp_uvars, *tmp_pvars, *deferred_uvars, *deferred_pvars;
+  Scheme_Object *after_i, *i_wrapped, *subexpr_ls;
   int i, old_subexpr, num_params, length_diff, position;
 
   /* gets the closed over data from clos, which will always be a
@@ -877,7 +869,7 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
 
     else {
       scheme_signal_error("letrec_check_deferred_expr: invalid type");
-      return; // dead
+      return;
     }
   }
   else {
@@ -983,10 +975,7 @@ void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *outer, int
 /* populates frame->deferred_with_(rhs/body)_ref with the deferred
    binding of every LHS variable mentioned in the (RHSs/BODY)
    according to frame->ref, and processes every expression inside */
-void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
-  // ls = &(frame->deferred_with_rhs_ref);
-
-  // TODO: anything weird here?
+static void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
   Scheme_Object **def, *tmp;
   int i, count, subexpr;
 
@@ -1021,9 +1010,7 @@ void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
   frame->deferred_with_rhs_ref = scheme_false;
 }
 
-void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
-  // ls = &(frame->deferred_with_body_ref);
-
+static void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
   Scheme_Object **def, *tmp;
   int i, count, subexpr;
 
@@ -1054,9 +1041,7 @@ void process_deferred_bindings_body(Letrec_Check_Frame *frame) {
   frame->deferred_with_body_ref = scheme_false;
 }
 
-void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
-  // ls = &(frame->deferred_with_no_ref);
-
+static void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
   Scheme_Object **def, *tmp;
   int i, count, subexpr;
 
@@ -1087,7 +1072,7 @@ void process_deferred_bindings_no(Letrec_Check_Frame *frame) {
   frame->deferred_with_no_ref = scheme_false;
 }
 
-void process_deferred_bindings(Letrec_Check_Frame *frame) {
+static void process_deferred_bindings(Letrec_Check_Frame *frame) {
   int subexpr;
 
   subexpr = frame->subexpr;
@@ -1106,8 +1091,8 @@ void process_deferred_bindings(Letrec_Check_Frame *frame) {
   }
 }
 
-Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame, 
-                                 Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame, 
+                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Letrec_Check_Frame *frame;
   Scheme_Compiled_Let_Value *clv;
@@ -1161,8 +1146,8 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
       new_pvars_level = tmp;
     }
 
-    // new_pvars_level = (i i-1 ... 1 0)
-    // new_uvars_level = ()
+    /* new_pvars_level = (i i-1 ... 1 0) */
+    /* new_uvars_level = () */
   } else {
     new_pvars_level = NULL;
     new_uvars_level = NULL;
@@ -1246,11 +1231,10 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
 
 /* note to future self: the length of define_values is sometimes 1,
    and you definitely don't want to look inside if that's the case */
-Scheme_Object *letrec_check_define_values(Scheme_Object *data, Letrec_Check_Frame *frame, 
-                                          Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_define_values(Scheme_Object *data, Letrec_Check_Frame *frame, 
+                                                 Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   if (SCHEME_VEC_SIZE(data) <= 1) {
-    // TODO: right thing to do?
     return data;
   }
   else {
@@ -1260,8 +1244,8 @@ Scheme_Object *letrec_check_define_values(Scheme_Object *data, Letrec_Check_Fram
       scheme_signal_error("letrec_check_define_values: processing resolved code");
     }
 
-    // TODO: don't think we need to process vars ever
-    // vars = letrec_check_expr(vars, frame, uvars, pvars, pos);
+    /* we don't need to process vars, ever */
+
     val = letrec_check_expr(val, frame, uvars, pvars, pos);
 
     SCHEME_VEC_ELS(data)[1] = val;
@@ -1270,14 +1254,14 @@ Scheme_Object *letrec_check_define_values(Scheme_Object *data, Letrec_Check_Fram
   return data;
 }
 
-Scheme_Object *letrec_check_ref(Scheme_Object *data, Letrec_Check_Frame *frame, 
-                                Scheme_Object *uvars, Scheme_Object *pvars, Wrapped_Lhs *lhs)
+static Scheme_Object *letrec_check_ref(Scheme_Object *data, Letrec_Check_Frame *frame, 
+                                       Scheme_Object *uvars, Scheme_Object *pvars, Wrapped_Lhs *lhs)
 {
   return data;
 }
 
-Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                       Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Set_Bang *sb;
   Scheme_Object *val;
@@ -1293,8 +1277,8 @@ Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_define_syntaxes(Scheme_Object *data, Letrec_Check_Frame *frame, 
-                                            Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_define_syntaxes(Scheme_Object *data, Letrec_Check_Frame *frame, 
+                                                   Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Object *val;
   val = SCHEME_VEC_ELS(data)[3];
@@ -1305,8 +1289,8 @@ Scheme_Object *letrec_check_define_syntaxes(Scheme_Object *data, Letrec_Check_Fr
   return data;
 }
 
-Scheme_Object *letrec_check_begin_for_syntax(Scheme_Object *data, Letrec_Check_Frame *frame, 
-                                             Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_begin_for_syntax(Scheme_Object *data, Letrec_Check_Frame *frame, 
+                                                    Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Object *l, *a, *val;
     
@@ -1322,8 +1306,8 @@ Scheme_Object *letrec_check_begin_for_syntax(Scheme_Object *data, Letrec_Check_F
   return data;
 }
 
-Scheme_Object *letrec_check_case_lambda(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_case_lambda(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                               Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Case_Lambda *cl;
   Scheme_Object *val;
@@ -1340,8 +1324,8 @@ Scheme_Object *letrec_check_case_lambda(Scheme_Object *o, Letrec_Check_Frame *fr
   return o;
 }
 
-Scheme_Object *letrec_check_begin0(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                   Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_begin0(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                          Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   int i, n;
   Scheme_Sequence *seq;
@@ -1358,8 +1342,8 @@ Scheme_Object *letrec_check_begin0(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_apply_values(Scheme_Object *data, Letrec_Check_Frame *frame, 
-                                         Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_apply_values(Scheme_Object *data, Letrec_Check_Frame *frame, 
+                                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Object *f, *e;
     
@@ -1375,8 +1359,8 @@ Scheme_Object *letrec_check_apply_values(Scheme_Object *data, Letrec_Check_Frame
   return data;
 }
 
-Scheme_Object *letrec_check_module(Scheme_Object *o, Letrec_Check_Frame *frame, 
-                                   Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_module(Scheme_Object *o, Letrec_Check_Frame *frame, 
+                                          Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   int i, cnt;
   Scheme_Module *m;
@@ -1413,8 +1397,8 @@ Scheme_Object *letrec_check_module(Scheme_Object *o, Letrec_Check_Frame *frame,
   return o;
 }
 
-Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame *frame, 
-                                 Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
+static Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame *frame, 
+                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   int type;
   type = SCHEME_TYPE(expr);
