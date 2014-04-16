@@ -1265,14 +1265,41 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
 {
   Scheme_Set_Bang *sb;
   Scheme_Object *val;
+  int position;
 
   sb = (Scheme_Set_Bang *)o;
   val = sb->val;
 
-
-
   val = letrec_check_expr(val, frame, uvars, pvars, pos);
   sb->val = val;
+
+  if (SAME_TYPE(SCHEME_TYPE(sb->var), scheme_local_type)) {
+    /* We may need to insert a definedness check before the assignment */
+    position = SCHEME_LOCAL_POS(sb->var);
+    if (lookup_var(position, uvars, frame) ||
+        lookup_var(position, pvars, frame)) {
+      /* Insert the check: */
+      Scheme_App3_Rec *app3;
+      Scheme_Object *name;
+      Scheme_Sequence *seq;
+      
+      name = record_checked((Scheme_Local *)sb->var, frame);
+      
+      app3 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
+      app3->iso.so.type = scheme_application3_type;
+      app3->rator = scheme_check_assign_not_undefined_proc;
+      app3->rand1 = sb->var;
+      app3->rand2 = name;
+      
+      seq = scheme_malloc_sequence(2);
+      seq->so.type = scheme_sequence_type;
+      seq->count = 2;
+      seq->array[0] = (Scheme_Object *)app3;
+      seq->array[1] = (Scheme_Object *)sb;
+
+      return (Scheme_Object *)seq;
+    }
+  }
 
   return o;
 }

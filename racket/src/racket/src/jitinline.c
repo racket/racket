@@ -3527,9 +3527,10 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_movr_p(dest, JIT_R0);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined")) {
+    } else if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined")
+               || IS_NAMED_PRIM(rator, "check-not-unsafe-undefined/assign")) {
       if (SCHEME_SYMBOLP(app->rand2)) {
-        GC_CAN_IGNORE jit_insn *ref, *ref2;
+        GC_CAN_IGNORE jit_insn *ref;
 
         LOG_IT(("inlined check-not-unsafe-undefined\n"));
 
@@ -3541,17 +3542,18 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         mz_rs_sync_fail_branch();
 
         __START_TINY_JUMPS__(1);
-        ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-        ref2 = mz_bnei_t(jit_forward(), JIT_R0, scheme_undefined_type, JIT_R2);
+        ref = jit_bnei_ul(jit_forward(), JIT_R0, scheme_undefined);
         __END_TINY_JUMPS__(1);
 
         scheme_mz_load_retained(jitter, JIT_R1, app->rand2);
-        (void)jit_calli(sjc.call_check_not_defined_code);
+        if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined"))
+          (void)jit_calli(sjc.call_check_not_defined_code);
+        else
+          (void)jit_calli(sjc.call_check_assign_not_defined_code);
         /* never returns */
 
         __START_TINY_JUMPS__(1);
         mz_patch_branch(ref);
-        mz_patch_branch(ref2);
         __END_TINY_JUMPS__(1);
         CHECK_LIMIT();
       } else {

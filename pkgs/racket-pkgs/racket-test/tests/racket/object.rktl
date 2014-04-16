@@ -1937,6 +1937,11 @@
       (define z z)
       (super-new)))
 
+  (define d!%
+    (class c%
+      (define z (set! z 0))
+      (super-new)))
+
   (define e%
     (class d%
       (define q 1)
@@ -1958,6 +1963,9 @@
   (err/rt-test (new d%) (lambda (exn)
                           (and (exn:fail:contract:variable? exn)
                                (eq? 'z (exn:fail:contract:variable-id exn)))))
+  (err/rt-test (new d!%) (lambda (exn)
+                           (and (exn:fail:contract:variable? exn)
+                                (eq? 'z (exn:fail:contract:variable-id exn)))))
   (err/rt-test (new e%) (lambda (exn)
                           (and (exn:fail:contract:variable? exn)
                                (eq? 'z (exn:fail:contract:variable-id exn)))))
@@ -2003,6 +2011,7 @@
   (check-opt '(class object% (init-field [x 1]) (super-new)) #t)
   (check-opt '(class object% (define x (+ 1 2))) #t)
   (check-opt '(class object% (define x (free-var 1))) #t)
+  (check-opt '(class object% (set! y 7) (define x 2) (define y 1) (super-new)) #f)
 
   (check-opt '(class object% (define x x)) #f)
   (check-opt '(class object% (field [x x])) #f)
@@ -2030,12 +2039,8 @@
   (check-opt '(class object% (inherit-field f) (super-new) (displayln f)) #t)
   (check-opt '(class object% (inherit-field f) (displayln f) (super-new)) #f)
   (check-opt '(class object% (inherit-field f) (set! f 10) (super-new)) #t)
-
-  ;; Ok to use after explicit assignment that's before the decl:
-  (check-opt '(class object% (set! y 7) (define x y) (define y 1) (super-new)) #t)
-  ;; But not in a branch
-  (check-opt '(class object% (when ? (set! y 7)) (define x y) (define y 1) (super-new)) #f)
-
+  (check-opt '(class object% (inherit-field f) (when ? (super-new)) (displayln f)) #f)
+  
   (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

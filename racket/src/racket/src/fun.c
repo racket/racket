@@ -87,6 +87,7 @@ READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
 READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
+READ_ONLY Scheme_Object *scheme_check_assign_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
@@ -677,6 +678,12 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   scheme_check_not_undefined_proc = o;
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("check-not-unsafe-undefined", o, env);
+
+  REGISTER_SO(scheme_check_assign_not_undefined_proc);
+  o = scheme_make_prim_w_arity(scheme_check_assign_not_undefined, "check-not-unsafe-undefined/assign", 2, 2);
+  scheme_check_assign_not_undefined_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("check-not-unsafe-undefined/assign", o, env);
 
   scheme_add_global_constant("unsafe-undefined", scheme_undefined, env);
 
@@ -2552,7 +2559,23 @@ scheme_check_not_undefined (int argc, Scheme_Object *argv[])
   if (SAME_OBJ(argv[0], scheme_undefined)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
                      argv[1],
-                     "%S: variable used before its definition",
+                     "%S: undefined;\n cannot use before initialization",
+                     argv[1]);
+  }
+
+  return argv[0];
+}
+
+Scheme_Object *
+scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("check-not-unsafe-undefined/assign", "symbol?", 1, argc, argv);
+
+  if (SAME_OBJ(argv[0], scheme_undefined)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                     argv[1],
+                     "%S: assignment disallowed;\n cannot assign before initialization",
                      argv[1]);
   }
 

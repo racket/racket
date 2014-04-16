@@ -89,6 +89,7 @@
 (test 10 add4 6)
 (err/rt-test (let ([x (lambda () (define d d) d)]) (x)) exn:fail:contract:variable?)
 (err/rt-test ((lambda () (define d d) d)) exn:fail:contract:variable?)
+(err/rt-test ((lambda () (define d (set! d #f)) d)) exn:fail:contract:variable?)
 (test '(3 4 5 6) (lambda x x) 3 4 5 6)
 (test '(5 6) (lambda (x y . z) z) 3 4 5 6)
 (test 'second (lambda () (cons 'first 2) 'second))
@@ -644,6 +645,8 @@
 (test 'threex 'letrec-values (letrec-values ([() (values)][() (values)]) 'threex))
 
 (err/rt-test (letrec-values ([(a b c) (values 1 a b)]) (list a b c))
+              exn:fail:contract:variable?)
+(err/rt-test (letrec-values ([(a b c) (values (set! a 0) a b)]) (list a b c))
               exn:fail:contract:variable?)
 
 (test '(10 11) 'letrec-values (letrec-values ([(names kps)

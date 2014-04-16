@@ -48,6 +48,8 @@
   (if inherited?
       stx
       (quasisyntax/loc src-stx (begin '(declare-field-assignment #,id) #,stx))))
+(define (add-declare-field-initialization id src-stx stx)
+  (quasisyntax/loc src-stx (begin '(declare-field-initialization #,id) #,stx)))
 
 (define (make-this-map orig-id the-finder the-obj)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
@@ -90,7 +92,20 @@
      (lambda (stx)
        (class-syntax-protect
         (with-syntax ([obj-expr (find the-finder the-obj stx)])
-          (syntax-case stx ()
+          (syntax-case stx (field-initialization-value)
+            [(set! id (field-initialization-value expr))
+             (free-identifier=? (syntax set!) set!-stx)
+             (add-declare-field-initialization
+              #'id
+              #'id
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
+                            [set (quasisyntax/loc stx
+                                   ;; This continuation mark disables the chaperone on field assignement
+                                   ;; (if any) installed via `prop:chaperone-unsafe-undefined`:
+                                   (with-continuation-mark prop:chaperone-unsafe-undefined unsafe-undefined
+                                     #,(quasisyntax/loc stx
+                                         ((unsyntax field-mutator) obj id))))])
+                (syntax/loc (choose-src stx #'id) (let* bindings set))))]
             [(set! id expr)
              (free-identifier=? (syntax set!) set!-stx)
              (add-declare-field-assignment

@@ -1993,6 +1993,30 @@ static Scheme_Object *chaperone_struct_ref_overflow(const char *who, Scheme_Obje
   return scheme_handle_stack_overflow(chaperone_struct_ref_k);
 }
 
+static void raise_undefined_error(Scheme_Object *val, const char *short_error, const char *mode, int i)
+{
+  int len;
+  Scheme_Object *o;
+
+  o = scheme_struct_type_property_ref(scheme_chaperone_undefined_property, val);
+  len = (o ? scheme_proper_list_length(o) : 0);
+  if (i < len) {
+    for (i = len - i; --i; ) {
+      o = SCHEME_CDR(o);
+    }
+    o = SCHEME_CAR(o);
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                     o,
+                     "%S: %s;\n cannot %s field before initialization",
+                     o, short_error, mode);
+  } else {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "%s;\n cannot %s field before initialization",
+                     short_error, mode);
+  }
+
+}
+
 static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, int i)
 {
   while (1) {
@@ -2014,22 +2038,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
           orig = chaperone_struct_ref(who, o, i);
 
         if (SAME_OBJ(orig, scheme_undefined)) {
-          int len;
-          o = scheme_struct_type_property_ref(scheme_chaperone_undefined_property, px->val);
-          len = (o ? scheme_proper_list_length(o) : 0);
-          if (i < len) {
-            for (i = len - i; --i; ) {
-              o = SCHEME_CDR(o);
-            }
-            o = SCHEME_CAR(o);
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
-                             o,
-                             "%S: field used before its initialization",
-                             o);
-          } else {
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "field used before its initialization");
-          }
+          raise_undefined_error(px->val, "undefined", "use", i);
         }
 
         return orig;
@@ -2118,6 +2127,19 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
             if (!SAME_OBJ(v, a[1]) && !scheme_chaperone_of(v, a[1]))
               scheme_wrong_chaperoned(who, "value", a[1], v);
         } 
+      } if (SCHEME_VECTORP(px->redirects)
+            && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+            && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
+        /* chaperone on every field: check that current value is not undefined
+           --- unless check is disabled by a mark (bit it's faster to check
+           for `undefined` before checking the mark) */
+        if (SAME_OBJ(scheme_undefined, ((Scheme_Structure *)px->val)->slots[i])) {
+          Scheme_Object *m;
+          
+          m = scheme_extract_one_cc_mark(NULL, scheme_chaperone_undefined_property);
+          if (!m || !SAME_OBJ(m, scheme_undefined))
+            raise_undefined_error(px->val, "assignment disallowed", "assign", i);
+        }
       }
     }
   }

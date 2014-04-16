@@ -2719,6 +2719,7 @@
 
 ;; Section 17.4 (Unsafe Undefined)
 [check-not-unsafe-undefined (-poly (a) (-> a -Symbol a))]
+[check-not-unsafe-undefined/assign (-poly (a) (-> a -Symbol a))]
 
 ;; Section 18.2 (Libraries and Collections)
 [find-library-collection-paths (->opt [(-lst -Pathlike) (-lst -Pathlike)] (-lst -Path))]
