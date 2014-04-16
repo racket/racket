@@ -1163,6 +1163,9 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
 
         // new_pvars_level = (i i-1 ... 1 0)
         // new_uvars_level = ()
+    } else {
+        new_pvars_level = NULL;
+        new_uvars_level = NULL;
     }
 
     body = head->body;
@@ -1171,6 +1174,7 @@ Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *old_frame
 
     /* loops through every right hand side */
     k = head->count;
+    clv = NULL;
     for (i = num_clauses; i--;) {
         clv = (Scheme_Compiled_Let_Value *)body;
 
