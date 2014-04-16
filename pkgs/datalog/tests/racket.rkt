@@ -15,6 +15,23 @@
           (? (parent X joseph2)))
  =>
  (list (hasheq 'X 'joseph3))
+
+ (datalog parent
+          (? (parent X (string->symbol "joseph2"))))
+ =>
+ (list (hasheq 'X 'joseph3))
+
+ (let ([atom 'joseph2])
+   (datalog parent
+            (? (parent X #,atom))))
+ =>
+ (list (hasheq 'X 'joseph3))
+
+ (let ([table 'parent])
+   (datalog parent
+            (? (#,table X joseph2))))
+ =>
+ (list (hasheq 'X 'joseph3))
  
  (datalog parent
           (? (parent joseph2 X)))
@@ -56,6 +73,11 @@
  
  (datalog parent
           (? (add1 1 :- X)))
+ =>
+ (list (hasheq 'X 2))
+
+ (datalog parent
+          (? (#,(λ (x) (+ x 1)) 1 :- X)))
  =>
  (list (hasheq 'X 2))
  

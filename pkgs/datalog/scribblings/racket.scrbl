@@ -15,6 +15,7 @@
 The Datalog database can be directly used by Racket programs through this API.
 
 @examples[#:eval the-eval
+          #:escape UNSYNTAX-NOT
           (define family (make-theory))
 
           (datalog family
@@ -24,6 +25,17 @@ The Datalog database can be directly used by Racket programs through this API.
 
           (datalog family
                    (? (parent X joseph2)))
+
+          (datalog family
+                   (? (parent X (string->symbol "joseph2"))))
+
+          (let ([atom 'joseph2])
+            (datalog family
+                     (? (parent X #,atom))))
+
+          (let ([table 'parent])
+            (datalog family
+                     (? (#,table X joseph2))))
 
           (datalog family
                    (? (parent joseph2 X)))
@@ -48,7 +60,9 @@ The Datalog database can be directly used by Racket programs through this API.
                      (? (parent x X))))
 
           (datalog family
-                   (? (add1 1 :- X)))]
+                   (? (add1 1 :- X)))
+          (datalog family
+                   (? (#,(λ (x) (+ x 1)) 1 :- X)))]
 
 @defthing[theory/c contract?]{ A contract for Datalog theories. }
 
@@ -75,9 +89,23 @@ Statements are either assertions, retractions, or queries.
 @defform[(? question)]{ Queries the literal and prints the result literals. }
 
 Questions are either literals or external queries.
-Literals are represented as @racket[identifier] or @racket[(identifier term ...)].
-External queries are represented as @racket[(identifier term ... :- term ...)], where @racket[identifier] is bound to a procedure that when given the first set of terms as arguments returns the second set of terms as values.
-A term is either a non-capitalized identifiers for a constant symbol, a Racket datum for a constant datum, or a capitalized identifier for a variable symbol. Bound identifiers in terms are treated as datums. 
+
+Literals are represented as @racket[identifier] or @racket[(table term ...)].
+
+A table is either an identifier or @RACKET[#,expr] where @racket[expr]
+evaluates to a symbol.
+
+External queries are represented as @racket[(ext-table term ... :-
+term ...)], where @racket[ext-table] is an identifier bound to a
+procedure or @RACKET[#,expr] where @racket[expr] evaluates to a
+procedure that when given the first set of terms as arguments returns
+the second set of terms as values.
+
+A term is either a non-capitalized identifiers for a constant symbol,
+a Racket expression for a constant datum, or a capitalized identifier
+for a variable symbol, or @RACKET[#,expr] where @racket[expr]
+evaluates to a constant datum. Bound identifiers in terms are treated
+as the datum they are bound to.
 
 External queries invalidate Datalog's guaranteed termination. For example, this program does not terminate:
 @racketblock[
