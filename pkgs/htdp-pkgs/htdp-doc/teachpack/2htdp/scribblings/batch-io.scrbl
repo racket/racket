@@ -4,7 +4,7 @@
           scribble/html-properties scribble/latex-properties
           2htdp/batch-io
           "shared.rkt"
-	  (for-syntax racket)
+          (for-syntax racket)
           (for-label scheme teachpack/2htdp/batch-io))
 
 @(require scheme/runtime-path)
@@ -38,7 +38,7 @@
      [(reading name ctc s)
      #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))]) @ctc ]{
       reads the standard input device (until closed) or the content of file
-      @racket[f] and produces it as @list[s].}] 
+      @racket[f] and produces it as @list[s].}]
      [(reading name ctc [x ctc2] s ...)
       #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))] [@x @ctc2]) @ctc ]{
       reads the standard input device (until closed) or the content of file
@@ -66,7 +66,7 @@ All functions that read a file consume the name of a file and possibly
 @examples[#:eval (examples-batch-io)
 (read-file "data.txt")
 ]
-assuming the file named @racket["data.txt"] has this shape: 
+assuming the file named @racket["data.txt"] has this shape:
 @(file-is "data.txt")
 Note how the leading space in the second line translates into the space
 between the newline indicator and the word @racket["good"] in the result.}
@@ -97,14 +97,14 @@ This time, however, the extra leading space of the second line of
 a part of the separator that surrounds the word @racket["good"].
 }
 
-@item{@reading[read-words/line (listof string?)]{a list of lists, one per line; each line is represented as a list of strings}
+@item{@reading[read-words/line (listof (listof string?))]{a list of lists, one per line; each line is represented as a list of strings}
 
 @examples[#:eval (examples-batch-io)
 (read-words/line "data.txt")
 ]
 The results is similar to the one that @racket[read-words] produces,
-except that the organization of the file into lines is preserved. 
-In particular, the empty third line is represented as an empty list of words. 
+except that the organization of the file into lines is preserved.
+In particular, the empty third line is represented as an empty list of words.
 }
 
 @item{@reading[read-words-and-numbers/line (listof (or number? string?))]{a list of lists, one per line; each line is represented as a list of strings and numbers}
@@ -120,11 +120,11 @@ except strings that can be parsed as numbers are represented as numbers.}
 @examples[#:eval (examples-batch-io)
 (read-csv-file "data.csv")
 ]
-where the file named @racket["data.csv"] has this shape: 
+where the file named @racket["data.csv"] has this shape:
 @(file-is "data.csv")
 It is important to understand that the rows don't have to have the same
 length. Here the third line of the file turns into a row of three
-elements. 
+elements.
 }
 
 @item{@reading[read-csv-file/rows (listof X?) [s (-> (listof any/c) X?)]]{reads the content of file @racket[f] and
@@ -136,7 +136,7 @@ elements.
 ]
  The first example shows how @racket[read-csv-file] is just a short form
  for @racket[read-csv-file/rows]; the second one simply counts the
- number of separated tokens and the result is just a list of numbers. 
+ number of separated tokens and the result is just a list of numbers.
  In many cases, the function argument is used to construct a structure from
  a row.}
 
@@ -144,12 +144,12 @@ elements.
 @item{@reading[read-xexpr xexpr?]{an X-expression, including whitespace such as tabs and newlines}
 
 Assumption: the file @racket[f] or the selected input device contains an
-XML element. It assumes the file contains HTML-like text and reads it as XML. 
+XML element. It assumes the file contains HTML-like text and reads it as XML.
 
 @examples[#:eval (examples-batch-io)
 (read-xexpr "data.xml")
 ]
-assuming the file named @racket["data.xml"] has this shape: 
+assuming the file named @racket["data.xml"] has this shape:
 @(file-is "data.xml")
 Note how the result includes @racket["\\n"] for the newlines.}
 
@@ -158,21 +158,21 @@ Note how the result includes @racket["\\n"] for the newlines.}
 Assumption: the file @racket[f] or the selected input device contains an
 XML element and the content of this element are other XML elements and
 whitespace. In particular, the XML element does not contain any strings as
-elements other than whitespace. 
+elements other than whitespace.
 
 @examples[#:eval (examples-batch-io)
 (read-plain-xexpr "data-plain.xml")
 ]
-assuming the file named @racket["data-plain.xml"] has this shape: 
+assuming the file named @racket["data-plain.xml"] has this shape:
 @(file-is "data-plain.xml")
 Compare this result with the one for @racket[read-xexpr].}
 ]
 
-There is only one writer function at the moment: 
+There is only one writer function at the moment:
 @itemlist[
 
 @item{@defproc[(write-file [f (or/c 'standard-out 'stdout string?)] [cntnt string?]) string?]{
- sends @racket[cntnt] to the standard output device or 
+ sends @racket[cntnt] to the standard output device or
  turns @racket[cntnt] into the content of file @racket[f], located in the
  same folder (directory) as the program. If the write succeeds, the
  function produces the name of the file (@racket[f]); otherwise it signals
@@ -184,7 +184,7 @@ There is only one writer function at the moment:
     (write-file "output.txt" "cruel world"))
 ]
  After evaluating this examples, the file named @racket["output.txt"]
- looks like this: 
+ looks like this:
 cruel world
  Explain why.
 }
@@ -202,7 +202,7 @@ cruel world
  to a Mac, reading the copied text file may produce extraneous ``return''
  characters. Note that this describes only one example of possible
  malfunction; there are other cases when trans-platform actions may cause
- this teachpack to fail. 
+ this teachpack to fail.
 
 @; -----------------------------------------------------------------------------
 @(define-syntax (reading/web stx)
@@ -225,7 +225,7 @@ cruel world
 All functions that read a web-based XML consume a URL and possibly
  additional arguments. They assume that the computer is connected to
  specified part of the web, though they tolerate non-existent web pages
- (404 errors) 
+ (404 errors)
 
 @itemlist[
 @; -----------------------------------------------------------------------------
@@ -241,25 +241,25 @@ All functions that read a web-based XML consume a URL and possibly
 
 @item{
 @defproc[(xexpr? [u any?]) boolean?]{checks that the given value is an
-X-expression in the following sense: 
+X-expression in the following sense:
 @;%
 @(begin
 #reader scribble/comment-reader
 (racketblock
- ;   @deftech{Xexpr} is one of: 
- ;   -- @racket[symbol?] 
- ;   -- @racket[string?] 
- ;   -- @racket[number?] 
+ ;   @deftech{Xexpr} is one of:
+ ;   -- @racket[symbol?]
+ ;   -- @racket[string?]
+ ;   -- @racket[number?]
  ;   -- @racket[(cons symbol? (cons [List-of #, @tech{Attribute}] [List-of #, @tech{Xexpr}]))]
  ;   -- @racket[(cons symbol? [List-of #, @tech{Xexpr}])]
  ;
  ;   @deftech{Attribute} is:
  ;      @racket[(list symbol? string?)]
- ;   @racket[(list 'a "some text")] is called an a-Attribute 
+ ;   @racket[(list 'a "some text")] is called an a-Attribute
  ;   and "some text" is a's value.
 ))
 @;%
- Note that full Racket uses a wider notion of X-expression. 
+ Note that full Racket uses a wider notion of X-expression.
  }}
 
 @item{
@@ -283,4 +283,4 @@ content of URL @racket[u] and produces the list of all URLs that refer to
  simulates a file system for the function @racket[process], which reads a
  file and may produce one. Note: this form is under development and will be
  documented in a precise manner after it is finalized and useful for a wide
- audience.} 
+ audience.}
