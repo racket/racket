@@ -6,7 +6,7 @@
 (require racket/flonum
          racket/extflonum
          racket/fixnum
-         racket/undefined
+         racket/unsafe/undefined
          racket/unsafe/ops
          compiler/zo-parse
          compiler/zo-marshal)
@@ -19,7 +19,7 @@
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
-  (namespace-require 'racket/undefined)
+  (namespace-require 'racket/unsafe/undefined)
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -793,7 +793,7 @@
       (bin-exact 3.3t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 2)
       (un-exact 3 'extflvector-length (extflvector 1.1t0 2.2t0 3.3t0) #t)
 
-      (bin-exact 5 'check-not-undefined 5 'check-not-undefined #:bad-value undefined)
+      (bin-exact 5 'check-not-unsafe-undefined 5 'check-not-unsafe-undefined #:bad-value unsafe-undefined)
       )
     
     (let ([test-setter
