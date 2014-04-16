@@ -411,21 +411,7 @@
                                   undefined)
                               (current-inexact-milliseconds))
                         empty)]
-           [head last]
-           [producer (proc->signal
-                      (lambda ()
-                        (let* ([now (and (signal? consumer) (current-inexact-milliseconds))]
-                               [ms (value-now ms-b)])
-                          (let loop ()
-                            (if (or (empty? (mcdr head))
-                                    (< now (+ ms (cdr (mcar (mcdr head))))))
-                                (let ([val (car (mcar head))])
-                                  (if (event-set? val)
-                                      (make-events-now (event-set-events val))
-                                      val))
-                                (begin
-                                  (set! head (mcdr head))
-                                  (loop)))))))]
+           [head last]          
            [consumer (proc->signal
                       (lambda ()
                         (let* ([now (current-inexact-milliseconds)]
@@ -436,7 +422,21 @@
                                                    empty))
                             (set! last (mcdr last))
                             (schedule-alarm (+ now ms) producer))))
-                      beh ms-b)])
+                      beh ms-b)]
+           [producer (proc->signal
+                      (lambda ()
+                        (let* ([now (and (signal? consumer) (current-inexact-milliseconds))]
+                               [ms (value-now ms-b)])
+                          (let loop ()
+                            (if (or (empty? (mcdr head))
+                                    (< now (+ ms (cdr (mcar (mcdr head))))))
+                              (let ([val (car (mcar head))])
+                                (if (event-set? val)
+                                  (make-events-now (event-set-events val))
+                                  val))
+                              (begin
+                                (set! head (mcdr head))
+                                (loop)))))))])
     producer))
 
 (define (inf-delay beh)
