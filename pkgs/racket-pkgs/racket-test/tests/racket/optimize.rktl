@@ -3416,5 +3416,16 @@
           (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an unsufe opertion's argument is
+;; not "optimized" away if it's a use of
+;; a variable before definition:
+
+(err/rt-test (let ()
+               (unsafe-fx+ x 1)
+               (define x 3)
+               x)
+             exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
