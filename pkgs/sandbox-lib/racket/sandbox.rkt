@@ -529,18 +529,18 @@
 ;; uncovered expressions with.  The input can be a list of sexprs/syntaxes, or
 ;; a list with a single input port spec (path/string/bytes) value.  Note that
 ;; the source can be a filtering function.
-(define (input->code inps source n accept-lang?)
+(define (input->code inps source-in n accept-lang?)
   (if (null? inps)
-    (values '() source)
+    (values '() source-in)
     (let ([p (input->port (car inps))])
       (cond [(and p (null? (cdr inps)))
              (port-count-lines! p)
              (define source
                (or (object-name p)
                    ;; just in case someone uses a function as the source...
-                   (if (procedure? source)
-                     (lambda (x) (eq? x source))
-                     source)))
+                   (if (procedure? source-in)
+                     (lambda (x) (eq? x source-in))
+                     source-in)))
              (define code
                (parameterize ([current-input-port p])
                  (if accept-lang?
@@ -561,12 +561,12 @@
                          (lambda (x) (memq x srcs)))))]
             [else (let loop ([inps inps] [n n] [r '()])
                     (if (null? inps)
-                      (values (reverse r) source)
+                      (values (reverse r) source-in)
                       (loop (cdr inps) (and n (add1 n))
                             ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
                             ;; (starting from the `n' argument)
                             (cons (add-location (car inps)
-                                                (list source n (and n 0) n (and n 1)))
+                                                (list source-in n (and n 0) n (and n 1)))
                                   r))))]))))
 
 (define orig-stx (read-syntax 'src (open-input-string "0"))) ; for "is original?" property
