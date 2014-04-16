@@ -8,8 +8,8 @@
 (require (only-in mzscheme define-struct))
 (load-relative "shared-tests.rktl")
 
-(stest (letrec ([x x]) x) (shared ([x x]) x))
-(stest (letrec ([x x]) x) (shared ([x y][y x]) x))
+(err/rt-test (shared ([x x]) x) exn:fail:contract:variable?)
+(err/rt-test (shared ([x y][y x]) x) exn:fail:contract:variable?)
 
 (namespace-require/copy 'scheme/base)
 (require (only-in mzscheme define-struct))
