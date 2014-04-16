@@ -114,15 +114,16 @@
 (define *index-ht-1* (make-hash))
 (define *index-ht-2* (make-hash))
 (define (start-pkg-server index-ht port)
-  (serve/servlet (pkg-index/basic
-                  (λ (pkg-name)
-                    (define r (hash-ref index-ht pkg-name #f))
-                    (printf "[>server ~a] ~a = ~a\n" port pkg-name r)
-                    r)
-                  (λ () index-ht))
-                 #:command-line? #t
-                 #:servlet-regexp #rx""
-                 #:port port))
+  (parameterize ([current-error-port (current-output-port)])
+    (serve/servlet (pkg-index/basic
+                    (λ (pkg-name)
+                      (define r (hash-ref index-ht pkg-name #f))
+                      (printf "[>server ~a] ~a = ~a\n" port pkg-name r)
+                      r)
+                    (λ () index-ht))
+                   #:command-line? #t
+                   #:servlet-regexp #rx""
+                   #:port port)))
 
 (define servers-on? #f)
 (define (with-servers* t)
