@@ -896,7 +896,7 @@
 								       (make-equal2-hash (lambda (r i) (raw-generic-access r i)) #,field-count)))
 								(cons prop:lazy-wrap
 								      (make-lazy-wrap-info
-								       #,constructor-name
+								       (lambda args (apply #,constructor-name args))
 								       (list #,@(map-with-index (lambda (i _)
 												  #`(lambda (r) (raw-generic-access r #,i)))
 												fields))
