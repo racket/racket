@@ -227,7 +227,7 @@
                                  find-or-create-pen
                                  border-color
                                  border-width
-                                 'solid))
+                                 (send old-pen get-style)))
           (send dc draw-path dc-path (- dx x) (- dy y))
           (send dc set-brush old-brush)
           (send dc set-pen   old-pen))
