@@ -691,7 +691,7 @@ path/s is either such a string or a list of them.
 "pkgs/deinprogramm/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
 "pkgs/deinprogramm/deinprogramm/quickcheck/random.scm" drdr:command-line #f
 "pkgs/distributed-places-pkgs" responsible (mflatt)
-"pkgs/distro-build" responsible (mflatt)
+"pkgs/distro-build-pkgs" responsible (mflatt)
 "pkgs/draw-pkgs" responsible (mflatt)
 "pkgs/drracket-pkgs" responsible (robby)
 "pkgs/drracket-pkgs/drracket/gui-debugger" responsible (gmarceau mflatt)
@@ -872,6 +872,7 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
+"pkgs/plt-web-pkgs" responsible (mflatt samth)
 "pkgs/preprocessor" responsible (eli)
 "pkgs/profile-pkgs" responsible (eli samth stamourv)
 "pkgs/r5rs-pkgs" responsible (mflatt)
@@ -1133,8 +1134,6 @@ path/s is either such a string or a list of them.
 "pkgs/scheme-lib/scheme/match.rkt" responsible (samth)
 "pkgs/schemeunit" responsible (jay)
 "pkgs/scribble-pkgs" responsible (mflatt eli)
-"pkgs/scribble-pkgs/scribble-lib/scribble/html" responsible (eli)
-"pkgs/scribble-pkgs/scribble-lib/scribble/html.rkt" responsible (eli)
 "pkgs/scribble-pkgs/scribble-test/tests/scriblib" responsible (mflatt)
 "pkgs/scribble-pkgs/scribble-text-lib/scribble/text.rkt" responsible (eli)
 "pkgs/serialize-cstruct-lib" responsible (mflatt)
