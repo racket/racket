@@ -10,6 +10,7 @@
   (string-append
    "The following individuals contributed to the implementation"
    " and documentation of Racket: "
+   "Claire Alvis, "
    "Yavuz Arkun, "
    "Ian Barland, "
    "Eli Barzilay, "
