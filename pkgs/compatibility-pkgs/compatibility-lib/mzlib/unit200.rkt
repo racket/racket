@@ -2,12 +2,12 @@
 ;; Unit system
 
 (module unit200 mzscheme
+  (require racket/undefined)
   (require-for-syntax syntax/kerncase
 		      syntax/stx
 		      syntax/name
 		      syntax/context
                       racket/syntax
-                      racket/undefined
 		      (only racket/base filter)
 		      "private/unitidmap.rkt")
 
