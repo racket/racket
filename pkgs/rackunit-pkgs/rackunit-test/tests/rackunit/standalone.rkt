@@ -47,7 +47,7 @@ Outta here!
 --------------------
 FAILURE
 name:       check
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-check-test.rkt> 44 0 1344 17)
+location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-check-test.rkt> 48 0 1450 17)
 expression: (check = 1 2)
 params:     (#<procedure:=> 1 2)\nmessage:    0.0
 
@@ -74,7 +74,7 @@ FAILURE
 actual:     1
 expected:   2
 name:       check-eq?
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 19 12 520 15)
+location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 23 12 626 15)
 expression: (check-eq? 1 2)
 
 Check failure
@@ -85,7 +85,7 @@ FAILURE
 actual:     1
 expected:   2
 name:       check-eq?
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 20 21 558 15)
+location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 24 21 664 15)
 expression: (check-eq? 1 2)
 
 Check failure
