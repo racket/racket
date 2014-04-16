@@ -141,3 +141,23 @@ response, which is why there is no @racket[#:closed?] argument like
 
 }
 
+@section[#:tag "faq"]{Troubleshooting and Tips}
+
+@subsection{How do I send properly formatted POST form requests?}
+
+You should send a @litchar{Content-Type} header with the value
+@litchar{application/x-www-form-urlencoded} and send the data
+formatted by @racketmodname[net/uri-codec]'s
+@racket[form-urlencoded-encode] function. For example,
+
+@(require (for-label net/uri-codec))
+@racketblock[
+(http-send!
+   hc "/login"
+   #:method "POST"
+   #:data
+   (alist->form-urlencoded
+    (list (cons 'username "Ryu")
+          (cons 'password "Sheng Long")))
+   #:headers (list "Content-Type: application/x-www-form-urlencoded"))             
+]
