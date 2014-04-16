@@ -151,7 +151,7 @@
               :make-methods-body))))
 
 (define-syntax-class class-expansion
-  #:literals (let-values letrec-syntaxes+values #%plain-app)
+  #:literals (let-values letrec-syntaxes+values #%plain-app quote)
   #:attributes (superclass-expr
                 type-parameters
                 all-init-internals
@@ -176,13 +176,15 @@
               ()
               ((() ;; residual class: data
                    :internal-class-data))
-              (let-values (((superclass:id) superclass-expr)
-                           ((interfaces:id) interface-expr))
-                (#%plain-app
-                 compose-class:id
-                 internal:expr ...
-                 (~and make-methods :make-methods-class)
-                 (quote #f)))))))
+              (#%plain-app
+               compose-class:id
+               name:expr
+               superclass-expr:expr
+               interface-expr:expr
+               internal:expr ...
+               (~and make-methods :make-methods-class)
+               (quote :boolean)
+               (quote #f))))))
 
 ;; This is similar to `type-declaration` from "internal-forms.rkt", but
 ;; the expansion is slightly different in a class so we use this instead.
@@ -517,15 +519,20 @@
         #:literals (:-augment)
         ;; FIXME: this case seems too loose, many things can match this syntax
         ;;        we likely need to set a property or match against another name
-        [(let-values ([(obj:id) self])
-           (let-values ([(field:id) initial-value])
-             (#%plain-app setter:id _ _)))
+        [(begin
+           (quote ((~datum declare-field-assignment) _))
+           (let-values ([(obj:id) self])
+            (let-values ([(field:id) initial-value])
+              (#%plain-app setter:id _ _))))
          ;; only record the first one, which is the one that initializes
          ;; the field or private field
          (unless (dict-has-key? initializers #'setter)
            (free-id-table-set! initializers #'setter #'initial-value))
          other-exprs]
-        [:tr:class:super-new^
+        ;; The second part of this pattern ensures that we find the actual
+        ;; initialization call, rather than the '(declare-super-new) in
+        ;; the expansion.
+        [(~and :tr:class:super-new^ (#%plain-app . rst))
          (when super-new
            (tc-error/delayed "typed classes must only call super-new a single time"))
          (set! super-new (find-provided-inits expr))
@@ -830,8 +837,6 @@
                             super-call-types
                             pubment-types augment-types inner-types))
   (values all-names all-types
-          ;; FIXME: consider removing method names and types
-          ;;        from top-level environment to avoid <undefined>
           (append all-names
                   localized-init-names
                   localized-init-rest-name
@@ -909,7 +914,6 @@
     (syntax-parse form
       #:literals (let-values #%plain-app quote)
       ;; init with default
-      ;; FIXME: undefined can appear here
       [(set! internal-init:id
              (#%plain-app extract-arg:id
                           _
@@ -939,14 +943,16 @@
               (tc-error/delayed "Init argument ~a has no type annotation"
                                 init-name)])]
       ;; init-field with default
-      [(let-values (((obj1:id) self:id))
-         (let-values (((x:id)
-                       (#%plain-app extract-arg:id
-                                    _
-                                    (quote name:id)
-                                    init-args:id
-                                    init-val:expr)))
-           (#%plain-app local-setter:id obj2:id y:id)))
+      [(begin
+         (quote ((~datum declare-field-assignment) _))
+         (let-values (((obj1:id) self:id))
+           (let-values (((x:id)
+                         (#%plain-app extract-arg:id
+                                      _
+                                      (quote name:id)
+                                      init-args:id
+                                      init-val:expr)))
+             (#%plain-app local-setter:id obj2:id y:id))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
        (define init-name (syntax-e #'name))
@@ -965,9 +971,11 @@
       ;; any field or init-field without default
       ;; FIXME: could use the local table to make sure the
       ;;        setter is known as a sanity check
-      [(let-values (((obj1:id) self:id))
-         (let-values (((x:id) init-val:expr))
-           (#%plain-app local-setter:id obj2:id y:id)))
+      [(begin
+         (quote ((~datum declare-field-assignment) _))
+         (let-values (((obj1:id) self:id))
+           (let-values (((x:id) init-val:expr))
+             (#%plain-app local-setter:id obj2:id y:id))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
        (tc-expr form)]
@@ -994,7 +1002,8 @@
 ;; generated inside the untyped class macro.
 (define (construct-local-mapping-tables stx)
   (syntax-parse stx
-    #:literals (let-values if quote #%plain-app #%plain-lambda values)
+    #:literal-sets (kernel-literals)
+    #:literals (values)
     ;; See base-env/class-prims.rkt to see how this in-syntax
     ;; table is constructed at the surface syntax
     ;;
@@ -1003,60 +1012,83 @@
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-this-escapes)))
                       (#%plain-app (#%plain-app local-method:id _) _))
                     ...)]
                   [(private:id ...)
                    (#%plain-app
                     values
-                    (#%plain-lambda () (#%plain-app local-private:id _))
+                    (#%plain-lambda ()
+                      (quote ((~datum declare-this-escapes)))
+                      (#%plain-app local-private:id _))
                     ...)]
                   [(field:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-field-use) _))
                       (let-values (((_) _)) (#%plain-app local-field-get:id _))
-                      (let-values (((_) _))
-                        (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
+                      (begin
+                        (quote ((~datum declare-field-assignment) _))
+                        (let-values (((_) _))
+                          (let-values (((_) _)) (#%plain-app local-field-set:id _ _)))))
                     ...)]
                   [(private-field:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-field-use) _))
                       (let-values (((_) _)) (#%plain-app local-private-get:id _))
-                      (let-values (((_) _))
-                        (let-values (((_) _)) (#%plain-app local-private-set:id _ _))))
+                      (begin
+                        (quote ((~datum declare-field-assignment) _))
+                        (let-values (((_) _))
+                          (let-values (((_) _)) (#%plain-app local-private-set:id _ _)))))
                     ...)]
                   [(inherit-field:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-inherit-use) _))
                       (let-values (((_) _)) (#%plain-app local-inherit-get:id _))
                       (let-values (((_) _))
                         (let-values (((_) _)) (#%plain-app local-inherit-set:id _ _))))
                     ...)]
                   [(init:id ...)
-                   (#%plain-app values (#%plain-lambda () local-init:id) ...)]
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      ;; check-not-unsafe-undefined
+                      (#%plain-app _ local-init:id _)) ...)]
                   [(init-rest:id ...)
-                   (#%plain-app values (#%plain-lambda () local-init-rest:id) ...)]
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      ;; check-not-unsafe-undefined
+                      (#%plain-app _ local-init-rest:id _)) ...)]
                   [(inherit:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-this-escapes)))
                       (#%plain-app (#%plain-app local-inherit:id _) _))
                     ...)]
                   [(override:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-this-escapes)))
                       (#%plain-app (#%plain-app local-override:id _) _)
+                      (quote ((~datum declare-this-escapes)))
                       (#%plain-app local-super:id _))
                     ...)]
                   [(augment:id ...)
                    (#%plain-app
                     values
                     (#%plain-lambda ()
+                      (quote ((~datum declare-this-escapes)))
                       (~or (#%plain-app local-augment:id _)
                            (#%plain-app (#%plain-app local-augment:id _) _))
+                      (quote ((~datum declare-this-escapes)))
                       (let-values ([(_) (#%plain-app local-inner:id _)])
                         (if _ (#%plain-app _ _) _)))
                     ...)])

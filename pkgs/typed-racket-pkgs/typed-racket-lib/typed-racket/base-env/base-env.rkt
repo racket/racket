@@ -6,6 +6,7 @@
  (for-template
   (except-in racket -> ->* one-of/c class)
   racket/unsafe/ops
+  racket/unsafe/undefined
   ;(only-in rnrs/lists-6 fold-left)
   '#%paramz
   "extra-procs.rkt"
@@ -2715,6 +2716,9 @@
 [unsafe-struct*-ref top-func]
 [unsafe-struct-set! top-func]
 [unsafe-struct*-set! top-func]
+
+;; Section 17.4 (Unsafe Undefined)
+[check-not-unsafe-undefined (-poly (a) (-> a -Symbol a))]
 
 ;; Section 18.2 (Libraries and Collections)
 [find-library-collection-paths (->opt [(-lst -Pathlike) (-lst -Pathlike)] (-lst -Path))]
