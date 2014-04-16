@@ -1,8 +1,9 @@
 #;
-(exn-pred 2)
+(exn-pred "x: variable used before its definition")
 #lang typed/racket
 
-;; make sure letrec takes into account that some bindings may be undefined
+;; This test previously tested TR's static analysis of undefined
+;; variables, but it now just delegates to Racket's dynamic checks.
 
 (+ (letrec: ([x : Float x]) x) 1) ; PR 11511
 

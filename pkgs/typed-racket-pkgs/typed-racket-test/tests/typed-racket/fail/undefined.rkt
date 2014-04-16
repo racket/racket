@@ -1,6 +1,9 @@
 #;
-(exn-pred "Undefined")
+(exn-pred "x: variable used before its definition")
 #lang scheme/load
+
+;; This test used to fail due to a type error, but TR no longer
+;; tracks undefined statically, so it is just a dynamic error.
 
 (module A scheme
 

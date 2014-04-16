@@ -832,6 +832,10 @@
 
         [tc-e (letrec: ([x : Number (values 1)]) (add1 x)) -Number]
 
+        ;; This test case still works, but the `x` checks as Undefined only because
+        ;; cyclic definitions can be given *any* type. This is ok since cyclic definitions
+        ;; are just errors that TR does not handle (because #<undefined> no longer leaks out
+        ;; in such cases).
         [tc-e (let ()
                  (: complicated Boolean)
                  (define complicated #f)
@@ -841,6 +845,23 @@
                            (y : Undefined (if complicated x undefined)))
                    y))
           -Undefined]
+
+        ;; This case fails, unlike the last one, since the types in the
+        ;; cycle are inconsistent. Note that this will error (if it typechecked)
+        ;; because of the uninitialized variables.
+        [tc-err (let ()
+                 (: x String)
+                 (define x y)
+                 (: y Symbol)
+                 (define y x)
+                 y)
+                #:ret (ret -Symbol)
+                #:msg #rx"expected: String|expected: Symbol"]
+
+        ;; Test ill-typed code in letrec RHS
+        [tc-err (let () (: x String) (define x 'foo) x)
+                #:ret (ret -String)
+                #:msg #rx"expected: String.*given: 'foo"]
 
         [tc-err (let ([x (add1 5)])
                   (set! x "foo")
