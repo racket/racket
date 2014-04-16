@@ -215,11 +215,10 @@ To see how to declare a type for @racket[add-map], see the
                            @code:line[#:when guard]]
                [binding id
                         [id : t]])]{
-Like @|for-id| from @racketmodname[racket/base], but each @racket[id] having the associated type
+Like @|for-id| from @racketmodname[racket/base], but each @racket[id] has the associated type
 @racket[t]. Since the return type is always @racket[Void], annotating
-the return type of a @racket[for] form is optional. Unlike
-@racket[for], multi-valued @racket[seq-expr]s are not supported.
-Type annotations in clauses are optional for all @racket[for:]
+the return type of a @racket[for] form is optional.
+Type annotations in clauses are optional for all @racket[for]
 variants.
 }
 
