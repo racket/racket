@@ -43,7 +43,8 @@
        (cond [(syntax-local-value stx (λ () #f)) => p?]
              [else #f])))
 
-(define-struct judgment-form (name mode proc mk-proc lang lws rule-names gen-clauses mk-gen-clauses term-proc relation?)
+(define-struct judgment-form (name mode proc mk-proc lang lws rule-names 
+                                   gen-clauses mk-gen-clauses term-proc relation?)
   #:transparent)
 
 (define-struct defined-term (value))
@@ -76,7 +77,11 @@
 (define pattern-symbols '(any number natural integer real string variable 
                               variable-not-otherwise-mentioned hole symbol))
 
-(define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
+(define-values (struct:metafunc-proc
+                make-metafunc-proc
+                metafunc-proc?
+                metafunc-proc-ref
+                metafunc-proc-set!)
   (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))
 (define metafunc-proc-clause-names (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 2))

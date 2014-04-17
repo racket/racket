@@ -1197,26 +1197,29 @@
                                prev-metafunction))
          (with-syntax ([(name2 name-predicate) (generate-temporaries (list name name))]
                        [name name])
-           (with-syntax ([defs #`(begin
-                                   (define-values (name2 name-predicate)
-                                     (generate-metafunction #,orig-stx
-                                                            lang
-                                                            #,prev-metafunction
-                                                            name
-                                                            name-predicate
-                                                            #,dom-ctcs
-                                                            #,codom-contracts
-                                                            #,pats
-                                                            #,syn-error-name))
-                                   (term-define-fn name name2))])
-             (if (eq? 'top-level (syntax-local-context))
-                 ; Introduce the names before using them, to allow
-                 ; metafunction definition at the top-level.
-                 (syntax 
-                  (begin 
-                    (define-syntaxes (name2 name-predicate) (values))
-                    defs))
-                 (syntax defs))))))]))
+           (with-syntax ([name2+prop (syntax-property #'name2
+                                                      'undefined-error-name
+                                                      (syntax-e #'name))])
+             (with-syntax ([defs #`(begin
+                                     (define-values (name2+prop name-predicate)
+                                       (generate-metafunction #,orig-stx
+                                                              lang
+                                                              #,prev-metafunction
+                                                              name
+                                                              name-predicate
+                                                              #,dom-ctcs
+                                                              #,codom-contracts
+                                                              #,pats
+                                                              #,syn-error-name))
+                                     (term-define-fn name name2))])
+               (if (eq? 'top-level (syntax-local-context))
+                   ; Introduce the names before using them, to allow
+                   ; metafunction definition at the top-level.
+                   (syntax 
+                    (begin 
+                      (define-syntaxes (name2+prop name-predicate) (values))
+                      defs))
+                   (syntax defs)))))))]))
 
 (define-for-syntax (extract-clause-names stuffss)
   (for/list ([stuffs (in-list (syntax->list stuffss))])

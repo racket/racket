@@ -1217,17 +1217,17 @@
                      (term (q))
                      (define-language L)
                      (define-metafunction L [(q) ()])))
-            (with-handlers ([exn:fail:redex? exn-message])
+            (with-handlers ([exn:fail:contract:variable? exn-message])
               (eval '(require 'm))
               #f)))
-        "reference to metafunction q before its definition")
-  (test (with-handlers ([exn:fail:redex? exn-message])
+        #rx"^q: undefined;\n[^\n]*use[^\n]*before")
+  (test (with-handlers ([exn:fail:contract:variable? exn-message])
           (let ()
             (term (q))
             (define-language L)
             (define-metafunction L [(q) ()])
             #f))
-        "reference to metafunction q before its definition")
+        #rx"^q: undefined;\n[^\n]*use[^\n]*before")
   
 ;                                                                                                 
 ;                                                                                                 
