@@ -489,7 +489,7 @@ that point.}
 @racket[racket-expression], which must produce a list. It then splices
 the contents of the list into the expression at that point in the sequence.}
 
-@item{A term written @racket[(in-hole @|tttterm| @|tttterm|)]
+@item{A term written @racket[(in-hole #,tttterm #,tttterm)]
  is the dual to the @pattern @racket[in-hole] -- it accepts
  a context and an expression and uses @racket[plug] to combine
 them.}
