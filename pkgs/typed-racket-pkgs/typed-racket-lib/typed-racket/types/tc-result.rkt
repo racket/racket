@@ -21,6 +21,20 @@
   (or (tc-results? v)
       (tc-any-results? v)))
 
+(define (tc-results/no-expected/c r)
+  (match r
+    [(tc-any-results:) #t]
+    [(tc-results: _ fs os)
+     (and
+       (not (member -no-filter fs))
+       (not (member -no-obj os)))]
+    [(tc-results: _ fs os _ _)
+     (and
+       (not (member -no-filter fs))
+       (not (member -no-obj os)))]
+    [else #f]))
+
+
 (define-match-expander tc-result:
   (syntax-rules ()
    [(_ tp fp op) (struct tc-result (tp fp op))]
@@ -139,4 +153,5 @@
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
- [tc-results/c c:flat-contract?])
+ [tc-results/c c:flat-contract?]
+ [tc-results/no-expected/c c:flat-contract?])
