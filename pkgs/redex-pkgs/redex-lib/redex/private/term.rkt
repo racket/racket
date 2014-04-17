@@ -210,7 +210,7 @@
                    (syntax-local-introduce #'x))])
          (check-id (syntax->datum #'x) stx ellipsis-allowed?)
          (with-syntax ([v #`(begin
-                              #,(defined-check ref "term" #:external #'x)
+                              #,(defined-check ref #:external #'x)
                               #,ref)])
            (values #`(undatum v) 0)))]
       [(unquote x)
@@ -293,7 +293,7 @@
        #`(begin
            #,@(free-identifier-mapping-map
                applied-mfs
-               (λ (f _) (defined-check f "metafunction")))
+               (λ (f _) (defined-check f)))
            #,(let loop ([bs outer-bindings])
                (cond
                  [(null? bs) (syntax t)]

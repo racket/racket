@@ -231,7 +231,7 @@
                         [(binding-constraint ...) binding-constraints])
             #`(begin
                 #,syncheck-exp
-                (void #,(defined-check judgment-proc "judgment form" #:external #'form-name))
+                (void #,(defined-check judgment-proc #:external #'form-name))
                 (judgment-form-bind-withs/proc
                  #,rt-lang
                  `#,output-pattern
