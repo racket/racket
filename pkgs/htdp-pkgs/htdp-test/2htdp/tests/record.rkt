@@ -21,8 +21,8 @@
     #:exists 'replace)
   (define final-world 
    (big-bang 0
-             (on-tick add1)
-             (stop-when (curry = n))
+             (on-tick add1 1)
+             (stop-when (lambda (k) (>= k (- n 1))))
              (on-draw draw-number)
              (record? dir)))
   (sleep 1)
