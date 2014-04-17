@@ -3,6 +3,7 @@
 
 (Section 'unit)
 (require mzlib/unit200)
+(require racket/undefined)
 
 ;; Hide keywords from scheme/unit.rkt:
 (define import #f)
@@ -68,7 +69,7 @@
 ; Self-import is now allowed
 ; (syntax-test #'(compound-unit (import) (link (A (0 (A)))) (export))) 
 ; (syntax-test #'(compound-unit (import) (link (A (0 (A x)))) (export)))
-(test (list (letrec ([x x]) x) 5)
+(test (list undefined 5)
       'self-import
       (invoke-unit 
        (compound-unit
@@ -362,7 +363,7 @@
 (test #t unit? u2)
 (test 3 'invoke (invoke-unit u2))
 
-(test (letrec ([x y][y 0]) x) 'invoke 
+(test undefined #;(letrec ([x y][y 0]) x) 'invoke 
       (invoke-unit (unit (import) (export) (define x y) (define y 7) x)))
 
 ; Can shadow syntax/macros in unit
