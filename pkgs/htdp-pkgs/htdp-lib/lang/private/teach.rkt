@@ -87,16 +87,6 @@
         (format "~a: question result is not true or false: ~e" where b)
         (current-continuation-marks)))))
 
-  ;; Wrapped around uses of local-bound variables:
-  (define (teach-check-not-undefined name val)
-    (if (eq? undefined val)
-      (raise
-       (make-exn:fail:contract:variable
-        (format "local variable used before its definition: ~a" name)
-        (current-continuation-marks)
-        name))
-      val))
-
   (define (identifier-is-bound? id)
     (or (identifier-binding id)
         ;; identifier-binding returns #f for variable bound at the top-level,
@@ -1144,18 +1134,6 @@
     ;; a good error message, we need to wait, and that's what
     ;; beginner-app-delay does.
 
-    ;; For intermediate:
-
-    ;; This application form disallows rator expressions that aren't
-    ;; top-level identifiers or of the form `(teach-check-not-undefined ...)'.
-
-    ;; The latter is probably surprising. It turns out that every use of
-    ;; a `local'-bound identifier gets converted to an undefined check,
-    ;; and the call to `teach-check-not-undefined' can't be forged by the
-    ;; programmer. So the pattern-match effectively recognizes uses of
-    ;; `local'-bound identifiers, which are legal as rator
-    ;; expressions. (`let' and `letrec' get converted to `local'.)
-
     (define-values (beginner-app/proc intermediate-app/proc)
       (let ([mk-app
 	     (lambda (lex-ok?)
@@ -1163,10 +1141,6 @@
 		 (syntax-case stx ()
 		   [(_ rator rand ...)
 		    (let* ([fun (syntax rator)]
-			   [undef-check? (syntax-case fun (teach-check-not-undefined)
-					   [(teach-check-not-undefined id)
-					    #t]
-					   [_else #f])]
 			   [binding (and (identifier? fun)
 					 (identifier-binding fun))]
 			   [lex? (eq? 'lexical binding)]
@@ -1177,7 +1151,7 @@
 					 fun
 					 "expected a function after the open parenthesis, but found ~a"
 					 what))])
-		      (unless (and (identifier? fun) (or lex-ok? undef-check? (not lex?)))
+		      (unless (and (identifier? fun) (or lex-ok? (not lex?)))
 			(bad-app (if lex?
 				     "a variable"
 				     (something-else fun))))
@@ -1748,8 +1722,8 @@
 					     (syntax
 					      ((define-syntaxes (def-id/prop ...)
 						 (values
-						  (make-undefined-check
-						   (quote-syntax teach-check-not-undefined)
+						  (redirect-identifier-to
+						   (quote-syntax set!)
 						   (quote-syntax tmp-id))
 						  ...))
 					       ...)))])
@@ -1817,8 +1791,8 @@
 					       (syntax->list (syntax (rhs-expr ...))))])
 	      (quasisyntax/loc stx
                 (#%stratified-body
-                  (define-syntaxes (name) (make-undefined-check
-                                           (quote-syntax teach-check-not-undefined)
+                  (define-syntaxes (name) (redirect-identifier-to
+                                           (quote-syntax set!)
                                            (quote-syntax tmp-id)))
                   ...
                   (define-values (tmp-id) rhs-expr)
@@ -1852,8 +1826,8 @@
 	      (quasisyntax/loc stx
                 (let-values ([(tmp-id) rhs-expr] ...)
                   #,(stepper-syntax-property
-                     #`(let-syntaxes ([(name) (make-undefined-check
-                                               (quote-syntax teach-check-not-undefined)
+                     #`(let-syntaxes ([(name) (redirect-identifier-to
+                                               (quote-syntax set!t)
                                                (quote-syntax tmp-id))]
                                       ...)
                                      expr)
