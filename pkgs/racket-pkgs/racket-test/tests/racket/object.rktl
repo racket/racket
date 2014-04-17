@@ -281,6 +281,8 @@
 (class-keyword-test #'super-instantiate)
 (class-keyword-test #'inspect)
 
+(test #t class? (class object% (define-values () (values))))
+
 ;; ------------------------------------------------------------
 ;; Test basic functionality
 

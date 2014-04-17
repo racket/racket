@@ -1207,7 +1207,8 @@
                                                          (syntax/loc e
                                                            (let-values ([(temp ...) expr])
                                                              (set! id (field-initialization-value temp))
-                                                             ...))))])
+                                                             ...
+                                                             (void)))))])
                                              (syntax-track-origin assignment e #'d-v))]
                                           [(_init orig idp ...)
                                            (and (identifier? (syntax _init))
