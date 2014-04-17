@@ -517,17 +517,18 @@
       (syntax-parse expr
         #:literal-sets (kernel-literals)
         #:literals (:-augment)
-        ;; FIXME: this case seems too loose, many things can match this syntax
-        ;;        we likely need to set a property or match against another name
         [(begin
-           (quote ((~datum declare-field-assignment) _))
+           (quote ((~datum declare-field-initialization) _))
            (let-values ([(obj:id) self])
-            (let-values ([(field:id) initial-value])
-              (#%plain-app setter:id _ _))))
-         ;; only record the first one, which is the one that initializes
-         ;; the field or private field
-         (unless (dict-has-key? initializers #'setter)
-           (free-id-table-set! initializers #'setter #'initial-value))
+             (let-values ([(field:id) initial-value])
+               (with-continuation-mark _ _
+                 (#%plain-app setter:id obj2:id field2:id)))))
+         ;; There should only be one initialization expression per field
+         ;; since they are distinguished by a declaration.
+         (cond [(not (dict-has-key? initializers #'setter))
+                (free-id-table-set! initializers #'setter #'initial-value)]
+               [else
+                (int-err "more than one field initialization expression")])
          other-exprs]
         ;; The second part of this pattern ensures that we find the actual
         ;; initialization call, rather than the '(declare-super-new) in
@@ -908,18 +909,20 @@
 
 ;; check-field-set!s : Syntax Dict<Symbol, Symbol> Dict<Symbol, Type> -> Void
 ;; Check that fields are initialized to the correct type
-;; FIXME: this function is too long
+;; FIXME: use syntax classes for matching and clearly separate the handling
+;;        of field initialization and set! uses
 (define (check-field-set!s stx local-field-table inits)
   (for ([form (syntax->list stx)])
     (syntax-parse form
-      #:literals (let-values #%plain-app quote)
+      #:literal-sets (kernel-literals)
       ;; init with default
       [(set! internal-init:id
-             (#%plain-app extract-arg:id
-                          _
-                          (quote init-external:id)
-                          init-args:id
-                          init-val:expr))
+             (begin
+               (#%plain-app extract-arg:id
+                            _
+                            (quote init-external:id)
+                            init-args:id
+                            init-val:expr)))
        (define init-name (syntax-e #'init-external))
        (define init-type (car (dict-ref inits init-name '(#f))))
        (cond [init-type
@@ -944,7 +947,9 @@
                                 init-name)])]
       ;; init-field with default
       [(begin
-         (quote ((~datum declare-field-assignment) _))
+         (quote ((~or (~datum declare-field-assignment)
+                      (~datum declare-field-initialization))
+                 _))
          (let-values (((obj1:id) self:id))
            (let-values (((x:id)
                          (#%plain-app extract-arg:id
@@ -952,7 +957,9 @@
                                       (quote name:id)
                                       init-args:id
                                       init-val:expr)))
-             (#%plain-app local-setter:id obj2:id y:id))))
+             (~or (with-continuation-mark _ _
+                    (#%plain-app local-setter:id obj2:id y:id))
+                  (#%plain-app local-setter:id obj2:id y:id)))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
        (define init-name (syntax-e #'name))
@@ -968,17 +975,25 @@
              [else
               (tc-error/delayed "Init argument ~a has no type annotation"
                                 init-name)])]
-      ;; any field or init-field without default
-      ;; FIXME: could use the local table to make sure the
-      ;;        setter is known as a sanity check
+      ;; any field or an init-field without default
       [(begin
-         (quote ((~datum declare-field-assignment) _))
+         (quote ((~or (~datum declare-field-assignment)
+                      (~datum declare-field-initialization))
+                 _))
          (let-values (((obj1:id) self:id))
            (let-values (((x:id) init-val:expr))
-             (#%plain-app local-setter:id obj2:id y:id))))
+             (~or (with-continuation-mark _ _
+                    (#%plain-app local-setter:id obj2:id y:id))
+                  (#%plain-app local-setter:id obj2:id y:id)))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
-       (tc-expr form)]
+       ;; Remove wcm for checking since TR can't handle these cases
+       (define simplified
+         (syntax/loc form
+           (let-values (((obj1) self))
+             (let-values (((x) init-val))
+               (#%plain-app local-setter obj2 y)))))
+       (tc-expr simplified)]
       [_ (void)])))
 
 ;; synthesize-private-field-types : IdTable Dict Hash -> Void
