@@ -34,7 +34,7 @@
 (define (contract-random-generate ctc fuel
                                   [fail (λ () 
                                           (error 'contract-random-generate
-                                                 "Unable to construct any generator for contract: ~s"
+                                                 "unable to construct any generator for contract: ~s"
                                                  (contract-struct-name 
                                                   (coerce-contract 'contract-random-generate ctc))))])
   (let ([def-ctc (coerce-contract 'contract-random-generate ctc)])

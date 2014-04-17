@@ -43,9 +43,15 @@
                                      (exact? n)
                                      (positive? n)
                                      (< n 1))
-                          (raise-syntax-error #f "expected each option to be a real exact number in the interval (0,1)" stx (car as)))
+                          (raise-syntax-error 
+                           #f
+                           "expected each option to be a real exact number in the interval (0,1)"
+                           stx (car as)))
                         (unless (< (+ n sum) 1)
-                          (raise-syntax-error #f "expected the sum of the options to be less than 1" stx #f (syntax->list #'(a ...))))
+                          (raise-syntax-error
+                           #f
+                           "expected the sum of the options to be less than 1"
+                           stx #f (syntax->list #'(a ...))))
                         (cons n (loop (+ sum n)
                                       (cdr as))))]))])
          (let* ([dens (map denominator ns)]
@@ -74,7 +80,7 @@
 
 ; oneof :: [a] -> a
 ; Randomly chooses one of the values from a given list
-(define (oneof a-list) 
+(define (oneof a-list)
   (list-ref a-list (random (length a-list))))
 
 ; fisher-yates shuffle

@@ -699,12 +699,15 @@
 
 (define (listof-generate elem-ctc)
   (λ (fuel)
-     (define (mk-rand-list so-far)
-       (rand-choice
-         [1/5 so-far]
-         [else (mk-rand-list (cons (generate/direct elem-ctc fuel)
-                                   so-far))]))
-     (mk-rand-list (list))))
+    (define (mk-rand-list so-far)
+      (rand-choice
+       [1/5 so-far]
+       [else 
+        (define next-elem (generate/direct elem-ctc fuel))
+        (if (generate-ctc-fail? next-elem)
+            (mk-rand-list so-far)
+            (mk-rand-list (cons next-elem so-far)))]))
+    (mk-rand-list (list))))
 
 (define (listof-exercise el-ctc)
   (λ (f n-tests size env)
@@ -747,7 +750,6 @@
           #:first-order fo-check
           #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
           #:projection (listof-*-ho-check (λ (p v) (map p v))))]))))
-
 
 (define (listof-*-val-first-flat-proj predicate? ctc)
   (define vf-proj (get/build-val-first-projection ctc))
@@ -876,6 +878,19 @@
                  [v (in-list x)])
          ((contract-first-order arg/c) v))))
 
+(define (list/c-generate ctc)
+  (define elem-ctcs (generic-list/c-args ctc))
+  (λ (fuel)
+    (let loop ([elem-ctcs elem-ctcs]
+               [result '()])
+      (cond
+        [(null? elem-ctcs) (reverse result)]
+        [else
+         (define next-elem (generate/direct (car elem-ctcs) fuel))
+         (if (generate-ctc-fail? next-elem)
+             next-elem
+             (loop (cdr elem-ctcs) (cons next-elem result)))]))))
+
 (struct generic-list/c (args))
 
 (struct flat-list/c generic-list/c ()
@@ -884,6 +899,7 @@
   (build-flat-contract-property
    #:name list/c-name-proc
    #:first-order list/c-first-order
+   #:generate list/c-generate
    #:val-first-projection
    (λ (c) 
      (λ (blame) 
@@ -1021,6 +1037,7 @@
     (build-chaperone-contract-property
      #:name list/c-name-proc
      #:first-order list/c-first-order
+     #:generate list/c-generate
      #:projection list/c-chaperone/other-projection
      #:val-first-projection list/c-chaperone/other-val-first-projection)))
 
@@ -1030,6 +1047,7 @@
   (build-contract-property
    #:name list/c-name-proc
    #:first-order list/c-first-order
+   #:generate list/c-generate
    #:projection list/c-chaperone/other-projection
    #:val-first-projection list/c-chaperone/other-val-first-projection))
 
