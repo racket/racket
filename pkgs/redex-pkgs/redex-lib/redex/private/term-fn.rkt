@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require (for-template racket/base
-                       racket/unsafe/undefined))
+(require (for-template racket/base "defined-checks.rkt"))
 (provide make-term-fn
          term-fn?
          term-fn-get-id
@@ -44,17 +43,17 @@
        (cond [(syntax-local-value stx (λ () #f)) => p?]
              [else #f])))
 
-(define-struct judgment-form (name mode proc mk-proc lang lws rule-names
-                                   gen-clauses mk-gen-clauses term-proc relation?)
+(define-struct judgment-form (name mode proc mk-proc lang lws rule-names gen-clauses mk-gen-clauses term-proc relation?)
   #:transparent)
 
 (define-struct defined-term (value))
 (define (defined-term-id? stx)
   (transformer-predicate defined-term? stx))
 
-(define (defined-check id #:external [external id])
-  (quasisyntax/loc external
-    (check-not-unsafe-undefined #,id '#,external)))
+(define (defined-check id desc #:external [external id])
+  (if (eq? (identifier-binding id) 'lexical)
+      (quasisyntax/loc external (check-defined-lexical #,id '#,external #,desc))
+      (quasisyntax/loc external (check-defined-module (λ () #,id) '#,external #,desc))))
 
 (define (not-expression-context stx)
   (when (eq? (syntax-local-context) 'expression)
@@ -77,11 +76,7 @@
 (define pattern-symbols '(any number natural integer real string variable 
                               variable-not-otherwise-mentioned hole symbol))
 
-(define-values (struct:metafunc-proc 
-                make-metafunc-proc 
-                metafunc-proc?
-                metafunc-proc-ref
-                metafunc-proc-set!)
+(define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
   (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))
 (define metafunc-proc-clause-names (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 2))
