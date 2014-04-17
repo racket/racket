@@ -429,7 +429,11 @@
 (define image-button:label ((bitmap-label-maker "Images" image-button:path) '_))
 
 (define aworld%
-  (class world% (super-new)
+  (class world% 
+    ;; an argument-recording ppdraw
+    (field [image-history '()]) ;; [Listof Evt]
+    
+    (super-new)
     (inherit-field world0 draw rate width height record?)
     (inherit show callback-stop!)
     
@@ -462,8 +466,6 @@
       (send image-button enable #f)
       (values switch stop))
     
-    ;; an argument-recording ppdraw
-    (field [image-history '()]) ;; [Listof Evt]
     (define/override (ppdraw)
       (define image (super ppdraw))
       (set! image-history (cons image image-history))
