@@ -5,12 +5,13 @@
 (define-syntax (test-name stx)
   (syntax-case stx ()
     [(_ name contract)
-     #'(do-name-test 'name 'contract)]))
+     (with-syntax ([line (syntax-line stx)])
+       #'(do-name-test line 'name 'contract))]))
 
-(define (do-name-test name contract-exp)
-  (contract-eval #:test-case-name "test a name"
+(define (do-name-test line name contract-exp)
+  (contract-eval #:test-case-name (format "name test on line ~a" line)
                  `(,test ,name contract-name ,contract-exp))
-  (contract-eval #:test-case-name "test a name opt/c"
+  (contract-eval #:test-case-name (format "opt/c name test on line ~a" line)
                  `(,test ,name contract-name (opt/c ,contract-exp))))
 
 (parameterize ([current-contract-namespace (make-basic-contract-namespace
@@ -174,9 +175,9 @@
   (test-name 'printable/c printable/c)
   (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
   (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
-  (test-name '(or/c '() 'x 1 #f #\a void? undefined?)
-             (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
-
+  (test-name '(or/c '() 'x 1 #f #\a void?)
+             (one-of/c '() 'x 1 #f #\a (void)))
+  
   (test-name '(or/c #f #t #\a "x") (or/c #f #t #\a "x"))
   (test-name '(or/c #f #t #\a "x" #rx"x" #rx#"x") (or/c #f #t #\a "x" #rx"x" #rx#"x"))
 
