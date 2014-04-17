@@ -108,6 +108,22 @@
 (syntax-test #'(lambda (x . 5) x))
 (syntax-test #'(lambda (x) x . 5))
 
+(err/rt-test (letrec ([not-ready not-ready]) 5)
+             (lambda (exn)
+               (and (exn:fail:contract:variable? exn)
+                    (eq? 'not-ready (exn:fail:contract:variable-id exn)))))
+(err/rt-test (let-syntax ([m
+                           (lambda (stx)
+                             (with-syntax ([not-ready-id
+                                            (syntax-property #'not-ready
+                                                             'undefined-error-name
+                                                             'alice)])
+                               #'(letrec ([not-ready-id not-ready]) 5)))])
+               (m))
+             (lambda (exn)
+               (and (exn:fail:contract:variable? exn)
+                    (eq? 'alice (exn:fail:contract:variable-id exn)))))
+
 (let ([f
        (case-lambda
 	[() 'zero]

@@ -63,6 +63,8 @@ ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *letrec_syntaxes_symbol;
 ROSYM static Scheme_Object *values_symbol;
 ROSYM static Scheme_Object *call_with_values_symbol;
+ROSYM static Scheme_Object *inferred_name_symbol;
+ROSYM static Scheme_Object *undefined_error_name_symbol;
 
 THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 
@@ -165,6 +167,9 @@ void scheme_init_compile (Scheme_Env *env)
   REGISTER_SO(disappeared_binding_symbol);
   REGISTER_SO(compiler_inline_hint_symbol);
 
+  REGISTER_SO(inferred_name_symbol);
+  REGISTER_SO(undefined_error_name_symbol);
+
   scheme_undefined->type = scheme_undefined_type;
   
   lambda_symbol = scheme_intern_symbol("lambda");
@@ -177,6 +182,9 @@ void scheme_init_compile (Scheme_Env *env)
 
   disappeared_binding_symbol = scheme_intern_symbol("disappeared-binding");
   compiler_inline_hint_symbol = scheme_intern_symbol("compiler-hint:cross-module-inline");
+
+  inferred_name_symbol = scheme_intern_symbol("inferred-name");
+  undefined_error_name_symbol = scheme_intern_symbol("undefined-error-name");
 
   scheme_define_values_syntax = scheme_make_compiled_syntax(define_values_syntax, 
 							    define_values_expand);
@@ -367,11 +375,22 @@ Scheme_Object *scheme_check_name_property(Scheme_Object *code, Scheme_Object *cu
 {
   Scheme_Object *name;
 
-  name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
+  name = scheme_stx_property(code, inferred_name_symbol, NULL);
   if (name && SCHEME_SYMBOLP(name))
     return name;
   else
     return current_val;
+}
+
+static Scheme_Object *get_local_name(Scheme_Object *id)
+{
+  Scheme_Object *name;
+
+  name = scheme_stx_property(id, undefined_error_name_symbol, NULL);
+  if (name && SCHEME_SYMBOLP(name))
+    return name;
+  else
+    return SCHEME_STX_VAL(id);
 }
 
 /**********************************************************************/
@@ -498,7 +517,7 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Inf
 {
   Scheme_Object *name;
 
-  name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
+  name = scheme_stx_property(code, inferred_name_symbol, NULL);
   if (name && SCHEME_SYMBOLP(name)) {
     name = combine_name_with_srcloc(name, code, 0);
   } else if (name && SCHEME_VOIDP(name)) {
@@ -2260,7 +2279,9 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
          currently. It would be ok if we record extra names, though. */
       clv_names = MALLOC_N(Scheme_Object*, lv->count);
       for (m = pre_k; m < k; m++) {
-        clv_names[m - pre_k] = SCHEME_STX_SYM(names[m]);
+        Scheme_Object *ln;
+        ln = get_local_name(names[m]);
+        clv_names[m - pre_k] = ln;
       }
       lv->names = clv_names;
     }

@@ -92,7 +92,6 @@ READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
-READ_ONLY Scheme_Object *scheme_inferred_name_symbol;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
 READ_ONLY Scheme_Object *scheme_chaperone_undefined_property;
 
@@ -644,12 +643,10 @@ scheme_init_fun (Scheme_Env *env)
   none_symbol                = scheme_intern_symbol("none");
 
   REGISTER_SO(is_method_symbol);
-  REGISTER_SO(scheme_inferred_name_symbol);
   REGISTER_SO(cont_key);
   REGISTER_SO(barrier_prompt_key);
   REGISTER_SO(prompt_cc_guard_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
-  scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   prompt_cc_guard_key = scheme_make_symbol("cc"); /* uninterned */
