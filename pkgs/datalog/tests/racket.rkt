@@ -77,6 +77,11 @@
  (list (hasheq 'X 2))
 
  (datalog parent
+          (? (add1 X :- 2)))
+ =>
+ (list)
+
+ (datalog parent
           (? (#,(λ (x) (+ x 1)) 1 :- X)))
  =>
  (list (hasheq 'X 2))
