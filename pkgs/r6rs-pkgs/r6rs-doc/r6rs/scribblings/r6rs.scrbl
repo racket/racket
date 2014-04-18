@@ -382,10 +382,6 @@ several known ways:
        @racket[string-upcase], and @racket[string-titlecase] are not
        determined as specified by Unicode Standard Annex #29.}
 
- @item{When an identifier bound by @racket[letrec] or @racket[letrec*]
-       is referenced before it is bound, an exception is not raised;
-       instead, the reference produces @|undefined-const|.}
-
  @item{A custom textual port must represent positions using integers,
        and the positions must correspond to bytes in a UTF-8 encoding
        of the port's data. For custom ports (byte or character) that
@@ -407,9 +403,13 @@ several known ways:
        @racketidfont{#%top}, and @racketidfont{#%top-interaction} are
        imported into every library and program, and at every phase
        level for which the library or program has imports.}
-
 ]
 
+@history[#:changed "6.0.1.4" @elem{When an identifier bound by
+                                   @racket[letrec] or @racket[letrec*]
+                                   is referenced before it is initialized,
+                                   an exception is raised, instead of
+                                   producing @|undefined-const|.}]
 
 @; ----------------------------------------------------------------------
 
