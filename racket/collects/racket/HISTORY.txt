@@ -1,4 +1,4 @@
-Version 6.0.0.1
+Version 6.0.1, April 2014
 Moved detailed-change recording to documentation
 
 Version 6.0, January 2014
