@@ -2747,6 +2747,12 @@
            (f 1 2 3))
          #:ret (ret Univ -true-filter)]
 
+       ;; typecheck-fail should fail
+       [tc-err (typecheck-fail #'stx "typecheck-fail")
+               #:msg #rx"typecheck-fail"]
+       [tc-err (string-append (typecheck-fail #'stx "typecheck-fail") "bar")
+               #:ret (ret -String)
+               #:msg #rx"typecheck-fail"]
         )
   (test-suite
    "tc-literal tests"
