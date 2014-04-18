@@ -508,13 +508,26 @@
                            (anchor-name (dest-anchor dest))))))
           "???"))
 
-    (define/private (dest->url-in-doc dest)
+    (define/private (dest->url-in-doc dest ext-id)
       (and dest
            (not (dest-redirect dest))
            (format "~a~a~a"
-                   (let-values ([(base name dir?) (split-path
-                                                   (relative->path (dest-path dest)))])
-                     name)
+                   ;; The path within the document directory is normally
+                   ;; just a single element, but detect nested paths
+                   ;; (for "r5rs-std", for example) when the containing
+                   ;; directory doesn't match `ext-id`:
+                   (let loop ([path (relative->path (dest-path dest))]
+                              [empty-ok? #f])
+                     (let-values ([(base name dir?) (split-path path)])
+                       (cond
+                        [(and empty-ok?
+                              dir? 
+                              (equal? (format "~a" name) (format "~a" ext-id)))
+                         #f]
+                        [(path? base)
+                         (define r (loop base #t))
+                         (if r (build-path r name) name)]
+                        [else name])))
                    (if (dest-page? dest) "" "#")
                    (if (dest-page? dest)
                        ""
@@ -1294,7 +1307,7 @@
                              [query
                               (if (string? ext-id)
                                   (list* (cons 'doc ext-id)
-                                         (cons 'rel (or (dest->url-in-doc dest) "???"))
+                                         (cons 'rel (or (dest->url-in-doc dest ext-id) "???"))
                                          (url-query u))
                                   (cons (cons 'tag (tag->query-string (link-element-tag e)))
                                         (url-query u)))])))]
