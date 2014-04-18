@@ -535,7 +535,9 @@
         ;; the expansion.
         [(~and :tr:class:super-new^ (#%plain-app . rst))
          (when super-new
-           (tc-error/delayed "typed classes must only call super-new a single time"))
+           (tc-error/fields #:delayed? #t
+                            "ill-formed typed class"
+                            #:more "must only call `super-new' a single time"))
          (set! super-new (find-provided-inits expr))
          other-exprs]
         [(~and t:class-type-declaration :tr:class:type-annotation^)
@@ -553,7 +555,9 @@
          other-exprs]
         [_ (cons expr other-exprs)])))
   (unless super-new
-    (tc-error/delayed "typed classes must call super-new at the class top-level")
+    (tc-error/fields #:delayed? #t
+                     "ill-formed typed class"
+                     #:more "must call `super-new' at the top-level of the class")
     (set! super-new (super-init-stxs null null)))
   (values super-new
           initializers
@@ -1449,46 +1453,51 @@
                      (case-lambda
                        [(annotated-self x ...) body] ...)])
          m)]
-    [_ (tc-error "annotate-method: internal error")]))
+    [_ (int-err "annotate-method: internal error")]))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that all the required names are actually present
 ;;
 ;; FIXME: This gives bad error messages. Consider using syntax
 ;;        object lists instead of sets.
-(define (check-exists actual required msg)
+(define (check-exists actual required kind)
   (define missing
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/delayed (~a "superclass missing ~a ~a "
-                          "that the current class requires")
-                      msg missing)))
+    (tc-error/fields #:delayed? #t
+                     "inheritance mismatch"
+                     #:more (~a "the superclass is missing a required " kind)
+                     (~a "missing " kind) missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that names are absent when they should be
-(define (check-absent actual should-be-absent msg)
+(define (check-absent actual should-be-absent kind)
   (define present
     (for/or ([m (in-set should-be-absent)])
       (and (set-member? actual m) m)))
   (when present
-    (tc-error/delayed "superclass defines conflicting ~a ~a"
-                      msg present)))
+    (tc-error/fields #:delayed? #t
+                     "inheritance mismatch"
+                     #:more (~a "the superclass has a conflicting " kind)
+                     kind present)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that the names are exactly the same as expected
-(define (check-same actual expected msg)
+(define (check-same actual expected kind)
   (define missing
     (for/or ([m (in-set expected)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/delayed (~a "class definition missing ~a ~a "
-                          "that is required by the expected type")
-                      msg missing))
+    (tc-error/fields #:delayed? #t
+                     "type mismatch"
+                     #:more (~a "the class is missing a required " kind)
+                     (~a "missing " kind) missing))
   (define too-many
     (for/or ([m (in-set actual)])
       (and (not (set-member? expected m)) m)))
   (when too-many
-    (tc-error/delayed (~a "class definition contains ~a ~a "
-                          "that is not in the expected type")
-                      msg too-many)))
+    (tc-error/fields #:delayed? #t
+                     "type mismatch"
+                     #:more (~a "the class has a " kind " that should be absent")
+                     kind too-many)))
