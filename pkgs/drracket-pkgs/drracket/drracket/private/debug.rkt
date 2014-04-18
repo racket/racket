@@ -208,9 +208,14 @@ profile todo:
                    (class clickable-image-snip%
                      (inherit get-callback)
                      (define/public (get-image-name) filename)
+                     (define stack1 #f)
+                     (define stack2 #f)
+                     (define/public (set-stacks s1 s2) (set! stack1 s1) (set! stack2 s2))
+                     (define/public (get-stacks) (values stack1 stack2))
                      (define/override (copy) 
                        (let ([n (new note%)])
                          (send n set-callback (get-callback))
+                         (send n set-stacks stack1 stack2)
                          n))
                      (super-make-object bitmap))])
            note%)))
@@ -492,6 +497,7 @@ profile todo:
       (let ([note% (if (mf-bday?) mf-note% bug-note%)])
         (when note%
           (let ([note (new note%)])
+            (send note set-stacks cms1 cms2)
             (send note set-callback (λ (snp) (show-backtrace-window/edition-pairs/two msg cms1 editions1 cms2 editions2 defs ints)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
