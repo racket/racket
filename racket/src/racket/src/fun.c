@@ -194,6 +194,8 @@ static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
 
+static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv);
+
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
@@ -688,6 +690,9 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   o = scheme_make_struct_type_property(scheme_intern_symbol("chaperone-unsafe-undefined"));
   scheme_chaperone_undefined_property = o;
   scheme_add_global_constant("prop:chaperone-unsafe-undefined", o, env);
+
+  o = scheme_make_prim_w_arity(chaperone_unsafe_undefined, "chaperone-struct-unsafe-undefined", 1, 1);
+  scheme_add_global_constant("chaperone-struct-unsafe-undefined", o, env);
 }
 
 void
@@ -2577,6 +2582,14 @@ scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[])
   }
 
   return argv[0];
+}
+
+static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_CHAPERONE_STRUCTP(argv[0]))
+    return scheme_chaperone_not_undefined(argv[0]);
+  else
+    return argv[0];
 }
 
 static Scheme_Object *

@@ -42,22 +42,17 @@ message (if any) is along the lines of ``@racket[sym]: undefined;
 assignment before initialization.''}
 
 
-@defthing[prop:chaperone-unsafe-undefined struct-type-property?]{
+@defproc[(chaperone-struct-unsafe-undefined [v any/c]) any/c]{
 
-A @tech{structure type property} that causes a structure type's
-constructor to produce a @tech{chaperone} of an instance. Every access
+Chaperones @racket[v] if it is a structure (as viewed through some
+@tech{inspector}). Every access of a field in the structure is checked
+to prevent returning @racket[unsafe-undefined]. Similarly, every
+assignment to a field in the structure is checked (unless the check
+disabled as described below) to prevent assignment of a field whose
+current value is @racket[unsafe-undefined].
 
-of a field in the structure is checked to prevent returning
-@racket[unsafe-undefined]. Similarly, every assignment to a field in
-the structure is checked (unless the check disabled as described
-below) to prevent assignment of a field whose current value is
-@racket[unsafe-undefined].
-
-The property value should be a list of symbols used as field names,
-but the list should be in reverse order of the structure's fields.
-When a field access would otherwise produce @racket[unsafe-undefined],
-the @racket[exn:fail:contract:variable] exception is raised if a field
-name is provided by the structure property's value, otherwise the
+When a field access would otherwise produce @racket[unsafe-undefined]
+or when a field assignment would replace @racket[unsafe-undefined], the
 @racket[exn:fail:contract] exception is raised.
 
 The chaperone's field-assignment check is disabled whenever
@@ -67,3 +62,18 @@ Thus, a field-initializing assignment---one that is intended to replace the
 @racket[unsafe-undefined] value of a field---should be wrapped with
 @racket[(with-continuation-mark prop:chaperone-unsafe-undefined
 unsafe-undefined ....)].}
+
+
+@defthing[prop:chaperone-unsafe-undefined struct-type-property?]{
+
+A @tech{structure type property} that causes a structure type's
+constructor to produce a @tech{chaperone} of an instance
+in the same way as @racket[chaperone-struct-unsafe-undefined].
+
+The property value should be a list of symbols used as field names,
+but the list should be in reverse order of the structure's fields.
+When a field access or assignment would produce or replace
+@racket[unsafe-undefined], the @racket[exn:fail:contract:variable]
+exception is raised if a field name is provided by the structure
+property's value, otherwise the @racket[exn:fail:contract] exception
+is raised.}

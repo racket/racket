@@ -1968,32 +1968,38 @@ int scheme_is_struct_instance(Scheme_Object *type, Scheme_Object *v)
   return STRUCT_TYPEP(stype, s);
 }
 
-static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, int i);
+static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
+                                           Scheme_Object *o, int i);
 
 static Scheme_Object *chaperone_struct_ref_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *prim = (Scheme_Object *)p->ku.k.p3;
   const char *who = (const char *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
 
-  return chaperone_struct_ref(who, o, p->ku.k.i1);
+  return chaperone_struct_ref(who, prim, o, p->ku.k.i1);
 }
 
-static Scheme_Object *chaperone_struct_ref_overflow(const char *who, Scheme_Object *o, int i)
+static Scheme_Object *chaperone_struct_ref_overflow(const char *who, Scheme_Object *prim, 
+                                                    Scheme_Object *o, int i)
 {
   Scheme_Thread *p = scheme_current_thread;
 
   p->ku.k.p1 = (void *)o;
   p->ku.k.p2 = (void *)who;
+  p->ku.k.p3 = (void *)prim;
   p->ku.k.i1 = i;
 
   return scheme_handle_stack_overflow(chaperone_struct_ref_k);
 }
 
-static void raise_undefined_error(Scheme_Object *val, const char *short_error, const char *mode, int i)
+static void raise_undefined_error(const char *who, Scheme_Object *prim, Scheme_Object *val,
+                                  const char *short_error, const char *mode, int i)
 {
   int len;
   Scheme_Object *o;
@@ -2010,14 +2016,19 @@ static void raise_undefined_error(Scheme_Object *val, const char *short_error, c
                      "%S: %s;\n cannot %s field before initialization",
                      o, short_error, mode);
   } else {
+    if (prim)
+      who = extract_field_proc_name(prim);
+
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s;\n cannot %s field before initialization",
+                     "%s: %s;\n cannot %s field before initialization",
+                     who,
                      short_error, mode);
   }
 
 }
 
-static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, int i)
+static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim, 
+                                           Scheme_Object *o, int i)
 {
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
@@ -2035,10 +2046,10 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
         if (!SCHEME_CHAPERONEP(o))
           orig = ((Scheme_Structure *)o)->slots[i];
         else
-          orig = chaperone_struct_ref(who, o, i);
+          orig = chaperone_struct_ref(who, prim, o, i);
 
         if (SAME_OBJ(orig, scheme_undefined)) {
-          raise_undefined_error(px->val, "undefined", "use", i);
+          raise_undefined_error(who, prim, px->val, "undefined", "use", i);
         }
 
         return orig;
@@ -2050,11 +2061,11 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
 #ifdef DO_STACK_CHECK
         {
 # include "mzstkchk.h"
-          return chaperone_struct_ref_overflow(who, o, i);
+          return chaperone_struct_ref_overflow(who, prim, o, i);
         }
 #endif
 
-        orig = chaperone_struct_ref(who, px->prev, i);
+        orig = chaperone_struct_ref(who, prim, px->prev, i);
 
         a[0] = px->prev;
         a[1] = orig;
@@ -2084,7 +2095,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
 Scheme_Object *scheme_struct_ref(Scheme_Object *sv, int pos)
 {
   if (SCHEME_CHAPERONEP(sv)) {
-    return chaperone_struct_ref("struct-ref", sv, pos);
+    return chaperone_struct_ref("struct-ref", NULL, sv, pos);
   } else {
     Scheme_Structure *s = (Scheme_Structure *)sv;
     
@@ -2092,7 +2103,8 @@ Scheme_Object *scheme_struct_ref(Scheme_Object *sv, int pos)
   }
 }
 
-static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Scheme_Object *v)
+static void chaperone_struct_set(const char *who, Scheme_Object *prim,
+                                 Scheme_Object *o, int i, Scheme_Object *v)
 {
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
@@ -2138,7 +2150,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
           
           m = scheme_extract_one_cc_mark(NULL, scheme_chaperone_undefined_property);
           if (!m || !SAME_OBJ(m, scheme_undefined))
-            raise_undefined_error(px->val, "assignment disallowed", "assign", i);
+            raise_undefined_error(who, prim, px->val, "assignment disallowed", "assign", i);
         }
       }
     }
@@ -2148,7 +2160,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
 void scheme_struct_set(Scheme_Object *sv, int pos, Scheme_Object *v)
 {
   if (SCHEME_CHAPERONEP(sv)) {
-    chaperone_struct_set("struct-set", sv, pos, v);
+    chaperone_struct_set("struct-set!", NULL, sv, pos, v);
   } else {
     Scheme_Structure *s = (Scheme_Structure *)sv;  
     
@@ -2498,7 +2510,7 @@ Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Objec
   if (SAME_OBJ((Scheme_Object *)inst, args[0]))
     return inst->slots[pos];
   else
-    return scheme_struct_ref(args[0], pos);
+    return chaperone_struct_ref("struct-ref", prim, args[0], pos);
 }
 
 Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim)
@@ -2554,7 +2566,7 @@ Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Objec
   if (SAME_OBJ((Scheme_Object *)inst, args[0]))
     inst->slots[pos] = v;
   else
-    scheme_struct_set(args[0], pos, v);
+    chaperone_struct_set("struct-set!", prim, args[0], pos, v);
   
   return scheme_void;
 }
@@ -5180,7 +5192,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
   if (SCHEME_INTP(a)) {
     *is_method = 0;
     if (!SAME_OBJ(plain_obj, obj)) {
-      proc = chaperone_struct_ref("struct-ref", obj, SCHEME_INT_VAL(a));
+      proc = chaperone_struct_ref("struct-ref", NULL, obj, SCHEME_INT_VAL(a));
     } else {
       proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
     }
