@@ -3542,7 +3542,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         mz_rs_sync_fail_branch();
 
         __START_TINY_JUMPS__(1);
-        ref = jit_bnei_ul(jit_forward(), JIT_R0, scheme_undefined);
+        ref = jit_bnei_p(jit_forward(), JIT_R0, scheme_undefined);
         __END_TINY_JUMPS__(1);
 
         scheme_mz_load_retained(jitter, JIT_R1, app->rand2);
