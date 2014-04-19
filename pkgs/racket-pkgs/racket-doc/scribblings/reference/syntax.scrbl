@@ -1956,7 +1956,8 @@ corresponding @racket[val-expr] is evaluated. The @racket[id]s must be distinct 
 @racket[bound-identifier=?].
 
 Referencing or assigning to an @racket[id] before its initialization
-raises @racket[exn:fail:contract:variable]. If an @racket[id] has an
+raises @racket[exn:fail:contract:variable]. If an @racket[id] (i.e.,
+the binding instance or @racket[id]) has an
 @indexed-racket['undefined-error-name] @tech{syntax property} whose
 value is a symbol, the symbol is used as the name of the variable for
 error reporting, instead of the symbolic form of @racket[id].
@@ -2343,8 +2344,8 @@ defined as follows:
                                          @#,elem{if} (#,cvt head . _datum) = expr
 ]
 
-In an @tech{internal-definition context} (see @secref["intdef-body"]), 
-a @racket[define] form introduces a local binding.
+In an @tech{internal-definition context}, a @racket[define] form
+introduces a local binding; see @secref["intdef-body"].
 At the top level, the top-level binding for @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked
