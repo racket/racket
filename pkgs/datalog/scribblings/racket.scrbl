@@ -62,6 +62,8 @@ The Datalog database can be directly used by Racket programs through this API.
           (datalog family
                    (? (add1 1 :- X)))
           (datalog family
+                   (? (add1 X :- 2)))
+          (datalog family
                    (? (#,(λ (x) (+ x 1)) 1 :- X)))]
 
 @defthing[theory/c contract?]{ A contract for Datalog theories. }
@@ -107,7 +109,13 @@ for a variable symbol, or @RACKET[#,expr] where @racket[expr]
 evaluates to a constant datum. Bound identifiers in terms are treated
 as the datum they are bound to.
 
-External queries invalidate Datalog's guaranteed termination. For example, this program does not terminate:
+External queries fail if any logic variable is not fully resolved to a
+datum on the Datalog side. In other words, unbound logic variables
+never flow to Racket.
+
+External queries invalidate Datalog's guaranteed termination. For
+example, this program does not terminate:
+
 @racketblock[
  (datalog (make-theory)
           (! (:- (loop X)

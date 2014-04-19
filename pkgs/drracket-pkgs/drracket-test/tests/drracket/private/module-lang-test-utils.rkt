@@ -115,6 +115,19 @@
                    get-text
                    (send interactions-text paragraph-start-position output-start-paragraph)
                    (send interactions-text paragraph-end-position para-before-prompt))))))
+    (define stacks
+      (queue-callback/res 
+       (λ ()
+         (let loop ([snip (send interactions-text find-first-snip)])
+           (cond
+             [(not snip) '()]
+             [else
+              (cond
+                [(method-in-interface? 'get-stacks (object-interface snip))
+                 (define-values (s1 s2) (send snip get-stacks))
+                 (list* s1 s2 (loop (send snip next)))]
+                [else
+                 (loop (send snip next))])])))))
     (define output-passed?
       (let ([r (test-result test)])
         ((cond [(string? r) string=?]
@@ -127,7 +140,15 @@
                (test-definitions test)
                (or (test-interactions test) 'no-interactions)
                (test-result test)
-               text))
+               text)
+      (unless (null? stacks)
+        (eprintf "stacks from error message:")
+        (for ([stack (in-list stacks)])
+          (when stack
+            (eprintf "\n----\n")
+            (for ([frame (in-list stack)])
+              (eprintf "  ~s\n" frame))
+            (eprintf "---\n")))))
     (cond
       [(eq? (test-error-ranges test) 'dont-test)
        (void)]

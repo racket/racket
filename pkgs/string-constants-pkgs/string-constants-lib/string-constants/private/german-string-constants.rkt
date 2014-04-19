@@ -1274,7 +1274,7 @@
  (module-browser-filename-format "Vollständiger Dateiname: ~a (~a Zeilen)")
  (module-browser-root-filename "Basis-Dateiname: ~a")
  (module-browser-font-size-gauge-label "Schriftgröße")
- (module-browser-progress-label "Fortschritt Modul-Übersicht")
+ (module-browser-progress-label "Fortschritt Modul-Browser")
  (module-browser-adding-file "Datei ~a hinzufügen...")
  (module-browser-laying-out-graph-label "Graph-Layout")
  (module-browser-open-file-format "~a öffnen")

@@ -9,6 +9,15 @@
     visible in released versions of DrRacket (previously they were
     visible only in git-based versions and nightly builds)
 
+  . improved DrRacket .plt installation functionality so that it
+    prints out the start of the contents of the file it tried to
+    unpack when it fails
+
+  . Mac OS X: added full screen support
+
+  . added a re-indent paragraph key binding (esc;q) for Scribble
+    mode. Thanks to Lei Wang for implementing this.
+
 ------------------------------
        Version 6.0
 ------------------------------

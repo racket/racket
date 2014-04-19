@@ -69,6 +69,8 @@ needed to really make this work:
       (define/override (write stream)
         (send stream put (string->bytes/utf-8 (format "~s" (marshall-syntax main-stx)))))
       
+      (define path '())
+      (define next-push 0)
       (define-values (datum paths-ht) (syntax-object->datum/record-paths main-stx))
       
       (define output-text (new text:hide-caret/selection%))
@@ -88,8 +90,6 @@ needed to really make this work:
               0
               (send text last-position)))
       
-      (define path '())
-      (define next-push 0)
       (define/private (push!)
         (set! path (cons next-push path))
         (set! next-push 0))
