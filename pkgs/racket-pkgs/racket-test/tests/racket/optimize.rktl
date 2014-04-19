@@ -2248,7 +2248,17 @@
                (list (c? (c-q (c 1 2 3))))
                5)))
 
-
+(test-comp `(lambda (b)
+              (let ([v (unbox b)])
+                (with-continuation-mark 'x 'y (unbox v))))
+           `(lambda (b)
+              (with-continuation-mark 'x 'y (unbox (unbox b))))
+           #f)
+(test-comp `(lambda (b)
+              (let ([v (box b)])
+                (with-continuation-mark 'x 'y (box v))))
+           `(lambda (b)
+              (with-continuation-mark 'x 'y (box (box b)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions

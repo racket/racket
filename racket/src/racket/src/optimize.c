@@ -3252,6 +3252,11 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   v = scheme_optimize_expr(wcm->val, info, 0);
 
+  /* The presence of a key can be detected by other expressions,
+     to increment vclock to prevent expressions incorrectly
+     moving under the mark: */
+  info->vclock++;
+
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
   if (omittable_key(k, info)
