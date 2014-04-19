@@ -7,7 +7,7 @@
 
 (provide (prefix-out pic: (all-defined-out)))
 
-(define bloch (bitmap "pictures/bloch.jpg"))
+(define bloch (bitmap "pictures/bloch.png"))
 (define hieroglyphics (bitmap "pictures/small_hieroglyphics.png"))
 (define hacker (bitmap "pictures/mad_hacker.png"))
 (define book (bitmap "pictures/qbook.png"))
