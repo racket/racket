@@ -2852,7 +2852,7 @@
 	     [_else (bad-use-error 'shared stx)])
 
 	   ;; The main implementation
-           (shared/proc stx make-check-cdr #'undefined))))))
+           (shared/proc stx make-check-cdr))))))
 
   ;; ----------------------------------------
   ;; Utilities for `define-struct':
