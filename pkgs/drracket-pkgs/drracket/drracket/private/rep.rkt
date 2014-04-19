@@ -141,6 +141,7 @@ TODO
                 (current-thread)))))
   
   (define drs-bindings-keymap (make-object keymap:aug-keymap%))
+  (define drs-binding-alt-as-meta-keymap (make-object keymap:aug-keymap%))
 
   (let* ([get-frame
           (λ (obj)
@@ -152,8 +153,18 @@ TODO
                                frame))))))]
          [add-drs-function
           (λ (name f)
-            (send drs-bindings-keymap add-function name
-                  (λ (obj evt) (cond [(get-frame obj) => f]))))]
+            (define (fn obj evt) (cond [(get-frame obj) => f]))
+            (send drs-bindings-keymap add-function name fn)
+            (send drs-binding-alt-as-meta-keymap add-function name fn))]
+         [map-drs-function
+          (λ (key f)
+            (send drs-bindings-keymap map-function key f)
+            (send drs-binding-alt-as-meta-keymap map-function key f))]
+         [map-meta-drs-function
+          (λ (key f)
+            (keymap:send-map-function-meta 
+             drs-bindings-keymap key f #t
+             #:alt-as-meta-keymap drs-binding-alt-as-meta-keymap))]
          [show-tab
           (λ (i)
             (λ (obj evt)
@@ -168,23 +179,23 @@ TODO
     (send drs-bindings-keymap add-function "search-help-desk"
           (λ (obj evt)
             (if (not (and (is-a? obj text%) (get-frame obj))) ; is `get-frame' needed?
-              (drracket:help-desk:help-desk)
-              (let* ([start (send obj get-start-position)]
-                     [end (send obj get-end-position)]
-                     [str (if (= start end)
-                            (drracket:unit:find-symbol obj start)
-                            (send obj get-text start end))])
-                (if (or (not str) (equal? "" str))
-                  (drracket:help-desk:help-desk)
-                  (let* ([l (send obj get-canvas)]
-                         [l (and l (send l get-top-level-window))]
-                         [l (and l (is-a? l drracket:unit:frame<%>) (send l get-definitions-text))]
-                         [l (and l (send l get-next-settings))]
-                         [l (and l (drracket:language-configuration:language-settings-language l))]
-                         [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
-                         [name (and l (send l get-language-name))])
-                    (drracket:help-desk:help-desk
-                     str (and ctxt (list ctxt name)))))))))
+                (drracket:help-desk:help-desk)
+                (let* ([start (send obj get-start-position)]
+                       [end (send obj get-end-position)]
+                       [str (if (= start end)
+                                (drracket:unit:find-symbol obj start)
+                                (send obj get-text start end))])
+                  (if (or (not str) (equal? "" str))
+                      (drracket:help-desk:help-desk)
+                      (let* ([l (send obj get-canvas)]
+                             [l (and l (send l get-top-level-window))]
+                             [l (and l (is-a? l drracket:unit:frame<%>) (send l get-definitions-text))]
+                             [l (and l (send l get-next-settings))]
+                             [l (and l (drracket:language-configuration:language-settings-language l))]
+                             [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
+                             [name (and l (send l get-language-name))])
+                        (drracket:help-desk:help-desk
+                         str (and ctxt (list ctxt name)))))))))
     
     ;; keep this in case people use it in their keymaps
     (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
@@ -206,35 +217,31 @@ TODO
     (add-drs-function "send-selection-to-repl" (λ (frame) (send frame send-selection-to-repl #f)))
     (add-drs-function "send-toplevel-form-to-repl-and-go" (λ (frame) (send frame send-toplevel-form-to-repl #t)))
     (add-drs-function "send-selection-to-repl-and-go" (λ (frame) (send frame send-selection-to-repl #t)))
-    (add-drs-function "move-to-interactions" (λ (frame) (send frame move-to-interactions))))
-  
-  (send drs-bindings-keymap map-function "~c:m:p" "jump-to-previous-error-loc")
-  (send drs-bindings-keymap map-function "~c:m:n" "jump-to-next-error-loc")
-  (send drs-bindings-keymap map-function "esc;p" "jump-to-previous-error-loc")
-  (send drs-bindings-keymap map-function "esc;n" "jump-to-next-error-loc")
-  (send drs-bindings-keymap map-function "c:x;`" "jump-to-next-error-loc")
-  
-  (send drs-bindings-keymap map-function "f5" "run")
-  (send drs-bindings-keymap map-function "f1" "search-help-desk")
-  (send drs-bindings-keymap map-function "c:tab" "next-tab")
-  (send drs-bindings-keymap map-function "c:s:tab" "prev-tab")
-  (send drs-bindings-keymap map-function "c:pagedown" "next-tab")
-  (send drs-bindings-keymap map-function "c:pageup" "prev-tab")
-  (send drs-bindings-keymap map-function "c:s:pagedown" "move-current-tab-right")
-  (send drs-bindings-keymap map-function "c:s:pageup" "move-current-tab-left")
-  
-  (send drs-bindings-keymap map-function "c:x;0" "collapse")
-  (send drs-bindings-keymap map-function "c:x;2" "split")
-
-  (send drs-bindings-keymap map-function "c:c;c:z" "move-to-interactions")
-  
-  (for ([i (in-range 1 10)])
-    (send drs-bindings-keymap map-function 
-          (format "a:~a" i) 
-          (format "show-tab-~a" i))
-    (send drs-bindings-keymap map-function 
-          (format "~~c:m:~a" i) 
-          (format "show-tab-~a" i)))
+    (add-drs-function "move-to-interactions" (λ (frame) (send frame move-to-interactions)))
+    
+    (map-meta-drs-function "p" "jump-to-previous-error-loc")
+    (map-meta-drs-function "n" "jump-to-next-error-loc")
+    (map-drs-function "c:x;`" "jump-to-next-error-loc")
+    
+    (map-drs-function "f5" "run")
+    (map-drs-function "f1" "search-help-desk")
+    (map-drs-function "c:tab" "next-tab")
+    (map-drs-function "c:s:tab" "prev-tab")
+    (map-drs-function "c:pagedown" "next-tab")
+    (map-drs-function "c:pageup" "prev-tab")
+    (map-drs-function "c:s:pagedown" "move-current-tab-right")
+    (map-drs-function "c:s:pageup" "move-current-tab-left")
+    
+    (map-drs-function "c:x;0" "collapse")
+    (map-drs-function "c:x;2" "split")
+    
+    (map-drs-function "c:c;c:z" "move-to-interactions")
+    
+    (for ([i (in-range 1 10)])
+      (map-drs-function (format "a:~a" i) 
+                        (format "show-tab-~a" i))
+      (map-drs-function (format "~~c:m:~a" i) 
+                        (format "show-tab-~a" i))))
   
   (define (get-drs-bindings-keymap) drs-bindings-keymap)
   
@@ -252,25 +259,48 @@ TODO
   ;; queue is full):
   (define output-limit-size 2000)
   
-  (define (setup-scheme-interaction-mode-keymap keymap)
-    (send keymap add-function "put-previous-sexp"
-          (λ (text event) 
-            (send text copy-prev-previous-expr)))
-    (send keymap add-function "put-next-sexp"
-          (λ (text event) 
-            (send text copy-next-previous-expr)))
-    (send keymap add-function "show-interactions-history"
-          (λ (text event) 
-            (send text show-interactions-history)))
+  (define (setup-racket-interaction-mode-keymap keymap alt-as-meta-keymap)
+    (define (add-fn name f)
+      (send keymap add-function name f)
+      (send alt-as-meta-keymap add-function name f))
+    (define (map-meta-fn key f)
+      (keymap:send-map-function-meta keymap "p" "put-previous-sexp" #t
+                                     #:alt-as-meta-keymap alt-as-meta-keymap))
+    (define (map-fn key f)
+      (send keymap map-function key f)
+      (send alt-as-meta-keymap map-function key f))
+      
+    (add-fn "put-previous-sexp"
+            (λ (text event) (send text copy-prev-previous-expr)))
+    (add-fn "put-next-sexp"
+            (λ (text event) (send text copy-next-previous-expr)))
+    (add-fn "show-interactions-history"
+            (λ (text event) (send text show-interactions-history)))
     
-    (keymap:send-map-function-meta keymap "p" "put-previous-sexp")
-    (keymap:send-map-function-meta keymap "n" "put-next-sexp")
-    (send keymap map-function "c:up" "put-previous-sexp")
-    (send keymap map-function "c:down" "put-next-sexp")
-    (keymap:send-map-function-meta keymap "h" "show-interactions-history"))
+    (map-meta-fn "p" "put-previous-sexp")
+    (map-meta-fn "n" "put-next-sexp")
+    (map-fn "c:up" "put-previous-sexp")
+    (map-fn "c:down" "put-next-sexp")
+    (map-meta-fn "h" "show-interactions-history"))
   
-  (define scheme-interaction-mode-keymap (make-object keymap:aug-keymap%))
-  (setup-scheme-interaction-mode-keymap scheme-interaction-mode-keymap)
+  (define racket-interaction-mode-keymap (make-object keymap:aug-keymap%))
+  (define racket-alt-as-meta-interaction-mode-keymap (make-object keymap:aug-keymap%))
+  (setup-racket-interaction-mode-keymap racket-interaction-mode-keymap
+                                        racket-alt-as-meta-interaction-mode-keymap)
+  
+  (define (adjust-alt-as-meta on?)
+    (send racket-interaction-mode-keymap remove-chained-keymap 
+          racket-alt-as-meta-interaction-mode-keymap)
+    (send drs-bindings-keymap remove-chained-keymap 
+          drs-binding-alt-as-meta-keymap)
+    (when on?
+      (send racket-interaction-mode-keymap chain-to-keymap
+            racket-alt-as-meta-interaction-mode-keymap #f)
+      (send drs-bindings-keymap chain-to-keymap
+            drs-binding-alt-as-meta-keymap #f)))
+  (preferences:add-callback 'framework:alt-as-meta
+                            (λ (p v) (adjust-alt-as-meta v)))
+  (adjust-alt-as-meta (preferences:get 'framework:alt-as-meta))
   
   (define drs-font-delta (make-object style-delta% 'change-family 'decorative))
   
@@ -798,7 +828,7 @@ TODO
         (inner (void) after-delete x y))
       
       (define/override (get-keymaps)
-        (editor:add-after-user-keymap scheme-interaction-mode-keymap
+        (editor:add-after-user-keymap racket-interaction-mode-keymap
                                       (super get-keymaps)))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
