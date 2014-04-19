@@ -808,7 +808,8 @@
    [tc-err (class object% (super-new)
              (: z Integer)
              (init [z "foo"]))
-           #:ret (ret (-class #:init ([z -Integer #t])))]
+           #:ret (ret (-class #:init ([z -Integer #t])))
+           #:msg #rx"expected: Integer.*given: String"]
    ;; test init field default value
    [tc-e (let ()
            (define c% (class object% (super-new)
@@ -1204,7 +1205,7 @@
              (super-new)
              (init-field [x : Z] [y : Z 0]))
            #:ret (ret (-poly (Z) (-class #:init-field ([x Z #f] [y Z #t]))))
-           #:msg #rx"Default init value has wrong type"]
+           #:msg #rx"expected: Z.*given: Zero"]
    ;; fails because default field value cannot be polymorphic
    [tc-err (class object%
              #:forall (Z)
