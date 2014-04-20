@@ -891,6 +891,10 @@ pict with the same shape and location.}
 
 @; ----------------------------------------
 
+@include-section["tree-layout.scrbl"]
+
+@; ----------------------------------------
+
 @section{Miscellaneous}
 
 @defproc[(hyperlinkize [pict pict?])

@@ -6,6 +6,7 @@
                "base"
                "compatibility-lib"
                "draw-lib" "snip-lib"))
+(define build-deps '("rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"pict\"")
 
