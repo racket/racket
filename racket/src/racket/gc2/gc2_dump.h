@@ -27,9 +27,10 @@ GC2_EXTERN void GC_dump_variable_stack(void **var_stack,
                                        GC_get_type_name_proc get_type_name,
                                        GC_print_tagged_value_proc print_tagged_value);
 
-# define GC_DUMP_SHOW_DETAILS  0x1
-# define GC_DUMP_SHOW_TRACE    0x2
-# define GC_DUMP_SHOW_FINALS   0x4
+# define GC_DUMP_SHOW_DETAILS     0x1
+# define GC_DUMP_SHOW_TRACE       0x2
+# define GC_DUMP_SHOW_FINALS      0x4
+# define GC_DUMP_SUPPRESS_SUMMARY 0x8
 
 GC2_EXTERN int GC_is_tagged(void *p);
 GC2_EXTERN int GC_is_tagged_start(void *p);

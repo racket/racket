@@ -3718,74 +3718,76 @@ void GC_dump_with_traces(int flags,
   for (ib = gc->immobile_boxes; ib; ib = ib->next)
     num_immobiles++;
 
-  GCPRINT(GCOUTF, "Begin Racket3m\n");
-  for (i = 0; i < MAX_DUMP_TAG; i++) {
-    if (counts[i]) {
-      char *tn, buf[256];
-      if (get_type_name)
-        tn = get_type_name((Type_Tag)i);
-      else
-        tn = NULL;
-      if (!tn) {
-        sprintf(buf, "unknown,%d", i);
-        tn = buf;
-      }
-      GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR " %10" PRIdPTR "\n",
-	      tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
-    }
-  }
-  GCPRINT(GCOUTF, "End Racket3m\n");
-
-  GCWARN((GCOUTF, "Generation 0: %" PRIdPTR " of %" PRIdPTR " bytes used\n",
-	  (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
-
-  for(i = 0; i < PAGE_TYPES; i++) {
-    uintptr_t total_use = 0, count = 0;
-
-    for(page = gc->gen1_pages[i]; page; page = page->next) {
-      total_use += page->size;
-      count++;
-    }
-    GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR " bytes used in %" PRIdPTR " pages\n",
-            type_name[i], total_use, count));
-  }
-
-  GCWARN((GCOUTF, "Generation 1 [medium]:"));
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    if (gc->med_pages[i]) {
-      intptr_t count = 0, page_count = 0;
-      for (page = gc->med_pages[i]; page; page = page->next) {
-        void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
-        void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
-        
-        page_count++;
-        
-        while(start <= end) {
-          objhead *info = (objhead *)start;
-          if (!info->dead) {
-            count += info->size;
-          }
-          start += info->size;
+  if (!(flags & GC_DUMP_SUPPRESS_SUMMARY)) {
+    GCPRINT(GCOUTF, "Begin Racket3m\n");
+    for (i = 0; i < MAX_DUMP_TAG; i++) {
+      if (counts[i]) {
+        char *tn, buf[256];
+        if (get_type_name)
+          tn = get_type_name((Type_Tag)i);
+        else
+          tn = NULL;
+        if (!tn) {
+          sprintf(buf, "unknown,%d", i);
+          tn = buf;
         }
+        GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR " %10" PRIdPTR "\n",
+                tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
       }
-      GCWARN((GCOUTF, " %" PRIdPTR " [%" PRIdPTR "/%" PRIdPTR "]",
-	      count, page_count, gc->med_pages[i]->size));
     }
+    GCPRINT(GCOUTF, "End Racket3m\n");
+
+    GCWARN((GCOUTF, "Generation 0: %" PRIdPTR " of %" PRIdPTR " bytes used\n",
+            (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
+
+    for(i = 0; i < PAGE_TYPES; i++) {
+      uintptr_t total_use = 0, count = 0;
+
+      for(page = gc->gen1_pages[i]; page; page = page->next) {
+        total_use += page->size;
+        count++;
+      }
+      GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR " bytes used in %" PRIdPTR " pages\n",
+              type_name[i], total_use, count));
+    }
+
+    GCWARN((GCOUTF, "Generation 1 [medium]:"));
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      if (gc->med_pages[i]) {
+        intptr_t count = 0, page_count = 0;
+        for (page = gc->med_pages[i]; page; page = page->next) {
+          void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+          void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+        
+          page_count++;
+        
+          while(start <= end) {
+            objhead *info = (objhead *)start;
+            if (!info->dead) {
+              count += info->size;
+            }
+            start += info->size;
+          }
+        }
+        GCWARN((GCOUTF, " %" PRIdPTR " [%" PRIdPTR "/%" PRIdPTR "]",
+                count, page_count, gc->med_pages[i]->size));
+      }
+    }
+    GCWARN((GCOUTF, "\n"));
+
+
+    GCWARN((GCOUTF,"\n"));
+    GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
+    GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
+    GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
+            gc->used_pages * APAGE_SIZE,
+            mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
+    GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
+    GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
+    GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
+    GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
+    GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
   }
-  GCWARN((GCOUTF, "\n"));
-
-
-  GCWARN((GCOUTF,"\n"));
-  GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
-  GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
-  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
-          gc->used_pages * APAGE_SIZE, 
-          mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
-  GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
-  GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
-  GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
-  GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
-  GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
 
   if (flags & GC_DUMP_SHOW_TRACE) {
     print_traced_objects(path_length_limit, get_type_name, print_tagged_value);
