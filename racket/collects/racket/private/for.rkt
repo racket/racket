@@ -1954,7 +1954,7 @@
                   eof)]])))
 
   (define (dir-list full-d d acc)
-    (for/fold ([acc acc]) ([f (in-list (directory-list full-d))])
+    (for/fold ([acc acc]) ([f (in-list (reverse (directory-list full-d)))])
 	      (cons (build-path d f) acc)))
 
   (define (next-body l d init-dir use-dir?)
