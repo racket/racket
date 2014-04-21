@@ -2759,6 +2759,34 @@
            (ret (cl->* (->* (list -Symbol -Symbol) -Symbol -Symbol)
                        (->* (list) -String -String)))]
 
+       [tc-e
+         (case-lambda
+           [() 1]
+           [args 2])
+         #:ret (ret (t:-> (-val 1)) -true-filter)
+         #:expected (ret (t:-> (-val 1)) -no-filter)]
+
+       [tc-e
+         (case-lambda
+           [(x . y) 2]
+           [args 1])
+         #:ret (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 2))) -true-filter)
+         #:expected (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 2))) -no-filter)]
+
+       [tc-e
+         (case-lambda
+           [(x) 2]
+           [args 1])
+         #:ret (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 2))) -true-filter)
+         #:expected (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 2))) -no-filter)]
+
+       [tc-err
+         (case-lambda
+           [(x . y) 1]
+           [args 2])
+         #:ret (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 1))) -true-filter)
+         #:expected (ret (cl->* (t:-> (-val 1)) (t:-> Univ (-val 1))) -no-filter)]
+
        ;; typecheck-fail should fail
        [tc-err (typecheck-fail #'stx "typecheck-fail")
                #:msg #rx"typecheck-fail"]

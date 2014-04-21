@@ -1,5 +1,5 @@
 #;
-(exn-pred 2)
+(exn-pred 1)
 #lang typed/racket
 (: f (case->
   (Symbol Symbol *  -> Integer)
