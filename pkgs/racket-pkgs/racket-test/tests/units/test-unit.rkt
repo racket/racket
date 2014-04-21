@@ -540,10 +540,12 @@
   (test 1 (l u4))
   (test 1 (l u5))
   (test 2 (l u6))
-  (test (letrec ((x x)) x)
-    (let ()
-      (define-values/invoke-unit (unit-from-context yz-sig) (import) (export yz-sig))
-      y))
+  (test-runtime-error
+   exn:fail:contract:variable?
+   "undefined"
+   (let ()
+     (define-values/invoke-unit (unit-from-context yz-sig) (import) (export yz-sig))
+     y))
   (test 1
     (let ()
       (let ((u (unit-from-context yz-sig)))
@@ -659,8 +661,6 @@
     (let ((b 2))
       (define-values/invoke-unit u1 (import) (export b-sig))
       b)))
-  
-
 
 (let ((x 1)
       (v 2))
@@ -1362,14 +1362,21 @@
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
   (let-syntax ([x 1])
     (define-values/invoke-unit/infer (link u x))))
-(let ()
-  (define-values/invoke-unit/infer (link u v))
-  x)
 
+(test-runtime-error
+ exn:fail:contract:variable?
+ "undefined"
+ (let ()
+   (define-values/invoke-unit/infer (link u v))
+   x))
 
-(let ()
-  (define-values/invoke-unit/infer (export x-sig) (link u v))
-  x)
+(test-runtime-error
+ exn:fail:contract:variable?
+ "undefined"
+ (let ()
+   (define-values/invoke-unit/infer (export x-sig) (link u v))
+   x))
+
 (let ()
   (define-values/invoke-unit/infer (export x-sig) v)
   x)
@@ -1403,7 +1410,6 @@
   (test-runtime-error exn? "define-values/invoke-unit/infer: init-depend broken"
     (define-values/invoke-unit/infer (export) (link u@ v@))))
 
-
 (define-unit u (import x-sig) (export) x)
 (test-syntax-error "define-values/invoke-unit/infer: bad imports"
   (define-values/invoke-unit/infer u))
@@ -1417,7 +1423,6 @@
   (let ()
     (define-values/invoke-unit/infer u)
     (+ y x)))
-
 
 (test 1
   (let ()
@@ -1504,10 +1509,12 @@
 (test-syntax-error "compound-unit/infer: unprovided sig"
   (compound-unit/infer (import) (export x-sig) (link)))
 
-(test (letrec ((x x)) x)
-  (invoke-unit 
-   (compound-unit/infer (import) (export)
-                        (link x y))))
+(test-runtime-error
+ exn:fail:contract:variable?
+ "undefined"
+ (invoke-unit 
+  (compound-unit/infer (import) (export)
+                       (link x y))))
 
 (test 3
   (let ()
