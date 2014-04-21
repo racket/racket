@@ -71,6 +71,7 @@ Closes the output side of @racket[hc], if it is live.
 @defproc[(http-conn-send! [hc http-conn-live?] [uri (or/c bytes? string?)]
                           [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
+                          [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:content-decode decodes (listof symbol?) '(gzip)]
                           [#:data data (or/c false/c bytes? string?) #f])
@@ -84,6 +85,10 @@ additional headers given in @racket[headers] and the additional data
 If @racket[headers] does not contain an @litchar{Accept-Encoding}
 header, then a header indicating that encodings from @racket[decodes]
 are accepted is automatically added.
+
+If @racket[close?] is @racket[#t] and @racket[headers] does not
+contain a @litchar{Connection} header, then a @litchar{Connection:
+close} header will be added.
 
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
