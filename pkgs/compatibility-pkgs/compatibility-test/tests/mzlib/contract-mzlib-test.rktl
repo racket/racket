@@ -4178,8 +4178,8 @@ so that propagation occurs.
   (test-name 'printable/c printable/c)
   (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
   (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
-  (test-name '(or/c '() 'x 1 #f #\a void? undefined?)
-             (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
+  (test-name '(or/c '() 'x 1 #f #\a void?)
+             (one-of/c '() 'x 1 #f #\a (void)))
   
   (test-name '(subclass?/c c%) 
              (let ([c% (class object% (super-new))]) (subclass?/c c%)))
