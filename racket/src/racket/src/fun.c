@@ -1776,8 +1776,6 @@ cert_with_specials(Scheme_Object *code,
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
 	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_module_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_modulestar_stx, name, phase)
               || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
@@ -1815,7 +1813,7 @@ cert_with_specials(Scheme_Object *code,
     if (SCHEME_PAIRP(code))
       return v;
 
-    return scheme_datum_to_syntax(v, code, code, 0, 1);
+    return scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
   } else if (SCHEME_STX_NULLP(code))
     return code;
 

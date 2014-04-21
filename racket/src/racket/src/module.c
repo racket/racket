@@ -7169,7 +7169,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                 Module_Begin_Expand_State *super_bxs,
                                 Scheme_Object *super_phase_shift)
 {
-  Scheme_Object *fm, *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx;
+  Scheme_Object *fm, *disarmed_form;
+  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -7198,7 +7199,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (!scheme_is_toplevel(env))
     scheme_wrong_syntax(NULL, NULL, form, "not in a module-definition context");
 
-  fm = SCHEME_STX_CDR(form);
+  disarmed_form = scheme_stx_taint_disarm(form, NULL);
+
+  fm = SCHEME_STX_CDR(disarmed_form);
   if (!SCHEME_STX_PAIRP(fm))
     scheme_wrong_syntax(NULL, NULL, form, NULL);
   nm = SCHEME_STX_CAR(fm);
@@ -7418,7 +7421,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       if (!SCHEME_STXP(fm))
         fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
       fm = scheme_add_rename(fm, rn);
-      mb_ctx = scheme_add_rename(form, rn);
+      mb_ctx = scheme_add_rename(disarmed_form, rn);
     } else {
       if (!SCHEME_STXP(fm))
         fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
@@ -7483,7 +7486,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Object *mb;
       mb = scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 0);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
-      fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+      fm = scheme_datum_to_syntax(fm, form, disarmed_form, 0, 2);
       fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
       if (ii) {
         /* Since fm is a newly-created syntax object, we need to re-add renamings: */
@@ -7542,7 +7545,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     hints = m->hints;
     m->hints = NULL;
 
-    formname = SCHEME_STX_CAR(form);
+    formname = SCHEME_STX_CAR(disarmed_form);
     fm = cons(formname,
 	      cons(nm,
 		   cons(orig_ii, cons(fm, scheme_null))));

@@ -1106,7 +1106,18 @@
     (eval '(require 'm))
     (parameterize ([current-namespace (module->namespace ''m)])
       (eval '(m)))))
-  
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check a a submodule can be armed:
+
+(test #t
+      syntax?
+      (expand
+       (expand
+        #'(module m racket/base
+            (define-syntax-rule (s) (module x racket/base 10))
+            (s)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
