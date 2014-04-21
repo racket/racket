@@ -734,7 +734,7 @@ for @racket[pict] that does not already use a specific pen style.}
 
 @defproc[(colorize [pict pict?]
                    [color (or/c string? (is-a?/c color%)
-                                (list byte? byte? byte?))])
+                                (list/c byte? byte? byte?))])
          pict?]{
 
 Selects a specific color drawing, which applies to drawing in
@@ -986,7 +986,7 @@ frame's drawing area, and the @racket[frame-x], @racket[frame-y],
 and @racket[frame-style] keyword arguments behave in the same manner as @racket[x], 
 @racket[y], and @racket[style] arguments for the @racket[frame%].}
 
-@defparam[current-expected-text-scale scales (list real? real?)]{
+@defparam[current-expected-text-scale scales (list/c real? real?)]{
 
 A parameter used to refine text measurements to better match an
 expected scaling of the image. The @racket[scale/improve-new-text]
