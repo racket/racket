@@ -937,14 +937,15 @@ static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size)
 }
 
 Scheme_Env *
-scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree)
+scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
+                      int new_exp_module_tree, int new_pre_registry)
 {
   Scheme_Env *menv;
   Scheme_Module_Registry *reg;
 
   menv = make_env(env, 7);
 
-  if (new_exp_module_tree && !menv->module_pre_registry) {
+  if (new_pre_registry) {
     /* pre_registry is for declarations to be used by submodules */
     reg = MALLOC_ONE_TAGGED(Scheme_Module_Registry);
     reg->so.type = scheme_module_registry_type;

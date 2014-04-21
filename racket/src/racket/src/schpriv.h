@@ -3478,7 +3478,8 @@ Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
 THREAD_LOCAL_DECL(extern Scheme_Bucket_Table *scheme_module_code_cache);
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv);
 
-Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree);
+Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
+                                  int new_exp_module_tree, int new_pre_registry);
 int scheme_is_module_env(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it);

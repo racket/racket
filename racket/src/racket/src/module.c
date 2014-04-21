@@ -5332,7 +5332,7 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
                             scheme_write_to_string(m->modname, NULL));
 
       /* printf("new %ld %s\n", env->phase, scheme_write_to_string(m->modname, NULL)); */
-      menv = scheme_new_module_env(env, m, 0);
+      menv = scheme_new_module_env(env, m, 0, 0);
       scheme_hash_set(MODCHAIN_TABLE(env->modchain), m->modname, (Scheme_Object *)menv);
 
       running = (char *)scheme_malloc_atomic(menv->module->num_phases);
@@ -5975,7 +5975,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m->predefined = scheme_starting_up;
   m->phaseless = scheme_true;
   
-  env = scheme_new_module_env(for_env, m, 0);
+  env = scheme_new_module_env(for_env, m, 0, 0);
 
   if (!scheme_defining_primitives) {
     config = scheme_current_config();
@@ -7295,7 +7295,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* Create module environment. This environment gets a fresh table
      for phase-1 instances: */
-  menv = scheme_new_module_env(top_env, m, 1);
+  menv = scheme_new_module_env(top_env, m, 1, SCHEME_NULLP(submodule_ancestry));
 
   menv->disallow_unbound = 1;
   
