@@ -1214,7 +1214,6 @@ path/s is either such a string or a list of them.
 "racket/collects/racket/private/generic-interfaces.rkt" responsible (asumu stamourv cce)
 "racket/collects/racket/private/generic-methods.rkt" responsible (asumu stamourv cce)
 "racket/collects/racket/private/generic.rkt" responsible (asumu stamourv cce)
-"racket/collects/racket/private/shared-body.rktl" drdr:command-line #f
 "racket/collects/s-exp" responsible (eli mflatt)
 "racket/collects/syntax/parse" responsible (ryanc)
 "racket/collects/syntax/parse.rkt" responsible (ryanc)
