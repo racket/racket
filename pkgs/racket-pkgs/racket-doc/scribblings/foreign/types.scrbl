@@ -530,8 +530,7 @@ For @tech{callouts} to foreign functions with the generated type:
 
  @item{If @racket[in-original-place?] is true, then when a foreign
        @tech{callout} procedure with the generated type is called in
-       any Racket @tech[#:doc '(lib
-       "scribblings/reference/reference.scrbl")]{place}, the procedure
+       any Racket @tech-place[], the procedure
        is called from the original Racket place. Use this mode for a
        foreign function that is not thread-safe at the C level, which
        means that it is not place-safe at the Racket
