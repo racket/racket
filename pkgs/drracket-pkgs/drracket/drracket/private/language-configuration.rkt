@@ -256,7 +256,8 @@
         (define (enter-callback)
           (cond [(get-selected-language)
                  (set! cancelled? #f)
-                 (send dialog show #f)]
+                 (send dialog show #f)
+                 #t]
                 [else #f]))
         
         ;; ok-callback : -> void
@@ -608,9 +609,12 @@
                 (λ (rb evt)
                   (use-teaching-language-rb-callback))]))
         (define (use-teaching-language-rb-callback)
-          (when most-recent-teaching-languages-hier-list-selection
-            (select-a-language-in-hierlist teaching-languages-hier-list
-                                           (cdr most-recent-teaching-languages-hier-list-selection)))
+          (cond
+            [most-recent-teaching-languages-hier-list-selection
+             (select-a-language-in-hierlist teaching-languages-hier-list
+                                            (cdr most-recent-teaching-languages-hier-list-selection))]
+            [else
+             (select-first-language-in-hierlist teaching-languages-hier-list)])
           (send use-chosen-language-rb set-selection #f)
           (send use-language-in-source-rb set-selection #f)
           (send use-teaching-language-rb set-selection 0)
@@ -1130,6 +1134,19 @@
                          (when (is-a? child hierarchical-list-compound-item<%>)
                            (send child open)
                            (loop child (car position) (cdr position)))]))])))]))
+        
+        (define (select-first-language-in-hierlist hier-list)
+          (let loop ([hi hier-list])
+            (for/or ([child (in-list (send hi get-items))])
+              (cond
+                [(is-a? child hierarchical-list-compound-item<%>)
+                 (send child open)
+                 (loop child)]
+                [(is-a? child hieritem-language<%>)
+                 (send child select #t)
+                 #t]
+                [else 
+                 #f]))))
         
         ;; docs-callback : -> void
         (define (docs-callback)
