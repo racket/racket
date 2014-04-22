@@ -2747,6 +2747,18 @@
            (f 1 2 3))
          #:ret (ret Univ -true-filter)]
 
+       [tc-err
+         (case-lambda
+           ((x y . z) 'x)
+           ((x . y) 'x)
+           (w (first w)))
+         #:ret
+           (ret (cl->* (->* (list -Symbol -Symbol) -Symbol -Symbol)
+                       (->* (list) -String -String)))
+         #:expected
+           (ret (cl->* (->* (list -Symbol -Symbol) -Symbol -Symbol)
+                       (->* (list) -String -String)))]
+
        ;; typecheck-fail should fail
        [tc-err (typecheck-fail #'stx "typecheck-fail")
                #:msg #rx"typecheck-fail"]
