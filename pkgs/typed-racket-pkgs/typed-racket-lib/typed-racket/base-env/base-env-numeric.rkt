@@ -1759,15 +1759,13 @@
                     (-NegFlonum . -> . -NegInt)
                     (-NonPosFlonum . -> . -NonPosInt)
                     (-Flonum . -> . -Int))]
-[real->single-flonum (cl->* (-PosReal . -> . -PosSingleFlonum)
-                            (-NegReal . -> . -NegSingleFlonum)
-                            (-RealZero . -> . -SingleFlonumZero)
+[real->single-flonum (cl->* (-RealZero . -> . -SingleFlonumZero)
+                            ;; no positive / negative cases, possible underflow
                             (-NonNegReal . -> . -NonNegSingleFlonum)
                             (-NonPosReal . -> . -NonPosSingleFlonum)
                             (-Real . -> . -SingleFlonumZero))]
-[real->double-flonum (cl->* (-PosReal . -> . -PosFlonum)
-                            (-NegReal . -> . -NegFlonum)
-                            (-RealZero . -> . -FlonumZero)
+[real->double-flonum (cl->* (-RealZero . -> . -FlonumZero)
+                            ;; no positive / negative cases, possible underflow
                             (-NonNegReal . -> . -NonNegFlonum)
                             (-NonPosReal . -> . -NonPosFlonum)
                             (-Real . -> . -Flonum))]
@@ -2324,9 +2322,8 @@
                              (-NegExtFlonum . -> . -NegInt)
                              (-NonPosExtFlonum . -> . -NonPosInt)
                              (-ExtFlonum . -> . -Int))]
-[real->extfl (cl->* (-PosReal . -> . -PosExtFlonum)
-                    (-NegReal . -> . -NegExtFlonum)
-                    (-RealZero . -> . -ExtFlonumZero)
+[real->extfl (cl->* (-RealZero . -> . -ExtFlonumZero)
+                    ;; no positive / negative cases, possible underflow
                     (-NonNegReal . -> . -NonNegExtFlonum)
                     (-NonPosReal . -> . -NonPosExtFlonum)
                     (-Real . -> . -ExtFlonum))]
@@ -2337,9 +2334,8 @@
                      (-NonPosExtFlonum . -> . -NonPosRat)
                      (-ExtFlonum . -> . -Rat))]
 [extfl->inexact (cl->* (-ExtFlonumZero . -> . -FlonumZero)
-                       (-PosExtFlonum . -> . -PosFlonum)
+                       ;; no positive / negative cases, possible underflow
                        (-NonNegExtFlonum . -> . -NonNegFlonum)
-                       (-NegExtFlonum . -> . -NegFlonum)
                        (-NonPosExtFlonum . -> . -NonPosFlonum)
                        (-ExtFlonum . -> . -Flonum))]
 [unsafe-extflabs (extflabs-type)]

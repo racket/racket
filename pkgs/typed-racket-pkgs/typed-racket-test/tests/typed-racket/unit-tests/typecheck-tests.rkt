@@ -413,6 +413,16 @@
         (tc-e (min (ann -2 Negative-Fixnum) (ann 3 Fixnum)) -NegFixnum)
         (tc-e (min (ann 3 Fixnum) (ann -2 Negative-Fixnum)) -NegFixnum)
         (tc-e (exact->inexact (ann 3 Number)) (t:Un -InexactReal -InexactComplex))
+        (tc-e (real->double-flonum #e1e-500) -NonNegFlonum)
+        (tc-e (real->double-flonum #e-1e-500) -NonPosFlonum)
+        (tc-e (real->single-flonum #e1e-500) -NonNegSingleFlonum)
+        (tc-e (real->single-flonum #e-1e-500) -NonPosSingleFlonum)
+        (tc-e (real->single-flonum 1e-300) -NonNegSingleFlonum)
+        (tc-e (real->single-flonum -1e-300) -NonPosSingleFlonum)
+        (tc-e (extfl->inexact 1t-500) -NonNegFlonum)
+        (tc-e (extfl->inexact -1t-500) -NonPosFlonum)
+        (tc-e (real->extfl #e1e-8192) -NonNegExtFlonum)
+        (tc-e (real->extfl #e-1e-8192) -NonPosExtFlonum)
         (tc-err (let: ([z : 10000000000000 10000000000000]) z)) ; unsafe
         (tc-err (let: ([z : -4611686018427387904 -4611686018427387904]) z)) ; unsafe
         (tc-e (let: ([z : -4611686018427387905 -4611686018427387905]) z) (-val -4611686018427387905))
