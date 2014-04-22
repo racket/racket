@@ -8,7 +8,7 @@
          (types numeric-tower union abbrev)
          (optimizer utils numeric-utils logging fixnum))
 
-(provide float-opt-expr float-arg-expr int-expr)
+(provide float-opt-expr float-arg-expr int-expr float-op)
 
 
 (define (mk-float-tbl generic)

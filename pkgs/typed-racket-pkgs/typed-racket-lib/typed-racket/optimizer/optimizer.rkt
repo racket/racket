@@ -5,8 +5,9 @@
          (private syntax-properties)
          (types type-table)
          (optimizer utils
-                    number fixnum float float-complex vector string list pair
-                    sequence box struct dead-code apply unboxed-let
+                    number fixnum float extflonum float-complex
+                    vector string list pair sequence
+                    box struct dead-code apply unboxed-let
                     hidden-costs))
 
 
@@ -38,7 +39,7 @@
   (pattern :number-opt-expr)
   (pattern :fixnum-opt-expr)
   (pattern :float-opt-expr)
-  ;; TODO add optimizations for extflonums. should be easy (like structs), if it typechecks, it's the right type
+  (pattern :extflonum-opt-expr)
   (pattern :float-complex-opt-expr)
   (pattern :vector-opt-expr)
   (pattern :string-opt-expr)
