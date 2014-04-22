@@ -58,7 +58,7 @@
     (new text-field% 
          [parent dlg] 
          [label (string-constant text-to-insert)]
-         [callback (λ: ([x : Any] [y : Any]) (update-txt (send (assert text-field defined?) get-value)))]))
+         [callback (λ: ([x : Any] [y : Any]) (update-txt (send text-field get-value)))]))
   (: info-bar (Instance Horizontal-Panel%))
   (define info-bar (new horizontal-panel%
                         [parent dlg]
@@ -73,7 +73,7 @@
            [callback
             (λ: ([x : Any] [y : Any])
                 (let ([old (preferences:get 'drracket:large-letters-font)]
-                      [choice (send (assert font-choice defined?) get-selection)])
+                      [choice (send font-choice get-selection)])
                   (when choice
                     (preferences:set 'drracket:large-letters-font
                                      (cons (list-ref (get-face-list)
@@ -81,7 +81,7 @@
                                            (if old
                                                (cdr old)
                                                (send (get-default-font) get-point-size))))
-                    (update-txt (send (assert text-field defined?) get-value)))))])))
+                    (update-txt (send text-field get-value)))))])))
   
   (: count (Instance Message%))
   (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
@@ -130,15 +130,15 @@
           [(null? faces) (void)]
           [else (cond
                   [(equal? face (car faces))
-                   (send (assert font-choice defined?) set-selection i)]
+                   (send font-choice set-selection i)]
                   [else
                    (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
   (update-txt " ")
-  (send (assert text-field defined?) focus)
+  (send text-field focus)
   (send dlg show #t)
-  (and ok? (send (assert text-field defined?) get-value)))
+  (and ok? (send text-field get-value)))
 
 (: get-w-size ((Instance Bitmap-DC%) String -> String))
 (define (get-w-size dc face-name)
