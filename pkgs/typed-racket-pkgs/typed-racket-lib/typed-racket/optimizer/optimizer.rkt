@@ -38,6 +38,7 @@
   (pattern :number-opt-expr)
   (pattern :fixnum-opt-expr)
   (pattern :float-opt-expr)
+  ;; TODO add optimizations for extflonums. should be easy (like structs), if it typechecks, it's the right type
   (pattern :float-complex-opt-expr)
   (pattern :vector-opt-expr)
   (pattern :string-opt-expr)
