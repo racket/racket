@@ -68,9 +68,10 @@ that render them as @racket[pict]s.
                         [#:x-spacing x-spacing (or/c (and/c real? positive?) #f) #f]
                         [#:y-spacing y-spacing (or/c (and/c real? positive?) #f) #f])
          pict?]{
-  Uses a naive layered algorithm to build the tree.
-  It recursively constructs subtrees and then horizontally
-  combines them, aligning them at the tops. Then it places
+  Uses a naive algorithm that ensures that all nodes at a fixed
+  depth are the same vertical distance from the root (dubbed ``layered'').
+  It recursively lays out subtrees and then horizontally
+  combines them, aligning them at their tops. Then it places
   the root node centered over the children nodes.
   
   @examples[#:eval 
@@ -102,7 +103,9 @@ that render them as @racket[pict]s.
                (tree-layout
                 (tree-layout
                  (tree-layout
-                  (tree-layout #f #f)
+                  (tree-layout 
+                   (tree-layout #f #f)
+                   #f)
                   #f)
                  #f)
                 #f)))
@@ -132,6 +135,12 @@ that render them as @racket[pict]s.
   as it can, even to the point that one subtree of a given node might cross
   under the other one.
 
+  More precisely, it recursively lays out the two subtree and then,
+  without adjusting the layout of the two subtrees, moves them as
+  close together as it can, putting the root of the new tree centered
+  on top of its children. (It does this in linear time, using clever
+  techniques as discussed in the paper.)
+  
   The @racket[x-spacing] and @racket[y-spacing] are the amount of space that each
   row and each column takes up, measured in pixels. If @racket[x-spacing] is @racket[#f],
   it is the width of the widest node @racket[pict?] in the tree. 

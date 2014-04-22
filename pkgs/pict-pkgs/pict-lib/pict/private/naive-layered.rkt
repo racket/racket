@@ -19,7 +19,9 @@
             (define children-pairs
               (for/list ([child (in-list children)])
                 (match child
-                  [#f (cons #f (blank))]
+                  [#f 
+                   (define b (blank))
+                   (cons b b)]
                   [(tree-edge child color) 
                    (loop child)])))
             (define this-root (launder (ghost pict)))
@@ -106,7 +108,9 @@
      (_tree-layout
       (_tree-layout
        (_tree-layout
-        (_tree-layout #f #f)
+        (_tree-layout 
+         (_tree-layout #f #f)
+         #f)
         #f)
        #f)
       #f)))
