@@ -330,6 +330,8 @@
           (subtype* A0 t t*)]
          [((Base: 'FlVector _ _ _) (Sequence: (list t*)))
           (subtype* A0 -Flonum t*)]
+         [((Base: 'ExtFlVector _ _ _) (Sequence: (list t*)))
+          (subtype* A0 -ExtFlonum t*)]
          [((Base: 'FxVector _ _ _) (Sequence: (list t*)))
           (subtype* A0 -Fixnum t*)]
          [((Base: 'String _ _ _) (Sequence: (list t*)))

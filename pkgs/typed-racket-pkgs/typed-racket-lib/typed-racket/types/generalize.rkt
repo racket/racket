@@ -28,6 +28,7 @@
         [(? (lambda (t) (subtype t -FloatComplex))) -FloatComplex]
         [(? (lambda (t) (subtype t -SingleFlonumComplex))) -SingleFlonumComplex]
         [(? (lambda (t) (subtype t -Number))) -Number]
+        [(? (lambda (t) (subtype t -ExtFlonum))) -ExtFlonum]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(MPair: t1 (Value: '())) (-mlst t1)]

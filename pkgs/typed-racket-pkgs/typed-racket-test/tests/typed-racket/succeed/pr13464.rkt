@@ -22,6 +22,11 @@
   (: pos-real     Positive-Real)
   (: non-neg-real Nonnegative-Real)
   (: non-pos-real Nonpositive-Real)
+  
+  (: neg-extflonum     Negative-ExtFlonum)
+  (: pos-extflonum     Positive-ExtFlonum)
+  (: non-neg-extflonum Nonnegative-ExtFlonum)
+  (: non-pos-extflonum Nonpositive-ExtFlonum)
 
 
   (define neg-flonum     +nan.0)
@@ -44,7 +49,12 @@
   (define non-neg-real +nan.0)
   (define non-pos-real +nan.0)
 
+  (define neg-extflonum     +nan.t)
+  (define pos-extflonum     +nan.t)
+  (define non-neg-extflonum +nan.t)
+  (define non-pos-extflonum +nan.t)
 
+  
   ;; extra tests for zeroes
   (: non-neg-flonum+0 Nonnegative-Flonum)
   (: non-pos-flonum+0 Nonpositive-Flonum)
@@ -66,6 +76,11 @@
   (: non-neg-real-0 Nonnegative-Real)
   (: non-pos-real-0 Nonpositive-Real)
 
+  (: non-neg-extflonum+0 Nonnegative-ExtFlonum)
+  (: non-pos-extflonum+0 Nonpositive-ExtFlonum)
+  (: non-neg-extflonum-0 Nonnegative-ExtFlonum)
+  (: non-pos-extflonum-0 Nonpositive-ExtFlonum)
+
   (define non-neg-flonum+0 0.0)
   (define non-pos-flonum+0 0.0)
   (define non-neg-flonum-0 -0.0)
@@ -85,6 +100,11 @@
   (define non-pos-real+0 0.0)
   (define non-neg-real-0 -0.0)
   (define non-pos-real-0 -0.0)
+
+  (define non-neg-extflonum+0 0.0t0)
+  (define non-pos-extflonum+0 0.0t0)
+  (define non-neg-extflonum-0 -0.0t0)
+  (define non-pos-extflonum-0 -0.0t0)
   )
 
 
@@ -106,6 +126,10 @@ neg-real
 pos-real
 non-neg-real
 non-pos-real
+neg-extflonum
+pos-extflonum
+non-neg-extflonum
+non-pos-extflonum
 
 non-neg-flonum+0
 non-pos-flonum+0
@@ -126,3 +150,8 @@ non-neg-real+0
 non-pos-real+0
 non-neg-real-0
 non-pos-real-0
+
+non-neg-extflonum+0
+non-pos-extflonum+0
+non-neg-extflonum-0
+non-pos-extflonum-0

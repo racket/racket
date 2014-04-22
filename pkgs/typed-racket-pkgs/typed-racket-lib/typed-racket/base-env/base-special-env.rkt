@@ -218,9 +218,11 @@
   ;; for `define-runtime-module-path`
   [(make-template-identifier 'combine-module-path 'racket/runtime-path)
    (-> -Variable-Reference -Module-Path -Resolved-Module-Path)]
-  ;; in-fxvector, in-flvector
+  ;; in-fxvector, in-flvector, in-extflvector
   [(make-template-identifier 'in-fxvector* 'racket/fixnum)
    (-> -FxVector (-seq -Fixnum))]
   [(make-template-identifier 'in-flvector* 'racket/flonum)
    (-> -FlVector (-seq -Flonum))]
+  [(make-template-identifier 'in-extflvector* 'racket/extflonum)
+   (-> -ExtFlVector (-seq -ExtFlonum))]
   )

@@ -9,7 +9,8 @@
          (utils stxclass-util)
          syntax/parse
          unstable/function
-         unstable/sequence)
+         unstable/sequence
+         racket/extflonum)
 
 (import)
 (export tc-literal^)
@@ -66,6 +67,16 @@
      -SingleFlonumComplex]
     ;; can't have real and imaginary parts that are both inexact, but not the same precision
     [(~var i (3d number?)) -Number] ; otherwise, Number
+    
+    ;; 80-bit flonums
+    [(~var i (3d (lambda (x) (eqv? x 0.0t0)))) -ExtFlonumPosZero]
+    [(~var i (3d (lambda (x) (eqv? x -0.0t0)))) -ExtFlonumNegZero]
+    [(~var i (3d (lambda (x) (eqv? x +nan.t)))) -ExtFlonumNan]
+    [(~var i (3d (lambda (x) (eqv? x +inf.t)))) (-val +inf.t)]
+    [(~var i (3d (lambda (x) (eqv? x -inf.t)))) (-val -inf.t)]
+    [(~var i (3d (conjoin extflonum? (λ (x) (extfl> x 0.0t0))))) -PosExtFlonum]
+    [(~var i (3d (conjoin extflonum? (λ (x) (extfl< x 0.0t0))))) -NegExtFlonum]
+    [(~var i (3d extflonum?)) -ExtFlonum] ; for nan
     
     [i:str -String]
     [i:char -Char]

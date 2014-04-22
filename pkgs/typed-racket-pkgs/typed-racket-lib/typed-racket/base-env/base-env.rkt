@@ -7,6 +7,7 @@
   (except-in racket -> ->* one-of/c class)
   racket/unsafe/ops
   racket/unsafe/undefined
+  (only-in racket/extflonum floating-point-bytes->extfl extfl->floating-point-bytes)
   ;(only-in rnrs/lists-6 fold-left)
   '#%paramz
   "extra-procs.rkt"
@@ -87,6 +88,10 @@
 [system-big-endian? (-> B)]
 
 [order-of-magnitude (-> -PosReal -Int)]
+
+;; Section 4.2.5.3 (ExtFlonum-Bytes Conversions)
+[floating-point-bytes->extfl (->opt -Bytes [Univ -Nat -Nat] -ExtFlonum)]
+[extfl->floating-point-bytes (->opt -ExtFlonum [Univ -Bytes -Nat] -Bytes)]
 
 ;; Section 4.3 (Strings)
 [string? (make-pred-ty -String)]

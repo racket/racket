@@ -10,7 +10,7 @@
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
 @(define the-top-eval (make-base-eval))
 @(the-top-eval '(require (except-in typed/racket #%module-begin)
-                         racket/flonum racket/fixnum))
+                         racket/flonum racket/extflonum racket/fixnum))
 
 @(define-syntax-rule (ex . args)
    (examples #:eval the-top-eval . args))
@@ -190,6 +190,21 @@ needed to check the desired bounds at runtime.
 -12
 3+4i]
 
+@defnums[(
+ExtFlonum
+Positive-ExtFlonum
+Nonnegative-ExtFlonum
+Negative-ExtFlonum
+Nonpositive-ExtFlonum
+ExtFlonum-Negative-Zero
+ExtFlonum-Positive-Zero
+ExtFlonum-Zero
+ExtFlonum-Nan
+)]
+80-bit @rtech{extflonum} types, for the values operated on by
+@racketmodname[racket/extflonum] exports.
+These are not part of the numeric tower.
+
 @subsection{Other Base Types}
 
 @deftogether[(
@@ -352,6 +367,8 @@ corresponding to @racket[trest], where @racket[bound]
 
 @defidform[FlVector]{An @rtech{flvector}.
   @ex[(flvector 1.0 2.0 3.0)]}
+@defidform[ExtFlVector]{An @rtech{extflvector}.
+  @ex[(extflvector 1.0t0 2.0t0 3.0t0)]}
 @defidform[FxVector]{An @rtech{fxvector}.
   @ex[(fxvector 1 2 3)]}
 

@@ -268,6 +268,7 @@
   racket/file
   racket/fixnum
   racket/flonum
+  racket/extflonum
   racket/function
   racket/future
   racket/list
@@ -399,6 +400,9 @@
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
+        (tc-e (extflexpt 0.5t0 0.3t0) -NonNegExtFlonum)
+        (tc-e (extflexpt 0.00000000001t0 100000000000.0t0) -NonNegExtFlonum)
+        (tc-e (extflexpt -2.0t0 -0.5t0) -ExtFlonum) ; NaN
         (tc-e (tanh (ann 0 Nonnegative-Integer)) -NonNegReal)
         (tc-e (sinh (ann 0 Nonpositive-Integer)) -NonPosReal)
         (tc-e (angle -1) (t:Un -InexactReal -Zero))
@@ -2163,8 +2167,10 @@
                (define f1 (sequence-ref s1 0))
                (define s2 (in-fxvector (fxvector 1 2 3)))
                (define f2 (sequence-ref s2 2))
-               (list f1 f2))
-             (-lst* -Flonum -Fixnum)]
+               (define s3 (in-extflvector (extflvector 1.0t0 2.0t0 3.0t0)))
+               (define f3 (sequence-ref s3 1))
+               (list f1 f2 f3))
+             (-lst* -Flonum -Fixnum -ExtFlonum)]
 
        ;; for/hash, for*/hash - PR 14306
        [tc-e (for/hash: : (HashTable Symbol String)
@@ -2807,6 +2813,14 @@
    (tc-l -5# -NegFlonum)
    (tc-l -5.0 -NegFlonum)
    (tc-l -5.1 -NegFlonum)
+   (tc-l 0.0t0 -ExtFlonumPosZero)
+   (tc-l -0.0t0 -ExtFlonumNegZero)
+   (tc-l 5#t0 -PosExtFlonum)
+   (tc-l 5.0t0 -PosExtFlonum)
+   (tc-l 5.1t0 -PosExtFlonum)
+   (tc-l -5#t0 -NegExtFlonum)
+   (tc-l -5.0t0 -NegExtFlonum)
+   (tc-l -5.1t0 -NegExtFlonum)
    (tc-l 1+1i -ExactNumber)
    (tc-l 1+1.0i -FloatComplex)
    (tc-l 1.0+1i -FloatComplex)

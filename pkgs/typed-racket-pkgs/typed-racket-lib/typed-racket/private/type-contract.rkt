@@ -539,9 +539,14 @@
     [_ (int-err "not a function" f)]))
 
 (module predicates racket/base
-  (provide nonnegative? nonpositive?)
+  (require racket/extflonum)
+  (provide nonnegative? nonpositive?
+           extflonum? extflzero? extflnonnegative? extflnonpositive?)
   (define nonnegative? (lambda (x) (>= x 0)))
-  (define nonpositive? (lambda (x) (<= x 0))))
+  (define nonpositive? (lambda (x) (<= x 0)))
+  (define extflzero? (lambda (x) (extfl= x 0.0t0)))
+  (define extflnonnegative? (lambda (x) (extfl>= x 0.0t0)))
+  (define extflnonpositive? (lambda (x) (extfl<= x 0.0t0))))
 
 (module numeric-contracts racket/base
   (require
@@ -603,6 +608,11 @@
                      (and (inexact-real? (imag-part x))
                           (inexact-real? (real-part x)))))))
   (define number/sc (numeric/sc Number number?))
+  
+  (define extflonum-zero/sc (numeric/sc ExtFlonum-Zero (and/c extflonum? extflzero?)))
+  (define nonnegative-extflonum/sc (numeric/sc Nonnegative-ExtFlonum (and/c extflonum? extflnonnegative?)))
+  (define nonpositive-extflonum/sc (numeric/sc Nonpositive-ExtFlonum (and/c extflonum? extflnonpositive?)))
+  (define extflonum/sc (numeric/sc ExtFlonum extflonum?))
 
   )
 (require 'numeric-contracts)
@@ -654,6 +664,10 @@
     [(== t:-ExactNumber type-equal?) exact-number/sc]
     [(== t:-InexactComplex type-equal?) inexact-complex/sc]
     [(== t:-Number type-equal?) number/sc]
+    [(== t:-ExtFlonumZero type-equal?) extflonum-zero/sc]
+    [(== t:-NonNegExtFlonum type-equal?) nonnegative-extflonum/sc]
+    [(== t:-NonPosExtFlonum type-equal?) nonpositive-extflonum/sc]
+    [(== t:-ExtFlonum type-equal?) extflonum/sc]
     [else #f]))
 
 

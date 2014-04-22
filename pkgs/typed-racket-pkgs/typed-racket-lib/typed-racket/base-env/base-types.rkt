@@ -75,7 +75,15 @@
 [Positive-Byte -PosByte]
 [Zero (-val 0)]
 [One  (-val 1)]
-
+[ExtFlonum -ExtFlonum]
+[Nonpositive-ExtFlonum -NonPosExtFlonum]
+[Negative-ExtFlonum -NegExtFlonum]
+[Nonnegative-ExtFlonum -NonNegExtFlonum]
+[Positive-ExtFlonum -PosExtFlonum]
+[ExtFlonum-Nan -ExtFlonumNan]
+[ExtFlonum-Zero -ExtFlonumZero]
+[ExtFlonum-Negative-Zero -ExtFlonumNegZero]
+[ExtFlonum-Positive-Zero -ExtFlonumPosZero]
 
 [Void -Void]
 [Undefined -Undefined] ; initial value of letrec bindings

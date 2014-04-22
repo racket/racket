@@ -106,6 +106,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "case-lambda.rkt"
          'struct-extraction
          racket/flonum ; for for/flvector and for*/flvector
+         racket/extflonum ; for for/extflvector and for*/extflvector
          (for-syntax
           racket/lazy-require
           syntax/parse
@@ -1368,7 +1369,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (base-for/flvector: stx)
   (syntax-parse stx
-    [(_ for: #:length n-expr:expr (clauses ...) body ...+)
+    [(_ for: Float flvector make-flvector unsafe-flvector-ref unsafe-flvector-set! flvector-copy
+        #:length n-expr:expr (clauses ...) body ...+)
      (syntax/loc stx
        (-let ([n : Integer  n-expr])
          (cond [(n . > . 0)
@@ -1381,7 +1383,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     (when (i . unsafe-fx>= . n) (break (void)))))
                 xs]
                [else  (flvector)])))]
-    [(_ for: (clauses ...) body ...+)
+    [(_ for: Float flvector make-flvector unsafe-flvector-ref unsafe-flvector-set! flvector-copy
+        (clauses ...) body ...+)
      (syntax/loc stx
        (let ()
          (define n 4)
@@ -1402,7 +1405,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (flvector-copy xs 0 i)))]))
 
 (define-syntax-rule (for/flvector: e ...)
-  (base-for/flvector: for: e ...))
+  (base-for/flvector: for: Flonum flvector make-flvector unsafe-flvector-ref unsafe-flvector-set! flvector-copy e ...))
 
 (define-syntax-rule (for*/flvector: e ...)
-  (base-for/flvector: for*: e ...))
+  (base-for/flvector: for*: Flonum flvector make-flvector unsafe-flvector-ref unsafe-flvector-set! flvector-copy e ...))
+
+(define-syntax-rule (for/extflvector: e ...)
+  (base-for/flvector: for: ExtFlonum extflvector make-extflvector unsafe-extflvector-ref unsafe-extflvector-set! extflvector-copy e ...))
+
+(define-syntax-rule (for*/extflvector: e ...)
+  (base-for/flvector: for*: ExtFlonum extflvector make-extflvector unsafe-extflvector-ref unsafe-extflvector-set! extflvector-copy e ...))
