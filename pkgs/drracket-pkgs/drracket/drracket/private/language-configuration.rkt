@@ -1,6 +1,5 @@
 #lang racket/base
-(require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
-         racket/unit
+(require racket/unit
          mrlib/hierlist
          racket/class
          racket/contract
@@ -19,12 +18,18 @@
          net/url
          syntax/toplevel
          browser/external
-         (only-in mzlib/struct make-->vector))
+         (only-in mzlib/struct make-->vector)
+
+         ;; ensure that this module is always loaded since it is shared below for pretty big
+         (prefix-in : mred/mred))
 
   (define original-output (current-output-port))
   (define (oprintf . args) (apply fprintf original-output args))
   
-  (define-values (sc-use-language-in-source sc-use-teaching-language sc-choose-a-language mouse-event-uses-shortcut-prefix?)
+  (define-values (sc-use-language-in-source 
+                  sc-use-teaching-language
+                  sc-choose-a-language
+                  mouse-event-uses-shortcut-prefix?)
     (let* ([shortcut-prefix (get-default-shortcut-prefix)]
            [menukey-string 
             (apply string-append
@@ -102,14 +107,17 @@
     ;; add-language : (instanceof language%) -> void
     ;; only allows addition on phase2
     ;; effect: updates `languages'
-    (define (add-language language [front? #f] #:allow-executable-creation? [allow-executable-creation? #f])
+    (define (add-language language [front? #f]
+                          #:allow-executable-creation? [allow-executable-creation? #f])
       
       (drracket:tools:only-in-phase 'drracket:language:add-language 'phase2)
       (for-each
        (λ (i<%>)
          (unless (is-a? language i<%>)
            (error 'drracket:language:add-language
-                  "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?"
+                  (string-append
+                   "expected language ~e to implement ~e,"
+                   " forgot to use `drracket:language:get-default-mixin'?")
                   language i<%>)))
        (drracket:language:get-language-extensions))
       
@@ -158,22 +166,41 @@
     
     
     
-    ;                                                                                                      
-    ;                                                                                                      
-    ;                                                                                                      
-    ;   ;                                                                ;   ;          ;                  
-    ;   ;                                                                ;              ;                  
-    ;   ;                                                                ;              ;                  
-    ;   ;   ;;;    ; ;;     ;; ;   ;   ;   ;;;     ;; ;    ;;;        ;; ;   ;   ;;;    ;    ;;;     ;; ;  
-    ;   ;  ;   ;   ;;  ;   ;  ;;   ;   ;  ;   ;   ;  ;;   ;   ;      ;  ;;   ;  ;   ;   ;   ;   ;   ;  ;;  
-    ;   ;      ;   ;   ;  ;    ;   ;   ;      ;  ;    ;  ;    ;     ;    ;   ;      ;   ;  ;     ; ;    ;  
-    ;   ;   ;;;;   ;   ;  ;    ;   ;   ;   ;;;;  ;    ;  ;;;;;;     ;    ;   ;   ;;;;   ;  ;     ; ;    ;  
-    ;   ;  ;   ;   ;   ;  ;    ;   ;   ;  ;   ;  ;    ;  ;          ;    ;   ;  ;   ;   ;  ;     ; ;    ;  
-    ;   ;  ;   ;   ;   ;   ;  ;;   ;  ;;  ;   ;   ;  ;;   ;          ;  ;;   ;  ;   ;   ;   ;   ;   ;  ;;  
-    ;   ;   ;;;;;  ;   ;    ;; ;    ;; ;   ;;;;;   ;; ;    ;;;;       ;; ;   ;   ;;;;;  ;    ;;;     ;; ;  
-    ;                          ;                      ;                                                 ;  
-    ;                     ;    ;                 ;    ;                                            ;    ;  
-    ;                      ;;;;                   ;;;;                                              ;;;;   
+
+;                                                              
+;                                                              
+;                                                              
+;                                                              
+;  ;;;                                                         
+;  ;;;                                                         
+;  ;;;  ;;;;;  ;;; ;;   ;; ;;; ;;; ;;;  ;;;;;   ;; ;;;   ;;;;  
+;  ;;; ;;;;;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;; ;;;;;;;  ;; ;;; 
+;  ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;   ;;;;; ;;; ;;; ;;; ;;; ;;; ;;;   ;;;;; ;;; ;;; ;;;;;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;     
+;  ;;; ;;; ;;; ;;; ;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;;  ;;;;;; 
+;  ;;;  ;;;;;; ;;; ;;;  ;; ;;;  ;; ;;;  ;;;;;;  ;; ;;;   ;;;;  
+;                          ;;;                     ;;;         
+;                      ;;;;;;                  ;;;;;;          
+;                                                              
+;                                                              
+;                                          
+;                                          
+;                                          
+;                                          
+;      ;;; ;;;         ;;;                 
+;      ;;;             ;;;                 
+;   ;; ;;; ;;;  ;;;;;  ;;;   ;;;    ;; ;;; 
+;  ;;;;;;; ;;; ;;;;;;; ;;;  ;;;;;  ;;;;;;; 
+;  ;;; ;;; ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;;   ;;;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;;;;; ;;; ;;; ;;; ;;;  ;;;;;  ;;;;;;; 
+;   ;; ;;; ;;;  ;;;;;; ;;;   ;;;    ;; ;;; 
+;                                      ;;; 
+;                                  ;;;;;;  
+;                                          
+;                                          
     
     
     ;; language-dialog : (boolean language-setting -> (union #f language-setting))
@@ -294,9 +321,10 @@
              (get-selected-language)
              (get-selected-language-settings)))))
     
-    ;; fill-language-dialog :    (vertical-panel panel language-setting -> language-setting)
-    ;;                           (union dialog #f) [...more stuff...]
-    ;;                        -> (-> (union #f language<%>)) (-> settings[corresponding to fst thnk result])
+    ;; fill-language-dialog :
+    ;;    (vertical-panel panel language-setting -> language-setting)
+    ;;    (union dialog #f) [...more stuff...]
+    ;; -> (-> (union #f language<%>)) (-> settings[corresponding to fst thnk result])
     ;; allows the user to configure their language. The input language-setting is used
     ;; as the defaults in the dialog and the output language setting is the user's choice
     ;; if re-center is a dialog, when the show details button is clicked, the dialog is recenterd.
@@ -563,7 +591,9 @@
                                                  [stretchable-width #f]
                                                  [min-width 32]))
         (define in-source-discussion-editor-canvas 
-          (add-discussion in-source-discussion-panel definitions-text use-language-in-source-rb-callback))
+          (add-discussion in-source-discussion-panel 
+                          definitions-text
+                          use-language-in-source-rb-callback))
         (define most-recent-languages-hier-list-selection
           (preferences:get 'drracket:language-dialog:hierlist-default))
         (define most-recent-teaching-languages-hier-list-selection 
@@ -630,33 +660,35 @@
                                            [parent languages-hier-list-panel]
                                            [stretchable-width #f]
                                            [min-width 32]))
-        (define ellipsis-message (new (class canvas%
-                                        (define/override (on-paint)
-                                          (define dc (get-dc))
-                                          (send dc set-font normal-control-font)
-                                          (send dc draw-text "..." 0 0))
-                                        (define/override (on-event evt)
-                                          (when (send evt button-up?)
-                                            (show-other-languages)))
-                                        (inherit get-dc min-width min-height)
-                                        (super-new [style '(transparent)]
-                                                   [parent languages-hier-list-panel]
-                                                   [stretchable-width #f]
-                                                   [stretchable-height #t])
-                                        (let ()
-                                          (define dc (get-dc))
-                                          (define-values (w h _1 _2) (send dc get-text-extent "..." normal-control-font))
-                                          (min-width (inexact->exact (ceiling w)))
-                                          (min-height (inexact->exact (ceiling h)))))))
+        (define ellipsis-message 
+          (new (class canvas%
+                 (define/override (on-paint)
+                   (define dc (get-dc))
+                   (send dc set-font normal-control-font)
+                   (send dc draw-text "..." 0 0))
+                 (define/override (on-event evt)
+                   (when (send evt button-up?)
+                     (show-other-languages)))
+                 (inherit get-dc min-width min-height)
+                 (super-new [style '(transparent)]
+                            [parent languages-hier-list-panel]
+                            [stretchable-width #f]
+                            [stretchable-height #t])
+                 (let ()
+                   (define dc (get-dc))
+                   (define-values (w h _1 _2) (send dc get-text-extent "..." normal-control-font))
+                   (min-width (inexact->exact (ceiling w)))
+                   (min-height (inexact->exact (ceiling h)))))))
         
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
                                                 [stretchable-width #f]
                                                 [min-width 16]))
         
-        (define other-languages-hier-list (new selectable-hierlist% 
-                                               [parent languages-hier-list-panel]
-                                               [style '(no-border no-hscroll auto-vscroll transparent)]))
+        (define other-languages-hier-list 
+          (new selectable-hierlist% 
+               [parent languages-hier-list-panel]
+               [style '(no-border no-hscroll auto-vscroll transparent)]))
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
@@ -688,10 +720,14 @@
               (init-rest args)
               (define/public (get-language) language)
               (define/public (selected)
-                (update-gui-based-on-selected-language language get-language-details-panel get/set-settings))
+                (update-gui-based-on-selected-language language
+                                                       get-language-details-panel
+                                                       get/set-settings))
               (apply super-make-object args))))
         
-        (define (update-gui-based-on-selected-language language get-language-details-panel get/set-settings)
+        (define (update-gui-based-on-selected-language language
+                                                       get-language-details-panel
+                                                       get/set-settings)
           (let ([ldp (get-language-details-panel)])
             (when ldp
               (send details-panel active-child ldp)))
@@ -793,7 +829,9 @@
             (when (null? (cdr positions))
               (unless (equal? positions (list (string-constant module-language-name)))
                 (error 'drracket:language
-                       "Only the module language may be at the top level. Other languages must have at least two levels")))
+                       (string-append
+                        "Only the module language may be at the top level."
+                        " Other languages must have at least two levels"))))
             
             (send other-languages-hier-list clear-fringe-cache)
             (send teaching-languages-hier-list clear-fringe-cache)
@@ -817,7 +855,10 @@
                                                 (cdr numbers)
                                                 numbers)]
                                    [first? #t]
-                                   [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
+                                   
+                                   ;; only non-#f during the second iteration
+                                   ;; in which case it is the first iterations number
+                                   [second-number #f])
               (cond
                 [(null? (cdr positions))
                  (let* ([language-details-panel #f]
@@ -875,7 +916,9 @@
                      [else
                       (let* ([mixin (compose
                                      number-mixin
-                                     (language-mixin language get-language-details-panel get/set-settings))]
+                                     (language-mixin language 
+                                                     get-language-details-panel
+                                                     get/set-settings))]
                              [item
                               (send hier-list new-item
                                     (if second-number
@@ -986,7 +1029,8 @@
             (define/public (set-second-number _second-number) (set! second-number _second-number))
             (super-instantiate ())))
         
-        ;; make-details-panel : ((instanceof language<%>) -> (values panel (case-> (-> settings) (settings -> void))))
+        ;; make-details-panel : (instanceof language<%>) 
+        ;;                   -> (values panel (case-> (-> settings) (settings -> void)))
         ;; adds a details panel for `language', using
         ;; the language's default settings, unless this is
         ;; the to-show language.
@@ -1034,7 +1078,8 @@
             [(not (and language-to-show settings-to-show))
              (no-language-selected)]
             [(is-a? language-to-show drracket:module-language:module-language<%>)
-             ;; the above changes the radio button selections, so do it before calling module-language-selected
+             ;; the above changes the radio button selections,
+             ;; so do it before calling module-language-selected
              (module-language-selected)]
             [else
              (define position (send language-to-show get-language-position))
@@ -1081,7 +1126,8 @@
                         [(null? position)
                          (send child select #t)]
                         [else
-                         (when (is-a? child hierarchical-list-compound-item<%>) ;; test can fail when prefs are bad
+                          ;; test can fail when prefs are bad
+                         (when (is-a? child hierarchical-list-compound-item<%>)
                            (send child open)
                            (loop child (car position) (cdr position)))]))])))]))
         
@@ -1232,8 +1278,9 @@
           (do-construct-details))
         (update-show/hide-details)
         (when get/set-selected-language-settings
-          ;; this call to get/set-selected-language-settings has to come after the call to do-construct-details above
-          ;; because do-construct-details sets all of the controls to the language's default settings
+          ;; this call to get/set-selected-language-settings has to come after the call
+          ;; to do-construct-details above because do-construct-details sets all of the
+          ;; controls to the language's default settings
           (get/set-selected-language-settings settings-to-show))
         (size-discussion-canvas in-source-discussion-editor-canvas)
         (values
@@ -1276,7 +1323,9 @@
                      [editor t]))
       (send t set-styles-sticky #f)
       (send t set-autowrap-bitmap #f)
-      (define size-sd (make-object style-delta% 'change-size (send normal-control-font get-point-size)))
+      (define size-sd (make-object style-delta%
+                        'change-size
+                        (send normal-control-font get-point-size)))
       (define (do-insert str tt-style?)
         (define before (send t last-position))
         (send t insert str before before)
@@ -1324,8 +1373,9 @@
                   (if definitions-text
                       (find-language-position definitions-text)
                       (values #f #f)))
-                (define existing-lang-line (and current-line-start
-                                                (send definitions-text get-text current-line-start current-line-end)))
+                (define existing-lang-line 
+                  (and current-line-start
+                       (send definitions-text get-text current-line-start current-line-end)))
                 (case (message-box/custom
                        (string-constant drscheme)
                        (string-append
@@ -1341,7 +1391,8 @@
                                    existing-lang-line
                                    the-lang-line)]
                           [else
-                           (format (string-constant racket-dialect-add-new-#lang-line) the-lang-line)]))
+                           (format (string-constant racket-dialect-add-new-#lang-line)
+                                   the-lang-line)]))
                        (cond
                          [(and existing-lang-line
                                (equal? existing-lang-line the-lang-line))
@@ -1359,7 +1410,10 @@
                      [current-line-start
                       (send definitions-text begin-edit-sequence)
                       (send definitions-text delete current-line-start current-line-end)
-                      (send definitions-text insert the-lang-line current-line-start current-line-start)
+                      (send definitions-text insert 
+                            the-lang-line
+                            current-line-start
+                            current-line-start)
                       (send definitions-text end-edit-sequence)]
                      [else
                       (send definitions-text begin-edit-sequence)
@@ -1597,34 +1651,41 @@
            (floor (inexact->exact (unbox y-box))))))
     
 
-;                                                   
-;                                                   
-;     ;             ;;;                             
-;                  ;                                
-;   ;;;   ;; ;;   ;;;;;   ;;;           ;;;;   ;;;; 
-;     ;    ;;  ;   ;     ;   ;         ;   ;  ;   ; 
-;     ;    ;   ;   ;     ;   ;          ;;;    ;;;  
-;     ;    ;   ;   ;     ;   ;             ;      ; 
-;     ;    ;   ;   ;     ;   ;   ;;    ;   ;  ;   ; 
-;   ;;;;; ;;; ;;; ;;;;;   ;;;    ;;    ;;;;   ;;;;  
-;                                                   
-;                                                   
-;                                                   
-;                                                   
-;                                                                 
-;                                                                 
-;    ;;                                                           
-;     ;                                                           
-;     ;     ;;;  ;; ;;    ;; ;;;;  ;;   ;;;    ;; ;;  ;;;    ;;;; 
-;     ;    ;   ;  ;;  ;  ;  ;;  ;   ;  ;   ;  ;  ;;  ;   ;  ;   ; 
-;     ;     ;;;;  ;   ;  ;   ;  ;   ;   ;;;;  ;   ;  ;;;;;   ;;;  
-;     ;    ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;          ; 
-;     ;    ;   ;  ;   ;  ;   ;  ;  ;;  ;   ;  ;   ;  ;      ;   ; 
-;   ;;;;;   ;;;;;;;; ;;;  ;;;;   ;; ;;  ;;;;;  ;;;;   ;;;;  ;;;;  
-;                            ;                    ;               
-;                         ;;;                  ;;;                
-;                                                                 
-;                                                                 
+
+;                                             
+;                                             
+;                                             
+;                                             
+;  ;;;          ;;;;                          
+;              ;;;                            
+;  ;;; ;;; ;;  ;;;;   ;;;        ;;;;   ;;;;  
+;  ;;; ;;;;;;; ;;;;  ;;;;;      ;;; ;; ;;; ;; 
+;  ;;; ;;; ;;; ;;;  ;;; ;;;     ;;;    ;;;    
+;  ;;; ;;; ;;; ;;;  ;;; ;;;      ;;;;   ;;;;  
+;  ;;; ;;; ;;; ;;;  ;;; ;;; ;;;    ;;;    ;;; 
+;  ;;; ;;; ;;; ;;;   ;;;;;  ;;; ;; ;;; ;; ;;; 
+;  ;;; ;;; ;;; ;;;    ;;;   ;;;  ;;;;   ;;;;  
+;                                             
+;                                             
+;                                             
+;                                             
+;                                                                     
+;                                                                     
+;                                                                     
+;                                                                     
+;  ;;;                                                                
+;  ;;;                                                                
+;  ;;;  ;;;;;  ;;; ;;   ;; ;;; ;;; ;;;  ;;;;;   ;; ;;;   ;;;;   ;;;;  
+;  ;;; ;;;;;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;; ;;;;;;;  ;; ;;; ;;; ;; 
+;  ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;;    
+;  ;;;   ;;;;; ;;; ;;; ;;; ;;; ;;; ;;;   ;;;;; ;;; ;;; ;;;;;;;  ;;;;  
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;        ;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;;  ;;;;;; ;; ;;; 
+;  ;;;  ;;;;;; ;;; ;;;  ;; ;;;  ;; ;;;  ;;;;;;  ;; ;;;   ;;;;   ;;;;  
+;                          ;;;                     ;;;                
+;                      ;;;;;;                  ;;;;;;                 
+;                                                                     
+;                                                                     
     
     (define (add-info-specified-languages)
       (for-each add-info-specified-language
@@ -1634,9 +1695,10 @@
     (define (add-info-specified-language directory)
       (let ([info-proc (get-info/full directory)])
         (when info-proc
-          (let* ([lang-positions (append
-                                  (info-proc 'drscheme-language-positions (λ () null))
-                                  (indirect-info-field info-proc 'get-drscheme-language-positions directory))]
+          (let* ([lang-positions 
+                  (append
+                   (info-proc 'drscheme-language-positions (λ () null))
+                   (indirect-info-field info-proc 'get-drscheme-language-positions directory))]
                  [lang-modules (info-proc 'drscheme-language-modules (λ () null))]
                  [numberss (info-proc 'drscheme-language-numbers 
                                       (λ ()
@@ -1693,66 +1755,66 @@
                        (length summaries)
                        (length urls)
                        (length reader-specs)))
-               (for-each
-                (λ (lang-module lang-position lang-numbers one-line-summary url reader-spec)
-                  (let ([%
-                         ((drracket:language:get-default-mixin)
-                          (drracket:language:module-based-language->language-mixin
-                           (drracket:language:simple-module-based-language->module-based-language-mixin
-                            drracket:language:simple-module-based-language%)))]
-                        [reader
-                         (if reader-spec
-                             (with-handlers ([exn:fail?
-                                              (λ (x)
-                                                (message-box (string-constant drscheme)
-                                                             (if (exn? x)
-                                                                 (exn-message x)
-                                                                 (format "uncaught exception: ~s" x))
-                                                             #:dialog-mixin frame:focus-table-mixin)
-                                                read-syntax/namespace-introduce)])
-                               (contract
-                                (->* ()
-                                     (any/c port?)
-                                     (or/c syntax? eof-object?))
-                                (dynamic-require
-                                 (cond
-                                   [(string? reader-spec)
-                                    (build-path
-                                     directory 
-                                     (platform-independent-string->path reader-spec))]
-                                   [else reader-spec])
-                                 'read-syntax)
-                                (string->symbol (format "~s" lang-position))
-                                'drscheme))
-                             read-syntax/namespace-introduce)])
-                    (add-language (instantiate % ()
-                                    (module (if (string? lang-module)
+                               
+               (for ([lang-module (in-list lang-modules)]
+                     [lang-position (in-list lang-positions)]
+                     [lang-numbers (in-list numberss)]
+                     [one-line-summary (in-list summaries)]
+                     [url (in-list urls)]
+                     [reader-spec (in-list reader-specs)])
+                 (define %
+                   ((drracket:language:get-default-mixin)
+                    (drracket:language:module-based-language->language-mixin
+                     (drracket:language:simple-module-based-language->module-based-language-mixin
+                      drracket:language:simple-module-based-language%))))
+                 (define reader
+                   (if reader-spec
+                       (with-handlers ([exn:fail?
+                                        (λ (x)
+                                          (message-box (string-constant drscheme)
+                                                       (if (exn? x)
+                                                           (exn-message x)
+                                                           (format "uncaught exception: ~s" x))
+                                                       #:dialog-mixin frame:focus-table-mixin)
+                                          read-syntax/namespace-introduce)])
+                         (contract
+                          (->* ()
+                               (any/c port?)
+                               (or/c syntax? eof-object?))
+                          (dynamic-require
+                           (cond
+                             [(string? reader-spec)
+                              (build-path
+                               directory 
+                               (platform-independent-string->path reader-spec))]
+                             [else reader-spec])
+                           'read-syntax)
+                          (string->symbol (format "~s" lang-position))
+                          'drscheme))
+                       read-syntax/namespace-introduce))
+                 (add-language (new %
+                                    [module (if (string? lang-module)
                                                 (build-path
                                                  directory 
                                                  (platform-independent-string->path lang-module))
-                                                `(lib ,@lang-module)))
-                                    (language-position lang-position)
-                                    (language-id (format "plt:lang-from-module: ~s" lang-module))
-                                    (language-numbers lang-numbers)
-                                    (one-line-summary one-line-summary)
-                                    (language-url url)
-                                    (reader reader)))))
-                lang-modules
-                lang-positions
-                numberss
-                summaries
-                urls
-                reader-specs)]
+                                                `(lib ,@lang-module))]
+                                    [language-position lang-position]
+                                    [language-id (format "plt:lang-from-module: ~s" lang-module)]
+                                    [language-numbers lang-numbers]
+                                    [one-line-summary one-line-summary]
+                                    [language-url url]
+                                    [reader reader])))]
               [else
                (message-box
                 (string-constant drscheme)
                 (format
                  (string-append
-                  "The drscheme-language-position, drscheme-language-modules, drscheme-language-numbers,"
-                  " and drscheme-language-readers specifications aren't correct. Expected"
-                  " (listof (cons string (listof string))), (listof (listof string)), (listof (listof number)), (listof string),"
-                  " (listof string), and (listof module-spec) respectively, where the lengths of the outer lists are the same."
-                  " Got ~e, ~e, ~e, ~e, ~e, and ~e")
+                  "The drscheme-language-position, drscheme-language-modules,"
+                  " drscheme-language-numbers, and drscheme-language-readers specifications"
+                  " aren't correct. Expected (listof (cons string (listof string))),"
+                  " (listof (listof string)), (listof (listof number)), (listof string),"
+                  " (listof string), and (listof module-spec) respectively, where the lengths"
+                  " of the outer lists are the same. Got ~e, ~e, ~e, ~e, ~e, and ~e")
                  lang-positions
                  lang-modules
                  numberss
@@ -1795,34 +1857,42 @@
     
     
 
-;                                                          
-;                                                          
-;  ;;               ;     ;;                    ;          
-;   ;                      ;     ;                         
-;   ; ;;  ;;  ;;  ;;;      ;    ;;;;;         ;;;   ;; ;;  
-;   ;;  ;  ;   ;    ;      ;     ;              ;    ;;  ; 
-;   ;   ;  ;   ;    ;      ;     ;     ;;;;;    ;    ;   ; 
-;   ;   ;  ;   ;    ;      ;     ;              ;    ;   ; 
-;   ;   ;  ;  ;;    ;      ;     ;   ;          ;    ;   ; 
-;  ;;;;;    ;; ;; ;;;;;  ;;;;;    ;;;         ;;;;; ;;; ;;;
-;                                                          
-;                                                          
-;                                                          
-;                                                          
-;                                                                 
-;                                                                 
-;    ;;                                                           
-;     ;                                                           
-;     ;     ;;;  ;; ;;    ;; ;;;;  ;;   ;;;    ;; ;;  ;;;    ;;;; 
-;     ;    ;   ;  ;;  ;  ;  ;;  ;   ;  ;   ;  ;  ;;  ;   ;  ;   ; 
-;     ;     ;;;;  ;   ;  ;   ;  ;   ;   ;;;;  ;   ;  ;;;;;   ;;;  
-;     ;    ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;          ; 
-;     ;    ;   ;  ;   ;  ;   ;  ;  ;;  ;   ;  ;   ;  ;      ;   ; 
-;   ;;;;;   ;;;;;;;; ;;;  ;;;;   ;; ;;  ;;;;;  ;;;;   ;;;;  ;;;;  
-;                            ;                    ;               
-;                         ;;;                  ;;;                
-;                                                                 
-;                                                                 
+;             
+;                                               
+;                                               
+;                                               
+;                                               
+;  ;;;             ;;; ;;;   ;      ;;;         
+;  ;;;                 ;;; ;;;                  
+;  ;;; ;;  ;;; ;;; ;;; ;;; ;;;;     ;;; ;;; ;;  
+;  ;;;;;;; ;;; ;;; ;;; ;;; ;;;;     ;;; ;;;;;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;      ;;; ;;; ;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;;;;;; ;;; ;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;;;;;; ;;; ;;; 
+;  ;;;;;;; ;;;;;;; ;;; ;;; ;;;;     ;;; ;;; ;;; 
+;  ;;; ;;   ;; ;;; ;;; ;;;  ;;;     ;;; ;;; ;;; 
+;                                               
+;                                               
+;                                               
+;                                               
+;                                                                     
+;                                                                     
+;                                                                     
+;                                                                     
+;  ;;;                                                                
+;  ;;;                                                                
+;  ;;;  ;;;;;  ;;; ;;   ;; ;;; ;;; ;;;  ;;;;;   ;; ;;;   ;;;;   ;;;;  
+;  ;;; ;;;;;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;; ;;;;;;;  ;; ;;; ;;; ;; 
+;  ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;;    
+;  ;;;   ;;;;; ;;; ;;; ;;; ;;; ;;; ;;;   ;;;;; ;;; ;;; ;;;;;;;  ;;;;  
+;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;        ;;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;;  ;;;;;; ;; ;;; 
+;  ;;;  ;;;;;; ;;; ;;;  ;; ;;;  ;; ;;;  ;;;;;;  ;; ;;;   ;;;;   ;;;;  
+;                          ;;;                     ;;;                
+;                      ;;;;;;                  ;;;;;;                 
+;                                                                     
+;                                                                     
+     
    
     
     ;; add-expand-to-front-end : mixin
@@ -2003,18 +2073,18 @@
                     (super-new))))]
              [make-simple
               (λ (module id position numbers mred-launcher? one-line-summary extra-mixin)
-                (let ([%
-                       (extra-mixin
-                        ((extras-mixin mred-launcher? one-line-summary)
-                         ((drracket:language:get-default-mixin)
-                          (drracket:language:module-based-language->language-mixin
-                           (drracket:language:simple-module-based-language->module-based-language-mixin
-                            drracket:language:simple-module-based-language%)))))])
-                  (instantiate % ()
-                    (module module)
-                    (language-id id)
-                    (language-position position)
-                    (language-numbers numbers))))])
+                (define %
+                  (extra-mixin
+                   ((extras-mixin mred-launcher? one-line-summary)
+                    ((drracket:language:get-default-mixin)
+                     (drracket:language:module-based-language->language-mixin
+                      (drracket:language:simple-module-based-language->module-based-language-mixin
+                       drracket:language:simple-module-based-language%))))))
+                (new % 
+                     (module module)
+                     (language-id id)
+                     (language-position position)
+                     (language-numbers numbers)))])
         (add-language
          (make-simple '(lib "lang/plt-pretty-big.rkt")
                       "plt:pretty-big"
@@ -2023,7 +2093,9 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (%) (pretty-big-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
+                      (λ (%) (pretty-big-mixin
+                              (macro-stepper-mixin
+                               (assume-mixin (add-errortrace-key-mixin %)))))))
         (add-language
          (make-simple '(lib "r5rs/lang.rkt")
                       "plt:r5rs"
@@ -2032,7 +2104,9 @@
                       (list -200 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
-                      (lambda (%) (r5rs-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
+                      (lambda (%) (r5rs-mixin
+                                   (macro-stepper-mixin
+                                    (assume-mixin (add-errortrace-key-mixin %)))))))
         
         (add-language
          (make-simple 'racket/base
@@ -2076,20 +2150,24 @@
     
     
 
-;                                                                                                    
-;                                                                                                    
-;                                              ;;                                                    
-;                  ;                            ;                                                    
-;  ;; ;;    ;;;   ;;;;;          ;;;            ;     ;;;  ;; ;;    ;; ;;;;  ;;   ;;;    ;; ;;  ;;;  
-;   ;;  ;  ;   ;   ;            ;   ;           ;    ;   ;  ;;  ;  ;  ;;  ;   ;  ;   ;  ;  ;;  ;   ; 
-;   ;   ;  ;   ;   ;     ;;;;;   ;;;;  ;;;;;    ;     ;;;;  ;   ;  ;   ;  ;   ;   ;;;;  ;   ;  ;;;;; 
-;   ;   ;  ;   ;   ;            ;   ;           ;    ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;     
-;   ;   ;  ;   ;   ;   ;        ;   ;           ;    ;   ;  ;   ;  ;   ;  ;  ;;  ;   ;  ;   ;  ;     
-;  ;;; ;;;  ;;;     ;;;          ;;;;;        ;;;;;   ;;;;;;;; ;;;  ;;;;   ;; ;;  ;;;;;  ;;;;   ;;;; 
-;                                                                      ;                    ;        
-;                                                                   ;;;                  ;;;         
-;                                                                                                    
-;                                                                                                    
+
+;                                                                                                   
+;                                                                                                   
+;                                                                                                   
+;                                                                                                   
+;                    ;                  ;;;                                                         
+;                  ;;;                  ;;;                                                         
+;  ;;; ;;    ;;;   ;;;;      ;;;;;      ;;;  ;;;;;  ;;; ;;   ;; ;;; ;;; ;;;  ;;;;;   ;; ;;;   ;;;;  
+;  ;;;;;;;  ;;;;;  ;;;;     ;;;;;;;     ;;; ;;;;;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;; ;;;;;;;  ;; ;;; 
+;  ;;; ;;; ;;; ;;; ;;;      ;;  ;;;     ;;; ;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;; ;;; ;;;  ;;;;  ;;;;; ;;;;;;;   ;;;;; ;;; ;;; ;;; ;;; ;;; ;;;   ;;;;; ;;; ;;; ;;;;;;; 
+;  ;;; ;;; ;;; ;;; ;;;  ;;;;;;; ;;; ;;;;;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;     
+;  ;;; ;;;  ;;;;;  ;;;;     ;;; ;;;     ;;; ;;; ;;; ;;; ;;; ;;;;;;; ;;;;;;; ;;; ;;; ;;;;;;;  ;;;;;; 
+;  ;;; ;;;   ;;;    ;;;      ;;;;;;     ;;;  ;;;;;; ;;; ;;;  ;; ;;;  ;; ;;;  ;;;;;;  ;; ;;;   ;;;;  
+;                                                               ;;;                     ;;;         
+;                                                           ;;;;;;                  ;;;;;;          
+;                                                                                                   
+;                                                                                                   
     
     
     (define (not-a-language-message)
@@ -2177,8 +2255,15 @@
                           (parent drs-frame)
                           (label (string-constant drscheme))))
       (define top-hp (new horizontal-pane% [parent dialog]))
-      (define qa-panel (new vertical-panel% [style '(border)] (parent top-hp) (stretchable-width #f)))
-      (define racketeer-panel (new vertical-panel% [style '(border)] [parent top-hp] [alignment '(center center)] [stretchable-width #f]))
+      (define qa-panel (new vertical-panel% 
+                            [style '(border)]
+                            [parent top-hp] 
+                            [stretchable-width #f]))
+      (define racketeer-panel (new vertical-panel% 
+                                   [style '(border)]
+                                   [parent top-hp]
+                                   [alignment '(center center)]
+                                   [stretchable-width #f]))
       (define button-panel (new horizontal-pane% 
                                 (parent dialog) 
                                 (stretchable-height #f)
@@ -2227,7 +2312,9 @@
         (for-each
          display-text-pl
          (sort
-          (apply append (map get-text-pls (find-relevant-directories '(textbook-pls get-textbook-pls))))
+          (apply append 
+                 (map get-text-pls 
+                      (find-relevant-directories '(textbook-pls get-textbook-pls))))
           (λ (x y)
             (cond
               [(string=? (cadr x) (string-constant how-to-design-programs))
@@ -2244,12 +2331,14 @@
         (new canvas-message% 
              [label (read-bitmap (collection-file-path "plt-logo-red-shiny.png" "icons"))]
              [parent racketeer-panel]
-             [callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>))))])
+             [callback (λ () (change-current-lang-to
+                              (λ (x) (is-a? x drracket:module-language:module-language<%>))))])
         (new canvas-message%
              (parent racketeer-panel) 
              (label (string-constant use-language-in-source))
              (color (send the-color-database find-color "blue"))
-             (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
+             (callback (λ () (change-current-lang-to
+                              (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
              (font (get-font #:underlined #t))))
       
       (define (display-text-pl lst)
