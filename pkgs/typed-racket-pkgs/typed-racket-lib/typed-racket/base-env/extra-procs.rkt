@@ -12,5 +12,4 @@
            val
            (error (format "Assertion ~a failed on ~v" pred val)))))))
 
-(define (defined? v)
-  (not (equal? v (letrec ([x x]) x))))
+(define (defined? v) #t)
