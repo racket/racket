@@ -9,6 +9,8 @@
          (rep type-rep)
          (except-in (types utils union abbrev subtype)
                     -> ->* one-of/c))
+(require-for-cond-contract
+  syntax/stx)
 
 (provide/cond-contract
   [tc/funapp1
