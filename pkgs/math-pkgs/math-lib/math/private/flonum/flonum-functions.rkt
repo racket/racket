@@ -38,15 +38,15 @@
   
   (define flrational?
     (λ: ([x : Flonum])
-      (and (x . fl> . -inf.0) (x . fl< . +inf.0))))
+      (fl< (flabs x) +inf.0)))
   
   (define flinfinite?
     (λ: ([x : Flonum])
-      (or (x . fl= . -inf.0) (x . fl= . +inf.0))))
+      (fl= (flabs x) +inf.0)))
   
   (define flnan?
     (λ: ([x : Flonum])
-      (not (and (x . fl>= . -inf.0) (x . fl<= . +inf.0)))))
+      (not (fl<= (flabs x) +inf.0))))
   
   (define flinteger?
     (λ: ([x : Flonum])

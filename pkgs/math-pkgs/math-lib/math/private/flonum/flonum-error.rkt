@@ -8,11 +8,13 @@
          fast-fl*/error
          fast-flsqr/error
          fast-fl//error
+         fast-flfma/error
          fl+/error
          fl-/error
          fl*/error
          flsqr/error
-         fl//error)
+         fl//error
+         flfma/error)
 
 (module untyped-defs racket/base
   (require (for-syntax racket/base)
@@ -84,7 +86,7 @@
   ;; Returns a*b+c and its rounding error
   (define-syntax-rule (fast-flfma/error a-expr b-expr c-expr)
     (let*-values ([(y2 y1)  (fast-fl*/error a-expr b-expr)]
-                  [(h0 h1)   (fast-fl+/error c-expr y1)]
+                  [(h0 h1)  (fast-fl+/error c-expr y1)]
                   [(h3 h2)  (fast-fl+/error h0 y2)])
       (values h3 (fl+ h2 h1))))
   
@@ -182,6 +184,17 @@
                          (let-values ([(w2 w1)  (fl*/error x2 b)])
                            (fl/ (fl- (fl- a w2) w1) b)))
                        0.0))))
+    
+    (: flfma/error (-> Flonum Flonum Flonum (Values Flonum Flonum)))
+    (define (flfma/error a b c)
+      (define-values (x2 x1) (fast-flfma/error a b c))
+      (cond [(flrational? (+ x2 x1))  (values x2 x1)]
+            [else
+             (define n (near-pow2 (max (flsqrt (abs a)) (flsqrt (abs b)))))
+             (define 1/n (/ 1.0 n))
+             (define n^2 (* n n))
+             (let-values ([(x2 x1)  (fast-flfma/error (* a 1/n) (* b 1/n) (* c 1/n 1/n))])
+               (values (* n^2 x2) (* n^2 x1)))]))
     
     )  ; begin-encourage-inline
   
