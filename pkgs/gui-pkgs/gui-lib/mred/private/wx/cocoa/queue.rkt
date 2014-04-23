@@ -92,7 +92,11 @@
         (parameterize ([current-custodian priviledged-custodian])
           (thread (lambda () (sleep 5.0)))))
       ;; Also need to reset blit windows, since OS may move them incorrectly:
-      (fixup-window-locations)])
+      (fixup-window-locations)]
+  [-a _void (tryDockToFront: o)
+      (try-dock-to-front)]
+  [-a _void (retrySelfToFront: o)
+      (tellv app activateIgnoringOtherApps: #:type _BOOL #t)])
 
 (define fixup-window-locations void)
 (define (set-fixup-window-locations! f) (set! fixup-window-locations f))
@@ -117,7 +121,33 @@
 (define app-delegate (tell (tell RacketApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
 (unless (scheme_register_process_global "Racket-GUI-no-front" #f)
-  (tellv app activateIgnoringOtherApps: #:type _BOOL #t))
+  (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
+  ;; It may not be that easy...
+  (when (version-10.6-or-later?)
+    (with-autorelease
+     (import-class NSRunningApplication)
+     (unless (tell #:type _BOOL (tell NSRunningApplication currentApplication) ownsMenuBar)
+       ;; Looks like we haven't yet convinced the system to give us
+       ;; the menu bar. Perform a menu-bar dance that is based on
+       ;; http://stackoverflow.com/questions/7596643/when-calling-transformprocesstype-the-app-menu-doesnt-show-up
+       (tellv app-delegate performSelector: #:type _SEL (selector tryDockToFront:) 
+              withObject: #f 
+              afterDelay: #:type _double 0.1)))))
+
+(define (try-dock-to-front)
+  ;; Phase 2 of the 10.9 menu-bar dance started above:
+  (with-autorelease
+   (import-class NSRunningApplication)
+   (define docks (tell NSRunningApplication 
+                       runningApplicationsWithBundleIdentifier: #:type _NSString "com.apple.dock"))
+   (when (positive? (tell #:type _NSUInteger docks count))
+     (define dock (tell docks firstObject))
+     (define NSApplicationActivateIgnoringOtherApps 2)
+     (tell #:type _BOOL dock 
+           activateWithOptions: #:type _NSUInteger NSApplicationActivateIgnoringOtherApps)
+     (tellv app-delegate performSelector: #:type _SEL (selector retrySelfToFront:) 
+            withObject: #f 
+            afterDelay: #:type _double 0.1))))
 
 ;; For some reason, nextEventMatchingMask:... gets stuck if the
 ;;  display changes, and it doesn't even send the 
