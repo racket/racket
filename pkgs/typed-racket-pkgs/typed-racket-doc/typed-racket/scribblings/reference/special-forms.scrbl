@@ -205,7 +205,7 @@ To see how to declare a type for @racket[add-map], see the
 
 @section{Loops}
 
-@defform/subs[(for type-ann-maybe (for:-clause ...)
+@defform/subs[(for type-ann-maybe (for-clause ...)
                 expr ...+)
               ([type-ann-maybe code:blank
                                @code:line[: u]]
@@ -229,6 +229,7 @@ variants.
 @defform[(for/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/vector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/extflvector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/and type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/or   type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/first type-ann-maybe (for-clause ...) expr ...+)]
@@ -241,6 +242,7 @@ variants.
 @defform[(for*/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/vector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/extflvector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/and type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/or   type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/first type-ann-maybe (for-clause ...) expr ...+)]
