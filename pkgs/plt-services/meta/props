@@ -1026,6 +1026,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/generator.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/id-table-test.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/iostream.rktl" drdr:command-line #f
+"pkgs/racket-pkgs/racket-test/tests/racket/link.rkt" drdr:timeout 300
 "pkgs/racket-pkgs/racket-test/tests/racket/list.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/loadable.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/loadtest.rktl" drdr:command-line #f
