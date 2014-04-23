@@ -1105,18 +1105,15 @@
            #:ret (ret -Void)
            #:msg #rx"superclass is missing a required augmentable method"]
    ;; Pubment with separate internal/external names
-   ;; FIXME: broken right now due to : macro changes
-   #|
    [tc-e (let ()
            (define c%
              (class object%
                (super-new)
-               (: m (Symbol -> Symbol))
+               (: n (Symbol -> Symbol))
                (pubment [n m])
                (define n (λ (x) 'a))))
            (send (new c%) m 'b))
          -Symbol]
-   |#
    ;; Pubment with expected class type
    [tc-e (let ()
            (: c% (Class [m (String -> String)]
