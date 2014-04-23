@@ -4,6 +4,8 @@ TR info: fixnum.rkt 12:0 (fx* (values (ann x Index)) (values (ann y Index))) -- 
 TR info: fixnum.rkt 15:0 (fx+ (+ 300 301) (+ 301 302)) -- non-optimized fixnum op
 TR info: fixnum.rkt 16:0 (fxquotient -4 -5) -- non-optimized fixnum op
 TR info: fixnum.rkt 44:28 (- 1 (expt 2 (- (system-type (quote word)) 2))) -- possible exact real arith
+TR info: fixnum.rkt 44:33 (expt 2 (- (system-type (quote word)) 2)) -- possible exact real arith
+TR info: fixnum.rkt 45:28 (expt 2 (- (system-type (quote word)) 2)) -- possible exact real arith
 TR missed opt: fixnum.rkt 10:0 (+ (ann z Fixnum) 234) -- out of fixnum range
 TR missed opt: fixnum.rkt 11:0 (* (ann x Index) (ann y Index)) -- out of fixnum range
 TR missed opt: fixnum.rkt 14:0 (+ (+ 300 301) (+ 301 302)) -- out of fixnum range

@@ -15,7 +15,7 @@
   (mk-unsafe-tbl generic "fl~a" "unsafe-fl~a"))
 
 (define binary-float-ops
-  (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
+  (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max #'expt)))
 (define binary-float-comps
   (dict-set*
     (mk-float-tbl (list #'= #'<= #'< #'> #'>=))
