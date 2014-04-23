@@ -139,7 +139,7 @@
                                              #:when (not (subtypeof? a -Flonum)))
                                      1)))]
                          ;; if we don't have a return type of float, or if the return type is
-                         ;; float, but we can't optimizer for some other reason, we missed an
+                         ;; float, but we can't optimize for some other reason, we missed an
                          ;; optimization opportunity, report it
                          ;; ignore operations that stay within integers or rationals, since
                          ;; these have nothing to do with float optimizations
