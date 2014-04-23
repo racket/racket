@@ -614,11 +614,43 @@
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> .
                        (Un (-pair a a) (-pair a (-val '())))))]
+[takef
+ (-poly (a b)
+   (cl->*
+    (-> (-lst a)
+        (asym-pred a Univ (-FS (-filter b 0) -top))
+        (-lst b))
+    (-> (-lst a) (-> a Univ) (-lst a))))]
+[dropf (-poly (a) (-> (-lst a) (-> a Univ) (-lst a)))]
+[splitf-at
+ (-poly (a b)
+   (cl->*
+    (-> (-lst a)
+        (asym-pred a Univ (-FS (-filter b 0) -top))
+        (-values (list (-lst b) (-lst a))))
+    (-> (-lst a) (-> a Univ) (-values (list (-lst a) (-lst a))))))]
+[takef-right
+ (-poly (a b)
+   (cl->*
+    (-> (-lst a)
+        (asym-pred a Univ (-FS (-filter b 0) -top))
+        (-lst b))
+    (-> (-lst a) (-> a Univ) (-lst a))))]
+[dropf-right (-poly (a) (-> (-lst a) (-> a Univ) (-lst a)))]
+[splitf-at-right
+ (-poly (a b)
+   (cl->*
+    (-> (-lst a)
+        (asym-pred a Univ (-FS (-filter b 0) -top))
+        (-values (list (-lst a) (-lst b))))
+    (-> (-lst a) (-> a Univ) (-values (list (-lst a) (-lst a))))))]
 [append-map
  (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
                      ((-lst b) b) . ->... .(-lst c)))]
 [append*
  (-poly (a) ((-lst (-lst a)) . -> . (-lst a)))]
+[permutations (-poly (a) (-> (-lst a) (-lst (-lst a))))]
+[in-permutations (-poly (a) (-> (-lst a) (-seq (-lst a))))]
 [argmin (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 [argmax (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 

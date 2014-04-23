@@ -2086,6 +2086,22 @@
        [tc-e (remq* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
        [tc-e (remv* '(1 2) '(a b c d)) (-lst (one-of/c 'a 'b 'c 'd))]
 
+       ;; functions from racket/list
+       [tc-e (takef '(a b "x" "y") symbol?) (-lst -Symbol)]
+       [tc-e (takef-right '(a b "x" "y") string?) (-lst -String)]
+       [tc-e (dropf '("a" b "x" "y") string?)
+             (-lst (t:Un -String (-val 'b)))]
+       [tc-e (dropf-right '("a" b "x" "y") string?)
+             (-lst (t:Un -String (-val 'b)))]
+       [tc-e (splitf-at '("a" b "x" "y") string?)
+             #:ret (ret (list (-lst -String)
+                              (-lst (t:Un -String (-val 'b)))))]
+       [tc-e (splitf-at-right '("a" b "x" "y") string?)
+             #:ret (ret (list (-lst (t:Un -String (-val 'b)))
+                              (-lst -String)))]
+       [tc-e (permutations '(a b c d)) (-lst (-lst (one-of/c 'a 'b 'c 'd)))]
+       [tc-e (in-permutations '(a b c d)) (-seq (-lst (one-of/c 'a 'b 'c 'd)))]
+
        ;; test functions which do lookup with the "wrong type", where the
        ;; result type shouldn't be widened to include that type
        [tc-e (memq 3 '(a b c)) (t:Un (-val #f) (-lst (one-of/c 'a 'b 'c)))]
