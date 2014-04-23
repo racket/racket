@@ -274,7 +274,6 @@
  ;; this is mostly cribbed from class-internal.rkt
  (define (expand-expressions stxs ctx def-ctx)
    (define (class-expand stx)
-     ;; try using syntax-local-expand-expression?
      (local-expand stx ctx stop-forms def-ctx))
    (let loop ([stxs stxs])
      (cond [(null? stxs) null]
@@ -288,12 +287,9 @@
               ;; i.e., macro definitions in the class body
               ;; see class-internal.rkt as well
               [(define-syntaxes (name:id ...) rhs:expr)
-               (define/with-syntax expanded-rhs
-                 (local-transformer-expand #'rhs 'expression null))
                (syntax-local-bind-syntaxes
-                (syntax->list #'(name ...)) #'expanded-rhs def-ctx)
-               (cons #'(define-syntaxes (name ...) expanded-rhs)
-                     (loop (cdr stxs)))]
+                (syntax->list #'(name ...)) #'rhs def-ctx)
+               (cons stx (loop (cdr stxs)))]
               [(define-values (name:id ...) rhs:expr)
                (syntax-local-bind-syntaxes
                 (syntax->list #'(name ...)) #f def-ctx)

@@ -1413,4 +1413,14 @@
              (init x)))
          #:ret (ret (-poly (A) (-class #:init ([x A #f]))))
          #:expected (ret (-poly (A) (-class #:init ([x A #f]))) -no-filter -no-obj)]
-   ))
+   ;; test uses of a macro in the body of the class
+   [tc-e
+    (let ()
+      (define c%
+        (class object%
+          (super-new)
+          (define-syntax-rule (my-meth (m arg ...) . body)
+            (define/public (m arg ...) . body))
+          (my-meth (hello) (displayln "hello world"))))
+      (send (new c%) hello))
+    -Void]))
