@@ -76,28 +76,31 @@ Vol 7, #2, March 1981
 (struct x-node (x l r) #:transparent)
 
 (define (tidier-x-coordinates t minsep)
-  (define t-link
-    (let loop ([t t])
-      (match t
-        [(tree-layout pict (list left right))
-         (link (and left (loop (tree-edge-child left)))
-               (and right (loop (tree-edge-child right)))
-               #f #f #f #f)])))
-  (setup t-link 0 (extreme #f #f #f) (extreme #f #f #f) minsep)
-  (petrify t-link 0)
-  
-  (define smallest
-    (let loop ([t-link t-link])
-      (match t-link
-        [#f #f]
-        [(link llink rlink xcoord _ _ _)
-         (min2/f xcoord (min2/f (loop llink) (loop rlink)))])))
-  
-  (let loop ([t-link t-link])
-    (match t-link
-      [#f #f]
-      [(link llink rlink xcoord ycoord offset thread)
-       (x-node (- xcoord smallest) (loop llink) (loop rlink))])))
+  (cond
+    [(not t) #f]
+    [else
+     (define t-link
+       (let loop ([t t])
+         (match t
+           [(tree-layout pict (list left right))
+            (link (and left (loop (tree-edge-child left)))
+                  (and right (loop (tree-edge-child right)))
+                  #f #f #f #f)])))
+     (setup t-link 0 (extreme #f #f #f) (extreme #f #f #f) minsep)
+     (petrify t-link 0)
+     
+     (define smallest
+       (let loop ([t-link t-link])
+         (match t-link
+           [#f #f]
+           [(link llink rlink xcoord _ _ _)
+            (min2/f xcoord (min2/f (loop llink) (loop rlink)))])))
+     
+     (let loop ([t-link t-link])
+       (match t-link
+         [#f #f]
+         [(link llink rlink xcoord ycoord offset thread)
+          (x-node (- xcoord smallest) (loop llink) (loop rlink))]))]))
 
 (define (min2/f a b) 
   (cond
@@ -219,40 +222,30 @@ Vol 7, #2, March 1981
 
 (module+ test
   (require rackunit)
-  (check-equal? (tidier-x-coordinates (_tree-layout) 2)
+  (check-equal? (tidier-x-coordinates #f 2)
                 #f)
-  (check-equal? (tidier-x-coordinates (_tree-layout (_tree-layout) (_tree-layout)) 2)
+  (check-equal? (tidier-x-coordinates (_tree-layout #f #f) 2)
                 (x-node 0 #f #f))
   (check-equal? (tidier-x-coordinates (_tree-layout
                                        (_tree-layout
-                                        (_tree-layout)
-                                        (_tree-layout))
+                                        #f #f)
                                        (_tree-layout
-                                        (_tree-layout)
-                                        (_tree-layout)))
+                                        #f #f))
                                       2)
                 (x-node 1 (x-node 0 #f #f) (x-node 2 #f #f)))
   
   (check-equal? (tidier-x-coordinates (_tree-layout
-                                       (_tree-layout)
+                                       #f
                                        (_tree-layout 
-                                        (_tree-layout
-                                         (_tree-layout)
-                                         (_tree-layout))
-                                        (_tree-layout
-                                         (_tree-layout)
-                                         (_tree-layout))))
+                                        (_tree-layout #f #f)
+                                        (_tree-layout #f #f)))
                                       2)
                 (x-node 0 #f (x-node 1 (x-node 0 #f #f) (x-node 2 #f #f))))
   (check-equal? (tidier-x-coordinates (_tree-layout
                                        (_tree-layout 
-                                        (_tree-layout
-                                         (_tree-layout)
-                                         (_tree-layout))
-                                        (_tree-layout
-                                         (_tree-layout)
-                                         (_tree-layout)))
-                                       (_tree-layout))
+                                        (_tree-layout #f #f)
+                                        (_tree-layout #f #f))
+                                       #f)
                                       2)
                 (x-node 2 (x-node 1 (x-node 0 #f #f) (x-node 2 #f #f)) #f))
   
@@ -263,26 +256,17 @@ Vol 7, #2, March 1981
   ;; for the tidier algorithm
   (define triangle
     (_tree-layout 
-     (_tree-layout
-      (_tree-layout)
-      (_tree-layout))
-     (_tree-layout
-      (_tree-layout)
-      (_tree-layout))))
+     (_tree-layout #f #f)
+     (_tree-layout #f #f)))
   
   (define left-subtree
-    (_tree-layout
-     (_tree-layout
-      (_tree-layout)
-      triangle)
-     (_tree-layout)))
+    (_tree-layout (_tree-layout #f triangle) 
+                  #f))
 
   (define right-subtree
     (_tree-layout 
      triangle
-     (_tree-layout
-      (_tree-layout)
-      (_tree-layout))))
+     (_tree-layout #f #f)))
   
   (check-equal? (tidier-x-coordinates left-subtree 2)
                 (x-node 1 (x-node 0 #f (x-node 1 (x-node 0 #f #f) (x-node 2 #f #f))) #f))
@@ -304,11 +288,11 @@ Vol 7, #2, March 1981
   
   
   ;; this is a simplification of the tree in figure 2 from the tidier paper
-  (define (build-left t) (_tree-layout (_tree-layout (_tree-layout) (_tree-layout)) t))
-  (define (build-right t) (_tree-layout t (_tree-layout (_tree-layout) (_tree-layout))))
+  (define (build-left t) (_tree-layout (_tree-layout #f #f) t))
+  (define (build-right t) (_tree-layout t (_tree-layout #f #f)))
   (check-equal? (tidier-x-coordinates
                  (_tree-layout
-                  (_tree-layout)
+                  #f
                   (build-left
                    (build-left
                     (build-right
