@@ -33,12 +33,15 @@ The @exec{raco test} command accepts several flags:
 @itemize[
 
  @item{@Flag{c} or @DFlag{collection}
-       --- Intreprets the arguments as collections where whose files should be tested.}
+       --- Interprets the arguments as collections where whose files should be tested.}
 
  @item{@Flag{p} or @DFlag{package}
-       --- Intreprets the arguments as packages whose files should
+       --- Interprets the arguments as packages whose files should
        be tested. (All package scopes are searched for the first, most
        specific package.)}
+ 
+ @item{@Flag{l} or @DFlag{lib}
+       --- Interprets the arguments as packages whose libraries to be tested.}
 
  @item{@Flag{m} or @DFlag{modules}
        --- Not only interprets the arguments as paths (which is the

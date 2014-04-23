@@ -608,6 +608,7 @@
 
 (define collections? #f)
 (define packages? #f)
+(define libraries? #f)
 (define check-top-suffix? #f)
 
 (define (test-top e 
@@ -621,7 +622,18 @@
        [l
         (with-summary
          `(collection ,e)
-         (map/parallel test-files l #:sema continue-sema))])]
+         (map/parallel test-files (collection-file-path l) #:sema continue-sema))])]
+    [libraries?     
+     (define (find x)
+       (define rmp ((current-module-name-resolver) x #f #f #f))
+       (define p (resolved-module-path-name rmp))
+       (and (file-exists? p) p))
+     (match (find (string->symbol e))
+       [#f (error 'test "Library ~e does not exist" e)]
+       [l
+        (with-summary
+         `(library ,l)
+         (test-files l #:sema continue-sema))])]
     [packages?
      (define pd (pkg-directory e))
      (if pd
@@ -803,6 +815,9 @@
  [("--collection" "-c")
   "Interpret arguments as collections"
   (set! collections? #t)]
+ [("--lib" "-l")
+  "Interpret arguments as libraries"
+  (set! libraries? #t)]
  [("--package" "-p")
   "Interpret arguments as packages"
   (set! packages? #t)]
