@@ -4,7 +4,7 @@
          syntax/parse/experimental/specialize
          (for-template racket/base racket/extflonum racket/unsafe/ops)
          "../utils/utils.rkt"
-         (optimizer utils numeric-utils logging float))
+         (optimizer utils numeric-utils logging float fixnum))
 
 (provide extflonum-opt-expr)
 
@@ -27,9 +27,9 @@
 (define-syntax-class/specialize unary-extflonum-op (float-op unary-extflonum-ops))
 (define-syntax-class/specialize binary-extflonum-op (float-op binary-extflonum-ops))
 
-
-;; TODO do conversions (unsafe-fx->extfl, unsafe-extfl->fx)
-;; TODO do extflvector ops
+(define-literal-syntax-class ->extfl)
+(define-literal-syntax-class real->extfl)
+(define-merged-syntax-class fx->extfl-op (->extfl^ real->extfl^))
 
 (define-syntax-rule (log-extfl-opt opt-label)
   (log-opt opt-label "Extflonum arithmetic specialization."))
@@ -45,4 +45,9 @@
     #:with opt #'(op.unsafe t.opt))
   (pattern (#%plain-app op:binary-extflonum-op t1:opt-expr t2:opt-expr)
     #:do [(log-extfl-opt "binary extflonum")]
-    #:with opt #'(op.unsafe t1.opt t2.opt)))
+    #:with opt #'(op.unsafe t1.opt t2.opt))
+
+  (pattern (#%plain-app :fx->extfl-op f:fixnum-expr)
+    #:do [(log-extfl-opt "fixnum to extflonum conversion")]
+    #:with opt #'(unsafe-fx->extfl f.opt))
+  )
