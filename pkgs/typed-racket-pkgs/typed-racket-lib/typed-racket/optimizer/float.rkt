@@ -98,6 +98,7 @@
 (define (maybe-exact-rational? stx)
   (and (subtypeof? stx -Real)
        (not (subtypeof? stx -Flonum))
+       (not (subtypeof? stx -SingleFlonum))
        (not (subtypeof? stx -Int))))
 
 
