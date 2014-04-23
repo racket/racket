@@ -1,14 +1,7 @@
 #lang racket/base
 
-(require "error.rkt"
-         racket/undefined)
-(provide check-defined-lexical
-         check-defined-module)
-
-(define (check-defined-lexical value name desc)
-  ;; Needed?
-  (when (eq? undefined value)
-    (report-undefined name desc)))
+(require "error.rkt")
+(provide check-defined-module)
 
 (define (check-defined-module thunk name desc)
   (with-handlers ([exn:fail:contract:variable?

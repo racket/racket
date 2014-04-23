@@ -528,18 +528,22 @@
   (define-values (judgment-form-name dup-form-names mode position-contracts clauses rule-names)
     (parse-judgment-form-body body syn-err-name stx (identifier? orig) is-relation?))
   (define definitions
-    #`(begin
-        (define-syntax #,judgment-form-name 
-          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc
-                         #'mk-judgment-form-proc #'#,lang #'jf-lws
-                         '#,rule-names #'judgment-runtime-gen-clauses #'mk-judgment-gen-clauses #'jf-term-proc #,is-relation?))
-        (define-values (mk-judgment-form-proc mk-judgment-gen-clauses)
-          (compile-judgment-form #,judgment-form-name #,mode #,lang #,clauses #,rule-names #,position-contracts 
-                                 #,orig #,stx #,syn-err-name judgment-runtime-gen-clauses))
-        (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
-        (define jf-lws (compiled-judgment-form-lws #,clauses #,judgment-form-name #,stx))
-        (define judgment-runtime-gen-clauses (mk-judgment-gen-clauses #,lang (λ () (judgment-runtime-gen-clauses))))
-        (define jf-term-proc (make-jf-term-proc #,judgment-form-name #,syn-err-name #,lang #,nts #,mode))))
+    (with-syntax ([judgment-form-runtime-proc
+                   (syntax-property (syntax/loc judgment-form-name judgment-form-runtime-proc)
+                                    'undefined-error-name
+                                    (syntax-e judgment-form-name))])
+      #`(begin
+          (define-syntax #,judgment-form-name 
+            (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc
+                           #'mk-judgment-form-proc #'#,lang #'jf-lws
+                           '#,rule-names #'judgment-runtime-gen-clauses #'mk-judgment-gen-clauses #'jf-term-proc #,is-relation?))
+          (define-values (mk-judgment-form-proc mk-judgment-gen-clauses)
+            (compile-judgment-form #,judgment-form-name #,mode #,lang #,clauses #,rule-names #,position-contracts 
+                                   #,orig #,stx #,syn-err-name judgment-runtime-gen-clauses))
+          (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
+          (define jf-lws (compiled-judgment-form-lws #,clauses #,judgment-form-name #,stx))
+          (define judgment-runtime-gen-clauses (mk-judgment-gen-clauses #,lang (λ () (judgment-runtime-gen-clauses))))
+          (define jf-term-proc (make-jf-term-proc #,judgment-form-name #,syn-err-name #,lang #,nts #,mode)))))
   (syntax-property
    (values ;prune-syntax
     (if (eq? 'top-level (syntax-local-context))

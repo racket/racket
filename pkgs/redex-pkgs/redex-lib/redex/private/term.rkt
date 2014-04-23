@@ -467,6 +467,9 @@
   (syntax-parse stx
                 [(_ x:id t:expr)
                  (not-expression-context stx)
-                 #'(begin
-                     (define term-val (term t))
-                     (define-syntax x (defined-term #'term-val)))]))
+                 (with-syntax ([term-val (syntax-property (syntax/loc #'x term-val)
+                                                          'undefined-error-name
+                                                          (syntax-e #'x))])
+                   #'(begin
+                       (define term-val (term t))
+                       (define-syntax x (defined-term #'term-val))))]))

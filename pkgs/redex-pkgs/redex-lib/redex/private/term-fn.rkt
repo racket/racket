@@ -52,8 +52,8 @@
   (transformer-predicate defined-term? stx))
 
 (define (defined-check id desc #:external [external id])
-  (if (eq? (identifier-binding id) 'lexical)
-      (quasisyntax/loc external (check-defined-lexical #,id '#,external #,desc))
+  (if (equal? (identifier-binding id) 'lexical)
+      (datum->syntax id (syntax-e id) external id)
       (quasisyntax/loc external (check-defined-module (λ () #,id) '#,external #,desc))))
 
 (define (not-expression-context stx)
