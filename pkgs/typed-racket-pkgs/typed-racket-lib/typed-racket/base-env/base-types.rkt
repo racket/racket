@@ -160,6 +160,7 @@
 [Listof -Listof]
 [Vectorof (-poly (a) (make-Vector a))]
 [FlVector -FlVector]
+[ExtFlVector -ExtFlVector]
 [FxVector -FxVector]
 [Option (-poly (a) (-opt a))]
 [HashTable (-poly (a b) (-HT a b))]
