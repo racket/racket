@@ -56,10 +56,10 @@
       (send message-timer start message-timeout #t))
     
     (define/public (set-message msg #:refresh? [refresh? #t])
-      (define refresh? (and refresh? (not (equal? msg message))))
-      (set! message msg)
-      (reset-message-timeout)
-      (when refresh? (refresh)))
+      (let ([refresh?  (and refresh? (not (equal? msg message)))])
+        (set! message msg)
+        (reset-message-timeout)
+        (when refresh? (refresh))))
     
     (define (draw-message dc dc-x-min dc-y-min)
       (define bm (get-bitmap))
