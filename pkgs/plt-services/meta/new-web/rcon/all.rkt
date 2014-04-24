@@ -18,9 +18,12 @@
         #:extra-headers style-header]{
    @columns[8 #:center? #t #:row? #t]{
     @h2{RacketCon}
-    @p{@b{RacketCon 2014} will be held in St. Louis on September 20,
+    @p{@b{(fourth RacketCon)} will be held in St. Louis on September 20, 2014,
        the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.
        Stay turned for more information!}
+    @p{@b{@a[href: "https://www.eventbrite.com/e/racketcon-2014-tickets-11408046775"]{Registration}}
+       is open. Tickets are 30$.}
+    @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} will be giving the keynote.}
     @p*{@b{RacketCon} is a public meeting for everyone interested in Racket:
         developers, contributors, programmers, educators, and by-standers.  It
         is an opportunity for all members of the community to come together to
