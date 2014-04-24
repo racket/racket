@@ -41,7 +41,7 @@ The basic collector allocation functions are:
  that does not contain pointers to collectable objects. If the memory
  does contain pointers, they are invisible to the collector and will
  not prevent an object from being collected. Newly allocated atomic
- memory is not necessary zeroed.
+ memory is not necessarily zeroed.
 
  Atomic memory is used for strings or other blocks of memory which do
  not contain pointers. Atomic memory can also be used to store
@@ -116,6 +116,17 @@ Garbage collection can occur during any call into Racket or its
 allocator, on anytime that Racket has control, except during functions
 that are documented otherwise.  The predicate and accessor macros
 listed in @secref["im:stdtypes"] never trigger a collection.
+
+As described in @secref["im:3m:places"], different @|tech-place|s
+manage allocation separately. Movable memory should not be
+communicated from one place to another, since the source place might
+move the memory before it is used in the destination place.
+Furthermore, allocated memory that contains pointers must not be
+written in a @|tech-place| other than the one where it is allocated,
+due to the place-specific implementation of a write barrier for
+generational garbage collection. No write barrier is used for memory
+that is allocated by @cppi{scheme_malloc_atomic_allow_interior} to
+contain no pointers.
 
 @; ----------------------------------------------------------------------
 

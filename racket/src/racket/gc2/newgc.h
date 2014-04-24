@@ -142,8 +142,8 @@ typedef struct NewGC {
   /* All non-gen0 pages are held in the following structure. */
   struct mpage *gen1_pages[PAGE_TYPES];
 
-  struct mpage *med_pages[NUM_MED_PAGE_SIZES];
-  struct mpage *med_freelist_pages[NUM_MED_PAGE_SIZES];
+  struct mpage *med_pages[MED_PAGE_TYPES][NUM_MED_PAGE_SIZES];
+  struct mpage *med_freelist_pages[MED_PAGE_TYPES][NUM_MED_PAGE_SIZES];
 
   MarkSegment *mark_stack;
 
