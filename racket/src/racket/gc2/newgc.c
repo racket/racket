@@ -3768,7 +3768,7 @@ void GC_dump_with_traces(int flags,
     }
 
     for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
-      GCWARN((GCOUTF, "Generation 1 [medium%s]:", ty ? " atomic" : ""));
+      GCWARN((GCOUTF, "Generation 1 [medium%s]:", (ty == MED_PAGE_ATOMIC) ? " atomic" : ""));
       for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
         if (gc->med_pages[ty][i]) {
           intptr_t count = 0, page_count = 0;
@@ -3963,7 +3963,7 @@ static void mark_backpointers(NewGC *gc)
             work->marked_on = 1;
             pagemap_add(pagemap, work);
 
-            if (!ty) {
+            if (ty == MED_PAGE_NONATOMIC) {
               while(start <= end) {
                 objhead *info = (objhead *)start;
                 if(!info->dead) {
