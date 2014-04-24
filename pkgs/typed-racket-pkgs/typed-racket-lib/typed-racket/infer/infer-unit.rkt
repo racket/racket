@@ -311,12 +311,14 @@
                    [new-s-arr (make-arr (append ss new-tys) s #f (cons s-dty dbound) null)]
                    [new-cset (cgen/arr V (append vars X) Y new-s-arr t-arr)])
               (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
-           [else
+           [(= (length ss) (length ts))
             ;; the simple case
             (let* ([arg-mapping (cgen/list V X Y (extend ss ts t-rest) ss)]
                    [darg-mapping (move-rest-to-dmap (cgen V (cons dbound X) Y t-rest s-dty) dbound #:exact #t)]
                    [ret-mapping (cg s t)])
-              (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
+              (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
+           [else
+             (fail! s-arr t-arr)])]
     [(_ _) (fail! s-arr t-arr)]))
 
 (define/cond-contract (cgen/flds V X Y flds-s flds-t)

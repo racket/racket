@@ -244,6 +244,10 @@
    [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
     (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
 
+   [FAIL
+    (-polydots (c a b) (->... (list (->... (list a) (b b) c) (-vec a)) ((-vec b) b) (-vec c)))
+    (->* (list (->* (list) -Symbol -Symbol)) (-vec -Symbol) (-vec -Symbol))]
+
    [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
     (-> Univ -Boolean : -top-filter)]
    [(-> Univ -Boolean : -bot-filter)
