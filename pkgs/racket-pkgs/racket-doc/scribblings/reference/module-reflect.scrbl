@@ -7,6 +7,9 @@
 @;------------------------------------------------------------------------
 @section[#:tag "modnameresolver"]{Resolving Module Names}
 
+@margin-note{The @racketmodname[syntax/modresolve] library provides additional
+operations for resolving and manipulating module names.}
+
 The name of a declared module is represented by a @deftech{resolved
 module path}, which encapsulates either a symbol or a complete
 filesystem path (see @secref["pathutils"]). A symbol normally refers
