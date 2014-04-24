@@ -1,13 +1,13 @@
 #;#;
 #<<END
+TR missed opt: expt.rkt 13:5 (expt -2.0 0.5) -- unexpected complex type
 TR missed opt: expt.rkt 6:13 (expt (sin 0.25) 1.0) -- unexpected complex type
-TR missed opt: expt.rkt 9:0 (expt -2.0 0.5) -- unexpected complex type
+TR opt: expt.rkt 12:5 (expt 2.0 3.0) -- binary float
 TR opt: expt.rkt 6:19 (sin 0.25) -- unary float
-TR opt: expt.rkt 8:0 (expt 2.0 3.0) -- binary float
 END
 #<<END
-8.0
-8.659560562354934e-17+1.4142135623730951i
+"8.00000"
+"0.00000"
 
 END
 #lang typed/racket
@@ -19,5 +19,9 @@ END
 (define (crash)
   (real-part (expt (sin 0.25) 1.0)))
 
-(expt 2.0 3.0)
-(expt -2.0 0.5) ; not a valid optimization, returns a complex
+;; to avoid machine-specific precision issues
+(: out : Number -> String)
+(define (out v) (real->decimal-string (real-part v) 5))
+
+(out (expt 2.0 3.0))
+(out (expt -2.0 0.5)) ; not a valid optimization, returns a complex
