@@ -251,6 +251,13 @@
              `(,(type->sexp t) : ,(type->sexp ft))
              `(,(type->sexp t) : ,(type->sexp ft) @
                ,@(map pathelem->sexp pth)))]
+        ;; Print asymmetric filters with only a positive filter as a
+        ;; special case (even when complex printing is off) because it's
+        ;; useful to users who use functions like `filter`.
+        [(Values: (list (Result: t
+                                 (FilterSet: (TypeFilter: ft '() id) (Top:))
+                                 (Empty:))))
+         `(,(type->sexp t) : #:+ ,(type->sexp ft))]
         [(Values: (list (Result: t fs (Empty:))))
          (if (print-complex-filters?)
              `(,(type->sexp t) : ,(filter->sexp fs))
