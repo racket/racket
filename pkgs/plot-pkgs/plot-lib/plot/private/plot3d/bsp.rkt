@@ -427,15 +427,25 @@
   (let* ([ss  (canonicalize-shapes ss)])
     (build-bsp-tree* ss)))
 
+(: bad-plane? (-> FlVector Boolean))
+(define (bad-plane? plane)
+  (define a (flvector-ref plane 0))
+  (define b (flvector-ref plane 1))
+  (define c (flvector-ref plane 2))
+  (define d (flvector-ref plane 3))
+  (or (and ((abs a) . < . 1e-16) ((abs b) . < . 1e-16) ((abs c) . < . 1e-16))
+      (not (flrational? a)) (not (flrational? b)) (not (flrational? c)) (not (flrational? d))))
+
 (: try-bsp-split (-> (Listof BSP-Shape) FlVector Boolean (-> (U #f BSP-Tree)) (U #f BSP-Tree)))
 (define (try-bsp-split ss plane disjoint? k)
-  (define-values (neg-ss pos-ss) (bin-shapes ss plane disjoint?))
-  (cond [(not (and neg-ss pos-ss))  (k)]
-        [(empty? neg-ss)  (k)]
-        [(empty? pos-ss)  (k)]
-        [(and disjoint? ((+ (length neg-ss) (length pos-ss)) . > . (length ss)))  (k)]
+  (cond [(bad-plane? plane)  (k)]
         [else
-         (bsp-node plane (build-bsp-tree* neg-ss) (build-bsp-tree* pos-ss))]))
+         (define-values (neg-ss pos-ss) (bin-shapes ss plane disjoint?))
+         (cond [(not (and neg-ss pos-ss))  (k)]
+               [(empty? neg-ss)  (k)]
+               [(empty? pos-ss)  (k)]
+               [(and disjoint? ((+ (length neg-ss) (length pos-ss)) . > . (length ss)))  (k)]
+               [else  (bsp-node plane (build-bsp-tree* neg-ss) (build-bsp-tree* pos-ss))])]))
 
 (: try-bsp-split/axial-planes (-> (Listof BSP-Shape) (Listof axis) (U #f BSP-Tree)))
 (define (try-bsp-split/axial-planes ss axes)
