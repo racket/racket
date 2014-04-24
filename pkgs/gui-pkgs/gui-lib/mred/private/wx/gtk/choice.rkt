@@ -59,6 +59,7 @@
   (set-auto-size)
 
   (connect-changed gtk)
+  (set! button-gtk (re-extract-combo-button gtk button-gtk this))
   (connect-focus button-gtk)
   (connect-combo-key-and-mouse button-gtk)
 

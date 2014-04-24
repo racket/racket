@@ -57,6 +57,10 @@
     
     (super-new)
 
+    (define/public (register-extra-gtk gtk extra-gtk)
+      (define cell (g_object_get_data gtk "wx"))
+      (g_object_set_data extra-gtk "wx" cell))
+
     (atomically
      (let ([cell (malloc-immobile-cell (make-weak-box this))])
        (g_object_set_data gtk "wx" cell)

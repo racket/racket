@@ -242,7 +242,8 @@
               is-auto-scroll? is-disabled-scroll?
               get-virtual-width get-virtual-height
               refresh-for-autoscroll refresh-all-children
-              get-eventspace)
+              get-eventspace
+	      register-extra-gtk)
 
      (define is-combo? (memq 'combo style))
      (define has-border? (or (memq 'border style)
@@ -359,6 +360,10 @@
                                          (list client-gtk combo-button-gtk)
                                          (list client-gtk)))))])
 
+     (define/private (check-combo)
+       (when is-combo?
+	 (set! combo-button-gtk (re-extract-combo-button gtk combo-button-gtk this))))
+
      (set-size x y w h)
 
      (define/override (set-size x y w h)
@@ -393,6 +398,7 @@
                  (is-panel?))
        (set-gtk-object-flags! client-gtk (bitwise-ior (get-gtk-object-flags client-gtk)
                                                       GTK_CAN_FOCUS)))
+     (check-combo)
      (when combo-button-gtk
        (connect-combo-key-and-mouse combo-button-gtk))
      (connect-unrealize client-gtk)
