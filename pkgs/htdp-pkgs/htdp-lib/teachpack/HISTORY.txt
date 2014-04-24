@@ -1,3 +1,13 @@
+Version NEXT > 6.0.1
+
+* added check-random to the test-engine so that students can test random
+  functions more easily 
+
+------------------------------------------------------------------------
+Version 6.0.1				  [Thu Apr 24 16:39:50 EDT 2014]
+
+* doc improvements 
+
 ------------------------------------------------------------------------
 Version 6.0				  [Wed Dec 18 22:02:03 EST 2013]
 
