@@ -572,7 +572,7 @@ argument with @racket['atomic-interior]:
 ]
 
 Beware that passing memory allocated with @racket['interior] (as
-opposed to @racket['interior-atomic]) is safe only for functions that
+opposed to @racket['atomic-interior]) is safe only for functions that
 read the memory without writing. A foreign function must not write to
 @racket['interior]-allocated memory from a place other than the one
 where the memory is allocated, due a place-specific treatment of
