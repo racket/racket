@@ -136,7 +136,7 @@ before the underscore.
 }
 
 @item{The @defpattech[_] @pattern matches any sexpression,
-but does not bind $pattech[_] as a name, nor can it be suffixed to bind a name.
+but does not bind @pattech[_] as a name, nor can it be suffixed to bind a name.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
