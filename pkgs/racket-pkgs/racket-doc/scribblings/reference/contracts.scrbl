@@ -2724,7 +2724,7 @@ Attempts to randomly generate a value which will match the contract. The fuel
 argument limits how hard the generator tries to generate a value matching the
 contract and is a rough limit of the size of the resulting value.
 
-The generator may fail to generate a contract, either because some contracts
+The generator may fail to generate a value, either because some contracts
 do not have corresponding generators (for example, not all predicates have
 generators) or because there is not enough fuel. In either case, the
 thunk @racket[fail] is invoked.

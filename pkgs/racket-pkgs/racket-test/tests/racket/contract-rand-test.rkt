@@ -20,11 +20,16 @@
 (check-not-exn (λ () (test-contract-generation (listof number?))))
 
 (check-not-exn (λ () (test-contract-generation (between/c 1 100))))
+(check-not-exn (λ () (test-contract-generation (between/c 1.0 100.0))))
 (check-not-exn (λ () (test-contract-generation (listof integer?))))
 (check-not-exn (λ () (test-contract-generation (>=/c 0))))
+(check-not-exn (λ () (test-contract-generation (>=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (<=/c 0))))
+(check-not-exn (λ () (test-contract-generation (<=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (>/c 0))))
+(check-not-exn (λ () (test-contract-generation (>/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (</c 0))))
+(check-not-exn (λ () (test-contract-generation (</c 0.0))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
