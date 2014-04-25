@@ -1243,6 +1243,20 @@
             (define-metafunction L [(q) ()])
             #f))
         #rx"^q: undefined;\n[^\n]*use[^\n]*before")
+
+(let ()
+  ;; named ellipses in where clauses
+  (define-language L)
+  
+  (define-metafunction L
+  [(f (any ..._n))
+   3
+   (where (any_2 ..._n) (1 2 3))]
+  [(f any)
+   #f])
+
+  (test (term (f (a b c))) 3)
+  (test (term (f (a b))) #f))
   
 ;                                                                                                 
 ;                                                                                                 

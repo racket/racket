@@ -193,7 +193,7 @@
          (define prefix-sym (if m
                                 (string->symbol (list-ref m 1))
                                 raw-sym))
-         (check-id (syntax->datum (term-id-id id)) stx ellipsis-allowed?)
+         (check-id (syntax->datum (term-id-id id)) stx ellipsis-allowed? #t)
          
          (define new-id
            (build-disappeared-use (current-id-stx-table) 
@@ -208,7 +208,7 @@
                    (defined-term-value (syntax-local-value #'x))
                    'disappeared-use 
                    (syntax-local-introduce #'x))])
-         (check-id (syntax->datum #'x) stx ellipsis-allowed?)
+         (check-id (syntax->datum #'x) stx ellipsis-allowed? #t)
          (with-syntax ([v #`(begin
                               #,(defined-check ref "term" #:external #'x)
                               #,ref)])
@@ -228,7 +228,7 @@
       [hole (values (syntax (undatum the-hole)) 0)]
       [x
        (and (identifier? (syntax x))
-            (check-id (syntax->datum #'x) stx ellipsis-allowed?))
+            (check-id (syntax->datum #'x) stx ellipsis-allowed? #f))
        (values stx 0)]
       [() (values stx 0)]
       [(x ... . y)
@@ -254,12 +254,13 @@
       
       [_ (values stx 0)]))
   
-  (define (check-id id stx ellipsis-allowed?)
+  (define (check-id id stx ellipsis-allowed? term-id?)
     (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
     (cond
       [m
        (define before-underscore (string->symbol (list-ref m 1)))
-       (when (equal? before-underscore '...)
+       (when (and (not term-id?)
+                  (equal? before-underscore '...))
          (raise-syntax-error 
           'term
           "ellipsis cannot have an underscore"
