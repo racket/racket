@@ -619,7 +619,7 @@
                 [lower (if (< (between/c-low ctc) min-n)
                          min-n
                          (between/c-low ctc))])
-           (+ (random (- upper lower))
+           (+ (* (random) (- upper lower))
               lower))))))
 
 (define (check-unary-between/c sym x)
@@ -651,7 +651,7 @@
              [upper (if (> x max-n)
                       max-n
                       x)])
-        (+ (random (- upper min-n))
+        (+ (* (random) (- upper min-n))
            min-n)))))
 
 (define (>/c x)
@@ -664,7 +664,7 @@
               [lower (if (< x min-n)
                        min-n
                        x)])
-         (+ (random (- max-n lower))
+         (+ (* (random) (- max-n lower))
             lower)))))
 
 (define (check-two-args name arg1 arg2 pred1? pred2?)
