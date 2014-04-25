@@ -367,6 +367,7 @@
   (for-each (λ (x) (hash-set! defaults-ht x 'begin))
             '(case-lambda case-lambda: pcase-lambda:
                match-lambda match-lambda*
+               syntax-parser
                cond
                delay
                unit compound-unit compound-unit/sig
@@ -407,6 +408,7 @@
                
                kernel-syntax-case
                syntax-case syntax-case* syntax-rules syntax-id-rules
+               syntax-parse
                let-signature fluid-let
                let-struct let-macro let-values let*-values
                case when unless 
