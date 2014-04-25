@@ -63,6 +63,7 @@
          (define exn
            (with-handlers ([void (lambda (exn) exn)])
              (cond [(module-path? mod)
+                    (module-language-configure-runtime mod)
                     (dynamic-rerequire mod #:verbosity verbosity)]
                    [else
                     (raise-argument-error 'dynamic-enter! "module-path?" mod)])
@@ -85,3 +86,20 @@
                (namespace-require 'racket/enter))))
          (unless (eq? none exn) (raise exn))]
         [else (current-namespace orig-namespace)]))
+
+(define (module-language-configure-runtime mod)
+  ;; Load language-info (if any) and do configure-runtime.
+  ;; Important for langs like Typed Racket.
+  (define info (module->language-info mod #t))
+  (when info
+    (define get-info ((dynamic-require (vector-ref info 0)
+                                       (vector-ref info 1))
+                      (vector-ref info 2)))
+    (define configs (get-info 'configure-runtime '()))
+    (for ([config (in-list configs)])
+      ((dynamic-require (vector-ref config 0)
+                        (vector-ref config 1))
+       (vector-ref config 2)))
+    (define cr-submod `(submod ,mod configure-runtime))
+    (when (module-declared? cr-submod)
+      (dynamic-require cr-submod #f))))
