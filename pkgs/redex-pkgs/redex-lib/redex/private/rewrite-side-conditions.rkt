@@ -536,9 +536,10 @@
                 (syntax (rest dots)))])))
   
   (define (binds? nts bind-names? x)
-    (or (and bind-names? (memq (syntax-e x) nts))
-        (and bind-names? (memq (syntax-e x) underscore-allowed))
-        (regexp-match #rx"_" (symbol->string (syntax-e x)))))
+    (and (not (eq? '_ (syntax-e x)))
+         (or (and bind-names? (memq (syntax-e x) nts))
+             (and bind-names? (memq (syntax-e x) underscore-allowed))
+             (regexp-match #rx"_" (symbol->string (syntax-e x))))))
   
   (define (binds-in-right-hand-side? nts bind-names? x)
     (and (binds? nts bind-names? x)

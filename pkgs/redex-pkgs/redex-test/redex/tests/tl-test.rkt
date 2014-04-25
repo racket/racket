@@ -569,8 +569,23 @@
                         (add-minuses 11 count)))))
      '()))
   (test (< cpu 1000) #t))
-                  
-    
+
+(let ()
+  ;; _ as a non-binding match
+  (define-language L)
+
+  (test (pair? (redex-match L _ '(1 2 3)))
+        #t)
+  (test (redex-match L (_ _) '(1 2 3))
+        #f)
+  (test (pair? (redex-match L (_ _ ...)'(1 2)))
+        #t)
+  (test (redex-match L (_ _ ...)'())
+        #f)
+  (test (pair? (redex-match L (_ (_ _ ...) ...) '((1 2) (3 4) (5 6))))
+        '#t)
+  (test (redex-match L (_ (_ _ ...) ...) '((1 2) (3 4) () (5 6)))
+        #f))
 
 
 ;                                                                                             
