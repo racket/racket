@@ -8,90 +8,77 @@
 
 (provide generate-env
          env-stash
-         
          contract-random-generate
-         
          generate/direct
          generate/choose
-         
          make-generate-ctc-fail
-         generate-ctc-fail?)
+         generate-ctc-fail?
+         with-definitely-available-contracts)
 
-; env parameter
+;; a stash of values and the contracts that they correspond to
+;; that generation has produced earlier in the process 
 (define generate-env (make-parameter #f))
+
+;; (parameter/c (listof contract?))
+;; contracts in this will definitely have values available
+;; by the time generation happens; those values will be 
+;; in the env-stash.
+(define definitely-available-contracts (make-parameter '()))
 
 ; Adds a new contract and value to the environment if
 ; they don't already exist
-(define (env-stash env ctc val)
-  (let* ([curvals (hash-ref env ctc (list))])
-    (hash-set! env ctc (cons val curvals))))
+(define (env-stash ctc val)
+  (define env (generate-env))
+  (define curvals (hash-ref env ctc '()))
+  (hash-set! env ctc (cons val curvals)))
 
-(define (gen-pred/direct pred fuel)
-  (let ([ctc (coerce-contract 'contract-direct-gen pred)])
-    (generate/direct ctc fuel)))
-
+(define (with-definitely-available-contracts ctcs thunk)
+  (parameterize ([definitely-available-contracts 
+                   (append ctcs (definitely-available-contracts))])
+    (thunk)))
+           
 ; generate : contract int -> ctc value or error
 (define (contract-random-generate ctc fuel
                                   [fail (λ () 
                                           (error 'contract-random-generate
-                                                 "unable to construct any generator for contract: ~s"
-                                                 (contract-struct-name 
-                                                  (coerce-contract 'contract-random-generate ctc))))])
-  (let ([def-ctc (coerce-contract 'contract-random-generate ctc)])
-    (parameterize ([generate-env (make-hash)])
-      ; choose randomly
-      (let ([val (generate/choose def-ctc fuel)])
-        (if (generate-ctc-fail? val)
-            (fail)
-            val)))))
+                                                 "unable to construct any generator for contract: ~e"
+                                                 (coerce-contract 'contract-random-generate ctc)))])
+  (define def-ctc (coerce-contract 'contract-random-generate ctc))
+  (parameterize ([generate-env (make-hash)])
+    (let ([proc (generate/choose def-ctc fuel)])
+      (if proc
+          (proc)
+          (fail)))))
 
+;; generate/choose : contract? nonnegative-int -> (or/c #f (-> any/c))
 ; Iterates through generation methods until failure. Returns
-; generate-ctc-fail if no value could be generated
+; #f if no value could be generated
 (define (generate/choose ctc fuel)
-  (let ([options (permute (list generate/direct
-                                generate/direct-env
-                                ))])
-    ; choose randomly
-    (let trygen ([options options])
-      (if (empty? options)
-          (make-generate-ctc-fail)
-          (let* ([option (car options)]
-                 [val (option ctc fuel)])
-            (if (generate-ctc-fail? val)
-                (trygen (cdr options))
-                val))))))
+  (let loop ([options (permute (list generate/direct generate/env))])
+    (cond
+      [(empty? options)
+       #f]
+      [else
+       (define option (car options))
+       (define gen (option ctc fuel))
+       (or gen (loop (cdr options)))])))
 
-; generate/direct :: contract int -> value for contract
-; Attempts to make a generator that generates values for this contract
-; directly. Returns generate-ctc-fail if making a generator fails.
-(define (generate/direct ctc fuel)
-  (let ([g (contract-struct-generate ctc)])
-    ; Check if the contract has a direct generate attached
-    (if (generate-ctc-fail? g)
-        ; Everything failed -- we can't directly generate this ctc
-        g 
-        (g fuel))))
-
-; generate/direct-env :: contract int -> value
+; generate/direct :: contract nonnegative-int -> (or/c #f (-> val))
+;; generate directly via the contract's built-in generator, if possible
+(define (generate/direct ctc fuel) ((contract-struct-generate ctc) fuel))
+  
+; generate/direct-env :: contract nonnegative-int -> value
 ; Attemps to find a value with the given contract in the environment.
-; Returns it if found and generate-ctc-fail otherwise.
-(define (generate/direct-env ctc fuel)
-  ; TODO: find out how to make negative test cases
-  (let* ([keys (hash-keys (generate-env))]
-         [valid-ctcs (filter (λ (c)
-                               (contract-stronger? c ctc))
-                             keys)])
-    (if (> (length valid-ctcs) 0)
-        (oneof (oneof (map (λ (key)
-                             (hash-ref (generate-env) key))
-                           valid-ctcs)))
-        (make-generate-ctc-fail))))
-
-; generate/indirect-env :: contract int -> (int -> value for contract)
-; Attempts to make a generator that generates values for this contract
-; by calling functions in the environment
-(define (generate/indirect-env ctc fuel)
-  (if (> fuel 0)
-      (make-generate-ctc-fail)
-      (make-generate-ctc-fail)))
-
+;; NB: this doesn't yet try to call things in the environment to generate
+(define (generate/env ctc fuel)
+  (for/or ([avail-ctc (in-list (definitely-available-contracts))])
+    (and (contract-stronger? avail-ctc ctc)
+         (λ ()
+           (define available 
+             (for/list ([(avail-ctc vs) (in-hash (generate-env))]
+                        #:when (contract-stronger? avail-ctc ctc)
+                        [v (in-list vs)])
+               v))
+           (when (null? available)
+             (error 'generate.rkt "internal error: no values satisfying ~s available" ctc))
+           (oneof available)))))

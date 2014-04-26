@@ -173,7 +173,7 @@
   (cond
     [(contract-struct? x) x]
     [(and (procedure? x) (procedure-arity-includes? x 1)) 
-     (make-predicate-contract (or (object-name x) '???) x (make-generate-ctc-fail))]
+     (make-predicate-contract (or (object-name x) '???) x #f)]
     [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x)) (make-eq-contract x)]
     [(or (bytes? x) (string? x)) (make-equal-contract x)]
     [(number? x) (make-=-contract x)]
@@ -295,7 +295,9 @@
         `',(eq-contract-val ctc)
         (eq-contract-val ctc)))
    #:generate
-   (λ (ctc) (λ (fuel) (eq-contract-val ctc)))
+   (λ (ctc) 
+     (define v (eq-contract-val ctc))
+     (λ (fuel) (λ () v)))
    #:stronger
    (λ (this that)
       (and (eq-contract? that)
@@ -312,7 +314,9 @@
       (and (equal-contract? that)
            (equal? (equal-contract-val this) (equal-contract-val that))))
    #:generate
-   (λ (ctc) (λ (fuel) (equal-contract-val ctc)))))
+   (λ (ctc) 
+     (define v (equal-contract-val ctc))
+     (λ (fuel) (λ () v)))))
 
 (define-struct =-contract (val)
   #:property prop:custom-write custom-write-property-proc
@@ -325,7 +329,9 @@
       (and (=-contract? that)
            (= (=-contract-val this) (=-contract-val that))))
    #:generate
-   (λ (ctc) (λ (fuel) (=-contract-val ctc)))))
+   (λ (ctc) 
+     (define v (=-contract-val ctc))
+     (λ (fuel) (λ () v)))))
 
 (define-struct regexp/c (reg)
   #:property prop:custom-write custom-write-property-proc
@@ -372,17 +378,22 @@
          predicate-contract-proj)))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
-                   (if (generate-ctc-fail? generate)
-                     (let ([fn (predicate-contract-pred ctc)])
-                       (find-generate fn (predicate-contract-name ctc)))
-                     generate)))
+                   (cond
+                     [generate generate]
+                     [else
+                      (define built-in-generator
+                        (find-generate (predicate-contract-pred ctc)
+                                       (predicate-contract-name ctc)))
+                      (λ (fuel)
+                        (and built-in-generator
+                             (λ () (built-in-generator fuel))))])))
    #:exercise (λ (ctc)
                  (λ (val fuel) 
                     ((predicate-contract-pred ctc) val)))))
 
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (build-flat-contract name pred [generate (make-generate-ctc-fail)])
+(define (build-flat-contract name pred [generate #f])
   (make-predicate-contract name pred generate))
 
 

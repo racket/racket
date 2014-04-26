@@ -713,25 +713,37 @@
                   (base->-min-arity ctc))
           (not (base->-rest ctc)))
      ;; only handle the case with no optional args and no rest args
-     (define doms-l (length (base->-doms ctc)))
+     (define dom-ctcs (base->-doms ctc))
+     (define doms-l (length dom-ctcs))
      (λ (fuel)
-       (define rngs-gens (map (λ (c) (generate/choose c (/ fuel 2)))
-                              (base->-rngs ctc)))
+       (define rngs-gens 
+         (with-definitely-available-contracts 
+          dom-ctcs
+          (λ ()
+            (for/list ([c (in-list (base->-rngs ctc))])
+              (generate/choose c fuel)))))
        (cond
-         [(for/or ([rng-gen (in-list rngs-gens)])
-            (generate-ctc-fail? rng-gen))
-          (make-generate-ctc-fail)]
-         [else
-          (procedure-reduce-arity
-           (λ args
-             ; Make sure that the args match the contract
-             (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
-                      (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
-                    ; Stash the valid value
-                    ;(env-stash (generate-env) ctc args)
-                    (apply values rngs-gens)))
-           doms-l)]))]
-    [else (λ (fuel) (make-generate-ctc-fail))]))
+         [(for/and ([rng-gen (in-list rngs-gens)])
+            rng-gen)
+          (λ ()
+            (define env (generate-env))
+            (procedure-reduce-arity
+             (λ args
+               ; Make sure that the args match the contract
+               (unless ((contract-struct-exercise ctc) args (/ fuel 2))
+                 (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
+               ; Stash the valid value
+               (parameterize ([generate-env env])
+                 (for ([ctc (in-list dom-ctcs)]
+                       [arg (in-list args)])
+                   (env-stash ctc arg))
+                 (define results
+                   (for/list ([rng-gen (in-list rngs-gens)])
+                     (rng-gen)))
+                 (apply values results)))
+             doms-l))]
+         [else #f]))]
+    [else (λ (fuel) #f)]))
 
 (define (->-exercise ctc) 
   (λ (args fuel)

@@ -2237,10 +2237,14 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
+          [#:generate
            generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c)
-                 #f)
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
            #f])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
@@ -2271,10 +2275,14 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
+          [#:generate
            generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c) 
-                 #f)
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
            #f])
          chaperone-contract-property?]
 @defproc[(build-contract-property
@@ -2305,10 +2313,14 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
+          [#:generate
            generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c) 
-                 #f)
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
            #f])
          contract-property?])]{
 
@@ -2316,7 +2328,7 @@ is expected to be the contract on the value).
            @racket[val-first-projection] argument
            are subject to change. (Probably
            also the default values of the @racket[project] 
-           arguments will change.}
+           arguments will change.)}
 
    
 These functions build the arguments for @racket[prop:contract],
@@ -2330,9 +2342,9 @@ which produces a description to @racket[write] as part of a contract violation;
 produces a blame-tracking projection defining the behavior of the contract;
 @racket[stronger], which is a predicate that determines whether this contract
 (passed in the first argument) is stronger than some other contract (passed
-in the second argument); and @racket[generator], which makes a random value
-that matches the contract, given a size bound and an environment from which
-to draw interesting values.
+in the second argument); and @racket[generate], which returns a thunk
+that generates random values matching the contract or @racket[#f], indicating
+that random generation for this contract isn't supported.
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the

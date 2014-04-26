@@ -611,16 +611,52 @@
    #:generate
    (λ (ctc)
       (λ (fuel)
-         (let* ([max-n 2147483647]
-                [min-n -2147483648]
-                [upper (if (> (between/c-high ctc) max-n)
-                         max-n
-                         (between/c-high ctc))]
-                [lower (if (< (between/c-low ctc) min-n)
-                         min-n
-                         (between/c-low ctc))])
-           (+ (* (random) (- upper lower))
-              lower))))))
+        (define n (between/c-low ctc))
+        (define m (between/c-high ctc))
+          (cond
+            [(= n m)
+             (λ () 
+               (define choice (rand-choice
+                               [1/2 n]
+                               [else m]))
+               (rand-choice 
+                [1/2 (if (exact? choice)
+                         (if (= (exact->inexact choice) choice)
+                             (exact->inexact choice)
+                             choice)
+                         (if (= (* 1.0 choice) choice)
+                             (* 1.0 choice)
+                             choice))]
+                [else choice]))]
+            [else
+             (λ ()
+               (rand-choice
+                [1/10 (if (<= n 0 m)
+                          (rand-choice [1/3 0] [1/3 0.0] [else -0.0])
+                          (rand-choice [1/2 n] [else m]))]
+                [1/20 (if (<= n 1 m)
+                          1
+                          (rand-choice [1/2 n] [else m]))]
+                [1/20 (if (<= n -1 m)
+                          -1
+                          (rand-choice [1/2 n] [else m]))]
+                [1/10 m]
+                [1/10 n]
+                [1/10 (if (<= n 0 1 m)
+                          (random)
+                          (rand-choice [1/2 n] [else m]))]
+                [else
+                 (cond
+                   [(or (= n -inf.0) (= m +inf.0))
+                    (define c (random 4294967087))
+                    (cond
+                      [(and (= n -inf.0) (= m +inf.0)) c]
+                      [(= m +inf.0) (+ n c)]
+                      [(= n -inf.0) (- m c)])]
+                   [else
+                    (+ n (* (random) (- m n)))])]))])))))
+
+(define (maybe-neg n) (rand-choice [1/2 n] [else (- n)]))
 
 (define (check-unary-between/c sym x)
   (unless (real? x)
@@ -646,26 +682,24 @@
    `(</c ,x)
    (λ (y) (and (real? y) (< y x)))
    (λ (fuel)
-      (let* ([max-n 2147483647]
-             [min-n -2147483648]
-             [upper (if (> x max-n)
-                      max-n
-                      x)])
-        (+ (* (random) (- upper min-n))
-           min-n)))))
+     (λ ()
+       (rand-choice
+        [1/10 -inf.0]
+        [1/10 (- x 0.01)]
+        [4/10 (- x (random))]
+        [else (- x (random 4294967087))])))))
 
 (define (>/c x)
   (flat-named-contract
     `(>/c ,x)
     (λ (y) (and (real? y) (> y x)))
     (λ (fuel) 
-       (let* ([max-n 2147483647]
-              [min-n -2147483648]
-              [lower (if (< x min-n)
-                       min-n
-                       x)])
-         (+ (* (random) (- max-n lower))
-            lower)))))
+      (λ ()
+        (rand-choice
+         [1/10 +inf.0]
+         [1/10 (+ x 0.01)]
+         [4/10 (+ x (random))]
+         [else (+ x (random 4294967087))])))))
 
 (define (check-two-args name arg1 arg2 pred1? pred2?)
   (unless (pred1? arg1)
@@ -699,19 +733,29 @@
 
 (define (listof-generate elem-ctc)
   (λ (fuel)
-    (define (mk-rand-list so-far)
-      (rand-choice
-       [1/5 so-far]
-       [else 
-        (define next-elem (generate/direct elem-ctc fuel))
-        (if (generate-ctc-fail? next-elem)
-            (mk-rand-list so-far)
-            (mk-rand-list (cons next-elem so-far)))]))
-    (mk-rand-list (list))))
+    (define eg (generate/choose elem-ctc fuel))
+    (if eg
+        (λ ()
+          (let loop ([so-far '()])
+            (rand-choice
+             [1/5 so-far]
+             [else (loop (cons (eg) so-far))])))
+        (λ () '()))))
 
 (define (listof-exercise el-ctc)
   (λ (f n-tests size env)
     #t))
+
+(define (non-empty-listof-generate elem-ctc)
+  (λ (fuel)
+    (define eg (generate/choose elem-ctc fuel))
+    (if eg
+        (λ ()
+          (let loop ([so-far (list (eg))])
+            (rand-choice
+             [1/5 so-far]
+             [else (loop (cons (eg) so-far))])))
+        #f)))
 
 (define (*-listof predicate? name generate)
   (λ (input)
@@ -793,7 +837,7 @@
 
 (define non-empty-listof-func (*-listof non-empty-list? 
                                         'non-empty-listof
-                                        (λ (ctc) (make-generate-ctc-fail))))
+                                        non-empty-listof-generate))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
 (define (blame-add-car-context blame) (blame-add-context blame "the car of"))
@@ -881,15 +925,15 @@
 (define (list/c-generate ctc)
   (define elem-ctcs (generic-list/c-args ctc))
   (λ (fuel)
-    (let loop ([elem-ctcs elem-ctcs]
-               [result '()])
-      (cond
-        [(null? elem-ctcs) (reverse result)]
-        [else
-         (define next-elem (generate/direct (car elem-ctcs) fuel))
-         (if (generate-ctc-fail? next-elem)
-             next-elem
-             (loop (cdr elem-ctcs) (cons next-elem result)))]))))
+    (define gens (for/list ([elem-ctc (in-list elem-ctcs)])
+                   (generate/choose elem-ctc fuel)))
+    (cond
+      [(andmap values gens)
+       (λ ()
+         (for/list ([gen (in-list gens)])
+           (gen)))]
+      [else
+       #f])))
 
 (struct generic-list/c (args))
 
@@ -1669,19 +1713,18 @@
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (flat-named-contract name predicate [generate #f])
-  (let ([generate (or generate (make-generate-ctc-fail))])
-    (cond
-      [(and (procedure? predicate)
-            (procedure-arity-includes? predicate 1))
-       (make-predicate-contract name predicate generate)]
-      [(flat-contract? predicate)
-       (make-predicate-contract name (flat-contract-predicate predicate) generate)]
-      [else
-       (raise-argument-error 'flat-named-contract
-                             (format "~s" `(or/c flat-contract?
-                                                 (and/c procedure?
-                                                        (λ (x) (procedure-arity-include? x 1)))))
-                             predicate)])))
+  (cond
+    [(and (procedure? predicate)
+          (procedure-arity-includes? predicate 1))
+     (make-predicate-contract name predicate generate)]
+    [(flat-contract? predicate)
+     (make-predicate-contract name (flat-contract-predicate predicate) generate)]
+    [else
+     (raise-argument-error 'flat-named-contract
+                           (format "~s" `(or/c flat-contract?
+                                               (and/c procedure?
+                                                      (λ (x) (procedure-arity-include? x 1)))))
+                           predicate)]))
 
 (define printable/c
   (flat-named-contract

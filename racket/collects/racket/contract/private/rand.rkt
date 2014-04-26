@@ -9,9 +9,6 @@
          permute
          oneof)
 
-
-;; random generator
-
 (define my-generator (make-pseudo-random-generator))
 (define (rand [x #f]) 
   (if x
@@ -22,8 +19,6 @@
 (define (rand-seed x)
   (parameterize ([current-pseudo-random-generator my-generator])
     (random-seed x)))
-
-(rand-seed 0)
 
 (define-syntax (rand-choice stx)
   (syntax-case stx ()
@@ -81,13 +76,13 @@
 ; oneof :: [a] -> a
 ; Randomly chooses one of the values from a given list
 (define (oneof a-list)
-  (list-ref a-list (random (length a-list))))
+  (list-ref a-list (rand (length a-list))))
 
 ; fisher-yates shuffle
 (define (permute a-list)
   (do ((v (list->vector a-list)) (n (length a-list) (- n 1)))
       ((zero? n) (vector->list v))
-    (let* ((r (random n)) (t (vector-ref v r)))
+    (let* ((r (rand n)) (t (vector-ref v r)))
       (vector-set! v r (vector-ref v (- n 1)))
       (vector-set! v (- n 1) t))))
 

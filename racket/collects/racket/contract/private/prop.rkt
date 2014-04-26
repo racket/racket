@@ -97,12 +97,11 @@
     (stronger a b)))
 
 (define (contract-struct-generate c)
-  (let* ([prop (contract-struct-property c)]
-         [generate (contract-property-generate prop)])
-    (if (procedure? generate)
-      ; FIXME: Call needs to take multiple arguments
-        (generate c)
-        (make-generate-ctc-fail))))
+  (define prop (contract-struct-property c))
+  (define generate (contract-property-generate prop))
+  (if (procedure? generate)
+      (generate c)
+      #f))
 
 (define (contract-struct-exercise c)
   (let* ([prop (contract-struct-property c)]

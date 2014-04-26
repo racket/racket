@@ -125,7 +125,7 @@
 
 ;; given a predicate returns a generate for this predicate or generate-ctc-fail
 (define (find-generate func [name "internal"])
-  (hash-ref predicate-generator-table func make-generate-ctc-fail))
+  (hash-ref predicate-generator-table func #f))
 
 (define (get-arg-names-space space-needed)
   (let ([rv (thread-cell-ref arg-names-count)])
