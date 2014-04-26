@@ -183,14 +183,14 @@
              ;; ... function, (Listof A) or (List A B C etc) arg
              [(and drest (not tail-bound)
                    (eq? (cdr drest) dotted-var)
-                   (= (length domain) (length arg-tys))
+                   (<= (length domain) (length arg-tys))
                    (match full-tail-ty
                      [(List: tail-arg-tys #:tail (Listof: tail-arg-ty))
                       (infer/vararg
                         fixed-vars (list dotted-var)
-                        (cons tail-arg-ty (append tail-arg-tys arg-tys))
-                        (cons (car drest) (append (map (λ _ (car drest)) tail-arg-tys) domain))
-                        rest
+                        (cons tail-arg-ty (append arg-tys tail-arg-tys))
+                        (cons (car drest) domain)
+                        (car drest)
                         range)]
                      [(List: tail-arg-tys)
                       (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) domain

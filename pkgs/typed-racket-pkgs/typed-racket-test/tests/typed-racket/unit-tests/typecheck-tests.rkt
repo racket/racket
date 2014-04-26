@@ -2860,6 +2860,13 @@
          #:expected (ret (->* (list) Univ Univ))]
 
        [tc-e
+         (let: ([f : (All (b ...) (Any ... b -> Any)) (lambda x 'x)])
+           (lambda xs (apply f 'y xs)))
+         #:ret (ret (->* (list) Univ Univ))
+         #:expected (ret (->* (list) Univ Univ))]
+
+
+       [tc-e
          (let ()
            (: a Symbol)
            (define a b)
