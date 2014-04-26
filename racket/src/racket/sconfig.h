@@ -233,6 +233,7 @@
 
 # ifdef __ANDROID__
 #  define USE_FCNTL_O_NONBLOCK
+#  define PROTOENT_IS_INT IPPROTO_TCP
 # endif
 
 # define FLAGS_ALREADY_SET
