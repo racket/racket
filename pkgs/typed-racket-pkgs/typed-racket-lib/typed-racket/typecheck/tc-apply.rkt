@@ -68,7 +68,7 @@
                          (subtype tail-ty (car (car drests*))))]
                    [_ #f]))
             (do-ret (car rngs*))]
-           ;; the function has no rest argument, but provides all the necessary fixed arguments           
+           ;; the function has no rest argument, but provides all the necessary fixed arguments
            [(and (not (car rests*)) (not (car drests*))
                  (subtype (apply -lst* arg-tys #:tail tail-ty)
                           (apply -lst* (car doms*))))
@@ -82,7 +82,7 @@
                    [(tail-ty tail-bound) (match (tc-expr/t tail)
                                            [(ListDots: tail-ty tail-bound)
                                             (values tail-ty tail-bound)]
-                                           [t (values t #f)])])       
+                                           [t (values t #f)])])
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty
@@ -104,7 +104,7 @@
                                    (car rests*)
                                    (car rngs*)))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
-               ;; the function has no rest argument, but provides all the necessary fixed arguments           
+               ;; the function has no rest argument, but provides all the necessary fixed arguments
                [(and (not (car rests*)) (not (car drests*)) (not tail-bound)
                      (infer vars null
                             (list (apply -lst* arg-tys #:tail tail-ty))
@@ -140,90 +140,72 @@
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tres) (map tc-expr fixed-args)]
                    [(arg-tys) (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
-                   [(tail-ty tail-bound) (match (tc-expr/t tail)
-                                           [(ListDots: tail-ty tail-bound)
-                                            (values tail-ty tail-bound)]
-                                           [t (values t #f)])])
-       (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
-         (define (finish substitution) (do-ret (subst-all substitution (car rngs*))))
-         (cond [(null? doms*)
-                (match f-ty
-                  [(tc-result1: (and t (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
-                   (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
-                                      #:msg-thunk (lambda (dom)
-                                                    (string-append
-                                                     "Bad arguments to polymorphic function in apply:\n"
-                                                     dom)))])]
-               ;; the actual work, when we have a * function and a list final argument
-               [(and (car rests*)
-                     (not tail-bound)
-                     (<= (length (car doms*))
-                         (length arg-tys))
-                     (infer/vararg fixed-vars (list dotted-var)
-                                   (cons tail-ty arg-tys)
-                                   (cons (make-Listof (car rests*))
-                                         (car doms*))
-                                   (car rests*)
-                                   (car rngs*)))
-                => finish]
-               ;; actual work, when we have a * function and ... final arg
-               [(and (car rests*)
-                     tail-bound
-                     (<= (length (car doms*))
-                         (length arg-tys))
-                     (infer/vararg fixed-vars (list dotted-var)
-                                   (cons (make-Listof tail-ty) arg-tys)
-                                   (cons (make-Listof (car rests*))
-                                         (car doms*))
-                                   (car rests*)
-                                   (car rngs*)))
-                => finish]
-               ;; ... function, ... arg, same bound on ...
-               [(and (car drests*)
-                     tail-bound
-                     (eq? tail-bound (cdr (car drests*)))
-                     (= (length (car doms*))
-                        (length arg-tys))
-                     (infer fixed-vars (list dotted-var)
-                            (cons (make-ListDots tail-ty tail-bound) arg-tys)
-                            (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
-                            (car rngs*)))
-                => finish]
-               ;; ... function, ... arg, different bound on ...
-               [(and (car drests*)
-                     tail-bound
-                     (not (eq? tail-bound (cdr (car drests*))))
-                     (= (length (car doms*))
-                        (length arg-tys))
-                     (extend-tvars (list tail-bound (cdr (car drests*)))
-                       (extend-indexes (cdr (car drests*))
-                         ;; don't need to add tail-bound - it must already be an index
-                         (infer fixed-vars (list dotted-var)
-                                (cons (make-ListDots tail-ty tail-bound) arg-tys)
-                                (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
-                                (car rngs*)))))
-                => finish]
-               ;; ... function, (Listof A) or (List A B C etc) arg
-               [(and (car drests*)
-                     (not tail-bound)
-                     (eq? (cdr (car drests*)) dotted-var)
-                     (= (length (car doms*))
-                        (length arg-tys))
-                     (match tail-ty
-                       [(Listof: tail-arg-ty)
-                        (infer/vararg
-                          fixed-vars (list dotted-var)
-                          (cons tail-arg-ty arg-tys)
-                          (cons (car (car drests*)) (car doms*))
-                          (car rests*)
-                          (car rngs*))]
-                       [(List: tail-arg-tys)
-                        (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) (car doms*)
-                                    (car (car drests*)) (car rngs*) (fv (car rngs*)))]
-                       [_ #f]))
-                => finish]
-               ;; if nothing matches, around the loop again
-               [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
+                   [(full-tail-ty) (tc-expr/t tail)]
+                   [(tail-ty tail-bound)
+                    (match full-tail-ty
+                      [(ListDots: tail-ty tail-bound)
+                       (values tail-ty tail-bound)]
+                      [t (values #f #f)])])
+       (or
+         (for/or ([domain (in-list doms)]
+                  [range (in-list rngs)]
+                  [rest (in-list rests)]
+                  [drest (in-list drests)])
+           (define (finish substitution) (do-ret (subst-all substitution range)))
+           (cond
+             ;; the actual work, when we have a * function
+             [(and rest
+                   (<= (length domain) (length arg-tys))
+                   (infer/vararg fixed-vars (list dotted-var)
+                                 (cons full-tail-ty arg-tys)
+                                 (cons (make-Listof rest) domain)
+                                 rest
+                                 range))
+              => finish]
+             ;; ... function, ... arg
+             [(and drest tail-bound
+                   (= (length domain) (length arg-tys))
+                   (if (eq? tail-bound (cdr drest))
+                       ;; same bound on the ...s
+                       (infer fixed-vars (list dotted-var)
+                              (cons (make-ListDots tail-ty tail-bound) arg-tys)
+                              (cons (make-ListDots (car drest) (cdr drest)) domain)
+                              range)
+                       ;; different bounds on the ...s
+                       (extend-tvars (list tail-bound (cdr drest))
+                         (extend-indexes (cdr drest)
+                           ;; don't need to add tail-bound - it must already be an index
+                          (infer fixed-vars (list dotted-var)
+                                 (cons (make-ListDots tail-ty tail-bound) arg-tys)
+                                 (cons (make-ListDots (car drest) (cdr drest)) domain)
+                                 range)))))
+              => finish]
+             ;; ... function, (Listof A) or (List A B C etc) arg
+             [(and drest (not tail-bound)
+                   (eq? (cdr drest) dotted-var)
+                   (= (length domain) (length arg-tys))
+                   (match full-tail-ty
+                     [(Listof: tail-arg-ty)
+                      (infer/vararg
+                        fixed-vars (list dotted-var)
+                        (cons tail-arg-ty arg-tys)
+                        (cons (car drest) domain)
+                        rest
+                        range)]
+                     [(List: tail-arg-tys)
+                      (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) domain
+                                  (car drest) range (fv range))]
+                     [_ #f]))
+              => finish]
+             [else #f]))
+         ;; Nothing matched
+         (match f-ty
+           [(tc-result1: (and t (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
+            (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
+                               #:msg-thunk (lambda (dom)
+                                             (string-append
+                                              "Bad arguments to polymorphic function in apply:\n"
+                                              dom)))])))]
     [(tc-result1: (PolyDots: vars (Function: '())))
      (tc-error/expr "Function has no cases")]
     [(tc-result1: f-ty)
