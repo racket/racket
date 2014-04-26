@@ -557,8 +557,8 @@
            (when (memq dbound Y) (fail! S T))
            (cgen V X Y (substitute Univ dbound s-dty) t-elem)]
           ;; two ListDots with the same bound, just check the element type
+          ;; This is conservative because we don't try to infer a constraint on dbound.
           [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
-           (when (memq dbound Y) (fail! S T))
            (cgen V X Y s-dty t-dty)]
           [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
            ;; What should we do if both are in Y?

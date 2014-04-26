@@ -67,7 +67,8 @@
 
     (infer-t (make-ListDots -Symbol 'b) (-lst -Symbol) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (-lst Univ) #:indices '(b))
-    (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b)  #:vars '(a))
+    (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b) #:vars '(a))
+    (infer-t (make-ListDots -Symbol 'b) (make-ListDots Univ 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots Univ 'b) #:indices '(b))
 
