@@ -28,16 +28,22 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
-       #'(app untuple (? values elem-pats))])))
+       #'(app untuple (? values elem-pats) (Value: '()))]
+      [(_ elem-pats #:tail tail-pat)
+       #'(app untuple (? values elem-pats) tail-pat)])))
 
+;; Type/c -> (or/c (values/c #f #f) (values/c (listof Type/c) Type/c)))
+;; Returns the prefix of types that are consed on to the last type (a non finite-pair type).
+;; The last type may contain pairs if it is a list type.
 (define (untuple t)
   (let loop ((t t) (seen (set)))
-    (and (not (set-member? seen (Type-seq t)))
-         (match (resolve t)
-           [(Value: '()) null]
-           [(Pair: a b) (cond [(loop b (set-add seen (Type-seq t))) => (lambda (l) (cons a l))]
-                              [else #f])]
-           [_ #f]))))
+    (if (not (set-member? seen (Type-seq t)))
+        (match (resolve t)
+          [(Pair: a b)
+           (define-values (elems tail) (loop b (set-add seen (Type-seq t))))
+           (values (cons a elems) tail)]
+          [_ (values null t)])
+        (values null t))))
 
 (define-match-expander MListof:
   (lambda (stx)
