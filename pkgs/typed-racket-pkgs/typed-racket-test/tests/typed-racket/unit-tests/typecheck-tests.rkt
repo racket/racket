@@ -2851,7 +2851,13 @@
          (let: ([f : (All (b ...) (Any ... b -> Any)) (lambda x 'x)])
            (lambda xs (apply f xs)))
          #:ret (ret (->* (list) Univ Univ))
-         #:expected (ret (->* (list)  Univ Univ))]
+         #:expected (ret (->* (list) Univ Univ))]
+
+       [tc-e
+         (let: ([f : (All (b ...) (Any ... b -> Any)) (lambda x 'x)])
+           (lambda xs (apply f (ann (cons 'y xs) (cons Symbol (Listof Any))))))
+         #:ret (ret (->* (list) Univ Univ))
+         #:expected (ret (->* (list) Univ Univ))]
 
        [tc-e
          (let ()
@@ -2877,8 +2883,6 @@
            'x)
          -Symbol
          #:expected (ret -Symbol)]
-
-
 
         )
   (test-suite

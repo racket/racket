@@ -185,11 +185,11 @@
                    (eq? (cdr drest) dotted-var)
                    (= (length domain) (length arg-tys))
                    (match full-tail-ty
-                     [(Listof: tail-arg-ty)
+                     [(List: tail-arg-tys #:tail (Listof: tail-arg-ty))
                       (infer/vararg
                         fixed-vars (list dotted-var)
-                        (cons tail-arg-ty arg-tys)
-                        (cons (car drest) domain)
+                        (cons tail-arg-ty (append tail-arg-tys arg-tys))
+                        (cons (car drest) (append (map (λ _ (car drest)) tail-arg-tys) domain))
                         rest
                         range)]
                      [(List: tail-arg-tys)
