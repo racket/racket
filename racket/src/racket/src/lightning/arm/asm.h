@@ -60,6 +60,15 @@ typedef enum {
 #define JIT_TMP2	_R7
 #define JIT_FTMP        JIT_TMP2
 
+/* Software FP without thumb needs 2 consecutive registers,
+   so JIT_DTMP must be an even-numbered register. It conceptually
+   overlaps with JIT_TMP and JIT_FTMP, but shuffle registers
+   locally to make those two consecutive. */
+#define JIT_DTMP      _R2
+#define push_DTMP()   jit_movr_p(JIT_FTMP, JIT_DTMP)
+#define pop_DTMP()    jit_movr_p(JIT_DTMP, JIT_FTMP)
+#define alt_DTMP(r)   ((r == JIT_DTMP) ? JIT_FTMP : r)
+
 /* must use blx to call functions or jit instruction set matches runtime? */
 #define jit_exchange_p()		1
 
@@ -1763,7 +1772,7 @@ _arm_cc_pkh(jit_state_t _jitp, int cc, int o, int rn, int rd, int rm, int im)
 #define _CC_LDRDN(cc,rt,rn,rm)	corrr(cc,ARM_LDRD,rn,rt,rm)
 #define _LDRDN(rd,rn,rm)	_CC_LDRDN(ARM_CC_AL,rn,rt,rm)
 #define _CC_LDRDI(cc,rt,rn,im)	corri8(cc,ARM_LDRDI|ARM_P,rn,rt,im)
-#define _LDRDI(rt,rn,im)	_CC_LDRDI(ARM_CC_AL,rn,rt,im)
+#define _LDRDI(rt,rn,im)	_CC_LDRDI(ARM_CC_AL,rt,rn,im)
 #define T2_LDRDI(rt,rt2,rn,im)	torrri8(THUMB2_LDRDI|ARM_P,rn,rt,rt2,im)
 #define _CC_LDRDIN(cc,rt,rn,im)	corri8(cc,ARM_LDRDI,rn,rt,im)
 #define _LDRDIN(rt,rn,im)	_CC_LDRDIN(ARM_CC_AL,rt,rn,im)
@@ -1811,7 +1820,7 @@ _arm_cc_pkh(jit_state_t _jitp, int cc, int o, int rn, int rd, int rm, int im)
 #define _CC_STRIN(cc,rt,rn,im)	corri(cc,ARM_STRI,rn,rt,im)
 #define _STRIN(rt,rn,im)	_CC_STRIN(ARM_CC_AL,rt,rn,im)
 #define T2_STRIN(rt,rn,im)	torri8(THUMB2_STRI,rn,rt,im)
-#define _CC_STRD(cc,rt,rn,rm)	corrr(cc,ARM_STRD|ARM_P,rt,rn,rm)
+#define _CC_STRD(cc,rt,rn,rm)	corrr(cc,ARM_STRD|ARM_P,rn,rt,rm)
 #define _STRD(rt,rn,rm)		_CC_STRD(ARM_CC_AL,rt,rn,rm)
 #define _CC_STRDN(cc,rt,rn,rm)	corrr(cc,ARM_STRD,rn,rt,rm)
 #define _STRDN(rt,rn,rm)	_CC_STRDN(ARM_CC_AL,rt,rn,rm)
