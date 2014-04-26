@@ -2825,6 +2825,13 @@
        [tc-err (string-append (typecheck-fail #'stx "typecheck-fail") "bar")
                #:ret (ret -String)
                #:msg #rx"typecheck-fail"]
+
+       [tc-e
+         (let: ([f : (All (b ...) (Any ... b -> Any)) (lambda x 'x)])
+           (lambda xs (apply f xs)))
+         #:ret (ret (->* (list) Univ Univ))
+         #:expected (ret (->* (list)  Univ Univ))]
+
         )
   (test-suite
    "tc-literal tests"

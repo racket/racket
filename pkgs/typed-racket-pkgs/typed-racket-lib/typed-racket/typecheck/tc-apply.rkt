@@ -203,15 +203,24 @@
                                 (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                                 (car rngs*)))))
                 => finish]
-               ;; ... function, (List A B C etc) arg
+               ;; ... function, (Listof A) or (List A B C etc) arg
                [(and (car drests*)
                      (not tail-bound)
                      (eq? (cdr (car drests*)) dotted-var)
                      (= (length (car doms*))
                         (length arg-tys))
-                     (untuple tail-ty)
-                     (infer/dots fixed-vars dotted-var (append arg-tys (untuple tail-ty)) (car doms*)
-                                 (car (car drests*)) (car rngs*) (fv (car rngs*))))
+                     (match tail-ty
+                       [(Listof: tail-arg-ty)
+                        (infer/vararg
+                          fixed-vars (list dotted-var)
+                          (cons tail-arg-ty arg-tys)
+                          (cons (car (car drests*)) (car doms*))
+                          (car rests*)
+                          (car rngs*))]
+                       [(List: tail-arg-tys)
+                        (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) (car doms*)
+                                    (car (car drests*)) (car rngs*) (fv (car rngs*)))]
+                       [_ #f]))
                 => finish]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
