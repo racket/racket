@@ -11,8 +11,6 @@
          (for-syntax racket/base syntax/parse))
 
 (provide Listof: List: MListof:)
-(provide/cond-contract
-  [untuple (Type/c . -> . (or/c #f (listof Type/c)))])
 
 
 (define-match-expander Listof:
