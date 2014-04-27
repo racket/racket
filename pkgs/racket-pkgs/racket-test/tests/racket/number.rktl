@@ -3078,5 +3078,58 @@
   (test #t list? (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; exact->inexact precision (thanks to Neil Toronto)
+
+(require racket/extflonum)
+
+(define (check start end exact-> >=?)
+  (define delta (/ (- end start) 300))
+  (for/fold ([prev (exact-> start)]) ([i (in-range start (+ end delta) delta)])
+    (define next (exact-> i))
+    (test #t >=? next prev)
+    next)
+  (for/fold ([prev (exact-> start)]) ([i (in-range start (+ end delta) delta)])
+    (define next (exact-> (- i)))
+    (test #t >=? prev next)
+    next)
+  (void))
+
+(check #e100000000000000.0 #e100000000000000.1 exact->inexact >=)
+(check #e100000000000000.0 #e100000000000000.1 real->double-flonum >=)
+(check #e1000000.0 #e1000000.1 real->single-flonum >=)
+(when extflonum-available?
+  (check #e1000000000000000000.0 #e1000000000000000000.1 real->extfl extfl>=))
+
+;; Sanity check
+(test 0.14285714285714285 real->double-flonum 1/7)
+(test 1.2857142857142858 real->double-flonum 9/7)
+;; Cases that real->double-flonum used to get wrong
+(test -4882.526517254422 real->double-flonum -13737024017780747/2813507303900)
+(test -9.792844933246106e-14 real->double-flonum -1656/16910305547451097)
+
+;; Hack to use the "math" package when it's available:
+(when (collection-file-path "base.rkt" "math" #:fail (lambda (x) #f))
+  (eval
+   '(begin
+      (test #t string? "Randomized testing of rational->flonum")
+
+      (require math/base
+               math/flonum)
+
+      (define (random-rational)
+        (define d (random-bits (+ 1 (random 8192))))
+        (cond [(zero? d)  (random-rational)]
+              [else
+               (* (if (< (random) 0.5) -1 1)
+                  (/ (random-bits (+ 1 (random 8192))) d))]))
+
+      (for ([_  (in-range 10000)])
+        (define ry (random-rational))
+        (define y (real->double-flonum ry))  ; this generates rounding errors
+        (define e (flulp-error y ry))
+        (unless (<= e 0.5)
+          (test #t (lambda (e y ry) (<= e 0.5)) e y ry))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

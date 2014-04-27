@@ -523,6 +523,13 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_LESS(x, y) x<y
 #define FP_IS_ZERO(x) x==0.0
 #define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
+# define BIGNUM_FITS_FP(x) 0
+#else
+# define FIXNUM_FITS_FP(x) 1
+# define BIGNUM_FITS_FP(x) (scheme_integer_length(x) <= (FLOAT_M_BITS-1))
+#endif
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_double
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_double
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_double_inf_info
@@ -541,7 +548,9 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_EQV(x,y) x==y
 #define FP_LESS(x, y) x<y
 #define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
 #define FP_IS_ZERO(x) x==0.0
+#define BIGNUM_FITS_FP(x) 0
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_float
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_float
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_float_inf_info
@@ -561,6 +570,8 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 # define FP_EQV(x,y) long_double_eqv(x,y)
 # define FP_LESS(x, y) long_double_less(x,y)
 # define FP_TYPE_FROM_INT(x) long_double_from_int(x)
+# define FIXNUM_FITS_FP(x) 1
+# define BIGNUM_FITS_FP(x) (scheme_integer_length(x) <= (FLOAT_M_BITS-1))
 # define FP_IS_ZERO(x) long_double_is_zero(x)
 # define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_long_double
 # define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_long_double

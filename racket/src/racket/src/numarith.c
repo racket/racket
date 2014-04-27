@@ -1103,19 +1103,37 @@ scheme_modulo(int argc, Scheme_Object *argv[])
   return rem_mod(argc, argv, "modulo", 0);
 }
 
+static Scheme_Object *
+do_quotient_remainder(const Scheme_Object *n1, const Scheme_Object *n2, Scheme_Object **_rem)
+{
+  Scheme_Object *rem = NULL, *quot, *a[2];
+
+  quot = do_bin_quotient("quotient/remainder", n1, n2, &rem);
+  if (!rem) {
+    a[0] = (Scheme_Object *)n1;
+    a[1] = (Scheme_Object *)n2;
+    rem = rem_mod(2, a, "remainder", 1);
+  }
+  *_rem = rem;
+
+  return quot;
+}
 
 Scheme_Object *
 quotient_remainder(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *rem = NULL, *quot, *a[2];
+  Scheme_Object *rem, *quot, *a[2];
 
-  quot = do_bin_quotient("quotient/remainder", argv[0], argv[1], &rem);
-  if (!rem) {
-    rem = rem_mod(argc, argv, "remainder", 1);
-  }
+  quot = do_quotient_remainder(argv[0], argv[1], &rem);
   a[0] = quot;
   a[1] = rem;
   return scheme_values(2, a);
+}
+
+Scheme_Object *scheme_bin_quotient_remainder(const Scheme_Object *n1, const Scheme_Object *n2,
+                                             Scheme_Object **_rem)
+{
+  return do_quotient_remainder(n1, n2, _rem);
 }
 
 /************************************************************************/

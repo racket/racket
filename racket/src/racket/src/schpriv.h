@@ -2226,6 +2226,8 @@ int scheme_bin_gt(const Scheme_Object *n1, const Scheme_Object *n2);
 int scheme_bin_gt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 int scheme_bin_lt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 
+Scheme_Object *scheme_bin_quotient_remainder(const Scheme_Object *n1, const Scheme_Object *n2, Scheme_Object **_rem);
+
 Scheme_Object *scheme_sub1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_add1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_odd_p(int argc, Scheme_Object *argv[]);

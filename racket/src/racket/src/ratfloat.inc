@@ -27,26 +27,48 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
   intptr_t ns, ds;
 
   if (SCHEME_INTP(r->num)) {
-  #ifdef CONVERT_INT_TO_FLOAT
-    n = CONVERT_INT_TO_FLOAT(SCHEME_INT_VAL(r->num));
-  #else
-    n = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->num));
-  #endif
-    ns = 0;
-  } else
-    n = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->num, 0, &ns);
+    if (FIXNUM_FITS_FP(r->num)) {
+#ifdef CONVERT_INT_TO_FLOAT
+      n = CONVERT_INT_TO_FLOAT(SCHEME_INT_VAL(r->num));
+#else
+      n = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->num));
+#endif
+      ns = 0;
+    } else {
+      n = FP_ZEROx;
+      ns = 1;
+    }
+  } else {
+    if (BIGNUM_FITS_FP(r->num)) {
+      n = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->num, 0, &ns);
+    } else {
+      n = FP_ZEROx;
+      ns = 1;
+    }
+  }
 
   if (SCHEME_INTP(r->denom)) {
-    d = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->denom));
-    ds = 0;
-  } else
-    d = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->denom, 0, &ds);
+    if (FIXNUM_FITS_FP(r->denom)) {
+      d = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->denom));
+      ds = 0;
+    } else {
+      d = FP_ZEROx;
+      ds = 1;
+    }
+  } else {
+    if (BIGNUM_FITS_FP(r->denom)) {
+      d = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->denom, 0, &ds);
+    } else {
+      d = FP_ZEROx;
+      ds = 1;
+    }
+  }
 
   if (ns || ds) {
     /* Quick path doesn't necessarily work. The more general
        way is adpated from Gambit-C 4.1. */
     intptr_t nl, dl, p, shift;
-    Scheme_Object *a[2], *n, *d;
+    Scheme_Object *a[2], *n, *d, *rem;
     FP_TYPE res;
 
     a[0] = r->num;
@@ -87,10 +109,26 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
     a[1] = scheme_make_integer(shift);
     n = scheme_bitwise_shift(2, a);
 
-    n = scheme_bin_div(n, d);
-    if (SCHEME_RATIONALP(n))
-      n = scheme_rational_round(n);
-    
+    /* Rounded divide: */
+    n = scheme_bin_quotient_remainder(n, d, &rem);
+    a[0] = d;
+    a[1] = scheme_make_integer(-1);
+    d = scheme_bitwise_shift(2, a);
+    if (!scheme_bin_lt(rem, d)) {
+      if (scheme_bin_gt(rem, d)) {
+        n = scheme_bin_plus(n, scheme_make_integer(1));
+      } else {
+        /* Round to even: */
+        a[0] = d;
+        if (!scheme_odd_p(1, a)) {
+          a[0] = n;
+          if (!scheme_even_p(1, a)) {
+            n = scheme_bin_plus(n, scheme_make_integer(1));
+          }
+        }
+      }
+    }
+
     if (SCHEME_INTP(n))
       res = FP_TYPE_FROM_INT(SCHEME_INT_VAL(n));
     else
@@ -178,6 +216,8 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 #undef SCHEME_BIGNUM_TO_FLOAT_INF_INFO
 #undef SCHEME_BIGNUM_FROM_FLOAT
 #undef SCHEME_CHECK_FLOAT
+#undef FIXNUM_FITS_FP
+#undef BIGNUM_FITS_FP
 #undef DO_FLOAT_DIV 
 #undef FLOAT_E_MIN
 #undef FLOAT_M_BITS
