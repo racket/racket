@@ -2832,6 +2832,33 @@
          #:ret (ret (->* (list) Univ Univ))
          #:expected (ret (->* (list)  Univ Univ))]
 
+       [tc-e
+         (let ()
+           (: a Symbol)
+           (define a b)
+           (: b Symbol)
+           (define b 'x)
+           a)
+         -Symbol]
+
+       [tc-e
+         (let ()
+           (: x Integer)
+           (define x
+             (let ()
+               (: f (Integer -> Integer))
+               (define (f y)
+                 (g (g y)))
+               (f 4)))
+           (: g (Integer -> Integer))
+           (define (g x)
+             (* x x))
+           'x)
+         -Symbol
+         #:expected (ret -Symbol)]
+
+
+
         )
   (test-suite
    "tc-literal tests"
