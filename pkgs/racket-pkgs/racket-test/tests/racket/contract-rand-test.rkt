@@ -55,3 +55,20 @@
                      (exn-message x))))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation some-crazy-predicate?)))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation (list/c some-crazy-predicate?))))
+
+
+(check-not-exn (lambda () (test-contract-generation (or/c #f number?))))
+(check-not-exn (lambda () (test-contract-generation (or/c some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          some-crazy-predicate?
+                                                          #f))))
+(check-exn cannot-generate-exn? (λ () (test-contract-generation 
+                                       (or/c some-crazy-predicate?
+                                             some-crazy-predicate?))))

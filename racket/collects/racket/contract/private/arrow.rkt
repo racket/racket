@@ -606,43 +606,6 @@
        (not (base->-post this))
        (not (base->-post that))))
 
-(define (->-generate ctc)
-  (let ([doms-l (length (base->-doms/c ctc))])
-    (λ (fuel)
-       (let ([rngs-gens (map (λ (c) (generate/choose c (/ fuel 2)))
-                             (base->-rngs/c ctc))])
-         (if (member #t (map generate-ctc-fail? rngs-gens))
-           (make-generate-ctc-fail)
-           (procedure-reduce-arity
-             (λ args
-                ; Make sure that the args match the contract
-                (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
-                           (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
-                       ; Stash the valid value
-                       ;(env-stash (generate-env) ctc args)
-                       (apply values rngs-gens)))
-             doms-l))))))
-
-(define (->-exercise ctc) 
-  (λ (args fuel)
-     (let* ([new-fuel (/ fuel 2)]
-            [gen-if-fun (λ (c v)
-                           ; If v is a function we need to gen the domain and call
-                           (if (procedure? v)
-                             (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
-                                                 (base->-doms/c c))])
-                               (let* ([result (call-with-values 
-                                                (λ () (apply v newargs))
-                                                list)]
-                                      [rngs (base->-rngs/c c)])
-                                 (andmap (λ (c v) 
-                                            ((contract-struct-exercise c) v new-fuel))
-                                         rngs 
-                                         result)))
-                             ; Delegate to check-ctc-val
-                             ((contract-struct-exercise c) v new-fuel)))])
-       (andmap gen-if-fun (base->-doms/c ctc) args))))
-
 (define-struct (chaperone-> base->) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -651,9 +614,7 @@
      #:projection (->-proj chaperone-procedure)
      #:name ->-name
      #:first-order ->-first-order
-     #:stronger ->-stronger?
-     #:generate ->-generate
-     #:exercise ->-exercise)))
+     #:stronger ->-stronger?)))
 
 (define-struct (impersonator-> base->) ()
   #:property prop:custom-write custom-write-property-proc
@@ -662,9 +623,7 @@
    #:projection (->-proj impersonate-procedure)
    #:name ->-name
    #:first-order ->-first-order
-   #:stronger ->-stronger?
-   #:generate ->-generate
-   #:exercise ->-exercise))
+   #:stronger ->-stronger?))
 
 (define (build--> name
                   pre post

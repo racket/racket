@@ -404,8 +404,17 @@
    (λ (ctc) (flat-or/c-pred ctc))
    #:generate
    (λ (ctc)
-      (λ (fuel)
-         (generate/direct (oneof (flat-or/c-flat-ctcs ctc)) fuel)))))
+     (λ (fuel)
+       (define choices 
+         (filter 
+          values
+          (for/list ([ctc (in-list (flat-or/c-flat-ctcs ctc))])
+            (generate/choose ctc fuel))))
+       (cond
+         [(null? choices) #f]
+         [else
+          (lambda ()
+            ((oneof choices)))])))))
 
 
 (define (and-name ctc)
