@@ -1361,11 +1361,12 @@
               ;; This is combine mode. It has to be a little complicated, after all,
               ;; because we may need to implement font substitution ourselves, which
               ;; breaks the string into multiple layouts.
-              (let loop ([s s] [draw-mode draw-mode] [measured? #f] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
+              (let loop ([s s] [draw-mode draw-mode] [measured? #f] [unrotate? rotate?]
+                         [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                 (cond
                  [(or (not s)
                       (equal? s "")) ; can happen if last char is substituted
-                  (when rotate? (cairo_restore cr))
+                  (when unrotate? (cairo_restore cr))
                   (values w h d a)]
                  [else
                   (pango_cairo_update_context cr context)
@@ -1401,9 +1402,9 @@
                       (cond
                        [(and draw-mode next-s (not measured?))
                         ;; It's going to take multiple layouts, so first gather measurements.
-                        (let-values ([(w2 h d a) (loop s #f #f w h d a)])
+                        (let-values ([(w2 h d a) (loop s #f #f #f w h d a)])
                           ;; draw again, supplying `h', `d', and `a' for the whole line
-                          (loop s draw-mode #t w h d a))]
+                          (loop s draw-mode #t unrotate? w h d a))]
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)
@@ -1425,14 +1426,15 @@
                             (cond
                              [(and draw-mode (not next-s))
                               (g_object_unref layout)
-                              (when rotate? (cairo_restore cr))]
+                              (when unrotate? (cairo_restore cr))]
                              [else
                               (let ([nw (if blank?
                                             0.0
                                             (force-hinting
                                              (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
                                     [na 0.0])
-                                (loop next-s draw-mode measured? (+ w nw) (max h nh) (max d nd) (max a na)))])))])))]))
+                                (loop next-s draw-mode measured? unrotate?
+                                      (+ w nw) (max h nh) (max d nd) (max a na)))])))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
               (let ([cache (if (or combine?
