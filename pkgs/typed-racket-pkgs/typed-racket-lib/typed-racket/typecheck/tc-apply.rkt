@@ -41,40 +41,42 @@
        (tc-error/expr "empty case-lambda given as argument to apply"))
      (match-let* ([arg-tres (map tc-expr fixed-args)]
                   [arg-tys (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
-                  [(tc-result1: tail-ty) (single-value tail)])
-       (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
-         (cond
-           ;; we've run out of cases to try, so error out
-           [(null? doms*)
-            (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
-                               #:msg-thunk (lambda (dom)
-                                             (string-append
-                                              "Bad arguments to function in apply:\n"
-                                              dom)))]
-           ;; this case of the function type has a rest argument
-           [(and (car rests*)
-                 ;; check that the tail expression is a subtype of the rest argument
-                 (subtype (apply -lst* arg-tys #:tail tail-ty)
-                          (apply -lst* (car doms*) #:tail (make-Listof (car rests*)))))
-            (do-ret (car rngs*))]
-           ;; the function expects a dotted rest arg, so make sure we have a ListDots
-           [(and (car drests*)
-                 (match tail-ty
-                   [(ListDots: tail-ty tail-bound)
-                    ;; the check that it's the same bound
-                    (and (eq? (cdr (car drests*)) tail-bound)
-                         ;; and that the types are correct
-                         (subtypes arg-tys (car doms*))
-                         (subtype tail-ty (car (car drests*))))]
-                   [_ #f]))
-            (do-ret (car rngs*))]
-           ;; the function has no rest argument, but provides all the necessary fixed arguments
-           [(and (not (car rests*)) (not (car drests*))
-                 (subtype (apply -lst* arg-tys #:tail tail-ty)
-                          (apply -lst* (car doms*))))
-            (do-ret (car rngs*))]
-           ;; otherwise, nothing worked, move on to the next case
-           [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
+                  [tail-ty (tc-expr/t tail)])
+       (or
+         (for/or ([domain (in-list doms)]
+                  [range (in-list rngs)]
+                  [rest (in-list rests)]
+                  [drest (in-list drests)])
+           (cond
+             ;; this case of the function type has a rest argument
+             [rest
+              ;; check that the tail expression is a subtype of the rest argument
+              (and
+                (subtype (apply -lst* arg-tys #:tail tail-ty)
+                         (apply -lst* domain #:tail (make-Listof rest)))
+                (do-ret range))]
+             ;; the function expects a dotted rest arg, so make sure we have a ListDots
+             [drest
+              (match tail-ty
+                [(ListDots: tail-ty tail-bound)
+                 ;; the check that it's the same bound
+                 (and (eq? (cdr drest) tail-bound)
+                      ;; and that the types are correct
+                      (subtypes arg-tys domain)
+                      (subtype tail-ty (car drest))
+                      (do-ret range))]
+                [_ #f])]
+             ;; the function has no rest argument, but provides all the necessary fixed arguments
+             [(and (not rest) (not drest))
+              (and
+                (subtype (apply -lst* arg-tys #:tail tail-ty)
+                         (apply -lst* domain))
+                (do-ret range))]))
+         (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
+                            #:msg-thunk (lambda (dom)
+                                          (string-append
+                                           "Bad arguments to function in apply:\n"
+                                           dom)))))]
     ;; apply of simple polymorphic function
     [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tres) (map tc-expr fixed-args)]
