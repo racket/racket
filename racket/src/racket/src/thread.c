@@ -4371,7 +4371,7 @@ static void escape_to_kill(Scheme_Thread *p)
   p->cjs.jumping_to_continuation = (Scheme_Object *)p;
   p->cjs.alt_full_continuation = NULL;
   p->cjs.is_kill = 1;
-  p->cjs.skip_dws = 0;
+  p->cjs.skip_dws = 1;
   scheme_longjmp(*p->error_buf, 1);
 }
 
