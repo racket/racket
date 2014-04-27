@@ -64,7 +64,9 @@ Remove the specified package from the local cache, optionally also removing its 
         "uninstalled-package cache")
        (erase? #t)]
       #:args (owner pkg maj min)
-      ((if (erase?) erase remove) owner pkg maj min)]
+      (begin
+        (verify-package-name pkg)
+        ((if (erase?) erase remove) owner pkg maj min))]
      ["show" "list the packages installed in the local cache"
       "\nList the packages installed in the local cache"
       #:once-any
