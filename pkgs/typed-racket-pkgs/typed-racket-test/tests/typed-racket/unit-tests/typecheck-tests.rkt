@@ -2881,6 +2881,22 @@
          #:ret (ret -Bottom)
          #:msg #rx"has no cases"]
 
+       [tc-err
+         (let: ([f : (case->) (case-lambda)])
+            (apply f empty))
+         #:ret (ret -Bottom)
+         #:msg #rx"has no cases"]
+       [tc-err
+         (let: ([f : (All (A) (case->)) (case-lambda)])
+            (apply f empty))
+         #:ret (ret -Bottom)
+         #:msg #rx"has no cases"]
+       [tc-err
+         (let: ([f : (All (A ...) (case->)) (case-lambda)])
+            (apply f empty))
+         #:ret (ret -Bottom)
+         #:msg #rx"has no cases"]
+
        [tc-e
          (let ()
            (: a Symbol)
