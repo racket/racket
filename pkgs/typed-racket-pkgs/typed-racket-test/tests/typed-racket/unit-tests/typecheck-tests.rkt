@@ -1001,8 +1001,8 @@
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PosByte)]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -PosByte))]
-        [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))
-         #:ret (ret (-polydots (b) (->... (list) (b b) -Bottom)) -true-filter)]
+        [tc-e (plambda: (b ...) [y : b ... b] (apply append (map list y)))
+         #:ret (ret (-polydots (b) (->... (list) (b b) (-lst Univ))) -true-filter)]
         [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
                 (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
 
@@ -2896,6 +2896,17 @@
             (apply f empty))
          #:ret (ret -Bottom)
          #:msg #rx"has no cases"]
+
+       [tc-e/t
+         (let: ([f : (All (a) (a a * -> Void)) (λ _ (void))])
+           (plambda: (A B ...) ([xs : (List Any A ... B)])
+             (apply f xs)))
+         (-polydots (a b) (t:-> (-pair Univ  (make-ListDots a 'b)) -Void))]
+       [tc-e/t
+         (let: ([f : (All (a) (a a * -> Void)) (λ _ (void))])
+           (plambda: (A B ...) ([xs : (List A ... B)])
+             (apply f (first xs) xs)))
+         (-polydots (a b) (t:-> (make-ListDots a 'b) -Void))]
 
        [tc-e
          (let ()

@@ -91,15 +91,12 @@
                   [drest (in-list drests)])
            (define (finish substitution) (do-ret (subst-all substitution range)))
            (cond
-             ;; the actual work, when we have a * function and a list final argument
+             ;; the actual work, when we have a * function
              [(and rest
-                   (not tail-bound)
-                   (<= (length domain) (length arg-tys))
-                   (infer/vararg vars null
-                                 (cons full-tail-ty arg-tys)
-                                 (cons (make-Listof rest) domain)
-                                 rest
-                                 range))
+                   (infer vars null
+                          (list (-Tuple* arg-tys full-tail-ty))
+                          (list (-Tuple* domain (make-Listof rest)))
+                          range))
               => finish]
              ;; the function has no rest argument, but provides all the necessary fixed arguments
              [(and (not rest) (not drest) (not tail-bound)
@@ -107,16 +104,6 @@
                           (list (-Tuple* arg-tys full-tail-ty))
                           (list (-Tuple domain))
                           range))
-              => finish]
-             ;; actual work, when we have a * function and ... final arg
-             [(and rest
-                   tail-bound
-                   (<= (length domain) (length arg-tys))
-                   (infer/vararg vars null
-                                 (cons (make-Listof tail-ty) arg-tys)
-                                 (cons (make-Listof rest) domain)
-                                 rest
-                                 range))
               => finish]
              ;; ... function, ... arg
              [(and drest
