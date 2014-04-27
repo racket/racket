@@ -2259,6 +2259,8 @@ int scheme_nonneg_exact_p(Scheme_Object *n);
 
 Scheme_Object *scheme_floor(int argc, Scheme_Object *argv[]);
 
+Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft, int mask);
+
 #ifdef TIME_TYPE_IS_UNSIGNED
 # define scheme_make_integer_value_from_time(t) scheme_make_integer_value_from_unsigned((uintptr_t)t)
 # define scheme_get_time_val(o, v) scheme_get_unsigned_int_val(o, v)

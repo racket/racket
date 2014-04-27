@@ -2036,6 +2036,130 @@ int scheme_check_long_double(const char *where, long_double d, const char *dest)
 /*                      native representations                            */
 /*========================================================================*/
 
+Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft, int mask)
+{
+  switch(slen) {
+  case 2:
+    if (sgned) {
+      short val;
+      memcpy(&val, str, sizeof(short));
+      return scheme_make_integer(val);
+    } else {
+      unsigned short val;
+      memcpy(&val, str, sizeof(unsigned short));
+      val >>= rshft;
+      if (mask < 16) { val &= (((unsigned short)1 << mask) - 1); }
+      return scheme_make_integer(val);
+    }
+    break;
+  case 4:
+    if (sgned) {
+      int val;
+      memcpy(&val, str, sizeof(int));
+      return scheme_make_integer_value(val);
+    } else {
+      unsigned int val;
+      memcpy(&val, str, sizeof(unsigned int));
+      val >>= rshft;
+      if (mask < 32) { val &= (((unsigned int)1 << mask) - 1); }
+      return scheme_make_integer_value_from_unsigned(val);
+    }
+    break;
+  default:
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+    if (sgned) {
+      intptr_t val;
+      memcpy(&val, str, sizeof(intptr_t));
+      return scheme_make_integer_value(val);
+      }
+    else {
+      uintptr_t val;
+      memcpy(&val, str, sizeof(uintptr_t));
+      val >>= rshft;
+      if (mask < 64) { val &= (((uintptr_t)1 << mask) - 1); }
+      return scheme_make_integer_value_from_unsigned(val);
+      }
+    break;
+#else
+# ifndef NO_LONG_LONG_TYPE
+    {
+      if (sgned) {
+        mzlonglong lv;
+        memcpy(&lv, str, sizeof(mzlonglong));
+	return scheme_make_integer_value_from_long_long(lv);
+      } else {
+        umzlonglong lv;
+        memcpy(&lv, str, sizeof(umzlonglong));
+        lv >>= rshft;
+        if (mask < 64) { lv &= (((umzlonglong)1 << mask) - 1); }
+	return scheme_make_integer_value_from_unsigned_long_long(lv);
+      }
+      break;
+    }
+# else
+    {
+      Scheme_Object *h, *l, *a[2];
+      unsigned int val;
+
+#  if MZ_IS_BIG_ENDIAN
+      /* make little-endian at int level: */
+      {
+	int v;
+	v = ((int *)str)[0];
+	buf[0] = ((int *)str)[1];
+	buf[1] = v;
+	str = (char *)buf;
+      }
+#  endif
+
+      if (rshft >= 32) {
+        
+      }
+
+      if (sgned)
+	h = scheme_make_integer_value(((int *)str)[1]);
+      else {
+        memcpy(&val, str + sizeof(unsigned int), sizeof(unsigned int));
+        if (rshft >= 32) {
+          rshft -= 32;
+          val >>= rshft;
+          if (mask < 64) { val &= (((umzlonglong)1 << mask) - 1); }
+          return scheme_make_integer_value_from_unsigned(val);
+        } else {
+          h = scheme_make_integer_value_from_unsigned(val);
+        }
+      }
+      
+      memcpy(&val, str, sizeof(unsigned int));
+      val >>= rshft;
+      l = scheme_make_integer_value_from_unsigned(val);      
+
+      a[0] = h;
+      a[1] = scheme_make_integer(32-rshft);
+      h = scheme_bitwise_shift(2, a);
+
+      l = scheme_bin_plus(h, l);
+
+      if (mask < 64) {
+        a[0] = scheme_make_integer(1);
+        a[1] = scheme_make_integer(mask);
+        h = scheme_bitwise_shift(2, a);
+        h = scheme_bin_minus(h, scheme_make_integer(1));
+        a[0] = h;
+        a[1] = l;
+        l = scheme_bitwise_and(2, a);
+      }
+
+      return l;
+    }
+# endif
+#endif
+    break;
+  }
+
+  ESCAPED_BEFORE_HERE;
+}
+
 static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 {
   intptr_t strlen, slen;
@@ -2086,86 +2210,7 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
     str = (char *)buf;
   }
 
-  switch(slen) {
-  case 2:
-    if (sgned) {
-      short val;
-      memcpy(&val, str, sizeof(short));
-      return scheme_make_integer(val);
-      }
-    else {
-      unsigned short val;
-      memcpy(&val, str, sizeof(unsigned short));
-      return scheme_make_integer(val);
-      }
-    break;
-  case 4:
-    if (sgned) {
-      int val;
-      memcpy(&val, str, sizeof(int));
-      return scheme_make_integer_value(val);
-      }
-    else {
-      unsigned int val;
-      memcpy(&val, str, sizeof(unsigned int));
-      return scheme_make_integer_value_from_unsigned(val);
-      }
-    break;
-  default:
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-    if (sgned) {
-      intptr_t val;
-      memcpy(&val, str, sizeof(intptr_t));
-      return scheme_make_integer_value(val);
-      }
-    else {
-      uintptr_t val;
-      memcpy(&val, str, sizeof(uintptr_t));
-      return scheme_make_integer_value_from_unsigned(val);
-      }
-    break;
-#else
-# ifndef NO_LONG_LONG_TYPE
-    {
-      mzlonglong lv;
-      memcpy(&lv, str, sizeof(mzlonglong));
-      if (sgned)
-	return scheme_make_integer_value_from_long_long(lv);
-      else
-	return scheme_make_integer_value_from_unsigned_long_long((umzlonglong)lv);
-      break;
-    }
-# else
-    {
-      Scheme_Object *h, *l, *a[2];
-
-#  if MZ_IS_BIG_ENDIAN
-      /* make little-endian at int level: */
-      {
-	int v;
-	v = ((int *)str)[0];
-	buf[0] = ((int *)str)[1];
-	buf[1] = v;
-	str = (char *)buf;
-      }
-#  endif
-
-      if (sgned)
-	h = scheme_make_integer_value(((int *)str)[1]);
-      else
-	h = scheme_make_integer_value_from_unsigned(((unsigned int *)str)[1]);
-      l = scheme_make_integer_value_from_unsigned(((unsigned int *)str)[0]);
-      a[0] = h;
-      a[1] = scheme_make_integer(32);
-      h = scheme_bitwise_shift(2, a);
-      return scheme_bin_plus(h, l);
-    }
-# endif
-#endif
-    break;
-  }
-
-  /* throw an error here */
+  return scheme_bytes_to_integer(str, slen, sgned, 0, slen*8);
 }
 
 #define MZ_U8HI 0

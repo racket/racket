@@ -1354,6 +1354,9 @@
  /* Inexact Arithmetic */
 /**********************/
 
+ /* FLOATING_POINT_IS_NOT_IEEE disables inexact->exact conversion via
+    parsing of IEEE-format bits. */
+
  /* USE_SINGLE_FLOATS turns on support for single-precision
     floating point numbers. Otherwise, floating point numbers
     are always represented in double-precision. */

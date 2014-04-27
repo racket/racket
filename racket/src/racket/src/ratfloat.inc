@@ -151,17 +151,75 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 
 Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 {
+#ifdef DECODE_IEEE_FLOATING_POINT
+  Scheme_Object *a[2], *r, *m;
+  intptr_t s, e;
+
+  SCHEME_CHECK_FLOAT("inexact->exact", d, "exact");
+
+# ifdef FP_FITS_INT_TYPE
+  {
+    FP_FITS_INT_TYPE k;
+    memcpy(&k, &d, sizeof(FP_TYPE));
+    s = (k >> (FLOAT_M_BITS + FLOAT_E_BITS)) & 0x1;
+    e = (k >> FLOAT_M_BITS) & (((FP_FITS_INT_TYPE)1 << FLOAT_E_BITS) - 1);
+    m = scheme_make_integer(k & (((FP_FITS_INT_TYPE)1 << FLOAT_M_BITS) - 1));
+  }
+# else
+  {
+    char b[sizeof(FP_TYPE)];  
+    memcpy(b, &d, sizeof(FP_TYPE));
+    m = scheme_bytes_to_integer(b, sizeof(FP_TYPE), 0, (FLOAT_M_BITS + FLOAT_E_BITS), 1);
+    s = SCHEME_INT_VAL(m);
+    m = scheme_bytes_to_integer(b, sizeof(FP_TYPE), 0, FLOAT_M_BITS, FLOAT_E_BITS);
+    e = SCHEME_INT_VAL(m);
+    m = scheme_bytes_to_integer(b, sizeof(FP_TYPE), 0, 0, FLOAT_M_BITS);
+  }
+# endif
+
+  if (e == 0) {
+    /* Subnormal numbers all have the same exponent, 2^FLOAT_E_MIN */
+    a[0] = scheme_make_integer(1);
+    a[1] = scheme_make_integer(-FLOAT_E_MIN);
+    r = scheme_bin_div(m, scheme_bitwise_shift(2, a));
+  } else {
+    /* Adjust exponent for bias and mantissa size; add implicit one bit to mantissa */
+    e -= (((1 << (FLOAT_E_BITS-1))-1) + FLOAT_M_BITS);
+# ifdef FP_FITS_INT_TYPE
+    m = scheme_make_integer(SCHEME_INT_VAL(m) | ((FP_FITS_INT_TYPE)1 << FLOAT_M_BITS));
+# else
+    a[0] = scheme_make_integer(1);
+    a[1] = scheme_make_integer(FLOAT_M_BITS);
+    m = scheme_bin_plus(m, scheme_bitwise_shift(2, a));
+#endif
+    /* Compute m * 2^e */
+    if (e < 0) {
+      a[0] = scheme_make_integer(1);
+      a[1] = scheme_make_integer(-e);
+      r = scheme_bin_div(m, scheme_bitwise_shift(2, a));
+    } else {
+      a[0] = m;
+      a[1] = scheme_make_integer(e);
+      r = scheme_bitwise_shift(2, a);
+    }
+  }
+
+  if (s)
+    return scheme_bin_minus(scheme_make_integer(0), r);
+  else
+    return r;
+#else
   FP_DOUBLE_TYPE frac, i;
   int count, exponent, is_neg;
   Scheme_Object *int_part, *frac_part, *frac_num, *frac_denom, *two, *result;
-#ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
+# ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
   int negate;
   if (d < FP_ZEROx) {
     d = -d;
     negate = 1;
   } else
     negate = 0;
-#endif
+# endif
 
   SCHEME_CHECK_FLOAT("inexact->exact", d, "exact");
 
@@ -173,10 +231,10 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
   int_part = SCHEME_BIGNUM_FROM_FLOAT(i);
 
   if (FP_EQV(frac, FP_ZEROx)) {
-#ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
+# ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
    if (negate)
      return scheme_bin_minus(scheme_make_integer(0), int_part);
-#endif  
+# endif  
     return int_part;
   }
 
@@ -202,12 +260,13 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 
   result = scheme_bin_plus(int_part, frac_part);
 
-#ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
+# ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
   if (negate)
     return scheme_bin_minus(scheme_make_integer(0), result);
-#endif
+# endif
 
   return result;
+#endif
 }
 
 #undef FP_TYPE
@@ -221,6 +280,7 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 #undef DO_FLOAT_DIV 
 #undef FLOAT_E_MIN
 #undef FLOAT_M_BITS
+#undef FLOAT_E_BITS
 #undef FP_ZEROx
 #undef FP_POWx
 #undef FP_MODFx
@@ -235,3 +295,4 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 #undef FP_LDEXP
 #undef FP_EQV
 #undef FP_IS_ZERO
+#undef FP_FITS_INT_TYPE

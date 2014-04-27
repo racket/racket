@@ -3082,23 +3082,25 @@
 
 (require racket/extflonum)
 
-(define (check start end exact-> >=?)
+(define (check start end exact-> ->exact >=?)
   (define delta (/ (- end start) 300))
   (for/fold ([prev (exact-> start)]) ([i (in-range start (+ end delta) delta)])
     (define next (exact-> i))
     (test #t >=? next prev)
+    (test next exact-> (->exact next))
     next)
   (for/fold ([prev (exact-> start)]) ([i (in-range start (+ end delta) delta)])
     (define next (exact-> (- i)))
     (test #t >=? prev next)
+    (test next exact-> (->exact next))
     next)
   (void))
 
-(check #e100000000000000.0 #e100000000000000.1 exact->inexact >=)
-(check #e100000000000000.0 #e100000000000000.1 real->double-flonum >=)
-(check #e1000000.0 #e1000000.1 real->single-flonum >=)
-(when extflonum-available?
-  (check #e1000000000000000000.0 #e1000000000000000000.1 real->extfl extfl>=))
+(check #e100000000000000.0 #e100000000000000.1 exact->inexact inexact->exact >=)
+(check #e100000000000000.0 #e100000000000000.1 real->double-flonum inexact->exact >=)
+(check #e1000000.0 #e1000000.1 real->single-flonum inexact->exact >=)
+(when (extflonum-available?)
+  (check #e1000000000000000000.0 #e1000000000000000000.1 real->extfl extfl->exact extfl>=))
 
 ;; Sanity check
 (test 0.14285714285714285 real->double-flonum 1/7)
@@ -3111,8 +3113,6 @@
 (when (collection-file-path "base.rkt" "math" #:fail (lambda (x) #f))
   (eval
    '(begin
-      (test #t string? "Randomized testing of rational->flonum")
-
       (require math/base
                math/flonum)
 
@@ -3123,12 +3123,27 @@
                (* (if (< (random) 0.5) -1 1)
                   (/ (random-bits (+ 1 (random 8192))) d))]))
 
+      (test #t string? "Randomized testing of rational->flonum")
       (for ([_  (in-range 10000)])
         (define ry (random-rational))
         (define y (real->double-flonum ry))  ; this generates rounding errors
         (define e (flulp-error y ry))
         (unless (<= e 0.5)
-          (test #t (lambda (e y ry) (<= e 0.5)) e y ry))))))
+          (test #t (lambda (e y ry) (<= e 0.5)) e y ry))
+        (unless (= e (exact->inexact (inexact->exact e)))
+          (test e exact->inexact (inexact->exact e))))
+
+      (define -max (flonum->ordinal -max.0))
+      (define +inf (flonum->ordinal +inf.0))
+      (define (random-flonum)
+        (ordinal->flonum (random-integer -max +inf)))
+      
+      (test #t string? "Randomized testing of inexact->exact")
+      (define xs (list* -max.0 -1.0 -min.0 -0.0 0.0 +min.0 1.0 +max.0
+                        (build-list 100000 (λ (_) (random-flonum)))))
+      (for ([x (in-list xs)])
+        (unless (= x (exact->inexact (inexact->exact x)))
+          (test x exact->inexact (inexact->exact x)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
