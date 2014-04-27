@@ -332,17 +332,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ v:expr ty:expr)
      (define (apply-contract ctc-expr)
        #`(#%expression
-           (ann
-             #,(ignore-some
-                 #`(let-values (((val) #,(with-type* #'v #'Any)))
-                     (contract
-                       #,ctc-expr
-                       val
-                       'cast
-                       'typed-world
-                       val
-                       (quote-syntax #,stx))))
-             ty)))
+          (ann
+           #,(ignore-some
+              #`(let-values (((val) #,(with-type* #'v #'Any)))
+                  #,(syntax-property
+                     (quasisyntax/loc stx
+                       (contract
+                        #,ctc-expr
+                        val
+                        'cast
+                        'typed-world
+                        val
+                        (quote-syntax #,stx)))
+                     'TR-dynamic-check #t)))
+           ty)))
 
      (cond [(not (unbox typed-context?)) ; no-check, don't check
             #'v]
@@ -1271,10 +1274,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 (error "Assertion failed")])])
    (syntax-parse stx
      [(_ (c:with-asserts-clause ...) body:expr ...+)
-      (syntax/loc stx
-        (cond c.cond-clause
-              ...
-              [else body ...]))]))
+      (syntax-property
+       (quasisyntax/loc stx
+         (cond c.cond-clause
+               ...
+               [else #,(syntax-property
+                        #'(begin body ...)
+                        'TR-dynamic-check 'antimark)]))
+       'TR-dynamic-check #t)]))
 
 (define-syntax (typecheck-fail stx)
   (syntax-parse stx

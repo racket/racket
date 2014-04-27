@@ -223,7 +223,8 @@
 ;; Entry point
 
 (provide (rename-out [contract-profile/user contract-profile])
-	 contract-profile-thunk)
+         contract-profile-thunk
+         analyze-contract-samples) ; for feature-specific profiler
 
 ;; TODO have kw args for profiler, etc.
 ;; TODO have kw args for output files
