@@ -20,7 +20,15 @@ ports} in position-setting mode.
 
 @refalso["bytestrings"]{bytestrings}
 
-@defproc[(open-input-bytes [bstr bytes?] [name any/c 'string]) input-port?]{
+@defproc[(string-port? [p port?]) boolean?]{
+
+Returns @racket[#t] if @racket[p] is a @tech{string port}, @racket[#f]
+otherwise.
+
+@history[#:added "6.0.1.6"]}
+
+@defproc[(open-input-bytes [bstr bytes?] [name any/c 'string])
+         (and/c input-port? string-port?)]{
 
 Creates an input @tech{string port} that reads characters from
 @racket[bstr] (see @secref["bytestrings"]). Modifying @racket[bstr]
@@ -39,7 +47,8 @@ port.}
 
 @refalso["strings"]{strings}
 
-@defproc[(open-input-string [str string?] [name any/c 'string]) input-port?]{
+@defproc[(open-input-string [str string?] [name any/c 'string])
+         (and/c input-port? string-port?)]{
 
 Creates an input @tech{string port} that reads bytes from the UTF-8
 encoding (see @secref["encodings"]) of @racket[str]. The optional
@@ -52,7 +61,8 @@ encoding (see @secref["encodings"]) of @racket[str]. The optional
   (read-line names)
   (read-line names)]
 
-@defproc[(open-output-bytes [name any/c 'string]) output-port?]{
+@defproc[(open-output-bytes [name any/c 'string])
+         (and/c output-port? string-port?)]{
 
 Creates an output @tech{string port} that accumulates the output into a
 byte string. The optional @racket[name] argument is used as the name for
@@ -72,8 +82,10 @@ the returned port.}
   (get-output-bytes op3)
 ]
 
-@defproc[(open-output-string [name any/c 'string]) output-port?]{The
-same as @racket[open-output-bytes].}
+@defproc[(open-output-string [name any/c 'string])
+         (and/c output-port? string-port?)]{
+
+The same as @racket[open-output-bytes].}
 
 @examples[ #:eval sp-eval
   (define op1 (open-output-string))
@@ -89,7 +101,7 @@ same as @racket[open-output-bytes].}
   (get-output-string op3)
 ]
 
-@defproc[(get-output-bytes [out output-port?]
+@defproc[(get-output-bytes [out (and/c output-port? string-port?)]
                            [reset? any/c #f]
                            [start-pos exact-nonnegative-integer? 0]
                            [end-pos exact-nonnegative-integer? #f])
@@ -126,7 +138,7 @@ passing a second argument to @racket[subbytes].}
   (get-output-bytes op #t)
   (get-output-bytes op)]
 
-@defproc[(get-output-string [out output-port?]) string?]{
+@defproc[(get-output-string [out (and/c output-port? string-port?)]) string?]{
 Returns @racket[(bytes->string/utf-8 (get-output-bytes out) #\?)].}
 
 @examples[
