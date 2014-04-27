@@ -72,10 +72,11 @@
 
   ;; seekable-port? : port -> boolean
   (define (seekable-port? port)
-    (and (file-stream-port? port)
-         (with-handlers ([void (lambda (exn) #f)])
-           (file-position port (file-position port))
-           #t)))
+    (or (string-port? port)
+        (and (file-stream-port? port)
+             (with-handlers ([void (lambda (exn) #f)])
+               (file-position port (file-position port))
+               #t))))
 
   (define (write-int n size)
     (write-bytes (integer->integer-bytes n size #f #f)))
