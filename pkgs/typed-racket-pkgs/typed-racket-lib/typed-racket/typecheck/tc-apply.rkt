@@ -35,10 +35,7 @@
 
   (match f-ty
     ;; apply of simple function
-    [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...))))
-     ;; special case for (case-lambda)
-     (when (null? doms)
-       (tc-error/expr "empty case-lambda given as argument to apply"))
+    [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (match-let* ([arg-tres (map tc-expr fixed-args)]
                   [arg-tys (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
                   [tail-ty (tc-expr/t tail)])
@@ -137,8 +134,6 @@
                                              (string-append
                                               "Bad arguments to polymorphic function in apply:\n"
                                                      dom)))])))]
-    [(tc-result1: (Poly: vars (Function: '())))
-     (tc-error/expr "Function has no cases")]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tres) (map tc-expr fixed-args)]
@@ -209,7 +204,7 @@
                                              (string-append
                                               "Bad arguments to polymorphic function in apply:\n"
                                               dom)))])))]
-    [(tc-result1: (PolyDots: vars (Function: '())))
+    [(tc-result1: (or (Function: '()) (Poly: _ (Function: '())) (PolyDots: _ (Function: '()))))
      (tc-error/expr "Function has no cases")]
     [(tc-result1: f-ty)
      (tc-error/expr "Type of argument to apply is not a function type: \n~a" f-ty)]))
