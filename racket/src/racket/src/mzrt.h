@@ -85,6 +85,8 @@ int mzrt_sema_destroy(mzrt_sema *sema);
 
 /****************** Compare and Swap *******************************/
 
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
+
 #ifdef __clang__
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-function"
@@ -131,6 +133,12 @@ static MZ_INLINE void mzrt_ensure_max_cas(uintptr_t *atomic_val, uintptr_t len) 
 # pragma clang diagnostic pop
 #endif
 
+/* end defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES) */
+#endif
+
+/****************************************************************/
+
+/* end MZ_USE_MZRT */
 #endif
 
 #endif
