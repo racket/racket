@@ -614,17 +614,17 @@ case "$host_os" in
   *freebsd*)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   openbsd*)
     LIBS="$LIBS -Wl,--export-dynamic"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   dragonfly*)
     LIBS="$LIBS -Wl,--export-dynamic"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   netbsd*)
@@ -1275,6 +1275,12 @@ if test "${enable_mzrt}" = "yes" ; then
 fi
 
 ############### pthread ###################
+
+if test "${enable_pthread}" = "" ; then
+  if test "${enable_pthread_by_default}" = "yes" ; then
+    enable_pthread=yes
+  fi
+fi
 
 if test "${enable_pthread}" = "yes" ; then
   if test "${use_flag_pthread}" = "yes" ; then
