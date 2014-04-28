@@ -518,7 +518,8 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 	      break;
 	  }
 	  /* printf("%p vs. %p: %d\n", (void*)bnd, (void*)p, p - bnd); */
-	  return p;
+	  bnd = p;
+          break;
 	}
       }
       free(buf);
