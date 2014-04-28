@@ -42,17 +42,18 @@
    [(_ tp fp op) (struct tc-result (tp fp op))]
    [(_ tp) (struct tc-result (tp _ _))]))
 
+;; expand-tc-results: (Listof tc-result) -> (Values (Listof Type) (Listof FilterSet) (Listof Object))
+(define (expand-tc-results results)
+  (values (map tc-result-t results) (map tc-result-f results) (map tc-result-o results)))
+
 (define-match-expander tc-results:
   (syntax-rules ()
-   [(_ tp fp op)
-    (struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          #f))]
-   [(_ tp fp op dty dbound)
-    (struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          (cons dty dbound)))]
    [(_ tp)
-    (struct tc-results ((list (struct tc-result (tp _ _)) (... ...))
-                          #f))]))
+    (struct tc-results ((app expand-tc-results tp _ _) #f))]
+   [(_ tp fp op)
+    (struct tc-results ((app expand-tc-results tp fp op) #f))]
+   [(_ tp fp op dty dbound)
+    (struct tc-results ((app expand-tc-results tp fp op) (cons dty dbound)))]))
 
 (define-match-expander tc-any-results:
   (syntax-rules ()
@@ -62,10 +63,8 @@
 
 (define-match-expander tc-result1:
   (syntax-rules ()
-   [(_ tp fp op) (struct tc-results ((list (struct tc-result (tp fp op)))
-                                       #f))]
-   [(_ tp) (struct tc-results ((list (struct tc-result (tp _ _)))
-                                 #f))]))
+   [(_ tp) (tc-results: (list tp))]
+   [(_ tp fp op) (tc-results: (list tp) (list fp) (list op))]))
 
 (define (tc-results-ts* tc)
   (match tc
@@ -73,14 +72,19 @@
 
 (define-match-expander Result1:
   (syntax-rules ()
-   [(_ tp) (Values: (list (Result: tp _ _)))]
-   [(_ tp fp op) (Values: (list (Result: tp fp op)))]))
+   [(_ tp) (Results: (list tp))]
+   [(_ tp fp op) (Results: (list tp) (list fp) (list op))]))
+
+;; expand-Results: (Listof Rresult) -> (Values (Listof Type) (Listof FilterSet) (Listof Object))
+(define (expand-Results results)
+  (values (map Result-t results) (map Result-f results) (map Result-o results)))
+
 
 (define-match-expander Results:
   (syntax-rules ()
-   [(_ tp) (Values: (list (Result: tp _ _) (... ...)))]
-   [(_ tp fp op) (Values: (list (Result: tp fp op) (... ...)))]
-   [(_ tp fp op dty dbound) (ValuesDots: (list (Result: tp fp op) (... ...)) dty dbound)]))
+   [(_ tp) (Values: (app expand-Results tp _ _))]
+   [(_ tp fp op) (Values: (app expand-Results tp fp op))]
+   [(_ tp fp op dty dbound) (ValuesDots: (app expand-Results tp fp op) dty dbound)]))
 
 ;; make-tc-result*: Type/c FilterSet/c Object? -> tc-result?
 ;; Smart constructor for a tc-result.

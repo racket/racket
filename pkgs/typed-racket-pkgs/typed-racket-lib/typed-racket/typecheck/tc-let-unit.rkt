@@ -50,7 +50,7 @@
                [e-r   (in-list expected-results)]
                [names (in-list namess)])
               (match* (r e-r)
-                [((tc-results: ts (FilterSet: fs+ fs-) os) (tc-results: e-ts _ _)) ; rest should be the same
+                [((tc-results: ts (list (FilterSet: fs+ fs-) ...) os) (tc-results: e-ts _ _)) ; rest should be the same
                  ;(printf "f+: ~a\n" fs+)
                  ;(printf "f-: ~a\n" fs-)
                  (values ts
@@ -63,7 +63,7 @@
                                       (list)
                                       (list (-imp (-not-filter (-val #f) n) f+)
                                             (-imp (-filter (-val #f) n) f-))))))]
-                [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
+                [((tc-results: ts (list (NoFilter:) ...) _) (tc-results: e-ts (list (NoFilter:) ...) _))
                  (values ts e-ts null)]))))
      (with-cond-contract append-region ([p1 (listof Filter?)]
                                         [p2 (listof Filter?)])

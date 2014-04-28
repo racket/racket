@@ -140,16 +140,18 @@
      (ret t2 (fix-filter f2 f1) (fix-object o2 o1))]
 
     ;; case where expected is like (Values a ... a) but got something else
-    [((tc-results: t1 f o) (tc-results: t2 f o dty dbound))
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2 dty dbound))
      (value-mismatch expected tr1)
      (fix-results expected)]
 
     ;; case where you have (Values a ... a) but expected something else
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o))
+    [((tc-results: t1 f1 o1 dty dbound) (tc-results: t2 f2 o2))
      (value-mismatch expected tr1)
      (fix-results expected)]
 
-    [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
+    [((tc-results: t1 f1 o1 dty1 dbound)
+      (tc-results: t2 (list (or (NoFilter:) (FilterSet: (Top:) (Top:))) ...)
+                      (list (or (NoObject:) (Empty:)) ...) dty2 dbound))
      (cond
        [(= (length t1) (length t2))
         (unless (andmap subtype t1 t2)
@@ -160,12 +162,39 @@
          (value-mismatch expected tr1)])
      (fix-results expected)]
 
+    [((tc-results: t1 f1 o1 dty1 dbound) (tc-results: t2 f2 o2 dty2 dbound))
+     (cond
+       [(= (length t1) (length t2))
+        (unless (andmap subtype t1 t2)
+          (expected-but-got (stringify t2) (stringify t1)))
+        (unless (subtype dty1 dty2)
+          (type-mismatch dty2 dty1 "mismatch in ... argument"))]
+       [else
+         (value-mismatch expected tr1)])
+     (fix-results expected)]
+
+    [((tc-results: t1 f1 o1)
+      (tc-results: t2 (list (or (NoFilter:) (FilterSet: (Top:) (Top:))) ...)
+                      (list (or (NoObject:) (Empty:)) ...)))
+     (unless (= (length t1) (length t2))
+       (value-mismatch expected tr1))
+     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
+       (expected-but-got (stringify t2) (stringify t1)))
+     (fix-results expected)]
+
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
      (unless (= (length t1) (length t2))
        (value-mismatch expected tr1))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (expected-but-got (stringify t2) (stringify t1)))
      (fix-results expected)]
+
+    [((tc-results: t1 f1 o1) (tc-results: t2 f2 o2)) (=> continue)
+     (if (= (length t1) (length t2))
+         (continue)
+         (value-mismatch expected tr1))
+     (fix-results expected)]
+
     [((tc-any-results:) (tc-results: ts fs os))
      (value-mismatch expected tr1)
      (fix-results expected)]

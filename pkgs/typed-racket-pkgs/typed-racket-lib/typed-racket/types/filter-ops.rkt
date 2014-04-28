@@ -214,12 +214,12 @@
   (match results
     ;; TODO add support for filters on tc-any-results
     [(tc-any-results:) results]
-    [(tc-results: ts (FilterSet: fs+ fs-) os)
+    [(tc-results: ts (list (FilterSet: fs+ fs-) ...) os)
      (ret ts
           (for/list ([f+ fs+] [f- fs-])
             (-FS (-and prop f+) (-and prop f-)))
           os)]
-    [(tc-results: ts (FilterSet: fs+ fs-) os dty dbound)
+    [(tc-results: ts (list (FilterSet: fs+ fs-) ...) os dty dbound)
      (ret ts
           (for/list ([f+ fs+] [f- fs-])
             (-FS (-and prop f+) (-and prop f-)))
