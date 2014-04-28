@@ -140,12 +140,10 @@
            (cond
              ;; the actual work, when we have a * function
              [(and rest
-                   (<= (length domain) (length arg-tys))
-                   (infer/vararg fixed-vars (list dotted-var)
-                                 (cons full-tail-ty arg-tys)
-                                 (cons (make-Listof rest) domain)
-                                 rest
-                                 range))
+                   (infer fixed-vars (list dotted-var)
+                          (list (-Tuple* arg-tys full-tail-ty))
+                          (list (-Tuple* domain (make-Listof rest)))
+                          range))
               => finish]
              ;; ... function, ... arg
              [(and drest tail-bound
