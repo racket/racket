@@ -44,31 +44,18 @@
                   [range (in-list rngs)]
                   [rest (in-list rests)]
                   [drest (in-list drests)])
-           (cond
-             ;; this case of the function type has a rest argument
-             [rest
-              ;; check that the tail expression is a subtype of the rest argument
-              (and
-                (subtype (-Tuple* arg-tys tail-ty)
-                         (-Tuple* domain (make-Listof rest)))
-                (do-ret range))]
-             ;; the function expects a dotted rest arg, so make sure we have a ListDots
-             [drest
-              (match tail-ty
-                [(ListDots: tail-ty tail-bound)
-                 ;; the check that it's the same bound
-                 (and (eq? (cdr drest) tail-bound)
-                      ;; and that the types are correct
-                      (subtypes arg-tys domain)
-                      (subtype tail-ty (car drest))
-                      (do-ret range))]
-                [_ #f])]
-             ;; the function has no rest argument, but provides all the necessary fixed arguments
-             [(and (not rest) (not drest))
-              (and
-                (subtype (-Tuple* arg-tys tail-ty)
-                         (-Tuple domain))
-                (do-ret range))]))
+           (and
+             (subtype
+               (-Tuple* arg-tys tail-ty)
+               (-Tuple* domain
+                        (cond
+                          ;; this case of the function type has a rest argument
+                          [rest (make-Listof rest)]
+                          ;; the function expects a dotted rest arg, so make sure we have a ListDots
+                          [drest (make-ListDots (car drest) (cdr drest))]
+                          ;; the function has no rest argument
+                          [else (-val '())])))
+             (do-ret range)))
          (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
                             #:msg-thunk (lambda (dom)
                                           (string-append
