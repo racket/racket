@@ -17,7 +17,7 @@
 
 ;; a stash of values and the contracts that they correspond to
 ;; that generation has produced earlier in the process 
-(define generate-env (make-parameter #f))
+(define generate-env (make-parameter 'generate-env-not-currently-set))
 
 ;; (parameter/c (listof contract?))
 ;; contracts in this will definitely have values available
@@ -27,8 +27,7 @@
 
 ; Adds a new contract and value to the environment if
 ; they don't already exist
-(define (env-stash ctc val)
-  (define env (generate-env))
+(define (env-stash env ctc val)
   (define curvals (hash-ref env ctc '()))
   (hash-set! env ctc (cons val curvals)))
 
@@ -36,7 +35,7 @@
   (parameterize ([definitely-available-contracts 
                    (append ctcs (definitely-available-contracts))])
     (thunk)))
-           
+
 ; generate : contract int -> ctc value or error
 (define (contract-random-generate ctc fuel
                                   [fail (λ () 
@@ -71,11 +70,12 @@
 ; Attemps to find a value with the given contract in the environment.
 ;; NB: this doesn't yet try to call things in the environment to generate
 (define (generate/env ctc fuel)
+  (define env (generate-env))
   (for/or ([avail-ctc (in-list (definitely-available-contracts))])
     (and (contract-stronger? avail-ctc ctc)
          (λ ()
            (define available 
-             (for/list ([(avail-ctc vs) (in-hash (generate-env))]
+             (for/list ([(avail-ctc vs) (in-hash env)]
                         #:when (contract-stronger? avail-ctc ctc)
                         [v (in-list vs)])
                v))

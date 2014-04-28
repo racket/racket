@@ -716,9 +716,15 @@
      (define dom-ctcs (base->-doms ctc))
      (define doms-l (length dom-ctcs))
      (λ (fuel)
+       (define dom-exers '())
+       (define addl-available dom-ctcs)
+       (for ([c (in-list (base->-doms ctc))])
+         (define-values (exer ctcs) ((contract-struct-exercise c) fuel))
+         (set! dom-exers (cons exer dom-exers))
+         (set! addl-available (append ctcs addl-available)))
        (define rngs-gens 
-         (with-definitely-available-contracts 
-          dom-ctcs
+         (with-definitely-available-contracts
+          addl-available
           (λ ()
             (for/list ([c (in-list (base->-rngs ctc))])
               (generate/choose c fuel)))))
@@ -729,41 +735,76 @@
             (define env (generate-env))
             (procedure-reduce-arity
              (λ args
-               ; Make sure that the args match the contract
-               (unless ((contract-struct-exercise ctc) args (/ fuel 2))
-                 (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
-               ; Stash the valid value
-               (parameterize ([generate-env env])
-                 (for ([ctc (in-list dom-ctcs)]
-                       [arg (in-list args)])
-                   (env-stash ctc arg))
-                 (define results
-                   (for/list ([rng-gen (in-list rngs-gens)])
-                     (rng-gen)))
-                 (apply values results)))
+               ; stash the arguments for use by other generators
+               (for ([ctc (in-list dom-ctcs)]
+                     [arg (in-list args)])
+                 (env-stash env ctc arg))
+               ; exercise the arguments
+               (for ([arg (in-list args)]
+                     [dom-exer (in-list dom-exers)])
+                 (dom-exer arg))
+               ; compute the results 
+               (define results
+                 (for/list ([rng-gen (in-list rngs-gens)])
+                   (rng-gen)))
+               ; return the results
+               (apply values results))
              doms-l))]
          [else #f]))]
     [else (λ (fuel) #f)]))
 
-(define (->-exercise ctc) 
-  (λ (args fuel)
-    (let* ([new-fuel (/ fuel 2)]
-           [gen-if-fun (λ (c v)
-                         ; If v is a function we need to gen the domain and call
-                         (if (procedure? v)
-                             (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
-                                                 (base->-doms c))])
-                               (let* ([result (call-with-values 
-                                               (λ () (apply v newargs))
-                                               list)]
-                                      [rngs (base->-rngs c)])
-                                 (andmap (λ (c v) 
-                                           ((contract-struct-exercise c) v new-fuel))
-                                         rngs 
-                                         result)))
-                             ; Delegate to check-ctc-val
-                             ((contract-struct-exercise c) v new-fuel)))])
-      (andmap gen-if-fun (base->-doms ctc) args))))
+(define (->-exercise ctc)
+  (define dom-ctcs (base->-doms ctc))
+  (define rng-ctcs (base->-rngs ctc))
+  (cond
+    [(and (equal? (length dom-ctcs) (base->-min-arity ctc))
+          (not (base->-rest ctc)))
+     (λ (fuel)
+       (define gens 
+         (for/list ([dom-ctc (in-list dom-ctcs)])
+           ((contract-struct-generate dom-ctc) fuel)))
+       (define env (generate-env))
+       (cond
+         [(andmap values gens)
+          (values 
+           (λ (f)
+             (call-with-values
+              (λ ()
+                (apply 
+                 f
+                 (for/list ([gen (in-list gens)])
+                   (gen))))
+              (λ results 
+                (for ([res-ctc (in-list rng-ctcs)]
+                      [result (in-list results)])
+                  (env-stash env res-ctc result)))))
+           (base->-rngs ctc))]
+         [else
+          (values void '())]))]
+    [else
+     (λ (fuel) (values void '()))]))
+
+#|
+
+         (λ (v) 
+           (let* ([new-fuel (/ fuel 2)]
+                  [gen-if-fun (λ (c v)
+                                ; If v is a function we need to gen the domain and call
+                                (if (procedure? v)
+                                    (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
+                                                        (base->-doms c))])
+                                      (let* ([result (call-with-values 
+                                                      (λ () (apply v newargs))
+                                                      list)]
+                                             [rngs (base->-rngs c)])
+                                        (andmap (λ (c v) 
+                                                  ((contract-struct-exercise c) v new-fuel))
+                                                rngs 
+                                                result)))
+                                    ; Delegate to check-ctc-val
+                                    ((contract-struct-exercise c) v new-fuel)))])
+             (andmap gen-if-fun (base->-doms ctc) args)))))]
+|#
 
 (define (base->-name ctc)
   (define rngs (base->-rngs ctc))

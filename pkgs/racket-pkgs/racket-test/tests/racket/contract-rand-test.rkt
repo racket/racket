@@ -72,3 +72,33 @@
 (check-exn cannot-generate-exn? (λ () (test-contract-generation 
                                        (or/c some-crazy-predicate?
                                              some-crazy-predicate?))))
+
+(check-not-exn 
+ (λ () 
+   (define eleven
+     ((test-contract-generation (-> (-> some-crazy-predicate?) some-crazy-predicate?))
+      (λ () 11)))
+   (unless (= eleven 11)
+     (error 'contract-rand-test.rkt "expected 11 got ~s" eleven))))
+
+(check-not-exn 
+ (λ () 
+   (define eleven
+     ((test-contract-generation (-> (-> number? boolean? some-crazy-predicate?)
+                                    some-crazy-predicate?))
+      (λ (n b) 11)))
+   (unless (= eleven 11)
+     (error 'contract-rand-test.rkt "expected 11 got ~s" eleven))))
+
+(check-not-exn 
+ (λ () 
+   (define eleven
+     ((test-contract-generation (-> (non-empty-listof some-crazy-predicate?)
+                                    some-crazy-predicate?))
+      (list 11)))
+   (unless (= eleven 11)
+     (error 'contract-rand-test.rkt "expected 11 got ~s" eleven))))
+
+(check-exn cannot-generate-exn? (λ () (test-contract-generation 
+                                       (-> (listof some-crazy-predicate?)
+                                           some-crazy-predicate?))))

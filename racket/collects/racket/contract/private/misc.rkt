@@ -751,10 +751,6 @@
              [else (loop (cons (eg) so-far))])))
         (λ () '()))))
 
-(define (listof-exercise el-ctc)
-  (λ (f n-tests size env)
-    #t))
-
 (define (non-empty-listof-generate elem-ctc)
   (λ (fuel)
     (define eg (generate/choose elem-ctc fuel))
@@ -766,43 +762,54 @@
              [else (loop (cons (eg) so-far))])))
         #f)))
 
-(define (*-listof predicate? name generate)
+(define (non-empty-listof-exercise elem-ctc)
+  (λ (fuel)
+    (define env (generate-env))
+    (values
+     (λ (lst)
+       (env-stash env elem-ctc (oneof lst)))
+     (list elem-ctc))))
+
+(define (*-listof predicate? name generate exercise)
   (λ (input)
-    (let* ([ctc (coerce-contract name input)]
-           [ctc-name (build-compound-type-name name ctc)]
-           [proj (contract-projection ctc)])
-      (define ((listof-*-ho-check check-all) blame)
-        (let ([p-app (proj (blame-add-listof-*-context blame))])
-          (λ (val)
-            (unless (predicate? val)
-              ((listof-*/fail blame val predicate?) #f))
-            (check-all p-app val))))
-      
-      (define (fo-check x)
-        (and (predicate? x) 
-             (for/and ([v (in-list x)])
-               (contract-first-order-passes? ctc v))))
-      (cond
-        [(flat-contract? ctc)
-         (make-flat-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:projection (listof-*-ho-check (λ (p v) (for-each p v) v))
-          #:val-first-projection (listof-*-val-first-flat-proj predicate? ctc)
-          #:generate (generate ctc))]
-        [(chaperone-contract? ctc)
-         (make-chaperone-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:projection (listof-*-ho-check (λ (p v) (map p v)))
-          #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
-          #:generate (generate ctc))]
-        [else
-         (make-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
-          #:projection (listof-*-ho-check (λ (p v) (map p v))))]))))
+    (define ctc (coerce-contract name input))
+    (define ctc-name (build-compound-type-name name ctc))
+    (define proj (contract-projection ctc))
+    (define ((listof-*-ho-check check-all) blame)
+      (let ([p-app (proj (blame-add-listof-*-context blame))])
+        (λ (val)
+          (unless (predicate? val)
+            ((listof-*/fail blame val predicate?) #f))
+          (check-all p-app val))))
+    
+    (define (fo-check x)
+      (and (predicate? x) 
+           (for/and ([v (in-list x)])
+             (contract-first-order-passes? ctc v))))
+    (cond
+      [(flat-contract? ctc)
+       (make-flat-contract
+        #:name ctc-name
+        #:first-order fo-check
+        #:projection (listof-*-ho-check (λ (p v) (for-each p v) v))
+        #:val-first-projection (listof-*-val-first-flat-proj predicate? ctc)
+        #:generate (generate ctc)
+        #:exercise (exercise ctc))]
+      [(chaperone-contract? ctc)
+       (make-chaperone-contract
+        #:name ctc-name
+        #:first-order fo-check
+        #:projection (listof-*-ho-check (λ (p v) (map p v)))
+        #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
+        #:generate (generate ctc)
+        #:exercise (exercise ctc))]
+      [else
+       (make-contract
+        #:name ctc-name
+        #:first-order fo-check
+        #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
+        #:projection (listof-*-ho-check (λ (p v) (map p v)))
+        #:exercise (exercise ctc))])))
 
 (define (listof-*-val-first-flat-proj predicate? ctc)
   (define vf-proj (get/build-val-first-projection ctc))
@@ -841,12 +848,14 @@
 (define (blame-add-listof-*-context blame) (blame-add-context blame "an element of"))
 (define (non-empty-list? x) (and (pair? x) (list? x)))
 
-(define listof-func (*-listof list? 'listof listof-generate))
+(define (no-exercise ctc) (λ (size) (values void '())))
+(define listof-func (*-listof list? 'listof listof-generate no-exercise))
 (define/subexpression-pos-prop (listof x) (listof-func x))
 
 (define non-empty-listof-func (*-listof non-empty-list? 
                                         'non-empty-listof
-                                        non-empty-listof-generate))
+                                        non-empty-listof-generate
+                                        non-empty-listof-exercise))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
 (define (blame-add-car-context blame) (blame-add-context blame "the car of"))

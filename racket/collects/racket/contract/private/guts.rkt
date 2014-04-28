@@ -386,10 +386,7 @@
                                        (predicate-contract-name ctc)))
                       (λ (fuel)
                         (and built-in-generator
-                             (λ () (built-in-generator fuel))))])))
-   #:exercise (λ (ctc)
-                 (λ (val fuel) 
-                    ((predicate-contract-pred ctc) val)))))
+                             (λ () (built-in-generator fuel))))])))))
 
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))

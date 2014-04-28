@@ -104,11 +104,11 @@
       #f))
 
 (define (contract-struct-exercise c)
-  (let* ([prop (contract-struct-property c)]
-         [exercise (contract-property-exercise prop)])
-    (if (procedure? exercise)
-        (exercise c)
-        (make-generate-ctc-fail))))
+  (define prop (contract-struct-property c))
+  (define exercise (contract-property-exercise prop))
+  (if (procedure? exercise)
+      (exercise c)
+      (λ (fuel) (values void '()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -203,8 +203,8 @@
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
          #:stronger [stronger #f]
-         #:generate [generate (make-generate-ctc-fail)]
-         #:exercise [exercise (make-generate-ctc-fail)])
+         #:generate [generate (λ (ctc) (λ (fuel) #f))]
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
   
   ;; this code is here to help me find the combinators that
   ;; are still using only #:projection and not #:val-first-projection
@@ -312,8 +312,8 @@
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
-   #:generate (lambda (c) ((make-contract-generate c)))
-   #:exercise (lambda (c) ((make-contract-exercise c)))))
+   #:generate (lambda (c) (make-contract-generate c))
+   #:exercise (lambda (c) (make-contract-exercise c))))
 
 (define-struct make-chaperone-contract [ name first-order projection val-first-projection
                                               stronger generate exercise ]
@@ -357,8 +357,8 @@
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
          #:stronger [stronger #f]
-         #:generate [generate (make-generate-ctc-fail)]
-         #:exercise [exercise (make-generate-ctc-fail)] )
+         #:generate [generate (λ (ctc) (λ (fuel) #f))]
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
 
   (let* ([name (or name default-name)]
          [first-order (or first-order any?)]
@@ -397,5 +397,4 @@
 (define make-chaperone-contract
   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract))
 
-(define make-flat-contract
-  (build-contract make-make-flat-contract 'anonymous-flat-contract))
+(define make-flat-contract (build-contract make-make-flat-contract 'anonymous-flat-contract))
