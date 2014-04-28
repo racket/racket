@@ -7,4 +7,4 @@
 
 (define pkg-desc "Legacy support for automatic package distribution")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))

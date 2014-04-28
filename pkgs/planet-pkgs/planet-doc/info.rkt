@@ -8,6 +8,6 @@
 
 (define pkg-desc "documentation part of \"planet\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
 (define build-deps '("racket-doc"
                      "scribble-doc"))

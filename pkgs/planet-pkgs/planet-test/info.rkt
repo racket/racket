@@ -6,7 +6,7 @@
 
 (define pkg-desc "tests for \"planet-lib\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
 (define build-deps '("eli-tester"
                      "planet-lib"
                      "rackunit-lib"
