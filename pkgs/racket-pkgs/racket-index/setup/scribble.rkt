@@ -1099,6 +1099,17 @@
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
                (error "old info has wrong version or flags"))
+             (when (and (or (not provides-time)
+                            (provides-time . < . info-out-time))
+                        (can-build? only-dirs doc))
+               ;; Database is out of sync, and we don't need to build
+               ;; this document, so update databse now. Note that a
+               ;; timestamp is good enough for determing a sync,
+               ;; instead of sha1s, because a database is never moved
+               ;; across installations.
+               (move-documentation-into-place doc #f
+                                              setup-printf workerid lock
+                                              main-doc-exists?))
              (define out-hash (get-info-out-hash doc latex-dest))
              (make-info
               doc
@@ -1115,10 +1126,7 @@
                        ;; maybe info is up-to-date but not rendered doc:
                        (not out-exists?)))
               #f 
-              ;; Need to write if database is out of sync. A timestamp is good enough,
-              ;; instead of sha1s, because a database is never moved across installations.
-              (or (not provides-time)
-                  (provides-time . < . info-out-time))
+              #f
               vers
               #f
               #f))))
@@ -1236,15 +1244,15 @@
                                ;; the job of the regular documentation builder.
                                (log-error (exn-message exn)))])
     (define dest-dir (doc-dest-dir doc))
-    (define move? (not (equal? (file-or-directory-identity src-dir)
-                               (and (directory-exists? dest-dir)
-                                    (file-or-directory-identity dest-dir)))))
+    (define move? (and src-dir
+                       (not (equal? (file-or-directory-identity src-dir)
+                                    (and (directory-exists? dest-dir)
+                                         (file-or-directory-identity dest-dir))))))
     (setup-printf (string-append
                    (if workerid (format "~a " workerid) "")
                    (if move? "moving" "syncing"))
                   "~a"
-                  (path->relative-string/setup src-dir))
-
+                  (path->relative-string/setup (or src-dir dest-dir)))
     (when move?
       (when (directory-exists? dest-dir)
         (delete-directory/files dest-dir))
