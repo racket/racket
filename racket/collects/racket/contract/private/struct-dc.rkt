@@ -10,14 +10,15 @@
                      "opt-guts.rkt"
                      "top-sort.rkt"
                      (only-in "ds-helpers.rkt" defeat-inlining)
-                     (rename-in syntax/private/boundmap
-                                ;; the private version of the library 
-                                ;; (the one without contracts)
-                                ;; has these old, wrong names in it.
-                                [make-module-identifier-mapping make-free-identifier-mapping]
-                                [module-identifier-mapping-get free-identifier-mapping-get]
-                                [module-identifier-mapping-put! free-identifier-mapping-put!]
-                                [module-identifier-mapping-for-each free-identifier-mapping-for-each]))
+                     (rename-in
+                      syntax/private/boundmap
+                      ;; the private version of the library 
+                      ;; (the one without contracts)
+                      ;; has these old, wrong names in it.
+                      [make-module-identifier-mapping make-free-identifier-mapping]
+                      [module-identifier-mapping-get free-identifier-mapping-get]
+                      [module-identifier-mapping-put! free-identifier-mapping-put!]
+                      [module-identifier-mapping-for-each free-identifier-mapping-for-each]))
          syntax/location
          racket/list
          "guts.rkt"
@@ -158,7 +159,8 @@
         (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)))))
     (define orig-mut-blames
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)) #:swap? #t)))
+        (define ctxt-string (format "the ~a field of" (subcontract-field-name subcontract)))
+        (blame-add-context blame ctxt-string #:swap? #t)))
     (define orig-indy-blames 
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (blame-replace-negative
@@ -364,10 +366,10 @@
                          (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
                                                   orig-indy-projs orig-indy-blames blame val)))
                       (define (set-chap-proc strct val)
-                        (with-continuation-mark
-                         contract-continuation-mark-key blame
-                         (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
-                                                  orig-mut-indy-projs orig-mut-indy-blames mut-blame val)))
+                        (with-continuation-mark contract-continuation-mark-key blame
+                          (build-dep-on-state-proj
+                           (base-struct/dc-subcontracts ctc) subcontract strct
+                           orig-mut-indy-projs orig-mut-indy-blames mut-blame val)))
                       (if (eq? (dep-type subcontract) '#:impersonator)
                           (values chaperone-args
                                   (list* sel
@@ -400,12 +402,15 @@
              [dep-args '()])
     (cond
       [(null? subcontracts) 
-       (error 'build-dep-on-state-proj "ran out of subcontracts ~s ~s ~s" orig-subcontracts this-subcontract strct)]
+       (error 'build-dep-on-state-proj
+              "ran out of subcontracts ~s ~s ~s"
+              orig-subcontracts this-subcontract strct)]
       [else
        (define subcontract (car subcontracts))
        (cond
          [(eq? subcontract this-subcontract)
-          (define the-ctc (coerce-contract 'struct/dc (apply (dep-dep-proc this-subcontract) dep-args)))
+          (define the-ctc 
+            (coerce-contract 'struct/dc (apply (dep-dep-proc this-subcontract) dep-args)))
           (check-flat/chaperone the-ctc subcontract)
           (((contract-projection the-ctc) blame) val)]
          [else
@@ -437,14 +442,16 @@
   (case (dep-type subcontract)
     [(#:flat)
      (unless (flat-contract? dep-ctc)
-       (raise-argument-error 'struct/dc
-                             (format "a flat-contract? for field ~a" (subcontract-field-name subcontract))
-                             dep-ctc))]
+       (raise-argument-error
+        'struct/dc
+        (format "a flat-contract? for field ~a" (subcontract-field-name subcontract))
+        dep-ctc))]
     [(#:chaperone)
      (unless (chaperone-contract? dep-ctc)
-       (raise-argument-error 'struct/dc
-                             (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
-                             dep-ctc))]))
+       (raise-argument-error
+        'struct/dc
+        (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
+        dep-ctc))]))
 
 (define (struct/dc-stronger? this that)
   (and (base-struct/dc? that)
@@ -507,9 +514,10 @@
     (when (and (indep? subcontract)
                (not (mutable? subcontract)))
       (unless (chaperone-contract? (indep-ctc subcontract))
-        (raise-argument-error 'struct/dc
-                             (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
-                             (indep-ctc subcontract)))))
+        (raise-argument-error
+         'struct/dc
+         (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
+         (indep-ctc subcontract)))))
   (define (flat-subcontract? subcontract)
     (cond
       [(indep? subcontract) (flat-contract? (indep-ctc subcontract))]
@@ -557,10 +565,13 @@
          (define selector-candidate (name->sel-id #'id sel-name))
          (unless (for/or ([selector (in-list (list-ref info 3))])
                    (and selector (free-identifier=? selector-candidate selector)))
-           (raise-syntax-error 'struct/dc 
-                               "expected an identifier that names a field or a sequence with a field name, the #:parent keyword, and the parent struct"
-                               stx
-                               sel-name)))
+           (raise-syntax-error 
+            'struct/dc 
+            (string-append 
+             "expected an identifier that names a field or a sequence with a field name,"
+             " the #:parent keyword, and the parent struct")
+            stx
+            sel-name)))
        
        (define (check-not-both this that)
          (when (and this that)
@@ -586,12 +597,15 @@
             #t]
            [_else #f]))
        
-       (define not-field-name-str "expected a field-name (either an identifier or a sequence: (selector-id #:parent struct-id))")
+       (define not-field-name-str
+         (string-append "expected a field-name (either an identifier or a sequence:"
+                        " (selector-id #:parent struct-id))"))
        
        (define parsed-clauses
          (for/list ([clause (in-list (syntax->list #'(clauses ...)))])
            (syntax-case clause ()
-             [(sel-name (dep-name ...) stuff1 . stuff) ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
+             [(sel-name (dep-name ...) stuff1 . stuff)
+              ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
               (sel-name? #'sel-name)
               (let ()
                 (for ([name (in-list (syntax->list #'(dep-name ...)))])
@@ -670,20 +684,27 @@
                    (free-identifier-mapping-get
                     lazy-mapping
                     id
-                    (λ () (raise-syntax-error 'struct/dc
-                                              (format "the field: ~s is depended on (by the contract on the field: ~s), but it has no contract"
-                                                      (syntax->datum dep-name)
-                                                      (syntax->datum (clause-sel-name clause)))
-                                              stx
-                                              (clause-sel-name clause))))))
+                    (λ () (raise-syntax-error 
+                           'struct/dc
+                           (format 
+                            (string-append
+                             "the field: ~s is depended on (by the contract on the field: ~s),"
+                             " but it has no contract")
+                            (syntax->datum dep-name)
+                            (syntax->datum (clause-sel-name clause)))
+                           stx
+                           (clause-sel-name clause))))))
                
                ;; check that impersonator fields are mutable
                (when (and (dep-clause? clause)
                           (eq? (dep-clause-type clause) '#:impersonator))
                  (unless mut
                    (raise-syntax-error 'struct/dc
-                                       (format "the ~a field is immutable, so the contract cannot be an impersonator contract"
-                                               (syntax-e (clause-sel-name clause)))
+                                       (format 
+                                        (string-append
+                                         "the ~a field is immutable, so the contract"
+                                         " cannot be an impersonator contract")
+                                        (syntax-e (clause-sel-name clause)))
                                        stx
                                        (clause-sel-name clause))))
 
@@ -811,7 +832,9 @@
                    (if (clause-lazy? clause)
                        (raise-syntax-error 
                         #f 
-                        (format "the contract on field ~a depends on mutable state (possibly indirectly), so cannot be lazy"
+                        (format (string-append
+                                 "the contract on field ~a depends on mutable state"
+                                 " (possibly indirectly), so cannot be lazy")
                                 (syntax->datum (clause-sel-name clause)))
                         stx 
                         (clause-sel-name clause))
@@ -906,7 +929,8 @@
           (define depended-on-fields (make-free-identifier-mapping))
           (define no-negative-blame-fields (make-free-identifier-mapping))
           (define-values (s-fo-code s-chap-code s-lifts s-super-lifts 
-                                    s-partially-applied can-be-optimized? stronger-ribs chaperone? no-negative-blame)
+                                    s-partially-applied can-be-optimized?
+                                    stronger-ribs chaperone? no-negative-blame)
             (for/fold ([s-fo-code '()]
                        [s-chap-code '()]
                        [s-lifts '()]
@@ -945,7 +969,8 @@
                 (for ([dep-name (in-list (syntax->list dep-names))])
                   (define dep-var (name->sel-id #'struct-id dep-name))
                   (free-identifier-mapping-put! depended-on-fields dep-var sel-id)))
-              (free-identifier-mapping-put! no-negative-blame-fields sel-id (optres-no-negative-blame? this-optres))
+              (free-identifier-mapping-put! no-negative-blame-fields sel-id
+                                            (optres-no-negative-blame? this-optres))
               
               (define this-body-code 
                 (cond
@@ -997,28 +1022,40 @@
                       (if this-chap-code 
                           (list* this-chap-code sel-id s-chap-code)
                           s-chap-code)
-                      (if dep-names s-lifts (append (optres-lifts this-optres) s-lifts))
-                      (if dep-names s-super-lifts (append (optres-superlifts this-optres) s-super-lifts))
-                      (if dep-names s-partially-applied (append (optres-partials this-optres) s-partially-applied))
+                      (if dep-names
+                          s-lifts
+                          (append (optres-lifts this-optres) s-lifts))
+                      (if dep-names
+                          s-super-lifts
+                          (append (optres-superlifts this-optres) s-super-lifts))
+                      (if dep-names 
+                          s-partially-applied 
+                          (append (optres-partials this-optres) s-partially-applied))
                       (and (optres-opt this-optres) can-be-optimized?)
-                      (if dep-names stronger-ribs (append (optres-stronger-ribs this-optres) stronger-ribs))
+                      (if dep-names
+                          stronger-ribs
+                          (append (optres-stronger-ribs this-optres) stronger-ribs))
                       (combine-two-chaperone?s chaperone? (optres-chaperone this-optres))
-                      (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? this-optres)))))
+                      (combine-two-no-negative-blame no-negative-blame
+                                                     (optres-no-negative-blame? this-optres)))))
           
           ;; to avoid having to deal with indy-ness, just give up if any
           ;; of the fields that are depended on can possibly raise negative blame
           (free-identifier-mapping-for-each
            depended-on-fields
            (λ (depended-on-id field-doing-the-depending)
-             (define no-neg-blame (free-identifier-mapping-get no-negative-blame-fields depended-on-id))
+             (define no-neg-blame 
+               (free-identifier-mapping-get no-negative-blame-fields depended-on-id))
              (define dep-answer (cond
                                   [(boolean? no-neg-blame) no-neg-blame]
                                   [else (traverse-no-neg-blame-identifiers no-neg-blame)]))
              (unless no-neg-blame
                (give-up 
-                (format " because the contract on field: ~a depends on: ~a and its contract may have negative blame"
-                        (syntax-e field-doing-the-depending)
-                        (syntax-e depended-on-id))))))
+                (format 
+                 (string-append " because the contract on field: ~a depends on: ~a and"
+                                " its contract may have negative blame")
+                 (syntax-e field-doing-the-depending)
+                 (syntax-e depended-on-id))))))
           
           (with-syntax ([(stronger-prop-desc stronger-prop-pred? stronger-prop-get)
                          (syntax-local-lift-values-expression
@@ -1030,7 +1067,8 @@
             
             (build-optres
              #:exp
-             (if (null? s-chap-code) ;; if this is #t, when we have to avoid putting the property on here.
+             ;; if this is #t, when we have to avoid putting the property on here.
+             (if (null? s-chap-code) 
                  #`(if (pred? #,(opt/info-val opt/info))
                        (begin
                          #,@s-fo-code
@@ -1119,10 +1157,14 @@
                                          (free-identifier=? (datum->syntax stx x)
                                                             sel)))
                              si-selectors)
-                      (define strip-reg (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e struct-id))))))
+                      (define strip-reg 
+                        (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e struct-id))))))
                       (define field-name
-                        (datum->syntax sel
-                                       (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel)) ""))))
+                        (datum->syntax 
+                         sel
+                         (string->symbol (regexp-replace strip-reg
+                                                         (symbol->string (syntax-e sel))
+                                                         ""))))
                       (cond
                         [(free-identifier=? #'struct-name struct-id)
                          #`(#:selector #,sel)]
@@ -1132,8 +1174,11 @@
                [else #f])))
          (unless candidate
            (raise-syntax-error 'struct/c
-                               (format "could not find selector id for field ~a (counting from 0) in current scope"
-                                       i)
+                               (format 
+                                (string-append
+                                 "could not find selector id for field ~a"
+                                 " (counting from 0) in current scope")
+                                i)
                                stx
                                sel))
          candidate)
