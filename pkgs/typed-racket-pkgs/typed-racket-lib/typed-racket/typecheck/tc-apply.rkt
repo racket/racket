@@ -98,12 +98,11 @@
                         (list (-Tuple domain))
                         range))
             => finish]
-           ;; ... function, ... arg
+           ;; ... function
            [(and drest
-                 tail-bound
-                 (eq? tail-bound (cdr drest))
-                 (= (length domain) (length arg-tys))
-                 (infer vars null (cons tail-ty arg-tys) (cons (car drest) domain)
+                 (infer vars null
+                        (list (-Tuple* arg-tys full-tail-ty))
+                        (list (-Tuple* domain (make-ListDots (car drest) (cdr drest))))
                         range))
             => finish]
            [else #f]))
