@@ -53,28 +53,8 @@
                                          dom)))]))
 
   (match f-ty
-    ;; apply of simple function
-    [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-     (or
-       (for/or ([domain (in-list doms)]
-                [range (in-list rngs)]
-                [rest (in-list rests)]
-                [drest (in-list drests)])
-         (and
-           (subtype
-             (-Tuple* arg-tys full-tail-ty)
-             (-Tuple* domain
-                      (cond
-                        ;; this case of the function type has a rest argument
-                        [rest (make-Listof rest)]
-                        ;; the function expects a dotted rest arg, so make sure we have a ListDots
-                        [drest (make-ListDots (car drest) (cdr drest))]
-                        ;; the function has no rest argument
-                        [else (-val '())])))
-           (do-ret range)))
-       (failure))]
-    ;; apply of simple polymorphic function
-    [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
+    ;; apply of a simple function or polymorphic function
+    [(tc-result1: (AnyPoly: vars '() (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (or
        (for/or ([domain (in-list doms)]
                 [range (in-list rngs)]
@@ -82,19 +62,22 @@
                 [drest (in-list drests)])
          (define (finish substitution)
            (and substitution (do-ret (subst-all substitution range))))
-         (finish
-           (infer vars null
-                  (list (-Tuple* arg-tys full-tail-ty))
-                  (list (-Tuple* domain
-                                 (cond
-                                   ;; the actual work, when we have a * function
-                                   [rest (make-Listof rest)]
-                                   ;; ... function
-                                   [drest (make-ListDots (car drest) (cdr drest))]
-                                   ;; the function has no rest argument,
-                                   ;; but provides all the necessary fixed arguments
-                                   [else  (-val '())])))
-                  range)))
+         (define (local-infer s t)
+           (if (empty? vars)
+               (and (subtype s t) (do-ret range))
+               (finish (infer vars null (list s) (list t) range))))
+
+         (local-infer
+           (-Tuple* arg-tys full-tail-ty)
+           (-Tuple* domain
+                    (cond
+                      ;; the actual work, when we have a * function
+                      [rest (make-Listof rest)]
+                      ;; ... function
+                      [drest (make-ListDots (car drest) (cdr drest))]
+                      ;; the function has no rest argument,
+                      ;; but provides all the necessary fixed arguments
+                      [else  (-val '())]))))
        (failure))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
