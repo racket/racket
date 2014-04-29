@@ -92,7 +92,7 @@
                         range))
             => finish]
            ;; the function has no rest argument, but provides all the necessary fixed arguments
-           [(and (not rest) (not drest) (not tail-bound)
+           [(and (not rest) (not drest)
                  (infer vars null
                         (list (-Tuple* arg-tys full-tail-ty))
                         (list (-Tuple domain))
