@@ -1,0 +1,73 @@
+1352317841
+Racket v5.3.1
+
+Racket:
+
+* The `case' form dispatches on characters, fixnums, symbols, and
+  keywords in logarithmic time.  (Thanks to Jon Zeppieri.)
+
+* The new `racket/format' library provides new and improved
+  string-formatting functions.
+
+* Logging tools include improved filtering support based on the name
+  of a logger.  A new `define-logger' form simplifies the use of
+  named loggers.  Forms such as `log-debug' now support string
+  formatting.
+
+* The `for' forms now support `#:break' and `#:final' clauses.
+
+* The new PLTCOMPILEDROOTS environment variable configures the
+  search path for compiled bytecode.
+
+DrRacket:
+
+* Check Syntax now summarizes the documentation (i.e., the blue
+  boxes) for the identifier at the insertion point in the top-right
+  corner of the definitions window.
+
+* Check Syntax now runs continuously for programs that declare their
+  language within the source.  This mode has been available for
+  several of the past releases, but now enabled by default.
+
+* DrRacket can spell-check string constants (enable this in the Edit
+  menu).
+
+Typed Racket:
+
+* Typed Racket interprets the Any type as a different contract.
+  This may signal dynamic errors in some existing mixed
+  typed/untyped programs.  The normal fix is to replace a use of Any
+  with a more specific types.
+
+* NaN is included in all of Typed Racket's floating-point types,
+  which makes precise floating-point types easier to use.
+
+* Typed Racket supports a `cast' operation with support for
+  higher-order types.
+
+* Typed Racket provides the `:query-type/args' and
+  `:query-type/result' utilities to explore types at the REPL.
+
+Miscellaneous:
+
+* The `compatibility' collection provides features from Racket
+  relatives, such as `defmacro' and mutable lists.  These features
+  are provided to ease porting code to Racket.  Avoid them in modern
+  Racket code.
+
+* Screenshots of the widgets provided by the Racket GUI library are
+  included in the documentation.  (Thanks to Diogo F. S. Ramos.)
+
+* FrTime was ported to racket lang.  (Thanks to Patrick Mahoney.)
+
+Deprecation:
+
+The following has been deprecated and will be removed in the January
+2013 release:
+
+* the `planet' command-line tool; use `raco planet' instead.
+
+The following has been deprecated and will be removed in the August
+2013 release:
+
+* the `mzlib/class100' library; use `racket/class' instead.

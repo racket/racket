@@ -1,0 +1,88 @@
+1359691127
+Racket v5.3.2
+
+Core Libraries:
+
+* The new `math' library provides functions and data structures for
+  working with numbers and collections of numbers.  Functions include
+  non-elementary (such as gamma, zeta, Lambert's W), number-theoretic
+  (factorization, modular arithmetic), linear algebra (arithmetic,
+  decompositions), and statistical (expected values, order statistics,
+  binning).  Data structures include arbitrary-precision bigfloats,
+  probability distributions, and multidimensional arrays.
+
+* The new `file/untar', `file/untgz', and `file/unzip' libraries support
+  unpacking widely used archive formats.
+
+* The new `lazy-require' form allows programs to delay the loading and
+  instantiation of helper modules until they are needed.
+
+* The new `data/bit-vector' library provides an implementation of bit
+  vectors (a mutable sequence of booleans) supporting popcount.
+
+* The `racket/generic' library allows the specification of default
+  method implementations for core datatypes.
+
+* The `openssl' library can verify hostnames and use the operating
+  system's certificate store to verify certificates.
+
+Package System:
+
+* A new package system is in beta release.  This system will become
+  Planet's successor.  It differs significantly from the latter.  For
+  details, please read the documentation at
+  http://docs.racket-lang.org/planet2/ and list your packages on the new
+  index at https://pkg.racket-lang.org/.
+
+* The `raco test' command supports testing by collection and package, in
+  addition to by directory and file, with the "-c" and "-p" options.
+
+Teaching Libraries:
+
+* batch-io: the read and write functions work on Unix-style standard
+  input and output.
+
+DrRacket:
+
+* DrRacket's GUI is more responsive.
+
+* The automatic parenthesis insertion mode is improved.
+
+Scribble:
+
+* Scribble renders Markdown format files via the "--markdown"
+  command-line flag.  Example use case: Generate documentation hosted on
+  GitHub or BitBucket.
+
+* Documentation cross-reference information is stored in an SQLite3
+  database, which means that SQLite3 is required for building Racket
+  documentation on Unix/Linux machines (but SQLite3 is included in
+  Racket distributions for Windows and Mac OS X).
+
+  Using a database for cross-reference information significantly reduces
+  the initial footprint of DrRacket, since DrRacket no longer needs to
+  load all cross-reference information.
+
+Typed Racket:
+
+* Typed Racket programs can require `plot/typed' to draw plots.  List-
+  and vector-accepting functions accept general sequences.
+
+* Typed Racket supports Racket's delimited continuation and continuation
+  mark operators.
+
+Redex:
+
+* Added more support for `define-judgment-form', including random
+  generation for well-formed judgments and visualization of judgments.
+
+Deprecation:
+
+The following have been removed in this release:
+
+* the `planet' command-line tool; use `raco planet' instead.
+
+The following has been deprecated and will be removed in the August 2013
+release:
+
+* the `mzlib/class100' library; use `racket/class' instead.

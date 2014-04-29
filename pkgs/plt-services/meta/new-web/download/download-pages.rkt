@@ -81,7 +81,7 @@
   @page[#:site download-site
         #:file (format "v~a.html" ver) #:title title #:part-of 'download]{
     @table[align: 'center]{
-      @tr{@td{@h2{Release Announcements for Version @ver}}}
+      @tr{@td{@h2{Release Announcement for Version @ver}}}
       @tr{@td{@pre{@release-announcement[rel]}}}}
   })
 (define release-page

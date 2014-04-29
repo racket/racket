@@ -1,0 +1,6 @@
+1313480645
+Racket v5.1.3
+
+This is a bugfix release, resolving the DrRacket issue with the contour
+view.  In addition, two tex files with problematic licensing were
+removed.

@@ -153,9 +153,8 @@
         (λ ()
           (define info (get-version-tag-info v))
           (if info
-            (let* ([tagger (car info)]
-                   [date   (cadr info)]
-                   [announcement (caddr info)]
+            (let* ([date   (car info)]
+                   [announcement (cadr info)]
                    [year   (date-year date)]
                    [month  (vector-ref months (sub1 (date-month date)))])
               (release v date (format "~a ~a" month year) announcement))

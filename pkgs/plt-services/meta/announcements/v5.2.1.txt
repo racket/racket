@@ -1,0 +1,48 @@
+1332774630
+Racket v5.2.1
+
+* Performance improvements include the use of epoll()/kqueue() instead
+  of select() for the Racket thread scheduler, cross-module inlining of
+  small functions, and the use of SSE instead of x87 for JIT-compiled
+  floating-point operations on platforms where SSE is always available
+  (including x86_64 platforms).  A related change is the interning of
+  literal numbers, strings, byte strings, characters, and regexps that
+  appear in code and syntax objects.
+
+* DrRacket uses a set of composable ray-traced icons available from the
+  new `images' library collection.
+
+* Typed Racket's `typecheck-fail' form allows macro creators to
+  customize the error messages that Typed Racket produces.  This is
+  especially useful when creating pattern matching macros.
+
+* The performance of Redex's matcher has been substantially improved;
+  depending on the model you should see improvements between 2x and 50x
+  in the time it takes to reduce terms.
+
+* Plots look nicer and are more correct at very small and very large
+  scales.  New features include customizable dual axis ticks and
+  transforms (e.g., log axes, date and currency ticks, axis interval
+  collapse and stretch), stacked histograms, and 3D vector fields.  The
+  legacy `fit' function and libfit have been removed.
+
+* The `2htdp/universe' library's `big-bang' form supports an
+  experimental game pad key handler.
+
+* The `db' library now supports nested transactions and PostgreSQL
+  arrays.  Bugs involving MySQL authentication and memory corruption in
+  the SQLite bindings have been fixed.
+
+* The Macro Stepper tool in DrRacket no longer executes a program after
+  expanding it.
+
+* In the DMdA teaching languages, infinite recursive signatures
+  ("streams", for example) with no intervening `mixed' are now
+  supported, and the signatures of record definitions without fields now
+  have generators for use with `property'.
+
+* MysterX's ActiveX support is deprecated and will be removed in the
+  next release.  MysterX's core COM functionality will become deprecated
+  in the next release, but COM functionality will be supported for the
+  foreseeable future as a compatibility layer over a forthcoming
+  `ffi/com' library.

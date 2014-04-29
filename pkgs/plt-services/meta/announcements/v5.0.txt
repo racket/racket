@@ -1,0 +1,36 @@
+1275916233
+PLT is happy to announce the release of Racket, available from
+
+  http://racket-lang.org/
+
+With Racket, you can script command shells and web servers; you can
+quickly prototype animations and complex GUIs; regexps and threads are
+here to serve you.  To organize your systems, you can mix and match
+classes, modules or components.  Best of all, you start without writing
+down types.  If you later wish to turn your script into a program, equip
+your Racket modules with explicit type declarations as you wish.  And
+Racket doesn't just come as a typed variant; you can also write your
+modules in a purely functional and lazy dialect.
+
+Racket comes in so many flavors because Racket is much more than a
+standard scripting language or a plain programming language.  Racket
+supports language extensibility to an unequaled degree.  A Racket
+programmer knows that making up a new language is as easy as writing a
+new library.
+
+To help you start quickly, Racket includes batteries in all shapes and
+sizes, most importantly, extensive documentation and all kinds of
+libraries.
+
+Racket occupies a unique position between research and practice.  It
+inherits many major ideas from language research, among them type safety
+(when the type system says that x is a number, then at runtime it always
+is a number) and memory safety (when some memory is reclaimed by the
+garbage collector it is impossible to still have a reference to it).  At
+the same time, user demand governs rigid adherence to purely theoretical
+principles.
+
+Racket, formerly PLT Scheme, is a product of over 15 years of
+development.  Although Racket starts with a mature software base and an
+established user community, its new name reflects our view that this is
+just the beginning of Racket's evolution.

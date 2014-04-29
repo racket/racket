@@ -1,0 +1,64 @@
+1280887792
+Racket v5.0.1
+
+* Datalog is a lightweight deductive database system with Racket
+  integration.  It is now available in the `datalog' collection and
+  with `#lang datalog'.
+
+* Racklog provides Prolog-style logic programming in Racket, adapted
+  from Dorai Sitaram's Schelog package.  It is available in the
+  `racklog' collection and now as `#lang racklog'.
+
+* By default `make install' and `raco setup' compile collections in
+  parallel on all available processors.  (Use `raco setup -j 1' to
+  disable, if necessary.)
+
+* Changes (as part of 5.0) in the `racket' language compared to the
+  `scheme' language: constructor-style printing, a `struct'
+  alternative to `define-struct' that fits more naturally with
+  `match' and constructor-style printing, bytecode-dependency
+  management via SHA-1 hashes instead of just timestamps (where the
+  `openssl/sha1' library provides the SHA-1 hash function), a
+  reorganization of `scheme/foreign' into `ffi/unsafe' and
+  associated libraries, and new printing functions `eprintf' and
+  `displayln'.  Also, a generator from `racket/generator' is
+  required to have the form `(generator () body ...)', which
+  supports a planned extension to let a generator accept arguments.
+
+* Changes to the `racket' language (since 5.0): internal-definition
+  positions allow mixing expressions with definitions, full
+  continuations can escape past a continuation barrier, custodians
+  can attempt to terminate subprocesses and subprocess groups (see
+  `current-subprocess-custodian-mode', `subprocess-group-enabled'),
+  the JIT supports additional unboxing flonum operations and unsafe
+  variants, `ffi/unsafe' provides an asychronous-call mechanism to
+  deal with foreign threads, a new "." modifier for format string
+  directives (e.g., "~.s" and "~.a") limits the respective output to
+  `(error-print-width)' characters.
+
+* The core type system of Typed Racket has been substantially
+  revised.  In particular, Typed Racket can now follow significantly
+  more sophisticated reasoning about the relationships between
+  predicates.  Additionally, Typed Racket now allows variable arity
+  types in more places, allowing programmers to specify
+  variable-arity lists.
+
+* We are working on an optimizing version of Typed Racket that takes
+  advantage of type information for certain classes of programs.
+  This project is a work in progress.  For those interested, see the
+  documentation for `#:optimized'.
+
+* The `web-server/formlets' library adds a `formlet*' form that
+  allows dynamic formlet construction, as opposed to `formlet' which
+  requires syntactic Xexprs and static formlets.  Several new
+  library formlets are added.
+
+* The `syntax/parse' library has new support for matching literals
+  at different phases using the `#:phase' argument for literals and
+  literal sets.
+
+* RackUnit now includes a GUI test runner as `rackunit/gui'.
+
+* The `2htdp/image' library now includes `flip-vertical' and
+  `flip-horizontal' operations that mirror images (vertically and
+  horizontally).

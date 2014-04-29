@@ -1,0 +1,22 @@
+1368030118
+Racket v5.3.4
+
+* Extflonums (80-bit floating-point numbers) are supported on some
+  x86/x86_64 platforms -- including Windows, and including platforms
+  where Racket is compiled to use SSE instructions for flonum
+  arithmetic.  Thanks to Michael Filonenko.
+
+* OS X: DrRacket and all of the other apps are now signed with an
+  official key.
+
+* Tally Maze: a new game based an enumeration of 2d mazes.
+
+* The Optimization Coach, a DrRacket plugin, has been moved from the
+  Racket distribution to the Racket package repository.  Install it
+  with: raco pkg install optimization-coach
+
+* Redex: `define-union-language' now merges productions when
+  languages define the same nonterminals.  Thanks to William Bowman.
+
+* The `srfi/19' library is now compatible with the date structure
+  type exported by `racket/base'.

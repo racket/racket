@@ -1,0 +1,83 @@
+1390668968
+Racket v5.92
+
+Racket 5.92 has a new package system, including a catalog of
+hundreds of already-available packages. Please visit
+
+  http://pkgs.racket-lang.org/
+
+for an overview of the packages.
+
+Recent releases included the "beta" versions of the package system.
+Racket version 5.92 incorporates many improvements suggested by these
+preliminary experiences:
+
+ * A package is treated as a single collection by default, so it is
+   even easier to use a Github repository as a package. Get started
+   quickly:
+     http://docs.racket-lang.org/pkg/getting-started.html
+
+ * DrRacket includes a new package manager GUI, available via the
+   File|Package Manager ... menu item. The GUI is also available
+   as a stand-alone program via the "gui-pkg-manager" package.
+
+ * The main Racket distribution has been separated into about 200
+   packages. The Racket installer combines the core system with
+   bundled versions of these packages.
+
+   Alternatively, you may now install a Minimal Racket distribution
+   --- which is about 1/10 the size of the main distribution --- and
+   add only those packages that you need.
+
+ * Package installation supports pre-built packages that include
+   compiled byte code and rendered documentation, meaning packages can
+   be installed quickly when built versions are available. All
+   packages in the main distribution are available in pre-built form.
+
+Further improvements are in the works, notably including package
+documentation on the package-catalog web site.
+
+COMPATIBILITY NOTE: PLaneT, the previous Racket package system, will
+remain in place for the foreseeable future, but we expect all package
+work to shift to the new system.
+
+Beyond the package system, this release brings a number of other
+changes:
+
+ * Racket's HTML documentation has a new and improved look, thanks to
+   Matthew Butterick.
+
+ * The documentation includes a style guide, "How to Program Racket"
+   http://docs.racket-lang.org/style/
+
+ * Racket's JIT compiler supports the ARM architecture.
+
+ * Racket supports the Mac's Retina display mode.
+
+ * The performance of the Typed Racket compiler improved by 50% on
+   some typed programs; e.g., see http://bit.ly/1d0Ye4z
+
+ * The profiler provides a new mode that uses the errortrace library
+   to produce fine-grained profiles.
+
+ * A new contract profiler reports how much time programs spend
+   checking contracts, and which contracts are most expensive.
+
+ * The math/flonum library exports fast 105-bit precision operations.
+
+ * Check Syntax handles generated identifiers, especially those
+   introduced by struct (e.g. field selectors) and Redex (e.g., e_1,
+   e_2)
+
+ * 2htdp/batch-io includes functions for dealing with html/xml in
+   files and web sites as X-expressions plus conveniences for
+   web-based graph traversals.
+
+ * The `gen:set' generic interface extends set operations to work on
+   user-defined types that implement set methods, as well as on other
+   set-like built-in types, such as lists.
+
+ * Picts support conversion to SVG format.
+
+ * Under unix, Racket provides desktop entries (.desktop files) for
+   its graphical executables.

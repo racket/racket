@@ -1,0 +1,79 @@
+1297739878
+Racket v5.1
+
+The most significant change in version 5.1 is a rewrite of the GUI
+library:
+
+  http://blog.racket-lang.org/2010/12/racket-version-5.html
+
+Unix/X users will see the biggest difference with this change,
+because DrRacket and all Racket GUI programs now take on the desktop
+theme for menus, buttons, and other GUI widgets.
+
+In the long run, Racket GUI programs on all platforms will improve
+as a result of the library rewrite.  In the short run, beware that
+this first release of a new library will inevitably include a new
+set of bugs.
+
+Version 5.1 changes in more detail:
+
+* The `racket/draw' library -- which implements the drawing half the
+  GUI toolkit -- can be used independent of the `racket/gui/base'
+  library and without a graphics display (e.g., without an X11
+  connection).
+
+  The new library has one small incompatibility with the old GUI
+  toolbox: 'xor drawing is no longer supported.  The new library has
+  many additional features: rotation and general affine
+  transformations, PDF and SVG drawing contexts, gradients, and
+  alpha-channel bitmaps.
+
+* The GRacket executable is no longer strictly necessary for running
+  GUI programs, because the `racket/gui/base' library can be used
+  from Racket.  To the degree that a platform distinguishes GUI and
+  console applications, however, the GRacket executable still offers
+  some additional GUI-specific functionality (e.g., single-instance
+  support).
+
+  The new `racket/gui/base' library includes small incompatibilities
+  with the old GUI toolbox: the `send-event',
+  `current-ps-afm-file-paths', and `current-ps-cmap-file-paths'
+  functions have been removed.  The `racket/gui/base' library
+  re-exports `racket/draw', so it includes the same drawing
+  functionality as before (except for 'xor drawing).
+
+* The new `racket/snip' library can be used independently of
+  `racket/gui/base' to work with graphical editor content (e.g.,
+  images in student programs).  Like `racket/draw', the
+  `racket/snip' library is re-exported by `racket/gui/base'.
+
+* The Web Server includes a backwards incompatible change that
+  prevents X-expressions and lists of bytes from being directly
+  returned from servlets.  This change will increase performance for
+  those types of responses and allow easier experimentation with
+  response types.  Please see "collects/web-server/compat/0/README"
+  in the installation to learn about porting your servlets forward.
+  Don't worry.  It's easy.
+
+* The new `raco demodularize' tool collapses a module's dependencies
+  into a single module comprising the whole program.  This
+  transformation currently provides no performance improvement, but
+  is the basis for cross-module optimization and dead-code
+  elimination tools to come.  The transformation is currently useful
+  for static analysis of whole Racket programs.
+
+* The picturing-programs teachpack, formerly installed via PLaneT,
+  is now bundled with the standard distribution.  Use the teachpack
+  with `(require picturing-programs)' instead of `(require
+  installed-teachpacks/picturing-programs)'.  The old PLaneT-based
+  installation procedure still works, but it now merely installs a
+  stub that invokes the bundled version.
+
+* Slideshow picts, `racket/draw' bitmaps, and images created with
+  `2htdp/image' can now be used directly in Scribble documents.
+  More generally, the new `file/convertible' protocol enables any
+  value that is convertible to a PNG and/or PDF stream to be used as
+  an image in a Scribble document.
+
+* The Same game sports a new look and an improved scoring system.
+  (The current known high score is 12,429; can you beat that?)

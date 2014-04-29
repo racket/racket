@@ -1,0 +1,58 @@
+1289106828
+Racket v5.0.2
+
+* Typed Racket's optimizer is now turned on by default; error
+  messages have been simplified and clarified.
+
+* Contracts: contracts on mutable containers allow functions or
+  other higher order values, and contracts are checked when updating
+  or dereferencing the containers.  The new contracts are slower
+  than the old ones, so the old check-once functionality is still
+  available.
+
+  A new dependent function contract combinator, `->i', properly
+  assigns blame for contracts that violate themselves and the
+  generated wrappers are more efficient than `->d'.  (Although it
+  does more checking so your contracts may be faster or slower).
+
+  See the docs for `box/c', `hash/c', `vector/c', `vectorof' and
+  `->i' for more details.
+
+* The `when', `unless', `cond', `case', and `match' forms (in
+  `racket/base' and derived languages) now allow immediate internal
+  definitions.
+
+* Web server: the formlets library provides more HTML form elements;
+  `make-xexpr-response' supports a preamble for DTD declarations;
+  `serve/servlet' supports stateless servlets.
+
+* New WebSocket implementation, see `net/websocket' for details.
+
+* The new `data' collection contains implementations of several data
+  structures, including growable vectors and order-based
+  dictionaries.
+
+* `racket/match' is now significantly faster
+
+* The Racket documentations are built in parallel by default.
+
+* The stepper is now compatible with programs using the Universe
+  teachpack.
+
+* `2htdp/image': pinholes are now supported in the library (if you
+  don't use pinhole primitives you will not see them); a number of
+  new triangle functions added; supports conversion of images to
+  color lists and back.  Also, cropping has been improved for
+  scenes; see the documentation section on the nitty-gritty of
+  pixels for details.
+
+* Signatures have been moved to ASL, BSL, BSL+, ISL, and ISL+ (HtDP
+  teaching languages) no longer support checked signatures.
+
+* Student languages: one-armed `check-error' in all levels; ASL is
+  extended with hash operations, and `define-datatype'.
+
+* DMdA languages: Checking for parametric signatures is now eager.
+  This catches errors earlier, but retains the asymptotic complexity
+  properties; signatures for record types now have generators;
+  `list-of' and `any' signatures are now provided.

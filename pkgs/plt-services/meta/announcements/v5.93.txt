@@ -1,0 +1,19 @@
+1391210625
+Racket v5.93
+
+Version 5.93 repairs a few problems with the recent v5.92 release (in
+preparation for a v6.0 release):
+
+ * fixed a low-level concurrency problem with the GUI library for Mac
+   OS X, which especially affected 32-bit builds;
+
+ * fixed GRacket-based launchers (such as `drracket`) in a Unix-style
+   installation;
+
+ * expanded the list of recognized OpenSSL library versions;
+
+ * fixed small CSS problems and inconsistencies (relative to v5.3.6) in
+   the new Scribble style as used by the Racket documentation; and
+
+ * added the version number back to the "racket" directory within the
+   source distribution bundle.
