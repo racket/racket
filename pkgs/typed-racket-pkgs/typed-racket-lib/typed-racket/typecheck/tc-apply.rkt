@@ -42,6 +42,18 @@
        (values tail-ty tail-bound)]
       [t (values #f #f)]))
 
+  (define (failure)
+    (match f-ty
+      [(tc-result1:
+         (and t (or (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))
+                    (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))
+                    (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))))
+       (domain-mismatches f args t doms rests drests rngs arg-tres full-tail-ty #f
+                          #:msg-thunk (lambda (dom)
+                                        (string-append
+                                         "Bad arguments to function in `apply':\n"
+                                         dom)))]))
+
   (match f-ty
     ;; apply of simple function
     [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
@@ -62,11 +74,7 @@
                         ;; the function has no rest argument
                         [else (-val '())])))
            (do-ret range)))
-       (domain-mismatches f args t doms rests drests rngs arg-tres full-tail-ty #f
-                          #:msg-thunk (lambda (dom)
-                                        (string-append
-                                         "Bad arguments to function in `apply':\n"
-                                         dom))))]
+       (failure))]
     ;; apply of simple polymorphic function
     [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (or
@@ -99,13 +107,7 @@
                         range))
             => finish]
            [else #f]))
-       (match f-ty
-         [(tc-result1: (and t (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
-          (domain-mismatches f args t doms rests drests rngs arg-tres (or tail-ty full-tail-ty) tail-bound
-                             #:msg-thunk (lambda (dom)
-                                           (string-append
-                                            "Bad arguments to polymorphic function in `apply':\n"
-                                                   dom)))]))]
+       (failure))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (or
@@ -158,14 +160,7 @@
                    [_ #f]))
             => finish]
            [else #f]))
-       ;; Nothing matched
-       (match f-ty
-         [(tc-result1: (and t (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
-          (domain-mismatches f args t doms rests drests rngs arg-tres (or tail-ty full-tail-ty) tail-bound
-                             #:msg-thunk (lambda (dom)
-                                           (string-append
-                                            "Bad arguments to polymorphic function in `apply':\n"
-                                            dom)))]))]
+       (failure))]
     [(tc-result1: (or (Function: '()) (Poly: _ (Function: '())) (PolyDots: _ (Function: '()))))
      (tc-error/expr "Function has no cases")]
     [(tc-result1: f-ty)
