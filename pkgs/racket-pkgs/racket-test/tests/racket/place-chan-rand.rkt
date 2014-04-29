@@ -16,7 +16,10 @@
      (vector-immutable i ...)
      (string->immutable-string str) 
      (make-prefab-struct pf-type legal-message ...)
-     (string->path (string-append string "x"))
+     (string->path (string-append (if (path-string? string)
+                                      string
+                                      "?")
+                                  "x"))
      (let-values ([(a b) (place-channel)]) a)
      (let-values ([(a b) (place-channel)]) b)
      f)
