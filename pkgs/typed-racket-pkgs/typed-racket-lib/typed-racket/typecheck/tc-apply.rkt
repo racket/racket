@@ -45,9 +45,7 @@
   (define (failure)
     (match f-ty
       [(tc-result1:
-         (and t (or (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))
-                    (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))
-                    (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))))
+         (and t (AnyPoly-names: _ _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
        (domain-mismatches f args t doms rests drests rngs arg-tres full-tail-ty #f
                           #:msg-thunk (lambda (dom)
                                         (string-append
@@ -151,7 +149,7 @@
             => finish]
            [else #f]))
        (failure))]
-    [(tc-result1: (or (Function: '()) (Poly: _ (Function: '())) (PolyDots: _ (Function: '()))))
+    [(tc-result1: (AnyPoly: _ _ (Function: '())))
      (tc-error/expr "Function has no cases")]
     [(tc-result1: f-ty)
      (tc-error/expr "Type of argument to apply is not a function type: \n~a" f-ty)]))

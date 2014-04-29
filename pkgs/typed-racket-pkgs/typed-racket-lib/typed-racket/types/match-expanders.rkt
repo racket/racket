@@ -10,7 +10,7 @@
          racket/set
          (for-syntax racket/base syntax/parse))
 
-(provide Listof: List: MListof:)
+(provide Listof: List: MListof: AnyPoly: AnyPoly-names:)
 
 
 (define-match-expander Listof:
@@ -52,3 +52,38 @@
        ;; see note above
        #'(or (Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))
              (Mu: var (Union: (list (MPair: elem-pat (F: var)) (Value: '())))))])))
+
+(define (unpoly t)
+  (match t
+    [(Poly: fixed-vars t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) dotted t))]
+    [(PolyDots: (list fixed-vars ... dotted-var) t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) (cons dotted-var dotted) t))]
+    [t (values null null t)]))
+
+(define (unpoly-names t)
+  (match t
+    [(Poly-names: fixed-vars t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) dotted t))]
+    [(PolyDots-names: (list fixed-vars ... dotted-var) t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) (cons dotted-var dotted) t))]
+    [t (values null null t)]))
+
+
+;; Match expanders that match any type and separate the outer layers of the poly and poly-dots, from
+;; the inner non polymorphic type.
+(define-match-expander AnyPoly:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ vars dotted-vars body)
+       #'(app unpoly vars dotted-vars body)])))
+
+(define-match-expander AnyPoly-names:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ vars dotted-vars body)
+       #'(app unpoly-names vars dotted-vars body)])))
