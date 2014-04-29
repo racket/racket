@@ -3547,7 +3547,14 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
 
     return 1;
   }
-  
+
+  if (no_writers) {
+    /* block on a semaphore that is not accessible, which may allow the thread
+       to be GCed */
+    scheme_set_sync_target(sinfo, scheme_make_sema(0), scheme_void, NULL, 0, 0, NULL);
+    return 0;
+  }
+
   return 0;
 }
 
