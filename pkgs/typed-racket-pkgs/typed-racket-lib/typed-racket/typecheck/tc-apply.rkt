@@ -82,30 +82,21 @@
                 [range (in-list rngs)]
                 [rest (in-list rests)]
                 [drest (in-list drests)])
-         (define (finish substitution) (do-ret (subst-all substitution range)))
-         (cond
-           ;; the actual work, when we have a * function
-           [(and rest
-                 (infer vars null
-                        (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple* domain (make-Listof rest)))
-                        range))
-            => finish]
-           ;; the function has no rest argument, but provides all the necessary fixed arguments
-           [(and (not rest) (not drest)
-                 (infer vars null
-                        (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple domain))
-                        range))
-            => finish]
-           ;; ... function
-           [(and drest
-                 (infer vars null
-                        (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple* domain (make-ListDots (car drest) (cdr drest))))
-                        range))
-            => finish]
-           [else #f]))
+         (define (finish substitution)
+           (and substitution (do-ret (subst-all substitution range))))
+         (finish
+           (infer vars null
+                  (list (-Tuple* arg-tys full-tail-ty))
+                  (list (-Tuple* domain
+                                 (cond
+                                   ;; the actual work, when we have a * function
+                                   [rest (make-Listof rest)]
+                                   ;; ... function
+                                   [drest (make-ListDots (car drest) (cdr drest))]
+                                   ;; the function has no rest argument,
+                                   ;; but provides all the necessary fixed arguments
+                                   [else  (-val '())])))
+                  range)))
        (failure))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
