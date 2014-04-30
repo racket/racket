@@ -58,35 +58,35 @@
      (unless (or var (eq? X X*))
        (int-err "Non-matching vars in c-meet: ~a ~a" X X*))
      (let ([S (join S S*)] [T (meet T T*)])
-       (and (subtype S T)  
+       (and (subtype S T)
             (make-c S (or var X) T)))]))
-  
+
 ;; compute the meet of two constraint sets
 ;; returns #f for failure
 (define (cset-meet x y)
   (match* (x y)
-   [((struct cset (maps1)) (struct cset (maps2)))
-    (define maps (for*/list ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
-                             [(map2 dmap2) (in-pairs (remove-duplicates maps2))]
-                             [v (in-value (% cons
-                                             (hash-union/fail map1 map2 #:combine c-meet)
-                                             (dmap-meet dmap1 dmap2)))]
-                             #:when v)
-                   v))
-    (cond [(null? maps)
-           #f]
-          [else (make-cset maps)])]
-   [(_ _) (int-err "Got non-cset: ~a ~a" x y)]))
+    [() (empty-cset null null)]
+    [(x) x]
+    [(x y)
+     (match* (x y)
+      [((struct cset (maps1)) (struct cset (maps2)))
+       (define maps (for*/list ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
+                                [(map2 dmap2) (in-pairs (remove-duplicates maps2))]
+                                [v (in-value (% cons
+                                                (hash-union/fail map1 map2 #:combine c-meet)
+                                                (dmap-meet dmap1 dmap2)))]
+                                #:when v)
+                      v))
+       (cond [(null? maps)
+              #f]
+             [else (make-cset maps)])])]
+    [(x y . z)
+     (% apply cset-meet (cset-meet x y) z)]))
 
 ;; combines a list of csets using cset-meet individually
 ;; returns #f for failure
 (define (cset-meet* args)
-  (for/fold ([c (make-cset (list (cons
-                                  (make-immutable-hash null)
-                                  (make-dmap (make-immutable-hash null)))))])
-    ([a (in-list args)]
-     #:break (not c))
-    (cset-meet a c)))
+  (apply cset-meet args))
 
 ;; produces a cset of all of the maps in all of the given csets
 ;; FIXME: should this call `remove-duplicates`?
