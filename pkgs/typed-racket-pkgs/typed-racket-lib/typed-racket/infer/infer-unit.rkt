@@ -570,8 +570,6 @@
              (for/or ([t (in-list (list -Byte -Index -NonNegFixnum -Nat))])
                (and (subtype S t) t)))
            (% cg type t*)]
-          [((Vector: t) (Sequence: (list t*)))
-           (cg t t*)]
           [((Hashtable: k v) (Sequence: (list k* v*)))
            (cgen/list V X Y (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
