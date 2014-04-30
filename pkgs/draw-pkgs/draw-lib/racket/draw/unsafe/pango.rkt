@@ -21,6 +21,8 @@
 (define-runtime-lib pangocairo-lib
   [(unix) (ffi-lib "libpangocairo-1.0" '("0" ""))]
   [(macosx)
+   (ffi-lib "libharfbuzz.0.dylib")
+   (ffi-lib "libpangoft2-1.0.0.dylib")
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(windows)
    (ffi-lib "libintl-8.dll")
