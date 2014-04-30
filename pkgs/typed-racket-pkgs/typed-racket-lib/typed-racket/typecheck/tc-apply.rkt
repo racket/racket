@@ -72,7 +72,7 @@
          (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
                             #:msg-thunk (lambda (dom)
                                           (string-append
-                                           "Bad arguments to function in apply:\n"
+                                           "Bad arguments to function in `apply':\n"
                                            dom)))))]
     ;; apply of simple polymorphic function
     [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
@@ -132,7 +132,7 @@
             (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
                                #:msg-thunk (lambda (dom)
                                              (string-append
-                                              "Bad arguments to polymorphic function in apply:\n"
+                                              "Bad arguments to polymorphic function in `apply':\n"
                                                      dom)))])))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
@@ -202,7 +202,7 @@
             (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
                                #:msg-thunk (lambda (dom)
                                              (string-append
-                                              "Bad arguments to polymorphic function in apply:\n"
+                                              "Bad arguments to polymorphic function in `apply':\n"
                                               dom)))])))]
     [(tc-result1: (or (Function: '()) (Poly: _ (Function: '())) (PolyDots: _ (Function: '()))))
      (tc-error/expr "Function has no cases")]
