@@ -1188,10 +1188,11 @@
                                                              (and p
                                                                   (if (symbol? p)
                                                                       p
-                                                                      (path->bytes 
-                                                                       (if (absolute-path? p)
-                                                                           p
-                                                                           (build-path (path-only (mod-file nc)) p))))))
+                                                                      (path->bytes
+                                                                       (simplify-path
+                                                                        (if (absolute-path? p)
+                                                                            p
+                                                                            (build-path (path-only (mod-file nc)) p)))))))
                                                            ;; As for the extension table, a placeholder to save 
                                                            ;; room likely needed by the distribution-mangler.
                                                            ;; The extra "."s are meant to cover the relative
