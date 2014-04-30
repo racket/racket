@@ -49,8 +49,8 @@
              [rest
               ;; check that the tail expression is a subtype of the rest argument
               (and
-                (subtype (apply -lst* arg-tys #:tail tail-ty)
-                         (apply -lst* domain #:tail (make-Listof rest)))
+                (subtype (-Tuple* arg-tys tail-ty)
+                         (-Tuple* domain (make-Listof rest)))
                 (do-ret range))]
              ;; the function expects a dotted rest arg, so make sure we have a ListDots
              [drest
@@ -66,8 +66,8 @@
              ;; the function has no rest argument, but provides all the necessary fixed arguments
              [(and (not rest) (not drest))
               (and
-                (subtype (apply -lst* arg-tys #:tail tail-ty)
-                         (apply -lst* domain))
+                (subtype (-Tuple* arg-tys tail-ty)
+                         (-Tuple domain))
                 (do-ret range))]))
          (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
                             #:msg-thunk (lambda (dom)
@@ -104,8 +104,8 @@
              ;; the function has no rest argument, but provides all the necessary fixed arguments
              [(and (not rest) (not drest) (not tail-bound)
                    (infer vars null
-                          (list (apply -lst* arg-tys #:tail full-tail-ty))
-                          (list (apply -lst* domain))
+                          (list (-Tuple* arg-tys full-tail-ty))
+                          (list (-Tuple domain))
                           range))
               => finish]
              ;; actual work, when we have a * function and ... final arg
