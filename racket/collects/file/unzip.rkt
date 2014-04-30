@@ -42,7 +42,8 @@
                  #:preserve-timestamps? any/c)
                 . ->* .
                 any)]
-
+  [with-unzip-entry (-> path-string? path-string? (-> path-string? any) any)]
+  [with-unzip (-> path-string? (-> path-string? any) any)]
   [path->zip-path ((or/c string? path?) . -> . bytes?)]))
 
 ;; ===========================================================================
@@ -359,3 +360,32 @@
   (if (path? base)
       base
       (current-directory)))
+
+;; use dynamic-wind to clean temporary files
+(define (with-unzip-entry zip_file entry_file user_proc)
+  (let ([temp_dir #f])
+    (dynamic-wind
+        (lambda ()
+          (set! temp_dir (make-temporary-file "ziptmp~a" 'directory ".")))
+        (lambda ()
+          (let ([directory_entries (read-zip-directory zip_file)])
+            (unzip-entry 
+             zip_file
+             directory_entries 
+             (path->zip-path entry_file) 
+             (make-filesystem-entry-reader #:dest temp_dir #:exists 'replace))
+            (user_proc (build-path temp_dir entry_file))))
+        (lambda ()
+          (delete-directory/files temp_dir)))))
+
+(define (with-unzip zip_file user_proc)
+  (let ([temp_dir #f])
+    (dynamic-wind
+        (lambda ()
+          (set! temp_dir (make-temporary-file "ziptmp~a" 'directory ".")))
+        (lambda ()
+          (unzip zip_file (make-filesystem-entry-reader #:dest temp_dir #:exists 'replace))
+          (user_proc temp_dir))
+        (lambda ()
+          (delete-directory/files temp_dir)))))
+
