@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; This module provides compatibility macros for no-check mode
+
 (require
  (except-in typed-racket/base-env/prims
             require/typed require/opaque-type require-typed-struct)
@@ -24,22 +26,14 @@
     #:attributes (nm ty)
     (pattern [nm:opt-rename ty]))
   (define-syntax-class struct-clause
-    ;#:literals (struct)
     #:attributes (nm (body 1) (opts 1))
     (pattern [(~or #:struct (~datum struct)) nm:opt-rename (body ...)
               opts:struct-option ...]))
   (define-syntax-class opaque-clause
-    ;#:literals (opaque)
     #:attributes (ty pred opt)
-    (pattern [#:opaque ty:id pred:id]
+    (pattern [(~or #:opaque (~datum opaque)) ty:id pred:id]
              #:with opt #'())
-    (pattern [#:opaque ty:id pred:id #:name-exists]
-             #:with opt #'(#:name-exists))
-    (pattern [opaque ty:id pred:id]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
-             #:with opt #'())
-    (pattern [opaque ty:id pred:id #:name-exists]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or #:opaque (~datum opaque)) ty:id pred:id #:name-exists]
              #:with opt #'(#:name-exists)))
   (define-splicing-syntax-class struct-option
     (pattern (~seq #:constructor-name cname:id))
