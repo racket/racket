@@ -25,11 +25,16 @@
   (define-syntax-class struct-clause
     ;#:literals (struct)
     #:attributes (nm (body 1))
+    (pattern [#:struct nm:opt-rename (body ...)])
     (pattern [struct nm:opt-rename (body ...)]
              #:fail-unless (eq? 'struct (syntax-e #'struct)) #f))
   (define-syntax-class opaque-clause
     ;#:literals (opaque)
     #:attributes (ty pred opt)
+    (pattern [#:opaque ty:id pred:id]
+             #:with opt #'())
+    (pattern [#:opaque ty:id pred:id #:name-exists]
+             #:with opt #'(#:name-exists))
     (pattern [opaque ty:id pred:id]
              #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
              #:with opt #'())
