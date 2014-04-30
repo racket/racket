@@ -236,6 +236,7 @@
     (one-mz-test "embed-me1c.rkt" "This is 1c\n" #f)
     (one-mz-test "embed-me1d.rkt" "This is 1d\n" #f)
     (one-mz-test "embed-me1e.rkt" "This is 1e\n" #f)
+    (one-mz-test "embed-me1f.rkt" "This is 1f\n" #f)
     (one-mz-test "embed-me2.rkt" "This is 1\nThis is 2: #t\n" #t)
     (one-mz-test "embed-me13.rkt" "This is 14\n" #f)
     (one-mz-test "embed-me14.rkt" "This is 14\n" #f)

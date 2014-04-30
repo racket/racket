@@ -599,8 +599,9 @@ tools like the executable creator can also arrange (by colluding with
 substituted in a generated executable. If @racket[expr] produces an
 absolute path, it is normally returned directly, but again may be
 replaced by an executable creator. In all cases, the executable
-creator preserves the relative locations of all paths.  When
-@racket[expr] produces a relative or absolute path, then the path
+creator preserves the relative locations of all paths within a given
+@tech{package} (treating paths outside of any package as being together).
+When @racket[expr] produces a relative or absolute path, then the path
 bound to @racket[id] is always an absolute path.
 
 If @racket[expr] produces a list of the form @racket[(list 'lib _str
@@ -691,6 +692,8 @@ In the latter two cases, the path is normally preserved in
 (platform-specific) byte form, but if the enclosing path corresponds to a
 result of @racket[collection-file-path], then the path is record as
 relative to the corresponding module path.
+
+@history[#:changed "6.0.1.6" @elem{Preserve relative paths only within a package.}]
 
 Examples:
 
