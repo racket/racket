@@ -63,27 +63,30 @@
          (fail! S T))
        (make-c S (or var X) T))]))
 
-(define (cset-meet x y)
-  (match* (x y)
-   [((struct cset (maps1)) (struct cset (maps2)))
-    (let ([maps (filter values
-                        (for*/list
-                         ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
-                          [(map2 dmap2) (in-pairs (remove-duplicates maps2))])
-                         (with-handlers ([exn:infer? (lambda (_) #f)])
-                           (cons
-                            (hash-union map1 map2 #:combine c-meet)
-                            (dmap-meet dmap1 dmap2)))))])
-      (when (null? maps)
-        (fail! maps1 maps2))
-      (make-cset maps))]
-   [(_ _) (int-err "Got non-cset: ~a ~a" x y)]))
+(define cset-meet
+  (case-lambda
+    [() (empty-cset null null)]
+    [(x) x]
+    [(x y)
+     (match* (x y)
+      [((struct cset (maps1)) (struct cset (maps2)))
+       (let ([maps (filter values
+                           (for*/list
+                            ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
+                             [(map2 dmap2) (in-pairs (remove-duplicates maps2))])
+                            (with-handlers ([exn:infer? (lambda (_) #f)])
+                              (cons
+                               (hash-union map1 map2 #:combine c-meet)
+                               (dmap-meet dmap1 dmap2)))))])
+         (when (null? maps)
+           (fail! maps1 maps2))
+         (make-cset maps))]
+      [(_ _) (int-err "Got non-cset: ~a ~a" x y)])]
+    [(x y . z)
+     (apply cset-meet (cset-meet x y) z)]))
 
 (define (cset-meet* args)
-  (for/fold ([c (make-cset (list (cons (make-immutable-hash null)
-                                       (make-dmap (make-immutable-hash null)))))])
-    ([a (in-list args)])
-    (cset-meet a c)))
+  (apply cset-meet args))
 
 (define (cset-combine l)
   (let ([mapss (map cset-maps l)])

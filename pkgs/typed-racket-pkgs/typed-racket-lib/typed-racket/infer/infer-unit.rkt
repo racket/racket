@@ -173,8 +173,8 @@
     [(e e) (empty-cset X Y)]
     [(e (Top:)) (empty-cset X Y)]
     ;; FIXME - is there something to be said about the logical ones?
-    [((TypeFilter: s p i) (TypeFilter: t p i)) (cset-meet (cgen V X Y s t) (cgen V X Y t s))]
-    [((NotTypeFilter: s p i) (NotTypeFilter: t p i)) (cset-meet (cgen V X Y s t) (cgen V X Y t s))]
+    [((TypeFilter: s p i) (TypeFilter: t p i)) (cgen/inv V X Y s t)]
+    [((NotTypeFilter: s p i) (NotTypeFilter: t p i)) (cgen/inv V X Y s t)]
     [(_ _) (fail! s t)]))
 
 ;; s and t must be *latent* filter sets
@@ -201,11 +201,11 @@
     ;; the simplest case - no rests, drests, keywords
     [((arr: ss s #f #f '())
       (arr: ts t #f #f '()))
-     (cset-meet* (list
-                  ;; contravariant
-                  (cgen/list V X Y ts ss)
-                  ;; covariant
-                  (cg s t)))]
+     (cset-meet
+       ;; contravariant
+       (cgen/list V X Y ts ss)
+       ;; covariant
+       (cg s t))]
     ;; just a rest arg, no drest, no keywords
     [((arr: ss s s-rest #f '())
       (arr: ts t t-rest #f '()))
@@ -220,7 +220,7 @@
               ;; no rest arg on the left, or wrong number = fail
               [else (fail! s-arr t-arr)])]
            [ret-mapping (cg s t)])
-       (cset-meet* (list arg-mapping ret-mapping)))]
+       (cset-meet arg-mapping ret-mapping))]
     ;; dotted on the left, nothing on the right
     [((arr: ss s #f (cons dty dbound) '())
       (arr: ts t #f #f                '()))
@@ -258,8 +258,7 @@
      (let* ([arg-mapping (cgen/list V X Y ts ss)]
             [darg-mapping (cgen V X Y t-dty s-dty)]
             [ret-mapping (cg s t)])
-       (cset-meet*
-        (list arg-mapping darg-mapping ret-mapping)))]
+       (cset-meet arg-mapping darg-mapping ret-mapping))]
     ;; bounds are different
     [((arr: ss s #f (cons s-dty (? (λ (db) (memq db Y)) dbound))  '())
       (arr: ts t #f (cons t-dty dbound*) '()))
@@ -269,8 +268,7 @@
             ;; just add dbound as something that can be constrained
             [darg-mapping (move-dotted-rest-to-dmap (cgen V (cons dbound X) Y t-dty s-dty) dbound)]
             [ret-mapping (cg s t)])
-       (cset-meet*
-        (list arg-mapping darg-mapping ret-mapping)))]
+       (cset-meet arg-mapping darg-mapping ret-mapping))]
     [((arr: ss s #f (cons s-dty dbound)  '())
       (arr: ts t #f (cons t-dty (? (λ (db) (memq db Y)) dbound*)) '()))
      (unless (= (length ss) (length ts)) (fail! ss ts))
@@ -278,8 +276,7 @@
             ;; just add dbound as something that can be constrained
             [darg-mapping (move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y t-dty s-dty) dbound*)]
             [ret-mapping (cg s t)])
-       (cset-meet*
-        (list arg-mapping darg-mapping ret-mapping)))]
+       (cset-meet arg-mapping darg-mapping ret-mapping))]
     ;; * <: ...
     [((arr: ss s s-rest #f                  '())
       (arr: ts t #f     (cons t-dty dbound) '()))
@@ -290,7 +287,7 @@
          (let* ([arg-mapping (cgen/list V X Y ts (extend ts ss s-rest))]
                 [darg-mapping (move-rest-to-dmap (cgen V (cons dbound X) Y t-dty s-rest) dbound)]
                 [ret-mapping (cg s t)])
-           (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
+           (cset-meet arg-mapping darg-mapping ret-mapping))
          ;; the hard case
          (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
                 [new-tys  (for/list ([var (in-list vars)])
@@ -316,7 +313,7 @@
             (let* ([arg-mapping (cgen/list V X Y (extend ss ts t-rest) ss)]
                    [darg-mapping (move-rest-to-dmap (cgen V (cons dbound X) Y t-rest s-dty) dbound #:exact #t)]
                    [ret-mapping (cg s t)])
-              (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
+              (cset-meet arg-mapping darg-mapping ret-mapping))]
            [else
              (fail! s-arr t-arr)])]
     [(_ _) (fail! s-arr t-arr)]))
@@ -327,9 +324,13 @@
    (for/list ([s (in-list flds-s)] [t (in-list flds-t)])
      (match* (s t)
        ;; mutable - invariant
-       [((fld: s _ #t) (fld: t _ #t)) (cset-meet (cgen V X Y s t) (cgen V X Y t s))]
+       [((fld: s _ #t) (fld: t _ #t)) (cgen/inv V X Y s t)]
        ;; immutable - covariant
        [((fld: s _ #f) (fld: t _ #f)) (cgen V X Y s t)]))))
+
+(define (cgen/inv V X Y s t)
+  (cset-meet (cgen V X Y s t) (cgen V X Y t s)))
+
 
 ;; V : a set of variables not to mention in the constraints
 ;; X : the set of type variables to be constrained
@@ -346,6 +347,9 @@
   (define/cond-contract (cg S T)
    (Type/c Type/c . -> . cset?)
    (cgen V X Y S T))
+  (define/cond-contract (cg/inv S T)
+   (Type/c Type/c . -> . cset?)
+   (cgen/inv V X Y S T))
   ;; this places no constraints on any variables in X
   (define empty (empty-cset X Y))
   ;; this constrains just x (which is a single var)
@@ -370,9 +374,9 @@
           ;; check each element
           [((Result: s f-s o-s)
             (Result: t f-t o-t))
-           (cset-meet* (list (cg s t)
-                             (cgen/filter-set V X Y f-s f-t)
-                             (cgen/object V X Y o-s o-t)))]
+           (cset-meet (cg s t)
+                      (cgen/filter-set V X Y f-s f-t)
+                      (cgen/object V X Y o-s o-t))]
 
           ;; values are covariant
           [((Values: ss) (Values: ts))
@@ -505,7 +509,7 @@
           ;; To check that mutable pair is a sequence we check that the cdr is
           ;; both an mutable list and a sequence
           [((MPair: t1 t2) (Sequence: (list t*)))
-           (cset-meet* (list (cg t1 t*) (cg t2 T) (cg t2 (Un (-val null) (make-MPairTop)))))]
+           (cset-meet (cg t1 t*) (cg t2 T) (cg t2 (Un (-val null) (make-MPairTop))))]
           [((List: ts) (Sequence: (list t*)))
            (cset-meet* (for/list ([t (in-list ts)])
                          (cg t t*)))]
@@ -619,24 +623,24 @@
           ;; Invariant here because struct types aren't subtypes just because the
           ;; structs are (since you can make a constructor from the type).
           [((StructType: s) (StructType: t))
-           (cset-meet (cg s t) (cg t s))]
+           (cg/inv s t)]
 
           ;; vectors are invariant - generate constraints *both* ways
           [((Vector: e) (Vector: e*))
-           (cset-meet (cg e e*) (cg e* e))]
+           (cg/inv e e*)]
           ;; boxes are invariant - generate constraints *both* ways
           [((Box: e) (Box: e*))
-           (cset-meet (cg e e*) (cg e* e))]
+           (cg/inv e e*)]
           [((MPair: s t) (MPair: s* t*))
-           (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
+           (cset-meet (cg/inv s s*) (cg/inv t t*))]
           [((Channel: e) (Channel: e*))
-           (cset-meet (cg e e*) (cg e* e))]
+           (cg/inv e e*)]
           [((ThreadCell: e) (ThreadCell: e*))
-           (cset-meet (cg e e*) (cg e* e))]
+           (cg/inv e e*)]
           [((Continuation-Mark-Keyof: e) (Continuation-Mark-Keyof: e*))
-           (cset-meet (cg e e*) (cg e* e))]
+           (cg/inv e e*)]
           [((Prompt-Tagof: s t) (Prompt-Tagof: s* t*))
-           (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
+           (cset-meet (cg/inv s s*)  (cg/inv t t*))]
           [((Promise: e) (Promise: e*))
            (cg e e*)]
           [((Ephemeron: e) (Ephemeron: e*))
@@ -671,7 +675,7 @@
           ;; we assume all HTs are mutable at the moment
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant
-           (cset-meet* (list (cg t1 s1) (cg s1 t1) (cg t2 s2) (cg s2 t2)))]
+           (cset-meet (cg/inv s1 t1) (cg/inv s2 t2))]
           ;; syntax is covariant
           [((Syntax: s1) (Syntax: s2))
            (cg s1 s2)]
