@@ -20,7 +20,7 @@
    (define-syntaxes (fail!)
      (syntax-rules ()
        [(_ s t) (raise (list fail-sym s t))]))
-   [cond-contracted cset-meet (cset? cset? . -> . cset?)]
+   [cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . cset?)]
    [cond-contracted cset-meet* ((listof cset?) . -> . cset?)]
    no-constraint
    [cond-contracted empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
