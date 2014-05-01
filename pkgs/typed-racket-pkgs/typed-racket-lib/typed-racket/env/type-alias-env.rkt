@@ -19,7 +19,7 @@
 (define the-mapping
   (make-free-id-table))
 
-(define (mapping-put! id v) (dict-set! the-mapping id v))
+(define (mapping-put! id v) (free-id-table-set! the-mapping id v))
 
 ;(trace mapping-put!)
 
@@ -33,16 +33,16 @@
   (mapping-put! id (make-resolved ty)))
 
 (define (lookup-type-alias id parse-type [k (lambda () (tc-error "Unknown type alias: ~a" (syntax-e id)))])
-  (let/ec return
-    (match (dict-ref the-mapping id (lambda () (return (k))))
-      [(struct unresolved (stx #f))
-       (resolve-type-alias id parse-type)]
-      [(struct unresolved (stx #t))
-       (tc-error/stx stx "Recursive Type Alias Reference")]
-      [(struct resolved (t)) t])))
+  (match (free-id-table-ref the-mapping id #f)
+    [#f (k)]
+    [(struct unresolved (stx #f))
+     (resolve-type-alias id parse-type)]
+    [(struct unresolved (stx #t))
+     (tc-error/stx stx "Recursive Type Alias Reference")]
+    [(struct resolved (t)) t]))
 
 (define (resolve-type-alias id parse-type)
-  (define v (dict-ref the-mapping id))
+  (define v (free-id-table-ref the-mapping id))
   (match v
     [(struct unresolved (stx _))
      (set-unresolved-in-process! v #t)
@@ -53,7 +53,7 @@
      t]))
 
 (define (resolve-type-aliases parse-type)
-  (for ([(id _) (in-dict the-mapping)])
+  (for ([id (in-dict-keys the-mapping)])
     (resolve-type-alias id parse-type)))
 
 ;; map over the-mapping, producing a list

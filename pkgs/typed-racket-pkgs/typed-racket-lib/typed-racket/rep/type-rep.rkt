@@ -615,19 +615,29 @@
 
 (define ((sub-pe st) e)
   (pathelem-case (#:Type st
-                  #:PathElem (sub-pe st))
+                         #:PathElem (sub-pe st))
                  e))
 
 ;; abstract-many : Names Type -> Scope^n
 ;; where n is the length of names
 (define (abstract-many names ty)
-  (define (nameTo name count type)
+  ;; mapping : dict[Type -> Natural]
+  (define (nameTo mapping type)
     (let loop ([outer 0] [ty type])
       (define (sb t) (loop outer t))
+      ;; transform : Name (Integer -> a) a -> a
+      ;; apply `mapping` to `name*`, returning `default` if it's not there
+      ;; use `f` to wrap the result
+      ;; note that this takes into account the value of `outer`
+      (define (transform name* f default)
+        (cond [(assq name* mapping)
+               => (λ (pr)
+                    (f (+ (cdr pr) outer)))]
+              [else default]))
       (type-case
-       (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
+        (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
        ty
-       [#:F name* (if (eq? name name*) (*B (+ count outer)) ty)]
+       [#:F name* (transform name* *B ty)]
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
@@ -637,16 +647,17 @@
                     (if rest (sb rest) #f)
                     (if drest
                         (cons (sb (car drest))
-                              (if (eq? (cdr drest) name) (+ count outer) (cdr drest)))
+                              (let ([c (cdr drest)])
+                                 (transform c values c)))
                         #f)
                     (map sb kws))]
        [#:ValuesDots rs dty dbound
               (*ValuesDots (map sb rs)
                            (sb dty)
-                           (if (eq? dbound name) (+ count outer) dbound))]
+                           (transform dbound values dbound))]
        [#:ListDots dty dbound
                    (*ListDots (sb dty)
-                              (if (eq? dbound name) (+ count outer) dbound))]
+                              (transform dbound values dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyRow constraints body*
                   (let ([body (remove-scopes 1 body*)])
@@ -658,28 +669,33 @@
        [#:Poly n body*
                (let ([body (remove-scopes n body*)])
                  (*Poly n (add-scopes n (loop (+ n outer) body))))])))
-  (let ([n (length names)])
-    (let loop ([ty ty] [names names] [count (sub1 n)])
-      (if (zero? count)
-          (add-scopes n (nameTo (car names) 0 ty))
-          (loop (nameTo (car names) count ty)
-                (cdr names)
-                (sub1 count))))))
+  (define n (length names))
+  (define mapping (for/list ([nm (in-list names)]
+                             [i (in-range n 0 -1)])
+                    (cons nm (sub1 i))))
+  (add-scopes n (nameTo mapping ty)))
 
 ;; instantiate-many : List[Type] Scope^n -> Type
 ;; where n is the length of types
 ;; all of the types MUST be Fs
 (define (instantiate-many images sc)
-  (define (replace image count type)
+  ;; mapping : dict[Natural -> Type]
+  (define (replace mapping type)
     (let loop ([outer 0] [ty type])
+      ;; transform : Integer (Name -> a) a -> a
+      ;; apply `mapping` to `idx`, returning `default` if it's not there
+      ;; use `f` to wrap the result
+      ;; note that this takes into account the value of `outer`
+      (define (transform idx f default)
+        (cond [(assf (lambda (v) (eqv? (+ v outer) idx)) mapping)
+               => (lambda (pr) (f (cdr pr)))]
+              [else default]))
       (define (sb t) (loop outer t))
       (define sf (sub-f sb))
       (type-case
        (#:Type sb #:Filter sf #:Object (sub-o sb))
        ty
-       [#:B idx (if (= (+ count outer) idx)
-                    image
-                    ty)]
+       [#:B idx (transform idx values ty)]
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
@@ -689,16 +705,16 @@
                     (if rest (sb rest) #f)
                     (if drest
                         (cons (sb (car drest))
-                              (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
+                              (transform (cdr drest) F-n (cdr drest)))
                         #f)
                     (map sb kws))]
        [#:ValuesDots rs dty dbound
                      (*ValuesDots (map sb rs)
                                   (sb dty)
-                                  (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
+                                  (transform dbound F-n dbound))]
        [#:ListDots dty dbound
                    (*ListDots (sb dty)
-                              (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
+                              (transform dbound F-n dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyRow constraints body*
                   (let ([body (remove-scopes 1 body*)])
@@ -709,13 +725,11 @@
        [#:Poly n body*
                (let ([body (remove-scopes n body*)])
                  (*Poly n (add-scopes n (loop (+ n outer) body))))])))
-  (let ([n (length images)])
-    (let loop ([ty (remove-scopes n sc)] [images images] [count (sub1 n)])
-      (if (zero? count)
-          (replace (car images) 0 ty)
-          (loop (replace (car images) count ty)
-                (cdr images)
-                (sub1 count))))))
+  (define n (length images))
+  (define mapping (for/list ([img (in-list images)]
+                             [i (in-range n 0 -1)])
+                    (cons (sub1 i) img)))
+  (replace mapping (remove-scopes n sc)))
 
 (define (abstract name ty)
   (abstract-many (list name) ty))

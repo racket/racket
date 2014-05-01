@@ -45,17 +45,9 @@
 
 ;; syntax? -> (listof def-binding?)
 (define (tc-toplevel/pass1 form)
-  #; ;; pass1 is fast
-  (do-time (format "pass1 ~a line ~a"
-                   (if #t
-                       (substring (~a (syntax-source form))
-                                  (max 0 (- (string-length (~a (syntax-source form))) 20)))
-                       (syntax-source form))
-                   (syntax-line form)))
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-values #%plain-app begin define-syntaxes)
-      ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
       [(~or _:ignore^ _:ignore-some^)

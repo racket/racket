@@ -11,7 +11,7 @@
 
 (define (V-in? V . ts)
   (for/or ([e (in-list (append* (map fv ts)))])
-          (memq e V)))
+    (memq e V)))
 
 ;; get-filters : SomeValues -> FilterSet
 ;; extract filters out of the range of a function type
