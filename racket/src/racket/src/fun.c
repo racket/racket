@@ -2865,6 +2865,23 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_object_name(Scheme_Object *a)
 {
+  Scheme_Object *v;
+
+  v = scheme_struct_type_property_ref(scheme_object_name_property, a);
+
+  if (v) {
+    if (SCHEME_INTP(v))
+      return scheme_struct_ref(a, SCHEME_INT_VAL(v));
+    if (SCHEME_PROCP(v)) {
+      if (scheme_check_proc_arity(NULL, 1, 0, 1, &v)) {
+        Scheme_Object *f = v, *arg[1];
+        
+        arg[0] = a;
+        return scheme_apply(f, 1, arg);
+      }
+    }
+  }
+
   if (SCHEME_CHAPERONEP(a))
     a = SCHEME_CHAPERONE_VAL(a);
 

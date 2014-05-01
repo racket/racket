@@ -529,6 +529,7 @@ extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 extern Scheme_Object *scheme_cpointer_property;
 
 extern Scheme_Object *scheme_equal_property;
+extern Scheme_Object *scheme_object_name_property;
 extern Scheme_Object *scheme_impersonator_of_property;
 
 extern Scheme_Object *scheme_app_mark_impersonator_property;

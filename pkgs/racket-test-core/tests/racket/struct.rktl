@@ -1101,6 +1101,25 @@
     (err/rt-test (f))))
 
 ;; ----------------------------------------
+;; Test `prop:object-name`:
+
+(let ()
+  (struct x1 (v) #:property prop:object-name 0)
+  (struct x2 (v) #:property prop:object-name
+          (lambda (s) 'name))
+  (struct x3 (v) #:property prop:object-name
+          (lambda (s) (x3-v s)))
+  (test 'x object-name (x1 'x))
+  (test 'name object-name (x2 'x))
+  (test "x" object-name (x3 "x"))
+  (err/rt-test (let () (struct x1 (v) #:property prop:object-name 1) 0))
+  (err/rt-test (let () (struct x0 (w)) (struct x1 x0 () #:property prop:object-name 0) 0))
+  (err/rt-test (let () (struct x1 (v) #:property prop:object-name (lambda () 0)) 0))
+  (err/rt-test (let () (struct x1 (v) #:property prop:object-name (lambda (a b) 0)) 0))
+  (err/rt-test (let () (struct x1 (v) #:mutable #:property prop:object-name 0) 0)))
+
+
+;; ----------------------------------------
 ;; Check interaction of `struct-type-info` and GC:
 
 (struct-type-info struct:arity-at-least)
