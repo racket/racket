@@ -288,6 +288,12 @@ The type @racket[(Discrete-Dist A)] is a subtype of @racket[(dist A A)]. This me
 distribution objects are unordered, and thus have only a @tech{pdf} and a procedure to generate
 random samples.
 
+Note, however, that the @racket[discrete-dist-values] and @racket[discrete-dist-probs] functions
+produce lists that may be paired; that is, if the result of calling @racket[discrete-dist-values]
+on a given distribution produces a list whose third element is @racket['a], and the result of calling
+@racket[discrete-dist-probs] on the same distribution produces a list whose third element is @racket[0.25],
+then the given distribution associates the probability @racket[0.25] with the value @racket['a].
+
 @examples[#:eval untyped-eval
                  (define xs '(a b c))
                  (define d (discrete-dist xs '(2 5 3)))
