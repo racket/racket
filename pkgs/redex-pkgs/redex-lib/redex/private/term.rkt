@@ -54,14 +54,14 @@
                   (loop (term-id-prev-id slv))
                   (values (language-id-nts ls 'term)
                           (language-id-nt-identifiers ls 'term)))))
-          #`(term/nts t #,lang-nts #,lang-nt-ids)]
+          (quasisyntax/loc stx (term/nts t #,lang-nts #,lang-nt-ids))]
          [else
-          #'(term/nts t #f #f)]))]))
+          (syntax/loc stx (term/nts t #f #f))]))]))
 
 (define-syntax (term/nts stx)
   (syntax-case stx ()
     [(_ arg nts nt-ids)
-     #'(#%expression (term/private arg nts nt-ids))]))
+     (syntax/loc stx (#%expression (term/private arg nts nt-ids)))]))
 
 (define-for-syntax current-id-stx-table (make-parameter #f))
 
@@ -81,7 +81,7 @@
 (define-syntax (mf-apply stx)
   (syntax-case stx ()
     [(_ mf)
-     #'(λ (x) (mf x))]))
+     (quasisyntax/loc stx (λ (x) #,(syntax/loc stx (mf x))))]))
 
 (define-syntax (jf-apply stx)
   (syntax-case stx ()
@@ -125,13 +125,13 @@
     (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f)])
       rewritten))
   
-  (define (rewrite-application fn args depth)
+  (define (rewrite-application fn args depth srcloc-stx)
     (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
           (let loop ([func (if (judgment-form-id? #'fn)
-                               (syntax (jf-apply fn))
-                               (syntax (mf-apply fn)))]
+                               (syntax/loc srcloc-stx (jf-apply fn))
+                               (syntax/loc srcloc-stx (mf-apply fn)))]
                      [args-stx rewritten]
                      [res result-id]
                      [args-depth (min depth max-depth)])
@@ -144,7 +144,7 @@
                           (cons (syntax [res (func (quasidatum args))])
                                 outer-bindings))
                     (values result-id (min depth max-depth)))
-                  (loop (syntax (mf-map func))
+                  (loop (syntax (begin (mf-map func)))
                         (syntax/loc args-stx (args (... ...)))
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
@@ -161,7 +161,7 @@
          (free-identifier-mapping-put! applied-metafunctions 
                                        (datum->syntax f (syntax-e f) #'metafunc-name)
                                        #t)
-         (rewrite-application f (syntax/loc stx (arg ...)) depth))]
+         (rewrite-application f (syntax/loc stx (arg ...)) depth stx))]
       [(jf-name arg ...)
        (and (identifier? (syntax jf-name))
             (if names
@@ -173,7 +173,7 @@
            (raise-syntax-error 'term 
                                "judgment forms with output mode (\"O\") positions disallowed"
                                arg-stx stx))
-         (rewrite-application #'jf-name (syntax/loc stx (arg ...)) depth))]
+         (rewrite-application #'jf-name (syntax/loc stx (arg ...)) depth stx))]
       [f
        (and (identifier? (syntax f))
             (if names
@@ -222,7 +222,7 @@
       [(unquote-splicing . x)
        (raise-syntax-error 'term "malformed unquote splicing" arg-stx stx)]
       [(in-hole id body)
-       (rewrite-application (syntax (λ (x) (apply plug x))) (syntax/loc stx (id body)) depth)]
+       (rewrite-application (syntax (λ (x) (apply plug x))) (syntax/loc stx (id body)) depth stx)]
       [(in-hole . x)
        (raise-syntax-error 'term "malformed in-hole" arg-stx stx)]
       [hole (values (syntax (undatum the-hole)) 0)]
