@@ -3,13 +3,17 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides constants and functions for specifying the shape of clauses in big-bang and universe 
 
-(provide nat> nat? proc> bool> num> ip> string> symbol> string-or-symbol> any> K False True)
+(provide port> nat> nat? proc> bool> num> ip> string> symbol> string-or-symbol> any> K False True)
 
 (require htdp/error "check-aux.rkt")
 
 (define (K w . r) w)
 (define (False w) #f)
 (define (True w) #t)
+
+;; Symbol X -> X : nat?
+(define (port> tag x)
+  (nat> tag x "port"))
 
 ;; Symbol X -> X : boolean? 
 (define (bool> tag x)

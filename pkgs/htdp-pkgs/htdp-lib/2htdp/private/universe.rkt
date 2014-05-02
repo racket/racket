@@ -58,6 +58,7 @@
        universe0         ;; the initial state of the universe
        on-new            ;; Universe World -> Result
        on-msg            ;; Universe World Message -> Result
+       port              ;; Number
        ;; tick              ;; Universe -> Result
        (state #f)        ;; Boolean 
        (on-disconnect    ;; Universe World -> Result
@@ -157,7 +158,7 @@
           ;;; WHERE 
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
-              (tcp-listen SQPORT 4 #t)))
+              (tcp-listen port 4 #t)))
           ;; (list IPort OPort) -> Void 
           (define (add-iworld in-out)
             (define in (first in-out))
