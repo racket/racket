@@ -27,7 +27,7 @@
          ;; 
          (only-in "private/launch-many-worlds.rkt" launch-many-worlds launch-many-worlds/proc)
          (only-in "private/stop.rkt" make-stop-the-world)
-         (only-in "private/check-aux.rkt" sexp?)
+         (only-in "private/check-aux.rkt" sexp? SQPORT)
          (only-in "private/pad.rkt" pad-event? pad=?)
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
@@ -74,7 +74,10 @@
   [state DEFAULT #'#f (expr-with-check any> "expected a boolean or a string")]
   ;; Any -> Boolean 
   ;; -- check-with: all states should specify this predicate 
-  [check-with DEFAULT #'True (function-with-arity 1)])
+  [check-with DEFAULT #'True (function-with-arity 1)]
+  ;; Natural
+  ;; -- port: specify the port to use
+  [port DEFAULT #'SQPORT (expr-with-check port> "expected a port number")])
 
 ;  (create-world world0)
 (define-keywords WldSpec AllSpec create-world
