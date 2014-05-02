@@ -1592,7 +1592,8 @@ place_async_channel_val {
   gcMARK2(pac->msg_chains, gc);
   gcMARK2(pac->wakeup_signal, gc);
 
-  /* mark master-allocated objects within each messages: */
+  /* mark master-allocated objects within each messages; the
+     raw pairs that form the list are embedded in each message block */
   j = pac->out;
   sz = pac->size;
   for (i = pac->count; i--; ) {

@@ -3012,11 +3012,12 @@ Scheme_Place_Async_Channel *place_async_channel_create() {
 #endif
 
   ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Async_Channel));
+  ch->so.type = scheme_place_async_channel_type;
+
   msgs = GC_master_malloc(sizeof(Scheme_Object*) * 8);
   msg_memory = GC_master_malloc(sizeof(void*) * 8);
   msg_chains = GC_master_malloc(sizeof(Scheme_Object*) * 8);
 
-  ch->so.type = scheme_place_async_channel_type;
   ch->in = 0;
   ch->out = 0;
   ch->count = 0;
@@ -3186,6 +3187,8 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   int cnt;
 
   o = places_serialize(uo, &msg_memory, &master_chain, &invalid_object);
+  /* uo needs to stay live until `master_chain` is registered in `ch` */
+
   if (!o) {
     if (invalid_object) {
       scheme_contract_error("place-channel-put",
@@ -3244,6 +3247,9 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
 
     maybe_report_message_size(ch);
   }
+
+  /* make sure `uo` is treated as live until here: */
+  if (!uo) scheme_signal_error("?");
 
   {
     intptr_t msg_size;
