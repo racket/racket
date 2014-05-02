@@ -1563,7 +1563,7 @@ place_async_channel_val {
       gcMARK2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
  size:
