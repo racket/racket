@@ -62,6 +62,7 @@
 
          nat/e
          range/e
+         slice/e
          nat+/e
 
          ;; Base type enumerators
@@ -89,7 +90,7 @@
   (if (and (< n (enum-size e))
            (>= n 0))
       ((enum-from e) n)
-      (redex-error 'decode "Index into enumerator out of range")))
+      (redex-error 'decode "Index into enumerator out of range. Tried to decode ~s in an enum of size ~s" n (size e))))
 
 ;; encode : enum a, a -> Nat
 (define/contract (encode e a)
@@ -199,8 +200,8 @@
            (define n (encode e x))
            (unless (and (n . >= . lo)
                         (n . <  . hi))
-             (redex-error 'slice/e "attempted to encode an element removed by slice/e"))
-           n)))
+             (redex-error 'slice/e "attempted to encode an element removed by slice/e: ~s was excepted, originally ~s, but sliced between ~s and ~s" x n lo hi))
+           (n . - . lo))))
 
 ;; below/e
 (define (below/e n)
@@ -1029,9 +1030,8 @@
   (loop xs -1 '()))
 
 (define (tuple-constructors infs fins)
-  (define (get-size e-x) (size (car e-x)))
-  (define inf?s (inf-slots (map get-size infs)
-                           (map get-size fins)))
+  (define inf?s (inf-slots (map cdr infs)
+                           (map cdr fins)))
   (define (decon xs)
     (let loop ([xs xs]
                [inf-acc '()]
@@ -1105,40 +1105,41 @@
 
             (define layer/es
               (for/list ([prev-cur (in-list prev-cur-layers)])
-                (match prev-cur
-                  [(cons (list-layer prev-max
-                                     prev-tuple-max
-                                     prev-exhs
-                                     prev-inexhs)
-                         (list-layer cur-max
-                                     cur-tuple-max
-                                     cur-exhs
-                                     cur-inexhs))
-                   (define-values (decon recon)
-                     (tuple-constructors cur-inexhs cur-exhs))
+                (match-define (cons (list-layer prev-max
+                                                prev-tuple-max
+                                                prev-exhs
+                                                prev-inexhs)
+                                    (list-layer cur-max
+                                                cur-tuple-max
+                                                cur-exhs
+                                                cur-inexhs))
+                              prev-cur)
 
-                   (define k (length cur-inexhs))
-                   (define inexhs-lo (expt prev-tuple-max k))
-                   (define inexhs-hi (expt cur-tuple-max  k))
+                (define-values (decon recon)
+                  (tuple-constructors cur-inexhs cur-exhs))
 
-                   (define inxh-tups
-                     (for/list ([_ cur-inexhs])
-                       nat/e))
-                   
-                   (define layer/e
-                     (map/e
-                      recon
-                      decon
-                      (fin-cons/e
-                       (slice/e (apply box-list/e inxh-tups)
-                                inexhs-lo
-                                (add1 inexhs-hi))
-                       (mixed-box-tuples/e (map car cur-exhs)))))
-                   (list layer/e
-                         cur-max
-                         prev-max
-                         cur-tuple-max)])))
-            
+                (define k (length cur-inexhs))
+                (define inexhs-lo (expt prev-tuple-max k))
+                (define inexhs-hi (expt cur-tuple-max  k))
+
+                (define inxh-tups
+                  (for/list ([_ cur-inexhs])
+                    nat/e))
+
+                (define layer/e
+                  (map/e
+                   recon
+                   decon
+                   (fin-cons/e
+                    (slice/e (apply box-list/e inxh-tups)
+                             inexhs-lo
+                             inexhs-hi)
+                    (mixed-box-tuples/e (map car (sort cur-exhs < #:key cdr))))))
+                (list layer/e
+                      cur-max
+                      prev-max
+                      cur-tuple-max)))
+
             (define (dec n)
               (let/ec return
                 (for ([layer (in-list layer/es)])
@@ -1149,7 +1150,6 @@
                            _)
                      (when (n . < . max-index)
                        (return (decode e (n . - . min-index))))]))))
-            
 
             (define (enc tup)
               (define m (apply max tup))
@@ -1160,7 +1160,7 @@
                            _
                            min-index
                            max-max)
-                     (when (m . <= . max-max)
+                     (when (m . < . max-max)
                        (return (+ min-index (encode e tup))))]))))
 
             (enum (apply * (map size es))
@@ -1171,9 +1171,11 @@
   (-> (listof number?)
       (listof number?)
       any/c)
+  (define sorted-infs (sort infs <))
+  (define sorted-fins (sort fins <))
   (reverse
-   (let loop ([inf-is infs]
-              [fin-is fins]
+   (let loop ([inf-is sorted-infs]
+              [fin-is sorted-fins]
               [acc    '()])
      (match* (inf-is fin-is)
              [('() '()) acc]
