@@ -10,7 +10,8 @@
          racket/file
          racket/path
          setup/dirs
-         setup/doc-db)
+         setup/doc-db
+         version/utils)
 
 (provide check-package-dependencies)
 
@@ -37,6 +38,9 @@
   (define pkg-implies (make-hash)) ; for checking unused
   (define pkg-reps (make-hash)) ; for union-find on external deps
   (define mod-pkg (make-hash))
+  (define dup-mods (make-hash)) ; modules that are provided by multiple packages
+  (define pkg-version-deps (make-hash)) ; save version dependencies
+  (define pkg-versions (make-hash)) ; save declared versions
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
 
@@ -76,35 +80,64 @@
     rep-b-pkg)
 
   ;; ----------------------------------------
+  ;; Check whether another package has already declared a module:
+  (define (check-module-declaration mod pkg)
+    (let ([already-pkg (hash-ref mod-pkg mod #f)])
+      (when already-pkg
+        (setup-fprintf* (current-error-port) #f 
+                        (string-append
+                         "module provided by multiple packages:\n"
+                         "  module: ~s\n"
+                         "  providing package: ~s\n"
+                         "  other providing package: ~s\n")
+                        mod
+                        pkg
+                        already-pkg)
+        (hash-update! dup-mods mod 
+                      (lambda (ht)
+                        (hash-set (hash-set ht pkg #t) already-pkg #t))
+                      #hash()))))
+
+  ;; ----------------------------------------
   ;; Get a package's info, returning its deps and implies:
   (define (get-immediate-pkg-info! pkg)
     (define dir (pkg-directory pkg))
     (unless dir 
       (error 'check-dependencies "package not installed: ~s" pkg))
     ;; Get package information:
-    (define-values (checksum mods deps+build-deps)
+    (define-values (checksum mods deps+build-deps+vers)
       (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
                        #:namespace metadata-ns
                        #:extract-info (lambda (i)
-                                        (if (and i
-                                                 (or (i 'deps (lambda () #f))
-                                                     (i 'build-deps (lambda () #f))))
-                                            (cons
-                                             (extract-pkg-dependencies i 
-                                                                       #:build-deps? #f 
-                                                                       #:filter? #t)
-                                             (extract-pkg-dependencies i 
-                                                                       #:filter? #t))
-                                            #f))))
+                                        (cons
+                                         (if (and i
+                                                  (or (i 'deps (lambda () #f))
+                                                      (i 'build-deps (lambda () #f))))
+                                             (cons
+                                              (extract-pkg-dependencies i
+                                                                        #:build-deps? #f
+                                                                        #:filter? #t
+                                                                        #:versions? #t)
+                                              (extract-pkg-dependencies i
+                                                                        #:filter? #t
+                                                                        #:versions? #t))
+                                             #f)
+                                         (and i (i 'version (lambda () #f)))))))
+    (define vers (cdr deps+build-deps+vers))
+    (define deps+build-deps (car deps+build-deps+vers))
     (unless deps+build-deps
       (hash-set! skip-pkgs pkg #t)
       (setup-printf #f "package declares no dependencies: ~s" pkg))
-    (define deps (if deps+build-deps
-                     (filter-map package-source->name (cdr deps+build-deps))
-                     '()))
+    (define deps+vers (if deps+build-deps
+                          (filter-map (lambda (p)
+                                        (define n (package-source->name (car p)))
+                                        (and n (cons n (cadr p))))
+                                      (cdr deps+build-deps))
+                          '()))
+    (define deps (map car deps+vers))
     (define runtime-deps (if deps+build-deps
                              (list->set (filter-map package-source->name
-                                                    (car deps+build-deps)))
+                                                    (map car (car deps+build-deps))))
                              (set)))
     (define implies 
       (list->set (let ([i (get-info/full dir #:namespace metadata-ns)])
@@ -123,19 +156,25 @@
                           pkg
                           i))))
     (for ([mod (in-list mods)])
+      (check-module-declaration mod pkg)
       (hash-set! mod-pkg mod pkg))
     ;; Save immediate dependencies, initialize external dependencies:
     (hash-set! pkg-reps pkg pkg)
     (hash-set! pkg-immediate-deps pkg (list
                                        (set-add runtime-deps
                                                 pkg)
-                                       (set-add (list->set deps) 
+                                       (set-add (list->set deps)
                                                 pkg)))
+    (hash-set! pkg-version-deps pkg (for/list ([d (in-list deps+vers)]
+                                               #:when (cdr d))
+                                      d))
     (hash-set! pkg-external-deps pkg (set-add (set-intersect
                                                implies
                                                (set-add runtime-deps
                                                         'core))
                                               pkg))
+    (when vers
+      (hash-set! pkg-versions pkg vers))
     (when check-unused?
       (hash-set! pkg-implies pkg implies))
     (values deps implies))
@@ -402,6 +441,27 @@
         ;; Treat all (direct) documentation links as 'build mode:
         (register-or-check-docs #t pkg path coll-main?))))
 
+  ;; check version dependencies:
+  (hash-set! pkg-versions "racket" (version))
+  (define bad-version-dependencies
+    (for*/fold ([ht #hash()]) ([(pkg deps) (in-hash pkg-version-deps)]
+                               [d (in-list deps)])
+      (define dep-pkg (car d))
+      (define dep-vers (cdr d))
+      (define decl-vers (hash-ref pkg-versions dep-pkg "1.0"))
+      (cond
+       [(version<? decl-vers dep-vers)
+        (setup-fprintf* (current-error-port) #f 
+                        (string-append
+                         "package depends on newer version:\n"
+                         "  package: ~s\n"
+                         "  depends on package: ~s\n"
+                         "  depends on version: ~s\n"
+                         "  current package version: ~s")
+                        pkg dep-pkg dep-vers decl-vers)
+        (hash-update ht pkg (lambda (l) (cons d l)) null)]
+       [else ht])))
+
   (when check-unused?
     (for ([(pkg actuals) (in-hash pkg-actual-deps)])
       (define availables (hash-ref pkg-internal-deps pkg))
@@ -444,47 +504,72 @@
                        (if (= (hash-count unused) 1) "" "s")))))
   
   ;; Report result summary and (optionally) repair:
-  (unless (zero? (hash-count missing))
-    (setup-fprintf (current-error-port) #f 
-                   "--- summary of missing dependencies ---"))
-  (for ([pkg (in-list (sort (hash-keys missing) string<?))])
-    (define pkgs (hash-ref missing pkg))
-    (define modes '(run build))
-    (define pkgss (for/list ([mode modes])
-                    (sort
-                     (for/list ([(pkg pkg-mode) (in-hash pkgs)]
-                                #:when (eq? mode pkg-mode))
-                       (if (eq? pkg 'core)
-                           core-pkg
-                           pkg))
-                     string<?)))
-    (apply setup-fprintf* (current-error-port) #f 
-           (apply
-            string-append
-            "undeclared dependency detected\n"
-            "  for package: ~s"
-            (for/list ([pkgs (in-list pkgss)]
-                       [mode (in-list modes)]
-                       #:when (pair? pkgs))
-              (format "\n  on package~a~a:~~a"
-                      (if (null? (cdr pkgs)) "" "s")
-                      (case mode
-                        [(run) ""]
-                        [(build) " for build"]))))
-           pkg
-           (for/list ([pkgs (in-list pkgss)]
-                      [mode (in-list modes)]
-                      #:when (pair? pkgs))
+  (define all-ok? (and (zero? (hash-count missing))
+                       (zero? (hash-count dup-mods))
+                       (zero? (hash-count bad-version-dependencies))))
+  (unless all-ok?
+    (setup-fprintf (current-error-port) #f
+                   "--- summary of package problems ---")
+    (for ([(pkg deps) (in-hash bad-version-dependencies)])
+      (setup-fprintf* (current-error-port) #f
+                      (string-append
+                       "package depends on newer version:\n"
+                       "  package: ~s\n"
+                       "  needed package versions:~a")
+                      pkg
+                      (apply
+                       string-append
+                       (for/list ([dep (in-list deps)])
+                         (format "\n   ~s version ~s" (car dep) (cdr dep))))))
+    (for ([pkg (in-list (sort (hash-keys missing) string<?))])
+      (define pkgs (hash-ref missing pkg))
+      (define modes '(run build))
+      (define pkgss (for/list ([mode modes])
+                      (sort
+                       (for/list ([(pkg pkg-mode) (in-hash pkgs)]
+                                  #:when (eq? mode pkg-mode))
+                         (if (eq? pkg 'core)
+                             core-pkg
+                             pkg))
+                       string<?)))
+      (apply setup-fprintf* (current-error-port) #f
              (apply
               string-append
-              (for/list ([k (in-list pkgs)])
-                (format "\n   ~s" k)))))
-    (when fix?
-      (define info-path (build-path (pkg-directory pkg) "info.rkt"))
-      (setup-printf #f "repairing ~s..." info-path)
-      (fix-info-deps-definition info-path 'deps (car pkgss))
-      (fix-info-deps-definition info-path 'build-deps (cadr pkgss))))
-  (zero? (hash-count missing)))
+              "undeclared dependency detected\n"
+              "  for package: ~s"
+              (for/list ([pkgs (in-list pkgss)]
+                         [mode (in-list modes)]
+                         #:when (pair? pkgs))
+                (format "\n  on package~a~a:~~a"
+                        (if (null? (cdr pkgs)) "" "s")
+                        (case mode
+                          [(run) ""]
+                          [(build) " for build"]))))
+             pkg
+             (for/list ([pkgs (in-list pkgss)]
+                        [mode (in-list modes)]
+                        #:when (pair? pkgs))
+               (apply
+                string-append
+                (for/list ([k (in-list pkgs)])
+                  (format "\n   ~s" k)))))
+      (when fix?
+        (define info-path (build-path (pkg-directory pkg) "info.rkt"))
+        (setup-printf #f "repairing ~s..." info-path)
+        (fix-info-deps-definition info-path 'deps (car pkgss))
+        (fix-info-deps-definition info-path 'build-deps (cadr pkgss))))
+    (for ([(mod pkgs) (in-hash dup-mods)])
+      (setup-fprintf* (current-error-port) #f
+                      (string-append
+                       "module provided by multiple packages:\n"
+                       "  module: ~s\n"
+                       "  providing packages:~a")
+                      mod
+                      (apply
+                       string-append
+                       (for/list ([pkg (hash-keys pkgs)])
+                         (format "\n   ~s" pkg))))))
+  all-ok?)
 
 (define (fix-info-deps-definition info-path deps-id pkgs)
   (unless (null? pkgs)

@@ -170,11 +170,13 @@ flags:
  @item{@DFlag{avoid-main} --- refrain from any setup actions that
   affect the installation, as opposed to user-specific actions.}
 
- @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking whether dependencies among
-  libraries are properly reflected by package-level dependency
-  declarations. The check uses compiled bytecode and associated
-  @filepath{.dep} files, and it checks only files are setup against
-  only packages that include files that are setup.}
+ @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking
+  whether dependencies among libraries are properly reflected by
+  package-level dependency declarations, whether modules are declared
+  by multiple packages, and whether package version dependencies are
+  satisfied. Dependency checking uses compiled bytecode and associated
+  @filepath{.dep} files, and it checks only files that are setup
+  against only packages that include files that are setup.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
   mismatches by adjusting package @filepath{info.rkt} files (which makes
