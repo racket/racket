@@ -186,7 +186,6 @@
         (for/first ([start-skip-space (in-range (sub1 para-end) para-start -1)];;ignore the newline
                     #:when (not (member (send txt get-character start-skip-space)  (list #\space #\tab))))
           start-skip-space))))
-;;TODO: start-skip-spaces return false, test cases
 
 ;;(delete-end-spaces a-racket:text para) → void?
 ;;para : exact-integer? = paragraph(line) number
@@ -689,4 +688,3 @@
 
 (provide determine-spaces adjust-para-width paragraph-indentation
          surrogate%)
-;;sdsdsdsdsdsd
