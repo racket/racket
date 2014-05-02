@@ -238,10 +238,13 @@
              [open-paren-posi (send t get-forward-sexp first-char-posi)]);start from the first char after @
         (cond 
           [(equal? #\[ (send t get-character open-paren-posi))
-           (let* ([close-paren-posi (sub1 (send t get-forward-sexp open-paren-posi))]
-                  [start-line (send t position-paragraph open-paren-posi)]
-                  [end-line (send t position-paragraph close-paren-posi)])
-             (equal? start-line end-line))]
+           (let* ([close-paren-posi-plus-one (send t get-forward-sexp open-paren-posi)]
+                  [start-line (send t position-paragraph open-paren-posi)])
+             (if close-paren-posi-plus-one
+                 (let* ([close-paren-posi (sub1 close-paren-posi-plus-one)]
+                        [end-line (send t position-paragraph close-paren-posi)])
+                   (equal? start-line end-line))
+                 #f))]
           [(equal? #\{ (send t get-character open-paren-posi))
            (define key-word (send t get-text first-char-posi open-paren-posi))
            (if (member key-word key-words)
@@ -606,7 +609,7 @@
                   (send t insert "#lang scribble/base\n\n@itemlist[@item{aaa bbb ccc\n                eee fff\n          @item{ggg hhh iii\n  jjj kkk lll mmm nnn ooo\n  ppp qqq\nrrr\nsss ttt uuu vvv}}]")
                   (paragraph-indentation t 38 29)
                   (send t get-text))
-                 "#lang scribble/base\n\n@itemlist[@item{aaa bbb ccc\n           eee fff @item{ggg\n            hhh iii jjj kkk\n            lll mmm nnn ooo\n            ppp qqq rrr sss\n            ttt uuu vvv}}]")
+                "#lang scribble/base\n\n@itemlist[@item{aaa bbb ccc\n           eee fff @item{ggg\n            hhh iii jjj kkk\n            lll mmm nnn ooo\n            ppp qqq rrr sss\n            ttt uuu vvv}}]")
   
   (check-equal? (let ([t (new racket:text%)])
                   (send t insert "#lang scribble/base\naaa bbb\n @ccc ddd")
