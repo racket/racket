@@ -102,7 +102,7 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
       gcMARK2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
   return
@@ -127,7 +127,7 @@ static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
       gcFIXUP2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
   return
