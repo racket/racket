@@ -5,9 +5,10 @@
          racket/format
          racket/string
          racket/set
+         racket/path
          setup/getinfo
          pkg/lib
-         (prefix-in db: pkg/db))
+         pkg/path)
 
 (define config-dir-path (build-path "racket" "etc"))
 (define config-file-path (build-path config-dir-path "config.rktd"))
@@ -108,6 +109,8 @@
                        (map path->string
                             (explode-path (system-library-subpath #f)))))))
 
+(printf "Finding packages\n")
+
 ;; Recur through directory tree, and treat each directory
 ;; that has an "info.rkt" file as a package (and don't recur
 ;; further into the package)
@@ -132,17 +135,19 @@
           (loop src-f)])))))
 
 (define metadata-ns (make-base-namespace))
+(parameterize ([current-namespace metadata-ns])
+  ;; with compiled files on:
+  (dynamic-require '(submod info reader) #f)
+  (dynamic-require 'info 0))
 (define (get-pkg-info pkg-dir)
-  (parameterize ([current-namespace metadata-ns])
-    ;; with compiled files on:
-    (dynamic-require '(submod info reader) #f)
-    (dynamic-require 'info 0))
   ;; without compiled files:
   (parameterize ([use-compiled-file-paths '()])
     (get-info/full pkg-dir #:namespace metadata-ns)))
 
 (define missing-desc null)
 (define missing-authors null)
+
+(define single-collection-pkgs (make-hash))
 
 (define all-pkgs
   (let loop ([all-pkgs pkgs] [pkgs pkgs])
@@ -153,6 +158,9 @@
         (unless dir
           (error 'link-all "requested package not available: ~s" pkg-name))
         (define i (get-pkg-info dir))
+        (define sc-name (i 'collection (lambda _ pkg-name)))
+        (when (string? sc-name)
+          (hash-set! single-collection-pkgs pkg-name sc-name))
         (define deps
           (extract-pkg-dependencies i #:filter? #t))
         (unless (string? (i 'pkg-desc (lambda _ #f)))
@@ -170,6 +178,31 @@
         all-pkgs
         (loop (set-union new-pkgs all-pkgs) new-pkgs))))
 
+(define (is-auto? name) (not (set-member? pkgs name)))
+
+;; Exit if we detect no change:
+(when (and (null? missing-desc)
+           (null? missing-authors))
+  (with-handlers ([exn:fail? (lambda (exn)
+                               (printf "shortcut failed: ~s" (exn-message exn)))])
+    (define devel-pkgs-file (build-path devel-pkgs-dir "pkgs.rktd"))
+    (define expected-link-results
+      (for/hash ([name (in-set all-pkgs)])
+        (define dir (hash-ref found name))
+        (define rel-dir (path->string (find-relative-path (path->complete-path devel-pkgs-dir)
+                                                          (path->complete-path dir))))
+        (define sc-name (hash-ref single-collection-pkgs name #f))
+        (define auto? (is-auto? name))
+        (values name
+                (if sc-name
+                    (sc-pkg-info `(static-link ,rel-dir) #f auto? sc-name)
+                    (pkg-info `(static-link ,rel-dir) #f auto?)))))
+    (when (and (file-exists? devel-pkgs-file)
+               (equal? (call-with-input-file* devel-pkgs-file read)
+                       expected-link-results))
+      (printf "No changes to links\n")
+      (exit 0))))
+
 ;; flush old configuration
 (when (directory-exists? devel-pkgs-dir)
   (printf "Erasing previous development package configuration\n")
@@ -177,7 +210,6 @@
 
 (void
  (parameterize ([current-pkg-scope (path->complete-path devel-pkgs-dir)])
-   (define (is-auto? name) (not (set-member? pkgs name)))
    (with-pkg-lock
     (pkg-install (for/list ([name (in-list (sort (set->list all-pkgs)
                                                  ;; Non-auto before auto:
