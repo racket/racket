@@ -123,7 +123,7 @@
 (unless (scheme_register_process_global "Racket-GUI-no-front" #f)
   (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
   ;; It may not be that easy...
-  (when (version-10.6-or-later?)
+  (when (version-10.7-or-later?)
     (with-autorelease
      (import-class NSRunningApplication)
      (unless (tell #:type _BOOL (tell NSRunningApplication currentApplication) ownsMenuBar)
