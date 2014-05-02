@@ -2916,7 +2916,8 @@
 
 (define (extract-pkg-dependencies get-info
                                   #:build-deps? [build-deps? #t]
-                                  #:filter? [filter? #f])
+                                  #:filter? [filter? #f]
+                                  #:versions? [versions? #f])
   (define v (if get-info
                 (get-info 'deps (lambda () empty))
                 empty))
@@ -2929,9 +2930,13 @@
   (if filter?
       (for/list ([dep (in-list all-v)]
                  #:when (dependency-this-platform? dep))
-        (if (pair? dep)
-            (car dep)
-            dep))
+        (define name
+          (if (pair? dep)
+              (car dep)
+              dep))
+        (if versions?
+            (list name (dependency->version dep))
+            name))
       all-v))
 
 (define (get-pkg-content desc 
@@ -3262,7 +3267,8 @@
   [extract-pkg-dependencies
    (->* ((symbol? (-> any/c) . -> . any/c))
         (#:build-deps? boolean?
-                       #:filter? boolean?)
+                       #:filter? boolean?
+                       #:versions? boolean?)
         (listof (or/c string? (cons/c string? list?))))]
   [pkg-single-collection
    (->* (path-string?)

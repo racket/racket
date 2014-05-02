@@ -437,7 +437,8 @@ The results are as follows:
 
 @defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
                                    [#:build-deps? build-deps? boolean? #f]
-                                   [#:filter? filter? boolean? #f])
+                                   [#:filter? filter? boolean? #f]
+                                   [#:versions? versions? boolean? #f])
          (listof (or/c string? (cons/c string? list?)))]{
 
 Returns packages dependencies reported by the @racket[info] procedure
@@ -449,7 +450,12 @@ run-time dependencies and build-time dependencies.
 If @racket[filter?] is true, then platform-specific dependencies are
 removed from the result list when they do not apply to the current
 platform, and other information is stripped so that the result list is
-always a list of strings.}
+always a list of either strings (when @racket[versions?] is true) or a
+two-element list containing a string and a version (when
+@racket[versions?] is @racket[#f]).
+
+@history[#:changed "6.0.1.6" @elem{Added the @racket[#:versions?] argument.}]}
+
 
 @defproc[(pkg-directory->module-paths [dir path-string?]
                                       [pkg-name string]
