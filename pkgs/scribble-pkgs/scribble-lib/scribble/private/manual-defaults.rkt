@@ -18,7 +18,9 @@
                                        (scribble-file "manual-fonts.css")))
                 #:properties (list
                               (css-style-addition
-                               (scribble-file "manual-racket.css")))
+                               (scribble-file "manual-racket.css"))
+                              (js-style-addition
+                               (scribble-file "manual-racket.js")))
                 #t))
 
 (define-on-demand manual-doc-style

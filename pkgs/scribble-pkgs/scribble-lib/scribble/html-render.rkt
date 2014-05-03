@@ -770,13 +770,19 @@
                                                 d ri)))))))))
                          ps)))))))
 
-    (define/public (extract-part-body-id d ri)
+    (define/private (extract-inherited d ri pred extract)
       (or (ormap (lambda (v)
-                   (and (body-id? v)
-                        (body-id-value v)))
+                   (and (pred v)
+                        (extract v)))
                  (style-properties (part-style d)))
           (let ([p (part-parent d ri)])
-            (and p (extract-part-body-id p ri)))))
+            (and p (extract-inherited p ri pred extract)))))
+
+    (define/public (extract-part-body-id d ri)
+      (extract-inherited d ri body-id? body-id-value))
+
+    (define/public (extract-part-source d ri)
+      (extract-inherited d ri document-source? document-source-module-path))
 
     (define/public (part-nesting-depth d ri)
       0)
@@ -1079,6 +1085,16 @@
                             [(1) 'h3]
                             [(2) 'h4]
                             [else 'h5])
+                         ,(let ([src (extract-part-source d ri)]
+                                [taglet (for/or ([t (in-list (part-tags d))])
+                                          (and (pair? t)
+                                               (eq? 'part (car t))
+                                               (= 2 (length t))
+                                               (cadr t)))])
+                            (if (and src taglet)
+                                `([x-source-module ,(format "~s" src)]
+                                  [x-part-tag ,(format "~s" taglet)])
+                                '()))
                          ,@(format-number number '((tt nbsp)))
                          ,@(map (lambda (t)
                                   `(a ([name ,(format "~a" (anchor-name

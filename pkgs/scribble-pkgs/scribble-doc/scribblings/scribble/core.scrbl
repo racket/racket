@@ -479,6 +479,12 @@ The recognized @tech{style properties} are as follows:
         how objects that subscribe to the @racketmodname[file/convertible]
         protocol are rendered.}
 
+ @item{@racket[document-source] structure --- For HTML, provides a
+        module path for the part's source. Clicking on an HTML section
+        title generated for the part or its sub-parts may show the
+        module path plus a section-tag string, so that the user can
+        create a reference to the section.}
+
 ]
 
 The @racket[to-collect] field contains @techlink{content} that is
@@ -1555,6 +1561,21 @@ Like @racket[css-style-addition], but for a JavaScript file instead of a CSS fil
 
 Used as a @tech{style property} to associate an @tt{id} attribute with
 an HTML tag.}
+
+
+@defstruct[document-source ([module-path module-path?])]{
+
+Used as a @tech{style property} to associate a module path with a
+part.  Clicking on a section title within the part may show
+@racket[module-path] with the part's tag string, so that authors of
+other documents can link to the section.
+
+More specifically, the section title is given the HTML attributes
+@tt{x-source-module} and @tt{x-part-tag}. The
+@racketmodname[scribble/manual] style recognizes those tags to make
+clicking a title show cross-reference information.
+
+@history[#:added "1.2"]}
 
 
 @defstruct[html-defaults ([prefix (or/c bytes? path-string? 

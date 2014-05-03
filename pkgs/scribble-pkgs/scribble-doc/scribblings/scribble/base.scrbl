@@ -598,7 +598,11 @@ document style. By default, only the section number is shown in the
 reference, but the @racketmodname[scribble/manual] style shows the
 title after the section number. Customize the output (see
 @secref["config"]) by redefining the @ltx{BookRef}, @|etc|, macros (see
-@secref["builtin-latex"]).}
+@secref["builtin-latex"]).
+
+In Racket documentation that is rendered to HTML, clicking on a
+section title normally shows the @racket[secref] call that is needed
+to link to the section.}
 
 
 @defproc[(Secref [tag string?]

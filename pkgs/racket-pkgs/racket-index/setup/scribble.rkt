@@ -23,6 +23,7 @@
          scribble/private/run-pdflatex
          setup/xref
          scribble/xref
+         syntax/modcollapse
          racket/place
          pkg/lib
          pkg/strip
@@ -722,6 +723,7 @@
         "racket.css"
         "manual-style.css"
         "manual-racket.css"
+        "manual-racket.js"
         "manual-fonts.css"
         "scribble-common.js"))
 (define shared-empty-style-files
@@ -824,8 +826,10 @@
                                             shared-empty-style-files)))]
 
                [search-box? (not (memq 'no-search flags))]))
-        (for ([s (in-list shared-empty-script-files)])
-          (send r add-extra-script-file (collection-file-path s "scribble")))
+        (unless (memq 'keep-style flags)
+          (send r add-extra-script-file (collection-file-path "manual-racket.js" "scribble"))
+          (for ([s (in-list shared-empty-script-files)])
+            (send r add-extra-script-file (collection-file-path s "scribble"))))
         (when allow-indirect?
           ;; For documentation that might be moved into a binary package
           ;; or that can contain an indirect reference, use a server indirection
@@ -912,7 +916,11 @@
                 [v (if (ormap document-version? v)
                        v
                        (cons (make-document-version (version))
-                             v))])
+                             v))]
+                [v (cons (document-source
+                          (collapse-module-path src-spec
+                                                'scribble))
+                         v)])
            (make-style (style-name style) v))
          (part-to-collect v)
          (part-blocks v)
