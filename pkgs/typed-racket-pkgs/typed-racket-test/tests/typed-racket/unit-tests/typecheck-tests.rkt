@@ -2906,6 +2906,10 @@
          -Symbol
          #:expected (ret -Symbol)]
 
+       [tc-e
+         (ann (for/list ([z #"foobar"]) (add1 z)) (Listof Integer))
+         (-lst -Int)]
+
         )
   (test-suite
    "tc-literal tests"

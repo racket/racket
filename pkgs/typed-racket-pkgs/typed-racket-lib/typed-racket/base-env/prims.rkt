@@ -888,7 +888,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 #,(loop #'(rest ...))))])))]))
 
 (define-for-syntax (maybe-annotate-body body ty)
-  (if (syntax-e ty)
+  (if ty
       (type-ascription-property body ty)
       body))
 
@@ -905,13 +905,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
           clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (maybe-annotate-body
-        (quasisyntax/loc stx
-          (#,name
-           (clause.expand ... ...)
-           #,@(maybe-annotate-body
-               #'(c ...)
-               #'a.ty)))
-        #'a.ty)])))
+         (quasisyntax/loc stx
+           (#,name
+            (clause.expand ... ...)
+            c ...))
+         (attribute a.ty))])))
 (define-syntax (define-for-variants stx)
   (syntax-parse stx
     [(_ (name untyped-name) ...)
@@ -1004,7 +1002,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (quasisyntax/loc stx
           (#,name (clause.expand ... ...)
                   c ...))
-        #'a.ty)])))
+        (attribute a.ty))])))
 (define-syntax (define-for*-variants stx)
   (syntax-parse stx
     [(_ (name no-colon-name) ...)
@@ -1069,7 +1067,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (cond
-        [(syntax-e #'a.ty)
+        [(attribute a.ty)
          ;; ty has to include exact 0, exact 1, null (sum/product/list respectively),
          ;; the initial value of the accumulator
          ;; (to be consistent with Racket semantics).
