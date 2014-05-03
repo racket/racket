@@ -1,6 +1,22 @@
 6.0.1
-- Generate more optimized contracts
-- Filters work better outside of if
+- Types for classes (including row types, sealing contracts, etc).
+  Still experimental.  
+- Contracts are now optimized; in particular, redundant contracts are omitted
+- Filters work with conditions that raise errors, as in the pattern
+  (begin (unless (number? x) (error 'fail))
+         (add1 x))
+- Types are now pretty-printed
+- Add prefix-style function types and `->*` function type constructor
+- Support syntactic forms without : (such as let, lambda, for, etc)
+- Type aliases support arbitrary mutual recursion
+- Inform check-syntax about expansion results
+- Add `typed/untyped-utils` library
+- Add `typed/syntax/stx`, `typed/pict`, 
+- Significant test suite improvments
+- Improved support for `Struct-Type` values
+- Support keyword function definitions without annotation.
+- Handle forward references in un-annotated definitions
+- Improve type inference for `letrec`-bound variables
 6.0
 - Support for `define-type', `struct:', `make-predicate', etc. at the REPL
 - Performance work: optimized subtyping
