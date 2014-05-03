@@ -963,6 +963,17 @@
                      'neg)))
    #\a)
   
+  (test/neg-blame
+   'struct/dc-new45
+   '(begin
+      (struct s ([f #:mutable] g) #:transparent)
+      (define an-s
+        (contract (struct/dc s [f (g) (<=/c g)] [g real?])
+                  (s 1 2)
+                  'pos
+                  'neg))
+      (set-s-f! an-s 3)))
+  
   (test/spec-passed/result
    'struct/dc-pred1
    '(let ()
@@ -989,7 +1000,79 @@
             (p? (s 11 #f 'whatver))))
    '(#t #f))
   
+  (test/spec-passed
+   'struct/dc-inv1
+   '(let ()
+      (struct s (f g))
+      (contract (struct/dc s
+                           [f real?]
+                           [g real?]
+                           #:inv (f g) (<= f g))
+                (s 1 2)
+                'pos
+                'neg)))
+
+  (test/pos-blame
+   'struct/dc-inv2
+   '(let ()
+      (struct s (f g))
+      (contract (struct/dc s
+                           [f real?]
+                           [g real?]
+                           #:inv (f g) (<= f g))
+                (s 2 1)
+                'pos
+                'neg)))
   
+  (test/neg-blame
+   'struct/dc-inv3
+   '(let ()
+      (struct s (f [g #:mutable]))
+      (define an-s
+        (contract (struct/dc s
+                             [f real?]
+                             [g real?]
+                             #:inv (f g) (<= f g))
+                  (s 1 2)
+                  'pos
+                  'neg))
+      (set-s-g! an-s -1)))
+  
+  (test/spec-passed
+   'struct/dc-inv4
+   '(let ()
+      (struct s (f [g #:mutable]))
+      (define an-s
+        (contract (struct/dc s
+                             [f real?]
+                             [g real?]
+                             #:inv (f g) (<= f g))
+                  (s 1 2)
+                  'pos
+                  'neg))
+      (set-s-g! an-s 3)))
+  
+  (test/spec-passed
+   'struct/dc-inv5
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (contract (struct/dc d 
+                           [(x #:parent a) any/c]
+                           [(y #:parent b) any/c]
+                           [(z #:parent c) any/c]
+                           [w any/c]
+                           #:inv ((x #:parent a) (y #:parent b) (z #:parent c) w)
+                           (and (equal? x #t)
+                                (equal? y #\a)
+                                (equal? z 3)
+                                (equal? w "x")))
+                (d #t #\a 3 "x")
+                'pos
+                'neg)))
   
   (contract-error-test
    'struct/dc-imp-nondep-runtime-error
@@ -1040,4 +1123,38 @@
    #'(eval '(let ()
               (struct s (a b))
               (struct/dc s [a integer?] [b (a) #:impersonator (<=/c a)])))
-   (λ (x) (and (exn:fail:syntax? x) (regexp-match #rx"immutable" (exn-message x))))))
+   (λ (x) (and (exn:fail:syntax? x) (regexp-match #rx"immutable" (exn-message x)))))
+  
+  (contract-error-test
+   'struct/dc-inv-not-a-field
+   #'(eval '(let ()
+              (struct s (f g))
+              (struct/dc s
+                         [f real?]
+                         [g real?]
+                         #:inv (f g h) (<= f g))))
+   (λ (x) (and (exn:fail:syntax? x)
+               (regexp-match #rx"field: h is depended" (exn-message x)))))
+  
+  (contract-error-test
+   'struct/dc-inv-dep-on-lazy
+   #'(eval '(let ()
+              (struct s (f g))
+              (struct/dc s
+                         [f real?]
+                         [g (f) #:lazy real?]
+                         #:inv (f g) (<= f g))))
+   (λ (x) (and (exn:fail:syntax? x)
+               (regexp-match #rx"field: g.*lazy" (exn-message x)))))
+  
+  (contract-error-test
+   'struct/dc-dep-on-present
+   #'(eval '(begin
+              (struct s (f [g #:mutable]) #:transparent)
+              (contract (struct/dc s [f (g) (<=/c g)])
+                        (s 1 2)
+                        'pos
+                        'neg)))
+    (λ (x) (and (exn:fail:syntax? x)
+                (regexp-match #rx"the field: g is depended on.*no contract"
+                              (exn-message x))))))

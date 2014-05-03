@@ -73,6 +73,16 @@
 (struct dep-on-state-immutable dep  ()     #:transparent)
 (struct dep-on-state-mutable   dep  (set)  #:transparent)
 
+;; dep-proc : procedure? -- pass the depended on fields's values
+;;            values and get back a boolean that says whether 
+;;            or not the invariant holds
+;; fields : (listof symbol?) -- in reverse order that the 
+;;          corresponding fields are evaluated (not necc. 
+;;          the order specified in the contract itself)
+;; muts : (listof mutator) -- the field mutators for mutable fields
+;;        on which the invariant depends
+(struct invariant (dep-proc fields sels muts))
+
 (define (subcontract-mutable-field? x)
   (or (mutable? x)
       (dep-mutable? x)
@@ -81,16 +91,34 @@
 ;; these are the compile-time structures, representing
 ;; parsed clauses of a struct/dc expression
 (begin-for-syntax
-  ;; exp : syntax
+  ;; d/i-clause's are the "normal" clauses in a struct/dc (field-spec) in the grammar
+  ;; exp : syntax[boolean-valued expression]
   ;; lazy? : boolean
   ;; sel-id : identifier?
+  (struct d/i-clause (exp lazy? sel-name sel-id) #:transparent)
+  
   ;; type : (or/c '#:flat '#:chaperone '#:impersonator) 
   ;; depends-on-state? : boolean? -- only set if the keyword #:depends-on-state is passed
+  ;; dep-names : (listof syntax?) -- the user's notation for the depended-on fields
   ;; dep-ids : (listof identifier?) -- the dependened on selector
-  ;; dep-name : (listof syntax?) -- the user's notation for the depended-on fields
-  (struct clause (exp lazy? sel-name sel-id) #:transparent)
-  (struct dep-clause clause (type depends-on-state? dep-names dep-ids) #:transparent)
-  (struct indep-clause clause () #:transparent))
+  (struct dep-clause d/i-clause (type depends-on-state? dep-names dep-ids) #:transparent)
+  
+  (struct indep-clause d/i-clause () #:transparent)
+  
+  ;; inv-clauses come from the information following the #:inv keyword
+  (struct inv-clause (exp dep-names dep-sel-ids dep-mut-ids))
+  
+  (define (has-deps? cl)
+    (or (inv-clause? cl)
+        (dep-clause? cl)))
+  (define (get-dep-names cl)
+    (cond
+      [(inv-clause? cl) (inv-clause-dep-names cl)]
+      [(dep-clause? cl) (dep-clause-dep-names cl)]))
+  (define (get-dep-ids cl)
+    (cond
+      [(inv-clause? cl) (inv-clause-dep-sel-ids cl)]
+      [(dep-clause? cl) (dep-clause-dep-ids cl)])))
 
 (define-syntax-rule
   (cache-λ (id ...) e)
@@ -104,30 +132,39 @@
 
 (define (struct/dc-name ctc)
   (define struct/c? (base-struct/dc-struct/c? ctc))
+  (define invariant-stuff '())
+  (define field-stuff
+    (apply
+     append
+     (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
+       (cond
+         [(invariant? subcontract)
+          (set! invariant-stuff (list '#:inv (reverse (invariant-fields subcontract)) '...))
+          '()]
+         [(indep? subcontract)
+          (if struct/c?
+              (list (contract-name (indep-ctc subcontract)))
+              (list `[,(subcontract-field-name subcontract)
+                      ,@(if (lazy-immutable? subcontract)
+                            '(#:lazy)
+                            '())
+                      ,(contract-name (indep-ctc subcontract))]))]
+         [else
+          (list `[,(subcontract-field-name subcontract) 
+                  ,(dep-dep-names subcontract)
+                  ,@(if (dep-lazy-immutable? subcontract)
+                        '(#:lazy)
+                        '())
+                  ,@(if (eq? '#:chaperone (dep-type subcontract))
+                        '()
+                        (list (dep-type subcontract)))
+                  ...])]))))
   `(,(if struct/c?
          'struct/c
          'struct/dc)
     ,(base-struct/dc-name-info ctc)
-    ,@(for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (cond
-          [(indep? subcontract)
-           (if struct/c?
-               (contract-name (indep-ctc subcontract))
-               `[,(subcontract-field-name subcontract)
-                 ,@(if (lazy-immutable? subcontract)
-                       '(#:lazy)
-                       '())
-                 ,(contract-name (indep-ctc subcontract))])]
-          [else
-           `[,(subcontract-field-name subcontract) 
-             ,(dep-dep-names subcontract)
-             ,@(if (dep-lazy-immutable? subcontract)
-                   '(#:lazy)
-                   '())
-             ,@(if (eq? '#:chaperone (dep-type subcontract))
-                   '()
-                   (list (dep-type subcontract)))
-             ...]]))))
+    ,@field-stuff
+    ,@invariant-stuff))
 
 (define (struct/dc-flat-first-order ctc)
   (define struct-pred? (base-struct/dc-pred ctc))
@@ -156,22 +193,32 @@
   (λ (blame)
     (define orig-blames
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)))))
+        (if (subcontract? subcontract)
+            (blame-add-context 
+             blame
+             (format "the ~a field of" (subcontract-field-name subcontract)))
+            blame)))
     (define orig-mut-blames
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (define ctxt-string (format "the ~a field of" (subcontract-field-name subcontract)))
-        (blame-add-context blame ctxt-string #:swap? #t)))
+        (cond
+          [(subcontract? subcontract)
+           (define ctxt-string (format "the ~a field of" (subcontract-field-name subcontract)))
+           (blame-add-context blame ctxt-string #:swap? #t)]
+          [else #f])))
     (define orig-indy-blames 
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (blame-replace-negative
-         (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)))
-         (base-struct/dc-here ctc))))
+        (and (subcontract? subcontract)
+             (blame-replace-negative
+              (blame-add-context 
+               blame (format "the ~a field of" (subcontract-field-name subcontract)))
+              (base-struct/dc-here ctc)))))
     (define orig-mut-indy-blames 
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-        (blame-replace-negative
-         (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract))
-                            #:swap? #t)
-         (base-struct/dc-here ctc))))
+        (and (subcontract? subcontract)
+             (blame-replace-negative
+              (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract))
+                                 #:swap? #t)
+              (base-struct/dc-here ctc)))))
     (define projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list orig-blames)])
@@ -200,7 +247,7 @@
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list orig-mut-indy-blames)])
         (cond
-          [(and (indep? subcontract) (mutable? subcontract))
+          [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
            ((contract-projection sub-ctc) blame+ctxt)]
           [else #f])))
@@ -214,6 +261,9 @@
            (raise-blame-error blame v '(expected: "~a?" given: "~e")
                               (base-struct/dc-struct-name ctc)
                               v))
+         (define invariant (for/or ([c (in-list (base-struct/dc-subcontracts ctc))])
+                             (and (invariant? c)
+                                  c)))
          (let loop ([subcontracts (base-struct/dc-subcontracts ctc)]
                     [projs projs]
                     [mut-projs mut-projs]
@@ -227,19 +277,21 @@
                     [impersonate-args '()]
                     [dep-args '()])
            (cond
-             [(null? subcontracts) 
+             [(null? subcontracts)
               (apply chaperone-struct
                      (apply impersonate-struct
                             v
                             impersonate-args)
-                     chaperone-args)]
+                     (if invariant
+                         (add-invariant-checks blame invariant chaperone-args)
+                         chaperone-args))]
              [else
-              (define subcontract (car subcontracts))
+              (define subcontract (car subcontracts)) ;; (or/c subcontract? invariant?)
               (define proj (car projs))
               (define mut-proj (car mut-projs))
               (define indy-proj (car indy-projs))
               (define mut-indy-proj (car mut-indy-projs))
-              (define sel (subcontract-ref subcontract))
+              (define sel (and (subcontract? subcontract) (subcontract-ref subcontract)))
               (define blame (car blames))
               (define mut-blame (car mut-blames))
               (define indy-blame (car indy-blames))
@@ -253,6 +305,13 @@
               (define dep-ctc-blame-proj (and dep-ctc (contract-projection dep-ctc)))
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
+                  [(invariant? subcontract)
+                   (unless (with-continuation-mark contract-continuation-mark-key blame
+                             (apply (invariant-dep-proc subcontract) dep-args))
+                     (raise-invariant-blame-failure blame v
+                                                    (reverse dep-args)
+                                                    (reverse (invariant-fields subcontract))))
+                   (values chaperone-args impersonate-args)]
                   [(immutable? subcontract)
                    (define projd
                      (with-continuation-mark
@@ -322,7 +381,7 @@
                               impersonate-args)]
                      [(dep-mutable? subcontract)
                       (define mut-proj (dep-ctc-blame-proj mut-blame))
-                      (if (eq? (dep-type subcontract) '#:impersonator)
+                      (if (equal? (dep-type subcontract) '#:impersonator)
                           (values (list* sel
                                          (λ (fld v)
                                            (with-continuation-mark
@@ -388,12 +447,91 @@
                     (cdr blames) (cdr mut-blames) (cdr indy-blames) (cdr mut-indy-blames)
                     new-chaperone-args
                     new-impersonate-args
-                    (if (subcontract-depended-on? subcontract)
+                    (if (and (subcontract? subcontract) (subcontract-depended-on? subcontract))
                         (cons (if dep-ctc-blame-proj 
                                   ((dep-ctc-blame-proj indy-blame) ((subcontract-ref subcontract) v))
                                   (indy-proj ((subcontract-ref subcontract) v)))
                               dep-args)
                         dep-args))]))]))))
+
+(define (check-invariant/mut blame invariant val sel field-v)
+  (define args
+    (let loop ([sels (invariant-sels invariant)]
+               [args '()])
+      (cond
+        [(null? sels) args]
+        [else 
+         (define this-sel (car sels))
+         (if (equal? this-sel sel)
+             (loop (cdr sels) (cons field-v args))
+             (loop (cdr sels) (cons (sel val) args)))])))
+  (unless (apply (invariant-dep-proc invariant) args)
+    (raise-invariant-blame-failure (blame-swap blame) val
+                                   (reverse args)
+                                   (reverse
+                                    (invariant-fields invariant)))))
+
+(define (raise-invariant-blame-failure blame v vals field-names)
+  (raise-blame-error 
+   blame
+   v 
+   "#:inv does not hold~a" 
+   (apply
+    string-append
+    (if (null? field-names) "" " for:")
+    (for/list ([dep-arg (in-list vals)]
+               [field-name (in-list field-names)])
+      (format "\n  ~a: ~e" field-name dep-arg)))))
+
+(define (add-invariant-checks blame invariant chaperone-args)
+  (let loop ([invariant-field-sels/muts
+              (for/list ([sel (in-list (invariant-sels invariant))]
+                         [mut (in-list (invariant-muts invariant))]
+                         #:when mut)
+                (cons sel mut))]
+             [chaperone-args chaperone-args])
+    (cond
+      [(null? chaperone-args)
+       (apply
+        append
+        (for/list ([sel/mut (in-list invariant-field-sels/muts)])
+          (define sel (car sel/mut))
+          (define mut (cdr sel/mut))
+          (list mut
+                (λ (stct field-v)
+                  (check-invariant/mut blame invariant stct sel field-v)
+                  field-v))))]
+      [else
+       (define fn (car chaperone-args))
+       (define proc (cadr chaperone-args))
+       (define sel #f)
+       (define which (for/or ([i (in-naturals)]
+                              [sel/mut (in-list invariant-field-sels/muts)])
+                       (cond
+                         [(equal? (cdr sel/mut) fn)
+                          (set! sel (car sel/mut))
+                          i]
+                         [else #f])))
+       (cond
+         [which
+          (list* fn
+                 (λ (stct field-v)
+                   (check-invariant/mut blame invariant stct sel field-v)
+                   (proc stct field-v))
+                 (loop (remove-ith invariant-field-sels/muts which)
+                       (cddr chaperone-args)))]
+         [else
+          (list* fn proc
+                 (loop invariant-field-sels/muts
+                       (cddr chaperone-args)))])])))
+
+(define (remove-ith l i)
+  (cond
+    [(null? l) '()]
+    [else
+     (if (= i 0)
+         (cdr l)
+         (cons (car l) (remove-ith (cdr l) (- i 1))))]))
 
 (define (build-dep-on-state-proj orig-subcontracts this-subcontract strct projs blames blame val)
   (let loop ([subcontracts orig-subcontracts]
@@ -427,7 +565,7 @@
             (check-flat/chaperone dep-ctc subcontract))
           
           (define new-dep-args
-            (if (subcontract-depended-on? subcontract)
+            (if (and (subcontract? subcontract) (subcontract-depended-on? subcontract))
                 (cons (if dep-ctc-blame-proj 
                           ((dep-ctc-blame-proj indy-blame) ((subcontract-ref subcontract) strct))
                           (proj ((subcontract-ref subcontract) strct)))
@@ -558,7 +696,7 @@
 
 (define-for-syntax (parse-struct/dc stx)
   (syntax-case stx ()
-    [(_ id clauses ...)
+    [(_ id pre-clauses ...)
      (let ()
        (define info (get-struct-info #'id stx))
        (define (ensure-valid-field sel-name)
@@ -572,6 +710,11 @@
              " the #:parent keyword, and the parent struct")
             stx
             sel-name)))
+       
+       (define (is-a-mutable-field? sel-name)
+         (define mutator-candidate (name->mut-id stx #'id sel-name))
+         (for/or ([mutator (in-list (list-ref info 4))])
+           (and mutator (free-identifier=? mutator mutator-candidate))))
        
        (define (check-not-both this that)
          (when (and this that)
@@ -601,8 +744,63 @@
          (string-append "expected a field-name (either an identifier or a sequence:"
                         " (selector-id #:parent struct-id))"))
        
+       (define-values (clauses invariant)
+         (let loop ([pre-clauses (syntax->list #'(pre-clauses ...))]
+                    [clauses '()])
+           (cond
+             [(null? pre-clauses) (values (reverse clauses) #f)]
+             [else
+              (define pre-clause (car pre-clauses))
+              (cond
+                [(keyword? (syntax-e pre-clause))
+                 (unless (equal? '#:inv (syntax-e pre-clause))
+                   (raise-syntax-error 
+                    'struct/dc
+                    "unknown keyword, expected only #:inv"
+                    stx
+                    pre-clause))
+                 (when (null? (cdr pre-clauses))
+                   (raise-syntax-error 
+                    'struct/dc
+                    "expected a sequence of identifiers and an invariant expression to follow #:inv"
+                    stx
+                    pre-clause))
+                 (define sel-names-stx (cadr pre-clauses))
+                 (define sel-names (syntax->list sel-names-stx))
+                 (unless sel-names
+                   (raise-syntax-error 
+                    'struct/dc
+                    "expected a sequence of identifiers to follow #:inv"
+                    stx
+                    sel-names-stx))
+                 (for ([sel-name (in-list sel-names)])
+                   (unless (sel-name? sel-name)
+                     (raise-syntax-error 'struct/dc not-field-name-str stx sel-name)))
+                 (unless (pair? (cddr pre-clauses))
+                   (raise-syntax-error
+                    'struct/dc
+                    "expected a sequence of identifiers and an invariant expression to follow #:inv"
+                    stx
+                    pre-clause))
+                 (define expr (caddr pre-clauses))
+                 (unless (null? (cdddr pre-clauses))
+                   (raise-syntax-error
+                    'struct/dc
+                    "expected only a sequence of identifiers and an invariant expression after #:inv"
+                    stx
+                    pre-clause))
+                 (values (reverse clauses) 
+                         (inv-clause expr 
+                                     sel-names 
+                                     (map (λ (name) (name->sel-id #'id name))
+                                          sel-names)
+                                     (map (λ (name) (and (is-a-mutable-field? name)
+                                                         (name->mut-id stx #'id name)))
+                                          sel-names)))]
+                [else
+                 (loop (cdr pre-clauses) (cons pre-clause clauses))])])))
        (define parsed-clauses
-         (for/list ([clause (in-list (syntax->list #'(clauses ...)))])
+         (for/list ([clause (in-list clauses)])
            (syntax-case clause ()
              [(sel-name (dep-name ...) stuff1 . stuff)
               ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
@@ -647,40 +845,62 @@
                 (indep-clause exp lazy? #'sel-name (name->sel-id #'id #'sel-name)))]
              [_ (raise-syntax-error 'struct/dc "could not parse clause" stx clause)])))
        
+       (define all-clauses (if invariant (cons invariant parsed-clauses) parsed-clauses))
        
        (let ()
          (define lazy-mapping (make-free-identifier-mapping))
-         (for ([clause (in-list parsed-clauses)])
-           (free-identifier-mapping-put! lazy-mapping 
-                                         (clause-sel-id clause)
-                                         (clause-lazy? clause)))
+         (define mutable-mapping (make-free-identifier-mapping))
+         
+         (for ([clause (in-list all-clauses)])
+           (when (d/i-clause? clause)
+             (free-identifier-mapping-put! lazy-mapping 
+                                           (d/i-clause-sel-id clause)
+                                           (d/i-clause-lazy? clause))
+             (free-identifier-mapping-put! mutable-mapping 
+                                           (d/i-clause-sel-id clause)
+                                           '(d/i-clause-mutable? clause))))
          
          ;; check that non-lazy don't depend on lazy
-         (for ([clause (in-list parsed-clauses)])
-           (when (dep-clause? clause)
-             (unless (clause-lazy? clause)
-               (for ([dep-id (in-list (dep-clause-dep-ids clause))]
-                     [dep-name (in-list (dep-clause-dep-names clause))])
-                 (when (free-identifier-mapping-get lazy-mapping dep-id)
-                   (raise-syntax-error 
-                    #f
-                    (format "the dependent clause for ~a is not lazy, but depends on ~a"
-                            (syntax->datum (clause-sel-name clause))
-                            (syntax->datum dep-name))
-                    stx
-                    dep-id))))))
+         (for ([clause (in-list all-clauses)])
+           (when (has-deps? clause)
+             (when (or (inv-clause? clause)
+                       (not (d/i-clause-lazy? clause)))
+               (for ([dep-id (in-list (get-dep-ids clause))]
+                     [dep-name (in-list (get-dep-names clause))])
+                 (when (free-identifier-mapping-get lazy-mapping dep-id (λ () #f))
+                   (cond
+                     [(d/i-clause? clause)
+                      (raise-syntax-error 
+                       #f
+                       (format
+                        "the dependent clause for field: ~s is not lazy, but depends on field: ~s"
+                        (syntax->datum (d/i-clause-sel-name clause))
+                        (syntax->datum dep-name))
+                       stx
+                       dep-id)]
+                     [else
+                      (raise-syntax-error 
+                       #f
+                       (format "the #:inv clause depends on field: ~s, but it is lazy"
+                               (syntax->datum dep-name))
+                       stx
+                       dep-id)]))))))
          
-         (for ([clause (in-list parsed-clauses)])
-           (define this-sel (clause-sel-id clause))
+         (for ([clause (in-list all-clauses)])
            (for ([sel (in-list (list-ref info 3))]
-                 [mut (in-list (list-ref info 4))])
-             (when (and sel
-                        (free-identifier=? sel this-sel))
+                 [mut (in-list (list-ref info 4))]
+                 [i (in-naturals)])
+             (when (or (and (inv-clause? clause)
+                            (zero? i))
+                       (and (d/i-clause? clause)
+                            sel
+                            (free-identifier=? sel 
+                                               (d/i-clause-sel-id clause))))
                
                ;; check that fields depended on actually exist
-               (when (dep-clause? clause)
-                 (for ([id (in-list (dep-clause-dep-ids clause))]
-                       [dep-name (in-list (dep-clause-dep-names clause))])
+               (when (has-deps? clause)
+                 (for ([id (in-list (get-dep-ids clause))]
+                       [dep-name (in-list (get-dep-names clause))])
                    (free-identifier-mapping-get
                     lazy-mapping
                     id
@@ -688,12 +908,17 @@
                            'struct/dc
                            (format 
                             (string-append
-                             "the field: ~s is depended on (by the contract on the field: ~s),"
+                             "the field: ~s is depended on (by the ~a),"
                              " but it has no contract")
                             (syntax->datum dep-name)
-                            (syntax->datum (clause-sel-name clause)))
+                            (if (d/i-clause? clause)
+                                (format "contract on the field: ~s"
+                                        (syntax->datum (d/i-clause-sel-name clause)))
+                                "#:inv clause"))
                            stx
-                           (clause-sel-name clause))))))
+                           (if (d/i-clause? clause)
+                               (d/i-clause-sel-name clause)
+                               dep-name))))))
                
                ;; check that impersonator fields are mutable
                (when (and (dep-clause? clause)
@@ -702,21 +927,22 @@
                    (raise-syntax-error 'struct/dc
                                        (format 
                                         (string-append
-                                         "the ~a field is immutable, so the contract"
+                                         "the field: ~a is immutable, so the contract"
                                          " cannot be an impersonator contract")
-                                        (syntax-e (clause-sel-name clause)))
+                                        (syntax-e (d/i-clause-sel-name clause)))
                                        stx
-                                       (clause-sel-name clause))))
+                                       (d/i-clause-sel-name clause))))
 
                ;; check that mutable fields aren't lazy
-               (when (and (clause-lazy? clause) mut)
-                 (raise-syntax-error 'struct/dc 
-                                     (format "the ~s field is mutable, so the contract cannot be lazy"
-                                             (syntax->datum (clause-sel-name clause)))
-                                     stx
-                                     (clause-sel-name clause)))))))
+               (when (and (d/i-clause? clause) (d/i-clause-lazy? clause) mut)
+                 (raise-syntax-error
+                  'struct/dc 
+                  (format "the field: ~s is mutable, so its contract cannot be lazy"
+                          (syntax->datum (d/i-clause-sel-name clause)))
+                  stx
+                  (d/i-clause-sel-name clause)))))))
                           
-       (values info #'id parsed-clauses))]))
+       (values info #'id all-clauses))]))
 
 ;; name->sel-id : identifier syntax -> identifier
 ;; returns the identifier for the selector, where the 'id'
@@ -740,17 +966,40 @@
     [(sel-id #:parent parent-id)
      (combine #'parent-id #'sel-id)]))
 
+(define-for-syntax (name->mut-id stx struct-id id)
+  (define (combine struct-id id)
+    (datum->syntax
+     id
+     (string->symbol
+      (format "set-~a-~a!"
+              (syntax-e struct-id)
+              (syntax-e id)))))
+  (syntax-case id ()
+    [x 
+     (identifier? #'x)
+     (combine struct-id id)]
+    [(#:selector sel-id)
+     (identifier? #'sel-id)
+     (raise-syntax-error
+      'struct/dc
+      "cannot use #:selector to choose a mutable field in an invariant declaration"
+      stx
+      id)]
+    [(sel-id #:parent parent-id)
+     (combine #'parent-id #'sel-id)]))
+
 (define-for-syntax (top-sort/clauses stx clauses)
   (define id->children (make-free-identifier-mapping))
   
   (for ([clause (in-list clauses)])
-    (define id (clause-sel-id clause))
-    (free-identifier-mapping-put! id->children id clause))
+    (when (d/i-clause? clause)
+      (define id (d/i-clause-sel-id clause))
+      (free-identifier-mapping-put! id->children id clause)))
   
   (define (neighbors x)
     (cond
-      [(dep-clause? x)
-       (for/list ([id (in-list (dep-clause-dep-ids x))])
+      [(has-deps? x)
+       (for/list ([id (in-list (get-dep-ids x))])
          (free-identifier-mapping-get id->children id
                                       (λ ()
                                         (raise-syntax-error 'struct/dc "unknown clause" stx id))))]
@@ -781,10 +1030,9 @@
   (define dep-on-mutable-clauses (make-free-identifier-mapping))
   
 
-  ;; find-selector/mutator : clause -> (values identifier? identifier?)
-  ;; this probably goes away
+  ;; find-selector/mutator : d/i-clause -> (values identifier? identifier?)
   (define (find-selector/mutator clause)
-    (define this-selector (clause-sel-id clause))
+    (define this-selector (d/i-clause-sel-id clause))
     (define mutator (for/or ([selector (in-list (list-ref info 3))]
                              [mutator (in-list (list-ref info 4))])
                       (and (free-identifier=? this-selector selector)
@@ -793,31 +1041,33 @@
   
   ;; init the first three mappings above
   (for ([clause (in-list sorted-clauses)])
-    (define-values (sel mut) (find-selector/mutator clause))
-    (free-identifier-mapping-put! mutable-clauses (clause-sel-id clause) (and mut #t))
-    (free-identifier-mapping-put! sel-id->clause (clause-sel-id clause) clause)
-    (when (dep-clause? clause)
-      (for ([var (in-list (dep-clause-dep-ids clause))])
+    (when (d/i-clause? clause)
+      (define-values (sel mut) (find-selector/mutator clause))
+      (free-identifier-mapping-put! mutable-clauses (d/i-clause-sel-id clause) (and mut #t))
+      (free-identifier-mapping-put! sel-id->clause (d/i-clause-sel-id clause) clause))
+    (when (has-deps? clause)
+      (for ([var (in-list (get-dep-ids clause))])
         (free-identifier-mapping-put! depended-on-clauses var #t))))
 
   ;; init the dep-on-mutable-clauses mapping
   (for ([clause (in-list clauses)])
-    (let loop ([clause clause])
-      (define sel-id (clause-sel-id clause))
-      (define current (free-identifier-mapping-get dep-on-mutable-clauses sel-id (λ () 'unknown)))
-      (cond
-        [(eq? current 'unknown)
-         (define ans 
-           (or (free-identifier-mapping-get mutable-clauses sel-id)
-               (and (dep-clause? clause)
-                    (or (dep-clause-depends-on-state? clause)
-                        (for/or ([dep (in-list (dep-clause-dep-ids clause))])
-                          (loop (free-identifier-mapping-get sel-id->clause dep)))))))
-         (free-identifier-mapping-put! dep-on-mutable-clauses sel-id ans)
-         ans]
-        [else
-         current])))
-
+    (when (d/i-clause? clause)
+      (let loop ([clause clause])
+        (define sel-id (d/i-clause-sel-id clause))
+        (define current (free-identifier-mapping-get dep-on-mutable-clauses sel-id (λ () 'unknown)))
+        (cond
+          [(equal? current 'unknown)
+           (define ans 
+             (or (free-identifier-mapping-get mutable-clauses sel-id)
+                 (and (dep-clause? clause)
+                      (or (dep-clause-depends-on-state? clause)
+                          (for/or ([dep (in-list (dep-clause-dep-ids clause))])
+                            (loop (free-identifier-mapping-get sel-id->clause dep)))))))
+           (free-identifier-mapping-put! dep-on-mutable-clauses sel-id ans)
+           ans]
+          [else
+           current]))))
+  
   (define structs
     (let loop ([dep-args '()]
                [clauses sorted-clauses])
@@ -825,44 +1075,43 @@
         [(null? clauses) '()]
         [else
          (define clause (car clauses))
-         (define-values (selector mutator) (find-selector/mutator clause))
+         (define-values (selector mutator)
+           (if (d/i-clause? clause)
+               (find-selector/mutator clause)
+               (values #f #f)))
          (define subcontract-constructor
-           (if (dep-clause? clause)
-               (if (free-identifier-mapping-get dep-on-mutable-clauses (clause-sel-id clause))
-                   (if (clause-lazy? clause)
-                       (raise-syntax-error 
-                        #f 
-                        (format (string-append
-                                 "the contract on field ~a depends on mutable state"
-                                 " (possibly indirectly), so cannot be lazy")
-                                (syntax->datum (clause-sel-name clause)))
-                        stx 
-                        (clause-sel-name clause))
+           (if (d/i-clause? clause)
+               (if (dep-clause? clause)
+                   (if (free-identifier-mapping-get dep-on-mutable-clauses (d/i-clause-sel-id clause))
+                       (if (d/i-clause-lazy? clause)
+                           (raise-syntax-error 
+                            #f 
+                            (format (string-append
+                                     "the contract on field ~a depends on mutable state"
+                                     " (possibly indirectly), so cannot be lazy")
+                                    (syntax->datum (d/i-clause-sel-name clause)))
+                            stx 
+                            (d/i-clause-sel-name clause))
+                           (if mutator
+                               #'dep-on-state-mutable
+                               #'dep-on-state-immutable))
+                       (if (d/i-clause-lazy? clause)
+                           #'dep-lazy-immutable
+                           (if mutator
+                               #'dep-mutable
+                               #'dep-immutable)))
+                   (if (d/i-clause-lazy? clause)
+                       #'lazy-immutable
                        (if mutator
-                           #'dep-on-state-mutable
-                           #'dep-on-state-immutable))
-                   (if (clause-lazy? clause)
-                       #'dep-lazy-immutable
-                       (if mutator
-                           #'dep-mutable
-                           #'dep-immutable)))
-               (if (clause-lazy? clause)
-                   #'lazy-immutable
-                   (if mutator
-                       #'mutable
-                       #'immutable))))
-         (define depended-on? (free-identifier-mapping-get
-                               depended-on-clauses
-                               (clause-sel-id clause)
-                               (λ () #f)))
-         (define subcontract-args 
-           (list #`'#,(clause-sel-name clause) selector depended-on?))
-         (define indep/dep-args
-           (if (dep-clause? clause)
-               (list #`(λ (#,@dep-args) #,(clause-exp clause))
-                     #`'(#,@(reverse dep-args))
-                     #`'#,(dep-clause-type clause))
-               (list #`(coerce-contract 'struct/dc #,(clause-exp clause)))))
+                           #'mutable
+                           #'immutable)))
+               'this-shouldnt-get-used))
+         (define depended-on? (and (d/i-clause? clause)
+                                   (free-identifier-mapping-get
+                                    depended-on-clauses
+                                    (d/i-clause-sel-id clause)
+                                    (λ () #f))))
+         
          (define (get-id name)
            (syntax-case name ()
              [x
@@ -870,13 +1119,32 @@
               name]
              [(x #:parent y)
               #'x]))
-         (cons #`(#,subcontract-constructor #,@subcontract-args
-                                            #,@indep/dep-args
-                                            #,@(if mutator
-                                                   (list mutator)
-                                                   '()))
+         
+         (define subcontract-call
+           (cond
+             [(d/i-clause? clause)
+              (define subcontract-args 
+                (list #`'#,(d/i-clause-sel-name clause) selector depended-on?))
+              (define indep/dep-args
+                (cond
+                  [(dep-clause? clause)
+                   (list #`(λ (#,@dep-args) #,(d/i-clause-exp clause))
+                         #`'(#,@(reverse dep-args))
+                         #`'#,(dep-clause-type clause))]
+                  [else
+                   (list #`(coerce-contract 'struct/dc #,(d/i-clause-exp clause)))]))     
+              #`(#,subcontract-constructor #,@subcontract-args
+                                           #,@indep/dep-args
+                                           #,@(if mutator
+                                                  (list mutator)
+                                                  '()))]
+             [else #`(invariant (λ (#,@dep-args) #,(inv-clause-exp clause))
+                                '#,dep-args
+                                (list #,@(inv-clause-dep-sel-ids clause))
+                                (list #,@(inv-clause-dep-mut-ids clause)))]))
+         (cons subcontract-call
                (loop (if depended-on?
-                         (cons (get-id (clause-sel-name clause)) dep-args)
+                         (cons (get-id (d/i-clause-sel-name clause)) dep-args)
                          dep-args)
                      (cdr clauses)))])))
   

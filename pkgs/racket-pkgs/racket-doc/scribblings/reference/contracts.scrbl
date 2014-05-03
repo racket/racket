@@ -419,7 +419,7 @@ produced.  Otherwise, an impersonator contract is produced.
 }
 
 
-@defform/subs[(struct/dc struct-id field-spec ...)
+@defform/subs[(struct/dc struct-id field-spec ... maybe-inv)
               ([field-spec [field-name maybe-lazy contract-expr]
                            [field-name (dep-field-name ...)
                                        maybe-lazy
@@ -431,7 +431,9 @@ produced.  Otherwise, an impersonator contract is produced.
                            (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
                [maybe-contract-type (code:line) #:flat #:chaperone #:impersonator]
-               [maybe-dep-state (code:line) #:depends-on-state])]{
+               [maybe-dep-state (code:line) #:depends-on-state]
+               [maybe-inv (code:line)
+                          (code:line #:inv (dep-field-name ...) invariant-expr)])]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 contracts produced by the @racket[field-spec]s.
@@ -468,6 +470,10 @@ each time the corresponding field is accessed (or mutated, if it is a mutable
 field). Otherwise, the contract expression for a dependent field contract
 is evaluated when the contract is applied to a value.
 
+If the @racket[#:inv] clause appears, then the invariant expression is 
+evaluated (and must return a non-@racket[#f] value) when the contract
+is applied to a struct.
+
 Contracts for immutable fields must be either flat or chaperone contracts.
 Contracts for mutable fields may be impersonator contracts.
 If all fields are immutable and the @racket[contract-expr]s evaluate
@@ -490,8 +496,8 @@ inspect the entire tree.
                                 [left (val) #:lazy (bst lo val)]
                                 [right (val) #:lazy (bst val hi)])))]
 
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }
-
 
 @defproc[(parameter/c [in contract?] [out contract? in])
          contract?]{

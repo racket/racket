@@ -380,6 +380,21 @@
                           [b #:lazy symbol?]
                           [c (a) boolean?]
                           [d (a c) integer?])))
+  
+  (test-name '(struct/dc s
+                         [a integer?]
+                         [b #:lazy symbol?]
+                         [c (a) ...]
+                         [d (a c) ...]
+                         #:inv (a c) ...)
+             (let ()
+               (struct s (a b c d))
+               (struct/dc s
+                          [a integer?]
+                          [b #:lazy symbol?]
+                          [c (a) boolean?]
+                          [d (a c) integer?]
+                          #:inv (a c) (if c (even? a) (odd? a)))))
 
   ;; NOT YET RELEASED
   #;
