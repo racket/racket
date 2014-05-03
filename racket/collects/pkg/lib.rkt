@@ -3026,14 +3026,30 @@
              [else s])]
            [else s])])]))))
 
-(define (pkg-catalog-update-local #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
+(define (pkg-catalog-update-local #:catalogs [catalogs (pkg-config-catalogs)]
+                                  #:set-catalogs? [set-catalogs? #t]
+                                  #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
                                   #:quiet? [quiet? #f]
                                   #:consult-packages? [consult-packages? #f])
   (parameterize ([db:current-pkg-catalog-file catalog-file])
-    (define catalogs (pkg-config-catalogs))
-    (db:set-catalogs! catalogs)
+    (define current-catalogs (db:get-catalogs))
+    (cond
+     [set-catalogs?
+      (unless (equal? catalogs current-catalogs)
+        (db:set-catalogs! catalogs))]
+     [else
+      (unless (for/and ([catalog (in-list catalogs)])
+                (member catalog current-catalogs))
+        (error 'pkg-catalog-update-local
+               (~a "given catalog list is not a superset of recorded catalogs\n"
+                   "  given: ~s\n"
+                   "  recorded: ~s")
+               catalogs
+               current-catalogs))])
 
     (for ([catalog (in-list catalogs)])
+      (unless quiet?
+        (printf/flush "Updating from ~a\n" catalog))
       (parameterize ([current-pkg-catalogs (list (string->url catalog))])
         (define details (get-all-pkg-details-from-catalogs))
         ;; set packages:
@@ -3050,6 +3066,9 @@
           (define mods (hash-ref ht 'modules #f))
           (when mods
             (db:set-pkg-modules! name catalog checksum mods))
+          (define tags (hash-ref ht 'tags #f))
+          (when tags
+            (db:set-pkg-tags! name catalog tags))
           (define deps (hash-ref ht 'dependencies #f))
           (when deps
             (db:set-pkg-dependencies! name catalog checksum deps)))
@@ -3240,7 +3259,9 @@
    (-> (listof string?))]
   [pkg-catalog-update-local
    (->* ()
-        (#:catalog-file path-string?
+        (#:catalogs (listof string?)
+         #:set-catalogs? boolean?
+         #:catalog-file path-string?
          #:quiet? boolean?
          #:consult-packages? boolean?)
         void?)]

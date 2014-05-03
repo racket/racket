@@ -312,29 +312,13 @@
       (send status-text set-label "Updating package list...")
       (task!
        (lambda ()
-         (define db-catalogs (db:get-catalogs))
-         (for ([catalog (in-list db-catalogs)])
+         (for ([catalog (in-list (db:get-catalogs))])
            (queue-callback/wait
             (lambda ()
               (send status-text set-label (format "Updating from ~a..." catalog))))
-           (define details
-             (parameterize ([current-pkg-catalogs (list (string->url catalog))])
-               (get-all-pkg-details-from-catalogs)))
-           (db:set-pkgs! catalog (for/list ([(name ht) (in-hash details)])
-                                   (db:pkg name
-                                           catalog
-                                           (hash-ref ht 'author "")
-                                           (hash-ref ht 'source "")
-                                           (hash-ref ht 'checksum "")
-                                           (hash-ref ht 'description ""))))
-           (for/list ([(name ht) (in-hash details)])
-             (db:set-pkg-tags! name catalog (hash-ref ht 'tags '())))
-           (for/list ([(name ht) (in-hash details)])
-             (db:set-pkg-modules! name catalog (hash-ref ht 'checksum "") 
-                                  (hash-ref ht 'modules '())))
-           (for/list ([(name ht) (in-hash details)])
-             (db:set-pkg-dependencies! name catalog (hash-ref ht 'checksum "")
-                                       (hash-ref ht 'dependencies '())))))
+           (pkg-catalog-update-local #:catalogs (list catalog)
+                                     #:set-catalogs? #f
+                                     #:quiet? #t)))
        (lambda (finished?)
          (send status-text set-label install-status-desc)
          (set! updating? #f)

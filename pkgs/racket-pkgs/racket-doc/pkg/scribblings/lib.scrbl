@@ -334,16 +334,28 @@ The @racket[current-pkg-scope-version] parameter determines the version
 for extracting existing catalog information.}
 
 
-@defproc[(pkg-catalog-update-local [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]
+@defproc[(pkg-catalog-update-local [#:catalogs catalogs (listof string?) (pkg-config-catalogs)]
+                                   [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]
                                    [#:quiet? quiet? boolean? #f]
+                                   [#:set-catalogs? set-catalogs? boolean? #t]
                                    [#:consult-packages? consult-packages? boolean? #f])
          void?]{
 
-Consults the user's configured @tech{package catalogs} (like
-@racket[pkg-catalog-copy]) and package servers (if
+Consults the @tech{package catalogs} specified by @racket[catalogs] (in the
+same way as @racket[pkg-catalog-copy]) and the user's configured package servers (if
 @racket[consult-packages?] is true) to populate the database
 @racket[catalog-file] with information about available packages and the
-modules that they implement.}
+modules that they implement.
+
+The local catalog @racket[catalog-file] records the set of source catalogs,
+including @racket[catalogs], from which its information is drawn. If
+@racket[set-catalogs?] is true (which is the default), then
+@racket[catalogs] is recorded as the set of sources, and information from any
+other catalog is discarded. If @racket[set-catalogs?] is @racket[#f],
+then @racket[catalogs] must be a subset of the source catalogs already
+recorded in @racket[catalog-file].
+
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:catalogs] and @racket[#:set-catalogs?] arguments.}]}
 
 
 @defproc[(pkg-catalog-suggestions-for-module 
