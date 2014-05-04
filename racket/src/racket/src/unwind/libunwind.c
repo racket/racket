@@ -2944,13 +2944,11 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
     {
 
     case UNW_X86_64_RIP:
-      c->dwarf.ip = *valp;		/* also update the RIP cache */
       loc = c->dwarf.loc[RIP];
       break;
 
     case UNW_X86_64_CFA:
     case UNW_X86_64_RSP:
-      return -UNW_EREADONLYREG;
       *valp = c->dwarf.cfa;
       return 0;
 
@@ -2984,6 +2982,70 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
 
     default:
       Debug (1, "bad register number %u\n", regnum);
+      return -UNW_EBADREG;
+    }
+#endif
+
+#ifdef PLAIN_X86
+  unsigned int mask;
+  int arg_num;
+
+  switch (regnum)
+    {
+    case UNW_X86_EIP:
+      loc = c->dwarf.loc[EIP];
+      break;
+
+    case UNW_X86_CFA:
+    case UNW_X86_ESP:
+      *valp = c->dwarf.cfa;
+      return 0;
+
+    case UNW_X86_EAX:
+    case UNW_X86_EDX:
+      arg_num = regnum - UNW_X86_EAX;
+      mask = (1 << arg_num);
+      if ((c->dwarf.eh_valid_mask & mask) != 0)
+	{
+	  *valp = c->dwarf.eh_args[arg_num];
+	  return 0;
+	}
+      else
+	loc = c->dwarf.loc[(regnum == UNW_X86_EAX) ? EAX : EDX];
+      break;
+
+    case UNW_X86_ECX: loc = c->dwarf.loc[ECX]; break;
+    case UNW_X86_EBX: loc = c->dwarf.loc[EBX]; break;
+
+    case UNW_X86_EBP: loc = c->dwarf.loc[EBP]; break;
+    case UNW_X86_ESI: loc = c->dwarf.loc[ESI]; break;
+    case UNW_X86_EDI: loc = c->dwarf.loc[EDI]; break;
+    case UNW_X86_EFLAGS: loc = c->dwarf.loc[EFLAGS]; break;
+    case UNW_X86_TRAPNO: loc = c->dwarf.loc[TRAPNO]; break;
+
+    case UNW_X86_FCW:
+    case UNW_X86_FSW:
+    case UNW_X86_FTW:
+    case UNW_X86_FOP:
+    case UNW_X86_FCS:
+    case UNW_X86_FIP:
+    case UNW_X86_FEA:
+    case UNW_X86_FDS:
+    case UNW_X86_MXCSR:
+    case UNW_X86_GS:
+    case UNW_X86_FS:
+    case UNW_X86_ES:
+    case UNW_X86_DS:
+    case UNW_X86_SS:
+    case UNW_X86_CS:
+    case UNW_X86_TSS:
+    case UNW_X86_LDT:
+      /* loc = x86_scratch_loc (c, reg); */
+      return -UNW_EBADREG;
+      break;
+
+    default:
+      Debug (1, "bad register number %u\n", reg);
       return -UNW_EBADREG;
     }
 #endif
@@ -3123,7 +3185,7 @@ common_init (struct cursor *c)
   c->sigcontext_addr = 0;
 
   c->dwarf.args_size = 0;
-  c->dwarf.ret_addr_column = 0;
+  c->dwarf.ret_addr_column = EIP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;
   c->dwarf.prev_rs = 0;
@@ -3333,13 +3395,43 @@ unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
 {
 #ifdef UNW_ARM
 # define JIT_FRAME_POINTER_ID 11
-#else
+#endif
+#ifdef UNW_X86_64
 # define JIT_FRAME_POINTER_ID 6 /* = BP */
+#endif
+#ifdef PLAIN_X86
+# define JIT_FRAME_POINTER_ID 5 /* = BP */
 #endif
   return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.as,
 				     ((struct cursor *)c)->dwarf.loc[JIT_FRAME_POINTER_ID].val);
 }
 
+#if defined(PLAIN_X86)
+void unw_manual_step(unw_cursor_t *_c, 
+		     void *ip_addr,
+		     void *bp_addr,
+		     void *sp_addr,
+		     void *bx_addr,
+		     void *_si_addr,
+		     void *di_addr)
+{
+  struct cursor *c = (struct cursor *)_c;
+
+  c->dwarf.loc[3].val = (unw_word_t)bx_addr;
+  c->dwarf.loc[4].val = (unw_word_t)sp_addr;
+  c->dwarf.loc[5].val = (unw_word_t)bp_addr;
+  c->dwarf.loc[6].val = (unw_word_t)_si_addr;
+  c->dwarf.loc[7].val = (unw_word_t)di_addr;
+  c->dwarf.loc[8].val = (unw_word_t)ip_addr;
+
+  c->dwarf.ip = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)sp_addr);
+  c->dwarf.ret_addr_column = UNW_TDEP_IP;
+  c->dwarf.pi_valid = 0;
+  c->dwarf.hint = 0;
+  c->dwarf.prev_rs = 0;
+}
+#endif
 #ifdef UNW_X86_64
 void unw_manual_step(unw_cursor_t *_c, 
 		     void *ip_addr,
