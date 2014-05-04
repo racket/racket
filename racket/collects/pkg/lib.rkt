@@ -2381,7 +2381,8 @@
                        "name"
                        "download-cache-max-files"
                        "download-cache-max-bytes"
-                       "download-cache-dir")))
+                       "download-cache-dir"
+                       "doc-open-url")))
         (pkg-error (~a "missing value for config key\n"
                        "  config key: ~a")
                    key)]
@@ -2437,6 +2438,12 @@
                      key
                      val))
         (update-pkg-cfg! (string->symbol key) (string->number val))]
+       [(list (and key "doc-open-url") val)
+        (unless (eq? 'installation (current-pkg-scope))
+          (pkg-error (~a "setting `doc-open-url' works only in `installation' scope\n"
+                         "  current package scope: ~a")
+                     (current-pkg-scope)))
+        (update-pkg-cfg! 'doc-open-url (if (equal? val "") #f val))]
        [(list* key args)
         (pkg-error "unsupported config key\n  key: ~a" key)])]
     [else
@@ -2455,6 +2462,8 @@
                  "download-cache-max-files"
                  "download-cache-max-bytes")
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
+            ["doc-open-url"
+             (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
             [_
              (pkg-error "unsupported config key\n  key: ~e" key)])]
          [(list)

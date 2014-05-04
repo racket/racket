@@ -638,6 +638,11 @@ for @nonterm{key}.
         be kept in the download cache directory.}
   @item{@exec{download-cache-max-bytes} --- A limit on the total size of files
         that are kept in the download cache directory.}
+  @item{@exec{doc-open-url} --- A URL to use in place of a local
+        filesystem path for viewing (or at least searching)
+        documentation; an empty string, which is the default, disables
+        the URL so that the local filesystem is used. This key can be
+        set only in @exec{installation} scope.}
  ]
 }
 
