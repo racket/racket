@@ -204,6 +204,27 @@
              (struct/dc s
                         [a number?]
                         [b number?]))
+      
+      (,test #f
+             contract-stronger?
+             (struct/dc s
+                        [a integer?]
+                        [b integer?])
+             (struct/dc s
+                        [a integer?]
+                        [b integer?]
+                        #:inv (a b) #f))
+      
+      (,test #t
+             contract-stronger?
+             (struct/dc s
+                        [a integer?]
+                        [b integer?]
+                        #:inv (a b) #f)
+             (struct/dc s
+                        [a integer?]
+                        [b integer?]))
+      
 
       (define (mk c)
         (struct/dc s

@@ -594,6 +594,14 @@
 (define (struct/dc-stronger? this that)
   (and (base-struct/dc? that)
        (eq? (base-struct/dc-pred this) (base-struct/dc-pred that))
+       (let ([this-inv (get-invariant this)]
+             [that-inv (get-invariant that)])
+         (cond
+           [(not that-inv) #t]
+           [(not this-inv) #f]
+           [else
+            (procedure-closure-contents-eq? (invariant-dep-proc this-inv)
+                                            (invariant-dep-proc that-inv))]))
        (for/and ([this-subcontract (in-list (base-struct/dc-subcontracts this))]
                  [that-subcontract (in-list (base-struct/dc-subcontracts that))])
          (cond
@@ -617,6 +625,11 @@
                   (dep-dep-proc this-subcontract)
                   (dep-dep-proc that-subcontract)))]
            [else #t]))))
+
+(define (get-invariant sc)
+  (for/or ([sub (base-struct/dc-subcontracts sc)]
+           #:when (invariant? sub))
+    sub))
 
 (define-struct base-struct/dc (subcontracts pred struct-name here name-info struct/c?))
 
