@@ -49,7 +49,7 @@
 
 ;; Symbol X String -> X
 (define (nat> tag x spec)
-  (check-arg tag (nat? x) spec "natural number" x)
+  (check-arg tag (nat? x) "natural number" spec x)
   x)
 
 ;; Symbol X String -> X
