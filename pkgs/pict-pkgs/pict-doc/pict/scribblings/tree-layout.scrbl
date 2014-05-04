@@ -184,3 +184,5 @@ that render them as @racket[pict]s.
             tree-layout-eval
             (hv-alternating (complete 8))]
 }
+
+@history[#:added "6.0.1.4"]
