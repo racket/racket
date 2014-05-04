@@ -196,7 +196,7 @@ The design of a world program demands that you come up with a data
                  (stop-when stop-expr) (stop-when stop-expr last-scene-expr)
                  (check-with world?-expr)
                  (record? r-expr)
-                 (state boolean-expr)
+                 (state expr)
                  (on-receive rec-expr)
                  (register IP-expr)
                  (port Port-expr)
@@ -709,7 +709,8 @@ and @racket[big-bang] will close down all event handling.}
 
 @item{
 
-@defform[(check-with world-expr?)
+@defform[#:literals (check-with)
+         (check-with world-expr?)
          #:contracts
          ([world-expr? (-> Any boolean?)])]{
  tells DrRacket to call the @racket[world-expr?] function on the result of
@@ -719,7 +720,8 @@ and @racket[big-bang] will close down all event handling.}
 
 @item{
 
-@defform[(record? r-expr)
+@defform[#:literals (record?)
+         (record? r-expr)
          #:contracts
          ([r-expr any/c])]{
  tells DrRacket to enable a visual replay of the interaction,
@@ -733,10 +735,8 @@ and @racket[big-bang] will close down all event handling.}
 
 @item{
 
-@defform[(state boolean-expr)
-         #:contracts
-         ([boolean-expr boolean?])]{
- tells DrRacket to display a separate window in which the current
+@defform[#:literals (state) (state expr)]{
+ if not @racket[#f], DrRacket opens a separate window in which the current
  state is rendered each time it is updated. This is useful for beginners
  who wish to see how their world evolves---without having to design a
  rendering function---plus for the debugging of world programs.
@@ -1170,7 +1170,7 @@ The @tech{server} itself is created with a description that includes the
                  (on-tick tick-expr rate-expr)
                  (on-tick tick-expr rate-expr limit-expr)
                  (on-disconnect dis-expr)
-                 (state boolean-expr)
+                 (state expr)
                  (to-string render-expr)
 		 (port port-expr)
                  (check-with universe?-expr)
@@ -1303,9 +1303,7 @@ optional handlers:
 }
 
 @item{
-@defform/none[(state boolean-expr)
-         #:contracts
-         ([boolean-expr boolean?])]{
+@defform/none[#:literals (state) (state expr)]{
  tells DrRacket to display a separate window in which the current
  state is rendered each time it is updated. This is mostly useful for
  debugging server programs.
