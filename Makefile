@@ -431,6 +431,7 @@ client:
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 win32-client:
+	cmd /c del /f /s /q build\user
 	$(MAKE) win32-base $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
@@ -469,7 +470,7 @@ installer-from-bundle:
 	$(RACKET) -l- distro-build/installer $(DIST_ARGS_q)
 
 win32-distro-build-from-server:
-	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build
+	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build-client
 
 win32-bundle:
 	IF EXIST bundle cmd /c rmdir /S /Q bundle
