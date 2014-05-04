@@ -390,7 +390,9 @@
 (define-syntax (universe stx)
   (syntax-case stx ()
     [(universe) (raise-syntax-error #f "expects an expression for the initial world" stx)]
-    [(universe u) (raise-syntax-error #f "expects at least an on-new and an on-msg clause after the initial world" stx)]
+    [(universe u)
+     (raise-syntax-error #f "expects at least an on-new and an on-msg clause after the initial world"
+                         stx)]
     [(universe u bind ...)
      (let* ([args (->args 'universe stx #'u #'(bind ...) UniSpec void)]
             [dom (syntax->list #'(bind ...))])
