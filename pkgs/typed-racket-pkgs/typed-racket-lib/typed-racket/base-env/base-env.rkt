@@ -2939,7 +2939,10 @@
   (cl->*
    (->optkey (-lst a) ((-> a a Univ)) #:key (-> a a) #f (-lst a))
    (->optkey (-lst a) ((-> b b Univ)) #:key (-> a b) #f (-lst a)))))
-(open-input-file (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Input-Port))
+(open-input-file (->key -Pathlike
+                        #:mode (one-of/c 'binary 'text) #f
+                        #:for-module? Univ #f
+                        -Input-Port))
 (open-output-file
  (->key
   -Pathlike
