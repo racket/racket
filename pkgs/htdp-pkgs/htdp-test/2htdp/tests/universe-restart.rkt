@@ -6,7 +6,7 @@
   (define (u)
     (universe 0
               (on-new (lambda (u w) (make-bundle (+ u 1) '() '())))
-              (on-tick (lambda (w) (make-bundle w '() '())) 1 5)
+              (on-tick (lambda (w) (make-bundle w '() '())) 1 3)
               (on-msg (lambda (u w m) (make-bundle (- u 1) '() (list w))))
               (state #t)))
   
