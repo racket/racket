@@ -24,12 +24,12 @@
   (define binary-or-text-desc
     "(or/c 'binary 'text)")
 
-  (define (open-input-file path #:mode [mode 'binary])
+  (define (open-input-file path #:mode [mode 'binary] #:for-module? [for-module? #f])
     (unless (path-string? path)
       (raise-argument-error 'open-input-file "path-string?" path))
     (unless (memq mode '(binary text))
       (raise-argument-error 'open-input-file binary-or-text-desc mode))
-    (k:open-input-file path mode))
+    (k:open-input-file path mode (if for-module? 'module 'none)))
 
   (define (open-output-file path #:mode [mode 'binary]
                             #:exists [exists 'error])

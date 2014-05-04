@@ -243,7 +243,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("port-closed?",           port_closed_p,          1, 1, env); 
-  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 2, env);
+  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 3, env);
   GLOBAL_PRIM_W_ARITY("open-input-bytes",       open_input_byte_string, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("open-input-string",      open_input_char_string, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("open-output-file",       open_output_file,       1, 3, env);

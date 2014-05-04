@@ -189,7 +189,7 @@ instead of the parameter value.}
 
 A @tech{parameter} that determines a module path used for
 @racket[exn:fail:syntax:missing-module] and
-@racket[exn:fail:filesytem:missing-module] exceptions as raised by the
+@racket[exn:fail:filesystem:missing-module] exceptions as raised by the
 default @tech{load handler}.  The parameter is normally set by a
 @tech{module name resolver}.}
 

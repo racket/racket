@@ -479,7 +479,7 @@ static Scheme_Object *make_oskit_console_input_port();
 static void force_close_output_port(Scheme_Object *port);
 static void force_close_input_port(Scheme_Object *port);
 
-ROSYM static Scheme_Object *text_symbol, *binary_symbol;
+ROSYM static Scheme_Object *text_symbol, *binary_symbol, *module_symbol;
 ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
 ROSYM static Scheme_Object *must_truncate_symbol;
@@ -515,6 +515,7 @@ scheme_init_port (Scheme_Env *env)
 
   REGISTER_SO(text_symbol);
   REGISTER_SO(binary_symbol);
+  REGISTER_SO(module_symbol);
   REGISTER_SO(append_symbol);
   REGISTER_SO(error_symbol);
   REGISTER_SO(replace_symbol);
@@ -526,6 +527,7 @@ scheme_init_port (Scheme_Env *env)
 
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
+  module_symbol = scheme_intern_symbol("module");
   append_symbol = scheme_intern_symbol("append");
   error_symbol = scheme_intern_symbol("error");
   replace_symbol = scheme_intern_symbol("replace");
@@ -4604,7 +4606,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 #endif
   char *filename;
   int regfile, i;
-  int m_set = 0;
+  int m_set = 0, mm_set = 0;
   Scheme_Object *result;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
@@ -4622,6 +4624,12 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     } else if (SAME_OBJ(argv[i], binary_symbol)) {
       /* This is the default */
       m_set++;
+    } else if (SAME_OBJ(argv[i], module_symbol)) {
+      mm_set++;
+      for_module = 1;
+    } else if (SAME_OBJ(argv[i], scheme_none_symbol)) {
+      mm_set++;
+      for_module = 1;
     } else {
       char *astr;
       intptr_t alen;
@@ -4634,7 +4642,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 		       astr, alen);
     }
 
-    if (m_set > 1) {
+    if ((m_set > 1) || (mm_set > 1)) {
       char *astr;
       intptr_t alen;
 
