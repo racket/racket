@@ -199,6 +199,7 @@ The design of a world program demands that you come up with a data
                  (state boolean-expr)
                  (on-receive rec-expr)
                  (register IP-expr)
+                 (port Port-expr)
                  (name name-expr)
                  ])]{
 
@@ -981,6 +982,12 @@ following shapes:
  @racket[(name SomeString)] or @racket[(name SomeSymbol)], the name of the
  world is sent along to the server.
 }}
+
+@item{
+@defform[(port port-expr) #:contracts ([port-expr natural-number/c])]{
+ specifies port on which a world wishes to receive and send messages. A
+ port number is an integer between @racket[0] and @racket[65536].
+}}
 ]
 
 When a world program registers with a universe program and the universe program
@@ -1154,7 +1161,7 @@ The @tech{server} itself is created with a description that includes the
 
 @defform/subs[#:id universe
               #:literals
-              (on-new on-msg on-tick on-disconnect to-string check-with state)
+              (on-new on-msg on-tick on-disconnect to-string check-with port state)
               (universe state-expr clause ...)
               ([clause
                  (on-new new-expr)
@@ -1165,6 +1172,7 @@ The @tech{server} itself is created with a description that includes the
                  (on-disconnect dis-expr)
                  (state boolean-expr)
                  (to-string render-expr)
+		 (port port-expr)
                  (check-with universe?-expr)
                  ])]{
 
@@ -1255,7 +1263,8 @@ optional handlers:
 
 
 @item{
- @defform[(on-disconnect dis-expr)
+ @defform[#:literals (on-disconnect)
+	  (on-disconnect dis-expr)
           #:contracts
           ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tells DrRacket to invoke @racket[dis-expr] every time a participating
@@ -1265,6 +1274,15 @@ optional handlers:
  bundle usually includes this second argument in the third field, telling
  DrRacket not to wait for messages from this world anymore.}
 }
+
+@item{
+@defform/none[#:literals (port)
+              (port port-expr) 
+	      #:contracts 
+	      ([port-expr natural-number/c])]{
+ specifies port on which a universe wishes to receive and send messages. A
+ port number is an integer between @racket[0] and @racket[65536].
+}}
 
 @item{
  @defform[(to-string render-expr)
