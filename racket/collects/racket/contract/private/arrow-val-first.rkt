@@ -731,8 +731,8 @@
        (cond
          [(for/and ([rng-gen (in-list rngs-gens)])
             rng-gen)
+          (define env (generate-env))
           (λ ()
-            (define env (generate-env))
             (procedure-reduce-arity
              (λ args
                ; stash the arguments for use by other generators

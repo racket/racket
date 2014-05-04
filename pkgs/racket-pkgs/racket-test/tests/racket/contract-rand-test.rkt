@@ -48,6 +48,9 @@
 (check-not-exn (λ () ((test-contract-generation (-> (-> integer? integer?) boolean?)) +)))
 (check-not-exn 
  (λ () ((test-contract-generation (-> some-crazy-predicate? some-crazy-predicate?)) 11)))
+(check-not-exn 
+ (λ () (((test-contract-generation (-> (-> (>/c 10) (>/c 10))))) 11)))
+
 
 (define (cannot-generate-exn? x)
   (and (exn:fail? x)
@@ -102,3 +105,4 @@
 (check-exn cannot-generate-exn? (λ () (test-contract-generation 
                                        (-> (listof some-crazy-predicate?)
                                            some-crazy-predicate?))))
+
