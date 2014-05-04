@@ -1,6 +1,10 @@
 #lang racket/base
 
-(require setup/dirs net/sendurl net/uri-codec)
+(require setup/dirs
+         net/sendurl
+         net/uri-codec
+         net/url
+         racket/string)
 (provide perform-search send-main-page)
 
 (define search-dir "search/")
@@ -11,13 +15,40 @@
 (define (send-main-page #:sub [sub "index.html"]
                         #:fragment [fragment #f] #:query [query #f]
                         #:notify [notify void])
-  (let* ([path (build-path (find-user-doc-dir) sub)]
-         [path (if (file-exists? path) path (build-path (find-doc-dir) sub))])
-    (notify path)
-    (send-url/file path #:fragment fragment #:query query)))
+  (define open-url (get-doc-open-url))
+  (cond
+   [open-url
+    (define dest-url (let ([u (string->url open-url)])
+                       (combine-url/relative
+                        u
+                        (string-join
+                         (for/list ([s (explode-path sub)])
+                           (if (path? s)
+                               (path-element->string s)
+                               (format "~a" s)))
+                         "/"))))
+    (notify (url->string dest-url))
+    (send-url (url->string
+               (struct-copy url dest-url
+                            [fragment (or fragment
+                                          (url-fragment dest-url))]
+                            [query (append
+                                    (url-query dest-url)
+                                    (if query
+                                        (url-query
+                                         (string->url
+                                          (format "q?~a" query)))
+                                        null))])))]
+   [else
+    (let* ([path (build-path (find-user-doc-dir) sub)]
+           [path (if (file-exists? path) path (build-path (find-doc-dir) sub))])
+      (notify path)
+      (send-url/file path #:fragment fragment #:query query))]))
 
 ;; This is an example of changing this code to use the online manuals.
-;; Useful in cases like schools that use systems that have problems
+;; Normally, it's better to set `doc-open-url` in "etc/config.rktd",
+;; but as a last resort, you can change `send-main-page` to compute a URL.
+;; This may be useful in cases like schools that use systems that have problems
 ;; running a browser on local files (like NEU).  If you use this, then
 ;; it is a good idea to put the documentation tree somewhere local, to
 ;; have better interaction times instead of using the PLT server.

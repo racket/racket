@@ -1174,6 +1174,15 @@ function for installing a single @filepath{.plt} file.
   Returns a string that is used by the documentation system, augmented
   with a version and search-key query, for remote documentation links.}
 
+@defproc[(get-doc-open-url) (or/c string? #f)]{
+  Returns @racket[#f] or a string for a root URL to be used as an
+  alternative to opening a local file for documentation. A
+  non-@racket[#f] configuration means that DrRacket, for example,
+  performs keyword searches for documentation via the specified URL
+  instead of from locally installed documentation.
+
+  @history[#:added "6.0.1.6"]}
+
 @defproc[(get-installation-name) string?]{ Returns the current
   installation's name, which is often @racket[(version)] but can be
   configured via @racket['installation-name] in @filepath{config.rktd}

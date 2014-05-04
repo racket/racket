@@ -69,6 +69,7 @@
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
 (define-config config:doc-search-url 'doc-search-url values)
+(define-config config:doc-open-url 'doc-open-url values)
 (define-config config:installation-name 'installation-name values)
 (define-config config:build-stamp 'build-stamp values)
 
@@ -76,6 +77,7 @@
          get-cgc-suffix
          get-3m-suffix
          get-doc-search-url
+         get-doc-open-url
          get-installation-name
          get-build-stamp)
 
@@ -84,6 +86,7 @@
 (define (get-3m-suffix) (force config:3m-suffix))
 (define (get-doc-search-url) (or (force config:doc-search-url)
                                  "http://docs.racket-lang.org/local-redirect/index.html"))
+(define (get-doc-open-url) (force config:doc-open-url))
 (define (get-installation-name) (or (force config:installation-name)
                                     (version)))
 (define (get-build-stamp) (force config:build-stamp))

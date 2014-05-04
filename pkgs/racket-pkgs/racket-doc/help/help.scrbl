@@ -3,7 +3,8 @@
           (for-label racket
                      help/search
                      help/help-utils
-                     net/sendurl))
+                     net/sendurl
+                     setup/dirs))
 
 @title{Help and Documentation Utilities}
 
@@ -16,17 +17,25 @@ and to support bug reports. See also @racketmodname[scribble/xref].
 @defmodule[help/search]
 
 @defproc[(send-main-page [#:sub sub path-string? "index.html"]
-                         [#:notify notify (-> path? void) void]
+                         [#:notify notify (-> (or/c path? string?) void) void]
                          [#:fragment fragment (or/c #f string?) #f]
                          [#:query query (or/c #f string?) #f])
          any]{
   Visits the documentation file @racket[sub] in the user's browser. 
   
-  This function builds a URL that points into the main collection documentation
+  When @racket[get-doc-open-url] returns @racket[#f], @racket[send-main-page]
+  builds a URL that points into the main collection documentation
   or into the user-specific documentation, depending on the @racket[sub] argument.
   Once it finds the path, @racket[send-main-page] passes the path to
   @racket[notify]. The @racket[fragment] and @racket[query] arguments are passed
   to @racket[send-url/file], along with the URL.
+
+  When @racket[get-doc-open-url] returns a URL string,
+  @racket[send-main-page] appends @racket[sub] to the URL and passes
+  it to @racket[notify]. It then appends @racket[fragment] and
+  @racket[query] to the URL and passes it on to @racket[send-url].
+
+  @history[#:changed "6.0.1.6" @elem{Added @racket[get-doc-open-url] support.}]
 }
 
 @defproc[(perform-search [str string?]
