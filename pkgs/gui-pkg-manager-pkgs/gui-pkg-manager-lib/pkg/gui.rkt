@@ -3,11 +3,12 @@
          racket/gui/base
          racket/contract/base
          framework
-         "by-source.rkt"
-         "by-list.rkt"
-         "by-installed.rkt"
-         "by-migrate.rkt"
-         "settings.rkt"
+         "gui/private/by-source.rkt"
+         "gui/private/by-list.rkt"
+         "gui/private/by-installed.rkt"
+         "gui/private/by-migrate.rkt"
+         "gui/private/settings.rkt"
+         "gui/private/catalog-update.rkt"
          mrlib/terminal
          string-constants)
 
@@ -28,7 +29,9 @@
          (-> (-> any) any)
          #:package-to-offer 
          (or/c #f string?))
-        (is-a?/c top-level-window<%>))]))
+        (is-a?/c top-level-window<%>))]
+  [pkg-catalog-update-local/simple-status-dialog
+   (->* () (#:parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)) void?)]))
 
 (define pkg-gui-frame% 
   (class (frame:standard-menus-mixin

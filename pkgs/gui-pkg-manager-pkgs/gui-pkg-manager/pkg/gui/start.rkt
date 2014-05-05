@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require pkg/gui/main)
+(require pkg/gui)
 
 (void (make-pkg-gui))
 
@@ -9,4 +9,3 @@
 (module+ test 
   (require racket/gui/base)
   (queue-callback (lambda () (exit)) #f))
-
