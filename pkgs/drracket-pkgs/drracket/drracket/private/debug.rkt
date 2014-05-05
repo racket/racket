@@ -28,6 +28,7 @@ profile todo:
          mrlib/include-bitmap
          images/compile-time
          pkg/lib
+         pkg/gui
          (for-syntax images/icons/misc images/icons/style images/icons/control images/logos)
          (for-syntax racket/base)
          (submod "frame.rkt" install-pkg))
@@ -167,7 +168,7 @@ profile todo:
       (set-flags (cons 'handles-events (get-flags)))))
   
   (define clickable-image-snip%  (clickable-snip-mixin image-snip%))
-  (define clickable-string-snip%  
+  (define clickable-string-snip%
     (class (clickable-snip-mixin snip%)
       (define/override (get-extent dc x y wb hb db sb lb rb)
         (define-values (w h d a) (send dc get-text-extent str))
@@ -198,8 +199,22 @@ profile todo:
         (let ([n (new clickable-string-snip% [str str])])
           (send n set-callback (get-callback))
           n))
-      (super-new)))
+      (define/override (write f)
+        (define bts (string->bytes/utf-8 str))
+        (send f put (bytes-length bts) bts))
+      (super-new)
+      (inherit set-snipclass)
+      (set-snipclass clickable-string-snipclass)))
   (define (set-box/f b v) (when (box? b) (set-box! b v)))
+  (define clickable-string-snipclass
+    (new (class snip-class%
+           (define/override (read f)
+             (define str (bytes->string/utf-8 (or (send f get-unterminated-bytes) #"")))
+             (new clickable-string-snip% [str str]))
+           (super-new))))
+  (send clickable-string-snipclass set-classname "drclickable-string-snipclass")
+  (send clickable-string-snipclass set-version 0)
+  (send (get-the-snip-class-list) add clickable-string-snipclass)
   
   ;; make-note% : string -> (union class #f)
   (define (make-note% filename bitmap)
@@ -461,28 +476,41 @@ profile todo:
     (when (exn:missing-module? exn)
       (define mod ((exn:missing-module-accessor exn) exn))
       (define pkgs (pkg-catalog-suggestions-for-module mod))
-      (unless (null? pkgs)
-        (display "\n" (current-error-port))
-        (display "  packages that provide the missing module:" (current-error-port))
-        (for ([pkg (in-list pkgs)])
-          (eprintf "\n    ~a" pkg)
-          (when (port-writes-special? (current-error-port))
-            (define note (new clickable-string-snip% [str "[install]"]))
-            (send note set-callback 
-                  (λ (snp) 
-                    ;; =Kernel= =Handler=
-                    (define admin (send snp get-admin))
-                    (define canvas (and admin (send (send admin get-editor) get-canvas)))
-                    (define tlw (and canvas (send canvas get-top-level-window)))
-                    (install-pkg
-                     tlw
-                     (lambda (thunk)
-                       (parameterize ([error-display-handler drracket:init:original-error-display-handler])
-                         (thunk)))
-                     #:package-to-offer pkg)))
-            (eprintf "  ")
-            (write-special note (current-error-port)))))))
-  
+      (define update-pkgs-node (new clickable-string-snip% [str "[update catalog]"]))
+      (define (get-tlw snp)
+        (define admin (send snp get-admin))
+        (define canvas (and admin (send (send admin get-editor) get-canvas)))
+        (and canvas (send canvas get-top-level-window)))
+      (send update-pkgs-node set-callback 
+            (λ (snp)
+              (pkg-catalog-update-local/simple-status-dialog
+               #:parent (get-tlw snp))))
+      (cond
+        [(null? pkgs)
+         (when (port-writes-special? (current-error-port))
+           (display "\n  no packages suggestions are available " (current-error-port))
+           (write-special update-pkgs-node (current-error-port)))]
+        [else
+         (display "\n  packages that provide the missing module:" (current-error-port))
+         (when (port-writes-special? (current-error-port))
+           (display " " (current-error-port))
+           (write-special update-pkgs-node (current-error-port)))
+         (for ([pkg (in-list pkgs)])
+           (eprintf "\n    ~a" pkg)
+           (when (port-writes-special? (current-error-port))
+             (define note (new clickable-string-snip% [str "[install]"]))
+             (send note set-callback 
+                   (λ (snp) 
+                     ;; =Kernel= =Handler=
+                     (define tlw (get-tlw snp))
+                     (install-pkg
+                      tlw
+                      (lambda (thunk)
+                        (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                          (thunk)))
+                      #:package-to-offer pkg)))
+             (eprintf "  ")
+             (write-special note (current-error-port))))])))
   
   ;; =User=
   (define (exn->trace exn)

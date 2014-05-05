@@ -27,6 +27,7 @@
          "local-member-names.rkt"
          "rectangle-intersect.rkt"
          pkg/lib
+         pkg/gui
          framework/private/logging-timer
          (submod "frame.rkt" install-pkg))
 
@@ -1246,6 +1247,12 @@
                (define missing-mods (exn-info-missing-mods error/status-message-str+srcloc))
                (with-handlers ([exn:fail? (λ (x) '())])
                  (pkg-catalog-suggestions-for-module missing-mods)))))
+          (define has-missing-mods?
+            (for/or ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
+                     #:when (exn-info-missing-mods error/status-message-str+srcloc))
+              (define missing-mods (exn-info-missing-mods error/status-message-str+srcloc))
+              (not (null? missing-mods))))
+            
           (define (combine-msg vec)
             (define msg (exn-info-str vec))
             (define stack (exn-info-src-vecs vec))
@@ -1277,7 +1284,7 @@
                    (for/sum ([error/status-message-str+srcloc
                               (in-list error/status-message-strs+srclocs)])
                      (max 1 (length (exn-info-src-vecs error/status-message-str+srcloc))))])
-                install-suggestions)))
+                (and has-missing-mods? install-suggestions))))
       (define/public (hide-module-language-error-panel)
         (set! error/status-message-hidden? #t)
         (update-frame-expand-error))
@@ -1646,21 +1653,34 @@
             (send expand-error-message set-msgs 
                   expand-error-msgs expand-error-msg-is-err? expand-error-msgs+stack)
             (send expand-error-install-suggestions-panel change-children (λ (l) '()))
-            (for ([suggestion-pkg (in-list expand-error-install-suggestions)])
-              (new button% 
-                   [parent expand-error-install-suggestions-panel]
-                   [callback 
-                    (λ (_1 _2)
-                      (install-pkg
-                       (send expand-error-install-suggestions-panel get-top-level-window)
-                       (lambda (thunk)
-                         (parameterize ([error-display-handler 
-                                         drracket:init:original-error-display-handler])
-                           (thunk)))
-                       #:package-to-offer suggestion-pkg))]
-                   [font small-control-font]
-                   [label (format (string-constant install-package-button) 
-                                  suggestion-pkg)]))
+            (when expand-error-install-suggestions
+              (cond
+                [(null? expand-error-install-suggestions) 
+                 (new button% 
+                      [parent expand-error-install-suggestions-panel]
+                      [callback 
+                       (λ (_1 _2)
+                         (pkg-catalog-update-local/simple-status-dialog 
+                          #:parent
+                          (send expand-error-install-suggestions-panel get-top-level-window)))]
+                      [font small-control-font]
+                      [label (string-constant update-catalog)])]
+                [else
+                 (for ([suggestion-pkg (in-list expand-error-install-suggestions)])
+                   (new button% 
+                        [parent expand-error-install-suggestions-panel]
+                        [callback 
+                         (λ (_1 _2)
+                           (install-pkg
+                            (send expand-error-install-suggestions-panel get-top-level-window)
+                            (lambda (thunk)
+                              (parameterize ([error-display-handler 
+                                              drracket:init:original-error-display-handler])
+                                (thunk)))
+                            #:package-to-offer suggestion-pkg))]
+                        [font small-control-font]
+                        [label (format (string-constant install-package-button) 
+                                       suggestion-pkg)]))]))
             (send expand-error-button-parent-panel change-children
                   (λ (l)
                     (list (cond
