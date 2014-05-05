@@ -215,7 +215,7 @@
            (define x 1)
            (* x 123))}
       #f
-      @rx{cannot open input file
+      @rx{cannot open module file
           Module Language: invalid language specification
           Interactions disabled}
       #t)
