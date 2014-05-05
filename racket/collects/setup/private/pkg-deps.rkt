@@ -448,7 +448,7 @@
                                [d (in-list deps)])
       (define dep-pkg (car d))
       (define dep-vers (cdr d))
-      (define decl-vers (hash-ref pkg-versions dep-pkg "1.0"))
+      (define decl-vers (hash-ref pkg-versions dep-pkg "0.0"))
       (cond
        [(version<? decl-vers dep-vers)
         (setup-fprintf* (current-error-port) #f 
