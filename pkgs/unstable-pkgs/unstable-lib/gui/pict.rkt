@@ -381,6 +381,7 @@
         #:color (or/c #f string? (is-a?/c color%))
         #:style pen-style/c
         #:alpha (real-in 0 1)
+        #:solid? any/c
         #:under? any/c #:hide-arrowhead? any/c
         #:x-adjust real? #:y-adjust real?]
        pict?))
