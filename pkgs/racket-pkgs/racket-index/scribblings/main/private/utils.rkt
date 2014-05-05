@@ -40,7 +40,9 @@
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
-(define (main-page id [installation-specific? '?] #:force-racket-css? [force-racket-css? #f])
+(define (main-page id [installation-specific? '?]
+                   #:force-racket-css? [force-racket-css? #f]
+                   #:show-root-info? [show-root-info? #f])
   (define info (page-info id))
   (define title-string (car info))
   (define root (cadr info))
@@ -54,10 +56,15 @@
     (title #:style (make-style #f (list*
                                    'no-toc
                                    'toc-hidden
-                                   (if (not force-racket-css?)
-                                       null
-                                       (list
-                                        (make-css-addition (collection-file-path "racket.css" "scribble"))))))
+                                   (append
+                                    (if force-racket-css?
+                                        (list (make-css-addition (collection-file-path "racket.css" "scribble")))
+                                        null)
+                                    (if (not show-root-info?)
+                                        null
+                                        (list
+                                         (make-css-addition (collection-file-path "root-info.css" "scribblings/main/private"))
+                                         (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private")))))))
            title-string
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but
@@ -74,6 +81,9 @@
          (front-toc-items up-path)))
   (make-splice `(,page-title
                  ,@toc
+                 ,@(if show-root-info?
+                     (list @script{var racket_root_version = "@(version)"@";"})
+                     '())
                  ,@(if user-doc?
                      (list @script{SetPLTRoot("@(version)", "@up-path")@";"})
                      '()))))
