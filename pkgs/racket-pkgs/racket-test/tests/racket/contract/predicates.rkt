@@ -215,6 +215,11 @@
   (ctest #t flat-contract? (let ()
                              (struct s (a b))
                              (struct/dc s [a integer?] [b (a) #:flat (>=/c a)])))
+  (ctest #t chaperone-contract?
+         (let ()
+           (struct s (x))
+           (struct/dc s [x () any/c] #:inv (x) #t)))
+  
   (contract-error-test
    'struct/dc-not-really-flat-dep-field
    #'(let ()

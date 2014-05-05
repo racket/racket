@@ -81,7 +81,7 @@
 ;;          the order specified in the contract itself)
 ;; muts : (listof mutator) -- the field mutators for mutable fields
 ;;        on which the invariant depends
-(struct invariant (dep-proc fields sels muts))
+(struct invariant (dep-proc fields sels muts) #:transparent)
 
 (define (subcontract-mutable-field? x)
   (or (mutable? x)
@@ -672,12 +672,16 @@
   (define (flat-subcontract? subcontract)
     (cond
       [(indep? subcontract) (flat-contract? (indep-ctc subcontract))]
-      [(dep? subcontract) (eq? '#:flat (dep-type subcontract))]))
+      [(dep? subcontract) (equal? '#:flat (dep-type subcontract))]
+      [(invariant? subcontract) #t]
+      [else (error 'struct-dc.rkt "internal error")]))
   
   (define (impersonator-subcontract? subcontract)
     (cond
       [(indep? subcontract) (impersonator-contract? (indep-ctc subcontract))]
-      [(dep? subcontract) (eq? '#:impersonator (dep-type subcontract))]))
+      [(dep? subcontract) (equal? '#:impersonator (dep-type subcontract))]
+      [(invariant? subcontract) #f]
+      [else (error 'struct-dc.rkt "internal error")]))
   (cond
     [(and (andmap flat-subcontract? subcontracts)
           (not (ormap subcontract-mutable-field? subcontracts)))
