@@ -12,4 +12,4 @@
 
 (define pkg-desc "Graphical tool for managing Racket package installations")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
