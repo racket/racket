@@ -201,6 +201,12 @@ additional provides all other bindings from @racketmodname[racket/class].
   The type of a class with the given initialization argument, method, and
   field types.
 
+  @ex[
+    (: food% (Class (init [liquid? Boolean])
+                    (field [nutrition Integer])
+                    [get-nutrition (-> Integer)]))
+  ]
+
   The types of methods are provided either without a keyword, in which case
   they correspond to public methods, or with the @racketidfont{augment}
   keyword, in which case they correspond to a method that can be augmented.
@@ -210,9 +216,25 @@ additional provides all other bindings from @racketmodname[racket/class].
   @racket[#:optional] corresponds to an argument that does not need to
   be provided at object instantiation.
 
+  @ex[
+    (: drink% (Class (init [color String]
+                           [carbonated? Boolean]
+                           [viscosity Positive-Real #:optional])))
+  ]
+
   The order of initialization arguments in the type is significant, because
   it determines the types of by-position arguments for use with
   @racket[make-object] and @racket[instantiate].
+
+  @ex[
+    (define drink%
+      (class object%
+        (super-new)
+        (code:comment "The order of `color' and `carbonated?' cannot be swapped")
+        (init color carbonated? [viscosity 1.002])))
+    (code:comment "The order of initialization matches the order in the type")
+    (make-object drink% "purple" #t)
+  ]
 
   When @racket[type-alias-id] is provided, the resulting class type
   includes all of the initialization argument, method, and field types
@@ -258,5 +280,14 @@ additional provides all other bindings from @racketmodname[racket/class].
   method and field types from @racket[class-type-expr]. The types for
   the @racketidfont{augment} and @racketidfont{init} clauses in the
   class type are ignored.
+
+  @ex[
+    (define-type Point% (Class (init-field [x Integer] [y Integer])))
+    (: a-point (Instance Point%))
+    (define a-point
+      (new (class object%
+             (super-new)
+             (init-field [x : Integer 0] [y : Integer 0]))))
+  ]
 }
 
