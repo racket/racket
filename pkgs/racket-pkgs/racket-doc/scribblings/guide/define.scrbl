@@ -237,7 +237,7 @@ Internal definitions in a particular @racket[_body] sequence are
 mutually recursive; that is, any definition can refer to any other
 definition---as long as the reference isn't actually evaluated before
 its definition takes place. If a definition is referenced too early,
-the result is a special value @|undefined-const|.
+an error occurs.
 
 @defexamples[
 (define (weird)

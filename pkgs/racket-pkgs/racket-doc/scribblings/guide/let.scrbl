@@ -129,26 +129,33 @@ The @racket[_expr]s in a @racket[letrec] form are most often
 ]
 
 @interaction[
-(letrec ([tarzan-in-tree?
-          (lambda (name path)
+(letrec ([tarzan-near-top-of-tree?
+          (lambda (name path depth)
             (or (equal? name "tarzan")
                 (and (directory-exists? path)
-                     (tarzan-in-directory? path))))]
+                     (tarzan-in-directory? path depth))))]
          [tarzan-in-directory?
-          (lambda (dir)
-            (ormap (lambda (elem)
-                     (tarzan-in-tree? (path-element->string elem)
-                                      (build-path dir elem)))
-                   (directory-list dir)))])
-  (tarzan-in-tree? "tmp" (find-system-path 'temp-dir)))
+          (lambda (dir depth)
+            (cond
+              [(zero? depth) #f]
+              [else
+               (ormap
+                (λ (elem)
+                  (tarzan-near-top-of-tree? (path-element->string elem)
+                                            (build-path dir elem)
+                                            (- depth 1)))
+                (directory-list dir))]))])
+  (tarzan-near-top-of-tree? "tmp" 
+                            (find-system-path 'temp-dir)
+                            4))
 ]
 
 While the @racket[_expr]s of a @racket[letrec] form are typically
 @racket[lambda] expressions, they can be any expression. The
 expressions are evaluated in order, and after each value is obtained,
 it is immediately associated with its corresponding @racket[_id]. If
-an @racket[_id] is referenced before its value is ready, the result is
-@|undefined-const|, just as for internal definitions.
+an @racket[_id] is referenced before its value is ready, an
+error is raised, just as for internal definitions.
 
 @interaction[
 (letrec ([quicksand quicksand])
