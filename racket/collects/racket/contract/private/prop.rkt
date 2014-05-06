@@ -36,8 +36,12 @@
          skip-projection-wrapper?
          
          prop:opt-chaperone-contract
-         prop:opt-chaperone-contract? 
-         prop:opt-chaperone-contract-get-test)
+         prop:opt-chaperone-contract?
+         prop:opt-chaperone-contract-get-test
+         
+         prop:orc-contract
+         prop:orc-contract?
+         prop:orc-contract-get-subcontracts)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,9 +96,16 @@
        (get-projection c)))
 
 (define (contract-struct-stronger? a b)
-  (let* ([prop (contract-struct-property a)]
-         [stronger (contract-property-stronger prop)])
-    (stronger a b)))
+  (define prop (contract-struct-property a))
+  (define stronger? (contract-property-stronger prop))
+  (let loop ([b b])
+    (cond
+      [(stronger? a b) #t]
+      [(prop:orc-contract? b)
+       (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+       (for/or ([sub-contract (in-list sub-contracts)])
+         (loop sub-contract))]
+      [else #f])))
 
 (define (contract-struct-generate c)
   (define prop (contract-struct-property c))
@@ -398,3 +409,8 @@
   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract))
 
 (define make-flat-contract (build-contract make-make-flat-contract 'anonymous-flat-contract))
+
+;; property should be bound to a function that accepts the contract and
+;; returns a list of contracts that were the original arguments to the or/c
+(define-values (prop:orc-contract prop:orc-contract? prop:orc-contract-get-subcontracts)
+  (make-struct-type-property 'prop:orc-contract))

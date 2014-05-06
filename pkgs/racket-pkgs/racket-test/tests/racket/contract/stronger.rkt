@@ -53,14 +53,25 @@
   (ctest #t contract-stronger? (or/c null? any/c) (or/c null? any/c))
   (ctest #f contract-stronger? (or/c null? any/c) (or/c boolean? any/c))
   (ctest #t contract-stronger? (or/c null? boolean?) (or/c null? boolean?))
-  (ctest #f contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
+  (ctest #t contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
   (ctest #t contract-stronger? 
          (or/c null? (-> integer? integer?))
          (or/c null? (-> integer? integer?)))
   (ctest #f contract-stronger?
          (or/c null? (-> boolean? boolean?))
          (or/c null? (-> integer? integer?)))
-
+  (ctest #f contract-stronger? (or/c number? #f) number?)
+  (ctest #t contract-stronger? number? (or/c number? #f))
+  (ctest #f contract-stronger? (or/c (-> number? number?) #f) (-> number? number?))
+  (ctest #t contract-stronger? (-> number? number?) (or/c (-> number? number?) #f))
+  (ctest #f contract-stronger? (or/c (-> number? number?) (-> number? number? number?) #f) #f)
+  (ctest #t contract-stronger? #f (or/c (-> number? number?) (-> number? number? number?) #f))
+  (ctest #t contract-stronger? (or/c real?) (or/c integer? real?))
+  (ctest #t contract-stronger? (-> number?) (-> (or/c #f number?)))
+  (ctest #t contract-stronger? (-> (or/c #f number?) any/c) (-> number? any/c))
+  (ctest #f contract-stronger? (-> (or/c #f number?)) (-> number?))
+  (ctest #f contract-stronger? (-> number? any/c) (-> (or/c #f number?) any/c))
+  
   (ctest #t contract-stronger? number? number?)
   (ctest #f contract-stronger? boolean? number?)
 
@@ -102,7 +113,7 @@
   (ctest #f contract-stronger?
         (or/c (-> string?) (-> integer? integer?) integer? char?)
         (or/c (-> string?) (-> integer? integer?) integer? boolean?))
-  (ctest #f contract-stronger?
+  (ctest #t contract-stronger?
         (or/c (-> string?) (-> integer? integer?) integer?)
         (or/c (-> string?) (-> integer? integer?) integer? boolean?))
   (ctest #f contract-stronger?

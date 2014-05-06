@@ -355,9 +355,9 @@
   (build-flat-contract-property
    #:stronger
    (λ (this that) 
-      (and (predicate-contract? that)
-           (procedure-closure-contents-eq? (predicate-contract-pred this)
-                                           (predicate-contract-pred that))))
+     (and (predicate-contract? that)
+          (procedure-closure-contents-eq? (predicate-contract-pred this)
+                                          (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
    #:val-first-projection
