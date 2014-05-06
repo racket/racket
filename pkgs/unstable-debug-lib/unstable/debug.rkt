@@ -117,31 +117,34 @@
   (define-splicing-syntax-class argument
     #:attributes ([debugged 1])
     (pattern arg:expr
-             #:attr [debugged 1] (list #'(debug arg)))
+             #:attr [debugged 1] (list #'(debug #:short arg)))
     (pattern (~seq kw:keyword arg:expr)
-             #:attr [debugged 1] (list #'kw #'(debug arg))))
+             #:attr [debugged 1] (list #'kw #'(debug #:short arg))))
 
   (syntax-parse stx
     [(_ f:expr arg:argument ...)
      #`(debug
-        #:name 'debugf
+        #:name 'f
         #:source (quote-srcloc #,stx)
-        (#%app (debug f) arg.debugged ... ...))]))
+        (#%app f arg.debugged ... ...))]))
 
 (define-syntax (debug stx)
   (syntax-parse stx
     [(_ (~or (~optional (~seq #:name name:expr))
-             (~optional (~seq #:source source:expr)))
+             (~optional (~seq #:source source:expr))
+             (~optional (~and short #:short)))
         ...
         body:expr)
      (with-syntax* ([name (or (attribute name) #'(quote body))]
+                    [short (if (attribute short) #'#true #'#false)]
                     [source (or (attribute source) #'(quote-srcloc body))])
        #'(debug/proc
           name
           source
+          short
           (lambda () (#%expression body))))]))
 
-(define (debug/proc name source thunk)
+(define (debug/proc name source short? thunk)
 
   (define src (source-location->prefix source))
 
@@ -156,18 +159,27 @@
   (dynamic-wind
 
     (lambda ()
-      (parameterize ([current-debug-depth depth])
-        (dprintf ">> ~a~a" src (pretty-format/write name 'infinity))))
+      (unless short?
+        (parameterize ([current-debug-depth depth])
+          (dprintf ">> ~a~a" src (pretty-format/write name 'infinity)))))
 
     (lambda ()
-      (parameterize ([current-debug-depth (add1 depth)])
+      (parameterize ([current-debug-depth (if short? depth (add1 depth))])
         (with-handlers ([(lambda _ #t) err])
           (call-with-values thunk
             (match-lambda*
               [(list v)
-               (dprintf "result: ~a"
-                 (pretty-format/print v 'infinity))
-               v]
+               (cond [short?
+                      (dprintf ">> ~a~a: ~a"
+                               src
+                               (pretty-format/write name 'infinity)
+                               (pretty-format/print v 'infinity))
+                      v]
+                     [else
+                      (dprintf "result (~a) : ~a"
+                               (pretty-format/write name 'infinity)
+                               (pretty-format/print v 'infinity))
+                      v])]
               [(list vs ...)
                (dprintf "results: (values~a)"
                  (apply string-append
@@ -176,8 +188,9 @@
                (apply values vs)])))))
 
     (lambda ()
-      (parameterize ([current-debug-depth depth])
-        (dprintf "<< ~a~a" src (pretty-format/write name 'infinity))))))
+      (unless short?
+        (parameterize ([current-debug-depth depth])
+          (dprintf "<< ~a~a" src (pretty-format/write name 'infinity)))))))
 
 (define (dprintf fmt . args)
   (define message (apply format fmt args))
