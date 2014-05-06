@@ -53,14 +53,16 @@
 ; Iterates through generation methods until failure. Returns
 ; #f if no value could be generated
 (define (generate/choose ctc fuel)
-  (let loop ([options (permute (list generate/direct generate/env))])
-    (cond
-      [(empty? options)
-       #f]
-      [else
-       (define option (car options))
-       (define gen (option ctc fuel))
-       (or gen (loop (cdr options)))])))
+  (define direct (generate/direct ctc fuel))
+  (define env (generate/env ctc fuel))
+  (cond
+    [(and direct env)
+     (λ ()
+       (if (zero? (rand 2))
+           (direct)
+           (env)))]
+    [else
+     (or direct env)]))
 
 ; generate/direct :: contract nonnegative-int -> (or/c #f (-> val))
 ;; generate directly via the contract's built-in generator, if possible
