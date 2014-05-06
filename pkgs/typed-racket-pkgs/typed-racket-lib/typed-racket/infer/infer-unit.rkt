@@ -494,7 +494,7 @@
           ;; FIXME: we're using multiple csets here, but I don't think it makes a difference
           ;; not using multiple csets will break for: ???
           [(S (Union: es))
-           (cset-combine
+           (cset-join
             (for*/list ([e (in-list es)]
                         [v (in-value (cg S e))]
                         #:when v)
@@ -719,7 +719,7 @@
                                v)])
                 ;; ensure that something produces a constraint set
                 (and (not (null? results))
-                     (cset-combine results)))))]
+                     (cset-join results)))))]
           [(_ _)
            ;; nothing worked, and we fail
            #f]))))

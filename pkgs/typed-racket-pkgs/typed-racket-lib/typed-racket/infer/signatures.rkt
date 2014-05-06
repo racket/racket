@@ -18,8 +18,8 @@
    [cond-contracted cset-meet* ((listof cset?) . -> . (or/c #f cset?))]
    no-constraint
    [cond-contracted empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
-   [cond-contracted insert (cset? symbol? Type/c Type/c . -> . (or/c #f cset?))]
-   [cond-contracted cset-combine ((listof cset?) . -> . cset?)]
+   [cond-contracted insert (cset? symbol? Type/c Type/c . -> . cset?)]
+   [cond-contracted cset-join ((listof cset?) . -> . cset?)]
    [cond-contracted c-meet ((c? c?) (symbol?) . ->* . (or/c #f c?))]))
 
 (define-signature restrict^
