@@ -46,29 +46,48 @@
 
 ;; (listof (U path-string? submodule-path #f)) -> same
 (define (shorten-paths ps*)
-  ;; zeroth pass, chop off submodule parts, to put back later
-  (define ps ; remove non-paths
+
+  ;; zeroth pass, remove non-paths
+  (define ps
     (for/list ([p (in-list ps*)]
                #:when (or (path-string? p)
                           (and (list? p) ; submodule
                                (not (empty? p))
                                (path-string? (first p)))))
       p))
-  (define submodules ; (listof (U submodule-part #f))
-    (for/list ([p ps])
-      (and (list? p) (rest p))))
-  (define w/o-submodules
-    (for/list ([p ps])
-      (if (list? p) (first p) p)))
+
+  ;; zeroth.5 pass, chop off submodule parts, to put back later
+  (define submodules ; (hashof path (U submodule-part #f))
+    (for/hash ([p ps])
+      (values p (and (list? p) (rest p)))))
+
   ;; first pass, convert to collect relative paths if possible
-  (define first-pass (map path->module-path w/o-submodules))
+  (define w/o-submodules
+    (for/hash ([p ps])
+      (values p (path->module-path (if (list? p) (first p) p)))))
+
   ;; second pass, make non-collect paths relative to their common ancestor
   (define-values (collect-paths non-collect-paths)
-    (partition list? first-pass))
+    (for/fold ([collect-paths     (hash)]
+               [non-collect-paths (hash)])
+        ([(k v) (in-hash w/o-submodules)])
+      (if (list? v) ; collect path?
+          (values (hash-set collect-paths k v)
+                  non-collect-paths)
+          (values collect-paths
+                  (values (hash-set non-collect-paths k v))))))
   (define relative-paths
-    (if (empty? non-collect-paths) ; degenerate case
-        '()
-        (let loop ([paths (map explode-path non-collect-paths)])
+    (cond
+     [(hash-empty? non-collect-paths) ; degenerate case
+      (hash)]
+     [else
+      ;; not using hash-keys and hash-values. need the orders to match
+      (define as-list (hash->list non-collect-paths))
+      (define origs   (map car as-list))
+      (define vs      (map cdr as-list))
+      ;; this transformation preserves order of paths
+      (define relative
+        (let loop ([paths (map explode-path vs)])
           (define head-base (first (first paths)))
           (if (and (for/and ([p (rest paths)]) (equal? (first p) head-base))
                    (not (for/or ([p paths]) (empty? (rest p)))))
@@ -76,11 +95,26 @@
               ;; (and we're not dropping filenames)
               (loop (map rest paths))
               ;; not all the same, we're done
-              (for/list ([p paths]) (apply build-path p))))))
-  ;; reassemble submodule parts
-  (for/list ([s (in-list submodules)]
-             [m (in-list (append collect-paths relative-paths))])
-    (if s (cons m s) m)))
+              (for/list ([p paths]) (apply build-path p)))))
+      (for/hash ([o (in-list origs)]
+                 [v (in-list relative)])
+        (values o v))]))
+
+  ;; final pass, reassemble submodule parts
+  ;; start with collect paths
+  (define init-table
+    (for/hash ([(k v) (in-hash collect-paths)])
+      (define submodule-part (hash-ref submodules k #f))
+      (values k
+              (if submodule-part (cons v submodule-part) v))))
+  ;; then add non-collect paths
+  (for/fold ([table init-table])
+      ([(k v) (in-hash relative-paths)])
+    (define submodule-part (hash-ref submodules k #f))
+    (hash-set table
+              k
+              (if submodule-part (cons v submodule-part) v))))
+
 
 ;; (sequenceof A) (A -> (U path-string? submodule-path #f)) -> (A -> (U ...))
 (define (make-shortener ps* [extract-path values])
@@ -94,10 +128,12 @@
                           (path-string? (first p)))))
                ;; can be any kind of sequence, turn into a list
                (for/list ([p ps*]) p)))
+  (define extracted (map extract-path ps))
+  (define shortened (shorten-paths extracted))
   (define init-table
     (for/hash ([p ps]
-               [s (shorten-paths (map extract-path ps))])
-      (values p s)))
+               [e extracted])
+      (values p (hash-ref shortened e))))
   ;; add bad "paths", mapping to themselves
   (define table
     (for/fold ([table init-table])
@@ -108,11 +144,14 @@
         (extract-path p))))
 
 (define (make-srcloc-shortener srcs [extract-srcloc values])
+  (define extracted
+    (for/list ([s srcs])
+      (srcloc-source (extract-srcloc s))))
+  (define shortened (shorten-paths extracted))
   (define table
     (for/hash ([p srcs]
-               [s (shorten-paths (for/list ([s srcs])
-                                   (srcloc-source (extract-srcloc s))))])
-      (values p s)))
+               [e extracted])
+      (values p (hash-ref shortened e))))
   (lambda (p)
     (define target (hash-ref table p #f))
     (if target
