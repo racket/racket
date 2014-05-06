@@ -259,12 +259,16 @@
            #:attr prop (-not-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
   (pattern (:! t:expr :@ pe:path-elem ... i:id)
            #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
+  (pattern (:! t:expr)
+           #:attr prop (-not-filter (parse-type #'t) 0))
   (pattern (and (~var p (prop doms)) ...)
            #:attr prop (apply -and (attribute p.prop)))
   (pattern (or (~var p (prop doms)) ...)
            #:attr prop (apply -or (attribute p.prop)))
   (pattern ((~literal implies) (~var p1 (prop doms)) (~var p2 (prop doms)))
-           #:attr prop (-imp (attribute p1.prop) (attribute p2.prop))))
+           #:attr prop (-imp (attribute p1.prop) (attribute p2.prop)))
+  (pattern t:expr
+           #:attr prop (-filter (parse-type #'t) 0)))
 
 (define-syntax-class object
   #:attributes (object)

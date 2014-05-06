@@ -526,22 +526,40 @@ functions and continuation mark functions.
 
 @section{Other Type Constructors}
 
-@defform*/subs[#:id -> #:literals (* ...)
-               [(-> dom ... rng)
+@defform*/subs[#:id -> #:literals (|@| * ... ! and or implies car cdr)
+               [(-> dom ... rng optional-filter)
                 (-> dom ... rest * rng)
                 (-> dom ... rest ooo bound rng)
-                (-> dom rng : pred)
 
-                (dom ... -> rng)
+                (dom ... -> rng optional-filter)
                 (dom ... rest * -> rng)
-                (dom ... rest ooo bound -> rng)
-                (dom -> rng : pred)]
+                (dom ... rest ooo bound -> rng)]
                ([ooo #,(racket ...)]
                 [dom type
                      mandatory-kw
                      optional-kw]
                 [mandatory-kw (code:line keyword type)]
-                [optional-kw [keyword type]])]{
+                [optional-kw [keyword type]]
+                [optional-filter (code:line)
+                                 (code:line : type)
+                                 (code:line : pos-filter neg-filter object)]
+                [pos-filter (code:line)
+                            (code:line #:+ proposition ...)]
+                [neg-filter (code:line)
+                            (code:line #:- proposition ...)]
+                [object (code:line)
+                        (code:line #:object index)]
+                [proposition type
+                             (! type)
+                             (type |@| path-elem ... index)
+                             (! type |@| path-elem ... index)
+                             (and proposition ...)
+                             (or proposition ...)
+                             (implies proposition ...)]
+                [path-elem car cdr]
+                [index positive-integer
+                       (positive-integer positive-integer)
+                       identifier])]{
   The type of functions from the (possibly-empty)
   sequence @racket[dom ....] to the @racket[rng] type.
 
@@ -559,13 +577,6 @@ functions and continuation mark functions.
   In the third form, the @racket[...] introduced by @racket[ooo] is literal,
   and @racket[bound] must be an identifier denoting a type variable.
 
-  In the fourth form, there must be only one @racket[dom] and @racket[pred] is the type
-  checked by the predicate. The type @racket[pred] is known as a @emph{filter} for
-  the function type (for an introduction to filters, see
-  @tr-guide-secref["filters-and-predicates"]).
-
-  @ex[string?]
-
   The @racket[dom]s can include both mandatory and optional keyword arguments.
   Mandatory keyword arguments are a pair of keyword and type, while optional
   arguments are surrounded by a pair of parentheses.
@@ -577,9 +588,35 @@ functions and continuation mark functions.
       (is-zero? 2 #:equality =)
       (is-zero? 2 #:equality eq? #:zero 2.0)]
 
+  When @racket[optional-filter] is provided, it specifies the @emph{filter} for the
+  function type (for an introduction to filters, see @tr-guide-secref["filters-and-predicates"]).
+  For almost all use cases, only the simplest form of filters, with a single type after a
+  @racket[:], are necessary:
+
+  @ex[string?]
+
+  The filter specifies that when @racket[(string? x)] evaluates to a true value, the
+  variable @racket[x] can be assumed to have type @racket[String]. Likewise, if the
+  expression evaluates to @racket[#f], the variable has type @racket[String].
+
+  In some cases, asymmetric type information is useful in filters. For example, the
+  @racket[filter] function's first argument is specified with only a positive filter:
+
+  @ex[filter]
+
+  The use of @racket[#:+] indicates that when the function applied to a variable
+  evaluates to a true value, the given type can be assumed for the variable. However,
+  the type-checker gains no information in branches in which the result is @racket[#f].
+
+  Conversely, @racket[#:-] specifies that a function provides information for the
+  false branch of a conditional.
+
+  The other filter proposition cases are rarely needed, but the grammar documents them
+  for completeness. They correspond to logical operations on the propositions.
+
   The type of functions can also be specified with an @emph{infix} @racket[->]
-  which comes immediately before the @racket[rng] type. The fifth through
-  eighth forms match the first four cases, but with the infix style of arrow.
+  which comes immediately before the @racket[rng] type. The fourth through
+  sixth forms match the first three cases, but with the infix style of arrow.
 
   @ex[(: add2 (Number -> Number))
       (define (add2 n) (+ n 2))]
