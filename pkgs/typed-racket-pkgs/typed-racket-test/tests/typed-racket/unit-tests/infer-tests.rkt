@@ -7,7 +7,7 @@
   (rep type-rep)
   (r:infer infer)
 
-  (types numeric-tower utils abbrev))
+  (types union substitute numeric-tower utils abbrev))
 
 (provide tests)
 (gen-test-main)
@@ -19,7 +19,7 @@
                 (fv ty*)
                 (list (quote elems) ...))))
 
-(define-syntax (infer-t stx)
+(begin-for-syntax
   (define-splicing-syntax-class vars
     (pattern (~seq) #:with vars #'empty)
     (pattern (~seq #:vars vars:expr) ))
@@ -29,14 +29,44 @@
   (define-splicing-syntax-class pass
     (pattern (~seq) #:with pass #'#t)
     (pattern #:pass #:with pass #'#t)
-    (pattern #:fail #:with pass #'#f))
+    (pattern #:fail #:with pass #'#f)))
+
+(define-syntax (infer-t stx)
   (syntax-parse stx
     ([_ S:expr T:expr :vars :indices :pass]
-     #'(test-case "foobar"
+     (syntax/loc stx
+       (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
          (define result (infer vars indices (list S) (list T) #f))
          (unless (equal? result pass)
-           (fail-check "Could not infer a substitution"))))))
+           (fail-check "Could not infer a substitution")))))))
 
+(define-syntax (infer-l stx)
+  (syntax-parse stx
+    ([_ S:expr T:expr :vars :indices :pass]
+     (syntax/loc stx
+       (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
+         (define result (infer vars indices S T #f))
+         (unless (equal? result pass)
+           (fail-check "Could not infer a substitution")))))))
+
+
+(define-syntax-rule (i2-t t1 t2 (a b) ...)
+  (test-equal? (format "~a ~a" t1 t2)
+               (infer (fv t1) null (list t2) (list t1) (-lst* (make-F a) ...) #f)
+               (make-immutable-hash (list (cons a (t-subst b)) ...))))
+
+(define-syntax-rule (i2-l t1 t2 fv (a b) ...)
+  (test-equal? (format "~a ~a" t2 t1)
+               (infer fv null t2 t1 (-lst* (make-F a) ...) #f)
+               (make-immutable-hash (list (cons a (t-subst b)) ...))))
+
+(define (f t1 t2) (infer (fv t1) null (list t1) (list t2) #f))
+
+(define-syntax-rule (i2-f t1 t2)
+  (infer-t t2 t1 #:vars (fv t2) #:fail))
+
+(define N -Number)
+(define B -Boolean)
 
 
 (define fv-tests
@@ -72,13 +102,47 @@
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots Univ 'b) #:indices '(b))
 
+    [infer-t (->... null ((-v a) a) (-v b)) (-> -Symbol -String) #:vars '(b) #:indices '(a)]
+    [infer-t (->... null ((-v a) a) (make-ListDots (-v a) 'a)) (-> -String -Symbol  (-lst* -String -Symbol)) #:indices '(a)]
+    [infer-t (->... (list (-v b)) ((-v a) a) (-v b)) (-> -String -Symbol -String) #:vars '(b) #:indices '(a)]
+
+    [infer-l (list (->... null ((-v b) b) (-v a)) (-> (-v a) -Boolean))
+             (list (-> -String -Symbol) (-> Univ -Boolean) -String)
+             #:vars '(a)
+             #:indices '(b)]
+    [infer-l (list (->... null ((-v a) a) (-v b)) (make-ListDots (-v a) 'a))
+             (list (-> -Symbol -Symbol -String) (-lst* -Symbol -Symbol))
+             #:vars '(b)
+             #:indices '(a)]
     ;; Currently Broken
     ;(infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b))
     ;(infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))
     ;(infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
     ;(infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
-  ))
+    [i2-t (-v a) N ('a N)]
+    [i2-t (-pair (-v a) (-v a)) (-pair N (Un N B)) ('a (Un N B))]
+    [i2-t (-lst (-v a)) (-pair N (-pair N (-val null))) ('a N)]
+    [i2-t (-lst (-v a)) (-pair N (-pair B (-val null))) ('a (Un N B))]
+    [i2-t Univ (Un N B)]
+    [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a (Un))]
+
+
+    [i2-l (list (-v a) (-v a) (-v b)) 
+          (list (Un (-val 1) (-val 2)) N N)
+          '(a b) ('b N) ('a N)]
+    [i2-l (list (-> (-v a) Univ) (-lst (-v a)))
+          (list (-> N (Un N B)) (-lst N))
+          '(a) ('a N)]
+    [i2-l (list (-> (-v a) (-v b)) (-lst (-v a)))
+          (list (-> N N) (-lst (Un (-val 1) (-val 2))))
+          '(a b) ('b N) ('a (Un (-val 1) (-val 2)))]
+    [i2-l (list  (-lst (-v a)))
+          (list  (-lst (Un B N)))
+          '(a) ('a (Un N B))]
+    ;; error tests
+    [i2-f (-lst (-v a)) Univ]
+    ))
 
 
 (define tests

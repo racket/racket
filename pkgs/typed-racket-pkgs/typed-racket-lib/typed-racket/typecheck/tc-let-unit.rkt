@@ -37,7 +37,7 @@
 ;; TODO: make this function sane.
 (define/cond-contract (do-check expr->type namess expected-results exprs body expected)
   ((syntax? tc-results/c . -> . any/c)
-   (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
+   (listof (listof identifier?)) (listof tc-results/c)
    (listof syntax?) syntax? (or/c #f tc-results/c)
    . -> .
    tc-results/c)
