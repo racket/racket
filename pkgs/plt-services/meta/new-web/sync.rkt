@@ -7,12 +7,16 @@
 (require racket/cmdline)
 
 (define dry-run? #f)
+(define save-temps? #f)
 
 (command-line
  #:once-each
  [("--dry-run") "Don't actually upload"
   (printf "Dry-run mode enabled\n")
-  (set! dry-run? #t)])
+  (set! dry-run? #t)]
+ [("--save-temps") "Preserve generated files"
+  (printf "Saving generated files\n")
+  (set! save-temps? #t)])
 
 ;; Manually check package install and version:
 (define s3-sync-pkg "s3-sync")
@@ -82,4 +86,7 @@
 ;; ----------------------------------------
 
 (current-directory orig-dir)
-(delete-directory/files tmp-dir)
+
+(if save-temps?
+    (printf "Files saved in ~a\n" tmp-dir)
+    (delete-directory/files tmp-dir))
