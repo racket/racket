@@ -2,7 +2,6 @@
 (require rackunit
          racket/port
          racket/system
-         unstable/debug
          racket/match
          (for-syntax racket/base
                      syntax/parse))
