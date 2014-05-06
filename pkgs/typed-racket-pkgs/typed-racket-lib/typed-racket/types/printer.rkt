@@ -65,8 +65,8 @@
 		 #:when (and (Type? t*) (type-equal? t t*)))
 	 n))
     (if (null? candidates)
-	#f
-	(sort candidates string>? #:key symbol->string))]
+        #f
+        (sort candidates string>? #:key symbol->string))]
    [else #f]))
 
 ;; print-<thing> : <thing> Output-Port Boolean -> Void

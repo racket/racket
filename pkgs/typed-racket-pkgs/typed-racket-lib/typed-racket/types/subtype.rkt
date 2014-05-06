@@ -3,7 +3,7 @@
          racket/match racket/function racket/lazy-require racket/list
          (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
-         (utils tc-utils)
+         (utils tc-utils early-return)
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
          (for-syntax racket/base syntax/parse unstable/sequence))
@@ -225,16 +225,6 @@
   (subtype-seq A0
 	       (subtype* s t)
 	       (subtype* t s)))
-
-(define-syntax (early-return stx)
-  (syntax-parse stx
-    [(_ e:expr ... #:return-when e0:expr e1:expr rest ...)
-     #'(let ()
-         e ...
-         (if e0 e1
-             (early-return rest ...)))]
-    [(_ e:expr ...) #'(let () e ...)]))
-
 
 (define bottom-key (Rep-seq -Bottom))
 (define top-key (Rep-seq Univ))

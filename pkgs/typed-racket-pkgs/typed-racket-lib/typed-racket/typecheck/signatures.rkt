@@ -7,7 +7,7 @@
 
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . full-tc-results/c)]
-   [cond-contracted tc-expr/check (syntax? tc-results/c . -> . full-tc-results/c)]
+   [cond-contracted tc-expr/check (syntax? tc-results/c . -> . tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
    [cond-contracted tc-body (syntax? . -> . full-tc-results/c)]
    [cond-contracted tc-body/check (syntax? tc-results/c . -> . full-tc-results/c)]

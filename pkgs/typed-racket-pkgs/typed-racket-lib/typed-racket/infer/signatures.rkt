@@ -7,26 +7,20 @@
 (provide (all-defined-out))
 
 (define-signature dmap^
-  ([cond-contracted dmap-meet (dmap? dmap? . -> . dmap?)]))
+  ([cond-contracted dmap-meet (dmap? dmap? . -> . (or/c #f dmap?))]))
 
 (define-signature promote-demote^
   ([cond-contracted var-promote (Type/c (listof symbol?) . -> . Type/c)]
    [cond-contracted var-demote  (Type/c (listof symbol?) . -> . Type/c)]))
 
 (define-signature constraints^
-  ([cond-contracted exn:infer? (any/c . -> . boolean?)]
-   [cond-contracted fail-sym symbol?]
-   ;; inference failure - masked before it gets to the user program
-   (define-syntaxes (fail!)
-     (syntax-rules ()
-       [(_ s t) (raise (list fail-sym s t))]))
-   [cond-contracted cset-meet (cset? cset? . -> . cset?)]
-   [cond-contracted cset-meet* ((listof cset?) . -> . cset?)]
+  ([cond-contracted cset-meet (cset? cset? . -> . (or/c #f cset?))]
+   [cond-contracted cset-meet* ((listof cset?) . -> . (or/c #f cset?))]
    no-constraint
    [cond-contracted empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
    [cond-contracted insert (cset? symbol? Type/c Type/c . -> . cset?)]
-   [cond-contracted cset-combine ((listof cset?) . -> . cset?)]
-   [cond-contracted c-meet ((c? c?) (symbol?) . ->* . c?)]))
+   [cond-contracted cset-join ((listof cset?) . -> . cset?)]
+   [cond-contracted c-meet ((c? c?) (symbol?) . ->* . (or/c #f c?))]))
 
 (define-signature restrict^
   ([cond-contracted restrict ((Type/c Type/c) ((or/c 'new 'orig)) . ->* . Type/c)]))
