@@ -35,6 +35,8 @@ LINK_MODE = --save
 
 CPUS = 
 
+AGAIN = 
+
 in-place:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-in-place PKGS="$(PKGS)" ; \
@@ -50,17 +52,19 @@ LIBSETUP = -N raco -l- raco setup
 plain-in-place:
 	$(MAKE) base
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
-	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
+	if [ "$(AGAIN)" = "" ] ; \
+	 then $(MAKE) pkg-links $(PKG_LINK_COPY_ARGS) ; fi
 	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
+	if [ "$(AGAIN)" = "" ] ; \
+	 then $(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS) ; fi
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) racket
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 again:
-	$(MAKE) LINK_MODE="--restore"
+	$(MAKE) in-place AGAIN="1"
 
 IN_PLACE_COPY_ARGS = JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
 
@@ -256,6 +260,8 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # Linking all packages (development mode; not an installer build)
 
 LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir native-pkgs
+
+no-pkg-links:
 
 pkg-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
