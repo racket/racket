@@ -6,8 +6,6 @@
          (contract-req)
          unstable/sequence unstable/hash racket/match)
 
-(require unstable/debug)
-
 (import constraints^)
 (export dmap^)
 
