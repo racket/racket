@@ -2778,5 +2778,11 @@ generators) or because there is not enough fuel. In either case, the
 thunk @racket[fail] is invoked.
 }
 
-
-
+@defproc[(contract-exercise [val any/c]) void?]{
+  Attempts to get @racket[val] to break its contract (if any).
+                  
+  Uses @racket[value-contract] to determine if @racket[val] has a contract and,
+  if it does, uses information about the contract's shape to poke and prod
+  at the value. For example, if the value is function, it will use the contract
+  to tell it what arguments to supply to the value. 
+}
