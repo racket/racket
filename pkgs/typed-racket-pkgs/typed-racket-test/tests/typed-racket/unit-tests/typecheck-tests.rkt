@@ -2910,6 +2910,12 @@
          (ann (for/list ([z #"foobar"]) (add1 z)) (Listof Integer))
          (-lst -Int)]
 
+       [tc-e
+         (with-handlers ([exn:fail? (λ (exn) 4)])
+            5)
+         #:ret (ret -Nat -true-filter)
+         #:expected (ret -Nat -no-filter)]
+
         )
   (test-suite
    "tc-literal tests"

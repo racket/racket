@@ -90,6 +90,7 @@
 
 ;; syntax tc-results -> tc-results
 (define (check-subforms/with-handlers/check form expected)
+  (define body-results #f)
   (find-syntax form
     ;; if this needs to be checked
     [stx:with-type^
@@ -100,8 +101,8 @@
      (tc-expr/check #'stx (ret (-> (Un) (tc-results->values expected))))]
     ;; this is the body of the with-handlers
     [stx:exn-body^
-     (tc-expr/check #'stx expected)])
-  expected)
+     (set! body-results (tc-expr/check #'stx expected))])
+  body-results)
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> void

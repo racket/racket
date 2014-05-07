@@ -7,7 +7,7 @@
 
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . full-tc-results/c)]
-   [cond-contracted tc-expr/check (syntax? tc-results/c . -> . tc-results/c)]
+   [cond-contracted tc-expr/check (syntax? tc-results/c . -> . full-tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
    [cond-contracted tc-body (syntax? . -> . full-tc-results/c)]
    [cond-contracted tc-body/check (syntax? tc-results/c . -> . full-tc-results/c)]
@@ -15,9 +15,9 @@
    [cond-contracted single-value ((syntax?) ((or/c tc-results/c #f)) . ->* . full-tc-results/c)]))
 
 (define-signature check-subforms^
-  ([cond-contracted check-subforms/ignore (syntax? . -> . any)]
-   [cond-contracted check-subforms/with-handlers (syntax? . -> . any)]
-   [cond-contracted check-subforms/with-handlers/check (syntax? tc-results/c . -> . any)]))
+  ([cond-contracted check-subforms/ignore (syntax? . -> . void?)]
+   [cond-contracted check-subforms/with-handlers (syntax? . -> . full-tc-results/c)]
+   [cond-contracted check-subforms/with-handlers/check (syntax? tc-results/c . -> . full-tc-results/c)]))
 
 (define-signature check-class^
   ([cond-contracted check-class (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]))
