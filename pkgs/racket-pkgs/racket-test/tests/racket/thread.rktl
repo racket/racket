@@ -1180,6 +1180,68 @@
   (test #f thread-running? t2))
 
 ;; ----------------------------------------
+;; custodian exits
+
+(let ()
+  (define c (make-custodian))
+
+  (define done 0)
+
+  (define e (custodian-add-tidy! c (lambda (e) (set! done (add1 done)))))
+
+  (test #t custodian-tidy-callback? e)
+  (test #f custodian-tidy-callback? c)
+
+  (test #f ormap custodian-tidy-callback?
+        (custodian-managed-list c (current-custodian)))
+
+  (custodian-remove-tidy! e)
+  (custodian-remove-tidy! e) ; no-op
+
+  (custodian-tidy-all c)
+  (test 0 values done)
+
+  (define e2 (custodian-add-tidy! c (lambda (e) (set! done (add1 done)))))
+  (custodian-tidy-all c)
+  (test 1 values done)
+
+  (custodian-remove-tidy! e2)
+
+  (define e3 (custodian-add-tidy! (make-custodian c) (lambda (e) (set! done (add1 done)))))
+  (custodian-tidy-all c)
+  (test 2 values done)
+  (custodian-tidy-all c)
+  (test 3 values done)
+
+  (custodian-remove-tidy! e3)
+
+  (custodian-add-tidy! c (lambda (e)
+                           (custodian-remove-tidy! e)
+                           (set! done (add1 done))
+                           (custodian-add-tidy! c (lambda (e)
+                                                    (custodian-remove-tidy! e)
+                                                    (set! done (add1 done))))))
+  (custodian-tidy-all c)
+  (test 4 values done)
+  (custodian-tidy-all c)
+  (test 5 values done)
+  (custodian-tidy-all c)
+  (test 5 values done)
+
+  (define e5 (custodian-add-tidy! c (lambda (e) (error "oops1"))))
+  (err/rt-test (custodian-tidy-all c) exn:fail?)
+  (err/rt-test (custodian-tidy-all c) exn:fail?)
+  (custodian-remove-tidy! e5)
+  (test (void) custodian-tidy-all c)
+
+  (custodian-add-tidy! c (lambda (e) (set! done (add1 done))))
+  (custodian-shutdown-all c)
+  (test 5 values done)
+  (custodian-tidy-all c)
+  (test 5 values done)
+  (err/rt-test (custodian-add-tidy! c (lambda (e) 'x))))
+
+;; ----------------------------------------
 
 ;; Check that a terminated thread cleans up ownership
 ;;  of runstack and mark stack (crashes or doesn't).

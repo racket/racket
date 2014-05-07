@@ -24,7 +24,8 @@ automatically directed to shut down its managed values as well.}
 
 @defproc[(custodian-shutdown-all [cust custodian?]) void?]{
 
-@margin-note{In GRacket, @|eventspaces| managed by @racket[cust] are also
+@margin-note{In @racketmodname[racket/gui/base],
+             @|eventspaces| managed by @racket[cust] are also
              shut down.}
 
 Closes all @tech{file-stream ports}, @tech{TCP ports}, @tech{TCP
@@ -40,7 +41,8 @@ thread.}
 
 @defparam[current-custodian cust custodian?]{
 
-@margin-note{In GRacket, custodians also manage @|eventspaces|.}
+@margin-note{Custodians also manage @|eventspaces|
+             from @racketmodname[racket/gui/base].}
 
 A @tech{parameter} that determines a custodian that assumes responsibility
 for newly created threads, @tech{file-stream ports}, TCP ports,
@@ -126,3 +128,60 @@ The @tech{custodian box} becomes ready when its custodian is shut down;
 @defproc[(custodian-box-value [cb custodian-box?]) any]{Returns the
  value in the given @tech{custodian box}, or @racket[#f] if the value
  has been removed.}
+
+
+@defproc[(custodian-tidy-callback? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] represents the registration of a
+@tech{tidy callback}, @racket[#f] otherwise.
+
+@history[#:added "6.0.1.7"]}
+
+
+@defproc[(custodian-add-tidy! [cust custodian?]
+                              [proc (custodian-tidy-callback? . -> . any)])
+         custodian-tidy-callback?]{
+
+Registers @racket[proc] as a @tech{tidy callback} in @racket[cust], so
+that @racket[proc] is called when @racket[custodian-tidy-all] is
+applied to @racket[cust] or any of its superordinates.
+
+The result value represents the registration of the callback and can
+be used with @racket[custodian-remove-tidy!] to unregister the callback.
+
+When @racket[proc] is called as a @tech{tidy callback}, it is passed
+the same value that is returned by @racket[custodian-add-tidy!] so
+that @racket[proc] can conveniently unregister itself. The call of
+@racket[proc] is within a @tech{continuation barrier}.
+
+All registered @tech{tidy callbacks} are preserved in @racket[cust]
+until they are explicitly removed with @racket[custodian-remove-tidy!]
+or the custodian is shut down with @racket[custodian-shutdown-all].
+If @racket[cust] has been shut down already, the @exnraise[exn:fail:contract].
+
+@history[#:added "6.0.1.7"]}
+
+
+@defproc[(custodian-remove-tidy! [tidy custodian-tidy-callback?]) void?]{
+
+Unregisters the @tech{tidy callback} that was registered by the
+@racket[custodian-add-tidy!] call that produced @racket[tidy].
+
+If the registration represented by @racket[tidy] has been removed already,
+then @racket[custodian-remove-tidy!] has no effect.
+
+@history[#:added "6.0.1.7"]}
+
+
+@defproc[(custodian-tidy-all [cust custodian?]) void?]{
+
+Calls all @tech{tidy callbacks} registered with @racket[cust] (and its
+subordinates).
+
+The @tech{tidy callbacks} to call are collected from @racket[cust]
+before the first one is called. If a @tech{tidy callback} registers a
+new @tech{tidy callback}, the new one is @emph{not} called. If a
+@tech{tidy callback} raises an exception or otherwise escapes, then
+the remaining @tech{tidy callbacks} are not called.
+
+@history[#:added "6.0.1.7"]}

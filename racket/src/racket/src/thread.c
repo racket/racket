@@ -357,6 +357,10 @@ static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_tidy_all(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_add_tidy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_remove_tidy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_tidy_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
@@ -530,6 +534,10 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("make-custodian"        , make_custodian       , 0, 1, env);
   GLOBAL_FOLDING_PRIM("custodian?"            , custodian_p          , 1, 1, 1  , env);
   GLOBAL_PRIM_W_ARITY("custodian-shutdown-all", custodian_close_all  , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("custodian-tidy-all"    , custodian_tidy_all   , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("custodian-add-tidy!"   , custodian_add_tidy   , 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("custodian-remove-tidy!", custodian_remove_tidy, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("custodian-tidy-callback?", custodian_tidy_p     , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("custodian-managed-list", custodian_to_list    , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("make-custodian-box"    , make_custodian_box   , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("custodian-box-value"   , custodian_box_value  , 1, 1, env);
@@ -1400,7 +1408,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 		}
 	      }
 	    }
-	  } else {
+	  } else if (f) {
 	    f(o, data);
 	  }
 	}
@@ -1462,7 +1470,6 @@ static void do_close_managed(Scheme_Custodian *m)
     else
       scheme_thread_block(0.0);
   }
-
 }
 
 void scheme_close_managed(Scheme_Custodian *m)
@@ -1472,6 +1479,97 @@ void scheme_close_managed(Scheme_Custodian *m)
   /* Give killed threads time to die: */
   scheme_thread_block(0);
   scheme_current_thread->ran_some = 1;
+}
+
+static Scheme_Object *get_tidy_managed(Scheme_Custodian *m)
+{
+  Scheme_Custodian *c, *start;
+  Scheme_Object *o, *r = scheme_null;
+  int i;
+
+  if (!m)
+    m = main_custodian;
+
+  if (m->shut_down)
+    return scheme_null;
+  
+  for (c = m; CUSTODIAN_FAM(c->children); ) {
+    for (c = CUSTODIAN_FAM(c->children); CUSTODIAN_FAM(c->sibling); ) {
+      c = CUSTODIAN_FAM(c->sibling);
+    }
+  }
+
+  start = m;
+  m = c;
+  while (1) {
+    for (i = 0; i < m->count; i++) {
+      if (m->boxes[i]) {
+
+	o = xCUSTODIAN_FAM(m->boxes[i]);
+
+        if (o && (SCHEME_OUTPORTP(o)
+                  || SAME_TYPE(SCHEME_TYPE(o), scheme_custodian_tidy_type))) {
+          r = scheme_make_pair(o, r);
+          SCHEME_USE_FUEL(1);
+        }
+      }
+    }
+    
+    if (SAME_OBJ(m, start))
+      break;
+    m = CUSTODIAN_FAM(m->global_prev);
+
+    if (!m) {
+      /* custodian was shut down? */
+      break;
+    }
+  }
+
+  return r;
+}
+
+int scheme_tidy_managed(Scheme_Custodian *m, int catch_errors)
+{
+  Scheme_Object *r, *o;
+  Scheme_Thread *p;
+  mz_jmp_buf * volatile saved_error_buf;
+  mz_jmp_buf new_error_buf;
+  volatile int escaped = 0;
+
+  if (catch_errors) {
+    p = scheme_current_thread;
+    saved_error_buf = p->error_buf;
+    p->error_buf = &new_error_buf;
+  } else
+    saved_error_buf = NULL;
+  
+  if (!scheme_setjmp(new_error_buf)) {
+    r = get_tidy_managed(m);
+    
+    while (!SCHEME_NULLP(r)) {
+      o = SCHEME_CAR(r);
+      
+      if (SCHEME_OUTPORTP(o)) {
+        scheme_flush_if_output_fds(o);
+      } else {
+        Scheme_Object *f, *a[1];
+        
+        f = SCHEME_PTR1_VAL(o);
+        
+        a[0] = o;
+        (void)scheme_apply_multi(f, 1, a);
+      }
+      
+      r = SCHEME_CDR(r);
+    }
+  } else {
+    escaped = 1;
+  }
+
+  if (catch_errors)
+    scheme_current_thread->error_buf = saved_error_buf;
+
+  return escaped;
 }
 
 static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[])
@@ -1512,6 +1610,67 @@ static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[])
   scheme_close_managed((Scheme_Custodian *)argv[0]);
 
   return scheme_void;
+}
+
+static Scheme_Object *custodian_tidy_all(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_CUSTODIANP(argv[0]))
+    scheme_wrong_contract("custodian-tidy-all", "custodian?", 0, argc, argv);
+
+  scheme_tidy_managed((Scheme_Custodian *)argv[0], 0);
+
+  return scheme_void;
+}
+
+static Scheme_Object *custodian_add_tidy(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *e;
+  Scheme_Custodian_Reference *mref;
+  Scheme_Custodian *m;
+
+  if (!SCHEME_CUSTODIANP(argv[0]))
+    scheme_wrong_contract("custodian-add-tidy!", "custodian?", 0, argc, argv);
+  scheme_check_proc_arity("custodian-add-tidy!", 1, 1, argc, argv);
+  
+  m = (Scheme_Custodian *)argv[0];
+  if (!scheme_custodian_is_available(m))
+    scheme_contract_error("custodian-add-tidy!", "the custodian has been shut down",
+                          "custodian", 1, m,
+                          NULL);
+
+  e = scheme_alloc_object();
+  e->type = scheme_custodian_tidy_type;
+  SCHEME_PTR1_VAL(e) = argv[1];
+
+  mref = scheme_add_managed(m, e, NULL, NULL, 1);
+
+  SCHEME_PTR2_VAL(e) = mref;
+
+  return e;
+}
+
+static Scheme_Object *custodian_remove_tidy(int argc, Scheme_Object *argv[])
+{
+  Scheme_Custodian_Reference *mref;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_custodian_tidy_type))
+    scheme_wrong_contract("custodian-remove-tidy!", "custodian-tidy-callback?", 0, argc, argv);
+  
+  mref = SCHEME_PTR2_VAL(argv[0]);
+
+  if (mref) {
+    SCHEME_PTR2_VAL(argv[0]) = NULL;
+    scheme_remove_managed(mref, argv[0]);
+  }
+
+  return scheme_void;
+}
+
+static Scheme_Object *custodian_tidy_p(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_custodian_tidy_type)
+          ? scheme_true
+          : scheme_false);
 }
 
 Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr)
@@ -1607,7 +1766,7 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
 	o = ex(o);
       }
 
-      if (o) {
+      if (o && !SAME_TYPE(SCHEME_TYPE(o), scheme_custodian_tidy_type)) {
 	hold[j] = o;
 	j++;
       }

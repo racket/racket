@@ -3840,6 +3840,7 @@ extern Scheme_Object *scheme_tcp_output_port_type;
 THREAD_LOCAL_DECL(extern int scheme_force_port_closed);
 
 void scheme_flush_orig_outputs(void);
+void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 

@@ -79,6 +79,7 @@
 #define scheme_custodian_is_available (scheme_extension_table->scheme_custodian_is_available)
 #define scheme_remove_managed (scheme_extension_table->scheme_remove_managed)
 #define scheme_close_managed (scheme_extension_table->scheme_close_managed)
+#define scheme_tidy_managed (scheme_extension_table->scheme_tidy_managed)
 #define scheme_schedule_custodian_close (scheme_extension_table->scheme_schedule_custodian_close)
 #define scheme_add_custodian_extractor (scheme_extension_table->scheme_add_custodian_extractor)
 #define scheme_add_atexit_closer (scheme_extension_table->scheme_add_atexit_closer)

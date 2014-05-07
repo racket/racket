@@ -79,6 +79,7 @@
   scheme_extension_table->scheme_custodian_is_available = scheme_custodian_is_available;
   scheme_extension_table->scheme_remove_managed = scheme_remove_managed;
   scheme_extension_table->scheme_close_managed = scheme_close_managed;
+  scheme_extension_table->scheme_tidy_managed = scheme_tidy_managed;
   scheme_extension_table->scheme_schedule_custodian_close = scheme_schedule_custodian_close;
   scheme_extension_table->scheme_add_custodian_extractor = scheme_add_custodian_extractor;
   scheme_extension_table->scheme_add_atexit_closer = scheme_add_atexit_closer;

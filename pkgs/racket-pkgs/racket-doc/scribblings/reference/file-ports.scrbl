@@ -43,7 +43,8 @@ recognizes file-stream ports.
 
 When an input or output file-stream port is created, it is placed into
 the management of the current custodian (see
-@secref["custodians"]).
+@secref["custodians"]). In the case of an output port, a @tech{tidy
+callback} is registered to flush the port.
 
 @defproc[(open-input-file [path path-string?]
                           [#:mode mode-flag (or/c 'binary 'text) 'binary]

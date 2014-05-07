@@ -2599,11 +2599,17 @@ static void terminate_current_place(Scheme_Object *result)
   Scheme_Place_Object *place_obj;
 
   place_obj = place_object;
-  place_object = NULL;
 
   mzrt_mutex_lock(place_obj->lock);
   place_obj_die = place_obj->die;
   mzrt_mutex_unlock(place_obj->lock);
+  
+  if (!place_obj_die) {
+    if (scheme_tidy_managed(NULL, 1))
+      result = scheme_make_integer(1);
+  }
+
+  place_object = NULL;
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
 

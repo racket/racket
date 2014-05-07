@@ -163,6 +163,7 @@ MZ_EXTERN void scheme_custodian_check_available(Scheme_Custodian *m, const char 
 MZ_EXTERN int scheme_custodian_is_available(Scheme_Custodian *m);
 MZ_EXTERN void scheme_remove_managed(Scheme_Custodian_Reference *m, Scheme_Object *o);
 MZ_EXTERN void scheme_close_managed(Scheme_Custodian *m);
+MZ_EXTERN int scheme_tidy_managed(Scheme_Custodian *m, int catch_errors);
 MZ_EXTERN void scheme_schedule_custodian_close(Scheme_Custodian *c);
 MZ_EXTERN void scheme_add_custodian_extractor(Scheme_Type t, Scheme_Custodian_Extractor e);
 

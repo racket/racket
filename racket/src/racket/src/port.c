@@ -8390,12 +8390,17 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 
 static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
-  if (SCHEME_OUTPUT_PORTP(o)) {
-    Scheme_Output_Port *op;
-    op = scheme_output_port_record(o);
-    if (SAME_OBJ(op->sub_type, fd_output_port_type))
-      scheme_flush_output(o);
+  if (SCHEME_OUTPORTP(o)) {
+    scheme_flush_if_output_fds(o);
   }
+}
+
+void scheme_flush_if_output_fds(Scheme_Object *o)
+{
+  Scheme_Output_Port *op;
+  op = scheme_output_port_record(o);
+  if (SAME_OBJ(op->sub_type, fd_output_port_type))
+    scheme_flush_output(o);
 }
 
 #ifdef WINDOWS_FILE_HANDLES

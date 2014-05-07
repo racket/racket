@@ -833,7 +833,8 @@ created, it is placed under the management of the @deftech{current
 custodian} as determined by the @racket[current-custodian]
 @tech{parameter}.
 
-@margin-note{In GRacket, custodians also manage eventspaces.}
+@margin-note{Custodians also manage eventspaces from
+             @racketmodname[racket/gui/base].}
 
 Except for the root custodian, every @tech{custodian} itself is
 managed by a @tech{custodian}, so that custodians form a hierarchy.
@@ -848,6 +849,14 @@ shut down cannot manage new objects.  After the current custodian is shut
 down, if a procedure is called that attempts to create a managed resource (e.g.,
 @racket[open-input-file], @racket[thread]), then the
 @exnraise[exn:fail:contract].
+
+A @tech{custodian} also supports @deftech{tidy callbacks}, which are
+normally triggered just before a Racket process or @tech{place} exits.
+For example, a @tech{tidy callback} might flush an output port's
+buffer. A tidying custodian calls its own callbacks as well as the
+tidy callbacks of its subcustodians, but there is no guarantee that a
+tidy callback will be called before exit. Shutting down a
+custodian does @emph{not} call tidy callbacks.
 
 A thread can have multiple managing custodians, and a suspended thread
 created with @racket[thread/suspend-to-kill] can have zero

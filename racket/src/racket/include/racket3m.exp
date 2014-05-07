@@ -71,6 +71,7 @@ scheme_custodian_check_available
 scheme_custodian_is_available
 scheme_remove_managed
 scheme_close_managed
+scheme_tidy_managed
 scheme_schedule_custodian_close
 scheme_add_custodian_extractor
 scheme_add_atexit_closer

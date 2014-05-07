@@ -3358,6 +3358,8 @@ def_exit_handler_proc(int argc, Scheme_Object *argv[])
   } else
     status = 0;
 
+  scheme_tidy_managed(NULL, 0);
+
   if (scheme_exit)
     scheme_exit(status);
   else
