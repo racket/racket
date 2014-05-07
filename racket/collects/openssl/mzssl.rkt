@@ -20,7 +20,6 @@ TO DO:
  - CRL support (?)
  - alternative hostname checking styles
  - double-check refcounting of X509
- - SNI: http://en.wikipedia.org/wiki/Server_Name_Indication
 |#
 
 #lang racket/base
@@ -287,6 +286,7 @@ TO DO:
 (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
 (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
 (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
+(define-ssl SSL_ctrl (_fun _SSL* _int _long _pointer -> _long))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
@@ -380,6 +380,7 @@ TO DO:
 (define GEN_DNS 2)
 
 (define SSL_CTRL_OPTIONS 32)
+(define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
 
@@ -1286,6 +1287,9 @@ TO DO:
                 (cond [(ssl-context? context-or-encrypt-method)
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
                       [else #f])])
+    (when (string? hostname)
+      (SSL_ctrl ssl SSL_CTRL_SET_TLSEXT_HOSTNAME 0 (string->bytes/latin-1 hostname)))
+
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
            [(pipe-r pipe-w) (make-pipe)])
