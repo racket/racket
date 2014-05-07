@@ -9,11 +9,23 @@
 (provide generate-env
          env-stash
          contract-random-generate
+         contract-exercise
          generate/direct
          generate/choose
          make-generate-ctc-fail
          generate-ctc-fail?
-         with-definitely-available-contracts)
+         with-definitely-available-contracts
+         can-generate/env?
+         try/env)
+
+(define (contract-exercise v [fuel 10])
+  (define ctc (value-contract v))
+  (when ctc
+    (define-values (go ctcs) 
+      (parameterize ([generate-env (make-hash)])
+        ((contract-struct-exercise ctc) fuel)))
+    (for ([x (in-range fuel)])
+      (go v))))
 
 ;; a stash of values and the contracts that they correspond to
 ;; that generation has produced earlier in the process 
@@ -54,15 +66,21 @@
 ; #f if no value could be generated
 (define (generate/choose ctc fuel)
   (define direct (generate/direct ctc fuel))
-  (define env (generate/env ctc fuel))
+  (define env-can? (can-generate/env? ctc))
+  (define env (generate-env))
   (cond
-    [(and direct env)
+    [direct
      (λ ()
-       (if (zero? (rand 2))
+       (define use-direct? (zero? (rand 2)))
+       (if use-direct?
            (direct)
-           (env)))]
-    [else
-     (or direct env)]))
+           (try/env ctc env direct)))]
+    [env-can?
+     (λ ()
+       (try/env 
+        ctc env
+        (λ () (error 'generate/choose "internal generation failure"))))]
+    [else #f]))
 
 ; generate/direct :: contract nonnegative-int -> (or/c #f (-> val))
 ;; generate directly via the contract's built-in generator, if possible
@@ -84,3 +102,17 @@
            (when (null? available)
              (error 'generate.rkt "internal error: no values satisfying ~s available" ctc))
            (oneof available)))))
+
+(define (try/env ctc env fail)
+  (define available 
+    (for/list ([(avail-ctc vs) (in-hash env)]
+               #:when (contract-stronger? avail-ctc ctc)
+               [v (in-list vs)])
+      v))
+  (cond
+    [(null? available) (fail)]
+    [else (oneof available)]))
+
+(define (can-generate/env? ctc)
+  (for/or ([avail-ctc (in-list (definitely-available-contracts))])
+    (contract-stronger? avail-ctc ctc)))

@@ -132,18 +132,33 @@
                      (loop (cdr ho-contracts))]))))
             '())))
 
-(define (or/c-generate ctcs)
-  (λ (fuel)
-    (define choices 
-      (filter 
-       values
-       (for/list ([ctc (in-list ctcs)])
-         (generate/choose ctc fuel))))
-    (cond
-      [(null? choices) #f]
-      [else
-       (lambda ()
-         ((oneof choices)))])))
+(define ((or/c-generate ctcs) fuel)
+  (define directs 
+    (filter
+     values
+     (for/list ([ctc (in-list ctcs)])
+       (generate/direct ctc fuel))))
+  (define can-generate?
+    (or (pair? directs)
+        (for/or ([ctc (in-list ctcs)])
+          (can-generate/env? ctc))))
+  (cond
+    [can-generate?
+     (define options (append directs ctcs))
+     (define env (generate-env))
+     (λ ()
+       (let loop ([options (permute options)])
+         (cond
+           [(null? options) (error 'or/c-generate "shouldn't fail!")]
+           [else
+            (define option (car options))
+            (cond
+              [(contract? option)
+               (try/env 
+                option env
+                (λ () 
+                  (loop (cdr options))))]
+              [else (option)])])))]))
 
 (define-struct single-or/c (name pred flat-ctcs ho-ctc)
   #:property prop:orc-contract

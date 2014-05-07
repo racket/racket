@@ -784,28 +784,6 @@
     [else
      (λ (fuel) (values void '()))]))
 
-#|
-
-         (λ (v) 
-           (let* ([new-fuel (/ fuel 2)]
-                  [gen-if-fun (λ (c v)
-                                ; If v is a function we need to gen the domain and call
-                                (if (procedure? v)
-                                    (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
-                                                        (base->-doms c))])
-                                      (let* ([result (call-with-values 
-                                                      (λ () (apply v newargs))
-                                                      list)]
-                                             [rngs (base->-rngs c)])
-                                        (andmap (λ (c v) 
-                                                  ((contract-struct-exercise c) v new-fuel))
-                                                rngs 
-                                                result)))
-                                    ; Delegate to check-ctc-val
-                                    ((contract-struct-exercise c) v new-fuel)))])
-             (andmap gen-if-fun (base->-doms ctc) args)))))]
-|#
-
 (define (base->-name ctc)
   (define rngs (base->-rngs ctc))
   (define rng-sexp
