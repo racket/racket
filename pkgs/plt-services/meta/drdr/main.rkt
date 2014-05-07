@@ -62,7 +62,7 @@
         (path->string
          (build-path (drdr-directory) "make-archive.rkt"))
         "--"
-        "--many" (number->string 100))))))
+        "--many" (number->string 45))))))
 
 (notify! "Last revision is r~a" cur-rev)
 (handle-revision prev-rev cur-rev)
