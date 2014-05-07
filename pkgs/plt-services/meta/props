@@ -1167,6 +1167,7 @@ path/s is either such a string or a list of them.
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/optimizer/run.rkt" drdr:timeout 1200
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/run.rkt" drdr:timeout 1800
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/tr-random-testing.rkt" drdr:timeout 300 drdr:random #t
+"pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/with-tr-contracts.rkt" drdr:timeout 600
 "pkgs/unstable-2d" responsible (robby)
 "pkgs/unstable-contract-lib" responsible (robby ryanc)
 "pkgs/unstable-debug-lib" responsible (samth)
