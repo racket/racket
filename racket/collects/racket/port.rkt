@@ -1636,7 +1636,10 @@
           [out-end 0]
           [buffer-mode (or (file-stream-buffer-mode port) 'block)]
           [debuffer-buf #f]
-          [newline-buffer #f])
+          [newline-buffer #f]
+          [cust (current-custodian)]
+          [tidy-callback #f]
+          [self #f])
       (define-values (buffered-r buffered-w) (make-pipe 4096))
 
       ;; The main writing entry point:
@@ -1649,7 +1652,9 @@
            (flush-buffer-pipe #f enable-break?)
            (flush-some #f enable-break?)
            (if (buffer-flushed?)
-             0
+             (begin
+               (buffering! #f)
+               0)
              (write-it s start end no-buffer&block? enable-break?))]
           [no-buffer&block?
            (case (flush-all #t enable-break?)
@@ -1671,6 +1676,7 @@
           [(and (eq? buffer-mode 'block)
                 (zero? (pipe-content-length buffered-r)))
            ;; The port system can buffer to a pipe faster, so give it a pipe.
+           (buffering! #t)
            buffered-w]
           [else
            ;; Flush/buffer from pipe, first:
@@ -1687,6 +1693,7 @@
                (write-it s start end #f enable-break?)
                ;; Buffer and report success:
                (begin
+                 (buffering! #t)
                  (bytes-copy! out-bytes out-end s2 start2 (+ start2 cnt2))
                  (set! out-end (+ cnt2 out-end))
                  (case buffer-mode
@@ -1837,7 +1844,9 @@
                 [orig-out-end out-end])
             (flush-some non-block? enable-break?)
             (if (buffer-flushed?)
-              'done
+              (begin
+                (buffering! #f)
+                'done)
               ;; Couldn't flush everything. One possibility is that we need
               ;;  more bytes to convert before a flush.
               (if (and orig-none-ready?
@@ -1856,6 +1865,14 @@
         (and (= ready-start ready-end)
              (= out-start out-end)
              (zero? (pipe-content-length buffered-r))))
+
+      (define (buffering! on?)
+        (cond
+         [(and on? (not tidy-callback))
+          (set! tidy-callback (custodian-add-tidy! cust (lambda (e) (flush-output self))))]
+         [(and (not on?) tidy-callback)
+          (custodian-remove-tidy! tidy-callback)
+          (set! tidy-callback #f)]))
 
       ;; Try to flush immediately a certain number of bytes.
       ;;   we've already converted them, so we have to keep
@@ -1913,28 +1930,30 @@
                "could not create converter from ~e to UTF-8"
                encoding))
 
-      (make-output-port
-       name
-       port
-       write-it
-       (lambda ()
-         ;; Flush output
-         (write-it #"" 0 0 #f #f)
-         (when close?
-           (close-output-port port))
-         (bytes-close-converter c))
-       write-special-it
-       #f #f
-       #f void
-       1
-       (case-lambda
-         [() buffer-mode]
-         [(mode) (let ([old buffer-mode])
-                   (set! buffer-mode mode)
-                   (when (or (and (eq? old 'block) (memq mode '(none line)))
-                             (and (eq? old 'line) (memq mode '(none))))
-                     ;; Flush output
-                     (write-it #"" 0 0 #f #f)))])))))
+      (set! self
+            (make-output-port
+             name
+             port
+             write-it
+             (lambda ()
+               ;; Flush output
+               (flush-output self)
+               (when close?
+                 (close-output-port port))
+               (bytes-close-converter c))
+             write-special-it
+             #f #f
+             #f void
+             1
+             (case-lambda
+              [() buffer-mode]
+              [(mode) (let ([old buffer-mode])
+                        (set! buffer-mode mode)
+                        (when (or (and (eq? old 'block) (memq mode '(none line)))
+                                  (and (eq? old 'line) (memq mode '(none))))
+                          ;; Flush output
+                          (write-it #"" 0 0 #f #f)))])))
+      self)))
 
 ;; ----------------------------------------
 

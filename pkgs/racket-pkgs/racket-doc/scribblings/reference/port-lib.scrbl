@@ -421,7 +421,10 @@ the buffer when they are part of an incomplete encoding sequence.
 
 The resulting output port does not support atomic writes. An explicit
 flush or special-write to the output port can hang if the most
-recently written bytes form an incomplete encoding sequence.}
+recently written bytes form an incomplete encoding sequence.
+
+When the port is buffered, a @tech{tidy callback} is registered with
+the current custodian (see @secref["custodians"]) to flush the buffer.}
 
 
 @defproc[(dup-input-port [in input-port?]
