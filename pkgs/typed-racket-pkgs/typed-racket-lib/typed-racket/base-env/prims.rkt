@@ -139,7 +139,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 [syntax/define (normalize-definition)]
                 [typed-racket/private/parse-type (parse-type)]
                 [typed-racket/private/type-contract (type->contract type->contract-fail)]
-                [typed-racket/env/type-name-env (register-type-name)]))
+                [typed-racket/env/type-alias-env (register-resolved-type-alias)]))
 
 (define-for-syntax (with-type* expr ty)
   (with-type #`(ann #,expr #,ty)))
@@ -380,7 +380,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern #:name-exists))
   (syntax-parse stx
     [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
-     (register-type-name #'ty (make-Opaque #'pred))
+     ;; This line appears redundant with the use of `define-type-alias` below, but
+     ;; it's actually necessary for top-level uses because this opaque type may appear
+     ;; in subsequent `require/typed` clauses, which needs to parse the types at
+     ;; expansion-time, not at typechecking time when aliases are installed.
+     (register-resolved-type-alias #'ty (make-Opaque #'pred))
      (with-syntax ([hidden (generate-temporary #'pred)])
        (quasisyntax/loc stx
          (begin
