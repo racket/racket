@@ -25,7 +25,8 @@
          "blame.rkt"
          "prop.rkt"
          "misc.rkt"
-         "opt.rkt")
+         "opt.rkt"
+         "generate.rkt")
 
 ;; these are the runtime structs for struct/dc.
 ;; each struct/dc contract has a list of subcontract's attached
@@ -633,6 +634,17 @@
 
 (define-struct base-struct/dc (subcontracts pred struct-name here name-info struct/c?))
 
+(define (struct/dc-exercise stct)
+  (λ (fuel)
+    (define env (generate-env))
+    (values
+     (λ (val) 
+       ;; need to extract the fields and do it in 
+       ;; the right order to figure out the contracts
+       ;; and then throw them into the environment
+       (void))
+     (map indep-ctc (filter indep? (base-struct/dc-subcontracts stct))))))
+
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
@@ -640,7 +652,8 @@
      #:name struct/dc-name
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?)))
+     #:stronger struct/dc-stronger?
+     #:exercise struct/dc-exercise)))
 
 (define-struct (flat-struct/dc base-struct/dc) ()
   #:property prop:flat-contract
@@ -649,7 +662,8 @@
      #:name struct/dc-name
      #:first-order struct/dc-flat-first-order
      #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?)))
+     #:stronger struct/dc-stronger?
+     #:exercise struct/dc-exercise)))
 
 (define-struct (impersonator-struct/dc base-struct/dc) ()
   #:property prop:contract
@@ -658,7 +672,8 @@
      #:name struct/dc-name
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?)))
+     #:stronger struct/dc-stronger?
+     #:exercise struct/dc-exercise)))
 
 (define (build-struct/dc subcontracts pred struct-name here name-info struct/c?)
   (for ([subcontract (in-list subcontracts)])

@@ -2,7 +2,8 @@
 
 (require racket/contract
          racket/contract/private/generate-base
-         rackunit)
+         rackunit
+         (for-syntax racket/base))
 
 ;; this is expected to never have a generator.
 (define (some-crazy-predicate? x) (and (number? x) (= x 11)))
@@ -36,6 +37,7 @@
 (check-not-exn (λ () (test-contract-generation (=/c 0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
+(check-not-exn (λ () (test-contract-generation any/c)))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))
@@ -106,3 +108,41 @@
                                        (-> (listof some-crazy-predicate?)
                                            some-crazy-predicate?))))
 
+(define (pos-exn-or-silence? val-or-exn)
+  (or (void? val-or-exn)
+      (and (string? val-or-exn)
+           (regexp-match #rx"blaming: pos" val-or-exn))))
+
+(define (pos-exn? val-or-exn)
+  (and (string? val-or-exn)
+       (regexp-match #rx"blaming: pos" val-or-exn)))
+
+(define-syntax (check-exercise stx)
+  (syntax-case stx ()
+    [(_ N pred exp)
+     (syntax/loc stx
+       (check-pred
+        pred
+        (with-handlers ([exn:fail? exn-message])
+          (contract-exercise exp N)
+          (void))))]))
+
+
+;; the tests below that use pos-exn? have a
+;; (vanishingly small) probability of not passing. 
+
+(check-exercise
+ 10000
+ pos-exn?
+ (contract (-> (or/c #f some-crazy-predicate?) some-crazy-predicate?)
+           (λ (x) (if x 'fail 11))
+           'pos
+           'neg))
+
+(check-exercise
+ 10000
+ pos-exn?
+ (contract (-> (or/c #f some-crazy-predicate?) (or/c #f some-crazy-predicate?))
+           (λ (x) (if x 'fail 11))
+           'pos
+           'neg))

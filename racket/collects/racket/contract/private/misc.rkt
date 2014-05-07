@@ -7,7 +7,8 @@
          "blame.rkt"
          "guts.rkt"
          "rand.rkt"
-         "generate.rkt")
+         "generate.rkt"
+         "generate-base.rkt")
 
 (provide flat-rec-contract
          flat-murec-contract
@@ -922,6 +923,14 @@
 (define (any? x) #t)
 (define any/c-neg-party-fn (λ (val) (λ (neg-party) val)))
 
+(define (random-any/c fuel)
+  (rand-choice
+   [1/2 (oneof '(0 #f "" () #() -1 1 #t elephant))]
+   [else 
+    ((hash-ref predicate-generator-table
+               (oneof (hash-keys predicate-generator-table)))
+     fuel)]))
+
 (define-struct any/c ()
   #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
@@ -931,6 +940,7 @@
    #:val-first-projection (λ (ctc) (λ (blame) any/c-neg-party-fn))
    #:stronger (λ (this that) (any/c? that))
    #:name (λ (ctc) 'any/c)
+   #:generate (λ (ctc) (λ (fuel) (λ () (random-any/c fuel))))
    #:first-order get-any?))
 
 (define/final-prop any/c (make-any/c))

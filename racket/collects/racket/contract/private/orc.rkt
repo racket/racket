@@ -132,7 +132,7 @@
                      (loop (cdr ho-contracts))]))))
             '())))
 
-(define ((or/c-generate ctcs) fuel)
+(define ((or/c-generate or/c-ctc ctcs) fuel)
   (define directs 
     (filter
      values
@@ -144,7 +144,8 @@
           (can-generate/env? ctc))))
   (cond
     [can-generate?
-     (define options (append directs ctcs))
+     ;; #f => try to use me in the env.
+     (define options (cons #f (append directs ctcs)))
      (define env (generate-env))
      (λ ()
        (let loop ([options (permute options)])
@@ -153,11 +154,14 @@
            [else
             (define option (car options))
             (cond
+              [(not option)
+               (try/env
+                or/c-ctc env
+                (λ () (loop (cdr options))))]
               [(contract? option)
                (try/env 
                 option env
-                (λ () 
-                  (loop (cdr options))))]
+                (λ () (loop (cdr options))))]
               [else (option)])])))]
     [else #f]))
 
@@ -176,7 +180,8 @@
      #:name single-or/c-name
      #:first-order single-or/c-first-order
      #:stronger single-or/c-stronger?
-     #:generate (λ (ctc) (or/c-generate (cons (single-or/c-ho-ctc ctc)
+     #:generate (λ (ctc) (or/c-generate ctc
+                                        (cons (single-or/c-ho-ctc ctc)
                                               (single-or/c-flat-ctcs ctc))))
      #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc)))))))
 
@@ -189,7 +194,8 @@
    #:name single-or/c-name
    #:first-order single-or/c-first-order
    #:stronger single-or/c-stronger?
-   #:generate (λ (ctc) (or/c-generate (cons (single-or/c-ho-ctc ctc)
+   #:generate (λ (ctc) (or/c-generate ctc
+                                      (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))))
 
@@ -325,7 +331,8 @@
      #:name multi-or/c-name
      #:first-order multi-or/c-first-order
      #:stronger multi-or/c-stronger?
-     #:generate (λ (ctc) (or/c-generate (append (multi-or/c-ho-ctcs ctc)
+     #:generate (λ (ctc) (or/c-generate ctc
+                                        (append (multi-or/c-ho-ctcs ctc)
                                                 (multi-or/c-flat-ctcs ctc))))
      #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc))))))
 
@@ -338,7 +345,8 @@
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
    #:stronger multi-or/c-stronger?
-   #:generate (λ (ctc) (or/c-generate (append (multi-or/c-ho-ctcs ctc)
+   #:generate (λ (ctc) (or/c-generate ctc
+                                      (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))))
 
@@ -385,7 +393,7 @@
 
    #:first-order
    (λ (ctc) (flat-or/c-pred ctc))
-   #:generate (λ (ctc) (or/c-generate (flat-or/c-flat-ctcs ctc)))))
+   #:generate (λ (ctc) (or/c-generate ctc (flat-or/c-flat-ctcs ctc)))))
 
 
 
