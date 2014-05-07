@@ -158,7 +158,8 @@
                 option env
                 (λ () 
                   (loop (cdr options))))]
-              [else (option)])])))]))
+              [else (option)])])))]
+    [else #f]))
 
 (define-struct single-or/c (name pred flat-ctcs ho-ctc)
   #:property prop:orc-contract
