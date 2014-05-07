@@ -563,6 +563,9 @@ END
                            "<root>&nbsp;</root>")      
        (test-xexpr->string '(root () 40)
                            "<root>&#40;</root>")
+       (check-exn
+        exn:fail?
+        (λ () (xexpr->string "\f")))
        ; XXX more xexpr->string tests
        )
       

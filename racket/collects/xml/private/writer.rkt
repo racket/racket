@@ -154,15 +154,22 @@
   (let ([n (entity-text entity)])
     (fprintf out (if (number? n) "&#~a;" "&~a;") n)))
 
-(define escape-table #rx"[<>&]")
+(define escape-table #px"[<>&[:cntrl:]]")
 (define escape-attribute-table #rx"[<>&\"]")
 
 (define (replace-escaped s)
-  (case (string-ref s 0)
+  (define c (string-ref s 0))
+  (case c
     [(#\<) "&lt;"]
     [(#\>) "&gt;"]
     [(#\&) "&amp;"]
-    [(#\") "&quot;"]))
+    [(#\") "&quot;"]
+    [(#\newline) "\n"]
+    [else
+     (define i (char->integer c))
+     (if (valid-char? i)
+       (format "&#~a;" i)
+       (error 'escape "illegal character, ~v" c))]))
 
 ;; escape : String -> String
 (define (escape x table)
