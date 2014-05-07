@@ -178,19 +178,15 @@ Applies @racket[proc] to the elements of the @racket[vec]s from the
 (vector-map + #(1 2) #(3 4))]
 }
 
-@defproc[(vector-map! [proc procedure?] [vec vector?] ...+) 
+@defproc[(vector-map! [proc procedure?] [vec (and/c vector? (not/c immutable?))] ...+)
          vector?]{
 
-Applies @racket[proc] to the elements of the @racket[vec]s from the
- first elements to the last. The @racket[proc] argument must accept
- the same number of arguments as the number of supplied @racket[vec]s,
- and all @racket[vec]s must have the same number of elements.  The
- each result of @racket[proc] is inserted into the first @racket[vec]
- at the index that the arguments to @racket[proc] was taken from.  The
- result is the first @racket[vec].
+Like @racket[vector-map], but result of @racket[proc] is inserted into
+ the first @racket[vec] at the index that the arguments to
+ @racket[proc] were taken from. The result is the first @racket[vec].
 
 @mz-examples[#:eval vec-eval
-(define v #(1 2 3 4))
+(define v (vector 1 2 3 4))
 (vector-map! add1 v)
 v
 ]}
