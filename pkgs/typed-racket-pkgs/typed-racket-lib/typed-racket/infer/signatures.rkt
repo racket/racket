@@ -14,7 +14,7 @@
    [cond-contracted var-demote  (Type/c (listof symbol?) . -> . Type/c)]))
 
 (define-signature constraints^
-   [cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . (or/c #f cset?))]
+  ([cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . (or/c #f cset?))]
    [cond-contracted cset-meet* ((listof cset?) . -> . cset?)]
    no-constraint
    [cond-contracted empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]

@@ -178,7 +178,7 @@
     ;; FIXME - is there something to be said about the logical ones?
     [((TypeFilter: s p i) (TypeFilter: t p i)) (cgen/inv V X Y s t)]
     [((NotTypeFilter: s p i) (NotTypeFilter: t p i)) (cgen/inv V X Y s t)]
-    [(_ _) (fail! s t)]))
+    [(_ _) #f]))
 
 ;; s and t must be *latent* filter sets
 (define/cond-contract (cgen/filter-set V X Y s t)

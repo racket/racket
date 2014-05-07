@@ -63,8 +63,8 @@
 
 ;; compute the meet of two constraint sets
 ;; returns #f for failure
-(define (cset-meet x y)
-  (match* (x y)
+(define cset-meet
+  (case-lambda
     [() (empty-cset null null)]
     [(x) x]
     [(x y)
