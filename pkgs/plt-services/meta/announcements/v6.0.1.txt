@@ -1,0 +1,62 @@
+1399579520
+Racket v6.0.1
+
+* A new `racket/undefined` library exports `undefined` as the value
+  currently produced by
+
+    (letrec ([x x]) x)
+
+  This library anticipates a future where that expression will raise
+  an exception. The `racket/undefined` library will continue to offer
+  the `undefined` value as a bridge between versions and as a last
+  resort.
+
+* The drawing and GUI libraries provide improved support for
+  high-resolution bitmaps and their use on Retina displays. For
+  example, `read-bitmap` includes a `#:try-@2x?` option to trigger
+  substitutions through the usual "@2x" naming convention.
+
+* Check Syntax cooperates with Typed Racket to show arrows and other
+  Check Syntax highlighting even when there is a type error.
+
+* Functions provided via contract-out that have first-order contracts
+  perform better.
+
+* The contract boundary between typed/untyped modules is much less
+  expensive. Typed Racket now avoids generating contracts for places
+  where contracts failures cannot happen.
+
+* Occurrence typing now works better with when/unless. Example:
+
+    (let ((x (read)))
+      (unless (number? x) (error 'bad-input))
+      (add1 x))
+
+* Types in Typed Racket are now pretty-printed.
+
+* Function types can now be written in prefix style, which is now
+  preferred and is used for printing. Infix function types are still
+  accepted for backwards compatibility.
+
+* A new `->*' type constructor is used for writing types for functions
+  with optional and keyword arguments. The notation is similar to the
+  matching contract combinator.
+
+* Typed Racket forms do not have a `:' suffix by default now. For
+  example, the `struct' form replaces `struct:'. The suffixed versions
+  are all provided for backwards compatibility.
+
+* Typed Racket now has preliminary support for classes and
+  objects. However, it is still experimental and the APIs are subject
+  to change.
+
+* Type aliases in Typed Racket now support recursion and mutual
+  recursion. For example, `(define-type (MyList X) (U Null (Pair X
+  (MyList X))))' is now a valid type alias.
+
+* Plot correctly renders intersecting 3D graphs and non-grid-aligned
+  3D rectangles.
+
+* Elements in plots output in PDF/PS format have the same relative
+  scale as in other formats. In particular, it is not necessary to
+  adjust `plot-font-size` to make PDF plots look the same as PNG.
