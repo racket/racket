@@ -36,9 +36,9 @@
    (-Symbol Univ)
    (-Void Univ)
    [-Number -Number]
-   [(Un (-pair Univ (-lst Univ)) (-val '())) (-lst Univ)]
-   [(-pair -Number (-pair -Number (-pair (-val 'foo) (-val '())))) (-lst Univ)]
-   [(-pair -Number (-pair -Number (-pair (-val 'foo) (-val '())))) (-lst (Un -Number -Symbol))]
+   [(Un (-pair Univ (-lst Univ)) -Null) (-lst Univ)]
+   [(-lst* -Number -Number (-val 'foo)) (-lst Univ)]
+   [(-lst* -Number -Number (-val 'foo)) (-lst (Un -Number -Symbol))]
    [(-pair (-val 6) (-val 6)) (-pair -Number -Number)]
    [(-val 6) (-val 6)]
    ;; unions
@@ -55,7 +55,7 @@
    [(-mu x (Un -Number (make-Listof x))) (-mu x (Un -Number -Symbol (make-Listof x)))]
    [(-mu x (Un -Number (make-Listof x))) (-mu y (Un -Number -Symbol (make-Listof y)))]
    ;; a hard one
-   [(-mu x (Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
+   [(-mu x (Un -Number (-lst* x -Symbol x))) -Sexp]
    [t1 (unfold t1)]
    [(unfold t1) t1]
    ;; simple function types

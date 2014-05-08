@@ -43,7 +43,7 @@
   [(make-template-identifier 'qq-append 'racket/private/qq-and-or)
    (-poly (a b)
          (cl->*
-          (-> (-lst a) (-val '()) (-lst a))
+          (-> (-lst a) -Null (-lst a))
           (-> (-lst a) (-lst b) (-lst (Un a b)))))]
   ;; make-sequence
   [(make-template-identifier 'make-sequence 'racket/private/for)
@@ -193,26 +193,18 @@
    ;; finite approximation of the type
    ;;   (-> ... 2 args ... (List Pathlike ..._n) -> (List Path ..._n))
    (cl->* (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair (Un -Pathlike
-                         (-pair (-val 'lib) (-pair -Pathlike (-lst -Pathlike))))
-                     (-val null))
-              (-pair -Path (-val null)))
+              (-lst* (Un -Pathlike (-lst* (-val 'lib) -Pathlike #:tail (-lst -Pathlike))))
+              (-lst* -Path))
           ;; this case is for `define-runtime-module-path-index`
           (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair (-pair (-val 'module)
-                            (-pair -Module-Path
-                                   (-pair -Variable-Reference (-val null))))
-                     (-val null))
-              (-pair -Module-Path-Index (-val null)))
+              (-lst* (-lst* (-val 'module) -Module-Path -Variable-Reference))
+              (-lst* -Module-Path-Index))
           (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair -Pathlike (-pair -Pathlike (-val null)))
-              (-pair -Path (-pair -Path (-val null))))
+              (-lst* -Pathlike -Pathlike)
+              (-lst* -Path -Path))
           (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair -Pathlike (-pair -Pathlike (-val null)))
-              (-pair -Path (-pair -Path (-val null))))
-          (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair -Pathlike (-pair -Pathlike (-pair -Pathlike (-val null))))
-              (-pair -Path (-pair -Path (-pair -Path (-val null))))))]
+              (-lst* -Pathlike -Pathlike -Pathlike)
+              (-lst* -Path -Path -Path)))]
   [(make-template-identifier 'extract-module-file 'racket/private/this-expression-source-directory)
    (-> (-Syntax Univ) -Path)]
   ;; for `define-runtime-module-path`

@@ -524,7 +524,7 @@
         [tc-e/t (if #f 'a 3) -PosByte]
         [tc-e/t (if #f #f #t) (t:Un (-val #t))]
         [tc-e (when #f 3) -Void]
-        [tc-e/t '() (-val '())]
+        [tc-e/t '() -Null]
         [tc-e/t (let: ([x : (Listof Number) '(1)])
                       (cond [(pair? x) 1]
                             [(null? x) 1]))
@@ -656,7 +656,7 @@
               -Number]
 
 
-        [tc-e null #:ret (-path (-val null) #'null)]
+        [tc-e null #:ret (-path -Null #'null)]
 
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
@@ -1021,7 +1021,7 @@
               (-polydots (a) ((list -String) (-Number a) . ->... . -Number))]
         [tc-e/t (let ([f (plambda: (a ...) [w : a ... a] w)])
                   (f 1 "hello" #\c))
-                (-pair -One (-pair -String (-pair -Char (-val null))))]
+                (-lst* -One -String -Char)]
         ;; instantiating non-dotted terms
         [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
                 (make-Function (list (make-arr* (list -Integer) -Integer
@@ -1145,7 +1145,7 @@
                 (-Number -Number -Number . t:-> . -Number)]
 
         [tc-e (assq 'foo #{'((a b) (foo bar)) :: (Listof (List Symbol Symbol))})
-              (t:Un (-val #f) (-pair -Symbol (-pair -Symbol (-val null))))]
+              (t:Un (-val #f) (-lst* -Symbol -Symbol))]
 
         [tc-e/t (ann (lambda (x) x) (All (a) (a -> a)))
                 (-poly (a) (a . t:-> . a))]
@@ -2975,7 +2975,7 @@
    (tc-l #:foo (-val '#:foo))
    (tc-l #f (-val #f))
    (tc-l #"foo" -Bytes)
-   [tc-l () (-val null)]
+   [tc-l () -Null]
    [tc-l (3 . 4) (-pair -PosByte -PosByte)]
    [tc-l #hash() (make-Hashtable Univ Univ)]
    [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Integer -Integer)]

@@ -215,8 +215,8 @@
 
 
 
-   [range (cl->* (-> (Un -Zero -NegInt) (-val '()))
-                 (-> -One  (-pair -One (-val '())))
+   [range (cl->* (-> (Un -Zero -NegInt) -Null)
+                 (-> -One (-lst* -One))
                  (-> -Byte (-lst -Byte))
                  (-> -Index (-lst -Index))
                  (-> -Fixnum (-lst -Fixnum))

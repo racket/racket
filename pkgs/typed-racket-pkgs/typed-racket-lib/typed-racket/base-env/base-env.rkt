@@ -274,7 +274,7 @@
  (-> -Char (apply Un (map -val
                           '(lu ll lt lm lo mn mc me nd nl no ps pe pi pf pd
                             pc po sc sm sk so zs zp zl cc cf cs co cn))))]
-[make-known-char-range-list (-> (-lst (-Tuple (list -PosInt -PosInt B))))]
+[make-known-char-range-list (-> (-lst (-lst* -PosInt -PosInt B)))]
 
 [char-upcase (-> -Char -Char)]
 [char-downcase (-> -Char -Char)]
@@ -504,12 +504,12 @@
                      [(a (-lst a)) (-lst a)]))]
 #;[*list? (make-pred-ty (-lst Univ))]
 
-[null? (make-pred-ty (-val null))]
-[null (-val null)]
+[null? (make-pred-ty -Null)]
+[null -Null]
 [cons? (make-pred-ty (-pair Univ Univ))]
 [pair? (make-pred-ty (-pair Univ Univ))]
-[empty? (make-pred-ty (-val null))]
-[empty (-val null)]
+[empty? (make-pred-ty -Null)]
+[empty -Null]
 
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #f))))]
 [andmap (-polydots (a c d b) (cl->*
@@ -611,9 +611,9 @@
                            #:after-last (-lst b) #f
                            . ->key . (-lst (Un a b))))]
 
-[last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
+[last-pair (-poly (a) ((-mu x (Un a -Null (-pair a x)))
                        . -> .
-                       (Un (-pair a a) (-pair a (-val '())))))]
+                       (Un (-pair a a) (-lst* a))))]
 [takef
  (-poly (a b)
    (cl->*
@@ -843,14 +843,14 @@
           (-> (-seq a) (-seq b) (-seq c) (-seq a b c))))]
 [in-values-sequence
  (-poly (a b c)
-   (cl->* (-> (-seq a) (-seq (-pair a (-val null))))
-          (-> (-seq a b) (-seq (-pair a (-pair b (-val null)))))
-          (-> (-seq a b c) (-seq (-pair a (-pair b (-pair c (-val null))))))))]
+   (cl->* (-> (-seq a) (-seq (-lst* a)))
+          (-> (-seq a b) (-seq (-lst* a b)))
+          (-> (-seq a b c) (-seq (-lst* a b c)))))]
 [in-values*-sequence
  (-poly (a b c)
    (cl->* (-> (-seq a) (-seq a))
-          (-> (-seq a b) (-seq (-pair a (-pair b (-val null)))))
-          (-> (-seq a b c) (-seq (-pair a (-pair b (-pair c (-val null))))))))]
+          (-> (-seq a b) (-seq (-lst* a b)))
+          (-> (-seq a b c) (-seq (-lst* a b c)))))]
 [stop-before (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [stop-after (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [make-do-sequence (-poly (a b) ((-> (-values (list (a . -> . b)
@@ -933,10 +933,10 @@
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [time-apply
  (-polydots (b a) (cl->*
-                   (-> (-> b) (-val '()) (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))
+                   (-> (-> b) -Null (-values (list (-lst* b) -Nat -Nat -Nat)))
                    (-> (->... '() (a a) b)
                        (make-ListDots a 'a)
-                       (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))))]
+                       (-values (list (-lst* b) -Nat -Nat -Nat)))))]
 
 ;; Section 4.17.3 (racket/function)
 [identity (-poly (a) (->acc (list a) a null))]
@@ -1337,12 +1337,12 @@
         [A Any-Syntax]
         [S (-Syntax Univ)]
         [ctxt (-opt S)]
-        [srclist (-Tuple (list
-                          Univ
-                          (-opt -Integer)
-                          (-opt -Integer)
-                          (-opt -Integer)
-                          (-opt -Integer)))]
+        [srclist (-lst*
+                   Univ
+                   (-opt -Integer)
+                   (-opt -Integer)
+                   (-opt -Integer)
+                   (-opt -Integer))]
         [srcvec (make-HeterogeneousVector (list
                                            Univ
                                            (-opt -Integer)
@@ -2114,32 +2114,29 @@
 [module-compiled-imports (-> -Compiled-Module-Expression
                              (-lst (-pair (-opt -Integer)
                                           (-lst -Module-Path-Index))))]
+
 [module-compiled-exports
  (-> -Compiled-Module-Expression
      (-values
       (list
-       (-lst (-pair (-opt -Integer)
-                    (-lst (-pair -Symbol
-                                 (-pair
-                                  (-lst
-                                   (Un -Module-Path-Index
-                                       (-pair -Module-Path-Index
-                                              (-pair (-opt -Integer)
-                                                     (-pair -Symbol
-                                                            (-pair (-opt -Integer)
-                                                                   (-val null)))))))
-                                  (-val null))))))
-       (-lst (-pair (-opt -Integer)
-                    (-lst (-pair -Symbol
-                                 (-pair
-                                  (-lst
-                                   (Un -Module-Path-Index
-                                       (-pair -Module-Path-Index
-                                              (-pair (-opt -Integer)
-                                                     (-pair -Symbol
-                                                            (-pair (-opt -Integer)
-                                                                   (-val null)))))))
-                                  (-val null)))))))))]
+        (-lst (-pair (-opt -Integer)
+                     (-lst (-lst*
+                             -Symbol
+                             (-lst (Un -Module-Path-Index
+                                       (-lst*
+                                         -Module-Path-Index
+                                         (-opt -Integer)
+                                         -Symbol
+                                         (-opt -Integer))))))))
+        (-lst (-pair (-opt -Integer)
+                     (-lst (-lst*
+                             -Symbol
+                             (-lst (Un -Module-Path-Index
+                                       (-lst*
+                                         -Module-Path-Index
+                                         (-opt -Integer)
+                                         -Symbol
+                                         (-opt -Integer)))))))))))]
 [module-compiled-language-info
  (-> -Compiled-Module-Expression
      (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
@@ -2437,7 +2434,7 @@
 
 [tcp-accept-evt
  (-> -TCP-Listener
-     (-evt (-pair -Input-Port (-pair -Output-Port (-val '())))))]
+     (-evt (-lst* -Input-Port -Output-Port)))]
 
 [tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
@@ -2475,7 +2472,7 @@
                      (-evt -Void))]
 [udp-receive!-evt
  (->opt -UDP-Socket -Bytes [-Nat -Nat]
-        (-evt (-pair -Nat (-pair -String (-pair -Nat (-val null))))))]
+        (-evt (-lst* -Nat -String -Nat)))]
 
 [udp-addresses
  (cl->*

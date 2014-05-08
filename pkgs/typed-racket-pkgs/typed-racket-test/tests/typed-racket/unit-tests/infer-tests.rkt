@@ -122,8 +122,8 @@
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]
     [i2-t (-pair (-v a) (-v a)) (-pair N (Un N B)) ('a (Un N B))]
-    [i2-t (-lst (-v a)) (-pair N (-pair N (-val null))) ('a N)]
-    [i2-t (-lst (-v a)) (-pair N (-pair B (-val null))) ('a (Un N B))]
+    [i2-t (-lst (-v a)) (-lst* N N) ('a N)]
+    [i2-t (-lst (-v a)) (-lst* N B) ('a (Un N B))]
     [i2-t Univ (Un N B)]
     [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a (Un))]
 

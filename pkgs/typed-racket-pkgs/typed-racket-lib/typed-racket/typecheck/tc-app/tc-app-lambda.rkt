@@ -98,7 +98,7 @@
                     (match expected
                       [(tc-result1: (and t (Listof: _))) t]
                       [_ #f])
-                    (generalize (-val '())))])
+                    (generalize -Null))])
        (define-values (fun-results body-results)
          (tc/rec-lambda/check args body lp (cons acc-ty ts) expected))
        (add-typeof-expr lam fun-results)
