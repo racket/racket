@@ -360,7 +360,7 @@
    (Type/c Type/c . -> . (or/c #f cset?))
    (cgen V X Y S T))
   (define/cond-contract (cg/inv S T)
-   (Type/c Type/c . -> . cset?)
+   (Type/c Type/c . -> . (or/c #f cset?))
    (cgen/inv V X Y S T))
   ;; this places no constraints on any variables in X
   (define empty (empty-cset X Y))
