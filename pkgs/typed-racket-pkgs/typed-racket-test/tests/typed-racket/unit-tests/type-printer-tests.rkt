@@ -44,7 +44,7 @@
     (check-prints-as? (-lst -Nat) "(Listof Nonnegative-Integer)")
     (check-prints-as? (make-App (-poly (a) (-lst a)) (list -Nat) #'foo)
                       "(Listof Nonnegative-Integer)")
-    (check-prints-as? (make-Mu 'x (Un (-val '()) (-pair -Nat (make-F 'x))))
+    (check-prints-as? (make-Mu 'x (Un -Null (-pair -Nat (make-F 'x))))
                       "(Listof Nonnegative-Integer)")
     (check-prints-as? (-lst* -String -Symbol) "(List String Symbol)")
     (check-prints-as? -Custodian "Custodian")

@@ -67,6 +67,6 @@
     (t/fail (-poly (a) (-lst a)) #:typed-side #f)
     (t/sc (-mu a (-lst a)))
     (t/sc (-mu a (-box a)))
-    (t/sc (-mu sexp (Un (-val '()) -Symbol (-pair sexp sexp) (-vec sexp) (-box sexp))))
+    (t/sc (-mu sexp (Un -Null -Symbol (-pair sexp sexp) (-vec sexp) (-box sexp))))
     (t/sc (-mu a (-> a a)))
     (t/sc (-seq -Symbol))))

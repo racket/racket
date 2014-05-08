@@ -301,7 +301,7 @@
          [((MPair: t1 t2) (Sequence: (list t*)))
           (subtype-seq A0
                        (subtype* t1 t*)
-                       (subtype* t2 (simple-Un (-val null) (make-MPairTop)))
+                       (subtype* t2 (simple-Un -Null (make-MPairTop)))
                        (subtype* t2 t))]
          ;; Note: this next case previously used the List: match expander, but
          ;;       using that would cause an infinite loop in certain cases

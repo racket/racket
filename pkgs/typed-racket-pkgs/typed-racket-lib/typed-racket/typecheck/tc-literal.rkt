@@ -86,7 +86,7 @@
     [i:byte-regexp -Byte-Regexp]
     [i:pregexp -PRegexp]
     [i:regexp  -Regexp]
-    [(~and i ()) (-val '())]
+    [() -Null]
     [(i . r)
      (match (and expected (resolve (restrict expected (-pair Univ Univ) 'orig)))
        [(Pair: a-ty d-ty)

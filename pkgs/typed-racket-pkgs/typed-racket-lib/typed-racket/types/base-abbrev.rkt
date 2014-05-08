@@ -48,8 +48,9 @@
 
 ;; Char type and List type (needed because of how sequences are checked in subtype)
 (define/decl -Char (make-Base 'Char #'char? char? #f))
-(define (make-Listof elem) (-mu list-rec (simple-Un (-val null) (make-Pair elem list-rec))))
-(define (make-MListof elem) (-mu list-rec (simple-Un (-val null) (make-MPair elem list-rec))))
+(define/decl -Null (-val null))
+(define (make-Listof elem) (-mu list-rec (simple-Un -Null (make-Pair elem list-rec))))
+(define (make-MListof elem) (-mu list-rec (simple-Un -Null (make-MPair elem list-rec))))
 
 ;; Needed for evt checking in subtype.rkt
 (define/decl -Symbol (make-Base 'Symbol #'symbol? symbol? #f))
@@ -60,7 +61,7 @@
 
 ;; -lst* Type is needed by substitute for ListDots
 (define -pair make-Pair)
-(define (-lst* #:tail [tail (-val null)] . args)
+(define (-lst* #:tail [tail -Null] . args)
   (for/fold ([tl tail]) ([a (in-list (reverse args))]) (-pair a tl)))
 
 ;; Simple union type constructor, does not check for overlaps

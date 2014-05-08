@@ -69,7 +69,7 @@
 (define (-opt t) (Un (-val #f) t))
 
 (define (-Tuple l)
-  (foldr -pair (-val '()) l))
+  (-Tuple* l -Null))
 
 (define (-Tuple* l b)
   (foldr -pair b l))
@@ -155,7 +155,7 @@
 (define -Syntax make-Syntax)
 (define/decl In-Syntax
   (-mu e
-       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number
+       (Un -Null -Boolean -Symbol -String -Keyword -Char -Number
            (make-Vector (-Syntax e))
            (make-Box (-Syntax e))
            (make-Listof (-Syntax e))
@@ -163,7 +163,7 @@
 (define/decl Any-Syntax (-Syntax In-Syntax))
 (define (-Sexpof t)
   (-mu sexp
-       (Un (-val '())
+       (Un -Null
            -Number -Boolean -Symbol -String -Keyword -Char
            (-pair sexp sexp)
            (make-Vector sexp)

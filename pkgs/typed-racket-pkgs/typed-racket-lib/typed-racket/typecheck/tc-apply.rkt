@@ -84,7 +84,7 @@
                       [drest (make-ListDots (car drest) (cdr drest))]
                       ;; the function has no rest argument,
                       ;; but provides all the necessary fixed arguments
-                      [else  (-val '())]))))
+                      [else -Null]))))
        (failure))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
