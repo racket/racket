@@ -387,6 +387,8 @@ TO DO:
 (define SSL_OP_SINGLE_ECDH_USE #x00080000)
 (define SSL_OP_SINGLE_DH_USE #x00100000)
 
+(define TLSEXT_NAMETYPE_host_name 0)
+
 (define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
 (define-runtime-path ssl-dh4096-param-path "dh4096.pem")
@@ -1288,7 +1290,8 @@ TO DO:
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
                       [else #f])])
     (when (string? hostname)
-      (SSL_ctrl ssl SSL_CTRL_SET_TLSEXT_HOSTNAME 0 (string->bytes/latin-1 hostname)))
+      (SSL_ctrl ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
+		TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
 
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
