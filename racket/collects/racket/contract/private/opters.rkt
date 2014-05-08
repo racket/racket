@@ -7,6 +7,7 @@
          "misc.rkt"
          "arrow.rkt"
          "arrow-val-first.rkt"
+         "orc.rkt"
          (for-syntax racket/base
                      syntax/stx
                      "opt-guts.rkt"))
