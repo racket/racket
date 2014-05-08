@@ -6,6 +6,7 @@
          rand-seed
          rand-choice
          rand-range
+         rand-nat
          permute
          oneof)
 
@@ -88,3 +89,10 @@
 
 (define (rand-range lower upper)
   (+ lower (rand (- upper lower))))
+
+;; returns a random natural from the geometric distribution
+(define (rand-nat [p 1/2])
+  (let loop ([n 0])
+    (cond
+      [(<= (rand) p) n]
+      [else (loop (+ n 1))])))

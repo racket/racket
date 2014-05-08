@@ -923,13 +923,34 @@
 (define (any? x) #t)
 (define any/c-neg-party-fn (λ (val) (λ (neg-party) val)))
 
-(define (random-any/c fuel)
-  (rand-choice
-   [1/2 (oneof '(0 #f "" () #() -1 1 #t elephant))]
-   [else 
-    ((hash-ref predicate-generator-table
-               (oneof (hash-keys predicate-generator-table)))
-     fuel)]))
+(define (random-any/c env fuel)
+  (cond
+    [(zero? (hash-count env))
+     (rand-choice
+      [1/3 (any/c-simple-value)]
+      [1/3 (any/c-procedure env fuel)]
+      [else (any/c-from-predicate-generator env fuel)])]
+    [else
+     (rand-choice
+      [1/4 (oneof (hash-ref env (oneof (hash-keys env))))]
+      [1/4 (any/c-simple-value)]
+      [1/4 (any/c-procedure env fuel)]
+      [else (any/c-from-predicate-generator env fuel)])]))
+
+(define (any/c-simple-value)
+  (oneof '(0 #f "" () #() -1 1 #t elephant)))
+(define (any/c-from-predicate-generator env fuel)
+  ((hash-ref predicate-generator-table
+             (oneof (hash-keys predicate-generator-table)))
+   fuel))
+(define (any/c-procedure env fuel)
+  (procedure-reduce-arity
+   (λ args
+     (apply
+      values
+      (for/list ([i (in-range (rand-nat))])
+        (random-any/c env fuel))))
+   (rand-nat)))
 
 (define-struct any/c ()
   #:property prop:custom-write custom-write-property-proc
