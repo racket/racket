@@ -4335,7 +4335,7 @@ so that propagation occurs.
   (ctest #t contract-stronger? (or/c null? any/c) (or/c null? any/c))
   (ctest #f contract-stronger? (or/c null? any/c) (or/c boolean? any/c))
   (ctest #t contract-stronger? (or/c null? boolean?) (or/c null? boolean?))
-  (ctest #f contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
+  (ctest #t contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
   (ctest #t contract-stronger? (or/c null? (-> integer? integer?)) (or/c null? (-> integer? integer?)))
   (ctest #f contract-stronger? (or/c null? (-> boolean? boolean?)) (or/c null? (-> integer? integer?)))
   
@@ -4353,26 +4353,26 @@ so that propagation occurs.
   (ctest #t contract-stronger? (one-of/c (expt 2 100)) (one-of/c (expt 2 100) 12))
   
   (ctest #t contract-stronger?
-        (or/c (-> (>=/c 3) (>=/c 3)) (-> string?))
-        (or/c (-> (>=/c 4) (>=/c 3)) (-> string?)))
+         (or/c (-> (>=/c 3) (>=/c 3)) (-> string?))
+         (or/c (-> (>=/c 4) (>=/c 3)) (-> string?)))
   (ctest #f contract-stronger?
-        (or/c (-> string?) (-> integer? integer?))
-        (or/c (-> string?) (-> any/c integer?)))
+         (or/c (-> string?) (-> integer? integer?))
+         (or/c (-> string?) (-> any/c integer?)))
   (ctest #f contract-stronger?
-        (or/c (-> string?) (-> any/c integer?))
-        (or/c (-> string?) (-> integer? integer?)))
+         (or/c (-> string?) (-> any/c integer?))
+         (or/c (-> string?) (-> integer? integer?)))
   (ctest #t contract-stronger?
-        (or/c (-> string?) (-> integer? integer?) integer? boolean?)
-        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+         (or/c (-> string?) (-> integer? integer?) integer? boolean?)
+         (or/c (-> string?) (-> integer? integer?) integer? boolean?))
   (ctest #f contract-stronger?
-        (or/c (-> string?) (-> integer? integer?) integer? char?)
-        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+         (or/c (-> string?) (-> integer? integer?) integer? char?)
+         (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+  (ctest #t contract-stronger?
+         (or/c (-> string?) (-> integer? integer?) integer?)
+         (or/c (-> string?) (-> integer? integer?) integer? boolean?))
   (ctest #f contract-stronger?
-        (or/c (-> string?) (-> integer? integer?) integer?)
-        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
-  (ctest #f contract-stronger?
-        (or/c (-> string?) (-> integer? integer?) integer?)
-        (or/c (-> integer? integer?) integer?))
+         (or/c (-> string?) (-> integer? integer?) integer?)
+         (or/c (-> integer? integer?) integer?))
 
   (contract-eval
    `(let ()
