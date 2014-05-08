@@ -42,6 +42,7 @@
        (values tail-ty tail-bound)]
       [t (values #f #f)]))
 
+  ;; Raises an error message for the case that the arguments do not match any of the domains
   (define (failure)
     (match f-ty
       [(tc-result1:
@@ -60,8 +61,14 @@
                 [range (in-list rngs)]
                 [rest (in-list rests)]
                 [drest (in-list drests)])
+         ;; Takes a possible substitution and comuptes the substituted range type if it is not #f
          (define (finish substitution)
            (and substitution (do-ret (subst-all substitution range))))
+
+         ;; Figures out if there is a possible substitution of vars and if there is uses that
+         ;; substitution to compute the actual range type.
+         ;; Currently if vars is null, then we use subtype instead because inference is missing some
+         ;; cases that are covered by subtype.
          (define (local-infer s t)
            (if (empty? vars)
                (and (subtype s t) (do-ret range))
