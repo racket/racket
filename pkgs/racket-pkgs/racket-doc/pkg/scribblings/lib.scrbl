@@ -42,6 +42,15 @@ Parameters that determine @tech{package scope} for management
 operations and, in the case of @racket['user] scope, the relevant
 installation name/version.}
 
+@deftogether[(
+@defparam[current-pkg-lookup-version s string?]
+)]{
+
+Parameter that determines the relevant Racket version for
+extracting package information from a catalog.
+
+@history[#:added "6.0.1.7"]}
+
 
 @defparam[current-pkg-error err procedure?]{
 
@@ -133,7 +142,9 @@ dependency.}
                     [#:checksum checksum (or/c #f string?) #f]
                     [#:in-place? in-place? boolean? #f]
                     [#:namespace namespace namespace? (make-base-namespace)]
-                    [#:strip strip (or/c #f 'source 'binary) #f])
+                    [#:strip strip (or/c #f 'source 'binary) #f]
+                    [#:use-cache? use-cache? boolean? #f]
+                    [#:quiet? quiet? boolean? #t])
          (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
 
 Locates the implementation of the package specified by @racket[desc]
@@ -150,6 +161,11 @@ If @racket[strip] is not @racket[#f], then files and directories are
 removed from the prepared directory the same as when creating the
 corresponding kind of package. A directory that is staged in-place
 cannot be stripped.
+
+If @racket[use-cache?] is true, then a local cache is consulted before
+downloading a particular package with a particular checksum. Note that
+the default for @racket[use-cache?] is @racket[#f], while the default
+is @racket[#t] for other functions that accept @racket[#:use-cache?].
 
 The result is the package name, the directory containing the unpacked package content,
 the checksum (if any) for the unpacked package, whether the
@@ -172,6 +188,9 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?]
+                     [#:source source (or/c 'dir 'name)]
+                     [#:mode mode (or/c 'as-is 'source 'binary 'built)]
+                     [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
         void?]{
@@ -191,6 +210,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:update-deps? update-deps? boolean? #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:use-cache? use-cache? boolean? #t]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary) #f]
@@ -229,6 +249,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:update-deps? update-deps? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
+                          [#:use-cache? use-cache? quiet? #t]
                           [#:quiet? boolean? quiet? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary) #f]
@@ -289,6 +310,7 @@ The package lock must be held to allow reads; see
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
                            [#:force? force? boolean? #f]
+                           [#:use-cache? use-cache? boolean? #t]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
@@ -316,8 +338,11 @@ The package lock must be held; see @racket[with-pkg-lock].}
 Implements @racket[pkg-catalog-show-command]. If @racket[all?] is true,
 then @racket[names] should be empty.
 
-The @racket[current-pkg-scope-version] parameter determines the version
-included in the catalog query.}
+The @racket[current-pkg-lookup-version] parameter determines the version
+included in the catalog query.
+
+@history[#:changed "6.0.1.7" @elem{Use @racket[current-pkg-lookup-version]
+                                   instead of @racket[current-pkg-scope-version].}]}
 
 
 @defproc[(pkg-catalog-copy [sources (listof path-string?)]
@@ -325,13 +350,33 @@ included in the catalog query.}
                            [#:from-config? from-config? boolean? #f]
                            [#:merge? merge? boolean? #f]
                            [#:force? force? boolean? #f]
-                           [#:override? override? boolean? #f])
+                           [#:override? override? boolean? #f]
+                           [#:relative-sources? relative-sources? boolean? #f])
          void?]{
 
 Implements @racket[pkg-catalog-copy-command].
 
-The @racket[current-pkg-scope-version] parameter determines the version
-for extracting existing catalog information.}
+The @racket[current-pkg-lookup-version] parameter determines the version
+for extracting existing catalog information.
+
+@history[#:changed "6.0.1.7" @elem{Use @racket[current-pkg-lookup-version]
+                                   instead of @racket[current-pkg-scope-version].}]}
+
+
+@defproc[(pkg-catalog-archive [dest-dir path-string?]
+                              [sources (listof path-string?)]
+                              [#:from-config? from-config? boolean? #f]
+                              [#:state-catalog state-catalog (or/c #f path-string?) #f]
+                              [#:relative-sources? relative-sources? boolean? #f]
+                              [#:quiet? quiet? boolean? #f])
+         void?]{
+
+Implements @racket[pkg-catalog-archive-command].
+
+The @racket[current-pkg-lookup-version] parameter determines the version
+for extracting existing catalog information.
+
+@history[#:added "6.0.1.7"]}
 
 
 @defproc[(pkg-catalog-update-local [#:catalogs catalogs (listof string?) (pkg-config-catalogs)]

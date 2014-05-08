@@ -45,7 +45,12 @@ information about packages:
        @itemlist[
 
         @item{@racket['source] (required) --- a @tech{package source}
-              string, typically a remote URL.}
+              string, typically a remote URL. If this source is a
+              relative path, then it is treated as relative to the
+              catalog.
+
+              @history[#:changed "6.0.1.7" @elem{Added relative-path support
+                                                 to clients of a catalog server.}]}
 
         @item{@racket['checksum] (requires) --- a string for a
               @tech{checksum}.}
@@ -174,7 +179,7 @@ constructed in any way as long as it contains the following tables:
  @item{A @tt{tags} table with the form
 
              @verbatim[#:indent 2]{(pkg TEXT,
-                                    catalog TEXT,
+                                    catalog SMALLINT,
                                     tag TEXT)}
 
        where the @tt{pkg} and @tt{catalog} combination identifies a unique

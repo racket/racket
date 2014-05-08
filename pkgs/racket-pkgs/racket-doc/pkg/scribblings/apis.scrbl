@@ -40,7 +40,9 @@ to the @exec{raco pkg} sub-subcommands.
 @defthing[pkg-create-command procedure?]{Implements @command-ref{create}.}
 @defthing[pkg-catalog-show-command procedure?]{Implements @command-ref{catalog-show}.}
 @defthing[pkg-catalog-copy-command procedure?]{Implements @command-ref{catalog-copy}.}
+@defthing[pkg-catalog-archive-command procedure?]{Implements @command-ref{catalog-archive}.
 
+                                                  @history[#:added "6.0.17"]}
 
 @include-section["lib.scrbl"]
 @include-section["path.scrbl"]
