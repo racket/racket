@@ -254,7 +254,10 @@ These are the currently supported macro names and the keys they map into:
 	       [char (list-ref line 1)])
 	   (list (make-flow (list (make-paragraph (list (index (format "\\~a keyboard shortcut" macro))
 							(tt (format " \\~a" macro))))))
-		 (make-flow (list (make-paragraph (list (hspace 1) char)))))))
+		 (make-flow (list (make-paragraph (list (hspace 1) 
+                                                        (regexp-replace* #px"[[:cntrl:]]"
+                                                                         char
+                                                                         " "))))))))
        tex-shortcut-table))
 }
 ]
