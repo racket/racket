@@ -249,16 +249,16 @@ prefix (unless there is only one such name, in which case it behaves as if
 These are the currently supported macro names and the keys they map into:
 @(make-table
   '()
-  (map (lambda (line) 
-	 (let ([macro (list-ref line 0)]
-	       [char (list-ref line 1)])
-	   (list (make-flow (list (make-paragraph (list (index (format "\\~a keyboard shortcut" macro))
-							(tt (format " \\~a" macro))))))
-		 (make-flow (list (make-paragraph (list (hspace 1) 
-                                                        (regexp-replace* #px"[[:cntrl:]]"
-                                                                         char
-                                                                         " "))))))))
-       tex-shortcut-table))
+  (for/list ([line (in-list tex-shortcut-table)])
+    (define macro (list-ref line 0))
+    (define char (list-ref line 1))
+    (when (equal? char "\f")
+      (set! char "^L"))
+    (unless (equal? (regexp-replace* #px"[[:cntrl:]]" char " ") char)
+      (error 'keybindings.scrbl "cannot render a non-printing character"))
+    (list (make-flow (list (make-paragraph (list (index (format "\\~a keyboard shortcut" macro))
+                                                 (tt (format " \\~a" macro))))))
+          (make-flow (list (make-paragraph (list (hspace 1) char)))))))
 }
 ]
 
