@@ -25,12 +25,9 @@
 (define-struct (cdata source) (string) #:transparent)
 
 ; Section 2.2 of XML 1.1
-; (XML 1.0 is slightly different and looks less restrictive)
+; (XML 1.0 is slightly different and more restrictive)
 (define (valid-char? i)
   (and (exact-nonnegative-integer? i)
-       (or (= i #x9)
-           (= i #xA)
-           (= i #xD)
-           (<= #x20 i #xD7FF)
-           (<= #xE000 i #xFFFD)
+       (or (<= #x1     i #xD7FF)
+           (<= #xE000  i #xFFFD)
            (<= #x10000 i #x10FFFF))))

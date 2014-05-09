@@ -563,9 +563,8 @@ END
                            "<root>&nbsp;</root>")      
        (test-xexpr->string '(root () 40)
                            "<root>&#40;</root>")
-       (check-exn
-        exn:fail?
-        (λ () (xexpr->string "\f")))
+       (test-xexpr->string '(root () "\f")
+                           "<root>\f</root>")
        ; XXX more xexpr->string tests
        )
       
@@ -639,7 +638,7 @@ END
          (test-validate-xexpr '(a ([href "#"]) "string"))
          
          (test-validate-xexpr/exn #f #f)
-         (test-validate-xexpr/exn 4 4)
+         (test-validate-xexpr 4)
          (test-validate-xexpr/exn + +)
          (test-validate-xexpr/exn '(a ([href foo]) bar) 'foo)
          (test-validate-xexpr/exn '("foo" bar) '("foo" bar))
