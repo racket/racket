@@ -1032,7 +1032,12 @@
            (let ([p (make-plumber)])
              (define fh (plumber-add-flush! (current-plumber)
                                             (lambda (fh)
-                                              (unless terminated? 
+                                              (unless (or terminated?
+                                                          ;; The evaluator thread may have terminated
+                                                          ;; asynchronously, such as through an enclosing
+                                                          ;; custodian's shutdown
+                                                          (and user-thread
+                                                               (thread-dead? user-thread)))
                                                 (call-in-sandbox-context
                                                  evaluator
                                                  (lambda ()
