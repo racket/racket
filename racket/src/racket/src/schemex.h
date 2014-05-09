@@ -116,9 +116,11 @@ void (*scheme_custodian_check_available)(Scheme_Custodian *m, const char *who, c
 int (*scheme_custodian_is_available)(Scheme_Custodian *m);
 void (*scheme_remove_managed)(Scheme_Custodian_Reference *m, Scheme_Object *o);
 void (*scheme_close_managed)(Scheme_Custodian *m);
-int (*scheme_tidy_managed)(Scheme_Custodian *m, int catch_errors);
 void (*scheme_schedule_custodian_close)(Scheme_Custodian *c);
 void (*scheme_add_custodian_extractor)(Scheme_Type t, Scheme_Custodian_Extractor e);
+int (*scheme_flush_managed)(Scheme_Plumber *p, int catch_errors);
+Scheme_Object *(*scheme_add_flush)(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush);
+void (*scheme_remove_flush)(Scheme_Object *h);
 void (*scheme_add_atexit_closer)(Scheme_Exit_Closer_Func f);
 void (*scheme_add_evt)(Scheme_Type type,
 				   Scheme_Ready_Fun ready,

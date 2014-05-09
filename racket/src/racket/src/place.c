@@ -2605,7 +2605,7 @@ static void terminate_current_place(Scheme_Object *result)
   mzrt_mutex_unlock(place_obj->lock);
   
   if (!place_obj_die) {
-    if (scheme_tidy_managed(NULL, 1))
+    if (scheme_flush_managed(NULL, 1))
       result = scheme_make_integer(1);
   }
 

@@ -1637,8 +1637,8 @@
           [buffer-mode (or (file-stream-buffer-mode port) 'block)]
           [debuffer-buf #f]
           [newline-buffer #f]
-          [cust (current-custodian)]
-          [tidy-callback #f]
+          [plumber (current-plumber)]
+          [flush-handle #f]
           [self #f])
       (define-values (buffered-r buffered-w) (make-pipe 4096))
 
@@ -1868,11 +1868,12 @@
 
       (define (buffering! on?)
         (cond
-         [(and on? (not tidy-callback))
-          (set! tidy-callback (custodian-add-tidy! cust (lambda (e) (flush-output self))))]
-         [(and (not on?) tidy-callback)
-          (custodian-remove-tidy! tidy-callback)
-          (set! tidy-callback #f)]))
+         [(and on? (not flush-handle))
+          (set! flush-handle (plumber-add-flush! plumber (lambda (fh) (flush-output self))))]
+         [(and (not on?) flush-handle)
+          (define h flush-handle)
+          (set! flush-handle #f)
+          (plumber-flush-handle-remove! h)]))
 
       ;; Try to flush immediately a certain number of bytes.
       ;;   we've already converted them, so we have to keep

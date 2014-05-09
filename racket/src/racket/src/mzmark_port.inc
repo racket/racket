@@ -65,6 +65,7 @@ static int mark_input_fd_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(fd->buffer, gc);
   gcMARK2(fd->refcount, gc);
+  gcMARK2(fd->flush_handle, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -75,6 +76,7 @@ static int mark_input_fd_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(fd->buffer, gc);
   gcFIXUP2(fd->refcount, gc);
+  gcFIXUP2(fd->flush_handle, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));

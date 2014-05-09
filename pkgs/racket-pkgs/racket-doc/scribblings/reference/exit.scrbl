@@ -16,7 +16,7 @@ A @tech{parameter} that determines the current @deftech{exit handler}. The
 @tech{exit handler} is called by @racket[exit].
 
 The default @tech{exit handler} in the Racket executable
-takes any argument, calls @racket[custodian-tidy-all] on the root custodian,
+takes any argument, calls @racket[plumber-flush-all] on the original plumber,
 and shuts down the OS-level Racket process. The
 argument is used as the OS-level exit code if it is an exact integer
 between @racket[1] and @racket[255] (which normally means

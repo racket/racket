@@ -790,9 +790,9 @@
         (test #\c read-char ei)
         (test eof read-char ei))))
   ;; (check-buffering flush-output)
-  (let ([c (make-custodian)])
-    (parameterize ([current-custodian c])
-      (check-buffering (lambda (o) (custodian-tidy-all c))))))
+  (let ([p (make-plumber)])
+    (parameterize ([current-plumber p])
+      (check-buffering (lambda (o) (plumber-flush-all p))))))
 
 (err/rt-test
  (port->bytes (reencode-input-port (open-input-bytes #"\xFF\xFF") "utf-8"))

@@ -192,6 +192,8 @@ THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
 READ_ONLY static Scheme_Object *initial_inspector;
 
+THREAD_LOCAL_DECL(static Scheme_Custodian *initial_plumber);
+
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
 #ifndef MZ_PRECISE_GC
@@ -316,6 +318,12 @@ typedef struct {
   intptr_t size;
 } Scheme_Phantom_Bytes;
 
+struct Scheme_Plumber {
+  Scheme_Object so;
+  Scheme_Hash_Table *handles;
+  Scheme_Bucket_Table *weak_handles;
+};
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -357,16 +365,20 @@ static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
-static Scheme_Object *custodian_tidy_all(int argc, Scheme_Object *argv[]);
-static Scheme_Object *custodian_add_tidy(int argc, Scheme_Object *argv[]);
-static Scheme_Object *custodian_remove_tidy(int argc, Scheme_Object *argv[]);
-static Scheme_Object *custodian_tidy_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[]);
+static Scheme_Object *plumber_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *plumber_flush_all(int argc, Scheme_Object *argv[]);
+static Scheme_Object *plumber_add_flush(int argc, Scheme_Object *argv[]);
+static Scheme_Object *plumber_remove_flush(int argc, Scheme_Object *argv[]);
+static Scheme_Object *plumber_flush_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_plumber(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *current_namespace(int argc, Scheme_Object *args[]);
 static Scheme_Object *namespace_p(int argc, Scheme_Object *args[]);
@@ -534,15 +546,19 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("make-custodian"        , make_custodian       , 0, 1, env);
   GLOBAL_FOLDING_PRIM("custodian?"            , custodian_p          , 1, 1, 1  , env);
   GLOBAL_PRIM_W_ARITY("custodian-shutdown-all", custodian_close_all  , 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("custodian-tidy-all"    , custodian_tidy_all   , 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("custodian-add-tidy!"   , custodian_add_tidy   , 2, 2, env);
-  GLOBAL_PRIM_W_ARITY("custodian-remove-tidy!", custodian_remove_tidy, 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("custodian-tidy-callback?", custodian_tidy_p     , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("custodian-managed-list", custodian_to_list    , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("make-custodian-box"    , make_custodian_box   , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("custodian-box-value"   , custodian_box_value  , 1, 1, env);
   GLOBAL_FOLDING_PRIM("custodian-box?"        , custodian_box_p      , 1, 1, 1  , env);
   GLOBAL_PRIM_W_ARITY("call-in-nested-thread" , call_as_nested_thread, 1, 2, env);
+
+  GLOBAL_PARAMETER("current-plumber"          , current_plumber      , MZCONFIG_PLUMBER, env);
+  GLOBAL_PRIM_W_ARITY("make-plumber"          , make_plumber       , 0, 0, env);
+  GLOBAL_FOLDING_PRIM("plumber?"              , plumber_p          , 1, 1, 1  , env);
+  GLOBAL_PRIM_W_ARITY("plumber-flush-all"     , plumber_flush_all   , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("plumber-add-flush!"    , plumber_add_flush   , 2, 3, env);
+  GLOBAL_PRIM_W_ARITY("plumber-flush-handle-remove!" , plumber_remove_flush, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("plumber-flush-handle?" , plumber_flush_p     , 1, 1, env);
 
   GLOBAL_PARAMETER("current-namespace"      , current_namespace, MZCONFIG_ENV, env);
   GLOBAL_PRIM_W_ARITY("namespace?"          , namespace_p          , 1, 1, env);
@@ -1481,97 +1497,6 @@ void scheme_close_managed(Scheme_Custodian *m)
   scheme_current_thread->ran_some = 1;
 }
 
-static Scheme_Object *get_tidy_managed(Scheme_Custodian *m)
-{
-  Scheme_Custodian *c, *start;
-  Scheme_Object *o, *r = scheme_null;
-  int i;
-
-  if (!m)
-    m = main_custodian;
-
-  if (m->shut_down)
-    return scheme_null;
-  
-  for (c = m; CUSTODIAN_FAM(c->children); ) {
-    for (c = CUSTODIAN_FAM(c->children); CUSTODIAN_FAM(c->sibling); ) {
-      c = CUSTODIAN_FAM(c->sibling);
-    }
-  }
-
-  start = m;
-  m = c;
-  while (1) {
-    for (i = 0; i < m->count; i++) {
-      if (m->boxes[i]) {
-
-	o = xCUSTODIAN_FAM(m->boxes[i]);
-
-        if (o && (SCHEME_OUTPORTP(o)
-                  || SAME_TYPE(SCHEME_TYPE(o), scheme_custodian_tidy_type))) {
-          r = scheme_make_pair(o, r);
-          SCHEME_USE_FUEL(1);
-        }
-      }
-    }
-    
-    if (SAME_OBJ(m, start))
-      break;
-    m = CUSTODIAN_FAM(m->global_prev);
-
-    if (!m) {
-      /* custodian was shut down? */
-      break;
-    }
-  }
-
-  return r;
-}
-
-int scheme_tidy_managed(Scheme_Custodian *m, int catch_errors)
-{
-  Scheme_Object *r, *o;
-  Scheme_Thread *p;
-  mz_jmp_buf * volatile saved_error_buf;
-  mz_jmp_buf new_error_buf;
-  volatile int escaped = 0;
-
-  if (catch_errors) {
-    p = scheme_current_thread;
-    saved_error_buf = p->error_buf;
-    p->error_buf = &new_error_buf;
-  } else
-    saved_error_buf = NULL;
-  
-  if (!scheme_setjmp(new_error_buf)) {
-    r = get_tidy_managed(m);
-    
-    while (!SCHEME_NULLP(r)) {
-      o = SCHEME_CAR(r);
-      
-      if (SCHEME_OUTPORTP(o)) {
-        scheme_flush_if_output_fds(o);
-      } else {
-        Scheme_Object *f, *a[1];
-        
-        f = SCHEME_PTR1_VAL(o);
-        
-        a[0] = o;
-        (void)scheme_apply_multi(f, 1, a);
-      }
-      
-      r = SCHEME_CDR(r);
-    }
-  } else {
-    escaped = 1;
-  }
-
-  if (catch_errors)
-    scheme_current_thread->error_buf = saved_error_buf;
-
-  return escaped;
-}
-
 static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[])
 {
   Scheme_Custodian *m;
@@ -1610,67 +1535,6 @@ static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[])
   scheme_close_managed((Scheme_Custodian *)argv[0]);
 
   return scheme_void;
-}
-
-static Scheme_Object *custodian_tidy_all(int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_CUSTODIANP(argv[0]))
-    scheme_wrong_contract("custodian-tidy-all", "custodian?", 0, argc, argv);
-
-  scheme_tidy_managed((Scheme_Custodian *)argv[0], 0);
-
-  return scheme_void;
-}
-
-static Scheme_Object *custodian_add_tidy(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *e;
-  Scheme_Custodian_Reference *mref;
-  Scheme_Custodian *m;
-
-  if (!SCHEME_CUSTODIANP(argv[0]))
-    scheme_wrong_contract("custodian-add-tidy!", "custodian?", 0, argc, argv);
-  scheme_check_proc_arity("custodian-add-tidy!", 1, 1, argc, argv);
-  
-  m = (Scheme_Custodian *)argv[0];
-  if (!scheme_custodian_is_available(m))
-    scheme_contract_error("custodian-add-tidy!", "the custodian has been shut down",
-                          "custodian", 1, m,
-                          NULL);
-
-  e = scheme_alloc_object();
-  e->type = scheme_custodian_tidy_type;
-  SCHEME_PTR1_VAL(e) = argv[1];
-
-  mref = scheme_add_managed(m, e, NULL, NULL, 1);
-
-  SCHEME_PTR2_VAL(e) = mref;
-
-  return e;
-}
-
-static Scheme_Object *custodian_remove_tidy(int argc, Scheme_Object *argv[])
-{
-  Scheme_Custodian_Reference *mref;
-
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_custodian_tidy_type))
-    scheme_wrong_contract("custodian-remove-tidy!", "custodian-tidy-callback?", 0, argc, argv);
-  
-  mref = SCHEME_PTR2_VAL(argv[0]);
-
-  if (mref) {
-    SCHEME_PTR2_VAL(argv[0]) = NULL;
-    scheme_remove_managed(mref, argv[0]);
-  }
-
-  return scheme_void;
-}
-
-static Scheme_Object *custodian_tidy_p(int argc, Scheme_Object *argv[])
-{
-  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_custodian_tidy_type)
-          ? scheme_true
-          : scheme_false);
 }
 
 Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr)
@@ -1766,7 +1630,7 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
 	o = ex(o);
       }
 
-      if (o && !SAME_TYPE(SCHEME_TYPE(o), scheme_custodian_tidy_type)) {
+      if (o) {
 	hold[j] = o;
 	j++;
       }
@@ -2068,6 +1932,197 @@ void scheme_free_all(void)
 #ifdef MZ_PRECISE_GC
   GC_free_all();
 #endif
+}
+
+/*========================================================================*/
+/*                              plumbers                                  */
+/*========================================================================*/
+
+#define FLUSH_HANDLE_FLAGS(h) MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)h)->iso)
+
+Scheme_Object *get_plumber_handles(Scheme_Plumber *p)
+{
+  Scheme_Object *v, *r = scheme_null;
+  Scheme_Bucket_Table *bt;
+  Scheme_Hash_Table *ht;
+  int i;
+
+  bt = p->weak_handles;
+  if (bt) {
+    for (i = bt->size; i--; ) {
+      if (bt->buckets[i]) {
+        v = (Scheme_Object *)HT_EXTRACT_WEAK(bt->buckets[i]->key);
+        if (v) {
+          r = scheme_make_pair(v, r);
+          SCHEME_USE_FUEL(1);
+        }
+      }
+    }
+  }
+
+  ht = p->handles;
+  for (i = ht->size; i--; ) {
+    if (ht->vals[i])
+      r = scheme_make_pair(ht->keys[i], r);
+    SCHEME_USE_FUEL(1);
+  }
+
+  return r;
+}
+
+int scheme_flush_managed(Scheme_Plumber *p, int catch_errors)
+{
+  Scheme_Object *r, *h, *o, *a[1];
+  Scheme_Thread *pt;
+  mz_jmp_buf * volatile saved_error_buf;
+  mz_jmp_buf new_error_buf;
+  volatile int escaped = 0;
+
+  if (!p) p = initial_plumber;
+
+  if (catch_errors) {
+    pt = scheme_current_thread;
+    saved_error_buf = pt->error_buf;
+    pt->error_buf = &new_error_buf;
+  } else
+    saved_error_buf = NULL;
+  
+  if (!scheme_setjmp(new_error_buf)) {
+    r = get_plumber_handles(p);
+    
+    while (!SCHEME_NULLP(r)) {
+      h = SCHEME_CAR(r);
+      
+      o = SCHEME_PTR2_VAL(h);
+
+      if (SCHEME_OUTPORTP(o)) {
+        scheme_flush_if_output_fds(o);
+      } else {
+        a[0] = h;
+        (void)scheme_apply_multi(o, 1, a);
+      }
+      
+      r = SCHEME_CDR(r);
+    }
+  } else {
+    escaped = 1;
+  }
+
+  if (catch_errors)
+    scheme_current_thread->error_buf = saved_error_buf;
+
+  return escaped;
+}
+
+static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[])
+{
+  Scheme_Plumber *p;
+  Scheme_Hash_Table *ht;
+
+  p = MALLOC_ONE_TAGGED(Scheme_Plumber);
+  p->so.type = scheme_plumber_type;
+  
+  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  p->handles = ht;
+
+  return (Scheme_Object *)p;
+}
+
+static Scheme_Object *plumber_p(int argc, Scheme_Object *argv[])
+{
+  return SCHEME_PLUMBERP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *plumber_flush_all(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_PLUMBERP(argv[0]))
+    scheme_wrong_contract("plumber-flush-all", "plumber?", 0, argc, argv);
+  
+  scheme_flush_managed((Scheme_Plumber *)argv[0], 0);
+
+  return scheme_void;
+}
+
+Scheme_Object *scheme_add_flush(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush)
+{
+  Scheme_Object *h;
+
+  if (!p)
+    p = (Scheme_Plumber *)scheme_get_param(scheme_current_config(), MZCONFIG_PLUMBER);
+  
+  h = scheme_alloc_object();
+  h->type = scheme_plumber_handle_type;
+  SCHEME_PTR1_VAL(h) = (Scheme_Object *)p;
+  SCHEME_PTR2_VAL(h) = proc_or_port;
+
+  if (weak_flush) {
+    FLUSH_HANDLE_FLAGS(h) |= 0x1;
+    if (!p->weak_handles) {
+      Scheme_Bucket_Table *bt;
+      bt = scheme_make_bucket_table(4, SCHEME_hash_weak_ptr);
+      p->weak_handles = bt;
+    }
+    scheme_add_to_table(p->weak_handles, (const char *)h, scheme_true, 0);
+  } else
+    scheme_hash_set(p->handles, h, scheme_true);
+
+  return h;
+}
+
+static Scheme_Object *plumber_add_flush(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_PLUMBERP(argv[0]))
+    scheme_wrong_contract("plumber-add-flush!", "plumber?", 0, argc, argv);
+  scheme_check_proc_arity("plumber-add-flush!", 1, 1, argc, argv);
+
+  return scheme_add_flush((Scheme_Plumber *)argv[0], argv[1], 
+                          (argc > 2) && SCHEME_TRUEP(argv[2]));
+}
+
+void scheme_remove_flush(Scheme_Object *h)
+{
+  Scheme_Plumber *p;
+
+  p = (Scheme_Plumber *)SCHEME_PTR1_VAL(h);
+
+  if (p) {
+    if (FLUSH_HANDLE_FLAGS(h) & 0x1) {
+      Scheme_Bucket *b;
+      b = scheme_bucket_or_null_from_table(p->weak_handles, (char *)h, 0);
+      if (b) {
+        HT_EXTRACT_WEAK(b->key) = NULL;
+        b->val = NULL;
+      }
+    } else
+      scheme_hash_set(p->handles, h, NULL);
+    SCHEME_PTR1_VAL(h) = NULL;
+    SCHEME_PTR2_VAL(h) = NULL;
+  }
+}
+
+static Scheme_Object *plumber_remove_flush(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_plumber_handle_type))
+    scheme_wrong_contract("plumber-flush-handle-remove!", "plumber-handle?", 0, argc, argv);
+  
+  scheme_remove_flush(argv[0]);
+
+  return scheme_void;  
+}
+
+static Scheme_Object *plumber_flush_p(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_plumber_handle_type)
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *current_plumber(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config2("current-plumber", 
+                              scheme_make_integer(MZCONFIG_PLUMBER),
+                              argc, argv,
+                              -1, plumber_p, "plumber?", 0);
 }
 
 /*========================================================================*/
@@ -2667,7 +2722,7 @@ static void do_swap_thread()
 
     {
       intptr_t cpm;
-      cpm = scheme_get_process_milliseconds();
+      cpm = 0; // scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
 
@@ -2680,7 +2735,7 @@ static void do_swap_thread()
 
     {
       intptr_t cpm;
-      cpm = scheme_get_process_milliseconds();
+      cpm = 0; // scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
     }
 
@@ -3006,7 +3061,7 @@ static void start_child(Scheme_Thread * volatile child,
 
     {
       intptr_t cpm;
-      cpm = scheme_get_process_milliseconds();
+      cpm = 0; // scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
 
@@ -7692,6 +7747,10 @@ static void make_initial_config(Scheme_Thread *p)
   last_custodian = main_custodian;
   init_param(cells, paramz, MZCONFIG_CUSTODIAN, (Scheme_Object *)main_custodian);
 
+  REGISTER_SO(initial_plumber);
+  initial_plumber = (Scheme_Plumber *)make_plumber(0, NULL);
+  init_param(cells, paramz, MZCONFIG_PLUMBER, (Scheme_Object *)initial_plumber);
+
   init_param(cells, paramz, MZCONFIG_ALLOW_SET_UNDEFINED, (scheme_allow_set_undefined
 							  ? scheme_true
 							  : scheme_false));
@@ -9190,6 +9249,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_thread_set_type, mark_thread_set);
   GC_REG_TRAV(scheme_config_type, mark_config);
   GC_REG_TRAV(scheme_thread_cell_type, mark_thread_cell);
+  GC_REG_TRAV(scheme_plumber_type, mark_plumber);
 
   GC_REG_TRAV(scheme_rt_param_data, mark_param_data);
   GC_REG_TRAV(scheme_rt_will, mark_will);

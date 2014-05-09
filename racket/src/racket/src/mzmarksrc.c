@@ -1727,6 +1727,7 @@ mark_input_fd {
 
   gcMARK2(fd->buffer, gc);
   gcMARK2(fd->refcount, gc);
+  gcMARK2(fd->flush_handle, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -2057,6 +2058,17 @@ mark_thread_cell {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+mark_plumber {
+ mark:
+  Scheme_Plumber *pl = (Scheme_Plumber *)p;
+ 
+  gcMARK2(pl->handles, gc);
+  gcMARK2(pl->weak_handles, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Plumber));
 }
 
 END thread;

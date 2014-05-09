@@ -1180,66 +1180,69 @@
   (test #f thread-running? t2))
 
 ;; ----------------------------------------
-;; custodian exits
+;; plumbers
 
 (let ()
-  (define c (make-custodian))
+  (define c (make-plumber))
+
+  (test #t plumber? c)
 
   (define done 0)
 
-  (define e (custodian-add-tidy! c (lambda (e) (set! done (add1 done)))))
+  (define e (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
 
-  (test #t custodian-tidy-callback? e)
-  (test #f custodian-tidy-callback? c)
+  (test #t plumber-flush-handle? e)
+  (test #f plumber-flush-handle? c)
 
-  (test #f ormap custodian-tidy-callback?
-        (custodian-managed-list c (current-custodian)))
+  (plumber-flush-handle-remove! e)
+  (plumber-flush-handle-remove! e) ; no-op
 
-  (custodian-remove-tidy! e)
-  (custodian-remove-tidy! e) ; no-op
-
-  (custodian-tidy-all c)
+  (plumber-flush-all c)
   (test 0 values done)
 
-  (define e2 (custodian-add-tidy! c (lambda (e) (set! done (add1 done)))))
-  (custodian-tidy-all c)
+  (define e2 (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
+  (plumber-flush-all c)
   (test 1 values done)
 
-  (custodian-remove-tidy! e2)
+  (plumber-flush-handle-remove! e2)
 
-  (define e3 (custodian-add-tidy! (make-custodian c) (lambda (e) (set! done (add1 done)))))
-  (custodian-tidy-all c)
+  (define e3 (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
+  (plumber-flush-all c)
   (test 2 values done)
-  (custodian-tidy-all c)
+  (plumber-flush-all c)
   (test 3 values done)
 
-  (custodian-remove-tidy! e3)
+  (plumber-flush-handle-remove! e3)
 
-  (custodian-add-tidy! c (lambda (e)
-                           (custodian-remove-tidy! e)
+  (plumber-add-flush! c (lambda (e)
+                           (plumber-flush-handle-remove! e)
                            (set! done (add1 done))
-                           (custodian-add-tidy! c (lambda (e)
-                                                    (custodian-remove-tidy! e)
-                                                    (set! done (add1 done))))))
-  (custodian-tidy-all c)
+                           (plumber-add-flush! c (lambda (e)
+                                                   (plumber-flush-handle-remove! e)
+                                                   (set! done (add1 done))))))
+  (plumber-flush-all c)
   (test 4 values done)
-  (custodian-tidy-all c)
+  (plumber-flush-all c)
   (test 5 values done)
-  (custodian-tidy-all c)
+  (plumber-flush-all c)
   (test 5 values done)
 
-  (define e5 (custodian-add-tidy! c (lambda (e) (error "oops1"))))
-  (err/rt-test (custodian-tidy-all c) exn:fail?)
-  (err/rt-test (custodian-tidy-all c) exn:fail?)
-  (custodian-remove-tidy! e5)
-  (test (void) custodian-tidy-all c)
+  (define e5 (plumber-add-flush! c (lambda (e) (error "oops1"))))
+  (err/rt-test (plumber-flush-all c) exn:fail?)
+  (err/rt-test (plumber-flush-all c) exn:fail?)
+  (plumber-flush-handle-remove! e5)
+  (test (void) plumber-flush-all c)
 
-  (custodian-add-tidy! c (lambda (e) (set! done (add1 done))))
-  (custodian-shutdown-all c)
-  (test 5 values done)
-  (custodian-tidy-all c)
-  (test 5 values done)
-  (err/rt-test (custodian-add-tidy! c (lambda (e) 'x))))
+  ;; Weak reference:
+  (when (regexp-match #rx"3m" (path->bytes (system-library-subpath)))
+    (let ([h (plumber-add-flush! c (lambda (e) (set! done (add1 done))) #t)])
+      (collect-garbage)
+      (plumber-flush-all c)
+      (test 6 values done)
+      (set! h #f)
+      (collect-garbage)
+      (plumber-flush-all c)
+      (test 6 values done))))
 
 ;; ----------------------------------------
 

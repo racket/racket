@@ -850,14 +850,6 @@ down, if a procedure is called that attempts to create a managed resource (e.g.,
 @racket[open-input-file], @racket[thread]), then the
 @exnraise[exn:fail:contract].
 
-A @tech{custodian} also supports @deftech{tidy callbacks}, which are
-normally triggered just before a Racket process or @tech{place} exits.
-For example, a @tech{tidy callback} might flush an output port's
-buffer. A tidying custodian calls its own callbacks as well as the
-tidy callbacks of its subcustodians, but there is no guarantee that a
-tidy callback will be called before exit. Shutting down a
-custodian does @emph{not} call tidy callbacks.
-
 A thread can have multiple managing custodians, and a suspended thread
 created with @racket[thread/suspend-to-kill] can have zero
 custodians. Extra custodians become associated with a thread through

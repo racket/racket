@@ -545,6 +545,7 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 
 #define SCHEME_THREADP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_thread_type)
 #define SCHEME_CUSTODIANP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_custodian_type)
+#define SCHEME_PLUMBERP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_plumber_type)
 #define SCHEME_SEMAP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_sema_type)
 #define SCHEME_CHANNELP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_channel_type)
 #define SCHEME_CHANNEL_PUTP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_channel_put_type)
@@ -1044,6 +1045,7 @@ typedef struct Scheme_Custodian *Scheme_Custodian_Reference;
 typedef struct Scheme_Custodian Scheme_Custodian;
 typedef Scheme_Bucket_Table Scheme_Thread_Cell_Table;
 typedef struct Scheme_Config Scheme_Config;
+typedef struct Scheme_Plumber Scheme_Plumber;
 
 typedef int (*Scheme_Ready_Fun)(Scheme_Object *o);
 typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *, void *);
@@ -1357,6 +1359,7 @@ enum {
   MZCONFIG_CUSTODIAN,
   MZCONFIG_INSPECTOR,
   MZCONFIG_CODE_INSPECTOR,
+  MZCONFIG_PLUMBER,
 
   MZCONFIG_USE_COMPILED_KIND,
   MZCONFIG_USE_COMPILED_ROOTS,

@@ -287,6 +287,7 @@ typedef struct Scheme_FD {
   char textmode; /* Windows: textmode => CRLF conversion; SOME_FDS_... => select definitely works */
   unsigned char *buffer;
   int *refcount;
+  Scheme_Object *flush_handle; /* output port: registration with plumber */
 
 # ifdef WINDOWS_FILE_HANDLES
   Win_FD_Input_Thread *th;   /* input mode */
@@ -8235,6 +8236,8 @@ fd_close_output(Scheme_Output_Port *port)
   }
 #endif
 
+  scheme_remove_flush(fop->flush_handle);
+
   /* Make sure no close happened while we blocked above! */
   if (port->closed)
     return;
@@ -8316,7 +8319,7 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 {
   Scheme_FD *fop;
   unsigned char *bfr;
-  Scheme_Object *the_port;
+  Scheme_Object *the_port, *fh;
   int start_closed = 0;
 
   fop = MALLOC_ONE_RT(Scheme_FD);
@@ -8372,6 +8375,9 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 						      NULL,
 						      1);
   ((Scheme_Port *)the_port)->buffer_mode_fun = fd_output_buffer_mode;
+
+  fh = scheme_add_flush(NULL, the_port, 0);
+  fop->flush_handle = fh;
 
   if (start_closed)
     scheme_close_output_port(the_port);

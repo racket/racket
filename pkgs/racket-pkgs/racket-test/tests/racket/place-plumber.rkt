@@ -4,19 +4,19 @@
 (define (go)
   (place 
    pch
-   (custodian-add-tidy! (current-custodian)
-                        (lambda (e) 
-                          (custodian-remove-tidy! e)
-                          (place-channel-put pch 'done)))
+   (plumber-add-flush! (current-plumber)
+                       (lambda (e) 
+                         (plumber-flush-handle-remove! e)
+                         (place-channel-put pch 'done)))
    (place-channel-put pch 'ready)
    (define mode (place-channel-get pch))
    (case mode
      [(exit) (exit 2)]
      [(error)
       (error-display-handler void)
-      (custodian-add-tidy! (current-custodian)
-                           (lambda (e)
-                             (error "fail")))]
+      (plumber-add-flush! (current-plumber)
+                          (lambda (e)
+                            (error "fail")))]
      [else (void)])))
 
 (module+ main

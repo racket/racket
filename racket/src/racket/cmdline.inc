@@ -602,7 +602,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   }
 #endif
 
-  if (scheme_tidy_managed(NULL, 1))
+  if (scheme_flush_managed(NULL, 1))
     exit_val = 1;
 
   return exit_val;
