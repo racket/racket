@@ -667,6 +667,26 @@
   (test #t equal? r1 r2))
 
 ;; ----------------------------------------
+;; Check that sandbox is not flushed if
+;; its custodian has been shut down:
+
+(let ()
+  (define p (make-plumber))
+
+  (define e0
+    (parameterize ([current-plumber p])
+      (call-with-trusted-sandbox-configuration
+       (lambda ()
+         (make-evaluator 'racket/base)))))
+
+  (e0 '(require racket/sandbox))
+  (e0 '(make-evaluator 'racket/base))
+
+  (kill-evaluator e0)
+  ;; e's plumber should not be flushed:
+  (plumber-flush-all p))
+
+;; ----------------------------------------
 
 ;; Backup test for one in "thread.rktl", since this sandbox test
 ;; originally exposed it:
