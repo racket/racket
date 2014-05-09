@@ -4,6 +4,7 @@
          racket/port
          racket/string
          racket/list
+         racket/path
          file/zip
          openssl/sha1
          net/url
@@ -120,6 +121,7 @@
                     (build-path info-path "info.rkt")))))
   
   (define (write-catalog-entry catalog-dir)
+    (define catalog-dir/normal (simplify-path (path->complete-path catalog-dir)))
     (define catalog-pkg-dir (build-path catalog-dir "pkg"))
     (define checksum (if dest-zip
                          (call-with-input-file* dest-zip sha1)
@@ -154,10 +156,14 @@
      #:exists 'truncate
      (lambda (o)
        (write (hash 'source (path->string
-                             ((if relative? values path->complete-path)
-                              (if dest-zip
-                                  checksum-dest
-                                  (path->directory-path pkg-dir))))
+                             (let ([p (path->complete-path
+                                       (if dest-zip
+                                           checksum-dest
+                                           (path->directory-path pkg-dir)))])
+                               (if relative?
+                                   (find-relative-path catalog-dir/normal
+                                                       (simplify-path p))
+                                   p)))
                     'checksum checksum
                     'name (path->string pkg-name)
                     'author (string-join (for/list ([r (get 'pkg-authors)])

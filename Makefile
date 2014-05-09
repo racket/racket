@@ -326,7 +326,7 @@ complain-no-submodule:
 	exit 1
 
 # Create packages and a catalog for all native libraries:
-PACK_NATIVE = --native --absolute --pack build/native/pkgs \
+PACK_NATIVE = --native --pack build/native/pkgs \
               ++catalog build/native/catalog \
 	      ++catalog build/local/catalog
 native-catalog:

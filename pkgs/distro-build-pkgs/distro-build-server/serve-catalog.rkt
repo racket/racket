@@ -47,37 +47,20 @@
 (define dirs (list built-dir native-dir))
 
 (define (pkg-name->info req name)
-  (define (extract-host-header sel)
-    (for/or ([h (in-list (request-headers/raw req))])
-      (and (equal? (header-field h) #"Host")
-           (let ([m (regexp-match #rx#"^(.*):([0-9]+)$"
-                                  (header-value h))])
-             (and m
-                  (sel (list (bytes->string/utf-8 (cadr m))
-                             (string->number (bytes->string/utf-8 (caddr m))))))))))
   (for/or ([d (in-list dirs)])
     (define f (build-path d "catalog" "pkg" name))
     (and (file-exists? f)
-         (let ([h (call-with-input-file*
+         ;; Change leading "../" to "./" in source, because
+         ;; we've shifted "pkg" relative to the site root
+         ;; by skipping over "catalog" in the URL.
+         (let ([ht (call-with-input-file*
                    f
                    read)])
-           (define s (hash-ref h 'source))
-           (hash-set h
+           (hash-set ht
                      'source
-                     (url->string
-                      (url "http"
-                           #f
-                           (or (extract-host-header car)
-                               (let ([h (request-host-ip req)])
-                                 (if (equal? h "::1")
-                                     "localhost"
-                                     h)))
-                           (or (extract-host-header cadr)
-                               (request-host-port req))
-                           #t
-                           (list (path/param (~a name ".zip") null))
-                           null
-                           #f)))))))
+                     (regexp-replace #rx"^[.][.]/"
+                                     (hash-ref ht 'source)
+                                     "./"))))))
 
 (define (response/sexpr v)
   (response 200 #"Okay" (current-seconds)
@@ -160,8 +143,9 @@
    (append
     (list (build-path build-dir "origin"))
     (list readmes-dir)
+    ;; for "pkgs" directories:
     (for/list ([d (in-list dirs)])
-      (path->complete-path (build-path d "pkgs")))
+      (path->complete-path d))
     ;; for ".git":
     (list (current-directory)))
    #:servlet-regexp #rx""
