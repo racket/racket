@@ -247,6 +247,18 @@
 (define (part-parent d ri)
   (collected-info-parent (part-collected-info d ri)))
 
+(define (with-output-to-file/clean fn thunk)
+  ;; We use 'replace instead of the usual 'truncate/replace
+  ;;  to avoid problems where a filename changes only in case,
+  ;;  in which case some platforms will see the old file
+  ;;  as matching the new name, while others don't. Replacing
+  ;;  the file syncs the case with the current uses.
+  (with-handlers ([exn? ; delete file on breaks, too
+                   (lambda (exn)
+                     (delete-file fn)
+                     (raise exn))])
+    (with-output-to-file fn #:exists 'replace thunk)))
+
 ;; ----------------------------------------
 ;;  main mixin
 
@@ -1808,8 +1820,9 @@
                ;; install files for each directory
                (install-extra-files ds)
                (let ([fn (build-path fn "index.html")])
-                 (with-output-to-file fn #:exists 'truncate/replace
-                   (lambda () (render-one d ri fn))))))
+                 (with-output-to-file/clean
+                  fn
+                  (lambda () (render-one d ri fn))))))
            ds
            fns))
 
@@ -1841,13 +1854,9 @@
                                                      (if p
                                                          (build-path (current-subdirectory) p)
                                                          (current-subdirectory)))])
-                ;; We use 'replace instead of the usual 'truncate/replace
-                ;;  to avoid problems where a filename changes only in case,
-                ;;  in which case some platforms will see the old file
-                ;;  as matching the new name, while others don't. Replacing
-                ;;  the file syncs the case with the current uses.
-                (with-output-to-file full-path #:exists 'replace
-                  (lambda () (render-one-part d ri full-path number)))
+                (with-output-to-file/clean
+                 full-path
+                 (lambda () (render-one-part d ri full-path number)))
                 null))
             (parameterize ([on-separate-page-ok #t])
               ;; Normal section render
