@@ -1317,10 +1317,14 @@ TODO
                  (set! user-eventspace-main-thread (current-thread))
                  
                  (current-logger user-logger)
+
+                 (define user-plumber (make-plumber))
+                 (current-plumber user-plumber)
                  
                  (initialize-parameters snip-classes)
                  (let ([drracket-exit-handler
                         (λ (x)
+                          (plumber-flush-all user-plumber)
                           (parameterize-break
                            #f
                            (let ([s (make-semaphore)])
