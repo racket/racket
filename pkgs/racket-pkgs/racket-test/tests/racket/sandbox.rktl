@@ -36,7 +36,9 @@
   (test 'shut (lambda () (nested* (shut)))))
 
 (let ([ev void]
-      [old-port #f])
+      [old-port #f]
+      [plumber (make-plumber)]
+      [out-port (open-output-bytes)])
   (define (make-evaluator! #:requires [reqs null] . args)
     (set! ev (apply make-evaluator args #:requires reqs)))
   (define (make-base-evaluator! . args)
@@ -596,6 +598,29 @@
    (getenv "PEAR") => "A Pear"
    --top--
    (getenv "PEAR") => #f
+
+   --top--
+   (parameterize ([sandbox-output (lambda () out-port)]
+                  [current-plumber plumber])
+     (make-base-evaluator!))
+   (plumber-add-flush! plumber (lambda (h) (set! plumber #f)))
+   (get-output-string out-port) => ""
+   --eval--
+   (plumber-flush-all (current-plumber)) ; should not affect `plumber`
+   (plumber-add-flush! (current-plumber) (lambda (h) (displayln "flushed")))
+   --top--
+   (not plumber) => #f
+   (get-output-string out-port) => ""
+   (plumber-flush-all plumber)
+   plumber => #f
+   --eval--
+   10 => 10 ; sync, so that flush has been propagated
+   --top--
+   (get-output-string out-port) => "flushed\n"
+   --eval--
+   (exit) =err> "terminated .exited.$"
+   --top--
+   (get-output-string out-port) => "flushed\nflushed\n"
 
    ;; tests for specials
    --top--

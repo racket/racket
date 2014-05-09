@@ -334,7 +334,7 @@ threads.
 Invokes the @racket[thunk] in a context where sandbox configuration
 parameters are set for minimal restrictions.  More specifically, there
 are no memory or time limits, and the existing existing @tech{inspectors},
-@tech{security guard}, @tech{exit handler}, @tech{logger}, and 
+@tech{security guard}, @tech{exit handler}, @tech{logger}, @tech{plumber}, and
 @tech{environment variable set} are used.  (Note that the I/O
 ports settings are not included.)}
 
@@ -411,8 +411,10 @@ values are allowed:
 
  @item{an output port, which is used as-is;}
 
- @item{the symbol @racket['bytes], which causes @racket[get-output]
-       to return the complete output as a byte string;}
+ @item{the symbol @racket['bytes], which causes @racket[get-output] to
+       return the complete output as a byte string as long as the
+       evaluator has not yet terminated (so that the size of the bytes
+       can be charged to the evaluator);}
 
  @item{the symbol @racket['string], which is similar to
        @racket['bytes], but makes @racket[get-output] produce a
@@ -781,6 +783,20 @@ an evaluator, and the default parameter value is
 logger (this might change in the future).}
 
 
+@defparam[sandbox-make-plumber make (or/c (-> plumber?) 'propagate)]{
+
+A @tech{parameter} that determines the procedure used to create the
+plumber for sandboxed evaluation.  The procedure is called when
+initializing an evaluator.
+
+If the value is @racket['propagate] (the default), then a new plumber
+is created, and a @tech{flush callback} is added to the current
+plumber to propagate the request to the new plumber within the created
+sandbox (if the sandbox has not already terminated).
+
+@history[#:added "6.0.1.8"]}
+
+
 @defparam[sandbox-make-environment-variables make (-> environment-variables?)]{
 
 A @tech{parameter} that determines the procedure used to create the
@@ -902,8 +918,9 @@ in a way that depends on the setting of @racket[(sandbox-output)] or
  @item{if it was @racket['bytes] or @racket['string], then the result
        is the accumulated output, and the output port is reset so each
        call returns a different piece of the evaluator's output (note
-       that any allocations of such output are still subject to the
-       sandbox memory limit);}
+       that results are available only until the evaluator has
+       terminated, and any allocations of the output are subject to
+       the sandbox memory limit);}
 
   @item{otherwise, it returns @racket[#f].}
 ]}
