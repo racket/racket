@@ -422,7 +422,7 @@
   (define window_size (* 2 WSIZE))
   ;;  /* window size, 2*WSIZE
   ;;   */
-  (define window-vec (make-bytes window_size 0))
+  (define window-vec (make-bytes (add1 window_size) 0)) ;; see "!!winvec" below
   (define window (make-gzbytes window-vec 0))
 
   (define block_start 0)
@@ -816,6 +816,7 @@
                               #f
                               (begin
                                 (set! scan_end1 (bytes-ref window-vec (+ scanpos best_len -1)))
+                                ;; the original C code can read past the end of the buffer here (!!winvec):
                                 (set! scan_end (bytes-ref window-vec (+ scanpos best_len)))
                                 #t)))
                         #t))
