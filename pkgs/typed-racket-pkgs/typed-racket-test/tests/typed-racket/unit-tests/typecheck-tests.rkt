@@ -2943,6 +2943,14 @@
          #:ret (ret -Nat -true-filter)
          #:expected (ret -Nat -no-filter)]
 
+       [tc-e
+         (lambda (a . b) (apply values a b))
+
+         #:ret (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
+         #:expected (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
+         ]
+
+
         )
   (test-suite
    "tc-literal tests"
