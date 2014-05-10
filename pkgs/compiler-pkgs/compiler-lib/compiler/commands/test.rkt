@@ -622,7 +622,7 @@
        [l
         (with-summary
          `(collection ,e)
-         (map/parallel test-files (collection-file-path l) #:sema continue-sema))])]
+         (map/parallel test-files l #:sema continue-sema))])]
     [libraries?     
      (define (find x)
        (define rmp ((current-module-name-resolver) x #f #f #f))
