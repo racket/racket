@@ -723,9 +723,10 @@
            #f]))))
 
 ;; C : cset? - set of constraints found by the inference engine
+;; X : (listof symbol?) - type variables that must have entries
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type/c - result type into which we will be substituting
-(define/cond-contract (subst-gen C Y R)
+(define/cond-contract (subst-gen C X Y R)
   (cset? (listof symbol?) (or/c Values/c AnyValues? ValuesDots?) . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
@@ -816,7 +817,7 @@
                    (for/hash ([(k v) (in-hash cmap)])
                      (values k (t-subst (constraint->type v var-hash)))))])
        ;; verify that we got all the important variables
-       (and (for/and ([v (in-list (fv R))])
+       (and (for/and ([v (in-list X)])
               (let ([entry (hash-ref subst v #f)])
                 ;; Make sure we got a subst entry for a type var
                 ;; (i.e. just a type to substitute)
@@ -867,8 +868,8 @@
            [cs  (and expected-cset
                      (cgen/list null X Y S T #:expected-cset expected-cset))]
            [cs* (% cset-meet cs expected-cset)])
-      (and cs* (if R (subst-gen cs* Y R) #t))))
-   infer)) ;to export a variable binding and not syntax
+      (and cs* (if R (subst-gen cs* X Y R) #t))))
+  infer)) ;to export a variable binding and not syntax
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X Y S T T-var R [expected #f])
@@ -903,6 +904,6 @@
    #:return-unless cs #f
    (define m (cset-meet cs expected-cset))
    #:return-unless m #f
-   (subst-gen m (list dotted-var) R)))
+   (subst-gen m X (list dotted-var) R)))
 
 
