@@ -121,6 +121,12 @@
              (list (-> -Symbol -Symbol -String) (-lst* -Symbol -Symbol))
              #:vars '(b)
              #:indices '(a)]
+
+    [infer-t (-values (list -String)) (-values-dots (list) -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(a) #:fail]
+    [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+
     ;; Currently Broken
     ;(infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b))
     ;(infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))

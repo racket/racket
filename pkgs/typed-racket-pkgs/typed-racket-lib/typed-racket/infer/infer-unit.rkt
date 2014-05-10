@@ -426,7 +426,7 @@
                   [new-tys  (for/list ([var (in-list vars)])
                               (-result (substitute (make-F var) dbound t-dty)))]
                   [new-cset (cgen/list V (append vars X) Y ss (append ts new-tys))])
-             (move-vars-to-dmap new-cset dbound vars))]
+             (% move-vars-to-dmap new-cset dbound vars))]
 
           ;; identical bounds - just unify pairwise
           [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
@@ -585,10 +585,10 @@
           [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
            ;; What should we do if both are in Y?
            #:return-when (memq t-dbound Y) #f
-           (move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound)]
+           (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound)]
           [((ListDots: s-dty s-dbound) (ListDots: t-dty (? (λ (db) (memq db Y)) t-dbound)))
            ;; s-dbound can't be in Y, due to previous rule
-           (move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound)]
+           (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound)]
 
           ;; this constrains `dbound' to be |ts| - |ss|
           [((ListDots: s-dty dbound) (List: ts))
@@ -612,7 +612,7 @@
                   [new-tys  (for/list ([var (in-list vars)])
                               (substitute (make-F var) dbound t-dty))]
                   [new-cset (cgen/list V (append vars X) Y ss new-tys)])
-             (move-vars-to-dmap new-cset dbound vars))]
+             (% move-vars-to-dmap new-cset dbound vars))]
 
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
