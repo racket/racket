@@ -113,17 +113,18 @@
             (hash-ref cmap dbound
                       (λ () (int-err "No constraint for bound ~a" dbound)))))))
 
-;; dbound : index variable
 ;; cset : the constraints being manipulated
+;; var : index variable being inferred
+;; dbound : constraining index variable
 ;;
-(define/cond-contract (move-dotted-rest-to-dmap cset dbound)
-  (cset? symbol? . -> . cset?)
-  (mover cset dbound null
+(define/cond-contract (move-dotted-rest-to-dmap cset var dbound)
+  (cset? symbol? symbol? . -> . cset?)
+  (mover cset var null
          (λ (cmap dmap)
            (make-dcon-dotted
             null
-            (hash-ref cmap dbound
-                      (λ () (int-err "No constraint for bound ~a" dbound)))
+            (hash-ref cmap var
+                      (λ () (int-err "No constraint for bound ~a" var)))
             dbound))))
 
 ;; This one's weird, because the way we set it up, the rest is already in the dmap.
@@ -271,7 +272,7 @@
      #:return-when (memq dbound* Y) #f
      (let* ([arg-mapping (cgen/list V X Y ts ss)]
             ;; just add dbound as something that can be constrained
-            [darg-mapping (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y t-dty s-dty) dbound)]
+            [darg-mapping (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y t-dty s-dty) dbound dbound*)]
             [ret-mapping (cg s t)])
        (% cset-meet arg-mapping darg-mapping ret-mapping))]
     [((arr: ss s #f (cons s-dty dbound)  '())
@@ -279,8 +280,7 @@
      #:return-unless (= (length ss) (length ts)) #f
      (let* ([arg-mapping (cgen/list V X Y ts ss)]
             ;; just add dbound as something that can be constrained
-            [darg-mapping (% move-dotted-rest-to-dmap
-                             (cgen V (cons dbound* X) Y t-dty s-dty) dbound*)]
+            [darg-mapping (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y t-dty s-dty) dbound* dbound)]
             [ret-mapping (cg s t)])
        (% cset-meet arg-mapping darg-mapping ret-mapping))]
     ;; * <: ...
@@ -438,14 +438,13 @@
            #:return-when (memq t-dbound Y) #f
            (% cset-meet
               (cgen/list V X Y ss ts)
-              (% move-dotted-rest-to-dmap 
-                 (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound))]
+              (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound))]
           [((ValuesDots: ss s-dty s-dbound)
             (ValuesDots: ts t-dty (? (λ (db) (memq db Y)) t-dbound)))
            ;; s-dbound can't be in Y, due to previous rule
            (% cset-meet
               (cgen/list V X Y ss ts)
-              (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound))]
+              (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound))]
 
           ;; they're subtypes. easy.
           [(a b) 
@@ -586,10 +585,10 @@
           [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
            ;; What should we do if both are in Y?
            #:return-when (memq t-dbound Y) #f
-           (move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound)]
+           (move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound)]
           [((ListDots: s-dty s-dbound) (ListDots: t-dty (? (λ (db) (memq db Y)) t-dbound)))
            ;; s-dbound can't be in Y, due to previous rule
-           (move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound)]
+           (move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound)]
 
           ;; this constrains `dbound' to be |ts| - |ss|
           [((ListDots: s-dty dbound) (List: ts))
