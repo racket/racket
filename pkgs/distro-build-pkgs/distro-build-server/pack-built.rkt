@@ -27,7 +27,7 @@
 (define catalog-dir (build-path dest-dir "catalog"))
 (define catalog-pkg-dir (build-path catalog-dir "pkg"))
 (make-directory* pkg-dest-dir)
-(make-directory* catalog-dir)
+(make-directory* catalog-pkg-dir)
 
 (for ([pkg (in-list (installed-pkg-names))])
   (define native-zip (build-path native-dir (path-add-suffix pkg ".zip")))
