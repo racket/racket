@@ -379,12 +379,12 @@
     (raise-argument-error name
                           (format "~a" (object-name pred1?))
                           0
-                          (list arg1 arg2)))
+                          arg1 arg2))
   (unless (pred2? arg2)
     (raise-argument-error name
                           (format "~a" (object-name pred2?))
                           1
-                          (list arg1 arg2))))
+                          arg1 arg2)))
 (define/final-prop (integer-in start end)
   (check-two-args 'integer-in start end exact-integer? exact-integer?)
   (flat-named-contract 
@@ -961,7 +961,10 @@
    #:val-first-projection (λ (ctc) (λ (blame) any/c-neg-party-fn))
    #:stronger (λ (this that) (any/c? that))
    #:name (λ (ctc) 'any/c)
-   #:generate (λ (ctc) (λ (fuel) (λ () (random-any/c fuel))))
+   #:generate (λ (ctc) 
+                (λ (fuel) 
+                  (define env (generate-env))
+                  (λ () (random-any/c env fuel))))
    #:first-order get-any?))
 
 (define/final-prop any/c (make-any/c))
