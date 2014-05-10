@@ -178,6 +178,9 @@
  
  (install-package-button "~a installieren") ;; button label: ~a is filled with the name of a pkg
 
+ (update-catalog "Katalog aktualisieren") ;; button label; shown when there is a missing module, but no matching package
+ (updating-catalog-from "Von ~a aktualisieren...") ;; message label; used as a status message when updating the pkg catalog
+
  ;;; misc
  (welcome-to-something "Willkommen bei ~a")
  
