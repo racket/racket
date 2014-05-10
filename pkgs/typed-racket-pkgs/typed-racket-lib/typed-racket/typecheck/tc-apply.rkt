@@ -95,12 +95,11 @@
                         (list (-Tuple* domain (make-Listof rest)))
                         range))
             => finish]
-           ;; ... function, ... arg
-           [(and drest tail-bound
-                 (= (length domain) (length arg-tys))
+           ;; ... function
+           [(and drest
                  (infer fixed-vars (list dotted-var)
-                        (cons (make-ListDots tail-ty tail-bound) arg-tys)
-                        (cons (make-ListDots (car drest) (cdr drest)) domain)
+                        (list (-Tuple* arg-tys full-tail-ty))
+                        (list (-Tuple* domain (make-ListDots (car drest) (cdr drest))))
                         range))
             => finish]
            ;; ... function, (Listof A) or (List A B C etc) arg
