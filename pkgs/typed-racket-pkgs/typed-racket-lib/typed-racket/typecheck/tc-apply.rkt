@@ -65,26 +65,19 @@
          (define (finish substitution)
            (and substitution (do-ret (subst-all substitution range))))
 
-         ;; Figures out if there is a possible substitution of vars and if there is uses that
-         ;; substitution to compute the actual range type.
-         ;; Currently if vars is null, then we use subtype instead because inference is missing some
-         ;; cases that are covered by subtype.
-         (define (local-infer s t)
-           (if (empty? vars)
-               (and (subtype s t) (do-ret range))
-               (finish (infer vars null (list s) (list t) range))))
-
-         (local-infer
-           (-Tuple* arg-tys full-tail-ty)
-           (-Tuple* domain
-                    (cond
-                      ;; the actual work, when we have a * function
-                      [rest (make-Listof rest)]
-                      ;; ... function
-                      [drest (make-ListDots (car drest) (cdr drest))]
-                      ;; the function has no rest argument,
-                      ;; but provides all the necessary fixed arguments
-                      [else -Null]))))
+         (finish
+           (infer vars null
+                  (list (-Tuple* arg-tys full-tail-ty))
+                  (list (-Tuple* domain
+                                 (cond
+                                   ;; the actual work, when we have a * function
+                                   [rest (make-Listof rest)]
+                                   ;; ... function
+                                   [drest (make-ListDots (car drest) (cdr drest))]
+                                   ;; the function has no rest argument,
+                                   ;; but provides all the necessary fixed arguments
+                                   [else -Null])))
+                  range)))
        (failure))]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
