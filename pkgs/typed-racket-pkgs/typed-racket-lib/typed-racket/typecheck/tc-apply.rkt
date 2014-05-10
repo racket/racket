@@ -98,20 +98,10 @@
            ;; ... function, ... arg
            [(and drest tail-bound
                  (= (length domain) (length arg-tys))
-                 (if (eq? tail-bound (cdr drest))
-                     ;; same bound on the ...s
-                     (infer fixed-vars (list dotted-var)
-                            (cons (make-ListDots tail-ty tail-bound) arg-tys)
-                            (cons (make-ListDots (car drest) (cdr drest)) domain)
-                            range)
-                     ;; different bounds on the ...s
-                     (extend-tvars (list tail-bound (cdr drest))
-                       (extend-indexes (cdr drest)
-                         ;; don't need to add tail-bound - it must already be an index
-                        (infer fixed-vars (list dotted-var)
-                               (cons (make-ListDots tail-ty tail-bound) arg-tys)
-                               (cons (make-ListDots (car drest) (cdr drest)) domain)
-                               range)))))
+                 (infer fixed-vars (list dotted-var)
+                        (cons (make-ListDots tail-ty tail-bound) arg-tys)
+                        (cons (make-ListDots (car drest) (cdr drest)) domain)
+                        range))
             => finish]
            ;; ... function, (Listof A) or (List A B C etc) arg
            [(and drest (not tail-bound)
