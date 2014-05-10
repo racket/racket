@@ -6,7 +6,9 @@
 A @deftech{plumber} supports @deftech{flush callbacks}, which are
 normally triggered just before a Racket process or @tech{place} exits.
 For example, a @tech{flush callback} might flush an output port's
-buffer.
+buffer. @tech{Flush callbacks} are roughly analogous to the standard C
+library's @as-index{atexit} feature, but can also be used in other
+similar scenarios.
 
 There is no guarantee that a flush callback will be called before a
 process terminates---either because the plumber is not the original
