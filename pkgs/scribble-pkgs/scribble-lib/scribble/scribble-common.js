@@ -20,7 +20,7 @@ var page_args =
 
 function GetPageArg(key, def) {
   for (var i=0; i<page_args.length; i++)
-    if (page_args[i][0] == key) return unescape(page_args[i][1]);
+    if (page_args[i][0] == key) return decodeURIComponent(page_args[i][1]);
   return def;
 }
 
@@ -131,7 +131,7 @@ function DoSearchKey(event, field, ver, top_path) {
   if (event && event.keyCode == 13) {
     var u = GetCookie("PLT_Root."+ver, null);
     if (u == null) u = top_path; // default: go to the top path
-    u += "search/index.html?q=" + escape(val);
+    u += "search/index.html?q=" + encodeURIComponent(val);
     u = MergePageArgsIntoUrl(u);
     location = u;
     return false;
