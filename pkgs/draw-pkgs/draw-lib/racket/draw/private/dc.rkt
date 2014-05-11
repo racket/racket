@@ -1816,14 +1816,21 @@
                                            (- (- a-dest-y a-src-y)))
                    (cairo_pattern_set_matrix (cairo_get_source cr) m)))
                (adjust-pattern-filter sc (cairo_get_source cr)))
-             (if mask
-                 (stamp-pattern mask a-msrc-x a-msrc-y)
-                 (begin
-                   (cairo_new_path cr)
-                   (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
-                   (if (= use-alpha 1.0)
-                       (cairo_fill cr)
-                       (cairo_paint_with_alpha cr use-alpha))))
+             (cond
+              [mask
+               (stamp-pattern mask a-msrc-x a-msrc-y)]
+              [(or (and (= 0 src-x)
+                        (= 0 src-y)
+                        (= src-w (send src get-width))
+                        (= src-h (send src get-height)))
+                   (< use-alpha 1.0))
+               ;; cairo_paint may be faster than cairo_fill
+               ;; when drawing the whole source:
+               (cairo_paint_with_alpha cr use-alpha)]
+              [else
+               (cairo_new_path cr)
+               (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
+               (cairo_fill cr)])
              (cairo_set_source cr s)
              (cairo_pattern_destroy s))]
           [else
