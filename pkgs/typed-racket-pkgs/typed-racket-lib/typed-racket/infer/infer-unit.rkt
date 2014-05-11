@@ -318,15 +318,12 @@
                                (substitute (make-F var) dbound s-dty))]
                    [new-s-arr (make-arr (append ss new-tys) s #f (cons s-dty dbound) null)]
                    [new-cset (cgen/arr V (append vars X) Y new-s-arr t-arr)])
-              (and new-cset vars
-                   (move-vars+rest-to-dmap new-cset dbound vars #:exact #t)))]
+              (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
            [(= (length ss) (length ts))
             ;; the simple case
             (let* ([arg-mapping (cgen/list V X Y (extend ss ts t-rest) ss)]
                    [rest-mapping (cgen V (cons dbound X) Y t-rest s-dty)]
-                   [darg-mapping (and rest-mapping 
-                                      (move-rest-to-dmap
-                                       rest-mapping dbound #:exact #t))]
+                   [darg-mapping (% move-rest-to-dmap rest-mapping dbound #:exact #t)]
                    [ret-mapping (cg s t)])
               (% cset-meet arg-mapping darg-mapping ret-mapping))]
            [else #f])]
@@ -588,7 +585,7 @@
           [((Listof: s-elem) (ListDots: t-dty dbound))
            #:return-unless (memq dbound Y) #f
            (define v (cgen V (cons dbound X) Y s-elem t-dty))
-           (and v (move-rest-to-dmap v dbound #:exact #t))]
+           (% move-rest-to-dmap v dbound #:exact #t)]
 
           ;; two ListDots with the same bound, just check the element type
           [((ListDots: s-dty dbound) (ListDots: t-dty dbound))

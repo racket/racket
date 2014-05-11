@@ -16,22 +16,31 @@
   [(_ e [c . r:rhs] ...)
    #'(match* e [c . r.r] ...)]))
 
+(begin-for-syntax
+  (define-splicing-syntax-class arg
+    #:attributes (v name (arg 1))
+    (pattern v:expr
+      #:with name (generate-temporary #'v)
+      #:with (arg ...) #'(name))
+    (pattern (~seq kw:keyword v:expr)
+      #:with name (generate-temporary #'v)
+      #:with (arg ...) #'(kw name))))
+
+
 ;; (% f e ...) == (and e ... (f e ...)) but without repeated evaluation
 (define-syntax (% stx)
-  (syntax-parse stx 
-    [(_ f e ...)
-     (define/with-syntax (a ...) (generate-temporaries #'(e ...)))
-     #'(let/fail ([a e] ...)
-         (f a ...))]))
+  (syntax-parse stx
+    [(_ f e:arg ...)
+     #'(let/fail ([e.name e.v] ...)
+         (f e.arg ... ...))]))
 
 ;; (%1 f e0 e ...) == (and e0 (f e0 e ...)) but without repeated evaluation
 (define-syntax (%1 stx)
-  (syntax-parse stx 
-    [(_ f e0 e ...)
-     (define/with-syntax (a0 a ...) (generate-temporaries #'(e0 e ...)))
-     #'(let/fail ([a0 e0]) 
-         (let ([a e] ...)
-           (f a0 a ...)))]))
+  (syntax-parse stx
+    [(_ f e0:arg e:arg ...)
+     #'(let/fail ([e0.name e0.v])
+         (let ([e.name e.v] ...)
+           (f e0.arg ... e.arg ... ...)))]))
 
 ;; like `let`, but if any bindings are #f, the whole expression produces #f
 (define-syntax (let/fail stx)
