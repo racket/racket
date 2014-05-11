@@ -1,4 +1,4 @@
-#lang racket/unit
+#lang racket/base
 
 (require string-constants
          racket/class
@@ -14,11 +14,14 @@
          racket/list
          "logging-timer.rkt"
          "coroutine.rkt"
-         data/queue)
+         data/queue
+         racket/unit)
 
 (require scribble/xref
          scribble/manual-struct)
 
+(provide text@)
+(define-unit text@
 (import mred^
         [prefix icon: framework:icon^]
         [prefix editor: framework:editor^]
@@ -2845,34 +2848,6 @@
              [else (loop rest
                          (cons front acc))])])))
     
-    ;; peel : (cons (cons (union snip bytes) X) (listof (cons (union snip bytes) X))
-    ;;     -> (values (cons (union snip bytes) X) (listof (cons (union snip bytes) X)
-    ;; finds the first segment of bytes with the same style and combines them,
-    ;; otherwise a lot like (define (peel x) (values (car x) (cdr x)))
-    (define/private (peel lst)
-      (let loop ([lst lst]
-                 [acc #f]
-                 [key #f])
-        (cond
-          [(null? lst) (values (cons acc key) null)]
-          [else 
-           (let* ([fst (car lst)]
-                  [fst-key (cdr fst)]
-                  [fst-val (car fst)])
-             (cond
-               [(and (not key) (bytes? fst-val))
-                (loop (cdr lst)
-                      fst-val
-                      fst-key)]
-               [(and key (bytes? fst-val) (eq? key fst-key))
-                (loop (cdr lst)
-                      (bytes-append acc fst-val)
-                      key)]
-               [(not key)
-                (values fst (cdr lst))]
-               [else (if acc
-                         (values (cons acc key) lst)
-                         (values fst (cdr lst)))]))])))
     
     (super-new)
     (init-output-ports)
@@ -4488,4 +4463,59 @@ designates the character that triggers autocompletion
 (define clever-file-format% (crlf-line-endings-mixin (clever-file-format-mixin file%)))
 (define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
 (define searching% (searching-mixin backup-autosave%))
-(define info% (info-mixin (editor:info-mixin searching%)))
+(define info% (info-mixin (editor:info-mixin searching%))))
+
+
+;; peel : (cons/c (cons/c (or/c bytes? (not/c bytes?)) X) 
+;;                        (listof (cons (or/c bytes? (not/c bytes?)) X))
+;;     -> (values (cons/c (or/c bytes? (not/c bytes?)) X)
+;;                (listof (cons (or/c bytes? (not/c bytes?)) X)
+;; finds the first segment of bytes with the same style and combines them,
+;; otherwise a lot like (define (peel x) (values (car x) (cdr x)))
+(define (peel lst)
+  (let loop ([lst lst]
+             [acc '()]
+             [key #f])
+    (cond
+      [(null? lst) (values (cons (peel-acc->bytes acc) key) null)]
+      [else 
+       (let* ([fst (car lst)]
+              [fst-key (cdr fst)]
+              [fst-val (car fst)])
+         (cond
+           [(and (not key) (bytes? fst-val))
+            (loop (cdr lst)
+                  (list fst-val)
+                  fst-key)]
+           [(and key (bytes? fst-val) (eq? key fst-key))
+            (loop (cdr lst)
+                  (cons fst-val acc)
+                  key)]
+           [(not key)
+            (values fst (cdr lst))]
+           [else (if (pair? acc)
+                     (values (cons (peel-acc->bytes acc) key) lst)
+                     (values fst (cdr lst)))]))])))
+
+(define (peel-acc->bytes acc)
+  (apply bytes-append (reverse acc)))
+
+(module+ test
+  (require rackunit)
+  (define (peek-lst arg) (define-values (x y) (peel arg)) (list x y))
+  (check-equal? (peek-lst (list (cons #"x" 'one)))
+                (list '(#"x" . one) '()))
+  (check-equal? (peek-lst (list (cons 'nb 'one)))
+                (list '(nb . one) '()))
+  (check-equal? (peek-lst (list (cons 'nb1 'one) (cons 'nb2 'one)))
+                (list '(nb1 . one) '((nb2 . one))))
+  (check-equal? (peek-lst (list (cons 'nb1 'one) (cons 'nb2 'two)))
+                (list '(nb1 . one) '((nb2 . two))))
+  (check-equal? (peek-lst (list (cons #"x" 'one) (cons #"y" 'one)))
+                (list '(#"xy" . one) '()))
+  (check-equal? (peek-lst (list (cons #"x" 'one) (cons 'nb 'one)))
+                (list '(#"x" . one) '((nb . one))))
+  (check-equal? (peek-lst (list (cons #"x" 'one) (cons #"y" 'two)))
+                (list '(#"x" . one) '((#"y" . two))))
+  (check-equal? (peek-lst (list (cons #"x" 'one) (cons #"y" 'one) (cons #"z" 'two)))
+                (list '(#"xy" . one) '((#"z" . two)))))
