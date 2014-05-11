@@ -585,6 +585,11 @@
            (if (memq dbound Y)
                (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-elem) dbound)
                (cgen V X Y (substitute Univ dbound s-dty) t-elem))]
+          [((Listof: s-elem) (ListDots: t-dty dbound))
+           #:return-unless (memq dbound Y) #f
+           (define v (cgen V (cons dbound X) Y s-elem t-dty))
+           (and v (move-rest-to-dmap v dbound #:exact #t))]
+
           ;; two ListDots with the same bound, just check the element type
           ;; This is conservative because we don't try to infer a constraint on dbound.
           [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
