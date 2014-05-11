@@ -6,22 +6,25 @@
   (provide back deck-of-cards make-card)
 
   (define (get-bitmap file)
-    (make-object mred:bitmap% file))
+    (mred:read-bitmap file 
+                      #:try-@2x? ((mred:get-display-backing-scale) . > . 1)))
 
   (define (make-dim bm-in)
     (let ([w (send bm-in get-width)]
-	  [h (send bm-in get-height)])
-      (let* ([bm (make-object mred:bitmap% w h)]
+	  [h (send bm-in get-height)]
+          [s (inexact->exact (round (send bm-in get-backing-scale)))])
+      (let* ([bm (mred:make-bitmap w h #:backing-scale s)]
 	     [mdc (make-object mred:bitmap-dc% bm)])
 	(send mdc draw-bitmap bm-in 0 0)
-	(let* ([len (* w h 4)]
+	(let* ([len (* w h 4 s s)]
 	       [b (make-bytes len)])
-	  (send mdc get-argb-pixels 0 0 w h b)
+	  (send bm get-argb-pixels 0 0 (* w s) (* h s) b #:unscaled? #t)
 	  (let loop ([i 0])
 	    (unless (= i len)
-	      (bytes-set! b i (quotient (* 3 (bytes-ref b i)) 4))
+              (when (positive? (modulo i 4))
+                (bytes-set! b i (quotient (* 3 (bytes-ref b i)) 4)))
 	      (loop (add1 i))))
-	  (send mdc set-argb-pixels 0 0 w h b))
+	  (send bm set-argb-pixels 0 0 (* w s) (* h s) b #:unscaled? #t))
 	(send mdc set-bitmap #f)
 	bm)))
 

@@ -11,27 +11,10 @@
   (define prev-regions #f)
   (define prev-region-dc #f)
 
-  (define (with-card-region dc x y width height thunk)
-    (let ([rs (if #f ; (eq? prev-region-dc dc) <- assumes the same xform matrix
-                  prev-regions
-		  (cons (make-object mred:region% dc)
-			(make-object mred:region% dc)))])
-      (set! prev-regions rs)
-      (set! prev-region-dc dc)
-      (send (car rs) set-rectangle x (add1 y) width (- height 2))
-      (send (cdr rs) set-rectangle (add1 x) y (- width 2) height)
-      (send (car rs) union (cdr rs))
-      (let ([r (send dc get-clipping-region)])
-	(when r
-	  (send (car rs) intersect r))
-	(send dc set-clipping-region (car rs))
-	(thunk)
-	(send dc set-clipping-region r))))
-
   (define (rotate-bm bm cw?)
     (let ([w (send bm get-width)]
           [h (send bm get-height)])
-      (let ([bm2 (make-object mred:bitmap% h w)]
+      (let ([bm2 (mred:make-bitmap h w)]
             [s (make-bytes (* w h 4))]
             [s2 (make-bytes (* h w 4))])
         (send bm get-argb-pixels 0 0 w h s)
@@ -197,15 +180,12 @@
 	   (check-dim)
 	   (let ([do-draw
                   (lambda (x y)
-                    (with-card-region
-                     dc x y width height
-                     (lambda ()
-                       (send dc draw-bitmap 
-                             (let ([bm (if flipped? 
-                                           (if is-dim? dim-back back)
-                                           (if is-dim? dim-front front))])
-                               (get-rotated bm rotated))
-                             x y))))])
+                    (send dc draw-bitmap 
+                          (let ([bm (if flipped? 
+                                        (if is-dim? dim-back back)
+                                        (if is-dim? dim-front front))])
+                            (get-rotated bm rotated))
+                          x y))])
              (if semi-flipped?
                  (let-values ([(sx sy) (send dc get-scale)])
                    (case rotated
