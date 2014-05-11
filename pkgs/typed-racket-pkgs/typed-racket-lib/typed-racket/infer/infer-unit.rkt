@@ -233,12 +233,10 @@
      #f
      #:return-unless (<= (length ss) (length ts))
      #f
-     (let* ([vars      (var-store-take dbound dty (- (length ts) (length ss)))]
-            [new-tys   (for/list ([var (in-list vars)])
-                         (substitute (make-F var) dbound dty))]
-            [new-s-seq (seq (append ss new-tys) (null-end))]
-            [new-cset  (cgen/seq V (append vars X) Y new-s-seq t-seq)])
-       (% move-vars-to-dmap new-cset dbound vars))]
+     (let* ([vars    (var-store-take dbound dty (- (length ts) (length ss)))]
+            [new-tys (for/list ([var (in-list vars)])
+                       (substitute (make-F var) dbound dty))])
+       (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars))]
     ;; dotted above, nothing below
     [((seq ss (null-end))
       (seq ts (dotted-end dty dbound)))
@@ -246,12 +244,10 @@
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (let* ([vars      (var-store-take dbound dty (- (length ss) (length ts)))]
-            [new-tys   (for/list ([var (in-list vars)])
-                         (substitute (make-F var) dbound dty))]
-            [new-t-seq (seq (append ts new-tys) (null-end))]
-            [new-cset  (cgen/seq V (append vars X) Y s-seq new-t-seq)])
-       (% move-vars-to-dmap new-cset dbound vars))]
+     (let* ([vars    (var-store-take dbound dty (- (length ss) (length ts)))]
+            [new-tys (for/list ([var (in-list vars)])
+                       (substitute (make-F var) dbound dty))])
+       (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars))]
     ;; this case is just for constrainting other variables, not dbound
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (dotted-end t-dty dbound)))
@@ -260,9 +256,9 @@
      ;; If we want to infer the dotted bound, then why is it in both types?
      #:return-when (memq dbound Y)
      #f
-     (let* ([arg-mapping (cgen/list V X Y ss ts)]
-            [darg-mapping (cgen V X Y s-dty t-dty)])
-       (% cset-meet arg-mapping darg-mapping))]
+     (% cset-meet
+        (cgen/list V X Y ss ts)
+        (cgen V X Y s-dty t-dty))]
     ;; bounds are different
     [((seq ss (dotted-end s-dty (? (λ (db) (memq db Y)) dbound)))
       (seq ts (dotted-end t-dty dbound*)))
