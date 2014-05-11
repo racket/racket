@@ -591,9 +591,11 @@
            (and v (move-rest-to-dmap v dbound #:exact #t))]
 
           ;; two ListDots with the same bound, just check the element type
-          ;; This is conservative because we don't try to infer a constraint on dbound.
           [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
-           (cgen V X Y s-dty t-dty)]
+           (if (memq dbound Y)
+               (extend-tvars (list dbound)
+                 (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
+               (cgen V X Y s-dty t-dty))]
           [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
            ;; What should we do if both are in Y?
            #:return-when (memq t-dbound Y) #f
