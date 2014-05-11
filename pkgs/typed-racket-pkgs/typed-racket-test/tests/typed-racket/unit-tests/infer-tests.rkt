@@ -105,6 +105,8 @@
     (infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (-lst Univ) #:indices '(b))
     (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b) #:vars '(a))
+    (infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
+    (infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots -Symbol 'b) (make-ListDots Univ 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots Univ 'b) #:indices '(b))
@@ -131,8 +133,6 @@
     [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
 
     ;; Currently Broken
-    ;(infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
-    ;(infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]
     [i2-t (-pair (-v a) (-v a)) (-pair N (Un N B)) ('a (Un N B))]
