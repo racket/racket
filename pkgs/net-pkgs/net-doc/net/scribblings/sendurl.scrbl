@@ -31,10 +31,12 @@ On Unix, @racket[send-url] uses a user-preference, or when none is
 set, it will look for a known browser.  See the description of
 @racket[external-browser] for details.
 
-The @racket[url] string is usually escaped to avoid dangerous shell
-characters (quotations, dollar signs, backslashes, and non-ASCII).  Note
-that it is a good idea to encode URLs before passing them to this
-function.
+If @racket[escape?] is true, then @racket[str] is escaped (by UTF-8
+encoding followed by ``%'' encoding) to avoid dangerous shell
+characters: single quotes, double quotes, backquotes, dollar signs,
+backslashes, non-ASCII characters, and non-graphic characters. Note
+that escaping does not affect already-encoded characters in
+@racket[str].
 
 On all platforms, @racket[external-browser] parameter can be set to a
 procedure to override the above behavior --- the procedure will be
@@ -45,12 +47,16 @@ called with the @racket[url] string.}
                         [#:query query (or/c string? false/c) #f])
          void?]{
 
-Similar to @racket[send-url], but accepts a path to a file to be
-displayed by the browser.  Use this function when you want to display
-a local file: it takes care of the peculiarities of constructing the
-correct @litchar{file://} URL, and uses @racket[send-url] to display
-the file.  If you need to use an anchor fragment or a query string,
-use the corresponding keyword arguments.}
+Similar to @racket[send-url] (with @racket[#:escape? #t]), but accepts
+a path to a file to be displayed by the browser, along with optional
+@racket[fragment] (with no leading @litchar{#}) and @racket[query]
+(with no leading @litchar{?}) strings.  Use @racket[send-url/file] to
+display a local file, since it takes care of the peculiarities of
+constructing the correct @litchar{file://} URL.
+
+The @racket[path], @racket[fragment], and @racket[query] arguments are
+all encoded in the same way as a path provided to @racket[send-url],
+which means that already-encoded characters are used as-is.}
 
 @defproc[(send-url/contents [contents string?] [separate-window? any/c #t]
                             [#:fragment fragment (or/c string? false/c) #f]
@@ -59,15 +65,17 @@ use the corresponding keyword arguments.}
          void?]{
 
 Similar to @racket[send-url/file], but it consumes the contents of a
-page to show, and displayes it from a temporary file.
+page to show and displays it from a temporary file.
 
-If @racket[delete-at] is a number, the temporary file is removed after
-this many seconds.  The deletion happens in a thread, so if racket
-exits before that it will not happen --- when this function is called
-it scans old generated files (this happens randomly, not on every
-call) and removes them to avoid cluttering the temporary directory.
-If @racket[delete-at] is @racket[#f], no delayed deletion happens, but
-old temporary files are still deleted as described above.}
+When @racket[send-url/content] is called, it scans old generated files
+(this happens randomly, not on every call) and removes them to avoid
+cluttering the temporary directory.  If the @racket[#:delete-at]
+argument is a number, then the temporary file is more eagerly removed
+after the specified number of seconds; the deletion happens in a
+thread, so if Racket exits earlier, the deletion will not happen.  If
+the @racket[#:delete-at] argument is @racket[#f], no eager deletion
+happens, but old temporary files are still deleted as described
+above.}
 
 @defparam[external-browser cmd browser-preference?]{
 
