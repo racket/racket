@@ -163,10 +163,28 @@
     [(ValuesDots: ts dty dbound) (seq ts (dotted-end (-result dty) dbound))]
     [_ #f]))
 
+
+(define (List->end v)
+  (match v
+    [(== -Null type-equal?) (null-end)]
+    [(Listof: t) (uniform-end t)]
+    [(ListDots: t dbound) (dotted-end t dbound)]
+    [_ #f]))
+
+(define (List->seq v)
+  (match v
+    [(List: ts #:tail (app List->end end)) (and end (seq ts end))]))
+
+
 (define-match-expander ValuesSeq:
   (lambda (stx)
     (syntax-parse stx
       [(_ seq) #'(app Values->seq (? values seq))])))
+
+(define-match-expander ListSeq:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ seq) #'(app List->seq (? values seq))])))
 
 
 ;; Maps dotted vars (combined with dotted types, to ensure global uniqueness)
@@ -553,56 +571,10 @@
            (cgen/list V X Y (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
-          ;; ListDots can be below a Listof
-          ;; must be above mu unfolding
-          [((ListDots: s-dty dbound) (Listof: t-elem))
-           (if (memq dbound Y)
-               (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-elem) dbound)
-               (cgen V X Y (substitute Univ dbound s-dty) t-elem))]
-          [((Listof: s-elem) (ListDots: t-dty dbound))
-           #:return-unless (memq dbound Y) #f
-           (define v (cgen V (cons dbound X) Y s-elem t-dty))
-           (% move-rest-to-dmap v dbound #:exact #t)]
 
-          ;; two ListDots with the same bound, just check the element type
-          [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
-           (if (memq dbound Y)
-               (extend-tvars (list dbound)
-                 (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
-               (cgen V X Y s-dty t-dty))]
-          [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
-           ;; What should we do if both are in Y?
-           #:return-when (memq t-dbound Y) #f
-           (extend-tvars (list t-dbound)
-             (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound))]
-          [((ListDots: s-dty s-dbound) (ListDots: t-dty (? (λ (db) (memq db Y)) t-dbound)))
-           ;; s-dbound can't be in Y, due to previous rule
-           (extend-tvars (list s-dbound)
-             (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound))]
-
-          ;; this constrains `dbound' to be |ts| - |ss|
-          [((ListDots: s-dty dbound) (List: ts))
-           #:return-unless (memq dbound Y) #f
-           (let* ([vars     (var-store-take dbound s-dty (length ts))]
-                  ;; new-tys are dummy plain type variables, 
-                  ;; standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var (in-list vars)])
-                              (substitute (make-F var) dbound s-dty))]
-                  ;; generate constraints on the prefixes, and on the dummy types
-                  [new-cset (cgen/list V (append vars X) Y new-tys ts)])
-             ;; now take all the dummy types, and use them to constrain dbound appropriately
-             (% move-vars-to-dmap new-cset dbound vars))]
-
-          ;; same as above, constrains `dbound' to be |ss| - |ts|
-          [((List: ss) (ListDots: t-dty dbound))
-           #:return-unless (memq dbound Y) #f
-
-           ;; see comments for last case, we flip s and t though
-           (let* ([vars     (var-store-take dbound t-dty (length ss))]
-                  [new-tys  (for/list ([var (in-list vars)])
-                              (substitute (make-F var) dbound t-dty))]
-                  [new-cset (cgen/list V (append vars X) Y ss new-tys)])
-             (% move-vars-to-dmap new-cset dbound vars))]
+          ;; Lists delegate to sequences
+          [((ListSeq: s-seq) (ListSeq: t-seq))
+           (cgen/seq V X Y s-seq t-seq)]
 
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
