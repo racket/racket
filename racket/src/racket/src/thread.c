@@ -2722,7 +2722,7 @@ static void do_swap_thread()
 
     {
       intptr_t cpm;
-      cpm = 0; // scheme_get_process_milliseconds();
+      cpm = scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
 
@@ -2735,7 +2735,7 @@ static void do_swap_thread()
 
     {
       intptr_t cpm;
-      cpm = 0; // scheme_get_process_milliseconds();
+      cpm = scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
     }
 
@@ -3061,7 +3061,7 @@ static void start_child(Scheme_Thread * volatile child,
 
     {
       intptr_t cpm;
-      cpm = 0; // scheme_get_process_milliseconds();
+      cpm = scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
 

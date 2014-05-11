@@ -1525,6 +1525,15 @@
 (for ([i 1000])
   (thread (make-keyword-procedure (lambda (x y) '()))))
 
+;; --------------------
+;; Make sure that thread time accounting works:
+
+(let ([t (thread (λ () (let loop () (loop))))])
+  (sleep 1)
+  (define s (current-process-milliseconds t))
+  (kill-thread t)
+  (test #t positive? s))
+
 ; --------------------
 
 (report-errs)
