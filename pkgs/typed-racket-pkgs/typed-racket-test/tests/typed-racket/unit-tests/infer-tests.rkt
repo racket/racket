@@ -159,6 +159,7 @@
     [i2-t (-lst (-v a)) (-lst* N B) ('a (Un N B))]
     [i2-t Univ (Un N B)]
     [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a (Un))]
+    [i2-t (-> (-v a) (-v a)) (->* null B B) ('a B)]
 
 
     [i2-l (list (-v a) (-v a) (-v b))
@@ -175,6 +176,7 @@
           '(a) ('a (Un N B))]
     ;; error tests
     [i2-f (-lst (-v a)) Univ]
+    [i2-f (->* null B B) (-> (-v a) (-v b))]
     ))
 
 
