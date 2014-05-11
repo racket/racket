@@ -1,10 +1,12 @@
 #lang racket/base
 
 (require "prop.rkt"
-         "blame.rkt")
+         "blame.rkt"
+         "guts.rkt"
+         (for-syntax racket/base syntax/name))
 
-(provide new-∃/c
-         new-∀/c
+(provide (rename-out [_new-∃/c new-∃/c]
+                     [_new-∀/c new-∀/c])
          ∀∃?)
 
 (define (∀∃-proj ctc)
@@ -22,6 +24,7 @@
 
 (define-struct ∀∃/c (in out pred? name neg?)
   #:omit-define-syntaxes
+  #:property prop:custom-write custom-write-property-proc  
   #:property prop:contract
   (build-contract-property
    #:name (λ (ctc) (∀∃/c-name ctc))
@@ -29,6 +32,27 @@
    #:projection ∀∃-proj))
 
 (define-struct ∀∃ ())
+
+(define-for-syntax (∀∃/trans which stx)
+  (define name (or (syntax-local-name)
+                   (let ([n (syntax-local-infer-name stx)])
+                     (string->symbol
+                      (format "∀∃-~a" (or n "unknown"))))))
+  (syntax-case stx ()
+    [x 
+     (identifier? #'x) 
+     #`(let ([which (case-lambda
+                      [() (#,which '#,name)]
+                      [(x) (#,which (or x '#,name))])])
+         which)]
+    [(f) #`(#,which '#,name)]
+    [(f x) #`(#,which (or x '#,name))]
+    [(f . x)
+     (with-syntax ([app (datum->syntax stx '#%app stx stx)])
+       #`(app #,which . x))]))
+
+(define-syntax (_new-∀/c stx) (∀∃/trans #'new-∀/c stx))
+(define-syntax (_new-∃/c stx) (∀∃/trans #'new-∃/c stx))
 
 (define (new-∃/c raw-name) (mk raw-name #t))
 (define (new-∀/c raw-name) (mk raw-name #f))
@@ -38,4 +62,3 @@
   (define-values (struct-type constructor predicate accessor mutator)
     (make-struct-type name struct:∀∃ 1 0))
   (make-∀∃/c constructor (λ (x) (accessor x 0)) predicate raw-name neg?))
-

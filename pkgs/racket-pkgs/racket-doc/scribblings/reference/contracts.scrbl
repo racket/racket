@@ -1157,7 +1157,7 @@ if they do not, a contract violation is signaled.
 ]
 }
 
-@defproc[(new-∀/c [name symbol?]) contract?]{
+@defproc[(new-∀/c [name (or/c symbol? #f) #f]) contract?]{
   Constructs a new universal contract.
 
   Universal contracts accept all values when in negative positions (e.g., function
@@ -1166,22 +1166,22 @@ if they do not, a contract violation is signaled.
   a universal contract accepts only values that were previously accepted
   in negative positions (by checking for the wrappers).
 
-  The name is used to identify the contract in error messages.
+  The name is used to identify the contract in error messages and defaults
+  to a name based on the lexical context of @racket[new-∀/c].
 
   For example, this contract:
   @racketblock[(let ([a (new-∀/c 'a)])
                  (-> a a))]
-  describes the identity function (or a non-terminating function)
+  describes the identity function (or a non-terminating function).
   That is, the first use of the @racket[a] appears in a
   negative position and thus inputs to that function are wrapped with an opaque struct.
   Then, when the function returns, it is checked to determine whether the result is wrapped, since
   the second @racket[a] appears in a positive position.
 
   The @racket[new-∀/c] construct constructor is dual to @racket[new-∃/c].
-
 }
 
-@defproc[(new-∃/c [name symbol?]) contract?]{
+@defproc[(new-∃/c [name (or/c symbol? #f) #f]) contract?]{
   Constructs a new existential contract.
 
   Existential contracts accept all values when in positive positions (e.g., function
@@ -1190,7 +1190,8 @@ if they do not, a contract violation is signaled.
   they accepts only values that were previously accepted in positive positions (by checking
   for the wrappers).
 
-  The name is used to identify the contract in error messages.
+  The name is used to identify the contract in error messages and defaults
+  to a name based on the lexical context of @racket[new-∀/c].
 
   For example, this contract:
   @racketblock[(let ([a (new-∃/c 'a)])
