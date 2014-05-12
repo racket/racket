@@ -72,7 +72,7 @@
      ;; Non Types
      [Result (#:co #:co #:co)]
      [Values ((#:listof #:co))]
-     [AnyValues ()]))
+     [AnyValues (#:co)]))
 
 (begin-for-syntax
   (define-syntax-class type-name

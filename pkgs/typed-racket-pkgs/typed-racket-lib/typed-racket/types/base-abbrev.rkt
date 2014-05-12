@@ -40,10 +40,6 @@
 (define/decl -False (make-Value #f))
 (define/decl -True (make-Value #t))
 
-;; A Type that corresponds to the any contract for the
-;; return type of functions
-(define/decl ManyUniv (make-AnyValues))
-
 (define -val make-Value)
 
 ;; Char type and List type (needed because of how sequences are checked in subtype)
@@ -159,6 +155,11 @@
   (match o
     [(Path: p i) (-not-filter t i p)]
     [_ -top]))
+
+;; A Type that corresponds to the any contract for the
+;; return type of functions
+(define (-AnyValues f) (make-AnyValues f))
+(define/decl ManyUniv (make-AnyValues -top))
 
 ;; Function types
 (define/cond-contract (make-arr* dom rng

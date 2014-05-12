@@ -400,7 +400,19 @@
           [(a b) #:when (type-equal? a b) empty]
           ;; CG-Top
           [(_ (Univ:)) empty]
-          [(_ (AnyValues:)) empty]
+          ;; AnyValues
+          [((AnyValues: s-f) (AnyValues: t-f))
+           (cgen/filter V X Y s-f t-f)]
+
+          [((or (Values: (list (Result: _ fs _) ...))
+                (ValuesDots: (list (Result: _ fs _) ...) _ _))
+            (AnyValues: t-f))
+           (cset-join
+             (filter identity
+               (for/list ([f (in-list fs)])
+                 (match f
+                   [(FilterSet: f+ f-)
+                    (% cset-meet (cgen/filter V X Y f+ t-f) (cgen/filter V X Y f- t-f))]))))]
 
           ;; check all non Type/c first so that calling subtype is safe
 
