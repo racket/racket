@@ -106,5 +106,5 @@ used as an ephemeron key (see @secref["ephemerons"]).
 
 Returns @racket[#t] if the arguments are sorted, where the comparison
 for each pair of symbols is the same as using
-@racket[symbol->string] witk @racket[string->bytes/utf-8] and
+@racket[symbol->string] with @racket[string->bytes/utf-8] and
 @racket[bytes<?].}
