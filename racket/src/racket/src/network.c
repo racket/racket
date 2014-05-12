@@ -1321,36 +1321,61 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
   int errid;
   int read_amt;
   Scheme_Tcp *data;
+  Scheme_Object *sema;
 
   data = (Scheme_Tcp *)port->port_data;
 
- top:
+  while (1) {
+    if (scheme_unless_ready(unless))
+      return SCHEME_UNLESS_READY;
 
-  if (scheme_unless_ready(unless))
-    return SCHEME_UNLESS_READY;
+    if (port->closed) {
+      /* Another thread closed the input port while we were waiting. */
+      /* Call scheme_get_byte to signal the error */
+      scheme_get_byte((Scheme_Object *)port);
+    }
 
-  if (data->b.hiteof)
-    return EOF;
-
-  if (data->b.bufpos < data->b.bufmax) {
-    int n;
-    n = data->b.bufmax - data->b.bufpos;
-    n = ((size <= n)
-	 ? size
-	 : n);
+    if (data->b.hiteof)
+      return EOF;
     
-    memcpy(buffer + offset, data->b.buffer + data->b.bufpos, n);
-    data->b.bufpos += n;
+    if (data->b.bufpos < data->b.bufmax) {
+      int n;
+      n = data->b.bufmax - data->b.bufpos;
+      n = ((size <= n)
+           ? size
+           : n);
+      
+      memcpy(buffer + offset, data->b.buffer + data->b.bufpos, n);
+      data->b.bufpos += n;
+      
+      return n;
+    }
     
-    return n;
-  }
-
-  while (!tcp_byte_ready(port, NULL)) {
-    if (nonblock > 0)
-      return 0;
-
+    /* No data in buffer, so read from socket: */
+    
+    if (!data->b.bufmode || (size > TCP_BUFFER_SIZE))
+      read_amt = TCP_BUFFER_SIZE;
+    else
+      read_amt = size;
+    
     {
-      Scheme_Object *sema;
+      int rn;
+      do {
+        rn = recv(data->tcp, data->b.buffer, read_amt, 0);
+      } while ((rn == -1) && (NOT_WINSOCK(errno) == EINTR));
+      data->b.bufmax = rn;
+    }
+    errid = SOCK_ERRNO();
+    
+    if ((data->b.bufmax != -1) || !WAS_EAGAIN(errid)) {
+      /* got data or error */
+      break;
+    } else {
+      /* no data/error is immediately avaulable */
+      if (nonblock > 0)
+        return 0;
+
+      /* block until data is (probably) available */
       sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_READ, 1);
       if (sema)
         scheme_wait_sema(sema, nonblock ? -1 : 0);
@@ -1360,43 +1385,12 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
                                   (Scheme_Object *)port,
                                   0.0, unless,
                                   nonblock);
+      
+      scheme_wait_input_allowed(port, nonblock);
     }
-
-    scheme_wait_input_allowed(port, nonblock);
-
-    if (scheme_unless_ready(unless))
-      return SCHEME_UNLESS_READY;
   }
 
-  if (port->closed) {
-    /* Another thread closed the input port while we were waiting. */
-    /* Call scheme_get_byte to signal the error */
-    scheme_get_byte((Scheme_Object *)port);
-  }
-
-  /* We assume that no other process has access to our sockets, so
-     when we unblock, there's definitely something to read. */
-
-  if (!data->b.bufmode || (size > TCP_BUFFER_SIZE))
-    read_amt = TCP_BUFFER_SIZE;
-  else
-    read_amt = size;
-
-  {
-    int rn;
-    do {
-      rn = recv(data->tcp, data->b.buffer, read_amt, 0);
-    } while ((rn == -1) && (NOT_WINSOCK(errno) == EINTR));
-    data->b.bufmax = rn;
-  }
-  errid = SOCK_ERRNO();
-
-  /* Is it possible that an EAGAIN error occurs? That means that data
-     isn't ready, even though select() says that data is ready. It
-     seems to happen for at least one user, and there appears to be
-     no harm in protecting against it. */
-  if ((data->b.bufmax == -1) && WAS_EAGAIN(errid))
-    goto top;
+  /* getting here means that data or error was ready */
   
   if (data->b.bufmax == -1) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
