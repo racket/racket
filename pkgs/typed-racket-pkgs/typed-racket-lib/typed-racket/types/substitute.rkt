@@ -169,7 +169,7 @@
 ;; substitute many variables
 ;; subst-all : substitution/c Type -> Type
 (define/cond-contract (subst-all s ty)
-  (substitution/c (or/c arr? Values/c) . -> . (or/c Values/c arr?))
+  (substitution/c (or/c arr? Values/c SomeValues/c) . -> . (or/c arr? Values/c SomeValues/c))
 
   (define t-substs
     (for/fold ([acc (hash)]) ([(v r) (in-hash s)])
