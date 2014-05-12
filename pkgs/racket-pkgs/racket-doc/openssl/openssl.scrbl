@@ -565,6 +565,53 @@ symbols naming a standard elliptic curve:
 Path for 4096-bit Diffie-Hellman parameters.
 }
 
+@defproc[(ssl-set-server-name-identification-callback!
+           [context ssl-server-context?]
+           [callback (string? . -> . (or/c ssl-server-context? #f))])
+         void?]{
+
+Provides an SSL server context with a procedure it can use for switching
+to alternative contexts on a per-connection basis. The procedure is given
+the hostname the client was attempting to connect to, to use as the basis
+for its decision.
+
+The client sends this information via the TLS
+@hyperlink["http://en.wikipedia.org/wiki/Server_Name_Indication"]{Server Name Identification}
+extension, which was created to allow @hyperlink["http://en.wikipedia.org/wiki/Virtual_hosting"]{virtual hosting}
+for secure servers.
+
+The suggested use it to prepare the appropriate server contexts, 
+define a single callback which can dispatch between them, and then
+apply it to all the contexts before sealing them. A minimal example:
+
+@racketblock[
+  (define ctx-a (ssl-make-server-context 'tls))
+  (define ctx-b (ssl-make-server-context 'tls))
+  ...
+  (ssl-load-certificate-chain! ctx-a "cert-a.pem")
+  (ssl-load-certificate-chain! ctx-b "cert-b.pem")
+  ...
+  (ssl-load-private-key! ctx-a "key-a.pem")
+  (ssl-load-private-key! ctx-b "key-b.pem")
+  ...
+  (define (callback hostname)
+    (cond [(equal? hostname "a") ctx-a]
+          [(equal? hostname "b") ctx-b]
+          ...
+          [else #f]))
+  (ssl-set-server-name-identification-callback! ctx-a callback)
+  (ssl-set-server-name-identification-callback! ctx-b callback)
+  ...
+  (ssl-seal-context! ctx-a)
+  (ssl-seal-context! ctx-b)
+  ...
+  (ssl-listen 443 5 #t #f ctx-a)
+]
+
+If the callback returns @racket[#f], the connection attempt will continue,
+using the original server context.
+
+}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}

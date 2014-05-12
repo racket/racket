@@ -119,6 +119,8 @@ TO DO:
         void?)]
   [ssl-set-ciphers!
    (c-> ssl-context? string? void?)]
+  [ssl-set-server-name-identification-callback!
+   (c-> ssl-server-context? (c-> string? (or/c ssl-server-context? #f)) void?)]
   [ssl-seal-context!
    (c-> ssl-context? void?)]
   [ssl-default-verify-sources
@@ -256,6 +258,10 @@ TO DO:
   #:wrap (deallocator))
 (define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*)
   #:wrap (allocator SSL_CTX_free))
+(define-ssl SSL_CTX_callback_ctrl
+  (_fun _SSL_CTX* _int
+        (_fun #:in-original-place? #t _SSL* _pointer _pointer -> _int)
+        -> _long))
 (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
 (define (SSL_CTX_set_mode ctx m)
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
@@ -281,12 +287,14 @@ TO DO:
 (define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_shutdown (_fun _SSL* -> _int))
 (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
+(define-ssl SSL_get_servername (_fun _SSL* _int -> _string))
 (define-ssl SSL_set_verify (_fun _SSL* _int _pointer -> _void))
 (define-ssl SSL_set_session_id_context (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
 (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
 (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
 (define-ssl SSL_ctrl (_fun _SSL* _int _long _pointer -> _long))
+(define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
@@ -380,6 +388,7 @@ TO DO:
 (define GEN_DNS 2)
 
 (define SSL_CTRL_OPTIONS 32)
+(define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB 53)
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
@@ -388,6 +397,9 @@ TO DO:
 (define SSL_OP_SINGLE_DH_USE #x00100000)
 
 (define TLSEXT_NAMETYPE_host_name 0)
+
+(define SSL_TLSEXT_ERR_OK 0)
+(define SSL_TLSEXT_ERR_NOACK 3)
 
 (define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
@@ -461,7 +473,7 @@ TO DO:
 
 (define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
 (define-struct (ssl-client-context ssl-context) ())
-(define-struct (ssl-server-context ssl-context) ())
+(define-struct (ssl-server-context ssl-context) ([servername-callback #:mutable #:auto]))
 
 (define-struct ssl-listener (l mzctx)
   #:property prop:evt (lambda (lst) (wrap-evt (ssl-listener-l lst) 
@@ -694,6 +706,26 @@ TO DO:
     (unless (= result 1)
       (error 'ssl-set-ciphers! "setting cipher list failed"))
     (void)))
+
+(define (ssl-set-server-name-identification-callback! ssl-context proc)
+  (let ([cb (lambda (ssl ad ptr)
+	      (let ([ret (proc (SSL_get_servername ssl TLSEXT_NAMETYPE_host_name))])
+		(if (ssl-server-context? ret)
+		    (begin
+		      (SSL_set_SSL_CTX ssl (extract-ctx 'callback #f ret))
+		      SSL_TLSEXT_ERR_OK)
+		    ; this isn't an error, it just means "no change necessary"
+		    SSL_TLSEXT_ERR_NOACK)))])
+
+    ; hold onto cb so that the garbage collector doesn't reclaim
+    ; the function that openssl is holding onto.
+    (set-ssl-server-context-servername-callback! ssl-context cb)
+
+    (unless (= (SSL_CTX_callback_ctrl
+		(extract-ctx 'ssl-set-server-name-identification-callback! #t ssl-context)
+		SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+		cb) 1)
+	    (error 'ssl-set-server-name-identification-callback! "setting server name identification callback failed"))))
 
 (define (ssl-set-verify-hostname! ssl-context on?)
   ;; to check not sealed:
