@@ -194,6 +194,11 @@
         (loop t 'both recursive-values))
       (define (t->sc/method t) (t->sc/function t fail typed-side recursive-values loop #t))
       (define (t->sc/fun t) (t->sc/function t fail typed-side recursive-values loop #f))
+
+      (define (only-untyped sc)
+        (if (from-typed? typed-side)
+            (fail #:reason "contract generation not supported for this type")
+            sc))
       (match type
         ;; Applications of implicit recursive type aliases
         ;;
@@ -322,6 +327,18 @@
              (λ () (error 'type->static-contract
                           "Recursive value lookup failed. ~a ~a" recursive-values v)))
            typed-side)]
+        [(VectorTop:) (only-untyped vector?/sc)]
+        [(BoxTop:) (only-untyped box?/sc)]
+        [(ChannelTop:) (only-untyped channel?/sc)]
+        [(HashtableTop:) (only-untyped hash?/sc)]
+        [(MPairTop:) (only-untyped mpair?/sc)]
+        [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
+        [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
+        [(Continuation-Mark-KeyTop:) (only-untyped continuation-mark-key?/sc)]
+        ;; TODO Figure out how this should work
+        ;[(StructTop: s) (struct-top/sc s)]
+
+
         [(Poly: vs b)
          (if (not (from-untyped? typed-side))
              ;; in positive position, no checking needed for the variables
