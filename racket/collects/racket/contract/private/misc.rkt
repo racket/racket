@@ -58,7 +58,9 @@
          
          blame-add-car-context
          blame-add-cdr-context
-         raise-not-cons-blame-error)
+         raise-not-cons-blame-error
+         
+         random-any/c)
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()

@@ -3,6 +3,8 @@
 (require "prop.rkt"
          "blame.rkt"
          "guts.rkt"
+         "generate.rkt"
+         "misc.rkt"
          (for-syntax racket/base syntax/name))
 
 (provide (rename-out [_new-∃/c new-∃/c]
@@ -15,7 +17,7 @@
         [pred? (∀∃/c-pred? ctc)]
         [neg? (∀∃/c-neg? ctc)])
     (λ (blame)
-      (if (eq? neg? (blame-swapped? blame))
+      (if (equal? neg? (blame-swapped? blame))
           (λ (val)
             (if (pred? val)
                 (out val)
@@ -29,7 +31,16 @@
   (build-contract-property
    #:name (λ (ctc) (∀∃/c-name ctc))
    #:first-order (λ (ctc) (λ (x) #t)) ;; ???
-   #:projection ∀∃-proj))
+   #:projection ∀∃-proj
+   #:stronger (λ (this that) (equal? this that))
+   #:generate (λ (ctc)
+                (cond
+                  [(∀∃/c-neg? ctc)
+                   (λ (fuel)
+                     (define env (generate-env))
+                     (λ () (random-any/c env fuel)))]
+                  [else
+                   (λ (fuel) #f)]))))
 
 (define-struct ∀∃ ())
 

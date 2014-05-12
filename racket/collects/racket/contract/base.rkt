@@ -48,7 +48,8 @@
              current-contract-region)
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
-             check-unary-between/c)
+             check-unary-between/c
+             random-any/c)
  symbols or/c one-of/c
  provide/contract
  ;(for-syntax make-provide/contract-transformer) ;; not documented!

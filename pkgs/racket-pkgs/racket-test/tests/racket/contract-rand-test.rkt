@@ -53,6 +53,13 @@
 (check-not-exn 
  (λ () (((test-contract-generation (-> (-> (>/c 10) (>/c 10))))) 11)))
 
+(check-not-exn
+ (λ ()
+   (define f (test-contract-generation (let ([α (new-∀/c)]) (-> α α))))
+   (f 4)
+   (define ans (f 5))
+   (unless (or (equal? ans 4) (equal? ans 5))
+     (error 'polymorphism-problem!))))
 
 (define (cannot-generate-exn? x)
   (and (exn:fail? x)
