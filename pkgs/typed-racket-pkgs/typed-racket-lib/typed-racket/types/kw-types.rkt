@@ -76,7 +76,7 @@
 ;; keyword conversion.
 (define (erase-filter/Values values)
   (match values
-    [(AnyValues:) values]
+    [(AnyValues: _) ManyUniv]
     [(Results: ts fs os)
      (-values ts)]
     [(Results: ts fs os dty dbound)

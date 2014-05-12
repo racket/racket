@@ -17,7 +17,7 @@
 ;; extract filters out of the range of a function type
 (define (get-filters rng)
   (match rng
-    [(AnyValues:) null]
+    [(AnyValues: f) (list (-FS f f))]
     [(Values: (list (Result: _ lf _) ...)) lf]
     [(ValuesDots: (list (Result: _ lf _) ...) _ _) lf]))
 

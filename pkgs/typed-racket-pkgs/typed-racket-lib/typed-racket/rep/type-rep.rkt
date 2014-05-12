@@ -292,7 +292,7 @@
   [#:fold-rhs (*Values (map type-rec-id rs))])
 
 
-(def-type AnyValues ()
+(def-type AnyValues ([f Filter/c])
   [#:fold-rhs #:base])
 
 (def-type ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])

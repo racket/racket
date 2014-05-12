@@ -258,7 +258,6 @@
          ;; these cases are above as special cases
          ;; [((Union: (list)) _) A0] ;; this is extremely common, so it goes first
          ;; [(_ (Univ:)) A0]
-         [((or (ValuesDots: _ _ _) (Values: _) (AnyValues:)) (AnyValues:)) A0]
          ;; error is top and bot
          [(_ (Error:)) A0]
          [((Error:) _) A0]
@@ -558,6 +557,15 @@
           (subtype-seq A0
                        (subtypes* s-rs t-rs)
                        (subtype* s-dty t-dty))]
+         [((AnyValues: s-f) (AnyValues: t-f))
+          (filter-subtype* A0 s-f t-f)]
+         [((or (Values: (list (Result: _ fs _) ...))
+               (ValuesDots: (list (Result: _ fs _) ...) _ _))
+           (AnyValues: t-f))
+          (for/or ([f (in-list fs)])
+            (match f
+              [(FilterSet: f+ f-)
+               (and (filter-subtype* A0 f+ t-f) (filter-subtype* A0 f+ t-f) A0)]))]
          [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
           (subtype-seq A0
                        (subtype* t t*)

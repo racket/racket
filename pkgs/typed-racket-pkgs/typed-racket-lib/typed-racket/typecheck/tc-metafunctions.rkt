@@ -73,7 +73,7 @@
   (tc-results/c (listof identifier?) . -> . SomeValues/c)
   (define keys (for/list ([(nm k) (in-indexed arg-names)]) (list 0 k)))
   (match results
-    [(tc-any-results:) (make-AnyValues)]
+    [(tc-any-results:) ManyUniv]
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])

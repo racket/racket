@@ -50,7 +50,8 @@
                           [ta (in-sequence-forever (in-list t-a) #f)])
                          (values oa ta))])
            (match rng
-            [(AnyValues:) tc-any-results]
+            ;; TODO add filters to tc-any-results
+            [(AnyValues: f) tc-any-results]
             [(Values: results)
              (define-values (t-r f-r o-r)
                (for/lists (t-r f-r o-r)
@@ -248,7 +249,7 @@
     (map (compose make-Function list make-arr)
          doms
          (map (match-lambda ; strip filters
-               [(AnyValues:) ManyUniv]
+               [(AnyValues: f) (-AnyValues f)]
                [(Values: (list (Result: t _ _) ...))
                 (-values t)]
                [(ValuesDots: (list (Result: t _ _) ...) _ _)
