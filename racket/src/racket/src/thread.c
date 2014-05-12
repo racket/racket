@@ -175,6 +175,7 @@ THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 
 THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
+THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
 SHARED_OK static int init_load_on_demand = 1;
 
@@ -2720,11 +2721,7 @@ static void do_swap_thread()
       scheme_takeover_stacks(scheme_current_thread);
     }
 
-    {
-      intptr_t cpm;
-      cpm = scheme_get_process_milliseconds();
-      scheme_current_thread->current_start_process_msec = cpm;
-    }
+    scheme_current_thread->current_start_process_msec = process_time_at_swap;
 
     if (scheme_current_thread->return_marks_to) {
       stash_current_marks();
@@ -2737,6 +2734,7 @@ static void do_swap_thread()
       intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
+      process_time_at_swap = cpm;
     }
 
     swap_target = NULL;
@@ -3059,11 +3057,7 @@ static void start_child(Scheme_Thread * volatile child,
       }
     }
 
-    {
-      intptr_t cpm;
-      cpm = scheme_get_process_milliseconds();
-      scheme_current_thread->current_start_process_msec = cpm;
-    }
+    scheme_current_thread->current_start_process_msec = process_time_at_swap;
 
     RESETJMP(child);
 

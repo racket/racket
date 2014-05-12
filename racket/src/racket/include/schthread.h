@@ -237,6 +237,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Thread *gc_prep_thread_chain_;
   struct Scheme_Thread_Set *scheme_thread_set_top_;
   struct Scheme_Current_LWC *scheme_current_lwc_;
+  intptr_t process_time_at_swap_;
   int num_running_threads_;
   int swap_no_setjmp_;
   int thread_swap_count_;
@@ -624,6 +625,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define num_running_threads XOA (scheme_get_thread_local_variables()->num_running_threads_)
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)
+#define process_time_at_swap XOA (scheme_get_thread_local_variables()->process_time_at_swap_)
 #define scheme_did_gc_count XOA (scheme_get_thread_local_variables()->scheme_did_gc_count_)
 #define scheme_future_state XOA (scheme_get_thread_local_variables()->scheme_future_state_)
 #define scheme_future_thread_state XOA (scheme_get_thread_local_variables()->scheme_future_thread_state_)
