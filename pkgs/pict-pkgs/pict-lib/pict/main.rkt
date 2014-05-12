@@ -5,11 +5,22 @@
          racket/draw)
 (provide 
  (except-out (all-from-out "private/main.rkt")
-                     pict->bitmap)
+             pict->bitmap
+             pict->argb-pixels
+             argb-pixels->pict)
  (contract-out 
   [pict->bitmap (->* (pict?)
                      ((or/c 'unsmoothed 'smoothed 'aligned))
-                     (is-a?/c bitmap%))]))
+                     (is-a?/c bitmap%))]
+  [pict->argb-pixels (->* (pict?) 
+                          ((or/c 'unsmoothed 'smoothed 'aligned))
+                          (and/c bytes? multiple-of-four-bytes?))]
+  [argb-pixels->pict (-> (and/c bytes? multiple-of-four-bytes?) 
+                         exact-nonnegative-integer?
+                         pict?)]))
+
+(define (multiple-of-four-bytes? b)
+  (zero? (modulo (bytes-length b) 4)))
   
 (require "private/play-pict.rkt")
 (provide
