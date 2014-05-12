@@ -1203,9 +1203,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
       }
     }
         
-    if (frame_type == FRAME_TYPE_LETREC) {
-      clv->value = val;
-    }
+    clv->value = val;
 
     body = clv->body;
   }

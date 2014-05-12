@@ -90,6 +90,10 @@
 (err/rt-test (let ([x (lambda () (define d d) d)]) (x)) exn:fail:contract:variable?)
 (err/rt-test ((lambda () (define d d) d)) exn:fail:contract:variable?)
 (err/rt-test ((lambda () (define d (set! d #f)) d)) exn:fail:contract:variable?)
+(err/rt-test (letrec ([y (let ([o x]) (o))]
+                      [x (void)])
+               y)
+             exn:fail:contract:variable?)
 (test '(3 4 5 6) (lambda x x) 3 4 5 6)
 (test '(5 6) (lambda (x y . z) z) 3 4 5 6)
 (test 'second (lambda () (cons 'first 2) 'second))
