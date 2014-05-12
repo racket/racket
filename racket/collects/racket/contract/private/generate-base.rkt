@@ -51,8 +51,8 @@
    [1/10 (oneof (list (expt 2 32) (expt 2 64) 
                       (- (expt 2 31)) (- (expt 2 63))
                       (- (expt 2 31) 1) (- (expt 2 63) 1)))]
-   [3/10 (rand-range 0 200)]
-   [else (rand-range 0 2000000000)]))
+   [3/10 (rand-range 1 200)]
+   [else (rand-range 1 2000000000)]))
   
 (define (rational-gen fuel)
   (/ (integer-gen fuel)
