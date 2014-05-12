@@ -1074,6 +1074,20 @@
                 'pos
                 'neg)))
   
+  (test/spec-passed/result
+   'struct/dc-inv6
+   '(let ()
+      (struct s (f))
+      ((struct/dc s [f any/c] #:inv (f) (equal? f 11)) (s 12)))
+   #f)
+  
+  (test/spec-passed/result
+   'struct/dc-inv7
+   '(let ()
+      (struct s (f))
+      ((struct/dc s [f any/c] #:inv (f) (equal? f 11)) (s 11)))
+   #t)
+  
   (contract-error-test
    'struct/dc-imp-nondep-runtime-error
    '(let ()
