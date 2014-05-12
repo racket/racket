@@ -791,7 +791,7 @@ static void make_kernel_env(void)
 
   DONE_TIME(env);
 
-  register_network_evts();
+  scheme_register_network_evts();
 
   REGISTER_SO(kernel_symbol);
   kernel_symbol = scheme_intern_symbol("#%kernel");

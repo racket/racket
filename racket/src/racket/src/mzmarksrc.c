@@ -1835,6 +1835,7 @@ END print;
 
 START network;
 
+#ifdef USE_TCP
 mark_listener {
   listener_t *l = (listener_t *)p;
 
@@ -1849,7 +1850,6 @@ mark_listener {
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
 }
 
-#ifdef USE_TCP
 mark_tcp {
  mark:
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;

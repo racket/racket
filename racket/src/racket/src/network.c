@@ -126,7 +126,6 @@ static void closesocket(intptr_t s) {
 typedef SOCKET tcp_t;
 #endif
 
-#ifdef USE_SOCKETS_TCP
 typedef struct {
   Scheme_Object so;
   Scheme_Custodian_Reference *mref;
@@ -136,7 +135,6 @@ typedef struct {
 # endif
   tcp_t s[mzFLEX_ARRAY_DECL];
 } listener_t;
-#endif
 
 typedef struct Scheme_Tcp_Buf {
   MZTAG_IF_REQUIRED
@@ -316,6 +314,7 @@ void scheme_init_network(Scheme_Env *env)
 #endif
 }
 
+#ifdef USE_TCP
 static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo, Scheme_Object *orig)
 {
   Scheme_Object *sema;
@@ -332,6 +331,7 @@ static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo, Scheme_
 
   return 1;
 }
+#endif
 
 /*========================================================================*/
 /*                             TCP glue                                   */
@@ -345,12 +345,6 @@ static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo, Scheme_
 #define CHECK_LISTEN_PORT_ID(obj) (SCHEME_INTP(obj) && (SCHEME_INT_VAL(obj) >= 0) && (SCHEME_INT_VAL(obj) <= 65535))
 
 #ifdef USE_TCP
-
-#ifdef USE_SOCKETS_TCP
-#define MAKE_TCP_ARG tcp_t tcp, 
-#else
-#define MAKE_TCP_ARG
-#endif
 
 #define REGISTER_SOCKET(s) /**/
 #define UNREGISTER_SOCKET(s) /**/
@@ -773,8 +767,6 @@ void scheme_free_ghbn_data() {
 void scheme_free_ghbn_data() { }
 #endif
 
-#ifdef USE_SOCKETS_TCP
-
 struct mz_addrinfo *scheme_get_host_address(const char *address, int id, int *err, 
 					    int family, int passive, int tcp)
 {
@@ -829,7 +821,6 @@ const char *scheme_host_address_strerror(int errnum)
 {
   return mz_gai_strerror(errnum);
 }
-#endif
 
 /******************************* WinSock ***********************************/
 
@@ -952,12 +943,7 @@ static void TCP_INIT(char *name)
 /*                       TCP ports and listeners                          */
 /*========================================================================*/
 
-#ifdef USE_SOCKETS_TCP
 #define LISTENER_WAS_CLOSED(x) (((listener_t *)(x))->s[0] == INVALID_SOCKET)
-#endif
-#ifndef LISTENER_WAS_CLOSED
-#define LISTENER_WAS_CLOSED(x) 0
-#endif
 
 /* Forward declaration */
 static int stop_listener(Scheme_Object *o);
@@ -980,7 +966,6 @@ static Scheme_Object *listener_to_evt(listener_t *listener)
 
 static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinfo)
 {
-#ifdef USE_SOCKETS_TCP
   listener_t *listener = (listener_t *)_listener;
   int sr, i;
 # ifndef HAVE_POLL_SYSCALL
@@ -1063,14 +1048,11 @@ static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinf
     }
   }
 
-#endif
-
   return 0;
 }
 
 static void tcp_accept_needs_wakeup(Scheme_Object *_listener, void *fds)
 {
-#ifdef USE_SOCKETS_TCP
   if (!LISTENER_WAS_CLOSED(_listener)) {
     listener_t *listener = (listener_t *)_listener;
     int i;
@@ -1085,12 +1067,10 @@ static void tcp_accept_needs_wakeup(Scheme_Object *_listener, void *fds)
       MZ_FD_SET(s, (fd_set *)fds2);
     }
   }
-#endif
 }
 
 static int tcp_check_connect(Scheme_Object *connector_p, Scheme_Schedule_Info *sinfo)
 {
-#ifdef USE_SOCKETS_TCP
   tcp_t s;
   int sr;
 
@@ -1147,13 +1127,11 @@ static int tcp_check_connect(Scheme_Object *connector_p, Scheme_Schedule_Info *s
 
   check_fd_sema(s, MZFD_CREATE_WRITE, sinfo, NULL);
 
-#endif
   return 0;
 }
 
 static void tcp_connect_needs_wakeup(Scheme_Object *connector_p, void *fds)
 {
-#ifdef USE_SOCKETS_TCP
   void *fds1, *fds2;
   tcp_t s = *(tcp_t *)connector_p;
   
@@ -1162,7 +1140,6 @@ static void tcp_connect_needs_wakeup(Scheme_Object *connector_p, void *fds)
 
   MZ_FD_SET(s, (fd_set *)fds1);
   MZ_FD_SET(s, (fd_set *)fds2);
-#endif
 }
 
 static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
@@ -1177,7 +1154,6 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
       return 0;
   }
 
-#ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
   {
     GC_CAN_IGNORE struct pollfd pfd[1];
@@ -1222,27 +1198,6 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
       return sr;
   }
 # endif
-#else
-  {
-    TCPiopbX *xpb;
-    TCPiopb *pb;
-    int bytes;
-    
-    xpb = mac_make_xpb(data);
-    pb = (TCPiopb *)xpb;
-    
-    pb->csCode = TCPStatus;
-    if (mzPBControlSync((ParamBlockRec*)pb))
-      bytes = -1;
-    else {
-      bytes = pb->csParam.status.sendWindow - pb->csParam.status.amtUnackedData;
-      if (bytes < 0)
-	bytes = 0;
-    }
-    
-    return !!bytes;
-  }
-#endif
 
   check_fd_sema(data->tcp, MZFD_CREATE_WRITE, sinfo, port);
 
@@ -1251,7 +1206,6 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
 
 static void tcp_write_needs_wakeup(Scheme_Object *port, void *fds)
 {
-#ifdef USE_SOCKETS_TCP
   Scheme_Object *conn = ((Scheme_Output_Port *)port)->port_data;
   void *fds1, *fds2;
   tcp_t s = ((Scheme_Tcp *)conn)->tcp;
@@ -1261,11 +1215,10 @@ static void tcp_write_needs_wakeup(Scheme_Object *port, void *fds)
   
   MZ_FD_SET(s, (fd_set *)fds1);
   MZ_FD_SET(s, (fd_set *)fds2);
-#endif
 }
 
 
-static Scheme_Tcp *make_tcp_port_data(MAKE_TCP_ARG int refcount)
+static Scheme_Tcp *make_tcp_port_data(tcp_t tcp, int refcount)
 {
   Scheme_Tcp *data;
   char *bfr;
@@ -1274,9 +1227,7 @@ static Scheme_Tcp *make_tcp_port_data(MAKE_TCP_ARG int refcount)
 #ifdef MZTAG_REQUIRED
   data->b.type = scheme_rt_tcp;
 #endif
-#ifdef USE_SOCKETS_TCP
   data->tcp = tcp;
-#endif
 
   bfr = (char *)scheme_malloc_atomic(TCP_BUFFER_SIZE);
   data->b.buffer = bfr;
@@ -1303,7 +1254,6 @@ static Scheme_Tcp *make_tcp_port_data(MAKE_TCP_ARG int refcount)
 static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Tcp *data;
-#ifdef USE_SOCKETS_TCP
   int sr;
 # ifndef HAVE_POLL_SYSCALL
   DECL_OS_FDSET(readfds);
@@ -1313,7 +1263,6 @@ static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
   INIT_DECL_OS_RD_FDSET(readfds);
   INIT_DECL_OS_ER_FDSET(exfds);
 # endif
-#endif
 
   if (port->closed)
     return 1;
@@ -1330,7 +1279,6 @@ static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
       return 0;
   }
 
-#ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
   {
     GC_CAN_IGNORE struct pollfd pfd[1];
@@ -1359,7 +1307,6 @@ static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
       return sr;
   }
 # endif
-#endif
 
   check_fd_sema(data->tcp, MZFD_CREATE_READ, sinfo, (Scheme_Object *)port);
 
@@ -1397,12 +1344,11 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
     
     return n;
   }
-  
+
   while (!tcp_byte_ready(port, NULL)) {
     if (nonblock > 0)
       return 0;
 
-#ifdef USE_SOCKETS_TCP
     {
       Scheme_Object *sema;
       sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_READ, 1);
@@ -1415,14 +1361,6 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
                                   0.0, unless,
                                   nonblock);
     }
-#else
-    do {
-      scheme_thread_block_enable_break((float)0.0, nonblock);
-      if (scheme_unless_ready(unless))
-	break;
-    } while (!tcp_byte_ready(port));
-    scheme_current_thread->ran_some = 1;
-#endif
 
     scheme_wait_input_allowed(port, nonblock);
 
@@ -1444,7 +1382,6 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
   else
     read_amt = size;
 
-#ifdef USE_SOCKETS_TCP
   {
     int rn;
     do {
@@ -1460,8 +1397,6 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
      no harm in protecting against it. */
   if ((data->b.bufmax == -1) && WAS_EAGAIN(errid))
     goto top;
-
-#endif
   
   if (data->b.bufmax == -1) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -1492,7 +1427,6 @@ static void tcp_need_wakeup(Scheme_Input_Port *port, void *fds)
 
   data = (Scheme_Tcp *)port->port_data;
 
-#ifdef USE_SOCKETS_TCP
   {
     void *fds2;
   
@@ -1501,7 +1435,6 @@ static void tcp_need_wakeup(Scheme_Input_Port *port, void *fds)
     MZ_FD_SET(data->tcp, (fd_set *)fds);
     MZ_FD_SET(data->tcp, (fd_set *)fds2);
   }
-#endif
 }
 
 static void tcp_close_input(Scheme_Input_Port *port)
@@ -1510,22 +1443,18 @@ static void tcp_close_input(Scheme_Input_Port *port)
 
   data = (Scheme_Tcp *)port->port_data;
 
-#ifdef USE_SOCKETS_TCP
   if (!(data->flags & MZ_TCP_ABANDON_INPUT)) {
     int cr;
     do { 
       cr = shutdown(data->tcp, 0);
     } while ((cr == -1) && (errno == EINTR));
   }
-#endif
 
   if (--data->b.refcount)
     return;
 
-#ifdef USE_SOCKETS_TCP
   UNREGISTER_SOCKET(data->tcp);
   closesocket(data->tcp);
-#endif
 
   (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
 }
@@ -1563,7 +1492,6 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
 
  top:
 
-#ifdef USE_SOCKETS_TCP
   do {
     sent = send(data->tcp, s XFORM_OK_PLUS offset, len, 0);
   } while ((sent == -1) && (NOT_WINSOCK(errno) == EINTR));
@@ -1600,7 +1528,6 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
     }
   } else
     errid = 0;
-#endif
 
   if (would_block) {
     if (rarely_block == 2)
@@ -1719,22 +1646,18 @@ static void tcp_close_output(Scheme_Output_Port *port)
   if (data->b.out_bufmax && !scheme_force_port_closed)
     tcp_flush(port, 0, 0);
 
-#ifdef USE_SOCKETS_TCP
   if (!(data->flags & MZ_TCP_ABANDON_OUTPUT)) {
     int cr;
     do { 
       cr = shutdown(data->tcp, 1);
     } while ((cr == -1) && (errno == EINTR));
   }
-#endif
 
   if (--data->b.refcount)
     return;
 
-#ifdef USE_SOCKETS_TCP
   UNREGISTER_SOCKET(data->tcp);
   closesocket(data->tcp);
-#endif
 
   (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
 }
@@ -1819,13 +1742,17 @@ make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
   return make_tcp_output_port_symbol_name(data, scheme_intern_symbol(name), cust);
 }
 
+#else
+
+void scheme_free_ghbn_data() { }
+
 #endif /* USE_TCP */
 
 /*========================================================================*/
 /*                         TCP Racket interface                           */
 /*========================================================================*/
 
-#ifdef USE_SOCKETS_TCP
+#ifdef USE_TCP
 typedef struct Close_Socket_Data {
   tcp_t s;
   struct mz_addrinfo *src_addr, *dest_addr;
@@ -1843,7 +1770,7 @@ static void closesocket_w_decrement(Close_Socket_Data *csd)
 
 const char *scheme_hostname_error(int err)
 {
-#ifdef USE_SOCKETS_TCP
+#ifdef USE_TCP
   return mz_gai_strerror(err);
 #else
   return "?";
@@ -1857,7 +1784,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
   int errpart = 0, errid = 0;
   volatile int nameerr = 0, no_local_spec;
   Scheme_Object *bs, *src_bs;
-#ifdef USE_SOCKETS_TCP
+#ifdef USE_TCP
   GC_CAN_IGNORE struct mz_addrinfo *tcp_connect_dest;
   GC_CAN_IGNORE struct mz_addrinfo * volatile tcp_connect_src;
 #endif
@@ -1910,9 +1837,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 #ifdef USE_TCP
   id = origid;
   src_id = src_origid;
-#endif
 
-#ifdef USE_SOCKETS_TCP
   tcp_connect_dest = scheme_get_host_address(address, id, &errid, -1, 0, 1);
   if (tcp_connect_dest) {
     if (no_local_spec)
@@ -2049,9 +1974,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     nameerr = 1;
     errmsg = "host not found";
   }
-#endif
 
-#ifdef USE_TCP
   scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		   "tcp-connect: connection failed\n"
                    "%s%s%s"
@@ -2078,7 +2001,7 @@ tcp_connect_break(int argc, Scheme_Object *argv[])
   return scheme_call_enable_break(tcp_connect, argc, argv);
 }
 
-
+#ifdef USE_TCP
 static unsigned short get_no_portno(tcp_t socket, int *_errid)
 {
   char here[MZ_SOCK_NAME_MAX_LEN];
@@ -2101,6 +2024,7 @@ static unsigned short get_no_portno(tcp_t socket, int *_errid)
     *_errid = 0;
   return no_port;
 }
+#endif
 
 static Scheme_Object *
 tcp_listen(int argc, Scheme_Object *argv[])
@@ -2157,6 +2081,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
  retry:
 #endif
 
+#ifdef USE_TCP
   {
     GC_CAN_IGNORE struct mz_addrinfo *tcp_listen_addr, *addr;
     int err, count = 0, pos = 0, i;
@@ -2356,7 +2281,6 @@ tcp_listen(int argc, Scheme_Object *argv[])
     }
   }
 
-#ifdef USE_TCP
   scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		   "tcp-listen: listen failed\n"
                    "  port number: %d\n"
@@ -2375,7 +2299,6 @@ static int stop_listener(Scheme_Object *o)
 {
   int was_closed = 0;
 
-#ifdef USE_SOCKETS_TCP
   {
     listener_t *listener = (listener_t *)o;
     int i;
@@ -2394,7 +2317,6 @@ static int stop_listener(Scheme_Object *o)
       scheme_remove_managed(((listener_t *)o)->mref, o);
     }
   }
-#endif
 
   return was_closed;
 }
@@ -2459,11 +2381,9 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
 #ifdef USE_TCP
   int was_closed = 0, errid, ready_pos;
   Scheme_Object *listener;
-# ifdef USE_SOCKETS_TCP
   tcp_t s, ls;
   unsigned int l;
   GC_CAN_IGNORE char tcp_accept_addr[MZ_SOCK_NAME_MAX_LEN];
-# endif
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_listener_type))
     scheme_wrong_contract("tcp-accept", "tcp-listener?", 0, argc, argv);
@@ -2510,7 +2430,6 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     }
   }
   
-# ifdef USE_SOCKETS_TCP
   ls = ((listener_t *)listener)->s[ready_pos-1];
 
   l = sizeof(tcp_accept_addr);
@@ -2540,7 +2459,6 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     return scheme_values(2, v);
   }
   errid = SOCK_ERRNO();
-# endif
   
   if (_fail_reason)
     *_fail_reason = "tcp-accept-evt: accept from listener failed";
@@ -2568,7 +2486,7 @@ tcp_accept_break(int argc, Scheme_Object *argv[])
   return scheme_call_enable_break(tcp_accept, argc, argv);
 }
 
-void register_network_evts()
+void scheme_register_network_evts()
 {
 #ifdef USE_TCP
   scheme_add_evt(scheme_listener_type, (Scheme_Ready_Fun)tcp_check_accept, tcp_accept_needs_wakeup, NULL, 0);
@@ -2590,10 +2508,11 @@ void scheme_getnameinfo(void *sa, int salen,
 			char *host, int hostlen,
 			char *serv, int servlen)
 {
-#ifdef HAVE_GETADDRINFO
+#ifdef USE_TCP
+# ifdef HAVE_GETADDRINFO
   getnameinfo(sa, salen, host, hostlen, serv, servlen,
 	      NI_NUMERICHOST | NI_NUMERICSERV);
-#else
+# else
   if (host) {
     unsigned char *b;
     b = (unsigned char *)&((struct sockaddr_in *)sa)->sin_addr;
@@ -2604,6 +2523,9 @@ void scheme_getnameinfo(void *sa, int salen,
     id = ntohs(((struct sockaddr_in *)sa)->sin_port);
     sprintf(serv, "%d", id);
   }
+# endif
+#else
+  scheme_signal_error("getnameinfo unsupported");
 #endif
 }
 
@@ -2666,7 +2588,6 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-addresses: port is closed");
 
-# ifdef USE_SOCKETS_TCP
   {
     unsigned int l;
     char here[MZ_SOCK_NAME_MAX_LEN], there[MZ_SOCK_NAME_MAX_LEN];
@@ -2723,16 +2644,6 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
       }
     }
   }
-# else
-  result[0] = scheme_make_utf8_string("0.0.0.0");
-  if (with_ports) {
-    result[1] = scheme_make_integer(1);
-    result[2] = result[0];
-    result[3] = result[1];
-  } else {
-    result[1] = result[0];
-  }
-# endif
 
   return scheme_values(with_ports ? 4 : 2, result);
 #else
@@ -2889,6 +2800,7 @@ int scheme_get_port_socket(Scheme_Object *p, intptr_t *_s)
 void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
                             Scheme_Object **_inp, Scheme_Object **_outp)
 {
+#ifdef USE_TCP
   Scheme_Tcp *tcp;
   Scheme_Object *v;
 
@@ -2902,11 +2814,16 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
   if (takeover) {
     REGISTER_SOCKET(s);
   }
+#else
+  *_inp = NULL;
+  *_outp = NULL;
+#endif
 }
 
 void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover,
                                  Scheme_Object **_inp)
 {
+#ifdef USE_TCP
   Scheme_Tcp *tcp;
   Scheme_Object *v;
 
@@ -2918,11 +2835,15 @@ void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover,
   if (takeover) {
     REGISTER_SOCKET(s);
   }
+#else
+  *_inp = NULL;
+#endif
 }
 
 void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
                                   Scheme_Object **_outp)
 {
+#ifdef USE_TCP
   Scheme_Tcp *tcp;
   Scheme_Object *v;
 
@@ -2934,10 +2855,13 @@ void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
   if (takeover) {
     REGISTER_SOCKET(s);
   }
+#else
+  *_outp = NULL;
+#endif
 }
 
 intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_SOCKETS_TCP
+#ifdef USE_TCP
 # ifdef USE_WINSOCK_TCP
   intptr_t nsocket;
   intptr_t rc;
@@ -2962,7 +2886,7 @@ intptr_t scheme_dup_socket(intptr_t fd) {
 
 void scheme_close_socket_fd(intptr_t fd) 
 {
-#ifdef USE_SOCKETS_TCP
+#ifdef USE_TCP
   UNREGISTER_SOCKET(fd);
   closesocket(fd);
   (void)scheme_fd_to_semaphore(fd, MZFD_REMOVE, 1);
@@ -3003,6 +2927,11 @@ static int udp_close_it(Scheme_Object *_udp)
 
   return 1;
 }
+
+#else
+
+typedef struct Scheme_UDP_Evt { } Scheme_UDP_Evt;
+typedef Scheme_Object Scheme_UDP;
 
 #endif
 
@@ -3425,6 +3354,7 @@ static void udp_send_needs_wakeup(Scheme_Object *_udp, void *fds)
 
 #endif
 
+#ifdef UDP_IS_SUPPORTED
 static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
 				     char *bstr, intptr_t start, intptr_t end,
 				     char *dest_addr, int dest_addr_len, int can_block)
@@ -3501,6 +3431,7 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
     return NULL;
   }
 }
+#endif
 
 static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *argv[],
 				  int with_addr, int can_block, Scheme_UDP_Evt *fill_evt)
@@ -3821,6 +3752,7 @@ static Scheme_Object *udp_recv(const char *name, int argc, Scheme_Object *argv[]
   if (!SCHEME_BYTE_STRINGP(argv[1]) || !SCHEME_MUTABLEP(argv[1]))
     scheme_wrong_contract(name, "(or/c bytes? (not/c immutable?))", 1, argc, argv);
   
+#ifdef UDP_IS_SUPPORTED
   scheme_get_substring_indices(name, argv[1], 
 			       argc, argv,
 			       2, 3, &start, &end);
@@ -3834,6 +3766,9 @@ static Scheme_Object *udp_recv(const char *name, int argc, Scheme_Object *argv[]
     
     return scheme_values(3,v);
   }
+#else
+  return NULL;
+#endif
 }
 
 static Scheme_Object *udp_receive(int argc, Scheme_Object *argv[])
@@ -3903,7 +3838,9 @@ static Scheme_Object *udp_write_to_evt(int argc, Scheme_Object *argv[])
   Scheme_Object *evt;
   evt = make_udp_evt("udp-send-to-evt", argc, argv, 0);
   udp_send_it("udp-send-to-evt", argc, argv, 1, 0, (Scheme_UDP_Evt *)evt);
+#ifdef UDP_IS_SUPPORTED
   ((Scheme_UDP_Evt *)evt)->with_addr = 1;
+#endif
   return evt;
 }
 
@@ -4282,11 +4219,17 @@ udp_multicast_join_or_leave_group(char const *name, int optname, int argc, Schem
 #endif
 }
 
+#ifdef UDP_IS_SUPPORTED
+# define WHEN_UDP_IS_SUPPORTED(x) x
+#else
+# define WHEN_UDP_IS_SUPPORTED(x) 0
+#endif
+
 static Scheme_Object *
 udp_multicast_join_group(int argc, Scheme_Object *argv[])
 {
   return udp_multicast_join_or_leave_group("udp-multicast-join-group!",
-					   IP_ADD_MEMBERSHIP,
+					   WHEN_UDP_IS_SUPPORTED(IP_ADD_MEMBERSHIP),
 					   argc,
 					   argv);
 }
@@ -4295,7 +4238,7 @@ static Scheme_Object *
 udp_multicast_leave_group(int argc, Scheme_Object *argv[])
 {
   return udp_multicast_join_or_leave_group("udp-multicast-leave-group!",
-					   IP_DROP_MEMBERSHIP,
+					   WHEN_UDP_IS_SUPPORTED(IP_DROP_MEMBERSHIP),
 					   argc,
 					   argv);
 }
@@ -4313,13 +4256,13 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
 #ifdef USE_TCP
+  GC_REG_TRAV(scheme_listener_type, mark_listener);
   GC_REG_TRAV(scheme_rt_tcp, mark_tcp);
 # ifdef UDP_IS_SUPPORTED
   GC_REG_TRAV(scheme_udp_type, mark_udp);
   GC_REG_TRAV(scheme_udp_evt_type, mark_udp_evt);
 # endif
 #endif
-  GC_REG_TRAV(scheme_listener_type, mark_listener);  
 }
 
 END_XFORM_SKIP;

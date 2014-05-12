@@ -1558,6 +1558,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       {
         intptr_t fd;
         if (scheme_get_port_socket(so, &fd)) {
+#ifdef USE_TCP
           if (mode == mzPDC_COPY) {
             Scheme_Object *tmp;
             Scheme_Object *portname;
@@ -1585,6 +1586,9 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             ssfd->name = tmp;
             return (Scheme_Object *)ssfd;
           }
+#else
+          scheme_signal_error("sockets aren't supported");
+#endif
         }
         else if (SCHEME_TRUEP(scheme_file_stream_port_p(1, &so))) {
           if (scheme_get_port_file_descriptor(so, &fd)) {

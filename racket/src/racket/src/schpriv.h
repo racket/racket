@@ -374,7 +374,7 @@ Scheme_Logger *scheme_get_future_logger(void);
 Scheme_Logger *scheme_get_place_logger(void);
 void scheme_init_logger_config(void);
 
-void register_network_evts();
+void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
@@ -3791,14 +3791,10 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 #ifdef NO_TCP_SUPPORT
 # undef USE_UNIX_SOCKETS_TCP
 # undef USE_WINSOCK_TCP
-# undef USE_MAC_TCP
-#endif
-#if defined(USE_UNIX_SOCKETS_TCP) || defined(USE_WINSOCK_TCP) || defined(USE_MAC_TCP)
-# define USE_TCP
 #endif
 
 #if defined(USE_UNIX_SOCKETS_TCP) || defined(USE_WINSOCK_TCP)
-# define USE_SOCKETS_TCP
+# define USE_TCP
 #endif
 
 THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);

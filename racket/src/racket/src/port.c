@@ -1127,7 +1127,7 @@ void scheme_fdzero(void *fd)
 
 void *scheme_alloc_fdset_array(int count, int permanent)
 {
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP) || defined(WIN32_FD_HANDLES)
   void *fdarray;
 #  if defined(WIN32_FD_HANDLES)
   if (count) {
@@ -1188,7 +1188,7 @@ void *scheme_init_fdset_array(void *fdarray, int count)
 
 void *scheme_get_fdset(void *fdarray, int pos)
 {
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP) || defined(WIN32_FD_HANDLES)
   return ((fdset_type *)fdarray) + pos;
 # else
   return NULL;
@@ -1200,7 +1200,7 @@ void scheme_fdzero(void *fd)
 # if defined(WIN32_FD_HANDLES)
   scheme_init_fdset_array(fd, 1);
 # else
-#  if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+#  if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   FD_ZERO((fd_set *)fd);
 #  endif
 # endif
@@ -1218,7 +1218,7 @@ void scheme_fdclr(void *fd, int n)
       efd->sockets[i] = INVALID_SOCKET;
   }
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   FD_CLR((unsigned)n, ((fd_set *)fd));
 # endif
 #endif
@@ -1241,7 +1241,7 @@ void scheme_fdset(void *fd, int n)
   efd->sockets[SCHEME_INT_VAL(efd->added)] = n;
   efd->added = scheme_make_integer(1 + SCHEME_INT_VAL(efd->added));
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
 #  ifdef STORED_ACTUAL_FDSET_LIMIT
   int mx;
   mx = FDSET_LIMIT(fd);
@@ -1264,7 +1264,7 @@ int scheme_fdisset(void *fd, int n)
   }
   return 0;
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   return FD_ISSET(n, ((fd_set *)fd));
 # else
   return 0;
