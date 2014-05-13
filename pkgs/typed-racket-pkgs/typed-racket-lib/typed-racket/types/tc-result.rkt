@@ -14,8 +14,7 @@
 (define-struct/cond-contract tc-results
   ([ts (c:listof tc-result?)] [drest (c:or/c (c:cons/c Type/c symbol?) #f)])
   #:transparent)
-(define-struct/cond-contract tc-any-results () #:transparent)
-(define tc-any-results* (tc-any-results))
+(define-struct/cond-contract tc-any-results ([f (c:or/c Filter/c NoFilter?)]) #:transparent)
 
 (define (tc-results/c v)
   (or (tc-results? v)
@@ -25,7 +24,7 @@
 ;; Used to contract the return values of typechecking functions.
 (define (full-tc-results/c r)
   (match r
-    [(tc-any-results:) #t]
+    [(tc-any-results: f) (not (equal? -no-filter f))]
     [(tc-results: _ fs os)
      (and
        (not (member -no-filter fs))
@@ -57,8 +56,8 @@
 
 (define-match-expander tc-any-results:
   (syntax-rules ()
-   [(_)
-    (tc-any-results)]))
+   [(_ f)
+    (tc-any-results f)]))
 
 
 (define-match-expander tc-result1:
@@ -150,11 +149,10 @@
 
 (define tc-result-equal? equal?)
 
-(provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
-         (rename-out
-           (tc-any-results* tc-any-results)))
+(provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:)
 (provide/cond-contract
  [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
+ [tc-any-results ((c:or/c Filter/c NoFilter?) . c:-> . tc-any-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]

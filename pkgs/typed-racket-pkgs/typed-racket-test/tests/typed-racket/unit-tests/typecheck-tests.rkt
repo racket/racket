@@ -456,7 +456,7 @@
         [tc-e/t #(2 3 #t) (make-HeterogeneousVector (list -Integer -Integer -Boolean))]
         [tc-e (vector 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
         [tc-e (vector) (make-HeterogeneousVector (list))]
-        [tc-e (vector) (make-HeterogeneousVector (list)) #:expected tc-any-results]
+        [tc-e (vector) #:ret (tc-any-results -top) #:expected (tc-any-results -no-filter)]
         [tc-err (vector)
            #:ret (ret -Integer)
            #:expected (ret -Integer)]
@@ -893,7 +893,7 @@
         [tc-err (with-continuation-mark 1 2 (5 4))]
 
         [tc-err (with-continuation-mark 'x 'y 'z)
-          #:ret (ret (-val 'z))
+          #:ret (ret (-val 'z) -bot-filter)
           #:expected (ret (-val 'z) -no-filter -no-obj)]
 
 
@@ -1156,7 +1156,7 @@
         [tc-e/t (plambda: (a ...) ([x : Number] . [y : a ... a])
                           (andmap null? (map list y)))
                 (-polydots (a) ((list -Number) (a a) . ->... . -Boolean))]
-        [tc-e (ann (error 'foo) (values Number Number)) #:ret (ret (list -Number -Number))]
+        [tc-e (ann (error 'foo) (values Number Number)) #:ret (ret (list -Bottom -Bottom))]
 
         [tc-e (string->number "123")
               (t:Un (-val #f) -Number)]
@@ -2676,23 +2676,23 @@
          #:expected (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -no-obj)]
 
        [tc-err (values 'x)
-         #:ret (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+         #:ret (ret (list -Symbol -Symbol) (list -bot-filter -bot-filter) (list -empty-obj -empty-obj))
          #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
 
        [tc-err (values 'x 'y 'z)
-         #:ret (ret (list -Symbol -Symbol) (list -top-filter -top-filter) (list -empty-obj -empty-obj))
+         #:ret (ret (list -Symbol -Symbol) (list -bot-filter -bot-filter) (list -empty-obj -empty-obj))
          #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
 
        [tc-err (values 'y)
-         #:ret (ret (list -Symbol) (list -top-filter ) (list -empty-obj) Univ 'B)
+         #:ret (ret (list -Symbol) (list -bot-filter ) (list -empty-obj) Univ 'B)
          #:expected (ret (list -Symbol) (list -no-filter ) (list -no-obj) Univ 'B)]
 
        [tc-err (values (values 'x 'y))
-         #:ret (ret (-val 'x))
+         #:ret (ret (-val 'x) -bot-filter)
          #:expected (ret (-val 'x) -no-filter -no-obj)]
 
        [tc-err (if (random) (values 1 2) 3)
-         #:ret (ret (-val 3) -top-filter)
+         #:ret (ret (-val 3) -true-filter)
          #:expected (ret (-val 3) -no-filter -no-obj)]
 
        [tc-err
@@ -2766,7 +2766,7 @@
                         (Number -> Number)))
            (define z (lambda (a) a))
            (z "y"))
-         #:ret (ret -String)
+         #:ret (ret -String -bot-filter)
          #:expected (ret -String -no-filter -no-obj)]
 
        [tc-err
@@ -2776,7 +2776,7 @@
                   (-> Symbol #:b Symbol Symbol)))
            (define z (lambda (a #:b b) a))
            (z "y" #:b "y"))
-         #:ret (ret -String)
+         #:ret (ret -String -bot-filter)
          #:expected (ret -String -no-filter -no-obj)]
 
        [tc-e/t

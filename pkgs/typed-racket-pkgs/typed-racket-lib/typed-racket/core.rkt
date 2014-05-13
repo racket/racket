@@ -74,7 +74,7 @@
                                [(tc-result1: (== -Void type-equal?))
                                 #f]
                                ;; don't print results of unknown type
-                               [(tc-any-results:)
+                               [(tc-any-results: f)
                                 #f]
                                [(tc-result1: t f o)
                                 ;; Don't display the whole types at the REPL. Some case-lambda types

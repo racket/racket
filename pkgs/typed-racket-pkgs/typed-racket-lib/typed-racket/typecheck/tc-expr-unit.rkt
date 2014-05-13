@@ -160,7 +160,7 @@
       [(begin0 e . es)
        (begin0
          (tc-expr/check #'e expected)
-         (tc-body/check #'es tc-any-results))]
+         (tc-body/check #'es (tc-any-results -top)))]
       ;; if
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
       ;; lambda
@@ -185,7 +185,7 @@
                                   (Poly: _ (Function: _)))))
           (tc-expr/check/type #'fun (kw-convert f #:split #t))
           (ret f -true-filter)]
-         [(or (tc-results: _) (tc-any-results:))
+         [(or (tc-results: _) (tc-any-results: _))
           (tc-expr form)])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
@@ -361,10 +361,10 @@
 ;; The environment is extended with the propositions that are true if the expression returns
 ;; (e.g. instead of raising an error).
 (define (check-body-form e k)
-  (define results (tc-expr/check e tc-any-results))
+  (define results (tc-expr/check e (tc-any-results -no-filter)))
   (define props
     (match results
-      [(tc-any-results:) empty]
+      [(tc-any-results: f) (list f)]
       [(tc-results: _ (list (FilterSet: f+ f-) ...) _)
        (map -or f+ f-)]
       [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)

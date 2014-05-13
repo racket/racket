@@ -107,7 +107,7 @@
          -Void]
    ;; Send to non object
    [tc-err (send 4 m 3)
-      #:ret (ret (-val 5))
+      #:ret (ret (-val 5) -bot-filter)
       #:expected (ret (-val 5) -no-filter -no-obj)]
    ;; Field access via get-field
    [tc-e (let ()

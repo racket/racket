@@ -73,7 +73,7 @@
   (tc-results/c (listof identifier?) . -> . SomeValues/c)
   (define keys (for/list ([(nm k) (in-indexed arg-names)]) (list 0 k)))
   (match results
-    [(tc-any-results:) ManyUniv]
+    [(tc-any-results: f) (-AnyValues (abo arg-names keys f))]
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
@@ -167,7 +167,7 @@
 
 (define (tc-results->values tc)
   (match tc
-    [(tc-any-results:) ManyUniv]
+    [(tc-any-results: _) ManyUniv]
     [(tc-results: ts) (-values ts)]
     [(tc-results: ts _ _ dty dbound) (-values-dots ts dty dbound)]))
 
@@ -244,12 +244,14 @@
 ;; For each name replaces all uses of it in res with the corresponding object.
 ;; This is used so that names do not escape the scope of their definitions
 (define (replace-names names+objects res)
+  (define (sub proc i)
+    (for/fold ([s i]) ([name/object (in-list names+objects)])
+      (proc s (first name/object) (second name/object) #t)))
   (define (subber proc lst)
     (for/list ([i (in-list lst)])
-      (for/fold ([s i]) ([name/object (in-list names+objects)])
-        (proc s (first name/object) (second name/object) #t))))
+      (sub proc i)))
   (match res
-    [(tc-any-results:) res]
+    [(tc-any-results: f) (tc-any-results (sub subst-filter f))]
     [(tc-results: ts fs os)
      (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
     [(tc-results: ts fs os dt db)

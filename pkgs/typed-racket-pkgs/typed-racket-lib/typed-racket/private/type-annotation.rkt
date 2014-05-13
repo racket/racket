@@ -81,7 +81,7 @@
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
-               [(tc-any-results:)
+               [(tc-any-results: _)
                 (tc-error/expr
                   "Expression should produce ~a values, but produces an unknown number of values"
                   (length stxs))]
