@@ -5,18 +5,19 @@
 (provide variant-suffix)
 
 (define plain-mz-is-cgc?
-  (delay (let* ([dir (find-console-bin-dir)]
-                [exe (cond [(eq? 'windows (system-type)) "Racket.exe"]
-                           [(equal? #".dll" (system-type 'so-suffix))
-                            ;; in cygwin so-suffix is ".dll"
-                            "racket.exe"]
-                           [else "racket"])]
-                [f (build-path dir exe)])
-           (and (file-exists? f)
-                (with-input-from-file f
-                  (lambda ()
-                    (regexp-match? #rx#"bINARy tYPe:..c"
-                                   (current-input-port))))))))
+  (delay/sync
+   (let* ([dir (find-console-bin-dir)]
+          [exe (cond [(eq? 'windows (system-type)) "Racket.exe"]
+                     [(equal? #".dll" (system-type 'so-suffix))
+                      ;; in cygwin so-suffix is ".dll"
+                      "racket.exe"]
+                     [else "racket"])]
+          [f (build-path dir exe)])
+     (and (file-exists? f)
+          (with-input-from-file f
+            (lambda ()
+              (regexp-match? #rx#"bINARy tYPe:..c"
+                             (current-input-port))))))))
 
 (define (variant-suffix variant cased?)
   (let ([r (case variant

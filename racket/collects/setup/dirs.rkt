@@ -18,18 +18,19 @@
 ;; config: definitions
 
 (define config-table
-  (delay (let ([d (find-config-dir)])
-           (if d
-               (let ([p (build-path d "config.rktd")])
-                 (if (file-exists? p)
-                     (call-with-input-file* 
-                      p
-                      (lambda (in) 
-                        (call-with-default-reading-parameterization
-                         (lambda ()
-                           (read in)))))
-                     #hash()))
-               #hash()))))
+  (delay/sync
+   (let ([d (find-config-dir)])
+     (if d
+         (let ([p (build-path d "config.rktd")])
+           (if (file-exists? p)
+               (call-with-input-file* 
+                p
+                (lambda (in) 
+                  (call-with-default-reading-parameterization
+                   (lambda ()
+                     (read in)))))
+               #hash()))
+         #hash()))))
 
 (define (to-path l)
   (cond [(string? l) (simplify-path (complete-path (string->path l)))]
@@ -45,7 +46,7 @@
           (find-main-collects))]))
 
 (define-syntax-rule (define-config name key wrap)
-  (define name (delay
+  (define name (delay/sync
                  (wrap 
                   (hash-ref (force config-table) key #f)))))
 
@@ -104,7 +105,9 @@
   (combine-search (force config:collects-search-dirs)
                   (list (find-collects-dir))))
 (define user-collects-dir
-  (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) "collects"))))
+  (delay/sync (simplify-path (build-path (find-system-path 'addon-dir)
+                                         (get-installation-name)
+                                         "collects"))))
 (define (find-user-collects-dir)
   (force user-collects-dir))
 (define (get-collects-search-dirs)
@@ -139,7 +142,9 @@
        (define-finder provide config:id id get-false default)
        (provide user-id)
        (define user-dir
-         (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) user-default))))
+         (delay/sync (simplify-path (build-path (find-system-path 'addon-dir)
+                                                (get-installation-name)
+                                                user-default))))
        (define (user-id)
          (force user-dir)))]
     [(_ provide config:id id user-id config:search-id search-id default)
@@ -165,7 +170,7 @@
        #'(begin
            (provide id)
            (define dir
-             (delay
+             (delay/sync
                (or (force config:id) (get-default))))
            (define (id)
              (force dir))))]
@@ -174,7 +179,7 @@
        #'(begin
            (provide id)
            (define dir
-             (delay
+             (delay/sync
                (or (force config:id)
                    (let ([p (find-collects-dir)])
                      (and p (simplify-path (build-path p 'up default)))))))
@@ -188,7 +193,7 @@
 ;; ----------------------------------------
 ;; "doc"
 
-(define delayed-#f (delay #f))
+(define delayed-#f (delay/sync #f))
 
 (provide find-doc-dir
          find-user-doc-dir
@@ -280,7 +285,7 @@
 
 (provide find-dll-dir)
 (define dll-dir
-  (delay
+  (delay/sync
     (case (system-type)
       [(windows)
        ;; Extract "lib" location from binary:
