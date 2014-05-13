@@ -705,6 +705,7 @@
             (max ay by cy dy))))
 
 (define (rotate-points in-points θ)
+  (printf "θ ~s\n" θ)
   (let* ([cs (map point->c in-points)]
          [vectors (points->vectors cs)]
          [rotated-vectors (map (λ (c) (rotate-c c θ)) vectors)]
