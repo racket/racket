@@ -40,8 +40,7 @@
                                                  (values full-tc-results/c full-tc-results/c))]))
 
 (define-signature tc-app^
-  ([cond-contracted tc/app (syntax? . -> . full-tc-results/c)]
-   [cond-contracted tc/app/check (syntax? tc-results/c . -> . full-tc-results/c)]
+  ([cond-contracted tc/app (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]
    [cond-contracted tc/app-regular (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]))
 
 (define-signature tc-apply^
