@@ -162,13 +162,9 @@
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
       ;; lambda
       [(#%plain-lambda formals . body)
-       (if expected
-           (tc/lambda/check form #'(formals) #'(body) expected)
-           (tc/lambda form #'(formals) #'(body)))]
+       (tc/lambda form #'(formals) #'(body) expected)]
       [(case-lambda [formals . body] ...)
-       (if expected
-           (tc/lambda/check form #'(formals ...) #'(body ...) expected)
-           (tc/lambda form #'(formals ...) #'(body ...)))]
+       (tc/lambda form #'(formals ...) #'(body ...) expected)]
       ;; send
       [(let-values (((_) meth))
          (let-values (((_) rcvr))
