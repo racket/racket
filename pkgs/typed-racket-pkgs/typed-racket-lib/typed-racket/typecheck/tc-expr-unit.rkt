@@ -189,7 +189,7 @@
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
           (tc-expr/check/type #'fun (kw-convert f #:split #t))
-          expected]
+          (ret f -true-filter)]
          [(or (tc-results: _) (tc-any-results:))
           (tc-expr form)])]
       ;; opt function def

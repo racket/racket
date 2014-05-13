@@ -2949,6 +2949,10 @@
          #:ret (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
          #:expected (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
          ]
+       [tc-e
+         (tr:lambda (x #:y [y 3]) x)
+         #:ret (ret (->key Univ #:y Univ #f Univ) -true-filter)
+         #:expected (ret (->key Univ #:y Univ #f Univ) -no-filter)]
 
 
         )
