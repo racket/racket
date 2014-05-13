@@ -155,6 +155,8 @@
       ;; begin
       [(begin . es)
        (tc-body/check #'es expected)]
+      [(begin0 e)
+       (tc-expr/check #'e expected)]
       [(begin0 e . es)
        (begin0
          (tc-expr/check #'e expected)
@@ -265,15 +267,11 @@
   (with-lexical-env/extend-props props
     (k)))
 
-;; type-check a body of exprs, producing the type of the last one.
-;; if the body is empty, the type is Void.
-;; syntax[list[expr]] -> tc-results/c
-(define (tc-body body)
-  (tc-body/check body #f))
-
+;; tc-body/check: syntax? tc-results? -> tc-results?
+;; Body must be a non empty sequence of expressions to typecheck.
+;; The final one will be checked against expected.
 (define (tc-body/check body expected)
   (match (syntax->list body)
-    [(list) (cond-check-below (ret -Void) expected)]
     [(list es ... e-final)
      (define ((continue es))
        (if (empty? es)
