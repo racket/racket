@@ -13,7 +13,7 @@
 These functions specify tree layouts and functions
 that render them as @racket[pict]s.
 
-@declare-exporting[pict/tree-layout]
+@defmodule[pict/tree-layout]
 
 @defproc[(tree-layout [#:pict node-pict (or/c #f pict?) #f]
                       [child (or/c tree-layout? tree-edge? #f)] ...)
