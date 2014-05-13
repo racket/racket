@@ -49,7 +49,7 @@ and see what packages are available. People contribute new PLaneT
 packages all the time --- if you want to be notified whenever a new or
 updated package is released, you can subscribe to the
 (announcement-only) 
-@link["http://mailman.cs.uchicago.edu/mailman/listinfo/planet-announce"]{PLaneT-announce mailing list} 
+@link["http://lists.racket-lang.org/planet-announce/"]{PLaneT-announce mailing list} 
 or use an RSS reader to subscribe to 
 @link["http://planet.racket-lang.org/300/planet.rss"]{PLaneT's RSS feed}.
 
