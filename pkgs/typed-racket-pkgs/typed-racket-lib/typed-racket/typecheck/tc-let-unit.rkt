@@ -73,9 +73,7 @@
                   exprs
                   expected-results)
         ;; typecheck the body
-        (if expected
-            (tc-body/check body (erase-filter expected))
-            (tc-body body))))))
+        (tc-body/check body (and expected (erase-filter expected)))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names
@@ -136,9 +134,7 @@
         (cond
           ;; after everything, check the body expressions
           [(null? remaining-names)
-           (if expected
-             (tc-body/check body (erase-filter expected))
-             (tc-body body))]
+           (tc-body/check body (and expected (erase-filter expected)))]
           [else
            (define flat-names (apply append remaining-names))
            (do-check tc-expr/check
