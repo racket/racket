@@ -349,8 +349,10 @@
                 (equal? arg +nan.0)))))
                                
 (define (angle->proper-range α)
-  (define whole-part (modulo (round α) 360))
-  (define decimal-part (- α (round α)))
+  (define eα (inexact->exact α))
+  (define rα (round eα))
+  (define whole-part (modulo rα 360))
+  (define decimal-part (- eα rα))
   (if (and (zero? whole-part)
            (negative? decimal-part))
       (+ 360 decimal-part)
