@@ -37,8 +37,8 @@
   tc/app-regular*)
 
 ;; the main dispatching function
-;; syntax tc-results/c -> tc-results/c
-(define (tc/app/internal form expected)
+;; syntax (or/c tc-results/c #f) -> tc-results/c
+(define (tc/app form expected)
   (syntax-parse form
     [(#%plain-app . (~var v (tc/app-special-cases expected)))
      ((attribute v.check))]))
@@ -95,11 +95,3 @@
                   (single-value a)))]
            [_ (map single-value args*)]))
        (tc/funapp #'f #'args f-ty arg-tys expected))]))
-
-;(trace tc/app/internal)
-
-;; syntax -> tc-results
-(define (tc/app form) (tc/app/internal form #f))
-
-;; syntax tc-results/c -> tc-results/c
-(define (tc/app/check form expected) (tc/app/internal form expected))

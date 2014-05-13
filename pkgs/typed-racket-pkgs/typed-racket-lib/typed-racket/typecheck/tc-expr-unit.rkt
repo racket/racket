@@ -142,10 +142,7 @@
           ;(tc-expr/check #'e3 expected)
           (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t)])]
       ;; application
-      [(#%plain-app . _)
-       (if expected
-           (tc/app/check form expected)
-           (tc/app form))]
+      [(#%plain-app . _) (tc/app form expected)]
       ;; #%expression
       [(#%expression e) (tc/#%expression form expected)]
       ;; syntax
