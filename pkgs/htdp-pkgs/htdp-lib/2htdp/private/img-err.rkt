@@ -229,7 +229,9 @@
      (check-arg fn-name (or (not arg) (string? arg)) 'face i arg)
      arg]
     [(family)
-     (check-arg fn-name (memq arg '(default decorative roman script swiss modern symbol system)) 'family i arg)
+     (check-arg fn-name
+                (memq arg '(default decorative roman script swiss modern symbol system))
+                'family i arg)
      arg]
     [(style)
      (check-arg fn-name (memq arg '(normal italic slant)) 'style i arg)
