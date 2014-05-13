@@ -18,6 +18,7 @@
          net/uri-codec
          net/base64
          scheme/serialize
+         racket/draw/gif
          (prefix-in xml: xml/xml)
          (for-syntax scheme/base)
          "search.rkt"
@@ -1211,11 +1212,13 @@
          (let* ([src (collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]
                 [scale (image-element-scale e)]
-                [to-num
+                [to-scaled-num
                  (lambda (s)
                    (number->string
                     (inexact->exact
-                     (floor (* scale (integer-bytes->integer s #f #t))))))]
+                     (floor (* scale (if (number? s)
+                                         s
+                                         (integer-bytes->integer s #f #t)))))))]
                 [src (select-suffix src suffixes '(".png" ".gif" ".svg"))]
                 [svg? (regexp-match? #rx#"[.]svg$" (if (path? src) (path->bytes src) src))]
                 [sz (cond
@@ -1242,7 +1245,6 @@
                              (if (and w h)
                                  `([width ,w][height ,h])
                                  null)))))]
-                     [(= 1.0 scale) null]
                      [else
                       ;; Try to extract file size:
                       (call-with-input-file*
@@ -1250,8 +1252,12 @@
                        (lambda (in)
                          (cond
                           [(regexp-try-match #px#"^\211PNG.{12}" in)
-                           `([width ,(to-num (read-bytes 4 in))]
-                             [height ,(to-num (read-bytes 4 in))])]
+                           `([width ,(to-scaled-num (read-bytes 4 in))]
+                             [height ,(to-scaled-num (read-bytes 4 in))])]
+                          [(regexp-try-match #px#"^(?=GIF8)" in)
+                           (define-values (w h rows) (gif->rgba-rows in))
+                           `([width ,(to-scaled-num w)]
+                             [height ,(to-scaled-num h)])]
                           [else
                            null])))])])
            (let ([srcref (let ([p (install-file src)])
