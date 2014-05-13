@@ -179,7 +179,7 @@
        null
        #f
        #f
-       (tc-body body)))))
+       (tc-body/check body #f)))))
 
 
 
@@ -218,7 +218,7 @@
                  null
                  #f
                  (list rest-id (cons rest-type bound))
-                 (tc-body body)))))]
+                 (tc-body/check body #f)))))]
          ;; Lambda with regular rest argument
          [rest-id
           (let ([rest-type (get-type rest-id #:default Univ)])
@@ -230,7 +230,7 @@
                null
                (list rest-id rest-type)
                #f
-               (tc-body body))))]
+               (tc-body/check body #f))))]
          ;; Lambda with no rest argument
          [else
           (with-lexical-env/extend
@@ -240,7 +240,7 @@
              null
              #f
              #f
-             (tc-body body)))]))]))
+             (tc-body/check body #f)))]))]))
 
 ;; positional: natural? - the number of positional arguments
 ;; rest: boolean? - if there is a positional argument
