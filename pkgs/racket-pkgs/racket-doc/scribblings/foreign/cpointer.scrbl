@@ -7,34 +7,48 @@ The unsafe @racket[cpointer-has-tag?] and @racket[cpointer-push-tag!]
 operations manage tags to distinguish pointer types.
 
 @defproc*[([(_cpointer [tag any/c]
-                       [ptr-type ctype? _pointer]
-                       [scheme-to-c (any/c . -> . any/c) values]
-                       [c-to-scheme (any/c . -> . any/c) values])
+                       [ptr-type (or/c ctype? #f) _pointer]
+                       [racket-to-c (or/c (any/c . -> . any/c) #f) values]
+                       [c-to-racket (or/c (any/c . -> . any/c) #f) values])
             ctype]
            [(_cpointer/null [tag any/c]
-                            [ptr-type ctype? _pointer]
-                            [scheme-to-c (any/c . -> . any/c) values]
-                            [c-to-scheme (any/c . -> . any/c) values])
+                            [ptr-type (or/c ctype? #f) _pointer]
+                            [racket-to-c (or/c (any/c . -> . any/c) #f) values]
+                            [c-to-racket (or/c (any/c . -> . any/c) #f) values])
             ctype])]{
 
-Construct a kind of a pointer that gets a specific tag when converted
-to Racket, and accept only such tagged pointers when going to C.  An
-optional @racket[ptr-type] can be given to be used as the base pointer
-type, instead of @racket[_pointer].
+Constructs a C pointer type, @racket[__tag], that gets a specific tag
+when converted to Racket, and accept only such tagged pointers when
+going to C.  For any optional argument, @racket[#f] is treated
+the same as the default value of the argument.
 
-Although any value can be used as a tag, by convention the symbol form
-of a type name---without a leading underscore---is used as the
-tag. For example, a pointer type @racketidfont{_animal}
-would normally use @racket['animal] as the key.
+The @racket[ptr-type] is used as the base pointer type for
+@racket[__tag]. Values of @racket[ptr-type] must be represented as
+pointers.
+
+Although any value can be used as @racket[tag], by convention it is
+the symbol form of a type name---without a leading underscore. For
+example, a pointer type @racketidfont{_animal} would normally use
+@racket['animal] as the tag.
 
 Pointer tags are checked with @racket[cpointer-has-tag?] and changed
 with @racket[cpointer-push-tag!], which means that other tags are
 preserved on an existing pointer value.  Specifically, if a base
-@racket[ptr-type] is given and is itself a @racket[_cpointer], then
+@racket[ptr-type] is given and is itself produced by @racket[_cpointer], then
 the new type will handle pointers that have the new tag in addition to
 @racket[ptr-type]'s tag(s).  When the tag is a pair, its first value
-is used for printing, so the most recently pushed tag which
-corresponds to the inheriting type is displayed.
+is used for printing, so the most recently pushed tag (which
+corresponds to the inheriting type) is displayed.
+
+A Racket value to be used as a @racket[__tag] value is first passed to
+@racket[racket-to-c], and the result must be a pointer that is tagged
+with @racket[tag]. Similarly, a C value to be returned as a
+@racket[__tag] value is initially represented as pointer tagged with
+@racket[tag], but then it is passed to @racket[c-to-racket] to obtain
+the Racket representation. Thus, a @racket[__tag] value is represented
+by a pointer at the C level, but (unlike the given @racket[ptr-type])
+it can have any representation at the Racket level as implemented by
+@racket[racket-to-c] and @racket[c-to-racket].
 
 The @racket[_cpointer/null] function is similar to @racket[_cpointer], except that
 it tolerates @cpp{NULL} pointers both going to C and back.  Note that
@@ -45,7 +59,7 @@ are not tagged.}
 @defform*[[(define-cpointer-type _id)
            (define-cpointer-type _id ptr-type-expr)
            (define-cpointer-type _id ptr-type-expr 
-                                 scheme-to-c-expr c-to-scheme-expr)]]{
+                                 racket-to-c-expr c-to-racket-expr)]]{
 
 A macro version of @racket[_cpointer] and @racket[_cpointer/null],
 using the defined name for a tag symbol, and defining a predicate
@@ -60,8 +74,8 @@ type produced by @racket[_cpointer/null] type. Finally,
 @racketvarfont{id}@racketidfont{-tag} is defined as an accessor to
 obtain a tag. The tag is the symbol form of @racketvarfont{id}.}
 
-@defproc*[([(cpointer-has-tag? [cptr any/c] [tag any/c]) boolean?]
-           [(cpointer-push-tag! [cptr any/c] [tag any/c]) void])]{
+@defproc*[([(cpointer-has-tag? [cptr cpointer?] [tag any/c]) boolean?]
+           [(cpointer-push-tag! [cptr cpointer?] [tag any/c]) void])]{
 
 These two functions treat pointer tags as lists of tags.  As described
 in @secref["foreign:pointer-funcs"], a pointer tag does not have any
