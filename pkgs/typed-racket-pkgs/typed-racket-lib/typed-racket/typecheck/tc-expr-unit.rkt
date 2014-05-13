@@ -43,9 +43,10 @@
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
-(define (tc-expr/t e) (match (single-value e)
-                        [(tc-result1: t _ _) t]
-                        [t (int-err "tc-expr returned ~a, not a single tc-result, for ~a" t (syntax->datum e))]))
+(define (tc-expr/t e)
+  (match (single-value e)
+    [(tc-result1: t _ _) t]
+    [t (int-err "tc-expr returned ~a, not a single tc-result, for ~a" t (syntax->datum e))]))
 
 (define (tc-expr/check/t e t)
   (match (tc-expr/check e t)
@@ -126,16 +127,12 @@
        (match key-t
          [(tc-result1: (Continuation-Mark-Keyof: rhs))
           (tc-expr/check/type #'e2 rhs)
-          (if expected
-              (tc-expr/check #'e3 expected)
-              (tc-expr #'e3))]
+          (tc-expr/check #'e3 expected)]
          [(? (λ (result)
                (and (identifier? #'e1)
                     (free-identifier=? #'pz:pk #'e1 #f (syntax-local-phase-level)))))
           (tc-expr/check/type #'e2 Univ)
-          (if expected
-              (tc-expr/check #'e3 expected)
-              (tc-expr #'e3))]
+          (tc-expr/check #'e3 expected)]
          [(tc-result1: key-t)
           ;(check-below key-t -Symbol)
           ;; FIXME -- would need to protect `e2` with any-wrap/c contract
@@ -157,12 +154,10 @@
        (tc-expr/check (syntax/loc form (letrec-values vals . body)) expected)]
       ;; begin
       [(begin . es)
-       (if expected
-           (tc-body/check #'es expected)
-           (tc-body #'es))]
+       (tc-body/check #'es expected)]
       [(begin0 e . es)
        (begin0
-         (if expected (tc-expr/check #'e expected) (tc-expr #'e))
+         (tc-expr/check #'e expected)
          (tc-body/check #'es (tc-any-results -top)))]
       ;; if
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
@@ -195,7 +190,7 @@
           (tc-expr/check/type #'fun (kw-convert f #:split #t))
           (ret f -true-filter)]
          [(or (tc-results: _) (tc-any-results: _))
-          (tc-expr form)])]
+          (tc-expr/check form #f)])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        #:when expected
@@ -208,7 +203,7 @@
            [_ #f]))
        (if conv-type
            (begin (tc-expr/check/type #'fun conv-type) expected)
-           (tc-expr form))]
+           (tc-expr/check form #f))]
       [(~and _:kw-lambda^
          (let-values ([(f) fun])
            (let-values _
@@ -246,7 +241,7 @@
   (tc-expr/check form #f))
 
 (define (single-value form [expected #f])
-  (define t (if expected (tc-expr/check form expected) (tc-expr form)))
+  (define t (tc-expr/check form expected))
   (match t
     [(tc-result1: _ _ _) t]
     [_ (tc-error/expr
@@ -274,18 +269,11 @@
 ;; if the body is empty, the type is Void.
 ;; syntax[list[expr]] -> tc-results/c
 (define (tc-body body)
-  (match (syntax->list body)
-    [(list) (ret -Void)]
-    [(list es ... e-final)
-     (define ((continue es))
-       (if (empty? es)
-           (tc-expr e-final)
-           (check-body-form (first es) (continue (rest es)))))
-     ((continue es))]))
+  (tc-body/check body #f))
 
 (define (tc-body/check body expected)
   (match (syntax->list body)
-    [(list) (check-below (ret -Void) expected)]
+    [(list) (cond-check-below (ret -Void) expected)]
     [(list es ... e-final)
      (define ((continue es))
        (if (empty? es)
