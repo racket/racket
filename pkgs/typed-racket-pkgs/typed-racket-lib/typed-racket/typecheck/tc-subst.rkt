@@ -165,8 +165,7 @@
 (define/cond-contract (values->tc-results tc formals)
   (SomeValues/c (or/c #f (listof identifier?)) . -> . tc-results/c)
   (match tc
-    ;; TODO make tc-any-results have a filter
-    [(AnyValues: f) tc-any-results]
+    [(AnyValues: f) (tc-any-results f)]
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
      (if formals
          (let-values ([(ts fs os)

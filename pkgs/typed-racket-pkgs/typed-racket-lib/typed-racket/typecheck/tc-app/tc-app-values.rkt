@@ -22,13 +22,13 @@
     (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
       [(tc-results: ts fs os)
        (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)]
-      [(tc-any-results:)
+      [(tc-any-results: _)
        (tc/app-regular this-syntax expected)]))
   ;; special case for `values' with single argument
   ;; we just ignore the values, except that it forces arg to return one value
   (pattern (values arg)
     (match expected
-     [(or #f (tc-any-results:)) (single-value #'arg)]
+     [(or #f (tc-any-results: _)) (single-value #'arg)]
      [(tc-result1: tp)
       (single-value #'arg expected)]
      [(tc-results: ts)

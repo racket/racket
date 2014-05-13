@@ -133,7 +133,7 @@
          [(list t0) (tc/app/check #'(#%plain-app . form) (ret t0))]
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
-      [(or #f (tc-any-results:) (tc-result1: _))
+      [(or #f (tc-any-results: _) (tc-result1: _))
        (ret (make-HeterogeneousVector
               (for/list ((e (in-syntax #'(args ...))))
                 (generalize (tc-expr/t e)))))]

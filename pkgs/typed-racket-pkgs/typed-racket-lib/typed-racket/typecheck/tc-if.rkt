@@ -68,8 +68,14 @@
                [else
                 (add-neither tst)])
          (match* (results-t results-u)
-           [((tc-any-results:) _) tc-any-results]
-           [(_ (tc-any-results:)) tc-any-results]
+
+           [((tc-any-results: f1) (tc-any-results: f2))
+            (tc-any-results (-or (apply -and fs+ f1 new-thn-props) (apply -and fs- f2 new-els-props)))]
+           ;; Not do awful things here
+           [((tc-results: ts (list (FilterSet: f+ f-) ...) os) (tc-any-results: f2))
+            (tc-any-results (-or (apply -and (map -or f+ f-)) f2))]
+           [((tc-any-results: f2) (tc-results: ts (list (FilterSet: f+ f-) ...) os))
+            (tc-any-results (-or (apply -and (map -or f+ f-)) f2))]
            [((tc-results: ts fs2 os2)
              (tc-results: us fs3 os3))
             ;; if we have the same number of values in both cases
@@ -98,6 +104,6 @@
                   [(and (= 1 (length ts)) (type-equal? (car ts) (Un)))
                    (ret us fs3 os3)]
                   ;; otherwise, error
-               [else
-                (tc-error/expr "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
-                               (length ts) (length us))])])))]))
+                  [else
+                   (tc-error/expr "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
+                                  (length ts) (length us))])])))]))

@@ -212,8 +212,7 @@
 ;; Useful to express properties of the form: if this expressions returns at all, we learn this
 (define (add-unconditional-prop results prop)
   (match results
-    ;; TODO add support for filters on tc-any-results
-    [(tc-any-results:) results]
+    [(tc-any-results: f) (tc-any-results (-and prop f))]
     [(tc-results: ts (list (FilterSet: fs+ fs-) ...) os)
      (ret ts
           (for/list ([f+ fs+] [f- fs-])
@@ -250,7 +249,7 @@
 ;; tc-results/c -> tc-results/c
 (define (erase-filter tc)
   (match tc
-    [(tc-any-results:) tc]
+    [(tc-any-results: _) (tc-any-results -no-filter)]
     [(tc-results: ts _ _)
      (ret ts
           (for/list ([f (in-list ts)]) -no-filter)

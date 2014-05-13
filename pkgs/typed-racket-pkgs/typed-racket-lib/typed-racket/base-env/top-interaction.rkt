@@ -86,7 +86,7 @@
                      (match type
                        [(tc-result1: t f o) t]
                        [(tc-results: t) (-values t)]
-                       [(tc-any-results:) ManyUniv]))))))]
+                       [(tc-any-results: f) (-AnyValues f)]))))))]
       [form
        (raise-syntax-error #f "must be applied to exactly one argument" #'form)]))
 

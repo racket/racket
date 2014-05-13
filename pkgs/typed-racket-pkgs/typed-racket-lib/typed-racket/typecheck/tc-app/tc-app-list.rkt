@@ -40,7 +40,7 @@
        (unless (for/and ([b (in-list bound)]) (or (not b) (eq? bound0 b))) (fail))
        (define expected-elem-type
          (match expected
-           [(or #f (tc-any-results:)) #f]
+           [(or #f (tc-any-results: _)) #f]
            [(tc-result1: (ListDots: elem-type (== bound0))) (ret elem-type)]
            [(tc-result1: (Listof: elem-type)) (ret elem-type)]
            [else (fail)]))

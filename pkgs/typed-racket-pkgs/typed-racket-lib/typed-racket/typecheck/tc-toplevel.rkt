@@ -179,7 +179,7 @@
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
 ;; syntax? -> (or/c 'no-type tc-results/c)
-(define (tc-toplevel/pass2 form)
+(define (tc-toplevel/pass2 form [expected (tc-any-results -top)])
   
   (do-time (format "pass2 ~a line ~a"
                    (if #t
@@ -230,10 +230,12 @@
       [(begin) 'no-type]
       [(begin . rest)
        (for/last ([form (in-syntax #'rest)])
-         (tc-toplevel/pass2 form))]
+         (tc-toplevel/pass2 form expected))]
 
       ;; otherwise, the form was just an expression
-      [_ (tc-expr/check form tc-any-results)])))
+      [_ (if expected
+             (tc-expr/check form expected)
+             (tc-expr form))])))
 
 
 
@@ -424,6 +426,6 @@
        (register-parsed-struct-bindings! parsed))
      (tc-toplevel/pass1 form)
      (tc-toplevel/pass1.5 form)
-     (begin0 (tc-toplevel/pass2 form)
+     (begin0 (tc-toplevel/pass2 form #f)
              (report-all-errors))]))
 
