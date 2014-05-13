@@ -509,22 +509,14 @@
          (make-Poly #:original-names (first tvarss) ns results))]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
-;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
-(define (tc/lambda/internal form formals bodies expected)
+;; tc/lambda : syntax syntax-list syntax-list (or/c tc-results #f) -> tc-results
+(define (tc/lambda form formals bodies expected)
   (if (or (has-poly-annotation? form)
           (match expected
             [(tc-result1: t) (or (Poly? t) (PolyDots? t) (PolyRow? t))]
             [_ #f]))
       (ret (tc/plambda form (get-poly-tvarss form) formals bodies expected) -true-filter)
       (ret (tc/mono-lambda/type formals bodies expected) -true-filter)))
-
-;; tc/lambda : syntax syntax-list syntax-list -> tc-result
-(define (tc/lambda form formals bodies)
-  (tc/lambda/internal form formals bodies #f))
-
-;; tc/lambda/check : syntax syntax-list syntax-list Type -> tc-result
-(define (tc/lambda/check form formals bodies expected)
-  (tc/lambda/internal form formals bodies expected))
 
 ;; formals : the formal arguments to the loop
 ;; body : a block containing the body of the loop

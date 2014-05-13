@@ -34,8 +34,7 @@
   ([cond-contracted tc/#%expression ((syntax?) ((or/c tc-results/c #f)) . ->* . full-tc-results/c)]))
 
 (define-signature tc-lambda^
-  ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . full-tc-results/c)]
-   [cond-contracted tc/lambda/check (syntax? syntax? syntax? tc-results/c . -> . full-tc-results/c)]
+  ([cond-contracted tc/lambda (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]
    [cond-contracted tc/rec-lambda/check (syntax? syntax? syntax? (listof Type/c) tc-results/c . -> .
                                                  (values full-tc-results/c full-tc-results/c))]))
 
