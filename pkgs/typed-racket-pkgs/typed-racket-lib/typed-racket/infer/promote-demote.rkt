@@ -1,13 +1,13 @@
-#lang racket/unit
+#lang racket/base
 
-(require "../utils/utils.rkt")
-(require (rep type-rep rep-utils)
+(require "../utils/utils.rkt"
+         (rep type-rep rep-utils)
          (types abbrev union utils)
-         "signatures.rkt"
          racket/list racket/match)
 
-(import)
-(export promote-demote^)
+(provide/cond-contract
+  [var-promote (-> Type/c (listof symbol?) Type/c)]
+  [var-demote (-> Type/c (listof symbol?) Type/c)])
 
 (define (V-in? V . ts)
   (for/or ([e (in-list (append* (map fv ts)))])

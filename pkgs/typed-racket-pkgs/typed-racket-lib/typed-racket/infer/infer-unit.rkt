@@ -18,6 +18,7 @@
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
          "signatures.rkt" "fail.rkt"
+         "promote-demote.rkt"
          racket/match
          mzlib/etc
          (contract-req)
@@ -27,7 +28,7 @@
          unstable/sequence unstable/list unstable/hash
          racket/list)
 
-(import dmap^ constraints^ promote-demote^)
+(import dmap^ constraints^)
 (export infer^)
 
 ;; For more data definitions, see "constraint-structs.rkt"
