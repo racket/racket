@@ -195,6 +195,31 @@
                     (and ((flat-contract-predicate (apply (dep-dep-proc subc) args)) val)
                          (loop (cdr subcs) next-args))])])])))))
 
+(define ((struct/dc-generate ctc) fuel)
+  (define constructor (base-struct/dc-constructor ctc))
+  (and constructor
+       (let loop ([subcs (base-struct/dc-subcontracts ctc)]
+                  [gens '()])
+         (cond
+           [(null? subcs)
+            (λ ()
+              (let loop ([gens gens]
+                         [args '()])
+                (cond
+                  [(null? gens) (apply constructor args)]
+                  [else (loop (cdr gens)
+                              (cons ((car gens)) args))])))]
+           [else
+            (define subc (car subcs))
+            (cond
+              [(invariant? subc) #f]
+              [(indep? subc)
+               (define sgen (generate/choose (indep-ctc subc) fuel))
+               (cond
+                 [sgen (loop (cdr subcs) (cons sgen gens))]
+                 [else #f])]
+              [else #f])]))))
+
 (define (struct/dc-first-order ctc)
   (base-struct/dc-pred ctc))
 
@@ -641,7 +666,7 @@
            #:when (invariant? sub))
     sub))
 
-(define-struct base-struct/dc (subcontracts pred struct-name here name-info struct/c?))
+(define-struct base-struct/dc (subcontracts constructor pred struct-name here name-info struct/c?))
 
 (define (struct/dc-exercise stct)
   (λ (fuel)
@@ -662,6 +687,7 @@
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?
+     #:generate struct/dc-generate
      #:exercise struct/dc-exercise)))
 
 (define-struct (flat-struct/dc base-struct/dc) ()
@@ -672,6 +698,7 @@
      #:first-order struct/dc-flat-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?
+     #:generate struct/dc-generate
      #:exercise struct/dc-exercise)))
 
 (define-struct (impersonator-struct/dc base-struct/dc) ()
@@ -682,9 +709,10 @@
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?
+     #:generate struct/dc-generate
      #:exercise struct/dc-exercise)))
 
-(define (build-struct/dc subcontracts pred struct-name here name-info struct/c?)
+(define (build-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)
   (for ([subcontract (in-list subcontracts)])
     (when (and (indep? subcontract)
                (not (mutable? subcontract)))
@@ -709,11 +737,11 @@
   (cond
     [(and (andmap flat-subcontract? subcontracts)
           (not (ormap subcontract-mutable-field? subcontracts)))
-     (make-flat-struct/dc subcontracts pred struct-name here name-info struct/c?)]
+     (make-flat-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)]
     [(ormap impersonator-subcontract? subcontracts)
-     (make-impersonator-struct/dc subcontracts pred struct-name here name-info struct/c?)]
+     (make-impersonator-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)]
     [else
-     (make-struct/dc subcontracts pred struct-name here name-info struct/c?)]))
+     (make-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)]))
    
 
 (define-for-syntax (get-struct-info id stx)
@@ -1190,6 +1218,7 @@
                      (cdr clauses)))])))
   
   #`(build-struct/dc (list #,@structs)
+                     #,(list-ref info 1)
                      #,(list-ref info 2)
                      '#,struct-id
                      (quote-module-name)

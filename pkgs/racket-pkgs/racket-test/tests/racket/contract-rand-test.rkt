@@ -54,6 +54,30 @@
      (or/c (cons/c any/c (cons/c any/c even-length-list/c))
            '())))))
 
+(check-not-exn
+ (λ ()
+   (struct s (a b) #:transparent)
+   (test-contract-generation
+    (struct/dc s [a integer?] [b boolean?]))))
+
+(check-not-exn
+ (λ ()
+   (struct s (a b) #:transparent)
+   (test-contract-generation
+    (struct/c s integer? boolean?))))
+
+(check-not-exn
+ (λ ()
+   (struct node (v l r) #:transparent)
+   (test-contract-generation
+    (flat-rec-contract
+     tree/c
+     (or/c (struct/dc node
+                      [v integer?]
+                      [l tree/c]
+                      [r tree/c])
+           #f)))))
+
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
 (check-not-exn (λ () ((test-contract-generation (-> (-> integer? integer?) boolean?)) +)))
