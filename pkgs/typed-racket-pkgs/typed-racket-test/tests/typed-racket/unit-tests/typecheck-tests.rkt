@@ -2959,6 +2959,16 @@
          #:expected (ret (-polydots (a) (->... (list) (a a) (-values-dots (list) a 'a))))]
 
 
+       [tc-e
+         (tr:lambda xs (tr:lambda (x) (apply values (map (tr:lambda (z) (tr:lambda (y) (symbol? x))) xs))))
+         #:ret
+           (ret (-polydots (a ...)
+                  (->... (list) (a a) (-values (list
+                                        (t:-> Univ (-values-dots (list) (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))
+         #:expected
+           (ret (-polydots (a ...)
+                  (->... (list) (a a) (-values (list
+                                        (t:-> Univ (-values-dots (list) (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))]
         )
   (test-suite
    "tc-literal tests"

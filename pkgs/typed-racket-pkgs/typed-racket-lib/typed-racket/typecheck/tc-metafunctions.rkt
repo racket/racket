@@ -80,7 +80,8 @@
         (-result (abstract-type arg-names keys t)
                  (abstract-filter arg-names keys f)
                  (abstract-object arg-names keys o)))
-      dty dbound)]
+      (abstract-type arg-names keys dty)
+      dbound)]
     [(tc-results: ts fs os)
      (make-Values
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
