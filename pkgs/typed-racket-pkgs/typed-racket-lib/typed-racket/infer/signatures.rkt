@@ -9,10 +9,6 @@
 (define-signature dmap^
   ([cond-contracted dmap-meet (dmap? dmap? . -> . (or/c #f dmap?))]))
 
-(define-signature promote-demote^
-  ([cond-contracted var-promote (Type/c (listof symbol?) . -> . Type/c)]
-   [cond-contracted var-demote  (Type/c (listof symbol?) . -> . Type/c)]))
-
 (define-signature constraints^
   ([cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . (or/c #f cset?))]
    [cond-contracted cset-meet* ((listof cset?) . -> . (or/c #f cset?))]
