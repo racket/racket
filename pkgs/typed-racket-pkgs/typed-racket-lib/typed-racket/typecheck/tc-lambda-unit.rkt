@@ -481,7 +481,7 @@
       constraints
       (extend-and-loop form fresh-ns
                        formals bodies (ret expected*)))]
-    [(or (tc-results: _) (tc-any-results:) #f)
+    [_
      (define lengths
        (for/set ((tvars (in-list tvarss)))
          (match tvars

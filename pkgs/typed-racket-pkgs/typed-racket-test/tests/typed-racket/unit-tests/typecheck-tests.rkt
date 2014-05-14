@@ -2953,6 +2953,10 @@
          (tr:lambda (x #:y [y 3]) x)
          #:ret (ret (->key Univ #:y Univ #f Univ) -true-filter)
          #:expected (ret (->key Univ #:y Univ #f Univ) -no-filter)]
+       [tc-err
+         (lambda xs (plambda: (b) ([x : Any]) 3))
+         #:ret (ret (-polydots (a) (->... (list) (a a) (-values-dots (list) a 'a))))
+         #:expected (ret (-polydots (a) (->... (list) (a a) (-values-dots (list) a 'a))))]
 
 
         )
