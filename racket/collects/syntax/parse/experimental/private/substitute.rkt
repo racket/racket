@@ -177,25 +177,29 @@ An VarRef is one of
                   over ellipsis levels and 'dotsloop' recur over the contents of the pattern
                   variables' (listof^n syntax) values.
 
-                  Also, we reuse env vectors to reduce allocation. For continuation-safety
+                  Also, we reuse lenv vectors to reduce allocation. There is one aux lenv
+                  vector per nesting level, preallocated in aux-lenvs. For continuation-safety
                   we must install a continuation barrier around metafunction applications.
                   |#
-                  (define (nestloop lenv* nesting uptos)
+                  (define (nestloop lenv* nesting uptos aux-lenvs)
                     (cond [(zero? nesting)
                            (fhead env lenv*)]
                           [else
                            (let ([iters (check-lenv/get-iterations stx lenv*)])
-                             (let ([lenv** (make-vector lenv*-len)]
+                             (let ([lenv** (car aux-lenvs)]
+                                   [aux-lenvs** (cdr aux-lenvs)]
                                    [upto** (car uptos)]
                                    [uptos** (cdr uptos)])
                                (let dotsloop ([iters iters])
                                  (if (zero? iters)
                                      null
                                      (begin (vector-car/cdr! lenv** lenv* upto**)
-                                            (let ([row (nestloop lenv** (sub1 nesting) uptos**)])
+                                            (let ([row (nestloop lenv** (sub1 nesting) uptos** aux-lenvs**)])
                                               (cons row (dotsloop (sub1 iters)))))))))]))
                   (define initial-lenv*
                     (vector-map (lambda (index) (get index env lenv)) henv))
+                  (define aux-lenvs
+                    (for/list ([depth (in-range nesting)]) (make-vector lenv*-len)))
 
                   ;; Check initial-lenv* contains lists of right depths.
                   ;; At each nesting depth, indexes [0,upto) of lenv* vary;
@@ -210,7 +214,7 @@ An VarRef is one of
                   (define head-results
                     ;; if ghead-is-hg?, is (listof^(nesting+1) stx) -- extra listof for loop-h
                     ;; otherwise, is (listof^nesting stx)
-                    (nestloop initial-lenv* nesting uptos))
+                    (nestloop initial-lenv* nesting uptos aux-lenvs))
                   (define tail-result (ftail env lenv))
                   (restx stx
                          (nested-append head-results
