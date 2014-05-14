@@ -2969,6 +2969,15 @@
            (ret (-polydots (a ...)
                   (->... (list) (a a) (-values (list
                                         (t:-> Univ (-values-dots (list) (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))]
+
+       [tc-err
+         (inst (eval '3) Any)
+         #:ret (ret -Bottom)]
+       [tc-err
+         (lambda xs (inst (apply values (plambda: (b) ([x : b]) x) xs) Symbol))
+         #:ret (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))
+         #:expected (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))]
+
         )
   (test-suite
    "tc-literal tests"

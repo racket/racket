@@ -42,23 +42,18 @@
 (define (do-inst tc-res inst)
   (define inst-type
     (if (row-syntax? inst) do-row-inst do-normal-inst))
-  (define (error-case tys)
+  (define (error-case number)
     (tc-error/expr
       "Cannot instantiate expression that produces ~a values"
-      (if (null? tys) 0 "multiple")))
+      number))
   (match tc-res
     [(tc-results: tys fs os)
      (match tys
       [(list ty)
        (ret (list (inst-type ty inst)) fs os)]
-      [_
-       (error-case tys)])]
-    [(tc-results: tys fs os dty dbound)
-     (match tys
-      [(list ty)
-       (ret (list (inst-type ty inst)) fs os dty dbound)]
-      [_
-       (error-case tys)])]))
+      [_ (error-case (if (null? tys) 0 "multiple"))])]
+    [_ (error-case "multiple")]))
+
 
 ;; row-syntax? Syntax -> Boolean
 ;; This checks if the syntax object resulted from a row instantiation
