@@ -37,6 +37,7 @@
 (check-not-exn (λ () (test-contract-generation (=/c 0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
+(check-not-exn (λ () (test-contract-generation (cons/c integer? boolean?))))
 (check-not-exn (λ () (test-contract-generation any/c)))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
@@ -44,6 +45,14 @@
 (check-not-exn (λ () (test-contract-generation (non-empty-listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (list/c boolean? number?))))
 (check-not-exn (λ () ((car (test-contract-generation (list/c (-> number? number?)))) 0)))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    (flat-rec-contract
+     even-length-list/c
+     (or/c (cons/c any/c (cons/c any/c even-length-list/c))
+           '())))))
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))

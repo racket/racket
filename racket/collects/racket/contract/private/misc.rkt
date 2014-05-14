@@ -10,8 +10,7 @@
          "generate.rkt"
          "generate-base.rkt")
 
-(provide flat-rec-contract
-         flat-murec-contract
+(provide flat-murec-contract
          and/c
          not/c
          =/c >=/c <=/c </c >/c between/c
@@ -61,29 +60,6 @@
          raise-not-cons-blame-error
          
          random-any/c)
-
-(define-syntax (flat-rec-contract stx)
-  (syntax-case stx  ()
-    [(_ name ctc ...)
-     (identifier? (syntax name))
-     (with-syntax ([(ctc-id ...) (generate-temporaries (syntax (ctc ...)))]
-                   [(pred-id ...) (generate-temporaries (syntax (ctc ...)))])
-       (syntax 
-        (let* ([pred flat-rec-contract/init]
-               [name (flat-contract (let ([name (λ (x) (pred x))]) name))])
-          (let ([ctc-id (coerce-flat-contract 'flat-rec-contract ctc)] ...)
-            (set! pred
-                  (let ([pred-id (flat-contract-predicate ctc-id)] ...)
-                    (λ (x)
-                      (or (pred-id x) ...))))
-            name))))]
-    [(_ name ctc ...)
-     (raise-syntax-error 'flat-rec-contract
-                         "expected first argument to be an identifier"
-                         stx
-                         (syntax name))]))
-
-(define (flat-rec-contract/init x) (error 'flat-rec-contract "applied too soon"))
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -563,19 +539,30 @@
           #:name ctc-name
           #:first-order fo-check
           #:val-first-projection (val-first-ho-check (λ (v a d) v))
-          #:projection (ho-check (λ (v a d) v)))]
+          #:projection (ho-check (λ (v a d) v))
+          #:generate (cons/c-generate ctc-car ctc-cdr))]
         [(and (chaperone-contract? ctc-car) (chaperone-contract? ctc-cdr))
          (make-chaperone-contract
           #:name ctc-name
           #:first-order fo-check
           #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
-          #:projection (ho-check (λ (v a d) (cons a d))))]
+          #:projection (ho-check (λ (v a d) (cons a d)))
+          #:generate (cons/c-generate ctc-car ctc-cdr))]
         [else
          (make-contract
           #:name ctc-name
           #:first-order fo-check
           #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
-          #:projection (ho-check (λ (v a d) (cons a d))))]))))
+          #:projection (ho-check (λ (v a d) (cons a d)))
+          #:generate (cons/c-generate ctc-car ctc-cdr))]))))
+
+(define (cons/c-generate ctc-car ctc-cdr)
+  (λ (fuel)
+    (define car-gen (generate/choose ctc-car fuel))
+    (define cdr-gen (generate/choose ctc-cdr fuel))
+    (and car-gen
+         cdr-gen
+         (λ () (cons (car-gen) (cdr-gen))))))
 
 (define (raise-not-cons-blame-error blame val #:missing-party [missing-party #f])
   (raise-blame-error
@@ -946,13 +933,15 @@
              (oneof (hash-keys predicate-generator-table)))
    fuel))
 (define (any/c-procedure env fuel)
-  (procedure-reduce-arity
-   (λ args
-     (apply
-      values
-      (for/list ([i (in-range (rand-nat))])
-        (random-any/c env fuel))))
-   (rand-nat)))
+  (procedure-rename
+   (procedure-reduce-arity
+    (λ args
+      (apply
+       values
+       (for/list ([i (in-range (rand-nat))])
+         (random-any/c env fuel))))
+    (rand-nat))
+   'random-any/c-generated-procedure))
 
 (define-struct any/c ()
   #:property prop:custom-write custom-write-property-proc

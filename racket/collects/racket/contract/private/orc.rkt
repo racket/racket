@@ -4,14 +4,17 @@
          "guts.rkt"
          "rand.rkt"
          "generate.rkt"
-         "misc.rkt")
+         "misc.rkt"
+         (for-syntax racket/base))
 
 (provide symbols or/c one-of/c
-         blame-add-or-context)
+         blame-add-or-context
+         (rename-out [_flat-rec-contract flat-rec-contract]))
 
 (define/subexpression-pos-prop or/c
   (case-lambda 
     [() (make-none/c '(or/c))]
+    [(x) (coerce-contract 'or/c x)]
     [raw-args
      (define args (coerce-contracts 'or/c raw-args))
      (define-values (ho-contracts flat-contracts)
@@ -431,3 +434,46 @@
      (or (char? x) (symbol? x) (boolean? x)
          (null? x) (keyword? x) (number? x)
          (void? x))))
+
+(define (get-flat-rec-me ctc)
+  (define ans (flat-rec-contract-me ctc))
+  (unless ans (error 'flat-rec-contract "attempted to access the contract too early"))
+  ans)
+
+(struct flat-rec-contract ([me #:mutable] name)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name
+   (λ (ctc) (flat-rec-contract-name ctc))
+   #:stronger
+   (λ (this that) (equal? this that))
+   #:first-order
+   (λ (ctc) 
+     (λ (v)
+       ((contract-first-order (get-flat-rec-me ctc)) v)))
+   #:generate 
+   (λ (ctc) 
+     (λ (fuel)
+       (if (zero? fuel)
+           #f
+           (generate/choose (get-flat-rec-me ctc) (- fuel 1)))))))
+
+(define-syntax (_flat-rec-contract stx)
+  (syntax-case stx  ()
+    [(_ name ctc ...)
+     (identifier? (syntax name))
+     (syntax
+      (let ([name (flat-rec-contract #f 'name)])
+        (set-flat-rec-contract-me!
+         name
+         (or/c (coerce-flat-contract 'flat-rec-contract ctc) 
+               ...))
+        name))]
+    [(_ name ctc ...)
+     (raise-syntax-error 'flat-rec-contract
+                         "expected first argument to be an identifier"
+                         stx
+                         (syntax name))]))
+(define (flat-rec-contract/init x) 
+  (error 'flat-rec-contract "applied too soon"))

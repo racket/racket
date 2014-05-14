@@ -121,7 +121,7 @@
   (test-name '(unconstrained-domain-> number?) (unconstrained-domain-> number?))
 
   (test-name '(or/c) (or/c))
-  (test-name '(or/c '()) (or/c '()))
+  (test-name 'integer? (or/c integer?))
   (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
   (test-name '(or/c integer? boolean?)
              (or/c (flat-contract integer?)
