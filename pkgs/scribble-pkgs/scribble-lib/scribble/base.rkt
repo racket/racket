@@ -243,7 +243,8 @@
 
  [image (->* ((or/c path-string? (cons/c 'collects (listof bytes?))))
              (#:scale real?
-                      #:suffixes (listof (and/c string? #rx"^[.]")))
+                      #:suffixes (listof (and/c string? #rx"^[.]"))
+                      #:style element-style?)
              #:rest (listof content?)
              image-element?)])
 
@@ -315,8 +316,9 @@
 (define (image #:scale [scale 1.0] 
                filename-relative-to-source
                #:suffixes [suffixes null]
+               #:style [style #f]
                . alt)
-  (make-image-element #f
+  (make-image-element style
                       (decode-content alt)
                       filename-relative-to-source
                       suffixes

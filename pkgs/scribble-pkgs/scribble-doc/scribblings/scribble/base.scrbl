@@ -459,8 +459,9 @@ See also @racket[verbatim].}
 @defproc[(image [path (or/c path-string? (cons/c 'collects (listof bytes?)))]
                 [#:scale scale real? 1.0]
                 [#:suffixes suffixes (listof #rx"^[.]") null]
+                [#:style style (or/c style? string? symbol? #f) #f]
                 [pre-content pre-content?] ...)
-         element?]{
+         image-element?]{
 
  Creates an image element from the given path. The @tech{decode}d
  @racket[pre-content] serves as the alternate text for contexts where
@@ -471,6 +472,13 @@ See also @racket[verbatim].}
  the directory of the main document file. Instead of a path or string,
  the @racket[path] argument can be a result of
  @racket[path->main-collects-relative].
+
+ The @racket[scale] argument sets the images scale relative to its
+ default size as determined by the content of @racket[path]. For HTML
+ output, the resulting @racket[image-element] is rendered with an
+ @tt{img} or @tt{object} (for SVG) tag, and @racket[scale] adjusts the
+ @tt{width} and @tt{height} attributes; a class name or other
+ attributes in @racket[style] can effectively override that size.
  
  The strings in @racket[suffixes] are filtered to those supported by
  given renderer, and then the acceptable suffixes are tried in
@@ -480,9 +488,10 @@ See also @racket[verbatim].}
  when converting Latex output to DVI, and @racket[".png"] and
  @racket[".pdf"] work only for converting Latex output to PDF).
  
- Note that when the @racket[suffixes] library is non-empty, then 
+ Note that when the @racket[suffixes] list is non-empty, then
  the @racket[path] argument should not have a suffix.
- }
+
+ @history[#:changed "1.3" @elem{Added the @racket[#:style] argument.}]}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "spacing"]{Spacing}
