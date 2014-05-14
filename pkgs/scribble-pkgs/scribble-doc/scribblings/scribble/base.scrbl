@@ -449,9 +449,9 @@ or similar brackets to disable @litchar["@"] notation within the
 
 which renders as
 
-@verbatim[#:indent 2]|{
+@verbatim[#:indent 2]{
    @literal|{@bold{---}}|
-}|
+}
 
 See also @racket[verbatim].}
 
