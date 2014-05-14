@@ -447,7 +447,14 @@
    #:name
    (λ (ctc) (flat-rec-contract-name ctc))
    #:stronger
-   (λ (this that) (equal? this that))
+   (let ([recur? (make-parameter #t)])
+     (λ (this that) 
+       (cond
+         [(equal? this that) #t]
+         [(recur?) 
+          (parameterize ([recur? #f])
+            (contract-stronger? (get-flat-rec-me this) that))]
+         [else #f])))
    #:first-order
    (λ (ctc) 
      (λ (v)
