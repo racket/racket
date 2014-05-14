@@ -150,6 +150,16 @@ bytecode-file information recorded by the @tech{compiled-load handler}
 for the source namespace's @tech{module registry} is transferred to
 the target namespace's @tech{module registry}.
 
+The default module name resolver also maintains a small,
+@tech{module registry}-specific cache that maps @racket[lib] and symbolic
+module paths to their resolutions. This cache is consulted before
+checking parameters such as @racket[current-library-collection-links]
+and @racket[current-library-collection-paths], so results may
+``stick'' even if those parameter values change. An entry is added to
+the cache only when the fourth argument to the module name resolver is
+true (indicating that a module should be loaded) and only when loading
+succeeds.
+
 Module loading is suppressed (i.e., @racket[#f] is supplied as a fourth
 argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a

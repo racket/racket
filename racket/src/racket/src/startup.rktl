@@ -1349,6 +1349,8 @@
                                                      base))))))
                                  (current-load-relative-directory)
                                  (current-directory)))]
+                  [get-reg (lambda ()
+                             (namespace-module-registry (current-namespace)))]
                   [show-collection-err (lambda (msg)
                                          (let ([msg (string-append
                                                      (or (and stx
@@ -1374,7 +1376,10 @@
                   [ss->rkt (lambda (s)
                              (let ([len (string-length s)])
                                (if (and (len . >= . 3)
-                                        (string=? ".ss" (substring s (- len 3))))
+                                        ;; ".ss"
+                                        (equal? #\. (string-ref s (- len 3)))
+                                        (equal? #\s (string-ref s (- len 2)))
+                                        (equal? #\s (string-ref s (- len 1))))
                                    (string-append (substring s 0 (- len 3)) ".rkt")
                                    s)))]
                   [path-ss->rkt (lambda (p)
@@ -1421,7 +1426,7 @@
                      ;; Non-string result represents an error
                      (cond
                       [(symbol? s)
-                       (or (path-cache-get (cons s (current-library-collection-paths)))
+                       (or (path-cache-get (cons s (get-reg)))
                            (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                              (let* ([f-file (if (null? cols)
                                                 "main.rkt"
@@ -1434,23 +1439,25 @@
                        (let* ([dir (get-dir)])
                          (or (path-cache-get (cons s dir))
                              (let-values ([(cols file) (split-relative-string s #f)])
-                               (apply build-path 
-                                      dir
-                                      (append
-                                       (map (lambda (s)
-                                              (cond
-                                               [(string=? s ".") 'same]
-                                               [(string=? s "..") 'up]
-                                               [else s]))
-                                            cols)
-                                       (list (ss->rkt file)))))))]
+                               (if (null? cols)
+                                   (build-path dir (ss->rkt file))
+                                   (apply build-path 
+                                          dir
+                                          (append
+                                           (map (lambda (s)
+                                                  (cond
+                                                   [(string=? s ".") 'same]
+                                                   [(string=? s "..") 'up]
+                                                   [else s]))
+                                                cols)
+                                           (list (ss->rkt file))))))))]
                       [(path? s) 
                        ;; Use filesystem-sensitive `simplify-path' here:
                        (path-ss->rkt (simplify-path (if (complete-path? s)
                                                         s
                                                         (path->complete-path s (get-dir)))))]
                       [(eq? (car s) 'lib)
-                       (or (path-cache-get (cons s (current-library-collection-paths)))
+                       (or (path-cache-get (cons s (get-reg)))
                            (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
                                          [(old-style?) (if (null? (cddr s))
                                                            (and (null? cols)
@@ -1513,11 +1520,11 @@
                                                (vector-ref s-parsed 4)
                                                (make-resolved-module-path filename))]
                              [hts (or (hash-ref -module-hash-table-table
-                                                (namespace-module-registry (current-namespace))
+                                                (get-reg)
                                                 #f)
                                       (let ([hts (cons (make-hasheq) (make-hasheq))])
                                         (hash-set! -module-hash-table-table
-                                                   (namespace-module-registry (current-namespace))
+                                                   (get-reg)
                                                    hts)
                                         hts))]
                              [modname (if subm-path
@@ -1539,7 +1546,7 @@
                                         -loading-filename
                                         null
                                         tag))]
-                                    [nsr (namespace-module-registry (current-namespace))])
+                                    [nsr (get-reg)])
                                 (for-each
                                  (lambda (s)
                                    (when (and (equal? (cdr s) normal-filename)
@@ -1558,9 +1565,7 @@
                                      (lambda (f) (f))
                                      (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
                                  (lambda ()
-                                   (with-continuation-mark -loading-filename (cons (cons 
-                                                                                    (namespace-module-registry (current-namespace))
-                                                                                    normal-filename)
+                                   (with-continuation-mark -loading-filename (cons (cons nsr normal-filename)
                                                                                    loading)
                                      (parameterize ([current-module-declare-name root-modname]
                                                     [current-module-path-for-load
@@ -1592,13 +1597,14 @@
                                               sym)))))))))))
                         ;; If a `lib' path, cache pathname manipulations
                         (when (and (not (vector? s-parsed))
+                                   load?
                                    (or (string? s)
                                        (symbol? s)
                                        (and (pair? s)
                                             (eq? (car s) 'lib))))
                           (path-cache-set! (if (string? s)
                                                (cons s (get-dir))
-                                               (cons s (current-library-collection-paths)))
+                                               (cons s (get-reg)))
                                            (vector filename
                                                    normal-filename
                                                    name
