@@ -244,9 +244,13 @@
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
          (list (type->sexp t))]
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft pth id)
-                                             (NotTypeFilter: ft pth id))
+                                 (FilterSet: (TypeFilter: ft pth (list 0 0))
+                                             (NotTypeFilter: ft pth (list 0 0)))
                                  (Empty:))))
+         ;; Only print a simple filter for single argument functions,
+         ;; since parse-type only accepts simple latent filters on single
+         ;; argument functions.
+         #:when (= 1 (length dom))
          (if (null? pth)
              `(,(type->sexp t) : ,(type->sexp ft))
              `(,(type->sexp t) : ,(type->sexp ft) @
