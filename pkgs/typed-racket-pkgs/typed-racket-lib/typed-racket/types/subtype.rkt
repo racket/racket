@@ -555,7 +555,9 @@
          ;; subtyping on values is pointwise
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
          [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
-          (subtype* (subtypes* A0 s-rs t-rs) s-dty t-dty)]
+          (subtype-seq A0
+                       (subtypes* s-rs t-rs)
+                       (subtype* s-dty t-dty))]
          [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
           (subtype-seq A0
                        (subtype* t t*)
