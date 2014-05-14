@@ -1088,6 +1088,30 @@
       ((struct/dc s [f any/c] #:inv (f) (equal? f 11)) (s 11)))
    #t)
   
+  (test/spec-passed/result
+   'struct/dc-inv8
+   '(let ()
+      (struct node (v l r))
+      ((struct/dc node
+                  [v any/c]
+                  [l any/c]
+                  [r any/c]
+                  #:inv (l r) #f)
+       (node #f #f #f)))
+   #f)
+  
+  (test/spec-passed/result
+   'struct/dc-inv9
+   '(let ()
+      (struct node (v l r))
+      ((struct/dc node
+                  [v any/c]
+                  [l any/c]
+                  [r any/c]
+                  #:inv (l r) #t)
+       (node #f #f #f)))
+   #t)
+  
   (contract-error-test
    'struct/dc-imp-nondep-runtime-error
    '(let ()

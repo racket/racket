@@ -179,16 +179,21 @@
               (define subc (car subcs))
               (cond
                 [(invariant? subc)
-                 (apply (invariant-dep-proc subc) args)]
+                 (and (apply (invariant-dep-proc subc) args)
+                      (loop (cdr subcs) args))]
                 [else
                  (define val ((subcontract-ref subc) v))
+                 (define next-args 
+                   (if (subcontract-depended-on? subc)
+                       (cons val args)
+                       args))
                  (cond
                    [(indep? subc)
                     (and ((flat-contract-predicate (indep-ctc subc)) val)
-                         (loop (cdr subcs) (cons val args)))]
+                         (loop (cdr subcs) next-args))]
                    [else
                     (and ((flat-contract-predicate (apply (dep-dep-proc subc) args)) val)
-                         (loop (cdr subcs) (cons val args)))])])])))))
+                         (loop (cdr subcs) next-args))])])])))))
 
 (define (struct/dc-first-order ctc)
   (base-struct/dc-pred ctc))
