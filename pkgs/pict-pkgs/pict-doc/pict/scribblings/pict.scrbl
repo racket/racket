@@ -669,7 +669,30 @@ list items that were expected. The @racket[col-aligns] and
 @racket[row-aligns] procedures are used to superimpose all of the
 cells in a column or row; this superimposition determines the total
 width or height of the column or row, and also determines the
-horizontal or vertical placement of each cell in the column or row.}
+horizontal or vertical placement of each cell in the column or row.
+
+@defexamples[#:eval 
+             ss-eval
+             (table 4
+                    (map (λ (x) (text (format "~a" x)))
+                         (list 1 2 3 4
+                               5 6 7 8
+                               9000 10 11 12))
+                    cc-superimpose
+                    cc-superimpose
+                    10
+                    10)
+             
+             (table 4
+                    (map (λ (x) (text (format "~a" x)))
+                         (list 1 2 3 4
+                               5 6 7 8
+                               9000 10 11 12))
+                    rc-superimpose
+                    cc-superimpose
+                    10
+                    10)]
+}
 
 @; ------------------------------------------------------------------------
 
