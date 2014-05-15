@@ -21,66 +21,39 @@
     [(Values: (list (Result: _ lf _) ...)) lf]
     [(ValuesDots: (list (Result: _ lf _) ...) _ _) lf]))
 
-(define (var-promote T V)
-  (define (vp t) (var-promote t V))
-  (define (inv t) (if (V-in? V t) Univ t))
-  (type-case (#:Type vp #:Filter (sub-f vp)) T
-             [#:F name (if (memq name V) Univ T)]
+(define-values (var-promote var-demote)
+  (let ()
+    (define (var-change V T change)
+      (define (co t) (var-change V t change))
+      (define (contra t) (var-change V t (not change)))
+      (define (inv t)
+        (if (V-in? V t)
+            (if change Univ -Bottom)
+            t))
+      (type-case (#:Type co #:Filter (sub-f co)) T
+             [#:F name (if (memq name V) (if change Univ -Bottom) T)]
              [#:Vector t (make-Vector (inv t))]
              [#:Box t (make-Box (inv t))]
              [#:Channel t (make-Channel (inv t))]
              [#:ThreadCell t (make-ThreadCell (inv t))]
              [#:Hashtable k v (make-Hashtable (inv k) (inv v))]
-             [#:Param in out
-                      (make-Param (var-demote in V)
-                                  (vp out))]
+             [#:Param in out (make-Param (contra in) (co out))]
              [#:arr dom rng rest drest kws
                     (cond
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
                       [(and drest (memq (cdr drest) V))
-                       (make-arr (for/list ([d (in-list dom)]) (var-demote d V))
-                                 (vp rng)
-                                 (var-demote (car drest) V)
+                       (make-arr (map contra dom)
+                                 (co rng)
+                                 (contra (car drest))
                                  #f
-                                 (for/list ([k (in-list kws)]) (var-demote k V)))]
+                                 (map contra kws))]
                       [else
-                       (make-arr (for/list ([d (in-list dom)]) (var-demote d V))
-                                 (vp rng)
-                                 (and rest (var-demote rest V))
-                                 (and drest
-                                      (cons (var-demote (car drest) V)
-                                            (cdr drest)))
-                                 (for/list ([k (in-list kws)]) (var-demote k V)))])]))
-
-(define (var-demote T V)
-  (define (vd t) (var-demote t V))
-  (define (inv t) (if (V-in? V t) (Un) t))
-  (type-case (#:Type vd #:Filter (sub-f vd)) T
-             [#:F name (if (memq name V) (Un) T)]
-             [#:Vector t (make-Vector (inv t))]
-             [#:Box t (make-Box (inv t))]
-             [#:Channel t (make-Channel (inv t))]
-             [#:ThreadCell t (make-ThreadCell (inv t))]
-             [#:Hashtable k v (make-Hashtable (inv k) (inv v))]
-             [#:Param in out
-                      (make-Param (var-promote in V)
-                                  (vd out))]
-             [#:arr dom rng rest drest kws
-                    (cond
-                      [(apply V-in? V (get-filters rng))
-                       (make-top-arr)]
-                      [(and drest (memq (cdr drest) V))
-                       (make-arr (for/list ([d (in-list dom)]) (var-promote d V))
-                                 (vd rng)
-                                 (var-promote (car drest) V)
-                                 #f
-                                 (for/list ([k (in-list kws)]) (var-promote k V)))]
-                      [else
-                       (make-arr (for/list ([d (in-list dom)]) (var-promote d V))
-                                 (vd rng)
-                                 (and rest (var-promote rest V))
-                                 (and drest
-                                      (cons (var-promote (car drest) V)
-                                            (cdr drest)))
-                                 (for/list ([k (in-list kws)]) (var-promote k V)))])]))
+                       (make-arr (map contra dom)
+                                 (co rng)
+                                 (and rest (contra rest))
+                                 (and drest (cons (contra (car drest)) (cdr drest)))
+                                 (map contra kws))])]))
+    (values
+      (lambda (T V) (var-change V T #t))
+      (lambda (T V) (var-change V T #f)))))
