@@ -127,6 +127,20 @@
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
       (,test #t contract-stronger? x (or/c (cons/c x '()) '()))))
+  
+  (ctest #t contract-stronger? "x" string?)
+  (ctest #f contract-stronger? string? "x")
+
+  (ctest #t contract-stronger? 1 real?)
+  (ctest #f contract-stronger? real? 1)
+
+  (ctest #t contract-stronger? 'x symbol?)
+  (ctest #f contract-stronger? symbol? 'x)
+  
+  ;; chances are, this predicate will accept "x", but
+  ;; we don't want to consider it stronger, since it 
+  ;; will not always accept "x".
+  (ctest #f contract-stronger? "x" (λ (x) (not (zero? (random 10000)))))
 
   (contract-eval
    `(let ()

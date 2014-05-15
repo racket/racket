@@ -1447,9 +1447,9 @@
   (cond
     [(and (procedure? predicate)
           (procedure-arity-includes? predicate 1))
-     (make-predicate-contract name predicate generate)]
+     (make-predicate-contract name predicate generate #f)]
     [(flat-contract? predicate)
-     (make-predicate-contract name (flat-contract-predicate predicate) generate)]
+     (make-predicate-contract name (flat-contract-predicate predicate) generate #f)]
     [else
      (raise-argument-error 'flat-named-contract
                            (format "~s" `(or/c flat-contract?
