@@ -503,60 +503,46 @@
 (define (blame-add-car-context blame) (blame-add-context blame "the car of"))
 (define (blame-add-cdr-context blame) (blame-add-context blame "the cdr of"))
 
-(define cons/c-main-function
-  (λ (car-c cdr-c)
-    (let* ([ctc-car (coerce-contract 'cons/c car-c)]
-           [ctc-cdr (coerce-contract 'cons/c cdr-c)]
-           [ctc-name (build-compound-type-name 'cons/c ctc-car ctc-cdr)]
-           [car-proj (contract-projection ctc-car)]
-           [cdr-proj (contract-projection ctc-cdr)])
-      (define (fo-check v)
-        (and (pair? v)
-             (contract-first-order-passes? ctc-car (car v))
-             (contract-first-order-passes? ctc-cdr (cdr v))))
-      (define ((ho-check combine) blame)
-        (let ([car-p (car-proj (blame-add-car-context blame))]
-              [cdr-p (cdr-proj (blame-add-cdr-context blame))])
-          (λ (v)
-            (unless (pair? v)
-              (raise-not-cons-blame-error blame v))
-            (combine v (car-p (car v)) (cdr-p (cdr v))))))
-      (define car-val-first-proj (get/build-val-first-projection ctc-car))
-      (define cdr-val-first-proj (get/build-val-first-projection ctc-cdr))
-      (define ((val-first-ho-check combine) blame)
-        (define car-p (car-val-first-proj (blame-add-car-context blame)))
-        (define cdr-p (cdr-val-first-proj (blame-add-cdr-context blame)))
-        (λ (v)
-          (λ (neg-party)
-            (unless (pair? v)
-              (raise-not-cons-blame-error blame #:missing-party neg-party v))
-            (combine v 
-                     ((car-p (car v)) neg-party)
-                     ((cdr-p (cdr v)) neg-party)))))
-      (cond
-        [(and (flat-contract? ctc-car) (flat-contract? ctc-cdr))
-         (make-flat-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:val-first-projection (val-first-ho-check (λ (v a d) v))
-          #:projection (ho-check (λ (v a d) v))
-          #:generate (cons/c-generate ctc-car ctc-cdr))]
-        [(and (chaperone-contract? ctc-car) (chaperone-contract? ctc-cdr))
-         (make-chaperone-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
-          #:projection (ho-check (λ (v a d) (cons a d)))
-          #:generate (cons/c-generate ctc-car ctc-cdr))]
-        [else
-         (make-contract
-          #:name ctc-name
-          #:first-order fo-check
-          #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
-          #:projection (ho-check (λ (v a d) (cons a d)))
-          #:generate (cons/c-generate ctc-car ctc-cdr))]))))
 
-(define (cons/c-generate ctc-car ctc-cdr)
+(define ((val-first-ho-check combine) ctc)
+  (define ctc-car (the-cons/c-hd-ctc ctc))
+  (define ctc-cdr (the-cons/c-tl-ctc ctc))
+  (define car-val-first-proj (get/build-val-first-projection ctc-car))
+  (define cdr-val-first-proj (get/build-val-first-projection ctc-cdr))
+  (λ (blame)
+    (define car-p (car-val-first-proj (blame-add-car-context blame)))
+    (define cdr-p (cdr-val-first-proj (blame-add-cdr-context blame)))
+    (λ (v)
+      (λ (neg-party)
+        (unless (pair? v)
+          (raise-not-cons-blame-error blame #:missing-party neg-party v))
+        (combine v 
+                 ((car-p (car v)) neg-party)
+                 ((cdr-p (cdr v)) neg-party))))))
+
+(define (cons/c-first-order ctc)
+  (define ctc-car (the-cons/c-hd-ctc ctc))
+  (define ctc-cdr (the-cons/c-tl-ctc ctc))
+  (λ (v)
+    (and (pair? v)
+         (contract-first-order-passes? ctc-car (car v))
+         (contract-first-order-passes? ctc-cdr (cdr v)))))
+
+(define (cons/c-name ctc)
+  (define ctc-car (the-cons/c-hd-ctc ctc))
+  (define ctc-cdr (the-cons/c-tl-ctc ctc))
+  (build-compound-type-name 'cons/c ctc-car ctc-cdr))
+
+(define (cons/c-stronger? this that) 
+  (and (the-cons/c? that)
+       (contract-stronger? (the-cons/c-hd-ctc this)
+                           (the-cons/c-hd-ctc that))
+       (contract-stronger? (the-cons/c-tl-ctc this)
+                           (the-cons/c-tl-ctc that))))
+
+(define (cons/c-generate ctc)
+  (define ctc-car (the-cons/c-hd-ctc ctc))
+  (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (λ (fuel)
     (define car-gen (generate/choose ctc-car fuel))
     (define cdr-gen (generate/choose ctc-cdr fuel))
@@ -564,14 +550,53 @@
          cdr-gen
          (λ () (cons (car-gen) (cdr-gen))))))
 
+(define-struct the-cons/c (hd-ctc tl-ctc))
+(define-struct (flat-cons/c the-cons/c) ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:val-first-projection (val-first-ho-check (λ (v a d) v))
+   #:name cons/c-name
+   #:first-order cons/c-first-order
+   #:stronger cons/c-stronger?
+   #:generate cons/c-generate))
+(define-struct (chaperone-cons/c the-cons/c) ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
+     #:name cons/c-name
+     #:first-order cons/c-first-order
+     #:stronger cons/c-stronger?
+     #:generate cons/c-generate)))
+(define-struct (impersonator-cons/c the-cons/c) ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
+   #:name cons/c-name
+   #:first-order cons/c-first-order
+   #:stronger cons/c-stronger?
+   #:generate cons/c-generate))
+
+(define/subexpression-pos-prop (cons/c a b)
+  (define ctc-car (coerce-contract 'cons/c a))
+  (define ctc-cdr (coerce-contract 'cons/c b))
+  (cond
+    [(and (flat-contract? ctc-car) (flat-contract? ctc-cdr))
+     (flat-cons/c ctc-car ctc-cdr)]
+    [(and (chaperone-contract? ctc-car) (chaperone-contract? ctc-cdr))
+     (chaperone-cons/c ctc-car ctc-cdr)]
+    [else
+     (impersonator-cons/c ctc-car ctc-cdr)]))
+
 (define (raise-not-cons-blame-error blame val #:missing-party [missing-party #f])
   (raise-blame-error
    blame
    val #:missing-party missing-party
    '(expected: "pair?" given: "~e")
    val))
-
-(define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
 
 (define/subexpression-pos-prop (list/c . args)
   (define ctc-args (coerce-contracts 'list/c args))

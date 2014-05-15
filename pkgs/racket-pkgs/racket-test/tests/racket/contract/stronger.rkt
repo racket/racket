@@ -119,6 +119,14 @@
   (ctest #f contract-stronger?
         (or/c (-> string?) (-> integer? integer?) integer?)
         (or/c (-> integer? integer?) integer?))
+  
+  (ctest #t contract-stronger? (cons/c boolean? integer?) (cons/c boolean? integer?))
+  (ctest #f contract-stronger? (cons/c boolean? integer?) (cons/c integer? boolean?))
+  
+  (contract-eval
+   `(let ()
+      (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
+      (,test #t contract-stronger? x (or/c (cons/c x '()) '()))))
 
   (contract-eval
    `(let ()
