@@ -18,6 +18,7 @@
    "Stephen Bloch, "
    "Matthew Butterick, "
    "Filipe Cabecinhas, "
+   "Stephen Chang, "
    "Richard Cleis, "
    "John Clements, "
    "Richard Cobbe, "
