@@ -6,7 +6,7 @@
   (for-syntax racket/base syntax/parse)
   syntax/location syntax/srcloc
   (rep type-rep)
-  (r:infer infer)
+  (r:infer infer promote-demote)
 
   (types union substitute numeric-tower utils abbrev))
 
@@ -80,6 +80,19 @@
 (define N -Number)
 (define B -Boolean)
 
+(define-syntax (pd-t stx)
+  (syntax-parse stx
+    ([_ S:expr (vars:id ...) D:expr P:expr]
+     (quasisyntax/loc stx
+       (test-case (format "~a => ~a < ~a < ~a" '(vars ...) 'D 'S 'P)
+         (define S-v S)
+         (define promoted (var-promote S-v '(vars ...)))
+         (define demoted (var-demote S-v '(vars ...)))
+         #,(syntax/loc stx
+             (check-equal? promoted P "Promoted value doesn't match expected."))
+         #,(syntax/loc stx
+             (check-equal? demoted D "Demoted value doesn't match expected.")))))))
+
 
 (define fv-tests
   (test-suite "Tests for fv"
@@ -94,6 +107,53 @@
 
               [fv-t (->* null (-v a) -Number) a] ;; check that a is CONTRAVARIANT
               ))
+
+(define pd-tests
+  (test-suite "Tests for var-promote/var-demote"
+    (pd-t Univ () Univ Univ)
+    (pd-t (-v a) () (-v a) (-v a))
+    (pd-t (-v a) (a) -Bottom Univ)
+    (pd-t (-v a) (b) (-v a) (-v a))
+
+    (pd-t (-vec (-v a)) (a) (-vec -Bottom) (-vec Univ))
+    (pd-t (-vec (-lst (-v a))) (a) (-vec -Bottom) (-vec Univ))
+    (pd-t (-vec (-v a)) (b) (-vec (-v a)) (-vec (-v a)))
+
+    (pd-t (-box (-v a)) (a) (-box -Bottom) (-box Univ))
+    (pd-t (-box (-lst (-v a))) (a) (-box -Bottom) (-box Univ))
+    (pd-t (-box (-v a)) (b) (-box (-v a)) (-box (-v a)))
+
+    (pd-t (-channel (-v a)) (a) (-channel -Bottom) (-channel Univ))
+    (pd-t (-channel (-lst (-v a))) (a) (-channel -Bottom) (-channel Univ))
+    (pd-t (-channel (-v a)) (b) (-channel (-v a)) (-channel (-v a)))
+
+    (pd-t (-thread-cell (-v a)) (a) (-thread-cell -Bottom) (-thread-cell Univ))
+    (pd-t (-thread-cell (-lst (-v a))) (a) (-thread-cell -Bottom) (-thread-cell Univ))
+    (pd-t (-thread-cell (-v a)) (b) (-thread-cell (-v a)) (-thread-cell (-v a)))
+
+    (pd-t (-HT (-v a) (-v a)) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
+    (pd-t (-HT (-lst (-v a)) (-lst (-v a))) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
+    (pd-t (-HT (-v a) (-v a)) (b) (-HT (-v a) (-v a)) (-HT (-v a) (-v a)))
+
+    (pd-t (-Param (-v a) (-v b)) (a b) (-Param Univ -Bottom) (-Param -Bottom Univ))
+    (pd-t (-Param (-lst (-v a)) (-lst (-v b))) (a b)
+          (-Param (-lst Univ) (-lst -Bottom))
+          (-Param (-lst -Bottom) (-lst Univ)))
+
+    (pd-t (->* (list (-lst (-v a))) (-lst (-v a)) (-lst (-v a))) (a)
+          (->* (list (-lst Univ)) (-lst Univ) (-lst -Bottom))
+          (->* (list (-lst -Bottom)) (-lst -Bottom) (-lst Univ)))
+
+    (pd-t (->key #:a (-lst (-v a)) #t #:b (-lst (-v a)) #f -Symbol) (a)
+          (->key #:a (-lst Univ) #t #:b (-lst Univ) #f -Symbol)
+          (->key #:a (-lst -Bottom) #t #:b (-lst -Bottom) #f -Symbol))
+
+    (pd-t (->... (list) ((-lst (-v a)) b) -Symbol) (a)
+          (->... (list) ((-lst Univ) b) -Symbol)
+          (->... (list) ((-lst -Bottom) b) -Symbol))
+
+
+    ))
 
 (define infer-tests
   (test-suite "Tests for infer"
@@ -192,5 +252,6 @@
 
 (define tests
   (test-suite "All inference tests"
+    pd-tests
     fv-tests
     infer-tests))

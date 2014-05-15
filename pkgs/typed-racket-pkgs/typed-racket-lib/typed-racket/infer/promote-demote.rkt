@@ -30,10 +30,7 @@
              [#:Box t (make-Box (inv t))]
              [#:Channel t (make-Channel (inv t))]
              [#:ThreadCell t (make-ThreadCell (inv t))]
-             [#:Hashtable k v
-                          (if (V-in? V v)
-                              Univ
-                              (make-Hashtable (vp k) v))]
+             [#:Hashtable k v (make-Hashtable (inv k) (inv v))]
              [#:Param in out
                       (make-Param (var-demote in V)
                                   (vp out))]
@@ -65,10 +62,7 @@
              [#:Box t (make-Box (inv t))]
              [#:Channel t (make-Channel (inv t))]
              [#:ThreadCell t (make-ThreadCell (inv t))]
-             [#:Hashtable k v
-                          (if (V-in? V v)
-                              (Un)
-                              (make-Hashtable (vd k) v))]
+             [#:Hashtable k v (make-Hashtable (inv k) (inv v))]
              [#:Param in out
                       (make-Param (var-promote in V)
                                   (vd out))]
@@ -81,7 +75,7 @@
                                  (vd rng)
                                  (var-promote (car drest) V)
                                  #f
-                                 (for/list ([k (in-list kws)]) (var-demote k V)))]
+                                 (for/list ([k (in-list kws)]) (var-promote k V)))]
                       [else
                        (make-arr (for/list ([d (in-list dom)]) (var-promote d V))
                                  (vd rng)
@@ -89,4 +83,4 @@
                                  (and drest
                                       (cons (var-promote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k (in-list kws)]) (var-demote k V)))])]))
+                                 (for/list ([k (in-list kws)]) (var-promote k V)))])]))
