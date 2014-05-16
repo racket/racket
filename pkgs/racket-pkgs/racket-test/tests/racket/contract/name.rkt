@@ -84,29 +84,47 @@
 
   (test-name '(->i () any) (->i () () any))
   (test-name '(->i () any) (->i () any))
-  (test-name '(->i () [x () ...])
+  (test-name '(->i () [x () number?])
               (->i () () [x () number?]))
   (test-name '(->i () [q number?])
               (->i () () [q number?]))
   (test-name '(->i () (values [x number?] [y number?]))
               (->i () (values [x number?] [y number?])))
-  (test-name '(->i () (values [x (y) ...] [y number?]))
+  (test-name '(->i () (values [x (y) number?] [y number?]))
               (->i () (values [x (y) number?] [y number?])))
   (test-name '(->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any)
               (->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any))
-  (test-name '(->i () #:pre () ... [q number?])
-              (->i () #:pre () #t  [q number?]))
-  (test-name '(->i () #:pre () ... [q () ...] #:post () ...)
-              (->i () #:pre () #t  [q () number?] #:post () #t))
-  (test-name '(->i ([x integer?]) #:pre (x) ... [q (x) ...]     #:post (x) ...)
-              (->i ([x integer?]) #:pre (x) #t  [q (x) number?] #:post (x) #t))
-  (test-name '(->i ([x real?]) [_ (x) ...])
+  (test-name '(->i () #:pre () #t [q number?])
+              (->i () #:pre () #t [q number?]))
+  (test-name '(->i () #:pre () #t [q () number?] #:post () #t)
+              (->i () #:pre () #t [q () number?] #:post () #t))
+  (test-name '(->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t)
+              (->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t))
+  (test-name '(->i ([x real?]) [_ (x) (>/c x)])
               (->i ([x real?]) [_ (x) (>/c x)]))
-  (test-name '(->i ([x any/c]) #:pre/name (x) "pair" ... #:pre/name (x) "car" ... any)
+  (test-name '(->i ([x any/c]) #:pre/name (x) "pair" (pair? x) #:pre/name (x) "car" (car x) any)
               (->i ([x any/c]) #:pre/name (x) "pair" (pair? x) #:pre/name (x) "car" (car x) any))
-  (test-name '(->i ([x any/c]) [y () ...] #:post/name (y) "pair" ... #:post/name (y) "car" ...)
+  (test-name '(->i ([x any/c]) [y () any/c] #:post/name (y) "pair" (pair? y)
+                   #:post/name (y) "car" (car y))
               (->i ([x any/c]) [y () any/c] #:post/name (y) "pair" (pair? y)
                    #:post/name (y) "car" (car y)))
+  (test-name '(->i ([p any/c]
+                    [q (p) (if (equal? p 10) 'aha any/c)])
+                   #:rest [rest (p) (if (equal? p 11) 'aha any/c)]
+                   #:pre (q) (if (equal? q 12) 'aha any/c)
+                   [res (p) (if (equal? p 13) 'aha any/c)]
+                   #:post (q) (if (equal? q 14) 'aha any/c))
+             (->i ([p any/c]
+                   [q (p) (if (equal? p 10) 'aha any/c)])
+                  #:rest [rest (p) (if (equal? p 11) 'aha any/c)]
+                  #:pre (q) (if (equal? q 12) 'aha any/c)
+                  [res (p) (if (equal? p 13) 'aha any/c)]
+                  #:post (q) (if (equal? q 14) 'aha any/c)))
+  (test-name '(->i ((p any/c) (q (p) (void (((((...))))) 2 3 ...))) any)
+             (->i ([p any/c]
+                   [q (p) (void (((((1))))) 2 3 4 5 6 7 8 9 10)])
+                  any))
+  
 
   (test-name '(case->) (case->))
   (test-name '(case-> (-> integer? any) (-> boolean? boolean? any) (-> char? char? char? any))

@@ -32,7 +32,8 @@ code does the parsing and validation of the syntax.
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))  -- #f if non-dep
 ;; ctc  : syntax[expr]
-(struct arg/res (var vars ctc) #:transparent)
+;; quoted-dep-src-code : sexp -- only useful if vars is not #f
+(struct arg/res (var vars ctc quoted-dep-src-code) #:transparent)
 
 ;; kwd  : (or/c #f syntax[kwd])
 ;; optional? : boolean?
@@ -49,7 +50,7 @@ code does the parsing and validation of the syntax.
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
 ;; str  : (or/c #f syntax[expr])
-(struct pre/post (vars str exp) #:transparent)
+(struct pre/post (vars str exp quoted-dep-src-code) #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -238,6 +239,39 @@ code does the parsing and validation of the syntax.
                   (list fst)
                   (cons fst (loop (cdr vars)))))])))
 
+(define (compute-quoted-src-expression stx)
+  (define max-depth 4)
+  (define max-width 5)
+  (let loop ([stx stx]
+             [depth max-depth])
+    (cond
+      [(zero? depth) '...]
+      [else
+       (define lst (syntax->list stx))
+       (cond
+         [lst 
+          (if (<= (length lst) max-width)
+              (for/list ([ele (in-list lst)])
+                (loop ele (- depth 1)))
+              (append (for/list ([ele (in-list lst)]
+                                 [i (in-range (- max-width 1))])
+                        (loop ele (+ depth 1)))
+                      '(...)))]
+         [else
+          (define ele (syntax-e stx))
+          (cond
+            [(or (symbol? ele)
+                 (boolean? ele)
+                 (char? ele)
+                 (number? ele))
+             ele]
+            [(string? ele)
+             (if (< (string-length ele) max-width)
+                 ele
+                 '...)]
+            [else
+             '...])])])))
+
 (define (parse-doms stx optional? doms)
   (let loop ([doms doms])
     (syntax-case doms ()
@@ -245,30 +279,34 @@ code does the parsing and validation of the syntax.
        (keyword? (syntax-e #'kwd))
        (begin
          (check-id stx #'id)
-         (cons (arg #'id #f #'ctc-expr #'kwd optional?)
+         (cons (arg #'id #f #'ctc-expr #f #'kwd optional?)
                (loop #'rest)))]
       [(kwd [id (id2 ...) ctc-expr] . rest)
        (keyword? (syntax-e #'kwd))
        (begin
          (check-id stx #'id)
          (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr #'kwd optional?)
+         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr
+                    (compute-quoted-src-expression #'ctc-expr)
+                    #'kwd optional?)
                (loop #'rest)))]
       [([id ctc-expr] . rest)
        (begin
          (check-id stx #'id)
-         (cons (arg #'id #f #'ctc-expr #f optional?)
+         (cons (arg #'id #f #'ctc-expr #f #f optional?)
                (loop #'rest)))]
       [([id (id2 ...) ctc-expr] . rest)
        (begin
          (check-id stx #'id)
          (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr #f optional?)
+         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr
+                    (compute-quoted-src-expression #'ctc-expr)
+                    #f optional?)
                (loop #'rest)))]
       [() '()]
       [(a . rest)
        (raise-syntax-error #f "expected an argument specification" stx #'a)])))
-
+  
 (define (parse-range stx range)
   (syntax-case range (any values _)
     [(values ctc-pr ...)
@@ -277,20 +315,22 @@ code does the parsing and validation of the syntax.
                     (begin
                       (check-id stx #'id)
                       (if (free-identifier=? #'_ #'id) 
-                          (eres #'id #f #'ctc (car (generate-temporaries '(eres))))
-                          (lres #'id #f #'ctc)))]
+                          (eres #'id #f #'ctc (car (generate-temporaries '(eres))) #f)
+                          (lres #'id #f #'ctc #f)))]
                    [[id (id2 ...) ctc]
                     (begin
                       (check-id stx #'id)
                       (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
                       (if (free-identifier=? #'_ #'id) 
                           (eres #'id (syntax->list #'(id2 ...)) #'ctc
+                                (compute-quoted-src-expression #'ctc)
                                 (car (generate-temporaries '(eres))))
-                          (lres #'id (syntax->list #'(id2 ...)) #'ctc)))]
+                          (lres #'id (syntax->list #'(id2 ...)) #'ctc
+                                (compute-quoted-src-expression #'ctc))))]
                    [(a ...)
                     (let ([len (length (syntax->list #'(a ...)))])
                       (unless (or (= 2 len) (= 3 len))
-                        (raise-syntax-error 
+                        (raise-syntax-error
                          #f
                          "wrong number of pieces in range portion of the contract, expected id+ctc"
                          stx #'x))
@@ -300,20 +340,23 @@ code does the parsing and validation of the syntax.
           (syntax->list #'(ctc-pr ...)))]
     [any #f]
     [[_ ctc]
-     (list (eres #'_ #f #'ctc (car (generate-temporaries '(eres)))))]
+     (list (eres #'_ #f #'ctc #f (car (generate-temporaries '(eres)))))]
     [[id ctc]
      (begin
        (check-id stx #'id)
-       (list (lres #'id #f #'ctc)))]
+       (list (lres #'id #f #'ctc #f)))]
     [[_ (id2 ...) ctc] 
      (begin
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-       (list (eres #'_ (syntax->list #'(id2 ...)) #'ctc (car (generate-temporaries '(eres))))))]
+       (list (eres #'_ (syntax->list #'(id2 ...)) #'ctc 
+                   (compute-quoted-src-expression #'ctc)
+                   (car (generate-temporaries '(eres))))))]
     [[id (id2 ...) ctc] 
      (begin
        (check-id stx #'id)
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-       (list (lres #'id (syntax->list #'(id2 ...)) #'ctc)))]
+       (list (lres #'id (syntax->list #'(id2 ...)) #'ctc
+                   (compute-quoted-src-expression #'ctc))))]
     [x (raise-syntax-error #f "expected the range portion" stx #'x)]))
 
 (define (check-id stx id)
@@ -353,7 +396,7 @@ code does the parsing and validation of the syntax.
                    [(#:rest [id rest-expr] . leftover)
                     (begin
                       (check-id stx #'id)
-                      (values (arg/res #'id #f #'rest-expr)
+                      (values (arg/res #'id #f #'rest-expr #f)
                               #'leftover))]
                    [(#:rest [id (id2 ...) rest-expr] . leftover)
                     (begin
@@ -362,7 +405,8 @@ code does the parsing and validation of the syntax.
                                 (syntax->list #'(id2 ...)))
                       (values (arg/res #'id 
                                        (syntax->list #'(id2 ...))
-                                       #'rest-expr)
+                                       #'rest-expr
+                                       (compute-quoted-src-expression #'rest-expr))
                               #'leftover))]
                    [(#:rest other . leftover)
                     (raise-syntax-error #f "expected an id+ctc"
@@ -393,7 +437,9 @@ code does the parsing and validation of the syntax.
                           [x (void)])
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (loop #'pre-leftover 
-                              (cons (pre/post (syntax->list #'(id ...)) #f #'pre-cond) conditions)))]
+                              (cons (pre/post (syntax->list #'(id ...)) #f #'pre-cond
+                                              (compute-quoted-src-expression #'pre-cond))
+                                    conditions)))]
                      [(#:pre . rest)
                       (raise-syntax-error
                        #f
@@ -420,7 +466,8 @@ code does the parsing and validation of the syntax.
                            stx
                            #'str))
                         (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'pre-cond)
+                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'pre-cond
+                                              (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(#:pre/name . rest)
                       (raise-syntax-error
@@ -453,7 +500,9 @@ code does the parsing and validation of the syntax.
                                 #f "cannot have a #:post with any as the range" stx #'post-cond)]
                           [_ (void)])
                         (loop #'leftover
-                              (cons (pre/post (syntax->list #'(id ...)) #f #'post-cond) post-conds)))]
+                              (cons (pre/post (syntax->list #'(id ...)) #f #'post-cond
+                                              (compute-quoted-src-expression #'post-cond))
+                                    post-conds)))]
                      [(#:post a b . stuff)
                       (begin
                         (raise-syntax-error
@@ -479,7 +528,8 @@ code does the parsing and validation of the syntax.
                            stx
                            #'str))
                         (loop #'leftover
-                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond)
+                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond
+                                              (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
                      [(#:post/name . stuff)
                       (begin
