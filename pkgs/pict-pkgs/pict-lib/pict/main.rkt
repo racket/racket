@@ -7,8 +7,15 @@
  (except-out (all-from-out "private/main.rkt")
              pict->bitmap
              pict->argb-pixels
-             argb-pixels->pict)
- (contract-out 
+             argb-pixels->pict
+             colorize)
+ (contract-out
+  [colorize (-> pict? 
+                (or/c string? 
+                      (is-a?/c color%)
+                      (list/c byte? byte? byte?))
+                pict?)]
+                
   [pict->bitmap (->* (pict?)
                      ((or/c 'unsmoothed 'smoothed 'aligned))
                      (is-a?/c bitmap%))]
