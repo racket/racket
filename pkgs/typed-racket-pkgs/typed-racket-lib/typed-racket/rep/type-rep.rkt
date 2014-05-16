@@ -31,7 +31,7 @@
          free-vars*
          type-compare type<?
          remove-dups
-         sub-f sub-o sub-pe
+         sub-t sub-f sub-o sub-pe
          (rename-out [Class:* Class:]
                      [Class* make-Class]
                      [Row* make-Row]
@@ -617,6 +617,12 @@
   (pathelem-case (#:Type st
                          #:PathElem (sub-pe st))
                  e))
+
+(define ((sub-t st) e)
+  (type-case (#:Type st
+              #:Filter (sub-f st))
+              e))
+
 
 ;; abstract-many : Names Type -> Scope^n
 ;; where n is the length of names
