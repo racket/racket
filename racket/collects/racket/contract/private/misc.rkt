@@ -631,6 +631,9 @@
       [else
        #f])))
 
+(define (list/c-exercise ctc)
+  (multi-exercise (generic-list/c-args ctc)))
+
 (struct generic-list/c (args))
 
 (struct flat-list/c generic-list/c ()
@@ -640,6 +643,7 @@
    #:name list/c-name-proc
    #:first-order list/c-first-order
    #:generate list/c-generate
+   #:exercise list/c-exercise
    #:val-first-projection
    (λ (c) 
      (λ (blame) 
@@ -778,6 +782,7 @@
      #:name list/c-name-proc
      #:first-order list/c-first-order
      #:generate list/c-generate
+     #:exercise list/c-exercise
      #:projection list/c-chaperone/other-projection
      #:val-first-projection list/c-chaperone/other-val-first-projection)))
 
@@ -788,6 +793,7 @@
    #:name list/c-name-proc
    #:first-order list/c-first-order
    #:generate list/c-generate
+   #:exercise list/c-exercise
    #:projection list/c-chaperone/other-projection
    #:val-first-projection list/c-chaperone/other-val-first-projection))
 

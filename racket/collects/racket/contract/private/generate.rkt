@@ -16,16 +16,75 @@
          generate-ctc-fail?
          with-definitely-available-contracts
          can-generate/env?
-         try/env)
+         try/env
+         multi-exercise)
 
-(define (contract-exercise v [fuel 10])
-  (define ctc (value-contract v))
-  (when ctc
-    (define-values (go ctcs) 
-      (parameterize ([generate-env (make-hash)])
-        ((contract-struct-exercise ctc) fuel)))
-    (for ([x (in-range fuel)])
-      (go v))))
+(define (contract-exercise #:fuel [fuel 10] v1 . vs)
+  (define vals 
+    (for/list ([val (in-list (cons v1 vs))]
+               #:when (value-contract val))
+      val))
+  (define ctcs (map value-contract vals))
+  (define-values (go _) 
+    (parameterize ([generate-env (make-hash)])
+      ((multi-exercise ctcs) fuel)))
+  (for ([x (in-range fuel)])
+    (go vals)))
+
+;; multi-exercise : (listof contract?) -> fuel -> (values (listof ctc) (-> (listof val[ctcs]) void)
+(define (multi-exercise orig-ctcs)
+  (λ (fuel)
+    (let loop ([ctcs orig-ctcs]
+               [exers '()]
+               [previously-available-ctcs '()]
+               [available-ctcs '()]
+               [max-iterations 4])
+      (cond
+        [(null? ctcs)
+         (cond
+           [(or (zero? max-iterations)
+                (equal? previously-available-ctcs available-ctcs))
+            (define rev-exers (reverse exers))
+            (values (λ (orig-vals)
+                      (let loop ([exers rev-exers]
+                                 [vals orig-vals])
+                        (cond
+                          [(null? exers) (void)]
+                          [(null? vals) (loop exers orig-vals)]
+                          [else
+                           ((car exers) (car vals))
+                           (loop (cdr exers) (cdr vals))])))
+                    available-ctcs)]
+           [else
+            (loop orig-ctcs
+                  exers
+                  available-ctcs
+                  available-ctcs
+                  (- max-iterations 1))])]
+        [else
+         (define-values (exer newly-available-ctcs) 
+           (with-definitely-available-contracts
+            available-ctcs
+            (λ ()
+              ((contract-struct-exercise (car ctcs)) fuel))))
+         (loop (cdr ctcs)
+               (cons exer exers)
+               previously-available-ctcs
+               (add-new-contracts newly-available-ctcs available-ctcs)
+               max-iterations)]))))
+
+(define (add-new-contracts newly-available-ctcs available-ctcs)
+  (let loop ([available-ctcs available-ctcs]
+             [newly-available-ctcs newly-available-ctcs])
+    (cond
+      [(null? newly-available-ctcs) available-ctcs]
+      [else
+       (if (member (car newly-available-ctcs) available-ctcs)
+           (loop available-ctcs
+                 (cdr newly-available-ctcs))
+           (loop (cons (car newly-available-ctcs) available-ctcs)
+                 (cdr newly-available-ctcs)))])))
+           
 
 ;; a stash of values and the contracts that they correspond to
 ;; that generation has produced earlier in the process 

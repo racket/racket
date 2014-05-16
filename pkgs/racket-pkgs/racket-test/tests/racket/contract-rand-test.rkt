@@ -159,14 +159,37 @@
 
 (define-syntax (check-exercise stx)
   (syntax-case stx ()
-    [(_ N pred exp)
+    [(_ N pred . exps)
      (syntax/loc stx
        (check-pred
         pred
         (with-handlers ([exn:fail? exn-message])
-          (contract-exercise exp N)
+          (contract-exercise #:fuel N . exps)
           (void))))]))
 
+(check-exercise
+ 1
+ pos-exn?
+ (contract (-> some-crazy-predicate? string?)
+           (λ (x) 'not-a-string)
+           'pos
+           'neg)
+ (contract (-> some-crazy-predicate?)
+           (λ () 11)
+           'wrong-one
+           'wrong-two))
+
+(check-exercise
+ 1
+ pos-exn?
+ (contract (-> some-crazy-predicate?)
+           (λ () 11)
+           'wrong-one
+           'wrong-two)
+ (contract (-> some-crazy-predicate? string?)
+           (λ (x) 'not-a-string)
+           'pos
+           'neg))
 
 ;; the tests below that use pos-exn? have a
 ;; (vanishingly small) probability of not passing. 

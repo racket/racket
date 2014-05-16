@@ -762,7 +762,7 @@
      (λ (fuel)
        (define gens 
          (for/list ([dom-ctc (in-list dom-ctcs)])
-           ((contract-struct-generate dom-ctc) fuel)))
+           (generate/choose dom-ctc fuel)))
        (define env (generate-env))
        (cond
          [(andmap values gens)
