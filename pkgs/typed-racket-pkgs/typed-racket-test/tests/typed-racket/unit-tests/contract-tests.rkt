@@ -213,4 +213,9 @@
                           (λ (x) 1)
                           #:untyped
                           #:msg #rx"produced: 1.*blaming: untyped")
+              (t-int (cl->* (->* '() -String -String)
+                            (->* (list -Symbol) -Symbol -Symbol))
+                     (λ (f) (f "a" "b"))
+                     (case-lambda [xs (car xs)]
+                                  [(sym . xs) sym]))
               ))

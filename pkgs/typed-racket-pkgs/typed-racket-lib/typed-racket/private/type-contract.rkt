@@ -515,7 +515,7 @@
                                      " with optional keyword arguments")))
                 (if case->
                   (arr/sc (process-dom (map t->sc/neg dom))
-                          (and rst (t->sc/neg rst))
+                          (and rst (listof/sc (t->sc/neg rst)))
                           (map t->sc rngs))
                   (function/sc
                     (process-dom (map t->sc/neg dom))
