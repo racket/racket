@@ -1,5 +1,5 @@
 #;
-(exn-pred 2)
+(exn-pred 1)
 #lang typed/scheme
 
 (define-struct: parent ((x : Integer)))

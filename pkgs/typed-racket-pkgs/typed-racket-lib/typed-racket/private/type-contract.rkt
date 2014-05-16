@@ -501,7 +501,7 @@
               (values (map conv mand-kws)
                       (map conv opt-kws))))
           (define range (map t->sc rngs))
-          (define rest (and rst (listof/sc (t->sc/neg rst))))
+          (define rest (and rst (t->sc/neg rst)))
           (function/sc (process-dom mand-args) opt-args mand-kws opt-kws rest range)])]
       [else
        (define ((f case->) a)
@@ -523,7 +523,7 @@
                     (map conv mand-kws)
                     (map conv opt-kws)
                     (or
-                      (and rst (listof/sc (t->sc/neg rst)))
+                      (and rst (t->sc/neg rst))
                       (and drst (listof/sc (t->sc/neg (car drst)
                                                       #:recursive-values
                                                         (hash-set recursive-values (cdr drst) (same any/sc))))))

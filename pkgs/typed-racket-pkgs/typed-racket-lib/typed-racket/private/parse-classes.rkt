@@ -3,7 +3,7 @@
 (require syntax/parse
          "../utils/literal-syntax-class.rkt"
          (for-label "../base-env/base-types-extra.rkt"))
-(provide star ddd ddd/bound omit-parens)
+(provide star star-at ddd ddd/bound omit-parens)
 
 (define-literal-syntax-class #:for-label ->)
 
@@ -13,6 +13,11 @@
            #:fail-unless (eq? '* (syntax-e #'star)) "missing *")
   (pattern star:id
            #:fail-unless (eq? '...* (syntax-e #'star)) "missing ...*"))
+
+(define-syntax-class star-at
+  #:description "*@"
+  (pattern star-at:id
+           #:fail-unless (eq? '*@ (syntax-e #'star-at)) "missing *@"))
 
 (define-syntax-class ddd
   #:description "..."

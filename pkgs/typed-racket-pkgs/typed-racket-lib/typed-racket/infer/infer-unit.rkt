@@ -13,7 +13,7 @@
            (utils tc-utils)
            (rep free-variance type-rep filter-rep object-rep rep-utils)
            (types utils abbrev numeric-tower union subtype resolve
-                  substitute generalize)
+                  substitute generalize match-expanders)
            (env index-env tvar-env))
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
@@ -214,17 +214,18 @@
     [((arr: ss s s-rest #f '())
       (arr: ts t t-rest #f '()))
      (let ([arg-mapping
-            (cond
+            (match* (s-rest t-rest)
               ;; both rest args are present, so make them the same length
-              [(and s-rest t-rest)
+              [((Listof: s-elem) (Listof: t-elem))
                (cgen/list V X Y
-                          (cons t-rest (extend ss ts t-rest))
-                          (cons s-rest (extend ts ss s-rest)))]
+                          (cons t-elem (extend ss ts t-elem))
+                          (cons s-elem (extend ts ss s-elem)))]
               ;; no rest arg on the right, so just pad the left and forget the rest arg
-              [(and s-rest (not t-rest) (<= (length ss) (length ts)))
-               (cgen/list V X Y ts (extend ts ss s-rest))]
+              [((Listof: s-elem) #f)
+               #:when (<= (length ss) (length ts))
+               (cgen/list V X Y ts (extend ts ss s-elem))]
               ;; no rest arg on the left, or wrong number = fail
-              [else #f])]
+              [(_ _) #f])]
            [ret-mapping (cg s t)])
        (% cset-meet arg-mapping ret-mapping))]
     ;; dotted on the left, nothing on the right
@@ -290,9 +291,10 @@
      #f
      (if (<= (length ss) (length ts))
          ;; the simple case
-         (let* ([arg-mapping (cgen/list V X Y ts (extend ts ss s-rest))]
+         (let* ([s-elem (match s-rest [(Listof: s-elem) s-elem])]
+                [arg-mapping (cgen/list V X Y ts (extend ts ss s-elem))]
                 [darg-mapping (% move-rest-to-dmap
-                                 (cgen V (cons dbound X) Y t-dty s-rest) dbound)]
+                                 (cgen V (cons dbound X) Y t-dty s-elem) dbound)]
                 [ret-mapping (cg s t)])
            (% cset-meet arg-mapping darg-mapping ret-mapping))
          ;; the hard case
@@ -318,8 +320,9 @@
                    (move-vars+rest-to-dmap new-cset dbound vars #:exact #t)))]
            [(= (length ss) (length ts))
             ;; the simple case
-            (let* ([arg-mapping (cgen/list V X Y (extend ss ts t-rest) ss)]
-                   [rest-mapping (cgen V (cons dbound X) Y t-rest s-dty)]
+            (let* ([t-elem (match t-rest [(Listof: t-elem) t-elem])]
+                   [arg-mapping (cgen/list V X Y (extend ss ts t-elem) ss)]
+                   [rest-mapping (cgen V (cons dbound X) Y t-elem s-dty)]
                    [darg-mapping (and rest-mapping 
                                       (move-rest-to-dmap
                                        rest-mapping dbound #:exact #t))]
@@ -872,7 +875,17 @@
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X Y S T T-var R [expected #f])
-  (define new-T (if T-var (extend S T T-var) T))
+  (define new-T
+    (cond [T-var
+           (match-define (List: T-var-elems #:tail T-var-tail) T-var)
+           (define T-var-tail-elem
+             (match T-var-tail
+               [(Listof: elem) elem]
+               [_ #f]))
+           (if T-var-tail-elem
+               (extend S (append T T-var-elems) T-var-tail-elem)
+               (append T T-var-elems))]
+          [else T]))
   (and ((length S) . >= . (length T))
        (infer X Y S new-T R expected)))
 
@@ -904,5 +917,3 @@
    (define m (cset-meet cs expected-cset))
    #:return-unless m #f
    (subst-gen m (list dotted-var) R)))
-
-

@@ -420,13 +420,21 @@
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
-            (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty
+                  (~or (~and ddd:star (~bind [full-rest? #f]))
+                       (~and ddd:star-at (~bind [full-rest? #t])))
+                  rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty
+             (~or (~and ddd:star (~bind [full-rest? #f]))
+                  (~and ddd:star-at (~bind [full-rest? #t])))
+             :->^ rng))
        (make-Function
         (list (make-arr
                (parse-types #'(dom ...))
                (parse-values-type #'rng)
-               #:rest (parse-type #'rest)
+               #:full-rest (if (attribute full-rest?)
+                               (parse-type #'rest)
+                               (-lst (parse-type #'rest)))
                #:kws (attribute kws.Keyword))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))

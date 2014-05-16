@@ -228,9 +228,13 @@
            (if req?
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
-      (if rest
-          (list (type->sexp rest) (if (special-dots-printing?) '...* '*))
-          null)
+      (cond [rest
+             (match rest
+               [(Listof: elem-ty)
+                (list (type->sexp elem-ty) (if (special-dots-printing?) '...* '*))]
+               [_
+                (list (type->sexp rest) '*@)])]
+            [else null])
       (if drest
           (if (special-dots-printing?)
               (list (type->sexp (car drest))
@@ -285,6 +289,12 @@
       (arr: last-dom _ _ _ _))
      (define-values (mand-kws opt-kws) (partition-kws kws))
      (define opt-doms (drop last-dom (length first-dom)))
+     (define printed-rst
+       (match rst
+         [(Listof: elem-ty) (list '#:rest (type->sexp elem-ty))]
+         [#f null]
+         ;; FIXME: figure out a good syntax
+         [_ (list '#:full-rest (type->sexp rst))]))
      `(->*
        ,(append* (for/list ([dom (in-list first-dom)])
                    (type->sexp dom))
@@ -296,7 +306,7 @@
                  (for/list ([opt-kw (in-list opt-kws)])
                    (match-define (Keyword: k t _) opt-kw)
                    (list k (type->sexp t))))
-       ,@(if rst (list '#:rest (type->sexp rst)) null)
+       ,@printed-rst
        ,(type->sexp rng))]))
 
 ;; cover-case-lambda : (Listof arr) -> (Listof s-expression)

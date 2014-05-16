@@ -6,7 +6,7 @@
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
-         (types utils)
+         (types utils match-expanders)
          (private syntax-properties)
          (rep type-rep filter-rep object-rep))
 
@@ -83,15 +83,20 @@
              (Function:
                (app matching-arities
                  (list (arr: doms ranges rests drests _) ..1))))
+            ;; matching-domains : (Sequenceof (Listof Type))
             (define matching-domains
               (in-values-sequence
                 (apply in-parallel
                   (for/list ((dom (in-list doms)) (rest (in-list rests)))
-                    (in-sequences (in-list dom) (in-cycle (in-value rest)))))))
+                    (define rest*
+                      (match rest
+                        [(Listof: elem) elem]
+                        [_ #f]))
+                    (in-sequences (in-list dom) (in-cycle (in-value rest*)))))))
             (for/list ([a (in-list args*)] [types matching-domains])
               (match-define (cons t ts) types)
-              (if (for/and ((t2 (in-list ts))) (equal? t t2))
-                  (tc-expr/check a (ret t))
+              (if (and t (for/and ((t2 (in-list ts))) (equal? t t2)))
+                  (single-value a (ret t))
                   (single-value a)))]
            [_ (map single-value args*)]))
        (tc/funapp #'f #'args f-ty arg-tys expected))]))
