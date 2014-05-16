@@ -8,7 +8,8 @@
              pict->bitmap
              pict->argb-pixels
              argb-pixels->pict
-             colorize)
+             colorize
+             pin-under pin-over)
  (contract-out
   [colorize (-> pict? 
                 (or/c string? 
@@ -24,7 +25,25 @@
                           (and/c bytes? multiple-of-four-bytes?))]
   [argb-pixels->pict (-> (and/c bytes? multiple-of-four-bytes?) 
                          exact-nonnegative-integer?
-                         pict?)]))
+                         pict?)]
+  [pin-under
+   (->i ([base pict?]
+         [dx/fp (or/c real? pict?)]
+         [dy/f (dx/fp)
+               (if (real? dx/fp)
+                   real?
+                   (-> pict? pict? (values real? real?)))]
+         [pict pict?])
+        [result pict?])]
+  [pin-over
+   (->i ([base pict?]
+         [dx/fp (or/c real? pict?)]
+         [dy/f (dx/fp)
+               (if (real? dx/fp)
+                   real?
+                   (-> pict? pict? (values real? real?)))]
+         [pict pict?])
+        [result pict?])]))
 
 (define (multiple-of-four-bytes? b)
   (zero? (modulo (bytes-length b) 4)))
