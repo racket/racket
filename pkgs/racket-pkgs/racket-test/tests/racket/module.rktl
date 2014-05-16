@@ -1108,7 +1108,7 @@
       (eval '(m)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check a a submodule can be armed:
+;; Check that a submodule can be armed:
 
 (test #t
       syntax?
@@ -1117,6 +1117,47 @@
         #'(module m racket/base
             (define-syntax-rule (s) (module x racket/base 10))
             (s)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interaction of marks and a syntax-object side channel
+
+;; Tests a special case that makes a reference to an identifier in
+;; the enclosing module work, even though the identifier is missing
+;; a module context.
+
+(let ()
+  (define (mk mode wrap?)
+    `(module m racket
+       (require (for-syntax syntax/parse racket/syntax))
+       (define-for-syntax funny #f)
+       (define-syntax (make-funny-set! stx)
+         (syntax-parse stx
+           [(_ v)
+            (define unmarked (generate-temporary))
+            (set! funny (syntax-local-introduce unmarked))
+            #`(define #,unmarked v)]))
+       (define-syntax (funny-ref stx)
+         (syntax-parse stx
+           [(_)
+            funny]))
+       (define-syntax (funny-set! stx)
+         (syntax-parse stx
+           [(_ v)
+            #`(set! #,funny v)]))
+       (define-syntax (funny-varref stx)
+         (syntax-parse stx
+           [(_)
+            #`(#%variable-reference #,funny)]))
+       (make-funny-set! 2)
+       ,((if wrap? (lambda (v) `(let () ,v)) values)
+         (case mode
+           [(ref) '(funny-ref)]
+           [(set) '(funny-set! 3)]
+           [(var) '(funny-varref)]))))
+  (for* ([m '(ref set var)]
+         [wrap? '(#t #f)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (mk m wrap?)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

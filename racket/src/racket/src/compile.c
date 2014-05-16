@@ -5222,7 +5222,10 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
   
   tl_id = scheme_tl_id_sym(genv, symbol, NULL, 0, NULL, NULL);
   if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
-    /* Since the module has a rename for this id, it's certainly defined. */
+    /* Since the module has a rename for this id, count it as
+       defined. This covers the unusual case that a marked identifier
+       is bound in a module, but the identifier doesn't have the
+       module's post_ex_rename_set in its lexical information. */
     bad = 0;
   } else {
     modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(genv->phase), NULL, NULL, NULL, 
