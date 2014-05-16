@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 (require "test-utils.rkt"
-         (for-syntax scheme/base
+         (for-syntax racket/base
                      syntax/parse)
-         (for-template scheme/base)
+         (for-template racket/base)
          (private type-contract)
          (rep type-rep)
          (types abbrev numeric-tower union)

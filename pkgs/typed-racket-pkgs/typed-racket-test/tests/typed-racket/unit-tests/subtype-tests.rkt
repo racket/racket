@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (require "test-utils.rkt"
          (types subtype numeric-tower union utils abbrev)
          (rep type-rep)
          (env init-envs type-env-structs)
          rackunit
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (provide tests)
 (gen-test-main)

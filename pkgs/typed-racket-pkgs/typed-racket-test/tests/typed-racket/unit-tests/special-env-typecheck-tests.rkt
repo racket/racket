@@ -2,8 +2,8 @@
 
 (require "test-utils.rkt"
          "evaluator.rkt"
-         (for-syntax scheme/base)
-         (for-template scheme/base)
+         (for-syntax racket/base)
+         (for-template racket/base)
          (rep type-rep filter-rep object-rep)
          (for-syntax (rename-in (types utils union numeric-tower abbrev filter-ops)
                                 [Un t:Un]
