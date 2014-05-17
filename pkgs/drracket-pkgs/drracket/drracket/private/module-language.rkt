@@ -1381,7 +1381,6 @@
       (inherit position-location get-admin)
       
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
-        (super on-paint before? dc left top right bottom dx dy draw-caret)
         (unless (null? online-error-ranges)
           (unless before?
             
@@ -1416,7 +1415,8 @@
               (send dc set-alpha 1)
               (send dc set-brush saved-brush)
               (send dc set-pen saved-pen)
-              (send dc set-smoothing smoothing)))))
+              (send dc set-smoothing smoothing))))
+        (super on-paint before? dc left top right bottom dx dy draw-caret))
       
       (define/override (on-event evt)
         (define-values (mx my) 
