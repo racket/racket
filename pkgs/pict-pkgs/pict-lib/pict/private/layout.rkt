@@ -34,8 +34,8 @@
 
 (define default-node-pict
   (cc-superimpose
-   (disk 12)
-   (colorize (disk 8) "white")))
+   (disk 16 #:draw-border? #f)
+   (colorize (disk 12 #:draw-border? #f) "white")))
 
 (define _tree-edge
   (let ([constructor tree-edge])
