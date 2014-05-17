@@ -4,7 +4,7 @@
          racket/match racket/set
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -lst* -result)
+         (only-in (types base-abbrev) -Tuple* -lst -Null -result ManyUniv)
          (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -99,19 +99,21 @@
                              (if (eq? name dbound)
                                  ;; We need to recur first, just to expand out any dotted usages of this.
                                  (let ([expanded (sb dty)])
-                                   (for/fold ([t (make-Value null)])
+                                   (for/fold ([t (if rimage (-lst rimage) -Null)])
                                      ([img (in-list (reverse images))])
                                      (make-Pair (substitute img name expanded) t)))
                                  (make-ListDots (sb dty) dbound))]
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
-                                   (make-Values
-                                    (append
-                                     (map sb types)
-                                     ;; We need to recur first, just to expand out any dotted usages of this.
-                                     (let ([expanded (sb dty)])
-                                       (for/list ([img (in-list images)])
-                                         (-result (substitute img name expanded))))))
+                                   (if rimage
+                                       ManyUniv
+                                       (make-Values
+                                        (append
+                                         (map sb types)
+                                         ;; We need to recur first, just to expand out any dotted usages of this.
+                                         (let ([expanded (sb dty)])
+                                           (for/list ([img (in-list images)])
+                                             (-result (substitute img name expanded)))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
@@ -148,9 +150,8 @@
                                                   (sb dty)
                                                   (if (eq? name dbound) image-bound dbound)))]
                  [#:ListDots dty dbound
-                             (apply -lst*
+                             (-Tuple*
                                (if (eq? name dbound) pre-image null)
-                               #:tail
                                (make-ListDots (sb dty)
                                               (if (eq? name dbound) image-bound dbound)))]
                  [#:F name*

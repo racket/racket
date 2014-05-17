@@ -59,10 +59,14 @@
 ;; Void is needed for Params
 (define/decl -Void (make-Base 'Void #'void? void? #f))
 
-;; -lst* Type is needed by substitute for ListDots
+;; -Tuple Type is needed by substitute for ListDots
 (define -pair make-Pair)
 (define (-lst* #:tail [tail -Null] . args)
   (for/fold ([tl tail]) ([a (in-list (reverse args))]) (-pair a tl)))
+(define (-Tuple l)
+  (-Tuple* l -Null))
+(define (-Tuple* l b)
+  (foldr -pair b l))
 
 ;; Simple union type constructor, does not check for overlaps
 ;; Normalizes representation by sorting types.

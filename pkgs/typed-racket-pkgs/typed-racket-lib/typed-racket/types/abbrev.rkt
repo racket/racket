@@ -68,12 +68,6 @@
 
 (define (-opt t) (Un (-val #f) t))
 
-(define (-Tuple l)
-  (-Tuple* l -Null))
-
-(define (-Tuple* l b)
-  (foldr -pair b l))
-
 ;; Convenient constructor for Values
 ;; (wraps arg types with Result)
 (define/cond-contract (-values args)
