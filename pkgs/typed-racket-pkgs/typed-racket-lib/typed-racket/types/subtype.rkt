@@ -98,8 +98,6 @@
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
     (match* (s t)
-      ;; top for functions is above everything
-      [(_ (top-arr:)) A0]
       ;; the really simple case
       [((arr: s1 s2 #f #f '())
         (arr: t1 t2 #f #f '()))

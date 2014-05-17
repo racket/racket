@@ -347,13 +347,8 @@
                     (and drest (cons (type-rec-id (car drest)) (cdr drest)))
                     (map type-rec-id kws))])
 
-;; top-arr is the supertype of all function types
-(def-type top-arr () [#:fold-rhs #:base])
-
-(define arr/c (or/c top-arr? arr?))
-
 ;; arities : Listof[arr]
-(def-type Function ([arities (listof arr/c)])
+(def-type Function ([arities (listof arr?)])
   [#:key 'procedure]
   [#:frees (λ (f) (combine-frees (map f arities)))]
   [#:fold-rhs (*Function (map type-rec-id arities))])

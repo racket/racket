@@ -1366,10 +1366,7 @@
   (match type
     [(Function: (list arrs ...))
      (define fixed-arrs
-       (for/list ([arr arrs]
-                  ;; ignore top-arr, since the arity cannot
-                  ;; be sensibly modified in that case
-                  #:when (arr? arr))
+       (for/list ([arr arrs])
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]

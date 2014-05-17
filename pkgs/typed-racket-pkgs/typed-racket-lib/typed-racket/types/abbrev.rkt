@@ -233,7 +233,7 @@
   (make-Struct name parent flds proc poly pred))
 
 ;; Function type constructors
-(define/decl top-func (make-Function (list (make-top-arr))))
+(define/decl top-func (make-Function (list)))
 
 (define (asym-pred dom rng filter)
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))
