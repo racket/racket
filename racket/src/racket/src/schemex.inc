@@ -722,3 +722,4 @@
   scheme_extension_table->scheme_register_process_global = scheme_register_process_global;
   scheme_extension_table->scheme_malloc_key = scheme_malloc_key;
   scheme_extension_table->scheme_free_key = scheme_free_key;
+  scheme_extension_table->scheme_jit_find_code_end = scheme_jit_find_code_end;

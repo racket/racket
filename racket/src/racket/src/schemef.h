@@ -1221,3 +1221,5 @@ MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);
 
 MZ_EXTERN Scheme_Object *scheme_malloc_key(void);
 MZ_EXTERN void scheme_free_key(Scheme_Object *k);
+
+MZ_EXTERN void* scheme_jit_find_code_end(void *p);

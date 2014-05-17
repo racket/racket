@@ -613,6 +613,38 @@ void scheme_jit_release_native_code(void *fnlized, void *p)
 }
 #endif
 
+void* scheme_jit_find_code_end(void *_p)
+{
+  uintptr_t p = (uintptr_t)_p;
+  uintptr_t hi, lo, mid;
+  void *n;
+
+  n = find_symbol(p);
+  if (n) {
+    /* find overesitinate of ending point: */
+    hi = 1;
+    while (find_symbol(p+hi) == n) {
+      hi = hi*2;
+      if (p + hi < p) {
+        /* this shouldn't happen, but if something has gone really wrong,
+           we don't want to loop forever */
+        return NULL;
+      }
+    }
+    /* binary search for precise ending point: */
+    lo = hi / 2;
+    while (lo+1 < hi) {
+      mid = lo + (((hi - lo) + 1) / 2);
+      if (find_symbol(p+mid) == n)
+        lo = mid;
+      else
+        hi = mid;
+    }
+    return (void *)(p+hi);
+  } else
+    return NULL;
+}
+
 typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
 typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
 typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
@@ -643,5 +675,9 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
   else
     return scheme_module_start_finish(a);
 }
+
+#else
+
+void* scheme_jit_find_code_end(void *p) { return NULL; }
 
 #endif

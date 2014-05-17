@@ -994,6 +994,7 @@ Scheme_Hash_Table *(*scheme_get_place_table)(void);
 void *(*scheme_register_process_global)(const char *key, void *val);
 Scheme_Object *(*scheme_malloc_key)(void);
 void (*scheme_free_key)(Scheme_Object *k);
+ (*scheme_jit_find_code_end)(void *p);
 #ifndef SCHEME_EX_INLINE
 } Scheme_Extension_Table;
 #endif

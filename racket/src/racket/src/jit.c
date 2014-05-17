@@ -30,7 +30,6 @@
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
-static void release_native_code(void *fnlized, void *p);
 #endif
 
 static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, int is_method);
