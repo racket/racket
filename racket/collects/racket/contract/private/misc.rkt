@@ -175,6 +175,33 @@
                       this-ctcs
                       that-ctcs)))))
 
+(define (and/c-generate? ctc)
+  (cond
+    [(and/c-check-nonneg ctc real?) => values]
+    [(and/c-check-nonneg ctc rational?) => values]
+    [else (λ (fuel) #f)]))
+
+(define (and/c-check-nonneg ctc pred)
+  (define sub-contracts (base-and/c-ctcs ctc))
+  (cond
+    [(are-stronger-contracts? (list pred (not/c negative?))
+                              sub-contracts)
+     (define go (hash-ref predicate-generator-table pred))
+     (λ (fuel)
+       (λ ()
+         (abs (go fuel))))]
+    [else #f]))
+
+(define (are-stronger-contracts? c1s c2s)
+  (let loop ([c1s c1s]
+             [c2s c2s])
+    (cond
+      [(and (null? c1s) (null? c2s)) #t]
+      [(and (pair? c1s) (pair? c2s))
+       (and (contract-stronger? (car c1s) (car c2s))
+            (loop (cdr c1s) (cdr c2s)))]
+      [else #f])))
+
 (define-struct base-and/c (ctcs))
 (define-struct (first-order-and/c base-and/c) (predicates)
   #:property prop:custom-write custom-write-property-proc
@@ -184,7 +211,8 @@
    #:val-first-projection first-order-val-first-and-proj
    #:name and-name
    #:first-order and-first-order
-   #:stronger and-stronger?))
+   #:stronger and-stronger?
+   #:generate and/c-generate?))
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -194,7 +222,8 @@
      #:val-first-projection val-first-and-proj
      #:name and-name
      #:first-order and-first-order
-     #:stronger and-stronger?)))
+     #:stronger and-stronger?
+     #:generate and/c-generate?)))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -203,7 +232,8 @@
    #:val-first-projection val-first-and-proj
    #:name and-name
    #:first-order and-first-order
-   #:stronger and-stronger?))
+   #:stronger and-stronger?
+   #:generate and/c-generate?))
 
 
 (define/subexpression-pos-prop (and/c . raw-fs)

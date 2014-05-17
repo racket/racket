@@ -36,6 +36,8 @@
 (check-not-exn (λ () (test-contract-generation (</c 0.0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
+(check-not-exn (λ () (test-contract-generation (and/c real? (not/c negative?)))))
+(check-not-exn (λ () (test-contract-generation (and/c rational? (not/c negative?)))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (cons/c integer? boolean?))))
 (check-not-exn (λ () (test-contract-generation any/c)))
@@ -166,6 +168,14 @@
         (with-handlers ([exn:fail? exn-message])
           (contract-exercise #:fuel N . exps)
           (void))))]))
+
+(check-exercise
+ 10
+ pos-exn-or-silence?
+ (contract (-> #:b boolean? any/c)
+           (λ (#:b b) b)
+           'pos
+           'neg))
 
 (check-exercise
  1

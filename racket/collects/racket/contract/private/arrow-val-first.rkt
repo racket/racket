@@ -754,24 +754,36 @@
     [else (λ (fuel) #f)]))
 
 (define (->-exercise ctc)
-  (define dom-ctcs (base->-doms ctc))
   (define rng-ctcs (base->-rngs ctc))
+  (define dom-ctcs (for/list ([doms (in-list (base->-doms ctc))]
+                              [i (in-range (base->-min-arity ctc))])
+                     doms))
+  (define dom-kwd-infos (for/list ([dom-kwd (in-list (base->-kwd-infos ctc))]
+                                   #:when (kwd-info-mandatory? dom-kwd))
+                          dom-kwd))
+  (define dom-kwds (map kwd-info-kwd dom-kwd-infos))
   (cond
-    [(and (equal? (length dom-ctcs) (base->-min-arity ctc))
-          (not (base->-rest ctc)))
+    [(not (base->-rest ctc))
      (λ (fuel)
        (define gens 
          (for/list ([dom-ctc (in-list dom-ctcs)])
            (generate/choose dom-ctc fuel)))
+       (define kwd-gens
+         (for/list ([kwd-info (in-list dom-kwd-infos)])
+           (generate/choose (kwd-info-ctc kwd-info) fuel)))
        (define env (generate-env))
        (cond
-         [(andmap values gens)
+         [(and (andmap values gens)
+               (andmap values kwd-gens))
           (values 
            (λ (f)
              (call-with-values
               (λ ()
-                (apply 
+                (keyword-apply 
                  f
+                 dom-kwds
+                 (for/list ([kwd-gen (in-list kwd-gens)])
+                   (kwd-gen))
                  (for/list ([gen (in-list gens)])
                    (gen))))
               (λ results 
