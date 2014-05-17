@@ -103,6 +103,11 @@
         (use-compiled-file-paths '("compiled"))
         
         (current-library-collection-paths (list (build-path (build-path (current-directory) rel-dir) "xform-collects")))
+
+        (let ([ns (make-empty-namespace)])
+          (dynamic-require ''#%builtin #f)
+          (namespace-attach-module (current-namespace) ''#%builtin ns)
+          (current-namespace ns))
         
         (error-print-width 100)
 
