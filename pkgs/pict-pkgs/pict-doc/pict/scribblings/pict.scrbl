@@ -288,7 +288,8 @@ override settings supplied by the context.
 @defproc*[([(ellipse [w real?] [h real?]) pict?]
            [(circle [diameter real?]) pict?]
            [(filled-ellipse [w real?] [h real?] [#:draw-border? draw-border? any/c #t]) pict?]
-           [(disk [diameter real?] [#:draw-border? draw-border? any/c #t]) pict?])]{
+           [(disk [diameter (and/c rational? (not/c negative?))]
+                  [#:draw-border? draw-border? any/c #t]) pict?])]{
 
 Unfilled and filled ellipses.
 

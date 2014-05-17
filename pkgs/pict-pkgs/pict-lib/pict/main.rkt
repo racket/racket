@@ -9,7 +9,7 @@
              pict->argb-pixels
              argb-pixels->pict
              colorize
-             pin-under pin-over)
+             pin-under pin-over disk)
  (contract-out
   [colorize (-> pict? 
                 (or/c string? 
@@ -43,7 +43,8 @@
                    real?
                    (-> pict? pict? (values real? real?)))]
          [pict pict?])
-        [result pict?])]))
+        [result pict?])]
+  [disk (->* ((and/c rational? (not/c negative?))) (#:draw-border? any/c) pict?)]))
 
 (define (multiple-of-four-bytes? b)
   (zero? (modulo (bytes-length b) 4)))
