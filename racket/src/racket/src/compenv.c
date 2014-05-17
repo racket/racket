@@ -1911,13 +1911,14 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (genv->module && genv->disallow_unbound) {
       /* double-check for a local-module binding that's not in find_id's context;
          see a similar test in scheme_check_top_identifier_bound() */
-      find_global_id = scheme_tl_id_sym(genv, find_id, NULL, 0, NULL, NULL);
-      if (!SAME_OBJ(find_global_id, SCHEME_STX_SYM(find_id))) {
+      if (SCHEME_STXP(find_id))
+        find_global_id = scheme_tl_id_sym(genv, find_id, NULL, 0, NULL, NULL);
+      else
+        find_global_id = NULL;
+      if (find_global_id && !SAME_OBJ(find_global_id, SCHEME_STX_SYM(find_id))) {
         /* it's defined after all; fall through below assumes a binding
            in the enclosing module */
       } else {
-        /* If find_global_id is not find_id, then the module must have a
-           definition of the identifier. */
         if (genv->disallow_unbound > 0) {
           /* Free identifier. Maybe don't continue. */
           if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
