@@ -4,6 +4,7 @@
   rackunit
   racket/list
   (for-syntax racket/base syntax/parse)
+  syntax/location syntax/srcloc
   (rep type-rep)
   (r:infer infer)
 
@@ -21,8 +22,8 @@
 
 (begin-for-syntax
   (define-splicing-syntax-class result
-    (pattern (~seq) #:with v #'#f)
-    (pattern (~seq #:result v:expr)))
+    (pattern (~seq) #:with v #'#f #:with exp #'#f)
+    (pattern (~seq #:result [v:expr exp:expr])))
   (define-splicing-syntax-class vars
     (pattern (~seq) #:with vars #'empty)
     (pattern (~seq #:vars vars:expr)))
@@ -36,21 +37,29 @@
 
 (define-syntax (infer-t stx)
   (syntax-parse stx
-    ([_ S:expr T:expr R:result :vars :indices :pass]
+    ([_ S:expr T:expr . rest]
      (syntax/loc stx
-       (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
-         (define result (infer vars indices (list S) (list T) R.v))
-         (unless (if pass result (not result))
-           (fail-check "Could not infer a substitution")))))))
+       (infer-l (list S) (list T) . rest)))))
 
 (define-syntax (infer-l stx)
   (syntax-parse stx
-    ([_ S:expr T:expr R:result :vars :indices :pass]
-     (syntax/loc stx
+    ([_ S:expr T:expr :vars :indices R:result :pass]
+     (quasisyntax/loc stx
        (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
-         (define result (infer vars indices S T R.v))
-         (unless (if pass result (not result))
-           (fail-check "Could not infer a substitution")))))))
+         (with-check-info (['location (build-source-location-list (quote-srcloc #,stx))])
+           (define substitution (infer vars indices S T R.v))
+           (define result (and substitution R.v (subst-all substitution R.v)))
+           (cond
+             [pass
+               (unless substitution
+                 (fail-check "Could not infer a substitution"))
+               (when result
+                 (with-check-info (['actual result] ['expected R.exp])
+                   (unless (equal? result R.exp)
+                     (fail-check "Did not infer the expected result."))))]
+             [fail
+               (when substitution
+                 (fail-check "Inferred an unexpected substitution."))])))))))
 
 
 (define-syntax-rule (i2-t t1 t2 (a b) ...)
@@ -90,7 +99,7 @@
   (test-suite "Tests for infer"
     (infer-t Univ Univ)
     (infer-t (-v a) Univ)
-    (infer-t (-v a) (-v a) #:result (-v a))
+    (infer-t (-v a) (-v a) #:result [(-v a) (-v a)])
     (infer-t Univ (-v a) #:fail)
     (infer-t Univ (-v a) #:vars '(a))
     (infer-t (-v a) Univ #:vars '(a))
@@ -112,7 +121,7 @@
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots Univ 'b) #:indices '(b))
     (infer-t (-pair (-v a) (make-ListDots (-v b) 'b))
              (-pair (-v a) (make-ListDots (-v b) 'b))
-             #:result (-v a))
+             #:result [(-v a) (-v a)])
 
     [infer-t (->... null ((-v a) a) (-v b)) (-> -Symbol -String) #:vars '(b) #:indices '(a)]
     [infer-t (->... null ((-v a) a) (make-ListDots (-v a) 'a)) (-> -String -Symbol  (-lst* -String -Symbol)) #:indices '(a)]
@@ -142,7 +151,7 @@
     [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a (Un))]
 
 
-    [i2-l (list (-v a) (-v a) (-v b)) 
+    [i2-l (list (-v a) (-v a) (-v b))
           (list (Un (-val 1) (-val 2)) N N)
           '(a b) ('b N) ('a N)]
     [i2-l (list (-> (-v a) Univ) (-lst (-v a)))
