@@ -37,24 +37,29 @@
     (define (contra t) (structural-recur t 'contra))
 
     (match T
-      [(? structural?) (structural-map T structural-recur)]
       [(F: name) (if (memq name V) (if change Univ -Bottom) T)]
-      [(arr: dom rng rest drest kws)
-       (cond
-         [(apply V-in? V (get-filters rng))
-          (make-top-arr)]
-         [(and drest (memq (cdr drest) V))
-          (make-arr (map contra dom)
-                    (co rng)
-                    (contra (car drest))
-                    #f
-                    (map contra kws))]
-         [else
-          (make-arr (map contra dom)
-                    (co rng)
-                    (and rest (contra rest))
-                    (and drest (cons (contra (car drest)) (cdr drest)))
-                    (map contra kws))])]
+      [(Function: arrs)
+       (make-Function
+         (filter values
+           (for/list ([arr (in-list arrs)])
+             (match arr
+              [(arr: dom rng rest drest kws)
+               (cond
+                 [(apply V-in? V (get-filters rng))
+                  #f]
+                 [(and drest (memq (cdr drest) V))
+                  (make-arr (map contra dom)
+                            (co rng)
+                            (contra (car drest))
+                            #f
+                            (map contra kws))]
+                 [else
+                  (make-arr (map contra dom)
+                            (co rng)
+                            (and rest (contra rest))
+                            (and drest (cons (contra (car drest)) (cdr drest)))
+                            (map contra kws))])]))))]
+      [(? structural?) (structural-map T structural-recur)]
       [(? Filter?) ((sub-f co) T)]
       [(? Object?) ((sub-o co) T)]
       [(? Type?) ((sub-t co) T)]))

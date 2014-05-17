@@ -665,10 +665,6 @@
           ;; parameters are just like one-arg functions
           [((Param: in1 out1) (Param: in2 out2))
            (% cset-meet (cg in2 in1) (cg out1 out2))]
-          ;; every function is trivially below top-arr
-          [((Function: _)
-            (Function: (list (top-arr:))))
-           empty]
           [((Function: (list s-arr ...))
             (Function: (list t-arr ...)))
            (% cset-meet*

@@ -475,7 +475,6 @@
   (define (t->sc/neg t #:recursive-values (recursive-values recursive-values))
     (loop t (flip-side typed-side) recursive-values))
   (match f
-    [(Function: (list (top-arr:))) (case->/sc empty)]
     [(Function: arrs)
      ;; Try to generate a single `->*' contract if possible.
      ;; This allows contracts to be generated for functions with both optional and keyword args.
@@ -545,16 +544,13 @@
        (define arities
          (for/list ([t arrs])
            (match t
-             [(arr: dom _ _ _ _) (length dom)]
-             ;; is there something more sensible here?
-             [(top-arr:) (int-err "got top-arr")])))
+             [(arr: dom _ _ _ _) (length dom)])))
        (define maybe-dup (check-duplicate arities))
        (when maybe-dup
          (fail #:reason (~a "function type has two cases of arity " maybe-dup)))
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
-           (case->/sc (map (f #t) arrs)))])]
-    [_ (int-err "not a function" f)]))
+           (case->/sc (map (f #t) arrs)))])]))
 
 (module predicates racket/base
   (require racket/extflonum)

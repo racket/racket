@@ -72,8 +72,7 @@
      ;; Non Types
      [Result (#:co #:co #:co)]
      [Values ((#:listof #:co))]
-     [AnyValues ()]
-     [top-arr ()]))
+     [AnyValues ()]))
 
 (begin-for-syntax
   (define-syntax-class type-name

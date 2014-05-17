@@ -207,7 +207,6 @@
 ;; Convert an arr (see type-rep.rkt) to its printable form
 (define (arr->sexp arr)
   (match arr
-    [(top-arr:) 'Procedure]
     [(arr: dom rng rest drest kws)
      (define out (open-output-string))
      (define (fp . args) (apply fprintf out args))
