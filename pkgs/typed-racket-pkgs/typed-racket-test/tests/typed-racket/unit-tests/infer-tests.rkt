@@ -108,10 +108,20 @@
     (infer-t (-v a) (-v b) #:vars '(a))
     (infer-t (-v a) (-v b) #:vars '(b))
 
-    (infer-t (make-ListDots -Symbol 'b) (-lst -Symbol) #:indices '(b))
-    (infer-t (make-ListDots (-v a) 'b) (-lst -Symbol) #:vars '(a) #:indices '(b))
-    (infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b))
-    (infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))
+    (infer-t (make-ListDots -Symbol 'b) (-lst -Symbol) #:indices '(b)
+             ;; TODO Figure out why this doesnt' work
+             #;#;
+             #:result [(make-ListDots (-v b) 'b) (-lst Univ)])
+    (infer-t (make-ListDots (-v a) 'b) (-lst -Symbol) #:vars '(a) #:indices '(b)
+             #:result [(-lst* (make-ListDots (-v b) 'b) (-v a))
+                       (-lst* (-lst -Bottom) -Bottom)])
+    (infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b)
+             #:result [(make-ListDots (-v b) 'b) (-lst -Bottom)])
+
+    (infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b)
+             #:result [(make-ListDots (-v b) 'b) (-lst -Bottom)])
+    (infer-t (-lst -Symbol) (make-ListDots (-v b) 'b) #:indices '(b)
+             #:result [(make-ListDots (-v b) 'b) (-lst -Symbol)])
     (infer-t (make-ListDots (-v b) 'b) (-lst Univ) #:indices '(b))
     (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b) #:vars '(a))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
