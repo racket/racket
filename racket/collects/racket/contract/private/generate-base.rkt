@@ -88,6 +88,15 @@
                (* 0+1i (integer-gen fuel)))]
       [else (rational-gen fuel)]))
    
+   real?
+   (λ (fuel)
+     (rand-choice
+      [1/10 (integer-gen fuel)]
+      [1/10 (exact-nonnegative-integer-gen fuel)]
+      [1/20 (oneof '(+inf.0 -inf.0 +nan.0 0 0.0))]
+      [else (rational-gen fuel)]))
+   
+   
    boolean?
    (λ (fuel)
      (rand-choice
