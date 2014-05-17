@@ -534,7 +534,7 @@
 (define (blame-add-cdr-context blame) (blame-add-context blame "the cdr of"))
 
 
-(define ((val-first-ho-check combine) ctc)
+(define ((cons/c-val-first-ho-check combine) ctc)
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (define car-val-first-proj (get/build-val-first-projection ctc-car))
@@ -549,6 +549,19 @@
         (combine v 
                  ((car-p (car v)) neg-party)
                  ((cdr-p (cdr v)) neg-party))))))
+
+(define ((cons/c-ho-check combine) ctc)
+  (define ctc-car (the-cons/c-hd-ctc ctc))
+  (define ctc-cdr (the-cons/c-tl-ctc ctc))
+  (define car-proj (contract-projection ctc-car))
+  (define cdr-proj (contract-projection ctc-cdr))
+  (λ (blame)
+    (let ([car-p (car-proj (blame-add-car-context blame))]
+          [cdr-p (cdr-proj (blame-add-cdr-context blame))])
+      (λ (v)
+        (unless (pair? v)
+          (raise-not-cons-blame-error blame v))
+        (combine v (car-p (car v)) (cdr-p (cdr v)))))))
 
 (define (cons/c-first-order ctc)
   (define ctc-car (the-cons/c-hd-ctc ctc))
@@ -585,7 +598,8 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:val-first-projection (val-first-ho-check (λ (v a d) v))
+   #:val-first-projection (cons/c-val-first-ho-check (λ (v a d) v))
+   #:projection (cons/c-ho-check (λ (v a d) v))
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
@@ -595,7 +609,8 @@
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
-     #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
+     #:val-first-projection (cons/c-val-first-ho-check (λ (v a d) (cons a d)))
+     #:projection (cons/c-ho-check (λ (v a d) (cons a d)))
      #:name cons/c-name
      #:first-order cons/c-first-order
      #:stronger cons/c-stronger?
@@ -604,7 +619,8 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:val-first-projection (val-first-ho-check (λ (v a d) (cons a d)))
+   #:val-first-projection (cons/c-val-first-ho-check (λ (v a d) (cons a d)))
+   #:projection (cons/c-ho-check (λ (v a d) (cons a d)))
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
