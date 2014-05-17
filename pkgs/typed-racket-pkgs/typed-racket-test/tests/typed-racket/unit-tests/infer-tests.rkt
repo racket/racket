@@ -20,12 +20,15 @@
                 (list (quote elems) ...))))
 
 (begin-for-syntax
+  (define-splicing-syntax-class result
+    (pattern (~seq) #:with v #'#f)
+    (pattern (~seq #:result v:expr)))
   (define-splicing-syntax-class vars
     (pattern (~seq) #:with vars #'empty)
-    (pattern (~seq #:vars vars:expr) ))
+    (pattern (~seq #:vars vars:expr)))
   (define-splicing-syntax-class indices
     (pattern (~seq) #:with indices #'empty)
-    (pattern (~seq #:indices indices:expr) ))
+    (pattern (~seq #:indices indices:expr)))
   (define-splicing-syntax-class pass
     (pattern (~seq) #:with pass #'#t)
     (pattern #:pass #:with pass #'#t)
@@ -33,20 +36,20 @@
 
 (define-syntax (infer-t stx)
   (syntax-parse stx
-    ([_ S:expr T:expr :vars :indices :pass]
+    ([_ S:expr T:expr R:result :vars :indices :pass]
      (syntax/loc stx
        (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
-         (define result (infer vars indices (list S) (list T) #f))
-         (unless (equal? result pass)
+         (define result (infer vars indices (list S) (list T) R.v))
+         (unless (if pass result (not result))
            (fail-check "Could not infer a substitution")))))))
 
 (define-syntax (infer-l stx)
   (syntax-parse stx
-    ([_ S:expr T:expr :vars :indices :pass]
+    ([_ S:expr T:expr R:result :vars :indices :pass]
      (syntax/loc stx
        (test-case (format "~a ~a~a" S T (if pass "" " should fail"))
-         (define result (infer vars indices S T #f))
-         (unless (equal? result pass)
+         (define result (infer vars indices S T R.v))
+         (unless (if pass result (not result))
            (fail-check "Could not infer a substitution")))))))
 
 
@@ -87,6 +90,7 @@
   (test-suite "Tests for infer"
     (infer-t Univ Univ)
     (infer-t (-v a) Univ)
+    (infer-t (-v a) (-v a) #:result (-v a))
     (infer-t Univ (-v a) #:fail)
     (infer-t Univ (-v a) #:vars '(a))
     (infer-t (-v a) Univ #:vars '(a))
@@ -96,11 +100,19 @@
     (infer-t (-v a) (-v b) #:vars '(b))
 
     (infer-t (make-ListDots -Symbol 'b) (-lst -Symbol) #:indices '(b))
+    (infer-t (make-ListDots (-v a) 'b) (-lst -Symbol) #:vars '(a) #:indices '(b))
+    (infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b))
+    (infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (-lst Univ) #:indices '(b))
     (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b) #:vars '(a))
+    (infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
+    (infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots -Symbol 'b) (make-ListDots Univ 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots Univ 'b) #:indices '(b))
+    (infer-t (-pair (-v a) (make-ListDots (-v b) 'b))
+             (-pair (-v a) (make-ListDots (-v b) 'b))
+             #:result (-v a))
 
     [infer-t (->... null ((-v a) a) (-v b)) (-> -Symbol -String) #:vars '(b) #:indices '(a)]
     [infer-t (->... null ((-v a) a) (make-ListDots (-v a) 'a)) (-> -String -Symbol  (-lst* -String -Symbol)) #:indices '(a)]
@@ -114,11 +126,13 @@
              (list (-> -Symbol -Symbol -String) (-lst* -Symbol -Symbol))
              #:vars '(b)
              #:indices '(a)]
+
+    [infer-t (-values (list -String)) (-values-dots (list) -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(a) #:fail]
+    [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+
     ;; Currently Broken
-    ;(infer-t (make-ListDots (-v b) 'b) (-lst -Symbol) #:indices '(b))
-    ;(infer-t (-lst -Symbol) (make-ListDots -Symbol 'b) #:indices '(b))
-    ;(infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
-    ;(infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]
     [i2-t (-pair (-v a) (-v a)) (-pair N (Un N B)) ('a (Un N B))]
