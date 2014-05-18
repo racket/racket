@@ -5,7 +5,8 @@
 ;; Ex: (listof/sc any/sc) => list?/sc
 
 (require "simple.rkt" "structural.rkt"
-         (for-template racket/base racket/list racket/set racket/promise racket/mpair))
+         (for-template racket/base racket/list racket/set racket/promise racket/mpair
+                       racket/class))
 (provide (all-defined-out))
 
 (define identifier?/sc (flat/sc #'identifier?))
@@ -30,3 +31,5 @@
 (define thread-cell?/sc (flat/sc #'thread-cell?))
 (define prompt-tag?/sc (flat/sc #'continuation-prompt-tag?))
 (define continuation-mark-key?/sc (flat/sc #'continuation-mark-key?))
+
+(define class?/sc (flat/sc #'class?))

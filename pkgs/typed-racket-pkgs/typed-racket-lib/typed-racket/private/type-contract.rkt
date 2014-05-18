@@ -335,6 +335,7 @@
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
         [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
         [(Continuation-Mark-KeyTop:) (only-untyped continuation-mark-key?/sc)]
+        [(ClassTop:) (only-untyped class?/sc)]
         ;; TODO Figure out how this should work
         ;[(StructTop: s) (struct-top/sc s)]
 

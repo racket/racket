@@ -8,6 +8,7 @@
 (make-predicate Thread-CellTop)
 (make-predicate Prompt-TagTop)
 (make-predicate Continuation-Mark-KeyTop)
+(make-predicate ClassTop)
 
 
  
