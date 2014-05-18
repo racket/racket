@@ -962,3 +962,17 @@ code, and works better, too.
 Nice to be here again...
 
 2010-12-04
+
+**************
+
+How time flies. Small bug fixes; it's now illegal to refer to undefined
+values. That is, (letrec ([a a]) 3) is illegal.  This caused stepper
+breakage, and I was worried that fixing this was going to require some
+terrible deep surgery.  In fact, though, it looks like this change
+makes things *simpler*; it looks like I was going out of my way to
+preserve the undefined values for situations where it might turn up in
+student programs, and now I can omit that check.
+
+2013-05-18
+
+**************
