@@ -1420,4 +1420,11 @@
             (define/public (m arg ...) . body))
           (my-meth (hello) (displayln "hello world"))))
       (send (new c%) hello))
-    -Void]))
+    -Void]
+   ;; the next few tests check failing class instantiation
+   [tc-err (make-object object% 1)
+           #:msg #rx"expected: 0 arguments.*given: 1 arguments"]
+   [tc-err (make-object (ann object% ClassTop))
+           #:msg #rx"cannot instantiate.*ClassTop"]
+   [tc-err (make-object 3)
+           #:msg #rx"value of a non-class type"]))
