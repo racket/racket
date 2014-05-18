@@ -697,7 +697,7 @@
   ;; variance : Variance
   (define (constraint->type v variance)
     (match v
-      [(c S _ T)
+      [(c S T)
        (evcase variance
                [Constant S]
                [Covariant S]
