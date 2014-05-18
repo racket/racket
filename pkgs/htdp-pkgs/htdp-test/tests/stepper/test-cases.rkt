@@ -681,6 +681,13 @@
 ;;
 ;;;;;;;;;;;;;
 
+(t1 'temp-letrec
+    m:intermediate "(letrec ([a 13]) 9)"
+    (let* ([defs2 `((define a_0 13))])
+      `((before-after ((hilite (letrec ([a 13]) 9)))
+                      ((hilite (define a_0 13)) (hilite 9)))
+        (finished-stepping))))
+
 (t1 'letrec1
     m:intermediate "(define a 3) (define c 19) (letrec ([a 13] [b a]) (+ b a c))"
     (let* ([defs1 `((define a 3) (define c 19))]

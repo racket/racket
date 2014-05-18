@@ -104,7 +104,7 @@
       #;(run-tests '(check-expect forward-ref check-within check-within-bad
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      #;(run-test 'check-expect)
+      #;(run-test 'temp-letrec)
       (run-all-tests)
 
       #;(string->expanded-syntax-list m:mz "(if true 3 4)"
