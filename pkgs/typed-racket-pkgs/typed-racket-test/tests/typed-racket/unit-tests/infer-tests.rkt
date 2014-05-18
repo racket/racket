@@ -109,9 +109,7 @@
     (infer-t (-v a) (-v b) #:vars '(b))
 
     (infer-t (make-ListDots -Symbol 'b) (-lst -Symbol) #:indices '(b)
-             ;; TODO Figure out why this doesnt' work
-             #;#;
-             #:result [(make-ListDots (-v b) 'b) (-lst Univ)])
+             #:result [(make-ListDots (-v b) 'b) -Null])
     (infer-t (make-ListDots (-v a) 'b) (-lst -Symbol) #:vars '(a) #:indices '(b)
              #:result [(-lst* (make-ListDots (-v b) 'b) (-v a))
                        (-lst* (-lst -Bottom) -Bottom)])
