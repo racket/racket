@@ -740,7 +740,8 @@
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type/c - result type into which we will be substituting
 (define/cond-contract (subst-gen C X Y R)
-  (cset? (listof symbol?) (or/c Values/c AnyValues? ValuesDots?) . -> . (or/c #f substitution/c))
+  (cset? (listof symbol?) (listof symbol?) (or/c Values/c AnyValues? ValuesDots?)
+   . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
   ;; v : Symbol - variable for which to check variance
