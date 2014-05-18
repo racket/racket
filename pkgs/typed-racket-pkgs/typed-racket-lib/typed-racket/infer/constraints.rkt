@@ -12,15 +12,14 @@
 (export constraints^)
 
 ;; Widest constraint possible
-(define (no-constraint v)
-  (make-c (Un) v Univ))
+(define no-constraint (make-c (Un) Univ))
 
 ;; Create an empty constraint map from a set of type variables X and
 ;; index variables Y.  For now, we add the widest constraints for
 ;; variables in X to the cmap and create an empty dmap.
 (define (empty-cset X Y)
   (make-cset (list (cons (for/hash ([x (in-list X)])
-                           (values x (no-constraint x)))
+                           (values x no-constraint))
                          (make-dmap (make-immutable-hash null))))))
 
 
@@ -29,7 +28,7 @@
   (match cs
     [(struct cset (maps))
      (make-cset (for/list ([(map dmap) (in-pairs maps)])
-                  (cons (hash-set map var (make-c S var T))
+                  (cons (hash-set map var (make-c S T))
                         dmap)))]))
 
 ;; meet: Type Type -> Type
@@ -54,12 +53,10 @@
 ;; `c2`)
 (define (c-meet c1 c2 [var #f])
   (match*/early (c1 c2)
-    [((struct c (S X T)) (struct c (S* X* T*)))
-     (unless (or var (eq? X X*))
-       (int-err "Non-matching vars in c-meet: ~a ~a" X X*))
+    [((struct c (S T)) (struct c (S* T*)))
      (let ([S (join S S*)] [T (meet T T*)])
        (and (subtype S T)
-            (make-c S (or var X) T)))]))
+            (make-c S T)))]))
 
 ;; compute the meet of two constraint sets
 ;; returns #f for failure

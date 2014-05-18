@@ -16,7 +16,6 @@
 (define-signature constraints^
   ([cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . (or/c #f cset?))]
    [cond-contracted cset-meet* ((listof cset?) . -> . (or/c #f cset?))]
-   no-constraint
    [cond-contracted empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
    [cond-contracted insert (cset? symbol? Type/c Type/c . -> . cset?)]
    [cond-contracted cset-join ((listof cset?) . -> . cset?)]
