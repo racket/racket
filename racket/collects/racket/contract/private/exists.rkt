@@ -16,12 +16,13 @@
         [out (∀∃/c-out ctc)]
         [pred? (∀∃/c-pred? ctc)]
         [neg? (∀∃/c-neg? ctc)])
+    (define name (∀∃/c-name ctc))
     (λ (blame)
       (if (equal? neg? (blame-swapped? blame))
           (λ (val)
             (if (pred? val)
                 (out val)
-                (raise-blame-error blame val "non-polymorphic value: ~e" val)))
+                (raise-blame-error blame val "not ~a: ~e" name val)))
           in))))
 
 (define-struct ∀∃/c (in out pred? name neg?)
