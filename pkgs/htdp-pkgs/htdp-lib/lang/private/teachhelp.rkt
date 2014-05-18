@@ -22,11 +22,7 @@
              stx
              stx)]
 	   [id
-            (stepper-syntax-property
-             tmp-id
-             'stepper-skipto
-             (append skipto/cdr
-                     skipto/third))]))))
+            tmp-id]))))
 #;    
   (define (appropriate-use what)
     (case what
