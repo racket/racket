@@ -13,8 +13,10 @@
 (plot-bitmap (function sin -4 4))
 (plot3d-bitmap (contour-intervals3d * -4 4 -4 4))
 
-(check-true (void? (plot-file (function sin -4 4) "sin.png")))
-(delete-file "sin.png")
+(define sin.png (make-temporary-file "plot-bitmap-sin-test~a.png"))
+(check-true (void? (plot-file (function sin -4 4) sin.png)))
+(delete-file sin.png)
 
-(check-true (void? (plot3d-file (contour-intervals3d * -4 4 -4 4) "times.png")))
-(delete-file "times.png")
+(define times.png (make-temporary-file "plot-bitmap-times-test~a.png"))
+(check-true (void? (plot3d-file (contour-intervals3d * -4 4 -4 4) times.png)))
+(delete-file times.png)
