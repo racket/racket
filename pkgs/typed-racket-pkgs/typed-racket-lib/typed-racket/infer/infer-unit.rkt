@@ -752,31 +752,30 @@
   (match (car (cset-maps C))
     [(cons cmap (dmap dm))
      (let ([subst (hash-union
-                   (for/hash ([(k dc) (in-hash dm)])
-                     (match dc
-                       [(dcon fixed #f)
-                        (values k
-                                (i-subst
-                                 (for/list ([f fixed])
-                                   (constraint->type f idx-hash #:variable k))))]
-                       [(dcon fixed rest)
-                        (values k
-                                (i-subst/starred (for/list ([f (in-list fixed)])
-                                                   (constraint->type f idx-hash #:variable k))
-                                                 (constraint->type rest idx-hash)))]
-                       [(dcon-exact fixed rest)
-                        (values k
-                                (i-subst/starred
-                                 (for/list ([f (in-list fixed)])
-                                   (constraint->type f idx-hash #:variable k))
-                                 (constraint->type rest idx-hash)))]
-                       [(dcon-dotted fixed dc dbound)
-                        (values k
-                                (i-subst/dotted
-                                 (for/list ([f (in-list fixed)])
-                                   (constraint->type f idx-hash #:variable k))
-                                 (constraint->type dc idx-hash #:variable k)
-                                 dbound))]))
+                    (for/hash ([(k dc) (in-hash dm)])
+                      (values
+                        k
+                        (match dc
+                          [(dcon fixed #f)
+                           (i-subst
+                             (for/list ([f fixed])
+                               (constraint->type f idx-hash #:variable k)))]
+                          [(dcon fixed rest)
+                           (i-subst/starred
+                             (for/list ([f (in-list fixed)])
+                               (constraint->type f idx-hash #:variable k))
+                             (constraint->type rest idx-hash))]
+                          [(dcon-exact fixed rest)
+                           (i-subst/starred
+                             (for/list ([f (in-list fixed)])
+                               (constraint->type f idx-hash #:variable k))
+                             (constraint->type rest idx-hash))]
+                          [(dcon-dotted fixed dc dbound)
+                           (i-subst/dotted
+                             (for/list ([f (in-list fixed)])
+                               (constraint->type f idx-hash #:variable k))
+                             (constraint->type dc idx-hash #:variable k)
+                             dbound)])))
                    (for/hash ([(k v) (in-hash cmap)])
                      (values k (t-subst (constraint->type v var-hash)))))])
        ;; verify that we got all the important variables
