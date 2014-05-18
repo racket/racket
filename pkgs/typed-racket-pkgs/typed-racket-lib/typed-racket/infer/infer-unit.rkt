@@ -693,24 +693,21 @@
    . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
-  ;; v : Symbol - variable for which to check variance
-  ;; h : (Hash Symbol Variance) - hash to check variance in (either var or idx hash)
-  ;; variable: Symbol - variable to use instead, if v was a temp var for idx extension
-  (define (constraint->type v h #:variable [variable #f])
+  ;; c : Constaint
+  ;; variance : Variance
+  (define (constraint->type v variance)
     (match v
-      [(c S X T)
-       (let ([var (hash-ref h (or variable X) Constant)])
-         ;(printf "variance was: ~a\nR was ~a\nX was ~a\nS T ~a ~a\n" var R (or variable X) S T)
-         (evcase var
-                 [Constant S]
-                 [Covariant S]
-                 [Contravariant T]
-                 [Invariant
-                  (let ([gS (generalize S)])
-                    ;(printf "Inv var: ~a ~a ~a ~a\n" v S gS T)
-                    (if (subtype gS T)
-                        gS
-                        S))]))]))
+      [(c S _ T)
+       (evcase variance
+               [Constant S]
+               [Covariant S]
+               [Contravariant T]
+               [Invariant
+                (let ([gS (generalize S)])
+                  (if (subtype gS T)
+                      gS
+                      S))])]))
+
   ;; Since we don't add entries to the empty cset for index variables (since there is no
   ;; widest constraint, due to dcon-exacts), we must add substitutions here if no constraint
   ;; was found.  If we're at this point and had no other constraints, then adding the
@@ -732,31 +729,23 @@
     [(cons cmap (dmap dm))
      (let ([subst (hash-union
                     (for/hash ([(k dc) (in-hash dm)])
+                      (define (c->t c) (constraint->type c (hash-ref idx-hash k Constant)))
                       (values
                         k
                         (match dc
                           [(dcon fixed #f)
-                           (i-subst
-                             (for/list ([f fixed])
-                               (constraint->type f idx-hash #:variable k)))]
-                          [(dcon fixed rest)
+                           (i-subst (map c->t fixed))]
+                          [(or (dcon fixed rest) (dcon-exact fixed rest))
                            (i-subst/starred
-                             (for/list ([f (in-list fixed)])
-                               (constraint->type f idx-hash #:variable k))
-                             (constraint->type rest idx-hash))]
-                          [(dcon-exact fixed rest)
-                           (i-subst/starred
-                             (for/list ([f (in-list fixed)])
-                               (constraint->type f idx-hash #:variable k))
-                             (constraint->type rest idx-hash))]
+                             (map c->t fixed)
+                             (c->t rest))]
                           [(dcon-dotted fixed dc dbound)
                            (i-subst/dotted
-                             (for/list ([f (in-list fixed)])
-                               (constraint->type f idx-hash #:variable k))
-                             (constraint->type dc idx-hash #:variable k)
+                             (map c->t fixed)
+                             (c->t dc)
                              dbound)])))
                    (for/hash ([(k v) (in-hash cmap)])
-                     (values k (t-subst (constraint->type v var-hash)))))])
+                     (values k (t-subst (constraint->type v (hash-ref var-hash k Constant))))))])
        ;; verify that we got all the important variables
        (and (for/and ([v (in-list X)])
               (let ([entry (hash-ref subst v #f)])
