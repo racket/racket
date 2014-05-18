@@ -136,6 +136,11 @@
     [infer-t (->... null ((-v a) a) (-v b)) (-> -Symbol -String) #:vars '(b) #:indices '(a)]
     [infer-t (->... null ((-v a) a) (make-ListDots (-v a) 'a)) (-> -String -Symbol  (-lst* -String -Symbol)) #:indices '(a)]
     [infer-t (->... (list (-v b)) ((-v a) a) (-v b)) (-> -String -Symbol -String) #:vars '(b) #:indices '(a)]
+    [infer-t (->... (list (-v b)) ((-v a) a) (-v b))
+             (->... (list -Symbol) (-String a) (-v b))
+             #:vars '(b) #:indices '(a)
+             #:result [(-lst* (make-ListDots (-v a) 'a) (-v b))
+                       (-lst* (-lst -String) -Symbol)]]
 
     [infer-l (list (->... null ((-v b) b) (-v a))  (-> (-v a) -Boolean))
              (list (-> -String            -Symbol) (-> -Symbol   -Boolean))

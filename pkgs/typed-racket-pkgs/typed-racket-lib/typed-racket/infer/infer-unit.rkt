@@ -262,17 +262,19 @@
             [new-tys (for/list ([var (in-list vars)])
                        (substitute (make-F var) dbound dty))])
        (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars))]
-    ;; this case is just for constrainting other variables, not dbound
+
+    ;; samed dotted bound
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (dotted-end t-dty dbound)))
      #:return-unless (= (length ss) (length ts))
      #f
-     ;; If we want to infer the dotted bound, then why is it in both types?
-     #:return-when (memq dbound Y)
-     #f
      (% cset-meet
         (cgen/list V X Y ss ts)
-        (cgen V X Y s-dty t-dty))]
+        (if (memq dbound Y)
+            (extend-tvars (list dbound)
+              (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
+            (cgen V X Y s-dty t-dty)))]
+
     ;; bounds are different
     [((seq ss (dotted-end s-dty (? (λ (db) (memq db Y)) dbound)))
       (seq ts (dotted-end t-dty dbound*)))
