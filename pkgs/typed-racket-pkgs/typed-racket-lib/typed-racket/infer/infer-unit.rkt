@@ -716,39 +716,18 @@
   ;; was found.  If we're at this point and had no other constraints, then adding the
   ;; equivalent of the constraint (dcon null (c Bot X Top)) is okay.
   (define (extend-idxs S)
-    (define fi-R (fi R))
-    ;; If the index variable v is not used in the type, then
-    ;; we allow it to be replaced with the empty list of types;
-    ;; otherwise we error, as we do not yet know what an appropriate
-    ;; lower bound is.
-    (define (demote/check-free v)
-      (if (memq v fi-R)
-          (int-err "attempted to demote dotted variable")
-          (i-subst null)))
-    ;; absent-entries is #f if there's an error in the substitution, otherwise
-    ;; it's a list of variables that don't appear in the substitution
-    (define absent-entries
-      (for/fold ([no-entry null]) ([v (in-list Y)])
-        (let ([entry (hash-ref S v #f)])
-          ;; Make sure we got a subst entry for an index var
-          ;; (i.e. a list of types for the fixed portion
-          ;;  and a type for the starred portion)
-          (cond
-            [(not no-entry) no-entry]
-            [(not entry) (cons v no-entry)]
-            [(or (i-subst? entry) (i-subst/starred? entry) (i-subst/dotted? entry)) no-entry]
-            [else #f]))))
-    (and absent-entries
-         (hash-union
-          (for/hash ([missing (in-list absent-entries)])
-            (let ([var (hash-ref idx-hash missing Constant)])
-              (values missing
-                      (evcase var
-                              [Constant (demote/check-free missing)]
-                              [Covariant (demote/check-free missing)]
-                              [Contravariant (i-subst/starred null Univ)]
-                              [Invariant (demote/check-free missing)]))))
-          S)))
+    (hash-union
+     (for/hash ([v (in-list Y)]
+                #:unless (hash-has-key? S v))
+       (let ([var (hash-ref idx-hash v Constant)])
+         (values v
+                 (evcase var
+                         [Constant (i-subst null)]
+                         [Covariant (i-subst null)]
+                         [Contravariant (i-subst/starred null Univ)]
+                         ;; TODO figure out if there is a better subst here
+                         [Invariant (i-subst null)]))))
+     S))
   (match (car (cset-maps C))
     [(cons cmap (dmap dm))
      (let ([subst (hash-union
