@@ -55,7 +55,7 @@
 
   (match f-ty
     ;; apply of a simple function or polymorphic function
-    [(tc-result1: (AnyPoly: vars '() (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
+    [(tc-result1: (AnyPoly: vars dotted-vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (or
        (for/or ([domain (in-list doms)]
                 [range (in-list rngs)]
@@ -66,7 +66,7 @@
            (and substitution (do-ret (subst-all substitution range))))
 
          (finish
-           (infer vars null
+           (infer vars dotted-vars
                   (list (-Tuple* arg-tys full-tail-ty))
                   (list (-Tuple* domain
                                  (cond
@@ -78,48 +78,6 @@
                                    ;; but provides all the necessary fixed arguments
                                    [else -Null])))
                   range)))
-       (failure))]
-    [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
-                            (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-     (or
-       (for/or ([domain (in-list doms)]
-                [range (in-list rngs)]
-                [rest (in-list rests)]
-                [drest (in-list drests)])
-         (define (finish substitution) (do-ret (subst-all substitution range)))
-         (cond
-           ;; the actual work, when we have a * function
-           [(and rest
-                 (infer fixed-vars (list dotted-var)
-                        (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple* domain (make-Listof rest)))
-                        range))
-            => finish]
-           ;; ... function
-           [(and drest
-                 (infer fixed-vars (list dotted-var)
-                        (list (-Tuple* arg-tys full-tail-ty))
-                        (list (-Tuple* domain (make-ListDots (car drest) (cdr drest))))
-                        range))
-            => finish]
-           ;; ... function, (Listof A) or (List A B C etc) arg
-           [(and drest (not tail-bound)
-                 (eq? (cdr drest) dotted-var)
-                 (<= (length domain) (length arg-tys))
-                 (match full-tail-ty
-                   [(List: tail-arg-tys #:tail (Listof: tail-arg-ty))
-                    (infer/vararg
-                      fixed-vars (list dotted-var)
-                      (cons tail-arg-ty (append arg-tys tail-arg-tys))
-                      (cons (car drest) domain)
-                      (car drest)
-                      range)]
-                   [(List: tail-arg-tys)
-                    (infer/dots fixed-vars dotted-var (append arg-tys tail-arg-tys) domain
-                                (car drest) range (fv range))]
-                   [_ #f]))
-            => finish]
-           [else #f]))
        (failure))]
     [(tc-result1: (AnyPoly: _ _ (Function: '())))
      (tc-error/expr "Function has no cases")]

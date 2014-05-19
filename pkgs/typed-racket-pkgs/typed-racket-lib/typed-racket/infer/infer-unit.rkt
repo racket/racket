@@ -21,6 +21,9 @@
          racket/match
          mzlib/etc
          (contract-req)
+         (for-syntax
+           racket/base
+           syntax/parse)
          unstable/sequence unstable/list unstable/hash
          racket/list)
 
@@ -145,6 +148,41 @@
               [(dcon-exact null rest) rest]
               [_ (int-err "did not get a rest-only dcon when moving to the dmap")])))))
 
+;; Represents a sequence of types. types are the fixed prefix, and end is the remaining types
+(struct seq (types end) #:transparent)
+(struct null-end () #:transparent)
+(struct uniform-end (type) #:transparent)
+(struct dotted-end (type bound) #:transparent)
+
+(define (Values->seq v)
+  (match v
+    [(Values: ts) (seq ts (null-end))]
+    [(ValuesDots: ts dty dbound) (seq ts (dotted-end (-result dty) dbound))]
+    [_ #f]))
+
+
+(define (List->end v)
+  (match v
+    [(== -Null type-equal?) (null-end)]
+    [(Listof: t) (uniform-end t)]
+    [(ListDots: t dbound) (dotted-end t dbound)]
+    [_ #f]))
+
+(define (List->seq v)
+  (match v
+    [(List: ts #:tail (app List->end end)) (and end (seq ts end))]))
+
+
+(define-match-expander ValuesSeq:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ seq) #'(app Values->seq (? values seq))])))
+
+(define-match-expander ListSeq:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ seq) #'(app List->seq (? values seq))])))
+
 
 ;; Maps dotted vars (combined with dotted types, to ensure global uniqueness)
 ;; to "fresh" symbols.
@@ -198,136 +236,141 @@
     ;; FIXME - do something here
     [(_ _) #f]))
 
-(define/cond-contract (cgen/arr V X Y s-arr t-arr)
-  ((listof symbol?) (listof symbol?) (listof symbol?) arr? arr? . -> . (or/c #f cset?))
-  (define (cg S T) (cgen V X Y S T))
-  (match*/early (s-arr t-arr)
-    ;; the simplest case - no rests, drests, keywords
-    [((arr: ss s #f #f '())
-      (arr: ts t #f #f '()))
-     (% cset-meet
-        ;; contravariant
-        (cgen/list V X Y ts ss)
-        ;; covariant
-        (cg s t))]
-    ;; just a rest arg, no drest, no keywords
-    [((arr: ss s s-rest #f '())
-      (arr: ts t t-rest #f '()))
-     (let ([arg-mapping
-            (cond
-              ;; both rest args are present, so make them the same length
-              [(and s-rest t-rest)
-               (cgen/list V X Y
-                          (cons t-rest (extend ss ts t-rest))
-                          (cons s-rest (extend ts ss s-rest)))]
-              ;; no rest arg on the right, so just pad the left and forget the rest arg
-              [(and s-rest (not t-rest) (<= (length ss) (length ts)))
-               (cgen/list V X Y ts (extend ts ss s-rest))]
-              ;; no rest arg on the left, or wrong number = fail
-              [else #f])]
-           [ret-mapping (cg s t)])
-       (% cset-meet arg-mapping ret-mapping))]
-    ;; dotted on the left, nothing on the right
-    [((arr: ss s #f (cons dty dbound) '())
-      (arr: ts t #f #f                '()))
+(define/cond-contract (cgen/seq V X Y s-seq t-seq)
+  ((listof symbol?) (listof symbol?) (listof symbol?) seq? seq? . -> . (or/c #f cset?))
+  (match*/early (s-seq t-seq)
+    ;; The simplest case - both are null-end
+    [((seq ss (null-end))
+      (seq ts (null-end)))
+      (cgen/list V X Y ss ts)]
+    ;; One is null-end the other is uniform-end
+    [((seq ss (null-end))
+      (seq ts (uniform-end t-rest)))
+     (cgen/list V X Y ss (extend ss ts t-rest))]
+    [((seq ss (uniform-end s-rest))
+      (seq ts (null-end)))
+     #f]
+    ;; Both are uniform-end
+    [((seq ss (uniform-end s-rest))
+      (seq ts (uniform-end t-rest)))
+     (cgen/list V X Y
+                (cons s-rest ss)
+                (cons t-rest (extend ss ts t-rest)))]
+    ;; dotted below, nothing above
+    [((seq ss (dotted-end dty dbound))
+      (seq ts (null-end)))
      #:return-unless (memq dbound Y)
      #f
      #:return-unless (<= (length ss) (length ts))
      #f
-     (let* ([vars      (var-store-take dbound dty (- (length ts) (length ss)))]
-            [new-tys   (for/list ([var (in-list vars)])
-                         (substitute (make-F var) dbound dty))]
-            [new-s-arr (make-arr (append ss new-tys) s #f #f null)]
-            [new-cset  (cgen/arr V (append vars X) Y new-s-arr t-arr)])
-       (% move-vars-to-dmap new-cset dbound vars))]
-    ;; dotted on the right, nothing on the left
-    [((arr: ss s #f #f                '())
-      (arr: ts t #f (cons dty dbound) '()))
+     (let* ([vars    (var-store-take dbound dty (- (length ts) (length ss)))]
+            [new-tys (for/list ([var (in-list vars)])
+                       (substitute (make-F var) dbound dty))])
+       (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars))]
+    ;; dotted above, nothing below
+    [((seq ss (null-end))
+      (seq ts (dotted-end dty dbound)))
      #:return-unless (memq dbound Y)
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (let* ([vars     (var-store-take dbound dty (- (length ss) (length ts)))]
-            [new-tys  (for/list ([var (in-list vars)])
-                        (substitute (make-F var) dbound dty))]
-            [new-t-arr (make-arr (append ts new-tys) t #f #f null)]
-            [new-cset (cgen/arr V (append vars X) Y s-arr new-t-arr)])
-       (% move-vars-to-dmap new-cset dbound vars))]
-    ;; this case is just for constrainting other variables, not dbound
-    [((arr: ss s #f (cons s-dty dbound) '())
-      (arr: ts t #f (cons t-dty dbound) '()))
+     (let* ([vars    (var-store-take dbound dty (- (length ss) (length ts)))]
+            [new-tys (for/list ([var (in-list vars)])
+                       (substitute (make-F var) dbound dty))])
+       (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars))]
+
+    ;; samed dotted bound
+    [((seq ss (dotted-end s-dty dbound))
+      (seq ts (dotted-end t-dty dbound)))
      #:return-unless (= (length ss) (length ts))
      #f
-     ;; If we want to infer the dotted bound, then why is it in both types?
-     #:return-when (memq dbound Y)
-     #f
-     (let* ([arg-mapping (cgen/list V X Y ts ss)]
-            [darg-mapping (cgen V X Y t-dty s-dty)]
-            [ret-mapping (cg s t)])
-       (% cset-meet arg-mapping darg-mapping ret-mapping))]
+     (% cset-meet
+        (cgen/list V X Y ss ts)
+        (if (memq dbound Y)
+            (extend-tvars (list dbound)
+              (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
+            (cgen V X Y s-dty t-dty)))]
+
     ;; bounds are different
-    [((arr: ss s #f (cons s-dty (? (λ (db) (memq db Y)) dbound))  '())
-      (arr: ts t #f (cons t-dty dbound*) '()))
+    [((seq ss (dotted-end s-dty (? (λ (db) (memq db Y)) dbound)))
+      (seq ts (dotted-end t-dty dbound*)))
      #:return-unless (= (length ss) (length ts)) #f
      #:return-when (memq dbound* Y) #f
-     (let* ([arg-mapping (cgen/list V X Y ts ss)]
+     (let* ([arg-mapping (cgen/list V X Y ss ts)]
             ;; just add dbound as something that can be constrained
             [darg-mapping
               (extend-tvars (list dbound*)
-                (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y t-dty s-dty) dbound dbound*))]
-            [ret-mapping (cg s t)])
-       (% cset-meet arg-mapping darg-mapping ret-mapping))]
-    [((arr: ss s #f (cons s-dty dbound)  '())
-      (arr: ts t #f (cons t-dty (? (λ (db) (memq db Y)) dbound*)) '()))
+                (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound dbound*))])
+       (% cset-meet arg-mapping darg-mapping))]
+    [((seq ss (dotted-end s-dty dbound))
+      (seq ts (dotted-end t-dty (? (λ (db) (memq db Y)) dbound*))))
      #:return-unless (= (length ss) (length ts)) #f
-     (let* ([arg-mapping (cgen/list V X Y ts ss)]
-            ;; just add dbound as something that can be constrained
+     (let* ([arg-mapping (cgen/list V X Y ss ts)]
+            ;; just add dbound* as something that can be constrained
             [darg-mapping
               (extend-tvars (list dbound)
-                (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y t-dty s-dty) dbound* dbound))]
-            [ret-mapping (cg s t)])
-       (% cset-meet arg-mapping darg-mapping ret-mapping))]
+                (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y s-dty t-dty) dbound* dbound))])
+       (% cset-meet arg-mapping darg-mapping))]
     ;; * <: ...
-    [((arr: ss s s-rest #f                  '())
-      (arr: ts t #f     (cons t-dty dbound) '()))
+    [((seq ss (uniform-end s-rest))
+      (seq ts (dotted-end t-dty dbound)))
      #:return-unless (memq dbound Y)
      #f
-     (if (<= (length ss) (length ts))
-         ;; the simple case
-         (let* ([arg-mapping (cgen/list V X Y ts (extend ts ss s-rest))]
-                [darg-mapping (% move-rest-to-dmap
-                                 (cgen V (cons dbound X) Y t-dty s-rest) dbound)]
-                [ret-mapping (cg s t)])
-           (% cset-meet arg-mapping darg-mapping ret-mapping))
-         ;; the hard case
-         (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
-                [new-tys  (for/list ([var (in-list vars)])
-                            (substitute (make-F var) dbound t-dty))]
-                [new-t-arr (make-arr (append ts new-tys) t #f (cons t-dty dbound) null)]
-                [new-cset (cgen/arr V (append vars X) Y s-arr new-t-arr)])
-           (% move-vars+rest-to-dmap new-cset dbound vars)))]
-    ;; If dotted <: starred is correct, add it below.  Not sure it is.
-    [((arr: ss s #f     (cons s-dty dbound) '())
-      (arr: ts t t-rest #f                  '()))
-     #:return-unless (memq dbound Y)
-     #f
-     (cond [(< (length ss) (length ts))
-            ;; the hard case
-            (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                   [new-tys  (for/list ([var (in-list vars)])
-                               (substitute (make-F var) dbound s-dty))]
-                   [new-s-arr (make-arr (append ss new-tys) s #f (cons s-dty dbound) null)]
-                   [new-cset (cgen/arr V (append vars X) Y new-s-arr t-arr)])
-              (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
-           [(= (length ss) (length ts))
-            ;; the simple case
-            (let* ([arg-mapping (cgen/list V X Y (extend ss ts t-rest) ss)]
-                   [rest-mapping (cgen V (cons dbound X) Y t-rest s-dty)]
-                   [darg-mapping (% move-rest-to-dmap rest-mapping dbound #:exact #t)]
-                   [ret-mapping (cg s t)])
-              (% cset-meet arg-mapping darg-mapping ret-mapping))]
-           [else #f])]
-    [(_ _) #f]))
+     (cond
+       [(= (length ts) (length ss))
+        ;; the simple case
+        (let* ([arg-mapping (cgen/list V X Y ss ts)]
+               [darg-mapping (% move-rest-to-dmap
+                                (cgen V (cons dbound X) Y s-rest t-dty) dbound #:exact #t)])
+          (% cset-meet arg-mapping darg-mapping))]
+       [(< (length ts) (length ss))
+        ;; the hard case
+        (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
+               [new-tys  (for/list ([var (in-list vars)])
+                           (substitute (make-F var) dbound t-dty))]
+               [new-t-seq (seq (append ts new-tys) (dotted-end t-dty dbound))]
+               [new-cset (cgen/seq V (append vars X) Y s-seq new-t-seq)])
+          (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
+       [else #f])]
+
+    [((seq ss (dotted-end s-dty dbound))
+      (seq ts (uniform-end t-rest)))
+     (if (memq dbound Y)
+         (cond [(< (length ss) (length ts))
+                ;; the hard case
+                (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
+                       [new-tys  (for/list ([var (in-list vars)])
+                                   (substitute (make-F var) dbound s-dty))]
+                       [new-s-seq (seq (append ss new-tys) (dotted-end s-dty dbound))]
+                       [new-cset (cgen/seq V (append vars X) Y new-s-seq t-seq)])
+                  (% move-vars+rest-to-dmap new-cset dbound vars))]
+               [else
+                ;; the simple case
+                (let* ([arg-mapping (cgen/list V X Y ss (extend ss ts t-rest))]
+                       [darg-mapping (% move-rest-to-dmap
+                                        (cgen V (cons dbound X) Y s-dty t-rest) dbound)])
+                  (% cset-meet arg-mapping darg-mapping))])
+         (cgen/seq V X Y (seq ss (uniform-end (substitute Univ dbound s-dty))) t-seq))]))
+
+
+(define/cond-contract (cgen/arr V X Y s-arr t-arr)
+  ((listof symbol?) (listof symbol?) (listof symbol?) arr? arr? . -> . (or/c #f cset?))
+
+  (match* (s-arr t-arr)
+    [((arr: ss s s-rest s-drest s-kws) (arr: ts t t-rest t-drest t-kws))
+     (define (rest->end rest drest)
+       (cond
+         [rest (uniform-end rest)]
+         [drest (dotted-end (car drest) (cdr drest))]
+         [else (null-end)]))
+
+     (define s-seq (seq ss (rest->end s-rest s-drest)))
+     (define t-seq (seq ts (rest->end t-rest t-drest)))
+     (and (null? s-kws)
+          (null? t-kws)
+          (% cset-meet
+           (cgen V X Y s t)
+           (cgen/seq V X Y t-seq s-seq)))]))
 
 (define/cond-contract (cgen/flds V X Y flds-s flds-t)
   ((listof symbol?) (listof symbol?) (listof symbol?) (listof fld?) (listof fld?)  
@@ -394,60 +437,9 @@
                         (cgen/filter-set V X Y f-s f-t)
                         (cgen/object V X Y o-s o-t))]
 
-          ;; values are covariant
-          [((Values: ss) (Values: ts))
-           #:return-unless (= (length ss) (length ts))
-           #f
-           (cgen/list V X Y ss ts)]
-
-          ;; this constrains `dbound' to be |ts| - |ss|
-          [((ValuesDots: ss s-dty dbound) (Values: ts))
-           #:return-unless (>= (length ts) (length ss)) #f
-           #:return-unless (memq dbound Y) #f
-
-           (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                  ;; new-tys are dummy plain type variables, 
-                  ;; standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var (in-list vars)])
-                              ;; must be a Result since we are matching these against
-                              ;; the contents of the `Values`, which are Results
-                              (-result (substitute (make-F var) dbound s-dty)))]
-                  ;; generate constraints on the prefixes, and on the dummy types
-                  [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
-             ;; now take all the dummy types, and use them to constrain dbound appropriately
-             (% move-vars-to-dmap new-cset dbound vars))]
-
-          ;; like the case above, but constrains `dbound' to be |ss| - |ts|
-          [((Values: ss) (ValuesDots: ts t-dty dbound))
-           #:return-unless (>= (length ss) (length ts)) #f
-           #:return-unless (memq dbound Y) #f
-
-           ;; see comments for last case, this case swaps `s` and `t` order
-           (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
-                  [new-tys  (for/list ([var (in-list vars)])
-                              (-result (substitute (make-F var) dbound t-dty)))]
-                  [new-cset (cgen/list V (append vars X) Y ss (append ts new-tys))])
-             (% move-vars-to-dmap new-cset dbound vars))]
-
-          ;; identical bounds - just unify pairwise
-          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
-           #:return-when (memq dbound Y) #f
-           (cgen/list V X Y (cons s-dty ss) (cons t-dty ts))]
-          [((ValuesDots: ss s-dty (? (λ (db) (memq db Y)) s-dbound))
-            (ValuesDots: ts t-dty t-dbound))
-           ;; What should we do if both are in Y?
-           #:return-when (memq t-dbound Y) #f
-           (% cset-meet
-              (cgen/list V X Y ss ts)
-              (extend-tvars (list t-dbound)
-                (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound)))]
-          [((ValuesDots: ss s-dty s-dbound)
-            (ValuesDots: ts t-dty (? (λ (db) (memq db Y)) t-dbound)))
-           ;; s-dbound can't be in Y, due to previous rule
-           (% cset-meet
-              (cgen/list V X Y ss ts)
-              (extend-tvars (list s-dbound)
-                (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound)))]
+          ;; Values just delegate to cgen/seq
+          [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
+           (cgen/seq V X Y s-seq t-seq)]
 
           ;; they're subtypes. easy.
           [(a b) 
@@ -576,56 +568,10 @@
            (cgen/list V X Y (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
-          ;; ListDots can be below a Listof
-          ;; must be above mu unfolding
-          [((ListDots: s-dty dbound) (Listof: t-elem))
-           (if (memq dbound Y)
-               (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-elem) dbound)
-               (cgen V X Y (substitute Univ dbound s-dty) t-elem))]
-          [((Listof: s-elem) (ListDots: t-dty dbound))
-           #:return-unless (memq dbound Y) #f
-           (define v (cgen V (cons dbound X) Y s-elem t-dty))
-           (% move-rest-to-dmap v dbound #:exact #t)]
 
-          ;; two ListDots with the same bound, just check the element type
-          [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
-           (if (memq dbound Y)
-               (extend-tvars (list dbound)
-                 (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
-               (cgen V X Y s-dty t-dty))]
-          [((ListDots: s-dty (? (λ (db) (memq db Y)) s-dbound)) (ListDots: t-dty t-dbound))
-           ;; What should we do if both are in Y?
-           #:return-when (memq t-dbound Y) #f
-           (extend-tvars (list t-dbound)
-             (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound))]
-          [((ListDots: s-dty s-dbound) (ListDots: t-dty (? (λ (db) (memq db Y)) t-dbound)))
-           ;; s-dbound can't be in Y, due to previous rule
-           (extend-tvars (list s-dbound)
-             (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound))]
-
-          ;; this constrains `dbound' to be |ts| - |ss|
-          [((ListDots: s-dty dbound) (List: ts))
-           #:return-unless (memq dbound Y) #f
-           (let* ([vars     (var-store-take dbound s-dty (length ts))]
-                  ;; new-tys are dummy plain type variables, 
-                  ;; standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var (in-list vars)])
-                              (substitute (make-F var) dbound s-dty))]
-                  ;; generate constraints on the prefixes, and on the dummy types
-                  [new-cset (cgen/list V (append vars X) Y new-tys ts)])
-             ;; now take all the dummy types, and use them to constrain dbound appropriately
-             (% move-vars-to-dmap new-cset dbound vars))]
-
-          ;; same as above, constrains `dbound' to be |ss| - |ts|
-          [((List: ss) (ListDots: t-dty dbound))
-           #:return-unless (memq dbound Y) #f
-
-           ;; see comments for last case, we flip s and t though
-           (let* ([vars     (var-store-take dbound t-dty (length ss))]
-                  [new-tys  (for/list ([var (in-list vars)])
-                              (substitute (make-F var) dbound t-dty))]
-                  [new-cset (cgen/list V (append vars X) Y ss new-tys)])
-             (% move-vars-to-dmap new-cset dbound vars))]
+          ;; Lists delegate to sequences
+          [((ListSeq: s-seq) (ListSeq: t-seq))
+           (cgen/seq V X Y s-seq t-seq)]
 
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies

@@ -136,6 +136,17 @@
     [infer-t (->... null ((-v a) a) (-v b)) (-> -Symbol -String) #:vars '(b) #:indices '(a)]
     [infer-t (->... null ((-v a) a) (make-ListDots (-v a) 'a)) (-> -String -Symbol  (-lst* -String -Symbol)) #:indices '(a)]
     [infer-t (->... (list (-v b)) ((-v a) a) (-v b)) (-> -String -Symbol -String) #:vars '(b) #:indices '(a)]
+    [infer-t (->... (list (-v b)) ((-v a) a) (-v b))
+             (->... (list -Symbol) (-String a) (-v b))
+             #:vars '(b) #:indices '(a)
+             #:result [(-lst* (make-ListDots (-v a) 'a) (-v b))
+                       (-lst* (-lst -String) -Symbol)]]
+    [infer-t (->* (list -Symbol) -String -Void)
+             (->... (list) ((-v a) a) -Void)
+             #:indices '(a)
+             #:result [(-lst* (make-ListDots (-v a) 'a))
+                       (-lst* (-lst* -Bottom #:tail (-lst -Bottom)))]]
+    [infer-t (->* (list) -String -Void) (->... (list) (-String a) -Void)]
 
     [infer-l (list (->... null ((-v b) b) (-v a))  (-> (-v a) -Boolean))
              (list (-> -String            -Symbol) (-> -Symbol   -Boolean))
@@ -150,6 +161,7 @@
     [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
     [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(a) #:fail]
     [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (->* (list -Symbol) -Symbol -Void) (->* (list) (-v a) -Void) #:vars '(a) #:fail]
 
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
@@ -159,6 +171,7 @@
     [i2-t (-lst (-v a)) (-lst* N B) ('a (Un N B))]
     [i2-t Univ (Un N B)]
     [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a (Un))]
+    [i2-t (-> (-v a) (-v a)) (->* null B B) ('a B)]
 
 
     [i2-l (list (-v a) (-v a) (-v b))
@@ -175,6 +188,7 @@
           '(a) ('a (Un N B))]
     ;; error tests
     [i2-f (-lst (-v a)) Univ]
+    [i2-f (->* null B B) (-> (-v a) (-v b))]
     ))
 
 
