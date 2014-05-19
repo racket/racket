@@ -1217,13 +1217,16 @@
                          dep-args)
                      (cdr clauses)))])))
   
-  #`(build-struct/dc (list #,@structs)
-                     #,(list-ref info 1)
-                     #,(list-ref info 2)
-                     '#,struct-id
-                     (quote-module-name)
-                     '#,struct-id
-                     #,struct/c?))
+  (syntax-property
+   #`(build-struct/dc (list #,@structs)
+                      #,(list-ref info 1)
+                      #,(list-ref info 2)
+                      '#,struct-id
+                      (quote-module-name)
+                      '#,struct-id
+                      #,struct/c?)
+   'disappeared-use
+   (list (syntax-local-introduce struct-id))))
 
 (define-syntax (-struct/dc stx) (do-struct/dc #f stx))
 
