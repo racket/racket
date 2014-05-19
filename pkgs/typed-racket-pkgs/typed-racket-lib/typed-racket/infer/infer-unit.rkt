@@ -228,9 +228,7 @@
     ;; One is null-end the other is uniform-end
     [((seq ss (null-end))
       (seq ts (uniform-end t-rest)))
-     (and
-      (<= (length ts) (length ss)))
-      (cgen/list V X Y ss (extend ss ts t-rest))]
+     (cgen/list V X Y ss (extend ss ts t-rest))]
     [((seq ss (uniform-end s-rest))
       (seq ts (null-end)))
      #f]
@@ -238,7 +236,7 @@
     [((seq ss (uniform-end s-rest))
       (seq ts (uniform-end t-rest)))
      (cgen/list V X Y
-                (cons s-rest (extend ts ss s-rest))
+                (cons s-rest ss)
                 (cons t-rest (extend ss ts t-rest)))]
     ;; dotted below, nothing above
     [((seq ss (dotted-end dty dbound))

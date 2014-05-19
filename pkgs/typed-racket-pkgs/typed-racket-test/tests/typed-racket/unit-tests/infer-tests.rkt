@@ -155,6 +155,7 @@
     [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
     [infer-t (make-ListDots -String 'a) (make-ListDots -Symbol 'b) #:indices '(a) #:fail]
     [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
+    [infer-t (->* (list -Symbol) -Symbol -Void) (->* (list) (-v a) -Void) #:vars '(a) #:fail]
 
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
