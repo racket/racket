@@ -89,7 +89,7 @@
         (match expected
           [(tc-result1: t)
            ;; We want to infer the largest vs that are still under the element types
-           (i:infer vs null (list l-type) (list t) (-values (list (-> l-type Univ))))]
+           (i:infer vs null l-type t (-values (list (-> l-type Univ))))]
           [_ #f]))
       (ret (-Tuple
              (for/list ([i (in-syntax #'args)] [v (in-list vs)])

@@ -67,16 +67,16 @@
 
          (finish
            (infer vars dotted-vars
-                  (list (-Tuple* arg-tys full-tail-ty))
-                  (list (-Tuple* domain
-                                 (cond
-                                   ;; the actual work, when we have a * function
-                                   [rest (make-Listof rest)]
-                                   ;; ... function
-                                   [drest (make-ListDots (car drest) (cdr drest))]
-                                   ;; the function has no rest argument,
-                                   ;; but provides all the necessary fixed arguments
-                                   [else -Null])))
+                  (-Tuple* arg-tys full-tail-ty)
+                  (-Tuple* domain
+                           (cond
+                             ;; the actual work, when we have a * function
+                             [rest (make-Listof rest)]
+                             ;; ... function
+                             [drest (make-ListDots (car drest) (cdr drest))]
+                             ;; the function has no rest argument,
+                             ;; but provides all the necessary fixed arguments
+                             [else -Null]))
                   range)))
        (failure))]
     [(tc-result1: (AnyPoly: _ _ (Function: '())))

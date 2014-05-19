@@ -414,10 +414,10 @@
           (subtype* A0 par t)]
          ;; use unification to see if we can use the polytype here
          [((Poly: vs b) s)
-          #:when (infer vs null (list b) (list s) Univ)
+          #:when (infer vs null b s Univ)
           A0]
          [((PolyDots: (list vs ... vdotted) b) s)
-          #:when (infer vs (list vdotted) (list b) (list s) Univ)
+          #:when (infer vs (list vdotted) b s Univ)
           A0]
          [(s (or (Poly: vs b) (PolyDots: vs b)))
           #:when (null? (fv b))

@@ -37,7 +37,7 @@
          (fail))
        (match (stx-map single-value #'pos-args)
          [(list (tc-result1: argtys-t) ...)
-          (let* ([subst (infer vars null argtys-t dom rng
+          (let* ([subst (infer vars null (-Tuple argtys-t) (-Tuple dom) rng
                                (and expected (tc-results->values expected)))])
             (unless subst (fail))
             (tc-keywords #'form (list (subst-all subst ar))

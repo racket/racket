@@ -733,27 +733,21 @@
 ;; Y : the set of index variables to be constrained
 ;; S : a list of types to be the subtypes of T
 ;; T : a list of types
-;; expected-cset : a cset representing the expected type, to meet early and
-;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
-(define/cond-contract (cgen/list V X Y S T
-                                 #:expected-cset [expected-cset (empty-cset '() '())])
-  (((listof symbol?) (listof symbol?) (listof symbol?) (listof Values/c) (listof Values/c))
-   (#:expected-cset cset?) . ->* . (or/c cset? #f))
+(define/cond-contract (cgen/list V X Y S T)
+  ((listof symbol?) (listof symbol?) (listof symbol?) (listof Values/c) (listof Values/c)
+   . -> . (or/c cset? #f))
   (and (= (length S) (length T))
        (% cset-meet*
           (for/list/fail ([s (in-list S)] [t (in-list T)])
-                         ;; We meet early to prune the csets to a reasonable size.
-                         ;; This weakens the inference a bit, but sometimes avoids
-                         ;; constraint explosion.
-            (% cset-meet (cgen V X Y s t) expected-cset)))))
+            (cgen V X Y s t)))))
 
 
 
 ;; X : variables to infer
 ;; Y : indices to infer
-;; S : actual argument types
-;; T : formal argument types
+;; S : actual argument type
+;; T : formal argument type
 ;; R : result type
 ;; expected : #f or the expected type
 ;; returns a substitution
@@ -767,8 +761,6 @@
       (let* ([expected-cset (if expected
                                 (cgen null X Y R expected)
                                 (empty-cset '() '()))]
-             [cs  (and expected-cset
-                       (cgen/list null X Y S T #:expected-cset expected-cset))]
-             [cs* (% cset-meet cs expected-cset)])
-        (and cs* (if R (subst-gen cs* X Y R) #t))))
+             [cs (% cset-meet (cgen null X Y S T) expected-cset)])
+        (and cs (if R (subst-gen cs X Y R) #t))))
     infer))

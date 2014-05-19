@@ -27,11 +27,11 @@
                             ;; indexes from the forall
                             (listof symbol?)
                             ;; actual argument types from call site
-                            (listof Type/c)
+                            Type/c
                             ;; domain
-                            (listof Type/c)
+                            Type/c
                             ;; range
-                            (or/c #f Values/c ValuesDots?))
+                            (or/c #f Values/c AnyValues? ValuesDots?))
                            ;; optional expected type
                            ((or/c #f Values/c AnyValues? ValuesDots?))
                            . ->* . any)]))

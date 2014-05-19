@@ -32,20 +32,20 @@
                   [kws (in-list kwss)]
                   [a (in-list arrs)]
                   #:unless (ormap Keyword-required? kws))
-           (extend-tvars fixed-vars
-             (define substitution
+           (define substitution
+             (extend-tvars (append fixed-vars dotted-vars)
                (infer fixed-vars dotted-vars
-                      (list (-Tuple argtys))
-                      (list (-Tuple* dom
-                              (cond
-                                [rest (-lst rest)]
-                                [drest (make-ListDots (car drest) (cdr drest))]
-                                [else -Null])))
+                      (-Tuple argtys)
+                      (-Tuple* dom
+                        (cond
+                          [rest (-lst rest)]
+                          [drest (make-ListDots (car drest) (cdr drest))]
+                          [else -Null]))
                       rng
-                      (and expected (tc-results->values expected))))
-             (and substitution
-                  (tc/funapp1 f-stx args-stx (subst-all substitution a)
-                              args-res expected #:check #f))))
+                      (and expected (tc-results->values expected)))))
+           (and substitution
+                (tc/funapp1 f-stx args-stx (subst-all substitution a)
+                            args-res expected #:check #f)))
          (if (and (null? fixed-vars) (null? dotted-vars))
              (domain-mismatches
                f-stx args-stx f-type doms rests drests rngs args-res #f #f
