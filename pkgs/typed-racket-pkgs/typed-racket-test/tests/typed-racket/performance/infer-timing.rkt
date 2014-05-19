@@ -412,7 +412,7 @@
   (cond [hsbencher
          (define-values (vs t r gc)
            (time-apply run null))
-         (printf "self time: ~a\n" (/ t 1000.))]
+         (printf "SELFTIMED: ~a\n" (/ t 1000.))]
         [else (time (run))]))
 
 (module+ main
