@@ -315,25 +315,24 @@
           (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
        [else #f])]
 
-    ;; If dotted <: starred is correct, add it below.  Not sure it is.
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (uniform-end t-rest)))
-     #:return-unless (memq dbound Y)
-     #f
-     (cond [(< (length ss) (length ts))
-            ;; the hard case
-            (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                   [new-tys  (for/list ([var (in-list vars)])
-                               (substitute (make-F var) dbound s-dty))]
-                   [new-s-seq (make-arr (append ss new-tys) (dotted-end s-dty dbound))]
-                   [new-cset (cgen/seq V (append vars X) Y new-s-seq t-seq)])
-              (% move-vars+rest-to-dmap new-cset dbound vars))]
-           [else
-            ;; the simple case
-            (let* ([arg-mapping (cgen/list V X Y ss (extend ss ts t-rest))]
-                   [darg-mapping (% move-rest-to-dmap
-                                    (cgen V (cons dbound X) Y t-rest s-dty) dbound)])
-              (% cset-meet arg-mapping darg-mapping))])]))
+     (if (memq dbound Y)
+         (cond [(< (length ss) (length ts))
+                ;; the hard case
+                (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
+                       [new-tys  (for/list ([var (in-list vars)])
+                                   (substitute (make-F var) dbound s-dty))]
+                       [new-s-seq (seq (append ss new-tys) (dotted-end s-dty dbound))]
+                       [new-cset (cgen/seq V (append vars X) Y new-s-seq t-seq)])
+                  (% move-vars+rest-to-dmap new-cset dbound vars))]
+               [else
+                ;; the simple case
+                (let* ([arg-mapping (cgen/list V X Y ss (extend ss ts t-rest))]
+                       [darg-mapping (% move-rest-to-dmap
+                                        (cgen V (cons dbound X) Y s-dty t-rest) dbound)])
+                  (% cset-meet arg-mapping darg-mapping))])
+         (cgen/seq V X Y (seq ss (uniform-end (substitute Univ dbound s-dty))) t-seq))]))
 
 
 (define/cond-contract (cgen/arr V X Y s-arr t-arr)
