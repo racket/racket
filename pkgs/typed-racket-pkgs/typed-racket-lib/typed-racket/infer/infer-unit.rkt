@@ -759,52 +759,16 @@
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result
+;;
+;; The inner let is to allow easy use of trace, because the outer binding can not be set!ed.
 (define infer
- (let ()
-  (define/cond-contract (infer X Y S T R [expected #f])
-    (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c)
-      (or/c #f Values/c ValuesDots?))
-     ((or/c #f Values/c AnyValues? ValuesDots?))
-     . ->* . (or/c boolean? substitution/c))
-    (let* ([expected-cset (if expected
-                              (cgen null X Y R expected)
-                              (empty-cset '() '()))]
-           [cs  (and expected-cset
-                     (cgen/list null X Y S T #:expected-cset expected-cset))]
-           [cs* (% cset-meet cs expected-cset)])
-      (and cs* (if R (subst-gen cs* X Y R) #t))))
-  infer)) ;to export a variable binding and not syntax
-
-;; like infer, but T-var is the vararg type:
-(define (infer/vararg X Y S T T-var R [expected #f])
-  (define new-T (if T-var (extend S T T-var) T))
-  (and ((length S) . >= . (length T))
-       (infer X Y S new-T R expected)))
-
-;; like infer, but dotted-var is the bound on the ...
-;; and T-dotted is the repeated type
-(define (infer/dots X dotted-var S T T-dotted R must-vars #:expected [expected #f])
-  (early-return
-   (define short-S (take S (length T)))
-   (define rest-S (drop S (length T)))
-   (define expected-cset (if expected
-                             (cgen null X (list dotted-var) R expected)
-                             (empty-cset '() '())))
-   #:return-unless expected-cset #f
-   (define cs-short (cgen/list null X (list dotted-var) short-S T
-                               #:expected-cset expected-cset))
-   #:return-unless cs-short #f
-   (define-values (new-vars new-Ts)
-     (generate-dbound-prefix dotted-var T-dotted (length rest-S) #f))
-   (define cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts
-                                #:expected-cset expected-cset))
-   #:return-unless cs-dotted #f
-   (define cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars))
-   #:return-unless cs-dotted* #f
-   (define cs (cset-meet cs-short cs-dotted*))
-   #:return-unless cs #f
-   (define m (cset-meet cs expected-cset))
-   #:return-unless m #f
-   (subst-gen m X (list dotted-var) R)))
-
-
+  (let ()
+    (define (infer X Y S T R [expected #f])
+      (let* ([expected-cset (if expected
+                                (cgen null X Y R expected)
+                                (empty-cset '() '()))]
+             [cs  (and expected-cset
+                       (cgen/list null X Y S T #:expected-cset expected-cset))]
+             [cs* (% cset-meet cs expected-cset)])
+        (and cs* (if R (subst-gen cs* X Y R) #t))))
+    infer))
