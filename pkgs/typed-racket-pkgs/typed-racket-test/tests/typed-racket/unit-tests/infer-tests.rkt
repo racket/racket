@@ -225,6 +225,9 @@
     [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
     [infer-t (->* (list -Symbol) -Symbol -Void) (->* (list) (-v a) -Void) #:vars '(a) #:fail]
 
+    [infer-t (-> (-values (list -Bottom))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
+    [infer-t (-> (-values (list (-v a)))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
+
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]

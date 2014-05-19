@@ -549,7 +549,9 @@
          ;; subtyping on structs follows the declared hierarchy
          [((Struct: nm (? Type/c? parent) _ _ _ _) other)
           (subtype* A0 parent other)]
-         ;; subtyping on values is pointwise
+         ;; subtyping on values is pointwise, except special case for Bottom
+         [((Values: (list (Result: (== -Bottom) _ _))) _)
+          A0]
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
          [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
           (subtype-seq A0

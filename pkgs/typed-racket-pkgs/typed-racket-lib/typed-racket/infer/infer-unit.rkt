@@ -405,9 +405,22 @@
                         (cgen/filter-set V X Y f-s f-t)
                         (cgen/object V X Y o-s o-t))]
 
-          ;; Values just delegate to cgen/seq
+          ;; Values just delegate to cgen/seq, except special handling for -Bottom.
+          ;; A single -Bottom in a Values means that there is no value returned and so any other
+          ;; Values or ValuesDots should be above it.
           [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
+           ;; Check for a substition that S is below (ret -Bottom).
+           (define bottom-case
+             (match S
+               [(Values: (list (Result: s f-s o-s)))
+                (cgen V X Y s -Bottom)]
+               [else #f]))
+           (define regular-case
+             (cgen/seq V X Y s-seq t-seq))
+           ;; If we want the OR of the csets that the two cases return.
+           (cset-join
+             (filter values
+               (list bottom-case regular-case)))]
 
           ;; they're subtypes. easy.
           [(a b) 
