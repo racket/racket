@@ -35,14 +35,12 @@
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match* (ftype0 argtys)
     ;; we special-case this (no case-lambda) for improved error messages
-    [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: _)
-                                                        rest #f kws))))))
+    ;; tc/funapp1 currently cannot handle drest arities
+    [((tc-result1: (Function: (list (and a (arr: _ _ _ #f _)))))
       argtys)
      (tc/funapp1 f-stx args-stx a argtys expected)]
-    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests
-                                                           (and drests #f) kws)
-                                                     ...)))))
-      (and argtys (list (tc-result1: argtys-t) ...)))
+    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests (and drests #f) kws) ...)))))
+      (list (tc-result1: argtys-t) ...))
      (or
       ;; find the first function where the argument types match
       (for/first ([dom (in-list doms)] [rng (in-list rngs)] [rest (in-list rests)] [a (in-list arrs)]
@@ -63,8 +61,7 @@
     [((tc-result1:
        (and t (PolyDots:
                (and vars (list fixed-vars ... dotted-var))
-               (Function: (list (and arrs (arr: doms rngs rests drests
-                                                (list (Keyword: _ _ #f) ...)))
+               (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)))
                                 ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses
@@ -95,10 +92,8 @@
     ;; regular polymorphic functions without dotted rest, 
     ;; we do not choose any instantiations with mandatory keyword arguments
     [((tc-result1:
-       (and t (Poly:
-               vars
-               (Function: (list (and arrs (arr: doms rngs rests (and drests #f)
-                                                (list (Keyword: _ _ kw?) ...)))
+       (and t (Poly: vars
+               (Function: (list (and arrs (arr: doms rngs rests #f (list (Keyword: _ _ kw?) ...)))
                                 ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses
