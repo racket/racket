@@ -1,8 +1,8 @@
 This directory contains
 
-  - solution files and project files for building Racket and GRacket
-    with Microsoft Visual Studio 2008 (a.k.a. version 9.0) and up,
-    which work with the Express version of Visual Studio;
+  - solution files and project files for building minimal Racket (and
+    GRacket) with Microsoft Visual Studio 2008 (a.k.a. version 9.0)
+    and up, which work with the Express version of Visual Studio;
 
   - mzconfig.h which is a manual version of information that is gathered
     automatically when using the "configure" script;
@@ -97,10 +97,10 @@ Downloading Pre-Built Binaries
 -------------------------------
 
 You must install some pre-built DLLs if you want text-encoding
-converts, OpenSSL support, `racket/draw', or `racket/gui' support.
-In principle, you could build them from scratch, but since they
-are (mostly) maintained by people and organizations other than
-PLT, we supply them in binary form.
+conversion, OpenSSL support, `racket/draw', or `racket/gui' support.
+In principle, you could build them from scratch, but since they are
+(mostly) maintained by people and organizations other than PLT, we
+supply them in binary form.
 
 The DLLs are distributed in packages, but they are also available
 from

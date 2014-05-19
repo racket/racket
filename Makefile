@@ -29,7 +29,8 @@ PKGS = main-distribution plt-services
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
-MACOSX_CHECK = $(PLAIN_RACKET) -G build/config -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
+MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
+MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
 
 LINK_MODE = --save
 
@@ -38,7 +39,7 @@ CPUS =
 in-place:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-in-place PKGS="$(PKGS)" ; \
-         else $(MAKE) cpus-in-place PKGS="$(PKGS)" ; fi
+         else $(MAKE) cpus-in-place CPUS="$(CPUS)" PKGS="$(PKGS)" ; fi
 
 cpus-in-place:
 	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
@@ -66,6 +67,40 @@ IN_PLACE_COPY_ARGS = JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP
 
 win32-again:
 	$(MAKE) LINK_MODE="--restore" $(IN_PLACE_COPY_ARGS)
+
+
+# ------------------------------------------------------------
+# Unix-style build (Unix and Mac OS X, only)
+
+PREFIX = 
+
+CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
+UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+
+unix-style:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-unix-style ; \
+         else $(MAKE) cpus-unix-style ; fi
+
+cpus-unix-style:
+	$(MAKE) -j $(CPUS) plain-unix-style JOB_OPTIONS="-j $(CPUS)"
+
+plain-unix-style:
+	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
+	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' SELF_FLAGS_qq=""
+	$(MAKE) local-catalog-maybe-native RACKET="$(PREFIX)/bin/racket"
+	"$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
+
+error-need-prefix:
+	: ================================================================
+	: Please supply PREFIX="<dest-dir>" to set the install destination
+	: ================================================================
+	exit 1
+
+local-catalog-maybe-native:
+	if $(RACKET) $(MACOSX_CHECK_ARGS) ; \
+         then $(MAKE) local-catalog ; \
+         else $(MAKE) local-source-catalog ; fi
 
 # ------------------------------------------------------------
 # Base build
@@ -320,9 +355,11 @@ local-catalog:
 native-from-git:
 	if [ ! -d native-pkgs/racket-win32-i386 ]; then $(MAKE) complain-no-submodule ; fi
 complain-no-submodule:
+	: ================================================================
 	: Native packages are not in the expected subdirectory. Probably,
 	: you need to use 'git submodule init' and 'git submodule update' to get
 	: the submodule for native packages.
+	: ================================================================
 	exit 1
 
 # Create packages and a catalog for all native libraries:
