@@ -4,7 +4,6 @@
          racket/match syntax/stx
          (prefix-in c: (contract-req))
          (env tvar-env)
-         (for-syntax syntax/parse racket/base)
          (types utils union subtype resolve abbrev
                 substitute classes)
          (typecheck tc-metafunctions tc-app-helper check-below)
@@ -17,21 +16,6 @@
     (c:or/c #f tc-results/c)
     . c:-> . full-tc-results/c)])
 
-(define-syntax (handle-clauses stx)
-  (syntax-parse stx
-    [(_  (lsts ... arrs) f-stx args-stx pred infer t args-res expected)
-     (with-syntax ([(vars ... a) (generate-temporaries #'(lsts ... arrs))])
-       (syntax/loc stx
-         (or (for/or ([vars (in-list lsts)] ... [a (in-list arrs)]
-                      #:when (pred vars ... a))
-               (let ([substitution (infer vars ... a)])
-                 (and substitution
-                      (tc/funapp1 f-stx args-stx (subst-all substitution a)
-                                  args-res expected #:check #f))))
-             (poly-fail f-stx args-stx t args-res
-                        #:name (and (identifier? f-stx) f-stx)
-                        #:expected expected))))]))
-
 (define (tc/funapp f-stx args-stx f-type args-res expected)
   (match-define (list (tc-result1: argtys) ...) args-res)
   (match f-type
@@ -39,66 +23,40 @@
     ;; tc/funapp1 currently cannot handle drest arities
     [(Function: (list (and a (arr: _ _ _ #f _))))
      (tc/funapp1 f-stx args-stx a args-res expected)]
-    [(Function/arrs: doms rngs rests (and drests #f) kws #:arrs arrs)
-     (or
-      ;; find the first function where the argument types match
-      (for/first ([dom (in-list doms)] [rng (in-list rngs)] [rest (in-list rests)] [a (in-list arrs)]
-                  #:when (subtypes/varargs argtys dom rest))
-        ;; then typecheck here
-        ;; we call the separate function so that we get the appropriate
-        ;; filters/objects
-        (tc/funapp1 f-stx args-stx a args-res expected #:check #f))
-      ;; if nothing matched, error
-      (domain-mismatches
-       f-stx args-stx f-type doms rests drests rngs args-res #f #f
-       #:expected expected
-       #:msg-thunk (lambda (dom)
-                     (string-append
-                      "No function domains matched in function application:\n"
-                      dom))))]
-    ;; any kind of dotted polymorphic function without mandatory keyword args
-    [(PolyDots: (list fixed-vars ... dotted-var)
-       (Function/arrs: doms rngs rests drests (list (Keyword: _ _ #f) ...) #:arrs arrs))
-     (handle-clauses
-      (doms rngs rests drests arrs) f-stx args-stx
-      ;; only try inference if the argument lengths are appropriate
-      (lambda (dom _ rest drest a)
-        (cond [rest (<= (length dom) (length argtys))]
-              [drest (and (<= (length dom) (length argtys))
-                          (eq? dotted-var (cdr drest)))]
-              [else (= (length dom) (length argtys))]))
-      ;; Only try to infer the free vars of the rng (which includes the vars
-      ;; in filters/objects).
-      (λ (dom rng rest drest a)
-        (extend-tvars fixed-vars
-          (cond
-           [drest
-            (infer/dots
-             fixed-vars dotted-var argtys dom (car drest) rng (fv rng)
-             #:expected (and expected (tc-results->values expected)))]
-           [rest
-            (infer/vararg fixed-vars (list dotted-var) argtys dom rest rng
-                          (and expected (tc-results->values expected)))]
-           ;; no rest or drest
-           [else (infer fixed-vars (list dotted-var) argtys dom rng
-                        (and expected (tc-results->values expected)))])))
-      f-type args-res expected)]
-    ;; regular polymorphic functions without dotted rest, 
-    ;; we do not choose any instantiations with mandatory keyword arguments
-    [(Poly: vars (Function/arrs: doms rngs rests #f (list (Keyword: _ _ kw?) ...) #:arrs arrs))
-     (handle-clauses
-      (doms rngs rests kw? arrs) f-stx args-stx
-      ;; only try inference if the argument lengths are appropriate
-      ;; and there's no mandatory kw
-      (λ (dom _ rest kw? a) 
-        (and (andmap not kw?) ((if rest <= =) (length dom) (length argtys))))
-      ;; Only try to infer the free vars of the rng (which includes the vars
-      ;; in filters/objects).
-      (λ (dom rng rest kw? a)
-        (extend-tvars vars
-         (infer/vararg vars null argtys dom rest rng
-                       (and expected (tc-results->values expected)))))
-      f-type args-res expected)]
+    ;; Standard function case.
+    [(AnyPoly: fixed-vars dotted-vars (Function/arrs: doms rngs rests drests kwss #:arrs arrs))
+     (or (for/or ([dom (in-list doms)]
+                  [rng (in-list rngs)]
+                  [rest (in-list rests)]
+                  [drest (in-list drests)]
+                  [kws (in-list kwss)]
+                  [a (in-list arrs)]
+                  #:unless (ormap Keyword-required? kws))
+           (extend-tvars fixed-vars
+             (define substitution
+               (infer fixed-vars dotted-vars
+                      (list (-Tuple argtys))
+                      (list (-Tuple* dom
+                              (cond
+                                [rest (-lst rest)]
+                                [drest (make-ListDots (car drest) (cdr drest))]
+                                [else -Null])))
+                      rng
+                      (and expected (tc-results->values expected))))
+             (and substitution
+                  (tc/funapp1 f-stx args-stx (subst-all substitution a)
+                              args-res expected #:check #f))))
+         (if (and (null? fixed-vars) (null? dotted-vars))
+             (domain-mismatches
+               f-stx args-stx f-type doms rests drests rngs args-res #f #f
+               #:expected expected
+               #:msg-thunk (lambda (dom)
+                             (string-append
+                              "No function domains matched in function application:\n"
+                              dom)))
+             (poly-fail f-stx args-stx f-type args-res
+                        #:name (and (identifier? f-stx) f-stx)
+                        #:expected expected)))]
     ;; Row polymorphism. For now we do really dumb inference that only works
     ;; in very restricted cases, but is probably enough for most cases in
     ;; the Racket codebase. Eventually this should be extended.
