@@ -174,26 +174,30 @@
       (define last-saved-file-time #f)
       
       (define/augment (after-save-file success?)
+        (define temp-b (box #f))
+        (define filename (get-filename temp-b))
+
         ;; update recently opened file names
-        (let* ([temp-b (box #f)]
-               [filename (get-filename temp-b)])
-          (unless (unbox temp-b)
-            (when filename
-              (handler:add-to-recent filename))))
+        (unless (unbox temp-b)
+          (when filename
+            (handler:add-to-recent filename)))
         
         ;; update last-saved-file-time
-        (when success?
-          (let ([filename (get-filename)])
-            (set! last-saved-file-time
-                  (and filename
-                       (file-exists? filename)
-                       (file-or-directory-modify-seconds filename)))))
+        (unless (doing-autosave?)
+          (unless (unbox temp-b)
+            (when success?
+              (set! last-saved-file-time
+                    (and filename
+                         (file-exists? filename)
+                         (file-or-directory-modify-seconds filename))))))
         
         (inner (void) after-save-file success?))
       
       (define/augment (after-load-file success?)
         (when success?
-          (let ([filename (get-filename)])
+          (define temp-b (box #f))
+          (define filename (get-filename temp-b))
+          (unless (unbox temp-b)
             (set! last-saved-file-time
                   (and filename
                        (file-exists? filename)
@@ -594,7 +598,9 @@
       autosave?
       do-autosave
       remove-autosave))
-  
+
+  (define doing-autosave? (make-parameter #f))
+
   (define backup-autosave-mixin
     (mixin (basic<%>) (backup-autosave<%> autosave:autosavable<%>)
       (inherit is-modified? get-filename save-file)
@@ -666,7 +672,8 @@
                                 (when (is-a? this text%)
                                   (send this set-file-format orig-format))
                                 #f)])
-               (save-file auto-name 'copy #f)
+               (parameterize ([doing-autosave? #t])
+                 (save-file auto-name 'copy #f))
                (when (is-a? this text%)
                  (send this set-file-format orig-format))
                (when old-auto-name
