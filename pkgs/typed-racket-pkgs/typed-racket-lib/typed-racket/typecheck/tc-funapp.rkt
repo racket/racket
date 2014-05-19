@@ -13,7 +13,7 @@
 
 (provide/cond-contract
   [tc/funapp
-   (syntax? stx-list? tc-results/c (c:listof tc-results/c)
+   (syntax? stx-list? Type/c (c:listof tc-results1/c)
     (c:or/c #f tc-results/c)
     . c:-> . full-tc-results/c)])
 
@@ -32,10 +32,8 @@
                         #:name (and (identifier? f-stx) f-stx)
                         #:expected expected))))]))
 
-
-(define (tc/funapp f-stx args-stx f-res args-res expected)
+(define (tc/funapp f-stx args-stx f-type args-res expected)
   (match-define (list (tc-result1: argtys) ...) args-res)
-  (match-define (tc-result1: f-type f-filter f-object) f-res)
   (match f-type
     ;; we special-case this (no case-lambda) for improved error messages
     ;; tc/funapp1 currently cannot handle drest arities
@@ -134,13 +132,13 @@
             (define substitution
               (hash row-var
                     (t-subst (infer-row constraints resolved-argty))))
-            (tc/funapp f-stx args-stx (ret (subst-all substitution f-ty))
+            (tc/funapp f-stx args-stx (subst-all substitution f-ty)
                        args-res expected)]
            [else (fail)])]
     ;; procedural structs
     [(Struct: _ _ _ (? Function? proc-ty) _ _)
-     (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty)
-                (cons f-res args-res) expected)]
+     (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) proc-ty
+                (cons (ret f-type) args-res) expected)]
     ;; parameters are functions too
     [(Param: in out)
      (match argtys
@@ -156,9 +154,8 @@
            "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
            (length argtys))])]
     ;; resolve names, polymorphic apps, mu, etc
-    ;; TODO figure out what needs the filter and object of the function
     [(? needs-resolving?)
-     (tc/funapp f-stx args-stx (ret (resolve-once f-type) f-filter f-object) args-res expected)]
+     (tc/funapp f-stx args-stx (resolve-once f-type) args-res expected)]
     ;; a union of functions can be applied if we can apply all of the elements
     [(Union: (and ts (list (Function: _) ...)))
      (merge-tc-results

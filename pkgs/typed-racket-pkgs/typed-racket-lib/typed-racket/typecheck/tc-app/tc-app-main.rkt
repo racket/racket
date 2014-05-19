@@ -67,7 +67,7 @@
 (define (tc/app-regular form expected)
   (syntax-case form ()
     [(f . args)
-     (let* ([f-ty (single-value #'f)]
+     (let* ([f-ty (tc-expr/t #'f)]
             [args* (syntax->list #'args)])
        (define (matching-arities arrs)
          (for/list ([arr (in-list arrs)] #:when (arr-matches? arr args*)) arr))
@@ -77,12 +77,11 @@
 
        (define arg-tys
          (match f-ty
-           [(tc-result1: (Function: (? has-drest/filter?)))
+           [(Function: (? has-drest/filter?))
             (map single-value args*)]
-           [(tc-result1:
-             (Function:
-               (app matching-arities
-                 (list (arr: doms ranges rests drests _) ..1))))
+           [(Function:
+              (app matching-arities
+                (list (arr: doms ranges rests drests _) ..1)))
             (define matching-domains
               (in-values-sequence
                 (apply in-parallel

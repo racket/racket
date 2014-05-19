@@ -95,7 +95,7 @@
     [(list (and a (arr: dom rng rest #f ktys)))
      (tc-keywords/internal a kws kw-args #t)
      (tc/funapp (car (syntax-e form)) kw-args
-                (ret (make-Function (list (make-arr* dom rng #:rest rest))))
+                (->* dom rest rng)
                 (stx-map tc-expr pos-args) expected)]
     [(list (and a (arr: doms rngs rests (and drests #f) ktyss)) ...)
      (let ([new-arities
@@ -115,7 +115,7 @@
               (string-append "No function domains matched in function application:\n"
                              dom)))
            (tc/funapp (car (syntax-e form)) kw-args
-                      (ret (make-Function new-arities))
+                      (make-Function new-arities)
                       (stx-map tc-expr pos-args) expected)))]))
 
 (define (type->list t)

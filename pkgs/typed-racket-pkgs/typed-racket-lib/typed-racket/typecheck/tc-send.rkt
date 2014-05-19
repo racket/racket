@@ -28,7 +28,7 @@
                          "method name" s
                          "object type" obj
                          #:return -Bottom)]))
-          (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected)]
+          (tc/funapp rcvr args ftype (stx-map tc-expr args) expected)]
          [_ (int-err "non-symbol methods not supported by Typed Racket: ~a"
                      rcvr-type)])]
       ;; union of objects, check pointwise and union the results

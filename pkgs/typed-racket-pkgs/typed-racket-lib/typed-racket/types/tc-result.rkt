@@ -20,6 +20,10 @@
   (or (tc-results? v)
       (tc-any-results? v)))
 
+(define (tc-results1/c v)
+  (and (tc-results? v)
+       (= (length (tc-results-ts v)) 1)))
+
 ;; Contract to check that values are tc-results/c and do not contain -no-filter or -no-obj.
 ;; Used to contract the return values of typechecking functions.
 (define (full-tc-results/c r)
@@ -160,4 +164,5 @@
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
  [tc-results/c c:flat-contract?]
+ [tc-results1/c c:flat-contract?]
  [full-tc-results/c c:flat-contract?])
