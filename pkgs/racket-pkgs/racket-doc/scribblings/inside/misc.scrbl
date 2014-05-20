@@ -378,3 +378,12 @@ is @racket[#f] if the address cannot be inferred, which may be because
 the given @var{p} does not refer to generated machine code.
 
 @history[#:added "6.0.1.9"]}
+
+@function[(void scheme_jit_now
+                [Scheme_Object* val])]{
+
+If @var{val} is a procedure that can be JIT-compiled, JIT compilation
+is forced immediately if it has not been forced already (usually
+through calling the function).
+
+@history[#:added "6.0.1.10"]}

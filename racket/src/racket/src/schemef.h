@@ -1223,3 +1223,4 @@ MZ_EXTERN Scheme_Object *scheme_malloc_key(void);
 MZ_EXTERN void scheme_free_key(Scheme_Object *k);
 
 MZ_EXTERN void* scheme_jit_find_code_end(void *p);
+MZ_EXTERN void scheme_jit_now(Scheme_Object *f);

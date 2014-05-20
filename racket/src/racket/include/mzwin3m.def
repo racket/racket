@@ -650,3 +650,4 @@ EXPORTS
  scheme_malloc_key
  scheme_free_key
  scheme_jit_find_code_end
+ scheme_jit_now

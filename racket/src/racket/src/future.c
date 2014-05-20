@@ -1319,8 +1319,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue, future_t *
    
   /* JIT the code if not already JITted */
   if (ncd) {
-    if (ncd->start_code == scheme_on_demand_jit_code)
-      scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
+    scheme_jit_now(lambda);
   
     if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
       /* Can't even call it in a future thread */

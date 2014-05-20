@@ -645,6 +645,20 @@ void* scheme_jit_find_code_end(void *_p)
     return NULL;
 }
 
+void scheme_jit_now(Scheme_Object *f)
+{
+  if (SAME_TYPE(SCHEME_TYPE(f), scheme_native_closure_type)) {
+    Scheme_Native_Closure *nc;
+    Scheme_Native_Closure_Data *ncd;
+
+    nc = (Scheme_Native_Closure*)f;
+    ncd = nc->code;
+    if (ncd->start_code == scheme_on_demand_jit_code)
+      scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
+  }
+}
+
+
 typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
 typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
 typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
