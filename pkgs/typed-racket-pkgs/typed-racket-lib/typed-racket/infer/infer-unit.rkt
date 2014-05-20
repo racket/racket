@@ -324,7 +324,8 @@
               (cgen V (cons dbound X) Y s-dty t-rest))
            vars dbound)]
        [else
-        (cgen/seq V X Y (seq ss (uniform-end (substitute Univ dbound s-dty))) t-seq)])]))
+        (extend-tvars (list dbound)
+          (cgen/seq (cons dbound V) X Y (seq ss (uniform-end s-dty)) t-seq))])]))
 
 (define/cond-contract (cgen/arr V X Y s-arr t-arr)
   ((listof symbol?) (listof symbol?) (listof symbol?) arr? arr? . -> . (or/c #f cset?))
