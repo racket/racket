@@ -11,6 +11,7 @@
          (only-in racket/sequence sequence->list))
 
 (provide/contract
+ [create-empty-module (->* (any/c (listof any/c)) (symbol?) (values any/c symbol?))]
  [expand-teaching-program (->* (input-port?
                                 (-> any/c input-port? any/c)
                                 any/c
@@ -27,6 +28,15 @@
 ;; a require. The module includes a 'require' for each teachpack that
 ;; the user has added. Also, any 'provide' expressions are stripped out.
 
+(define (create-empty-module language-module teachpacks [module-name '#%htdp])
+  (values (datum->syntax
+           #f
+           `(,#'module ,module-name ,language-module 
+                       ,@(map (λ (x) 
+                                `(require ,x))
+                              teachpacks)))
+          module-name))
+  
 (define (expand-teaching-program port reader language-module teachpacks [module-name '#%htdp] [enable-testing? #t])
   (define state 'init)
   ;; state : 'init => 'require => 'done-or-exn
@@ -43,12 +53,7 @@
                         (λ (x)
                           (set! saved-exn x)
                           (expand
-                           (datum->syntax
-                            #f
-                            `(,#'module ,module-name ,language-module 
-                                        ,@(map (λ (x) 
-                                                 `(require ,x))
-                                               teachpacks)))))])
+                           (create-empty-module language-module teachpacks module-name)))])
          (define body-exps (suck-all-exps port reader))           
          (define teachpack-requires (teachpacks->requires teachpacks))        
          (rewrite-module

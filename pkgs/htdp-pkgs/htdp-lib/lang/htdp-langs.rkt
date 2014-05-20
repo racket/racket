@@ -468,8 +468,12 @@
               (newline port)))
           
           (define/override (first-opened settings)
-            (for ([tp (in-list (htdp-lang-settings-teachpacks settings))])
-              (namespace-require/constant tp)))
+            (define-values (mod name)
+              (create-empty-module (get-module)
+                                   (htdp-lang-settings-teachpacks settings)))
+            (eval mod)
+            (dynamic-require `',name #f)
+            (current-namespace (module->namespace `',name)))
           
           (define/private (tp-require->str tp)
             (match tp
