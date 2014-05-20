@@ -121,6 +121,10 @@
     (infer-t (-lst -Symbol) (make-ListDots (-v b) 'b) #:indices '(b)
              #:result [(make-ListDots (-v b) 'b) (-lst -Symbol)])
     (infer-t (make-ListDots (-v b) 'b) (-lst Univ) #:indices '(b))
+    (infer-t (make-ListDots (-v a) 'a) (-lst Univ))
+    (infer-t (make-ListDots (-lst (-v a)) 'a) (-lst (-lst Univ)))
+    (infer-t (make-ListDots (-vec (-v a)) 'a) (-lst (-vec Univ)) #:fail)
+
     (infer-t (make-ListDots (-v a) 'b) (make-ListDots -Symbol 'b) #:vars '(a))
     (infer-t (make-ListDots (-v b) 'b) (make-ListDots -Symbol 'b) #:indices '(b))
     (infer-t (make-ListDots -Symbol 'b) (make-ListDots (-v b) 'b) #:indices '(b))
