@@ -811,24 +811,38 @@
             ;; draw the arrows
             (when before
               (when error-arrows
-                (let ([old-pen (send dc get-pen)])
-                  (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'solid))
-                  (let loop ([pts error-arrows])
-                    (cond
-                      [(null? pts) (void)]
-                      [(null? (cdr pts)) (void)]
-                      [else (let ([pt1 (car pts)]
-                                  [pt2 (cadr pts)])
-                              (draw-arrow dc dx dy pt1 pt2)
-                              (loop (cdr pts)))]))
-                  (send dc set-pen old-pen)))))
+                (define old-pen (send dc get-pen))
+                (define old-brush (send dc get-brush))
+                (send dc set-brush "red" 'solid)
+                (define font-size-factor
+                  (cond
+                    [(<= (editor:get-current-preferred-font-size) 12) 1]
+                    [else (* (editor:get-current-preferred-font-size) 1/8)]))
+                (define pen-width font-size-factor)
+                (define arrow-head-size (* 8 font-size-factor))
+                (define arrow-root-radius (* 1 font-size-factor))
+                (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'solid))
+                (let loop ([pts error-arrows])
+                  (cond
+                    [(null? pts) (void)]
+                    [(null? (cdr pts)) (void)]
+                    [else (define pt1 (car pts))
+                          (define pt2 (cadr pts))
+                          (draw-arrow dc dx dy pt1 pt2
+                                      pen-width arrow-head-size arrow-root-radius)
+                          (loop (cdr pts))]))
+                (send dc set-pen old-pen)
+                (send dc set-brush old-brush))))
           
-          (define/private (draw-arrow dc dx dy pt1 pt2)
+          (define/private (draw-arrow dc dx dy pt1 pt2 pen-width arrow-head-size arrow-root-radius)
             (define-values (x1 y1) 
               (find-poss (srcloc-source pt1) (- (srcloc-position pt1) 1) (srcloc-position pt1)))
             (define-values (x2 y2)
               (find-poss (srcloc-source pt2) (- (srcloc-position pt2) 1) (srcloc-position pt2)))
-            (drracket:arrow:draw-arrow dc x1 y1 x2 y2 dx dy))
+            (drracket:arrow:draw-arrow dc x1 y1 x2 y2 dx dy
+                                       #:pen-width pen-width
+                                       #:arrow-head-size arrow-head-size
+                                       #:arrow-root-radius arrow-root-radius))
           
           (inherit dc-location-to-editor-location)
           (define/private (find-poss text left-pos right-pos)
