@@ -2641,7 +2641,10 @@
                      [((at-queue-size text-to-insert) . < . output-buffer-full)
                       (when return-chan
                         (channel-put return-chan '()))
-                      (loop new-text-to-insert last-flush)]
+                      (loop new-text-to-insert 
+                            (if (at-queue-empty? text-to-insert)
+                                (current-inexact-milliseconds)
+                                last-flush))]
                      [else
                       (let ([chan (make-channel)])
                         (let-values ([(viable-bytes remaining-queue) 
