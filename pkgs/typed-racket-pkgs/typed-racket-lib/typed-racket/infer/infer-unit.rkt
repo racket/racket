@@ -440,9 +440,66 @@
                         (cgen/filter-set V X Y f-s f-t)
                         (cgen/object V X Y o-s o-t))]
 
+          ;; values are covariant
+          [((Values: ss) (Values: ts))
+           #:return-unless (= (length ss) (length ts))
+           #f
+           (cgen/list V X Y ss ts)]
+
+          ;; this constrains `dbound' to be |ts| - |ss|
+          [((ValuesDots: ss s-dty dbound) (Values: ts))
+           #:return-unless (>= (length ts) (length ss)) #f
+           #:return-unless (memq dbound Y) #f
+
+           (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
+                  ;; new-tys are dummy plain type variables,
+                  ;; standing in for the elements of dbound that need to be generated
+                  [new-tys  (for/list ([var (in-list vars)])
+                              ;; must be a Result since we are matching these against
+                              ;; the contents of the `Values`, which are Results
+                              (-result (substitute (make-F var) dbound s-dty)))]
+                  ;; generate constraints on the prefixes, and on the dummy types
+                  [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
+             ;; now take all the dummy types, and use them to constrain dbound appropriately
+             (% move-vars-to-dmap new-cset dbound vars))]
+
+          ;; like the case above, but constrains `dbound' to be |ss| - |ts|
+          [((Values: ss) (ValuesDots: ts t-dty dbound))
+           #:return-unless (>= (length ss) (length ts)) #f
+           #:return-unless (memq dbound Y) #f
+
+           ;; see comments for last case, this case swaps `s` and `t` order
+           (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
+                  [new-tys  (for/list ([var (in-list vars)])
+                              (-result (substitute (make-F var) dbound t-dty)))]
+                  [new-cset (cgen/list V (append vars X) Y ss (append ts new-tys))])
+             (% move-vars-to-dmap new-cset dbound vars))]
+
+          ;; identical bounds - just unify pairwise
+          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
+           #:return-when (memq dbound Y) #f
+           (cgen/list V X Y (cons s-dty ss) (cons t-dty ts))]
+          [((ValuesDots: ss s-dty (? (λ (db) (memq db Y)) s-dbound))
+            (ValuesDots: ts t-dty t-dbound))
+           ;; What should we do if both are in Y?
+           #:return-when (memq t-dbound Y) #f
+           (% cset-meet
+              (cgen/list V X Y ss ts)
+              (extend-tvars (list t-dbound)
+                (% move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound t-dbound)))]
+          [((ValuesDots: ss s-dty s-dbound)
+            (ValuesDots: ts t-dty (? (λ (db) (memq db Y)) t-dbound)))
+           ;; s-dbound can't be in Y, due to previous rule
+           (% cset-meet
+              (cgen/list V X Y ss ts)
+              (extend-tvars (list s-dbound)
+                (% move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound s-dbound)))]
+
           ;; Values just delegate to cgen/seq
-          [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
+          ;; This is currently buggy because cgen/seq assumes types and not results
+
+          ;; [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
+          ;; (cgen/seq V X Y s-seq t-seq)]
 
           ;; they're subtypes. easy.
           [(a b) 
