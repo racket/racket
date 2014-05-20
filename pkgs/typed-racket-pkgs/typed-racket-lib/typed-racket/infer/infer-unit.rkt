@@ -86,7 +86,7 @@
         (dmap-meet
          (singleton-dmap
           dbound
-          (f cmap dmap))
+          (f cmap))
          (make-dmap (hash-remove (dmap-map dmap) dbound)))))
    cset))
 
@@ -98,23 +98,11 @@
 (define/cond-contract (move-vars-to-dmap cset dbound vars)
   (cset? symbol? (listof symbol?) . -> . cset?)
   (mover cset dbound vars
-         (λ (cmap dmap)
+         (λ (cmap)
            (make-dcon (for/list ([v (in-list vars)])
                         (hash-ref cmap v
                                   (λ () (int-err "No constraint for new var ~a" v))))
                       #f))))
-
-;; dbound : index variable
-;; cset : the constraints being manipulated
-;;
-(define/cond-contract (move-rest-to-dmap cset dbound #:exact [exact? #f])
-  ((cset? symbol?) (#:exact boolean?) . ->* . cset?)
-  (mover cset dbound null
-         (λ (cmap dmap)
-           ((if exact? make-dcon-exact make-dcon)
-            null
-            (hash-ref cmap dbound
-                      (λ () (int-err "No constraint for bound ~a" dbound)))))))
 
 ;; cset : the constraints being manipulated
 ;; var : index variable being inferred
@@ -123,30 +111,24 @@
 (define/cond-contract (move-dotted-rest-to-dmap cset var dbound)
   (cset? symbol? symbol? . -> . cset?)
   (mover cset var null
-         (λ (cmap dmap)
+         (λ (cmap)
            (make-dcon-dotted
             null
             (hash-ref cmap var
                       (λ () (int-err "No constraint for bound ~a" var)))
             dbound))))
 
-;; This one's weird, because the way we set it up, the rest is already in the dmap.
-;; This is because we create all the vars, then recall cgen/arr with the new vars
-;; in place, and the "simple" case will then call move-rest-to-dmap.  This means
-;; we need to extract that result from the dmap and merge it with the fixed vars
-;; we now handled.  So I've extended the mover to give access to the dmap, which we use here.
-(define/cond-contract (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
+;; cset : the constraints being manipulated
+;; vars : the variables that are the prefix of the dbound
+;; dbound : index variable
+(define/cond-contract (move-vars+rest-to-dmap cset vars dbound #:exact [exact? #f])
   ((cset? symbol? (listof symbol?)) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound vars
-         (λ (cmap dmap)
+         (λ (cmap)
            ((if exact? make-dcon-exact make-dcon)
             (for/list ([v (in-list vars)])
-              (hash-ref cmap v (λ () (int-err "No constraint for new var ~a" v))))
-            (match (hash-ref (dmap-map dmap) dbound
-                             (λ () (int-err "No constraint for bound ~a" dbound)))
-              [(dcon null rest) rest]
-              [(dcon-exact null rest) rest]
-              [_ (int-err "did not get a rest-only dcon when moving to the dmap")])))))
+              (hash-ref cmap v no-constraint))
+            (hash-ref cmap dbound (λ () (int-err "No constraint for bound ~a" dbound)))))))
 
 ;; Represents a sequence of types. types are the fixed prefix, and end is the remaining types
 ;; This is a unification of all of the dotted types that exist ListDots, ->..., and ValuesDots.
@@ -295,7 +277,7 @@
         (cgen/list V X Y ss ts)
         (if (memq dbound Y)
             (extend-tvars (list dbound)
-              (% move-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound))
+              (% move-vars+rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) null dbound))
             (cgen V X Y s-dty t-dty)))]
 
     ;; bounds are different
@@ -320,38 +302,28 @@
       (seq ts (dotted-end t-dty dbound)))
      #:return-unless (memq dbound Y)
      #f
-     (cond
-       [(= (length ts) (length ss))
-        ;; the simple case
-        (let* ([arg-mapping (cgen/list V X Y ss ts)]
-               [darg-mapping (% move-rest-to-dmap
-                                (cgen V (cons dbound X) Y s-rest t-dty) dbound #:exact #t)])
-          (% cset-meet arg-mapping darg-mapping))]
-       [(< (length ts) (length ss))
-        ;; the hard case
-        (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))))
-        (let* ([new-t-seq (seq (append ts new-tys) (dotted-end t-dty dbound))]
-               [new-cset (cgen/seq V (append vars X) Y s-seq new-t-seq)])
-          (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
-       [else #f])]
+     #:return-unless (<= (length ts) (length ss))
+     #f
+     (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))))
+     (% move-vars+rest-to-dmap
+        (% cset-meet
+           (cgen/list V (append vars X) Y ss (append ts new-tys))
+           (cgen V (cons dbound X) Y s-rest t-dty))
+        vars dbound #:exact #t)]
 
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (uniform-end t-rest)))
-     (if (memq dbound Y)
-         (cond [(< (length ss) (length ts))
-                ;; the hard case
-                (define-values (vars new-tys) (generate-dbound-prefix dbound s-dty (- (length ts) (length ss))))
-                (let* ([new-s-seq (seq (append ss new-tys) (dotted-end s-dty dbound))]
-                       [new-cset (cgen/seq V (append vars X) Y new-s-seq t-seq)])
-                  (% move-vars+rest-to-dmap new-cset dbound vars))]
-               [else
-                ;; the simple case
-                (let* ([arg-mapping (cgen/list V X Y ss (extend ss ts t-rest))]
-                       [darg-mapping (% move-rest-to-dmap
-                                        (cgen V (cons dbound X) Y s-dty t-rest) dbound)])
-                  (% cset-meet arg-mapping darg-mapping))])
-         (cgen/seq V X Y (seq ss (uniform-end (substitute Univ dbound s-dty))) t-seq))]))
-
+     (cond
+       [(memq dbound Y)
+        (define-values (vars new-tys)
+          (generate-dbound-prefix dbound s-dty (max 0 (- (length ts) (length ss)))))
+        (% move-vars+rest-to-dmap
+           (% cset-meet
+              (cgen/list V (append vars X) Y (append ss new-tys) (extend ss ts t-rest))
+              (cgen V (cons dbound X) Y s-dty t-rest))
+           vars dbound)]
+       [else
+        (cgen/seq V X Y (seq ss (uniform-end (substitute Univ dbound s-dty))) t-seq)])]))
 
 (define/cond-contract (cgen/arr V X Y s-arr t-arr)
   ((listof symbol?) (listof symbol?) (listof symbol?) arr? arr? . -> . (or/c #f cset?))
