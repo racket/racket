@@ -215,7 +215,14 @@
                          'mixed (λ (x) (memq x '(mixed improper decimal))))
 
 (preferences:set-default 'framework:standard-style-list:font-name
-                         (get-family-builtin-face 'modern)
+                         (cond
+                           [(equal? (system-type) 'macosx)
+                            (define preferred-font "Menlo")
+                            (define fl (get-face-list))
+                            (if (member preferred-font fl)
+                                preferred-font
+                                (get-family-builtin-face 'modern))]
+                           [else (get-family-builtin-face 'modern)])
                          string?)
 
 (preferences:set-default

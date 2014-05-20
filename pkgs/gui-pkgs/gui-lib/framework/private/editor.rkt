@@ -434,9 +434,17 @@
                                 (set-font-size/callback (font-size-pref->current-font-size v))))
     (preferences:add-callback 'framework:standard-style-list:font-name (λ (p v) (set-font-name v)))
     (preferences:add-callback 'framework:standard-style-list:smoothing (λ (p v) (set-font-smoothing v)))
-    
-    (unless (member (preferences:get 'framework:standard-style-list:font-name) (get-face-list))
-      (preferences:set 'framework:standard-style-list:font-name (get-family-builtin-face 'modern))))
+    (define fl (get-face-list))
+    (unless (member (preferences:get 'framework:standard-style-list:font-name) fl)
+      (define preferred-font 
+        (cond
+          [(equal? (system-type) 'macosx)
+           (define preferred-font "Menlo")
+           (if (member preferred-font fl)
+               preferred-font
+               (get-family-builtin-face 'modern))]
+          [else (get-family-builtin-face 'modern)]))
+      (preferences:set 'framework:standard-style-list:font-name preferred-font)))
   
   (define (get-current-preferred-font-size)
     (font-size-pref->current-font-size (preferences:get 'framework:standard-style-list:font-size)))
