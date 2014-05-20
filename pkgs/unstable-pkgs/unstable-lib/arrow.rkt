@@ -13,13 +13,6 @@
 (define cos-arrow-head-angle (cos arrow-head-angle))
 (define sin-arrow-head-angle (sin arrow-head-angle))
 
-(define arrow-head-size 8)
-(define arrow-head-size-cos-arrow-head-angle (* arrow-head-size cos-arrow-head-angle))
-(define arrow-head-size-sin-arrow-head-angle (* arrow-head-size sin-arrow-head-angle))
-
-(define arrow-root-radius 2.5)
-(define arrow-root-diameter (* 2 arrow-root-radius))
-
 ; If alpha is the angle between the x axis and the Start->End vector:
 ;
 ; p2-x = end-x + arrow-head-size * cos(alpha + pi - arrow-head-angle)
@@ -49,7 +42,14 @@
 ; dc<%> real real real real real real -> void
 ; draw one arrow
 (define (draw-arrow dc uncropped-pre-start-x uncropped-pre-start-y uncropped-pre-end-x uncropped-pre-end-y dx dy
-                    #:pen-width [pen-width #f])
+                    #:pen-width [pen-width #f]
+                    #:arrow-head-size [arrow-head-size 8]
+                    #:arrow-root-radius [arrow-root-radius 2.5])
+  
+  (define arrow-head-size-cos-arrow-head-angle (* arrow-head-size cos-arrow-head-angle))
+  (define arrow-head-size-sin-arrow-head-angle (* arrow-head-size sin-arrow-head-angle))
+  
+  (define arrow-root-diameter (* 2 arrow-root-radius))
   (define the-pen-width (or pen-width (send (send dc get-pen) get-width)))
   (let ([uncropped-start-x (+ uncropped-pre-start-x dx (- (/ the-pen-width 2)))]
         [uncropped-start-y (+ uncropped-pre-start-y dy)]
@@ -186,18 +186,19 @@
   (sqrt (+ (sqr (- (car p1) (car p2)))
            (sqr (- (cdr p1) (cdr p2))))))
 
-;; localled defined test code.... :(
+;; localled defined test code....
 ;; use module language to run tests
-(define (tests)
-  (and (equal? (find-intersection 0 1 0 10 0 2 0 20) #f)
-       (equal? (find-intersection 0 1 0 10 0 0 10 10) (cons 0 0))
-       (equal? (find-intersection 0 0 10 10 0 1 0 10) (cons 0 0))
-       (equal? (find-intersection 0 0 3 3 2 2 4 4) #f)
-       (equal? (find-intersection -3 3 3 -3 -3 -3 3 3) (cons 0 0))
-       (equal? (smallest? 3 1 2 3) #f)
-       (equal? (smallest? 0 1 2 3) #t)
-       (equal? (smallest? 1 0 2 3) #f)
-       (equal? (smallest? 1 0 #f 4) #f)
-       (equal? (smallest? 1 #f #f 4) #t)
-       (equal? (smallest? 1 #f #f #f) #t)
-       (equal? (dist (cons 1 1) (cons 4 5)) 5)))
+(module+ test
+  (require rackunit)
+  (check-equal? (find-intersection 0 1 0 10 0 2 0 20) #f)
+  (check-equal? (find-intersection 0 1 0 10 0 0 10 10) (cons 0 0))
+  (check-equal? (find-intersection 0 0 10 10 0 1 0 10) (cons 0 0))
+  (check-equal? (find-intersection 0 0 3 3 2 2 4 4) #f)
+  (check-equal? (find-intersection -3 3 3 -3 -3 -3 3 3) (cons 0 0))
+  (check-equal? (smallest? 3 1 2 3) #f)
+  (check-equal? (smallest? 0 1 2 3) #t)
+  (check-equal? (smallest? 1 0 2 3) #f)
+  (check-equal? (smallest? 1 0 #f 4) #f)
+  (check-equal? (smallest? 1 #f #f 4) #t)
+  (check-equal? (smallest? 1 #f #f #f) #t)
+  (check-equal? (dist (cons 1 1) (cons 4 5)) 5))

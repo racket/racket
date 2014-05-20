@@ -10,7 +10,7 @@
                "slideshow-lib"
                "unstable-macro-testing-lib"))
 (define implies '("unstable-macro-testing-lib"))
-(define build-deps '())
+(define build-deps '("rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"unstable\"")
 
