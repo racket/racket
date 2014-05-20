@@ -212,6 +212,14 @@
           (hash-set! dotted-var-store key all)
           all))))
 
+(define (generate-dbound-prefix v ty n)
+  (define vars (var-store-take v ty n))
+  (values
+    vars
+    (for/list ([var (in-list vars)])
+      (substitute (make-F var) v ty))))
+
+
 (define/cond-contract (cgen/filter V X Y s t)
   ((listof symbol?) (listof symbol?) (listof symbol?) Filter? Filter? . -> . (or/c #f cset?))
   (match* (s t)
@@ -266,10 +274,8 @@
      #f
      #:return-unless (<= (length ss) (length ts))
      #f
-     (let* ([vars    (var-store-take dbound dty (- (length ts) (length ss)))]
-            [new-tys (for/list ([var (in-list vars)])
-                       (substitute (make-F var) dbound dty))])
-       (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars))]
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss))))
+     (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars)]
     ;; dotted above, nothing below
     [((seq ss (null-end))
       (seq ts (dotted-end dty dbound)))
@@ -277,10 +283,8 @@
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (let* ([vars    (var-store-take dbound dty (- (length ss) (length ts)))]
-            [new-tys (for/list ([var (in-list vars)])
-                       (substitute (make-F var) dbound dty))])
-       (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars))]
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts))))
+     (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars)]
 
     ;; samed dotted bound
     [((seq ss (dotted-end s-dty dbound))
@@ -328,10 +332,8 @@
           (% cset-meet arg-mapping darg-mapping))]
        [(< (length ts) (length ss))
         ;; the hard case
-        (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
-               [new-tys  (for/list ([var (in-list vars)])
-                           (substitute (make-F var) dbound t-dty))]
-               [new-t-seq (seq (append ts new-tys) (dotted-end t-dty dbound))]
+        (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))))
+        (let* ([new-t-seq (seq (append ts new-tys) (dotted-end t-dty dbound))]
                [new-cset (cgen/seq V (append vars X) Y s-seq new-t-seq)])
           (% move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
        [else #f])]
@@ -341,10 +343,8 @@
      (if (memq dbound Y)
          (cond [(< (length ss) (length ts))
                 ;; the hard case
-                (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                       [new-tys  (for/list ([var (in-list vars)])
-                                   (substitute (make-F var) dbound s-dty))]
-                       [new-s-seq (seq (append ss new-tys) (dotted-end s-dty dbound))]
+                (define-values (vars new-tys) (generate-dbound-prefix dbound s-dty (- (length ts) (length ss))))
+                (let* ([new-s-seq (seq (append ss new-tys) (dotted-end s-dty dbound))]
                        [new-cset (cgen/seq V (append vars X) Y new-s-seq t-seq)])
                   (% move-vars+rest-to-dmap new-cset dbound vars))]
                [else
