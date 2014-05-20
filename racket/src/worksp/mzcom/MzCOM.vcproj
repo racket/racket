@@ -24,14 +24,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
@@ -64,6 +59,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -75,14 +71,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TargetEnvironment="3"
@@ -116,6 +107,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -128,14 +120,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
@@ -172,6 +159,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -183,14 +171,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TargetEnvironment="3"
@@ -228,6 +211,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -240,14 +224,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
@@ -285,6 +264,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -296,14 +276,9 @@
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			UseOfATL="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="..\..\..\racket -c mzobj_rgs.rkt"
-			/>
 			<Tool
 				Name="VCMIDLTool"
 				TargetEnvironment="3"
@@ -342,6 +317,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -360,15 +336,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\mzcom\com_glue.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\mzcom\mzcom.idl"
 				>
 			</File>
 			<File
 				RelativePath="..\..\mzcom\mzobj.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mzcom\stdafx.h"
 				>
 			</File>
 		</Filter>
@@ -377,15 +353,11 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath=".\mzcom.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MzCOMCP.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\mzcom\mzobj.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\mzcom\com_glue.h"
 				>
 			</File>
 		</Filter>
@@ -399,14 +371,6 @@
 			</File>
 			<File
 				RelativePath=".\mzcom.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\MzCOM.rgs"
-				>
-			</File>
-			<File
-				RelativePath=".\MzObj.rgs"
 				>
 			</File>
 		</Filter>

@@ -12,10 +12,14 @@
 START_XFORM_SKIP;
 #endif
 
-#include "stdafx.h"
 #include "resource.h"
 
-#include "mzcom.h"
+#include <process.h>
+
+#include <objbase.h>
+extern "C" {
+#include "com_glue.h"
+};
 
 #ifdef MZ_PRECISE_GC
 END_XFORM_SKIP;
@@ -332,7 +336,10 @@ void CMzObj::startMzThread(void) {
 }
 
 
-CMzObj::CMzObj(void) {
+CMzObj::CMzObj(void *_com_obj) {
+
+  com_obj = _com_obj;
+
   inputMutex = NULL;
   readSem = NULL;
   threadHandle = NULL;
@@ -433,7 +440,7 @@ void CMzObj::RaiseError(const OLECHAR *msg) {
 
   if (CreateErrorInfo(&pICreateErrorInfo) == S_OK &&
       pICreateErrorInfo != NULL) {
-    pICreateErrorInfo->SetGUID(IID_IMzObj);
+    pICreateErrorInfo->SetGUID(com_get_class_iid());
     pICreateErrorInfo->SetDescription((LPOLESTR)msg);
     pICreateErrorInfo->SetSource((LPOLESTR)L"MzCOM.MzObj");
     if (pICreateErrorInfo->QueryInterface(IID_IErrorInfo,
@@ -443,7 +450,7 @@ void CMzObj::RaiseError(const OLECHAR *msg) {
     }
   }
 
-  Fire_SchemeError(bstr);
+  Fire_SchemeError((IMzObj *)com_obj, bstr);
   SysFreeString(bstr);
 }
 
@@ -470,7 +477,7 @@ BOOL CMzObj::testThread(void) {
 /////////////////////////////////////////////////////////////////////////////
 // CMzObj
 
-STDMETHODIMP CMzObj::Eval(BSTR input, BSTR *output) {
+HRESULT CMzObj::Eval(BSTR input, BSTR *output) {
   if (!testThread()) {
     return E_ABORT;
   }
@@ -515,12 +522,12 @@ INT_PTR WINAPI dlgProc(HWND hDlg,UINT msg,WPARAM wParam,LPARAM) {
   }
 }
 
-STDMETHODIMP CMzObj::About() {
+HRESULT CMzObj::About() {
   DialogBox(globHinst,MAKEINTRESOURCE(ABOUTBOX),NULL,dlgProc);
   return S_OK;
 }
 
-STDMETHODIMP CMzObj::Reset() {
+HRESULT CMzObj::Reset() {
   if (!testThread()) {
     return E_ABORT;
   }
@@ -528,6 +535,31 @@ STDMETHODIMP CMzObj::Reset() {
   ReleaseSemaphore(resetSem,1,NULL);
   WaitForSingleObject(resetDoneSem,INFINITE);
   return S_OK;
+}
+
+void *new_mzobj(IMzObj *com_obj)
+{
+  return new CMzObj(com_obj);
+}
+
+void delete_mzobj(void *o)
+{
+  delete (CMzObj *)o;
+}
+
+HRESULT mzobj_about(void *o)
+{
+  return ((CMzObj *)o)->About();
+}
+
+HRESULT mzobj_reset(void *o)
+{
+  return ((CMzObj *)o)->Reset();
+}
+
+HRESULT mzobj_eval(void *o, BSTR s, BSTR *r)
+{
+  return ((CMzObj *)o)->Eval(s, r);
 }
 
 #ifdef MZ_PRECISE_GC
