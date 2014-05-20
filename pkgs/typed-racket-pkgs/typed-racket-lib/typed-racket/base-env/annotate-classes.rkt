@@ -264,9 +264,12 @@
            (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
 
 (define-syntax-class curried-formals
-  #:attributes (erased)
-  (pattern fun:id #:with erased #'fun)
+  #:attributes (erased fun-name)
+  (pattern fun:id
+           #:with fun-name #'fun
+           #:with erased #'fun)
   (pattern (fun:curried-formals . formals:lambda-formals)
+           #:with fun-name #'fun.fun-name
            #:with erased #`(fun.erased . #,(attribute formals.erased))))
 
 (define-splicing-syntax-class return-ann

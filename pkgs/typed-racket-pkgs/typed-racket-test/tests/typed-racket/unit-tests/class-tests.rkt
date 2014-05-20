@@ -17,7 +17,9 @@
 
 ;; see typecheck-tests.rkt for rationale on imports
 (require rackunit
-         (except-in racket/class class)
+         (except-in racket/class
+                    class define/public define/override
+                    define/pubment define/augment define/private)
          (except-in typed-racket/utils/utils private)
          (except-in (base-env extra-procs prims class-prims
                               base-types base-types-extra)

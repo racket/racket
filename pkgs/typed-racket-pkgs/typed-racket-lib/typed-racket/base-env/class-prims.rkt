@@ -2,9 +2,17 @@
 
 ;; This module provides TR primitives for classes and objects
 
-(require (rename-in racket/class [class untyped-class])
+(require (rename-in (except-in racket/class
+                               define/public
+                               define/override
+                               define/pubment
+                               define/augment
+                               define/private)
+                    [class untyped-class])
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
+         "../private/class-literals.rkt"
+         (only-in "prims.rkt" [define tr:define])
          (for-syntax
           racket/base
           racket/class
@@ -23,21 +31,32 @@
           syntax/parse
           syntax/stx
           unstable/list
+          "annotate-classes.rkt"
           "../private/syntax-properties.rkt"
           "../utils/tc-utils.rkt"))
 
 (provide ;; Typed class macro that coordinates with TR
          class
-         ;; for use in ~literal clauses
-         class-internal
-         :-augment)
+         ;; override these macros to use TR define
+         define/public
+         define/override
+         define/pubment
+         define/augment
+         define/private)
 
-;; give it a binding, but it shouldn't be used directly
-(define-syntax (class-internal stx)
-  (raise-syntax-error 'class "should only be used internally"))
+;; overriden forms
+(define-syntax-rule (define-define/foo (?id ...) (?class-kw ...))
+  (begin (define-syntax (?id stx)
+           (syntax-parse stx
+             [(_ ??header:curried-formals . ??body)
+              (quasisyntax/loc stx
+                (begin (tr:define ??header . ??body)
+                       (?class-kw ??header.fun-name)))]))
+         ...))
 
-(define-syntax (:-augment stx)
-  (raise-syntax-error 'class "should only be used internally"))
+(define-define/foo
+  (define/public define/override define/pubment define/augment define/private)
+  (public override pubment augment private))
 
 (begin-for-syntax
  ;; forms that are not allowed by Typed Racket yet
