@@ -3,6 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
          (types abbrev union utils structural)
+         racket/performance-hint
          racket/list racket/match)
 
 (provide/cond-contract
@@ -21,43 +22,43 @@
     [(Values: (list (Result: _ lf _) ...)) lf]
     [(ValuesDots: (list (Result: _ lf _) ...) _ _) lf]))
 
-(define-values (var-promote var-demote)
-  (let ()
-    (define (var-change V T change)
-      (define (structural-recur t sym)
-        (case sym
-          [(co) (var-change V t change)]
-          [(contra) (var-change V t (not change))]
-          [(inv)
-           (if (V-in? V t)
-               (if change Univ -Bottom)
-               t)]))
-      (define (co t) (structural-recur t 'co))
-      (define (contra t) (structural-recur t 'contra))
 
-      (match T
-        [(? structural?) (structural-map T structural-recur)]
-        [(F: name) (if (memq name V) (if change Univ -Bottom) T)]
-        [(arr: dom rng rest drest kws)
-         (cond
-           [(apply V-in? V (get-filters rng))
-            (make-top-arr)]
-           [(and drest (memq (cdr drest) V))
-            (make-arr (map contra dom)
-                      (co rng)
-                      (contra (car drest))
-                      #f
-                      (map contra kws))]
-           [else
-            (make-arr (map contra dom)
-                      (co rng)
-                      (and rest (contra rest))
-                      (and drest (cons (contra (car drest)) (cdr drest)))
-                      (map contra kws))])]
-        [(? Filter?) ((sub-f co) T)]
-        [(? Object?) ((sub-o co) T)]
-        [(? Type?) ((sub-t co) T)]))
+(begin-encourage-inline
+  (define (var-change V T change)
+    (define (structural-recur t sym)
+      (case sym
+        [(co) (var-change V t change)]
+        [(contra) (var-change V t (not change))]
+        [(inv)
+         (if (V-in? V t)
+             (if change Univ -Bottom)
+             t)]))
+    (define (co t) (structural-recur t 'co))
+    (define (contra t) (structural-recur t 'contra))
 
-    (values
-      (lambda (T V) (var-change V T #t))
-      (lambda (T V) (var-change V T #f)))))
+    (match T
+      [(? structural?) (structural-map T structural-recur)]
+      [(F: name) (if (memq name V) (if change Univ -Bottom) T)]
+      [(arr: dom rng rest drest kws)
+       (cond
+         [(apply V-in? V (get-filters rng))
+          (make-top-arr)]
+         [(and drest (memq (cdr drest) V))
+          (make-arr (map contra dom)
+                    (co rng)
+                    (contra (car drest))
+                    #f
+                    (map contra kws))]
+         [else
+          (make-arr (map contra dom)
+                    (co rng)
+                    (and rest (contra rest))
+                    (and drest (cons (contra (car drest)) (cdr drest)))
+                    (map contra kws))])]
+      [(? Filter?) ((sub-f co) T)]
+      [(? Object?) ((sub-o co) T)]
+      [(? Type?) ((sub-t co) T)]))
+  (define (var-promote T V)
+    (var-change V T #t))
+  (define (var-demote T V)
+    (var-change V T #f)))
