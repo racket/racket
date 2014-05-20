@@ -4,7 +4,23 @@
          "../utils/tc-utils.rkt"
          "tc-result.rkt"
          racket/list racket/set racket/dict racket/match
+         racket/format racket/string
          syntax/parse)
+
+;; Data definitions
+;; ----------------
+;;
+;; A LambdaKeywords is a
+;;   #s(lambda-kws (Listof Keyword) (Listof Keyword))
+(struct lambda-kws (mand opt) #:prefab)
+
+;;
+;; interp.
+;;   - the first list contains the mandatory keywords
+;;   - the second list contains the optional keywords
+;;
+;; The TR lambda form sets this as a syntax property on lambda expansions
+;; to allow TR to check for missing keywords.
 
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type]
 ;;           [Option Type] [Option (Pair Type symbol)] boolean -> Type
@@ -219,6 +235,40 @@
            [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
 
+;; check-kw-arity : LambdaKeywords Type -> Any
+;;
+;; Check if the TR lambda property listing the keywords matches up with
+;; the type that we've given. Allows for better error messages than just
+;; relying on tc-expr.
+(define (check-kw-arity kw-prop f-type)
+  (define (get-arrs f-ty)
+    (match f-ty
+      [(Function: arrs) arrs]
+      [(Poly-names: names ty) (get-arrs ty)]
+      [(PolyDots-names: names ty) (get-arrs ty)]))
+  (match-define (lambda-kws *actual-mands *actual-opts) kw-prop)
+  (define arrs (get-arrs f-type))
+  (for/and ([arr (in-list arrs)])
+    (match-define (arr: _ _ _ _ kws) arr)
+    (define-values (mand-kw-types opt-kw-types) (partition-kws kws))
+    (define *mand-kws (map (match-lambda [(Keyword: kw _ _) kw]) mand-kw-types))
+    (define *opt-kws (map (match-lambda [(Keyword: kw _ _) kw]) opt-kw-types))
+    (define-values (actual-mands actual-opts mand-kws opt-kws)
+      (values (list->set *actual-mands)
+              (list->set *actual-opts)
+              (list->set *mand-kws)
+              (list->set *opt-kws)))
+    (define missing-kws (set-union (set-subtract mand-kws actual-mands)
+                                   (set-subtract opt-kws actual-opts)))
+    (or (set-empty? missing-kws)
+        (not (tc-error/fields
+              "type mismatch"
+              #:more "function is missing keyword arguments"
+              #:delayed? #t
+              "missing keywords"
+              (string-join (map ~a (set->list missing-kws)))
+              "expected type" f-type)))))
+
 ;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
 ;;               -> (Listof make-Keyword)
 ;; Computes the keyword types for an arr in kw-unconvert
@@ -325,4 +375,5 @@
 (define (partition-kws kws)
   (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws))
 
-(provide kw-convert kw-unconvert opt-convert opt-unconvert partition-kws)
+(provide kw-convert kw-unconvert opt-convert opt-unconvert partition-kws
+         check-kw-arity)

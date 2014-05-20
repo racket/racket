@@ -175,12 +175,13 @@
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
       ;; kw function def
       ;; TODO simplify this case
-      [(~and (let-values ([(f) fun]) . body) _:kw-lambda^)
+      [(~and (let-values ([(f) fun]) . body) kw:kw-lambda^)
        #:when expected
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
-          (tc-expr/check/type #'fun (kw-convert f #:split #t))
+          (when (check-kw-arity (attribute kw.value) f)
+            (tc-expr/check/type #'fun (kw-convert f #:split #t)))
           (ret f -true-filter)]
          [(or (tc-results: _) (tc-any-results: _))
           (tc-expr/check form #f)])]
