@@ -1767,16 +1767,29 @@ TODO
                (cond
                  [(null? ports) (channel-put io-chan io)]
                  [else
-                  (apply sync
-                         (map (λ (port) (handle-evt 
-                                         port 
-                                         (λ (_) 
-                                           (define byte/special (read-byte-or-special port))
-                                           (if (eof-object? byte/special)
-                                               (loop (remq port ports) io)
-                                               (loop ports (cons (cons port byte/special) 
-                                                                 io))))))
-                              ports))]))))
+                  (apply 
+                   sync
+                   (for/list ([port (in-list ports)])
+                     (handle-evt 
+                      port 
+                      (λ (_)
+                        (define-values (the-bytes/specials eof?)
+                          (let b-loop ([bytes '()])
+                            (cond
+                              [(byte-ready? port)
+                               (define b (read-byte-or-special port))
+                               (cond
+                                 [(eof-object? b) (values bytes #t)]
+                                 [else (b-loop (cons b bytes))])]
+                              [else (values bytes #f)])))
+                        (define new-io
+                          (if (null? bytes)
+                              io
+                              (cons (cons port (reverse the-bytes/specials))
+                                    io)))
+                        (if eof?
+                            (loop (remq port ports) new-io)
+                            (loop ports new-io))))))]))))
              
           (run-in-evaluation-thread
            (λ ()
@@ -1808,13 +1821,15 @@ TODO
           ;; duplicate it over to the user's ports, now that there is
           ;; no danger of deadlock
           (for ([i (in-list (reverse (channel-get io-chan)))])
-            (define obj (cdr i))
-            
-            ((if (byte? obj) write-byte write-special)
-             obj
-             (if (eq? (car i) sp-err-other-end)
-                 (get-err-port)
-                 (get-out-port))))
+            (define objs (cdr i))
+            (define port
+              (if (equal? (car i) sp-err-other-end)
+                  (get-err-port)
+                  (get-out-port)))
+            (for ([obj (in-list objs)])
+              ((if (byte? obj) write-byte write-special)
+               obj
+               port)))
           (flush-output (get-err-port))
           (flush-output (get-out-port)))
         
