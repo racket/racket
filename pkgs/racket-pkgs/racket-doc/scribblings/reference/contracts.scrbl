@@ -2766,8 +2766,8 @@ parts of the contract system.
 @section{Random generation}
 
 @defproc[(contract-random-generate [ctc contract?]
-                                   [fuel int?]
-                                   [fail (-> any/c) (λ () (error ...))])
+                                   [fuel 5 exact-nonnegative-integer?]
+                                   [fail (or/c #f (-> any)) #f])
          any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
 argument limits how hard the generator tries to generate a value matching the

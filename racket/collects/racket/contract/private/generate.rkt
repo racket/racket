@@ -107,9 +107,17 @@
                    (append ctcs (definitely-available-contracts))])
     (thunk)))
 
-; generate : contract int -> ctc value or error
-(define (contract-random-generate ctc fuel [_fail #f])
+(define (contract-random-generate ctc [fuel 5] [_fail #f])
   (define def-ctc (coerce-contract 'contract-random-generate ctc))
+  (unless (exact-nonnegative-integer? fuel)
+    (raise-argument-error 'contract-random-generate
+                          "exact-nonnegative-integer?"
+                          fuel))
+  (unless (or (not _fail) (and (procedure? _fail) (procedure-arity-includes? _fail 0)))
+    (raise-argument-error 'contract-random-generate
+                          (format "~s" '(or/c #f (-> any)))
+                          3
+                          ctc fuel _fail))
   (define proc
     (parameterize ([generate-env (make-hash)]) 
       (generate/choose def-ctc fuel)))
