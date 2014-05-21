@@ -287,7 +287,7 @@
      (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts))))
      (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars)]
 
-    ;; samed dotted bound
+    ;; same dotted bound
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (dotted-end t-dty dbound)))
      #:return-unless (= (length ss) (length ts))
@@ -304,21 +304,18 @@
       (seq ts (dotted-end t-dty dbound*)))
      #:return-unless (= (length ss) (length ts)) #f
      #:return-when (memq dbound* Y) #f
-     (let* ([arg-mapping (cgen/list V X Y ss ts)]
-            ;; just add dbound as something that can be constrained
-            [darg-mapping
-              (extend-tvars (list dbound*)
-                (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound dbound*))])
-       (% cset-meet arg-mapping darg-mapping))]
+     (% cset-meet
+        (cgen/list V X Y ss ts)
+        (extend-tvars (list dbound*)
+          (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound dbound*)))]
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (dotted-end t-dty (? (λ (db) (memq db Y)) dbound*))))
      #:return-unless (= (length ss) (length ts)) #f
-     (let* ([arg-mapping (cgen/list V X Y ss ts)]
-            ;; just add dbound* as something that can be constrained
-            [darg-mapping
-              (extend-tvars (list dbound)
-                (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y s-dty t-dty) dbound* dbound))])
-       (% cset-meet arg-mapping darg-mapping))]
+     (% cset-meet
+        (cgen/list V X Y ss ts)
+        (extend-tvars (list dbound)
+          (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y s-dty t-dty) dbound* dbound)))]
+
     ;; * <: ...
     [((seq ss (uniform-end s-rest))
       (seq ts (dotted-end t-dty dbound)))
