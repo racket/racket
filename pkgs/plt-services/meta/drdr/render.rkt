@@ -382,16 +382,17 @@
                                                `(span ([class "commandline"]) ,s))
                                              command-line)
                                         " ")))
-                             (tr (td "Duration:") (td ,(format-duration-ms dur)
-                                                      nbsp (a ([href ,(format "/data~a" (path-add-suffix the-base-path #".timing"))])
-                                                              "(timing data)")))
+                             (tr (td "Duration:")
+                                 (td ,(format-duration-ms dur)
+                                     nbsp (a ([href ,(format "/data~a" (path-add-suffix the-base-path #".timing"))])
+                                             "(timing data)")))
                              (tr (td "Timeout:") (td ,(if (timeout? log) checkmark-entity "")))
                              (tr (td "Exit Code:") (td ,(if (exit? log) (number->string (exit-code log)) "")))
                              (tr (td " ") (td (a ([href ,scm-url]) "View File"))))
                       ,(if (lc-zero? changed)
                            ""
                            `(div ([class "error"])
-                                 "This result of executing this file has changed since the previous push."
+                                 "The result of executing this file has changed since the previous push."
                                  " "
                                  (a ([href ,(format "/diff/~a/~a~a" (previous-rev) (current-rev) the-base-path)])
                                     "See the difference")))
