@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/pretty
-         (for-syntax racket/base))
+         (for-syntax racket/base syntax/name syntax/parse))
 
 (provide trace untrace
          trace-define trace-let trace-lambda
@@ -76,7 +76,7 @@
   (let ([p (open-output-bytes)])
     (parameterize ([current-output-port p])
       (thunk))
-    (let ([b (get-output-bytes p #t 0 
+    (let ([b (get-output-bytes p #t 0
                                ;; drop newline:
                                (sub1 (file-position p)))])
       ((current-trace-notify) (bytes->string/utf-8 b)))))
@@ -119,9 +119,9 @@
            (let ([args (append args
                                (apply append (map (lambda (kw val)
                                                     (list (plain kw) val))
-                                                  kws 
+                                                  kws
                                                   kw-vals)))])
-             (let-values ([(struct: make- ? -ref -set!) 
+             (let-values ([(struct: make- ? -ref -set!)
                            (make-struct-type name #f
                                              (length args) 0 #f
                                              null #f #f null #f
@@ -193,7 +193,7 @@
             ids procs)
   (for-each (lambda (proc setter traced-proc)
               (unless (traced-proc? proc)
-                (setter (make-traced-proc 
+                (setter (make-traced-proc
                          (let-values ([(a) (procedure-arity proc)]
                                       [(req allowed) (procedure-keywords proc)])
                            (procedure-reduce-keyword-arity traced-proc
@@ -244,7 +244,7 @@
                     (keyword-apply real-value kws kw-vals args))))
             ;; Not a tail call; push the old level, again, to ensure
             ;;  that when we push the new level, we have consecutive
-            ;;  levels associated with the mark (i.e., set up for 
+            ;;  levels associated with the mark (i.e., set up for
             ;;  tail-call detection the next time around):
             (begin
               (-:trace-print-args id args kws kw-vals level)
@@ -303,13 +303,34 @@
      (let-values ([(name def) (normalize-definition stx #'lambda)])
        #`(begin (define #,name #,def) (trace #,name)))]))
 
+(module+ test
+  (require rackunit)
+  (parameterize ([current-trace-notify (let ([x (current-output-port)])
+                                         (lambda (s) (display s x)
+                                           (newline x)))])
+    (trace-define (verbose-fact x)
+      (if (zero? x)
+        (begin (display 1) 1)
+        (begin (display (* x (verbose-fact (sub1 x))))
+               (* x (verbose-fact (sub1 x))))))
+    (check-not-equal? (string-ref (with-output-to-string (thunk (verbose-fact 5))) 0) ">")))
+
 (define-syntax trace-let
   (syntax-rules ()
     [(_ name ([x* e*] ...) body ...)
      ((letrec ([name (lambda (x* ...) body ...)]) (trace name) name)
       e* ...)]))
 
-(define-syntax trace-lambda
-  (syntax-rules ()
-    [(_ name args body ...)
-     (let ([name (lambda args body ...)]) (trace name) name)]))
+(define-syntax (trace-lambda stx)
+  (syntax-parse stx
+    [(_ (~optional (~seq #:name name:id) #:defaults ([name #`#,(syntax-local-infer-name stx)])) args body:expr ...)
+     #'(let ([name (lambda args body ...)]) (trace name) name)]))
+
+(module+ test
+  (require racket)
+  (check-equal?
+    (with-output-to-string (thunk ((trace-lambda #:name fact (x) x) 120)))
+    ">(fact 120)\n<120\n")
+  (check-regexp-match
+    #px">\\(.+\\.rkt:\\d+:\\d+ 120\\)\n<120\n"
+    (with-output-to-string (thunk ((trace-lambda (x) x) 120)))))
