@@ -143,9 +143,17 @@ add this test:
                             (λ ()
                               (send interactions-text paragraph-end-position
                                     (- (send interactions-text last-paragraph) 1)))))])
-        (unless (equal? got-value expected-transcript)
+        (unless (got-matches-expected? got-value expected-transcript)
           (eprintf "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
                    expected-transcript got-value program input)))))
+  
+  (define (got-matches-expected? got expected)
+    (cond
+      [(list? expected)
+       (for/or ([expected (in-list expected)])
+         (equal? expected got))]
+      [else
+       (equal? expected got)]))
   
   (clear-definitions drs-frame)
   
@@ -161,7 +169,7 @@ add this test:
   (do-input-test "(begin (read-char) (sleep 1) (read-char))" "ab\ncd\n" "ab\ncd\n#\\b")
   (do-input-test "(list (read) (sleep 1) (read) (read))" "a b\nc d\n" "a b\nc d\n(a #<void> b c)")
   
-  (do-input-test "(begin (display 1) (read))" "2\n" "12\n2")
+  (do-input-test "(begin (display 1) (read))" "2\n" '("12\n2" "2\n12"))
   
   (do-input-test "(read-line)" "\n" "\n\"\"")
   (do-input-test "(read-char)" "\n" "\n#\\newline")
