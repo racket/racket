@@ -3023,7 +3023,7 @@
    [tc-l (3 . 4) (-pair -PosByte -PosByte)]
    [tc-l #hash() (make-Hashtable Univ Univ)]
    [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Integer -Integer)]
-   [tc-l #hasheq((a . q) (b . w)) (make-Hashtable -Symbol -Symbol)])
+   [tc-l #hasheq((a . q) (b . w)) (make-Hashtable -Symbol -Symbol)]
    [tc-l #hash{[:a . :b]}
          (let ([rec-type (-mu X (make-Hashtable (t:Un -Symbol X) (t:Un -Symbol X)))])
            (make-Hashtable (t:Un -Symbol rec-type) (t:Un -Symbol rec-type)))
@@ -3040,4 +3040,5 @@
          #:expected (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))]
    [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))
                     #:msg #rx"expected: Symbol"]
+   )
   ))
