@@ -534,9 +534,7 @@
   (define formals (syntax->list formals*))
   (with-lexical-env/extend
    formals args
-   (let* ([r (tc-results->values return)]
-          [t (make-arr args r)]
-          [ft (make-Function (list t))])
+   (let* ([ft (->* args (tc-results->values return))]
      (with-lexical-env/extend
       (list name) (list ft)
       (values
