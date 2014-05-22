@@ -89,14 +89,11 @@
       [(tc-result1: (List: (? (lambda (ts) (= (syntax-length #'args)
                                               (length ts)))
                               ts)))
-       (match (for/list ([ac (in-syntax #'args)]
+       (ret (-Tuple
+              (for/list ([ac (in-syntax #'args)]
                          [exp (in-list ts)])
-                (tc-expr/check ac (ret exp)))
-         [(list (tc-result1: t) ...)
-          (ret (-Tuple t))])]
-      [_
-       (let ([tys (stx-map tc-expr/t #'args)])
-         (ret (apply -lst* tys)))]))
+                (tc-expr/check/t ac (ret exp)))))]
+      [_ (ret (-Tuple (stx-map tc-expr/t #'args)))]))
   ;; special case for `list*'
   (pattern (list* . args)
     (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
