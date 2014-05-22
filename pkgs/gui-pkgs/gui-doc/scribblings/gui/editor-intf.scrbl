@@ -2025,8 +2025,12 @@ If @racket[filename] is @racket[#f], then the internally stored filename
 @method[editor<%> load-file].
 
 The filename and format used to save the file can be retrieved with
- @method[editor<%> get-filename]. In a @racket[text%] instance, the
- format can be retrieved with @method[text% get-file-format].
+ @method[editor<%> get-filename] unless the @racket[format] is
+ @racket['copy] -- see also @method[editor<%> load-file] for more information
+ on the @racket[format] argument.
+ 
+ In a @racket[text%] instance, the format can be retrieved 
+ with @method[text% get-file-format].
 
 See also @method[editor<%> on-save-file], @method[editor<%>
  after-save-file], and @method[editor<%> can-save-file?].
