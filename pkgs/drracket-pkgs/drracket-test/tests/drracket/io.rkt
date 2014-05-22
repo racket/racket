@@ -84,15 +84,23 @@ add this test:
                       (list "1" output-style)
                       (list "1" error-style)
                       prompt))
-  (check-output "(let ([s (make-semaphore)]) (thread (lambda () (display 1) (semaphore-post s))) (semaphore-wait s))"
+  (check-output (format "~s" '(let ([s (make-semaphore)])
+                                (thread (lambda () (display 1) (semaphore-post s)))
+                                (semaphore-wait s)))
                 (list (list "1" output-style)
                       prompt))
-  (check-output
-   "(let ([s (make-semaphore)]) (thread (lambda () (display 1 (current-output-port)) (semaphore-post s))) (semaphore-wait s))" 
+  (check-output (format "~s" '(let ([s (make-semaphore)]) 
+                                (thread (lambda () 
+                                          (display 1 (current-output-port))
+                                          (semaphore-post s)))
+                                (semaphore-wait s)))
    (list (list "1" output-style)
          prompt))
-  (check-output
-   "(let ([s (make-semaphore)]) (thread (lambda () (display 1 (current-error-port)) (semaphore-post s))) (semaphore-wait s))"
+  (check-output (format "~s" '(let ([s (make-semaphore)]) 
+                                (thread (lambda () 
+                                          (display 1 (current-error-port)) 
+                                          (semaphore-post s)))
+                                (semaphore-wait s))))
    (list (list "1" error-style)
          prompt)))
 
@@ -104,7 +112,10 @@ add this test:
     (clear-definitions drs-frame)
     (type-in-definitions
      drs-frame
-     "(let f ([n 7] [p null]) (if (= n 0) p (list (f (- n 1) (cons 'l p)) (f (- n 1)  (cons 'r p)))))")
+     (format "~s" '(let f ([n 7] [p null])
+                     (if (= n 0) p 
+                         (list (f (- n 1) (cons 'l p)) 
+                               (f (- n 1)  (cons 'r p)))))))
     (do-execute drs-frame)
     (let ([got-output (fetch-output drs-frame)])
       (clear-definitions drs-frame)
@@ -138,13 +149,17 @@ add this test:
              (fetch-output drs-frame 
                            (queue-callback/res
                             (λ ()
-                              (send interactions-text paragraph-start-position 3))) ;; start after test expression
+                               ;; start after test expression
+                              (send interactions-text paragraph-start-position 3)))
                            (queue-callback/res
                             (λ ()
                               (send interactions-text paragraph-end-position
                                     (- (send interactions-text last-paragraph) 1)))))])
         (unless (got-matches-expected? got-value expected-transcript)
-          (eprintf "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
+          (eprintf (string-append "FAILED: expected: ~s\n"
+                                  "             got: ~s\n"
+                                  "         program: ~s\n"
+                                  "           input: ~s\n")
                    expected-transcript got-value program input)))))
   
   (define (got-matches-expected? got expected)
