@@ -2978,6 +2978,15 @@
          #:ret (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))
          #:expected (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))]
 
+       [tc-err
+         (lambda xs (andmap (lambda: ([x : (Vectorof Any)]) x) xs))
+         #:ret (ret (-polydots (a ...) (->... (list) ((-vec a) a) (t:Un (-val #f) (-vec Univ)))))
+         #:expected (ret (-polydots (a ...) (->... (list) ((-vec a) a) (t:Un (-val #f) (-vec Univ)))))]
+       [tc-err
+         (lambda xs (andmap (lambda: ([x : #f]) x) xs))
+         #:ret (ret (-polydots (a ...) (->... (list) ((-val #f) a) (-val #f))))
+         #:expected (ret (-polydots (a ...) (->... (list) ((-val #f) a) (-val #f))))]
+
         )
   (test-suite
    "tc-literal tests"

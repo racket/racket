@@ -22,6 +22,12 @@
   #:for-label
   (reverse k:reverse list list* cons map andmap ormap))
 
+(define-syntax-class boolmap
+  #:literal-sets (list-literals)
+  #:attributes (default)
+  (pattern andmap #:attr default #t)
+  (pattern ormap #:attr default #f))
+
 (define-tc/app-syntax-class (tc/app-list expected)
   #:literal-sets (list-literals)
   (pattern (~and form (map f arg0 arg ...))
@@ -58,17 +64,18 @@
       ;; TODO fix double typechecking
       [(res0 res) (tc/app-regular #'form expected)]))
   ;; ormap/andmap of ... argument
-  (pattern (~and form ((~or andmap ormap) f arg))
-    (match-let* ([arg-ty (single-value #'arg)]
+  (pattern (~and form (m:boolmap f arg))
+    (match-let* ([arg-ty (tc-expr/t #'arg)]
                  [ft (tc-expr #'f)])
       (match (match arg-ty
                ;; if the argument is a ListDots
-               [(tc-result1: (ListDots: t bound))
+               [(ListDots: t bound)
                 ;; just check that the function applies successfully to the element type
-                (tc/funapp #'f #'(arg) ft (list (ret (substitute Univ bound t))) expected)]
+                (extend-tvars (list bound)
+                  (tc/funapp #'f #'(arg) ft (list (ret t)) expected))]
                ;; otherwise ...
                [_ #f])
-        [(tc-result1: t) (ret (Un (-val #f) t))]
+        [(tc-result1: t) (ret (Un (-val (attribute m.default)) t))]
         ;; if it's not a ListDots, defer to the regular function typechecking
         ;; TODO fix double typechecking
         [_ (tc/app-regular #'form expected)])))
