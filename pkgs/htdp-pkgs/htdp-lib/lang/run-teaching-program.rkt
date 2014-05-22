@@ -52,8 +52,9 @@
        (with-handlers ([exn:fail?
                         (λ (x)
                           (set! saved-exn x)
-                          (expand
-                           (create-empty-module language-module teachpacks module-name)))])
+                          (define-values (mod name)
+                            (create-empty-module language-module teachpacks module-name))
+                          (expand mod))])
          (define body-exps (suck-all-exps port reader))           
          (define teachpack-requires (teachpacks->requires teachpacks))        
          (rewrite-module
