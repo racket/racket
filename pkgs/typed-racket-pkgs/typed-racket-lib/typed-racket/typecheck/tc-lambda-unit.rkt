@@ -4,9 +4,11 @@
          racket/dict racket/list syntax/parse racket/syntax syntax/stx
          racket/match syntax/id-table racket/set
          (contract-req)
-         (except-in (rep type-rep) make-arr)
-         (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
-                    [make-arr* make-arr])
+         (rep type-rep)
+         (rename-in (types abbrev utils union)
+                    [-> t:->]
+                    [->* t:->*]
+                    [one-of/c t:one-of/c])
          (private type-annotation syntax-properties)
          (types type-table)
          (typecheck signatures tc-metafunctions tc-subst)
@@ -30,7 +32,7 @@
                               (if rest (list (first rest)) null)
                               (if drest (list (first drest)) null)
                               kw-id)])
-       (make-arr
+       (make-arr*
         arg-tys
         (abstract-results body arg-names)
         #:kws (map make-Keyword kw kw-ty req?)
@@ -532,11 +534,9 @@
 ;; Returns both the tc-results of the function and of the body
 (define (tc/rec-lambda/check formals* body name args return)
   (define formals (syntax->list formals*))
+  (define ft (t:->* args (tc-results->values return)))
   (with-lexical-env/extend
-   formals args
-   (let* ([ft (->* args (tc-results->values return))]
-     (with-lexical-env/extend
-      (list name) (list ft)
-      (values
-        (replace-names (map (λ (f) (list f -empty-obj)) formals) (ret ft))
-        (replace-names (map (λ (f) (list f -empty-obj)) formals) (tc-body/check body return)))))))
+   (cons name formals) (cons ft args)
+   (values
+     (replace-names (map (λ (f) (list f -empty-obj)) (cons name formals)) (ret ft))
+     (replace-names (map (λ (f) (list f -empty-obj)) (cons name formals)) (tc-body/check body return)))))

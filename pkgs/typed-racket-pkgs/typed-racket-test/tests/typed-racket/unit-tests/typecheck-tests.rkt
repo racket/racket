@@ -2987,7 +2987,12 @@
          #:ret (ret (-polydots (a ...) (->... (list) ((-val #f) a) (-val #f))))
          #:expected (ret (-polydots (a ...) (->... (list) ((-val #f) a) (-val #f))))]
 
+       [tc-e
+        ((letrec ([lp (lambda (x) lp)]) lp) 'y)
+        #:ret (ret (t:-> -Symbol Univ))
+        #:expected (ret (t:-> -Symbol Univ) -no-filter -no-obj)]
         )
+
   (test-suite
    "tc-literal tests"
    (tc-l 5 -PosByte)
