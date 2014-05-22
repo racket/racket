@@ -12,9 +12,6 @@
          combine-props
          tc-results->values)
 
-(provide/cond-contract
-  [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
-
 
 ;; abstract-results
 ;;
@@ -240,9 +237,3 @@
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
 
-;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
-;; For each name replaces all uses of it in res with the corresponding object.
-;; This is used so that names do not escape the scope of their definitions
-(define (replace-names names+objects res)
-  (for/fold ([res res]) ([name/object (in-list names+objects)])
-    (subst-tc-results res (first name/object) (second name/object) #t)))

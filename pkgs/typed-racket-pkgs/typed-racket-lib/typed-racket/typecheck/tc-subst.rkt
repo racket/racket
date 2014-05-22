@@ -4,12 +4,15 @@
 ;; figure 8, pg 8 of "Logical Types for Untyped Languages"
 
 (require "../utils/utils.rkt"
-         racket/match
+         racket/match racket/list
          (contract-req)
          (except-in (types abbrev utils filter-ops) -> ->* one-of/c)
          (rep type-rep object-rep filter-rep rep-utils))
 
-(provide (all-defined-out))
+(provide open-Result add-scope values->tc-results)
+
+(provide/cond-contract
+  [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
 
 ;; Substitutes the given objects into the type, filters, and object
 ;; of a Result for function application. This matches up to the substitutions
@@ -24,6 +27,13 @@
     (values (subst-type t key o #t)
             (subst-filter-set fs key o #t arg-ty)
             (subst-object old-obj key o #t))))
+
+;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
+;; For each name replaces all uses of it in res with the corresponding object.
+;; This is used so that names do not escape the scope of their definitions
+(define (replace-names names+objects res)
+  (for/fold ([res res]) ([name/object (in-list names+objects)])
+    (subst-tc-results res (first name/object) (second name/object) #t)))
 
 ;; Substitution of objects into a tc-results
 (define/cond-contract (subst-tc-results res k o polarity)

@@ -8,7 +8,7 @@
               global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
          syntax/free-vars
-         (typecheck signatures tc-metafunctions internal-forms)
+         (typecheck signatures tc-metafunctions tc-subst internal-forms)
          (utils tarjan)
          racket/match (contract-req)
          racket/list
