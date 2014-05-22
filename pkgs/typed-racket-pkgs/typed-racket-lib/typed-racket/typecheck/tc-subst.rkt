@@ -6,10 +6,7 @@
 (require "../utils/utils.rkt"
          racket/match
          (contract-req)
-         (rename-in (types abbrev utils filter-ops)
-                    [-> -->]
-                    [->* -->*]
-                    [one-of/c -one-of/c])
+         (except-in (types abbrev utils filter-ops) -> ->* one-of/c)
          (rep type-rep object-rep filter-rep rep-utils))
 
 (provide (all-defined-out))
@@ -27,6 +24,21 @@
     (values (subst-type t key o #t)
             (subst-filter-set fs key o #t arg-ty)
             (subst-object old-obj key o #t))))
+
+;; Substitution of objects into a tc-results
+(define/cond-contract (subst-tc-results res k o polarity)
+  (-> full-tc-results/c name-ref/c Object? boolean? full-tc-results/c)
+  (define (st t) (subst-type t k o polarity))
+  (define (sf f) (subst-filter f k o polarity))
+  (define (sfs fs) (subst-filter-set fs k o polarity))
+  (define (so ob) (subst-object ob k o polarity))
+  (match res
+    [(tc-any-results: f) (tc-any-results (sf f))]
+    [(tc-results: ts fs os)
+     (ret (map st ts) (map sfs fs) (map so os))]
+    [(tc-results: ts fs os dt db)
+     (ret (map st ts) (map sfs fs) (map so os) dt db)]))
+
 
 ;; Substitution of objects into a filter set
 ;; This is essentially ψ+|ψ- [o/x] from the paper

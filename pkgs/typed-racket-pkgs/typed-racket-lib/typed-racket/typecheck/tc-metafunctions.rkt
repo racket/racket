@@ -244,15 +244,5 @@
 ;; For each name replaces all uses of it in res with the corresponding object.
 ;; This is used so that names do not escape the scope of their definitions
 (define (replace-names names+objects res)
-  (define (sub proc i)
-    (for/fold ([s i]) ([name/object (in-list names+objects)])
-      (proc s (first name/object) (second name/object) #t)))
-  (define (subber proc lst)
-    (for/list ([i (in-list lst)])
-      (sub proc i)))
-  (match res
-    [(tc-any-results: f) (tc-any-results (sub subst-filter f))]
-    [(tc-results: ts fs os)
-     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
-    [(tc-results: ts fs os dt db)
-     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
+  (for/fold ([res res]) ([name/object (in-list names+objects)])
+    (subst-tc-results res (first name/object) (second name/object) #t)))
