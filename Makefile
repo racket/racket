@@ -468,7 +468,7 @@ client:
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 win32-client:
-	cmd /c del /f /s /q build\user
+	IF EXIST build\user cmd /c del /f /s /q build\user
 	$(MAKE) win32-base $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
