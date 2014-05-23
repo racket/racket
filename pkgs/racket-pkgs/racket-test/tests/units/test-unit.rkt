@@ -149,11 +149,12 @@
       (let ()
         (define-signature x (a b))
         (lookup-sig-mac x)))
+
 (let ()
   (define s7 (void))
   (define h (void))
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
-  (test stx-bound-id=? #'((s1 a b f) (((s2 s3) . s4) ((c d) . e) ((i) . j)) (((s5 s6) . (values #'s7 #'s7)) ((g) . #'h)))
+  (test stx-bound-id=? #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
         (let ()
           (define-signature x extends super (a b (define-values (c d) e) f
                                                (define-syntaxes (g) #'h)
@@ -164,7 +165,8 @@
   (define h (void))
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
   (let ((a 1) (g 2) (j 3) (s1 4) (s2 5))
-    (test stx-bound-id=? #'(((#f . s1) a b f) ((((#f . s2) s3) . s4) ((c d) . e) ((i) . j)) (((s5 s6) . (values #'s7 #'s7)) ((g) . #'h)))
+    (test stx-bound-id=?
+          #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
           (let ()
             (define-signature x extends super (a b (define-values (c d) e) f
                                                  (define-syntaxes (g) #'h)
@@ -174,7 +176,8 @@
   (define s7 (void))
   (define h (void))
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
-  (test stx-bound-id=? #'((s1 a b f) (((s2 s3) . s4) ((c d) . e) ((i) . j)) (((s5 s6) . (values #'s7 #'s7)) ((g) . #'h)))
+  (test stx-bound-id=?
+        #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
         (let ()
           (define-signature x extends super (a b (define-values (c d) e) f
                                                (define-syntaxes (g) #'h)
@@ -196,7 +199,6 @@
         (let ()
           (define-signature z ((x . a)))
           (lookup-sig-mac z))))
-
 
 ;; unit syntax errors (without sub-signatures)
 (test-syntax-error "unit: bad sig import"
@@ -822,18 +824,18 @@
     (define-signature s2 extends s1 ((define-values (z) (list a x))))
     (define u1 (unit (import s2) (export) (cons y z)))
     (define u2 (unit (import) (export s2) (define a 123)))
-    (test (list 2 123 12) (invoke-unit (compound-unit (import) (export)
-                                                      (link (((a : s2)) u2)
-                                                            (() u1 a)))))))
+    (test (list 2 123 1) (invoke-unit (compound-unit (import) (export)
+                                                     (link (((a : s2)) u2)
+                                                           (() u1 a)))))))
 
-(let ()
+(let ([c 5])
   (define-signature s1 (a (define-values (x y) (values c 2))))
   (define-signature s2 extends s1 (c (define-values (z) (list a x))))
   (define u1 (unit (import s2) (export) (cons y z)))
   (define u2 (unit (import) (export s2) (define a 123) (define c 43)))
-  (test (list 2 123 43) (invoke-unit (compound-unit (import) (export)
-                                                    (link (((a : s2)) u2)
-                                                          (() u1 a))))))
+  (test (list 2 123 5) (invoke-unit (compound-unit (import) (export)
+                                                   (link (((a : s2)) u2)
+                                                         (() u1 a))))))
 
 ;; Test define-syntaxes and define-values, without except, only, prefix and rename
 ;; Check the scoping
@@ -1051,6 +1053,7 @@
                                      (link (((S1 : x-sig)) u3)
                                            (() u1 S2 S1)
                                            (((S2 : x-sig)) u3))))
+
 ;; tags
 (let ()
   (define-signature s1 (a))
@@ -1564,6 +1567,7 @@
          (compound-unit/infer (import) (export)
                               (link x2 u b)))))
 
+#;
 (let ()
   (define-unit u (import x-sig) (export))
   (define-unit v (import) (export x-sub) (define x 12) (define xx 13))
@@ -1793,5 +1797,62 @@
           (define x 12))
         (define-values/invoke-unit u@ (import) (export s^))
         x))
+
+;; ----------------------------------------
+
+;; Make sure that right-hand side of a `define-values`
+;; has the right scope, including in the case of
+;; signature extension.
+;; Based on examples from Dan Feltey.
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module scope-check/a-sig racket
+      (provide a^)
+      (define-signature a^ ((define-values (a) (+ b 1))))
+      (define b 7)))
+  (eval
+   '(module scope-check/b-sig racket
+      (require 'scope-check/a-sig)
+      (provide result)
+
+      (define-signature b^ extends a^ (b))
+
+      (define b-out@ (unit (import) (export b^)
+                           (define b "BAD")))
+      (define b-in@
+        (unit (import b^) (export) a))
+      (define result
+        (invoke-unit
+         (compound-unit (import) (export)
+                        (link (((B : b^)) b-out@)
+                              (() b-in@ B)))))))
+  (test 8 (dynamic-require  ''scope-check/b-sig 'result)))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module scope-check/a-sig racket
+      (provide a^)
+      (define-signature a^ ((define-values (a) (+ b 1))))
+      (define b 7)))
+  (eval
+   '(module scope-check/b-sig racket
+      (require 'scope-check/a-sig)
+      (provide result)
+
+      (define-signature b^ extends a^ ())
+      (define b "BAD")
+
+      (define b-out@ (unit (import) (export b^)))
+      (define b-in@
+        (unit (import b^) (export) a))
+      (define result
+        (invoke-unit
+         (compound-unit (import) (export)
+                        (link (((B : b^)) b-out@)
+                              (() b-in@ B)))))))
+  (test 8 (dynamic-require  ''scope-check/b-sig 'result)))
+
+;; ----------------------------------------
 
 (displayln "tests passed")
