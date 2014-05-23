@@ -16,7 +16,9 @@
                     [one-of/c -one-of/c])
          (typecheck tc-metafunctions))
 
-;(trace replace-nth)
+(provide/cond-contract
+ [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
+        #:pre (bx) (unbox bx) . ->i . [_ env?])])
 
 (define/cond-contract (update t ft pos? lo)
   (Type/c Type/c boolean? (listof PathElem?) . -> . Type/c)
@@ -60,21 +62,17 @@
      t]))
 
 ;; sets the flag box to #f if anything becomes (U)
-(define/cond-contract (env+ env fs flag)
-  (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
-   #:pre (bx) (unbox bx) . ->i . [_ env?])
+(define (env+ env fs flag)
   (define-values (props atoms) (combine-props fs (env-props env) flag))
   (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
     (match f
       [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
       [(or (TypeFilter: ft lo x) (NotTypeFilter: ft lo x))
-       (update-type/lexical (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
-                                            (when (type-equal? new-t (Un))
-                                              (set-box! flag #f))
-                                            new-t))
-                            x Γ)]
+       (update-type/lexical
+         (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
+                         (when (type-equal? new-t -Bottom)
+                           (set-box! flag #f))
+                         new-t))
+         x Γ)]
       [_ Γ])))
 
-(provide/cond-contract
- [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
-        #:pre (bx) (unbox bx) . ->i . [_ env?])])
