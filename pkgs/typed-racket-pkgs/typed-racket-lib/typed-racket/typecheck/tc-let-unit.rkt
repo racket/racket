@@ -60,10 +60,8 @@
                                       (-imp (-filter (-val #f) n) f-))))))]
           [(tc-results: e-ts (list (NoFilter:) ...) _)
            (values e-ts null)]))))
-  (with-cond-contract append-region ([p1 (listof Filter?)]
-                                     [p2 (listof Filter?)])
-    (define-values (p1 p2)
-      (combine-props (apply append props) (env-props (lexical-env)) (box #t))))
+  (define-values (p1 p2)
+    (combine-props (apply append props) (env-props (lexical-env)) (box #t)))
   ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
     namess

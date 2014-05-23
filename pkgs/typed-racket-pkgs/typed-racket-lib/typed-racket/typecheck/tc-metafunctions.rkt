@@ -196,30 +196,28 @@
 (define/cond-contract (combine-props new-props old-props flag)
   ((listof Filter/c) (listof Filter/c) (box/c boolean?)
    . -> .
-   (values (listof (or/c ImpFilter? OrFilter? AndFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
+   (values (listof (or/c ImpFilter? OrFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
   (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
   (define-values (new-atoms new-formulas) (partition atomic-prop? (flatten-props new-props)))
-  (let loop ([derived-props null]
+  (let loop ([derived-formulas null]
              [derived-atoms new-atoms]
              [worklist (append old-props new-formulas)])
     (if (null? worklist)
-        (values derived-props derived-atoms)
+        (values derived-formulas derived-atoms)
         (let* ([p (car worklist)]
                [p (resolve derived-atoms p)])
           (match p
-            [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(ImpFilter: a c)
-             ;(printf "combining ~a with ~a\n" p (append derived-props derived-atoms))
-             (if (for/or ([p (in-list (append derived-props derived-atoms))])
+             (if (for/or ([p (in-list (append derived-formulas derived-atoms))])
                    (implied-atomic? a p))
-                 (loop derived-props derived-atoms (cons c (cdr worklist)))
-                 (loop (cons p derived-props) derived-atoms (cdr worklist)))]
+                 (loop derived-formulas derived-atoms (cons c (cdr worklist)))
+                 (loop (cons p derived-formulas) derived-atoms (cdr worklist)))]
             [(OrFilter: ps)
              (let ([new-or
                     (let or-loop ([ps ps] [result null])
                       (cond
                         [(null? ps) (apply -or result)]
-                        [(for/or ([other-p (in-list (append derived-props derived-atoms))])
+                        [(for/or ([other-p (in-list (append derived-formulas derived-atoms))])
                              (complementary? (car ps) other-p))
                          (or-loop (cdr ps) result)]
                         [(for/or ([other-p (in-list derived-atoms)])
@@ -227,13 +225,12 @@
                          -top]
                         [else (or-loop (cdr ps) (cons (car ps) result))]))])
                (if (OrFilter? new-or)
-                   (loop (cons new-or derived-props) derived-atoms (cdr worklist))
-                   (loop derived-props derived-atoms (cons new-or (cdr worklist)))))]
-            [(TypeFilter: (== (Un) type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
-            [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
-            [(NotTypeFilter: (== Univ type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
-            [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
-            [(Top:) (loop derived-props derived-atoms (cdr worklist))]
-            [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
-            [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
+                   (loop (cons new-or derived-formulas) derived-atoms (cdr worklist))
+                   (loop derived-formulas derived-atoms (cons new-or (cdr worklist)))))]
+            [(TypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
+            [(NotTypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
+
+            [(AndFilter: ps) (loop derived-formulas derived-atoms (append ps (cdr worklist)))]
+            [(Top:) (loop derived-formulas derived-atoms (cdr worklist))]
+            [(Bot:) (set-box! flag #f) (values derived-formulas derived-atoms)])))))
 
