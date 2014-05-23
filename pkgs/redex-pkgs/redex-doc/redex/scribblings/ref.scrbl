@@ -2996,6 +2996,15 @@ This function sets @racket[dc-for-text-size]. See also
   See also @racket[language-nts].
 }
 
+@defparam[non-terminal-gap-space gap-space real?]{
+  Controls the amount of vertical space between non-terminals
+  in a typeset language.
+  
+  Defaults to @racket[0].
+  
+  @history[#:added "1.1"]
+}
+
 @defparam[extend-language-show-union show? boolean?]{
 
 If this is @racket[#t], then a language constructed with
