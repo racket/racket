@@ -75,15 +75,6 @@
                           t))]
          [else (tc-error/expr #:stx stx (syntax-e msg))]))
 
-;; check that `expr` doesn't evaluate any references 
-;; to `name` that aren't under `lambda`
-;; value-restriction? : syntax identifier -> boolean
-(define (value-restriction? expr name)
-  (syntax-parse expr
-    [((~literal #%plain-lambda) . _) #true]
-    [((~literal case-lambda) . _) #true]
-    [_ #false]))
-
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
   (--> syntax? tc-results/c full-tc-results/c)
@@ -202,14 +193,6 @@
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body expected)]
-      [(letrec-values ([(name) expr]) name*)
-       #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
-                   (value-restriction? #'expr #'name))
-       (match expected
-         [(tc-result1: t)
-          (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
-         [(tc-results: ts)
-          (tc-error/expr "Expected ~a values, but got only 1" (length ts))])]
       [(letrec-values ([(name ...) expr] ...) . body)
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body expected)]
       ;; other
