@@ -465,6 +465,11 @@
                            'pos
                            'neg))
   
+  (context-test '("an element of")
+                '(contract (vectorof integer? #:flat? #t)
+                           (vector-immutable #f)
+                           'pos 'neg))
+  
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f
                                                 (λ () 'integer?)

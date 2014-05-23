@@ -44,6 +44,48 @@
                    0 #f)))
   
   
+  (test/pos-blame
+   'vectorof7
+   '(contract (vectorof integer? #:immutable #t)
+              (vector-immutable #f)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'vectorof8
+   '(contract (vectorof integer? #:immutable #t)
+              11
+              'pos 'neg))
+  
+  (test/pos-blame
+   'vectorof9
+   '(contract (vectorof integer? #:immutable #t)
+              (vector 11)
+              'pos 'neg))
+  
+  (test/spec-passed
+   'vectorof10
+   '(contract (vectorof integer? #:flat? #t)
+              (vector 11)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'vectorof10
+   '(contract (vectorof integer? #:flat? #t)
+              (vector #f)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'vectorof11
+   '(contract (vectorof integer? #:flat? #t)
+              (vector-immutable #f)
+              'pos 'neg))
+  
+  (test/spec-passed
+   'vectorof12
+   '(contract (vectorof integer? #:flat? #t)
+              (vector-immutable 11)
+              'pos 'neg))
+  
   (test/spec-passed
    'vector/c1
    '(let ([v (chaperone-vector (vector-immutable 1)
@@ -82,4 +124,10 @@
                                (λ (vec i v) v)
                                (λ (vec i v) v))])
       (vector-set! (contract (vector/c integer?) v 'pos 'neg)
-                   0 #f))))
+                   0 #f)))
+  
+  (test/pos-blame
+   'vector/c6
+   '(contract (vector/c integer? #:immutable #t)
+              (vector-immutable #f)
+              'pos 'neg)))
