@@ -8,7 +8,7 @@
               global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
          syntax/free-vars
-         (typecheck signatures tc-metafunctions tc-subst internal-forms)
+         (typecheck signatures tc-metafunctions tc-subst internal-forms tc-envops)
          (utils tarjan)
          racket/match (contract-req)
          racket/list
@@ -60,23 +60,22 @@
                                       (-imp (-filter (-val #f) n) f-))))))]
           [(tc-results: e-ts (list (NoFilter:) ...) _)
            (values e-ts null)]))))
-  (define-values (p1 p2)
-    (combine-props (apply append props) (env-props (lexical-env)) (box #t)))
   ;; extend the lexical environment for checking the body
-  (with-lexical-env/extend/props
+  (with-lexical-env/extend
     namess
     expected-types
-    (append p1 p2)
-    ;; type-check the rhs exprs
-    (for-each expr->type
-              exprs
-              expected-results)
-    ;; typecheck the body
-    (replace-names
-     (get-names+objects namess expected-results)
-     (if expected
-         (tc-body/check body (erase-filter expected))
-         (tc-body body)))))
+    (with-lexical-env/extend-props
+      (apply append props)
+      ;; type-check the rhs exprs
+      (for-each expr->type
+                exprs
+                expected-results)
+      ;; typecheck the body
+      (replace-names
+       (get-names+objects namess expected-results)
+       (if expected
+           (tc-body/check body (erase-filter expected))
+           (tc-body body))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names

@@ -2,23 +2,24 @@
 
 (require (rename-in "../utils/utils.rkt" [infer infer-in]))
 (require racket/match
-         unstable/list
+         (only-in unstable/list list-update)
          (contract-req)
          (infer-in infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types resolve subtype remove-intersect union)
-         (only-in (env type-env-structs lexical-env)
-                  env? update-type/lexical env-map env-props replace-props)
+         (env type-env-structs lexical-env)
          (rename-in (types abbrev)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
          (typecheck tc-metafunctions))
 
+(provide
+  with-lexical-env/extend-props)
 (provide/cond-contract
- [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
-        #:pre (bx) (unbox bx) . ->i . [_ env?])])
+  [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
+         #:pre (bx) (unbox bx) . ->i . [_ env?])])
 
 (define/cond-contract (update t ft pos? lo)
   (Type/c Type/c boolean? (listof PathElem?) . -> . Type/c)
@@ -76,3 +77,6 @@
          x Γ)]
       [_ Γ])))
 
+;; run code in an extended env and with replaced props
+(define-syntax-rule (with-lexical-env/extend-props  ps . b)
+  (with-lexical-env (env+ (lexical-env) ps (box #t)) . b))
