@@ -38,12 +38,8 @@
         (begin es es ...) (begin0 es es ...) (es es ...)
         (if es es es) (set! x es) x
         nonproc pproc (lambda f es es ...)
-        (side-condition 
-         (letrec ([x_1 es] ...) es es ...)
-         (unique? (term (x_1 ...)))) 
-        (side-condition
-         (letrec* ([x_1 es] ...) es es ...)
-         (unique? (term (x_1 ...))))
+        (letrec ([x_!_1 es] ...) es es ...) 
+        (letrec* ([x_!_1 es] ...) es es ...)
         
         ;; intermediate states
         (dw x e e e)
@@ -52,12 +48,8 @@
         (handlers proc ... e)
         (l! x es)
         (reinit x))
-    (f (side-condition 
-        (x_1 ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (x_1 x_2 ... dot x_3)
-        (unique? (term (x_1 x_2 ... x_3))))
+    (f (x_!_1 ...)
+       (x_!_1 x_!_1 ... dot x_!_1)
        x)
     
     (s seq () sqv sym)
@@ -70,12 +62,8 @@
        (set! x e) (handlers proc ... e)
        x nonproc proc (dw x e e e)
        unspecified
-       (side-condition
-        (letrec ([x_1 e] ...) e e ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) e e ...)
-        (unique? (term (x_1 ...))))
+       (letrec ([x_!_1 e] ...) e e ...)
+       (letrec* ([x_!_1 e] ...) e e ...)
        (l! x e)
        (reinit x))
     (v nonproc proc)
@@ -157,24 +145,12 @@
        (e ... S es ...) (if S es es) (if e S es) (if e e S)
        (set! x S) (l! x S) 
        (lambda f S es ...) (lambda f e e ... S es ...)
-       (side-condition 
-        (letrec ([x_1 e] ... [x_2 S] [x_3 es] ...) es es ...)
-        (unique? (term (x_1 ... x_2 x_3 ...))))
-       (side-condition 
-        (letrec ([x_1 e] ...) S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition 
-        (letrec ([x_1 e] ...) e e ... S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ... [x_2 S] [x_3 es] ...) es es ...)
-        (unique? (term (x_1 ... x_2 x_3 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) e e ... S es ...)
-        (unique? (term (x_1 ...)))))
+       (letrec ([x_!_1 e] ... [x_!_1 S] [x_!_1 es] ...) es es ...)
+       (letrec ([x_!_1 e] ...) S es ...)
+       (letrec ([x_!_1 e] ...) e e ... S es ...)
+       (letrec* ([x_!_1 e] ... [x_!_2 S] [x_!_3 es] ...) es es ...)
+       (letrec* ([x_!_1 e] ...) S es ...)
+       (letrec* ([x_!_1 e] ...) e e ... S es ...))
     
     (B E (in-hole E (begin e B))))
 
