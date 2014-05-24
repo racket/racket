@@ -15,7 +15,6 @@ don't depend on any other portion of the system
          orig-module-stx
          expanded-module-stx
          print-syntax?
-         check-unreachable-code?
          warn-unreachable?
          delay-errors?
          current-type-names
@@ -57,7 +56,6 @@ don't depend on any other portion of the system
 ;; do we print the fully-expanded syntax in error messages?
 (define print-syntax? (make-parameter #f))
 
-(define check-unreachable-code? (make-parameter #f))
 
 (define warn-unreachable? (make-parameter #t))
 

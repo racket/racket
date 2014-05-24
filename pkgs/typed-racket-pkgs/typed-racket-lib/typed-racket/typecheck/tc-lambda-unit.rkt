@@ -347,7 +347,7 @@
                     (null? matching-arrs))
                 (warn-unreachable body)
                 (add-dead-lambda-branch (formals-syntax formal))
-                (list formal body (if (check-unreachable-code?) #f null))]
+                (list formal body null)]
                [else (list formal body matching-arrs)])
              formals+bodies+arrs*)
            (arities-seen-add arities-seen arity))])))

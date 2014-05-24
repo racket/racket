@@ -16,12 +16,10 @@
  [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
  [type-of (syntax? . -> . tc-results/c)]
  [reset-type-table (-> any/c)]
- [add-tautology (syntax? . -> . any)]
- [add-contradiction (syntax? . -> . any)]
- [add-neither (syntax? . -> . any)]
+ [test-position-add-true (syntax? . -> . any)]
+ [test-position-add-false (syntax? . -> . any)]
  [tautology? (syntax? . -> . boolean?)]
  [contradiction? (syntax? . -> . boolean?)]
- [neither? (syntax? . -> . boolean?)]
  [add-dead-lambda-branch (syntax? . -> . any)]
  [dead-lambda-branch? (syntax? . -> . boolean?)]
  [;; Register that the given expression should be ignored
@@ -64,22 +62,30 @@
                                         (syntax-line e)
                                         (syntax-column e))))))
 
-;; keeps track of expressions that always evaluate to true or always evaluate
-;; to false, so that the optimizer can eliminate dead code
-;; 3 possible values: 'tautology 'contradiction 'neither
-(define tautology-contradiction-table (make-hasheq))
+;; For expressions in test position keep track of if it evaluates to true/false
+;; values: can be 'true, 'false, 'both.
+(define test-position-table (make-hasheq))
 
-(define-values (add-tautology add-contradiction add-neither)
+(define (test-position-add-true expr)
+  (hash-update! test-position-table expr
+    (lambda (v)
+      (case v
+        [(true) 'true]
+        [(false both) 'both]))
+    'true))
+(define (test-position-add-false expr)
+  (hash-update! test-position-table expr
+    (lambda (v)
+      (case v
+        [(false) 'false]
+        [(true both) 'both]))
+    'false))
+
+(define-values (tautology? contradiction?)
   (let ()
     (define ((mk t?) e)
-      (when (optimize?)
-        (hash-set! tautology-contradiction-table e t?)))
-    (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
-(define-values (tautology? contradiction? neither?)
-  (let ()
-    (define ((mk t?) e)
-      (eq? t? (hash-ref tautology-contradiction-table e 'not-there)))
-    (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
+      (eq? t? (hash-ref test-position-table e 'not-there)))
+    (values (mk 'true) (mk 'false))))
 
 ;; keeps track of lambda branches that never get evaluated, so that the
 ;; optimizer can eliminate dead code. The key is the formals syntax object.
