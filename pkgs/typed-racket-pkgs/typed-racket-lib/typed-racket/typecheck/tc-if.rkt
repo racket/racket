@@ -33,20 +33,13 @@
     [(tc-result1: _ (and f1 (FilterSet: fs+ fs-)) _)
      (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
        (match-let* ([env-thn (env+ (lexical-env) (list fs+) flag+)]
-                    [env-els (env+ (lexical-env) (list fs-) flag-)]
-                    [new-thn-props (env-props env-thn)]
-                    [new-els-props (env-props env-els)])
-
-
-         (define results-t (with-lexical-env env-thn (tc thn (unbox flag+))))
-         (define results-u (with-lexical-env env-els (tc els (unbox flag-))))
-         ;(printf "old props: ~a\n" (env-props (lexical-env)))
-         ;(printf "fs+: ~a\n" fs+)
-         ;(printf "fs-: ~a\n" fs-)
-         ;(printf "thn-props: ~a\n" (env-props env-thn))
-         ;(printf "els-props: ~a\n" (env-props env-els))
-         ;(printf "new-thn-props: ~a\n" new-thn-props)
-         ;(printf "new-els-props: ~a\n" new-els-props)
+                    [env-els (env+ (lexical-env) (list fs-) flag-)])
+         (define results-t
+           (with-lexical-env env-thn
+             (add-unconditional-prop (tc thn (unbox flag+)) (apply -and (env-props env-thn)))))
+         (define results-u
+           (with-lexical-env env-els
+             (add-unconditional-prop (tc els (unbox flag-)) (apply -and (env-props env-els)))))
 
          ;; record reachability
          ;; since we may typecheck a given piece of code multiple times in different
@@ -68,7 +61,7 @@
          (match* (results-t results-u)
 
            [((tc-any-results: f1) (tc-any-results: f2))
-            (tc-any-results (-or (apply -and fs+ f1 new-thn-props) (apply -and fs- f2 new-els-props)))]
+            (tc-any-results (-or (-and fs+ f1) (-and fs- f2)))]
            ;; Not do awful things here
            [((tc-results: ts (list (FilterSet: f+ f-) ...) os) (tc-any-results: f2))
             (tc-any-results (-or (apply -and (map -or f+ f-)) f2))]
@@ -84,17 +77,10 @@
                                [o2 (in-list os2)] [o3 (in-list os3)])
                       (let ([filter
                              (match* (f2 f3)
-                               [((NoFilter:) _)
-                                -top-filter]
-                               [(_ (NoFilter:))
-                                -top-filter]
                                [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
-                                ;(printf "f2- ~a f+ ~a\n" f2- fs+)
-                                (-FS (-or (apply -and f2+ new-thn-props) (apply -and f3+ new-els-props))
-                                     (-or (apply -and f2- new-thn-props) (apply -and f3- new-els-props)))])]
+                                (-FS (-or f2+ f3+) (-or f2- f3-))])]
                             [type (Un t2 t3)]
                             [object (if (object-equal? o2 o3) o2 -empty-obj)])
-                        ;(printf "result filter is: ~a\n" filter)
                         (ret type filter object))))]
                   ;; special case if one of the branches is unreachable
                   [(and (= 1 (length us)) (type-equal? (car us) (Un)))
