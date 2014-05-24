@@ -93,10 +93,10 @@
                     (combine-results
                      (for/list ([stx (in-list stxs)] [ty (in-list tys)]
                                 [a (in-list anns)] [f (in-list fs)] [o (in-list os)])
-                       (cond [a (check-type stx ty a) (ret a f o)]
+                       (cond [a (check-type stx ty a) (tc-result a f o)]
                              ;; mutated variables get generalized, so that we don't infer too small a type
-                             [(is-var-mutated? stx) (ret (generalize ty) f o)]
-                             [else (ret ty f o)]))))]))))]))
+                             [(is-var-mutated? stx) (tc-result (generalize ty) f o)]
+                             [else (tc-result ty f o)]))))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx
 ;; otherwise, error

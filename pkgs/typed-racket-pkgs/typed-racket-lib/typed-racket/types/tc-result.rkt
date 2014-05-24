@@ -94,9 +94,9 @@
 (define (-tc-result type filter object)
   (cond
     [(or (equal? type -Bottom) (equal? filter -bot-filter))
-     (make-tc-result -Bottom -bot-filter object)]
+     (tc-result -Bottom -bot-filter object)]
     [else
-     (make-tc-result type filter object)]))
+     (tc-result type filter object)]))
 
 
 ;; convenience function for returning the result of typechecking an expression
@@ -148,7 +148,7 @@
 
 (define (combine-results tcs)
   (match tcs
-    [(list (tc-result1: t f o) ...)
+    [(list (tc-result: t f o) ...)
      (ret t f o)]))
 
 (define tc-result-equal? equal?)
@@ -156,8 +156,8 @@
 (provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
          tc-results)
 (provide/cond-contract
- [tc-result (Type/c FilterSet/c Object? . c:-> . tc-result?)]
- [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
+ [rename -tc-result tc-result (Type/c FilterSet/c Object? . c:-> . tc-result?)]
+ [combine-results ((c:listof tc-result?) . c:-> . tc-results?)]
  [tc-any-results ((c:or/c Filter/c NoFilter?) . c:-> . tc-any-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
