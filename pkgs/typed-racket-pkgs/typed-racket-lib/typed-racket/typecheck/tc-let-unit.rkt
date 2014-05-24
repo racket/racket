@@ -64,18 +64,20 @@
   (with-lexical-env/extend
     namess
     expected-types
-    (with-lexical-env/extend-props
-      (apply append props)
-      ;; type-check the rhs exprs
-      (for-each expr->type
-                exprs
-                expected-results)
-      ;; typecheck the body
-      (replace-names
-       (get-names+objects namess expected-results)
-       (if expected
-           (tc-body/check body (erase-filter expected))
-           (tc-body body))))))
+    (replace-names
+      (get-names+objects namess expected-results)
+      (with-lexical-env/extend-props
+        (apply append props)
+        ;; type-check the rhs exprs
+        (for-each expr->type
+                  exprs
+                  expected-results)
+        ;; typecheck the body
+        (add-unconditional-prop
+          (if expected
+              (tc-body/check body (erase-filter expected))
+              (tc-body body))
+          (apply -and (apply append props)))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names

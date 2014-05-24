@@ -570,7 +570,7 @@
                         3))
               -Number]
 
-        [tc-e (let ([x 1]) x) -One]
+        [tc-e/t (let ([x 1]) x) -One]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean -false-filter)]
         [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot (-not-filter -Boolean #'number?)))]
 
@@ -658,10 +658,10 @@
 
         [tc-e null #:ret (-path -Null #'null)]
 
-        [tc-e (let* ([sym 'squarf]
-                     [x (if (= 1 2) 3 sym)])
-                x)
-              (t:Un (-val 'squarf) -PosByte)]
+        [tc-e/t (let* ([sym 'squarf]
+                       [x (if (= 1 2) 3 sym)])
+                  x)
+                (t:Un (-val 'squarf) -PosByte)]
 
         [tc-e/t (if #t 1 2) -One]
 
@@ -2418,7 +2418,7 @@
              #:ret (ret (-lst* -String -String) -true-filter)]
 
        ;; test new :-less forms that allow fewer annotations
-       [tc-e (let ([x "foo"]) x) -String]
+       [tc-e/t (let ([x "foo"]) x) -String]
        [tc-e (let ([x : String "foo"]) (string-append x "bar"))
              -String]
        [tc-e (let ([x : String "foo"] [y 'y]) (string-append x "bar"))
@@ -2431,7 +2431,7 @@
              #:ret (ret -String -true-filter)]
        [tc-e (let #:forall (A) ([y 'y] [x : A "foo"]) x)
              #:ret (ret -String -true-filter)]
-       [tc-e (let* ([x "foo"]) x) -String]
+       [tc-e/t (let* ([x "foo"]) x) -String]
        [tc-e (let* ([x : String "foo"]) (string-append x "bar"))
              -String]
        [tc-e (let* ([x : String "foo"] [y 'y]) (string-append x "bar"))
@@ -2449,7 +2449,7 @@
              -String]
        [tc-e (letrec ([y 'y] [x : String "foo"]) (string-append x "bar"))
              -String]
-       [tc-e (let-values ([(x y) (values "foo" "bar")]) x) -String]
+       [tc-e/t (let-values ([(x y) (values "foo" "bar")]) x) -String]
        [tc-e (let-values ([(x y) (values "foo" "bar")]
                           [([z : String]) (values "baz")])
                (string-append x y z))
