@@ -73,11 +73,9 @@
                   exprs
                   expected-results)
         ;; typecheck the body
-        (add-unconditional-prop
-          (if expected
-              (tc-body/check body (erase-filter expected))
-              (tc-body body))
-          (apply -and (apply append props)))))))
+        (if expected
+            (tc-body/check body (erase-filter expected))
+            (tc-body body))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names

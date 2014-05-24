@@ -35,10 +35,10 @@
      (define flag- (box #t))
      (define results-t
        (with-lexical-env/extend-props (list fs+) #:flag flag+
-         (add-unconditional-prop (tc thn (unbox flag+)) (apply -and (env-props (lexical-env))))))
+         (tc thn (unbox flag+))))
      (define results-u
        (with-lexical-env/extend-props (list fs-) #:flag flag-
-         (add-unconditional-prop (tc els (unbox flag-)) (apply -and (env-props (lexical-env))))))
+         (tc els (unbox flag-))))
 
      ;; record reachability
      ;; since we may typecheck a given piece of code multiple times in different

@@ -353,7 +353,7 @@
       [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)
        (map -or f+ f-)]))
   (with-lexical-env/extend-props props
-    (add-unconditional-prop (k) (apply -and props))))
+    (k)))
 
 ;; type-check a body of exprs, producing the type of the last one.
 ;; if the body is empty, the type is Void.

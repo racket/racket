@@ -8,7 +8,7 @@
          (infer-in infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types resolve subtype remove-intersect union)
+         (types resolve subtype remove-intersect union filter-ops)
          (env type-env-structs lexical-env)
          (rename-in (types abbrev)
                     [-> -->]
@@ -78,11 +78,14 @@
          x Γ)]
       [_ Γ])))
 
-;; run code in an extended env and with replaced props
+;; run code in an extended env and with replaced props. Requires the body to return a tc-results.
+;; TODO make this only add the new prop instead of the entire environment once tc-id is fixed to
+;; include the interesting props in its filter.
 (define-syntax (with-lexical-env/extend-props stx)
   (define-splicing-syntax-class flag
     [pattern (~seq #:flag v:expr)]
     [pattern (~seq) #:with v #'(box #t)])
   (syntax-parse stx
     [(_ ps flag:flag . b)
-     #'(with-lexical-env (env+ (lexical-env) ps flag.v) . b)]))
+     #'(with-lexical-env (env+ (lexical-env) ps flag.v)
+         (add-unconditional-prop (let () . b) (apply -and (env-props (lexical-env)))))]))
