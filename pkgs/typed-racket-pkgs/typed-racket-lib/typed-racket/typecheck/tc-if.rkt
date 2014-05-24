@@ -34,10 +34,8 @@
      (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
        (match-let* ([env-thn (env+ (lexical-env) (list fs+) flag+)]
                     [env-els (env+ (lexical-env) (list fs-) flag-)]
-                    [new-thn-props (filter (λ (e) (and (atomic-filter? e) (not (memq e (env-props (lexical-env))))))
-                                           (env-props env-thn))]
-                    [new-els-props (filter (λ (e) (and (atomic-filter? e) (not (memq e (env-props (lexical-env))))))
-                                           (env-props env-els))])
+                    [new-thn-props (env-props env-thn)]
+                    [new-els-props (env-props env-els)])
 
 
          (define results-t (with-lexical-env env-thn (tc thn (unbox flag+))))
@@ -92,8 +90,8 @@
                                 -top-filter]
                                [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
                                 ;(printf "f2- ~a f+ ~a\n" f2- fs+)
-                                (-FS (-or (apply -and fs+ f2+ new-thn-props) (apply -and fs- f3+ new-els-props))
-                                     (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
+                                (-FS (-or (apply -and f2+ new-thn-props) (apply -and f3+ new-els-props))
+                                     (-or (apply -and f2- new-thn-props) (apply -and f3- new-els-props)))])]
                             [type (Un t2 t3)]
                             [object (if (object-equal? o2 o3) o2 -empty-obj)])
                         ;(printf "result filter is: ~a\n" filter)

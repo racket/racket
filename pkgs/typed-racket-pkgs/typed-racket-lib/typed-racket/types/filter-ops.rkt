@@ -128,6 +128,7 @@
 ;; Smart constructor for make-ImpFilter
 (define (-imp p1 p2)
   (match* (p1 p2)
+    [(t t) -top]
     [((Bot:) _) -top]
     [(_ (Top:)) -top]
     [((Top:) _) p2]

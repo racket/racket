@@ -477,7 +477,7 @@
         [tc-e (let: ([x : Number 5]) x) -Number]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y)))
-              -Boolean]
+              #:ret (ret -Boolean -false-filter)]
         [tc-e/t (values 3) -PosByte]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -PosByte (-val #f)) (list -true-filter -false-filter))]
@@ -689,11 +689,11 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
-              -PosByte]
+              #:ret (ret -PosByte -true-filter)]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
-              -PosByte]
+              #:ret (ret -PosByte -true-filter)]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
@@ -705,11 +705,11 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
-              -PosByte]
+              #:ret (ret -PosByte -true-filter)]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
-              -PosByte]
+              #:ret (ret -PosByte -true-filter)]
 
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
