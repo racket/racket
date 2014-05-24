@@ -266,8 +266,8 @@
     (syntax-case stx ()
       [(s (... ...))
        (let ([r (id/depth #'s)])
-         (make-id/depth (id/depth-id r) (add1 (id/depth-depth r)) (id/depth-mismatch? r)))]
-      [s (make-id/depth #'s 0 #f)]))
+         (make-id/depth (id/depth-id r) (add1 (id/depth-depth r))))]
+      [s (make-id/depth #'s 0)]))
   (define temporaries (generate-temporaries names))
   (values
    (for/fold ([cs '()])

@@ -236,6 +236,14 @@ example, this @|pattern|:
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
 
+If the @tt{_!_} is used under the ellipsis then the ellipsis is effectively
+ignored. That is, a pattern like this:
+
+@racketblock[(e_!_1 ... e_!_1)]
+
+matches all sequences of @racket[e]s that have at least one element and are
+all distinct.
+
 Unlike a @tt{_} @|pattern|, the @tt{_!_} @|pattern|s do not bind names.
 
 If @tt{_} names and @tt{_!_} are mixed, they are treated as

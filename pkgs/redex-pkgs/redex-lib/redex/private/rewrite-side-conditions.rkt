@@ -121,15 +121,11 @@
              (define names/ellipses (map build-dots pre-vars))
              (with-syntax ([pre-term pre-term]
                            [((name name/ellipses) ...)
-                            (filter
-                             values
-                             (map (λ (id name/ellipses)
-                                    (if (id/depth-mismatch? id)
-                                        #f
-                                        (list (id/depth-id id)
-                                              name/ellipses)))
-                                  pre-vars
-                                  names/ellipses))]
+                            (map (λ (id name/ellipses)
+                                   (list (id/depth-id id)
+                                         name/ellipses))
+                                 pre-vars
+                                 names/ellipses)]
                            [src-loc 
                             (let ([stx #'exp])
                               (define src (syntax-source stx))
@@ -176,7 +172,7 @@
              (define-values (sub-term sub-vars) (loop #'y under under-mismatch-ellipsis))
              (record-binder #'x under under-mismatch-ellipsis)
              (values #`(name x #,sub-term)
-                     (cons (make-id/depth #'x (length under) #f)
+                     (cons (make-id/depth #'x (length under))
                            sub-vars)))]
           [(name x ...) (expected-exact 'name 2 term)]
           [name (expected-arguments 'name term)]
@@ -227,16 +223,18 @@
                   [(memq prefix-sym all-nts)
                    (record-binder term under under-mismatch-ellipsis)
                    (record-syncheck-use term prefix-sym)
-                   (values (if mismatch?
-                               `(mismatch-name ,term (nt ,prefix-stx))
-                               `(name ,term (nt ,prefix-stx)))
-                           (list (make-id/depth term (length under) mismatch?)))]
+                   (if mismatch?
+                       (values `(mismatch-name ,term (nt ,prefix-stx))
+                               '())
+                       (values `(name ,term (nt ,prefix-stx))
+                               (list (make-id/depth term (length under)))))]
                   [(memq prefix-sym underscore-allowed)
                    (record-binder term under under-mismatch-ellipsis)
-                   (values (if mismatch?
-                               `(mismatch-name ,term ,prefix-stx)
-                               `(name ,term ,prefix-stx))
-                           (list (make-id/depth term (length under) mismatch?)))]
+                   (if mismatch?
+                       (values `(mismatch-name ,term ,prefix-stx)
+                               '())
+                       (values `(name ,term ,prefix-stx)
+                               (list (make-id/depth term (length under)))))]
                   [else
                    (raise-syntax-error
                     what
@@ -256,14 +254,14 @@
                 (cond
                   [bind-names?
                    (record-binder term under under-mismatch-ellipsis)
-                   (values `(name ,term (nt ,term)) (list (make-id/depth term (length under) #f)))]
+                   (values `(name ,term (nt ,term)) (list (make-id/depth term (length under))))]
                   [else
                    (values `(nt ,term) '())])]
                [(memq (syntax-e term) underscore-allowed)
                 (cond
                   [bind-names?
                    (record-binder #'term under under-mismatch-ellipsis)
-                   (values `(name ,term ,term) (list (make-id/depth term (length under) #f)))]
+                   (values `(name ,term ,term) (list (make-id/depth term (length under))))]
                   [else
                    (values term '())])]
                [else
@@ -333,7 +331,7 @@
                                   rst-terms)
                             (append fst-vars
                                     (if was-named-ellipsis? 
-                                        (list (id/depth (cadr terms) (length under) #f))
+                                        (list (make-id/depth (cadr terms) (length under)))
                                         '())
                                     rst-vars))]
                    [else
@@ -466,14 +464,13 @@
     
     (filter-duplicates what orig-stx names)
     
-    (let ([without-mismatch-names (filter (λ (x) (not (id/depth-mismatch? x))) names)])
-      (with-syntax ([(name/ellipses ...) (map build-dots without-mismatch-names)]
-                    [(name ...) (map id/depth-id without-mismatch-names)]
-                    [term ellipsis-normalized/simplified]
-                    [void-stx void-stx])
-        #'(void-stx term (name ...) (name/ellipses ...)))))
+    (with-syntax ([(name/ellipses ...) (map build-dots names)]
+                  [(name ...) (map id/depth-id names)]
+                  [term ellipsis-normalized/simplified]
+                  [void-stx void-stx])
+      #'(void-stx term (name ...) (name/ellipses ...))))
   
-  (define-struct id/depth (id depth mismatch?))
+  (define-struct id/depth (id depth))
   
   ;; extract-names : syntax syntax -> 
   ;;   (values (listof syntax)
@@ -489,7 +486,7 @@
                 [(name sym pat)
                  (identifier? (syntax sym))
                  (loop (syntax pat) 
-                       (cons (make-id/depth (syntax sym) depth #f) names)
+                       (cons (make-id/depth (syntax sym) depth) names)
                        depth)]
                 [(in-hole pat1 pat2)
                  (loop (syntax pat1)
@@ -520,7 +517,7 @@
                          [(rhs-only) binds-in-right-hand-side?]
                          [(binds-anywhere) binds?])
                        all-nts bind-names? (syntax x)))
-                 (cons (make-id/depth (syntax x) depth #f) names)]
+                 (cons (make-id/depth (syntax x) depth) names)]
                 [else names]))]
            [no-dups (filter-duplicates what orig-stx dups)])
       (values (map id/depth-id no-dups)
@@ -583,8 +580,6 @@
                            orig-stx)))
                       (not same-id?)))
                   (loop (cdr dups))))])))
-
-
 
   (define (bind-pattern-names err-name names/ellipses vals body)
     (with-syntax ([(names/ellipsis ...) names/ellipses]

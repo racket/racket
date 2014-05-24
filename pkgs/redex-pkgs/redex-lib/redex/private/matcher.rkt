@@ -76,12 +76,12 @@ See match-a-pattern.rkt for more details
             empty-bindings)))
 
 (define-struct bind (name exp) #:transparent)
-(define-struct mismatch-bind (name exp) #:transparent)
+(define-struct mismatch-bind (name exp nesting-depth) #:transparent)
 
 ;; repeat = (make-repeat compiled-pattern (listof rib) (or/c #f symbol?) (or/c #f symbol?))
 (define-struct repeat (pat empty-bindings name mismatch) #:transparent)
 
-;; compiled-pattern : exp hole-info -> (union #f (listof mtch))
+;; compiled-pattern : exp hole-info nesting-depth -> (union #f (listof mtch))
 ;; mtch = (make-mtch bindings sexp[context] (union none sexp[hole]))
 ;; hole-info = boolean
 ;;               #f means we're not in a `in-hole' context
@@ -625,7 +625,7 @@ See match-a-pattern.rkt for more details
 
 ;; match-pattern : compiled-pattern exp -> (union #f (listof bindings))
 (define (match-pattern compiled-pattern exp)
-  (let ([results ((compiled-pattern-cp compiled-pattern) exp #f)])
+  (let ([results ((compiled-pattern-cp compiled-pattern) exp #f 0)])
     (if (compiled-pattern-skip-dup-check? compiled-pattern)
         results
         (and results
@@ -663,31 +663,35 @@ See match-a-pattern.rkt for more details
           [mismatch-ht (make-hash)]
           
           [ribs (bindings-table (mtch-bindings match))])
-      (for-each
-       (lambda (rib)
-         (cond
-           [(bind? rib)
-            (let ([name (bind-name rib)]
-                  [exp (bind-exp rib)])
-              (let ([previous-exp (hash-ref match-ht name uniq)])
-                (cond
-                  [(eq? previous-exp uniq)
-                   (hash-set! match-ht name exp)]
-                  [else
-                   (unless (equal? exp previous-exp)
-                     (fail #f))])))]
-           [(mismatch-bind? rib)
-            (let* ([name (mismatch-bind-name rib)]
-                   [exp (mismatch-bind-exp rib)]
-                   [priors (hash-ref mismatch-ht name uniq)])
-              (when (eq? priors uniq)
-                (let ([table (make-hash)])
-                  (hash-set! mismatch-ht name table)
-                  (set! priors table)))
-              (when (hash-ref priors exp #f)
-                (fail #f))
-              (hash-set! priors exp #t))]))
-       ribs)
+      (for ([rib (in-list ribs)])
+        (cond
+          [(bind? rib)
+           (let ([name (bind-name rib)]
+                 [exp (bind-exp rib)])
+             (let ([previous-exp (hash-ref match-ht name uniq)])
+               (cond
+                 [(eq? previous-exp uniq)
+                  (hash-set! match-ht name exp)]
+                 [else
+                  (unless (equal? exp previous-exp)
+                    (fail #f))])))]
+          [(mismatch-bind? rib)
+           (match-define (mismatch-bind name exp nesting-depth) rib)
+           (define priors (hash-ref mismatch-ht name uniq))
+           (when (eq? priors uniq)
+             (define table (make-hash))
+             (hash-set! mismatch-ht name table)
+             (set! priors table))
+           (let loop ([depth nesting-depth]
+                      [exp exp])
+             (cond
+               [(= depth 0)
+                (when (hash-ref priors exp #f)
+                  (fail #f))
+                (hash-set! priors exp #t)]
+               [else
+                (for ([exp-ele (in-list exp)])
+                  (loop (- depth 1) exp-ele))]))]))
       (make-mtch
        (make-bindings (hash-map match-ht make-bind))
        (mtch-context match)
@@ -733,7 +737,7 @@ See match-a-pattern.rkt for more details
         [(eq? compiled-cache uniq)
          (define-values (compiled-pattern has-hole? has-hide-hole? names) (true-compile-pattern pattern))
          (unless (equal? (if (or has-hole? has-hide-hole? (not (null? names)))
-                             2
+                             3
                              1)
                          (procedure-arity compiled-pattern))
            (error 'compile-pattern "got procedure with wrong arity; pattern ~s ~s ~s ~s ~s\n"
@@ -791,7 +795,7 @@ See match-a-pattern.rkt for more details
        (define has-hole? (hash-ref has-hole-or-hide-hole-ht nt))
        (values
         (if has-hole?
-            (λ (exp hole-info)
+            (λ (exp hole-info nesting-depth)
               (match-nt (hash-ref clang-list-ht nt)
                         (hash-ref clang-ht nt)
                         nt exp hole-info))
@@ -858,15 +862,15 @@ See match-a-pattern.rkt for more details
        (values
         (cond
           [(or has-hole? has-hide-hole? (not (null? names)))
-           (lambda (exp hole-info)
-             (let ([matches (match-pat exp #f)])
+           (lambda (exp hole-info nesting-depth)
+             (let ([matches (match-pat exp #f nesting-depth)])
                (and matches
                     (map (λ (match) (make-mtch (mtch-bindings match) 
                                                (hole->not-hole (mtch-context match))
                                                none))
                          matches))))]
           [else
-           (lambda (exp hole-info)
+           (lambda (exp hole-info nesting-depth)
              (let ([matches (match-pat exp)])
                (and matches
                     (list (make-mtch empty-bindings
@@ -879,8 +883,8 @@ See match-a-pattern.rkt for more details
        (define-values (match-pat has-hole? has-hide-hole? names) (compile-pattern/default-cache pat))
        (values
         (if (or has-hole? has-hide-hole? (not (null? names)))
-            (λ (exp hole-info)
-              (let ([matches (match-pat exp hole-info)])
+            (λ (exp hole-info nesting-depth)
+              (let ([matches (match-pat exp hole-info nesting-depth)])
                 (and matches
                      (let ([filtered (filter (λ (m) (condition (mtch-bindings m))) 
                                              (filter-multiples matches))])
@@ -899,7 +903,7 @@ See match-a-pattern.rkt for more details
        (cond
          [(hash-maps? across-ht id)
           (values
-           (λ (exp hole-info)
+           (λ (exp hole-info nesting-depth)
              (match-nt (hash-ref across-list-ht id)
                        (hash-ref across-ht id)
                        id exp hole-info))
@@ -927,7 +931,7 @@ See match-a-pattern.rkt for more details
               ;; the has-hide-hole? boolean will be true, but pat
               ;; may not need converting)
               (if (equal? (procedure-arity (repeat-pat pat))
-                          2)
+                          3)
                   pat
                   (struct-copy repeat pat [pat (convert-matcher (repeat-pat pat))]))]
              [else
@@ -942,22 +946,22 @@ See match-a-pattern.rkt for more details
                [(list? exp) (match-list/boolean rewritten exp)]
                [else #f]))]
           [(= 0 repeats)
-           (λ (exp hole-info)
+           (λ (exp hole-info nesting-depth)
              (cond
                [(list? exp)
                 ;; shortcircuit: if the list isn't the right length, give up immediately.
                 (if (= (length exp) non-repeats)
-                    (match-list/no-repeats rewritten/coerced exp hole-info)
+                    (match-list/no-repeats rewritten/coerced exp hole-info nesting-depth)
                     #f)]
                [else #f]))]
           [else
-           (λ (exp hole-info)
+           (λ (exp hole-info nesting-depth)
              (cond
                [(list? exp)
                 ;; shortcircuit: if the list doesn't have the right number of
                 ;; fixed parts, give up immediately
                 (if (>= (length exp) non-repeats)
-                    (match-list rewritten/coerced exp hole-info)
+                    (match-list rewritten/coerced exp hole-info nesting-depth)
                     #f)]
                [else #f]))])
         any-has-hole?
@@ -996,7 +1000,7 @@ See match-a-pattern.rkt for more details
     (error 'convert-matcher 
            "not a unary proc: ~s" 
            boolean-based-matcher))
-  (define (match-boolean-to-record-converter exp hole-info)
+  (define (match-boolean-to-record-converter exp hole-info nesting-depth)
     (and (boolean-based-matcher exp)
          (list (make-mtch empty-bindings
                           (build-flat-context exp)
@@ -1005,13 +1009,15 @@ See match-a-pattern.rkt for more details
 
 ;; match-named-pat : symbol <compiled-pattern> -> <compiled-pattern>
 (define (match-named-pat name match-pat mismatch-bind?)
-  (λ (exp hole-info)
-    (let ([matches (match-pat exp hole-info)])
+  (λ (exp hole-info nesting-depth)
+    (let ([matches (match-pat exp hole-info nesting-depth)])
       (and matches 
            (map (lambda (match)
                   (make-mtch
                    (make-bindings (cons (if mismatch-bind?
-                                            (make-mismatch-bind name (mtch-context match))
+                                            (make-mismatch-bind name 
+                                                                (mtch-context match)
+                                                                nesting-depth)
                                             (make-bind name (mtch-context match)))
                                         (bindings-table (mtch-bindings match))))
                    (mtch-context match)
@@ -1025,7 +1031,7 @@ See match-a-pattern.rkt for more details
 (define (memoize f needs-all-args?)
   (case (procedure-arity f)
     [(1) (memoize/1 f nohole)]
-    [(2) (memoize/2 f w/hole)]
+    [(3) (memoize/3 f w/hole)]
     [else (error 'memoize "unknown arity for ~s" f)]))
 
 (define cache-size 63)
@@ -1062,7 +1068,7 @@ See match-a-pattern.rkt for more details
                           [else ans])))]))))))]))
 
 ;(define memoize/1 (mk-memoize-key 1))
-;(define memoize/2 (mk-memoize-key 2))
+;(define memoize/3 (mk-memoize-key 3))
 
 (define-syntax (mk-memoize-vec stx)
   (syntax-case stx ()
@@ -1097,7 +1103,7 @@ See match-a-pattern.rkt for more details
                            ans)]))]))))))]))
 
 (define memoize/1 (mk-memoize-vec 1))
-(define memoize/2 (mk-memoize-vec 2))
+(define memoize/3 (mk-memoize-vec 3))
 
 ;; hash version, but with an extra hash that tells when to evict cache entries
 #;
@@ -1330,7 +1336,7 @@ See match-a-pattern.rkt for more details
 
 ;; match-hole : compiled-pattern
 (define match-hole
-  (λ (exp hole-info)
+  (λ (exp hole-info nesting-depth)
     (if hole-info
         (list (make-mtch empty-bindings
                          the-hole
@@ -1342,60 +1348,62 @@ See match-a-pattern.rkt for more details
 
 ;; match-in-hole : sexp sexp sexp compiled-pattern compiled-pattern -> compiled-pattern
 (define (match-in-hole context contractum exp match-context match-contractum)
-   (λ (exp old-hole-info)
-     (let ([mtches (match-context exp #t)])
-       (and mtches
-            (let loop ([mtches mtches]
-                       [acc null])
-              (cond
-                [(null? mtches) 
-                 (if (null? acc)
+   (λ (exp old-hole-info nesting-depth)
+     (define mtches (match-context exp #t nesting-depth))
+     (and mtches
+          (let loop ([mtches mtches]
+                     [acc null])
+            (cond
+              [(null? mtches) 
+               (if (null? acc)
                    #f
                    acc)]
-                [else 
-                 (let* ([mtch (car mtches)]
-                        [bindings (mtch-bindings mtch)]
-                        [hole-exp (mtch-hole mtch)]
-                        [contractum-mtches (match-contractum hole-exp old-hole-info)])
-                   (when (eq? none hole-exp)
-                     (error 'matcher.rkt "found no hole when matching a decomposition"))
-                   (if contractum-mtches
-                       (let i-loop ([contractum-mtches contractum-mtches]
-                                    [acc acc])
-                         (cond
-                           [(null? contractum-mtches) (loop (cdr mtches) acc)]
-                           [else (let* ([contractum-mtch (car contractum-mtches)]
-                                        [contractum-bindings (mtch-bindings contractum-mtch)])
-                                   (i-loop
-                                    (cdr contractum-mtches)
-                                    (cons
-                                     (make-mtch (make-bindings
-                                                 (append (bindings-table contractum-bindings)
-                                                         (bindings-table bindings)))
-                                                (build-nested-context 
-                                                 (mtch-context mtch)
-                                                 (mtch-context contractum-mtch))
-                                                (mtch-hole contractum-mtch))
-                                     acc)))]))
-                       (loop (cdr mtches) acc)))]))))))
+              [else 
+               (define mtch (car mtches))
+               (define bindings (mtch-bindings mtch))
+               (define hole-exp (mtch-hole mtch))
+               (define contractum-mtches (match-contractum hole-exp old-hole-info nesting-depth))
+               (when (eq? none hole-exp)
+                 (error 'matcher.rkt "found no hole when matching a decomposition"))
+               (if contractum-mtches
+                   (let i-loop ([contractum-mtches contractum-mtches]
+                                [acc acc])
+                     (cond
+                       [(null? contractum-mtches) (loop (cdr mtches) acc)]
+                       [else (let* ([contractum-mtch (car contractum-mtches)]
+                                    [contractum-bindings (mtch-bindings contractum-mtch)])
+                               (i-loop
+                                (cdr contractum-mtches)
+                                (cons
+                                 (make-mtch (make-bindings
+                                             (append (bindings-table contractum-bindings)
+                                                     (bindings-table bindings)))
+                                            (build-nested-context 
+                                             (mtch-context mtch)
+                                             (mtch-context contractum-mtch))
+                                            (mtch-hole contractum-mtch))
+                                 acc)))]))
+                   (loop (cdr mtches) acc))])))))
 
 (define (match-in-hole/contractum-boolean context contractum exp match-context match-contractum)
   (λ (exp)
-    (let ([mtches (match-context exp #t)])
-      (and mtches
-           (let loop ([mtches mtches])
-             (cond
-               [(null? mtches) #f]
-               [else 
-                (let* ([mtch (car mtches)]
-                       [hole-exp (mtch-hole mtch)]
-                       [contractum-mtches (match-contractum hole-exp)])
-                  (when (eq? none hole-exp)
-                    (error 'matcher.rkt "found no hole when matching a decomposition"))
-                  (or contractum-mtches
-                      (loop (cdr mtches))))]))))))
+    ;; we get here only if there are no names in the context so we can safely pass 0 as the depth
+    (define mtches (match-context exp #t 0))
+    (and mtches
+         (let loop ([mtches mtches])
+           (cond
+             [(null? mtches) #f]
+             [else 
+              (let* ([mtch (car mtches)]
+                     [hole-exp (mtch-hole mtch)]
+                     [contractum-mtches (match-contractum hole-exp)])
+                (when (eq? none hole-exp)
+                  (error 'matcher.rkt "found no hole when matching a decomposition"))
+                (or contractum-mtches
+                    (loop (cdr mtches))))])))))
 
-;; match-list/boolean : (listof (union repeat (any hole-info -> boolean))) sexp hole-info -> boolean
+;; match-list/boolean : (listof (union repeat (any -> boolean)))
+;;                      sexp hole-info -> boolean
 (define (match-list/boolean patterns exp)
   (define has-repeats? (ormap repeat? patterns))
   (cond
@@ -1422,16 +1430,16 @@ See match-a-pattern.rkt for more details
                (loop (cdr exp) (cdr patterns)))]))]))
 
 ;; match-list : (listof (union repeat compiled-pattern)) sexp hole-info -> (union #f (listof bindings))
-(define (match-list patterns exp hole-info)
+(define (match-list patterns exp hole-info nesting-depth)
   (let (;; raw-match : (listof (listof (listof mtch)))
-        [raw-match (match-list/raw patterns exp hole-info)])
+        [raw-match (match-list/raw patterns exp hole-info nesting-depth)])
     
     (and (not (null? raw-match))
          (let loop ([raw-match raw-match])
-	   (cond
-	    [(null? raw-match) '()]
-	    [else (append (combine-matches (car raw-match))
-                          (loop (cdr raw-match)))])))))
+           (cond
+             [(null? raw-match) '()]
+             [else (append (combine-matches (car raw-match))
+                           (loop (cdr raw-match)))])))))
 
 ;; match-list/raw : (listof (union repeat compiled-pattern)) 
 ;;                  sexp
@@ -1444,7 +1452,7 @@ See match-a-pattern.rkt for more details
 ;;    \-------------------------/    one element for different expansions of the ellipses
 ;; the failures to match are just removed from the outer list before this function finishes
 ;; via the `fail' argument to `loop'.
-(define (match-list/raw patterns exp hole-info)
+(define (match-list/raw patterns exp hole-info nesting-depth)
   (let/ec k
     (let loop ([patterns patterns]
                [exp exp]
@@ -1468,7 +1476,11 @@ See match-a-pattern.rkt for more details
                      (cons (let/ec k
                              (let ([mt-fail (lambda () (k null))])
                                (map (lambda (pat-ele) 
-                                      (cons (add-ellipses-index (list r-mt) (repeat-name fst-pat) (repeat-mismatch fst-pat) 0)
+                                      (cons (add-ellipses-index (list r-mt)
+                                                                (repeat-name fst-pat)
+                                                                (repeat-mismatch fst-pat)
+                                                                0
+                                                                nesting-depth)
                                             pat-ele))
                                     (loop (cdr patterns) exp mt-fail))))
                            (let r-loop ([exp exp]
@@ -1479,7 +1491,7 @@ See match-a-pattern.rkt for more details
                              (cond
                                [(pair? exp)
                                 (let* ([fst (car exp)]
-                                       [m (r-pat fst hole-info)])
+                                       [m (r-pat fst hole-info (+ nesting-depth 1))])
                                   (if m
                                       (let* ([combined-matches (collapse-single-multiples m past-matches)]
                                              [reversed 
@@ -1487,7 +1499,8 @@ See match-a-pattern.rkt for more details
                                                (reverse-multiples combined-matches)
                                                (repeat-name fst-pat)
                                                (repeat-mismatch fst-pat)
-                                               index)])
+                                               index
+                                               nesting-depth)])
                                         (cons 
                                          (let/ec fail-k
                                            (map (lambda (x) (cons reversed x))
@@ -1505,7 +1518,7 @@ See match-a-pattern.rkt for more details
               (cond
                 [(pair? exp)
                  (let* ([fst-exp (car exp)]
-                        [match (fst-pat fst-exp hole-info)])
+                        [match (fst-pat fst-exp hole-info nesting-depth)])
                    (if match
                        (let ([exp-match (map (λ (mtch) (make-mtch (mtch-bindings mtch)
                                                                   (build-list-context (mtch-context mtch))
@@ -1523,7 +1536,7 @@ See match-a-pattern.rkt for more details
 
 (define null-match (list (make-mtch (make-bindings '()) '() none)))
 
-(define (match-list/no-repeats patterns exp hole-info)
+(define (match-list/no-repeats patterns exp hole-info nesting-depth)
   
   (define (match-list/raw/no-repeats/no-ambiguity patterns exp hole-info)
     (let/ec k
@@ -1536,7 +1549,7 @@ See match-a-pattern.rkt for more details
                (cond
                  [(pair? exp)
                   (let* ([fst-exp (car exp)]
-                         [fst-mtchs (fst-pat fst-exp hole-info)])
+                         [fst-mtchs (fst-pat fst-exp hole-info nesting-depth)])
                     (cond
                       [(not fst-mtchs) (k #f)]
                       [(null? (cdr fst-mtchs))
@@ -1565,7 +1578,7 @@ See match-a-pattern.rkt for more details
              (cond
                [(pair? exp)
                 (let* ([fst-exp (car exp)]
-                       [fst-mtchs (fst-pat fst-exp hole-info)])
+                       [fst-mtchs (fst-pat fst-exp hole-info nesting-depth)])
                   (cond
                     [fst-mtchs
                      (define rst-mtchs (loop (cdr patterns) (cdr exp)))
@@ -1604,13 +1617,13 @@ See match-a-pattern.rkt for more details
   )
 
 ;; add-ellipses-index : (listof mtch) (or/c sym #f) (or/c sym #f) number -> (listof mtch)
-(define (add-ellipses-index mtchs name mismatch-name i)
+(define (add-ellipses-index mtchs name mismatch-name i nesting-depth)
   (let* ([ribs '()]
          [ribs (if name
                    (cons (make-bind name i) ribs)
                    ribs)]
          [ribs (if mismatch-name
-                   (cons (make-mismatch-bind mismatch-name i) ribs)
+                   (cons (make-mismatch-bind mismatch-name i nesting-depth) ribs)
                    ribs)])
     (map (λ (mtch) (make-mtch (make-bindings (append ribs (bindings-table (mtch-bindings mtch))))
                               (mtch-context mtch)
@@ -1630,8 +1643,11 @@ See match-a-pattern.rkt for more details
                                (map (match-lambda* 
                                       [`(,(struct bind (name sing-exp)) ,(struct bind (name mult-exp)))
                                        (make-bind name (cons sing-exp mult-exp))]
-                                      [`(,(struct mismatch-bind (name sing-exp)) ,(struct mismatch-bind (name mult-exp)))
-                                       (make-mismatch-bind name (cons sing-exp mult-exp))]
+                                      [`(,(struct mismatch-bind (name sing-exp nesting-depth1))
+                                         ,(struct mismatch-bind (name mult-exp nesting-depth2)))
+                                       (make-mismatch-bind name 
+                                                           (cons sing-exp mult-exp)
+                                                           nesting-depth1)]
                                       [else 
                                        (error 'collapse-single-multiples
                                               "internal error: expected matches' bindings in same order; got\n  ~e\n  ~e"
@@ -1668,7 +1684,8 @@ See match-a-pattern.rkt for more details
                                   (reverse (bind-exp rib)))]
                       [(mismatch-bind? rib)
                        (make-mismatch-bind (mismatch-bind-name rib)
-                                           (reverse (mismatch-bind-exp rib)))]))
+                                           (reverse (mismatch-bind-exp rib))
+                                           (mismatch-bind-nesting-depth rib))]))
                   (bindings-table bindings)))
             (reverse-context (mtch-context match))
             (mtch-hole match))))
@@ -1733,7 +1750,7 @@ See match-a-pattern.rkt for more details
 (define (call-nt-proc/bool nt-proc exp)
   (if (procedure-arity-includes? nt-proc 1)
       (nt-proc exp)
-      (and (remove-bindings/filter (nt-proc exp #f)) #t)))
+      (and (remove-bindings/filter (nt-proc exp #f 0)) #t)))
 
 (define (call-nt-proc/bindings compiled-pattern exp hole-info)
   (define nt-proc (compiled-pattern-cp compiled-pattern))
@@ -1746,7 +1763,7 @@ See match-a-pattern.rkt for more details
                            (build-flat-context exp)
                            none)))]
     [skip-dup? 
-     (define res (nt-proc exp hole-info))
+     (define res (nt-proc exp hole-info 0))
      (and res
           (not (null? res))
           (if has-names?
@@ -1757,7 +1774,7 @@ See match-a-pattern.rkt for more details
                    res)
               res))]
     [else
-     (remove-bindings/filter (nt-proc exp hole-info))]))
+     (remove-bindings/filter (nt-proc exp hole-info 0))]))
 
 ;; remove-bindings/filter : (union #f (listof mtch)) -> (union #f (listof mtch))
 (define (remove-bindings/filter matches)
@@ -1833,7 +1850,7 @@ See match-a-pattern.rkt for more details
       [`(name ,name ,pat)
        (cons (make-bind name '()) (loop pat ribs))]
       [`(mismatch-name ,name ,pat) 
-       (cons (make-mismatch-bind name '()) (loop pat ribs))]
+       (cons (make-mismatch-bind name '() 'unknown-mismatch-depth) (loop pat ribs))]
       [`(in-hole ,context ,contractum) (loop contractum (loop context ribs))]
       [`(hide-hole ,p) (loop p ribs)]
       [`(side-condition ,pat ,test ,expr) (loop pat ribs)]
@@ -1849,7 +1866,9 @@ See match-a-pattern.rkt for more details
                      (cond
                        [(repeat? r-exp)
                         (define bindings (if (repeat-mismatch r-exp)
-                                             (list (make-mismatch-bind (repeat-mismatch r-exp) '()))
+                                             (list (make-mismatch-bind (repeat-mismatch r-exp)
+                                                                       '()
+                                                                       'unknown-mismatch-depth))
                                              '()))
                         (define bindings2 (if (repeat-name r-exp)
                                               (cons (make-bind (repeat-name r-exp) '()) bindings)

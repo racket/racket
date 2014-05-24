@@ -2937,6 +2937,13 @@
                (x_one x_!_one)))
          (term (a a b c)))
         (list (term (a x_!_one))))
+
+(test (apply-reduction-relation
+       (reduction-relation
+        x-language
+        (--> (x_!_one ... x_!_one) odd-length-different))
+       (term (a b c d)))
+      (list (term odd-length-different)))
   
   ;; tests `where' clauses in reduction relation
   (test (apply-reduction-relation
