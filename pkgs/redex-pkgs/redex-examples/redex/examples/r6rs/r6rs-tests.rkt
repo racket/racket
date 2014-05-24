@@ -91,15 +91,14 @@
     [`(unknown ,str) actual]
     [`(uncaught-exception ,v) actual]
     [`(store ,xs ...)
-     (let loop ([actual actual])
-       (subst-:-vars actual))]
+     (subst-:-vars actual)]
     [_
      (error 'rewrite-actual "unknown actual ~s\n" actual)]))
 
 (define (subst-:-vars exp)
   (match exp
     [`(store ,str ,exps ...)
-     (let* ([pp-var? (λ (x) (regexp-match #rx"^[qmi]p" (format "~a" (car x))))]
+     (let* ([pp-var? (λ (x) (regexp-match #rx"^([(]-)?[qmi]p" (format "~a" (car x))))]
             [pp-bindings (filter pp-var? str)]
             [with-out-pp (fp-sub pp-bindings `(store ,(filter (λ (x) (not (pp-var? x))) str) ,@exps))]
             [with-out-app-vars (remove-unassigned-app-vars with-out-pp)]
@@ -108,7 +107,11 @@
     [`(unknown ,string) string]
     [_ (error 'subst-:-vars "unknown exp ~s" exp)]))
 
-(define (is-ri-var? x) (regexp-match #rx"^ri" (symbol->string x)))
+(define (is-ri-var? x) 
+  (or (and (symbol? x) (regexp-match #rx"^r" (symbol->string x)))
+      (and (pair? x)
+           (symbol? (car x))
+           (regexp-match #rx"^-i" (symbol->string (car x))))))
 
 (define (remove-unused-ri-vars exp)
   (match exp
@@ -116,7 +119,7 @@
      (let ([ri-vars (filter is-ri-var? (map car str))]
            [str-without-ri-binders 
             (filter (λ (binding) (not (is-ri-var? (car binding)))) str)])
-       `(store ,(filter (λ (binding) 
+       `(store ,(filter (λ (binding)
                           (cond
                             [(is-ri-var? (car binding)) 
                              (not (not-in (car binding) (cons str-without-ri-binders exps)))]
@@ -139,12 +142,12 @@
   (cond
     [(pair? e) (and (not-in var (car e))
                     (not-in var (cdr e)))]
-    [else (not (eq? var e))]))
+    [else (not (equal? var e))]))
 
 (define (appears-in-set? x e)
   (let loop ([e e])
     (match e
-      [`(set! ,x2 ,e2) (or (eq? x x2)
+      [`(set! ,x2 ,e2) (or (equal? x x2)
                            (loop e2))]
       [else
        (and (list? e) 
