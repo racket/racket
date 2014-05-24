@@ -682,16 +682,24 @@ See match-a-pattern.rkt for more details
              (define table (make-hash))
              (hash-set! mismatch-ht name table)
              (set! priors table))
-           (let loop ([depth nesting-depth]
-                      [exp exp])
-             (cond
-               [(= depth 0)
-                (when (hash-ref priors exp #f)
-                  (fail #f))
-                (hash-set! priors exp #t)]
-               [else
-                (for ([exp-ele (in-list exp)])
-                  (loop (- depth 1) exp-ele))]))]))
+           (cond
+             [(equal? nesting-depth 'unknown-mismatch-depth)
+              (unless (null? exp)
+                (error 'matcher.rkt 
+                       (string-append "invariant broken; unknown-mismatch-depth should"
+                                      " appear only when the expression is an empty list: ~s")
+                       exp))]
+             [else
+              (let loop ([depth nesting-depth]
+                         [exp exp])
+                (cond
+                  [(= depth 0)
+                   (when (hash-ref priors exp #f)
+                     (fail #f))
+                   (hash-set! priors exp #t)]
+                  [else
+                   (for ([exp-ele (in-list exp)])
+                     (loop (- depth 1) exp-ele))]))])]))
       (make-mtch
        (make-bindings (hash-map match-ht make-bind))
        (mtch-context match)

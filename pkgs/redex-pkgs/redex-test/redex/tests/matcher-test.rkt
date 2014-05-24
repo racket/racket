@@ -143,6 +143,9 @@
                        (repeat (mismatch-name number_!_1 number) #f #f))
                 '((1 2) (3 4) 5 6)
                 (list (make-test-mtch (make-bindings (list)) '((1 2) (3 4) 5 6) none)))
+    (test-empty '(list (repeat (mismatch-name number_!_1 number) #f #f))
+                '()
+                (list (make-test-mtch (make-bindings (list)) '() none)))
     
     (test-empty '(list (repeat (name x_1 1) ..._1 ..._!_1)
                        (repeat (name x_1 1) ..._1 #f)
