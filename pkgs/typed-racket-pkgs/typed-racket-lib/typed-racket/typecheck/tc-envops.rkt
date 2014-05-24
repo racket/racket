@@ -3,6 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer infer-in]))
 (require racket/match
          (only-in unstable/list list-update)
+         (for-syntax racket/base syntax/parse)
          (contract-req)
          (infer-in infer)
          (rep type-rep filter-rep object-rep rep-utils)
@@ -78,5 +79,10 @@
       [_ Γ])))
 
 ;; run code in an extended env and with replaced props
-(define-syntax-rule (with-lexical-env/extend-props  ps . b)
-  (with-lexical-env (env+ (lexical-env) ps (box #t)) . b))
+(define-syntax (with-lexical-env/extend-props stx)
+  (define-splicing-syntax-class flag
+    [pattern (~seq #:flag v:expr)]
+    [pattern (~seq) #:with v #'(box #t)])
+  (syntax-parse stx
+    [(_ ps flag:flag . b)
+     #'(with-lexical-env (env+ (lexical-env) ps flag.v) . b)]))
