@@ -8,7 +8,7 @@
          (infer-in infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types resolve subtype remove-intersect union filter-ops)
+         (types tc-result resolve subtype remove-intersect union filter-ops)
          (env type-env-structs lexical-env)
          (rename-in (types abbrev)
                     [-> -->]
@@ -63,29 +63,35 @@
      (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)
      t]))
 
-;; sets the flag box to #f if anything becomes (U)
-(define (env+ env fs flag)
-  (define-values (props atoms) (combine-props fs (env-props env) flag))
-  (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
-    (match f
-      [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
-      [(or (TypeFilter: ft (Path: lo x)) (NotTypeFilter: ft (Path: lo x)))
-       (update-type/lexical
-         (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
-                         (when (type-equal? new-t -Bottom)
-                           (set-box! flag #f))
-                         new-t))
-         x Γ)]
-      [_ Γ])))
+;; Returns #f if anything becomes (U)
+(define (env+ env fs)
+  (let/ec exit
+    (define-values (props atoms) (combine-props fs (env-props env) exit))
+    (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
+      (match f
+        [(or (TypeFilter: ft (Path: lo x)) (NotTypeFilter: ft (Path: lo x)))
+         (update-type/lexical
+           (lambda (x t)
+             (define new-t (update t ft (TypeFilter? f) lo))
+             (when (type-equal? new-t -Bottom)
+               (exit #f))
+             new-t)
+           x Γ)]
+        [_ Γ]))))
 
 ;; run code in an extended env and with replaced props. Requires the body to return a tc-results.
 ;; TODO make this only add the new prop instead of the entire environment once tc-id is fixed to
 ;; include the interesting props in its filter.
 (define-syntax (with-lexical-env/extend-props stx)
-  (define-splicing-syntax-class flag
-    [pattern (~seq #:flag v:expr)]
-    [pattern (~seq) #:with v #'(box #t)])
+  (define-splicing-syntax-class unreachable?
+    (pattern (~seq #:unreachable form:expr))
+    (pattern (~seq) #:with form #'(begin)))
   (syntax-parse stx
-    [(_ ps flag:flag . b)
-     #'(with-lexical-env (env+ (lexical-env) ps flag.v)
-         (add-unconditional-prop (let () . b) (apply -and (env-props (lexical-env)))))]))
+    [(_ ps:expr u:unreachable? . b)
+     #'(let ([new-env (env+ (lexical-env) ps)])
+         (if new-env
+             (with-lexical-env new-env
+               (add-unconditional-prop (let () . b) (apply -and (env-props new-env))))
+             (let ()
+               u.form
+               (ret -Bottom))))]))
