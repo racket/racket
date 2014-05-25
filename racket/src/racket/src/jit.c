@@ -2035,7 +2035,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           if (target != JIT_R1) {
             jit_movr_p(target, JIT_R1);
             if (target == JIT_R0)
-              jitter->r1_status = pos;
+              jitter->r0_status = pos;
             mz_SET_REG_STATUS_VALID(1);
           }
         } else {

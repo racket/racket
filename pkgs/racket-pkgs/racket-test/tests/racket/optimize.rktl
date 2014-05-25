@@ -3437,5 +3437,58 @@
              exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to check that JIT's register shortcuts
+;; (tracking when a value is ready in a register)
+;; works ok. The example here failed once upon
+;; a time, at least.
+
+;; Example by Dale Vaillancourt
+
+(module check-jit-registers-shortcut racket/base
+  (require racket/fixnum racket/match) 
+
+  (struct bral-empty () #:transparent)
+  (struct bral-node (weight tree rest) #:transparent)
+
+  (struct node (val even odd) #:transparent)
+
+  (struct var (name idx) #:transparent)
+
+
+  (define (half n) (fxrshift n 1))
+
+  (define (lookup-tree w i t)
+    (if (node? t)
+        (if (zero? i) 
+            (node-val t)
+            (let [(w/2 (half w))]
+              (if (<= i w/2)
+                  (lookup-tree w/2 (fx- i 1) (node-even t))
+                  (lookup-tree w/2 (- (- i 1) w/2) (node-odd t)))))
+        (if (zero? i) t #f)))
+
+  (define (lookup i ls)
+    (match ls 
+      [(bral-empty) #f]
+      [(bral-node weight tree ls*)
+       (if (< i weight)
+           (lookup-tree weight i tree)
+           (lookup (- i weight) ls*))]))
+
+  (define a-node
+    (bral-node
+     15
+     (node
+      'a
+      (node 'b (node 'c 'd 'e) (node 'f 'g 'h))
+      (node 'i (node 'j 'k 'l) (node 'm 'n 'o)))
+     (bral-empty)))
+
+  (define result (lookup 2 a-node))
+  (provide result))
+
+(test 'c dynamic-require ''check-jit-registers-shortcut 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
