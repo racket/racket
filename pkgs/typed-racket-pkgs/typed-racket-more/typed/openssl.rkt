@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require "openssl/types.rkt")
+(provide (all-from-out "openssl/types.rkt"))
 
 (require/typed/provide openssl
   [ssl-available? Boolean]
