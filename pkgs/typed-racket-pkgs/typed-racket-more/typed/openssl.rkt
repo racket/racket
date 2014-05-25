@@ -1,14 +1,6 @@
 #lang typed/racket/base
 
-(require/opaque-type SSL-Client-Context ssl-client-context? openssl)
-(define-type SSL-Protocol
-  (U 'sslv2-or-v3 'sslv2 'sslv3 'tls))
-(provide SSL-Client-Context
-         ssl-client-context?
-         SSL-Protocol)
-
-(require/opaque-type SSL-Listener ssl-listener? openssl)
-
+(require "openssl/types.rkt")
 
 (require/typed/provide openssl
   [ssl-available? Boolean]
@@ -27,17 +19,6 @@
   [ssl-secure-client-context (-> SSL-Client-Context)]
   [ssl-make-client-context (SSL-Protocol -> SSL-Client-Context)]
   )
-
-;;;; Ports ;;;;
-
-(require/typed/provide openssl
-  ;; XXX Would be better if we could make SSL-Port be a subtype
-  ;; of Port, but for now that's impossible so we'll just provide
-  ;; this predicate.
-  [ssl-port? (-> Any Boolean)]
-  )
-
-(require/opaque-type SSL-Server-Context ssl-server-context? openssl)
 
 ;;;; 2: TCP-like Server Procedures
 (require/typed/provide openssl
@@ -73,14 +54,6 @@
   )
 
 ;;;; 4: Context Procedures
-
-(define-type SSL-Context (U SSL-Client-Context SSL-Server-Context))
-
-(define-type SSL-Verify-Source
-  (U Path-String
-     (List 'directory Path-String)
-     (List 'win32-store String)
-     (List 'macosx-keychain Path-String)))
 
 (require/typed/provide openssl
   [ssl-load-verify-source!
