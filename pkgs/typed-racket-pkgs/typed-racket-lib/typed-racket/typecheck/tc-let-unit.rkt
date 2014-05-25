@@ -125,12 +125,10 @@
         (match-define (lr-clause name expr) remaining-clause)
         (values name expr)))
 
-    ;; Check those and gather an environment for use below
-    (define-values (env-names env-results)
-      (check-non-recursive-clauses ordered-clauses))
-
-    (replace-names (get-names+objects env-names env-results)
-      (with-lexical-env/extend env-names (map tc-results-ts env-results)
+    ;; Check those and then check the rest in the extended environment
+    (check-non-recursive-clauses
+      ordered-clauses
+      (lambda ()
         (cond
           ;; after everything, check the body expressions
           [(null? remaining-names)
@@ -206,23 +204,21 @@
   (values (append non-recursive non-binding)
           remaining))
 
-;; check-non-recursive-clauses : (Listof lr-clause) ->
-;;                               (Listof (Listof Identifier)) (Listof tc-results)
-;; Given a list of non-recursive clauses, check the clauses in order and
-;; build up a type environment for use in the second pass.
-(define (check-non-recursive-clauses clauses)
-  (let loop ([clauses clauses] [env-ids '()] [env-types '()])
-    (cond [(null? clauses) (values env-ids env-types)]
+;; check-non-recursive-clauses : (Listof lr-clause) (-> tc-results) -> tc-results
+;; Given a list of non-recursive clauses, check the clauses in order then call k
+;; in the built up environment.
+(define (check-non-recursive-clauses clauses k)
+  (let loop ([clauses clauses])
+    (cond [(null? clauses) (k)]
           [else
            (match-define (lr-clause names expr) (car clauses))
-           (define results
+           (match-define (tc-results: ts fs os)
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
                              tc-expr/check))
-           (with-lexical-env/extend names (tc-results-ts results)
-             (loop (cdr clauses)
-                   (cons names env-ids)
-                   (cons results env-types)))])))
+           (with-lexical-env/extend names ts
+             (replace-names (map list names os)
+               (loop (cdr clauses))))])))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
