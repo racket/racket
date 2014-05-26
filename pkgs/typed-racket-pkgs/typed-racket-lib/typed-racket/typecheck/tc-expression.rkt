@@ -2,8 +2,8 @@
 
 (require
   "../utils/utils.rkt"
-  (typecheck tc-expr-unit signatures tc-app-helper)
-  (types tc-result tc-error utils abbrev classes)
+  (typecheck tc-expr-unit signatures tc-app-helper check-below)
+  (types tc-result tc-error utils abbrev classes type-table)
   (rep type-rep)
   (utils tc-utils)
   (env index-env tvar-env scoped-tvar-env)
@@ -15,7 +15,7 @@
   syntax/parse)
 
 
-(import tc-expr^)
+(import tc-expr^ check-subforms^)
 (export tc-expression^)
 
 ;; Typecheck an (#%expression e) form
@@ -26,6 +26,10 @@
     [(exp:type-ascription^ e)
      (add-scoped-tvars #'e (parse-literal-alls (attribute exp.value)))
      (tc-expr/check #'e (parse-tc-results (attribute exp.value)))]
+    [(exp:ignore-some-expr^ e)
+     (register-ignored! #'e)
+     (check-subforms/ignore #'e)
+     (fix-results (parse-tc-results (attribute exp.value)))]
     [(exp:external-check^ e)
      ((attribute exp.value) #'e)
      (if expected

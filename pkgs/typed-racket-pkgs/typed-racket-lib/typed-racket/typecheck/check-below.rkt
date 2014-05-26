@@ -15,6 +15,7 @@
  [cond-check-below (-->i ([s (-or/c Type/c full-tc-results/c)]
                           [t (s) (-or/c #f (if (Type/c? s) Type/c tc-results/c))])
                          [_ (s) (-or/c #f (if (Type/c? s) Type/c full-tc-results/c))])]
+ [fix-results (--> tc-results/c full-tc-results/c)]
  [type-mismatch (-->* ((-or/c Type/c string?) (-or/c Type/c string?))
                       ((-or/c string? #f))
                       -any)])

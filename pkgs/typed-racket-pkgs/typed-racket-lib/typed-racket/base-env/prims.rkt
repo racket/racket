@@ -143,6 +143,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-for-syntax (with-type* expr ty)
   (with-type #`(ann #,expr #,ty)))
+(define-for-syntax (ignore-some/expr expr ty)
+  #`(#,(ignore-some-expr-property #'#%expression ty) #,expr))
 
 
 (begin-for-syntax
@@ -308,45 +310,41 @@ This file defines two sorts of primitives. All of them are provided into any mod
                "Type ~a could not be converted to a predicate because it contains free variables."
                type)))
 
-         #`(ann
-             (#,(external-check-property #'#%expression check-valid-type)
-              #,(ignore-some name))
-             (Any -> Boolean : ty)))
+         #`(#,(external-check-property #'#%expression check-valid-type)
+            #,(ignore-some/expr name #'(Any -> Boolean : ty))))
        (let ([typ (parse-type #'ty)])
          (if (Error? typ)
              ;; This code should never get run, typechecking will have an error earlier
              #`(error 'make-predicate "Couldn't parse type")
              #`(#%expression
-                (ann
-                 #,(ignore-some
-                    (type->contract
-                     typ
-                     ;; must be a flat contract
-                     #:kind 'flat
-                     ;; the value is not from the typed side
-                     #:typed-side #f
-                     (type->contract-fail typ #'ty #:ctc-str "predicate")))
-                 (Any -> Boolean : ty))))))]))
+                #,(ignore-some/expr
+                   (type->contract
+                    typ
+                    ;; must be a flat contract
+                    #:kind 'flat
+                    ;; the value is not from the typed side
+                    #:typed-side #f
+                    (type->contract-fail typ #'ty #:ctc-str "predicate"))
+                   #'(Any -> Boolean : ty))))))]))
 
 (define-syntax (cast stx)
   (syntax-parse stx
     [(_ v:expr ty:expr)
      (define (apply-contract ctc-expr)
        #`(#%expression
-          (ann
-           #,(ignore-some
-              #`(let-values (((val) #,(with-type* #'v #'Any)))
-                  #,(syntax-property
-                     (quasisyntax/loc stx
-                       (contract
-                        #,ctc-expr
-                        val
-                        'cast
-                        'typed-world
-                        val
-                        (quote-syntax #,stx)))
-                     'feature-profile:TR-dynamic-check #t)))
-           ty)))
+          #,(ignore-some/expr
+             #`(let-values (((val) #,(with-type* #'v #'Any)))
+                 #,(syntax-property
+                    (quasisyntax/loc stx
+                      (contract
+                       #,ctc-expr
+                       val
+                       'cast
+                       'typed-world
+                       val
+                       (quote-syntax #,stx)))
+                    'feature-profile:TR-dynamic-check #t))
+             #'ty)))
 
      (cond [(not (unbox typed-context?)) ; no-check, don't check
             #'v]

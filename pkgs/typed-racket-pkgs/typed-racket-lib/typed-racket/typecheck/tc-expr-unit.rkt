@@ -100,11 +100,6 @@
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers/check form expected)]
-      [stx:ignore-some^
-       (register-ignored! form)
-       (check-subforms/ignore form)
-       ;; We trust ignore to be only on syntax objects objects that are well typed
-       (ret -Bottom)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
@@ -237,10 +232,6 @@
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers form) ]
-      [stx:ignore-some^
-       (register-ignored! form)
-       (check-subforms/ignore form)
-       (ret Univ)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
