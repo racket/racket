@@ -366,7 +366,36 @@
              (syntax/loc stx
                (#%require new-in ...)))]
           [(_ in ...)
-           (syntax/loc stx (begin (require in) ...))]))))
+           ;; Prefetch on simple module paths:
+           (let ([prefetches
+                  (let loop ([in (syntax->list #'(in ...))])
+                    (cond
+                     [(null? in) null]
+                     [(let ([a (syntax->datum (car in))])
+                        (and (module-path? a) a))
+                      => (lambda (a)
+                           (cons a (loop (cdr in))))]
+                     [else
+                      (let ([a (syntax->list (car in))])
+                        (if (and a
+                                 (let ([i (car a)])
+                                   (and (identifier? i)
+                                        (or (free-identifier=? #'for-something #'for-syntax)
+                                            (free-identifier=? #'for-something #'for-template)
+                                            (free-identifier=? #'for-something #'for-label)))))
+                            (loop (append (cdr a) (cdr in)))
+                            (loop (cdr in))))]))])
+             (unless (null? prefetches)
+               (log-message (current-logger)
+                            'info 
+                            'module-prefetch
+                            (format "module-prefetch: ~s in: ~s"
+                                    prefetches
+                                    (current-load-relative-directory))
+                            (list prefetches (current-load-relative-directory))
+                            #f))
+             (syntax/loc stx
+               (begin (require in) ...)))]))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers

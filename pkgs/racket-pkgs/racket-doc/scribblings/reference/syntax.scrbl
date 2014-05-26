@@ -852,7 +852,18 @@ corresponds to the default @tech{module name resolver}.
   of a submodule, and it's intended for use in @racket[(submod "." ....)] 
   and @racket[(submod ".." ....)] forms.}
 
-}
+As @racket[require] prepares to handle a sequence of
+@racket[require-spec]s, it logs a ``prefetch'' message to the
+@tech{current logger} at the @racket['info] level, using the name
+@racket['module-prefetch], and including message data that is a list
+of two elements: a list of @tech{module paths} that appear to be
+imported, and a directory path to use for relative module paths. The
+logged list of module paths may be incomplete, but a compilation
+manager can use approximate prefetch information to start on
+compilations in parallel.
+
+@history[#:changed "6.0.1.10" @elem{Added prefetch logging.}]}
+
 
 @defform[(local-require require-spec ...)]{
 
