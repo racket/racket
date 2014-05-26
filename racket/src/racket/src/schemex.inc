@@ -116,6 +116,7 @@
   scheme_extension_table->scheme_log_w_data = scheme_log_w_data;
   scheme_extension_table->scheme_log_message = scheme_log_message;
   scheme_extension_table->scheme_log_name_message = scheme_log_name_message;
+  scheme_extension_table->scheme_log_name_pfx_message = scheme_log_name_pfx_message;
   scheme_extension_table->scheme_log_abort = scheme_log_abort;
   scheme_extension_table->scheme_log_warning = scheme_log_warning;
   scheme_extension_table->scheme_glib_log_message = scheme_glib_log_message;

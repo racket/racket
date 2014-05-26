@@ -226,7 +226,11 @@ MZ_EXTERN void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
                                  Scheme_Object *data,
                                  const char *msg, ...);
 MZ_EXTERN void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data);
-MZ_EXTERN void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name, char *buffer, intptr_t len, Scheme_Object *data);
+MZ_EXTERN void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                       char *buffer, intptr_t len, Scheme_Object *data);
+MZ_EXTERN void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                           char *buffer, intptr_t len, Scheme_Object *data,
+                                           int prefix_message);
 MZ_EXTERN void scheme_log_abort(char *buffer);
 MZ_EXTERN void scheme_log_warning(char *buffer);
 MZ_EXTERN void scheme_glib_log_message(const char *log_domain, int log_level, const char *message, void *user_data);

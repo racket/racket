@@ -116,6 +116,7 @@
 #define scheme_log_w_data (scheme_extension_table->scheme_log_w_data)
 #define scheme_log_message (scheme_extension_table->scheme_log_message)
 #define scheme_log_name_message (scheme_extension_table->scheme_log_name_message)
+#define scheme_log_name_pfx_message (scheme_extension_table->scheme_log_name_pfx_message)
 #define scheme_log_abort (scheme_extension_table->scheme_log_abort)
 #define scheme_log_warning (scheme_extension_table->scheme_log_warning)
 #define scheme_glib_log_message (scheme_extension_table->scheme_glib_log_message)

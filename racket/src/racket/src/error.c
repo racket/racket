@@ -730,7 +730,7 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 3, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
-  GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 5, env);
+  GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 6, env);
   GLOBAL_FOLDING_PRIM("logger?",        logger_p,      1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("logger-name",    logger_name,   1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("log-receiver?",  log_reader_p,  1, 1, 1, env);
@@ -3434,6 +3434,27 @@ static int extract_spec_level(Scheme_Object *level_spec, Scheme_Object *name)
   }
 }
 
+static int extract_max_spec_level(Scheme_Object *level_spec)
+{
+  int mx = 0, v;
+
+  if (level_spec)  {
+    while (1) {
+      if (SCHEME_INTP(level_spec)) {
+        v = SCHEME_INT_VAL(level_spec);
+        if (v > mx) mx = v;
+        break;
+      } else {
+        v = SCHEME_INT_VAL(SCHEME_CAR(level_spec));
+        if (v > mx) mx = v;
+        level_spec = SCHEME_CDR(SCHEME_CDR(level_spec));
+      }
+    }
+  }
+
+  return mx;
+}
+
 void update_want_level(Scheme_Logger *logger)
 {
   Scheme_Log_Reader *lr;
@@ -3457,7 +3478,7 @@ void update_want_level(Scheme_Logger *logger)
       b = SCHEME_CAR(b);
       lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
       if (lr) {
-        level = extract_spec_level(lr->level, logger->name);
+        level = extract_max_spec_level(lr->level);
         if (level > want_level)
           want_level = level;
         prev = queue;
@@ -3470,10 +3491,10 @@ void update_want_level(Scheme_Logger *logger)
       queue = SCHEME_CDR(queue);
     }
 
-    level = extract_spec_level(parent->syslog_level, logger->name);
+    level = extract_max_spec_level(parent->syslog_level);
     if (level > want_level)
       want_level = level;
-    level = extract_spec_level(parent->stderr_level, logger->name);
+    level = extract_max_spec_level(parent->stderr_level);
     if (level > want_level)
       want_level = level;    
 
@@ -3496,7 +3517,7 @@ static mzReportEventProc mzReportEvent;
 
 
 
-static Scheme_Object *make_log_message(int level, Scheme_Object *name, 
+static Scheme_Object *make_log_message(int level, Scheme_Object *name, int prefix_msg,
                                        char *buffer, intptr_t len, Scheme_Object *data) {
   Scheme_Object *msg;
   Scheme_Object *v;
@@ -3522,7 +3543,7 @@ static Scheme_Object *make_log_message(int level, Scheme_Object *name,
   }
   SCHEME_VEC_ELS(msg)[0] = v;
           
-  if (name) {
+  if (name && prefix_msg) {
     /* Add logger name prefix: */
     intptr_t slen;
     char *cp;
@@ -3546,8 +3567,9 @@ static Scheme_Object *make_log_message(int level, Scheme_Object *name,
   return msg;
 }
 
-void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name, 
-                             char *buffer, intptr_t len, Scheme_Object *data)
+void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                 char *buffer, intptr_t len, Scheme_Object *data,
+                                 int prefix_msg)
 {
   /* This function must avoid GC allocation when called with the
      configuration of scheme_log_abort(). */
@@ -3575,7 +3597,7 @@ void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *na
     if (lo->callback) {
       Scheme_Object *a[1];
       if (!msg)
-        msg = make_log_message(level, name, buffer, len, data);
+        msg = make_log_message(level, name, prefix_msg, buffer, len, data);
 
       a[0] = msg;
       scheme_apply_multi(lo->callback, 1, a);
@@ -3697,7 +3719,7 @@ void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *na
       if (lr) {
         if (extract_spec_level(lr->level, name) >= level) {
           if (!msg)
-            msg = make_log_message(level, name, buffer, len, data);
+            msg = make_log_message(level, name, prefix_msg, buffer, len, data);
           
           /* enqueue */
           q = scheme_make_raw_pair(msg, NULL);
@@ -3716,9 +3738,15 @@ void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *na
   }
 }
 
+void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                             char *buffer, intptr_t len, Scheme_Object *data)
+{
+  scheme_log_name_pfx_message(logger, level, name, buffer, len, data, 1);
+}
+
 void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data)
 {
-  scheme_log_name_message(logger, level, NULL, buffer, len, data);
+  scheme_log_name_pfx_message(logger, level, NULL, buffer, len, data, 1);
 }
 
 void scheme_log_abort(char *buffer)
@@ -3825,7 +3853,7 @@ log_message(int argc, Scheme_Object *argv[])
   Scheme_Logger *logger;
   Scheme_Object *bytes;
   Scheme_Object *name;
-  int level, pos;
+  int level, pos, pfx;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
     scheme_wrong_contract("log-message", "logger?", 0, argc, argv);
@@ -3844,8 +3872,15 @@ log_message(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("log-message", "string?", pos, argc, argv);
   bytes = scheme_char_string_to_byte_string(bytes);
   pos++;
+
+  if (argc >= (pos+1))
+    pfx = SCHEME_TRUEP(argv[pos+1]);
+  else
+    pfx = 1;
   
-  scheme_log_name_message(logger, level, name, SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[pos]);
+  scheme_log_name_pfx_message(logger, level, name,
+                              SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[pos],
+                              pfx);
 
   return scheme_void;
 }

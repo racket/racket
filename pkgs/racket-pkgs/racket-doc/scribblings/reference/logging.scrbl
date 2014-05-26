@@ -93,7 +93,7 @@ Creates a new @tech{logger} with an optional name and parent.
 If @racket[notify-callback] is provided, then it is called (under a
 @tech{continuation barrier}) whenever an event is logged to the result
 @tech{logger} or one of its descendants, but only if some @tech{log
-receiver} is inteested in the event in the same sense as
+receiver} is interested in the event in the same sense as
 @racket[log-level?]. The event is not propagated to any @tech{log
 receivers} until @racket[notify-callback] returns.}
 
@@ -128,7 +128,8 @@ created when @racket[define-logger] is evaluated.}
                       [level (or/c 'fatal 'error 'warning 'info 'debug)]
                       [name (or/c symbol? #f) (object-name logger)]
                       [message string?]
-                      [data any/c])
+                      [data any/c]
+                      [prefix-message? any/c #t])
           void?]{
 
 Reports an event to @racket[logger], which in turn distributes the
@@ -137,9 +138,11 @@ its ancestors that are interested in events at @racket[level] or
 higher.
 
 @tech{Log receivers} can filter events based on @racket[name].  In
-addition, if @racket[name] is not @racket[#f], then @racket[message]
-is prefixed with the name followed by @racket[": "] before it is sent
-to receivers.}
+addition, if @racket[name] and @racket[prefix-message?] are not
+@racket[#f], then @racket[message] is prefixed with the name followed
+by @racket[": "] before it is sent to receivers.
+
+@history[#:changed "6.0.1.10" @elem{Added the @racket[prefix-message?] argument.}]}
 
 
 @defproc[(log-level? [logger logger?]
