@@ -216,12 +216,34 @@ code does the parsing and validation of the syntax.
           [(free-identifier-mapping-get safe var (λ () #f))
            (void)]
           [(memf (λ (x) (free-identifier=? x var)) visited)
-           (let ([ids (trim-at var visited)])
-             (raise-syntax-error #f 
-                                 "cyclic dependencies are not allowed"
-                                 stx
-                                 (car ids)
-                                 (cdr ids)))]
+           (define ids (trim-at var visited))
+           (cond
+             [(null? (cdr ids))
+              (raise-syntax-error #f 
+                                  (format "~s's contract depends on ~s's value"
+                                          (syntax-e (car ids))
+                                          (syntax-e (car ids)))
+                                  stx
+                                  (car ids))]
+             [else
+              (raise-syntax-error 
+               #f 
+               (format "generation of ~s's contract depends on ~s's value; specifically:~a~a"
+                       (syntax-e (car ids))
+                       (syntax-e (car ids))
+                       (apply
+                        string-append
+                        (for/list ([i (in-list ids)]
+                                   [j (in-list (cdr ids))])
+                          (format "\n  ~s's contract depends on ~s"
+                                  (syntax-e i)
+                                  (syntax-e j))))
+                       (format " and\n  ~s's contract depends on ~a"
+                               (syntax-e (car (reverse ids)))
+                               (syntax-e (car ids))))
+               stx
+               (car ids)
+               (cdr ids))])]
           [else
            (let ([new-visited (cons var visited)])
              (for ([neighbor (in-list (free-identifier-mapping-get neighbors var))])
