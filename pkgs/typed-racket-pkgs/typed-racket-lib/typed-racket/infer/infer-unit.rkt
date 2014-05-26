@@ -123,7 +123,7 @@
 ;; vars : the variables that are the prefix of the dbound
 ;; dbound : index variable
 (define/cond-contract (move-vars+rest-to-dmap cset vars dbound #:exact [exact? #f])
-  ((cset? symbol? (listof symbol?)) (#:exact boolean?) . ->* . cset?)
+  ((cset? (listof symbol?) symbol?) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound vars
          (λ (cmap)
            ((if exact? make-dcon-exact make-dcon)

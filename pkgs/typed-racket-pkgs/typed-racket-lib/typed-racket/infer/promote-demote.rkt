@@ -3,12 +3,13 @@
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
          (types abbrev union utils structural)
+         (prefix-in c: (contract-req))
          racket/performance-hint
          racket/list racket/match)
 
 (provide/cond-contract
-  [var-promote (-> Type/c (listof symbol?) Type/c)]
-  [var-demote (-> Type/c (listof symbol?) Type/c)])
+  [var-promote (c:-> Type/c (c:listof symbol?) Type/c)]
+  [var-demote (c:-> Type/c (c:listof symbol?) Type/c)])
 
 (define (V-in? V . ts)
   (for/or ([e (in-list (append* (map fv ts)))])
