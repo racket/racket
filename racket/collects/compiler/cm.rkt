@@ -379,8 +379,11 @@
                                (path? (file-dependency-path (vector-ref l 2))))
                         (external-dep! (file-dependency-path (vector-ref l 2))
                                        (file-dependency-module? (vector-ref l 2)))
-                        (log-message orig-log (vector-ref l 0) (vector-ref l 1)
-                                     (vector-ref l 2)))
+                        (log-message orig-log
+                                     (vector-ref l 0) (vector-ref l 3)
+                                     (vector-ref l 1)
+                                     (vector-ref l 2)
+                                     #f))
                       (loop))))))))
 
   ;; Compile the code:
