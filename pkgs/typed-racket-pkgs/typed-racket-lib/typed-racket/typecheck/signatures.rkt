@@ -7,7 +7,7 @@
 
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . full-tc-results/c)]
-   [cond-contracted tc-expr/check (syntax? tc-results/c . -> . full-tc-results/c)]
+   [cond-contracted tc-expr/check (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
    [cond-contracted tc-body (syntax? . -> . full-tc-results/c)]
    [cond-contracted tc-body/check (syntax? tc-results/c . -> . full-tc-results/c)]
@@ -23,7 +23,7 @@
   ([cond-contracted check-class (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]))
 
 (define-signature tc-if^
-  ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results/c) . ->* . full-tc-results/c)]))
+  ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) ((or/c tc-results/c #f)) . ->* . full-tc-results/c)]))
 
 (define-signature tc-literal^
   ([cond-contracted tc-literal (->* (syntax?) ((or/c Type/c #f)) Type/c)]))

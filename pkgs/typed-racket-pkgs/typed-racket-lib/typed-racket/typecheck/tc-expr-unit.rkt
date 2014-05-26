@@ -64,7 +64,7 @@
     ;; typecheck form
     (define t (tc-expr/check/internal form expected))
     (add-typeof-expr form t)
-    (check-below t expected)))
+    (cond-check-below t expected)))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -75,9 +75,9 @@
                           t))]
          [else (tc-error/expr #:stx stx (syntax-e msg))]))
 
-;; tc-expr/check : syntax tc-results -> tc-results
+;; tc-expr/check : syntax maybe[tc-results] -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
-  (--> syntax? tc-results/c full-tc-results/c)
+  (--> syntax? (-or/c tc-results/c #f) full-tc-results/c)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
@@ -90,7 +90,9 @@
        (check-class form expected)]
       [stx:exn-handlers^
        (register-ignored! form)
-       (check-subforms/with-handlers/check form expected)]
+       (if expected
+           (check-subforms/with-handlers/check form expected)
+           (check-subforms/with-handlers form))]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
@@ -102,7 +104,7 @@
          [(tc-result1: t)
           (ret (tc-literal #'val t) -true-filter)]
          [_
-          (ret (tc-literal #'val #f))])]
+          (ret (tc-literal #'val) -true-filter)])]
       ;; syntax
       [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) -true-filter)]
       ;; mutation!
@@ -124,12 +126,16 @@
        (match key-t
          [(tc-result1: (Continuation-Mark-Keyof: rhs))
           (tc-expr/check/type #'e2 rhs)
-          (tc-expr/check #'e3 expected)]
+          (if expected
+              (tc-expr/check #'e3 expected)
+              (tc-expr #'e3))]
          [(? (λ (result)
                (and (identifier? #'e1)
                     (free-identifier=? #'pz:pk #'e1 #f (syntax-local-phase-level)))))
           (tc-expr/check/type #'e2 Univ)
-          (tc-expr/check #'e3 expected)]
+          (if expected
+              (tc-expr/check #'e3 expected)
+              (tc-expr #'e3))]
          [(tc-result1: key-t)
           ;(check-below key-t -Symbol)
           ;; FIXME -- would need to protect `e2` with any-wrap/c contract
@@ -139,7 +145,10 @@
           ;(tc-expr/check #'e3 expected)
           (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t)])]
       ;; application
-      [(#%plain-app . _) (tc/app/check form expected)]
+      [(#%plain-app . _)
+       (if expected
+           (tc/app/check form expected)
+           (tc/app form))]
       ;; #%expression
       [(#%expression e) (tc/#%expression form expected)]
       ;; syntax
@@ -147,18 +156,25 @@
       [(letrec-syntaxes+values stxs vals . body)
        (tc-expr/check (syntax/loc form (letrec-values vals . body)) expected)]
       ;; begin
-      [(begin . es) (tc-body/check #'es expected)]
+      [(begin . es)
+       (if expected
+           (tc-body/check #'es expected)
+           (tc-body #'es))]
       [(begin0 e . es)
        (begin0
-         (tc-expr/check #'e expected)
+         (if expected (tc-expr/check #'e expected) (tc-expr #'e))
          (tc-body/check #'es (tc-any-results -top)))]
       ;; if
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
       ;; lambda
       [(#%plain-lambda formals . body)
-       (tc/lambda/check form #'(formals) #'(body) expected)]
+       (if expected
+           (tc/lambda/check form #'(formals) #'(body) expected)
+           (tc/lambda form #'(formals) #'(body)))]
       [(case-lambda [formals . body] ...)
-       (tc/lambda/check form #'(formals ...) #'(body ...) expected)]
+       (if expected
+           (tc/lambda/check form #'(formals ...) #'(body ...) expected)
+           (tc/lambda form #'(formals ...) #'(body ...)))]
       ;; send
       [(let-values (((_) meth))
          (let-values (((_) rcvr))
@@ -170,7 +186,9 @@
        (register-ignored! form)
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
       ;; kw function def
+      ;; TODO simplify this case
       [(~and (let-values ([(f) fun]) . body) _:kw-lambda^)
+       #:when expected
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
@@ -180,6 +198,7 @@
           (tc-expr form)])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
+       #:when expected
        (define conv-type
          (match expected
            [(tc-result1: fun-type)
@@ -190,89 +209,22 @@
        (if conv-type
            (begin (tc-expr/check/type #'fun conv-type) expected)
            (tc-expr form))]
-      ;; let
-      [(let-values ([(name ...) expr] ...) . body)
-       (tc/let-values #'((name ...) ...) #'(expr ...) #'body expected)]
-      [(letrec-values ([(name ...) expr] ...) . body)
-       (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body expected)]
-      ;; other
-      [_ (int-err "cannot typecheck unknown form : ~s" (syntax->datum form))]
-      )))
-
-;; type check form in the current type environment
-;; if there is a type error in form, or if it has the wrong annotation, error
-;; otherwise, produce the type of form
-;; syntax[expr] -> type
-(define (tc-expr form)
-  ;; do the actual typechecking of form
-  ;; internal-tc-expr : syntax -> Type
-  (define (internal-tc-expr form)
-    (syntax-parse form
-      #:literal-sets (kernel-literals tc-expr-literals)
-      [stx:tr:class^
-       (check-class form #f)]
-      ;;
-      [stx:exn-handlers^
-       (register-ignored! form)
-       (check-subforms/with-handlers form) ]
-      ;; explicit failure
-      [t:typecheck-failure
-       (explicit-fail #'t.stx #'t.message #'t.var)]
-      ;; data
-      [(quote #f) (ret (-val #f) -false-filter)]
-      [(quote #t) (ret (-val #t) -true-filter)]
-
-      [(quote val)  (ret (tc-literal #'val) -true-filter)]
-      ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) -true-filter)]
-      ;; w-c-m
-      [(with-continuation-mark e1 e2 e3)
-       (define key-t (single-value #'e1))
-       (match key-t
-         [(tc-result1: (Continuation-Mark-Keyof: rhs))
-          (tc-expr/check/type #'e2 rhs)
-          (tc-expr #'e3)]
-         [(? (λ (result)
-               (and (identifier? #'e1)
-                    (free-identifier=? #'pz:pk #'e1 #f (syntax-local-phase-level)))))
-          (tc-expr/check/type #'e2 Univ)
-          (tc-expr #'e3)]
-         [(tc-result1: key-t)
-          ;; see comments in the /check variant
-          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t)])]
-      ;; lambda
-      [(#%plain-lambda formals . body)
-       (tc/lambda form #'(formals) #'(body))]
-      [(case-lambda [formals . body] ...)
-       (tc/lambda form #'(formals ...) #'(body ...))]
-      ;; send
-      [(let-values (((_) meth))
-         (let-values (((_) rcvr))
-           (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
-             (let-values ([_arg-var args] ...)
-               (if wrapped-object-check
-                   ignore-this-case
-                   (#%plain-app _ _ _arg-var2 ...))))))
-       (register-ignored! form)
-       (tc/send #'find-app #'rcvr #'meth #'(args ...))]
-      ;; kw function def
       [(~and _:kw-lambda^
-             (let-values ([(f) fun])
-               (let-values _
-                 (#%plain-app
-                  maker
-                  lambda-for-kws
-                  (case-lambda ; wrapper function
-                    (formals . cl-body) ...)
-                  (~or (quote (mand-kw:keyword ...))
-                       (~and _ (~bind [(mand-kw 1) '()])))
-                  (quote (all-kw:keyword ...))
-                  . rst))))
+         (let-values ([(f) fun])
+           (let-values _
+             (#%plain-app
+              maker
+              lambda-for-kws
+              (case-lambda ; wrapper function
+                (formals . cl-body) ...)
+              (~or (quote (mand-kw:keyword ...))
+                   (~and _ (~bind [(mand-kw 1) '()])))
+              (quote (all-kw:keyword ...))
+              . rst))))
        (ret (kw-unconvert (tc-expr/t #'fun)
                           (syntax->list #'(formals ...))
                           (syntax->datum #'(mand-kw ...))
                           (syntax->datum #'(all-kw ...))))]
-      ;; opt function def
       [(~and opt:opt-lambda^
              (let-values ([(f) fun])
                (case-lambda (formals . cl-body) ...)))
@@ -280,55 +232,18 @@
                            (syntax->list #'(formals ...))))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
-       (tc/let-values #'((name ...) ...) #'(expr ...) #'body)]
+       (tc/let-values #'((name ...) ...) #'(expr ...) #'body expected)]
       [(letrec-values ([(name ...) expr] ...) . body)
-       (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body)]
-      ;; mutation!
-      [(set! id val)
-       (match-let* ([(tc-result1: id-t) (tc-expr #'id)]
-                    [(tc-result1: val-t) (tc-expr #'val)])
-         (unless (subtype val-t id-t)
-           (type-mismatch id-t val-t "mutation only allowed with compatible types"))
-         (ret -Void))]
-      ;; top-level variable reference - occurs at top level
-      [(#%top . id) (tc-id #'id)]
-      ;; #%expression
-      [(#%expression e) (tc/#%expression form #f)]
-      ;; #%variable-reference
-      [(#%variable-reference . _)
-       (ret -Variable-Reference)]
-      ;; identifiers
-      [x:identifier (tc-id #'x)]
-      ;; application
-      [(#%plain-app . _) (tc/app form)]
-      ;; if
-      [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els)]
-
-
-
-      ;; syntax
-      ;; for now, we ignore the rhs of macros
-      [(letrec-syntaxes+values stxs vals . body)
-       (tc-expr (syntax/loc form (letrec-values vals . body)))]
-
-      ;; begin
-      [(begin . es) (tc-body #'es)]
-      [(begin0 e . es)
-       (begin0
-         (tc-expr #'e)
-         (tc-body #'es))]
+       (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body expected)]
       ;; other
-      [_ (int-err "cannot typecheck unknown form : ~s" (syntax->datum form))]))
+      [_ (int-err "cannot typecheck unknown form : ~s" (syntax->datum form))])))
 
-  (parameterize ([current-orig-stx form])
-    ;(printf "form: ~a\n" (syntax->datum form))
-    ;; the argument must be syntax
-    (unless (syntax? form)
-      (int-err "bad form input to tc-expr: ~a" form))
-    ;; typecheck form
-    (let ([ty (internal-tc-expr form)])
-      (add-typeof-expr form ty)
-      ty)))
+;; type check form in the current type environment
+;; if there is a type error in form, or if it has the wrong annotation, error
+;; otherwise, produce the type of form
+;; syntax[expr] -> type
+(define (tc-expr form)
+  (tc-expr/check form #f))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
