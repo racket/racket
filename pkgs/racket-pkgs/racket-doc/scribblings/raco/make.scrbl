@@ -303,7 +303,7 @@ out-of-date @filepath{.zo} files instead of re-compiling from source.}
 
 
 @defproc[(make-caching-managed-compile-zo
-          [read-src-syntax (any/c input-port? . -> . syntax?)]
+          [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]
           [#:security-guard security-guard (or/c security-guard? #f) #f])
          (path-string? . -> . void?)]{
 
