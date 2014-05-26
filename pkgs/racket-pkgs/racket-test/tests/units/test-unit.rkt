@@ -1855,4 +1855,36 @@
 
 ;; ----------------------------------------
 
+(module check-define-values-invoke-unit-spec racket/base
+  (require racket/unit)
+
+  (define-signature a^ (foo))
+  (define-signature b^ (bar))
+
+  (define-unit works@
+    (import) (export a^) (define foo 'foo))
+  (define-values/invoke-unit/infer
+    (export (rename a^ [qux foo]))
+    works@)
+
+  (define-unit doesnt@
+    (import) (export b^) (define bar 0))
+  (define-unit work@
+    (import b^) (export a^) (define foo bar))
+  ;; No rename on export
+  (define-values/invoke-unit/infer
+    (export a^)
+    (link doesnt@ work@))
+  ;; Rename on export
+  (define-values/invoke-unit/infer
+    (export (rename a^ [baz foo]))
+    (link doesnt@ work@))
+
+  (provide results)
+  (define results (list foo baz)))
+
+(test '(0 0) (dynamic-require ''check-define-values-invoke-unit-spec 'results))
+
+;; ----------------------------------------
+
 (displayln "tests passed")

@@ -2101,7 +2101,7 @@
              [exports
               (map 
                (lambda (e)
-                 (define tid (check-tagged-id e))
+                 (define tid (check-tagged-spec-syntax e #f identifier?))
                  (define lookup (bound-identifier-mapping-get 
                                  lnk-table
                                  (cdr tid)

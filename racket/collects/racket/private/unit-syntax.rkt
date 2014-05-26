@@ -56,8 +56,8 @@
 
 (define check-tagged-id (check-tagged check-id))
 
-;; check-spec-syntax : syntax-object boolean (syntax-object -> boolean) ->
-;; ensures that s matches spec.
+;; check-spec-syntax : syntax-object boolean (syntax-object -> boolean) -> prim-spec?
+;; ensures that s matches spec, returns the core prim-spec (which is usually an identifier)
 ;; tag-spec ::= spec
 ;;            | (tag symbol spec)
 ;; spec ::= prim-spec
@@ -69,7 +69,9 @@
   ((check-tagged (λ (s) (check-spec-syntax s import? prim-spec?))) s))
 
 (define (check-spec-syntax s import? prim-spec?)
-  (unless (prim-spec? s)
+  (cond
+   [(prim-spec? s) s]
+   [else
     (let ((ie (if import? 'import 'export)))
       (unless (stx-pair? s)
         (raise-stx-err (format "bad ~a spec" ie) s))
@@ -124,7 +126,7 @@
             (syntax->list #'(clause ...)))
            (check-spec-syntax #'sub-s import? prim-spec?)))
         ((k . x)
-         (raise-stx-err (format "bad ~a-spec keyword" ie) #'k))))))
+         (raise-stx-err (format "bad ~a-spec keyword" ie) #'k))))]))
 
 ;; check-unit-syntax : syntax-object -> syntax-object
 ;; ensures that stx matches ((import i ...) (export e ...) b ...)
