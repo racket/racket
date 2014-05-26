@@ -104,6 +104,13 @@
                                      " 'append 'update 'replace 'truncate"
                                      " 'truncate/replace)] [#:mode (U"
                                      " 'binary 'text)] Void)"))
+    (check-prints-as? (-> Univ (-AnyValues -top)) "(-> Any AnyValues)")
+    (check-prints-as? (-> Univ (-AnyValues (-filter -String '(0 0))))
+                      "(-> Any AnyValues : (String @ (0 0)))")
+    (check-prints-as? (-AnyValues -top) "AnyValues")
+    (check-prints-as? (-AnyValues (-filter -String '(0 0)))
+                      "(AnyValues : (String @ (0 0)))")
+
     (check-prints-as? (->opt Univ [] -Void) "(-> Any Void)")
     (check-prints-as? (->opt [-String] -Void) "(->* () (String) Void)")
     (check-prints-as? (->opt Univ [-String] -Void) "(->* (Any) (String) Void)")

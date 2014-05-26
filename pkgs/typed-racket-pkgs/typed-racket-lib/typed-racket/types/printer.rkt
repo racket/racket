@@ -240,7 +240,7 @@
           null)
       (match rng
         [(AnyValues: (Top:)) '(AnyValues)]
-        [(AnyValues: f) `(AnyValues : ,(type->sexp f))]
+        [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
          (list (type->sexp t))]
         [(Values: (list (Result: t
@@ -480,7 +480,7 @@
     [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
     [(AnyValues: (Top:)) 'AnyValues]
-    [(AnyValues: f) (displayln (list 'this-case (NoFilter? f) (Top? f))) `(AnyValues : ,(filter->sexp f))]
+    [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
     [(Values: (list v)) v]
     [(Values: (list v ...)) (cons 'values (map t->s v))]
     [(ValuesDots: v dty dbound)
