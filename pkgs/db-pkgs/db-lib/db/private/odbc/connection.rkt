@@ -30,6 +30,7 @@
                   notice-handler
                   char-mode)
     (init strict-parameter-types?)
+    (super-new)
 
     (define statement-table (make-hasheq))
 
@@ -653,10 +654,6 @@
 
     ;; Handler
 
-    (define add-notice! ;; field, not method; allocate only once
-      (lambda (sqlstate message)
-        (add-delayed-call! (lambda () (notice-handler sqlstate message)))))
-
     (define/private (handle-status who s [handle #f]
                                    #:ignore-ok/info? [ignore-ok/info? #f])
       (define (handle-error e)
@@ -682,9 +679,10 @@
       (with-handlers ([exn:fail? handle-error])
         (handle-status* who s handle
                         #:ignore-ok/info? ignore-ok/info?
-                        #:on-notice add-notice!)))
+                        #:on-notice (lambda (sqlstate msg)
+                                      (add-delayed-call!
+                                       (lambda () (notice-handler sqlstate msg)))))))
 
-    (super-new)
     (register-finalizer this
                         (lambda (obj)
                           ;; Keep a reference to the class to keep all FFI callout objects
