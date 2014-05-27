@@ -16,7 +16,7 @@ END
 
 ;; should error
 (with-handlers ([exn:fail:contract?
-                 (lambda (e)
+                 (lambda: ([e : exn])
                    (when (regexp-match "index is out of range for empty vector"
                                        (exn-message e))
                      (display "passed\n")))])

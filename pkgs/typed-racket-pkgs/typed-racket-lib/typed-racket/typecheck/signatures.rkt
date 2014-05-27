@@ -15,8 +15,7 @@
 
 (define-signature check-subforms^
   ([cond-contracted check-subforms/ignore (syntax? . -> . void?)]
-   [cond-contracted check-subforms/with-handlers (syntax? . -> . full-tc-results/c)]
-   [cond-contracted check-subforms/with-handlers/check (syntax? tc-results/c . -> . full-tc-results/c)]))
+   [cond-contracted check-subforms/with-handlers (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]))
 
 (define-signature check-class^
   ([cond-contracted check-class (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]))

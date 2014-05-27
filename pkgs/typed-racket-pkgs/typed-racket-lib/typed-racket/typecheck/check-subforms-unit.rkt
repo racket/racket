@@ -21,19 +21,6 @@
 ;; get called with the wrong kind of arguments by the exception
 ;; mechanism.  The right thing is to use the exception predicate.
 
-(define (transpose l) (apply map list l))
-
-;; combine-types : Values * -> tc-results
-(define (combine-types . args)
-  (match args
-    [(list (tc-results: tss) ...)
-     (unless (apply = (map length tss))
-       (tc-error "Exception handlers and body did not all have the same number of results: ~a" (map length tss)))
-     ;; transpose and union
-     (let ([ts* (transpose tss)])
-       (ret (map (lambda (ts) (apply Un ts)) ts*)))]
-    [_ (int-err "Internal error: unsupported exception result type in: ~a" args)]))
-
 ;; Does a depth first search of the syntax object. For each sub object it attempts to match it
 ;; against the provide syntax-parse patterns.
 (define-syntax find-syntax
@@ -52,15 +39,14 @@
              [_ (void)])))]))
 
 ;; find the subexpressions that need to be typechecked in an ignored form
-;; syntax -> any
-(define (check-subforms/with-handlers form [expected #f])
-  (define handler-tys '())
-  (define body-ty #f)
-  (define body-stx #f)
+;; syntax (or/c #f tc-results/c) -> full-tc-results/c
+(define (check-subforms/with-handlers form expected)
+  (define handler-results '())
+  (define body-results #f)
   ;; tc-result1 -> tc-results
   ;; The result of applying the function to a single argument of the type of its first argument
   ;; FIXME: This is the wrong type, see above fixme
-  (define (get-result-ty t)
+  (define (get-range-result t)
     (let loop ((t t))
       (match t
         [(Function: (list _ ... (arr: (list arg1) _ _ #f (list (Keyword: _ _ #f) ...)) _ ...))
@@ -81,28 +67,11 @@
     [stx:exn-handler^
      (match (single-value #'stx)
        [(tc-result1: t)
-        (set! handler-tys (cons (get-result-ty t) handler-tys))])]
-    ;; this is the body of the with-handlers
-    [stx:exn-body^
-     (set! body-stx #'stx)
-     (set! body-ty (tc-expr #'stx))])
-  (apply combine-types body-ty handler-tys))
-
-;; syntax tc-results -> tc-results
-(define (check-subforms/with-handlers/check form expected)
-  (define body-results #f)
-  (find-syntax form
-    ;; if this needs to be checked
-    [stx:with-type^
-     ;; the form should be already ascribed the relevant type
-     (tc-expr #'stx)]
-    ;; this is a handler function
-    [stx:exn-handler^
-     (tc-expr/check #'stx (ret (-> (Un) (tc-results->values expected))))]
+        (set! handler-results (cons (get-range-result t) handler-results))])]
     ;; this is the body of the with-handlers
     [stx:exn-body^
      (set! body-results (tc-expr/check #'stx expected))])
-  body-results)
+  (merge-tc-results (cons body-results handler-results)))
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> void
