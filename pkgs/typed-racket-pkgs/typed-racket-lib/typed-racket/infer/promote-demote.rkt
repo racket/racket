@@ -37,29 +37,31 @@
     (define (co t) (structural-recur t 'co))
     (define (contra t) (structural-recur t 'contra))
 
+    ;; arr? -> (or/c #f arr?)
+    ;; Returns the changed arr or #f if there is no arr above it
+    (define (arr-change arr)
+      (match arr
+        [(arr: dom rng rest drest kws)
+         (cond
+           [(apply V-in? V (get-filters rng))
+            #f]
+           [(and drest (memq (cdr drest) V))
+            (make-arr (map contra dom)
+                      (co rng)
+                      (contra (car drest))
+                      #f
+                      (map contra kws))]
+           [else
+            (make-arr (map contra dom)
+                      (co rng)
+                      (and rest (contra rest))
+                      (and drest (cons (contra (car drest)) (cdr drest)))
+                      (map contra kws))])]))
+
     (match T
       [(F: name) (if (memq name V) (if change Univ -Bottom) T)]
       [(Function: arrs)
-       (make-Function
-         (filter values
-           (for/list ([arr (in-list arrs)])
-             (match arr
-              [(arr: dom rng rest drest kws)
-               (cond
-                 [(apply V-in? V (get-filters rng))
-                  #f]
-                 [(and drest (memq (cdr drest) V))
-                  (make-arr (map contra dom)
-                            (co rng)
-                            (contra (car drest))
-                            #f
-                            (map contra kws))]
-                 [else
-                  (make-arr (map contra dom)
-                            (co rng)
-                            (and rest (contra rest))
-                            (and drest (cons (contra (car drest)) (cdr drest)))
-                            (map contra kws))])]))))]
+       (make-Function (filter-map arr-change arrs))]
       [(? structural?) (structural-map T structural-recur)]
       [(? Filter?) ((sub-f co) T)]
       [(? Object?) ((sub-o co) T)]
