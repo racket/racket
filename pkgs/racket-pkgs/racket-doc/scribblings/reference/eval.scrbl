@@ -339,7 +339,7 @@ A list of relative paths, which defaults to @racket[(list
 handler} (see @racket[current-load/use-compiled]).}
 
 
-@defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'path))]{
+@defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'same))]{
 
 A list of paths and @racket['same]s that is is used by the default
 @tech{compiled-load handler} (see @racket[current-load/use-compiled]).
