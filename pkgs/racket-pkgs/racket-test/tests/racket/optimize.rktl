@@ -1158,6 +1158,36 @@
                              (a1)
                              (a2))))
 
+(test-comp '(lambda (y)
+              (let ([f (lambda (x) x)])
+                (if f
+                    (+ y 1)
+                    (- y 1))))
+           '(lambda (y)
+              (+ y 1)))
+
+(test-comp '(module m racket/base
+              (define (f x) x)
+              (define (g y)
+                (if f
+                    (+ y 1)
+                    (- y 1))))
+           '(module m racket/base
+              (define (f x) x)
+              (define (g y)
+                (+ y 1))))
+
+(test-comp '(module m racket/base
+              (struct p (x y) #:omit-define-syntaxes)
+              (define (g y)
+                (if p-x
+                    (+ y 1)
+                    (- y 1))))
+           '(module m racket/base
+              (struct p (x y) #:omit-define-syntaxes)
+              (define (g y)
+                (+ y 1))))
+
 (test-comp '(values 10)
            10)
 (test-comp '(let ([x (values 10)])

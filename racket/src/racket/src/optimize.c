@@ -6005,7 +6005,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_with_cont_mark_type:
     return optimize_wcm(expr, info, context);
   case scheme_compiled_unclosed_procedure_type:
-    return optimize_closure_compilation(expr, info, context);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else
+      return optimize_closure_compilation(expr, info, context);
   case scheme_compiled_let_void_type:
     return scheme_optimize_lets(expr, info, 0, context);
   case scheme_compiled_toplevel_type:
@@ -6025,6 +6028,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       }
 
       if (c) {
+        if (context & OPT_CONTEXT_BOOLEAN)
+          return (SCHEME_FALSEP(c) ? scheme_false : scheme_true);
+
 	if (scheme_compiled_duplicate_ok(c, 0))
 	  return c;
 
@@ -6052,8 +6058,12 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     optimize_info_used_top(info);
     return expr;
   case scheme_compiled_quote_syntax_type:
-    info->size += 1;
-    optimize_info_used_top(info);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else {
+      info->size += 1;
+      optimize_info_used_top(info);
+    }
     return expr;
   case scheme_variable_type:
   case scheme_module_variable_type:
@@ -6070,7 +6080,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_begin_for_syntax_type:
     return begin_for_syntax_optimize(expr, info, context);
   case scheme_case_lambda_sequence_type:
-    return case_lambda_optimize(expr, info, context);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else
+      return case_lambda_optimize(expr, info, context);
   case scheme_begin0_sequence_type:
     return begin0_optimize(expr, info, context);
   case scheme_apply_values_type:
@@ -6943,11 +6956,13 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       if (single_use)
         *single_use = SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
+        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
 	if (!closure_offset)
 	  break;
 	else
           *closure_offset = delta;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_case_lambda_sequence_type)) {
+        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
         if (!closure_offset)
 	  break;
 	else
