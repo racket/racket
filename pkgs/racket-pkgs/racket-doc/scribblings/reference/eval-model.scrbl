@@ -622,18 +622,18 @@ internal effects is not detectable outside of the Racket program.
 External effects are exemplified by input/output (or I/O). I/O is the
 action of a function such as @racket[tcp-connect], which communicates
 with the operating system to send network packets outside of the
-machine running Racket via the electromagnetic spectrum. The
-transmission of these packets is observable outside of Racket, in
-particular by the receiver computer or any routers in
-between. External effects exist to be detectable outside of the Racket
-program and are often detectable using physical processes.
+machine running Racket. The transmission of these packets is
+observable outside of Racket, in particular by the receiver computer
+or any routers in between. External effects exist to be detectable
+outside of the Racket program and are often detectable using physical
+processes.
 
 An effect is @deftech{discarded} when it is no longer detectable. For
 instance, a mutation of a box from @racket[3] to @racket[4] would be
 discarded if it ceases to be detectable that it was ever changed, and
 thus would still contain @racket[3]. Because external effects are
-intrinsically observable outside of Racket, they cannot be discarded,
-because Racket lacks a time-reversal mechanism.
+intrinsically observable outside of Racket, they are irreversible and
+cannot be discarded.
 
 Thus, The Separate Compilation Guarantee only concerns effects like
 mutation, because they are exclusively effects "on the Racket runtime
@@ -671,7 +671,7 @@ compilation of one module to have already compiled a different module.
 In particular, if module A is shared by the phase 1 portion of modules
 X and Y, then any internal effects while X is compiled are not visible
 during the compilation of Y, regardless of whether X and Y are
-compiled during the same Racket runtime system.
+compiled during the same execution of Racket's runtime system.
 
 The following set of modules demonstrate this guarantee. First, we
 define a module with the ability to observe effects via a
@@ -737,6 +737,13 @@ time or separately.
 In contrast, if these modules were changed to store the value of
 @racket[b] in a file on the filesystem, then the program would only
 display @litchar["2"].
+
+The Separate Compilation Guarantee is described in more detail
+in "Composable and Compilable Macros" @cite["Flatt02"], including
+informative examples. The paper "Advanced Macrology and the
+implementation of Typed Scheme" @cite["Culpepper07"] also contains an
+extended example of why it is important and how to design effectful
+syntactic extensions in its presence.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "cross-phase persistent-modules"]{Cross-Phase Persistent Modules}
