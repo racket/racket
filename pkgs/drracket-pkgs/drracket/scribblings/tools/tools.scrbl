@@ -239,6 +239,8 @@ as the @racket[_key] argument to the @racket[_get-info] function to do so:
 @itemize[@item{@language-info-ref[drracket:toolbar-buttons]}
           @item{@language-info-ref[drracket:opt-out-toolbar-buttons]}
           @item{@language-info-ref[definitions-text-surrogate]}
+          @item{@language-info-ref[drracket:default-filters]}
+          @item{@language-info-ref[drracket:default-extension]}
           @item{@language-info-ref[color-lexer]}]
 
 If the call to @racket[read-language] raises an error, DrRacket logs the
@@ -261,6 +263,21 @@ The recognized token styles (specified implicitly via @method[color:text<%> star
           @item{@indexed-racket['error]}
           @item{@indexed-racket['other]}]
 These precise colors for these identifiers are controlled by the preferences dialog in DrRacket.
+
+@language-info-def[drracket:default-filters]{
+  When a language's @racket[_get-info] procedure responds to
+  @racket['drracket:default-filters], it is expected to return
+  @racket[(listof (list/c string? string?))].}
+These results are added as a prefix to @racket[finder:default-filters],
+extending the default that DrRacket normally uses, namely:
+@racketblock[`(["Racket Sources" "*.rkt;*.scrbl;*.rktl;*.rktd;*.ss;*.scm"]
+               ["Any" "*.*"])]
+
+@language-info-def[drracket:default-extension]{
+  When a language's @racket[_get-info] procedure responds to @racket['drracket:default-extension],
+  it is expected to return @racket[(and/c string? (not/c #rx"[.]"))]; the result is used
+  as the default extension when saving files by setting @racket[finder:default-extension].
+}
 
 @subsection{Adding Module-based Languages to DrRacket}
 
