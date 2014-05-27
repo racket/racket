@@ -91,9 +91,7 @@
        (check-class form expected)]
       [stx:exn-handlers^
        (register-ignored! form)
-       (if expected
-           (check-subforms/with-handlers/check form expected)
-           (check-subforms/with-handlers form))]
+       (check-subforms/with-handlers form expected) ]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]

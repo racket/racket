@@ -118,7 +118,8 @@
 
    ;; exception handling
    [tc-e (with-handlers ([void (λ (x) (values 0 0))]) (values  "" ""))
-         #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String)))]
+         #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String))
+                    (list -true-filter -true-filter))]
 
    (tc-e (make-temporary-file) -Path)
    (tc-e (make-temporary-file "ee~a") -Path)

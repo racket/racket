@@ -2946,6 +2946,12 @@
          #:expected (ret -Nat -no-filter)]
 
        [tc-e
+         (with-handlers ([exn:fail? (λ (exn) #f)])
+            5)
+         #:ret (ret Univ -top-filter)
+         #:expected (ret Univ -no-filter)]
+
+       [tc-e
          (lambda (a . b) (apply values a b))
 
          #:ret (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
