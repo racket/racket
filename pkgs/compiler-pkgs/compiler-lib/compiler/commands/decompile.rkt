@@ -3,6 +3,7 @@
          raco/command-name
          compiler/zo-parse
          compiler/decompile
+         compiler/compilation-path
          racket/pretty
          racket/format)
 
@@ -75,7 +76,7 @@
 (for ([zo-file source-files])
   (let ([zo-file (path->complete-path zo-file)])
     (let-values ([(base name dir?) (split-path zo-file)])
-      (let ([alt-file (build-path base "compiled" (path-add-suffix name #".zo"))])
+      (let ([alt-file (get-compilation-bytecode-file zo-file)])
         (check-files zo-file alt-file)
         (parameterize ([current-load-relative-directory base]
                        [print-graph #t])
