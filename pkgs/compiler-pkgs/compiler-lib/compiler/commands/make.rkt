@@ -3,6 +3,7 @@
          raco/command-name
          compiler/cm
          compiler/compiler
+         compiler/compilation-path
          dynext/file
          setup/parallel-build
          setup/path-to-relative
@@ -89,14 +90,10 @@
                            [compile-enforce-module-constants
                             (not (disable-const))])
               (managed-compile-zo file))
-            (let ([dest (append-zo-suffix
-                         (let-values ([(base name dir?) (split-path file)])
-                           (build-path (if (symbol? base) 'same base)
-                                       "compiled" name)))])
-              (when (verbose)
-                (printf " [~a \"~a\"]\n"
-                        (if did-one? "output to" "already up-to-date at")
-                        dest)))))))]
+            (when (verbose)
+              (printf " [~a \"~a\"]\n"
+                      (if did-one? "output to" "already up-to-date at")
+                      (get-compilation-bytecode-file file)))))))]
   ;; Parallel make:
   [else
    (define path-cache (make-hash))
