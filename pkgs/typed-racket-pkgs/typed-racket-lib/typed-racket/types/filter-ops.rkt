@@ -52,6 +52,8 @@
     [(_ (Bot:)) #t]
     [((OrFilter: fs) f2)
      (memf (lambda (f) (filter-equal? f f2)) fs)]
+    [(f1 (AndFilter: fs))
+     (memf (lambda (f) (filter-equal? f f1)) fs)]
     [((TypeFilter: t1 p1 i1)
       (TypeFilter: t2 p1 i2))
      (and (name-ref=? i1 i2)
