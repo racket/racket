@@ -809,7 +809,8 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ Univ : (-FS  (-not-filter (-val #f) 0) (-filter (-val #f) 0)))]
+                (t:-> Univ Univ : (-FS  (-not-filter (-val #f) 0) (-filter (-val #f) 0))
+                                : (make-Path null '(0 0)))]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) (ann (add1 7) Any) 12)))
@@ -821,7 +822,8 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ Univ : (-FS (-not-filter (-val #f) 0) (-filter (-val #f) 0)))]
+                (t:-> Univ Univ : (-FS (-not-filter (-val #f) 0) (-filter (-val #f) 0))
+                                : (make-Path null '(0 0)))]
 
         [tc-e (not 1)
           #:ret (ret -Boolean -false-filter)]

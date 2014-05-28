@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match racket/list
-         (except-in (types abbrev union utils filter-ops)
+         (except-in (types abbrev union utils filter-ops tc-result)
                     -> ->* one-of/c)
          (rep type-rep filter-rep object-rep rep-utils)
          (typecheck tc-subst)
@@ -10,6 +10,7 @@
 
 (provide abstract-results
          combine-props
+         merge-tc-results
          tc-results->values)
 
 
@@ -234,3 +235,56 @@
             [(Top:) (loop derived-formulas derived-atoms (cdr worklist))]
             [(Bot:) (set-box! flag #f) (values derived-formulas derived-atoms)])))))
 
+
+(define (unconditional-prop res)
+  (match res
+    [(tc-any-results: f) f]
+    [(tc-results (list (tc-result: _ (FilterSet: f+ f-) _) ...) _)
+     (apply -and (map -or f+ f-))]))
+
+(define (merge-tc-results results)
+  (define/match (merge-tc-result r1 r2)
+    [((tc-result: t1 (FilterSet: f1+ f1-) o1)
+      (tc-result: t2 (FilterSet: f2+ f2-) o2))
+     (tc-result
+       (Un t1 t2)
+       (-FS (-or f1+ f2+) (-or f1- f2-))
+       (if (equal? o1 o2) o1 -empty-obj))])
+
+  (define/match (same-dty? r1 r2)
+    [(#f #f) #t]
+    [((cons t1 dbound) (cons t2 dbound)) #t]
+    [(_ _) #f])
+  (define/match (merge-dty r1 r2)
+    [(#f #f) #f]
+    [((cons t1 dbound) (cons t2 dbound))
+     (cons (Un t1 t2) dbound)])
+
+  (define/match (number-of-values res)
+    [((tc-results rs #f))
+     (length rs)]
+    [((tc-results rs (cons _ dbound)))
+     (format "~a and ... ~a" (length rs) dbound)])
+
+
+  (define/match (merge-two-results res1 res2)
+    [((tc-result1: (== -Bottom)) res2) res2]
+    [(res1 (tc-result1: (== -Bottom))) res1]
+    [((tc-any-results: f1) res2)
+     (tc-any-results (-or f1 (unconditional-prop res2)))]
+    [(res1 (tc-any-results: f2))
+     (tc-any-results (-or (unconditional-prop res1) f2))]
+    [((tc-results results1 dty1) (tc-results results2 dty2))
+     ;; if we have the same number of values in both cases
+     (cond
+       [(and (= (length results1) (length results2))
+             (same-dty? dty1 dty2))
+        (tc-results (map merge-tc-result results1 results2)
+                    (merge-dty dty1 dty2))]
+       ;; otherwise, error
+       [else
+        (tc-error/expr "Expected the same number of values, but got ~a and ~a"
+                         (length res1) (length res2))])])
+
+  (for/fold ([res (ret -Bottom)]) ([res2 (in-list results)])
+    (merge-two-results res res2)))
