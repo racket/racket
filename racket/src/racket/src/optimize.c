@@ -2526,13 +2526,22 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
-        /* (cdr (cons X Y)) */
+        /* (cdr ({cons|list|list*} X Y)) */
         if (SAME_OBJ(scheme_cons_proc, app3->rator)
-            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)) {
+            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
+            || SAME_OBJ(scheme_list_proc, app3->rator)
+            || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
           if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
                || single_valued_noncm_expression(app3->rand2, 5))
               && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
-            alt = app3->rand2;
+            if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+              alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
+                                                             scheme_make_pair(app3->rand2,
+                                                                              scheme_null)),
+                                            info);
+              SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+            } else
+              alt = app3->rand2;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
@@ -2542,6 +2551,42 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
                || single_valued_noncm_expression(app3->rand2, 5))
               && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
             alt = app3->rand2;
+          }
+        }
+      }
+    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application_type)) {
+      Scheme_App_Rec *appr = (Scheme_App_Rec *)rand;
+      Scheme_Object *r = appr->args[0];
+      if (IS_NAMED_PRIM(app->rator, "car")) {
+        if ((appr->args > 0)
+            && (SAME_OBJ(scheme_list_proc, r)
+                || SAME_OBJ(scheme_list_star_proc, r))) {
+          /* (car ({list|list*} X Y ...)) */
+          if (scheme_omittable_expr(appr->args[1], 1, 5, 0, info, NULL, -1, 0)
+              || single_valued_noncm_expression(appr->args[1], 5)) {
+            int k;
+            for (k = appr->num_args; k > 1; k--) {
+              if (!scheme_omittable_expr(appr->args[k], 1, 5, 0, info, NULL, -1, 0))
+                break;
+            }
+            if (k <= 1)
+              alt = appr->args[1];
+          }
+        }
+      } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+        /* (cdr ({list|list*} X Y ...)) */
+        if ((appr->args > 0)
+            && (SAME_OBJ(scheme_list_proc, r)
+                || SAME_OBJ(scheme_list_star_proc, r))) {
+          if (scheme_omittable_expr(appr->args[1], 1, 5, 0, info, NULL, -1, 0)) {
+            Scheme_Object *al = scheme_null;
+            int k;
+            for (k = appr->num_args; k > 1; k--) {
+              al = scheme_make_pair(appr->args[k], al);
+            }
+            al = scheme_make_pair(r, al);
+            alt = scheme_make_application(al, info);
+            SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
           }
         }
       }
