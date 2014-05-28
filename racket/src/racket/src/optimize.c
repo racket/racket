@@ -911,7 +911,7 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k)
 }
 
 static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
-/* Non-omittable but single-valued expresions that are not sensitive
+/* Non-omittable/non-copyable but single-valued expresions that are not sensitive
    to being in tail position. */
 {
   Scheme_Object *rator = NULL;
@@ -937,6 +937,10 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
        return single_valued_noncm_expression(clv->body, fuel - 1);
      }
    }
+   break;
+ default:
+   if (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
+     return 1;
    break;
  }
 

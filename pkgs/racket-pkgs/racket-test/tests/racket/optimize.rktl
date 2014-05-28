@@ -1565,6 +1565,11 @@
   (check '(case-lambda [() 1] [(x y) x]) '(0 2) '(1 3))
   (check '(lambda (x [y #f]) y) '(1 2) '(0 3)))
 
+(test-comp '(lambda ()
+              (let ([l '(1 2)])
+                (car l)))
+           '(lambda () 1))
+
 (let ([test-dropped
        (lambda (cons-name . args)
          (test-comp `(let ([x 5])
@@ -1666,7 +1671,8 @@
     (test-move '(cons 1 2 3) #f)
     (test-move '(mcons 1 2 3) #f)
     (test-move '(box 1 2) #f)
-    (test-move '(box-immutable 1 2) #f)))
+    (test-move '(box-immutable 1 2) #f)
+    (test-move '(quote (1 2)) #t)))
 
 ;; Check move in to `else` branch where `then`
 ;; branch might capture a continuation
