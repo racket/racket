@@ -1,7 +1,8 @@
 #lang racket
 
 (require redex/reduction-semantics)
-(require "grammar.rkt" "util.rkt")
+(require redex/examples/racket-machine/grammar 
+         redex/examples/racket-machine/util)
 
 (define (bytecode-ok? e)
   (not (eq? 'invalid (car (term (verify ,e () 0 #f () () ∅))))))

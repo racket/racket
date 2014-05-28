@@ -1,10 +1,10 @@
 #lang racket
 
 (require redex/reduction-semantics
-         (only-in "grammar.rkt" bytecode)
-         (only-in "reduction.rkt" -> load runtime)
-         (only-in "verification.rkt" bytecode-ok?)
-         "model-impl.rkt"
+         (only-in redex/examples/racket-machine/grammar bytecode)
+         (only-in redex/examples/racket-machine/reduction -> load runtime)
+         (only-in redex/examples/racket-machine/verification bytecode-ok?)
+         redex/examples/racket-machine/model-impl
          compiler/zo-parse compiler/zo-marshal)
 
 (provide (all-defined-out))

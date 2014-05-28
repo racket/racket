@@ -21,6 +21,7 @@ and the @tt{examples} subdirectory in the @tt{redex} collection.
 
 @include-section["scribblings/tut.scrbl"]
 @include-section["scribblings/ref.scrbl"]
+@include-section["scribblings/benchmark.scrbl"]
 
 @index-section[]
 
