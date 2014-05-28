@@ -2354,6 +2354,105 @@ static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, const char *
   }
 }
 
+static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *arg_rator,
+                                           int argc,
+                                           Scheme_App2_Rec *arg_app2,
+                                           Scheme_App3_Rec *arg_app3,
+                                           Scheme_App_Rec *arg_app,
+                                           Optimize_Info *info)
+/* Change (pair? (list X complex-Y Z)) => (begin complex-Y #t), etc.
+   So much more could be done with type inference, but we're checking some
+   known predicates against the results of some known constructors, because
+   it's especially nice to avoid the constructions. */
+{
+  Scheme_Type get_type, want_type;
+  int i, count;
+  Scheme_Object *arg;
+  Scheme_Sequence *s;
+
+  if (!SCHEME_PRIMP(arg_rator))
+    return NULL;
+  else if ((SAME_OBJ(scheme_cons_proc, arg_rator)
+            || SAME_OBJ(scheme_unsafe_cons_list_proc, arg_rator))
+           && (argc == 2))
+    get_type = scheme_pair_type;
+  else if (SAME_OBJ(scheme_mcons_proc, arg_rator) && (argc == 2))
+    get_type = scheme_mutable_pair_type;
+  else if (SAME_OBJ(scheme_list_proc, arg_rator) && (argc > 0))
+    get_type = scheme_pair_type;
+  else if (SAME_OBJ(scheme_list_star_proc, arg_rator) && (argc > 1))
+    get_type = scheme_pair_type;
+  else if (SAME_OBJ(scheme_vector_proc, arg_rator))
+    get_type = scheme_vector_type;
+  else if (SAME_OBJ(scheme_vector_immutable_proc, arg_rator))
+    get_type = scheme_vector_type;
+  else if (SAME_OBJ(scheme_box_proc, arg_rator) && (argc == 1))
+    get_type = scheme_box_type;
+  else if (SAME_OBJ(scheme_box_immutable_proc, arg_rator) && (argc == 1))
+    get_type = scheme_box_type;
+  else
+    return NULL;
+
+  if (IS_NAMED_PRIM(rator, "pair?"))
+    want_type = scheme_pair_type;
+  else if (IS_NAMED_PRIM(rator, "null?"))
+    want_type = scheme_null_type;
+  else if (IS_NAMED_PRIM(rator, "mpair?"))
+    want_type = scheme_mutable_pair_type;
+  else if (IS_NAMED_PRIM(rator, "vector?"))
+    want_type = scheme_vector_type;
+  else if (IS_NAMED_PRIM(rator, "box?"))
+    want_type = scheme_box_type;
+  else
+    return NULL;
+
+  count = 0;
+
+  for (i = 0; i < argc; i++) {
+    if (arg_app2)
+      arg = arg_app2->rand;
+    else if (arg_app3)
+      arg = (i ? arg_app3->rand2 : arg_app3->rand1);
+    else
+      arg = arg_app->args[i+1];
+
+    if (!scheme_omittable_expr(arg, 1, -1, 0, info, info, -1, 0))
+      count++;
+  }
+
+  if (!count)
+    return ((want_type == get_type) ? scheme_true : scheme_false);
+
+  s = scheme_malloc_sequence(count+1);
+  s->so.type = scheme_sequence_type;
+  s->count = count+1;
+
+  count = 0;
+
+  for (i = 0; i < argc; i++) {
+    if (arg_app2)
+      arg = arg_app2->rand;
+    else if (arg_app3)
+      arg = (i ? arg_app3->rand2 : arg_app3->rand1);
+    else
+      arg = arg_app->args[i+1];
+
+    if (!scheme_omittable_expr(arg, 1, -1, 0, info, info, -1, 0)) {
+      if (!single_valued_noncm_expression(arg, 5)) {
+        /* wrap with `values` create a single-value context */
+        arg = scheme_make_application(scheme_make_pair(scheme_values_func,
+                                                       scheme_make_pair(arg, scheme_null)),
+                                      info);
+      }
+      s->array[count++] = arg;
+    }
+  }
+
+  s->array[count++] = ((want_type == get_type) ? scheme_true : scheme_false);
+
+  return (Scheme_Object *)s;
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App2_Rec *app;
@@ -2511,6 +2610,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             alt = scheme_null;
         }
       }
+      if (!alt)
+        alt = try_reduce_predicate(app->rator, app2->rator, 1, app2, NULL, NULL, info);
     } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application3_type)) {
       Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
       if (IS_NAMED_PRIM(app->rator, "car")) {
@@ -2553,7 +2654,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             alt = app3->rand2;
           }
         }
-      }
+      } else
+        alt = try_reduce_predicate(app->rator, app3->rator, 2, NULL, app3, NULL, info);
     } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application_type)) {
       Scheme_App_Rec *appr = (Scheme_App_Rec *)rand;
       Scheme_Object *r = appr->args[0];
@@ -2589,7 +2691,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
           }
         }
-      }
+      } else
+        alt = try_reduce_predicate(app->rator, appr->args[0], appr->num_args, NULL, NULL, appr, info);
     } else {
       check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
       check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
