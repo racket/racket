@@ -3709,12 +3709,12 @@ An example
 
 (define (find-method/who who in-object name)
   (cond
-    [(_object? in-object)
-     (define cls (object-ref in-object #f))
-     (define mth-idx (hash-ref (class-method-ht cls) name #f))
-     (if mth-idx
-         (vector-ref (class-methods cls) mth-idx)
-         (no-such-method who name cls))]
+    [(object-ref in-object #f) ; non-#f result implies `_object?`
+     => (lambda (cls)
+          (define mth-idx (hash-ref (class-method-ht cls) name #f))
+          (if mth-idx
+              (vector-ref (class-methods cls) mth-idx)
+              (no-such-method who name cls)))]
     [(wrapped-object? in-object)
      (define cls
        (let loop ([obj in-object])
