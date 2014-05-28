@@ -476,7 +476,7 @@
         [tc-e/t (tr:case-lambda [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
         [tc-e (let: ([x : Number 5]) x) -Number]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
-        [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y)))
+        [tc-e (let-values ([(x y) (values 3 #t)]) (and (= x 1) (not y)))
               #:ret (ret -Boolean -false-filter)]
         [tc-e/t (values 3) -PosByte]
         [tc-e (values) #:ret (ret null)]
@@ -728,8 +728,8 @@
 
         [tc-err (let: ([x : Any 3])
                       (car x))]
-        [tc-err (car #{3 : Any})]
-        [tc-err (map #{3 : Any} #{12 : Any})]
+        [tc-err (car 3)]
+        [tc-err (map 3 12)]
         [tc-err (car 3)]
 
         [tc-e/t (let: ([x : Any 1])
@@ -962,7 +962,7 @@
         [tc-e/t (let ()
                   (define: (f [x : Number]) : Number
                     (define: (g [y : Number]) : Number
-                      (let*-values ([(#{z : Number} #{w : Number}) (values (g (f x)) 5)])
+                      (let*-values ([(z w) (values (g (f x)) 5)])
                         (+ z w)))
                     (g 4))
                   5)
@@ -1921,7 +1921,7 @@
               -Void]
         [tc-err
           (ann
-            ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
+            ((letrec ((x (lambda (acc v) (if v (list v) acc)))) x) null (list 'bad 'prog))
             (Listof Symbol))
           #:ret (ret (-lst -Symbol) -top-filter -empty-obj)]
         [tc-e (filter values empty)
