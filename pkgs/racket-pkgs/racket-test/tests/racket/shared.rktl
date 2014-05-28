@@ -3,13 +3,18 @@
 
 (Section 'shared)
 
-(require mzlib/shared)
+(require racket/shared
+         racket/undefined)
 
 (require (only-in mzscheme define-struct))
 (load-relative "shared-tests.rktl")
 
 (err/rt-test (shared ([x x]) x) exn:fail:contract:variable?)
 (err/rt-test (shared ([x y][y x]) x) exn:fail:contract:variable?)
+
+(test 3 'unbox (shared ([y (box 3)]
+                        [x (box (unbox y))])
+                 (unbox x)))
 
 (namespace-require/copy 'scheme/base)
 (require (only-in mzscheme define-struct))

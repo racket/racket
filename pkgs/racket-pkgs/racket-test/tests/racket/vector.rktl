@@ -221,6 +221,7 @@
   (let ([vec (vector 1 -2 -3)])
     (test #(1 2 3) vector-map! (lambda (x y) (max x y)) vec #(0 2 3))
     (test #(1 2 3) values vec))
+  (err/rt-test (vector-map! add1 #(1)))
   (err/rt-test (vector-map 1 #()) (check-regs #rx"vector-map" #rx"procedure"))
   (err/rt-test (vector-map (lambda (x) x) 1) (check-regs #rx"vector-map" #rx"vector"))
   (err/rt-test (vector-map (lambda (x) x) #() 1) (check-regs #rx"vector-map" #rx"vector"))

@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "guide-utils.rkt")
+@(require scribble/manual scribble/eval "guide-utils.rkt"
+          (for-label racket/undefined
+                     racket/shared))
 
 @title[#:tag "void+undefined"]{Void and Undefined}
 
@@ -21,21 +23,18 @@ directly to @|void-const|.)
 (list (void))
 ]
 
-A constant that prints as @undefined-const is used as the result of a
-reference to a local binding when the binding is not yet
-initialized. Such early references are not possible for bindings that
-correspond to procedure arguments, @racket[let] bindings, or
-@racket[let*] bindings; early reference requires a recursive binding
-context, such as @racket[letrec] or local @racket[define]s in a
-procedure body. Also, early references to top-level and module-level
-bindings raise an exception, instead of producing
-@|undefined-const|. For these reasons, @undefined-const rarely
-appears.
+The @racket[undefined] constant, which prints as @|undefined-const|, is
+sometimes used as the result of a reference whose value is not yet
+available. In previous versions of Racket (before version 6.1),
+referencing a local binding too early produced @|undefined-const|;
+too-early references now raise an exception, instead.
+
+@margin-note{The @racket[undefined] result can still be produced
+in some cases by the @racket[shared] form.}
 
 @def+int[
-(define (strange)
+(define (fails)
   (define x x)
   x)
-(strange)
+(fails)
 ]
-

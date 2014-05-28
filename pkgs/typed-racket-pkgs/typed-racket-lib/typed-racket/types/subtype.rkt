@@ -3,7 +3,7 @@
          racket/match racket/function racket/lazy-require racket/list
          (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
-         (utils tc-utils)
+         (utils tc-utils early-return)
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
          (for-syntax racket/base syntax/parse unstable/sequence))
@@ -98,8 +98,6 @@
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
     (match* (s t)
-      ;; top for functions is above everything
-      [(_ (top-arr:)) A0]
       ;; the really simple case
       [((arr: s1 s2 #f #f '())
         (arr: t1 t2 #f #f '()))
@@ -226,16 +224,6 @@
 	       (subtype* s t)
 	       (subtype* t s)))
 
-(define-syntax (early-return stx)
-  (syntax-parse stx
-    [(_ e:expr ... #:return-when e0:expr e1:expr rest ...)
-     #'(let ()
-         e ...
-         (if e0 e1
-             (early-return rest ...)))]
-    [(_ e:expr ...) #'(let () e ...)]))
-
-
 (define bottom-key (Rep-seq -Bottom))
 (define top-key (Rep-seq Univ))
 
@@ -268,7 +256,6 @@
          ;; these cases are above as special cases
          ;; [((Union: (list)) _) A0] ;; this is extremely common, so it goes first
          ;; [(_ (Univ:)) A0]
-         [((or (ValuesDots: _ _ _) (Values: _) (AnyValues:)) (AnyValues:)) A0]
          ;; error is top and bot
          [(_ (Error:)) A0]
          [((Error:) _) A0]
@@ -311,7 +298,7 @@
          [((MPair: t1 t2) (Sequence: (list t*)))
           (subtype-seq A0
                        (subtype* t1 t*)
-                       (subtype* t2 (simple-Un (-val null) (make-MPairTop)))
+                       (subtype* t2 (simple-Un -Null (make-MPairTop)))
                        (subtype* t2 t))]
          ;; Note: this next case previously used the List: match expander, but
          ;;       using that would cause an infinite loop in certain cases
@@ -330,6 +317,8 @@
           (subtype* A0 t t*)]
          [((Base: 'FlVector _ _ _) (Sequence: (list t*)))
           (subtype* A0 -Flonum t*)]
+         [((Base: 'ExtFlVector _ _ _) (Sequence: (list t*)))
+          (subtype* A0 -ExtFlonum t*)]
          [((Base: 'FxVector _ _ _) (Sequence: (list t*)))
           (subtype* A0 -Fixnum t*)]
          [((Base: 'String _ _ _) (Sequence: (list t*)))
@@ -563,7 +552,18 @@
          ;; subtyping on values is pointwise
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
          [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
-          (subtype* (subtypes* A0 s-rs t-rs) s-dty t-dty)]
+          (subtype-seq A0
+                       (subtypes* s-rs t-rs)
+                       (subtype* s-dty t-dty))]
+         [((AnyValues: s-f) (AnyValues: t-f))
+          (filter-subtype* A0 s-f t-f)]
+         [((or (Values: (list (Result: _ fs _) ...))
+               (ValuesDots: (list (Result: _ fs _) ...) _ _))
+           (AnyValues: t-f))
+          (for/or ([f (in-list fs)])
+            (match f
+              [(FilterSet: f+ f-)
+               (and (filter-subtype* A0 f+ t-f) (filter-subtype* A0 f+ t-f) A0)]))]
          [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
           (subtype-seq A0
                        (subtype* t t*)

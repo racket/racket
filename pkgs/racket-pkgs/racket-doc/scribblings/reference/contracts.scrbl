@@ -419,7 +419,7 @@ produced.  Otherwise, an impersonator contract is produced.
 }
 
 
-@defform/subs[(struct/dc struct-id field-spec ...)
+@defform/subs[(struct/dc struct-id field-spec ... maybe-inv)
               ([field-spec [field-name maybe-lazy contract-expr]
                            [field-name (dep-field-name ...)
                                        maybe-lazy
@@ -431,7 +431,9 @@ produced.  Otherwise, an impersonator contract is produced.
                            (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
                [maybe-contract-type (code:line) #:flat #:chaperone #:impersonator]
-               [maybe-dep-state (code:line) #:depends-on-state])]{
+               [maybe-dep-state (code:line) #:depends-on-state]
+               [maybe-inv (code:line)
+                          (code:line #:inv (dep-field-name ...) invariant-expr)])]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 contracts produced by the @racket[field-spec]s.
@@ -468,6 +470,10 @@ each time the corresponding field is accessed (or mutated, if it is a mutable
 field). Otherwise, the contract expression for a dependent field contract
 is evaluated when the contract is applied to a value.
 
+If the @racket[#:inv] clause appears, then the invariant expression is 
+evaluated (and must return a non-@racket[#f] value) when the contract
+is applied to a struct.
+
 Contracts for immutable fields must be either flat or chaperone contracts.
 Contracts for mutable fields may be impersonator contracts.
 If all fields are immutable and the @racket[contract-expr]s evaluate
@@ -490,8 +496,8 @@ inspect the entire tree.
                                 [left (val) #:lazy (bst lo val)]
                                 [right (val) #:lazy (bst val hi)])))]
 
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }
-
 
 @defproc[(parameter/c [in contract?] [out contract? in])
          contract?]{
@@ -1151,7 +1157,7 @@ if they do not, a contract violation is signaled.
 ]
 }
 
-@defproc[(new-∀/c [name symbol?]) contract?]{
+@defproc[(new-∀/c [name (or/c symbol? #f) #f]) contract?]{
   Constructs a new universal contract.
 
   Universal contracts accept all values when in negative positions (e.g., function
@@ -1160,22 +1166,22 @@ if they do not, a contract violation is signaled.
   a universal contract accepts only values that were previously accepted
   in negative positions (by checking for the wrappers).
 
-  The name is used to identify the contract in error messages.
+  The name is used to identify the contract in error messages and defaults
+  to a name based on the lexical context of @racket[new-∀/c].
 
   For example, this contract:
   @racketblock[(let ([a (new-∀/c 'a)])
                  (-> a a))]
-  describes the identity function (or a non-terminating function)
+  describes the identity function (or a non-terminating function).
   That is, the first use of the @racket[a] appears in a
   negative position and thus inputs to that function are wrapped with an opaque struct.
   Then, when the function returns, it is checked to determine whether the result is wrapped, since
   the second @racket[a] appears in a positive position.
 
   The @racket[new-∀/c] construct constructor is dual to @racket[new-∃/c].
-
 }
 
-@defproc[(new-∃/c [name symbol?]) contract?]{
+@defproc[(new-∃/c [name (or/c symbol? #f) #f]) contract?]{
   Constructs a new existential contract.
 
   Existential contracts accept all values when in positive positions (e.g., function
@@ -1184,7 +1190,8 @@ if they do not, a contract violation is signaled.
   they accepts only values that were previously accepted in positive positions (by checking
   for the wrappers).
 
-  The name is used to identify the contract in error messages.
+  The name is used to identify the contract in error messages and defaults
+  to a name based on the lexical context of @racket[new-∀/c].
 
   For example, this contract:
   @racketblock[(let ([a (new-∃/c 'a)])
@@ -2237,11 +2244,24 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
-           generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c)
-                 #f)
-           #f])
+          [#:generate
+           generate
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
+           #f]
+          [#:exercise
+           exercise
+           (->i ([c contract?])
+                ([result
+                  (c)
+                  (-> (and/c positive? real?)
+                      (values
+                       (-> c void?)
+                       (listof contract?)))]))])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
           [#:name
@@ -2271,11 +2291,24 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
-           generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c) 
-                 #f)
-           #f])
+          [#:generate
+           generate
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
+           #f]
+          [#:exercise
+           exercise
+           (->i ([c contract?])
+                ([result
+                  (c)
+                  (-> (and/c positive? real?)
+                      (values
+                       (-> c void?)
+                       (listof contract?)))]))])
          chaperone-contract-property?]
 @defproc[(build-contract-property
           [#:name
@@ -2305,18 +2338,31 @@ is expected to be the contract on the value).
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
-          [#:generator
-           generator
-           (or/c (-> number? (listof (list any/c contract?)) any/c) 
-                 #f)
-           #f])
+          [#:generate
+           generate
+           (->i ([c contract?])
+                ([generator 
+                  (c)
+                  (-> (and/c positive? real?) 
+                      (or/c #f
+                            (-> c)))]))
+           #f]
+          [#:exercise
+           exercise
+           (->i ([c contract?])
+                ([result
+                  (c)
+                  (-> (and/c positive? real?)
+                      (values
+                       (-> c void?)
+                       (listof contract?)))]))])
          contract-property?])]{
 
       @italic{The precise details of the 
            @racket[val-first-projection] argument
            are subject to change. (Probably
            also the default values of the @racket[project] 
-           arguments will change.}
+           arguments will change.)}
 
    
 These functions build the arguments for @racket[prop:contract],
@@ -2330,9 +2376,12 @@ which produces a description to @racket[write] as part of a contract violation;
 produces a blame-tracking projection defining the behavior of the contract;
 @racket[stronger], which is a predicate that determines whether this contract
 (passed in the first argument) is stronger than some other contract (passed
-in the second argument); and @racket[generator], which makes a random value
-that matches the contract, given a size bound and an environment from which
-to draw interesting values.
+in the second argument); @racket[generate], which returns a thunk
+that generates random values matching the contract or @racket[#f], indicating
+that random generation for this contract isn't supported; and @racket[exercise],
+which returns a function that exercises values matching the contract (e.g.,
+if it is a function contract, it may call the function) and a list of contracts
+whose values will be generated by this process.
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the
@@ -2717,18 +2766,24 @@ parts of the contract system.
 @section{Random generation}
 
 @defproc[(contract-random-generate [ctc contract?]
-                                   [fuel int?]
-                                   [fail (-> any/c) (λ () (error ...))])
+                                   [fuel 5 exact-nonnegative-integer?]
+                                   [fail (or/c #f (-> any)) #f])
          any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
 argument limits how hard the generator tries to generate a value matching the
 contract and is a rough limit of the size of the resulting value.
 
-The generator may fail to generate a contract, either because some contracts
+The generator may fail to generate a value, either because some contracts
 do not have corresponding generators (for example, not all predicates have
 generators) or because there is not enough fuel. In either case, the
 thunk @racket[fail] is invoked.
 }
 
-
-
+@defproc[(contract-exercise [val any/c] ...+) void?]{
+  Attempts to get the @racket[val]s to break their contracts (if any).
+                  
+  Uses @racket[value-contract] to determine if any of the @racket[val]s have a
+  contract and, for those that do, uses information about the contract's shape
+  to poke and prod at the value. For example, if the value is function, it will
+  use the contract to tell it what arguments to supply to the value. 
+}

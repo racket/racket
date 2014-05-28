@@ -49,6 +49,7 @@
   (plambda typechecker:plambda)
   (ignore typechecker:ignore #:mark)
   (ignore-some typechecker:ignore-some #:mark)
+  (ignore-some-expr typechecker:ignore-some)
   (contract-def/maker typechecker:contract-def/maker)
   (contract-def typechecker:contract-def)
   (flat-contract-def typechecker:flat-contract-def)

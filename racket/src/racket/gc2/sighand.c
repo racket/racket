@@ -82,7 +82,7 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
       /* supposedly its coming from the user via kill */
       /* so just ignore it. It appears when */
       /* running w/ places in GDB */
-      printf("SIGSEGV SI_USER SI_CODE %i fault on addr %p\n", c, p);
+      printf("SIGSEGV SI_USER SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
 #ifdef MZ_USE_PLACES
       printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
 #else
@@ -90,8 +90,8 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 #endif      
       return;
     }
-    if (c == 128 ) {
-      printf("SIGSEGV SI_KERNEL SI_CODE %i fault on addr %p sent by kernel\n", c, p);
+    if (c == 128) {
+      printf("SIGSEGV SI_KERNEL SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
     }
 #if WAIT_FOR_GDB
     launchgdb();
@@ -227,7 +227,7 @@ static void initialize_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGACTION
   {
     struct sigaction act, oact;
-    memset(&act, 0, sizeof(sigaction));
+    memset(&act, 0, sizeof(act));
     act.sa_sigaction = fault_handler;
     sigemptyset(&act.sa_mask);
     /* In Racket, SIGCHLD or SIGINT handling may trigger a write barrier: */
@@ -269,7 +269,7 @@ static void remove_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGACTION
   {
     struct sigaction act, oact;
-    memset(&act, 0, sizeof(sigaction));
+    memset(&act, 0, sizeof(act));
     act.sa_handler = SIG_DFL;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_SIGINFO;

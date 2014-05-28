@@ -103,6 +103,9 @@
       (check implied-atomic?
              (-or (-filter -Symbol 1) (-filter -Symbol #'x))
              (-filter -Symbol #'x))
+      (check implied-atomic?
+             (-filter -Symbol #'x)
+             (-and (-filter -Symbol 1) (-filter -Symbol #'x)))
     )
 
     (test-suite "Implication"

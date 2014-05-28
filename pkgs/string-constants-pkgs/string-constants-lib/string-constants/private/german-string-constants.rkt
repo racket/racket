@@ -178,6 +178,9 @@
  
  (install-package-button "~a installieren") ;; button label: ~a is filled with the name of a pkg
 
+ (update-catalog "Katalog aktualisieren") ;; button label; shown when there is a missing module, but no matching package
+ (updating-catalog-from "Von ~a aktualisieren...") ;; message label; used as a status message when updating the pkg catalog
+
  ;;; misc
  (welcome-to-something "Willkommen bei ~a")
  
@@ -1274,7 +1277,7 @@
  (module-browser-filename-format "Vollständiger Dateiname: ~a (~a Zeilen)")
  (module-browser-root-filename "Basis-Dateiname: ~a")
  (module-browser-font-size-gauge-label "Schriftgröße")
- (module-browser-progress-label "Fortschritt Modul-Übersicht")
+ (module-browser-progress-label "Fortschritt Modul-Browser")
  (module-browser-adding-file "Datei ~a hinzufügen...")
  (module-browser-laying-out-graph-label "Graph-Layout")
  (module-browser-open-file-format "~a öffnen")

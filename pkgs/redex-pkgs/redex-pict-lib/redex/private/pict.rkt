@@ -70,6 +70,7 @@
          just-before
          just-after         
          
+         non-terminal-gap-space
          rule-pict-style
          arrow-space
          label-space
@@ -574,6 +575,8 @@
     (parameterize ([current-ps-setup ps-setup])
       (make-object % #f #f))))
 
+(define non-terminal-gap-space (make-parameter 0))
+
 ;; raw-info : language-pict-info
 ;; nts : (listof symbol) -- the nts that the user expects to see
 (define (make-grammar-pict raw-info nts all-nts)
@@ -584,6 +587,7 @@
             (apply cc-superimpose (map (λ (x) (sequence-of-non-terminals (car x)))
                                        info))))])
     (apply vl-append
+           (non-terminal-gap-space)
            (map (λ (line)
                   (htl-append 
                    (rc-superimpose term-space (sequence-of-non-terminals (car line)))

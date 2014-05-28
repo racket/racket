@@ -3,96 +3,101 @@
 // This file is not xformed for 3m. There's just one
 // bit of conditional compilation on MZCOM_3M.
 
-#include "stdafx.h"
+#include "../racket/src/schvers.h"
 #include "resource.h"
-#include <initguid.h>
-#include "mzcom.h"
 
-#include "mzcom_i.c"
-#include "mzobj.h"
+#include <objbase.h>
+extern "C" {
+#include "com_glue.h"
+};
 
-// time for EXE to be idle before shutting down
-#define dwTimeOut (5000)
 // time to wait for threads to finish up
 #define dwPause (1000)
 
 HINSTANCE globHinst;
 
-// Passed to CreateThread to monitor the shutdown event
+/* A monitor thread might be a good idea to make sure the process
+   terminates if it's somehow started and not used. It also creates
+   a race condition, though, so it's disabled for now. */
+
+#if 0
+
+// time for EXE to be idle before shutting down
+#define dwTimeOut (5000)
+
+static HANDLE hEventShutdown;
+static DWORD dwThreadID;
+
+// Polls for idle state
 static DWORD WINAPI MonitorProc(void* pv)
 {
-    CExeModule* p = (CExeModule*)pv;
-    p->MonitorShutdown();
-    return 0;
+  while (1) {
+    DWORD dwWait=0;
+    do
+      {
+        dwWait = WaitForSingleObject(hEventShutdown, dwTimeOut);
+      } while (dwWait == WAIT_OBJECT_0);
+
+    if (com_can_unregister())
+      break;
+  }
+  CloseHandle(hEventShutdown);
+  PostThreadMessage(dwThreadID, WM_QUIT, 0, 0);
+
+  return 0;
 }
 
-LONG CExeModule::Unlock()
+static bool StartMonitor()
 {
-    LONG l = CComModule::Unlock();
-    if (l == 0)
-    {
-        bActivity = true;
-        SetEvent(hEventShutdown);
-    }
-    return l;
+  dwThreadID = GetCurrentThreadId();
+  hEventShutdown = CreateEvent(NULL, false, false, NULL);
+  if (hEventShutdown == NULL)
+    return false;
+
+  DWORD subThreadID;
+  HANDLE h = CreateThread(NULL, 0, MonitorProc, NULL, 0, &subThreadID);
+  return (h != NULL);
 }
 
-// Monitors the shutdown event
-void CExeModule::MonitorShutdown()
-{
-    while (1)
-    {
-        WaitForSingleObject(hEventShutdown, INFINITE);
-        DWORD dwWait=0;
-        do
-        {
-            bActivity = false;
-            dwWait = WaitForSingleObject(hEventShutdown, dwTimeOut);
-        } while (dwWait == WAIT_OBJECT_0);
-        // timed out
-        if (!bActivity && m_nLockCnt == 0) // if no activity let's really bail
-        {
-#if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-            CoSuspendClassObjects();
-            if (!bActivity && m_nLockCnt == 0)
+#else
+
+static bool StartMonitor() { return TRUE; }
+
 #endif
-                break;
-        }
-    }
-    CloseHandle(hEventShutdown);
-    PostThreadMessage(dwThreadID, WM_QUIT, 0, 0);
-}
 
-bool CExeModule::StartMonitor()
+static int set_reg_string(HKEY sub, char *name, char *s)
 {
-    hEventShutdown = CreateEvent(NULL, false, false, NULL);
-    if (hEventShutdown == NULL)
-        return false;
-    DWORD dwThreadID;
-    HANDLE h = CreateThread(NULL, 0, MonitorProc, this, 0, &dwThreadID);
-    return (h != NULL);
+  return RegSetValueExA(sub, name, 0, REG_SZ, (const BYTE *)s, strlen(s));
 }
 
-CExeModule _Module;
+static int set_reg_sub_string(HKEY sub, char *name, char *s)
+{
+  HKEY sub2;
+  int nRet;
 
-BEGIN_OBJECT_MAP(ObjectMap)
-OBJECT_ENTRY(CLSID_MzObj, CMzObj)
-END_OBJECT_MAP()
+  nRet = RegCreateKeyExA(sub, name, 0, NULL, 0, KEY_SET_VALUE, NULL, &sub2, NULL);
+  if (!nRet) {
+    nRet |= set_reg_string(sub2, NULL, s);
+    nRet |= RegCloseKey(sub2);
+  }
+
+  return nRet;
+}
 
 LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
 {
-    while (p1 != NULL && *p1 != NULL)
+  while (p1 != NULL && *p1 != NULL)
     {
-        LPCTSTR p = p2;
-        while (p != NULL && *p != NULL)
+      LPCTSTR p = p2;
+      while (p != NULL && *p != NULL)
         {
-            if (*p1 == *p)
-                return CharNext(p1);
-            p = CharNext(p);
+          if (*p1 == *p)
+            return CharNext(p1);
+          p = CharNext(p);
         }
-        p1 = CharNext(p1);
+      p1 = CharNext(p1);
     }
-    return NULL;
+  return NULL;
 }
 
 int IsFlag(LPCTSTR cmd, LPCTSTR flag)
@@ -122,8 +127,8 @@ int IsFlag(LPCTSTR cmd, LPCTSTR flag)
 
 /////////////////////////////////////////////////////////////////////////////
 //
-extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, 
-				HINSTANCE /*hPrevInstance*/, LPTSTR lpCmdLine, int /*nShowCmd*/) {
+extern "C" int WINAPI WinMain(HINSTANCE hInstance, 
+                              HINSTANCE /*hPrevInstance*/, LPTSTR lpCmdLine, int /*nShowCmd*/) {
 
   globHinst = hInstance;
 
@@ -136,98 +141,160 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
   load_delayed_dll(hInstance, "libracketxxxxxxx.dll");
 #endif
 
-#if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-  HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-#else
-  HRESULT hRes = CoInitialize(NULL);
-#endif
-  _ASSERTE(SUCCEEDED(hRes));
-  _Module.Init(ObjectMap, hInstance, &LIBID_MZCOMLib);
-  _Module.dwThreadID = GetCurrentThreadId();
+  HRESULT nRet = CoInitialize(NULL);
 
   int argc, i;
   char **argv, *normalized_path;
 
   argv = cmdline_to_argv(&argc, &normalized_path);
 
-  int nRet = 0, verbose = 0;
+  int verbose = 0;
   BOOL bRun = TRUE;
   LPCTSTR lpszToken;
   for (i = 1; i < argc; i++)
     {
       lpszToken = argv[i];
-      if (IsFlag(lpszToken, _T("UnregServer")))
+      if (IsFlag(lpszToken, "UnregServer"))
         {
 	  if (!nRet) {
-	    _Module.UpdateRegistryFromResource(IDR_MZCOM, FALSE);
-	    nRet = _Module.UnregisterServer(TRUE);
+            HKEY sub;
+
+            nRet |= RegDeleteKeyA(HKEY_CLASSES_ROOT, "MzCOM.MzObj");
+            nRet |= RegDeleteKeyA(HKEY_CLASSES_ROOT, "MzCOM.MzObj." MZSCHEME_VERSION);
+
+            if (!nRet) {
+              nRet = RegCreateKeyExA(HKEY_CLASSES_ROOT, "CLSID", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+              if (!nRet) {
+                nRet |= RegDeleteKeyA(sub, "{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}");
+                nRet |= RegCloseKey(sub);
+              }
+            }
+            
+	    if (!nRet) {
+              nRet = RegCreateKeyExA(HKEY_CLASSES_ROOT, "AppID", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+              if (!nRet) {
+                nRet |= RegDeleteKeyA(sub, "{A604CB9D-2AB5-11D4-B6D3-0060089002FE}");
+                nRet |= RegCloseKey(sub);
+              }
+            }
+            
 	    bRun = FALSE;
 	  }
         }
-      else if (IsFlag(lpszToken, _T("RegServer")))
+      else if (IsFlag(lpszToken, "RegServer"))
         {
 	  if (!nRet) {
-	    _Module.UpdateRegistryFromResource(IDR_MZCOM, TRUE);
-	    nRet = _Module.RegisterServer(TRUE);
+            HKEY sub, sub2;
+
+            nRet |= RegCreateKeyExA(HKEY_CLASSES_ROOT, "MzCOM.MzObj", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+
+            if (!nRet) {
+              nRet |= set_reg_string(sub, NULL, "MzObj Class");
+              nRet |= set_reg_sub_string(sub, "CLSID", "{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}");
+              nRet |= set_reg_sub_string(sub, "CurVer", "MzCOM.MzObj." MZSCHEME_VERSION);
+              nRet |= RegCloseKey(sub);
+            }
+
+            if (!nRet) {
+              nRet = RegCreateKeyExA(HKEY_CLASSES_ROOT, "MzCOM.MzObj." MZSCHEME_VERSION, 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+              if (!nRet) {
+                nRet |= set_reg_string(sub, NULL, "MzObj Class");
+                nRet |= set_reg_sub_string(sub, "CLSID", "{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}");
+                nRet |= RegCloseKey(sub);
+              }
+            }
+
+            if (!nRet) {
+              nRet = RegCreateKeyExA(HKEY_CLASSES_ROOT, "CLSID", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+              if (!nRet) {
+                nRet = RegCreateKeyExA(sub, "{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub2, NULL);
+                if (!nRet) {
+                  nRet |= set_reg_string(sub2, NULL, "MzObj Class");
+                  nRet |= set_reg_string(sub2, "AppId", "{A604CB9D-2AB5-11D4-B6D3-0060089002FE}");
+                  nRet |= set_reg_sub_string(sub2, "ProgID", "MzCOM.MzObj." MZSCHEME_VERSION);
+                  nRet |= set_reg_sub_string(sub2, "VersionIndependentProgID", "MzCOM.MzObj");
+                  nRet |= set_reg_sub_string(sub2, "Programmable", "");
+
+                  char *path;
+                  path = (char *)malloc(1024 * sizeof(wchar_t));
+                  GetModuleFileNameA(NULL, path, 1024);
+                  nRet |= set_reg_sub_string(sub2, "LocalServer32", path);
+                  free(path);
+
+                  nRet |= set_reg_sub_string(sub2, "TypeLib", "{A604CB9C-2AB5-11D4-B6D3-0060089002FE}");
+                  nRet |= RegCloseKey(sub2);
+                }
+                nRet |= RegCloseKey(sub);
+              }
+            }
+
+            if (!nRet) {
+              nRet = RegCreateKeyExA(HKEY_CLASSES_ROOT, "AppID", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub, NULL);
+              if (!nRet) {
+                nRet = RegCreateKeyExA(sub, "{A604CB9D-2AB5-11D4-B6D3-0060089002FE}", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub2, NULL);
+                if (!nRet) {
+                  nRet |= set_reg_string(sub2, NULL, "MzCOM");
+                  nRet |= RegCloseKey(sub2);
+                }
+              }
+              if (!nRet) {
+                nRet = RegCreateKeyExA(sub, "MzCOM.EXE", 0, NULL, 0, KEY_SET_VALUE, NULL, &sub2, NULL);
+                if (!nRet) {
+                  nRet |= set_reg_string(sub2, "AppID", "{A604CB9D-2AB5-11D4-B6D3-0060089002FE}");
+                  nRet |= RegCloseKey(sub2);
+                }
+              }
+              nRet |= RegCloseKey(sub);
+            }
+
 	    bRun = FALSE;
 	  }
         }
-      else if (IsFlag(lpszToken, _T("v")))
+      else if (IsFlag(lpszToken, "v"))
 	{
 	  verbose = 1;
 	}
-      else if (IsFlag(lpszToken, _T("?")))
+      else if (IsFlag(lpszToken, "?"))
         {
 	  MessageBox(NULL,
-		     _T("/RegServer - register\n"
-			"/UnregServer - unregister\n"
-			"/Embedding - ignored\n"
-			"/v - report failures\n"
-			"/? - show this help"),
-		     _T("Help"),
+		     "/RegServer - register\n"
+                     "/UnregServer - unregister\n"
+                     "/Embedding - ignored\n"
+                     "/v - report failures\n"
+                     "/? - show this help",
+                     "Help",
 		     MB_OK);
 	  bRun = FALSE;
         }
-      else if (IsFlag(lpszToken, _T("Embedding")))
+      else if (IsFlag(lpszToken, "Embedding"))
 	{
 	  /* ??? */
 	}
       else
 	{
           if (verbose)
-            MessageBox(NULL, lpszToken, _T("Unknown Flag"), MB_OK);
+            MessageBox(NULL, lpszToken, "Unknown Flag", MB_OK);
 	  bRun = FALSE;
 	  break;
 	}
     }
   
-  if (bRun)
-    {
-        _Module.StartMonitor();
+  if (bRun) {
+    StartMonitor();
 
-#if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-        hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER, 
-					    REGCLS_SINGLEUSE | REGCLS_SUSPENDED);
-    // was:  REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
+    nRet = com_register();
 
-
-        _ASSERTE(SUCCEEDED(hRes));
-        hRes = CoResumeClassObjects();
-#else
-        hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER, 
-					    // was REGCLS_MULTIPLEUSE);
-					    REGCLS_SINGLEUSE);
-#endif
-        _ASSERTE(SUCCEEDED(hRes));
-
-        MSG msg;
-        while (GetMessage(&msg, 0, 0, 0))
-            DispatchMessage(&msg);
-
-        _Module.RevokeClassObjects();
-	Sleep(dwPause); //wait for any threads to finish
+    if (!nRet) {
+      MSG msg;
+      while (GetMessage(&msg, 0, 0, 0))
+        DispatchMessage(&msg);
+      
+      while (!com_unregister()) {
+        Sleep(dwPause); // wait for any objects to finish
+      }
     }
-
+  }
+   
   if (verbose && (nRet != 0)) {
     wchar_t *res;
     FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER
@@ -241,7 +308,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
     MessageBoxW(NULL, res, L"Registration Failed", MB_OK);
   }
 
-    _Module.Term();
-    CoUninitialize();
-    return nRet;
+  CoUninitialize();
+
+  return nRet;
 }

@@ -34,7 +34,8 @@
   (define-local-member-name
     set-lang-toolbar-buttons
     get-lang-toolbar-buttons
-    get-online-expansion-monitor-pcs)
+    get-online-expansion-monitor-pcs
+    with-language-specific-default-extensions-and-filters)
     
   (define tab-mixin
     (mixin (drracket:unit:tab<%>) (drracket:module-language-tools:tab<%>)
@@ -83,6 +84,12 @@
           (send toolbar-button-panel change-children
                 (λ (l) (send new-tab get-lang-toolbar-buttons)))
           (sort-toolbar-buttons-panel)))
+      
+      (define/override (file-menu:open-callback menu evt)
+        (send (get-definitions-text) with-language-specific-default-extensions-and-filters
+              (λ ()
+                (super file-menu:open-callback menu evt))))
+      
       (super-new)
       (inherit get-button-panel)
       (set! toolbar-button-panel (new panel:horizontal-discrete-sizes% 
@@ -217,6 +224,22 @@
               (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels?
                     lang-wants-big-defs/ints-labels?)
               
+              (set! extra-default-filters
+               (if info-result
+                   (or (ctc-on-info-proc-result
+                        (or/c #f (listof (list/c string? string?)))
+                        (info-proc 'drracket:default-filters #f))
+                       '())
+                   '()))
+              
+              (set! default-extension
+               (if info-result
+                   (or (ctc-on-info-proc-result
+                        (or/c #f (and/c string? (not/c #rx"[.]")))
+                        (info-proc 'drracket:default-extension #f))
+                       "")
+                   ""))
+              
               (when info-result
                 (register-new-buttons
                  (ctc-on-info-proc-result 
@@ -324,6 +347,25 @@
          (is-a? (drracket:language-configuration:language-settings-language settings)
                 drracket:module-language:module-language<%>))
         (inner (void) after-set-next-settings settings))
+      
+      (define/override (put-file dir default-name)
+        (with-language-specific-default-extensions-and-filters
+         (λ ()
+           (super put-file dir default-name))))
+      (define/override (get-file dir)
+        (with-language-specific-default-extensions-and-filters
+         (λ ()
+           (super get-file dir))))
+      
+      (define extra-default-filters '())
+      (define default-extension "")
+      (define/public (with-language-specific-default-extensions-and-filters t)
+        (parameterize ([finder:default-extension default-extension]
+                       [finder:default-filters 
+                        (append extra-default-filters (finder:default-filters))])
+          (t)))
+        
+      
       (super-new)
       (set! in-module-language? 
             (is-a? (drracket:language-configuration:language-settings-language (get-next-settings))

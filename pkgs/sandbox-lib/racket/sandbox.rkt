@@ -30,6 +30,7 @@
          sandbox-make-inspector
          sandbox-make-code-inspector
          sandbox-make-logger
+         sandbox-make-plumber
          sandbox-make-environment-variables
          sandbox-memory-limit
          sandbox-eval-limits
@@ -95,6 +96,7 @@
                  [sandbox-make-inspector      current-inspector]
                  [sandbox-make-code-inspector current-code-inspector]
                  [sandbox-make-logger         current-logger]
+                 [sandbox-make-plumber        (lambda () (current-plumber))]
                  [sandbox-make-environment-variables current-environment-variables]
                  [sandbox-memory-limit        #f]
                  [sandbox-eval-limits         #f]
@@ -236,6 +238,8 @@
   (make-parameter (lambda () (make-inspector (current-code-inspector)))))
 
 (define sandbox-make-logger (make-parameter current-logger))
+
+(define sandbox-make-plumber (make-parameter 'propagate))
 
 (define sandbox-make-environment-variables (make-parameter
                                             (lambda ()
@@ -1020,6 +1024,31 @@
     [current-security-guard
      (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
     [current-logger ((sandbox-make-logger))]
+    [current-plumber
+     (let ([maker (sandbox-make-plumber)])
+       (if (eq? maker 'propagate)
+           ;; Create a new plumber, but cause flushes to the original
+           ;; plumber schedule a flush in the sandbox:
+           (let ([p (make-plumber)])
+             (define fh (plumber-add-flush! (current-plumber)
+                                            (lambda (fh)
+                                              (unless (or terminated?
+                                                          ;; The evaluator thread may have terminated
+                                                          ;; asynchronously, such as through an enclosing
+                                                          ;; custodian's shutdown
+                                                          (and user-thread
+                                                               (thread-dead? user-thread)))
+                                                (call-in-sandbox-context
+                                                 evaluator
+                                                 (lambda ()
+                                                   (plumber-flush-all p)))))
+                                            ;; weak:
+                                            #t))
+             ;; Retain flush propagation as long as the new plumber is
+             ;; reachable:
+             (plumber-add-flush! p (lambda (_) fh))
+             p)
+           (maker)))]
     [current-inspector ((sandbox-make-inspector))]
     [current-code-inspector ((sandbox-make-code-inspector))]
     ;; The code inspector serves two purposes -- making sure that only trusted
@@ -1059,8 +1088,11 @@
     [exit-handler
      (let ([h (sandbox-exit-handler)])
        (if (eq? h default-sandbox-exit-handler)
-         (lambda _ (terminate+kill! 'exited #f))
-         h))]
+           (let ([p (current-plumber)])
+             (lambda _
+               (plumber-flush-all p)
+               (terminate+kill! 'exited #f)))
+           h))]
     ;; general info
     [current-command-line-arguments '#()]
     ;; Finally, create the namespace in the restricted environment (in
@@ -1079,7 +1111,7 @@
     (define bg-run->thread (if (sandbox-gui-available)
                                (lambda (ignored)
                                  ((mz/mr void eventspace-handler-thread) (current-eventspace)))
-                               values))
+                                values))
     (define t (bg-run->thread (run-in-bg user-process)))
     (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
     (set! user-thread t)))

@@ -113,9 +113,14 @@
   [predicate-assertion
     (assert-predicate-internal type predicate)]
   [type-declaration
-    (:-internal id:identifier type)]
-  [typecheck-failure
-    (typecheck-fail-internal stx message:str var:id)])
+    (:-internal id:identifier type)])
+
+;; Define separately outside of `define-internal-classes` since this form
+;; is meant to appear in expression positions, so it doesn't make sense to use
+;; the `define-values` protocol used for other internal forms.
+(define-syntax-class typecheck-failure
+  #:literal-sets (kernel-literals internal-literals)
+  (pattern (quote-syntax (typecheck-fail-internal stx message:str var))))
 
 ;;; Internal form creation
 (begin-for-syntax

@@ -4,6 +4,8 @@
            setup/dirs
            racket/list
            setup/variant
+           pkg/path
+           setup/main-collects
            dynext/filename-version
            "private/macfw.rkt"
            "private/windlldir.rkt"
@@ -472,6 +474,7 @@
   (define (copy-runtime-files-and-patch-binaries orig-binaries binaries types sub-dirs 
                                                  exts-dir relative-exts-dir
                                                  relative->binary-relative)
+    (define pkg-path-cache (make-hash))
     (let ([paths null])
       ;; Pass 1: collect all the paths
       (copy-and-patch-binaries #f #rx#"rUnTiMe-paths[)]"
@@ -492,7 +495,7 @@
                                exts-dir relative-exts-dir
                                relative->binary-relative)
       (unless (null? paths)
-        ;; Determine the shared path prefix:
+        ;; Determine the shared path prefix among paths within a package:
         (let* ([root-table (make-hash)]
                [root->path-element (lambda (root)
                                      (hash-ref root-table
@@ -502,12 +505,27 @@
                                                    (hash-set! root-table root v)
                                                    v))))]
                [explode (lambda (src)
+                          (define-values (pkg subpath)
+                            (path->pkg+subpath src #:cache pkg-path-cache))
+                          (define main
+                            (and (not pkg)
+                                 (path->main-collects-relative src)))
                           (reverse
-                           (let loop ([src src])
+                           (let loop ([src (cond
+                                            [pkg subpath]
+                                            [(pair? main)
+                                             (apply build-path
+                                                    (map bytes->path-element (cdr main)))]
+                                            [else src])])
                              (let-values ([(base name dir?) (split-path src)])
-                               (if base
-                                   (cons name (loop base))
-                                   (list (root->path-element name)))))))]
+                               (cond
+                                [(path? base)
+                                 (cons name (loop base))]
+                                [else
+                                 (list (root->path-element (or pkg
+                                                               (and (pair? main)
+                                                                    'collects)
+                                                               name)))])))))]
                ;; In reverse order, so we can pick off the paths
                ;;  in the second pass:
                [exploded (reverse (map explode paths))]

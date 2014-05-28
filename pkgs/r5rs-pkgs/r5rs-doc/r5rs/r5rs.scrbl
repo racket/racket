@@ -134,6 +134,13 @@ not allow redefinition of top-level bindings, and expressions
 evaluated through @racket[load] and @racket[eval] cannot automatically
 access bindings defined within the module.
 
+
+@history[#:changed "6.0.1.4" @elem{When an identifier bound by
+                                   @racket[letrec] is referenced
+                                   before it is initialized, an
+                                   exception is raised, instead of
+                                   producing @|undefined-const|.}]
+
 @; --------------------
 
 @subsection{Non-@|r5rs| Bindings from @racketmodname[r5rs]}

@@ -143,6 +143,14 @@
     (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
    [(-> Any Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
     (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+   [(All (a b) (-> (-> a Any : #:+ b) (Listof a) (Listof b)))
+    (-poly (a b) (t:-> (asym-pred a Univ (-FS (-filter b 0) -top)) (-lst a) (-lst b)))]
+   [(All (a b) (-> (-> a Any : #:+ (! b)) (Listof a) (Listof b)))
+    (-poly (a b) (t:-> (asym-pred a Univ (-FS (-not-filter b 0) -top)) (-lst a) (-lst b)))]
+   [(All (a b) (-> (-> a Any : #:- b) (Listof a) (Listof b)))
+    (-poly (a b) (t:-> (asym-pred a Univ (-FS -top (-filter b 0))) (-lst a) (-lst b)))]
+   [(All (a b) (-> (-> a Any : #:- (! b)) (Listof a) (Listof b)))
+    (-poly (a b) (t:-> (asym-pred a Univ (-FS -top (-not-filter b 0))) (-lst a) (-lst b)))]
    [(Number -> Number -> Number)
     (t:-> -Number (t:-> -Number -Number))]
    [(-> Number (-> Number Number))

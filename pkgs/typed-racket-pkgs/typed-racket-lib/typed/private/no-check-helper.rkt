@@ -1,10 +1,13 @@
 #lang racket/base
 
+;; This module provides compatibility macros for no-check mode
+
 (require
  (except-in typed-racket/base-env/prims
             require/typed require/opaque-type require-typed-struct)
  typed-racket/base-env/base-types-extra
- (for-syntax racket/base syntax/parse syntax/struct))
+ (for-syntax racket/base syntax/parse syntax/struct
+             syntax/parse/experimental/template))
 (provide (all-from-out racket/base)
          (all-defined-out)
          (all-from-out typed-racket/base-env/prims
@@ -23,25 +26,25 @@
     #:attributes (nm ty)
     (pattern [nm:opt-rename ty]))
   (define-syntax-class struct-clause
-    ;#:literals (struct)
-    #:attributes (nm (body 1))
-    (pattern [struct nm:opt-rename (body ...)]
-             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f))
+    #:attributes (nm (body 1) (opts 1))
+    (pattern [(~or #:struct (~datum struct)) nm:opt-rename (body ...)
+              opts:struct-option ...]))
   (define-syntax-class opaque-clause
-    ;#:literals (opaque)
     #:attributes (ty pred opt)
-    (pattern [opaque ty:id pred:id]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or #:opaque (~datum opaque)) ty:id pred:id]
              #:with opt #'())
-    (pattern [opaque ty:id pred:id #:name-exists]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or #:opaque (~datum opaque)) ty:id pred:id #:name-exists]
              #:with opt #'(#:name-exists)))
+  (define-splicing-syntax-class struct-option
+    (pattern (~seq #:constructor-name cname:id))
+    (pattern (~seq #:extra-constructor-name extra-cname:id)))
   (syntax-parse stx
     [(_ lib (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
-     #'(begin
-         (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
-         (require/typed sc.nm sc.ty lib) ...
-         (require-typed-struct strc.nm (strc.body ...) lib) ...)]
+     (template
+      (begin
+       (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
+       (require/typed sc.nm sc.ty lib) ...
+       (require-typed-struct strc.nm (strc.body ...) (?@ . strc.opts) ... lib) ...))]
     [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
      #'(require (only-in lib nm.spec))]))
 
@@ -50,7 +53,22 @@
 
 (define-syntax (require-typed-struct stx)
   (syntax-parse stx #:literals (:)
-    [(_ (~or nm:id (nm:id _:id)) ([fld : ty] ...) lib)
-     (with-syntax ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)])
-       #'(require (only-in lib struct-info maker pred sel ...)))]))
+    [(_ (~or nm:id (nm:id _:id)) ([fld : ty] ...)
+        (~or (~and (~seq) (~bind [cname #'#f] [extra-cname #'#f]))
+             (~and (~seq #:constructor-name cname)
+                   (~bind [extra-cname #'#f]))
+             (~and (~seq #:extra-constructor-name extra-cname)
+                   (~bind [cname #'#f])))
+        lib)
+     (with-syntax ([(struct-info maker pred sel ...)
+                    (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t
+                                        #:constructor-name
+                                        (if (syntax-e #'cname) #'cname #'nm))])
+       #`(require (only-in lib
+                           struct-info
+                           maker
+                           #,@(if (syntax-e #'extra-cname)
+                                  #'(extra-cname)
+                                  #'())
+                           pred sel ...)))]))
 

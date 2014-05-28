@@ -288,7 +288,8 @@ override settings supplied by the context.
 @defproc*[([(ellipse [w real?] [h real?]) pict?]
            [(circle [diameter real?]) pict?]
            [(filled-ellipse [w real?] [h real?] [#:draw-border? draw-border? any/c #t]) pict?]
-           [(disk [diameter real?] [#:draw-border? draw-border? any/c #t]) pict?])]{
+           [(disk [diameter (and/c rational? (not/c negative?))]
+                  [#:draw-border? draw-border? any/c #t]) pict?])]{
 
 Unfilled and filled ellipses.
 
@@ -669,7 +670,30 @@ list items that were expected. The @racket[col-aligns] and
 @racket[row-aligns] procedures are used to superimpose all of the
 cells in a column or row; this superimposition determines the total
 width or height of the column or row, and also determines the
-horizontal or vertical placement of each cell in the column or row.}
+horizontal or vertical placement of each cell in the column or row.
+
+@defexamples[#:eval 
+             ss-eval
+             (table 4
+                    (map (λ (x) (text (format "~a" x)))
+                         (list 1 2 3 4
+                               5 6 7 8
+                               9000 10 11 12))
+                    cc-superimpose
+                    cc-superimpose
+                    10
+                    10)
+             
+             (table 4
+                    (map (λ (x) (text (format "~a" x)))
+                         (list 1 2 3 4
+                               5 6 7 8
+                               9000 10 11 12))
+                    rc-superimpose
+                    cc-superimpose
+                    10
+                    10)]
+}
 
 @; ------------------------------------------------------------------------
 
@@ -734,7 +758,7 @@ for @racket[pict] that does not already use a specific pen style.}
 
 @defproc[(colorize [pict pict?]
                    [color (or/c string? (is-a?/c color%)
-                                (list byte? byte? byte?))])
+                                (list/c byte? byte? byte?))])
          pict?]{
 
 Selects a specific color drawing, which applies to drawing in
@@ -891,6 +915,10 @@ pict with the same shape and location.}
 
 @; ----------------------------------------
 
+@include-section["tree-layout.scrbl"]
+
+@; ----------------------------------------
+
 @section{Miscellaneous}
 
 @defproc[(hyperlinkize [pict pict?])
@@ -955,11 +983,52 @@ Draws @racket[pict] to @racket[dc], with its top-left corner at offset
  (@racket[x], @racket[y]).}
 
 
-@defproc[(pict->bitmap [pict pict?])
+@defproc[(pict->bitmap [pict pict?] 
+                       [smoothing (or/c 'unsmoothed 'smoothed 'aligned) 'aligned])
          (is-a?/c bitmap%)]{
 
-Returns a @racket[bitmap%] with an alpha channel, no larger than @racket[pict], with @racket[pict] drawn on it in the top-left corner (@racket[0], @racket[0]).}
+Returns a @racket[bitmap%] with an alpha channel, no larger than @racket[pict],
+with @racket[pict] drawn on it in the top-left corner (@racket[0], @racket[0]).
 
+When drawing the pict into the bitmap using the smoothing mode @racket[smoothing]
+(see @method[set-smoothing dc<%>] for more information on smoothing modes).
+}
+
+@defproc[(pict->argb-pixels [pict pict?]
+                            [smoothing (or/c 'unsmoothed 'smoothed 'aligned) 'aligned])
+         bytes?]{
+Returns the @racket[bytes?] with the pixels corresponding the bitmap that @racket[pict->bitmap]
+returns. Each pixel has four bytes in the result: the alpha, red, green, and blue components.
+
+@examples[#:eval 
+          ss-eval
+          (pict->argb-pixels
+           (filled-rectangle 1 1))
+          (pict->argb-pixels
+           (colorize (filled-rectangle 1 1) "red"))]
+
+@history[#:added "1.1"]
+}
+
+@defproc[(argb-pixels->pict [bytes bytes?] [width exact-nonnegative-integer?]) pict?]{
+  Constructs a pict from @racket[bytes] with the width @racket[width]. Each pixel
+  in the resulting pict corresponds to four entries in @racket[bytes]: the alpha value,
+  and the red, green, and blue values.
+  
+ @examples[#:eval 
+          ss-eval
+          (let ([b (make-bytes (* 40 40 4) 255)])
+            (for ([x (in-range (bytes-length b))])
+              (code:comment "when in one of two vertical bands (10-20 & 30-40)")
+              (when (or (<= 10 (modulo (quotient x 4) 40) 20)
+                        (<= 30 (modulo (quotient x 4) 40) 40))
+                (code:comment "change the red and green fields of the pixel")
+                (when (= 1 (modulo x 4)) (bytes-set! b x 0))
+                (when (= 2 (modulo x 4)) (bytes-set! b x 150))))
+            (argb-pixels->pict b 40))]
+ 
+@history[#:added "1.1"]
+}
 
 @defproc[(make-pict-drawer [pict pict?])
          ((is-a?/c dc<%>) real? real? . -> . void?)]{
@@ -986,7 +1055,7 @@ frame's drawing area, and the @racket[frame-x], @racket[frame-y],
 and @racket[frame-style] keyword arguments behave in the same manner as @racket[x], 
 @racket[y], and @racket[style] arguments for the @racket[frame%].}
 
-@defparam[current-expected-text-scale scales (list real? real?)]{
+@defparam[current-expected-text-scale scales (list/c real? real?)]{
 
 A parameter used to refine text measurements to better match an
 expected scaling of the image. The @racket[scale/improve-new-text]

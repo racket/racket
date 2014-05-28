@@ -6,15 +6,17 @@
          (contract-req)
          (typecheck check-below tc-subst)
          (utils tc-utils)
-         (rep type-rep)
+         (rep type-rep filter-rep)
          (except-in (types utils union abbrev subtype)
                     -> ->* one-of/c))
+(require-for-cond-contract
+  syntax/stx)
 
 (provide/cond-contract
   [tc/funapp1
     ((syntax? stx-list? arr? (listof tc-results/c) (or/c #f tc-results/c))
      (#:check boolean?)
-     . ->* . tc-results/c)])
+     . ->* . full-tc-results/c)])
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
@@ -48,7 +50,7 @@
                           [ta (in-sequence-forever (in-list t-a) #f)])
                          (values oa ta))])
            (match rng
-            [(AnyValues:) tc-any-results]
+            [(AnyValues: f) (tc-any-results f)]
             [(Values: results)
              (define-values (t-r f-r o-r)
                (for/lists (t-r f-r o-r)
@@ -85,7 +87,7 @@
   (match t
     [(tc-result1: t) t]
     [(tc-results: ts) (-values ts)]
-    [(tc-any-results:) ManyUniv]
+    [(tc-any-results: f) (-AnyValues -top)]
     [_ t]))
 
 (define (stringify-domain dom rst drst [rng #f])
@@ -225,7 +227,7 @@
     (and expected
          (match expected
            [(tc-result1: t) t]
-           [(tc-any-results:) #t] ; anything is a subtype of expected
+           [(tc-any-results: (or (Top:) (NoFilter:))) #t] ; anything is a subtype of expected
            [_ #f]))) ; don't know what it is, don't do any pruning
   (define (returns-subtype-of-expected? fun-ty)
     (or (not expected) ; no expected type, anything is fine
@@ -246,7 +248,7 @@
     (map (compose make-Function list make-arr)
          doms
          (map (match-lambda ; strip filters
-               [(AnyValues:) ManyUniv]
+               [(AnyValues: f) (-AnyValues -top)]
                [(Values: (list (Result: t _ _) ...))
                 (-values t)]
                [(ValuesDots: (list (Result: t _ _) ...) _ _)

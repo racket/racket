@@ -1592,7 +1592,8 @@ place_async_channel_val {
   gcMARK2(pac->msg_chains, gc);
   gcMARK2(pac->wakeup_signal, gc);
 
-  /* mark master-allocated objects within each messages: */
+  /* mark master-allocated objects within each messages; the
+     raw pairs that form the list are embedded in each message block */
   j = pac->out;
   sz = pac->size;
   for (i = pac->count; i--; ) {
@@ -1601,7 +1602,7 @@ place_async_channel_val {
       gcMARK2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
  size:
@@ -1726,6 +1727,7 @@ mark_input_fd {
 
   gcMARK2(fd->buffer, gc);
   gcMARK2(fd->refcount, gc);
+  gcMARK2(fd->flush_handle, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -1833,6 +1835,7 @@ END print;
 
 START network;
 
+#ifdef USE_TCP
 mark_listener {
   listener_t *l = (listener_t *)p;
 
@@ -1847,7 +1850,6 @@ mark_listener {
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
 }
 
-#ifdef USE_TCP
 mark_tcp {
  mark:
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;
@@ -2056,6 +2058,17 @@ mark_thread_cell {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+mark_plumber {
+ mark:
+  Scheme_Plumber *pl = (Scheme_Plumber *)p;
+ 
+  gcMARK2(pl->handles, gc);
+  gcMARK2(pl->weak_handles, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Plumber));
 }
 
 END thread;

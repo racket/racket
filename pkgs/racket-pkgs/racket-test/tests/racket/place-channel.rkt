@@ -421,27 +421,30 @@
   ;; can be GCed if the other end of the channel is
   ;; unreachable --- where a place's channels should
   ;; all count as "unreachable" when the place ends
-  (displayln "checking place-channel and thread GC interaction")
-  (let ([N 40])
-    (define weaks (make-weak-hash))
-    (for ([i (in-range N)])
-      (define s (make-semaphore))
-      (hash-set!
-       weaks
-       (thread (lambda ()
-                 (define-values (i o) (place-channel))
-                 (define p (place ch (place-channel-get ch)))
-                 (place-channel-put p o)
-                 (place-wait p)
-                 (semaphore-post s)
-                 (sync i)))
-       #t)
-      (sync s))
-    (for ([i 3])
-      (sync (system-idle-evt))
-      (collect-garbage))
-    (unless ((hash-count weaks) . < . (/ N 2))
-      (error "thread-gc test failed")))
+  (define (check-thread sync-ch)
+    (displayln "checking place-channel and thread GC interaction")
+    (let ([N 40])
+      (define weaks (make-weak-hash))
+      (for ([i (in-range N)])
+        (define s (make-semaphore))
+        (hash-set!
+         weaks
+         (thread (lambda ()
+                   (define-values (i o) (place-channel))
+                   (define p (place ch (place-channel-get ch)))
+                   (place-channel-put p o)
+                   (place-wait p)
+                   (semaphore-post s)
+                   (sync-ch i)))
+         #t)
+        (sync s))
+      (for ([i 3])
+        (sync (system-idle-evt))
+        (collect-garbage))
+      (unless ((hash-count weaks) . < . (/ N 2))
+        (error "thread-gc test failed"))))
+  (check-thread place-channel-get)
+  (check-thread sync)
 
 )
   

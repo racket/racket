@@ -287,6 +287,7 @@ typedef struct Scheme_FD {
   char textmode; /* Windows: textmode => CRLF conversion; SOME_FDS_... => select definitely works */
   unsigned char *buffer;
   int *refcount;
+  Scheme_Object *flush_handle; /* output port: registration with plumber */
 
 # ifdef WINDOWS_FILE_HANDLES
   Win_FD_Input_Thread *th;   /* input mode */
@@ -479,7 +480,7 @@ static Scheme_Object *make_oskit_console_input_port();
 static void force_close_output_port(Scheme_Object *port);
 static void force_close_input_port(Scheme_Object *port);
 
-ROSYM static Scheme_Object *text_symbol, *binary_symbol;
+ROSYM static Scheme_Object *text_symbol, *binary_symbol, *module_symbol;
 ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
 ROSYM static Scheme_Object *must_truncate_symbol;
@@ -515,6 +516,7 @@ scheme_init_port (Scheme_Env *env)
 
   REGISTER_SO(text_symbol);
   REGISTER_SO(binary_symbol);
+  REGISTER_SO(module_symbol);
   REGISTER_SO(append_symbol);
   REGISTER_SO(error_symbol);
   REGISTER_SO(replace_symbol);
@@ -526,6 +528,7 @@ scheme_init_port (Scheme_Env *env)
 
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
+  module_symbol = scheme_intern_symbol("module");
   append_symbol = scheme_intern_symbol("append");
   error_symbol = scheme_intern_symbol("error");
   replace_symbol = scheme_intern_symbol("replace");
@@ -1124,7 +1127,7 @@ void scheme_fdzero(void *fd)
 
 void *scheme_alloc_fdset_array(int count, int permanent)
 {
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP) || defined(WIN32_FD_HANDLES)
   void *fdarray;
 #  if defined(WIN32_FD_HANDLES)
   if (count) {
@@ -1185,7 +1188,7 @@ void *scheme_init_fdset_array(void *fdarray, int count)
 
 void *scheme_get_fdset(void *fdarray, int pos)
 {
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP) || defined(WIN32_FD_HANDLES)
   return ((fdset_type *)fdarray) + pos;
 # else
   return NULL;
@@ -1197,7 +1200,7 @@ void scheme_fdzero(void *fd)
 # if defined(WIN32_FD_HANDLES)
   scheme_init_fdset_array(fd, 1);
 # else
-#  if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+#  if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   FD_ZERO((fd_set *)fd);
 #  endif
 # endif
@@ -1215,7 +1218,7 @@ void scheme_fdclr(void *fd, int n)
       efd->sockets[i] = INVALID_SOCKET;
   }
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   FD_CLR((unsigned)n, ((fd_set *)fd));
 # endif
 #endif
@@ -1238,7 +1241,7 @@ void scheme_fdset(void *fd, int n)
   efd->sockets[SCHEME_INT_VAL(efd->added)] = n;
   efd->added = scheme_make_integer(1 + SCHEME_INT_VAL(efd->added));
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
 #  ifdef STORED_ACTUAL_FDSET_LIMIT
   int mx;
   mx = FDSET_LIMIT(fd);
@@ -1261,7 +1264,7 @@ int scheme_fdisset(void *fd, int n)
   }
   return 0;
 #else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# if defined(FILES_HAVE_FDS) || defined(USE_TCP)
   return FD_ISSET(n, ((fd_set *)fd));
 # else
   return 0;
@@ -4604,7 +4607,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 #endif
   char *filename;
   int regfile, i;
-  int m_set = 0;
+  int m_set = 0, mm_set = 0;
   Scheme_Object *result;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
@@ -4622,6 +4625,12 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     } else if (SAME_OBJ(argv[i], binary_symbol)) {
       /* This is the default */
       m_set++;
+    } else if (SAME_OBJ(argv[i], module_symbol)) {
+      mm_set++;
+      for_module = 1;
+    } else if (SAME_OBJ(argv[i], scheme_none_symbol)) {
+      mm_set++;
+      for_module = 1;
     } else {
       char *astr;
       intptr_t alen;
@@ -4634,7 +4643,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 		       astr, alen);
     }
 
-    if (m_set > 1) {
+    if ((m_set > 1) || (mm_set > 1)) {
       char *astr;
       intptr_t alen;
 
@@ -8227,6 +8236,8 @@ fd_close_output(Scheme_Output_Port *port)
   }
 #endif
 
+  scheme_remove_flush(fop->flush_handle);
+
   /* Make sure no close happened while we blocked above! */
   if (port->closed)
     return;
@@ -8308,7 +8319,7 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 {
   Scheme_FD *fop;
   unsigned char *bfr;
-  Scheme_Object *the_port;
+  Scheme_Object *the_port, *fh;
   int start_closed = 0;
 
   fop = MALLOC_ONE_RT(Scheme_FD);
@@ -8365,6 +8376,9 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 						      1);
   ((Scheme_Port *)the_port)->buffer_mode_fun = fd_output_buffer_mode;
 
+  fh = scheme_add_flush(NULL, the_port, 0);
+  fop->flush_handle = fh;
+
   if (start_closed)
     scheme_close_output_port(the_port);
 
@@ -8382,12 +8396,17 @@ make_fd_output_port(intptr_t fd, Scheme_Object *name, int regfile, int win_textm
 
 static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
-  if (SCHEME_OUTPUT_PORTP(o)) {
-    Scheme_Output_Port *op;
-    op = scheme_output_port_record(o);
-    if (SAME_OBJ(op->sub_type, fd_output_port_type))
-      scheme_flush_output(o);
+  if (SCHEME_OUTPORTP(o)) {
+    scheme_flush_if_output_fds(o);
   }
+}
+
+void scheme_flush_if_output_fds(Scheme_Object *o)
+{
+  Scheme_Output_Port *op;
+  op = scheme_output_port_record(o);
+  if (SAME_OBJ(op->sub_type, fd_output_port_type))
+    scheme_flush_output(o);
 }
 
 #ifdef WINDOWS_FILE_HANDLES

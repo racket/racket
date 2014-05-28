@@ -1180,6 +1180,71 @@
   (test #f thread-running? t2))
 
 ;; ----------------------------------------
+;; plumbers
+
+(let ()
+  (define c (make-plumber))
+
+  (test #t plumber? c)
+
+  (define done 0)
+
+  (define e (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
+
+  (test #t plumber-flush-handle? e)
+  (test #f plumber-flush-handle? c)
+
+  (plumber-flush-handle-remove! e)
+  (plumber-flush-handle-remove! e) ; no-op
+
+  (plumber-flush-all c)
+  (test 0 values done)
+
+  (define e2 (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
+  (plumber-flush-all c)
+  (test 1 values done)
+
+  (plumber-flush-handle-remove! e2)
+
+  (define e3 (plumber-add-flush! c (lambda (e) (set! done (add1 done)))))
+  (plumber-flush-all c)
+  (test 2 values done)
+  (plumber-flush-all c)
+  (test 3 values done)
+
+  (plumber-flush-handle-remove! e3)
+
+  (plumber-add-flush! c (lambda (e)
+                           (plumber-flush-handle-remove! e)
+                           (set! done (add1 done))
+                           (plumber-add-flush! c (lambda (e)
+                                                   (plumber-flush-handle-remove! e)
+                                                   (set! done (add1 done))))))
+  (plumber-flush-all c)
+  (test 4 values done)
+  (plumber-flush-all c)
+  (test 5 values done)
+  (plumber-flush-all c)
+  (test 5 values done)
+
+  (define e5 (plumber-add-flush! c (lambda (e) (error "oops1"))))
+  (err/rt-test (plumber-flush-all c) exn:fail?)
+  (err/rt-test (plumber-flush-all c) exn:fail?)
+  (plumber-flush-handle-remove! e5)
+  (test (void) plumber-flush-all c)
+
+  ;; Weak reference:
+  (when (regexp-match #rx"3m" (path->bytes (system-library-subpath)))
+    (let ([h (plumber-add-flush! c (lambda (e) (set! done (add1 done))) #t)])
+      (collect-garbage)
+      (plumber-flush-all c)
+      (test 6 values done)
+      (set! h #f)
+      (collect-garbage)
+      (plumber-flush-all c)
+      (test 6 values done))))
+
+;; ----------------------------------------
 
 ;; Check that a terminated thread cleans up ownership
 ;;  of runstack and mark stack (crashes or doesn't).
@@ -1459,6 +1524,15 @@
 
 (for ([i 1000])
   (thread (make-keyword-procedure (lambda (x y) '()))))
+
+;; --------------------
+;; Make sure that thread time accounting works:
+
+(let ([t (thread (λ () (let loop () (loop))))])
+  (sleep 1)
+  (define s (current-process-milliseconds t))
+  (kill-thread t)
+  (test #t positive? s))
 
 ; --------------------
 

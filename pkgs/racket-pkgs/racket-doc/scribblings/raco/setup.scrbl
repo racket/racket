@@ -170,11 +170,13 @@ flags:
  @item{@DFlag{avoid-main} --- refrain from any setup actions that
   affect the installation, as opposed to user-specific actions.}
 
- @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking whether dependencies among
-  libraries are properly reflected by package-level dependency
-  declarations. The check uses compiled bytecode and associated
-  @filepath{.dep} files, and it checks only files are setup against
-  only packages that include files that are setup.}
+ @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking
+  whether dependencies among libraries are properly reflected by
+  package-level dependency declarations, whether modules are declared
+  by multiple packages, and whether package version dependencies are
+  satisfied. Dependency checking uses compiled bytecode and associated
+  @filepath{.dep} files, and it checks only files that are setup
+  against only packages that include files that are setup.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
   mismatches by adjusting package @filepath{info.rkt} files (which makes
@@ -1171,6 +1173,15 @@ function for installing a single @filepath{.plt} file.
 @defproc[(get-doc-search-url) string?]{
   Returns a string that is used by the documentation system, augmented
   with a version and search-key query, for remote documentation links.}
+
+@defproc[(get-doc-open-url) (or/c string? #f)]{
+  Returns @racket[#f] or a string for a root URL to be used as an
+  alternative to opening a local file for documentation. A
+  non-@racket[#f] configuration means that DrRacket, for example,
+  performs keyword searches for documentation via the specified URL
+  instead of from locally installed documentation.
+
+  @history[#:added "6.0.1.6"]}
 
 @defproc[(get-installation-name) string?]{ Returns the current
   installation's name, which is often @racket[(version)] but can be

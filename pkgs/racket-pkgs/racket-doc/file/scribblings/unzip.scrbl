@@ -7,7 +7,7 @@
 @defmodule[file/unzip]{The @racketmodname[file/unzip] library provides
 a function to extract items from a @exec{zip} archive.}
 
-@defproc[(unzip [in (or/c path-string? input-port)]
+@defproc[(unzip [in (or/c path-string? input-port?)]
                 [entry-reader (if preserve-timestamps?
                                   (bytes? boolean? input-port? (or/c #f exact-integer?)
                                    . -> . any)
@@ -28,6 +28,17 @@ filesystem; call @racket[make-filesystem-entry-reader] to configure
 aspects of the unpacking, such as  the destination directory.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
+
+
+@defproc[(call-with-unzip [in (or/c path-string? input-port?)]
+                          [proc (-> path-string? any)])
+         any]{
+
+Unpacks @racket[in] to a temporary directory, calls @racket[proc] on
+the temporary directory's path, and then deletes the temporary
+directory while returning the result of @racket[proc].
+
+@history[#:added "6.0.1.6"]}
 
 
 @defproc[(make-filesystem-entry-reader
@@ -135,6 +146,19 @@ If @racket[entry] is not in @racket[zipdir], an
 @racket[exn:fail:unzip:no-such-entry] exception is raised.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
+
+
+@defproc[(call-with-unzip-entry [in path-string? input-port]
+                                [entry path-string?]
+                                [proc (-> path-string? any)])
+         any]{
+
+Unpacks @racket[entry] within @racket[in] to a temporary directory,
+calls @racket[proc] on the unpacked file's path, and then
+deletes the temporary directory while returning the result of
+@racket[proc].
+
+@history[#:added "6.0.1.6"]}
 
 
 @defproc[(path->zip-path [path path-string?]) bytes?]{

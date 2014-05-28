@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/match racket/contract/combinator
-         racket/fixnum racket/flonum
+         racket/fixnum racket/flonum racket/extflonum
          racket/set
          racket/undefined
          (only-in (combine-in racket/private/promise)
@@ -15,7 +15,7 @@
       ;; Base values because you can only store flonums/fixnums in these
       ;; and not any higher-order values. This isn't sound if we ever
       ;; introduce bounded polymorphism for Flvector/Fxvector.
-      (flvector? e) (fxvector? e)))
+      (flvector? e) (fxvector? e) (extflvector? e)))
 
 (define (val-first-projection b)
   (define (fail neg-party v)

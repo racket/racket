@@ -89,6 +89,11 @@
 (test 10 add4 6)
 (err/rt-test (let ([x (lambda () (define d d) d)]) (x)) exn:fail:contract:variable?)
 (err/rt-test ((lambda () (define d d) d)) exn:fail:contract:variable?)
+(err/rt-test ((lambda () (define d (set! d #f)) d)) exn:fail:contract:variable?)
+(err/rt-test (letrec ([y (let ([o x]) (o))]
+                      [x (void)])
+               y)
+             exn:fail:contract:variable?)
 (test '(3 4 5 6) (lambda x x) 3 4 5 6)
 (test '(5 6) (lambda (x y . z) z) 3 4 5 6)
 (test 'second (lambda () (cons 'first 2) 'second))
@@ -106,6 +111,22 @@
 (syntax-test #'(lambda (x (y)) x))
 (syntax-test #'(lambda (x . 5) x))
 (syntax-test #'(lambda (x) x . 5))
+
+(err/rt-test (letrec ([not-ready not-ready]) 5)
+             (lambda (exn)
+               (and (exn:fail:contract:variable? exn)
+                    (eq? 'not-ready (exn:fail:contract:variable-id exn)))))
+(err/rt-test (let-syntax ([m
+                           (lambda (stx)
+                             (with-syntax ([not-ready-id
+                                            (syntax-property #'not-ready
+                                                             'undefined-error-name
+                                                             'alice)])
+                               #'(letrec ([not-ready-id not-ready]) 5)))])
+               (m))
+             (lambda (exn)
+               (and (exn:fail:contract:variable? exn)
+                    (eq? 'alice (exn:fail:contract:variable-id exn)))))
 
 (let ([f
        (case-lambda
@@ -644,6 +665,8 @@
 (test 'threex 'letrec-values (letrec-values ([() (values)][() (values)]) 'threex))
 
 (err/rt-test (letrec-values ([(a b c) (values 1 a b)]) (list a b c))
+              exn:fail:contract:variable?)
+(err/rt-test (letrec-values ([(a b c) (values (set! a 0) a b)]) (list a b c))
               exn:fail:contract:variable?)
 
 (test '(10 11) 'letrec-values (letrec-values ([(names kps)

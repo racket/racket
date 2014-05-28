@@ -58,6 +58,7 @@ AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled 
 AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sysroot=<path> use sysroot directory (e.g., for Android)])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
@@ -343,6 +344,10 @@ if test "${enable_sdk6}" != "" ; then
    echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
 fi
 
+if test "${enable_sysroot}" != "" ; then
+   echo "=== Using sysroot directory ${enable_sysroot}"
+fi
+
 if test "${enable_racket}" != "" ; then
    echo "=== Using Racket executable ${enable_racket}"
 fi
@@ -483,6 +488,14 @@ ORIG_CPP="${CPP}"
 # Include `--enable-portable-binary' by default for libffi
 SUB_CONFIGURE_EXTRAS=" --enable-portable-binary"
 
+if test "${enable_sysroot}" != "" ; then
+   PREFLAGS="--sysroot=${enable_sysroot} ${PREFLAGS}"
+   CPPFLAGS="--sysroot=${enable_sysroot} ${CPPFLAGS}"
+   LDFLAGS="--sysroot=${enable_sysroot} ${LDFLAGS}"
+   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+fi
+
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
   AC_PROG_CPP
@@ -601,17 +614,17 @@ case "$host_os" in
   *freebsd*)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   openbsd*)
     LIBS="$LIBS -Wl,--export-dynamic"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   dragonfly*)
     LIBS="$LIBS -Wl,--export-dynamic"
-    enable_pthread=yes
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
   netbsd*)
@@ -1262,6 +1275,12 @@ if test "${enable_mzrt}" = "yes" ; then
 fi
 
 ############### pthread ###################
+
+if test "${enable_pthread}" = "" ; then
+  if test "${enable_pthread_by_default}" = "yes" ; then
+    enable_pthread=yes
+  fi
+fi
 
 if test "${enable_pthread}" = "yes" ; then
   if test "${use_flag_pthread}" = "yes" ; then

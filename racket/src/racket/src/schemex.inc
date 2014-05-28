@@ -81,6 +81,9 @@
   scheme_extension_table->scheme_close_managed = scheme_close_managed;
   scheme_extension_table->scheme_schedule_custodian_close = scheme_schedule_custodian_close;
   scheme_extension_table->scheme_add_custodian_extractor = scheme_add_custodian_extractor;
+  scheme_extension_table->scheme_flush_managed = scheme_flush_managed;
+  scheme_extension_table->scheme_add_flush = scheme_add_flush;
+  scheme_extension_table->scheme_remove_flush = scheme_remove_flush;
   scheme_extension_table->scheme_add_atexit_closer = scheme_add_atexit_closer;
   scheme_extension_table->scheme_add_evt = scheme_add_evt;
   scheme_extension_table->scheme_add_evt_through_sema = scheme_add_evt_through_sema;
@@ -113,6 +116,7 @@
   scheme_extension_table->scheme_log_w_data = scheme_log_w_data;
   scheme_extension_table->scheme_log_message = scheme_log_message;
   scheme_extension_table->scheme_log_name_message = scheme_log_name_message;
+  scheme_extension_table->scheme_log_name_pfx_message = scheme_log_name_pfx_message;
   scheme_extension_table->scheme_log_abort = scheme_log_abort;
   scheme_extension_table->scheme_log_warning = scheme_log_warning;
   scheme_extension_table->scheme_glib_log_message = scheme_glib_log_message;
@@ -719,3 +723,5 @@
   scheme_extension_table->scheme_register_process_global = scheme_register_process_global;
   scheme_extension_table->scheme_malloc_key = scheme_malloc_key;
   scheme_extension_table->scheme_free_key = scheme_free_key;
+  scheme_extension_table->scheme_jit_find_code_end = scheme_jit_find_code_end;
+  scheme_extension_table->scheme_jit_now = scheme_jit_now;

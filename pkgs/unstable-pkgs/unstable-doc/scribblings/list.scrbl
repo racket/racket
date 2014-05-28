@@ -167,7 +167,9 @@ for which @racket[pred] produces a true value.
          (listof (listof A))]{
 
 Groups the given list into equivalence classes, with equivalence being
-determined by @racket[=?].
+determined by @racket[=?]. Within each equivalence class, @racket[group-by]
+preserves the ordering of the original list. The ordering of the equivalence
+classes themselves is unspecified.
 
 @examples[#:eval the-eval
 (group-by (lambda (x) (modulo x 3)) '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))

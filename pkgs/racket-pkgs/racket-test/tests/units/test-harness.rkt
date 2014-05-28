@@ -8,6 +8,8 @@
   
   (define (stx-bound-id=? x y)
     (cond 
+      ((and (syntax? x) (eq? '_ (syntax-e x)))
+       #t)
       ((and (stx-pair? x)
             (not (syntax-e (stx-car x)))
             (identifier? (stx-cdr x)))
@@ -20,7 +22,8 @@
             (stx-bound-id=? (stx-cdr x) (stx-cdr y))))
       ((and (identifier? x) (identifier? y))
        (bound-identifier=? x y))
-      ((and (number? (syntax-e x)) (number? (syntax-e y)))
+      ((and (syntax? x) (number? (syntax-e x))
+            (syntax? y) (number? (syntax-e y)))
        (= (syntax-e x) (syntax-e y)))
       (else #f)))
 

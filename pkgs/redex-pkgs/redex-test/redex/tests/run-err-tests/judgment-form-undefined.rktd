@@ -1,4 +1,4 @@
-("reference to judgment form q before its definition"
+("q: undefined;\n cannot use before initialization"
  ([use q]) ([def q])
  (let ()
    (judgment-holds (use 1))

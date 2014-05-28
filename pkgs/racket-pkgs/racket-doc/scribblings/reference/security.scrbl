@@ -16,4 +16,5 @@
 @include-section["thread-groups.scrbl"]
 @include-section["struct-inspectors.scrbl"]
 @include-section["code-inspectors.scrbl"]
+@include-section["plumbers.scrbl"]
 @include-section["sandbox.scrbl"]

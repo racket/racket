@@ -52,6 +52,8 @@
     [(_ (Bot:)) #t]
     [((OrFilter: fs) f2)
      (memf (lambda (f) (filter-equal? f f2)) fs)]
+    [(f1 (AndFilter: fs))
+     (memf (lambda (f) (filter-equal? f f1)) fs)]
     [((TypeFilter: t1 p1 i1)
       (TypeFilter: t2 p1 i2))
      (and (name-ref=? i1 i2)
@@ -126,6 +128,7 @@
 ;; Smart constructor for make-ImpFilter
 (define (-imp p1 p2)
   (match* (p1 p2)
+    [(t t) -top]
     [((Bot:) _) -top]
     [(_ (Top:)) -top]
     [((Top:) _) p2]
@@ -212,14 +215,13 @@
 ;; Useful to express properties of the form: if this expressions returns at all, we learn this
 (define (add-unconditional-prop results prop)
   (match results
-    ;; TODO add support for filters on tc-any-results
-    [(tc-any-results:) results]
-    [(tc-results: ts (FilterSet: fs+ fs-) os)
+    [(tc-any-results: f) (tc-any-results (-and prop f))]
+    [(tc-results: ts (list (FilterSet: fs+ fs-) ...) os)
      (ret ts
           (for/list ([f+ fs+] [f- fs-])
             (-FS (-and prop f+) (-and prop f-)))
           os)]
-    [(tc-results: ts (FilterSet: fs+ fs-) os dty dbound)
+    [(tc-results: ts (list (FilterSet: fs+ fs-) ...) os dty dbound)
      (ret ts
           (for/list ([f+ fs+] [f- fs-])
             (-FS (-and prop f+) (-and prop f-)))
@@ -250,7 +252,7 @@
 ;; tc-results/c -> tc-results/c
 (define (erase-filter tc)
   (match tc
-    [(tc-any-results:) tc]
+    [(tc-any-results: _) (tc-any-results -no-filter)]
     [(tc-results: ts _ _)
      (ret ts
           (for/list ([f (in-list ts)]) -no-filter)

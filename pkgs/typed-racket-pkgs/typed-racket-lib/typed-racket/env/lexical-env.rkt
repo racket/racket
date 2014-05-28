@@ -18,7 +18,7 @@
          (except-in (types utils abbrev kw-types) -> ->* one-of/c))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
-         with-lexical-env/extend/props update-type/lexical)
+         update-type/lexical)
 (provide/cond-contract
  [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))])
 
@@ -32,10 +32,6 @@
 ;; run code in an extended env
 (define-syntax-rule (with-lexical-env/extend is ts . b)
   (with-lexical-env (extend/values is ts (lexical-env)) . b))
-
-;; run code in an extended env and with replaced props
-(define-syntax-rule (with-lexical-env/extend/props is ts ps . b)
-  (with-lexical-env (replace-props (extend/values is ts (lexical-env)) ps) . b))
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifier -> Type

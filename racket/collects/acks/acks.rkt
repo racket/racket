@@ -10,6 +10,7 @@
   (string-append
    "The following individuals contributed to the implementation"
    " and documentation of Racket: "
+   "Claire Alvis, "
    "Yavuz Arkun, "
    "Ian Barland, "
    "Eli Barzilay, "
@@ -17,6 +18,7 @@
    "Stephen Bloch, "
    "Matthew Butterick, "
    "Filipe Cabecinhas, "
+   "Stephen Chang, "
    "Richard Cleis, "
    "John Clements, "
    "Richard Cobbe, "

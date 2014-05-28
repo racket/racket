@@ -60,8 +60,10 @@
     [(and c (Class: _ inits fields _ _ init-rest))
      (cond [;; too many positional arguments, fail
             (and (> (length pos-args) (length inits)) (not init-rest))
-            ;; FIXME: better message
-            (tc-error "too many positional arguments supplied")]
+            (tc-error/fields "failure in class instantiation"
+                             #:more "too many positional arguments supplied"
+                             "expected" (format "~a arguments" (length inits))
+                             "given" (format "~a arguments" (length pos-args)))]
            [;; more args than inits, now feed them to init-rest
             (and (> (length pos-args) (length inits)))
             (define-values (pos-for-inits other-pos)
@@ -80,8 +82,12 @@
               (tc-expr/check pos-arg (ret type)))
             (check-named-inits other-inits given-names name-assoc)])
      (ret (make-Instance c))]
+    [(ClassTop:) (tc-error/expr/fields "failure in class instantiation"
+                                       #:more "cannot instantiate a value of type ClassTop")]
     [t
-     (tc-error/expr "expected a class value for object creation, got: ~a" t)]))
+     (tc-error/expr/fields "failure in class instantiation"
+                           #:more "given a value of a non-class type"
+                           "given" t)]))
 
 (define (check-named-inits inits names name-assoc)
   (define init-names (map car inits))

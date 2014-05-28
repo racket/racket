@@ -13,11 +13,12 @@
          (utils tc-utils)
          (typecheck provide-handling def-binding tc-structs
                     typechecker internal-forms)
-
-
-         (for-template 
-           (only-in syntax/location quote-module-name)
-           racket/base))
+         syntax/location
+         racket/format
+         (for-template
+          (only-in syntax/location quote-module-name)
+          racket/base
+          (env env-req)))
 
 (provide/cond-contract
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
@@ -47,7 +48,6 @@
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-values #%plain-app begin define-syntaxes)
-      ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
       [(~or _:ignore^ _:ignore-some^)
@@ -179,7 +179,14 @@
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
 ;; syntax? -> (or/c 'no-type tc-results/c)
-(define (tc-toplevel/pass2 form)
+(define (tc-toplevel/pass2 form [expected (tc-any-results -top)])
+  
+  (do-time (format "pass2 ~a line ~a"
+                   (if #t
+                       (substring (~a (syntax-source form))
+                                  (max 0 (- (string-length (~a (syntax-source form))) 20)))
+                       (syntax-source form))
+                   (syntax-line form)))
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literal-sets (kernel-literals)
@@ -223,10 +230,12 @@
       [(begin) 'no-type]
       [(begin . rest)
        (for/last ([form (in-syntax #'rest)])
-         (tc-toplevel/pass2 form))]
+         (tc-toplevel/pass2 form expected))]
 
       ;; otherwise, the form was just an expression
-      [_ (tc-expr/check form tc-any-results)])))
+      [_ (if expected
+             (tc-expr/check form expected)
+             (tc-expr form))])))
 
 
 
@@ -248,6 +257,7 @@
 ;; syntax-list -> (values syntax syntax)
 (define (type-check forms0)
   (define forms (syntax->list forms0))
+  (do-time "before form splitting")
   (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
     (filter-multiple
      forms
@@ -258,13 +268,11 @@
      provide?
      define/fixup-contract?))
   (do-time "Form splitting done")
-  ;(printf "before parsing type aliases~n")
 
   (define-values (type-alias-names type-alias-map)
     (get-type-alias-info type-aliases))
 
   ;; Add the struct names to the type table, but not with a type
-  ;(printf "before adding type names~n")
   (let ((names (map name-of-struct struct-defs))
         (type-vars (map type-vars-of-struct struct-defs)))
     (for ([name names])
@@ -272,10 +280,11 @@
        name (make-Name name null #f #t)))
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
-  ;(printf "after adding type names~n")
+  (do-time "after adding type names")
 
   (register-all-type-aliases type-alias-names type-alias-map)
 
+  (do-time "starting struct handling")
   ;; Parse and register the structure types
   (define parsed-structs
     (for/list ((def (in-list struct-defs)))
@@ -287,8 +296,7 @@
 
   ;; register the bindings of the structs
   (define struct-bindings (map register-parsed-struct-bindings! parsed-structs))
-  ;(printf "after resolving type aliases~n")
-  ;(displayln "Starting pass1")
+  (do-time "before pass1")
   ;; do pass 1, and collect the defintions
   (define *defs (apply append
                        (append
@@ -296,7 +304,7 @@
                         (map tc-toplevel/pass1 forms))))
   ;; do pass 1.5 to finish up the definitions
   (define defs (append *defs (apply append (map tc-toplevel/pass1.5 forms))))
-  ;(displayln "Finished pass1")
+  (do-time "Finished pass1")
   ;; separate the definitions into structures we'll handle for provides
   (define def-tbl
     (for/fold ([h (make-immutable-free-id-table)])
@@ -312,10 +320,11 @@
           [else
             (int-err "Two conflicting definitions: ~a ~a" def other-def)]))
       (dict-update h (binding-name def) merge-def-bindings #f)))
+  (do-time "computed def-tbl")
   ;; typecheck the expressions and the rhss of defintions
   ;(displayln "Starting pass2")
   (for-each tc-toplevel/pass2 forms)
-  ;(displayln "Finished pass2")
+  (do-time "Finished pass2")
   ;; check that declarations correspond to definitions
   (check-all-registered-types)
   ;; report delayed errors
@@ -384,7 +393,7 @@
 ;; syntax -> (values syntax syntax)
 (define (tc-module stx)
   (syntax-parse stx
-    [(pmb . forms) (type-check #'forms)]))
+    [(pmb . forms) (begin0 (type-check #'forms) (do-time "finished type checking"))]))
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
@@ -417,6 +426,6 @@
        (register-parsed-struct-bindings! parsed))
      (tc-toplevel/pass1 form)
      (tc-toplevel/pass1.5 form)
-     (begin0 (tc-toplevel/pass2 form)
+     (begin0 (tc-toplevel/pass2 form #f)
              (report-all-errors))]))
 

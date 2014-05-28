@@ -4,7 +4,8 @@
          racket/contract/combinator
          (for-syntax racket/base))
 
-(provide option/c #;transfer-option exercise-option waive-option tweak-option transfer/c
+(provide (rename-out [_option/c option/c])
+         #;transfer-option exercise-option waive-option tweak-option transfer/c
          has-option? has-option-with-contract?
          invariant/c)
 
@@ -148,9 +149,6 @@
               null
               (list '#:struct (fourth (option-structid c)))))))
 
-
-
-
 (define (check-option structid invariant flat immutable val blame) 
     (when (and (eq? invariant 'dont-care)
                (or  (not (eq? immutable 'dont-care))
@@ -164,8 +162,10 @@
                 (and (hash? val) (eq? structid 'none))
                 (and (not (eq? structid 'none)) (same-type val structid)))
       (if (eq? structid 'none)
-          (raise-blame-error blame val '(expected "a procedure or a vector or a hash" given: "~e") val)  
-          (raise-blame-error blame val '(expected "a struct of type ~a" given: "~e") (fourth structid) val))))
+          (raise-blame-error blame val '(expected "a procedure or a vector or a hash" given: "~e")
+                             val)  
+          (raise-blame-error blame val '(expected "a struct of type ~a" given: "~e")
+                             (fourth structid) val))))
 
 
 
@@ -206,19 +206,19 @@
                          blame
                          "the option of"))))))))
 
-(define (build-option ctc
-                      #:with-contract [with #f]
-                      #:tester [tester 'dont-care]
-                      #:invariant [invariant 'dont-care] 
-                      #:flat? [flat #f] 
-                      #:immutable [immutable 'dont-care]
-                      #:struct [structid 'none]
-                      here)
+(define (option/c ctc
+                  #:with-contract [with #f]
+                  #:tester [tester 'dont-care]
+                  #:invariant [invariant 'dont-care] 
+                  #:flat? [flat #f] 
+                  #:immutable [immutable 'dont-care]
+                  #:struct [structid 'none]
+                  here)
   (option ctc with tester invariant flat immutable structid here))
 
 
 
-(define-syntax (option/c stx)
+(define-syntax (_option/c stx)
   (syntax-case stx ()
     [x
      (identifier? #'x)
@@ -232,7 +232,7 @@
        (with-syntax ([(new-arg ...) (convert-args args this-one 'option/c)])
          (syntax-property
           (syntax/loc stx
-            (build-option new-arg ... (quote-module-name)))
+            (option/c new-arg ... (quote-module-name)))
           'racket/contract:contract
           (vector this-one (list #'optionc) null))))]))
 
@@ -369,7 +369,10 @@
           (let ([kind (cond [(vector? val) "vector"]
                             [(hash? val) "hash"]
                             [else "struct"])])                            
-            (fail val '(expected: "~s that satisfies ~s" given: "~e") kind (contract-name orig-ctc) val))))
+            (fail val '(expected: "~s that satisfies ~s" given: "~e") 
+                  kind
+                  (contract-name orig-ctc)
+                  val))))
       #t)))
 
 (define (invariantc-first-order ctc)
@@ -430,8 +433,12 @@
                   (wrapper
                    ((proj blame) val)
                    (λ (h k) (run-invariant 'hash blame) (values k (λ (h k v) v)))
-                   (λ (h k v) (if (immutable? h) (hash-set h k v) (hash-set! h k v)) (run-invariant 'hash (blame-swap blame)) (values k v))
-                   (λ (h k) (if (immutable? h) (hash-remove h k) (hash-remove! h k)) (run-invariant 'hash (blame-swap blame)) k)
+                   (λ (h k v) 
+                     (if (immutable? h) (hash-set h k v) (hash-set! h k v))
+                     (run-invariant 'hash (blame-swap blame)) (values k v))
+                   (λ (h k) 
+                     (if (immutable? h) (hash-remove h k) (hash-remove! h k))
+                     (run-invariant 'hash (blame-swap blame)) k)
                    (λ (h k) (run-invariant 'hash blame) k)
                    impersonator-prop:contracted ctc))])
            (if impersonate? 

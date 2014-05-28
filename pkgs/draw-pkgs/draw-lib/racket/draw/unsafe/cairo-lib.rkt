@@ -10,6 +10,9 @@
   [(macosx)
    (ffi-lib "libpixman-1.0.dylib")
    (ffi-lib "libpng16.16.dylib")
+   (ffi-lib "libexpat.1.dylib")
+   (ffi-lib "libfreetype.6.dylib")
+   (ffi-lib "libfontconfig.1.dylib")
    (ffi-lib "libcairo.2.dylib")]
   [(windows)
    (ffi-lib "zlib1.dll")

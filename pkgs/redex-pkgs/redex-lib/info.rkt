@@ -17,3 +17,5 @@
 (define pkg-desc "implementation (no documentation) part of \"redex\"")
 
 (define pkg-authors '(robby bfetscher))
+
+(define version "1.1")

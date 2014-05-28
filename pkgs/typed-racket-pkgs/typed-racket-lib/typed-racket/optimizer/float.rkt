@@ -8,14 +8,14 @@
          (types numeric-tower union abbrev)
          (optimizer utils numeric-utils logging fixnum))
 
-(provide float-opt-expr float-arg-expr int-expr)
+(provide float-opt-expr float-arg-expr int-expr float-op)
 
 
 (define (mk-float-tbl generic)
   (mk-unsafe-tbl generic "fl~a" "unsafe-fl~a"))
 
 (define binary-float-ops
-  (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
+  (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max #'expt)))
 (define binary-float-comps
   (dict-set*
     (mk-float-tbl (list #'= #'<= #'< #'> #'>=))
@@ -98,6 +98,7 @@
 (define (maybe-exact-rational? stx)
   (and (subtypeof? stx -Real)
        (not (subtypeof? stx -Flonum))
+       (not (subtypeof? stx -SingleFlonum))
        (not (subtypeof? stx -Int))))
 
 
@@ -139,7 +140,7 @@
                                              #:when (not (subtypeof? a -Flonum)))
                                      1)))]
                          ;; if we don't have a return type of float, or if the return type is
-                         ;; float, but we can't optimizer for some other reason, we missed an
+                         ;; float, but we can't optimize for some other reason, we missed an
                          ;; optimization opportunity, report it
                          ;; ignore operations that stay within integers or rationals, since
                          ;; these have nothing to do with float optimizations

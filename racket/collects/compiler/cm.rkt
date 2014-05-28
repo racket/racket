@@ -9,7 +9,8 @@
          racket/promise
          openssl/sha1
          racket/place
-         setup/collects)
+         setup/collects
+         compiler/compilation-path)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -172,46 +173,9 @@
         (loop subcode ht))))
   (for/list ([k (in-hash-keys ht)]) k))
 
-(define (get-compilation-dir+name mode roots path)
-  (define (get-one root)
-    (let-values ([(base name must-be-dir?) (split-path path)])
-      (values 
-       (cond
-        [(eq? 'relative base) 
-         (cond
-          [(eq? root 'same) mode]
-          [else (build-path root mode)])]
-        [else (build-path (cond
-                           [(eq? root 'same) base]
-                           [(relative-path? root) (build-path base root)]
-                           [else (reroot-path base root)])
-                          mode)])
-       name)))
-  ;; Try first root:
-  (define-values (p n) (get-one (car roots)))
-  (if (or (null? (cdr roots))
-          (file-exists? (path-add-suffix (build-path p n) #".zo")))
-      ;; Only root or first has a ".zo" file:
-      (values p n)
-      (let loop ([roots (cdr roots)])
-        (cond
-         [(null? roots) 
-          ;; No roots worked, so assume the first root:
-          (values p n)]
-         [else
-          ;; Check next root:
-          (define-values (p n) (get-one (car roots)))
-          (if (file-exists? (path-add-suffix (build-path p n) #".zo"))
-              (values p n)
-              (loop (cdr roots)))]))))
-
 (define (get-compilation-path mode roots path)
-  (let-values ([(dir name) (get-compilation-dir+name mode roots path)])
+  (let-values ([(dir name) (get-compilation-dir+name path #:modes (list mode) #:roots roots)])
     (build-path dir name)))
-
-(define (get-compilation-dir mode roots path)
-  (let-values ([(dir name) (get-compilation-dir+name mode roots path)])
-    dir))
 
 (define (touch path)
   (with-compiler-security-guard
@@ -379,8 +343,11 @@
                                (path? (file-dependency-path (vector-ref l 2))))
                         (external-dep! (file-dependency-path (vector-ref l 2))
                                        (file-dependency-module? (vector-ref l 2)))
-                        (log-message orig-log (vector-ref l 0) (vector-ref l 1)
-                                     (vector-ref l 2)))
+                        (log-message orig-log
+                                     (vector-ref l 0) (vector-ref l 3)
+                                     (vector-ref l 1)
+                                     (vector-ref l 2)
+                                     #f))
                       (loop))))))))
 
   ;; Compile the code:
@@ -417,7 +384,7 @@
                        (lambda (a b) #f) ; extension handler
                        #:source-reader read-src-syntax)))
   (define dest-roots (list (car roots)))
-  (define code-dir (get-compilation-dir mode dest-roots path))
+  (define code-dir (get-compilation-dir path #:modes (list mode) #:roots dest-roots))
 
   ;; Wait for accomplice logging to finish:
   (log-message accomplice-logger 'info "stop" done-key)
@@ -578,7 +545,7 @@
        (trace-printf "end compile: ~a" actual-path)))))
 
 (define (get-compiled-time mode roots path)
-  (define-values (dir name) (get-compilation-dir+name mode roots path))
+  (define-values (dir name) (get-compilation-dir+name path #:modes (list mode) #:roots roots))
   (or (try-file-time (build-path dir "native" (system-library-subpath)
                                  (path-add-suffix name (system-type
                                                         'so-suffix))))
@@ -594,7 +561,7 @@
           (call-with-input-file* dep-path (lambda (p) (cdadr (read p))))))))))
 
 (define (get-compiled-sha1 mode roots path)
-  (define-values (dir name) (get-compilation-dir+name mode roots path))
+  (define-values (dir name) (get-compilation-dir+name path #:modes (list mode) #:roots roots))
   (let ([dep-path (build-path dir (path-add-suffix name #".dep"))])
     (or (try-file-sha1 (build-path dir "native" (system-library-subpath)
                                    (path-add-suffix name (system-type

@@ -5,14 +5,10 @@
 
 ;; For simplicity, protect everything produced by Typed Racket.
 (define (arm stx)
-  (syntax-case stx (module module* #%plain-module-begin
-                       #%require #%provide #%declare begin
-                       define-values define-syntaxes
-                       begin-for-syntax)
-    [(module name initial-import mb)
-     (quasisyntax/loc stx (module name initial-import #,(arm #'mb)))]
-    [(module* name initial-import mb)
-     (quasisyntax/loc stx (module* name initial-import #,(arm #'mb)))]
+  (syntax-case stx (#%plain-module-begin
+                    #%require #%provide #%declare begin
+                    define-values define-syntaxes
+                    begin-for-syntax)
     [(#%plain-module-begin . _) (syntax-property (syntax-arm stx)
                                                  'taint-mode
                                                  'opaque)]

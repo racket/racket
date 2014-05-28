@@ -34,11 +34,24 @@ If a valid name cannot be inferred, the result is @racket[#f].}
 
 
 @defproc[(package-source->name+type [source string?]
-                                    [type (or/c package-source-format? #f)
-                                     #f])
+                                    [type (or/c package-source-format? #f) #f]
+                                    [#:complain complain-proc (string? string? . -> . any) void]
+                                    [#:must-infer-name? must-infer-name? boolean? #f]
+                                    [#:link-dirs? link-dir? boolean?])
           (values (or/c #f string?)
                   (or/c package-source-format? #f))]{
 
 Like @racket[package-source->name], but also returns the type of the
 source (which is useful when the type is inferred). If the source is
-not well-formed, the second result can be @racket[#f].}
+not well-formed, the second result can be @racket[#f].
+
+The @racket[complain-proc] function is applied when @racket[source] is
+ill-formed. The arguments to @racket[complain-proc] are
+@racket[source] and an error message.
+
+If @racket[must-infer-name?] is true, then @racket[complain-proc]
+is called if a valid name cannot be inferred from @racket[source].
+
+If @racket[link-dirs?] is true, then a directory path is reported as
+type @racket['link] instead of @racket['dir].}
+

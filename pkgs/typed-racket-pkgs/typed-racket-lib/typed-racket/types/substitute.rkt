@@ -4,7 +4,7 @@
          racket/match racket/set
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -lst* -result)
+         (only-in (types base-abbrev) -Tuple* -lst -Null -result ManyUniv)
          (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -38,15 +38,15 @@
 ;; TODO: Figure out if free var checking/short circuiting is actually a performance improvement.
 
 ;; substitute-many : Hash[Name,Type] Type -> Type
-(define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
-  ((simple-substitution/c (or/c Values/c arr?)) (#:Un procedure?) . ->* . (or/c Values/c arr?))
-  (define (sb t) (substitute-many subst t #:Un Un))
+(define/cond-contract (substitute-many subst target)
+  (simple-substitution/c Type? . -> .  Type?)
+  (define (sb t) (substitute-many subst t))
   (define names (hash-keys subst))
   (define fvs (free-vars* target))
   (if (ormap (lambda (name) (free-vars-has-key? fvs name)) names)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
-                 [#:Union tys (Un (map sb tys))]
+                 [#:Union tys (apply Un (map sb tys))]
                  [#:F name (hash-ref subst name target)]
                  [#:arr dom rng rest drest kws
                         (cond
@@ -81,14 +81,14 @@
 
 
 ;; substitute : Type Name Type -> Type
-(define/cond-contract (substitute image name target #:Un [Un (lambda (args) (apply Un args))])
-  ((Type/c symbol? Type/c) (#:Un procedure?) . ->* . Type/c)
-  (substitute-many (hash name image) target #:Un Un))
+(define/cond-contract (substitute image name target)
+  (Type/c symbol? Type? . -> . Type?)
+  (substitute-many (hash name image) target))
 
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (define/cond-contract (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f Type/c) symbol? (or/c arr? Values/c) . -> . (or/c arr? Values/c))
+  ((listof Type/c) (or/c #f Type/c) symbol? Type?  . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
   (if (or (set-member? (free-vars-names (free-idxs* target)) name)
           (set-member? (free-vars-names (free-vars* target)) name))
@@ -97,19 +97,21 @@
                              (if (eq? name dbound)
                                  ;; We need to recur first, just to expand out any dotted usages of this.
                                  (let ([expanded (sb dty)])
-                                   (for/fold ([t (make-Value null)])
+                                   (for/fold ([t (if rimage (-lst rimage) -Null)])
                                      ([img (in-list (reverse images))])
                                      (make-Pair (substitute img name expanded) t)))
                                  (make-ListDots (sb dty) dbound))]
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
-                                   (make-Values
-                                    (append
-                                     (map sb types)
-                                     ;; We need to recur first, just to expand out any dotted usages of this.
-                                     (let ([expanded (sb dty)])
-                                       (for/list ([img (in-list images)])
-                                         (-result (substitute img name expanded))))))
+                                   (if rimage
+                                       ManyUniv
+                                       (make-Values
+                                        (append
+                                         (map sb types)
+                                         ;; We need to recur first, just to expand out any dotted usages of this.
+                                         (let ([expanded (sb dty)])
+                                           (for/list ([img (in-list images)])
+                                             (-result (substitute img name expanded)))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
@@ -146,9 +148,8 @@
                                                   (sb dty)
                                                   (if (eq? name dbound) image-bound dbound)))]
                  [#:ListDots dty dbound
-                             (apply -lst*
+                             (-Tuple*
                                (if (eq? name dbound) pre-image null)
-                               #:tail
                                (make-ListDots (sb dty)
                                               (if (eq? name dbound) image-bound dbound)))]
                  [#:F name*
@@ -169,7 +170,7 @@
 ;; substitute many variables
 ;; subst-all : substitution/c Type -> Type
 (define/cond-contract (subst-all s ty)
-  (substitution/c (or/c arr? Values/c) . -> . (or/c Values/c arr?))
+  (substitution/c Type? . -> . Type?)
 
   (define t-substs
     (for/fold ([acc (hash)]) ([(v r) (in-hash s)])

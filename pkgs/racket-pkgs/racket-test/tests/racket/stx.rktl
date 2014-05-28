@@ -1601,6 +1601,17 @@
   (test #t syntax-tainted? (syntax-touch (round-trip (syntax-arm (quote-syntax foo)))))
   (test #t syntax-tainted? (round-trip (syntax-touch (syntax-arm (quote-syntax foo))))))
 
+;; Make sure that a taint-transparent syntax object loses its lexical context:
+(let ([b-stx #'(begin 1)])
+  (test #t free-identifier=? #'begin (datum->syntax b-stx 'begin))
+  (let ([a-b-stx (parameterize ([current-namespace (make-base-namespace)])
+                   (eval '(define-syntax-rule (b e)
+                            (begin e)))
+                   (expand #'(b 1)))])
+    (test #f free-identifier=? #'begin (datum->syntax a-b-stx 'begin))
+    (test #t free-identifier=? #'begin (syntax-case a-b-stx ()
+                                         [(b . _) (datum->syntax #'b 'begin)]))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that attacks are thwarted via `syntax-local-get-shadower'
 ;; or `make-syntax-delta-introducer':

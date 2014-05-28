@@ -1,14 +1,7 @@
 #lang racket/base
 
-(require "error.rkt"
-         racket/undefined)
-(provide check-defined-lexical
-         check-defined-module)
-
-(define (check-defined-lexical value name desc)
-  ;; Needed?
-  (when (eq? undefined value)
-    (report-undefined name desc)))
+(require "error.rkt")
+(provide check-defined-module)
 
 (define (check-defined-module thunk name desc)
   (with-handlers ([exn:fail:contract:variable?
@@ -16,4 +9,8 @@
     (thunk)))
 
 (define (report-undefined name desc)
-  (redex-error #f "reference to ~a ~s before its definition" desc name))
+  (raise
+   (exn:fail:contract:variable
+    (format "~s: undefined;\n cannot use ~a before its definition" name desc)
+    (current-continuation-marks)
+    name)))

@@ -599,6 +599,153 @@ top-level variables in higher @tech{phases}, while module
 top-levels are in corresponding higher @tech{phase}s.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "separate-compilation"]{The Separate Compilation Guarantee}
+
+When a module is compiled, its @tech{phase} 1 is instantiated. This
+can, in turn, trigger the transitive instantiation of many other
+modules at other phases, including phase 1. Racket provides a very
+strong guarantee about this instantiation called "The Separate
+Compilation Guarantee":
+
+"Any @tech{effects} of the instantiation of the module's phase 1 due
+to compilation on the Racket runtime system are @tech{discarded}."
+
+The guarantee concerns @deftech{effects}. There are two different
+kinds of effects: internal and external.
+
+Internal effects are exemplified by mutation.  Mutation is the action
+of a function such as @racket[set-box!], which changes the value
+contained in the box. The modified box is not observable outside of
+Racket, so the effect is said to be "internal". By definition,
+internal effects is not detectable outside of the Racket program.
+
+External effects are exemplified by input/output (or I/O). I/O is the
+action of a function such as @racket[tcp-connect], which communicates
+with the operating system to send network packets outside of the
+machine running Racket. The transmission of these packets is
+observable outside of Racket, in particular by the receiver computer
+or any routers in between. External effects exist to be detectable
+outside of the Racket program and are often detectable using physical
+processes.
+
+An effect is @deftech{discarded} when it is no longer detectable. For
+instance, a mutation of a box from @racket[3] to @racket[4] would be
+discarded if it ceases to be detectable that it was ever changed, and
+thus would still contain @racket[3]. Because external effects are
+intrinsically observable outside of Racket, they are irreversible and
+cannot be discarded.
+
+Thus, The Separate Compilation Guarantee only concerns effects like
+mutation, because they are exclusively effects "on the Racket runtime
+system" and not "on the physical universe".
+
+There are many things a Racket program can do that appear to be
+internal effects, but are actually external effects. For instance,
+@racket[bytes-set!] is typically an internal effect, except when the
+bytes were created by @racket[make-shared-bytes] which is allocated in
+space observable by other processes. Thus, effects which modify them
+are not discardable, so @racket[bytes-set!], in this case, is an
+external effect.
+
+The opposite is also true: some things which appear to be external are
+actually internal. For instance, if a Racket program starts multiple
+threads and uses mutation to communicate between them, that mutation
+is purely internal, because Racket's threads are defined entirely
+internally.
+
+Furthermore, whenever a Racket program calls an @tech{unsafe}
+function, the Racket runtime system makes no promises about its
+effects. For instance, all foreign calls use
+@racketmodname[ffi/unsafe], so all foreign calls are unsafe and their
+effects cannot be discarded by Racket.
+
+Finally, The Separate Compilation Guarantee only concerns
+instantiations at phase 1 during compilation and not all phase 1
+instantiations generally, such as when its phase 1 is required and
+used for effects via reflective mechanisms.
+
+The practical consequence of this guarantee is that because effects
+are never visible, no module can detect whether a module it
+@racket[require]s is already compiled. Thus, it can never change the
+compilation of one module to have already compiled a different module.
+In particular, if module A is shared by the phase 1 portion of modules
+X and Y, then any internal effects while X is compiled are not visible
+during the compilation of Y, regardless of whether X and Y are
+compiled during the same execution of Racket's runtime system.
+
+The following set of modules demonstrate this guarantee. First, we
+define a module with the ability to observe effects via a
+@racket[box]:
+
+@racketblock[
+(module box racket/base
+  (provide (all-defined-out))
+  (define b (box 0)))
+]
+
+Next, we define two syntax transformers that use and mutate this box:
+
+@RACKETBLOCK[
+(module transformers racket/base
+  (provide (all-defined-out))
+  (require (for-syntax racket/base
+                       'box))
+  (define-syntax (sett stx)
+    (set-box! b 2)
+    (syntax (void)))
+  (define-syntax (gett stx)
+    (quasisyntax (unsyntax (unbox b)))))
+]
+
+Next, we define a module that uses these transformers:
+
+@racketblock[
+(module user racket/base
+  (provide (all-defined-out))
+  (require 'transformers)
+  (sett)
+  (define gott (gett)))
+]
+
+Finally, we define a second module that uses these transformers:
+
+@racketblock[
+(module test racket/base
+  (require 'box 'transformers 'user)
+  (displayln gott)
+  (displayln (gett))
+
+  (sett)
+  (displayln (gett))
+
+  (displayln (unbox b))
+  )
+]
+
+This module displays:
+@itemize[
+ @item{@litchar["2"], because the module @racket['user] expanded to @racket[2].}
+ @item{@litchar["0"], because the effects of compiling @racket['user] were discarded.}
+ @item{@litchar["2"], because the effect of @racket[(sett)] inside @racket['test] is not discarded.}
+ @item{@litchar["0"], because the effects at phase 1 are irrelevant to the phase 0 use of @racket[b].}
+]
+
+Furthermore, this display will never change, regardless of which order
+these modules are compiled in or whether they are compiled at the same
+time or separately.
+
+In contrast, if these modules were changed to store the value of
+@racket[b] in a file on the filesystem, then the program would only
+display @litchar["2"].
+
+The Separate Compilation Guarantee is described in more detail
+in "Composable and Compilable Macros" @cite["Flatt02"], including
+informative examples. The paper "Advanced Macrology and the
+implementation of Typed Scheme" @cite["Culpepper07"] also contains an
+extended example of why it is important and how to design effectful
+syntactic extensions in its presence.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "cross-phase persistent-modules"]{Cross-Phase Persistent Modules}
 
 Module declarations that fit a highly constrained form---including a
@@ -833,7 +980,8 @@ created, it is placed under the management of the @deftech{current
 custodian} as determined by the @racket[current-custodian]
 @tech{parameter}.
 
-@margin-note{In GRacket, custodians also manage eventspaces.}
+@margin-note{Custodians also manage eventspaces from
+             @racketmodname[racket/gui/base].}
 
 Except for the root custodian, every @tech{custodian} itself is
 managed by a @tech{custodian}, so that custodians form a hierarchy.

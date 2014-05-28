@@ -4,11 +4,14 @@
                      syntax/kerncase))
 
 (provide declare-field-use-start
-         declare-field-assignment
+         declare-field-initialization
          declare-field-use
          declare-inherit-use
+         declare-field-assignment
          declare-this-escapes
          declare-super-new
+
+         field-initialization-value
          
          detect-field-unsafe-undefined)
 
@@ -16,11 +19,16 @@
 ;; of the form `(begin (_declare-word _id ...) _expr ...)`
 ;; for each of the following `_declare-word`s:
 (define-syntax declare-field-use-start #f) ; marks start of initialization
-(define-syntax declare-field-assignment #f)
+(define-syntax declare-field-initialization #f)
 (define-syntax declare-field-use #f)
 (define-syntax declare-inherit-use #f)
+(define-syntax declare-field-assignment #f)
 (define-syntax declare-this-escapes #f)
 (define-syntax declare-super-new #f)
+
+;; A wrapper around the RHS of an initlization assignment,
+;; recognized by field identifier macros:
+(define-syntax field-initialization-value #f)
 
 ;; A wrapper macro that runs the `need-undeed-check?` analysis
 ;; and adds a boolean argument to a call to `compose-class`:
@@ -67,23 +75,11 @@
        (cloop #`(begin . body) (make-module-identifier-mapping) #f)]
       [(begin '(decl id ...) . body)
        (and (identifier? #'decl)
-            (free-identifier=? #'decl #'declare-field-use))
-       ;; A field is used. If tracking has started, make sure the
-       ;; field is definitely initalized:
-       (or (and ready
-                (ormap (lambda (id)
-                         (not (module-identifier-mapping-get ready id (lambda () #f))))
-                       (syntax->list #'(id ...)))
-                (report #'body)
-                #t)
-           (loop #'(begin . body)))]
-      [(begin '(decl id ...) . body)
-       (and (identifier? #'decl)
-            (free-identifier=? #'decl #'declare-field-assignment))
-       ;; A field is assigned. If this is after an action that
+            (free-identifier=? #'decl #'declare-field-initialization))
+       ;; A field is initialized. If this is after an action that
        ;; might read a field externally, it's too late. Otherwise,
        ;; assuming that we're not in a branch, the field is after here
-       ;; assigned (but not before the right-hand side is evaluated):
+       ;; initialized (but not before the right-hand side is evaluated):
        (let ([ids (syntax->list #'(id ...))])
          (or (and ready
                   init-too-late?
@@ -100,6 +96,19 @@
                   (for-each (lambda (id)
                               (module-identifier-mapping-put! ready id #t))
                             ids))))))]
+      [(begin '(decl id ...) . body)
+       (and (identifier? #'decl)
+            (or (free-identifier=? #'decl #'declare-field-use)
+                (free-identifier=? #'decl #'declare-field-assignment)))
+       ;; A field is used or assigned. If tracking has started, make sure the
+       ;; field is definitely initalized:
+       (or (and ready
+                (ormap (lambda (id)
+                         (not (module-identifier-mapping-get ready id (lambda () #f))))
+                       (syntax->list #'(id ...)))
+                (report #'body)
+                #t)
+           (loop #'(begin . body)))]
       [(begin '(decl id ...) . body)
        (and (identifier? #'decl)
             (free-identifier=? #'decl #'declare-inherit-use))

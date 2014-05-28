@@ -11,6 +11,7 @@
          racket/syntax
          syntax/id-table
          syntax/parse
+         syntax/stx
          "signatures.rkt"
          (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
@@ -517,24 +518,27 @@
       (syntax-parse expr
         #:literal-sets (kernel-literals)
         #:literals (:-augment)
-        ;; FIXME: this case seems too loose, many things can match this syntax
-        ;;        we likely need to set a property or match against another name
         [(begin
-           (quote ((~datum declare-field-assignment) _))
+           (quote ((~datum declare-field-initialization) _))
            (let-values ([(obj:id) self])
-            (let-values ([(field:id) initial-value])
-              (#%plain-app setter:id _ _))))
-         ;; only record the first one, which is the one that initializes
-         ;; the field or private field
-         (unless (dict-has-key? initializers #'setter)
-           (free-id-table-set! initializers #'setter #'initial-value))
+             (let-values ([(field:id) initial-value])
+               (with-continuation-mark _ _
+                 (#%plain-app setter:id obj2:id field2:id)))))
+         ;; There should only be one initialization expression per field
+         ;; since they are distinguished by a declaration.
+         (cond [(not (dict-has-key? initializers #'setter))
+                (free-id-table-set! initializers #'setter #'initial-value)]
+               [else
+                (int-err "more than one field initialization expression")])
          other-exprs]
         ;; The second part of this pattern ensures that we find the actual
         ;; initialization call, rather than the '(declare-super-new) in
         ;; the expansion.
         [(~and :tr:class:super-new^ (#%plain-app . rst))
          (when super-new
-           (tc-error/delayed "typed classes must only call super-new a single time"))
+           (tc-error/fields #:delayed? #t
+                            "ill-formed typed class"
+                            #:more "must only call `super-new' a single time"))
          (set! super-new (find-provided-inits expr))
          other-exprs]
         [(~and t:class-type-declaration :tr:class:type-annotation^)
@@ -552,7 +556,9 @@
          other-exprs]
         [_ (cons expr other-exprs)])))
   (unless super-new
-    (tc-error/delayed "typed classes must call super-new at the class top-level")
+    (tc-error/fields #:delayed? #t
+                     "ill-formed typed class"
+                     #:more "must call `super-new' at the top-level of the class")
     (set! super-new (super-init-stxs null null)))
   (values super-new
           initializers
@@ -908,43 +914,29 @@
 
 ;; check-field-set!s : Syntax Dict<Symbol, Symbol> Dict<Symbol, Type> -> Void
 ;; Check that fields are initialized to the correct type
-;; FIXME: this function is too long
+;; FIXME: use syntax classes for matching and clearly separate the handling
+;;        of field initialization and set! uses
 (define (check-field-set!s stx local-field-table inits)
   (for ([form (syntax->list stx)])
     (syntax-parse form
-      #:literals (let-values #%plain-app quote)
+      #:literal-sets (kernel-literals)
       ;; init with default
       [(set! internal-init:id
-             (#%plain-app extract-arg:id
-                          _
-                          (quote init-external:id)
-                          init-args:id
-                          init-val:expr))
+             (begin
+               (#%plain-app extract-arg:id
+                            _
+                            (quote init-external:id)
+                            init-args:id
+                            init-val:expr)))
        (define init-name (syntax-e #'init-external))
-       (define init-type (car (dict-ref inits init-name '(#f))))
-       (cond [init-type
-              ;; Catch the exception because the error that is produced
-              ;; in the case of a type error is incomprehensible for a
-              ;; programmer looking at surface syntax. Raise a custom
-              ;; type error instead.
-              (with-handlers
-                  ([exn:fail:syntax?
-                    (λ (e) (tc-error/delayed "Default init value has wrong type"))])
-                (parameterize ([delay-errors? #f])
-                  (unless (equal? (syntax->datum #'init-val) '(quote #f))
-                    (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
-             ;; If the type can't be found, it means that there was no
-             ;; expected type or no annotation was provided via (: ...).
-             ;;
-             ;; FIXME: is this the right place to raise this error, or
-             ;;        should it be caught earlier so that this function
-             ;;        can be simpler?
-             [else
-              (tc-error/delayed "Init argument ~a has no type annotation"
-                                init-name)])]
+       (check-init-arg init-name
+                       (car (dict-ref inits init-name '(#f)))
+                       #'init-val)]
       ;; init-field with default
       [(begin
-         (quote ((~datum declare-field-assignment) _))
+         (quote ((~or (~datum declare-field-assignment)
+                      (~datum declare-field-initialization))
+                 _))
          (let-values (((obj1:id) self:id))
            (let-values (((x:id)
                          (#%plain-app extract-arg:id
@@ -952,34 +944,55 @@
                                       (quote name:id)
                                       init-args:id
                                       init-val:expr)))
-             (#%plain-app local-setter:id obj2:id y:id))))
+             (~or (with-continuation-mark _ _
+                    (#%plain-app local-setter:id obj2:id y:id))
+                  (#%plain-app local-setter:id obj2:id y:id)))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
        (define init-name (syntax-e #'name))
-       (define init-type (car (dict-ref inits init-name '(#f))))
-       (cond [init-type
-              (with-handlers
-                  ([exn:fail:syntax?
-                    ;; FIXME: produce a better error message
-                    (λ (e) (tc-error/delayed "Default init value has wrong type"))])
-                (parameterize ([delay-errors? #f])
-                  (unless (equal? (syntax->datum #'init-val) '(quote #f))
-                    (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
-             [else
-              (tc-error/delayed "Init argument ~a has no type annotation"
-                                init-name)])]
-      ;; any field or init-field without default
-      ;; FIXME: could use the local table to make sure the
-      ;;        setter is known as a sanity check
+       (check-init-arg init-name
+                       (car (dict-ref inits init-name '(#f)))
+                       #'init-val)]
+      ;; any field or an init-field without default
       [(begin
-         (quote ((~datum declare-field-assignment) _))
+         (quote ((~or (~datum declare-field-assignment)
+                      (~datum declare-field-initialization))
+                 _))
          (let-values (((obj1:id) self:id))
            (let-values (((x:id) init-val:expr))
-             (#%plain-app local-setter:id obj2:id y:id))))
+             (~or (with-continuation-mark _ _
+                    (#%plain-app local-setter:id obj2:id y:id))
+                  (#%plain-app local-setter:id obj2:id y:id)))))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
-       (tc-expr form)]
+       ;; Remove wcm for checking since TR can't handle these cases
+       (define simplified
+         (syntax/loc form
+           (let-values (((obj1) self))
+             (let-values (((x) init-val))
+               (#%plain-app local-setter obj2 y)))))
+       (tc-expr simplified)]
       [_ (void)])))
+
+;; check-init-arg : Id Type Syntax -> Void
+;; Check the initialization of an init arg variable against the
+;; expected type provided by an annotation (or the default)
+(define (check-init-arg init-name init-type init-val)
+  (define thunk?
+    (and (stx-pair? init-val)
+         (free-identifier=? #'#%plain-lambda (stx-car init-val))))
+  (unless (equal? (syntax->datum init-val) '(quote #f))
+    (cond [thunk?
+           (define type
+             (tc-expr/check/t init-val (ret (->* null init-type))))
+           (match type
+             [(Function: (list (arr: _ (Values: (list (Result: result _ _)))
+                                     _ _ _)))
+              (check-below result init-type)]
+             [_ (int-err "unexpected init value ~a"
+                         (syntax->datum init-val))])]
+          [else
+           (tc-expr/check init-val (ret init-type))])))
 
 ;; synthesize-private-field-types : IdTable Dict Hash -> Void
 ;; Given top-level expressions in the class, synthesize types from
@@ -1353,10 +1366,7 @@
   (match type
     [(Function: (list arrs ...))
      (define fixed-arrs
-       (for/list ([arr arrs]
-                  ;; ignore top-arr, since the arity cannot
-                  ;; be sensibly modified in that case
-                  #:when (arr? arr))
+       (for/list ([arr arrs])
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
@@ -1434,46 +1444,51 @@
                      (case-lambda
                        [(annotated-self x ...) body] ...)])
          m)]
-    [_ (tc-error "annotate-method: internal error")]))
+    [_ (int-err "annotate-method: internal error")]))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that all the required names are actually present
 ;;
 ;; FIXME: This gives bad error messages. Consider using syntax
 ;;        object lists instead of sets.
-(define (check-exists actual required msg)
+(define (check-exists actual required kind)
   (define missing
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/delayed (~a "superclass missing ~a ~a "
-                          "that the current class requires")
-                      msg missing)))
+    (tc-error/fields #:delayed? #t
+                     "inheritance mismatch"
+                     #:more (~a "the superclass is missing a required " kind)
+                     (~a "missing " kind) missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that names are absent when they should be
-(define (check-absent actual should-be-absent msg)
+(define (check-absent actual should-be-absent kind)
   (define present
     (for/or ([m (in-set should-be-absent)])
       (and (set-member? actual m) m)))
   (when present
-    (tc-error/delayed "superclass defines conflicting ~a ~a"
-                      msg present)))
+    (tc-error/fields #:delayed? #t
+                     "inheritance mismatch"
+                     #:more (~a "the superclass has a conflicting " kind)
+                     kind present)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that the names are exactly the same as expected
-(define (check-same actual expected msg)
+(define (check-same actual expected kind)
   (define missing
     (for/or ([m (in-set expected)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/delayed (~a "class definition missing ~a ~a "
-                          "that is required by the expected type")
-                      msg missing))
+    (tc-error/fields #:delayed? #t
+                     "type mismatch"
+                     #:more (~a "the class is missing a required " kind)
+                     (~a "missing " kind) missing))
   (define too-many
     (for/or ([m (in-set actual)])
       (and (not (set-member? expected m)) m)))
   (when too-many
-    (tc-error/delayed (~a "class definition contains ~a ~a "
-                          "that is not in the expected type")
-                      msg too-many)))
+    (tc-error/fields #:delayed? #t
+                     "type mismatch"
+                     #:more (~a "the class has a " kind " that should be absent")
+                     kind too-many)))

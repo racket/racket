@@ -2,7 +2,7 @@
 
 (require
  "../utils/utils.rkt"
- (for-template racket/base racket/list racket/unsafe/ops racket/flonum racket/fixnum)
+ (for-template racket/base racket/list racket/unsafe/ops racket/flonum racket/extflonum racket/fixnum)
  (utils tc-utils) 
  (rename-in (types union abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
@@ -215,8 +215,8 @@
 
 
 
-   [range (cl->* (-> (Un -Zero -NegInt) (-val '()))
-                 (-> -One  (-pair -One (-val '())))
+   [range (cl->* (-> (Un -Zero -NegInt) -Null)
+                 (-> -One (-lst* -One))
                  (-> -Byte (-lst -Byte))
                  (-> -Index (-lst -Index))
                  (-> -Fixnum (-lst -Fixnum))
@@ -267,6 +267,10 @@
    [flvector (->* (list) -Flonum -FlVector)]
    [make-flvector (cl->* (-> index-type -FlVector)
                          (-> index-type -Flonum -FlVector))]
+   
+   [shared-flvector (->* (list) -Flonum -FlVector)]
+   [make-shared-flvector (cl->* (-> index-type -FlVector)
+                                (-> index-type -Flonum -FlVector))]
 
    [flvector-length (-> -FlVector -Index)]
    [flvector-ref (-> -FlVector index-type -Flonum)]
@@ -278,12 +282,37 @@
    [unsafe-flvector-length (-> -FlVector -Index)]
    [unsafe-flvector-ref (-> -FlVector index-type -Flonum)]
    [unsafe-flvector-set! (-> -FlVector index-type -Flonum -Void)]
+   
+   ;; Section 4.2.5.2 (ExtFlonum Vectors)
+   [extflvector? (make-pred-ty -ExtFlVector)]
+   [extflvector (->* (list) -ExtFlonum -ExtFlVector)]
+   [make-extflvector (cl->* (-> index-type -ExtFlVector)
+                            (-> index-type -ExtFlonum -ExtFlVector))]
+   
+   [shared-extflvector (->* (list) -ExtFlonum -ExtFlVector)]
+   [make-shared-extflvector (cl->* (-> index-type -ExtFlVector)
+                                   (-> index-type -ExtFlonum -ExtFlVector))]
 
+   [extflvector-length (-> -ExtFlVector -Index)]
+   [extflvector-ref (-> -ExtFlVector index-type -ExtFlonum)]
+   [extflvector-set! (-> -ExtFlVector index-type -ExtFlonum -Void)]
+   [extflvector-copy (cl->* (-> -ExtFlVector -ExtFlVector)
+                            (-> -ExtFlVector index-type -ExtFlVector)
+                            (-> -ExtFlVector index-type index-type -ExtFlVector))]
+
+   [unsafe-extflvector-length (-> -ExtFlVector -Index)]
+   [unsafe-extflvector-ref (-> -ExtFlVector index-type -ExtFlonum)]
+   [unsafe-extflvector-set! (-> -ExtFlVector index-type -ExtFlonum -Void)]
+   
    ;; Section 4.2.4.2 (Fixnum vectors)
    [fxvector? (make-pred-ty -FxVector)]
    [fxvector (->* (list) -Fixnum -FxVector)]
    [make-fxvector (cl->* (-> index-type -FxVector)
                          (-> index-type -Fixnum -FxVector))]
+   
+   [shared-fxvector (->* (list) -Fixnum -FxVector)]
+   [make-shared-fxvector (cl->* (-> index-type -FxVector)
+                                (-> index-type -Fixnum -FxVector))]
 
    [fxvector-length (-> -FxVector -Index)]
    [fxvector-ref (-> -FxVector index-type -Fixnum)]

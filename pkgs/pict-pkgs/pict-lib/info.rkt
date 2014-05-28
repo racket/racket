@@ -6,7 +6,10 @@
                "base"
                "compatibility-lib"
                "draw-lib" "snip-lib"))
+(define build-deps '("rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"pict\"")
 
 (define pkg-authors '(mflatt robby))
+
+(define version "1.1")

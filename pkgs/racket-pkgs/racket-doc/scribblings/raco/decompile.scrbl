@@ -9,12 +9,21 @@
 
 @title[#:tag "decompile"]{@exec{raco decompile}: Decompiling Bytecode}
 
-The @exec{raco decompile} command takes a bytecode file (which usually
+The @exec{raco decompile} command takes the path of a bytecode file (which usually
  has the file extension @filepath{.zo}) or a source file with an
  associated bytecode file (usually created with @exec{raco make}) and
- converts it back to an approximation of Racket code. Decompiled
+ converts the bytecode file's content back to an approximation of Racket code. Decompiled
  bytecode is mostly useful for checking the compiler's transformation
  and optimization of the source program.
+
+The @exec{raco decompile} command accepts the following command-line flags:
+
+@itemlist[
+  @item{@DFlag{force} --- skip modification-date comparison on the
+        given file's path and an associated @filepath{.zo} file (if any)}
+  @item{@Flag{n} @nonterm{n} or @DFlag{columns} @nonterm{n} --- format
+        output for a display with @nonterm{n} columns}
+]
 
 Many forms in the decompiled code, such as @racket[module],
  @racket[define], and @racket[lambda], have the same meanings as
@@ -104,14 +113,6 @@ Many forms in the decompiled code, such as @racket[module],
  of functions without an @racket['%%inline-variant%%] are never
  inlined across modules.}
 
-@item{Some applications of core primitives are annotated with
- @racketidfont{#%in}, which indicates that the JIT compiler will
- inline the operation. (Inlining information is not part of the
- bytecode, but is instead based on an enumeration of primitives that
- the JIT is known to handle specially.) Operations from
- @racketmodname[racket/flonum] and @racketmodname[racket/unsafe/ops]
- are always inlined, so @racketidfont{#%in} is not shown for them.}
-
 @item{Function arguments and local bindings that are known to have a
  particular type have names that embed the known type. For example, an
  argument might have a name that starts @racketidfont{argflonum} or a
@@ -121,14 +122,6 @@ Many forms in the decompiled code, such as @racket[module],
 @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
  object.}
 
-]
-
-Command-line flags:
-
-@itemlist[
-  @item{@Flag{n} @nonterm{n} or @DFlag{columns} @nonterm{n}  --- format output for a display with @nonterm{n} columns}
-  @item{@Flag{h} or @DFlag{help} --- show help information for this command}
-  @item{@DFlag{} --- do not treat remaining arguments as switches}
 ]
 
 @; ------------------------------------------------------------

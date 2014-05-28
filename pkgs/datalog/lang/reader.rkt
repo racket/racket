@@ -8,6 +8,8 @@
   #:info (lambda (key defval default)
            ; XXX Should have different comment character key
            (case key
+             [(drracket:default-filters) '(["Datalog Sources" "*.dl"])]
+             [(drracket:default-extension) "dl"]
              [(drracket:submit-predicate)
               (dynamic-require 'datalog/tool/submit 'repl-submit?)]
              [(color-lexer)

@@ -9,6 +9,7 @@
 (require mzlib/unit200)
 (require mzlib/unitsig200)
 (require mzlib/include)
+(require racket/undefined)
 
 (Section 'unit/sig)
 
@@ -127,7 +128,7 @@
 ; Self-import is now allowed
 ; (syntax-test #'(compound-unit/sig (import) (link (A : () (0 A))) (export))) ; self-import
 ; (syntax-test #'(compound-unit/sig (import) (link (A : (x) (0 A))) (export))) ; self-import
-(test (list (letrec ([x x]) x) 5)
+(test (list undefined 5)
       'self-import
       (invoke-unit/sig
        (compound-unit/sig

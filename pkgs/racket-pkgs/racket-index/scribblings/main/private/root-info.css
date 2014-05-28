@@ -1,0 +1,11 @@
+
+.RootPathInfo {
+    margin-top: 1em;
+    display: none;
+}
+
+.RootPathAction {
+    display: block;
+    font-size: 80%;
+    white-space: nowrap;
+}

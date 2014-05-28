@@ -4,15 +4,15 @@
 ;; figure 8, pg 8 of "Logical Types for Untyped Languages"
 
 (require "../utils/utils.rkt"
-         racket/match
+         racket/match racket/list
          (contract-req)
-         (rename-in (types abbrev utils filter-ops)
-                    [-> -->]
-                    [->* -->*]
-                    [one-of/c -one-of/c])
+         (except-in (types abbrev utils filter-ops) -> ->* one-of/c)
          (rep type-rep object-rep filter-rep rep-utils))
 
-(provide (all-defined-out))
+(provide open-Result add-scope values->tc-results)
+
+(provide/cond-contract
+  [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
 
 ;; Substitutes the given objects into the type, filters, and object
 ;; of a Result for function application. This matches up to the substitutions
@@ -27,6 +27,28 @@
     (values (subst-type t key o #t)
             (subst-filter-set fs key o #t arg-ty)
             (subst-object old-obj key o #t))))
+
+;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
+;; For each name replaces all uses of it in res with the corresponding object.
+;; This is used so that names do not escape the scope of their definitions
+(define (replace-names names+objects res)
+  (for/fold ([res res]) ([name/object (in-list names+objects)])
+    (subst-tc-results res (first name/object) (second name/object) #t)))
+
+;; Substitution of objects into a tc-results
+(define/cond-contract (subst-tc-results res k o polarity)
+  (-> full-tc-results/c name-ref/c Object? boolean? full-tc-results/c)
+  (define (st t) (subst-type t k o polarity))
+  (define (sf f) (subst-filter f k o polarity))
+  (define (sfs fs) (subst-filter-set fs k o polarity))
+  (define (so ob) (subst-object ob k o polarity))
+  (match res
+    [(tc-any-results: f) (tc-any-results (sf f))]
+    [(tc-results: ts fs os)
+     (ret (map st ts) (map sfs fs) (map so os))]
+    [(tc-results: ts fs os dt db)
+     (ret (map st ts) (map sfs fs) (map so os) dt db)]))
+
 
 ;; Substitution of objects into a filter set
 ;; This is essentially ψ+|ψ- [o/x] from the paper
@@ -165,7 +187,7 @@
 (define/cond-contract (values->tc-results tc formals)
   (SomeValues/c (or/c #f (listof identifier?)) . -> . tc-results/c)
   (match tc
-    [(AnyValues:) tc-any-results]
+    [(AnyValues: f) (tc-any-results f)]
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
      (if formals
          (let-values ([(ts fs os)

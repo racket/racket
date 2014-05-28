@@ -28,6 +28,32 @@
        (raise-blame-error blame val '(expected "a mutable box" given: "~e") val))]
     [(dont-care) (void)]))
 
+(define (check-box/c-np ctc val blame)
+  (define elem-ctc (base-box/c-content ctc))
+  (define immutable (base-box/c-immutable ctc))
+  (cond
+    [(box? val) 
+     (case immutable
+       [(#t)
+        (cond
+          [(immutable? val) #f]
+          [else
+           (λ (neg-party)
+             (raise-blame-error blame #:missing-party neg-party
+                                val '(expected "an immutable box" given: "~e") val))])]
+       [(#f)
+        (cond
+          [(immutable? val) #F]
+          [else
+           (λ (neg-party)
+             (raise-blame-error blame #:missing-party neg-party
+                                val '(expected "a mutable box" given: "~e") val))])]
+       [(dont-care) #f])]
+    [else
+     (λ (neg-party)
+       (raise-blame-error blame #:missing-party neg-party
+                          val '(expected "a box" given: "~e") val))]))
+
 (define (box/c-first-order ctc)
   (define elem-ctc (base-box/c-content ctc))
   (define immutable (base-box/c-immutable ctc))
@@ -56,12 +82,27 @@
                     (list '#:flat? #t)
                     null))))))
 
+(define (add-box-context blame)
+  (blame-add-context blame "the content of"))
+
 (define-struct (flat-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:val-first-projection
+   (λ (ctc)
+     (define content-ctc (get/build-val-first-projection (base-box/c-content ctc)))
+     (λ (blame)
+       (define box-blame (add-box-context blame))
+       (define val-first-proj (content-ctc box-blame))
+       (λ (val)
+         (define fail-proc (check-box/c-np ctc val blame))
+         (or fail-proc
+             (λ (neg-party) 
+               ((val-first-proj (unbox val)) neg-party)
+               val)))))
    #:projection
    (λ (ctc)
      (λ (blame)
@@ -86,12 +127,32 @@
                              (λ (b v) (neg-elem-proj v))
                              impersonator-prop:contracted ctc))))))))
 
+(define (ho-val-first-projection chaperone/impersonate-box)
+  (λ (ctc)
+    (define elem-ctc (base-box/c-content ctc))
+    (define immutable (base-box/c-immutable ctc))
+    (define vfp (get/build-val-first-projection elem-ctc))
+    (λ (blame)
+      (define box-blame (add-box-context blame))
+      (define pos-elem-proj (vfp box-blame))
+      (define neg-elem-proj (vfp (blame-swap box-blame)))
+      (λ (val)
+        (or (check-box/c-np ctc val blame)
+            (if (and (immutable? val) (not (chaperone? val)))
+                (λ (neg-party) (box-immutable ((pos-elem-proj (unbox val)) neg-party)))
+                (λ (neg-party)
+                  (chaperone/impersonate-box val
+                                             (λ (b v) ((pos-elem-proj v) neg-party))
+                                             (λ (b v) ((neg-elem-proj v) neg-party))
+                                             impersonator-prop:contracted ctc))))))))
+
 (define-struct (chaperone-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:val-first-projection (ho-val-first-projection chaperone-box)
    #:projection (ho-projection chaperone-box)))
 
 (define-struct (impersonator-box/c base-box/c) ()
@@ -100,6 +161,7 @@
   (build-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:val-first-projection (ho-val-first-projection impersonate-box)
    #:projection (ho-projection impersonate-box)))
 
 (define-syntax (wrap-box/c stx)

@@ -107,7 +107,7 @@
          -Void]
    ;; Send to non object
    [tc-err (send 4 m 3)
-      #:ret (ret (-val 5))
+      #:ret (ret (-val 5) -bot-filter)
       #:expected (ret (-val 5) -no-filter -no-obj)]
    ;; Field access via get-field
    [tc-e (let ()
@@ -164,7 +164,7 @@
                           (super-new)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"defines conflicting public field n"]
+           #:msg #rx"has a conflicting public field.*field: n"]
    ;; Fail, conflict with parent method
    [tc-err (let ()
              (: j% (Class [m (-> Integer)]))
@@ -177,7 +177,7 @@
                           (define/public (m) 17)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"defines conflicting public method m"]
+           #:msg #rx"has a conflicting public method.*method: m"]
    ;; Inheritance
    [tc-e (let ()
            (: j% (Class (field [n Integer])
@@ -203,7 +203,7 @@
                           (define/public (m) 0)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"public method m that is not in the expected type"]
+           #:msg #rx"public method that should be absent.*method: m"]
    ;; same as previous
    [tc-err (let ()
              (: c% (Class [m (Integer -> Integer)]))
@@ -212,7 +212,7 @@
                           (define/public (n) 0)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"public method n that is not in the expected type"]
+           #:msg #rx"public method that should be absent.*method: n"]
    ;; fails, too many inits
    [tc-err (let ()
              (: c% (Class))
@@ -220,7 +220,7 @@
                           (init x)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"initialization argument x that is not in the expected type"]
+           #:msg #rx"initialization argument that should be absent.*argument: x"]
    ;; fails, init should be optional but is mandatory
    [tc-err (let ()
              (: c% (Class (init [str String #:optional])))
@@ -228,7 +228,7 @@
                           (init str)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"missing optional init argument str"]
+           #:msg #rx"missing a required optional init argument.*argument: str"]
    ;; fails, too many fields
    [tc-err (let ()
              (: c% (Class (field [str String])))
@@ -236,7 +236,7 @@
                           (field [str "foo"] [x 0])))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"public field x that is not in the expected type"]
+           #:msg #rx"has a public field that should be absent.*public field: x"]
    ;; test that an init with no annotation still type-checks
    ;; (though it will have the Any type)
    [tc-e (let () (class object% (super-new) (init x)) (void)) -Void]
@@ -281,7 +281,7 @@
 
              (mixin arg-class%))
            #:ret (ret (-class #:method ([m (t:-> -Integer)] [n (t:-> -String)])))
-           #:msg #rx"missing public method n"]
+           #:msg #rx"missing a required public method.*missing public method: n"]
    ;; Fail, bad mixin argument
    [tc-err (let ()
              (: mixin ((Class [m (-> Symbol)])
@@ -337,7 +337,7 @@
              (define c% (class object% (init x)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"typed classes must call super-new"]
+           #:msg #rx"must call `super-new'"]
    ;; fails, non-top-level super-new
    ;; FIXME: this case also spits out additional untyped identifier
    ;;        errors which should be squelched maybe
@@ -346,7 +346,7 @@
              (define c% (class object% (let () (super-new)) (init x)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"typed classes must call super-new"]
+           #:msg #rx"must call `super-new'"]
    ;; fails, bad super-new argument
    [tc-err (let ()
              (: c% (Class (init [x Symbol])))
@@ -541,7 +541,7 @@
                           (init [x 0])))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"optional init argument x that is not in the expected type"]
+           #:msg #rx"has a optional init argument that should be absent"]
    ;; fails, mandatory init not provided
    [tc-err (let ()
              (define d% (class object% (super-new)
@@ -570,7 +570,8 @@
            #:ret (ret (-object))]
    ;; fails, super-new can only be called once per class
    [tc-err (class object% (super-new) (super-new))
-           #:ret (ret (-class))]
+           #:ret (ret (-class))
+           #:msg #rx"`super-new' a single time"]
    ;; test passing an init arg to super-new
    [tc-e (let ()
            (define c% (class (class object% (super-new)
@@ -636,7 +637,7 @@
              (super-new)
              (inherit-field [y x]))
            #:ret (ret (-class))
-           #:msg #rx"superclass missing field"]
+           #:msg #rx"superclass is missing a required field"]
    ;; fails, missing super method for inherit
    [tc-err (class (class object% (super-new)) (super-new) (inherit z))
            #:ret (ret (-class))]
@@ -807,7 +808,8 @@
    [tc-err (class object% (super-new)
              (: z Integer)
              (init [z "foo"]))
-           #:ret (ret (-class #:init ([z -Integer #t])))]
+           #:ret (ret (-class #:init ([z -Integer #t])))
+           #:msg #rx"expected: Integer.*given: String"]
    ;; test init field default value
    [tc-e (let ()
            (define c% (class object% (super-new)
@@ -1101,20 +1103,17 @@
                  (define/augment (m x) 1)))
              (void))
            #:ret (ret -Void)
-           #:msg #rx"superclass missing augmentable method m"]
+           #:msg #rx"superclass is missing a required augmentable method"]
    ;; Pubment with separate internal/external names
-   ;; FIXME: broken right now due to : macro changes
-   #|
    [tc-e (let ()
            (define c%
              (class object%
                (super-new)
-               (: m (Symbol -> Symbol))
+               (: n (Symbol -> Symbol))
                (pubment [n m])
                (define n (λ (x) 'a))))
            (send (new c%) m 'b))
          -Symbol]
-   |#
    ;; Pubment with expected class type
    [tc-e (let ()
            (: c% (Class [m (String -> String)]
@@ -1203,7 +1202,7 @@
              (super-new)
              (init-field [x : Z] [y : Z 0]))
            #:ret (ret (-poly (Z) (-class #:init-field ([x Z #f] [y Z #t]))))
-           #:msg #rx"Default init value has wrong type"]
+           #:msg #rx"expected: Z.*given: Zero"]
    ;; fails because default field value cannot be polymorphic
    [tc-err (class object%
              #:forall (Z)
@@ -1411,4 +1410,21 @@
              (init x)))
          #:ret (ret (-poly (A) (-class #:init ([x A #f]))))
          #:expected (ret (-poly (A) (-class #:init ([x A #f]))) -no-filter -no-obj)]
-   ))
+   ;; test uses of a macro in the body of the class
+   [tc-e
+    (let ()
+      (define c%
+        (class object%
+          (super-new)
+          (define-syntax-rule (my-meth (m arg ...) . body)
+            (define/public (m arg ...) . body))
+          (my-meth (hello) (displayln "hello world"))))
+      (send (new c%) hello))
+    -Void]
+   ;; the next few tests check failing class instantiation
+   [tc-err (make-object object% 1)
+           #:msg #rx"expected: 0 arguments.*given: 1 arguments"]
+   [tc-err (make-object (ann object% ClassTop))
+           #:msg #rx"cannot instantiate.*ClassTop"]
+   [tc-err (make-object 3)
+           #:msg #rx"value of a non-class type"]))

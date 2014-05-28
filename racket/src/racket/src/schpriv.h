@@ -374,7 +374,7 @@ Scheme_Logger *scheme_get_future_logger(void);
 Scheme_Logger *scheme_get_place_logger(void);
 void scheme_init_logger_config(void);
 
-void register_network_evts();
+void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
@@ -437,6 +437,7 @@ extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_check_not_undefined_proc;
+extern Scheme_Object *scheme_check_assign_not_undefined_proc;
 extern Scheme_Object *scheme_pair_p_proc;
 extern Scheme_Object *scheme_mpair_p_proc;
 extern Scheme_Object *scheme_unsafe_cons_list_proc;
@@ -2225,6 +2226,8 @@ int scheme_bin_gt(const Scheme_Object *n1, const Scheme_Object *n2);
 int scheme_bin_gt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 int scheme_bin_lt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 
+Scheme_Object *scheme_bin_quotient_remainder(const Scheme_Object *n1, const Scheme_Object *n2, Scheme_Object **_rem);
+
 Scheme_Object *scheme_sub1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_add1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_odd_p(int argc, Scheme_Object *argv[]);
@@ -2255,6 +2258,8 @@ int scheme_exact_p(Scheme_Object *n);
 int scheme_nonneg_exact_p(Scheme_Object *n);
 
 Scheme_Object *scheme_floor(int argc, Scheme_Object *argv[]);
+
+Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft, int mask);
 
 #ifdef TIME_TYPE_IS_UNSIGNED
 # define scheme_make_integer_value_from_time(t) scheme_make_integer_value_from_unsigned((uintptr_t)t)
@@ -3184,7 +3189,6 @@ void scheme_ill_formed(Mz_CPort *port);
 # define scheme_ill_formed_code(port) scheme_ill_formed(port)
 #endif
 
-extern Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_check_name_property(Scheme_Object *stx, Scheme_Object *current_name);
 
 Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env);
@@ -3478,7 +3482,8 @@ Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
 THREAD_LOCAL_DECL(extern Scheme_Bucket_Table *scheme_module_code_cache);
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv);
 
-Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree);
+Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
+                                  int new_exp_module_tree, int new_pre_registry);
 int scheme_is_module_env(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it);
@@ -3786,14 +3791,10 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 #ifdef NO_TCP_SUPPORT
 # undef USE_UNIX_SOCKETS_TCP
 # undef USE_WINSOCK_TCP
-# undef USE_MAC_TCP
-#endif
-#if defined(USE_UNIX_SOCKETS_TCP) || defined(USE_WINSOCK_TCP) || defined(USE_MAC_TCP)
-# define USE_TCP
 #endif
 
 #if defined(USE_UNIX_SOCKETS_TCP) || defined(USE_WINSOCK_TCP)
-# define USE_SOCKETS_TCP
+# define USE_TCP
 #endif
 
 THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);
@@ -3835,6 +3836,7 @@ extern Scheme_Object *scheme_tcp_output_port_type;
 THREAD_LOCAL_DECL(extern int scheme_force_port_closed);
 
 void scheme_flush_orig_outputs(void);
+void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
@@ -3993,6 +3995,7 @@ Scheme_Object *scheme_checked_char_to_integer (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_integer_to_char (int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_check_not_undefined (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);
@@ -4108,7 +4111,7 @@ typedef struct Scheme_Place_Async_Channel {
 #endif
   Scheme_Object **msgs;
   void **msg_memory;
-  Scheme_Object **msg_chains;
+  Scheme_Object **msg_chains; /* lists embedded in message blocks; specially traversed during GC */
   intptr_t mem_size;
   intptr_t reported_size; /* size reported to master GC; avoid reporting too often */
   void *wakeup_signal;

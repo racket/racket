@@ -522,6 +522,7 @@
   ;; step through a single expanded expression.
   (define (step-through-expression expanded)  
     (define annotated (a:annotate expanded break show-lambdas-as-lambdas?))
+    #;(printf "annotated: ~s\n" annotated)
     (parameterize ([test-engine:test-silence #t])
       (eval-syntax annotated)))
   

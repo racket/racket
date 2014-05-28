@@ -426,3 +426,32 @@ static int mark_thread_cell_FIXUP(void *p, struct NewGC *gc) {
 #define mark_thread_cell_IS_CONST_SIZE 1
 
 
+static int mark_plumber_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Plumber));
+}
+
+static int mark_plumber_MARK(void *p, struct NewGC *gc) {
+  Scheme_Plumber *pl = (Scheme_Plumber *)p;
+ 
+  gcMARK2(pl->handles, gc);
+  gcMARK2(pl->weak_handles, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Plumber));
+}
+
+static int mark_plumber_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Plumber *pl = (Scheme_Plumber *)p;
+ 
+  gcFIXUP2(pl->handles, gc);
+  gcFIXUP2(pl->weak_handles, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Plumber));
+}
+
+#define mark_plumber_IS_ATOMIC 0
+#define mark_plumber_IS_CONST_SIZE 1
+
+

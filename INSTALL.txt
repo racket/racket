@@ -1,38 +1,128 @@
-Quick Instructions
-==================
+Build Options
+=============
 
-On Unix or Mac OS X, `make' (or `make in-place') creates a build in
-the "racket" directory --- but for Mac OS X, see the notes below on
-`git submodule'.
+For Unix platforms, instead of using this source repository, consider
+getting source for the current Racket release from
 
-On Windows, `nmake win32-in-place' creates a build in the "racket"
-directory, but see the notes below on `git submodule'.
+  http://download.racket-lang.org/
 
-An in-place build includes (via links) packages that are in the "pkgs"
+or get a source snapshot (updated daily) from
+
+  http://pre.racket-lang.org/installers/
+
+The "Source + built packages" options from those sites will build and
+install especially quickly, because platform-independent bytecode and
+documentation are pre-built.
+
+In contrast to this repository, release and snapshot source
+distributions will work in the
+  configure --prefix=... && make && make install
+way that you probably expect.
+
+
+If you stick with this repository, then you have several options:
+
+ * In-place build --- the default, creates a build in the "racket"
+   subdirectory that references the packages that reside in the "pkgs"
+   subdirectory. This is the most natural mode for developing Racket
+   itself or staying on the bleeding edge. See "Quick Instructions:
+   In-place Build" below.
+
+ * Unix-style install --- installs to a given destination directory
+   (Unix and Mac OS X, only), leaving no reference to the source
+   directory. This is the most natural mode for installing once from
+   the source repository. See "Quick Instructions: Unix-style Install"
+   below.
+
+ * Minimal --- as described in the "src" subdirectory of "racket"
+   (i.e., ignore this directory and "pkgs"). You can build a minimal
+   Racket using the usual `configure && make && make install' steps
+   (or similar for Windows), and then you can install packages from
+   the catalog server with `raco pkg'.
+
+ * Installers --- create installers for a variety of platforms by
+   farming out work to machines that run those platforms. This is the
+   way that Racket snapshots and releases are created, and you can
+   create your own. See "Building Installers" below.
+
+
+Quick Instructions: In-place Build
+==================================
+
+On Unix, `make' (or `make in-place') creates a build in the "racket"
 directory.
 
+On Mac OS X, see the notes below on git submodules, and then `make'
+(or `make in-place') creates a build in the "racket" directory.
 
-Building Racket
-===============
+On Windows with Microsoft Visual Studio 9.0 (2008), see the notes
+below on git submodules, and then `nmake win32-in-place' creates a
+build in the "racket" directory.
 
-The "racket" directory contains a stripped down version of Racket ---
-enough to run `raco pkg' to install everything else.
+In all cases, an in-place build includes (via links) packages that are
+in the "pkgs" directory.
 
-The "pkgs" directory contains the packages that are included in a
-Racket distribution, plus some additional packages (such as tests).
+See "More Instructions: Building Racket" below for more information.
 
-On Unix and Mac OS X, you can build Racket plus the included packages
-with `make in-place' (or just `make'). On Windows, you can use `nmake
-win32-in-place', as long as you're using Microsoft Visual Studio 9.0
-(2008). The resulting build is in the "racket" subdirectory. If you
-want more control over the process, see below.
+
+Quick Instructions: Unix-style Install
+======================================
+
+On Unix, `make PREFIX=<dir>' builds and installs into <dir> with
+binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
+documentation in "<dir>/share/racket/doc", etc.
+
+On Mac OS X, see the notes below on git submodules, and then `make
+PREFIX=<dir>' builds and installs into "<dir>" with binaries in
+"<dir>/bin", packges in "<dir>/share/pkgs", documentation in
+"<dir>/doc", etc.
+
+On Windows, Unix-style install is not supported.
+
+A Unix-style install leaves no reference to this source directory.
+
+See "More Instructions: Building Racket" below for more information.
+
+
+git Submodules (Mac OS X and Windows)
+=====================================
 
 On Mac OS X and Windows, you'll need native-library packages in the
-"native-pkgs" directory. In the git repository, "native-pkgs" is a git
-submodule, so you'll need
+"native-pkgs" directory for either an in-place build or a Unix-style
+install. The "native-pkgs" directory is treated in the same way as
+"pkgs"; for example, in-place build uses links into the "native-pkgs"
+directory.
+
+The "native-pkgs" directory is a git submodule, so you'll need
+
    git submodule init
    git submodule update
-to get it set up.
+
+before you do anything else.
+
+
+More Instructions: Building Racket
+==================================
+
+The "racket" directory contains minimal Racket, which is just enough
+to run `raco pkg' to install everything else. The first step of `make
+in-place' or `make unix-style' is to build minimal Racket, and you can
+read "racket/src/README" for more information.
+
+If you would like to provide arguments to `configure' for the minimal
+Racket build, then you can supply them with by adding
+`CONFIGURE_ARGS_qq="..."' to `make in-place' or `make
+unix-style'. (The `_qq' suffix on the variable name is a convention
+that indicates that single- and double-quote marks are allowed in the
+value.)
+
+The "pkgs" directory contains the packages that are included in a
+Racket distribution, plus some additional packages (such as tests).  A
+`make in-place' links to the package in-place, while `make unix-style'
+copies packages out of "pkgs" to install them.
+
+Either way, if you're building on Mac OS X or Windows, be sure to
+start with "git Submodules", above.
 
 To install a subset of the packages in "pkgs", supply `PKGS' value to
 `make'. For example,
@@ -41,10 +131,11 @@ To install a subset of the packages in "pkgs", supply `PKGS' value to
 
 links only the "gui-lib" and "readline-lib" packages and their
 dependencies. The default value of `PKGS' reaches all packages in
-"pkgs" among its dependencies. See "Linking Packages for Development
-Mode", below, for more information on package links and using `again'
-or `LINK_MODE' to use remembered `PKGS' values from previous `make
-in-place's.
+"pkgs" among its dependencies. See "Linking Packages for In-place
+Development Mode", below, for more information on package links and
+using `again' or `LINK_MODE' to use remembered `PKGS' values from
+previous `make in-place's. Setting `PKGS' also works for `make
+unix-style'.
 
 Using `make' (or `make in-place') sets the installation's name to
 "development", unless the installation has been previously configured
@@ -62,17 +153,22 @@ makefile and the `raco setup' part, use
 
  make CPUS=<n>
 
-which recurs with `make -j <n> JOB_OPTIONS="-j <n>"'.
+which recurs with `make -j <n> JOB_OPTIONS="-j <n>"'. Setting `CPUS'
+also works with `make unix-style'.
+
+If you need even more control over the build, carry on to "Even More
+Instructions: Building Racket Pieces".
 
 
-Building Racket Pieces
-======================
+Even More Instructions: Building Racket Pieces
+==============================================
 
-Instead of just using `make in-place', you can take more control over
-the build.
+Instead of just using `make in-place' or `make unix-style', you can
+take more control over the build by understand how the pieces fit
+together.
 
-Building Base Racket
---------------------
+Building Minimal Racket
+-----------------------
 
 Instead of using the top-level makefile, you can go into "racket/src"
 and follow the "README" there, which gives you more configuration
@@ -82,45 +178,47 @@ If you don't want any special configuration and you just want the base
 build, you can use `make base' (or `nmake win32-base') with the
 top-level makefile.
 
-(The Racket base does not require additional native libraries to run,
+Minimal Racket does not require additional native libraries to run,
 but under Windows, encoding-conversion, extflonum, and SSL
 functionality is hobbled until native libraries from the
-`racket-win32-i386' or `racket-win32-x86_64' package are installed.)
-
-On Unix or Mac OS X, you can use `make in-place' and still set
-`configure' options by supplying `CONFIGURE_ARGS_qq'. (The `_qq'
-suffix on the variable name is a convention that indicates that
-single- and double-quote marks are allowed in the value.)
+`racket-win32-i386' or `racket-win32-x86_64' package are installed.
 
 On all platforms, `JOB_OPTIONS' as a makefile variable and
 `PLT_SETUP_OPTIONS' as an environment variable are passed on to the
-`raco setup' that is used to build base libraries.
+`raco setup' that is used to build minimal-Racket libraries. See the
+documentation for `raco setup' for information on the options.
 
 Installing Packages
 -------------------
 
-In the near future, after you've built the base, you can install
-packages via a package-catalog server (ignoring the content of
-"pkgs"). That catalog server is not ready, yet.
+After you've built and installed minimal Racket, you could install
+packages via the package-catalog server --- ignoring the content of
+"pkgs" and "native-pkgs".
 
-Linking Packages for Development Mode
--------------------------------------
+If you want to install packages manually out of the "pkgs" and
+"native-pkgs" directories, the `local-catalog' target creates a
+catalog as "build/local/catalog" that points to the sources in "pkgs"
+and "native-pkgs". A Unix-style build works that way: it builds and
+installs minimal Racket, and then it installs packags out of a catalog
+that is created by `make local-catalog'.
 
-Aside from the issue of native-library packages, using the
-"main-distribution" package corresponds to a build that is like the
-main Racket distribution. Furthermore, if you install all of those
-packages with `raco pkg install -i --link ...', then you can edit
-libraries or update via `git pull' plus `raco setup' (as opposed to
-updating or reinstalling packages).
+Linking Packages for In-place Development Mode
+----------------------------------------------
+
+Using the "main-distribution" package corresponds to a build that is
+like the main Racket distribution. Furthermore, if you install all of
+those packages with `raco pkg install -i --link ...', then you can
+edit libraries or update via `git pull' plus `raco setup' (as opposed
+to updating or reinstalling packages). That's how the in-place build
+works.
 
 The `pkg-links' target of the makefile links (or re-links) packages
-from "pkgs" into the "racket" build. (The `in-place' target of the
-makefile uses `pkg-links'.) By default, `pkg-links' starts with the
-"main-distribution" and "plt-services" packages and links all of their
-dependencies, which includes all of the packages in "pkgs". Specify a
-subset of the packages with `PKGS="...."' as an argument to `make
-pkg-links'. Make the `pkg-links' target whenever the set of
-dependencies can change.
+from "pkgs" and "native-pkgs" into the "racket" build. By default,
+`pkg-links' starts with the "main-distribution" and "plt-services"
+packages and links all of their dependencies, which includes all of
+the packages in "pkgs". Specify a subset of the packages with
+`PKGS="...."' as an argument to `make pkg-links'. Make the `pkg-links'
+target whenever the set of dependencies can change.
 
 Packages are linked in a database (at "racket/lib/devel-pkgs") that is
 added to the installation's search paths. As a result, the links
@@ -144,56 +242,28 @@ same as `in-place' (or `win32-in-place'), but with
 `LINK_MODE=--save' is the default.
 
 The `pkg-links' makefile target installs links to a specific
-"devel-pkgs" directory and adjusts the build's configuration to
-include "devel-pkgs" in the search path for packages. As a result, the
-package links are installation specific, but still isolated from any
-`installation'-scope packages that you install later. The `pkg-links'
-target also sets the default package scope for the build to
-`installation' mode. Both of those configuration adjustments are made
-only if no configuration file "racket/etc/config.rktd" exists already.
-
-Trying Packages Locally
------------------------
-
-Suppose that you've built base "racket" and you want to see what it
-looks like to install individual packages as if provided by a server
-(i.e., not through development-mode links).
-
-Use `make local-catalog' to create a package catalog that provides
-mappings for all of the packages in "pkgs" as well as packages for
-pre-built native libraries.
-
-To install a package, try
-
- racket/bin/raco pkg install -i --catalog build/local/catalog --deps search-auto <pkg-name>
-
-The `-i' flag makes the package install specific to the build in the
-"racket" directory. The `--catalog build/local/catalog' causes the
-installation to use the catalog created by the `local-catalog'
-makefile target. The `--deps search-auto' flag installs dependencies
-(from the local catalog) automatically.
-
-To remove the package, try
-
- racket/bin/raco pkg remove -i --auto <pkg-name>
-
-The `--auto' flag undoes automatic installs from `--deps search-auto'.
+"devel-pkgs" directory and also sets the default package scope for the
+build to "installation" mode. Both of those configuration adjustments
+are made only if no configuration file "racket/etc/config.rktd" exists
+already.
 
 
-Building Installers
-===================
+The Whole Enchilada: Building Installers
+========================================
 
-To build distribution installers, do not use `make in-place' or just
-`make', but instead start from a clean repository.
+To build installers that can be distributed to other users, do not use
+`make in-place' or `make unix-style', but instead start from a clean
+repository.
 
-Use one non-Windows machine as a server[*], where packages will be
-pre-built. Then, create platform-specific installers on N client
-machines, each of which contacts the server machine to obtain
-pre-built packages. The server can act as a client, naturally, to
-create an installer for the server's platform.
+Use one non-Windows machine as a server, where packages will be
+pre-built. Then, as described below, create platform-specific
+installers on N client machines, each of which contacts the server
+machine to obtain pre-built packages. The server can act as a client,
+naturally, to create an installer for the server's platform.
 
- [*] GNU `make' is required on the server machine, but any `make'
-     should work on client machines.
+GNU `make' is required on the server machine, `nmake' is required on
+Windows client machines, and any `make' should work on other client
+machines.
 
 Running Build Farms
 -------------------
@@ -217,7 +287,7 @@ If "my-site-config.rkt" is a configuration module, then
 drives the build farm, and the resulting installers are in
 "build/installers", with a hash table mapping descriptions to
 installer filenames in "build/installer/table.rktd". A log file
-for each client are written to "build/log".
+for each client is written to "build/log".
 
 The default CONFIG path is "build/site.rkt", so you could put your
 configuration file there and omit the `CONFIG' argument to
@@ -247,8 +317,8 @@ where <dist-base> defaults to "racket" (but can be set via
 normalizing the Windows results to "i386-win32" and "x86_63-win32",
 -<dist-suffix> is omitted unless a `#:dist-suffix' string is specified
 for the client in the site configuration, and <ext> is
-platform-specific: ".sh" for Unix, ".dmg" for Mac Os X, and ".exe" for
-Windows.
+platform-specific: ".sh" for Unix, ".dmg" or ".pkg" for Mac OS X, and
+".exe" for Windows.
 
 Generating Installer Web Sites
 ------------------------------
@@ -312,64 +382,16 @@ Roughly, the steps are
  1. On the server machine:
       make server PKGS="..."
 
-    Add `DOC_SEARCH="..."' to the `server' line to build documentation
-    so that it redirects to the given URL when a remote search is
-    necessary.
-
-    Add `SERVER_PORT=...' to the `server' line to choose the port on
-    which the server listens to clients. The default is port 9440.
-
-    Add `SERVER_HOSTS="..."' to determine the interfaces at which the
-    server listens. The default is "localhost" which listens only on
-    the loopback device (for security). Supply the empty string to
-    listen on all interfaces. Supply multiple addresses by separating
-    them with a comma.
+    See 1b below for more information on variables other than `PKGS'
+    that you can provide with `make'.
 
  2. On each client machine:
       make client SERVER=... PKGS="..."
     or
       nmake win32-client SERVER=... PKGS="..."
 
-    Add `SERVER_PORT=...' to the `client' line if you picked an
-    alternate port in the `server` line; it should be the same as for
-    the `server' line.
-
-    Add `DOC_SEARCH="..."' to the `client' line, if needed;
-    normally, it should be the same as for the `server' line.
-
-    Add `RELEASE_MODE=--release' to the `client' line to build
-    a "release" installer, as opposed to a snapshot installer.
-
-    Add `DIST_NAME="..."' to the `client' line to give an installer a
-    different human-readable distribution name, instead of "Racket".
-
-    Add `DIST_BASE="..."' to the `client' line to adjust the installer
-    name's prefix, instead of starting with "racket".
-
-    Add `DIST_DIR="..."' to the `client' line to make the installer
-    use a different directory name on installation on Unix, instead of
-    "racket".
-
-    Add `DIST_SUFFIX="..."' to the `client' line to add a suffix
-    string for the installer's name, such as an identifier for a
-    particular variant of Linux.
-
-    Add `DIST_DESC="..."' to the `client' line to set the installer's
-    description, which is used as a key in the generated table of
-    uploaded installer files (when UPLOAD is set).
-
-    Add `DIST_CATALOGS_q='...'' to the `client' line to declare a
-    space-separated sequence of catalog URLs to set an installation's
-    initial package catalog URLs. Use the empty string in place of a
-    URL to indicate that the default path should be spliced.
-
-    Add `README="..."' to specify a URL for a file to use as the
-    "README" file in the generated installer, or leave as empty for no
-    "README".
-
-    Add `UPLOAD="..."` to specify a URL to use as an upload
-    destination for the created installed, where the installer's name
-    is added to the end of the URL, or leave as empty for no upload.
+    See 2b below for more information on variables other than `SERVER'
+    and `PKGS' that you can provide with `make'.
 
 In more detail:
 
@@ -386,8 +408,15 @@ In more detail:
      Alternatively, use the `server' target, which combines `base' and
      `server-from-base' (i.e., steps 1a and 1b).
 
-     The `SERVER_PORT' and `SERVER_HOSTS' variables of the makefile
-     configure the port and interfaces of the server.
+     The `SERVER_PORT' variable of the makefile choose the port on
+     which the server listens to clients. The default is port 9440.
+
+     The `SERVER_HOSTS' variable of the makefile determines the
+     interfaces at which the server listens. The default is
+     "localhost" which listens only on the loopback device (for
+     security). Supply the empty string to listen on all
+     interfaces. Supply multiple addresses by separating them with a
+     comma.
 
      The `PKGS' variable of the makefile determines which packages are
      built for potential inclusion in a distribution.
@@ -450,7 +479,7 @@ In more detail:
      distribution name is "Racket". Whatever name you pick, the Racket
      version number is automatically added for various contexts.
 
-     To change the base name of the installer file, provide `DIST_BASE
+     To change the base name of the installer file, provide `DIST_BASE'
      to `make'. The default is "racket".
 
      To change the directory name for Unix installation, provide
@@ -489,6 +518,11 @@ In more detail:
      client, but those paths should be empty for a server started with
      `make server', and they are used mainly by `make
      client-from-site' (described below).
+
+     The `UPLOAD' makefile variable specifies a URL to use as an
+     upload destination for the created installed, where the
+     installer's name is added to the end of the URL, or leave as
+     empty for no upload.
 
 On each client, step 2b produces a "bundle/installer.txt" file that
 contains the path to the generated installer on one line, followed by

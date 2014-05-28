@@ -34,7 +34,6 @@
                        ;; context of the given syntax object
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
                        [parse-tc-results (syntax? . c:-> . tc-results/c)]
-                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
                        [parse-literal-alls (syntax? . c:-> . (c:listof (c:or/c (c:listof identifier?) (c:list/c (c:listof identifier?) identifier?))))])
 
 (provide star ddd/bound
@@ -246,26 +245,30 @@
   #:attributes (prop)
   (pattern :Top^ #:attr prop -top)
   (pattern :Bot^ #:attr prop -bot)
-  (pattern (t:expr :@ pe:path-elem ... i:idx-obj)
+  (pattern (t:expr :@ pe:path-elem ... i:id)
+           #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
+  (pattern (t:expr :@ ~! pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
            #:attr prop (-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
-  (pattern (t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern (:! t:expr :@ pe:path-elem ... i:idx-obj)
+  (pattern (:! t:expr :@ pe:path-elem ... i:id)
+           #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
+  (pattern (:! t:expr :@ ~! pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
            #:attr prop (-not-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
-  (pattern (:! t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
+  (pattern (:! t:expr)
+           #:attr prop (-not-filter (parse-type #'t) 0))
   (pattern (and (~var p (prop doms)) ...)
            #:attr prop (apply -and (attribute p.prop)))
   (pattern (or (~var p (prop doms)) ...)
            #:attr prop (apply -or (attribute p.prop)))
   (pattern ((~literal implies) (~var p1 (prop doms)) (~var p2 (prop doms)))
-           #:attr prop (-imp (attribute p1.prop) (attribute p2.prop))))
+           #:attr prop (-imp (attribute p1.prop) (attribute p2.prop)))
+  (pattern t:expr
+           #:attr prop (-filter (parse-type #'t) 0)))
 
 (define-syntax-class object
   #:attributes (object)
@@ -824,8 +827,6 @@
           (stx-map (lambda (x) -no-filter) #'(t ...))
           (stx-map (lambda (x) -no-obj) #'(t ...)))]
     [t (ret (parse-type #'t) -no-filter -no-obj)]))
-
-(define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
 

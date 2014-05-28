@@ -306,3 +306,14 @@ tbody > tr:first-child > td > .together {
    top: 0px;
    z-index: 1;
 }
+
+/* ---------------------------------------- */
+/* For section source modules & tags */
+
+.RPartExplain {
+    background: #eee;
+    font-size: 0.9rem;
+    margin-top: 0.2rem;
+    padding: 0.2rem;
+    text-align: left;
+}

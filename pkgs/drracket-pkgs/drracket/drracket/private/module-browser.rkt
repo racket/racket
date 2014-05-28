@@ -647,8 +647,9 @@
           (let loop ([snip (send pasteboard find-first-snip)])
             (when snip
               (when (is-a? snip boxed-word-snip<%>)
+                (define fn (send snip get-filename))
                 (define found? 
-                  (and reg (regexp-match reg (path->string (send snip get-filename)))))
+                  (and reg fn (regexp-match reg (path->string fn))))
                 (when (or (not reg) found?) 
                   (for ([phase (in-list (send snip get-require-phases))])
                     (set! phases (set-add phases phase)))
@@ -1098,28 +1099,28 @@
                               (is-a? snip boxed-word-snip<%>)
                               canvas
                               (send snip get-filename))
-                     (instantiate menu-item% ()
-                       (label 
-                        (trim-string
-                         (format open-file-format
-                                 (path->string (send snip get-filename)))
-                         200))
-                       (parent right-button-menu)
-                       (callback
-                        (λ (x y)
-                          (handler:edit-file
-                           (send snip get-filename))))))
-                   (instantiate menu-item% ()
-                     (label (string-constant module-browser-open-all))
-                     (parent right-button-menu)
-                     (callback
-                      (λ (x y)
-                        (let loop ([snip (find-first-snip)])
-                          (when snip
-                            (when (is-a? snip boxed-word-snip<%>)
-                              (let ([filename (send snip get-filename)])
-                                (handler:edit-file filename)))
-                            (loop (send snip next)))))))
+                     (new menu-item%
+                          [label 
+                           (trim-string
+                            (format open-file-format
+                                    (path->string (send snip get-filename)))
+                            200)]
+                          [parent right-button-menu]
+                          [callback
+                           (λ (x y)
+                             (handler:edit-file
+                              (send snip get-filename)))]))
+                   (new menu-item%
+                        [label (string-constant module-browser-open-all)]
+                        [parent right-button-menu]
+                        [callback
+                         (λ (x y)
+                           (let loop ([snip (find-first-snip)])
+                             (when snip
+                               (when (is-a? snip boxed-word-snip<%>)
+                                 (let ([filename (send snip get-filename)])
+                                   (handler:edit-file filename)))
+                               (loop (send snip next)))))])
                    (send canvas popup-menu
                          right-button-menu
                          (+ (send evt get-x) 1)

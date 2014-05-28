@@ -84,17 +84,25 @@ add this test:
                       (list "1" output-style)
                       (list "1" error-style)
                       prompt))
-  (check-output "(let ([s (make-semaphore)]) (thread (lambda () (display 1) (semaphore-post s))) (semaphore-wait s))"
+  (check-output (format "~s" '(let ([s (make-semaphore)])
+                                (thread (lambda () (display 1) (semaphore-post s)))
+                                (semaphore-wait s)))
                 (list (list "1" output-style)
                       prompt))
-  (check-output
-   "(let ([s (make-semaphore)]) (thread (lambda () (display 1 (current-output-port)) (semaphore-post s))) (semaphore-wait s))" 
-   (list (list "1" output-style)
-         prompt))
-  (check-output
-   "(let ([s (make-semaphore)]) (thread (lambda () (display 1 (current-error-port)) (semaphore-post s))) (semaphore-wait s))"
-   (list (list "1" error-style)
-         prompt)))
+  (check-output (format "~s" '(let ([s (make-semaphore)]) 
+                                (thread (lambda () 
+                                          (display 1 (current-output-port))
+                                          (semaphore-post s)))
+                                (semaphore-wait s)))
+                (list (list "1" output-style)
+                      prompt))
+  (check-output (format "~s" '(let ([s (make-semaphore)]) 
+                                (thread (lambda () 
+                                          (display 1 (current-error-port)) 
+                                          (semaphore-post s)))
+                                (semaphore-wait s)))
+                (list (list "1" error-style)
+                      prompt)))
 
 (define (long-io/execute-test)
   (let ([string-port (open-output-string)])
@@ -104,7 +112,10 @@ add this test:
     (clear-definitions drs-frame)
     (type-in-definitions
      drs-frame
-     "(let f ([n 7] [p null]) (if (= n 0) p (list (f (- n 1) (cons 'l p)) (f (- n 1)  (cons 'r p)))))")
+     (format "~s" '(let f ([n 7] [p null])
+                     (if (= n 0) p 
+                         (list (f (- n 1) (cons 'l p)) 
+                               (f (- n 1)  (cons 'r p)))))))
     (do-execute drs-frame)
     (let ([got-output (fetch-output drs-frame)])
       (clear-definitions drs-frame)
@@ -138,14 +149,26 @@ add this test:
              (fetch-output drs-frame 
                            (queue-callback/res
                             (λ ()
-                              (send interactions-text paragraph-start-position 3))) ;; start after test expression
+                               ;; start after test expression
+                              (send interactions-text paragraph-start-position 3)))
                            (queue-callback/res
                             (λ ()
                               (send interactions-text paragraph-end-position
                                     (- (send interactions-text last-paragraph) 1)))))])
-        (unless (equal? got-value expected-transcript)
-          (eprintf "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
+        (unless (got-matches-expected? got-value expected-transcript)
+          (eprintf (string-append "FAILED: expected: ~s\n"
+                                  "             got: ~s\n"
+                                  "         program: ~s\n"
+                                  "           input: ~s\n")
                    expected-transcript got-value program input)))))
+  
+  (define (got-matches-expected? got expected)
+    (cond
+      [(list? expected)
+       (for/or ([expected (in-list expected)])
+         (equal? expected got))]
+      [else
+       (equal? expected got)]))
   
   (clear-definitions drs-frame)
   
@@ -161,7 +184,7 @@ add this test:
   (do-input-test "(begin (read-char) (sleep 1) (read-char))" "ab\ncd\n" "ab\ncd\n#\\b")
   (do-input-test "(list (read) (sleep 1) (read) (read))" "a b\nc d\n" "a b\nc d\n(a #<void> b c)")
   
-  (do-input-test "(begin (display 1) (read))" "2\n" "12\n2")
+  (do-input-test "(begin (display 1) (read))" "2\n" '("12\n2" "2\n12"))
   
   (do-input-test "(read-line)" "\n" "\n\"\"")
   (do-input-test "(read-char)" "\n" "\n#\\newline")

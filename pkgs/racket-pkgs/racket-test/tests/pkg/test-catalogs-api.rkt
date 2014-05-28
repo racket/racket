@@ -2,7 +2,7 @@
 (require pkg/lib
          rackunit)
 
-;; The `test-api' function is meant to be called via "test-catalogs.rkt"
+;; The `test-api' function is meant to be called via "tests-catalogs.rkt"
 (provide test-api)
 
 (define (test-api)

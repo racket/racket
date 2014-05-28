@@ -6,6 +6,8 @@
 
 (provide-structs
  [body-id ([value string?])]
+ [document-source ([module-path module-path?])]
+
  [hover-property ([text string?])]
  [script-property ([type string?]
                    [script (or/c path-string? (listof string?))])]

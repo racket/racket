@@ -1,23 +1,13 @@
 #lang scheme/base
-
-(require syntax/stx
-         syntax/kerncase
-         syntax/struct
-         racket/struct-info
-         scheme/include)
+(require (for-template racket/private/shared-body
+                       (only-in "teachprims.rkt" advanced-cons)))
 
 (provide shared/proc)
 
-(require (for-template
-          scheme/base
-          (only-in "teachprims.rkt" [advanced-cons the-cons])))
-
-(define code-insp (variable-reference->module-declaration-inspector
-                   (#%variable-reference)))
+(define code-insp
+  (variable-reference->module-declaration-inspector
+   (#%variable-reference)))
 
 (define shared/proc
-  (lambda (stx make-check-cdr undefined-expr)
-    (with-syntax ([undefined undefined-expr])
-      ;; Include the implementation.
-      ;; See private/shared-body.rkt.
-      (include (lib "racket/private/shared-body.rktl")))))
+  (lambda (stx make-check-cdr)
+    (shared-body stx #'advanced-cons code-insp make-check-cdr)))

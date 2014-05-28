@@ -192,9 +192,13 @@
           (loop bs)))))
 
   (define-values (in out) (make-pipe PIPE-SIZE))
+  (define chunk-t
+    (thread
+     (λ ()
+       (http-pipe-chunk (http-conn-from hc) out))))
   (thread
    (λ ()
-     (http-pipe-chunk (http-conn-from hc) out)
+     (thread-wait chunk-t)
      (when close?
        (http-conn-close! hc))
      (close-output-port out)))
@@ -237,9 +241,13 @@
     (cond
       [(and (memq 'gzip decodes) (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers))
        (define-values (in out) (make-pipe PIPE-SIZE))
-       (thread
+       (define gunzip-t
+         (thread
+          (λ ()
+            (gunzip-through-ports raw-response-port out))))
+       (thread 
         (λ ()
-          (gunzip-through-ports raw-response-port out)
+          (thread-wait gunzip-t)
           (close-output-port out)))
        in]
       [else 

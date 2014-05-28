@@ -166,6 +166,10 @@ MZ_EXTERN void scheme_close_managed(Scheme_Custodian *m);
 MZ_EXTERN void scheme_schedule_custodian_close(Scheme_Custodian *c);
 MZ_EXTERN void scheme_add_custodian_extractor(Scheme_Type t, Scheme_Custodian_Extractor e);
 
+MZ_EXTERN int scheme_flush_managed(Scheme_Plumber *p, int catch_errors);
+MZ_EXTERN Scheme_Object *scheme_add_flush(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush);
+MZ_EXTERN void scheme_remove_flush(Scheme_Object *h);
+
 MZ_EXTERN void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f);
 
 MZ_EXTERN void scheme_add_evt(Scheme_Type type,
@@ -222,7 +226,11 @@ MZ_EXTERN void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
                                  Scheme_Object *data,
                                  const char *msg, ...);
 MZ_EXTERN void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data);
-MZ_EXTERN void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name, char *buffer, intptr_t len, Scheme_Object *data);
+MZ_EXTERN void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                       char *buffer, intptr_t len, Scheme_Object *data);
+MZ_EXTERN void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                           char *buffer, intptr_t len, Scheme_Object *data,
+                                           int prefix_message);
 MZ_EXTERN void scheme_log_abort(char *buffer);
 MZ_EXTERN void scheme_log_warning(char *buffer);
 MZ_EXTERN void scheme_glib_log_message(const char *log_domain, int log_level, const char *message, void *user_data);
@@ -1217,3 +1225,6 @@ MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);
 
 MZ_EXTERN Scheme_Object *scheme_malloc_key(void);
 MZ_EXTERN void scheme_free_key(Scheme_Object *k);
+
+MZ_EXTERN void* scheme_jit_find_code_end(void *p);
+MZ_EXTERN void scheme_jit_now(Scheme_Object *f);

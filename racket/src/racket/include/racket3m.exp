@@ -73,6 +73,9 @@ scheme_remove_managed
 scheme_close_managed
 scheme_schedule_custodian_close
 scheme_add_custodian_extractor
+scheme_flush_managed
+scheme_add_flush
+scheme_remove_flush
 scheme_add_atexit_closer
 scheme_add_evt
 scheme_add_evt_through_sema
@@ -105,6 +108,7 @@ scheme_log
 scheme_log_w_data
 scheme_log_message
 scheme_log_name_message
+scheme_log_name_pfx_message
 scheme_log_abort
 scheme_log_warning
 scheme_glib_log_message
@@ -654,3 +658,5 @@ scheme_get_place_table
 scheme_register_process_global
 scheme_malloc_key
 scheme_free_key
+scheme_jit_find_code_end
+scheme_jit_now

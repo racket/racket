@@ -46,6 +46,8 @@
 
     (SendMessageW hwnd CB_SETCURSEL 0 0)
 
+    (define choice-dropped? #f)
+
     (super-new [callback cb]
                [parent parent]
                [hwnd hwnd]
@@ -60,8 +62,6 @@
                (lambda (w h)
                  (set-size #f #f w (* h 8))))
 
-
-    (define choice-dropped? #f)
 
     (define/override (ctlproc w msg wParam lParam default)
       (cond

@@ -215,7 +215,14 @@
                          'mixed (λ (x) (memq x '(mixed improper decimal))))
 
 (preferences:set-default 'framework:standard-style-list:font-name
-                         (get-family-builtin-face 'modern)
+                         (cond
+                           [(equal? (system-type) 'macosx)
+                            (define preferred-font "Menlo")
+                            (define fl (get-face-list))
+                            (if (member preferred-font fl)
+                                preferred-font
+                                (get-family-builtin-face 'modern))]
+                           [else (get-family-builtin-face 'modern)])
                          string?)
 
 (preferences:set-default
@@ -367,6 +374,7 @@
   (for-each (λ (x) (hash-set! defaults-ht x 'begin))
             '(case-lambda case-lambda: pcase-lambda:
                match-lambda match-lambda*
+               syntax-parser
                cond
                delay
                unit compound-unit compound-unit/sig
@@ -407,6 +415,7 @@
                
                kernel-syntax-case
                syntax-case syntax-case* syntax-rules syntax-id-rules
+               syntax-parse
                let-signature fluid-let
                let-struct let-macro let-values let*-values
                case when unless 

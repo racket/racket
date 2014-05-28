@@ -7,6 +7,9 @@
 @;------------------------------------------------------------------------
 @section[#:tag "modnameresolver"]{Resolving Module Names}
 
+@margin-note{The @racketmodname[syntax/modresolve] library provides additional
+operations for resolving and manipulating module names.}
+
 The name of a declared module is represented by a @deftech{resolved
 module path}, which encapsulates either a symbol or a complete
 filesystem path (see @secref["pathutils"]). A symbol normally refers
@@ -147,6 +150,16 @@ bytecode-file information recorded by the @tech{compiled-load handler}
 for the source namespace's @tech{module registry} is transferred to
 the target namespace's @tech{module registry}.
 
+The default module name resolver also maintains a small,
+@tech{module registry}-specific cache that maps @racket[lib] and symbolic
+module paths to their resolutions. This cache is consulted before
+checking parameters such as @racket[current-library-collection-links]
+and @racket[current-library-collection-paths], so results may
+``stick'' even if those parameter values change. An entry is added to
+the cache only when the fourth argument to the module name resolver is
+true (indicating that a module should be loaded) and only when loading
+succeeds.
+
 Module loading is suppressed (i.e., @racket[#f] is supplied as a fourth
 argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a
@@ -186,7 +199,7 @@ instead of the parameter value.}
 
 A @tech{parameter} that determines a module path used for
 @racket[exn:fail:syntax:missing-module] and
-@racket[exn:fail:filesytem:missing-module] exceptions as raised by the
+@racket[exn:fail:filesystem:missing-module] exceptions as raised by the
 default @tech{load handler}.  The parameter is normally set by a
 @tech{module name resolver}.}
 

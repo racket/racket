@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/require-syntax
-         scheme/match
-         scheme/gui/dynamic
+(require racket/require-syntax
+         racket/match
+         racket/gui/dynamic
          typed-racket/utils/utils
-         (for-syntax scheme/base syntax/parse)
+         (for-syntax racket/base syntax/parse)
          (types utils)
          (rep type-rep)
          rackunit rackunit/text-ui)

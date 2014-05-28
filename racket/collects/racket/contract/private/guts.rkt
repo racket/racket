@@ -5,9 +5,9 @@
          "prop.rkt"
          "rand.rkt"
          "generate-base.rkt"
-         racket/pretty)
-
-(require (for-syntax racket/base))
+         racket/pretty
+         (for-syntax racket/base
+                     "helpers.rkt"))
 
 (provide coerce-contract
          coerce-contracts
@@ -151,7 +151,7 @@
                             "contract?"
                             x)))
 
-;; coerce-contracts : symbols (listof any) -> (listof contract)
+;; coerce-contracts : symbol (listof any) -> (listof contract)
 ;; turns all of the arguments in 'xs' into contracts
 ;; the error messages assume that the function named by 'name'
 ;; got 'xs' as it argument directly
@@ -173,12 +173,19 @@
   (cond
     [(contract-struct? x) x]
     [(and (procedure? x) (procedure-arity-includes? x 1)) 
-     (make-predicate-contract (or (object-name x) '???) x (make-generate-ctc-fail))]
+     (make-predicate-contract (or (object-name x) '???) 
+                              x 
+                              #f 
+                              (memq x the-known-good-contracts))]
     [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x)) (make-eq-contract x)]
     [(or (bytes? x) (string? x)) (make-equal-contract x)]
     [(number? x) (make-=-contract x)]
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
     [else #f]))
+
+(define the-known-good-contracts
+  (let-syntax ([m (λ (x) #`(list #,@(known-good-contracts)))])
+    (m)))
 
 (struct wrapped-extra-arg-arrow (real-func extra-neg-party-argument)
   #:property prop:procedure 0)
@@ -295,11 +302,17 @@
         `',(eq-contract-val ctc)
         (eq-contract-val ctc)))
    #:generate
-   (λ (ctc) (λ (fuel) (eq-contract-val ctc)))
+   (λ (ctc) 
+     (define v (eq-contract-val ctc))
+     (λ (fuel) (λ () v)))
    #:stronger
    (λ (this that)
-      (and (eq-contract? that)
-           (eq? (eq-contract-val this) (eq-contract-val that))))))
+     (define this-val (eq-contract-val this))
+     (or (and (eq-contract? that)
+              (eq? this-val (eq-contract-val that)))
+         (and (predicate-contract? that)
+              (predicate-contract-sane? that)
+              ((predicate-contract-pred that) this-val))))))
 
 (define-struct equal-contract (val)
   #:property prop:custom-write custom-write-property-proc
@@ -309,10 +322,16 @@
    #:name (λ (ctc) (equal-contract-val ctc))
    #:stronger
    (λ (this that)
-      (and (equal-contract? that)
-           (equal? (equal-contract-val this) (equal-contract-val that))))
+     (define this-val (equal-contract-val this))
+     (or (and (equal-contract? that)
+              (equal? this-val (equal-contract-val that)))
+         (and (predicate-contract? that)
+              (predicate-contract-sane? that)
+              ((predicate-contract-pred that) this-val))))
    #:generate
-   (λ (ctc) (λ (fuel) (equal-contract-val ctc)))))
+   (λ (ctc) 
+     (define v (equal-contract-val ctc))
+     (λ (fuel) (λ () v)))))
 
 (define-struct =-contract (val)
   #:property prop:custom-write custom-write-property-proc
@@ -322,10 +341,16 @@
    #:name (λ (ctc) (=-contract-val ctc))
    #:stronger
    (λ (this that)
-      (and (=-contract? that)
-           (= (=-contract-val this) (=-contract-val that))))
+     (define this-val (=-contract-val this))
+     (or (and (=-contract? that)
+              (= this-val (=-contract-val that)))
+         (and (predicate-contract? that)
+              (predicate-contract-sane? that)
+              ((predicate-contract-pred that) this-val))))
    #:generate
-   (λ (ctc) (λ (fuel) (=-contract-val ctc)))))
+   (λ (ctc) 
+     (define v (=-contract-val ctc))
+     (λ (fuel) (λ () v)))))
 
 (define-struct regexp/c (reg)
   #:property prop:custom-write custom-write-property-proc
@@ -343,15 +368,17 @@
       (and (regexp/c? that) (eq? (regexp/c-reg this) (regexp/c-reg that))))))
 
 
-(define-struct predicate-contract (name pred generate)
+;; sane? : boolean -- indicates if we know that the predicate is well behaved
+;; (for now, basically amounts to trusting primitive procedures)
+(define-struct predicate-contract (name pred generate sane?)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:stronger
    (λ (this that) 
-      (and (predicate-contract? that)
-           (procedure-closure-contents-eq? (predicate-contract-pred this)
-                                           (predicate-contract-pred that))))
+     (and (predicate-contract? that)
+          (procedure-closure-contents-eq? (predicate-contract-pred this)
+                                          (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
    #:val-first-projection
@@ -372,18 +399,20 @@
          predicate-contract-proj)))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
-                   (if (generate-ctc-fail? generate)
-                     (let ([fn (predicate-contract-pred ctc)])
-                       (find-generate fn (predicate-contract-name ctc)))
-                     generate)))
-   #:exercise (λ (ctc)
-                 (λ (val fuel) 
-                    ((predicate-contract-pred ctc) val)))))
+                   (cond
+                     [generate generate]
+                     [else
+                      (define built-in-generator
+                        (find-generate (predicate-contract-pred ctc)
+                                       (predicate-contract-name ctc)))
+                      (λ (fuel)
+                        (and built-in-generator
+                             (λ () (built-in-generator fuel))))])))))
 
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (build-flat-contract name pred [generate (make-generate-ctc-fail)])
-  (make-predicate-contract name pred generate))
+(define (build-flat-contract name pred [generate #f])
+  (make-predicate-contract name pred generate #f))
 
 
 ;; Key used by the continuation mark that holds blame information for the current contract.

@@ -4,9 +4,11 @@
          racket/dict racket/list syntax/parse racket/syntax syntax/stx
          racket/match syntax/id-table racket/set
          (contract-req)
-         (except-in (rep type-rep) make-arr)
-         (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
-                    [make-arr* make-arr])
+         (rep type-rep)
+         (rename-in (types abbrev utils union)
+                    [-> t:->]
+                    [->* t:->*]
+                    [one-of/c t:one-of/c])
          (private type-annotation syntax-properties)
          (types type-table)
          (typecheck signatures tc-metafunctions tc-subst)
@@ -30,7 +32,7 @@
                               (if rest (list (first rest)) null)
                               (if drest (list (first drest)) null)
                               kw-id)])
-       (make-arr
+       (make-arr*
         arg-tys
         (abstract-results body arg-names)
         #:kws (map make-Keyword kw kw-ty req?)
@@ -311,55 +313,64 @@
            [_ #f]))]
       [_ #f]))
 
-  ;; find-matching-arities: formals -> Listof[arr?]
-  (define (find-matching-arities fml)
+  ;; find-matching-arrs: (list/c natural? boolean?) arities-seen? -> (or #f Listof[arr?])
+  ;; Returns a list when we know the expected type, and the list contains all the valid arrs that the
+  ;; clause needs to type as.
+  ;; Returns false if there is not enough information in the expected type to propogate down to the
+  ;; clause
+  (define (find-matching-arrs formal-arity arities-seen)
+    (match-define (list formal-positionals formal-rest) formal-arity)
     (match expected-type
       [(Function: (and fs (list (arr: argss rets rests drests '()) ...)))
-       (for/list ([a (in-list argss)] [f (in-list fs)]  [r (in-list rests)] [dr (in-list drests)]
-                  #:when (if (formals-rest fml)
-                             (>= (length a) (length (formals-positional fml)))
-                             ((if (or r dr) <= =) (length a) (length (formals-positional fml)))))
+       (for/list ([a (in-list argss)] [f (in-list fs)] [r (in-list rests)] [dr (in-list drests)]
+                  #:unless (arities-seen-seen-before? arities-seen (list (length a) (or r dr)))
+                  #:when (if formal-rest
+                             (or r (>= (length a) formal-positionals))
+                             ((if (or r dr) <= =) (length a) formal-positionals)))
          f)]
-      [_ null]))
+      [_ #f]))
 
-  (define-values (used-formals+bodies arities-seen)
-    (for/fold ((formals+bodies* empty) (arities-seen initial-arities-seen))
+
+  ;; For each clause we figure out which arrs it needs to typecheck as, and also which clauses are
+  ;; dead code.
+  (define-values (used-formals+bodies+arrs arities-seen)
+    (for/fold ((formals+bodies+arrs* empty) (arities-seen initial-arities-seen))
               ((formal+body formals+bodies))
       (match formal+body
         [(list formal body)
          (define arity (formals->arity formal))
+         (define matching-arrs (find-matching-arrs arity arities-seen))
          (values
-           (cond
-             [(or (arities-seen-seen-before? arities-seen arity)
-                   (and expected-type (null? (find-matching-arities formal))))
-              (warn-unreachable body)
-              (add-dead-lambda-branch (formals-syntax formal))
-              (if (check-unreachable-code?)
-                  (cons formal+body formals+bodies*)
-                  formals+bodies*)]
-             [else
-              (cons formal+body formals+bodies*)])
+           (cons
+             (cond
+               [(or (arities-seen-seen-before? arities-seen arity)
+                    (null? matching-arrs))
+                (warn-unreachable body)
+                (add-dead-lambda-branch (formals-syntax formal))
+                (list formal body (if (check-unreachable-code?) #f null))]
+               [else (list formal body matching-arrs)])
+             formals+bodies+arrs*)
            (arities-seen-add arities-seen arity))])))
 
-   (if (and
-         (empty? used-formals+bodies)
-         ;; If the empty function is expected, then don't error out
-         (match expected-type
-           [(Function: (list)) #f]
-           [_ #t]))
-       ;; TODO improve error message.
-       (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
-                      "Expected a function of type ~a, but got a function with the wrong arity"
-                      expected-type)
-       (apply append
-              (for/list ([fb* (in-list used-formals+bodies)])
-                (match-define (list f* b*) fb*)
-                (match (find-matching-arities f*)
-                  [(list) (tc/lambda-clause f* b*)]
-                  [(list (arr: argss rets rests drests '()) ...)
-                   (for/list ([args (in-list argss)] [ret (in-list rets)] [rest (in-list rests)] [drest (in-list drests)])
-                     (tc/lambda-clause/check
-                      f* b* args (values->tc-results ret (formals->list f*)) rest drest))])))))
+  (if (and
+        (andmap (λ (f-b-arr) (empty? (third f-b-arr))) used-formals+bodies+arrs)
+        ;; If the empty function is expected, then don't error out
+        (match expected-type
+          [(Function: (list)) #f]
+          [_ #t]))
+      ;; TODO improve error message.
+      (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
+                     "Expected a function of type ~a, but got a function with the wrong arity"
+                     expected-type)
+      (apply append
+             (for/list ([fb* (in-list used-formals+bodies+arrs)])
+               (match-define (list f* b* t*) fb*)
+               (match t*
+                 [#f (tc/lambda-clause f* b*)]
+                 [(list (arr: argss rets rests drests '()) ...)
+                  (for/list ([args (in-list argss)] [ret (in-list rets)] [rest (in-list rests)] [drest (in-list drests)])
+                    (tc/lambda-clause/check
+                     f* b* args (values->tc-results ret (formals->list f*)) rest drest))])))))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type
@@ -413,7 +424,7 @@
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _) (PolyRow: _ _ _)))
        (tc/plambda form (remove-poly-layer tvarss-list) formals bodies expected)]
       [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
-      [_ 
+      [_
         (define remaining-layers (remove-poly-layer tvarss-list))
         (if (null? remaining-layers)
             (tc/mono-lambda/type formals bodies expected)
@@ -472,7 +483,7 @@
       constraints
       (extend-and-loop form fresh-ns
                        formals bodies (ret expected*)))]
-    [(or (tc-results: _) (tc-any-results:) #f)
+    [_
      (define lengths
        (for/set ((tvars (in-list tvarss)))
          (match tvars
@@ -523,13 +534,9 @@
 ;; Returns both the tc-results of the function and of the body
 (define (tc/rec-lambda/check formals* body name args return)
   (define formals (syntax->list formals*))
+  (define ft (t:->* args (tc-results->values return)))
   (with-lexical-env/extend
-   formals args
-   (let* ([r (tc-results->values return)]
-          [t (make-arr args r)]
-          [ft (make-Function (list t))])
-     (with-lexical-env/extend
-      (list name) (list ft)
-      (values
-        (replace-names (map (λ (f) (list f -empty-obj)) formals) (ret ft))
-        (replace-names (map (λ (f) (list f -empty-obj)) formals) (tc-body/check body return)))))))
+   (cons name formals) (cons ft args)
+   (values
+     (replace-names (map (λ (f) (list f -empty-obj)) (cons name formals)) (ret ft))
+     (replace-names (map (λ (f) (list f -empty-obj)) (cons name formals)) (tc-body/check body return)))))

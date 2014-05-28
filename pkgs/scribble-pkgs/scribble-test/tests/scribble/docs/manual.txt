@@ -155,10 +155,10 @@ v : integer?
 A thing, again, with a documented value that’s too wide to fit on one
 line.
 
-(struct pt (x y)                         
-        #:extra-constructor-name make-pt)
-  x : real?                              
-  y : real?                              
+(struct pt (x y)                     
+    #:extra-constructor-name make-pt)
+  x : real?                          
+  y : real?                          
 
 A structure type with extra name.
 
@@ -174,46 +174,46 @@ A structure type.
 
 A structure type, again.
 
-(struct pn (x y)      
-        #:transparent)
-  x : real?           
-  y : real?           
+(struct pn (x y)  
+    #:transparent)
+  x : real?       
+  y : real?       
 
 A transparent structure type, again.
 
-(struct pn (x y)      
-        #:transparent)
-  x : real?           
-  y : real?           
+(struct pn (x y)  
+    #:transparent)
+  x : real?       
+  y : real?       
 
 A transparent structure type, again.
 
-(struct pn (x y) 
-        #:prefab)
-  x : real?      
-  y : real?      
+(struct pn (x y)
+    #:prefab)   
+  x : real?     
+  y : real?     
 
 A prefab structure type, again.
 
-(struct pn (x y)              
-        #:constructor-name pt)
-  x : real?                   
-  y : real?                   
+(struct pn (x y)          
+    #:constructor-name pt)
+  x : real?               
+  y : real?               
 
 A structure type with name, again.
 
-(struct pn (x y)                    
-        #:extra-constructor-name pt)
-  x : real?                         
-  y : real?                         
+(struct pn (x y)                
+    #:extra-constructor-name pt)
+  x : real?                     
+  y : real?                     
 
 A structure type with extra name, again.
 
-(struct pt (x y)                        
-        #:extra-constructor-name make-pt
-        #:mutable)                      
-  x : real?                             
-  y : real?                             
+(struct pt (x y)                    
+    #:extra-constructor-name make-pt
+    #:mutable)                      
+  x : real?                         
+  y : real?                         
 
 A mutable structure type with extra name, again.
 

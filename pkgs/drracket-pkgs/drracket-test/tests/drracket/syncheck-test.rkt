@@ -904,6 +904,20 @@
                   '((10 18) (20 38) (50 70) (82 94) (95 96))
                   '((39 47) (95 96))))
      
+     (build-test (format "~s" '(module m racket (module n racket list) (module+ o list)))
+                 '(("(" default-color)
+                   ("module" imported)
+                   (" m racket (" default-color)
+                   ("module" imported)
+                   (" n racket " default-color)
+                   ("list" imported)
+                   (") (module+ o " default-color)
+                   ("list" imported)
+                   ("))" default-color))
+                 (list 
+                  '((10 16) (18 24) (51 55))
+                  '((27 33) (34 38))))
+     
      ;; test case from Chongkai
      (build-test (format "~s\n\n#reader'reader\n1\n"
                          '(module reader mzscheme

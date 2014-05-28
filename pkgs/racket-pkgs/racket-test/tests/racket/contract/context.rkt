@@ -453,6 +453,22 @@
                              'neg))
                   #f))
   
+  (context-test '("the content of")
+                '(unbox (contract (box/c integer?)
+                                  (box #f)
+                                  'pos
+                                  'neg)))
+  
+  (context-test '("the content of")
+                '(contract (box/c integer? #:immutable #t)
+                           (box-immutable #f)
+                           'pos
+                           'neg))
+  
+  (context-test '("an element of")
+                '(contract (vectorof integer? #:flat? #t)
+                           (vector-immutable #f)
+                           'pos 'neg))
   
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f

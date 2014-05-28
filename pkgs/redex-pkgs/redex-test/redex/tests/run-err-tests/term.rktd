@@ -41,7 +41,7 @@
  ([rhs 'a]) ([ellipsis ...])
  (term-let ([(x ellipsis) rhs]) 3))
 
-("reference to term x before its definition"
+("x: undefined;\n cannot use before initialization"
  ([use x]) ([def x])
  (let ()
    (define t (term (use y)))

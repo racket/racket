@@ -20,7 +20,7 @@ var page_args =
 
 function GetPageArg(key, def) {
   for (var i=0; i<page_args.length; i++)
-    if (page_args[i][0] == key) return unescape(page_args[i][1]);
+    if (page_args[i][0] == key) return decodeURIComponent(page_args[i][1]);
   return def;
 }
 
@@ -28,9 +28,13 @@ function MergePageArgsIntoLink(a) {
   if (page_args.length == 0 ||
       (!a.attributes["data-pltdoc"]) || (a.attributes["data-pltdoc"].value == ""))
     return;
-  a.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
+  a.href = MergePageArgsIntoUrl(a.href);
+}
+
+function MergePageArgsIntoUrl(href) {
+  href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
   if (RegExp.$2.length == 0) {
-    a.href = RegExp.$1 + "?" + page_query_string + RegExp.$3;
+    return RegExp.$1 + "?" + page_query_string + RegExp.$3;
   } else {
     // need to merge here, precedence to arguments that exist in `a'
     var i, j;
@@ -47,7 +51,7 @@ function MergePageArgsIntoLink(a) {
         if (args[j] == page_args[i][0]) { exists = true; break; }
       if (!exists) str += "&" + page_args[i][0] + "=" + page_args[i][1];
     }
-    a.href = prefix + "?" + str + suffix;
+    return prefix + "?" + str + suffix;
   }
 }
 
@@ -127,8 +131,8 @@ function DoSearchKey(event, field, ver, top_path) {
   if (event && event.keyCode == 13) {
     var u = GetCookie("PLT_Root."+ver, null);
     if (u == null) u = top_path; // default: go to the top path
-    u += "search/index.html?q=" + escape(val);
-    if (page_query_string) u += "&" + page_query_string;
+    u += "search/index.html?q=" + encodeURIComponent(val);
+    u = MergePageArgsIntoUrl(u);
     location = u;
     return false;
   }

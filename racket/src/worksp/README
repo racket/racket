@@ -1,8 +1,9 @@
 This directory contains
 
-  - solution files and project files for building Racket and GRacket
-    with Microsoft Visual Studio 2008 (a.k.a. version 9.0) and up,
-    which work with the Express version of Visual Studio;
+  - solution files and project files for building minimal Racket and
+    related executables with Microsoft Visual Studio 2008
+    (a.k.a. version 9.0) and up, which work with the Express version
+    of Visual Studio;
 
   - mzconfig.h which is a manual version of information that is gathered
     automatically when using the "configure" script;
@@ -10,16 +11,11 @@ This directory contains
   - scripts for building 3m variants of Racket and GRacket using Visual
     Studio command-line tools;
 
-  - solution files and project files for building MzCOM with
-    Microsoft Visual Studio 2008 (not Express, which doesn't support ATL
-    and MFC);
-
   - solution files and project files for building "myssink.dll" with
-    Microsoft Visual Studio 2008, although the DLL is normally
-    downloaded along with other pre-built DLLs.
+    Microsoft Visual Studio 2008 (not Express), although the DLL is
+    normally downloaded along with other pre-built DLLs.
 
-Visual Studio Express is available for free from Microsoft; it can be
-used to build Racket and GRacket, but not MzCOM.
+Visual Studio Express is available for free from Microsoft.
 
 Racket and GRacket also compile with MinGW.  To compile with MinGW,
 follow the instructions in racket\src\README (which contains a short
@@ -97,10 +93,10 @@ Downloading Pre-Built Binaries
 -------------------------------
 
 You must install some pre-built DLLs if you want text-encoding
-converts, OpenSSL support, `racket/draw', or `racket/gui' support.
-In principle, you could build them from scratch, but since they
-are (mostly) maintained by people and organizations other than
-PLT, we supply them in binary form.
+conversion, OpenSSL support, `racket/draw', or `racket/gui' support.
+In principle, you could build them from scratch, but since they are
+(mostly) maintained by people and organizations other than PLT, we
+supply them in binary form.
 
 The DLLs are distributed in packages, but they are also available
 from
@@ -192,9 +188,8 @@ updated to replace "xxxxxxxx" with a specific version number.
 Building MzCOM
 --------------
 
-Beware that MzCOM does not build with Express versions of Visual
-Studio.  Otherwise, building MzCOMCGC is similar to building
-RacketCGC.  Building the 3m variant is a little different.
+Building MzCOMCGC is similar to building RacketCGC.  Building the 3m
+variant is a little different.
 
 To build MzCOMCGC, make the MzCOM solution in
     racket\src\worksp\mzcom - makes racket\MzCOMCGC.exe

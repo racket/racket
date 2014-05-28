@@ -3,6 +3,7 @@
          (prefix-in db: pkg/db)
          racket/file
          racket/format
+         racket/string
          "shelly.rkt"
          "util.rkt")
 
@@ -39,6 +40,7 @@
     (db:set-pkg-modules! "fish" "local" "123" '((lib "fish/main.rkt") (lib "fish/food.rkt")))
     (db:set-pkg-dependencies! "fish" "local" "123"
                               '("ocean" ("water" "1.0") ("crash-helmet" #:platform windows))))
+
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
   $ "raco pkg catalog-show fish" =stdout> #rx"ocean"
   $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
@@ -52,7 +54,7 @@
   $ "raco pkg catalog-show --only-names --all" =stdout> #rx"fish"
   $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
   $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
-  
+ 
   (delete-file (build-path dir "pkgs"))
   (delete-file (build-path dir "pkgs-all"))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
@@ -98,6 +100,54 @@
   (try-merge dir)
   (try-merge db)
 
+  ;; catalog-archive:
+
+  (define archive-d (build-path d "archive"))
+  
+  $ (~a "raco pkg catalog-archive " archive-d " http://localhost:9990")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+
+  (define rx:pkg-test1 (regexp
+                        (~a (regexp-quote (~a "Source: " archive-d "/pkgs/pkg-test1.zip"))
+                            ".*"
+                            (regexp-quote (~a "Checksum: " (file->string 
+                                                            (build-path archive-d
+                                                                        "pkgs"
+                                                                        "pkg-test1.zip.CHECKSUM")))))))
+  
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
+  =stdout> rx:pkg-test1
+
+  (delete-directory/files archive-d)
+
   $ "raco pkg config --set catalogs http://localhost:9990"
 
+  $ (~a "raco pkg catalog-archive --from-config --relative"
+        " --state " (build-path archive-d "state.sqlite")
+        " " archive-d)
+  =stdout> #rx"== Archiving pkg-test1 =="
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
+  =stdout> rx:pkg-test1
+  $ (~a "grep archive " archive-d "/catalog/pkg/pkg-test1") ; relative path => no "archive"
+  =exit> 1
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
+
+  ;; Incremental update:
+  $ (~a "raco pkg catalog-archive --from-config --relative"
+        " --state " (build-path archive-d "state.sqlite")
+        " " archive-d
+        " http://localhost:9991")
+  =stdout> #rx"== Archiving pkg-test2-snd =="
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip.CHECKSUM")
+  
+  ;; Delete package not in source archives:
+  $ (~a "raco pkg catalog-archive --from-config --relative"
+        " --state " (build-path archive-d "state.sqlite")
+        " " archive-d)
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip.CHECKSUM") =exit> 1
+  
   (delete-directory/files d)))

@@ -202,7 +202,7 @@
                [st (if (empty? (hash-ref ht 'tags))
                      (hash-set st ':no-tag: #t)
                      st)]
-               [st (if (hash-ref ht 'checksum-error)
+               [st (if (hash-ref ht 'checksum-error #f)
                      (hash-set st ':error: #t)
                      st)]
                [st (if (equal? "" (hash-ref ht 'description ""))

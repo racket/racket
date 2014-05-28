@@ -93,7 +93,8 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pac->msg_chains, gc);
   gcMARK2(pac->wakeup_signal, gc);
 
-  /* mark master-allocated objects within each messages: */
+  /* mark master-allocated objects within each messages; the
+     raw pairs that form the list are embedded in each message block */
   j = pac->out;
   sz = pac->size;
   for (i = pac->count; i--; ) {
@@ -102,7 +103,7 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
       gcMARK2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
   return
@@ -118,7 +119,8 @@ static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pac->msg_chains, gc);
   gcFIXUP2(pac->wakeup_signal, gc);
 
-  /* mark master-allocated objects within each messages: */
+  /* mark master-allocated objects within each messages; the
+     raw pairs that form the list are embedded in each message block */
   j = pac->out;
   sz = pac->size;
   for (i = pac->count; i--; ) {
@@ -127,7 +129,7 @@ static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
       gcFIXUP2(SCHEME_CAR(pr), gc);
       pr = SCHEME_CDR(pr);
     }
-    j = ((j + 1) & sz);
+    j = ((j + 1) % sz);
   }
 
   return

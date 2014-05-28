@@ -157,6 +157,14 @@
   (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
   (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require redex/reduction-semantics))
+  (eval '(define-language L))
+  (eval '(define-metafunction L
+           ∨ : boolean boolean -> boolean
+           [(∨ #f #f) #f]
+           [(∨ boolean boolean) #t]))
+  (exec-runtime-error-tests "run-err-tests/metafunction-no-match.rktd"))
 
 (require redex/private/term
          redex/private/lang-struct)

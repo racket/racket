@@ -105,6 +105,12 @@ directory}:
        with version and search-tag queries to form a remote
        documentation reference.}
 
+ @item{@indexed-racket['doc-open-url] --- a URL string or @racket[#f];
+       a string supplies a URL that is used instead of a local path to
+       search and maybe open documentation pages (which normally makes
+       sense only in an environment where opening a local HTML file
+       does not work).}
+
  @item{@indexed-racket['include-dir] --- a path, string, or byte string for
        the main directory containing C header files. It defaults to an
        @filepath{include} sibling directory of the @tech{main collection

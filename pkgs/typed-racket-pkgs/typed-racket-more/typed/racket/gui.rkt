@@ -100,7 +100,7 @@
              (Un (-val #f) -Pathlike)
              (Un (-val #f) -String)
              (-lst (one-of/c 'packages 'enter-packages 'common))
-             (-lst (-pair -String (-pair -String (-val null))))]
+             (-lst (-lst* -String -String))]
             #:dialog-mixin (Un) #f
             (Un (-val #f) -Path))]
  [get-file-list
@@ -112,7 +112,7 @@
              (Un (-val #f) -Pathlike)
              (Un (-val #f) -String)
              (-lst (one-of/c 'packages 'enter-packages 'common))
-             (-lst (-pair -String (-pair -String (-val null))))]
+             (-lst (-lst* -String -String))]
             #:dialog-mixin (Un) #f
             (Un (-val #f) (-lst -Path)))]
  [put-file
@@ -124,7 +124,7 @@
              (Un (-val #f) -Pathlike)
              (Un (-val #f) -String)
              (-lst (one-of/c 'packages 'enter-packages 'common))
-             (-lst (-pair -String (-pair -String (-val null))))]
+             (-lst (-lst* -String -String))]
             #:dialog-mixin (Un) #f
             (Un (-val #f) -Path))]
  [get-directory
@@ -226,7 +226,7 @@
                  (make-Instance (parse-type #'Frame%))
                  (make-Instance (parse-type #'Dialog%)))
              (Un (make-Instance (parse-type #'Font%)) (-val #f))
-             (-val null)]
+             -Null]
             (Un (-val #f) (make-Instance (parse-type #'Font%))))]
  [can-get-page-setup-from-user? (-> -Boolean)]
  ;; 4.2 Eventspaces

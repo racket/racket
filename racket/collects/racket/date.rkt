@@ -221,11 +221,11 @@
           (loop hi (* 2 offset)))))))
 
 (define get-min-seconds
-  (let ([d (delay (find-extreme-date-seconds (current-seconds) -1))])
+  (let ([d (delay/sync (find-extreme-date-seconds (current-seconds) -1))])
     (lambda ()
       (force d))))
 (define get-max-seconds
-  (let ([d (delay (find-extreme-date-seconds (current-seconds) 1))])
+  (let ([d (delay/sync (find-extreme-date-seconds (current-seconds) 1))])
     (lambda ()
       (force d))))
 

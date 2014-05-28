@@ -156,6 +156,7 @@
            canvas-hwnd))
 
      (define hwnd (or panel-hwnd canvas-hwnd))
+     (define dc #f)
 
      (super-new [parent parent]
                 [hwnd hwnd]
@@ -244,7 +245,7 @@
 	   0
 	   (default w msg wParam lParam)))
      
-     (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
+     (set! dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
      (send dc start-backing-retained)
 
      (define/public (get-dc) dc)

@@ -2,7 +2,7 @@
 
 (module install-pkg racket/base
   (require racket/class
-           pkg/gui/main)
+           pkg/gui)
   (provide install-pkg
            pkg-manager)
 

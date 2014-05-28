@@ -59,7 +59,8 @@ This package contains the following languages:
 
 @PLAI-LANG is derived from the @racketmodname[scheme] language.  In addition,
 it includes the @racket[define-type] and @racket[type-case] forms and testing
-support.
+support. Also, modules written in @racketmodname[plai] export every definition
+(unlike @racketmodname[scheme]).
 
 @subsection[#:tag "define-type"]{Defining Types: @racket[define-type]}
 

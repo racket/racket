@@ -2119,7 +2119,7 @@ static AVLNode *make_avl(AVLNode *left,
 {
   AVLNode *avl;
 
-  avl = MALLOC_ONE_TAGGED(AVLNode);
+  avl = scheme_malloc_small_dirty_tagged(sizeof(AVLNode));
   SET_REQUIRED_TAG(avl->type = scheme_rt_avl_node);
   avl->code = code;
   avl->key = key;

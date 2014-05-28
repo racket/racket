@@ -227,6 +227,8 @@ scheme_init_type ()
 
   set_name(scheme_custodian_type, "<custodian>");
   set_name(scheme_cust_box_type, "<custodian-box>");
+  set_name(scheme_plumber_type, "<plumber>");
+  set_name(scheme_plumber_handle_type, "<plumber-flush-handle>");
   set_name(scheme_cont_mark_set_type, "<continuation-mark-set>");
   set_name(scheme_cont_mark_chain_type, "<chain>");
 
@@ -726,6 +728,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_struct_proc_shape_type, small_atomic_obj);
 
   GC_REG_TRAV(scheme_environment_variables_type, small_object);
+
+  GC_REG_TRAV(scheme_plumber_handle_type, twoptr_obj);
 }
 
 END_XFORM_SKIP;

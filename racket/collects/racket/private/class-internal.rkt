@@ -1195,9 +1195,21 @@
                                           [(d-v (id ...) expr)
                                            (and (identifier? #'d-v)
                                                 (free-identifier=? #'d-v #'define-values))
-                                           (syntax-track-origin (syntax/loc e (set!-values (id ...) expr))
-                                                                e
-                                                                #'d-v)]
+                                           (let* ([ids (syntax->list #'(id ...))]
+                                                  [assignment
+                                                   (if (= 1 (length ids))
+                                                       ;; Special-case single variable in case the RHS
+                                                       ;; uses the name:
+                                                       (syntax/loc e
+                                                         (set! id ... (field-initialization-value expr)))
+                                                       ;; General case:
+                                                       (with-syntax ([(temp ...) (generate-temporaries ids)])
+                                                         (syntax/loc e
+                                                           (let-values ([(temp ...) expr])
+                                                             (set! id (field-initialization-value temp))
+                                                             ...
+                                                             (void)))))])
+                                             (syntax-track-origin assignment e #'d-v))]
                                           [(_init orig idp ...)
                                            (and (identifier? (syntax _init))
                                                 (ormap (lambda (it) 
@@ -1217,11 +1229,14 @@
                                                                        (with-syntax ([defexp (stx-car (stx-cdr norm))])
                                                                          (syntax (lambda () defexp)))))
                                                                  norms)]
-                                                           [class-name class-name])
+                                                           [class-name class-name]
+                                                           [wrapper (if (free-identifier=? #'_init #'-init-field)
+                                                                        #'field-initialization-value
+                                                                        #'begin)])
                                                (syntax-track-origin
                                                 (syntax/loc e 
                                                   (begin
-                                                    (set! id (extract-arg 'class-name `idpos init-args defval))
+                                                    (set! id (wrapper (extract-arg 'class-name `idpos init-args defval)))
                                                     ...))
                                                 e
                                                 #'_init)))]
@@ -1232,7 +1247,7 @@
                                                           (map normalize-init/field (syntax->list #'(idp ...)))])
                                              (syntax-track-origin
                                               (syntax/loc e (begin 
-                                                              (set! iid expr)
+                                                              (set! iid (field-initialization-value expr))
                                                               ...))
                                               e
                                               #'-fld))]
@@ -3576,7 +3591,8 @@ An example
         (set! arg-list (reverse arg-list))
         (set! let-bindings (reverse let-bindings))
         
-        (quasisyntax/loc stx
+        (syntax-property
+         (quasisyntax/loc stx
           (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
                         [(receiver) (unsyntax obj)]
                         [(method) (find-method/who '(unsyntax form) receiver sym)])
@@ -3588,7 +3604,8 @@ An example
                (make-method-call-to-possibly-wrapped-object
                 stx kw-args/var arg-list rest-arg?
                 #'sym #'method #'receiver
-                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))))
+                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
+         'feature-profile:send-dispatch #t)))
     
     (define (core-send apply? kws?)
       (lambda (stx)

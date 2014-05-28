@@ -27,7 +27,10 @@
      (sending-world rate limit)
      (receiving-world 10)
      ;; a universe that channels all messages from one world to another
-     (universe '() (on-new accept-another-world) (on-msg forward-message)))))
+     (universe '()
+               (on-tick (lambda (s) (make-bundle s '() '())) 1 10)
+               (on-new accept-another-world)
+	       (on-msg forward-message)))))
 
 ;; World1 = Number 
 

@@ -138,7 +138,8 @@ An VarRef is one of
        (cond [(and (= lenv*-len 1) (= nesting 1) (not ghead-is-hg?)
                    (equal? ghead '-1))
               ;; Fast path for (pvar ... . T) template
-              ;;  - no list? or syntax? checks needed (because ghead is just raw varref)
+              ;;  - no list? or syntax? checks needed (because ghead is just raw varref,
+              ;;    no 'check' wrapper)
               ;;  - avoid trivial map, just append
               (let ([var-index (vector-ref henv 0)])
                 (lambda (env lenv)
@@ -153,7 +154,7 @@ An VarRef is one of
                      [var-index (vector-ref henv 0)])
                 (lambda (env lenv)
                   (restx stx
-                         (let ([lenv* (check-list stx (get var-index env lenv))])
+                         (let ([lenv* (check-list/depth stx (get var-index env lenv) 1)])
                            (let dotsloop ([lenv* lenv*])
                              (if (null? lenv*)
                                  (ftail env lenv)
@@ -176,33 +177,49 @@ An VarRef is one of
                   over ellipsis levels and 'dotsloop' recur over the contents of the pattern
                   variables' (listof^n syntax) values.
 
-                  Also, we reuse env vectors to reduce allocation. For continuation-safety
+                  Also, we reuse lenv vectors to reduce allocation. There is one aux lenv
+                  vector per nesting level, preallocated in aux-lenvs. For continuation-safety
                   we must install a continuation barrier around metafunction applications.
                   |#
-                  (define (nestloop lenv* nesting uptos)
+                  (define (nestloop lenv* nesting uptos aux-lenvs)
                     (cond [(zero? nesting)
                            (fhead env lenv*)]
                           [else
                            (let ([iters (check-lenv/get-iterations stx lenv*)])
-                             (let ([lenv** (make-vector lenv*-len)]
+                             (let ([lenv** (car aux-lenvs)]
+                                   [aux-lenvs** (cdr aux-lenvs)]
                                    [upto** (car uptos)]
                                    [uptos** (cdr uptos)])
                                (let dotsloop ([iters iters])
                                  (if (zero? iters)
                                      null
                                      (begin (vector-car/cdr! lenv** lenv* upto**)
-                                            (let ([row (nestloop lenv** (sub1 nesting) uptos**)])
+                                            (let ([row (nestloop lenv** (sub1 nesting) uptos** aux-lenvs**)])
                                               (cons row (dotsloop (sub1 iters)))))))))]))
-                  (let ([head-results
-                         ;; if ghead-is-hg?, is (listof^(nesting+1) stx) -- extra listof for loop-h
-                         ;; otherwise, is (listof^nesting stx)
-                         (nestloop (vector-map (lambda (index) (get index env lenv)) henv)
-                                   nesting uptos)]
-                        [tail-result (ftail env lenv)])
-                    (restx stx
-                           (nested-append head-results
-                                          (if ghead-is-hg? nesting (sub1 nesting))
-                                          tail-result)))))]))]
+                  (define initial-lenv*
+                    (vector-map (lambda (index) (get index env lenv)) henv))
+                  (define aux-lenvs
+                    (for/list ([depth (in-range nesting)]) (make-vector lenv*-len)))
+
+                  ;; Check initial-lenv* contains lists of right depths.
+                  ;; At each nesting depth, indexes [0,upto) of lenv* vary;
+                  ;; uptos is monotonic nondecreasing (every variable varies in inner
+                  ;; loop---this is always counterintuitive to me).
+                  (let checkloop ([depth nesting] [uptos uptos] [start 0])
+                    (when (pair? uptos)
+                      (for ([v (in-vector initial-lenv* start (car uptos))])
+                        (check-list/depth stx v depth))
+                      (checkloop (sub1 depth) (cdr uptos) (car uptos))))
+
+                  (define head-results
+                    ;; if ghead-is-hg?, is (listof^(nesting+1) stx) -- extra listof for loop-h
+                    ;; otherwise, is (listof^nesting stx)
+                    (nestloop initial-lenv* nesting uptos aux-lenvs))
+                  (define tail-result (ftail env lenv))
+                  (restx stx
+                         (nested-append head-results
+                                        (if ghead-is-hg? nesting (sub1 nesting))
+                                        tail-result))))]))]
 
     [(vector 'app ghead gtail)
      (let ([fhead (loop-h (stx-car stx) ghead)]
@@ -405,23 +422,27 @@ An VarRef is one of
            (raise (absent-pvar ctx v #f))]
           [else (err/not-syntax ctx v)])))
 
-(define (check-list ctx v0)
-  (if (list? v0)
-      v0
-      (let loop ([v v0])
-        (cond [(null? v)
-               null]
-              [(pair? v)
-               (let ([new-cdr (loop (cdr v))])
-                 ;; Don't copy unless necessary
-                 (if (eq? new-cdr (cdr v))
-                     v
-                     (cons (car v) new-cdr)))]
-              [(promise? v)
-               (loop (force v))]
-              [(eq? v #f)
-               (raise (absent-pvar ctx v0 #t))]
-              [else (err/not-syntax ctx v0)]))))
+(define (check-list/depth ctx v0 depth0)
+  (let depthloop ([v v0] [depth depth0])
+    (cond [(zero? depth) v]
+          [(and (= depth 1) (list? v)) v]
+          [else
+           (let loop ([v v])
+             (cond [(null? v)
+                    null]
+                   [(pair? v)
+                    (let ([new-car (depthloop (car v) (sub1 depth))]
+                          [new-cdr (loop (cdr v))])
+                      ;; Don't copy unless necessary
+                      (if (and (eq? new-car (car v)) (eq? new-cdr (cdr v)))
+                          v
+                          (cons new-car new-cdr)))]
+                   [(promise? v)
+                    (loop (force v))]
+                   [(eq? v #f)
+                    (raise (absent-pvar ctx v0 #t))]
+                   [else
+                    (err/not-syntax ctx v0)]))])))
 
 ;; Note: slightly different from error msg in syntax/parse/private/residual:
 ;; here says "contains" instead of "is bound to", because might be within list

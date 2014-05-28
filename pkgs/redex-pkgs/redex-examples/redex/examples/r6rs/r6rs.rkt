@@ -38,12 +38,8 @@
         (begin es es ...) (begin0 es es ...) (es es ...)
         (if es es es) (set! x es) x
         nonproc pproc (lambda f es es ...)
-        (side-condition 
-         (letrec ([x_1 es] ...) es es ...)
-         (unique? (term (x_1 ...)))) 
-        (side-condition
-         (letrec* ([x_1 es] ...) es es ...)
-         (unique? (term (x_1 ...))))
+        (letrec ([x_!_1 es] ...) es es ...) 
+        (letrec* ([x_!_1 es] ...) es es ...)
         
         ;; intermediate states
         (dw x e e e)
@@ -52,12 +48,8 @@
         (handlers proc ... e)
         (l! x es)
         (reinit x))
-    (f (side-condition 
-        (x_1 ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (x_1 x_2 ... dot x_3)
-        (unique? (term (x_1 x_2 ... x_3))))
+    (f (x_!_1 ...)
+       (x_!_1 x_!_1 ... dot x_!_1)
        x)
     
     (s seq () sqv sym)
@@ -70,12 +62,8 @@
        (set! x e) (handlers proc ... e)
        x nonproc proc (dw x e e e)
        unspecified
-       (side-condition
-        (letrec ([x_1 e] ...) e e ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) e e ...)
-        (unique? (term (x_1 ...))))
+       (letrec ([x_!_1 e] ...) e e ...)
+       (letrec* ([x_!_1 e] ...) e e ...)
        (l! x e)
        (reinit x))
     (v nonproc proc)
@@ -90,38 +78,37 @@
     
     ; pair pointers, both mutable and immutable
     (pp ip mp)
-    (ip (variable-prefix ip))
-    (mp (variable-prefix mp))
+    (ip (-ip x))
+    (mp (-mp x))
     
     (sym (variable-except dot))
     
-    (x (side-condition 
-        (name var_none
-              (variable-except 
-               dot                         ; the . in dotted pairs
-               lambda if loc set!          ; core syntax names
-               quote
-               begin begin0
-               
-               null                      ; non-function values
-               unspecified
-               pair closure
-               
-               error                       ; signal an error
-               
-               letrec letrec* l! reinit
-               
-               procedure? condition?
-               cons consi pair? null? car cdr       ; list functions
-               set-car! set-cdr! list
-               + - * /                          ; math functions
-               call/cc throw dw dynamic-wind  ; call/cc functions
-               values call-with-values              ; values functions
-               apply eqv?
-               
-               with-exception-handler handlers
-               raise-continuable raise make-cond))
-        (not (pp? (term var_none)))))
+    (x (variable-except 
+        dot                                  ; the . in dotted pairs
+        lambda if loc set!                   ; core syntax names
+        quote
+        begin begin0
+        
+        null                                 ; non-function values
+        unspecified
+        pair closure
+        
+        error                                ; signal an error
+        
+        letrec letrec* l! reinit
+        
+        procedure? condition?
+        cons consi pair? null? car cdr       ; list functions
+        set-car! set-cdr! list
+        + - * /                              ; math functions
+        call/cc throw dw dynamic-wind        ; call/cc functions
+        values call-with-values              ; values functions
+        apply eqv?
+        
+        with-exception-handler handlers
+        raise-continuable raise make-cond
+        -ip -mp))
+    (cansub x pp)
     
     (n number)
     
@@ -157,24 +144,12 @@
        (e ... S es ...) (if S es es) (if e S es) (if e e S)
        (set! x S) (l! x S) 
        (lambda f S es ...) (lambda f e e ... S es ...)
-       (side-condition 
-        (letrec ([x_1 e] ... [x_2 S] [x_3 es] ...) es es ...)
-        (unique? (term (x_1 ... x_2 x_3 ...))))
-       (side-condition 
-        (letrec ([x_1 e] ...) S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition 
-        (letrec ([x_1 e] ...) e e ... S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ... [x_2 S] [x_3 es] ...) es es ...)
-        (unique? (term (x_1 ... x_2 x_3 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) S es ...)
-        (unique? (term (x_1 ...))))
-       (side-condition
-        (letrec* ([x_1 e] ...) e e ... S es ...)
-        (unique? (term (x_1 ...)))))
+       (letrec ([x_!_1 e] ... [x_!_1 S] [x_!_1 es] ...) es es ...)
+       (letrec ([x_!_1 e] ...) S es ...)
+       (letrec ([x_!_1 e] ...) e e ... S es ...)
+       (letrec* ([x_!_1 e] ... [x_!_2 S] [x_!_3 es] ...) es es ...)
+       (letrec* ([x_!_1 e] ...) S es ...)
+       (letrec* ([x_!_1 e] ...) e e ... S es ...))
     
     (B E (in-hole E (begin e B))))
 
@@ -279,14 +254,14 @@
           "6listn")
      
      (--> (store (sf_1 ...) (in-hole E_1 (cons v_1 v_2)))
-          (store (sf_1 ... (mp (cons v_1 v_2))) (in-hole E_1 mp))
+          (store (sf_1 ... ((-mp x) (cons v_1 v_2))) (in-hole E_1 (-mp x)))
           "6cons"
-          (fresh mp))
+          (fresh x))
      
      (--> (store (sf_1 ...) (in-hole E_1 (consi v_1 v_2)))
-          (store (sf_1 ... (ip (cons v_1 v_2))) (in-hole E_1 ip))
+          (store (sf_1 ... ((-ip x) (cons v_1 v_2))) (in-hole E_1 (-ip x)))
           "6consi"
-          (fresh ip))
+          (fresh x))
      
      ;; car
      (--> (store (sf_1 ... (pp_i (cons v_1 v_2)) sf_2 ...) (in-hole E_1 (car pp_i)))
@@ -830,115 +805,115 @@
      Underspecification))
   
   (define-metafunction lang
-
+    
     ;; variable cases
-    [(r6rs-subst-one (variable_1 e_1 variable_1)) e_1]
-    [(r6rs-subst-one (variable_1 e_1 variable_2)) variable_2]
+    [(r6rs-subst-one (cansub_1 e_1 cansub_1)) e_1]
+    [(r6rs-subst-one (cansub_1 e_1 cansub_2)) cansub_2]
     
     ;; dont substitute inside quoted expressions
-    [(r6rs-subst-one (variable_1 e_1 'any_1)) 'any_1]
+    [(r6rs-subst-one (cansub_1 e_1 'any_1)) 'any_1]
     
     ;; when the lambda/letrec binds the variable, stop stubstituting
-    [(r6rs-subst-one (variable_1 e (lambda (variable_2 ... variable_1 variable_3 ...) e_2 e_3 ...)))
-     (lambda (variable_2 ... variable_1 variable_3 ...) e_2 e_3 ...)
-     (side-condition (not (memq (term variable_1) (term (variable_2 ...)))))]
-    [(r6rs-subst-one (variable_1 e (lambda (variable_2 ... dot variable_1) e_2 e_3 ...)))
-     (lambda (variable_2 ... dot variable_1) e_2 e_3 ...)]
-    [(r6rs-subst-one (variable_1 e (lambda (variable_2 ... variable_1 variable_3 ... dot variable_4) e_2 e_3 ...)))
-     (lambda (variable_2 ... variable_1 variable_3 ... dot variable_4) e_2 e_3 ...)
-     (side-condition (not (memq (term variable_1) (term (variable_2 ...)))))]
-    [(r6rs-subst-one (variable_1 e (lambda variable_1 e_2 e_3 ...)))
-     (lambda variable_1 e_2 e_3 ...)]
-    [(r6rs-subst-one (variable_1 e (letrec ([variable_2 e_2] ... [variable_1 e_1] [variable_3 e_3] ...) e_4 e_5 ...)))
-     (letrec ([variable_2 e_2] ... [variable_1 e_1] [variable_3 e_3] ...) e_4 e_5 ...)
-     (side-condition (not (memq (term variable_1) (term (variable_2 ...)))))]
-    [(r6rs-subst-one (variable_1 e (letrec* ([variable_2 e_2] ... [variable_1 e_1] [variable_3 e_3] ...) e_4 e_5 ...)))
-     (letrec* ([variable_2 e_2] ... [variable_1 e_1] [variable_3 e_3] ...) e_4 e_5 ...)
-     (side-condition (not (memq (term variable_1) (term (variable_2 ...)))))]
+    [(r6rs-subst-one (cansub_1 e (lambda (cansub_2 ... cansub_1 cansub_3 ...) e_2 e_3 ...)))
+     (lambda (cansub_2 ... cansub_1 cansub_3 ...) e_2 e_3 ...)
+     (side-condition (not (memq (term cansub_1) (term (cansub_2 ...)))))]
+    [(r6rs-subst-one (cansub_1 e (lambda (cansub_2 ... dot cansub_1) e_2 e_3 ...)))
+     (lambda (cansub_2 ... dot cansub_1) e_2 e_3 ...)]
+    [(r6rs-subst-one (cansub_1 e (lambda (cansub_2 ... cansub_1 cansub_3 ... dot cansub_4) e_2 e_3 ...)))
+     (lambda (cansub_2 ... cansub_1 cansub_3 ... dot cansub_4) e_2 e_3 ...)
+     (side-condition (not (memq (term cansub_1) (term (cansub_2 ...)))))]
+    [(r6rs-subst-one (cansub_1 e (lambda cansub_1 e_2 e_3 ...)))
+     (lambda cansub_1 e_2 e_3 ...)]
+    [(r6rs-subst-one (cansub_1 e (letrec ([cansub_2 e_2] ... [cansub_1 e_1] [cansub_3 e_3] ...) e_4 e_5 ...)))
+     (letrec ([cansub_2 e_2] ... [cansub_1 e_1] [cansub_3 e_3] ...) e_4 e_5 ...)
+     (side-condition (not (memq (term cansub_1) (term (cansub_2 ...)))))]
+    [(r6rs-subst-one (cansub_1 e (letrec* ([cansub_2 e_2] ... [cansub_1 e_1] [cansub_3 e_3] ...) e_4 e_5 ...)))
+     (letrec* ([cansub_2 e_2] ... [cansub_1 e_1] [cansub_3 e_3] ...) e_4 e_5 ...)
+     (side-condition (not (memq (term cansub_1) (term (cansub_2 ...)))))]
     
     ;; next 3 cases: we know no capture can occur, so we just recur
-    [(r6rs-subst-one (variable_1 e_1 (lambda (variable_2 ...) e_2 e_3 ...)))
-     (lambda (variable_2 ...) 
-       (r6rs-subst-one (variable_1 e_1 e_2))
-       (r6rs-subst-one (variable_1 e_1 e_3)) ...)
+    [(r6rs-subst-one (cansub_1 e_1 (lambda (cansub_2 ...) e_2 e_3 ...)))
+     (lambda (cansub_2 ...) 
+       (r6rs-subst-one (cansub_1 e_1 e_2))
+       (r6rs-subst-one (cansub_1 e_1 e_3)) ...)
      (side-condition (andmap (λ (x) (equal? (variable-not-in (term e_1) x) x))
-                             (term (variable_2 ...))))]
-    [(r6rs-subst-one (variable_1 e_1 (lambda (variable_2 ... dot variable_3) e_2 e_3 ...)))
-     (lambda (variable_2 ...) 
-       (r6rs-subst-one (variable_1 e_1 e_2))
-       (r6rs-subst-one (variable_1 e_1 e_3)) ...)
+                             (term (cansub_2 ...))))]
+    [(r6rs-subst-one (cansub_1 e_1 (lambda (cansub_2 ... dot cansub_3) e_2 e_3 ...)))
+     (lambda (cansub_2 ...) 
+       (r6rs-subst-one (cansub_1 e_1 e_2))
+       (r6rs-subst-one (cansub_1 e_1 e_3)) ...)
      (side-condition (andmap (λ (x) (equal? (variable-not-in (term e_1) x) x))
-                             (term (variable_2 ... variable_3))))]
-    [(r6rs-subst-one (variable_1 e_1 (lambda variable_2 e_2 e_3 ...)))
-     (lambda variable_2
-       (r6rs-subst-one (variable_1 e_1 e_2))
-       (r6rs-subst-one (variable_1 e_1 e_3)) ...)
-     (side-condition (equal? (variable-not-in (term e_1) (term variable_2)) 
-                             (term variable_2)))]
-    [(r6rs-subst-one (variable_1 e_1 (letrec ([variable_2 e_2] ...) e_3 e_4 ...)))
-     (letrec ([variable_2 (r6rs-subst-one (variable_1 e_1 e_2))] ...) 
-       (r6rs-subst-one (variable_1 e_1 e_3)) 
-       (r6rs-subst-one (variable_1 e_1 e_4)) ...)
+                             (term (cansub_2 ... cansub_3))))]
+    [(r6rs-subst-one (cansub_1 e_1 (lambda cansub_2 e_2 e_3 ...)))
+     (lambda cansub_2
+       (r6rs-subst-one (cansub_1 e_1 e_2))
+       (r6rs-subst-one (cansub_1 e_1 e_3)) ...)
+     (side-condition (equal? (variable-not-in (term e_1) (term cansub_2)) 
+                             (term cansub_2)))]
+    [(r6rs-subst-one (cansub_1 e_1 (letrec ([cansub_2 e_2] ...) e_3 e_4 ...)))
+     (letrec ([cansub_2 (r6rs-subst-one (cansub_1 e_1 e_2))] ...) 
+       (r6rs-subst-one (cansub_1 e_1 e_3)) 
+       (r6rs-subst-one (cansub_1 e_1 e_4)) ...)
      (side-condition (andmap (λ (x) (equal? (variable-not-in (term e_1) x) x))
-                             (term (variable_2 ...))))]
-    [(r6rs-subst-one (variable_1 e_1 (letrec* ([variable_2 e_2] ...) e_3 e_4 ...)))
-     (letrec* ([variable_2 (r6rs-subst-one (variable_1 e_1 e_2))] ...) 
-       (r6rs-subst-one (variable_1 e_1 e_3)) 
-       (r6rs-subst-one (variable_1 e_1 e_4)) ...)
+                             (term (cansub_2 ...))))]
+    [(r6rs-subst-one (cansub_1 e_1 (letrec* ([cansub_2 e_2] ...) e_3 e_4 ...)))
+     (letrec* ([cansub_2 (r6rs-subst-one (cansub_1 e_1 e_2))] ...) 
+              (r6rs-subst-one (cansub_1 e_1 e_3)) 
+              (r6rs-subst-one (cansub_1 e_1 e_4)) ...)
      (side-condition (andmap (λ (x) (equal? (variable-not-in (term e_1) x) x))
-                             (term (variable_2 ...))))]
+                             (term (cansub_2 ...))))]
     
     ;; capture avoiding cases
-    [(r6rs-subst-one (variable_1 e_1 (lambda (variable_2 ... dot variable_3) e_2 e_3 ...)))
-     ,(term-let ([(variable_new ... variable_new_dot) (variables-not-in (term (variable_1 e_1 e_2 e_3 ...))
-                                                                        (term (variable_2 ... variable_3)))])
-        (term (lambda (variable_new ... dot variable_new_dot) 
-                (r6rs-subst-one (variable_1 
+    [(r6rs-subst-one (cansub_1 e_1 (lambda (cansub_2 ... dot cansub_3) e_2 e_3 ...)))
+     ,(term-let ([(cansub_new ... cansub_new_dot) (variables-not-in (term (cansub_1 e_1 e_2 e_3 ...))
+                                                                    (term (cansub_2 ... cansub_3)))])
+        (term (lambda (cansub_new ... dot cansub_new_dot) 
+                (r6rs-subst-one (cansub_1 
                                  e_1
-                                 (r6rs-subst-many ((variable_2 variable_new) ... (variable_3 variable_new_dot) e_2))))
-                (r6rs-subst-one (variable_1 
+                                 (r6rs-subst-many ((cansub_2 cansub_new) ... (cansub_3 cansub_new_dot) e_2))))
+                (r6rs-subst-one (cansub_1 
                                  e_1
-                                 (r6rs-subst-many ((variable_2 variable_new) ... (variable_3 variable_new_dot) e_3))))
+                                 (r6rs-subst-many ((cansub_2 cansub_new) ... (cansub_3 cansub_new_dot) e_3))))
                 ...)))]
-    [(r6rs-subst-one (variable_1 e_1 (lambda (variable_2 ...) e_2 e_3 ...)))
-     ,(term-let ([(variable_new ...) (variables-not-in (term (variable_1 e_1 e_2 e_3 ...))
-                                                       (term (variable_2 ...)))])
-        (term (lambda (variable_new ...) 
-                (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_2))))
-                (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_3)))) ...)))]
-    [(r6rs-subst-one (variable_1 e_1 (lambda variable_2 e_2 e_3 ...)))
-     ,(term-let ([variable_new (variable-not-in (term (variable_1 e_1 e_2 e_3 ...))
-                                                (term variable_2))])
-        (term (lambda variable_new
-                (r6rs-subst-one (variable_1 e_1 (r6rs-subst-one (variable_2 variable_new e_2))))
-                (r6rs-subst-one (variable_1 e_1 (r6rs-subst-one (variable_2 variable_new e_3)))) ...)))]
-    [(r6rs-subst-one (variable_1 e_1 (letrec ([variable_2 e_2] ...) e_3 e_4 ...)))
-     ,(term-let ([(variable_new ...) (variables-not-in (term (variable_1 e_1 e_2 ... e_3 e_4 ...))
-                                                       (term (variable_2 ...)))])
-                (term (letrec ([variable_new (r6rs-subst-one 
-                                              (variable_1 
-                                               e_1
-                                               (r6rs-subst-many ((variable_2 variable_new) ... e_2))))] ...)
-                        (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_3))))
-                        (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_4)))) ...)))]
-    [(r6rs-subst-one (variable_1 e_1 (letrec* ([variable_2 e_2] ...) e_3 e_4 ...)))
-     ,(term-let ([(variable_new ...) (variables-not-in (term (variable_1 e_1 e_2 ... e_3 e_4 ...))
-                                                       (term (variable_2 ...)))])
-                (term (letrec* ([variable_new (r6rs-subst-one 
-                                               (variable_1 
-                                                e_1
-                                                (r6rs-subst-many ((variable_2 variable_new) ... e_2))))] ...)
-                        (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_3))))
-                        (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 variable_new) ... e_4)))) ...)))]
+    [(r6rs-subst-one (cansub_1 e_1 (lambda (cansub_2 ...) e_2 e_3 ...)))
+     ,(term-let ([(cansub_new ...) (variables-not-in (term (cansub_1 e_1 e_2 e_3 ...))
+                                                     (term (cansub_2 ...)))])
+        (term (lambda (cansub_new ...) 
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_2))))
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_3)))) ...)))]
+    [(r6rs-subst-one (cansub_1 e_1 (lambda cansub_2 e_2 e_3 ...)))
+     ,(term-let ([cansub_new (variable-not-in (term (cansub_1 e_1 e_2 e_3 ...))
+                                              (term cansub_2))])
+        (term (lambda cansub_new
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-one (cansub_2 cansub_new e_2))))
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-one (cansub_2 cansub_new e_3)))) ...)))]
+    [(r6rs-subst-one (cansub_1 e_1 (letrec ([cansub_2 e_2] ...) e_3 e_4 ...)))
+     ,(term-let ([(cansub_new ...) (variables-not-in (term (cansub_1 e_1 e_2 ... e_3 e_4 ...))
+                                                     (term (cansub_2 ...)))])
+        (term (letrec ([cansub_new (r6rs-subst-one 
+                                    (cansub_1 
+                                     e_1
+                                     (r6rs-subst-many ((cansub_2 cansub_new) ... e_2))))] ...)
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_3))))
+                (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_4)))) ...)))]
+    [(r6rs-subst-one (cansub_1 e_1 (letrec* ([cansub_2 e_2] ...) e_3 e_4 ...)))
+     ,(term-let ([(cansub_new ...) (variables-not-in (term (cansub_1 e_1 e_2 ... e_3 e_4 ...))
+                                                     (term (cansub_2 ...)))])
+        (term (letrec* ([cansub_new (r6rs-subst-one 
+                                     (cansub_1 
+                                      e_1
+                                      (r6rs-subst-many ((cansub_2 cansub_new) ... e_2))))] ...)
+                       (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_3))))
+                       (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 cansub_new) ... e_4)))) ...)))]
     
     ;; last two cases cover all other expressions -- they don't have any variables, 
     ;; so we don't care about their structure. 
-    [(r6rs-subst-one (variable_1 e_1 (any_1 ...))) ((r6rs-subst-one (variable_1 e_1 any_1)) ...)]
-    [(r6rs-subst-one (variable_1 e_1 any_1)) any_1])
+    [(r6rs-subst-one (cansub_1 e_1 (any_1 ...))) ((r6rs-subst-one (cansub_1 e_1 any_1)) ...)]
+    [(r6rs-subst-one (cansub_1 e_1 any_1)) any_1])
   
   (define-metafunction lang
-    [(r6rs-subst-many ((variable_1 e_1) (variable_2 e_2) ... e_3)) 
-     (r6rs-subst-one (variable_1 e_1 (r6rs-subst-many ((variable_2 e_2) ... e_3))))]
+    [(r6rs-subst-many ((cansub_1 e_1) (cansub_2 e_2) ... e_3)) 
+     (r6rs-subst-one (cansub_1 e_1 (r6rs-subst-many ((cansub_2 e_2) ... e_3))))]
     [(r6rs-subst-many (e_1)) e_1])
   
   (metafunction-type observable (-> a* r*))

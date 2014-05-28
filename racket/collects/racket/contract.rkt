@@ -12,4 +12,5 @@
                        "contract/region.rkt"
                        "contract/private/legacy.rkt"
                        "contract/private/ds.rkt")
-         contract-random-generate)
+         contract-random-generate
+         contract-exercise)

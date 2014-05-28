@@ -1188,13 +1188,17 @@
                                                              (and p
                                                                   (if (symbol? p)
                                                                       p
-                                                                      (path->bytes 
-                                                                       (if (absolute-path? p)
-                                                                           p
-                                                                           (build-path (path-only (mod-file nc)) p))))))
+                                                                      (path->bytes
+                                                                       (simplify-path
+                                                                        (if (absolute-path? p)
+                                                                            p
+                                                                            (build-path (path-only (mod-file nc)) p)))))))
                                                            ;; As for the extension table, a placeholder to save 
-                                                           ;; room likely needed by the distribution-mangler
-                                                           (bytes-append #"................." program-name-bytes)))
+                                                           ;; room likely needed by the distribution-mangler.
+                                                           ;; The extra "."s are meant to cover the relative
+                                                           ;; path (even in Windows format) to runtime files,
+                                                           ;; and the program name is also part of that path.
+                                                           (bytes-append (make-bytes 32 (char->integer #\.)) program-name-bytes)))
                                                         (mod-runtime-paths nc)
                                                         (mod-runtime-module-syms nc)))
                                                  runtimes))])

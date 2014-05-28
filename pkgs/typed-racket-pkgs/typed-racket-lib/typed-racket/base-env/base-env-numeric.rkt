@@ -2,8 +2,8 @@
 
 (begin
   (require
-   racket/list racket/math racket/flonum racket/unsafe/ops unstable/sequence racket/match
-   (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
+   racket/list racket/math racket/flonum racket/extflonum racket/unsafe/ops unstable/sequence racket/match
+   (for-template racket/flonum racket/extflonum racket/fixnum racket/math racket/unsafe/ops racket/base
                  (only-in "../types/numeric-predicates.rkt" index?))
    (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
 
@@ -683,6 +683,171 @@
      ((Un -PosReal -NegReal) . -> . -PosReal)
      (-Real . -> . -NonNegReal)))
 
+  (define extfl-unop (lambda () (unop -ExtFlonum)))
+  
+  (define extflabs-type
+    (lambda ()
+      (cl->* (-> -ExtFlonumZero -ExtFlonumZero)
+             (-> (Un -PosExtFlonum -NegExtFlonum) -PosExtFlonum)
+             (-> -ExtFlonum -NonNegExtFlonum))))
+  (define extfl+-type
+    (lambda ()
+      (from-cases (map (lambda (t) (commutative-binop t -ExtFlonumZero t))
+                       ;; not all float types. singleton types are ruled out, since NaN can arise
+                       (list -ExtFlonumZero -ExtFlonumNan -PosExtFlonum -NonNegExtFlonum
+                             -NegExtFlonum -NonPosExtFlonum -ExtFlonum))
+                  (commutative-binop -NonNegExtFlonum -PosExtFlonum -PosExtFlonum)
+                  (map binop (list -NonNegExtFlonum -NegExtFlonum -NonPosExtFlonum -ExtFlonum))
+                  (-ExtFlonum -ExtFlonum . -> . -ExtFlonum))))
+  (define extfl--type
+    (lambda ()
+      (from-cases (binop -ExtFlonumZero)
+                  (-NegExtFlonum (Un -NonNegExtFlonum -ExtFlonumZero) . -> . -NegExtFlonum)
+                  ((Un -NonPosExtFlonum -ExtFlonumZero) -PosExtFlonum . -> . -NegExtFlonum)
+                  (-NonPosExtFlonum -NonNegExtFlonum . -> . -NonPosExtFlonum)
+                  (binop -ExtFlonum))))
+  (define extfl*-type
+    (lambda ()
+      (from-cases (binop -ExtFlonumZero)
+                  ;; we don't have Pos Pos -> Pos, possible underflow
+                  (binop -PosExtFlonum -NonNegExtFlonum)
+                  (binop -NonNegExtFlonum)
+                  (commutative-binop -NegExtFlonum -PosExtFlonum -NonPosExtFlonum)
+                  (binop -NegExtFlonum -NonNegExtFlonum)
+                  (binop -ExtFlonum))))
+  (define extfl/-type
+    (lambda ()
+      (from-cases (-ExtFlonumZero -ExtFlonum . -> . -ExtFlonumZero)
+                  (-PosExtFlonum -PosExtFlonum . -> . -NonNegExtFlonum) ; possible underflow
+                  (commutative-binop -PosExtFlonum -NegExtFlonum -NonPosExtFlonum)
+                  (-NegExtFlonum -NegExtFlonum . -> . -NonNegExtFlonum)
+                  (binop -ExtFlonum))))
+  (define extfl=-type
+    (lambda ()
+      (from-cases (map (lambda (l) (exclude-zero (car l) (cadr l) -ExtFlonumZero))
+                       (list (list -NonNegExtFlonum -PosExtFlonum)
+                             (list -NonPosExtFlonum -NegExtFlonum)))
+                  (map (lambda (t) (commutative-equality/filter -ExtFlonum t))
+                       (list -ExtFlonumZero -PosExtFlonum -NonNegExtFlonum
+                             -NegExtFlonum -NonPosExtFlonum))
+                  (comp -ExtFlonum))))
+  (define extfl<-type
+    (lambda ()
+      (from-cases
+       ;; false case, we know nothing, lhs may be NaN. same for all comparison that can involve floats
+       (-> -ExtFlonumZero -ExtFlonum B : (-FS (-filter -PosExtFlonum 1) -top))
+       (-> -ExtFlonum -ExtFlonumZero B : (-FS (-filter -NegExtFlonum 0) -top))
+       (-> -PosExtFlonum -ExtFlonum B : (-FS (-filter -PosExtFlonum 1) -top))
+       (-> -ExtFlonum -PosExtFlonum B)
+       (-> -NonNegExtFlonum -ExtFlonum B : (-FS (-filter -PosExtFlonum 1) -top))
+       (-> -ExtFlonum -NonNegExtFlonum B)
+       (-> -NegExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NegExtFlonum B : (-FS (-filter -NegExtFlonum 0) -top))
+       (-> -NonPosExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NonPosExtFlonum B : (-FS (-filter -NegExtFlonum 0) -top))
+       (comp -ExtFlonum))))
+  (define extfl>-type
+    (lambda ()
+      (from-cases
+       (-> -ExtFlonumZero -ExtFlonum B : (-FS (-filter -NegExtFlonum 1) -top))
+       (-> -ExtFlonum -ExtFlonumZero B : (-FS (-filter -PosExtFlonum 0) -top))
+       (-> -PosExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -PosExtFlonum B : (-FS (-filter -PosExtFlonum 0) -top))
+       (-> -NonNegExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NonNegExtFlonum B : (-FS (-filter -PosExtFlonum 0) -top))
+       (-> -NegExtFlonum -ExtFlonum B : (-FS (-filter -NegExtFlonum 1) -top))
+       (-> -ExtFlonum -NegExtFlonum B)
+       (-> -NonPosExtFlonum -ExtFlonum B : (-FS (-filter -NegExtFlonum 1) -top))
+       (-> -ExtFlonum -NonPosExtFlonum B)
+       (comp -ExtFlonum))))
+  (define extfl<=-type
+    (lambda ()
+      (from-cases
+       (-> -ExtFlonumZero -ExtFlonum B : (-FS (-filter -NonNegExtFlonum 1) -top))
+       (-> -ExtFlonum -ExtFlonumZero B : (-FS (-filter -NonPosExtFlonum 0) -top))
+       (-> -PosExtFlonum -ExtFlonum B : (-FS (-filter -PosExtFlonum 1) -top))
+       (-> -ExtFlonum -PosExtFlonum B)
+       (-> -NonNegExtFlonum -ExtFlonum B : (-FS (-filter -NonNegExtFlonum 1) -top))
+       (-> -ExtFlonum -NonNegExtFlonum B)
+       (-> -NegExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NegExtFlonum B : (-FS (-filter -NegExtFlonum 0) -top))
+       (-> -NonPosExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NonPosExtFlonum B : (-FS (-filter -NonPosExtFlonum 0) -top))
+       (comp -ExtFlonum))))
+  (define extfl>=-type
+    (lambda ()
+      (from-cases
+       (-> -ExtFlonumZero -ExtFlonum B : (-FS (-filter -NonPosExtFlonum 1) -top))
+       (-> -ExtFlonum -ExtFlonumZero B : (-FS (-filter -NonNegExtFlonum 0) -top))
+       (-> -PosExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -PosExtFlonum B : (-FS (-filter -PosExtFlonum 0) -top))
+       (-> -NonNegExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NonNegExtFlonum B : (-FS (-filter -NonNegExtFlonum 0) -top))
+       (-> -NegExtFlonum -ExtFlonum B : (-FS (-filter -NegExtFlonum 1) -top))
+       (-> -ExtFlonum -NegExtFlonum B)
+       (-> -NonPosExtFlonum -ExtFlonum B)
+       (-> -ExtFlonum -NonPosExtFlonum B : (-FS (-filter -NonPosExtFlonum 0) -top))
+       (comp -ExtFlonum))))
+  (define extflmin-type
+    (lambda ()
+      (from-cases (commutative-case -NegExtFlonum -ExtFlonum)
+                  (commutative-case -NonPosExtFlonum -ExtFlonum)
+                  (map binop (list -PosExtFlonum -NonNegExtFlonum -ExtFlonum)))))
+  (define extflmax-type
+    (lambda ()
+      (from-cases (commutative-case -PosExtFlonum -ExtFlonum)
+                  (commutative-case -NonNegExtFlonum -ExtFlonum)
+                  (map binop (list -NegExtFlonum -NonPosExtFlonum -ExtFlonum)))))
+  (define extflround-type ; truncate too
+    (lambda ()
+      (from-cases (map unop (list -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumZero
+                                  -NonNegExtFlonum -NonPosExtFlonum -ExtFlonum)))))
+  (define extflfloor-type
+    (lambda ()
+      (from-cases (map unop (list -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumZero
+                                  -NonNegExtFlonum -NegExtFlonum -NonPosExtFlonum -ExtFlonum)))))
+  (define extflceiling-type
+    (lambda ()
+      (from-cases (map unop (list -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumZero
+                                  -PosExtFlonum -NonNegExtFlonum -NonPosExtFlonum -ExtFlonum)))))
+  (define extfllog-type
+    (lambda ()
+      (from-cases (-> -ExtFlonumZero -NegExtFlonum) ; -inf
+                  (unop -ExtFlonum))))
+  (define extflexp-type
+    (lambda ()
+      (from-cases (-NonNegExtFlonum . -> . -PosExtFlonum)
+                  (-NegExtFlonum . -> . -NonNegExtFlonum)
+                  (-ExtFlonum . -> . -ExtFlonum)))) ; nan is the only non nonnegative case (returns nan)
+  (define extflsqrt-type
+    (lambda ()
+      (from-cases (map unop (list -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumZero
+                                  -NonNegExtFlonum ; we don't have positive case, possible underflow
+                                  -ExtFlonum))))) ; anything negative returns nan
+  (define extflexpt-type
+    (lambda ()
+      (from-cases (-ExtFlonumZero -PosExtFlonum . -> . -ExtFlonumZero) ; (extflexpt -0.0t0 0.1t0) -> 0.0t0 ; not sign preserving
+                  ((Un -PosExtFlonum -NegExtFlonum) -ExtFlonumZero . -> . -PosExtFlonum) ; always returns 1.0t0
+                  (-NonNegExtFlonum -ExtFlonum . -> . -NonNegExtFlonum) ; can underflow
+                  (-ExtFlonum -ExtFlonum . -> . -ExtFlonum))))
+
+  (define fx->extfl-type
+    (lambda ()
+      (fx-from-cases
+       (-PosInt . -> . -PosExtFlonum)
+       (-Nat . -> . -NonNegExtFlonum)
+       (-NegInt . -> . -NegExtFlonum)
+       (-NonPosInt . -> . -NonPosExtFlonum)
+       (-Int . -> . -ExtFlonum))))
+  (define extfl->fx-type
+    (lambda ()
+      (from-cases
+       (-ExtFlonumZero . -> . -Zero)
+       (-PosExtFlonum . -> . -PosFixnum)
+       (-NegExtFlonum . -> . -NegFixnum)
+       (-NonNegExtFlonum . -> . -NonNegFixnum)
+       (-NonPosExtFlonum . -> . -NonPosFixnum)
+       (-ExtFlonum . -> . -Fixnum))))
 
   ;Check to ensure we fail fast if the flonum bindings change
   (define-namespace-anchor anchor)
@@ -698,7 +863,20 @@
                        [unsafe-flacos     flacos]
                        [unsafe-fllog      fllog]
                        [unsafe-flexp      flexp]
-                       [unsafe-flexpt     flexpt])))
+                       [unsafe-flexpt     flexpt]
+                       [unsafe-extflround    extflround]
+                       [unsafe-extflfloor    extflfloor]
+                       [unsafe-extflceiling  extflceiling]
+                       [unsafe-extfltruncate extfltruncate]
+                       [unsafe-extflsin      extflsin]
+                       [unsafe-extflcos      extflcos]
+                       [unsafe-extfltan      extfltan]
+                       [unsafe-extflatan     extflatan]
+                       [unsafe-extflasin     extflasin]
+                       [unsafe-extflacos     extflacos]
+                       [unsafe-extfllog      extfllog]
+                       [unsafe-extflexp      extflexp]
+                       [unsafe-extflexpt     extflexpt])))
     (define phase (namespace-base-phase (namespace-anchor->namespace anchor)))
 
     (for ([op-pair (in-syntax flonum-ops)])
@@ -1581,15 +1759,13 @@
                     (-NegFlonum . -> . -NegInt)
                     (-NonPosFlonum . -> . -NonPosInt)
                     (-Flonum . -> . -Int))]
-[real->single-flonum (cl->* (-PosReal . -> . -PosSingleFlonum)
-                            (-NegReal . -> . -NegSingleFlonum)
-                            (-RealZero . -> . -SingleFlonumZero)
+[real->single-flonum (cl->* (-RealZero . -> . -SingleFlonumZero)
+                            ;; no positive / negative cases, possible underflow
                             (-NonNegReal . -> . -NonNegSingleFlonum)
                             (-NonPosReal . -> . -NonPosSingleFlonum)
                             (-Real . -> . -SingleFlonumZero))]
-[real->double-flonum (cl->* (-PosReal . -> . -PosFlonum)
-                            (-NegReal . -> . -NegFlonum)
-                            (-RealZero . -> . -FlonumZero)
+[real->double-flonum (cl->* (-RealZero . -> . -FlonumZero)
+                            ;; no positive / negative cases, possible underflow
                             (-NonNegReal . -> . -NonNegFlonum)
                             (-NonPosReal . -> . -NonPosFlonum)
                             (-Real . -> . -Flonum))]
@@ -2107,3 +2283,93 @@
 [unsafe-flreal-part (flreal-part-type)]
 [unsafe-flimag-part (flimag-part-type)]
 [unsafe-flrandom (flrandom-type)]
+
+; racket/extflonum
+[extflonum? (make-pred-ty -ExtFlonum)]
+[extflonum-available? (-> B)]
+[pi.t -PosExtFlonum]
+
+[extflabs (extflabs-type)]
+[extfl+ (extfl+-type)]
+[extfl- (extfl--type)]
+[extfl* (extfl*-type)]
+[extfl/ (extfl/-type)]
+[extfl= (extfl=-type)]
+[extfl<= (extfl<=-type)]
+[extfl>= (extfl>=-type)]
+[extfl> (extfl>-type)]
+[extfl< (extfl<-type)]
+[extflmin (extflmin-type)]
+[extflmax (extflmax-type)]
+[extflround (extflround-type)]
+[extflfloor (extflfloor-type)]
+[extflceiling (extflceiling-type)]
+[extfltruncate (extflround-type)]
+[extflsin (extfl-unop)] ; special cases (0s) not worth special-casing
+[extflcos (extfl-unop)]
+[extfltan (extfl-unop)]
+[extflatan (extfl-unop)]
+[extflasin (extfl-unop)]
+[extflacos (extfl-unop)]
+[extfllog (extfllog-type)]
+[extflexp (extflexp-type)]
+[extflexpt (extflexpt-type)]
+[extflsqrt (extflsqrt-type)]
+[->extfl (fx->extfl-type)]
+[extfl->exact-integer (cl->* (-ExtFlonumZero . -> . -Zero)
+                             (-PosExtFlonum . -> . -PosInt)
+                             (-NonNegExtFlonum . -> . -Nat)
+                             (-NegExtFlonum . -> . -NegInt)
+                             (-NonPosExtFlonum . -> . -NonPosInt)
+                             (-ExtFlonum . -> . -Int))]
+[real->extfl (cl->* (-RealZero . -> . -ExtFlonumZero)
+                    ;; no positive / negative cases, possible underflow
+                    (-NonNegReal . -> . -NonNegExtFlonum)
+                    (-NonPosReal . -> . -NonPosExtFlonum)
+                    (-Real . -> . -ExtFlonum))]
+[extfl->exact (cl->* (-ExtFlonumZero . -> . -Zero)
+                     (-PosExtFlonum . -> . -PosRat)
+                     (-NonNegExtFlonum . -> . -NonNegRat)
+                     (-NegExtFlonum . -> . -NegRat)
+                     (-NonPosExtFlonum . -> . -NonPosRat)
+                     (-ExtFlonum . -> . -Rat))]
+[extfl->inexact (cl->* (-ExtFlonumZero . -> . -FlonumZero)
+                       ;; no positive / negative cases, possible underflow
+                       (-NonNegExtFlonum . -> . -NonNegFlonum)
+                       (-NonPosExtFlonum . -> . -NonPosFlonum)
+                       (-ExtFlonum . -> . -Flonum))]
+[unsafe-extflabs (extflabs-type)]
+[unsafe-extfl+ (extfl+-type)]
+[unsafe-extfl- (extfl--type)]
+[unsafe-extfl* (extfl*-type)]
+[unsafe-extfl/ (extfl/-type)]
+[unsafe-extfl= (extfl=-type)]
+[unsafe-extfl<= (extfl<=-type)]
+[unsafe-extfl>= (extfl>=-type)]
+[unsafe-extfl> (extfl>-type)]
+[unsafe-extfl< (extfl<-type)]
+[unsafe-extflmin (extflmin-type)]
+[unsafe-extflmax (extflmax-type)]
+
+;These are currently the same binding as the safe versions
+;and so are not needed. If this changes they should be
+;uncommented. There is a check in the definitions part of
+;the file that makes sure that they are the same binding.
+;
+;[unsafe-extflround (extflround-type)]
+;[unsafe-extflfloor (extflfloor-type)]
+;[unsafe-extflceiling (extflceiling-type)]
+;[unsafe-extfltruncate (extflround-type)]
+;[unsafe-extflsin (extfl-unop)]
+;[unsafe-extflcos (extfl-unop)]
+;[unsafe-extfltan (extfl-unop)]
+;[unsafe-extflatan (extfl-unop)]
+;[unsafe-extflasin (extfl-unop)]
+;[unsafe-extflacos (extfl-unop)]
+;[unsafe-extfllog (extfllog-type)]
+;[unsafe-extflexp (extflexp-type)]
+;[unsafe-extflexpt (extflexpt-type)]
+;
+[unsafe-extflsqrt (extflsqrt-type)]
+[unsafe-fx->extfl (fx->extfl-type)]
+[unsafe-extfl->fx (extfl->fx-type)]

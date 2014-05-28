@@ -8,6 +8,7 @@
 
 (define original-stx (make-parameter #f))
 (define expanded-stx (make-parameter #f))
+(define maybe-undefined (make-parameter #hasheq()))
 
 (provide stacktrace@ stacktrace^ stacktrace-imports^ original-stx expanded-stx)
 (define-signature stacktrace-imports^
@@ -273,22 +274,46 @@
             (syntax-property new 'inferred-name p2)
             new))))
   
-  (define (annotate-let expr phase varss-stx rhss-stx bodys-stx)
+  (define (annotate-let expr phase varss-stx rhss-stx bodys-stx letrec?)
     (let ([varss (syntax->list varss-stx)]
           [rhss  (syntax->list rhss-stx)]
           [bodys (syntax->list bodys-stx)])
-      (let ([rhsl (map
-                   (lambda (vars rhs)
-                     (no-cache-annotate-named
-                      (syntax-case vars () [(id) (syntax id)] [_else #f])
-                      rhs
-                      phase))
-                   varss
-                   rhss)]
-            [bodyl (map (lambda (body) (no-cache-annotate body phase))
-                        bodys)])
-        (rebuild expr (append (map cons bodys bodyl)
-                              (map cons rhss rhsl))))))
+      (parameterize ([maybe-undefined (if (and letrec?
+                                               (not (andmap (simple-rhs? phase) rhss)))
+                                          (add-identifiers
+                                           (apply append (map syntax->list varss))
+                                           (maybe-undefined))
+                                          (maybe-undefined))])
+        (let ([rhsl (map
+                     (lambda (vars rhs)
+                       (no-cache-annotate-named
+                        (syntax-case vars () [(id) (syntax id)] [_else #f])
+                        rhs
+                        phase))
+                     varss
+                     rhss)]
+              [bodyl (map (lambda (body) (no-cache-annotate body phase))
+                          bodys)])
+          (rebuild expr (append (map cons bodys bodyl)
+                                (map cons rhss rhsl)))))))
+
+  (define ((simple-rhs? phase) expr)
+    (kernel-syntax-case/phase expr phase
+      [(quote _) #t]
+      [(quote-syntax _) #t]
+      [(#%plain-lambda . _) #t]
+      [(case-lambda . _) #t]
+      [_else #f]))
+
+  (define (add-identifiers ids ht)
+    (for/fold ([ht ht]) ([id (in-list ids)])
+      (define l (hash-ref ht (syntax-e id) null))
+      (hash-set ht (syntax-e id) (cons id l))))
+
+  (define (maybe-undefined? id phase)
+    (define l (hash-ref (maybe-undefined) (syntax-e id) null))
+    (for/or ([mu-id (in-list l)])
+      (free-identifier=? mu-id id phase)))
   
   (define (annotate-seq expr bodys-stx annotate phase)
     (let* ([bodys (syntax->list bodys-stx)]
@@ -362,10 +387,13 @@
           (let ([b (identifier-binding expr phase)])
             (cond
              [(eq? 'lexical b)
-              ;; lexical variable - no error possile
-              expr]
+              ;; lexical variable; a use-before-defined error is possible
+              ;; for letrec-bound variables
+              (if (maybe-undefined? expr phase)
+                  (with-mrk* expr expr)
+                  expr)]
              [(and (pair? b) (let-values ([(base rel) (module-path-index-split (car b))])
-                               (and base rel)))
+                               (or base rel)))
               ;; from another module -- no error possible
               expr]
              [else
@@ -485,14 +513,16 @@
                       (annotate-let disarmed-expr phase
                                     (syntax (vars ...))
                                     (syntax (rhs ...))
-                                    (syntax body))))]
+                                    (syntax body)
+                                    #f)))]
          [(letrec-values ([vars rhs] ...) . body)
           (let ([fm (rearm
                      expr
                      (annotate-let disarmed-expr phase
                                    (syntax (vars ...))
                                    (syntax (rhs ...))
-                                   (syntax body)))])
+                                   (syntax body)
+                                   #t))])
             (kernel-syntax-case/phase expr phase
               [(lv ([(var1) (#%plain-lambda . _)]) var2)
                (and (identifier? #'var2)
@@ -508,7 +538,8 @@
                      (annotate-let disarmed-expr phase
                                    (syntax (vars ...))
                                    (syntax (rhs ...))
-                                   (syntax body)))])
+                                   (syntax body)
+                                   #t))])
             (with-mrk* expr fm))]
 
          ;; Wrap RHS

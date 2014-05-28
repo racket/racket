@@ -174,26 +174,30 @@
       (define last-saved-file-time #f)
       
       (define/augment (after-save-file success?)
+        (define temp-b (box #f))
+        (define filename (get-filename temp-b))
+
         ;; update recently opened file names
-        (let* ([temp-b (box #f)]
-               [filename (get-filename temp-b)])
-          (unless (unbox temp-b)
-            (when filename
-              (handler:add-to-recent filename))))
+        (unless (unbox temp-b)
+          (when filename
+            (handler:add-to-recent filename)))
         
         ;; update last-saved-file-time
-        (when success?
-          (let ([filename (get-filename)])
-            (set! last-saved-file-time
-                  (and filename
-                       (file-exists? filename)
-                       (file-or-directory-modify-seconds filename)))))
+        (unless (doing-autosave?)
+          (unless (unbox temp-b)
+            (when success?
+              (set! last-saved-file-time
+                    (and filename
+                         (file-exists? filename)
+                         (file-or-directory-modify-seconds filename))))))
         
         (inner (void) after-save-file success?))
       
       (define/augment (after-load-file success?)
         (when success?
-          (let ([filename (get-filename)])
+          (define temp-b (box #f))
+          (define filename (get-filename temp-b))
+          (unless (unbox temp-b)
             (set! last-saved-file-time
                   (and filename
                        (file-exists? filename)
@@ -430,9 +434,17 @@
                                 (set-font-size/callback (font-size-pref->current-font-size v))))
     (preferences:add-callback 'framework:standard-style-list:font-name (λ (p v) (set-font-name v)))
     (preferences:add-callback 'framework:standard-style-list:smoothing (λ (p v) (set-font-smoothing v)))
-    
-    (unless (member (preferences:get 'framework:standard-style-list:font-name) (get-face-list))
-      (preferences:set 'framework:standard-style-list:font-name (get-family-builtin-face 'modern))))
+    (define fl (get-face-list))
+    (unless (member (preferences:get 'framework:standard-style-list:font-name) fl)
+      (define preferred-font 
+        (cond
+          [(equal? (system-type) 'macosx)
+           (define preferred-font "Menlo")
+           (if (member preferred-font fl)
+               preferred-font
+               (get-family-builtin-face 'modern))]
+          [else (get-family-builtin-face 'modern)]))
+      (preferences:set 'framework:standard-style-list:font-name preferred-font)))
   
   (define (get-current-preferred-font-size)
     (font-size-pref->current-font-size (preferences:get 'framework:standard-style-list:font-size)))
@@ -594,7 +606,9 @@
       autosave?
       do-autosave
       remove-autosave))
-  
+
+  (define doing-autosave? (make-parameter #f))
+
   (define backup-autosave-mixin
     (mixin (basic<%>) (backup-autosave<%> autosave:autosavable<%>)
       (inherit is-modified? get-filename save-file)
@@ -666,7 +680,8 @@
                                 (when (is-a? this text%)
                                   (send this set-file-format orig-format))
                                 #f)])
-               (save-file auto-name 'copy #f)
+               (parameterize ([doing-autosave? #t])
+                 (save-file auto-name 'copy #f))
                (when (is-a? this text%)
                  (send this set-file-format orig-format))
                (when old-auto-name

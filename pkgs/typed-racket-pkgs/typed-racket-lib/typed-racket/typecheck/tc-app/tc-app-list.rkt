@@ -22,6 +22,12 @@
   #:for-label
   (reverse k:reverse list list* cons map andmap ormap))
 
+(define-syntax-class boolmap
+  #:literal-sets (list-literals)
+  #:attributes (default)
+  (pattern andmap #:attr default #t)
+  (pattern ormap #:attr default #f))
+
 (define-tc/app-syntax-class (tc/app-list expected)
   #:literal-sets (list-literals)
   (pattern (~and form (map f arg0 arg ...))
@@ -40,7 +46,7 @@
        (unless (for/and ([b (in-list bound)]) (or (not b) (eq? bound0 b))) (fail))
        (define expected-elem-type
          (match expected
-           [(or #f (tc-any-results:)) #f]
+           [(or #f (tc-any-results: _)) #f]
            [(tc-result1: (ListDots: elem-type (== bound0))) (ret elem-type)]
            [(tc-result1: (Listof: elem-type)) (ret elem-type)]
            [else (fail)]))
@@ -58,17 +64,18 @@
       ;; TODO fix double typechecking
       [(res0 res) (tc/app-regular #'form expected)]))
   ;; ormap/andmap of ... argument
-  (pattern (~and form ((~or andmap ormap) f arg))
-    (match-let* ([arg-ty (single-value #'arg)]
+  (pattern (~and form (m:boolmap f arg))
+    (match-let* ([arg-ty (tc-expr/t #'arg)]
                  [ft (tc-expr #'f)])
       (match (match arg-ty
                ;; if the argument is a ListDots
-               [(tc-result1: (ListDots: t bound))
+               [(ListDots: t bound)
                 ;; just check that the function applies successfully to the element type
-                (tc/funapp #'f #'(arg) ft (list (ret (substitute Univ bound t))) expected)]
+                (extend-tvars (list bound)
+                  (tc/funapp #'f #'(arg) ft (list (ret t)) expected))]
                ;; otherwise ...
                [_ #f])
-        [(tc-result1: t) (ret (Un (-val #f) t))]
+        [(tc-result1: t) (ret (Un (-val (attribute m.default)) t))]
         ;; if it's not a ListDots, defer to the regular function typechecking
         ;; TODO fix double typechecking
         [_ (tc/app-regular #'form expected)])))
@@ -82,14 +89,11 @@
       [(tc-result1: (List: (? (lambda (ts) (= (syntax-length #'args)
                                               (length ts)))
                               ts)))
-       (match (for/list ([ac (in-syntax #'args)]
+       (ret (-Tuple
+              (for/list ([ac (in-syntax #'args)]
                          [exp (in-list ts)])
-                (tc-expr/check ac (ret exp)))
-         [(list (tc-result1: t) ...)
-          (ret (-Tuple t))])]
-      [_
-       (let ([tys (stx-map tc-expr/t #'args)])
-         (ret (apply -lst* tys)))]))
+                (tc-expr/check/t ac (ret exp)))))]
+      [_ (ret (-Tuple (stx-map tc-expr/t #'args)))]))
   ;; special case for `list*'
   (pattern (list* . args)
     (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])

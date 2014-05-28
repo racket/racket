@@ -34,6 +34,12 @@
                                 (test (and on?
                                            (vector level "name: message" 'data 'name))
                                       sync/timeout 0 lr))
+                              lrs)
+                    (log-message l level 'name "message" 'data #f)
+                    (for-each (lambda (lr)
+                                (test (and on?
+                                           (vector level "message" 'data 'name))
+                                      sync/timeout 0 lr))
                               lrs))])
   (test #t logger? l)
   (test 'test logger-name l)
@@ -171,6 +177,14 @@
         (lambda (v) 'aborted))
   
   (void))
+
+; --------------------
+
+(let ()
+  (define l (make-logger))
+  (define r (make-log-receiver l 'info 'sub))
+  (log-message l 'info 'sub "hey" #f)
+  (test '#(info "sub: hey" #f sub) sync/timeout 0 r))
 
 ; --------------------
 

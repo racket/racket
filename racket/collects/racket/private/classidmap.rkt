@@ -48,6 +48,8 @@
   (if inherited?
       stx
       (quasisyntax/loc src-stx (begin '(declare-field-assignment #,id) #,stx))))
+(define (add-declare-field-initialization id src-stx stx)
+  (quasisyntax/loc src-stx (begin '(declare-field-initialization #,id) #,stx)))
 
 (define (make-this-map orig-id the-finder the-obj)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
@@ -90,7 +92,20 @@
      (lambda (stx)
        (class-syntax-protect
         (with-syntax ([obj-expr (find the-finder the-obj stx)])
-          (syntax-case stx ()
+          (syntax-case stx (field-initialization-value)
+            [(set! id (field-initialization-value expr))
+             (free-identifier=? (syntax set!) set!-stx)
+             (add-declare-field-initialization
+              #'id
+              #'id
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
+                            [set (quasisyntax/loc stx
+                                   ;; This continuation mark disables the chaperone on field assignement
+                                   ;; (if any) installed via `prop:chaperone-unsafe-undefined`:
+                                   (with-continuation-mark prop:chaperone-unsafe-undefined unsafe-undefined
+                                     #,(quasisyntax/loc stx
+                                         ((unsyntax field-mutator) obj id))))])
+                (syntax/loc (choose-src stx #'id) (let* bindings set))))]
             [(set! id expr)
              (free-identifier=? (syntax set!) set!-stx)
              (add-declare-field-assignment
@@ -423,24 +438,28 @@
               ;; as the object to 'make-method-call' so that the
               ;; arguments end up in the right order.
               (unsyntax
-               (make-method-call
-                stx
-                #`(wrapped-object-neg-party receiver)
-                (syntax/loc stx method)
-                (syntax/loc stx sym)
-                #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
-                rest-arg?
-                kw-args/var))
+               (syntax-property
+                (make-method-call
+                 stx
+                 #`(wrapped-object-neg-party receiver)
+                 (syntax/loc stx method)
+                 (syntax/loc stx sym)
+                 #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
+                 rest-arg?
+                 kw-args/var)
+                'feature-profile:send-dispatch 'antimark))
               (let ([receiver (wrapped-object-object receiver)])
                 (unsyntax
-                 (make-method-call
-                  stx
-                  (syntax/loc stx receiver)
-                  (syntax/loc stx method-in-wrapper-fallback-case)
-                  (syntax/loc stx sym)
-                  arg-list
-                  rest-arg?
-                  kw-args/var))))
+                 (syntax-property
+                  (make-method-call
+                   stx
+                   (syntax/loc stx receiver)
+                   (syntax/loc stx method-in-wrapper-fallback-case)
+                   (syntax/loc stx sym)
+                   arg-list
+                   rest-arg?
+                   kw-args/var)
+                  'feature-profile:send-dispatch 'antimark))))
           (unsyntax
            (make-method-call
             stx

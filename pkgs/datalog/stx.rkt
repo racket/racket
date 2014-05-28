@@ -139,44 +139,53 @@
 (define-syntax (datalog-literal/bind stx) (datalog-literal/b stx #t))
 (define-syntax (datalog-literal/ref stx) (datalog-literal/b stx #f))
 
-(define-for-syntax (datalog-literal/b stx binding?)
-  (syntax-parse 
-   stx
-   #:literals (:-)
-   [(_ sym:id)
-    (syntax-property 
-     (quasisyntax/loc #'sym
-       (literal #,(srcloc-list #'sym) 'sym empty))
-     (if binding? 'disappeared-binding 'disappeared-use)
-     (syntax-local-introduce #'sym))]
-   [(_ (~and tstx (sym:id arg ... :- ans ...)))
-    (quasisyntax/loc #'tstx
-      (external #,(srcloc-list #'tstx) 'sym sym
-                (list (datalog-term arg) ...)
-                (list (datalog-term ans) ...)))]
-   [(_ (~and tstx (sym:id e ...)))
-    (syntax-property
-     (quasisyntax/loc #'tstx
-       (literal #,(srcloc-list #'tstx) 'sym 
-                (list (datalog-term e)
-                      ...)))
-     (if binding? 'disappeared-binding 'disappeared-use)
-     (syntax-local-introduce #'sym))]))
+(begin-for-syntax
+  (define-syntax-class table-id
+    #:literals (unsyntax)
+    (pattern sym:id
+             #:attr ref #''sym
+             #:attr val #'sym)
+    (pattern (unsyntax sym:expr)
+             #:attr ref #'sym
+             #:attr val #'sym))
+  (define (datalog-literal/b stx binding?)
+    (syntax-parse 
+        stx
+      #:literals (:-)
+      [(_ sym:table-id)
+       (syntax-property 
+        (quasisyntax/loc #'sym
+          (literal #,(srcloc-list #'sym) sym.ref empty))
+        (if binding? 'disappeared-binding 'disappeared-use)
+        (syntax-local-introduce #'sym))]
+      [(_ (~and tstx (sym:table-id arg ... :- ans ...)))
+       (quasisyntax/loc #'tstx
+         (external #,(srcloc-list #'tstx) 'sym sym.val
+                   (list (datalog-term arg) ...)
+                   (list (datalog-term ans) ...)))]
+      [(_ (~and tstx (sym:table-id e ...)))
+       (syntax-property
+        (quasisyntax/loc #'tstx
+          (literal #,(srcloc-list #'tstx) sym.ref 
+                   (list (datalog-term e)
+                         ...)))
+        (if binding? 'disappeared-binding 'disappeared-use)
+        (syntax-local-introduce #'sym))])))
 
 (define-syntax (datalog-literal-var-selector stx)
   (syntax-parse 
    stx
    #:literals (:-)
-   [(_ sym:id)
+   [(_ sym:table-id)
     (quasisyntax/loc #'sym (λ (l) (hasheq)))]
-   [(_ (~and tstx (sym:id arg ... :- ans ...)))
+   [(_ (~and tstx (sym:table-id arg ... :- ans ...)))
     (quasisyntax/loc #'tstx 
       (match-lambda
         [(external _srcloc _predsym _pred args anss)
          (terms->hasheq (list (datalog-term arg) ...
                               (datalog-term ans) ...)
                         (append args anss))]))]
-   [(_ (~and tstx (sym:id e ...)))
+   [(_ (~and tstx (sym:table-id e ...)))
     (quasisyntax/loc #'tstx
       (match-lambda
         [(literal _srcloc _predsym ts)
@@ -194,6 +203,7 @@
 (define-syntax (datalog-term stx)
   (syntax-parse 
    stx
+   #:literals (unsyntax)
    [(_ sym:id)
     (cond
       [(identifier-binding #'sym 0)
@@ -205,6 +215,9 @@
       [else
        (quasisyntax/loc #'sym
          (constant #,(srcloc-list #'sym) 'sym))])]
+   [(_ (unsyntax sym:expr))
+    (quasisyntax/loc #'sym
+      (constant #,(srcloc-list #'sym) sym))]
    [(_ sym:expr)
     (quasisyntax/loc #'sym
       (constant #,(srcloc-list #'sym) sym))]))

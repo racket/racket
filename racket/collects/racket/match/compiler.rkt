@@ -428,13 +428,16 @@
                                             ([fail (make-rename-transformer
                                                     (quote-syntax #,esc))])
                                             #,(Row-rhs (car blocks)))])
-                                   (if (Row-unmatch (car blocks))
-                                       #`(call-with-continuation-prompt
-                                          (lambda () (let ([#,(Row-unmatch (car blocks))
-                                                            (lambda () (abort-current-continuation match-prompt-tag))])
+                                   (define unmatch (Row-unmatch (car blocks)))
+                                   (if unmatch
+                                       (quasisyntax/loc unmatch
+                                         (call-with-continuation-prompt
+                                          (lambda () (let ([#,unmatch
+                                                            (lambda ()
+                                                              (abort-current-continuation match-prompt-tag))])
                                                        rhs))
                                           match-prompt-tag
-                                          (lambda () (#,esc)))
+                                          (lambda () (#,esc))))
                                        #'rhs))])
                   ;; then compile the rest, with our name as the esc
                   (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])

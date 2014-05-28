@@ -107,6 +107,7 @@ define_ts_iS_s(scheme_checked_integer_to_char, FSRC_MARKS)
 define_ts_iSi_s(scheme_build_list_offset, FSRC_OTHER)
 # endif
 define_ts_iS_s(scheme_check_not_undefined, FSRC_MARKS)
+define_ts_iS_s(scheme_check_assign_not_undefined, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
@@ -240,4 +241,5 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_checked_char_to_integer scheme_checked_char_to_integer
 # define ts_scheme_checked_integer_to_char scheme_checked_integer_to_char
 # define ts_scheme_check_not_undefined scheme_check_not_undefined
+# define ts_scheme_check_assign_not_undefined scheme_check_assign_not_undefined
 #endif

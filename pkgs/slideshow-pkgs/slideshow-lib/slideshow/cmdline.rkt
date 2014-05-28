@@ -46,6 +46,7 @@
     (define smoothing? #t)
     (define screen-number 0)
     (define right-half-screen? #f)
+    (define zero-margins? #f)
     
     (define init-page 0)
 
@@ -99,6 +100,8 @@
            (set! actual-screen-h nh)))
         (("-a" "--squash") "scale to full window, even if not 4:3 aspect"
          (set! no-squash? #f))
+        (("-z" "--zero-margins") "when printing, draw the slides right to the edge of the page"
+                                 (set! zero-margins? #t))
         (("-m" "--no-smoothing") 
          "disable anti-aliased drawing (usually faster)"
          (set! smoothing? #f))
@@ -150,6 +153,9 @@
       (set! use-prefetch? #f)
       (set! keep-titlebar? #t))
 
+    (when (and (not printing-mode) zero-margins?)
+      (raise-user-error 'slideshow "The --zero and -z flags may be used only when printing"))
+    
     (dc-for-text-size
      (if printing-mode
          (let ([p (let ([pss (make-object ps-setup%)])
@@ -169,6 +175,7 @@
                                                               ".~a")
                                                           suffix))
                                     (format "untitled.~a" suffix)))))
+                    (when zero-margins? (send pss set-margin 0 0))
                     (send pss set-orientation 'landscape)
                     (parameterize ([current-ps-setup pss])
                       (case printing-mode

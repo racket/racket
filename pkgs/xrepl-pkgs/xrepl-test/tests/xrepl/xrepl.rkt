@@ -7,9 +7,6 @@
 ;; sometimes there's very little help, and it might also fail by just getting
 ;; stuck.
 
-(module test racket/base
-  (displayln "run as program for tests"))
-
 (define verbose? (make-parameter #f))
 
 (define global-ns (current-namespace))
@@ -83,6 +80,9 @@
 (require setup/dirs)
 (define tmp (path->string (find-system-path 'temp-dir)))
 (define collects (path->string (find-collects-dir)))
+
+(define tmp-no-slash (let-values ([(base name dir?) (split-path tmp)])
+                       (path->string (build-path base name))))
 
 (provide test-xrepl)
 (module+ main (test-xrepl))
@@ -166,12 +166,12 @@
   -> «(current-directory "/( none )")»  ⇒ racket allows this
   ; now in /( none )                    ⇒ reports without ,cd
   -> «,cd @|tmp|»
-  ; now in @tmp
+  ; now in @tmp-no-slash
   -> «,desc scribble/html»
   ; `scribble/html' is a module,
-  ;   located at <pkgs>/scribble-lib/scribble/html.rkt
+  ;   located at <pkgs>/scribble-html-lib/scribble/html.rkt
   ;   imports: <collects>/racket/base.rkt,
-  ;     <pkgs>/scribble-lib/scribble/html/main.rkt.
+  ;     <pkgs>/scribble-html-lib/scribble/html/main.rkt.
   ;   no direct exports.
   -> «(module broken racket/base (define foo 123) (error "bleh!"))»
   -> «,en broken»

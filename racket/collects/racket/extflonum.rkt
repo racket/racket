@@ -6,9 +6,11 @@
          (for-syntax racket/base))
 
 (provide (all-from-out '#%extfl)
-
+         pi.t
          in-extflvector for/extflvector for*/extflvector
          extflvector-copy)
+
+(define pi.t 3.1415926535897932385t0)
 
 (define-vector-wraps "extflvector"
   "extflonum?" extflonum?

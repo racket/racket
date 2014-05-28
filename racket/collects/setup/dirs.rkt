@@ -18,18 +18,19 @@
 ;; config: definitions
 
 (define config-table
-  (delay (let ([d (find-config-dir)])
-           (if d
-               (let ([p (build-path d "config.rktd")])
-                 (if (file-exists? p)
-                     (call-with-input-file* 
-                      p
-                      (lambda (in) 
-                        (call-with-default-reading-parameterization
-                         (lambda ()
-                           (read in)))))
-                     #hash()))
-               #hash()))))
+  (delay/sync
+   (let ([d (find-config-dir)])
+     (if d
+         (let ([p (build-path d "config.rktd")])
+           (if (file-exists? p)
+               (call-with-input-file* 
+                p
+                (lambda (in) 
+                  (call-with-default-reading-parameterization
+                   (lambda ()
+                     (read in)))))
+               #hash()))
+         #hash()))))
 
 (define (to-path l)
   (cond [(string? l) (simplify-path (complete-path (string->path l)))]
@@ -45,7 +46,7 @@
           (find-main-collects))]))
 
 (define-syntax-rule (define-config name key wrap)
-  (define name (delay
+  (define name (delay/sync
                  (wrap 
                   (hash-ref (force config-table) key #f)))))
 
@@ -69,6 +70,7 @@
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
 (define-config config:doc-search-url 'doc-search-url values)
+(define-config config:doc-open-url 'doc-open-url values)
 (define-config config:installation-name 'installation-name values)
 (define-config config:build-stamp 'build-stamp values)
 
@@ -76,6 +78,7 @@
          get-cgc-suffix
          get-3m-suffix
          get-doc-search-url
+         get-doc-open-url
          get-installation-name
          get-build-stamp)
 
@@ -84,6 +87,7 @@
 (define (get-3m-suffix) (force config:3m-suffix))
 (define (get-doc-search-url) (or (force config:doc-search-url)
                                  "http://docs.racket-lang.org/local-redirect/index.html"))
+(define (get-doc-open-url) (force config:doc-open-url))
 (define (get-installation-name) (or (force config:installation-name)
                                     (version)))
 (define (get-build-stamp) (force config:build-stamp))
@@ -101,7 +105,9 @@
   (combine-search (force config:collects-search-dirs)
                   (list (find-collects-dir))))
 (define user-collects-dir
-  (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) "collects"))))
+  (delay/sync (simplify-path (build-path (find-system-path 'addon-dir)
+                                         (get-installation-name)
+                                         "collects"))))
 (define (find-user-collects-dir)
   (force user-collects-dir))
 (define (get-collects-search-dirs)
@@ -136,7 +142,9 @@
        (define-finder provide config:id id get-false default)
        (provide user-id)
        (define user-dir
-         (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) user-default))))
+         (delay/sync (simplify-path (build-path (find-system-path 'addon-dir)
+                                                (get-installation-name)
+                                                user-default))))
        (define (user-id)
          (force user-dir)))]
     [(_ provide config:id id user-id config:search-id search-id default)
@@ -162,7 +170,7 @@
        #'(begin
            (provide id)
            (define dir
-             (delay
+             (delay/sync
                (or (force config:id) (get-default))))
            (define (id)
              (force dir))))]
@@ -171,7 +179,7 @@
        #'(begin
            (provide id)
            (define dir
-             (delay
+             (delay/sync
                (or (force config:id)
                    (let ([p (find-collects-dir)])
                      (and p (simplify-path (build-path p 'up default)))))))
@@ -185,7 +193,7 @@
 ;; ----------------------------------------
 ;; "doc"
 
-(define delayed-#f (delay #f))
+(define delayed-#f (delay/sync #f))
 
 (provide find-doc-dir
          find-user-doc-dir
@@ -277,7 +285,7 @@
 
 (provide find-dll-dir)
 (define dll-dir
-  (delay
+  (delay/sync
     (case (system-type)
       [(windows)
        ;; Extract "lib" location from binary:

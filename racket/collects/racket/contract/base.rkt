@@ -16,7 +16,8 @@
          "private/basic-opters.rkt" ;; required for effect to install the opters
          "private/opt.rkt"
          "private/out.rkt"
-         "private/arrow-val-first.rkt")
+         "private/arrow-val-first.rkt"
+         "private/orc.rkt")
 
 (provide
  (except-out (all-from-out "private/arrow.rkt")
@@ -47,7 +48,10 @@
              current-contract-region)
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
-             check-unary-between/c)
+             check-unary-between/c
+             random-any/c)
+ symbols or/c one-of/c
+ flat-rec-contract
  provide/contract
  ;(for-syntax make-provide/contract-transformer) ;; not documented!
  contract-out

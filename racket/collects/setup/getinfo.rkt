@@ -70,51 +70,83 @@
                     'setup/infotab
                     'info)
                 expr ...)
-          ;; No need to set a reader-guard, since we checked it
-          ;; above (a guard will see other uses of #lang for stuff
-          ;; that is required).
-          ;; We are, however, trusting that the bytecode form of the
-          ;; file (if any) matches the source.
-          (let ([ns (or ns (info-namespace))])
-            (if (and bootstrap?
-                     (parameterize ([current-namespace ns])
-                       (not (module-declared? file))))
-                ;; Attach `info' language modules to target namespace, and
-                ;; disable the use of compiled bytecode if it fails; we
-                ;; need a trial namespace to try loading bytecode, since
-                ;; the use of bytecode "sticks" for later attempts.
-                (let ([attach!
-                       (lambda (ns)
-                         (namespace-attach-module enclosing-ns 'setup/infotab ns)
-                         (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader ns)
-                         (namespace-attach-module enclosing-ns 'info ns)
-                         (namespace-attach-module enclosing-ns '(submod info reader) ns))]
-                      [try
-                       (lambda (ns)
-                         (parameterize ([current-namespace ns])
-                           (dynamic-require file '#%info-lookup)))])
-                  (define ns-id (namespace-module-registry ns))
-                  ((with-handlers ([exn:fail? (lambda (exn)
-                                                ;; Trial namespace is damaged, so uncache:
-                                                (hash-set! trial-namespaces ns-id #f)
-                                                ;; Try again from source:
-                                                (lambda ()
-                                                  (attach! ns)
-                                                  (parameterize ([use-compiled-file-paths null])
-                                                    (try ns))))])
-                     ;; To reduce the cost of the trial namespace, try to used a cached
-                     ;; one previously generated for the `ns':
-                     (define try-ns (or (hash-ref trial-namespaces ns-id #f)
-                                        (let ([try-ns (make-base-empty-namespace)])
-                                          (attach! try-ns)
-                                          try-ns)))
-                     (define v (try try-ns))
-                     (hash-set! trial-namespaces ns-id try-ns)
-                     (namespace-attach-module try-ns file ns)
-                     (lambda () v))))
-                ;; Can use compiled bytecode, etc.:
-                (parameterize ([current-namespace ns])
-                  (dynamic-require file '#%info-lookup))))]
+          ;; Although `#lang info` is intended to be loaded as code,
+          ;; many modules are so simple that we can synthesize the
+          ;; procedure directly:
+          (cond
+           [(and (not bootstrap?)
+                 (= 1 (length expr))
+                 (list? (car expr))
+                 ((length (car expr)) . >= . 1)
+                 (eq? '#%module-begin (caar expr))
+                 (for/fold ([ht #hasheq()]) ([e (in-list (cdar expr))])
+                   (match e
+                     [`(define ,id ,rhs)
+                      (and (symbol? id)
+                           ht
+                           (eq? file (hash-ref ht id file))
+                           (or (string? rhs)
+                               (number? rhs)
+                               (boolean? rhs)
+                               (and (pair? rhs)
+                                    (eq? 'quote (car rhs))
+                                    (list? rhs)
+                                    (= 2 (length rhs))))
+                           (hash-set ht id (if (pair? rhs)
+                                               (cadr rhs)
+                                               rhs)))]
+                     [_ #f])))
+            => (lambda (ht)
+                 ;; This module is so simple that we don't need to `eval` it.
+                 (lambda (key [default (lambda () (error 'info.rkt "no info for ~a" key))])
+                   (hash-ref ht key default)))]
+           [else
+            ;; Load the module.
+            ;; No need to set a reader-guard, since we checked it
+            ;; above (a guard will see other uses of #lang for stuff
+            ;; that is required).
+            ;; We are, however, trusting that the bytecode form of the
+            ;; file (if any) matches the source.
+            (let ([ns (or ns (info-namespace))])
+              (if (and bootstrap?
+                       (parameterize ([current-namespace ns])
+                         (not (module-declared? file))))
+                  ;; Attach `info' language modules to target namespace, and
+                  ;; disable the use of compiled bytecode if it fails; we
+                  ;; need a trial namespace to try loading bytecode, since
+                  ;; the use of bytecode "sticks" for later attempts.
+                  (let ([attach!
+                         (lambda (ns)
+                           (namespace-attach-module enclosing-ns 'setup/infotab ns)
+                           (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader ns)
+                           (namespace-attach-module enclosing-ns 'info ns)
+                           (namespace-attach-module enclosing-ns '(submod info reader) ns))]
+                        [try
+                         (lambda (ns)
+                           (parameterize ([current-namespace ns])
+                             (dynamic-require file '#%info-lookup)))])
+                    (define ns-id (namespace-module-registry ns))
+                    ((with-handlers ([exn:fail? (lambda (exn)
+                                                  ;; Trial namespace is damaged, so uncache:
+                                                  (hash-set! trial-namespaces ns-id #f)
+                                                  ;; Try again from source:
+                                                  (lambda ()
+                                                    (attach! ns)
+                                                    (parameterize ([use-compiled-file-paths null])
+                                                      (try ns))))])
+                       ;; To reduce the cost of the trial namespace, try to used a cached
+                       ;; one previously generated for the `ns':
+                       (define try-ns (or (hash-ref trial-namespaces ns-id #f)
+                                          (let ([try-ns (make-base-empty-namespace)])
+                                            (attach! try-ns)
+                                            try-ns)))
+                       (define v (try try-ns))
+                       (hash-set! trial-namespaces ns-id try-ns)
+                       (namespace-attach-module try-ns file ns)
+                       (lambda () v))))
+                  ;; Can use compiled bytecode, etc.:
+                  (parameterize ([current-namespace ns])
+                    (dynamic-require file '#%info-lookup))))])]
          [else (err "does not contain a module of the right shape")])))
 
 (define info-namespace

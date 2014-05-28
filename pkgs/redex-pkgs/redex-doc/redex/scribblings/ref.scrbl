@@ -61,7 +61,8 @@
    (make-blockquote #f 
     (list (make-paragraph 
            (list (racketidfont (make-element #f (list (symbol->string 'a0))))
-                 (make-element #f (list " " (hspace 1) " " (racketidfont (symbol->string 'a)))) ...)))))
+                 (make-element #f (list " " (hspace 1) " " (racketidfont (symbol->string 'a))))
+                 ...)))))
 
 @(define (examples-link relative-path dir? text)
    (link (format "http://git.racket-lang.org/plt/~a/HEAD:/collects/redex/examples/~a"
@@ -99,7 +100,7 @@ This is the grammar for the Redex pattern language. Non-terminal
 references are wrapped with angle brackets; otherwise identifiers
 in the grammar are terminals.
 
-@(racketgrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
+@(racketgrammar*
    [pattern any 
             _
             number 
@@ -136,7 +137,7 @@ before the underscore.
 }
 
 @item{The @defpattech[_] @pattern matches any sexpression,
-but does not bind $pattech[_] as a name, nor can it be suffixed to bind a name.
+but does not bind @pattech[_] as a name, nor can it be suffixed to bind a name.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
@@ -234,6 +235,14 @@ example, this @|pattern|:
 
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
+
+If the @tt{_!_} is used under the ellipsis then the ellipsis is effectively
+ignored. That is, a pattern like this:
+
+@racketblock[(e_!_1 ... e_!_1)]
+
+matches all sequences of @racket[e]s that have at least one element and are
+all distinct.
 
 Unlike a @tt{_} @|pattern|, the @tt{_!_} @|pattern|s do not bind names.
 
@@ -489,7 +498,7 @@ that point.}
 @racket[racket-expression], which must produce a list. It then splices
 the contents of the list into the expression at that point in the sequence.}
 
-@item{A term written @racket[(in-hole @|tttterm| @|tttterm|)]
+@item{A term written @racket[(in-hole #,tttterm #,tttterm)]
  is the dual to the @pattern @racket[in-hole] -- it accepts
  a context and an expression and uses @racket[plug] to combine
 them.}
@@ -2525,7 +2534,8 @@ traces window instead of just the numbers.
                     [file (or/c path-string? path?)]
                     [#:multiple? multiple? boolean? #f]
                     [#:reduce reduce (-> reduction-relation? any/c
-                                         (listof (list/c (union false/c string?) any/c))) apply-reduction-relation/tag-with-names]
+                                         (listof (list/c (union false/c string?) any/c)))
+                              apply-reduction-relation/tag-with-names]
                     [#:pred pred
                             (or/c (-> sexp any)
                                   (-> sexp term-node? any))
@@ -2546,7 +2556,9 @@ traces window instead of just the numbers.
                     [#:y-spacing y-spacing number? 15]
                     [#:edge-labels? edge-labels? boolean? #t]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
-                    [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values]
+                    [#:graph-pasteboard-mixin graph-pasteboard-mixin 
+                                              (make-mixin-contract graph-pasteboard<%>)
+                                              values]
                     [#:post-process post-process (-> (is-a?/c graph-pasteboard<%>) any/c)])
          void?]{
 
@@ -2650,7 +2662,8 @@ term-node-parents. If the list contains @racket[#f], that means that
 the corresponding step does not have a label.
 }
 
-@defproc[(term-node-set-color! [tn term-node?] [color (or/c string? (is-a?/c color%) false/c)]) void?]{
+@defproc[(term-node-set-color! [tn term-node?] [color (or/c string? (is-a?/c color%) false/c)])
+         void?]{
 
 Changes the highlighting of the node; if its second argument
 is @racket[#f], the coloring is removed, otherwise the color is set
@@ -2678,7 +2691,10 @@ not colored specially.
 Returns the expression in this node.
 }
 
-@defproc[(term-node-set-position! [tn term-node?] [x (and/c real? positive?)] [y (and/c real? positive?)]) void?]{
+@defproc[(term-node-set-position! [tn term-node?] 
+                                  [x (and/c real? positive?)]
+                                  [y (and/c real? positive?)])
+         void?]{
 
 Sets the position of @racket[tn] in the graph to (@racket[x],@racket[y]). 
 }
@@ -2753,7 +2769,12 @@ color used to draw the label on the edge.
 
 }
 
-@defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{
+@defproc[(default-pretty-printer 
+           [v any/c] 
+           [port output-port?]
+           [width exact-nonnegative-integer?]
+           [text (is-a?/c text%)])
+         void?]{
 
 This is the default value of @racket[pp] used by @racket[traces] and
 @racket[stepper] and it uses
@@ -2840,14 +2861,22 @@ sets @racket[dc-for-text-size] and the latter does not.
  together.
 }
 
-@defproc[(render-term/pretty-write [lang compiled-lang?] [term any/c] [filename path-string?] [#:width width #f]) void?]{
+@defproc[(render-term/pretty-write [lang compiled-lang?]
+                                   [term any/c]
+                                   [filename path-string?]
+                                   [#:width width #f])
+         void?]{
   Like @racket[render-term], except that the @racket[term] argument is evaluated,
   and expected to return a term. Then, @racket[pretty-write] is used
   to determine where the line breaks go, using the @racket[width] argument
   as a maximum width (via @racket[pretty-print-columns]).
 }
 
-@defproc[(term->pict/pretty-write [lang compiled-lang?] [term any/c] [filename (or/c path-string? #f)] [#:width width #f]) pict?]{
+@defproc[(term->pict/pretty-write [lang compiled-lang?] 
+                                  [term any/c]
+                                  [filename (or/c path-string? #f)]
+                                  [#:width width #f])
+         pict?]{
   Like @racket[term->pict], but with the same change that
   @racket[render-term/pretty-write] has from @racket[render-term].
 }
@@ -2994,6 +3023,15 @@ This function sets @racket[dc-for-text-size]. See also
   If it is a list of symbols, only the listed symbols are rendered.
 
   See also @racket[language-nts].
+}
+
+@defparam[non-terminal-gap-space gap-space real?]{
+  Controls the amount of vertical space between non-terminals
+  in a typeset language.
+  
+  Defaults to @racket[0].
+  
+  @history[#:added "1.1"]
 }
 
 @defparam[extend-language-show-union show? boolean?]{

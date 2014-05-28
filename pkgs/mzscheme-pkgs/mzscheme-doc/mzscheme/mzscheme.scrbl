@@ -244,7 +244,9 @@ the field for an instance causes the instance to accept keyword
 arguments.)}
 
 @deftogether[(
-@defproc[(open-input-file [file path-string?] [mode (one-of/c 'text 'binary) 'binary])
+@defproc[(open-input-file [file path-string?]
+                          [mode (one-of/c 'text 'binary) 'binary]
+                          [module-mode (or-of/c 'module 'none) 'none])
          input-port?]
 @defproc[(open-output-file [file path-string?]
                            [mode (one-of/c 'text 'binary) 'binary]
@@ -279,10 +281,13 @@ arguments.)}
 )]{
 
 Like @base-open-input-file, etc. from @racketmodname[scheme/base], but
-@racket[mode] and @racket[exists] arguments are not keyword
-arguments. When both @racket[mode] and @racket[exists] are accepted,
-they are accepted in either order.}
+the @racket[mode], @racket[exists], and @racket[module-mode]
+(corresponds to @racket[#:for-module?]) arguments are not keyword
+arguments. When both @racket[mode] and @racket[exists] or
+@racket[module-mode] are accepted, they are accepted in either order.
 
+@history[#:changed "6.0.1.6" 
+         @elem{Added the @scheme[module-mode] argument to @racket[open-input-file].}]}
 
 @deftogether[(
 @defproc[(syntax-object->datum [stx syntax?]) any]

@@ -43,10 +43,12 @@ recognizes file-stream ports.
 
 When an input or output file-stream port is created, it is placed into
 the management of the current custodian (see
-@secref["custodians"]).
+@secref["custodians"]). In the case of an output port, a @tech{flush
+callback} is registered with the @tech{current plumber} to flush the port.
 
 @defproc[(open-input-file [path path-string?]
-                          [#:mode mode-flag (or/c 'binary 'text) 'binary])
+                          [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                          [#:for-module? for-module? any/c #f])
          input-port?]{
 
 Opens the file specified by @racket[path] for input. The
@@ -92,6 +94,15 @@ to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
+
+If opening the file fails, if @racket[for-module?] is true, and
+@racket[current-module-path-for-load] has a non-@racket[#f] value,
+then the raised exception is either
+@racket[exn:fail:syntax:missing-module] (if the value of
+@racket[current-module-path-for-load] is a @tech{syntax object}) or
+@racket[exn:fail:filesystem:missing-module] (otherwise).
+
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:for-module?].}]
 
 @file-examples[
 ;; put some text in a file

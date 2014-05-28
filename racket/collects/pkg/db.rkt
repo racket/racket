@@ -82,14 +82,18 @@
                      " author TEXT,"
                      " source TEXT,"
                      " checksum TEXT,"
-                     " desc TEXT)")))
+                     " desc TEXT)")
+                 ;; index:
+                 "(name, catalog)"))
 
 (define (prepare-tags-table db)
   (prepare-table db
                  "tags"
                  (~a "(pkg TEXT,"
-                     " catalog TEXT,"
-                     " tag TEXT)")))
+                     " catalog SMALLINT,"
+                     " tag TEXT)")
+                 ;; index:
+                 "(pkg, catalog)"))
 
 (define (prepare-modules-table db)
   (prepare-table db
@@ -97,7 +101,9 @@
                  (~a "(name TEXT,"
                      " pkg TEXT,"
                      " catalog SMALLINT,"
-                     " checksum TEXT)")))
+                     " checksum TEXT)")
+                 ;; index:
+                 "(pkg, catalog, checksum)"))
 
 (define (prepare-dependencies-table db)
   (prepare-table db
@@ -107,7 +113,9 @@
                      " onplatform TEXT,"
                      " pkg TEXT,"
                      " catalog SMALLINT,"
-                     " checksum TEXT)")))
+                     " checksum TEXT)")
+                 ;; index:
+                 "(pkg, catalog, checksum)"))
 
 (define current-pkg-catalog-file
   (make-parameter (build-path
@@ -548,9 +556,12 @@
                             (pkg-checksum new)
                             (pkg-desc new))))))))))
 
-(define (prepare-table db which desc)
+(define (prepare-table db which desc [index #f])
   (when (null? 
          (query-rows db (~a "SELECT name FROM sqlite_master"
                             " WHERE type='table' AND name='" which "'")))
     (query-exec db (~a "CREATE TABLE " which " "
-                       desc))))
+                       desc))
+    (when index
+      (query-exec db (~a "CREATE INDEX " which "_index "
+                         "ON " which " " index)))))

@@ -13,6 +13,7 @@ cd tests
 run random-seed-works.rkt
 run bitmap-as-image-in-universe.rkt
 run key-error.rkt
+run to-draw-error.rkt
 run run-movie.rkt
 run bad-draw.rkt
 run error-in-tick.rkt
@@ -53,3 +54,4 @@ run pad1.rkt
 run pad1-handler.rkt
 run pad1-in-bsl.rkt
 run error-messages.rkt
+run two-ports.rkt

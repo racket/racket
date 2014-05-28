@@ -249,8 +249,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         for "functional" bodies.
         If warn_info is supplied, complain when a mismatch is detected.
         If no_id is 1, then an identifier doesn't count as omittable,
-        unless the identifier is a consistent top-level; currently, this
-        is used to imply the absence of a continuation-mark impersonator. */
+        unless the identifier is a consistent top-level; the no_id mode
+        is used by the "compile" phase before letrec checks are inserted
+        (where referencing a variable might raise an exception) and to
+        imply the absence of a continuation-mark impersonator. */
 {
   Scheme_Type vtype;
 
@@ -315,7 +317,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_branch_type) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
-    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than, 0)
+    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id)
 	    && scheme_omittable_expr(b->tbranch, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id)
 	    && scheme_omittable_expr(b->fbranch, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id));
   }
@@ -345,7 +347,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
           && (lv2->position == 0)
           && scheme_omittable_expr(lv2->value, 1, fuel - 1, resolved, opt_info, warn_info,
                                    deeper_than + 1 + lv->count,
-                                   0)) {
+                                   no_id)) {
         o = lv2->body;
         deeper_than += 1;
       } else
@@ -362,7 +364,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if ((lh->count == 1) && (lh->num_clauses == 1)) {
       if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
-        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than + 1, 0)) {
+        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than + 1, no_id)) {
           o = lv->body;
           deeper_than++;
           goto try_again;
@@ -389,7 +391,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       int i;
       for (i = app->num_args; i--; ) {
         if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, opt_info, warn_info,
-                                   deeper_than + (resolved ? app->num_args : 0), 0))
+                                   deeper_than + (resolved ? app->num_args : 0), no_id))
           return 0;
       }
       return 1;
@@ -409,7 +411,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if (scheme_is_functional_primitive(app->rator, 1, vals)
         || scheme_is_struct_functional(app->rator, 1, opt_info, vals)) {
       if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, opt_info, warn_info,
-                                deeper_than + (resolved ? 1 : 0), 0))
+                                deeper_than + (resolved ? 1 : 0), no_id))
         return 1;
     } else if (SCHEME_PRIMP(app->rator)) {
       if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
@@ -425,9 +427,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if (scheme_is_functional_primitive(app->rator, 2, vals)
         || scheme_is_struct_functional(app->rator, 2, opt_info, vals)) {
       if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, opt_info, warn_info,
-                                deeper_than + (resolved ? 2 : 0), 0)
+                                deeper_than + (resolved ? 2 : 0), no_id)
           && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, opt_info, warn_info,
-                                   deeper_than + (resolved ? 2 : 0), 0))
+                                   deeper_than + (resolved ? 2 : 0), no_id))
         return 1;
     } else if (SCHEME_PRIMP(app->rator)) {
       if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)) {
@@ -459,7 +461,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                                                5);
     if (auto_e) {
       if (scheme_omittable_expr(auto_e, 1, fuel - 1, resolved, opt_info, warn_info,
-                                deeper_than + auto_e_depth, 0))
+                                deeper_than + auto_e_depth, no_id))
         return 1;
     }
   }
@@ -3250,6 +3252,11 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   v = scheme_optimize_expr(wcm->val, info, 0);
 
+  /* The presence of a key can be detected by other expressions,
+     to increment vclock to prevent expressions incorrectly
+     moving under the mark: */
+  info->vclock++;
+
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
   if (omittable_key(k, info)
@@ -5998,7 +6005,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_with_cont_mark_type:
     return optimize_wcm(expr, info, context);
   case scheme_compiled_unclosed_procedure_type:
-    return optimize_closure_compilation(expr, info, context);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else
+      return optimize_closure_compilation(expr, info, context);
   case scheme_compiled_let_void_type:
     return scheme_optimize_lets(expr, info, 0, context);
   case scheme_compiled_toplevel_type:
@@ -6018,6 +6028,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       }
 
       if (c) {
+        if (context & OPT_CONTEXT_BOOLEAN)
+          return (SCHEME_FALSEP(c) ? scheme_false : scheme_true);
+
 	if (scheme_compiled_duplicate_ok(c, 0))
 	  return c;
 
@@ -6045,8 +6058,12 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     optimize_info_used_top(info);
     return expr;
   case scheme_compiled_quote_syntax_type:
-    info->size += 1;
-    optimize_info_used_top(info);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else {
+      info->size += 1;
+      optimize_info_used_top(info);
+    }
     return expr;
   case scheme_variable_type:
   case scheme_module_variable_type:
@@ -6063,7 +6080,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_begin_for_syntax_type:
     return begin_for_syntax_optimize(expr, info, context);
   case scheme_case_lambda_sequence_type:
-    return case_lambda_optimize(expr, info, context);
+    if (context & OPT_CONTEXT_BOOLEAN)
+      return scheme_true;
+    else
+      return case_lambda_optimize(expr, info, context);
   case scheme_begin0_sequence_type:
     return begin0_optimize(expr, info, context);
   case scheme_apply_values_type:
@@ -6936,11 +6956,13 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       if (single_use)
         *single_use = SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
+        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
 	if (!closure_offset)
 	  break;
 	else
           *closure_offset = delta;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_case_lambda_sequence_type)) {
+        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
         if (!closure_offset)
 	  break;
 	else

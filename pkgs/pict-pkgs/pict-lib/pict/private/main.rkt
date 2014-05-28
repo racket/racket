@@ -218,6 +218,20 @@
     (send dc set-smoothing smoothing)
     (draw-pict p dc 0 0)
     bm)
+  
+  (define (pict->argb-pixels p [smoothing 'aligned])
+    (define bm (pict->bitmap p smoothing))
+    (define w (send bm get-width)) 
+    (define h (send bm get-height))
+    (define bytes (make-bytes (* w h 4)))
+    (send bm get-argb-pixels 0 0 w h bytes)
+    bytes)
+  
+  (define (argb-pixels->pict b w)
+    (define h (/ (bytes-length b) w 4))
+    (define bm (make-bitmap w (/ (bytes-length b) w 4)))
+    (send bm set-argb-pixels 0 0 w h b)
+    (bitmap bm))
 
   (provide hline vline
            frame
@@ -282,4 +296,6 @@
 
                        find-pen find-brush)
            (rename-out [fish standard-fish])
-           pict->bitmap))
+           pict->bitmap
+           pict->argb-pixels
+           argb-pixels->pict))

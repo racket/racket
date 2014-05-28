@@ -18,8 +18,8 @@ TR opt: pr13468.rkt 33:5 (magnitude (ann -6.0 Negative-Flonum)) -- unary float
 TR opt: pr13468.rkt 34:5 (magnitude (ann 6.0 Flonum)) -- unary float
 TR opt: pr13468.rkt 38:5 (real-part (ann 0 Zero)) -- unary number
 TR opt: pr13468.rkt 39:5 (real-part (ann 1 One)) -- unary number
-TR opt: pr13468.rkt 3:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 3:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 3:13 6.0+2.3i -- unbox float-complex
+TR opt: pr13468.rkt 3:13 6.0+2.3i -- unbox float-complex
 TR opt: pr13468.rkt 3:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
 TR opt: pr13468.rkt 40:5 (real-part (ann 6 Byte)) -- unary number
 TR opt: pr13468.rkt 41:5 (real-part (ann 6 Index)) -- unary number
@@ -29,8 +29,8 @@ TR opt: pr13468.rkt 45:5 (real-part (ann -6 Nonpositive-Fixnum)) -- unary number
 TR opt: pr13468.rkt 46:5 (real-part (ann -6 Negative-Fixnum)) -- unary number
 TR opt: pr13468.rkt 47:5 (real-part (ann 6 Fixnum)) -- unary number
 TR opt: pr13468.rkt 49:5 (real-part (ann 6 Positive-Integer)) -- unary number
-TR opt: pr13468.rkt 4:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 4:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 4:13 6.0+2.3i -- unbox float-complex
+TR opt: pr13468.rkt 4:13 6.0+2.3i -- unbox float-complex
 TR opt: pr13468.rkt 4:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
 TR opt: pr13468.rkt 50:5 (real-part (ann 6 Nonnegative-Integer)) -- unary number
 TR opt: pr13468.rkt 51:5 (real-part (ann -6 Nonpositive-Integer)) -- unary number

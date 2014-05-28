@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (require "test-utils.rkt"
          (types subtype numeric-tower union utils abbrev)
          (rep type-rep)
          (env init-envs type-env-structs)
          rackunit
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (provide tests)
 (gen-test-main)
@@ -36,9 +36,9 @@
    (-Symbol Univ)
    (-Void Univ)
    [-Number -Number]
-   [(Un (-pair Univ (-lst Univ)) (-val '())) (-lst Univ)]
-   [(-pair -Number (-pair -Number (-pair (-val 'foo) (-val '())))) (-lst Univ)]
-   [(-pair -Number (-pair -Number (-pair (-val 'foo) (-val '())))) (-lst (Un -Number -Symbol))]
+   [(Un (-pair Univ (-lst Univ)) -Null) (-lst Univ)]
+   [(-lst* -Number -Number (-val 'foo)) (-lst Univ)]
+   [(-lst* -Number -Number (-val 'foo)) (-lst (Un -Number -Symbol))]
    [(-pair (-val 6) (-val 6)) (-pair -Number -Number)]
    [(-val 6) (-val 6)]
    ;; unions
@@ -55,7 +55,7 @@
    [(-mu x (Un -Number (make-Listof x))) (-mu x (Un -Number -Symbol (make-Listof x)))]
    [(-mu x (Un -Number (make-Listof x))) (-mu y (Un -Number -Symbol (make-Listof y)))]
    ;; a hard one
-   [(-mu x (Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
+   [(-mu x (Un -Number (-lst* x -Symbol x))) -Sexp]
    [t1 (unfold t1)]
    [(unfold t1) t1]
    ;; simple function types
@@ -244,6 +244,10 @@
    [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
     (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
 
+   [FAIL
+    (-polydots (c a b) (->... (list (->... (list a) (b b) c) (-vec a)) ((-vec b) b) (-vec c)))
+    (->* (list (->* (list) -Symbol -Symbol)) (-vec -Symbol) (-vec -Symbol))]
+
    [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
     (-> Univ -Boolean : -top-filter)]
    [(-> Univ -Boolean : -bot-filter)
@@ -256,6 +260,8 @@
 
    [FAIL (make-ListDots (-box (make-F 'a)) 'a) (-lst (-box Univ))]
    [(make-ListDots (-> -Symbol (make-F 'a)) 'a) (-lst (-> -Symbol Univ))]
+
+   [FAIL (make-ValuesDots (list) -Symbol 'a) (make-ValuesDots (list (-result -String)) -String 'a)]
 
    ;; keyword function types
    [(->key #:x -Symbol #f Univ) (->key Univ)]

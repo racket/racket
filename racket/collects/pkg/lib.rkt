@@ -41,6 +41,8 @@
                               p))))
 (define current-pkg-scope-version
   (make-parameter (get-installation-name)))
+(define current-pkg-lookup-version
+  (make-parameter (version)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
 (define current-no-pkg-db
@@ -417,7 +419,7 @@
                [query (append
                        (url-query addr/no-query)
                        (list
-                        (cons 'version (current-pkg-scope-version))))]))
+                        (cons 'version (current-pkg-lookup-version))))]))
 
 ;; Take a package-info hash table and lift any version-specific
 ;; information in 'versions.
@@ -426,7 +428,7 @@
        (let ([v (hash-ref ht 'versions #f)])
          (cond
           [(hash? v)
-           (or (for/or ([vers (in-list (list (current-pkg-scope-version)
+           (or (for/or ([vers (in-list (list (current-pkg-lookup-version)
                                              'default))])
                  (define ht2 (hash-ref v vers #f))
                  (and ht2
@@ -437,37 +439,105 @@
                ht)]
           [else ht]))))
 
+;; If the 'source field in `ht` is a relative path, treat
+;; it as relative to `i` and make it absolute:
+(define (source->absolute-source i ht)
+  (cond
+   [ht
+    (define s (hash-ref ht 'source #f))
+    (define new-ht
+      (cond
+       [s
+        (define-values (name type) (package-source->name+type s #f))
+        (cond
+         [(and (or (eq? type 'dir) (eq? type 'file))
+               (not (complete-path? s)))
+          (define full-path
+            (cond
+             [(equal? "file" (url-scheme i))
+              (define path (url->path i))
+              (define dir (if (db-path? path)
+                              (let-values ([(base name dir?) (split-path path)])
+                                base)
+                              path))
+              (path->string (simplify-path (path->complete-path s dir)))]
+             [else
+              (url->string (combine-url/relative i s))]))
+          (hash-set ht 'source full-path)]
+         [else ht])]
+       [else ht]))
+    (let ([v (hash-ref new-ht 'versions #f)])
+      (if v
+          ;; Adjust version-specific sources:
+          (hash-set new-ht 'versions
+                    (for/hash ([(k ht) (in-hash v)])
+                      (values k (source->absolute-source i ht))))
+          ;; No further adjustments:
+          new-ht))]
+   [else #f]))
+
+;; Make sources in `ht` relative to `dir`, when possible:
+(define (source->relative-source dir ht)
+  (define s (hash-ref ht 'source #f))
+  (define new-ht
+    (cond
+     [s
+      (define-values (name type) (package-source->name+type s #f))
+      (cond
+       [(or (eq? type 'dir) (eq? type 'file))
+        (hash-set ht
+                  'source
+                  (string-join (map (lambda (s)
+                                      (case s
+                                        [(up) ".."]
+                                        [(same) "."]
+                                        [else (path-element->string s)]))
+                                    (explode-path (find-relative-path dir s)))
+                               "/"))]
+       [else ht])]
+     [else ht]))
+  (let ([v (hash-ref new-ht 'versions #f)])
+    (if v
+        ;; Adjust version-specific sources:
+        (hash-set new-ht 'versions
+                  (for/hash ([(k ht) (in-hash new-ht)])
+                    (values k (source->relative-source dir ht))))
+        ;; No further adjustments:
+        new-ht)))
+
 (define (package-catalog-lookup pkg details? download-printf)
   (or
    (for/or ([i (in-list (pkg-catalogs))])
      (if download-printf
          (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
          (log-pkg-debug "consulting catalog ~a" (url->string i)))
-     (select-info-version
-      (catalog-dispatch
-       i
-       ;; Server:
-       (lambda (i)
-         (define addr (add-version-query
-                       (combine-url/relative i (format "pkg/~a" pkg))))
-         (log-pkg-debug "resolving via ~a" (url->string addr))
-         (read-from-server
-          'package-catalog-lookup
-          addr
-          (lambda (v) (and (hash? v)
-                           (for/and ([k (in-hash-keys v)])
-                             (symbol? k))))
-          (lambda (s) #f)))
-       ;; Local database:
-       (lambda ()
-         (define pkgs (db:get-pkgs #:name pkg))
-         (and (pair? pkgs)
-              (db-pkg-info (car pkgs) details?)))
-       ;; Local directory:
-       (lambda (path)
-         (define pkg-path (build-path path "pkg" pkg))
-         (and (file-exists? pkg-path)
-              (call-with-input-file* pkg-path read))))))
+     (source->absolute-source
+      i
+      (select-info-version
+       (catalog-dispatch
+        i
+        ;; Server:
+        (lambda (i)
+          (define addr (add-version-query
+                        (combine-url/relative i (format "pkg/~a" pkg))))
+          (log-pkg-debug "resolving via ~a" (url->string addr))
+          (read-from-server
+           'package-catalog-lookup
+           addr
+           (lambda (v) (and (hash? v)
+                            (for/and ([k (in-hash-keys v)])
+                              (symbol? k))))
+           (lambda (s) #f)))
+        ;; Local database:
+        (lambda ()
+          (define pkgs (db:get-pkgs #:name pkg))
+          (and (pair? pkgs)
+               (db-pkg-info (car pkgs) details?)))
+        ;; Local directory:
+        (lambda (path)
+          (define pkg-path (build-path path "pkg" pkg))
+          (and (file-exists? pkg-path)
+               (call-with-input-file* pkg-path read)))))))
    (pkg-error (~a "cannot find package on catalogs\n"
                   "  package: ~a")
               pkg)))
@@ -1322,14 +1392,16 @@
 (define (pkg-stage desc
                    #:namespace [metadata-ns (make-metadata-namespace)] 
                    #:in-place? [in-place? #f]
-                   #:strip [strip-mode #f])
+                   #:strip [strip-mode #f]
+                   #:use-cache? [use-cache? #f]
+                   #:quiet? [quiet? #t])
   (define i (stage-package/info (pkg-desc-source desc)
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
                                 #:given-checksum (pkg-desc-checksum desc)
-                                #:use-cache? #f
+                                #:use-cache? use-cache?
                                 #t
-                                void
+                                (if quiet? void printf)
                                 metadata-ns
                                 #:in-place? in-place?
                                 #:strip strip-mode))
@@ -2381,7 +2453,8 @@
                        "name"
                        "download-cache-max-files"
                        "download-cache-max-bytes"
-                       "download-cache-dir")))
+                       "download-cache-dir"
+                       "doc-open-url")))
         (pkg-error (~a "missing value for config key\n"
                        "  config key: ~a")
                    key)]
@@ -2437,6 +2510,12 @@
                      key
                      val))
         (update-pkg-cfg! (string->symbol key) (string->number val))]
+       [(list (and key "doc-open-url") val)
+        (unless (eq? 'installation (current-pkg-scope))
+          (pkg-error (~a "setting `doc-open-url' works only in `installation' scope\n"
+                         "  current package scope: ~a")
+                     (current-pkg-scope)))
+        (update-pkg-cfg! 'doc-open-url (if (equal? val "") #f val))]
        [(list* key args)
         (pkg-error "unsupported config key\n  key: ~a" key)])]
     [else
@@ -2455,6 +2534,8 @@
                  "download-cache-max-files"
                  "download-cache-max-bytes")
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
+            ["doc-open-url"
+             (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
             [_
              (pkg-error "unsupported config key\n  key: ~e" key)])]
          [(list)
@@ -2597,16 +2678,18 @@
         (delete-directory/files tmp-dir))))
 
 (define (pkg-create create:format dir-or-name
+                    #:pkg-name [given-pkg-name #f]
                     #:dest [dest-dir #f]
                     #:source [source 'dir]
                     #:mode [mode 'as-is]
                     #:quiet? [quiet? #f]
                     #:from-command-line? [from-command-line? #f])
   (define pkg-name
-    (if (eq? source 'dir)
-        (path->string (let-values ([(base name dir?) (split-path dir-or-name)])
-                        name))
-        dir-or-name))
+    (or given-pkg-name
+        (if (eq? source 'dir)
+            (path->string (let-values ([(base name dir?) (split-path dir-or-name)])
+                            name))
+            dir-or-name)))
   (define dir
     (if (eq? source 'dir)
         dir-or-name
@@ -2637,10 +2720,11 @@
                            #:from-command-line? from-command-line?)]))
 
 (define (pkg-catalog-copy srcs dest
-                        #:from-config? [from-config? #f]
-                        #:merge? [merge? #f]
-                        #:force? [force? #f]
-                        #:override? [override? #f])
+                          #:from-config? [from-config? #f]
+                          #:merge? [merge? #f]
+                          #:force? [force? #f]
+                          #:override? [override? #f]
+                          #:relative-sources? [relative-sources? #f])
   (define src-paths
     (for/list ([src (in-list (append srcs
                                      (if from-config?
@@ -2654,7 +2738,7 @@
          [(regexp-match? #rx"^file://" src)
           (url->path (string->url src))]
          [(regexp-match? #rx"^[a-zA-Z]*://" src)
-          (pkg-error (~a "unrecognized URL scheme for an catalog\n"
+          (pkg-error (~a "unrecognized URL scheme for a catalog\n"
                          "  URL: ~a")
                      src)]
          [else (path->complete-path src)]))
@@ -2683,6 +2767,13 @@
                  dest)]
      [else (path->complete-path dest)]))
 
+  (define dest-dir
+    (and relative-sources?
+         (if (db-path? dest-path)
+             (let-values ([(base name dir?) (split-path dest-path)])
+               base)
+             dest-path)))
+
   (unless (or force? merge?)
     (when (or (file-exists? dest-path)
               (directory-exists? dest-path)
@@ -2691,7 +2782,7 @@
                      "  path: ~a")
                  dest-path)))
 
-  (define details
+  (define absolute-details
     (let ([src-paths (if (and merge?
                               (or (file-exists? dest-path)
                                   (directory-exists? dest-path)))
@@ -2706,6 +2797,11 @@
                                                 (path->url src-path)
                                                 src-path))])
         (get-all-pkg-details-from-catalogs))))
+  (define details
+    (if relative-sources?
+        (for/hash ([(k ht) (in-hash absolute-details)])
+          (values k (source->relative-source dest-dir ht)))
+        absolute-details))
 
   (when (and force? (not merge?))
     (cond
@@ -2912,11 +3008,12 @@
     (for/fold ([ht ht]) ([(k v) (in-hash one-ht)])
       (if (hash-ref ht k #f)
           ht
-          (hash-set ht k v)))))
+          (hash-set ht k (source->absolute-source i v))))))
 
 (define (extract-pkg-dependencies get-info
                                   #:build-deps? [build-deps? #t]
-                                  #:filter? [filter? #f])
+                                  #:filter? [filter? #f]
+                                  #:versions? [versions? #f])
   (define v (if get-info
                 (get-info 'deps (lambda () empty))
                 empty))
@@ -2929,9 +3026,13 @@
   (if filter?
       (for/list ([dep (in-list all-v)]
                  #:when (dependency-this-platform? dep))
-        (if (pair? dep)
-            (car dep)
-            dep))
+        (define name
+          (if (pair? dep)
+              (car dep)
+              dep))
+        (if versions?
+            (list name (dependency->version dep))
+            name))
       all-v))
 
 (define (get-pkg-content desc 
@@ -3021,14 +3122,30 @@
              [else s])]
            [else s])])]))))
 
-(define (pkg-catalog-update-local #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
+(define (pkg-catalog-update-local #:catalogs [catalogs (pkg-config-catalogs)]
+                                  #:set-catalogs? [set-catalogs? #t]
+                                  #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
                                   #:quiet? [quiet? #f]
                                   #:consult-packages? [consult-packages? #f])
   (parameterize ([db:current-pkg-catalog-file catalog-file])
-    (define catalogs (pkg-config-catalogs))
-    (db:set-catalogs! catalogs)
+    (define current-catalogs (db:get-catalogs))
+    (cond
+     [set-catalogs?
+      (unless (equal? catalogs current-catalogs)
+        (db:set-catalogs! catalogs))]
+     [else
+      (unless (for/and ([catalog (in-list catalogs)])
+                (member catalog current-catalogs))
+        (error 'pkg-catalog-update-local
+               (~a "given catalog list is not a superset of recorded catalogs\n"
+                   "  given: ~s\n"
+                   "  recorded: ~s")
+               catalogs
+               current-catalogs))])
 
     (for ([catalog (in-list catalogs)])
+      (unless quiet?
+        (printf/flush "Updating from ~a\n" catalog))
       (parameterize ([current-pkg-catalogs (list (string->url catalog))])
         (define details (get-all-pkg-details-from-catalogs))
         ;; set packages:
@@ -3045,6 +3162,9 @@
           (define mods (hash-ref ht 'modules #f))
           (when mods
             (db:set-pkg-modules! name catalog checksum mods))
+          (define tags (hash-ref ht 'tags #f))
+          (when tags
+            (db:set-pkg-tags! name catalog tags))
           (define deps (hash-ref ht 'dependencies #f))
           (when deps
             (db:set-pkg-dependencies! name catalog checksum deps)))
@@ -3066,6 +3186,104 @@
                                          #f)))
             (db:set-pkg-modules! name catalog checksum modules)
             (db:set-pkg-dependencies! name catalog checksum deps)))))))
+
+(define (pkg-catalog-archive dest-dir
+                             src-catalogs
+                             #:from-config? [from-config? #f]
+                             #:state-catalog [state-catalog #f]
+                             #:relative-sources? [relative-sources? #f]
+                             #:quiet? [quiet? #f])
+  (when (and state-catalog
+             (not (db-path? (if (path? state-catalog)
+                                state-catalog
+                                (string->path state-catalog)))))
+    (pkg-error (~a "bad state file path\n"
+                   "  given: ~a\n"
+                   "  expected: path with \".sqlite\" extension")
+               state-catalog))
+  ;; Take a snapshot of the source catalog:
+  (define temp-catalog-file (make-temporary-file "pkg~a.sqlite"))
+  (pkg-catalog-update-local #:catalogs (append src-catalogs
+                                               (if from-config?
+                                                   (pkg-config-catalogs)
+                                                   null))
+                            #:set-catalogs? #t
+                            #:catalog-file temp-catalog-file
+                            #:quiet? quiet?)
+  (define pkgs
+    (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
+      (db:get-pkgs)))
+  ;; Reset state catalog to new packages:
+  (when state-catalog
+    (parameterize ([db:current-pkg-catalog-file state-catalog])
+      (db:set-catalogs! '("local"))
+      (db:set-pkgs! "local" (map db:pkg-name pkgs))))
+  ;; Remove any package not in `pkgs`:
+  (define pkgs-dir (build-path dest-dir "pkgs"))
+  (when (directory-exists? pkgs-dir)
+    (define keep-pkgs (list->set (map db:pkg-name pkgs)))
+    (for ([f (in-list (directory-list pkgs-dir))])
+      (cond
+       [(regexp-match #rx"^(.*)[.]zip(?:[.]CHECKSUM)?$" f)
+        => (lambda (m)
+             (unless (set-member? keep-pkgs (cadr m))
+               (unless quiet?
+                 (printf/flush "Removing old package file ~a\n" f))
+               (delete-file (build-path pkgs-dir f))))])))
+  ;; Check on each new package:
+  (for ([pkg (in-list (sort pkgs string<? #:key db:pkg-name))])
+    (define name (db:pkg-name pkg))
+    (define current-checksum (and state-catalog
+                                  (parameterize ([db:current-pkg-catalog-file state-catalog])
+                                    (define l (db:get-pkgs #:name (db:pkg-name pkg)))
+                                    (and (= 1 (length l))
+                                         (db:pkg-checksum (car l))))))
+    (unless (and current-checksum
+                 (equal? current-checksum (db:pkg-checksum pkg)))
+      (unless quiet?
+        (printf/flush "== Archiving ~a ==\nchecksum: ~a\n" (db:pkg-name pkg) (db:pkg-checksum pkg)))
+      ;; Download/unpack existing package:
+      (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
+        (pkg-stage
+         (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f)
+         #:in-place? #t
+         #:use-cache? #t
+         #:quiet? quiet?))
+      (make-directory* (build-path dest-dir "pkgs"))
+      ;; Repack:
+      (pkg-create 'zip
+                  staged-dir
+                  #:pkg-name name
+                  #:dest (build-path dest-dir "pkgs")
+                  #:quiet? quiet?)
+      (when clean? (delete-directory/files staged-dir))
+      ;; Record packed result:
+      (when state-catalog
+        (parameterize ([db:current-pkg-catalog-file state-catalog])
+          (db:set-pkg! name "local"
+                       (db:pkg-author pkg)
+                       (db:pkg-source pkg)
+                       staged-checksum
+                       (db:pkg-desc pkg)))))
+    ;; Record packed result:
+    (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
+    (define new-checksum
+      (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
+    (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
+      (db:set-pkg! name (db:pkg-catalog pkg)
+                   (db:pkg-author pkg)
+                   (path->string pkg-file)
+                   new-checksum
+                   (db:pkg-desc pkg))))
+  (define dest-catalog (build-path dest-dir "catalog"))
+  (unless quiet?
+    (printf/flush "Creating catalog ~a\n" dest-catalog))
+  (pkg-catalog-copy (list temp-catalog-file)
+                    (build-path dest-dir "catalog")
+                    #:force? #t
+                    #:override? #t
+                    #:relative-sources? relative-sources?)
+  (delete-file temp-catalog-file))
 
 (define (choose-catalog-file)
   (define default (db:current-pkg-catalog-file))
@@ -3113,6 +3331,8 @@
    (parameter/c package-scope/c)]
   [current-pkg-scope-version
    (parameter/c string?)]
+  [current-pkg-lookup-version
+   (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
   [current-pkg-catalogs
@@ -3140,6 +3360,7 @@
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)
         (#:source (or/c 'dir 'name)
+                  #:pkg-name (or/c #f string?)
                   #:mode (or/c 'as-is 'source 'binary 'built)
                   #:quiet? boolean?
                   #:from-command-line? boolean?
@@ -3210,7 +3431,15 @@
         (#:from-config? any/c
                         #:merge? boolean?
                         #:force? boolean?
-                        #:override? boolean?)
+                        #:override? boolean?
+                        #:relative-sources? boolean?)
+        void?)]
+  [pkg-catalog-archive
+   (->* (path-string? (listof string?))
+        (#:from-config? boolean?
+                        #:state-catalog (or/c path-string? #f)
+                        #:relative-sources? boolean?
+                        #:quiet? boolean?)
         void?)]
   [default-pkg-scope
    (-> package-scope/c)]
@@ -3225,7 +3454,9 @@
   [pkg-stage (->* (pkg-desc?)
                   (#:namespace namespace?
                                #:in-place? boolean?
-                               #:strip (or/c #f 'source 'binary))
+                               #:strip (or/c #f 'source 'binary)
+                               #:use-cache? boolean?
+                               #:quiet? boolean?)
                   (values string?
                           path?
                           (or/c #f string?)
@@ -3235,7 +3466,9 @@
    (-> (listof string?))]
   [pkg-catalog-update-local
    (->* ()
-        (#:catalog-file path-string?
+        (#:catalogs (listof string?)
+         #:set-catalogs? boolean?
+         #:catalog-file path-string?
          #:quiet? boolean?
          #:consult-packages? boolean?)
         void?)]
@@ -3262,7 +3495,8 @@
   [extract-pkg-dependencies
    (->* ((symbol? (-> any/c) . -> . any/c))
         (#:build-deps? boolean?
-                       #:filter? boolean?)
+                       #:filter? boolean?
+                       #:versions? boolean?)
         (listof (or/c string? (cons/c string? list?))))]
   [pkg-single-collection
    (->* (path-string?)

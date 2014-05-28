@@ -154,20 +154,21 @@
   (let ([n (entity-text entity)])
     (fprintf out (if (number? n) "&#~a;" "&~a;") n)))
 
-(define escape-table #rx"[<>&]")
+(define escape-table #px"[<>&]")
 (define escape-attribute-table #rx"[<>&\"]")
 
 (define (replace-escaped s)
-  (case (string-ref s 0)
+  (define c (string-ref s 0))
+  (case c
     [(#\<) "&lt;"]
     [(#\>) "&gt;"]
     [(#\&) "&amp;"]
-    [(#\") "&quot;"]))
+    [(#\") "&quot;"]
+    [else c]))
 
 ;; escape : String -> String
 (define (escape x table)
   (regexp-replace* table x replace-escaped))
-
 
 ;; write-string/excape: String Regexp Output-Port -> Void
 ;; Writes the string to the output port, with a fast-path 
@@ -177,7 +178,6 @@
          (write-string (escape str table) out)]
         [else
          (write-string str out)]))
-
 
 (provide escape
          write-string/escape

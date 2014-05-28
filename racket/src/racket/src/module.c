@@ -5332,7 +5332,7 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
                             scheme_write_to_string(m->modname, NULL));
 
       /* printf("new %ld %s\n", env->phase, scheme_write_to_string(m->modname, NULL)); */
-      menv = scheme_new_module_env(env, m, 0);
+      menv = scheme_new_module_env(env, m, 0, 0);
       scheme_hash_set(MODCHAIN_TABLE(env->modchain), m->modname, (Scheme_Object *)menv);
 
       running = (char *)scheme_malloc_atomic(menv->module->num_phases);
@@ -5975,7 +5975,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m->predefined = scheme_starting_up;
   m->phaseless = scheme_true;
   
-  env = scheme_new_module_env(for_env, m, 0);
+  env = scheme_new_module_env(for_env, m, 0, 0);
 
   if (!scheme_defining_primitives) {
     config = scheme_current_config();
@@ -7169,7 +7169,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                 Module_Begin_Expand_State *super_bxs,
                                 Scheme_Object *super_phase_shift)
 {
-  Scheme_Object *fm, *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx;
+  Scheme_Object *fm, *disarmed_form;
+  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -7198,7 +7199,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (!scheme_is_toplevel(env))
     scheme_wrong_syntax(NULL, NULL, form, "not in a module-definition context");
 
-  fm = SCHEME_STX_CDR(form);
+  disarmed_form = scheme_stx_taint_disarm(form, NULL);
+
+  fm = SCHEME_STX_CDR(disarmed_form);
   if (!SCHEME_STX_PAIRP(fm))
     scheme_wrong_syntax(NULL, NULL, form, NULL);
   nm = SCHEME_STX_CAR(fm);
@@ -7292,7 +7295,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* Create module environment. This environment gets a fresh table
      for phase-1 instances: */
-  menv = scheme_new_module_env(top_env, m, 1);
+  menv = scheme_new_module_env(top_env, m, 1, SCHEME_NULLP(submodule_ancestry));
 
   menv->disallow_unbound = 1;
   
@@ -7418,7 +7421,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       if (!SCHEME_STXP(fm))
         fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
       fm = scheme_add_rename(fm, rn);
-      mb_ctx = scheme_add_rename(form, rn);
+      mb_ctx = scheme_add_rename(disarmed_form, rn);
     } else {
       if (!SCHEME_STXP(fm))
         fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
@@ -7483,7 +7486,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Object *mb;
       mb = scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 0);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
-      fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+      fm = scheme_datum_to_syntax(fm, form, disarmed_form, 0, 2);
       fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
       if (ii) {
         /* Since fm is a newly-created syntax object, we need to re-add renamings: */
@@ -7542,7 +7545,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     hints = m->hints;
     m->hints = NULL;
 
-    formname = SCHEME_STX_CAR(form);
+    formname = SCHEME_STX_CAR(disarmed_form);
     fm = cons(formname,
 	      cons(nm,
 		   cons(orig_ii, cons(fm, scheme_null))));

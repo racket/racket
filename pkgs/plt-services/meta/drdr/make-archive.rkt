@@ -16,11 +16,11 @@
               ["--many" "Archive many revisions" (mode 'many)]
               #:args (ns)
               (local [(define n (string->number ns))]
-                (case (mode)
-                  [(many)
-                   (local [(define all-revisions
-                             (sort revisions >=))]
-                     (for ([rev (in-list (list-tail all-revisions n))])
-                       (make-archive rev)))]
-                  [(single)
-                   (make-archive n)])))
+                     (case (mode)
+                       [(many)
+                        (local [(define all-revisions
+                                  (sort revisions >=))]
+                               (for/or ([rev (in-list (list-tail all-revisions n))])
+                                 (make-archive rev)))]
+                       [(single)
+                        (make-archive n)])))

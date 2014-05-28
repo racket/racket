@@ -5,24 +5,24 @@
 
 (require mzlib/etc)
 
-(let ([u (letrec ([x x]) x)])
-  (let ([l1
-	 (let+ ([rec a a]
-		[recs [b c] [c b]]
-		[rec d 1]
-		[val e 1]
-		[val x 1]
-		[val y 2]
-		[vals (x y) (y x)]
-		[rec (values f) (values 1)]
-		[vals [(values g h) (values 2 3)]]
-		[val i 3]
-		[_ (set! i 4)
-		   (set! i 5)])
-	       'x
-	       (list a b c d e x y f g h i))]
-	[l2 (list u u u 1 1 2 1 1 2 3 5)])
-    (test l1 'let-plus l2)))
+(err/rt-test (let+ ([rec a a]) 5) exn:fail:contract:variable?)
+(err/rt-test (let+ ([recs [b c] [c b]]) 5) exn:fail:contract:variable?)
+
+(let ([l1
+       (let+ ([rec d 1]
+              [val e 1]
+              [val x 1]
+              [val y 2]
+              [vals (x y) (y x)]
+              [rec (values f) (values 1)]
+              [vals [(values g h) (values 2 3)]]
+              [val i 3]
+              [_ (set! i 4)
+                 (set! i 5)])
+             'x
+             (list d e x y f g h i))]
+      [l2 (list 1 1 2 1 1 2 3 5)])
+  (test l1 'let-plus l2))
 
 (test 'hi 'local (local () 'hi))
 (define x 7)

@@ -852,7 +852,18 @@ corresponds to the default @tech{module name resolver}.
   of a submodule, and it's intended for use in @racket[(submod "." ....)] 
   and @racket[(submod ".." ....)] forms.}
 
-}
+As @racket[require] prepares to handle a sequence of
+@racket[require-spec]s, it logs a ``prefetch'' message to the
+@tech{current logger} at the @racket['info] level, using the name
+@racket['module-prefetch], and including message data that is a list
+of two elements: a list of @tech{module paths} that appear to be
+imported, and a directory path to use for relative module paths. The
+logged list of module paths may be incomplete, but a compilation
+manager can use approximate prefetch information to start on
+compilations in parallel.
+
+@history[#:changed "6.0.1.10" @elem{Added prefetch logging.}]}
+
 
 @defform[(local-require require-spec ...)]{
 
@@ -1949,11 +1960,18 @@ distinct; later bindings shadow earlier bindings.
 
 Like @racket[let], including left-to-right evaluation of the @racket[val-expr]s,
 but the @tech{locations} for all @racket[id]s are
-created first and filled with @|undefined-const|, all
+created first, all
 @racket[id]s are bound in all @racket[val-expr]s as well as the
-@racket[body]s, and each @racket[id] is set immediately after the
+@racket[body]s, and each @racket[id] is initialized immediately after the
 corresponding @racket[val-expr] is evaluated. The @racket[id]s must be distinct according to
 @racket[bound-identifier=?].
+
+Referencing or assigning to an @racket[id] before its initialization
+raises @racket[exn:fail:contract:variable]. If an @racket[id] (i.e.,
+the binding instance or @racket[id]) has an
+@indexed-racket['undefined-error-name] @tech{syntax property} whose
+value is a symbol, the symbol is used as the name of the variable for
+error reporting, instead of the symbolic form of @racket[id].
 
 @mz-examples[
 (letrec ([is-even? (lambda (n)
@@ -1963,7 +1981,9 @@ corresponding @racket[val-expr] is evaluated. The @racket[id]s must be distinct 
                     (and (not (zero? n))
                          (is-even? (sub1 n))))])
   (is-odd? 11))
-]}
+]
+
+@history[#:changed "6.0.1.2" @elem{Changed reference or assignment of an uninitialized @racket[id] to an error.}]}
 
 @defform[(let-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @racket[let], except that each @racket[val-expr] must produce as many
@@ -1991,8 +2011,7 @@ for each @racket[id], all of which are bound in the later
 @defform[(letrec-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @racket[letrec], except that each @racket[val-expr] must produce as
 many values as corresponding @racket[id]s. A separate @tech{location} is
-created for each @racket[id], all of which are initialized to
-@|undefined-const| and bound in all @racket[val-expr]s
+created for each @racket[id], all of which are bound in all @racket[val-expr]s
 and in the @racket[body]s.
 
 @mz-examples[
@@ -2336,8 +2355,8 @@ defined as follows:
                                          @#,elem{if} (#,cvt head . _datum) = expr
 ]
 
-In an @tech{internal-definition context} (see @secref["intdef-body"]), 
-a @racket[define] form introduces a local binding.
+In an @tech{internal-definition context}, a @racket[define] form
+introduces a local binding; see @secref["intdef-body"].
 At the top level, the top-level binding for @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked

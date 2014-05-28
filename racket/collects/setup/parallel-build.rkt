@@ -12,6 +12,7 @@
          racket/future
          compiler/find-exe
          racket/place
+         syntax/modresolve
          (for-syntax racket/base))
 
 
@@ -95,6 +96,9 @@
                 ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
                 #t]
               [else (eprintf "Failed trying to match:\n~e\n" result-type)]))]
+        [(list _ (list 'ADD fn))
+         ;; Currently ignoring queued individual files
+         #f]
         [else
           (match work 
             [(list-rest (list cc file last) message)
@@ -197,30 +201,41 @@
     (field [results (void)])
     (inspect #f)
 
+    (define seen
+      (for/hash ([k (in-list filelist)])
+        (values k #t)))
+
     (define/public (work-done work wrkr msg)
+      (define id (send wrkr get-id))
       (match msg
         [(list result-type out err)
           (match result-type
             [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
             [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
-            [(list 'ERROR msg) (handler 'error work msg out err) 
+            [(list 'ERROR msg) (handler id 'error work msg out err) 
                                (set! results #f)
                                #t]
             ['DONE
               (define (string-!empty? s) (not (zero? (string-length s))))
               (if (ormap string-!empty? (list out err))
-                (handler 'output work "" out err)
-                (handler 'done work "" "" ""))
+                (handler id 'output work "" out err)
+                (handler id 'done work "" "" ""))
               #t])]
+        [(list 'ADD fn)
+         (unless (hash-ref seen fn #f)
+           (set! filelist (cons fn filelist))
+           (set! seen (hash-set seen fn #t)))
+         #f]
         [else
-          (handler 'fatalerror (format "Error matching work: ~a queue ~a" work filelist) "" "") #t]))
+          (handler id 'fatalerror (format "Error matching work: ~a queue ~a" work filelist) "" "") #t]))
            
       (define/public (get-job workerid)
         (match filelist
           [(cons hd tail)
-              (define-values (dir file b) (split-path hd))
-              (set! filelist tail)
-              (values hd (list (->bytes hd) (dir->bytes dir) (->bytes file) null))]
+           (define-values (dir file b) (split-path hd))
+           (set! filelist tail)
+           (handler workerid 'start hd "" "" "")
+           (values hd (list (->bytes hd) (dir->bytes dir) (->bytes file) null))]
           [(list) null]))
       (define/public (has-jobs?) (not (null? filelist)))
       (define/public (jobs-cnt) (length filelist))
@@ -252,6 +267,7 @@
           (define cop (current-output-port))
           (define cep (current-error-port))
           (define (send/recv msg) (send/msg msg) (recv/req))
+          (define (send/add fn) (send/msg (list 'ADD fn)))
           (define (send/resp type)
             (send/msg (list type (get-output-string out-str-port) (get-output-string err-str-port))))
           (define (pp x) (fprintf cep "COMPILING ~a ~a ~a ~a\n" worker-id name file x))
@@ -289,7 +305,13 @@
                           [current-error-port err-str-port]
                           ;[manager-compile-notify-handler pp]
                          )
-             (cmc (build-path dir file)))
+
+             ;; Watch for module-prefetch events, and queue jobs in response
+             (define t (start-prefetch-thread send/add))
+
+             (cmc (build-path dir file))
+
+             (kill-thread t))
            (send/resp 'DONE))]
         [x (send/error (format "DIDNT MATCH A ~v\n" x))]
         [else (send/error (format "DIDNT MATCH A\n"))]))))
@@ -304,3 +326,39 @@
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '()))
   (parallel-build collects-queue worker-count))
+
+(define (start-prefetch-thread send/add)
+  (define pf (make-log-receiver (current-logger) 'info 'module-prefetch))
+  (thread
+   (lambda ()
+     (let loop ()
+       (let ([v (sync pf)])
+         (define l (vector-ref v 2))
+         (when (and (list? l)
+                    (= 2 (length l))
+                    (list? (car l))
+                    (path? (cadr l))
+                    (andmap module-path? (car l)))
+           (define dir (cadr l))
+           (define (quote? p) (and (pair? p) (eq? (car p) 'quote)))
+           (define (submod? p) (and (pair? p) (eq? (car p) 'submod)))
+           ;; Add prefetch modules to work queue --- but skip the first one,
+           ;; because it's going to be compiled immediately, anyway:
+           (for/fold ([prev #f]) ([p (in-list (reverse (car l)))])
+             (cond
+              [(or (quote? p)
+                   (and (submod? p) (quote? (cadr p))))
+               ;; skip `quote` module paths
+               prev]
+              [else
+               (when prev
+                 (define path
+                   (let loop ([prev prev])
+                     (cond
+                      [(submod? prev)
+                       (loop (cadr prev))]
+                      [else (resolve-module-path prev (build-path dir "dummy.rkt"))])))
+                 (when (path? path)
+                   (send/add path)))
+               p])))
+         (loop))))))

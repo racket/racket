@@ -22,11 +22,11 @@
 
 (define-tc/app-syntax-class (tc/app-apply expected)
   #:literal-sets (apply-literals)
-  (pattern ((~or apply k:apply) values e)
+  (pattern ((~or apply k:apply) (~and f values) e)
     (match (single-value #'e)
       [(tc-result1: (ListDots: dty dbound))
        (ret null null null dty dbound)]
       [(tc-result1: (List: ts)) (ret ts)]
-      [_ (tc/apply #'values #'(e))]))
+      [_ (tc/apply #'f #'(e))]))
   (pattern ((~or apply k:apply) f . args)
     (tc/apply #'f #'args)))

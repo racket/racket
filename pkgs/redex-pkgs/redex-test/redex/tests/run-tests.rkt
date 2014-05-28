@@ -33,7 +33,6 @@
      "pict-test.rkt"
      "hole-test.rkt"
      "stepper-test.rkt"
-     "defined-checks-test.rkt"
      "check-syntax-test.rkt"
      "test-docs-complete.rkt"
      "tut-subst-test.rkt"
@@ -58,28 +57,27 @@
 
 (define (flush)
   ;; these flushes are here for running under cygwin, 
-  ;; which somehow makes mzscheme think it isn't using
+  ;; which somehow makes racket think it isn't using
   ;; an interative port
   (flush-output (current-error-port))
   (flush-output (current-output-port)))
 
-(for-each
- (λ (test-file)
-   (let-values ([(file provided action)
-                 (match test-file
-                   [(list (? string? file) id)
-                    (values file id (λ (x) (x)))]
-                   [(? string?) 
-                    (values test-file #f values)])])
-     (flush)
-     (printf "running ~a\n" file)
-     (flush)
-     (define path (if (regexp-match #rx"<redex-examples>" file)
-                      (build-path examples-path (cadr (regexp-match #rx"^<redex-examples>/(.*)$" file)))
-                      (build-path here file)))
-     (action (dynamic-require path provided))
-     (flush)))
- test-files)
+(for ([test-file (in-list test-files)])
+  (define-values (file provided action)
+    (match test-file
+      [(list (? string? file) id)
+       (values file id (λ (x) (x)))]
+      [(? string?) 
+       (values test-file #f values)]))
+  (flush)
+  (printf "running ~a\n" file)
+  (flush)
+  (define path
+    (if (regexp-match #rx"<redex-examples>" file)
+        (build-path examples-path (cadr (regexp-match #rx"^<redex-examples>/(.*)$" file)))
+        (build-path here file)))
+  (action (dynamic-require path provided))
+  (flush))
 
 (printf "\nWARNING: didn't run color-test.rkt\n")
 (flush)
@@ -91,4 +89,3 @@
   (parameterize ([current-command-line-arguments
                   (vector "--examples" "--no-bitmap-gui")])
     (dynamic-require (quote-module-path "..") #f)))
-

@@ -33,16 +33,24 @@ along with conversion functions to and from the existing types.
 @section[#:tag "ctype"]{Type Constructors}
 
 @defproc[(make-ctype [type ctype?]
-                     [scheme-to-c (or/c #f (any/c . -> . any))]
-                     [c-to-scheme (or/c #f (any/c . -> . any))])
+                     [racket-to-c (or/c #f (any/c . -> . any))]
+                     [c-to-racket (or/c #f (any/c . -> . any))])
          ctype?]{
 
 Creates a new @tech{C type} value whose representation for foreign
-code is the same as @racket[type]'s. The given conversions functions
-convert to and from the Racket representation of @racket[type]. Either
-conversion function can be @racket[#f], meaning that the conversion
-for the corresponding direction is the identity function.  If both
-functions are @racket[#f], @racket[type] is returned.}
+code is the same as @racket[type]'s.
+
+The given conversion functions convert to and from the Racket
+representation of the new type. Either conversion function can be
+@racket[#f], meaning that the conversion for the corresponding
+direction is the identity function.  If both functions are
+@racket[#f], @racket[type] is returned.
+
+The @racket[racket-to-c] function takes any value and, if it is a
+valid representation of the new type, converts it to a representation
+of @racket[type]. The @racket[c-to-racket] function takes a
+representation of @racket[type] and produces a representation of the
+new type.}
 
 
 @defproc[(ctype? [v any/c]) boolean?]{
@@ -530,8 +538,7 @@ For @tech{callouts} to foreign functions with the generated type:
 
  @item{If @racket[in-original-place?] is true, then when a foreign
        @tech{callout} procedure with the generated type is called in
-       any Racket @tech[#:doc '(lib
-       "scribblings/reference/reference.scrbl")]{place}, the procedure
+       any Racket @tech-place[], the procedure
        is called from the original Racket place. Use this mode for a
        foreign function that is not thread-safe at the C level, which
        means that it is not place-safe at the Racket
@@ -838,7 +845,7 @@ with a function call.
 
 Binds @racket[id] as a @tech{custom function type} as well as a syntax
 transformer (i.e, macro). The type is expanded by applying the
-procedure produced by @scheme[transformer-expr] to a use of the
+procedure produced by @racket[transformer-expr] to a use of the
 @tech{custom function type}.
 
 For instance, the following defines a new type that automatically

@@ -10,9 +10,7 @@
          racket/set
          (for-syntax racket/base syntax/parse))
 
-(provide Listof: List: MListof:)
-(provide/cond-contract
-  [untuple (Type/c . -> . (or/c #f (listof Type/c)))])
+(provide Listof: List: MListof: AnyPoly: AnyPoly-names:)
 
 
 (define-match-expander Listof:
@@ -30,16 +28,22 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
-       #'(app untuple (? values elem-pats))])))
+       #'(app untuple (? values elem-pats) (Value: '()))]
+      [(_ elem-pats #:tail tail-pat)
+       #'(app untuple (? values elem-pats) tail-pat)])))
 
+;; Type/c -> (or/c (values/c #f #f) (values/c (listof Type/c) Type/c)))
+;; Returns the prefix of types that are consed on to the last type (a non finite-pair type).
+;; The last type may contain pairs if it is a list type.
 (define (untuple t)
   (let loop ((t t) (seen (set)))
-    (and (not (set-member? seen (Type-seq t)))
-         (match (resolve t)
-           [(Value: '()) null]
-           [(Pair: a b) (cond [(loop b (set-add seen (Type-seq t))) => (lambda (l) (cons a l))]
-                              [else #f])]
-           [_ #f]))))
+    (if (not (set-member? seen (Type-seq t)))
+        (match (resolve t)
+          [(Pair: a b)
+           (define-values (elems tail) (loop b (set-add seen (Type-seq t))))
+           (values (cons a elems) tail)]
+          [_ (values null t)])
+        (values null t))))
 
 (define-match-expander MListof:
   (lambda (stx)
@@ -48,3 +52,38 @@
        ;; see note above
        #'(or (Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))
              (Mu: var (Union: (list (MPair: elem-pat (F: var)) (Value: '())))))])))
+
+(define (unpoly t)
+  (match t
+    [(Poly: fixed-vars t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) dotted t))]
+    [(PolyDots: (list fixed-vars ... dotted-var) t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) (cons dotted-var dotted) t))]
+    [t (values null null t)]))
+
+(define (unpoly-names t)
+  (match t
+    [(Poly-names: fixed-vars t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) dotted t))]
+    [(PolyDots-names: (list fixed-vars ... dotted-var) t)
+     (let-values ([(vars dotted t) (unpoly t)])
+       (values (append fixed-vars vars) (cons dotted-var dotted) t))]
+    [t (values null null t)]))
+
+
+;; Match expanders that match any type and separate the outer layers of the poly and poly-dots, from
+;; the inner non polymorphic type.
+(define-match-expander AnyPoly:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ vars dotted-vars body)
+       #'(app unpoly vars dotted-vars body)])))
+
+(define-match-expander AnyPoly-names:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ vars dotted-vars body)
+       #'(app unpoly-names vars dotted-vars body)])))

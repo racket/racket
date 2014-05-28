@@ -24,7 +24,8 @@ automatically directed to shut down its managed values as well.}
 
 @defproc[(custodian-shutdown-all [cust custodian?]) void?]{
 
-@margin-note{In GRacket, @|eventspaces| managed by @racket[cust] are also
+@margin-note{In @racketmodname[racket/gui/base],
+             @|eventspaces| managed by @racket[cust] are also
              shut down.}
 
 Closes all @tech{file-stream ports}, @tech{TCP ports}, @tech{TCP
@@ -40,7 +41,8 @@ thread.}
 
 @defparam[current-custodian cust custodian?]{
 
-@margin-note{In GRacket, custodians also manage @|eventspaces|.}
+@margin-note{Custodians also manage @|eventspaces|
+             from @racketmodname[racket/gui/base].}
 
 A @tech{parameter} that determines a custodian that assumes responsibility
 for newly created threads, @tech{file-stream ports}, TCP ports,

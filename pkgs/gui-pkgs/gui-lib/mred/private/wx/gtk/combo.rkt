@@ -10,12 +10,15 @@
 
 (provide 
  (protect-out extract-combo-button
+	      re-extract-combo-button
               connect-combo-key-and-mouse))
 
 ;; ----------------------------------------
 
 (define-gtk gtk_container_foreach (_fun _GtkWidget (_fun _GtkWidget -> _void) _pointer -> _void))
 (define-gtk gtk_container_forall (_fun _GtkWidget (_fun _GtkWidget -> _void) _pointer -> _void))
+
+(define-gtk gtk_widget_get_name (_fun _GtkWidget -> _string))
 
 (define-gobj g_signal_parse_name (_fun _string
                                        _GType
@@ -80,17 +83,39 @@
     (gtk_container_forall gtk (lambda (c) (set! all (cons c all))) #f)
     (gtk_container_foreach gtk (lambda (c) (set! ext (cons c ext))) #f)
     (for-each (lambda (e)
-                (set! all (filter (lambda (a) (not (ptr-equal? a e)))
+                (set! all (filter (lambda (a)
+				    (not (ptr-equal? a e)))
                                   all)))
               ext)
-    (unless (= 1 (length all))
-      (error "expected Gtk combobox to have one private child"))
-    (define combo-gtk (car all))
-    (gobject-ref combo-gtk)
+    (define combo-gtk
+      (cond
+       [(= 1 (length all))
+	;; most common case:
+	(car all)]
+       [(and (= 2 (length all))
+	     (equal? '("GtkFrame" "GtkToggleButton")
+		     (map gtk_widget_get_name all)))
+	(define inner null)
+	(gtk_container_forall (car all) (lambda (c) (set! inner (cons c inner))) #f)
+	(and (= 1 (length inner))
+	     (car inner))]
+       [else #f]))
+    (unless combo-gtk
+      (error "unrecognized Gtk combobox implementation"))
     combo-gtk))
 
+(define (re-extract-combo-button gtk combo-button-gtk win)
+  (define c-gtk (extract-combo-button gtk))
+  (cond
+   [(ptr-equal? c-gtk combo-button-gtk)
+    ;; combo button hasn't changed:
+    combo-button-gtk]
+   [else
+    (send win register-extra-gtk gtk c-gtk)
+    c-gtk]))
+
 ;; More dependence on the implemenation of GtkComboBox:
-;; The memnu-popup action is implemented by seeting a button-press-event
+;; The menu-popup action is implemented by seeting a button-press-event
 ;; signal handler on `button-gtk'. Since Gtk calls signal handlers in the
 ;; order that they're registered, our button-press-event handler doesn't
 ;; get called first, so it can't cancel the button press due to modality

@@ -59,7 +59,7 @@
     (class* object% (start-stop<%>)
       (inspect #f)
       (init-field world0)
-      (init-field name state register check-with on-key on-release on-pad on-mouse record?)
+      (init-field name state register port check-with on-key on-release on-pad on-mouse record?)
       (init on-receive on-draw stop-when)
       
       ;; -----------------------------------------------------------------------
@@ -114,7 +114,7 @@
                                (if (= n 1) 
                                    (printf FMTtry register TRIES)
                                    (begin (sleep PAUSE) (try (- n 1)))))))
-              (define-values (in out) (tcp-connect register SQPORT))
+              (define-values (in out) (tcp-connect register port))
               (tcp-register in out name)
               (printf "... successful registered and ready to receive\n")
               (set! *out* out)
@@ -429,7 +429,11 @@
 (define image-button:label ((bitmap-label-maker "Images" image-button:path) '_))
 
 (define aworld%
-  (class world% (super-new)
+  (class world% 
+    ;; an argument-recording ppdraw
+    (field [image-history '()]) ;; [Listof Evt]
+    
+    (super-new)
     (inherit-field world0 draw rate width height record?)
     (inherit show callback-stop!)
     
@@ -462,8 +466,6 @@
       (send image-button enable #f)
       (values switch stop))
     
-    ;; an argument-recording ppdraw
-    (field [image-history '()]) ;; [Listof Evt]
     (define/override (ppdraw)
       (define image (super ppdraw))
       (set! image-history (cons image image-history))

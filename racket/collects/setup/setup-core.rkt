@@ -13,6 +13,7 @@
          compiler/cm
          planet/planet-archives
          planet/private/planet-shared
+         (only-in planet/resolver resolve-planet-path)
 
          "option.rkt"
          compiler/compiler
@@ -1050,7 +1051,21 @@
                                             (equal? p (cc-path cc)))
                                           p))))]
                              [(abs)
-                              (and (complete-path? p) p)]))
+                              (and (complete-path? p)
+                                   (match c
+                                     [(list 'planet (? string? a) (? string? p))
+                                      ;; Check that the package is installed and maps to `p`:
+                                      (and (get-installed-package a p d e)
+                                           (let ([bp (resolve-planet-path
+                                                      `(planet "bogus.rkt" (,a ,p ,d ,e)))])
+                                             (and (path? bp)
+                                                  (let-values ([(base name dir?) (split-path bp)])
+                                                    (and (path? base)
+                                                         (equal? (path->directory-path p)
+                                                                 (path->directory-path base)))))))]
+                                     [else
+                                      #t])
+                                   p)]))
                          (if (and dir
                                   (let ([omit-root
                                          (if (path? p)
@@ -1134,7 +1149,7 @@
           (get-info-ht info-root info-path 'abs-in-relative))
         (define planet-info-path (get-planet-cache-path))
         (when (file-exists? planet-info-path)
-          (get-info-ht #f info-path 'abs))))
+          (get-info-ht #f planet-info-path 'abs))))
     ;; Write out each collection-root-specific table to a "cache.rktd" file:
     (hash-for-each ht
       (lambda (info-path ht)

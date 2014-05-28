@@ -120,6 +120,13 @@ its closest @racket{flonum} approximation.}
 
 @; ------------------------------------------------------------------------
 
+@section{Extflonum Constants}
+
+@defthing[pi.t extflonum?]{
+Like @racket[pi], but with 80 bits precision.}
+
+@; ------------------------------------------------------------------------
+
 @section[#:tag "extflvectors"]{Extflonum Vectors}
 
 An @deftech{extflvector} is like an @tech{flvector}, but it holds only

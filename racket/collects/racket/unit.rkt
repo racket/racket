@@ -632,12 +632,18 @@
                        ((renames
                          (((mac-name ...) mac-body) ...) 
                          (((val-name ...) val-body) ...))
-                        (build-val+macro-defs sig)))
+                        (build-val+macro-defs sig))
+                       ((((e-post-id ...) . _) ...) (list-ref sig 4))
+                       ((post-renames (e-post-rhs ...))
+                        (build-post-val-defs sig)))
            (syntax->list
             #'(sig-elem ...
                (define-syntaxes . renames)
                (define-syntaxes (mac-name ...) mac-body) ...
-               (define-values (val-name ...) val-body) ...)))))
+               (define-values (val-name ...) val-body) ...
+               (define-values-for-export (e-post-id ...)
+                 (let-syntaxes (post-renames) e-post-rhs))
+               ...)))))
       (_
        (raise-stx-err (format "must match (~a export-spec)"
                               (syntax-e (stx-car stx))))))))
@@ -654,27 +660,18 @@
   (unless (or (stx-null? sig-exprs) (stx-pair? sig-exprs))
     (raise-stx-err "expected syntax matching (sig-expr ...)" sig-exprs))
   (let ([ses (checked-syntax->list sig-exprs)])
-    (define-values (super-names super-ctimes super-rtimes super-bindings
-                                super-val-defs super-stx-defs super-post-val-defs 
-                                super-ctcs)
+    (define-values (super-names super-ctimes super-rtimes)
       (if super-sigid
           (let* ([super-sig (lookup-signature super-sigid)]
                  [super-siginfo (signature-siginfo super-sig)])
             (values (siginfo-names super-siginfo)
                     (siginfo-ctime-ids super-siginfo)
                     (map syntax-local-introduce
-                         (siginfo-rtime-ids super-siginfo))
-                    (map syntax-local-introduce (signature-vars super-sig))
-                    (map introduce-def (signature-val-defs super-sig))
-                    (map introduce-def (signature-stx-defs super-sig))
-                    (map introduce-def (signature-post-val-defs super-sig))
-                    (map (lambda (ctc)
-                           (if ctc
-                               (syntax-local-introduce ctc)
-                               ctc))
-                         (signature-ctcs super-sig))))
-          (values '() '() '() '() '() '() '() '())))
-    (let loop ((sig-exprs ses)
+                         (siginfo-rtime-ids super-siginfo))))
+          (values '() '() '())))
+    (let loop ((sig-exprs (if super-sigid
+                              (cons #`(open #,super-sigid) ses)
+                              ses))
                (bindings null)
                (val-defs null)
                (stx-defs null)
@@ -682,11 +679,11 @@
                (ctcs null))
       (cond
         ((null? sig-exprs)
-         (let* ([all-bindings (append super-bindings (reverse bindings))]
-                [all-val-defs (append super-val-defs (reverse val-defs))]
-                [all-stx-defs (append super-stx-defs (reverse stx-defs))]
-                [all-post-val-defs (append super-post-val-defs (reverse post-val-defs))]
-                [all-ctcs (append super-ctcs (reverse ctcs))]
+         (let* ([all-bindings (reverse bindings)]
+                [all-val-defs (reverse val-defs)]
+                [all-stx-defs (reverse stx-defs)]
+                [all-post-val-defs (reverse post-val-defs)]
+                [all-ctcs (reverse ctcs)]
                 [dup
                  (check-duplicate-identifier
                   (append all-bindings
@@ -1755,9 +1752,24 @@
   (syntax-case stx ()
     ((export-spec)
      (let* ((tagged-export-sig (process-tagged-export #'export-spec))
-            (export-sig (caddr tagged-export-sig)))
-       (with-syntax ((((int-id . ext-id) ...) (car export-sig))
-                     ((def-name ...) (generate-temporaries (map car (car export-sig)))))
+            (export-sig (caddr tagged-export-sig))
+            (int+ext-ids
+             (let ([int+ext-ids (car export-sig)]
+                   [post-ids (apply append (map car (list-ref export-sig 4)))])
+               ;; Remove any bindings that will be generated via post- definitions
+               (if (null? post-ids)
+                   int+ext-ids
+                   (let ([ht (make-bound-identifier-mapping)])
+                     (for ([post-id (in-list post-ids)])
+                       (bound-identifier-mapping-put! ht post-id #t))
+                     (for/list ([int+ext-id (in-list int+ext-ids)]
+                                #:unless (bound-identifier-mapping-get
+                                          ht
+                                          (car int+ext-id)
+                                          (lambda () #f)))
+                       int+ext-id))))))
+       (with-syntax ((((int-id . ext-id) ...) int+ext-ids)
+                     ((def-name ...) (generate-temporaries (map car int+ext-ids))))
          (values
           #'(:unit (import) (export (rename export-spec (def-name int-id) ...))
                    (define def-name int-id)
@@ -2089,7 +2101,7 @@
              [exports
               (map 
                (lambda (e)
-                 (define tid (check-tagged-id e))
+                 (define tid (check-tagged-spec-syntax e #f identifier?))
                  (define lookup (bound-identifier-mapping-get 
                                  lnk-table
                                  (cdr tid)

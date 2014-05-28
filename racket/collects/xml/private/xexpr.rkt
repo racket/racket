@@ -60,7 +60,7 @@
                   (error 'xexpr->xml
                          "expected a list of xexprs for the body in ~e"
                          x))
-                (make-element 'scheme 'scheme (car x)
+                (make-element 'racket 'racket (car x)
                               atts
                               (map xexpr->xml body)))])
        (if (and (pair? (cdr x))
@@ -68,9 +68,9 @@
                     (and (pair? (cadr x)) (pair? (caadr x)))))
            (f (map srep->attribute (cadr x)) (cddr x))
            (f null (cdr x))))]
-    [(string? x) (make-pcdata 'scheme 'scheme x)]
+    [(string? x) (make-pcdata 'racket 'racket x)]
     [(or (symbol? x) (exact-nonnegative-integer? x))
-     (make-entity 'scheme 'scheme x)]
+     (make-entity 'racket 'racket x)]
     [(or (comment? x) (p-i? x) (cdata? x) (pcdata? x)) x]
     [else ;(error 'xexpr->xml "malformed xexpr ~e" x)
      x]))

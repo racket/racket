@@ -79,8 +79,8 @@
                 (Value: (? simple-datum? v2)))
           (equal? v1 v2)]
          [(or (list (Value: (? simple-datum?))
-                    (Struct: n _ flds _ _ _))
-              (list (Struct: n _ flds _ _ _) 
+                    (or (? Struct?) (? StructTop?)))
+              (list (or (? Struct?) (? StructTop?))
                     (Value: (? simple-datum?))))
           #f]
          [(list (Struct: n _ flds _ _ _)

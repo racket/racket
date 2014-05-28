@@ -1,0 +1,7 @@
+1371553231
+Racket v5.3.5
+
+This is a special-purpose release to match the arrival of "Realm of
+Racket" in bookstores.  Racket v.5.3.5 adds a single `realm'
+collection to the v5.3.4 release.  The new collection contains the
+source code that readers of Realm may wish to use for experiments.

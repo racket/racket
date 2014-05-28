@@ -81,6 +81,9 @@
 #define scheme_close_managed (scheme_extension_table->scheme_close_managed)
 #define scheme_schedule_custodian_close (scheme_extension_table->scheme_schedule_custodian_close)
 #define scheme_add_custodian_extractor (scheme_extension_table->scheme_add_custodian_extractor)
+#define scheme_flush_managed (scheme_extension_table->scheme_flush_managed)
+#define scheme_add_flush (scheme_extension_table->scheme_add_flush)
+#define scheme_remove_flush (scheme_extension_table->scheme_remove_flush)
 #define scheme_add_atexit_closer (scheme_extension_table->scheme_add_atexit_closer)
 #define scheme_add_evt (scheme_extension_table->scheme_add_evt)
 #define scheme_add_evt_through_sema (scheme_extension_table->scheme_add_evt_through_sema)
@@ -113,6 +116,7 @@
 #define scheme_log_w_data (scheme_extension_table->scheme_log_w_data)
 #define scheme_log_message (scheme_extension_table->scheme_log_message)
 #define scheme_log_name_message (scheme_extension_table->scheme_log_name_message)
+#define scheme_log_name_pfx_message (scheme_extension_table->scheme_log_name_pfx_message)
 #define scheme_log_abort (scheme_extension_table->scheme_log_abort)
 #define scheme_log_warning (scheme_extension_table->scheme_log_warning)
 #define scheme_glib_log_message (scheme_extension_table->scheme_glib_log_message)
@@ -719,6 +723,8 @@
 #define scheme_register_process_global (scheme_extension_table->scheme_register_process_global)
 #define scheme_malloc_key (scheme_extension_table->scheme_malloc_key)
 #define scheme_free_key (scheme_extension_table->scheme_free_key)
+#define scheme_jit_find_code_end (scheme_extension_table->scheme_jit_find_code_end)
+#define scheme_jit_now (scheme_extension_table->scheme_jit_now)
 #ifdef MZ_PRECISE_GC
 #pragma GC_VARIABLE_STACK_THOUGH_TABLE
 #endif

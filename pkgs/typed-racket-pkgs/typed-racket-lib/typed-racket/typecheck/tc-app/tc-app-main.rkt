@@ -15,15 +15,6 @@
         tc-app-objects^ tc-app-eq^ tc-app-lambda^ tc-app-special^)
 (export tc-app^)
 
-
-(define-syntax-class annotated-op
-  (pattern (~and i:identifier (~or :type-inst^ :type-ascription^))))
-
-(define-tc/app-syntax-class (tc/app-annotated expected)
-  ;; Just do regular typechecking if we have one of these.
-  (pattern (~and form (rator:annotated-op . rands))
-    (tc/app-regular #'form expected)))
-
 (define-tc/app-syntax-class (tc/app-regular* expected)
   (pattern form (tc/app-regular #'form expected)))
 
@@ -34,7 +25,6 @@
              #:attr check (attribute v.check)) ...))
 
 (combine-tc/app-syntax-classes tc/app-special-cases
-  tc/app-annotated
   tc/app-list
   tc/app-apply
   tc/app-eq

@@ -3,16 +3,15 @@
          rackunit
          rackunit/text-ui)
 
-(define (exn:fail:contract-violation? exn)
-  (if (regexp-match #rx"contract violation" (exn-message exn)) #t #f))
-
 (define ((blame-to whom) exn)
-  (and (exn:fail:contract-violation? exn)
-       (regexp-match (regexp-quote (format "blaming ~a" whom))
-                     (exn-message exn))))
+  (and (exn:fail:contract:blame? exn)
+       (regexp-match? (regexp-quote (format "blaming: ~a" whom))
+                      (exn-message exn))))
 
-(define ((match-msg msg) exn)
-  (regexp-match (regexp msg) (exn-message exn)))
+(define ((match-msg . msgs) exn)
+  (and (exn:fail? exn)
+       (for/and ([msg (in-list msgs)])
+         (regexp-match (regexp-quote msg) (exn-message exn)))))
 
 (define-simple-check (check-pred2 func thunk)
   (let-values ([(a b) (thunk)])
@@ -103,7 +102,7 @@
    
    (test-exn
     "flat-contract 2"
-    (match-msg "expected a flat")
+    (match-msg "expected: flat-contract?")
     (λ ()
       (contract (opt/c (flat-contract (λ (x y) #f))) 1 'pos 'neg)))
    
@@ -138,13 +137,13 @@
    
    (test-exn
     "between/c 2"
-    (match-msg "expected a real number as first")
+    (match-msg "expected: real?" "argument position: 1st")
     (λ ()
       (contract (opt/c (between/c 'x 'b)) 1 'pos 'neg)))
    
    (test-exn
     "between/c 3"
-    (match-msg "expected a real number as second")
+    (match-msg "expected: real?" "argument position: 2nd")
     (λ ()
       (contract (opt/c (between/c 1 'b)) 1 'pos 'neg)))
    
@@ -206,7 +205,7 @@
    
    (test-case
     "or/c name 6"
-    (check-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+    (check-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
                 (opt/c (or/c boolean? (-> (>=/c 5) (>=/c 5))))))
    
    (test-case

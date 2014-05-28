@@ -5,4 +5,4 @@
 
 (define pkg-desc "implementation (no documentation) part of \"planet\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))

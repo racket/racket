@@ -6,7 +6,7 @@
          (for-syntax syntax/parse racket/base)
          (types utils union subtype resolve abbrev
                 substitute classes)
-         (typecheck tc-metafunctions tc-app-helper)
+         (typecheck tc-metafunctions tc-app-helper check-below)
          (rep type-rep)
          (r:infer infer))
 
@@ -14,7 +14,7 @@
   [tc/funapp
    (syntax? stx-list? tc-results/c (c:listof tc-results/c)
     (c:or/c #f tc-results/c)
-    . c:-> . tc-results/c)])
+    . c:-> . full-tc-results/c)])
 
 (define-syntax (handle-clauses stx)
   (syntax-parse stx

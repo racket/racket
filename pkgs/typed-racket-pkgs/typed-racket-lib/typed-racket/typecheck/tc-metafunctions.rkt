@@ -12,9 +12,6 @@
          combine-props
          tc-results->values)
 
-(provide/cond-contract
-  [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
-
 
 ;; abstract-results
 ;;
@@ -73,14 +70,15 @@
   (tc-results/c (listof identifier?) . -> . SomeValues/c)
   (define keys (for/list ([(nm k) (in-indexed arg-names)]) (list 0 k)))
   (match results
-    [(tc-any-results:) (make-AnyValues)]
+    [(tc-any-results: f) (-AnyValues (abo arg-names keys f))]
     [(tc-results: ts fs os dty dbound)
      (make-ValuesDots
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
         (-result (abstract-type arg-names keys t)
                  (abstract-filter arg-names keys f)
                  (abstract-object arg-names keys o)))
-      dty dbound)]
+      (abstract-type arg-names keys dty)
+      dbound)]
     [(tc-results: ts fs os)
      (make-Values
       (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
@@ -166,7 +164,7 @@
 
 (define (tc-results->values tc)
   (match tc
-    [(tc-any-results:) ManyUniv]
+    [(tc-any-results: _) ManyUniv]
     [(tc-results: ts) (-values ts)]
     [(tc-results: ts _ _ dty dbound) (-values-dots ts dty dbound)]))
 
@@ -198,30 +196,28 @@
 (define/cond-contract (combine-props new-props old-props flag)
   ((listof Filter/c) (listof Filter/c) (box/c boolean?)
    . -> .
-   (values (listof (or/c ImpFilter? OrFilter? AndFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
+   (values (listof (or/c ImpFilter? OrFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
   (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
   (define-values (new-atoms new-formulas) (partition atomic-prop? (flatten-props new-props)))
-  (let loop ([derived-props null]
+  (let loop ([derived-formulas null]
              [derived-atoms new-atoms]
              [worklist (append old-props new-formulas)])
     (if (null? worklist)
-        (values derived-props derived-atoms)
+        (values derived-formulas derived-atoms)
         (let* ([p (car worklist)]
                [p (resolve derived-atoms p)])
           (match p
-            [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(ImpFilter: a c)
-             ;(printf "combining ~a with ~a\n" p (append derived-props derived-atoms))
-             (if (for/or ([p (in-list (append derived-props derived-atoms))])
+             (if (for/or ([p (in-list (append derived-formulas derived-atoms))])
                    (implied-atomic? a p))
-                 (loop derived-props derived-atoms (cons c (cdr worklist)))
-                 (loop (cons p derived-props) derived-atoms (cdr worklist)))]
+                 (loop derived-formulas derived-atoms (cons c (cdr worklist)))
+                 (loop (cons p derived-formulas) derived-atoms (cdr worklist)))]
             [(OrFilter: ps)
              (let ([new-or
                     (let or-loop ([ps ps] [result null])
                       (cond
                         [(null? ps) (apply -or result)]
-                        [(for/or ([other-p (in-list (append derived-props derived-atoms))])
+                        [(for/or ([other-p (in-list (append derived-formulas derived-atoms))])
                              (complementary? (car ps) other-p))
                          (or-loop (cdr ps) result)]
                         [(for/or ([other-p (in-list derived-atoms)])
@@ -229,27 +225,12 @@
                          -top]
                         [else (or-loop (cdr ps) (cons (car ps) result))]))])
                (if (OrFilter? new-or)
-                   (loop (cons new-or derived-props) derived-atoms (cdr worklist))
-                   (loop derived-props derived-atoms (cons new-or (cdr worklist)))))]
-            [(TypeFilter: (== (Un) type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
-            [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
-            [(NotTypeFilter: (== Univ type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
-            [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
-            [(Top:) (loop derived-props derived-atoms (cdr worklist))]
-            [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
-            [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
+                   (loop (cons new-or derived-formulas) derived-atoms (cdr worklist))
+                   (loop derived-formulas derived-atoms (cons new-or (cdr worklist)))))]
+            [(TypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
+            [(NotTypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
 
-;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
-;; For each name replaces all uses of it in res with the corresponding object.
-;; This is used so that names do not escape the scope of their definitions
-(define (replace-names names+objects res)
-  (define (subber proc lst)
-    (for/list ([i (in-list lst)])
-      (for/fold ([s i]) ([name/object (in-list names+objects)])
-        (proc s (first name/object) (second name/object) #t))))
-  (match res
-    [(tc-any-results:) res]
-    [(tc-results: ts fs os)
-     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
-    [(tc-results: ts fs os dt db)
-     (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
+            [(AndFilter: ps) (loop derived-formulas derived-atoms (append ps (cdr worklist)))]
+            [(Top:) (loop derived-formulas derived-atoms (cdr worklist))]
+            [(Bot:) (set-box! flag #f) (values derived-formulas derived-atoms)])))))
+

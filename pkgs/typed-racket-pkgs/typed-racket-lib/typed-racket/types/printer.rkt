@@ -65,8 +65,8 @@
 		 #:when (and (Type? t*) (type-equal? t t*)))
 	 n))
     (if (null? candidates)
-	#f
-	(sort candidates string>? #:key symbol->string))]
+        #f
+        (sort candidates string>? #:key symbol->string))]
    [else #f]))
 
 ;; print-<thing> : <thing> Output-Port Boolean -> Void
@@ -207,7 +207,6 @@
 ;; Convert an arr (see type-rep.rkt) to its printable form
 (define (arr->sexp arr)
   (match arr
-    [(top-arr:) 'Procedure]
     [(arr: dom rng rest drest kws)
      (define out (open-output-string))
      (define (fp . args) (apply fprintf out args))
@@ -240,17 +239,29 @@
                     (cdr drest)))
           null)
       (match rng
-        [(AnyValues:) '(AnyValues)]
+        [(AnyValues: (Top:)) '(AnyValues)]
+        [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
          (list (type->sexp t))]
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft pth id)
-                                             (NotTypeFilter: ft pth id))
+                                 (FilterSet: (TypeFilter: ft pth (list 0 0))
+                                             (NotTypeFilter: ft pth (list 0 0)))
                                  (Empty:))))
+         ;; Only print a simple filter for single argument functions,
+         ;; since parse-type only accepts simple latent filters on single
+         ;; argument functions.
+         #:when (= 1 (length dom))
          (if (null? pth)
              `(,(type->sexp t) : ,(type->sexp ft))
              `(,(type->sexp t) : ,(type->sexp ft) @
                ,@(map pathelem->sexp pth)))]
+        ;; Print asymmetric filters with only a positive filter as a
+        ;; special case (even when complex printing is off) because it's
+        ;; useful to users who use functions like `filter`.
+        [(Values: (list (Result: t
+                                 (FilterSet: (TypeFilter: ft '() id) (Top:))
+                                 (Empty:))))
+         `(,(type->sexp t) : #:+ ,(type->sexp ft))]
         [(Values: (list (Result: t fs (Empty:))))
          (if (print-complex-filters?)
              `(,(type->sexp t) : ,(filter->sexp fs))
@@ -468,7 +479,8 @@
      `(List ,(t->s dty) ,@dbound*)]
     [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
-    [(AnyValues:) 'AnyValues]
+    [(AnyValues: (Top:)) 'AnyValues]
+    [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
     [(Values: (list v)) v]
     [(Values: (list v ...)) (cons 'values (map t->s v))]
     [(ValuesDots: v dty dbound)

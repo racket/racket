@@ -205,7 +205,7 @@ To see how to declare a type for @racket[add-map], see the
 
 @section{Loops}
 
-@defform/subs[(for type-ann-maybe (for:-clause ...)
+@defform/subs[(for type-ann-maybe (for-clause ...)
                 expr ...+)
               ([type-ann-maybe code:blank
                                @code:line[: u]]
@@ -215,11 +215,10 @@ To see how to declare a type for @racket[add-map], see the
                            @code:line[#:when guard]]
                [binding id
                         [id : t]])]{
-Like @|for-id| from @racketmodname[racket/base], but each @racket[id] having the associated type
+Like @|for-id| from @racketmodname[racket/base], but each @racket[id] has the associated type
 @racket[t]. Since the return type is always @racket[Void], annotating
-the return type of a @racket[for] form is optional. Unlike
-@racket[for], multi-valued @racket[seq-expr]s are not supported.
-Type annotations in clauses are optional for all @racket[for:]
+the return type of a @racket[for] form is optional.
+Type annotations in clauses are optional for all @racket[for]
 variants.
 }
 
@@ -230,6 +229,7 @@ variants.
 @defform[(for/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/vector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for/extflvector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/and type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/or   type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for/first type-ann-maybe (for-clause ...) expr ...+)]
@@ -242,6 +242,7 @@ variants.
 @defform[(for*/hasheqv type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/vector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/flvector type-ann-maybe (for-clause ...) expr ...+)]
+@defform[(for*/extflvector type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/and type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/or   type-ann-maybe (for-clause ...) expr ...+)]
 @defform[(for*/first type-ann-maybe (for-clause ...) expr ...+)]
@@ -375,7 +376,8 @@ those functions.
  [name-spec name (code:line name parent)]
  [options #:transparent #:mutable])]{
  Defines a @rtech{structure} with the name @racket[name], where the
- fields @racket[f] have types @racket[t], similar to the behavior of @|struct-id|.
+ fields @racket[f] have types @racket[t], similar to the behavior of @|struct-id|
+ from @racketmodname[racket/base].
   When @racket[parent] is present, the
 structure is a substructure of @racket[parent].  When
 @racket[maybe-type-vars] is present, the structure is polymorphic in the type
@@ -384,7 +386,8 @@ there must be at least as many type variables as in the parent type, and the
 parent type is instantiated with a prefix of the type variables matching the
 amount it needs.
 
-Options provided have the same meaning as for the @racket[struct] form.}
+Options provided have the same meaning as for the @|struct-id| form
+from @racketmodname[racket/base].}
 
 
 @defform/subs[

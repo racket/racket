@@ -1,8 +1,7 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("unstable-debug-lib"
-               "unstable-macro-testing-lib"
+(define deps '("unstable-macro-testing-lib"
                "compiler-lib"
                "sandbox-lib"
                "compatibility-lib"

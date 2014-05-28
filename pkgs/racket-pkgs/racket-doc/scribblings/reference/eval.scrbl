@@ -258,7 +258,9 @@ The check for a compiled file occurs whenever the given path
 indicated by the @racket[current-compiled-file-roots] and
 @racket[use-compiled-file-paths] parameters relative to
 @racket[_file], where the former supplies ``roots'' for compiled files
-and the latter provides subdirectories. A ``root'' can be an absolute
+and the latter provides subdirectories.
+@margin-note*{See also @racketmodname[compiler/compilation-path].}
+A ``root'' can be an absolute
 path, in which case @racket[_file]'s directory is combined with
 @racket[reroot-path] and the root as the second argument; if the
 ``root'' is a relative path, then the relative path is instead
@@ -339,7 +341,7 @@ A list of relative paths, which defaults to @racket[(list
 handler} (see @racket[current-load/use-compiled]).}
 
 
-@defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'path))]{
+@defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'same))]{
 
 A list of paths and @racket['same]s that is is used by the default
 @tech{compiled-load handler} (see @racket[current-load/use-compiled]).

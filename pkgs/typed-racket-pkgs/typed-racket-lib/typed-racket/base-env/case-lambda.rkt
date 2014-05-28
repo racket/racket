@@ -38,9 +38,7 @@
 (define-syntax (pcase-lambda: stx)
   (syntax-parse stx
     [(pcase-lambda: tvars:type-variables cl ...)
-     (quasisyntax/loc stx
-       (#%expression
-        #,(plambda-property
-            (syntax/loc stx (-case-lambda cl ...))
-            #'(tvars.vars ...))))]))
+     (plambda-property
+       (syntax/loc stx (-case-lambda cl ...))
+       #'(tvars.vars ...))]))
 

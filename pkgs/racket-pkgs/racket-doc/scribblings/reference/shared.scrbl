@@ -28,7 +28,7 @@ the last expression.
 The @racket[shared] form is similar to @racket[letrec], except that
 special forms of @racket[expr] are recognized (after partial macro
 expansion) to construct graph-structured data, where the corresponding
-@racket[letrec] would instead produce @|undefined-const|s. 
+@racket[letrec] would instead produce a use-before-initialization error.
 
 Each @racket[expr] (after partial expansion) is matched against the
 following @racket[_shared-expr] grammar, where earlier variants in a
@@ -46,7 +46,7 @@ production take precedence over later variants:
             (box-immutable in-immutable-expr)
             (mcons patchable-expr patchable-expr)
             (vector patchable-expr ...)
-            (box patchable-expr ...)
+            (box patchable-expr)
             (@#,|maker| patchable-expr ...)]
 [in-immutable-expr shell-id
                    shell-expr
@@ -76,26 +76,44 @@ for parsing precedence), the sub-expressions that were parsed via
 form is evaluated. Among such expressions, they are evaluated in the
 order as they appear within the @racket[shared] form. However, any
 reference to an @racket[id] bound by @racket[shared] produces
-@|undefined-const|, even if the binding for the @racket[id] appears
+a use-before-initialization errror, even if the binding for the @racket[id] appears
 before the corresponding @racket[_early-expr] within the
 @racket[shared] form.
 
-The @racket[_shell-ids] and @racket[_shell-exprs] (not counting
+The @racket[_shell-id]s and @racket[_shell-expr]s (not counting
 @racket[_patchable-expr] and @racket[_early-expr] sub-expressions) are
-effectively evaluated next.  A @racket[_shell-id] reference produces
-the same value as the corresponding @racket[_id] will produce within
-the @racket[body]s, assuming that @racket[_id] is never mutated with
-@racket[set!].  This special handling of a @racket[_shell-id]
-reference is one way in which @racket[shared] supports the creation of
-cyclic data, including immutable cyclic data.
+effectively evaluated next:
+
+@itemlist[
+
+ @item{A @racket[_shell-id] reference produces the same value as the
+       corresponding @racket[_id] will produce within the
+       @racket[body]s, assuming that @racket[_id] is never mutated
+       with @racket[set!].  This special handling of a
+       @racket[_shell-id] reference is one way in which
+       @racket[shared] supports the creation of cyclic data, including
+       immutable cyclic data.}
+
+ @item{A @racket[_shell-expr] of the form @racket[(mcons
+       _patchable-expr _patchable-expr)], @racket[(vector _patchable-expr
+       ...)], @racket[(box _patchable-expr)], or @racket[(@#,|maker|
+       _patchable-expr ...)] produces a mutable value whose content
+       positions are initialized to @racket[undefined]. Each content
+       position is @deftech{patched} (i.e., updated) after the
+       corresponding @racket[_patchable-expr] expression is later
+       evaluated.}
+
+]
 
 Next, the @racket[_plain-expr]s are evaluated as for @racket[letrec],
-where a reference to an @racket[id] produces @|undefined-const| if it
+where a reference to an @racket[id] raises @racket[exn:fail:contract:variable] if it
 is evaluated before the right-hand side of the @racket[id] binding.
 
-Finally, the @racket[_patchable-expr]s are evaluated. At this point,
-all @racket[id]s are bound, so @racket[_patchable-expr]s also creates
-data cycles (but only with cycles that can be created via mutation).
+Finally, the @racket[_patchable-expr]s are evaluated and their values
+replace @racket[undefined]s in the results of
+@racket[_shell-expr]s. At this point, all @racket[id]s are bound, so
+@racket[_patchable-expr]s can create data cycles (but only with cycles
+that can be created via mutation).
 
 @examples[
 #:eval shared-eval

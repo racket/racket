@@ -35,7 +35,8 @@
 
 (define (path-ss->rkt p)
   (let-values ([(base name dir?) (split-path p)])
-    (if (regexp-match #rx"[.]ss$" (path->bytes name))
+    (if (and (path? name)
+             (regexp-match #rx"[.]ss$" (path->bytes name)))
         (path-replace-suffix p #".rkt")
         p)))
 

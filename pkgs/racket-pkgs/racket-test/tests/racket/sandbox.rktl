@@ -36,7 +36,9 @@
   (test 'shut (lambda () (nested* (shut)))))
 
 (let ([ev void]
-      [old-port #f])
+      [old-port #f]
+      [plumber (make-plumber)]
+      [out-port (open-output-bytes)])
   (define (make-evaluator! #:requires [reqs null] . args)
     (set! ev (apply make-evaluator args #:requires reqs)))
   (define (make-base-evaluator! . args)
@@ -597,6 +599,29 @@
    --top--
    (getenv "PEAR") => #f
 
+   --top--
+   (parameterize ([sandbox-output (lambda () out-port)]
+                  [current-plumber plumber])
+     (make-base-evaluator!))
+   (plumber-add-flush! plumber (lambda (h) (set! plumber #f)))
+   (get-output-string out-port) => ""
+   --eval--
+   (plumber-flush-all (current-plumber)) ; should not affect `plumber`
+   (plumber-add-flush! (current-plumber) (lambda (h) (displayln "flushed")))
+   --top--
+   (not plumber) => #f
+   (get-output-string out-port) => ""
+   (plumber-flush-all plumber)
+   plumber => #f
+   --eval--
+   10 => 10 ; sync, so that flush has been propagated
+   --top--
+   (get-output-string out-port) => "flushed\n"
+   --eval--
+   (exit) =err> "terminated .exited.$"
+   --top--
+   (get-output-string out-port) => "flushed\nflushed\n"
+
    ;; tests for specials
    --top--
    ;; these are conditional so that we can run
@@ -640,6 +665,26 @@
         #rx"access disallowed by code inspector to protected variable"
         r1)
   (test #t equal? r1 r2))
+
+;; ----------------------------------------
+;; Check that sandbox is not flushed if
+;; its custodian has been shut down:
+
+(let ()
+  (define p (make-plumber))
+
+  (define e0
+    (parameterize ([current-plumber p])
+      (call-with-trusted-sandbox-configuration
+       (lambda ()
+         (make-evaluator 'racket/base)))))
+
+  (e0 '(require racket/sandbox))
+  (e0 '(make-evaluator 'racket/base))
+
+  (kill-evaluator e0)
+  ;; e's plumber should not be flushed:
+  (plumber-flush-all p))
 
 ;; ----------------------------------------
 

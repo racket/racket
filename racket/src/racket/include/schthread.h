@@ -237,6 +237,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Thread *gc_prep_thread_chain_;
   struct Scheme_Thread_Set *scheme_thread_set_top_;
   struct Scheme_Current_LWC *scheme_current_lwc_;
+  intptr_t process_time_at_swap_;
   int num_running_threads_;
   int swap_no_setjmp_;
   int thread_swap_count_;
@@ -251,6 +252,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Custodian *main_custodian_;
   struct Scheme_Custodian *last_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
+  struct Scheme_Plumber *initial_plumber_;
   struct Scheme_Config *initial_config_;
   struct Scheme_Thread *swap_target_;
   struct Scheme_Object *scheduled_kills_;
@@ -623,6 +625,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define num_running_threads XOA (scheme_get_thread_local_variables()->num_running_threads_)
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)
+#define process_time_at_swap XOA (scheme_get_thread_local_variables()->process_time_at_swap_)
 #define scheme_did_gc_count XOA (scheme_get_thread_local_variables()->scheme_did_gc_count_)
 #define scheme_future_state XOA (scheme_get_thread_local_variables()->scheme_future_state_)
 #define scheme_future_thread_state XOA (scheme_get_thread_local_variables()->scheme_future_thread_state_)
@@ -634,6 +637,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define main_custodian XOA (scheme_get_thread_local_variables()->main_custodian_)
 #define last_custodian XOA (scheme_get_thread_local_variables()->last_custodian_)
 #define limited_custodians XOA (scheme_get_thread_local_variables()->limited_custodians_)
+#define initial_plumber XOA (scheme_get_thread_local_variables()->initial_plumber_)
 #define initial_config XOA (scheme_get_thread_local_variables()->initial_config_)
 #define swap_target XOA (scheme_get_thread_local_variables()->swap_target_)
 #define scheduled_kills XOA (scheme_get_thread_local_variables()->scheduled_kills_)

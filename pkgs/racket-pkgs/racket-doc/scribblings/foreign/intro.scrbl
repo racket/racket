@@ -12,6 +12,8 @@
                                  (lambda (stx) #'@schemeidfont{_WINDOW-pointer})))
 @(define-syntax _mmask_t (make-element-id-transformer
                           (lambda (stx) #'@schemeidfont{_mmask_t})))
+@(define-syntax _string/immobile (make-element-id-transformer
+                                  (lambda (stx) #'@schemeidfont{_string/immobile})))
    
 
 @title[#:tag "intro"]{Overview}
@@ -294,7 +296,7 @@ not enough space for an @cpp{MEVENT} struct.
 
 @section{Pointers and Manual Allocation}
 
-To get text from the user instead of a mouse click, @racket{libcurses}
+To get text from the user instead of a mouse click, @filepath{libcurses}
 provides @racket[wgetnstr]:
 
 @verbatim[#:indent 2]{
@@ -508,6 +510,73 @@ If a resource is scarce or visible to end users, then @tech[#:doc
 reference.scrbl]{custodian} management is more appropriate than
 mere finalization as implemented by @racket[allocator]. See the
 @racketmodname[ffi/unsafe/custodian] library.
+
+@; --------------------------------------------------
+
+@section{Threads and Places}
+
+Although older versions of @filepath{libcurses} are not thread-safe,
+Racket threads do not correspond to OS-level threads, so using Racket
+threads to call @filepath{libcurses} functions creates no particular
+problems.
+
+Racket @tech-place[]s, however, correspond to OS-level threads. Using
+a foreign library from multiple places works when the library is
+thread-safe. Calling a non-thread-safe library from multiple places
+requires more care.
+
+The simplest way to use a non-thread-safe library from multiple places
+is to specify the @racket[#:in-original-place? #t] option of
+@racket[_fun], which routes every call to the function through the
+original Racket place instead of the calling place. Most of the
+functions that we initially used from @filepath{libcurses} can be made
+thread-safe simply:
+
+@racketblock[
+(define-curses initscr
+  (_fun #:in-original-place? #t -> _WINDOW-pointer))
+(define-curses wrefresh
+  (_fun #:in-original-place? #t _WINDOW-pointer -> _int))
+(define-curses endwin
+  (_fun #:in-original-place? #t -> _int))
+]
+
+The @racket[waddstr] function is not quite as straightforward. The
+problem with
+
+@racketblock[
+(define-curses waddstr
+  (_fun #:in-original-place? #t _WINDOW-pointer _string -> _int))
+]
+
+is that the string argument to @racket[waddstr] might move in the
+calling place before the @racket[waddstr] call completes in the
+original place. To safely call @racket[waddstr], we can use a
+@racket[_string/immobile] type that allocates bytes for the string
+argument with @racket['atomic-interior]:
+
+@racketblock[
+(define _string/immobile
+  (make-ctype _pointer
+              (lambda (s)
+                (define bstr (cast s _string _bytes))
+                (define len (bytes-length bstr))
+                (define p (malloc 'atomic-interior len))
+                (memcpy p bstr len)
+                p)
+              (lambda (p)
+                (cast p _pointer _string))))
+ 
+(define-curses waddstr
+  (_fun #:in-original-place? #t _WINDOW-pointer _string/immobile -> _int))
+]
+
+Beware that passing memory allocated with @racket['interior] (as
+opposed to @racket['atomic-interior]) is safe only for functions that
+read the memory without writing. A foreign function must not write to
+@racket['interior]-allocated memory from a place other than the one
+where the memory is allocated, due a place-specific treatment of
+writes to implement generational garbage collection.
 
 @; ------------------------------------------------------------
 

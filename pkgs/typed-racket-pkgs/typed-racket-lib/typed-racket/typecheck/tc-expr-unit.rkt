@@ -9,7 +9,7 @@
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
-         (env lexical-env tvar-env index-env)
+         (env lexical-env tvar-env index-env scoped-tvar-env)
          racket/format racket/list
          racket/private/class-internal
          syntax/parse syntax/stx
@@ -23,124 +23,18 @@
                     (only-in racket/private/class-internal find-method/who)))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^
-        check-class^)
+        check-class^ tc-expression^)
 (export tc-expr^)
 
 (define-literal-set tc-expr-literals #:for-label
   (find-method/who))
 
-;; do-inst : syntax type -> type
-;; Perform a type instantiation, delegating to the appropriate helper
-;; function depending on if the argument is a row or not
-(define (do-inst stx ty)
-  (define inst (type-inst-property stx))
-  (if (row-syntax? inst)
-      (do-row-inst stx inst ty)
-      (do-normal-inst stx inst ty)))
-
-;; row-syntax? Syntax -> Boolean
-;; This checks if the syntax object resulted from a row instantiation
-(define (row-syntax? stx)
-  (define lst (stx->list stx))
-  (and lst (pair? lst)
-       (eq? (syntax-e (car lst)) '#:row)))
-
-;; do-normal-inst : Syntax Syntax Type -> Type
-;; Instantiate a normal polymorphic type
-(define (do-normal-inst stx inst ty)
-  (define (split-last l)
-    (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
-      (values all-but (car last-list))))
-  (define (in-improper-stx stx)
-    (let loop ([l stx])
-      (match l
-        [#f null]
-        [(cons a b) (cons a (loop b))]
-        [e (list e)])))
-  (match ty
-    [(list ty)
-     (list
-      (for/fold ([ty ty])
-        ([inst (in-list (in-improper-stx inst))])
-        (cond [(not inst) ty]
-              [(not (or (Poly? ty) (PolyDots? ty)))
-               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
-                              (cleanup-type ty))]
-              [(and (Poly? ty)
-                    (not (= (syntax-length inst) (Poly-n ty))))
-               (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                              (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-              [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
-               ;; we can provide 0 arguments for the ... var
-               (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                              (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
-              [(PolyDots? ty)
-               ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-               ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-               ;; In the case that the list is empty we also do the normal thing
-               (let ((stx-list (syntax->list inst)))
-                 (if (null? stx-list)
-                     (instantiate-poly ty (map parse-type stx-list))
-                     (let-values ([(all-but-last last-stx) (split-last stx-list)])
-                       (match (syntax-e last-stx)
-                         [(cons last-ty-stx (? identifier? last-id-stx))
-                          (unless (bound-index? (syntax-e last-id-stx))
-                            (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-                          (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
-                              (let* ([last-id (syntax-e last-id-stx)]
-                                     [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
-                                (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                              (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                             ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
-                         [_
-                          (instantiate-poly ty (map parse-type stx-list))]))))]
-              [else
-               (instantiate-poly ty (stx-map parse-type inst))])))]
-    [_ (if inst
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
-
-;; do-row-inst : Syntax ClassRow Type -> Type
-;; Instantiate a row polymorphic function
-(define (do-row-inst stx row-stx ty)
-  ;; At this point, we know `stx` represents a row so we can parse it.
-  ;; The parsing is done here because if `inst` did the parsing, it's
-  ;; too early and ends up with an empty type environment.
-  (define row
-    (syntax-parse row-stx
-      [(#:row (~var clauses (row-clauses parse-type)))
-       (attribute clauses.row)]))
-  (match ty
-    [(list ty)
-     (list
-      (cond [(not row) ty]
-            [(not (PolyRow? ty))
-             (tc-error/expr #:return (Un) "Cannot instantiate non-row-polymorphic type ~a"
-                            (cleanup-type ty))]
-            [else
-             (match-define (PolyRow: _ constraints _) ty)
-             (check-row-constraints
-              row constraints
-              (λ (name)
-                (tc-error/delayed
-                 (~a "Cannot instantiate row with member " name
-                     " that the given row variable requires to be absent"))))
-             (instantiate-poly ty (list row))]))]
-    [_ (if row
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
-  (--> identifier? tc-results/c)
+  (--> identifier? full-tc-results/c)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
@@ -168,43 +62,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let loop ([form* form] [expected expected] [checked? #f])
-      (cond [(type-ascription form*)
-             =>
-             (lambda (ann)
-               (let* ([r (tc-expr/check/internal form* ann)]
-                      [r* (check-below (check-below r ann) expected)])
-                 ;; add this to the *original* form, since the newer forms aren't really in the program
-                 (add-typeof-expr form r)
-                 ;; around again in case there is an instantiation
-                 ;; remove the ascription so we don't loop infinitely
-                 (loop (remove-ascription form*) r* #t)))]
-            [(type-inst-property form*)
-             ;; check without property first
-             ;; to get the appropriate type to instantiate
-             (match (tc-expr (type-inst-property form* #f))
-               [(tc-results: ts fs os)
-                ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form* ts)]
-                       [ts** (ret ts* fs os)])
-                  (add-typeof-expr form ts**)
-                  ;; make sure the new type is ok
-                  (check-below ts** expected))]
-               ;; no annotations possible on dotted results
-               [ty (add-typeof-expr form ty) ty])]
-            [(external-check-property form*)
-             =>
-             (lambda (check)
-               (check form*)
-               (loop (external-check-property form* #f)
-                     expected
-                     checked?))]
-            ;; nothing to see here
-            [checked? expected]
-            [else 
-             (define t (tc-expr/check/internal form* expected))
-             (add-typeof-expr form t)
-             (check-below t expected)]))))
+    (define t (tc-expr/check/internal form expected))
+    (add-typeof-expr form t)
+    (check-below t expected)))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -215,18 +75,9 @@
                           t))]
          [else (tc-error/expr #:stx stx (syntax-e msg))]))
 
-;; check that `expr` doesn't evaluate any references 
-;; to `name` that aren't under `lambda`
-;; value-restriction? : syntax identifier -> boolean
-(define (value-restriction? expr name)
-  (syntax-parse expr
-    [((~literal #%plain-lambda) . _) #true]
-    [((~literal case-lambda) . _) #true]
-    [_ #false]))
-
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
-  (--> syntax? tc-results/c tc-results/c)
+  (--> syntax? tc-results/c full-tc-results/c)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
@@ -240,11 +91,6 @@
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers/check form expected)]
-      [stx:ignore-some^
-       (register-ignored! form)
-       (check-subforms/ignore form)
-       ;; We trust ignore to be only on syntax objects objects that are well typed
-       (ret -Bottom)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
@@ -295,7 +141,7 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [(#%expression e) (tc-expr/check #'e expected)]
+      [(#%expression e) (tc/#%expression form expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -305,7 +151,7 @@
       [(begin0 e . es)
        (begin0
          (tc-expr/check #'e expected)
-         (tc-body/check #'es tc-any-results))]
+         (tc-body/check #'es (tc-any-results -top)))]
       ;; if
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
       ;; lambda
@@ -329,9 +175,9 @@
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
           (tc-expr/check/type #'fun (kw-convert f #:split #t))
-          expected]
-         [(or (tc-results: _) (tc-any-results:))
-          (tc-expr (remove-ascription form))])]
+          (ret f -true-filter)]
+         [(or (tc-results: _) (tc-any-results: _))
+          (tc-expr form)])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        (define conv-type
@@ -343,18 +189,10 @@
            [_ #f]))
        (if conv-type
            (begin (tc-expr/check/type #'fun conv-type) expected)
-           (tc-expr (remove-ascription form)))]
+           (tc-expr form))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body expected)]
-      [(letrec-values ([(name) expr]) name*)
-       #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
-                   (value-restriction? #'expr #'name))
-       (match expected
-         [(tc-result1: t)
-          (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
-         [(tc-results: ts)
-          (tc-error/expr "Expected ~a values, but got only 1" (length ts))])]
       [(letrec-values ([(name ...) expr] ...) . body)
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body expected)]
       ;; other
@@ -377,10 +215,6 @@
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers form) ]
-      [stx:ignore-some^
-       (register-ignored! form)
-       (check-subforms/ignore form)
-       (ret Univ)]
       ;; explicit failure
       [t:typecheck-failure
        (explicit-fail #'t.stx #'t.message #'t.var)]
@@ -459,7 +293,7 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
-      [(#%expression e) (tc-expr #'e)]
+      [(#%expression e) (tc/#%expression form #f)]
       ;; #%variable-reference
       [(#%variable-reference . _)
        (ret -Variable-Reference)]
@@ -492,24 +326,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (cond
-      [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
-      [else 
-       (let ([ty (internal-tc-expr form)])
-         (match ty
-           [(tc-any-results:)
-            (add-typeof-expr form ty)
-            ty]
-           [(tc-results: ts fs os)
-            (let* ([ts* (do-inst form ts)]
-                   [r (ret ts* fs os)])
-              (add-typeof-expr form r)
-              r)]
-           [(tc-results: ts fs os dty dbound)
-            (define ts* (do-inst form ts))
-            (define r (ret ts* fs os dty dbound))
-            (add-typeof-expr form r)
-            r]))])))
+    (let ([ty (internal-tc-expr form)])
+      (add-typeof-expr form ty)
+      ty)))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
@@ -525,16 +344,16 @@
 ;; The environment is extended with the propositions that are true if the expression returns
 ;; (e.g. instead of raising an error).
 (define (check-body-form e k)
-  (define results (tc-expr/check e tc-any-results))
+  (define results (tc-expr/check e (tc-any-results -no-filter)))
   (define props
     (match results
-      [(tc-any-results:) empty]
-      [(tc-results: _ (FilterSet: f+ f-) _)
+      [(tc-any-results: f) (list f)]
+      [(tc-results: _ (list (FilterSet: f+ f-) ...) _)
        (map -or f+ f-)]
-      [(tc-results: _ (FilterSet: f+ f-) _ _ _)
+      [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)
        (map -or f+ f-)]))
-  (with-lexical-env (env+ (lexical-env) props (box #t))
-    (add-unconditional-prop (k) (apply -and props))))
+  (with-lexical-env/extend-props props
+    (k)))
 
 ;; type-check a body of exprs, producing the type of the last one.
 ;; if the body is empty, the type is Void.

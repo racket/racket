@@ -30,12 +30,14 @@
            (only-in racket/udp udp?)
            (only-in racket/tcp tcp-listener?)
            (only-in racket/flonum flvector?)
+           (only-in racket/extflonum extflvector?)
            (only-in racket/fixnum fxvector?)
            (only-in '#%place place? place-channel?))
          (only-in racket/pretty pretty-print-style-table?)
          (only-in racket/udp udp?)
          (only-in racket/tcp tcp-listener?)
          (only-in racket/flonum flvector?)
+         (only-in racket/extflonum extflvector?)
          (only-in racket/fixnum fxvector?)
          (only-in '#%place place? place-channel?))
 
@@ -65,12 +67,6 @@
   (apply Un (map -val args)))
 
 (define (-opt t) (Un (-val #f) t))
-
-(define (-Tuple l)
-  (foldr -pair (-val '()) l))
-
-(define (-Tuple* l b)
-  (foldr -pair b l))
 
 ;; Convenient constructor for Values
 ;; (wraps arg types with Result)
@@ -148,11 +144,12 @@
 (define/decl -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener? tcp-listener?))
 (define/decl -UDP-Socket (make-Base 'UDP-Socket #'udp? udp?))
 (define/decl -FlVector (make-Base 'FlVector #'flvector? flvector?))
+(define/decl -ExtFlVector (make-Base 'ExtFlVector #'extflvector? extflvector?))
 (define/decl -FxVector (make-Base 'FxVector #'fxvector? fxvector?))
 (define -Syntax make-Syntax)
 (define/decl In-Syntax
   (-mu e
-       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number
+       (Un -Null -Boolean -Symbol -String -Keyword -Char -Number
            (make-Vector (-Syntax e))
            (make-Box (-Syntax e))
            (make-Listof (-Syntax e))
@@ -160,7 +157,7 @@
 (define/decl Any-Syntax (-Syntax In-Syntax))
 (define (-Sexpof t)
   (-mu sexp
-       (Un (-val '())
+       (Un -Null
            -Number -Boolean -Symbol -String -Keyword -Char
            (-pair sexp sexp)
            (make-Vector sexp)
@@ -236,7 +233,7 @@
   (make-Struct name parent flds proc poly pred))
 
 ;; Function type constructors
-(define/decl top-func (make-Function (list (make-top-arr))))
+(define/decl top-func (make-Function (list)))
 
 (define (asym-pred dom rng filter)
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))

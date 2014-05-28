@@ -19,9 +19,11 @@
 (define (unfold t)
   (match t
     [(Mu: name b)
-     (substitute t name b #:Un (lambda (tys)
-                                 (make-Union (sort tys < #:key Type-seq))))]
-    [_ (int-err "unfold: requires Mu type, got ~a" t)]))
+     (define (sb target)
+       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
+         target
+         [#:F name* (if (eq? name name*) t target)]))
+     (sb b)]))
 
 (define (instantiate-poly t types)
   (match t

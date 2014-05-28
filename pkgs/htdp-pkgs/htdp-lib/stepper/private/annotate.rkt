@@ -436,7 +436,7 @@
       ;  wish me luck.
       
       
-      (define (let-abstraction stx output-identifier make-init-list)
+      (define (let-abstraction stx output-identifier)
         (with-syntax ([(_ ([(var ...) val] ...) . bodies) stx])
           (match-let*
               ([binding-sets (map syntax->list (syntax->list #'((var ...) ...)))]
@@ -491,7 +491,7 @@
                                                     free-varref-sets-vals)) 
                             binding-list)]
              [counter-id #`lifting-counter]
-             [unevaluated-list (make-init-list binding-list)]
+             [unevaluated-list (map (lambda (b) *unevaluated*)  binding-list)]
              [outer-initialization
               #`([(#,@lifted-vars #,@binding-list #,let-counter)
                   (values #,@(append (map (lambda (dc_binding) counter-id)
@@ -788,16 +788,9 @@
                                          #,rolled-into-fakes))
                            all-free-vars))]
                                             
-                [(let-values . _)
-                 (let-abstraction exp 
-                                  #`let-values
-                                  (lambda (bindings)
-                                    (map (lambda (_) *unevaluated*) bindings)))]
+                [(let-values . _) (let-abstraction exp #`let-values)]
                 
-                [(letrec-values . _)
-                 (let-abstraction exp 
-                                  #`letrec-values
-                                  (lambda (bindings) (map (lambda (b) #`#,b) bindings)))]
+                [(letrec-values . _) (let-abstraction exp #`letrec-values)]
                 
                 
                 ;                          $   

@@ -13,3 +13,5 @@
 (define pkg-desc "Sources for http://racket-lang.org")
 
 (define pkg-authors '(eli mflatt samth))
+
+(define test-omit-paths '("sync.rkt"))

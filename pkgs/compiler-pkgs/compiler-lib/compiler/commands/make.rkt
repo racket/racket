@@ -3,8 +3,10 @@
          raco/command-name
          compiler/cm
          compiler/compiler
+         compiler/compilation-path
          dynext/file
          setup/parallel-build
+         setup/path-to-relative
          racket/match)
 
 (module test racket/base)
@@ -88,24 +90,24 @@
                            [compile-enforce-module-constants
                             (not (disable-const))])
               (managed-compile-zo file))
-            (let ([dest (append-zo-suffix
-                         (let-values ([(base name dir?) (split-path file)])
-                           (build-path (if (symbol? base) 'same base)
-                                       "compiled" name)))])
-              (when (verbose)
-                (printf " [~a \"~a\"]\n"
-                        (if did-one? "output to" "already up-to-date at")
-                        dest)))))))]
+            (when (verbose)
+              (printf " [~a \"~a\"]\n"
+                      (if did-one? "output to" "already up-to-date at")
+                      (get-compilation-bytecode-file file)))))))]
   ;; Parallel make:
-  [else 
+  [else
+   (define path-cache (make-hash))
    (or (parallel-compile-files
         source-files
         #:worker-count (worker-count)
-        #:handler (lambda (type work msg out err)
+        #:handler (lambda (id type work msg out err)
+                    (define (->rel p)
+                      (path->relative-string/library p #:cache path-cache))
                     (match type
-                      ['done (when (verbose) (printf " Made ~a\n" work))]
-                      ['output (printf " Output from: ~a\n~a~a" work out err)]
-                      [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)]))
+                      ['start (when (verbose) (printf " ~a making ~a\n" id (->rel work)))]
+                      ['done (when (verbose) (printf " ~a made ~a\n" id (->rel work)))]
+                      ['output (printf " ~a output from: ~a\n~a~a" id work out err)]
+                      [else (printf " ~a error compiling ~a\n~a\n~a~a" id work msg out err)]))
         #:options (let ([cons-if-true (lambda (bool carv cdrv)
                                         (if bool
                                             (cons carv cdrv)

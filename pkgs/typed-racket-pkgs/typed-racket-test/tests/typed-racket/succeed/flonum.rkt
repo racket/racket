@@ -1,8 +1,9 @@
-#lang typed/scheme
+#lang typed/racket
 
 (require
- scheme/flonum
- scheme/unsafe/ops)
+ racket/flonum
+ racket/extflonum
+ racket/unsafe/ops)
 
 (: check (All (a) ((a a -> Boolean) a a -> Boolean)))
 ;; Simple check function as RackUnit doesn't work in Typed Scheme (yet)
@@ -55,3 +56,36 @@
 (check = (flsqrt 1.45) (unsafe-flsqrt 1.45))
 (check = (->fl 1) 1.0)
 (check = (unsafe-fx->fl 1) 1.0)
+
+(check extfl= (extflabs 1.45t0) (unsafe-extflabs 1.45t0))
+(check extfl= (extfl+ 1.45t0 2.36t0) (unsafe-extfl+ 1.45t0 2.36t0))
+(check extfl= (extfl- 1.45t0 2.36t0) (unsafe-extfl- 1.45t0 2.36t0))
+(check extfl= (extfl* 1.45t0 2.36t0) (unsafe-extfl* 1.45t0 2.36t0))
+(check extfl= (extfl/ 1.45t0 2.36t0) (unsafe-extfl/ 1.45t0 2.36t0))
+(check-pred true? (extfl= 1.45t0 1.45t0))
+(check-pred true? (extfl<= 1.45t0 1.45t0))
+(check-pred true? (extfl>= 1.45t0 1.45t0))
+(check-pred true? (extfl> 1.45t0 1.36t0))
+(check-pred true? (extfl< 1.36t0 1.45t0))
+(check-pred true? (unsafe-extfl= 1.45t0 1.45t0))
+(check-pred true? (unsafe-extfl<= 1.45t0 1.45t0))
+(check-pred true? (unsafe-extfl>= 1.45t0 1.45t0))
+(check-pred true? (unsafe-extfl> 1.45t0 1.36t0))
+(check-pred true? (unsafe-extfl< 1.36t0 1.45t0))
+(check extfl= (extflmin 1.45t0 2.36t0) (unsafe-extflmin 1.45t0 2.36t0))
+(check extfl= (extflmax 1.45t0 2.36t0) (unsafe-extflmax 1.45t0 2.36t0))
+(check extfl= (extflround 1.45t0) (unsafe-extflround 1.45t0))
+(check extfl= (extflfloor 1.45t0) (unsafe-extflfloor 1.45t0))
+(check extfl= (extflceiling 1.45t0) (unsafe-extflceiling 1.45t0))
+(check extfl= (extfltruncate 1.45t0) (unsafe-extfltruncate 1.45t0))
+(check extfl= (extflsin 1.45t0) (unsafe-extflsin 1.45t0))
+(check extfl= (extflcos 1.45t0) (unsafe-extflcos 1.45t0))
+(check extfl= (extfltan 1.45t0) (unsafe-extfltan 1.45t0))
+(check extfl= (extflatan 1.45t0) (unsafe-extflatan 1.45t0))
+(check extfl= (extflasin .45t0) (unsafe-extflasin .45t0))
+(check extfl= (extflacos .45t0) (unsafe-extflacos .45t0))
+(check extfl= (extfllog 1.45t0) (unsafe-extfllog 1.45t0))
+(check extfl= (extflexp 1.45t0) (unsafe-extflexp 1.45t0))
+(check extfl= (extflsqrt 1.45t0) (unsafe-extflsqrt 1.45t0))
+(check extfl= (->extfl 1) 1.0t0)
+(check extfl= (unsafe-fx->extfl 1) 1.0t0)

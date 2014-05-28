@@ -20,7 +20,7 @@ at least theoretically.
  rep utils typecheck infer env private types static-contracts)
 
 (define optimize? (make-parameter #t))
-(define-for-syntax enable-contracts? #f)
+(define-for-syntax enable-contracts? (and (getenv "PLT_TR_CONTRACTS") #t))
 
 (define-syntax do-contract-req
   (if enable-contracts?
@@ -198,5 +198,5 @@ at least theoretically.
           #:property prop:procedure
                      (lambda (ins stx)
                       (self-ctor-transformer (struct-info-self-ctor-id ins) stx))
-          #:property prop:struct-info (lambda (x) (extract-struct-info (struct-info-self-ctor-info x))))
+          #:property prop:struct-info (λ (x) (extract-struct-info (struct-info-self-ctor-info x))))
   struct-info-self-ctor))

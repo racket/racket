@@ -27,7 +27,7 @@ run_loop () { # <basename> <kill?>
     echo "$1: compiling"
     "$PLTROOT/bin/raco" make "$1.rkt"
     echo "$1: running"
-    "$R" -t "$1.rkt" 2>&1 >> "$LOGS/$1.log" &
+    "$R" -t "$1.rkt" &
     echo "$!" > "$LOGS/$1.pid"
     wait "$!"
     echo "$1: died"
@@ -39,7 +39,7 @@ run_loop () { # <basename> <kill?>
   done
 }
 
-exec 2>&1 >> "$LOGS/meta.log"
+exec
 
 run_loop render &
 run_loop main yes &

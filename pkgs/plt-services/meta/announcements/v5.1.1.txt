@@ -1,0 +1,64 @@
+1304146952
+Racket v5.1.1
+
+* The new `racket/stream' library provides `stream-first',
+  `stream-rest', a lazy `stream-cons', and so on.  Streams are a
+  subtype of sequences, so they work in `for' forms.  Some sequence
+  generators, such as `in-range', now produce streams.  A
+  `racket/sequence' library replaces the old `racket/stream'
+  library.
+
+* The new `racket/syntax' library contains facilities useful for
+  writing macros.  The new `syntax/srcloc' and `syntax/location'
+  libraries provide support for manipulating source locations.
+
+* The `racket/gui' library now supports multi-column list boxes and
+  scrolling panels.
+
+* The new `ffi/file' library is useful for writing foreign library
+  bindings that cooperate with Racket's security guard mechanism.
+
+* Generators from the `racket/generator' library can now have formal
+  arguments that are used when the generator is fired up.
+
+* Single-precision floating-point support is now enabled by default.
+  Single-precision floats print differently from their default
+  double-precision counterparts, new primitives convert between the
+  two precisions, and new reader syntax supports single-precision
+  literals.
+
+* JIT improvements include a small change to aid x86 branch
+  prediction on function-call returns, which can speed up some
+  programs significantly.
+
+* Typed Racket:
+  - The numeric tower has been entirely overhauled.  TR programs can
+    now use more precise types than before, and check more numeric
+    properties, such as sign or range properties.
+  - Fixnum optimizations have been improved and should apply more
+    broadly.
+  - The performance of the typechecker has been improved.  In
+    particular, dispatch on large union types should typecheck much
+    faster than before.
+
+* The Stepper can now step through Lazy Racket programs.
+
+* The `racket/future' library includes `fsemaphore' values, the
+  `future' primitive no longer freezes futures (so a future can
+  spawn new futures), and `future' log messages are more
+  informative.
+
+* PLaneT development links are now version-specific.
+
+* The `2htdp/image' library now includes `overlay/align',
+  `underlay/align', `overlay/align/offset' and
+  `underlay/align/offset'.
+
+* The network protocol for universes in `2htdp/universe' has
+  changed, so that v5.1.1 is incompatible with earlier versions.
+
+* The "DrScheme" application (which simply ran DrRacket in the last
+  few releases) has been removed.  The "MrEd" GUI executables for
+  Windows and Mac OS X have also been removed, although the "mred"
+  console executable remains for Unix and Mac OS X to support old
+  scripts.

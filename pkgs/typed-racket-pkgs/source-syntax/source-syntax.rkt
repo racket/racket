@@ -22,7 +22,12 @@
 
   ;; build `syntax-locs`
   (let loop ([stx orig])
-    (when (syntax? stx) (hash-set! syntax-locs (syntax-loc stx) stx))
+    (when (and (syntax? stx)
+               ;; avoid spurious hits in the table from syntaxes
+               ;; that have no useful source information
+               (and (syntax-source stx)
+                    (syntax-position stx)))
+      (hash-set! syntax-locs (syntax-loc stx) stx))
     (let ([stx (if (syntax? stx) (syntax-e stx) stx)])
       (when (pair? stx) (loop (car stx)) (loop (cdr stx)))))
 

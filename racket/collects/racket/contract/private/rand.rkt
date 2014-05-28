@@ -6,11 +6,9 @@
          rand-seed
          rand-choice
          rand-range
+         rand-nat
          permute
          oneof)
-
-
-;; random generator
 
 (define my-generator (make-pseudo-random-generator))
 (define (rand [x #f]) 
@@ -22,8 +20,6 @@
 (define (rand-seed x)
   (parameterize ([current-pseudo-random-generator my-generator])
     (random-seed x)))
-
-(rand-seed 0)
 
 (define-syntax (rand-choice stx)
   (syntax-case stx ()
@@ -43,9 +39,15 @@
                                      (exact? n)
                                      (positive? n)
                                      (< n 1))
-                          (raise-syntax-error #f "expected each option to be a real exact number in the interval (0,1)" stx (car as)))
+                          (raise-syntax-error 
+                           #f
+                           "expected each option to be a real exact number in the interval (0,1)"
+                           stx (car as)))
                         (unless (< (+ n sum) 1)
-                          (raise-syntax-error #f "expected the sum of the options to be less than 1" stx #f (syntax->list #'(a ...))))
+                          (raise-syntax-error
+                           #f
+                           "expected the sum of the options to be less than 1"
+                           stx #f (syntax->list #'(a ...))))
                         (cons n (loop (+ sum n)
                                       (cdr as))))]))])
          (let* ([dens (map denominator ns)]
@@ -74,16 +76,23 @@
 
 ; oneof :: [a] -> a
 ; Randomly chooses one of the values from a given list
-(define (oneof a-list) 
-  (list-ref a-list (random (length a-list))))
+(define (oneof a-list)
+  (list-ref a-list (rand (length a-list))))
 
 ; fisher-yates shuffle
 (define (permute a-list)
   (do ((v (list->vector a-list)) (n (length a-list) (- n 1)))
       ((zero? n) (vector->list v))
-    (let* ((r (random n)) (t (vector-ref v r)))
+    (let* ((r (rand n)) (t (vector-ref v r)))
       (vector-set! v r (vector-ref v (- n 1)))
       (vector-set! v (- n 1) t))))
 
 (define (rand-range lower upper)
   (+ lower (rand (- upper lower))))
+
+;; returns a random natural from the geometric distribution
+(define (rand-nat [p 1/2])
+  (let loop ([n 0])
+    (cond
+      [(<= (rand) p) n]
+      [else (loop (+ n 1))])))

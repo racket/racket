@@ -1,0 +1,6 @@
+1360960689
+Racket v5.3.3
+
+This is a bug-fix release to address a flaw in DrRacket v5.3.2
+concerning interactions between the contour window and the syntax
+coloring.

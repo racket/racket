@@ -78,6 +78,11 @@
   (test #t evt? (sync/timeout 0 (port-progress-evt i)))
   (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
 
+(test #t string-port? (open-input-string ""))
+(test #t string-port? (open-input-bytes #""))
+(test #t string-port? (open-output-bytes))
+(test #t string-port? (open-output-string))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the Racket manual...
 

@@ -16,6 +16,7 @@
 
 (require htdp/error
          racket/class
+         racket/contract
          lang/posn
          (except-in racket/draw
                     make-pen make-color)
@@ -228,7 +229,9 @@
      (check-arg fn-name (or (not arg) (string? arg)) 'face i arg)
      arg]
     [(family)
-     (check-arg fn-name (memq arg '(default decorative roman script swiss modern symbol system)) 'family i arg)
+     (check-arg fn-name
+                (memq arg '(default decorative roman script swiss modern symbol system))
+                'family i arg)
      arg]
     [(style)
      (check-arg fn-name (memq arg '(normal italic slant)) 'style i arg)
@@ -347,22 +350,27 @@
        (not (or (= arg +inf.0)
                 (= arg -inf.0)
                 (equal? arg +nan.0)))))
-                               
-(define (angle->proper-range α)
-  (define whole-part (modulo (round α) 360))
-  (define decimal-part (- α (round α)))
-  (if (and (zero? whole-part)
-           (negative? decimal-part))
-      (+ 360 decimal-part)
-      (+ whole-part decimal-part)))
+
+(define/contract (angle->proper-range α)
+  (-> real? (between/c 0 360))
+  (let loop ([θ (- α (* 360 (floor (/ α 360))))])
+    (cond [(negative? θ) (+ θ 360)]
+          [(>= θ 360)    (- θ 360)]
+          [else θ])))
 
 (module+ test
   (require rackunit)
   (check-equal? (angle->proper-range 1) 1)
   (check-equal? (angle->proper-range 361) 1)
-  (check-equal? (angle->proper-range 0.5) 0.5)
+  (check-equal? (angle->proper-range 1/2) 1/2)
   (check-equal? (angle->proper-range -1) 359)
+  (check-equal? (angle->proper-range #e-1.5) #e358.5)
+  (check-equal? (angle->proper-range #e-.1) #e359.9)
+  
+  (check-equal? (angle->proper-range 1.0) 1.0)
+  (check-equal? (angle->proper-range 361.0) 1.0)
+  (check-equal? (angle->proper-range 0.5) 0.5)
+  (check-equal? (angle->proper-range -1.0) 359.0)
   (check-equal? (angle->proper-range -1.5) 358.5)
   (check-equal? (angle->proper-range -.1) 359.9)
-  (check-equal? (angle->proper-range #i-7.347880794884119e-016) 
-                (+ 360 #i-7.347880794884119e-016)))
+  (check-equal? (angle->proper-range #i-7.347880794884119e-016) 0.0))

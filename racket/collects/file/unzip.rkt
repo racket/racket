@@ -43,7 +43,15 @@
                 . ->* .
                 any)]
 
-  [path->zip-path ((or/c string? path?) . -> . bytes?)]))
+  [call-with-unzip (-> (or/c path-string? input-port?)
+                       (-> path-string? any)
+                       any)]
+  [call-with-unzip-entry (-> (or/c path-string? input-port?)
+                             path-string?
+                             (-> path-string? any)
+                             any)]
+
+  [path->zip-path (path-string? . -> . bytes?)]))
 
 ;; ===========================================================================
 ;; CONSTANTS
@@ -359,3 +367,29 @@
   (if (path? base)
       base
       (current-directory)))
+
+(define (call-with-unzip-entry zip-file entry-file user-proc)
+  (let ([temp-dir #f])
+    (dynamic-wind
+        (lambda ()
+          (set! temp-dir (make-temporary-file "ziptmp~a" 'directory)))
+        (lambda ()
+          (let ([directory-entries (read-zip-directory zip-file)])
+            (unzip-entry zip-file
+                         directory-entries 
+                         (path->zip-path entry-file) 
+                         (make-filesystem-entry-reader #:dest temp-dir #:exists 'replace))
+            (user-proc (build-path temp-dir entry-file))))
+        (lambda ()
+          (delete-directory/files temp-dir)))))
+
+(define (call-with-unzip zip-file user-proc)
+  (let ([temp-dir #f])
+    (dynamic-wind
+        (lambda ()
+          (set! temp-dir (make-temporary-file "ziptmp~a" 'directory)))
+        (lambda ()
+          (unzip zip-file (make-filesystem-entry-reader #:dest temp-dir #:exists 'replace))
+          (user-proc temp-dir))
+        (lambda ()
+          (delete-directory/files temp-dir)))))

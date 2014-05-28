@@ -265,6 +265,13 @@
 (err/rt-test (open-input-file "x" 8))
 (err/rt-test (open-input-file "x" 'something-else))
 (err/rt-test (open-input-file "badfile") exn:fail:filesystem:errno?)
+(err/rt-test (open-input-file "badfile" #:for-module? #t) exn:fail:filesystem:errno?)
+(err/rt-test (parameterize ([current-module-path-for-load 'badfile])
+               (open-input-file "badfile" #:for-module? #t))
+             exn:fail:filesystem:missing-module?)
+(err/rt-test (parameterize ([current-module-path-for-load #'badfile])
+               (open-input-file "badfile" #:for-module? #t))
+             exn:fail:syntax:missing-module?)
 
 (arity-test open-output-file 1 1)
 (err/rt-test (open-output-file 8))

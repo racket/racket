@@ -7,7 +7,7 @@
    (Un (-lst type) (-Syntax (-lst type)))))
 
 (type-environment
- [stx-null? (make-pred-ty (Un (-val '()) (-Syntax (-val '()))))]
+ [stx-null? (make-pred-ty (Un -Null (-Syntax -Null)))]
  [stx-pair? (make-pred-ty (Un (-pair Univ Univ) (-Syntax (-pair Univ Univ))))]
  [stx-list? (make-pred-ty (-stx-list Univ))]
  [stx->list (-poly (a)

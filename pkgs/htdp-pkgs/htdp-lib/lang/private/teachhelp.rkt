@@ -4,11 +4,10 @@
            stepper/private/syntax-property
            (for-template (prefix r: racket/base)))
 
-  (provide make-undefined-check
-           make-first-order-function)
+  (provide make-first-order-function
+           redirect-identifier-to)
 
-  (define (make-undefined-check check-proc tmp-id)
-    (let ([set!-stx (datum->syntax-object check-proc 'set!)])
+  (define (redirect-identifier-to set!-stx tmp-id)
       (make-set!-transformer
        (lambda (stx)
 	 (syntax-case stx ()
@@ -23,16 +22,7 @@
              stx
              stx)]
 	   [id
-            (stepper-syntax-property
-             (datum->syntax-object
-              check-proc
-              (list check-proc 
-                    (list 'quote (syntax id))
-                    tmp-id)
-              stx)
-             'stepper-skipto
-             (append skipto/cdr
-                     skipto/third))])))))
+            tmp-id]))))
 #;    
   (define (appropriate-use what)
     (case what

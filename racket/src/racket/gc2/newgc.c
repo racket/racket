@@ -97,8 +97,15 @@ enum {
   PAGE_TARRAY   = 3,
   PAGE_PAIR     = 4,
   PAGE_BIG      = 5,
-  /* the number of page types. */
+  /* the number of page types: */
   PAGE_TYPES    = 6,
+};
+
+enum {
+  MED_PAGE_NONATOMIC   = 0,
+  MED_PAGE_ATOMIC      = 1,
+  /* the number of medium-page types: */
+  MED_PAGE_TYPES       = 2
 };
 
 enum {
@@ -1041,12 +1048,16 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   }
 }
 #define MED_NEXT_SEARCH_SLOT(page) ((page)->previous_size)
-inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos) {
+inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos, int type) {
   mpage *page;
-  int n;
+  int n, ty;
+
+  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC : MED_PAGE_NONATOMIC);
 
   page = malloc_mpage();
-  page->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED, MMU_PROTECTABLE, &page->mmu_src_block);
+  page->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED,
+                            (type == MED_PAGE_NONATOMIC) ? MMU_PROTECTABLE : MMU_NON_PROTECTABLE,
+                            &page->mmu_src_block);
   page->size = sz;
   page->size_class = 1;
   page->page_type = PAGE_BIG;
@@ -1061,11 +1072,11 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   }
 
   /* push page onto linked list */
-  page->next = gc->med_pages[pos];
+  page->next = gc->med_pages[ty][pos];
   if (page->next)
     page->next->prev = page;
-  gc->med_pages[pos] = page;
-  gc->med_freelist_pages[pos] = page;
+  gc->med_pages[ty][pos] = page;
+  gc->med_freelist_pages[ty][pos] = page;
 
   if (gc->saved_allocator) { /* see MESSAGE ALLOCATION above */
     orphan_page_accounting(gc, APAGE_SIZE);
@@ -1079,10 +1090,12 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
 }
 
 inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const int pos, const int type) {
-  int n;
+  int n, ty;
   mpage *page;
 
-  for (page = gc->med_freelist_pages[pos]; page; page = gc->med_freelist_pages[pos] = page->prev) {
+  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC : MED_PAGE_NONATOMIC);
+
+  for (page = gc->med_freelist_pages[ty][pos]; page; page = gc->med_freelist_pages[ty][pos] = page->prev) {
     for (n = MED_NEXT_SEARCH_SLOT(page); ((n + sz) <= APAGE_SIZE); n += sz) {
       objhead * info = (objhead *)PTR(NUM(page->addr) + n);
       if (info->dead) {
@@ -1152,7 +1165,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
       mpage *page;
       objhead *info;
 
-      page = create_new_medium_page(gc, sz, pos);
+      page = create_new_medium_page(gc, sz, pos, type);
       info = (objhead *)PTR(NUM(page->addr) + MED_NEXT_SEARCH_SLOT(page));
 
       info->dead = 0;
@@ -1160,11 +1173,12 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 
       objptr = OBJHEAD_TO_OBJPTR(info);
     }
+
 #if defined(GC_DEBUG_PAGES) && defined(MASTER_ALLOC_DEBUG)
-  if (postmaster_and_master_gc(gc)) {
-    GCVERBOSEprintf(gc, "MASTERGC_allocate_medium %zi %i %i %i %i %p\n", request_size_bytes, type, sz, pos, 1 << (pos +3), objptr);
-    /* print_libc_backtrace(gcdebugOUT(gc)); */
-  }
+    if (postmaster_and_master_gc(gc)) {
+      GCVERBOSEprintf(gc, "MASTERGC_allocate_medium %zi %i %i %i %i %p\n", request_size_bytes, type, sz, pos, 1 << (pos +3), objptr);
+      /* print_libc_backtrace(gcdebugOUT(gc)); */
+    }
 #endif
 
     ASSERT_VALID_OBJPTR(objptr);
@@ -3622,7 +3636,7 @@ void GC_dump_with_traces(int flags,
 {
   NewGC *gc = GC_get_GC();
   mpage *page;
-  int i, num_immobiles;
+  int i, ty, num_immobiles;
   GC_Immobile_Box *ib;
   static uintptr_t counts[MAX_DUMP_TAG], sizes[MAX_DUMP_TAG];
 
@@ -3683,33 +3697,35 @@ void GC_dump_with_traces(int flags,
       }
     }
   }
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[i]; page; page = page->next) {
-      void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
-      void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (page = gc->med_pages[ty][i]; page; page = page->next) {
+        void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+        void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
       
-      while(start <= end) {
-        objhead *info = (objhead *)start;
-        if (!info->dead) {
-          if (info->type == PAGE_TAGGED) {
-            void *obj_start = OBJHEAD_TO_OBJPTR(start);
-            unsigned short tag = *(unsigned short *)obj_start;
-            ASSERT_TAG(tag);
-            if (tag < MAX_DUMP_TAG) {
-              counts[tag]++;
-              sizes[tag] += info->size;
-            }
-            if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
-              if (for_each_struct) for_each_struct(obj_start);
-            }
-            if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
-              register_traced_object(obj_start);
-              if (for_each_found)
-                for_each_found(obj_start);
+        while(start <= end) {
+          objhead *info = (objhead *)start;
+          if (!info->dead) {
+            if (info->type == PAGE_TAGGED) {
+              void *obj_start = OBJHEAD_TO_OBJPTR(start);
+              unsigned short tag = *(unsigned short *)obj_start;
+              ASSERT_TAG(tag);
+              if (tag < MAX_DUMP_TAG) {
+                counts[tag]++;
+                sizes[tag] += info->size;
+              }
+              if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
+                if (for_each_struct) for_each_struct(obj_start);
+              }
+              if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
+                register_traced_object(obj_start);
+                if (for_each_found)
+                  for_each_found(obj_start);
+              }
             }
           }
+          start += info->size;
         }
-        start += info->size;
       }
     }
   }
@@ -3718,74 +3734,77 @@ void GC_dump_with_traces(int flags,
   for (ib = gc->immobile_boxes; ib; ib = ib->next)
     num_immobiles++;
 
-  GCPRINT(GCOUTF, "Begin Racket3m\n");
-  for (i = 0; i < MAX_DUMP_TAG; i++) {
-    if (counts[i]) {
-      char *tn, buf[256];
-      if (get_type_name)
-        tn = get_type_name((Type_Tag)i);
-      else
-        tn = NULL;
-      if (!tn) {
-        sprintf(buf, "unknown,%d", i);
-        tn = buf;
+  if (!(flags & GC_DUMP_SUPPRESS_SUMMARY)) {
+    GCPRINT(GCOUTF, "Begin Racket3m\n");
+    for (i = 0; i < MAX_DUMP_TAG; i++) {
+      if (counts[i]) {
+        char *tn, buf[256];
+        if (get_type_name)
+          tn = get_type_name((Type_Tag)i);
+        else
+          tn = NULL;
+        if (!tn) {
+          sprintf(buf, "unknown,%d", i);
+          tn = buf;
+        }
+        GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR " %10" PRIdPTR "\n",
+                tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
       }
-      GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR " %10" PRIdPTR "\n",
-	      tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
     }
-  }
-  GCPRINT(GCOUTF, "End Racket3m\n");
+    GCPRINT(GCOUTF, "End Racket3m\n");
 
-  GCWARN((GCOUTF, "Generation 0: %" PRIdPTR " of %" PRIdPTR " bytes used\n",
-	  (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
+    GCWARN((GCOUTF, "Generation 0: %" PRIdPTR " of %" PRIdPTR " bytes used\n",
+            (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
 
-  for(i = 0; i < PAGE_TYPES; i++) {
-    uintptr_t total_use = 0, count = 0;
+    for(i = 0; i < PAGE_TYPES; i++) {
+      uintptr_t total_use = 0, count = 0;
 
-    for(page = gc->gen1_pages[i]; page; page = page->next) {
-      total_use += page->size;
-      count++;
+      for(page = gc->gen1_pages[i]; page; page = page->next) {
+        total_use += page->size;
+        count++;
+      }
+      GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR " bytes used in %" PRIdPTR " pages\n",
+              type_name[i], total_use, count));
     }
-    GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR " bytes used in %" PRIdPTR " pages\n",
-            type_name[i], total_use, count));
-  }
 
-  GCWARN((GCOUTF, "Generation 1 [medium]:"));
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    if (gc->med_pages[i]) {
-      intptr_t count = 0, page_count = 0;
-      for (page = gc->med_pages[i]; page; page = page->next) {
-        void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
-        void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+    for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+      GCWARN((GCOUTF, "Generation 1 [medium%s]:", (ty == MED_PAGE_ATOMIC) ? " atomic" : ""));
+      for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+        if (gc->med_pages[ty][i]) {
+          intptr_t count = 0, page_count = 0;
+          for (page = gc->med_pages[ty][i]; page; page = page->next) {
+            void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+            void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
         
-        page_count++;
+            page_count++;
         
-        while(start <= end) {
-          objhead *info = (objhead *)start;
-          if (!info->dead) {
-            count += info->size;
+            while(start <= end) {
+              objhead *info = (objhead *)start;
+              if (!info->dead) {
+                count += info->size;
+              }
+              start += info->size;
+            }
           }
-          start += info->size;
+          GCWARN((GCOUTF, " %" PRIdPTR " [%" PRIdPTR "/%" PRIdPTR "]",
+                  count, page_count, gc->med_pages[ty][i]->size));
         }
       }
-      GCWARN((GCOUTF, " %" PRIdPTR " [%" PRIdPTR "/%" PRIdPTR "]",
-	      count, page_count, gc->med_pages[i]->size));
+      GCWARN((GCOUTF, "\n"));
     }
+
+    GCWARN((GCOUTF,"\n"));
+    GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
+    GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
+    GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
+            gc->used_pages * APAGE_SIZE,
+            mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
+    GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
+    GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
+    GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
+    GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
+    GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
   }
-  GCWARN((GCOUTF, "\n"));
-
-
-  GCWARN((GCOUTF,"\n"));
-  GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
-  GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
-  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
-          gc->used_pages * APAGE_SIZE, 
-          mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
-  GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
-  GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
-  GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
-  GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
-  GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
 
   if (flags & GC_DUMP_SHOW_TRACE) {
     print_traced_objects(path_length_limit, get_type_name, print_tagged_value);
@@ -3864,7 +3883,7 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
   }
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (work = gc->med_pages[i]; work; work = work->next) {
+    for (work = gc->med_pages[MED_PAGE_NONATOMIC][i]; work; work = work->next) {
       if (work->generation) {
         reset_gen1_page(gc, work);
       }
@@ -3889,7 +3908,7 @@ static void mark_backpointers(NewGC *gc)
 {
   if(!gc->gc_full) {
     mpage *work;
-    int i;
+    int i, ty;
     PageMap pagemap = gc->page_maps;
 
     /* if this is not a full collection, then we need to mark any pointers
@@ -3934,23 +3953,27 @@ static void mark_backpointers(NewGC *gc)
       }
     }
 
-    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-      for (work = gc->med_pages[i]; work; work = work->next) {
-        if(work->back_pointers) {
-          void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
-          void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
+    for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+      for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+        for (work = gc->med_pages[ty][i]; work; work = work->next) {
+          if(work->back_pointers) {
+            void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
+            void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
           
-          work->marked_on = 1;
-          pagemap_add(pagemap, work);
+            work->marked_on = 1;
+            pagemap_add(pagemap, work);
 
-          while(start <= end) {
-            objhead *info = (objhead *)start;
-            if(!info->dead) {
-              info->mark = 1;
-              /* This must be a push_ptr (see above) */
-              push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
+            if (ty == MED_PAGE_NONATOMIC) {
+              while(start <= end) {
+                objhead *info = (objhead *)start;
+                if(!info->dead) {
+                  info->mark = 1;
+                  /* This must be a push_ptr (see above) */
+                  push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
+                }
+                start += info->size;
+              }
             }
-            start += info->size;
           }
         }
       }
@@ -4140,7 +4163,7 @@ static void killing_debug(NewGC *gc, mpage *page, objhead *info) {
 static void repair_heap(NewGC *gc)
 {
   mpage *page;
-  int i;
+  int i, ty;
   Fixup2_Proc *fixup_table = gc->fixup_table;
 #ifdef MZ_USE_PLACES
   int master_has_switched = postmaster_and_master_gc(gc);
@@ -4304,54 +4327,56 @@ static void repair_heap(NewGC *gc)
     }
   }
 
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[i]; page; page = page->next) {
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (page = gc->med_pages[ty][i]; page; page = page->next) {
 #ifdef MZ_USE_PLACES
-      if (master_has_switched || page->marked_on)
+        if (master_has_switched || page->marked_on)
 #else
-      if (page->marked_on)
+        if (page->marked_on)
 #endif
-      {
-        void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
-        void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+        {
+          void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+          void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
         
-        while(start <= end) {
-          objhead *info = (objhead *)start;
-          if(info->mark) {
-            switch(info->type) {
-            case PAGE_ARRAY:
-              {
-                void **tempend = PPTR(info) + info->size;
-                start = OBJHEAD_TO_OBJPTR(start);
-                while(start < tempend) gcFIXUP2(*start++, gc);
-              }
-              break;
-            case PAGE_TAGGED:
-              {
-                void *obj_start = OBJHEAD_TO_OBJPTR(start);
-                unsigned short tag = *(unsigned short *)obj_start;
-                ASSERT_TAG(tag);
-                fixup_table[tag](obj_start, gc);
+          while(start <= end) {
+            objhead *info = (objhead *)start;
+            if(info->mark) {
+              switch(info->type) {
+              case PAGE_ARRAY:
+                {
+                  void **tempend = PPTR(info) + info->size;
+                  start = OBJHEAD_TO_OBJPTR(start);
+                  while(start < tempend) gcFIXUP2(*start++, gc);
+                }
+                break;
+              case PAGE_TAGGED:
+                {
+                  void *obj_start = OBJHEAD_TO_OBJPTR(start);
+                  unsigned short tag = *(unsigned short *)obj_start;
+                  ASSERT_TAG(tag);
+                  fixup_table[tag](obj_start, gc);
+                  start += info->size;
+                }
+                break;
+              case PAGE_ATOMIC:
                 start += info->size;
+                break;
+              default:
+                printf("Unhandled info->type %i\n", info->type);
+                abort();
               }
-              break;
-            case PAGE_ATOMIC:
-              start += info->size;
-              break;
-            default:
-              printf("Unhandled info->type %i\n", info->type);
-              abort();
-            }
-            info->mark = 0;
+              info->mark = 0;
 #ifdef MZ_USE_PLACES
-            page->marked_on = 1;
+              page->marked_on = 1;
 #endif
-          } else {
+            } else {
 #ifdef KILLING_DEBUG
-            killing_debug(gc, page, info);
+              killing_debug(gc, page, info);
 #endif
-            info->dead = 1;
-            start += info->size;
+              info->dead = 1;
+              start += info->size;
+            }
           }
         }
       }
@@ -4409,7 +4434,7 @@ inline static void gen0_free_big_pages(NewGC *gc) {
 
 static void clean_up_heap(NewGC *gc)
 {
-  int i;
+  int i, ty;
   uintptr_t memory_in_use = 0;
   PageMap pagemap = gc->page_maps;
 
@@ -4446,59 +4471,61 @@ static void clean_up_heap(NewGC *gc)
     }
   }
 
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    mpage *work;
-    mpage *prev = NULL, *next;
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      mpage *work;
+      mpage *prev = NULL, *next;
 
-    for (work = gc->med_pages[i]; work; work = next) {
-      if (work->marked_on) {
-        void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
-        void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
-        int non_dead = 0;
+      for (work = gc->med_pages[ty][i]; work; work = next) {
+        if (work->marked_on) {
+          void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
+          void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
+          int non_dead = 0;
 
-        while(start <= end) {
-          objhead *info = (objhead *)start;
-          if (!info->dead) {
-            non_dead++;
+          while(start <= end) {
+            objhead *info = (objhead *)start;
+            if (!info->dead) {
+              non_dead++;
+            }
+            start += info->size;
           }
-          start += info->size;
-        }
 
-        next = work->next;
-        if (non_dead) {
-          work->live_size = (work->size * non_dead);
+          next = work->next;
+          if (non_dead) {
+            work->live_size = (work->size * non_dead);
+            memory_in_use += work->live_size;
+            work->previous_size = PREFIX_SIZE;
+            work->back_pointers = work->marked_on = 0;
+            work->generation = 1;
+            pagemap_add(pagemap, work);
+            prev = work;
+          } else {
+            /* free the page */
+            if(prev) prev->next = next; else gc->med_pages[ty][i] = next;
+            if(next) work->next->prev = prev;
+            GCVERBOSEPAGE(gc, "Cleaning up MED PAGE NO OBJ", work);
+            gen1_free_mpage(pagemap, work);
+          }
+        } else if (gc->gc_full || !work->generation) {
+          /* Page wasn't touched in full GC, or gen-0 not touched,
+             so we can free it. */
+          next = work->next;
+          if(prev) prev->next = next; else gc->med_pages[ty][i] = next;
+          if(next) work->next->prev = prev;
+          GCVERBOSEPAGE(gc, "Cleaning up MED NO MARKEDON", work);
+          gen1_free_mpage(pagemap, work);
+        } else {
+          /* not touched during minor gc */
           memory_in_use += work->live_size;
           work->previous_size = PREFIX_SIZE;
-          work->back_pointers = work->marked_on = 0;
-          work->generation = 1;
-          pagemap_add(pagemap, work);
+          next = work->next;
           prev = work;
-        } else {
-          /* free the page */
-          if(prev) prev->next = next; else gc->med_pages[i] = next;
-          if(next) work->next->prev = prev;
-          GCVERBOSEPAGE(gc, "Cleaning up MED PAGE NO OBJ", work);
-          gen1_free_mpage(pagemap, work);
+          work->back_pointers = 0;
+          pagemap_add(pagemap, work);
         }
-      } else if (gc->gc_full || !work->generation) {
-        /* Page wasn't touched in full GC, or gen-0 not touched,
-           so we can free it. */
-        next = work->next;
-        if(prev) prev->next = next; else gc->med_pages[i] = next;
-        if(next) work->next->prev = prev;
-        GCVERBOSEPAGE(gc, "Cleaning up MED NO MARKEDON", work);
-        gen1_free_mpage(pagemap, work);
-      } else {
-        /* not touched during minor gc */
-        memory_in_use += work->live_size;
-        work->previous_size = PREFIX_SIZE;
-        next = work->next;
-        prev = work;
-        work->back_pointers = 0;
-        pagemap_add(pagemap, work);
       }
+      gc->med_freelist_pages[ty][i] = prev;
     }
-    gc->med_freelist_pages[i] = prev;
   }
 
   memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
@@ -4528,7 +4555,7 @@ static void unprotect_old_pages(NewGC *gc)
   }
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[i]; page; page = page->next) {
+    for (page = gc->med_pages[MED_PAGE_NONATOMIC][i]; page; page = page->next) {
       if (page->mprotected) {
         page->mprotected = 0;
         mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
@@ -4564,7 +4591,7 @@ static void protect_old_pages(NewGC *gc)
   }
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[i]; page; page = page->next) {
+    for (page = gc->med_pages[MED_PAGE_NONATOMIC][i]; page; page = page->next) {
       if (!page->mprotected) {
         page->back_pointers = 0;
         page->mprotected = 1;

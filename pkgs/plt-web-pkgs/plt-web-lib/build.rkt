@@ -85,3 +85,5 @@
   [else (void)])
 
 (printf "Done.\n")
+
+(module test racket/base)

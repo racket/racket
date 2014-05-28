@@ -194,6 +194,11 @@
         (loop t 'both recursive-values))
       (define (t->sc/method t) (t->sc/function t fail typed-side recursive-values loop #t))
       (define (t->sc/fun t) (t->sc/function t fail typed-side recursive-values loop #f))
+
+      (define (only-untyped sc)
+        (if (from-typed? typed-side)
+            (fail #:reason "contract generation not supported for this type")
+            sc))
       (match type
         ;; Applications of implicit recursive type aliases
         ;;
@@ -322,6 +327,19 @@
              (λ () (error 'type->static-contract
                           "Recursive value lookup failed. ~a ~a" recursive-values v)))
            typed-side)]
+        [(VectorTop:) (only-untyped vector?/sc)]
+        [(BoxTop:) (only-untyped box?/sc)]
+        [(ChannelTop:) (only-untyped channel?/sc)]
+        [(HashtableTop:) (only-untyped hash?/sc)]
+        [(MPairTop:) (only-untyped mpair?/sc)]
+        [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
+        [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
+        [(Continuation-Mark-KeyTop:) (only-untyped continuation-mark-key?/sc)]
+        [(ClassTop:) (only-untyped class?/sc)]
+        ;; TODO Figure out how this should work
+        ;[(StructTop: s) (struct-top/sc s)]
+
+
         [(Poly: vs b)
          (if (not (from-untyped? typed-side))
              ;; in positive position, no checking needed for the variables
@@ -457,7 +475,6 @@
   (define (t->sc/neg t #:recursive-values (recursive-values recursive-values))
     (loop t (flip-side typed-side) recursive-values))
   (match f
-    [(Function: (list (top-arr:))) (case->/sc empty)]
     [(Function: arrs)
      ;; Try to generate a single `->*' contract if possible.
      ;; This allows contracts to be generated for functions with both optional and keyword args.
@@ -498,7 +515,7 @@
                                      " with optional keyword arguments")))
                 (if case->
                   (arr/sc (process-dom (map t->sc/neg dom))
-                          (and rst (t->sc/neg rst))
+                          (and rst (listof/sc (t->sc/neg rst)))
                           (map t->sc rngs))
                   (function/sc
                     (process-dom (map t->sc/neg dom))
@@ -527,21 +544,23 @@
        (define arities
          (for/list ([t arrs])
            (match t
-             [(arr: dom _ _ _ _) (length dom)]
-             ;; is there something more sensible here?
-             [(top-arr:) (int-err "got top-arr")])))
+             [(arr: dom _ _ _ _) (length dom)])))
        (define maybe-dup (check-duplicate arities))
        (when maybe-dup
          (fail #:reason (~a "function type has two cases of arity " maybe-dup)))
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
-           (case->/sc (map (f #t) arrs)))])]
-    [_ (int-err "not a function" f)]))
+           (case->/sc (map (f #t) arrs)))])]))
 
 (module predicates racket/base
-  (provide nonnegative? nonpositive?)
+  (require racket/extflonum)
+  (provide nonnegative? nonpositive?
+           extflonum? extflzero? extflnonnegative? extflnonpositive?)
   (define nonnegative? (lambda (x) (>= x 0)))
-  (define nonpositive? (lambda (x) (<= x 0))))
+  (define nonpositive? (lambda (x) (<= x 0)))
+  (define extflzero? (lambda (x) (extfl= x 0.0t0)))
+  (define extflnonnegative? (lambda (x) (extfl>= x 0.0t0)))
+  (define extflnonpositive? (lambda (x) (extfl<= x 0.0t0))))
 
 (module numeric-contracts racket/base
   (require
@@ -603,6 +622,11 @@
                      (and (inexact-real? (imag-part x))
                           (inexact-real? (real-part x)))))))
   (define number/sc (numeric/sc Number number?))
+  
+  (define extflonum-zero/sc (numeric/sc ExtFlonum-Zero (and/c extflonum? extflzero?)))
+  (define nonnegative-extflonum/sc (numeric/sc Nonnegative-ExtFlonum (and/c extflonum? extflnonnegative?)))
+  (define nonpositive-extflonum/sc (numeric/sc Nonpositive-ExtFlonum (and/c extflonum? extflnonpositive?)))
+  (define extflonum/sc (numeric/sc ExtFlonum extflonum?))
 
   )
 (require 'numeric-contracts)
@@ -654,6 +678,10 @@
     [(== t:-ExactNumber type-equal?) exact-number/sc]
     [(== t:-InexactComplex type-equal?) inexact-complex/sc]
     [(== t:-Number type-equal?) number/sc]
+    [(== t:-ExtFlonumZero type-equal?) extflonum-zero/sc]
+    [(== t:-NonNegExtFlonum type-equal?) nonnegative-extflonum/sc]
+    [(== t:-NonPosExtFlonum type-equal?) nonpositive-extflonum/sc]
+    [(== t:-ExtFlonum type-equal?) extflonum/sc]
     [else #f]))
 
 

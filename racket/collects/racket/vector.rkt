@@ -55,11 +55,15 @@
 ;; that `v' and all the `vs' have the same length
 ;; and that `f' takes |v + vs| args
 ;; uses name for error reporting
-(define (varargs-check f v vs name)
+(define (varargs-check f v vs name need-mutable?)
   (unless (procedure? f)
     (apply raise-argument-error name "procedure?" 0 f v vs))
-  (unless (vector? v)
-    (apply raise-argument-error name "vector?" 1 f v vs))
+  (unless (and (vector? v)
+               (or (not need-mutable?)
+                   (not (immutable? v))))
+    (apply raise-argument-error name
+           (if need-mutable? "(and/c vector? (not/c immutable?))" "vector?")
+           1 f v vs))
   (let ([len (unsafe-vector-length v)])
     (for ([e (in-list vs)]
           [i (in-naturals 2)])
@@ -86,13 +90,13 @@
     len))
 
 (define (vector-map f v . vs)
-  (let* ([len (varargs-check f v vs 'vector-map)]
+  (let* ([len (varargs-check f v vs 'vector-map #f)]
          [new-v (make-vector len)])
     (vector-map/update f new-v len (cons v vs))
     new-v))
 
 (define (vector-map! f v . vs)
-  (define len (varargs-check f v vs 'vector-map!))
+  (define len (varargs-check f v vs 'vector-map! #t))
   (vector-map/update f v len (cons v vs))
   v)
 

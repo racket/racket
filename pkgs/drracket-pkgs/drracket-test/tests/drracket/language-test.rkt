@@ -121,8 +121,8 @@ the settings above should match r5rs
     (test-expression "(define shrd (box 1)) (list shrd shrd)"
                      "'(#&1 #&1)"
                      #rx"define-values: assignment disallowed.*: shrd")
-    (test-expression "(local ((define x x)) 1)" "1")
-    (test-expression "(letrec ([x x]) 1)" "1")
+    (test-expression "(local ((define x x)) 1)" #rx"x: undefined;\n cannot use before initialization")
+    (test-expression "(letrec ([x x]) 1)" #rx"x: undefined;\n cannot use before initialization")
     (test-expression "(if 1 1 1)" "1")
     (test-expression "(+ 1)" "1")
     
@@ -236,8 +236,8 @@ the settings above should match r5rs
     (test-expression "'(1)" "(1)")
     (test-expression "(define shrd (box 1)) (list shrd shrd)"
                      "(#&1 #&1)")
-    (test-expression "(local ((define x x)) 1)" "1")
-    (test-expression "(letrec ([x x]) 1)" "1")
+    (test-expression "(local ((define x x)) 1)" #rx"x: undefined;\n cannot use before initialization")
+    (test-expression "(letrec ([x x]) 1)" #rx"x: undefined;\n cannot use before initialization")
     (test-expression "(if 1 1 1)" "1")
     (test-expression "(+ 1)" "1")
     
@@ -370,7 +370,7 @@ the settings above should match r5rs
     (test-expression 
      "(local ((define x x)) 1)"
      #rx"define: not allowed in an expression context")
-    (test-expression "(letrec ((x x)) 1)" "1")
+    (test-expression "(letrec ((x x)) 1)" #rx"x: undefined;\n cannot use before initialization")
     (test-expression "(if 1 1 1)" "1")
     (test-expression "(+ 1)" "1")
     

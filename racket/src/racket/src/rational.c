@@ -515,6 +515,10 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #endif
 }
 
+#ifndef FLOATING_POINT_IS_NOT_IEEE
+# define DECODE_IEEE_FLOATING_POINT
+#endif
+
 #define FP_TYPE double
 #define FP_MULT(x, y) x*y
 #define FP_DIV(x, y) x/y
@@ -523,14 +527,23 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_LESS(x, y) x<y
 #define FP_IS_ZERO(x) x==0.0
 #define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
+# define BIGNUM_FITS_FP(x) 0
+# define FP_FITS_INT_TYPE uintptr_t
+#else
+# define FIXNUM_FITS_FP(x) 1
+# define BIGNUM_FITS_FP(x) (scheme_integer_length(x) <= (FLOAT_M_BITS-1))
+#endif
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_double
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_double
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_double_inf_info
 #define SCHEME_CHECK_FLOAT scheme_check_double
 #define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_double
 #define DO_FLOAT_DIV scheme__do_double_div
-#define FLOAT_E_MIN -1074
+#define FLOAT_E_MIN (-1074)
 #define FLOAT_M_BITS 52
+#define FLOAT_E_BITS 11
 #include "ratfloat.inc"
 
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -541,17 +554,24 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_EQV(x,y) x==y
 #define FP_LESS(x, y) x<y
 #define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
 #define FP_IS_ZERO(x) x==0.0
+#define BIGNUM_FITS_FP(x) 0
+#define FP_FITS_INT_TYPE unsigned int
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_float
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_float
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_float_inf_info
 #define SCHEME_CHECK_FLOAT scheme_check_float
 #define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_float
 #define DO_FLOAT_DIV scheme__do_float_div
-#define FLOAT_E_MIN -127
+#define FLOAT_E_MIN (-127)
 #define FLOAT_M_BITS 23
+#define FLOAT_E_BITS 8
 #include "ratfloat.inc"
 #endif
+
+/* scheme_bytes_to_integer() can't real with sizeof(long_double): */
+#undef DECODE_IEEE_FLOATING_POINT
 
 #ifdef MZ_LONG_DOUBLE
 # define FP_TYPE long_double
@@ -561,14 +581,17 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 # define FP_EQV(x,y) long_double_eqv(x,y)
 # define FP_LESS(x, y) long_double_less(x,y)
 # define FP_TYPE_FROM_INT(x) long_double_from_int(x)
+# define FIXNUM_FITS_FP(x) 1
+# define BIGNUM_FITS_FP(x) (scheme_integer_length(x) <= (FLOAT_M_BITS-1))
 # define FP_IS_ZERO(x) long_double_is_zero(x)
 # define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_long_double
 # define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_long_double
 # define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_long_double_inf_info
 # define SCHEME_CHECK_FLOAT scheme_check_long_double
 # define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_long_double
-# define FLOAT_E_MIN -16383
+# define FLOAT_E_MIN (-16383)
 # define FLOAT_M_BITS 64
+# define FLOAT_E_BITS 15
 # define FP_ZEROx get_long_double_zero()
 # define FP_POWx pow
 # define FP_MODFx long_double_modf

@@ -141,7 +141,7 @@
                                 [level-of-enclosing-module 0]
                                 [tail-parent-src #f]
                                 [tail-parent-pos #f]
-                                ;; mods: (or/f #f   ; => outside a module
+                                ;; mods: (or/c #f   ; => outside a module
                                 ;;             '()  ; => inside the main module in this file
                                 ;;             '(name names ...) ; => inside some submodules 
                                 ;;                                    named by name & names
@@ -161,6 +161,7 @@
                  (values child-src child-pos)]
                 [else
                  (values tail-parent-src tail-parent-pos)])))
+          (define (sub-mods mod) (if mods (cons mod mods) '()))
           (let* ([level-loop (λ (sexp level) (level+tail+mod-loop sexp level level-of-enclosing-module
                                                                   #f #f
                                                                   mods))]
@@ -170,19 +171,20 @@
                  [mod-loop (λ (sexp mod) (level+tail+mod-loop sexp 0
                                                               (+ level level-of-enclosing-module)
                                                               #f #f
-                                                              (if mods
-                                                                  (cons mod mods)
-                                                                  '())))]
+                                                              (if mod 
+                                                                  (sub-mods mod)
+                                                                  mods)))]
                  [loop (λ (sexp) (level+tail+mod-loop sexp level level-of-enclosing-module
                                                       #f #f mods))]
                  [varrefs (lookup-phase-to-mapping phase-to-varrefs
-                                                   (+ level level-of-enclosing-module))]
+                                                   (list (+ level level-of-enclosing-module) mods))]
                  [varsets (lookup-phase-to-mapping phase-to-varsets
                                                    (+ level level-of-enclosing-module))]
                  [binders (lookup-phase-to-mapping phase-to-binders
                                                    (+ level level-of-enclosing-module))]
                  [tops (lookup-phase-to-mapping phase-to-tops (+ level level-of-enclosing-module))]
-                 [requires (hash-ref! phase-to-requires (+ level level-of-enclosing-module)
+                 [requires (hash-ref! phase-to-requires 
+                                      (list (+ level level-of-enclosing-module) mods)
                                       (λ () (make-hash)))]
                  [collect-general-info
                   (λ (stx)
@@ -192,7 +194,8 @@
                     (add-sub-range-binders stx 
                                            sub-identifier-binding-directives
                                            level
-                                           level-of-enclosing-module))])
+                                           level-of-enclosing-module
+                                           mods))])
             (collect-general-info stx-obj)
             
             (define (list-loop/tail-last bodies)
@@ -337,19 +340,31 @@
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (hash-set! module-lang-requires (syntax lang) #t)
                  (annotate-require-open user-namespace user-directory (syntax lang))
-                 (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
+                 (define module-name (syntax-e #'m-name))
+                 (define sub-requires
+                   (hash-ref! phase-to-requires 
+                              (list (+ level level-of-enclosing-module) (sub-mods module-name))
+                              (λ () (make-hash))))
+                 (hash-cons! sub-requires (syntax->datum (syntax lang)) (syntax lang))
                  (for ([body (in-list (syntax->list (syntax (bodies ...))))])
-                   (mod-loop body (syntax-e #'m-name))))]
+                   (mod-loop body module-name)))]
               [(module* m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
+                 (define module-name (syntax-e #'m-name))
                  (when (syntax-e #'lang)
                    (hash-set! module-lang-requires (syntax lang) #t)
                    (annotate-require-open user-namespace user-directory (syntax lang))
-                   (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang)))
+                   (define sub-requires
+                     (hash-ref! phase-to-requires 
+                                (list (+ level level-of-enclosing-module) (sub-mods module-name))
+                                (λ () (make-hash))))
+                   (hash-cons! sub-requires (syntax->datum (syntax lang)) (syntax lang)))
                  
                  (for ([body (in-list (syntax->list (syntax (bodies ...))))])
-                   (mod-loop body (syntax-e #'m-name))))]
+                   (if (syntax-e #'lang)
+                       (mod-loop body module-name)
+                       (mod-loop body #f))))]
               
               
               ; top level or module top level only:
@@ -380,12 +395,9 @@
                         (handle-phaseless-spec spec level)])))
                  (define (handle-phaseless-spec stx level)
                    (define adjusted-level (and level (+ level level-of-enclosing-module)))
-                   (define require-ht (hash-ref! phase-to-requires 
-                                                 adjusted-level
-                                                 (λ ()
-                                                   (define h (make-hash))
-                                                   (hash-set! phase-to-requires adjusted-level h)
-                                                   h)))
+                   (define require-ht (hash-ref! phase-to-requires
+                                                 (list adjusted-level mods)
+                                                 (λ () (make-hash))))
                    (define raw-module-path (phaseless-spec->raw-module-path stx))
                    (annotate-require-open user-namespace user-directory raw-module-path)
                    (when (syntax-original? raw-module-path)
@@ -438,7 +450,8 @@
     (define (add-sub-range-binders stx 
                                    sub-identifier-binding-directives 
                                    level
-                                   level-of-enclosing-module)
+                                   level-of-enclosing-module
+                                   mods)
       (let loop ([prop (syntax-property stx 'sub-range-binders)])
         (cond
           [(pair? prop)
@@ -452,10 +465,11 @@
                      (syntax-shift-phase-level (vector-ref prop 3) level-of-enclosing-module)
                      (vector-ref prop 4)
                      (vector-ref prop 5)))
+           (define key (list level mods)) 
            (hash-set! sub-identifier-binding-directives
-                      level
+                      key
                       (cons new-entry
-                            (hash-ref sub-identifier-binding-directives level '())))]
+                            (hash-ref sub-identifier-binding-directives key '())))]
           [(vector? prop)
            (log-check-syntax-debug
             "found a vector in a 'sub-range-binders property that is ill-formed ~s"
@@ -503,10 +517,6 @@
                                 phase-to-requires
                                 sub-identifier-binding-directives)
       
-      (define unused-requires (make-hash))
-      (define unused-require-for-syntaxes (make-hash))
-      (define unused-require-for-templates (make-hash))
-      (define unused-require-for-labels (make-hash))
       (define unused/phases (make-hash))
 
       ;; hash[(list (list src pos pos) (list src pos pos)) -o> #t
@@ -515,9 +525,9 @@
       ;;      (list src pos pos) -o> (cons number number)]
       (define connections (make-hash))
 
-      (for ([(level requires) (in-hash phase-to-requires)])
+      (for ([(level+mods requires) (in-hash phase-to-requires)])
         (define new-hash (make-hash))
-        (hash-set! unused/phases level new-hash)
+        (hash-set! unused/phases level+mods new-hash)
         (for ([(k v) (in-hash requires)])
           (hash-set! new-hash k #t)))
       
@@ -528,7 +538,9 @@
             (color-variable var 0 varset)
             (document-variable var 0))))
       
-      (for ([(level varrefs) (in-hash phase-to-varrefs)])
+      (for ([(level+mods varrefs) (in-hash phase-to-varrefs)])
+        (define level (list-ref level+mods 0))
+        (define mods (list-ref level+mods 1))
         (define binders (lookup-phase-to-mapping phase-to-binders level))
         (define varsets (lookup-phase-to-mapping phase-to-varsets level)) 
         (for ([vars (in-list (get-idss varrefs))])
@@ -536,6 +548,7 @@
             (color-variable var level varsets)
             (document-variable var level)
             (connect-identifier var
+                                mods
                                 binders
                                 unused/phases
                                 phase-to-requires
@@ -548,18 +561,25 @@
       
       ;; build a set of all of the known phases
       (define phases (set))
-      (for ([phase (in-list (hash-keys phase-to-binders))])
+      (define all-mods (set))
+      (for ([(phase _) (in-hash phase-to-binders)])
         (set! phases (set-add phases phase)))
-      (for ([phase (in-list (hash-keys phase-to-requires))])
-        (set! phases (set-add phases phase)))
+      (for ([(phase+mod _) (in-hash phase-to-requires)])
+        (define phase (list-ref phase+mod 0))
+        (define mod (list-ref phase+mod 1))
+        (set! phases (set-add phases phase))
+        (set! all-mods (set-add all-mods mod)))
       
       (for ([vars (in-list (get-idss templrefs))])
         (for ([var (in-list vars)])
           
-          ;; connect every identifier inside a quote-syntax to each binder at any phase
-          (for ([phase (in-set phases)])
+          ;; connect every identifier inside a quote-syntax to
+          ;; each binder, at any phase, in any submodule
+          (for* ([phase (in-set phases)]
+                 [mod (in-set all-mods)])
             (document-variable var phase)
             (connect-identifier var
+                                mod
                                 (lookup-phase-to-mapping phase-to-binders phase)
                                 unused/phases
                                 phase-to-requires
@@ -575,17 +595,19 @@
           (for ([var (in-list vars)])
             (color/connect-top user-namespace user-directory binders var connections))))
       
-      (for ([(level require-hash) (in-hash phase-to-requires)])
-        (define unused-hash (hash-ref unused/phases level))
+      (for ([(phase+mods require-hash) (in-hash phase-to-requires)])
+        (define unused-hash (hash-ref unused/phases phase+mods))
         (color-unused require-hash unused-hash module-lang-requires))
       
       (annotate-counts connections)
       
-      (for ([(phase-level directives) (in-hash sub-identifier-binding-directives)])
+      (for ([(level+mods directives) (in-hash sub-identifier-binding-directives)])
+        (define phase-level (list-ref level+mods 0))
+        (define mods (list-ref level+mods 1))
         (for ([directive (in-list directives)])
           (match-define (vector binding-id to-start to-span new-binding-id from-start from-span)
             directive)
-          (define all-varrefs (lookup-phase-to-mapping phase-to-varrefs phase-level))
+          (define all-varrefs (lookup-phase-to-mapping phase-to-varrefs (list phase-level mods)))
           (define all-binders (lookup-phase-to-mapping phase-to-binders phase-level))
           (define varrefs (get-ids all-varrefs binding-id))
           (when varrefs
@@ -636,6 +658,7 @@
         (and (not a) (not b))))
     
     ;; connect-identifier : syntax
+    ;;                      (or/c #f (listof symbol)) -- name of enclosing sub-modules
     ;;                      id-set 
     ;;                      (union #f hash-table)
     ;;                      (union #f hash-table)
@@ -644,7 +667,7 @@
     ;;                      connections-table (see its defn)
     ;;                   -> void
     ;; adds the arrows that correspond to binders/bindings
-    (define (connect-identifier var all-binders unused/phases phase-to-requires
+    (define (connect-identifier var mods all-binders unused/phases phase-to-requires
                                 phase-level user-namespace user-directory actual?
                                 connections)
       (define binders (get-ids all-binders var))
@@ -661,11 +684,12 @@
           (define source-req-path (list-ref source-req-path/pr 3))
           (define source-id (list-ref source-req-path/pr 1))
           (define req-phase-level (list-ref req-path/pr 2))
-          (define require-ht (hash-ref! phase-to-requires req-phase-level #f))
+          (define require-hash-key (list req-phase-level mods))
+          (define require-ht (hash-ref phase-to-requires require-hash-key #f))
           (when require-ht
             (define req-stxes (hash-ref require-ht req-path #f))
             (when req-stxes
-              (define unused (hash-ref! unused/phases req-phase-level #f))
+              (define unused (hash-ref unused/phases require-hash-key #f))
               (when unused (hash-remove! unused req-path))
               (for ([req-stx (in-list req-stxes)])
                 (when (id/require-match? (syntax->datum var)
@@ -761,7 +785,7 @@
           [else
            (add-mouse-over var (format "~s is a free variable" (syntax-e var)))
            (color var free-variable-style-name)])
-        (connect-identifier var binders #f #f 0 user-namespace user-directory #t connections)))
+        (connect-identifier var #f binders #f #f 0 user-namespace user-directory #t connections)))
     
     ;; annotate-counts : connections[see defn] -> void
     ;; this function doesn't try to show the number of uses at

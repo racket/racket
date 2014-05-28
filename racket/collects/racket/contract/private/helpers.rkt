@@ -7,6 +7,7 @@
          add-name-prop
          all-but-last
          known-good-contract?
+         known-good-contracts
          update-loc)
 
 (require setup/main-collects
@@ -370,3 +371,7 @@
   (and (symbol? r-id)
        (hash-ref known-good-syms-ht r-id #f)
        (free-identifier=? id (datum->syntax #'here r-id))))
+
+(define (known-good-contracts)
+  (for/list ([(k v) (in-hash known-good-syms-ht)])
+    (datum->syntax #'here k)))

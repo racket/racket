@@ -85,6 +85,12 @@ The @racketmodname[racket] library combines
              #:title "ISO/IEC 9899:1999 Cor. 3:2007(E))"
              #:date "2007")
 
+  (bib-entry #:key "Culpepper07"
+             #:author "Ryan Culpepper, Sam Tobin-Hochstadt, and Matthew Flatt"
+             #:title "Advanced Macrology and the Implementation of Typed Scheme"
+             #:location "Workshop on Scheme and Functional Programming"
+             #:date "2007")
+
   (bib-entry #:key "Danvy90"
              #:author "Olivier Danvy and Andre Filinski"
              #:title "Abstracting Control"
@@ -102,6 +108,12 @@ The @racketmodname[racket] library combines
              #:title "Abstract Continuations: A Mathematical Semantics for Handling Full Functional Jumps"
              #:location "LISP and Functional Programming"
              #:date "1988")
+
+  (bib-entry #:key "Flatt02"
+             #:author "Matthew Flatt"
+             #:title "Composable and Compilable Macros: You Want it When?"
+             #:location "International Conference on Functional Programming (ICFP)"
+             #:date "2002")
 
   (bib-entry #:key "Friedman95" 
              #:title "Exception system proposal" 
@@ -186,7 +198,7 @@ The @racketmodname[racket] library combines
   (bib-entry #:key "Strickland12"
              #:title "Chaperones and Impersonators: Run-time Support for Reasonable Interposition"
              #:author "T. Stephen Strickland, Sam Tobin-Hochstadt, Matthew Flatt, and Robert Bruce Findler"
-             #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA"
+             #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA)"
              #:url "http://www.eecs.northwestern.edu/~robby/pubs/papers/oopsla2012-stff.pdf"
              #:date "2012")
   )

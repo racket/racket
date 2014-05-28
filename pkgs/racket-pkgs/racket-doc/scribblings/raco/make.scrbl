@@ -303,7 +303,7 @@ out-of-date @filepath{.zo} files instead of re-compiling from source.}
 
 
 @defproc[(make-caching-managed-compile-zo
-          [read-src-syntax (any/c input-port? . -> . syntax?)]
+          [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]
           [#:security-guard security-guard (or/c security-guard? #f) #f])
          (path-string? . -> . void?)]{
 
@@ -584,6 +584,46 @@ like evaluation, but the problem is also solved (as much as possible)
 by the @racket[compile-zos] procedure.
 
 See also @racket[managed-compile-zo].}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "api:compile-path"]{API for Bytecode Paths}
+
+@defmodule[compiler/compilation-path]
+
+@history[#:added "6.0.1.10"]
+
+@defproc[(get-compilation-dir+name [path path-string?]
+                                   [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
+                                   [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+         (values path? path?)]{
+
+Determines the directory that holds the bytecode form of @racket[path]
+plus base name of @racket[path].
+
+The directory is determined by checking @racket[roots] in order, and
+for each element of @racket[roots] checking @racket[modes] in order.
+The first such directory that contains a file whose name matches
+@racket[path] with @filepath{.zo} added (in the sense of
+@racket[path-add-suffix]) is reported as the return directory path.
+If no such file is found, the result corresponds to the first elements
+of @racket[modes] and @racket[roots].}
+
+@defproc[(get-compilation-dir [path path-string?]
+                              [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
+                              [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+         path?]{
+
+The same as @racket[get-compilation-dir+home], but returning only the first result.}
+
+@defproc[(get-compilation-bytecode-file [path path-string?]
+                                        [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
+                                        [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+         path?]{
+
+The same as @racket[get-compilation-dir+home], but combines the
+results and adds a @filepath{.zo} suffix to arrive at a bytecode file
+path.}
 
 @; ----------------------------------------------------------------------
 

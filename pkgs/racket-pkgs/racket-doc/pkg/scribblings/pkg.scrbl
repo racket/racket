@@ -638,6 +638,11 @@ for @nonterm{key}.
         be kept in the download cache directory.}
   @item{@exec{download-cache-max-bytes} --- A limit on the total size of files
         that are kept in the download cache directory.}
+  @item{@exec{doc-open-url} --- A URL to use in place of a local
+        filesystem path for viewing (or at least searching)
+        documentation; an empty string, which is the default, disables
+        the URL so that the local filesystem is used. This key can be
+        set only in @exec{installation} scope.}
  ]
 }
 
@@ -665,7 +670,7 @@ for @nonterm{key}.
 }
 
 @subcommand{@command/toc{catalog-copy} @nonterm{option} ... @nonterm{src-catalog} ... @nonterm{dest-catalog}
---- Copies information from @tech{package catalog} names by @nonterm{src-catalog}s 
+--- Copies information from the @tech{package catalog} named by @nonterm{src-catalog}s
     to a local database or directory @nonterm{dest-catalog},
     which can be used as a new @tech{package catalog}.
 
@@ -676,11 +681,11 @@ for @nonterm{key}.
     with information from earlier @nonterm{src-catalog}s taking precedence over later 
     @nonterm{src-catalog}s.
 
-    The @exec{catalog-copy} sub-command accepts 
+    The @exec{catalog-copy} sub-command accepts
     the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{from-config} --- Adds the currently configured 
+ @item{@DFlag{from-config} --- Adds the currently configured
        @tech{package catalogs} to the end of the @nonterm{src-catalog}s list.}
  @item{@DFlag{force} --- Replaces @nonterm{dest-catalog} if it exists already.}
  @item{@DFlag{merge} --- Adds to @nonterm{dest-catalog} if it exists already. By default,
@@ -688,11 +693,42 @@ for @nonterm{key}.
                          over new information.}
  @item{@DFlag{override} --- Changes merging so that new information takes precedence
                          over information already in @nonterm{dest-catalog}.}
- @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog 
+ @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form,
+                            when possible.}
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog
        results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
  ]
 }
+
+@subcommand{@command/toc{catalog-archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{src-catalog} ...
+--- Copies information from the @tech{package catalog} named by @nonterm{src-catalog}s
+    to a @filepath{catalog} directory catalog in @nonterm{dest-dir}, and also copies
+    all package sources to a @filepath{pkgs} directory in @nonterm{dest-dir}.
+
+    Packages sources are downloaded and repacked as needed, so that
+    all packages are written to the @filepath{pkgs} directory as
+    @filepath{.zip} archives. This conversion may change the checksum
+    on each archived package.
+
+    The @exec{catalog-archive} sub-command accepts
+    the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{from-config} --- Adds the currently configured 
+       @tech{package catalogs} to the end of the @nonterm{src-catalog}s list.}
+ @item{@DFlag{state} @nonterm{state-database} --- To enable incremental
+       updating, Reads and writes the database @nonterm{state-database}, which must have the suffix
+       @filepath{.sqlite}, as the current state of @nonterm{dest-dir}.}
+ @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form.}
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog
+       results specific to @nonterm{version}
+       (for catalogs that make a distinction), instead of the installation's Racket version.}
+ ]
+
+ @history[#:added "6.0.17"]
+}
+
 @; ----------------------------------------
 
 @section[#:tag "metadata"]{Package Metadata}
@@ -960,6 +996,15 @@ package name resolution, and then
 
 directs all package-name resolution to the snapshot. You can configure
 resolution for specific package names by editing the snapshot.
+
+You can go even further with
+
+@commandline{raco pkg catalog-archive --from-config /home/joe/snapshot/}
+
+which not only takes a snapshot of the catalog, but also takes a
+snapshot of all package sources (so that you do not depend on the
+original sources).
+
 
 @subsection{Why is the package manager so different than @|Planet1|?}
 

@@ -99,7 +99,7 @@
                   [terms (listof term/c)])]
  [literal-equal? (literal? literal? . -> . boolean?)]
  [struct external ([srcloc srcloc/c]
-                   [predicate-sym symbol?]
+                   [predicate-sym any/c]
                    [predicate procedure?]
                    [arg-terms (listof term/c)]
                    [ans-terms (listof term/c)])]

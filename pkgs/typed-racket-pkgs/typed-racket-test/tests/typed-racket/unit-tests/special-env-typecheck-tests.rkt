@@ -2,8 +2,8 @@
 
 (require "test-utils.rkt"
          "evaluator.rkt"
-         (for-syntax scheme/base)
-         (for-template scheme/base)
+         (for-syntax racket/base)
+         (for-template racket/base)
          (rep type-rep filter-rep object-rep)
          (for-syntax (rename-in (types utils union numeric-tower abbrev filter-ops)
                                 [Un t:Un]
@@ -137,11 +137,11 @@
    [tc-e (in-cycle '(a b) '(z y)) (-seq (one-of/c 'a 'b 'z 'y))]
    [tc-e (in-parallel '(a b) '(z y)) (-seq (one-of/c 'a 'b) (one-of/c 'z 'y))]
    [tc-e (in-values-sequence (in-parallel '(a b) '(z y)))
-         (-seq (-pair (one-of/c 'a 'b) (-pair (one-of/c 'z 'y) (-val null))))]
+         (-seq (-lst* (one-of/c 'a 'b) (one-of/c 'z 'y)))]
    [tc-e (in-values-sequence '(a b c))
-         (-seq (-pair (one-of/c 'a 'b 'c) (-val null)))]
+         (-seq (-lst* (one-of/c 'a 'b 'c)))]
    [tc-e (in-values*-sequence (in-parallel '(a b) '(z y)))
-         (-seq (-pair (one-of/c 'a 'b) (-pair (one-of/c 'z 'y) (-val null))))]
+         (-seq (-lst* (one-of/c 'a 'b) (one-of/c 'z 'y)))]
    [tc-e (in-values*-sequence '(a b c))
          (-seq (one-of/c 'a 'b 'c))]
    ))

@@ -47,9 +47,11 @@
                              '(1 4 2 56 2 3)
                              (lambda (x y) (or (and (even? x) (even? y))
                                                (and (odd?  x) (odd?  y)))))
-                   '((2 56 2 4) (3 1)))
+                   '((4 2 56 2) (1 3)))
      (check-equal? (group-by car '((1 a) (4 b) (2 c) (56 d) (2 e) (3 f)))
-                    '(((3 f)) ((56 d)) ((2 e) (2 c)) ((4 b)) ((1 a)))))
+                    '(((3 f)) ((56 d)) ((2 c) (2 e)) ((4 b)) ((1 a))))
+     (check-equal? (group-by even? '(1 2 3 4 5 6))
+                   '((2 4 6) (1 3 5))))
    (test-suite "cartesian-product"
      (check-equal? (cartesian-product '(1 2 3) '(a b c))
                    '((1 a) (1 b) (1 c)

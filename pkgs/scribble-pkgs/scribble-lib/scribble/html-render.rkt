@@ -18,6 +18,7 @@
          net/uri-codec
          net/base64
          scheme/serialize
+         racket/draw/gif
          (prefix-in xml: xml/xml)
          (for-syntax scheme/base)
          "search.rkt"
@@ -246,6 +247,18 @@
 
 (define (part-parent d ri)
   (collected-info-parent (part-collected-info d ri)))
+
+(define (with-output-to-file/clean fn thunk)
+  ;; We use 'replace instead of the usual 'truncate/replace
+  ;;  to avoid problems where a filename changes only in case,
+  ;;  in which case some platforms will see the old file
+  ;;  as matching the new name, while others don't. Replacing
+  ;;  the file syncs the case with the current uses.
+  (with-handlers ([exn? ; delete file on breaks, too
+                   (lambda (exn)
+                     (delete-file fn)
+                     (raise exn))])
+    (with-output-to-file fn #:exists 'replace thunk)))
 
 ;; ----------------------------------------
 ;;  main mixin
@@ -508,13 +521,26 @@
                            (anchor-name (dest-anchor dest))))))
           "???"))
 
-    (define/private (dest->url-in-doc dest)
+    (define/private (dest->url-in-doc dest ext-id)
       (and dest
            (not (dest-redirect dest))
            (format "~a~a~a"
-                   (let-values ([(base name dir?) (split-path
-                                                   (relative->path (dest-path dest)))])
-                     name)
+                   ;; The path within the document directory is normally
+                   ;; just a single element, but detect nested paths
+                   ;; (for "r5rs-std", for example) when the containing
+                   ;; directory doesn't match `ext-id`:
+                   (let loop ([path (relative->path (dest-path dest))]
+                              [empty-ok? #f])
+                     (let-values ([(base name dir?) (split-path path)])
+                       (cond
+                        [(and empty-ok?
+                              dir? 
+                              (equal? (format "~a" name) (format "~a" ext-id)))
+                         #f]
+                        [(path? base)
+                         (define r (loop base #t))
+                         (if r (build-path r name) name)]
+                        [else name])))
                    (if (dest-page? dest) "" "#")
                    (if (dest-page? dest)
                        ""
@@ -757,13 +783,19 @@
                                                 d ri)))))))))
                          ps)))))))
 
-    (define/public (extract-part-body-id d ri)
+    (define/private (extract-inherited d ri pred extract)
       (or (ormap (lambda (v)
-                   (and (body-id? v)
-                        (body-id-value v)))
+                   (and (pred v)
+                        (extract v)))
                  (style-properties (part-style d)))
           (let ([p (part-parent d ri)])
-            (and p (extract-part-body-id p ri)))))
+            (and p (extract-inherited p ri pred extract)))))
+
+    (define/public (extract-part-body-id d ri)
+      (extract-inherited d ri body-id? body-id-value))
+
+    (define/public (extract-part-source d ri)
+      (extract-inherited d ri document-source? document-source-module-path))
 
     (define/public (part-nesting-depth d ri)
       0)
@@ -1066,6 +1098,16 @@
                             [(1) 'h3]
                             [(2) 'h4]
                             [else 'h5])
+                         ,(let ([src (extract-part-source d ri)]
+                                [taglet (for/or ([t (in-list (part-tags d))])
+                                          (and (pair? t)
+                                               (eq? 'part (car t))
+                                               (= 2 (length t))
+                                               (cadr t)))])
+                            (if (and src taglet)
+                                `([x-source-module ,(format "~s" src)]
+                                  [x-part-tag ,(format "~s" taglet)])
+                                '()))
                          ,@(format-number number '((tt nbsp)))
                          ,@(map (lambda (t)
                                   `(a ([name ,(format "~a" (anchor-name
@@ -1170,11 +1212,13 @@
          (let* ([src (collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]
                 [scale (image-element-scale e)]
-                [to-num
+                [to-scaled-num
                  (lambda (s)
                    (number->string
                     (inexact->exact
-                     (floor (* scale (integer-bytes->integer s #f #t))))))]
+                     (floor (* scale (if (number? s)
+                                         s
+                                         (integer-bytes->integer s #f #t)))))))]
                 [src (select-suffix src suffixes '(".png" ".gif" ".svg"))]
                 [svg? (regexp-match? #rx#"[.]svg$" (if (path? src) (path->bytes src) src))]
                 [sz (cond
@@ -1201,7 +1245,6 @@
                              (if (and w h)
                                  `([width ,w][height ,h])
                                  null)))))]
-                     [(= 1.0 scale) null]
                      [else
                       ;; Try to extract file size:
                       (call-with-input-file*
@@ -1209,8 +1252,12 @@
                        (lambda (in)
                          (cond
                           [(regexp-try-match #px#"^\211PNG.{12}" in)
-                           `([width ,(to-num (read-bytes 4 in))]
-                             [height ,(to-num (read-bytes 4 in))])]
+                           `([width ,(to-scaled-num (read-bytes 4 in))]
+                             [height ,(to-scaled-num (read-bytes 4 in))])]
+                          [(regexp-try-match #px#"^(?=GIF8)" in)
+                           (define-values (w h rows) (gif->rgba-rows in))
+                           `([width ,(to-scaled-num w)]
+                             [height ,(to-scaled-num h)])]
                           [else
                            null])))])])
            (let ([srcref (let ([p (install-file src)])
@@ -1294,7 +1341,7 @@
                              [query
                               (if (string? ext-id)
                                   (list* (cons 'doc ext-id)
-                                         (cons 'rel (or (dest->url-in-doc dest) "???"))
+                                         (cons 'rel (or (dest->url-in-doc dest ext-id) "???"))
                                          (url-query u))
                                   (cons (cons 'tag (tag->query-string (link-element-tag e)))
                                         (url-query u)))])))]
@@ -1779,8 +1826,9 @@
                ;; install files for each directory
                (install-extra-files ds)
                (let ([fn (build-path fn "index.html")])
-                 (with-output-to-file fn #:exists 'truncate/replace
-                   (lambda () (render-one d ri fn))))))
+                 (with-output-to-file/clean
+                  fn
+                  (lambda () (render-one d ri fn))))))
            ds
            fns))
 
@@ -1812,13 +1860,9 @@
                                                      (if p
                                                          (build-path (current-subdirectory) p)
                                                          (current-subdirectory)))])
-                ;; We use 'replace instead of the usual 'truncate/replace
-                ;;  to avoid problems where a filename changes only in case,
-                ;;  in which case some platforms will see the old file
-                ;;  as matching the new name, while others don't. Replacing
-                ;;  the file syncs the case with the current uses.
-                (with-output-to-file full-path #:exists 'replace
-                  (lambda () (render-one-part d ri full-path number)))
+                (with-output-to-file/clean
+                 full-path
+                 (lambda () (render-one-part d ri full-path number)))
                 null))
             (parameterize ([on-separate-page-ok #t])
               ;; Normal section render

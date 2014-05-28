@@ -5,6 +5,7 @@
          net/url
          racket/set
          racket/file
+         racket/path
          openssl/sha1
          racket/cmdline)
 
@@ -23,9 +24,10 @@
 (define dest-dir (build-path build-dir (~a create-mode)))
 (define native-dir (build-path build-dir "native" "pkgs"))
 (define pkg-dest-dir (path->complete-path (build-path dest-dir "pkgs")))
-(define catalog-dir (build-path dest-dir "catalog" "pkg"))
+(define catalog-dir (build-path dest-dir "catalog"))
+(define catalog-pkg-dir (build-path catalog-dir "pkg"))
 (make-directory* pkg-dest-dir)
-(make-directory* catalog-dir)
+(make-directory* catalog-pkg-dir)
 
 (for ([pkg (in-list (installed-pkg-names))])
   (define native-zip (build-path native-dir (path-add-suffix pkg ".zip")))
@@ -36,10 +38,12 @@
                 #:dest pkg-dest-dir
                 #:mode create-mode)
     (call-with-output-file*
-     (build-path catalog-dir pkg)
+     (build-path catalog-pkg-dir pkg)
      #:exists 'truncate
      (lambda (o)
-       (write (hash 'source (path->string dest-zip)
+       (write (hash 'source (path->string (find-relative-path
+                                           (simple-form-path catalog-dir)
+                                           (simple-form-path dest-zip)))
                     'checksum (call-with-input-file* dest-zip sha1)
                     'name pkg
                     'author "plt@racket-lang.org"

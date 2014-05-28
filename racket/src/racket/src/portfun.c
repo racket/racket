@@ -33,6 +33,7 @@ static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
 static Scheme_Object *port_closed_p (int, Scheme_Object *[]);
 static Scheme_Object *current_input_port (int, Scheme_Object *[]);
+static Scheme_Object *string_port_p(int, Scheme_Object *[]);
 static Scheme_Object *current_output_port (int, Scheme_Object *[]);
 static Scheme_Object *current_error_port (int, Scheme_Object *[]);
 static Scheme_Object *make_input_port (int, Scheme_Object *[]);
@@ -238,10 +239,11 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("input-port?",            input_port_p,               1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("output-port?",           output_port_p,              1, 1, 1, env); 
   GLOBAL_FOLDING_PRIM("file-stream-port?",      scheme_file_stream_port_p,  1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("port-closed?",           port_closed_p,          1, 1, env); 
-  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 2, env);
+  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 3, env);
   GLOBAL_PRIM_W_ARITY("open-input-bytes",       open_input_byte_string, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("open-input-string",      open_input_char_string, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("open-output-file",       open_output_file,       1, 3, env);
@@ -2629,7 +2631,7 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
   op = scheme_output_port_record(argv[0]);
   if (!SCHEME_OUTPUT_PORTP(argv[0])
       || (op->sub_type != scheme_string_output_port_type))
-    scheme_wrong_contract(who, "string-output-port?", 0, argc, argv);
+    scheme_wrong_contract(who, "(and/c output-port? string-port?)", 0, argc, argv);
 
   if (argc > 2) {
     intptr_t len;
@@ -2690,6 +2692,26 @@ static Scheme_Object *
 get_output_char_string (int argc, Scheme_Object *argv[])
 {
   return do_get_output_string("get-output-string", 0, argc, argv);
+}
+
+static Scheme_Object *
+string_port_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+
+  if (SCHEME_INPUT_PORTP(p)) {
+    if (SAME_OBJ(scheme_input_port_record(p)->sub_type,
+                 scheme_string_input_port_type))
+      return scheme_true;
+  } else if (SCHEME_OUTPUT_PORTP(p)) {
+    if (SAME_OBJ(scheme_output_port_record(p)->sub_type,
+                 scheme_string_output_port_type))
+      return scheme_true;
+  } else {
+    scheme_wrong_contract("string-port?", "port?", 0, argc, argv);
+  }
+
+  return scheme_false;
 }
 
 static Scheme_Object *

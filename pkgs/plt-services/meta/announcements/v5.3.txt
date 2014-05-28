@@ -1,0 +1,82 @@
+1344312796
+Racket v5.3
+
+* Submodules are nested module declarations that can be loaded and
+  run independently from the enclosing module.  For an overview of
+  submodules, see
+
+    http://blog.racket-lang.org/2012/06/submodules.html
+
+* The futures visualizer is a graphical profiling tool for parallel
+  programs using futures.  The tool shows a detailed execution
+  timeline depicting the migration of futures between threads, and
+  gives detailed information about each runtime synchronization that
+  occurred during program execution.  In addition, `would-be-future'
+  is a special type of future that always executes sequentially and
+  records all potential barricades a regular future would encounter.
+
+* Optimization Coach (formerly Performance Report) reports
+  information about Racket's inlining optimizations.  Optimization
+  Coach can be launched in any language through the View menu.
+
+* The new `images/flomap' library defines floating-point bitmaps and
+  fast image processing operations on them.  It is written in Typed
+  Racket, so Typed Racket code may use it without the cost of
+  contract checks.
+
+* The new `json' library supports parsing and generating JSON.
+  (Originally based on Dave Herman's planet library.)
+
+* `racket/string' is extended with a set of simplified string
+  manipulation functions that are more convenient than using
+  regexps.  `regexp-match*' and friends can now be used with new
+  keyword arguments to return specific matched regexp group/s and
+  gaps between matches.
+
+* The new `racket/generic' library allows generic function
+  definitions, which dispatch to methods added to a structure type
+  via the new `#:methods' keyword.
+
+* The `class' form supports declaring a method abstract.  An
+  abstract method prevents a class from being instantiated unless it
+  is overridden.
+
+* The contract library comes with support for interfaces, generics,
+  prompts, continuation-marks, and structs.
+
+* Most error messages use a new multi-line format that is more
+  consistent with contract errors and accommodates more information.
+
+* Typed Racket supports function definitions with keyword arguments;
+  the startup time of Typed Racket programs has been sharply
+  reduced.
+
+* The new `ffi/com' library replaces MysterX; a compatibility
+  `mysterx' library remains, but without ActiveX support.  The new
+  `ffi/unsafe/com' library offers a more primitive and direct way to
+  use COM classes and methods.
+
+* There is now a very complete completion code for zsh.  It is not
+  included in the distribution though; get it at http://goo.gl/DU8JK
+  (This script and the bash completions will be included in the
+  standard installers in future versions.)
+
+--- DEPRECATION ----------------------------------------------------
+
+Effective this release:
+
+  - The `tex2page' and `combinator-parser' libraries have been moved
+    from the Racket distribution to PLaneT:
+
+     (require (planet plt/tex2page))
+     (require (planet plt/combinator-parser))
+
+The following has been deprecated and will be removed in the
+January 2013 release:
+
+  - the `planet' command-line tool; use `raco planet' instead.
+
+The following has been deprecated and will be removed in the
+August 2013 release:
+
+  - the `mzlib/class100' library; use `racket/class' instead.

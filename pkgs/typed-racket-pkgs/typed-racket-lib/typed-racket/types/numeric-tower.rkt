@@ -5,8 +5,9 @@
                     [simple-Un *Un])
          (rename-in (rep type-rep) [make-Base make-Base*])
          unstable/function
+         racket/extflonum
          ;; For base type contracts
-         (for-template racket/base racket/contract/base (types numeric-predicates)))
+         (for-template racket/base racket/contract/base racket/extflonum (types numeric-predicates)))
 
 (provide portable-fixnum? portable-index?
          -Zero -One -PosByte -Byte -PosIndex -Index
@@ -19,9 +20,11 @@
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
          -ExactImaginary -FloatImaginary -SingleFlonumImaginary -InexactImaginary -Imaginary
          -ExactNumber -ExactComplex -FloatComplex -SingleFlonumComplex -InexactComplex -Number
-         (rename-out (-Int -Integer)))
+         (rename-out (-Int -Integer))
+         -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumZero -ExtFlonumNan
+         -PosExtFlonum -NonNegExtFlonum -NegExtFlonum -NonPosExtFlonum -ExtFlonum)
 
-;; all the types defined here are numeric
+;; all the types defined here are numeric (except 80-bit flonums)
 (define (make-Base name contract predicate)
   (make-Base* name contract predicate #t))
 
@@ -287,3 +290,42 @@
 (define/decl -InexactComplex (*Un -FloatComplex -SingleFlonumComplex))
 (define/decl -Complex (*Un -Real -Imaginary -ExactComplex -InexactComplex))
 (define/decl -Number -Complex)
+
+;; 80-bit floating-point numbers
+;; +nan.t is included in all 80-bit floating-point types
+(define/decl -ExtFlonumNan
+  (make-Base* 'ExtFlonum-Nan
+              #'(and/c extflonum? (lambda (x) (eqv? x +nan.t)))
+              (lambda (x) (and (extflonum? x) (eqv? x +nan.t)))
+              #f))
+
+(define/decl -ExtFlonumPosZero
+  (make-Base* 'ExtFlonum-Positive-Zero
+              #'(lambda (x) (eqv? x 0.0t0))
+              (lambda (x) (eqv? x 0.0t0))
+              #f))
+
+(define/decl -ExtFlonumNegZero
+  (make-Base* 'ExtFlonum-Negative-Zero
+              #'(lambda (x) (eqv? x -0.0t0))
+              (lambda (x) (eqv? x -0.0t0))
+              #f))
+
+(define/decl -NegExtFlonumNoNan
+  (make-Base* 'Negative-ExtFlonum-No-NaN
+              #'(and/c extflonum? (λ (x) (extfl<= x 0.0t0)))
+              (lambda (x) (and (extflonum? x) (extfl<= x 0.0t0)))
+              #f))
+
+(define/decl -PosExtFlonumNoNan
+  (make-Base* 'Positive-ExtFlonum-No-NaN
+              #'(and/c extflonum? (λ (x) (extfl>= x 0.0t0)))
+              (lambda (x) (and (extflonum? x) (extfl>= x 0.0t0)))
+              #f))
+
+(define/decl -ExtFlonumZero (*Un -ExtFlonumPosZero -ExtFlonumNegZero -ExtFlonumNan))
+(define/decl -PosExtFlonum (*Un -PosExtFlonumNoNan -ExtFlonumNan))
+(define/decl -NonNegExtFlonum (*Un -PosExtFlonum -ExtFlonumZero))
+(define/decl -NegExtFlonum (*Un -NegExtFlonumNoNan -ExtFlonumNan))
+(define/decl -NonPosExtFlonum (*Un -NegExtFlonum -ExtFlonumZero))
+(define/decl -ExtFlonum (*Un -NegExtFlonumNoNan -ExtFlonumNegZero -ExtFlonumPosZero -PosExtFlonumNoNan -ExtFlonumNan))

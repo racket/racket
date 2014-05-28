@@ -87,11 +87,11 @@ READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
 READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
+READ_ONLY Scheme_Object *scheme_check_assign_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
-READ_ONLY Scheme_Object *scheme_inferred_name_symbol;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
 READ_ONLY Scheme_Object *scheme_chaperone_undefined_property;
 
@@ -193,6 +193,8 @@ static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
 
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
+
+static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv);
 
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
@@ -643,12 +645,10 @@ scheme_init_fun (Scheme_Env *env)
   none_symbol                = scheme_intern_symbol("none");
 
   REGISTER_SO(is_method_symbol);
-  REGISTER_SO(scheme_inferred_name_symbol);
   REGISTER_SO(cont_key);
   REGISTER_SO(barrier_prompt_key);
   REGISTER_SO(prompt_cc_guard_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
-  scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   prompt_cc_guard_key = scheme_make_symbol("cc"); /* uninterned */
@@ -678,12 +678,21 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("check-not-unsafe-undefined", o, env);
 
+  REGISTER_SO(scheme_check_assign_not_undefined_proc);
+  o = scheme_make_prim_w_arity(scheme_check_assign_not_undefined, "check-not-unsafe-undefined/assign", 2, 2);
+  scheme_check_assign_not_undefined_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("check-not-unsafe-undefined/assign", o, env);
+
   scheme_add_global_constant("unsafe-undefined", scheme_undefined, env);
 
   REGISTER_SO(scheme_chaperone_undefined_property);
   o = scheme_make_struct_type_property(scheme_intern_symbol("chaperone-unsafe-undefined"));
   scheme_chaperone_undefined_property = o;
   scheme_add_global_constant("prop:chaperone-unsafe-undefined", o, env);
+
+  o = scheme_make_prim_w_arity(chaperone_unsafe_undefined, "chaperone-struct-unsafe-undefined", 1, 1);
+  scheme_add_global_constant("chaperone-struct-unsafe-undefined", o, env);
 }
 
 void
@@ -1767,8 +1776,6 @@ cert_with_specials(Scheme_Object *code,
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
 	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_module_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_modulestar_stx, name, phase)
               || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
@@ -1806,7 +1813,7 @@ cert_with_specials(Scheme_Object *code,
     if (SCHEME_PAIRP(code))
       return v;
 
-    return scheme_datum_to_syntax(v, code, code, 0, 1);
+    return scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
   } else if (SCHEME_STX_NULLP(code))
     return code;
 
@@ -2552,11 +2559,35 @@ scheme_check_not_undefined (int argc, Scheme_Object *argv[])
   if (SAME_OBJ(argv[0], scheme_undefined)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
                      argv[1],
-                     "%S: variable used before its definition",
+                     "%S: undefined;\n cannot use before initialization",
                      argv[1]);
   }
 
   return argv[0];
+}
+
+Scheme_Object *
+scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("check-not-unsafe-undefined/assign", "symbol?", 1, argc, argv);
+
+  if (SAME_OBJ(argv[0], scheme_undefined)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                     argv[1],
+                     "%S: assignment disallowed;\n cannot assign before initialization",
+                     argv[1]);
+  }
+
+  return argv[0];
+}
+
+static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_CHAPERONE_STRUCTP(argv[0]))
+    return scheme_chaperone_not_undefined(argv[0]);
+  else
+    return argv[0];
 }
 
 static Scheme_Object *

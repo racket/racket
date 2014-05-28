@@ -274,7 +274,6 @@
  ;; this is mostly cribbed from class-internal.rkt
  (define (expand-expressions stxs ctx def-ctx)
    (define (class-expand stx)
-     ;; try using syntax-local-expand-expression?
      (local-expand stx ctx stop-forms def-ctx))
    (let loop ([stxs stxs])
      (cond [(null? stxs) null]
@@ -288,12 +287,9 @@
               ;; i.e., macro definitions in the class body
               ;; see class-internal.rkt as well
               [(define-syntaxes (name:id ...) rhs:expr)
-               (define/with-syntax expanded-rhs
-                 (local-transformer-expand #'rhs 'expression null))
                (syntax-local-bind-syntaxes
-                (syntax->list #'(name ...)) #'expanded-rhs def-ctx)
-               (cons #'(define-syntaxes (name ...) expanded-rhs)
-                     (loop (cdr stxs)))]
+                (syntax->list #'(name ...)) #'rhs def-ctx)
+               (cons stx (loop (cdr stxs)))]
               [(define-values (name:id ...) rhs:expr)
                (syntax-local-bind-syntaxes
                 (syntax->list #'(name ...)) #f def-ctx)
@@ -336,34 +332,35 @@
         (define optional-inits (get-optional-inits clauses))
         (ignore
          (tr:class
-          #`(let-values ()
-              #,(internal (make-class-name-table (attribute forall.type-variables)
-                                                 private-fields
-                                                 ordered-inits
-                                                 optional-inits
-                                                 name-dict))
-              (untyped-class #,annotated-super
-                #,@(map clause-stx clauses)
-                ;; construct in-body type annotations for clauses
-                #,@(apply append
-                          (for/list ([a-clause clauses])
-                            (match-define (clause _1 _2 ids types) a-clause)
-                            (for/list ([id ids] [type types]
-                                       #:when type)
-                              ;; FIXME: it might be cleaner to use the type-label-property
-                              ;;        here and use the property to build annotation tables
-                              ;;        in the class type-checker.
-                              (tr:class:type-annotation-property
-                               (tr:class:top-level-property
-                                #`(: #,(if (stx-pair? id) (stx-car id) id)
-                                     #,type)
-                                #t)
-                               #t))))
-                #,@(map non-clause-stx annotated-methods)
-                #,(tr:class:top-level-property
-                   #`(begin #,@(map non-clause-stx other-top-level))
-                   #t)
-                #,(make-locals-table name-dict private-fields)))))])]))
+          (quasisyntax/loc stx
+           (let-values ()
+             #,(internal (make-class-name-table (attribute forall.type-variables)
+                                                private-fields
+                                                ordered-inits
+                                                optional-inits
+                                                name-dict))
+             (untyped-class #,annotated-super
+               #,@(map clause-stx clauses)
+               ;; construct in-body type annotations for clauses
+               #,@(apply append
+                         (for/list ([a-clause clauses])
+                           (match-define (clause _1 _2 ids types) a-clause)
+                           (for/list ([id ids] [type types]
+                                      #:when type)
+                             ;; FIXME: it might be cleaner to use the type-label-property
+                             ;;        here and use the property to build annotation tables
+                             ;;        in the class type-checker.
+                             (tr:class:type-annotation-property
+                              (tr:class:top-level-property
+                               #`(: #,(if (stx-pair? id) (stx-car id) id)
+                                    #,type)
+                               #t)
+                              #t))))
+               #,@(map non-clause-stx annotated-methods)
+               #,(tr:class:top-level-property
+                  #`(begin #,@(map non-clause-stx other-top-level))
+                  #t)
+               #,(make-locals-table name-dict private-fields))))))])]))
 
 (begin-for-syntax
   ;; process-class-contents : Listof<Syntax> Dict<Id, Listof<Id>>

@@ -1,13 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 (require "test-utils.rkt"
-         (for-syntax scheme/base)
-         (for-template scheme/base)
+         (for-syntax racket/base
+                     syntax/parse)
+         (for-template racket/base)
          (private type-contract)
          (rep type-rep)
          (types abbrev numeric-tower union)
          (static-contracts combinators optimize)
          (submod typed-racket/private/type-contract numeric-contracts)
+         (only-in racket/contract contract)
          rackunit)
 (provide tests)
 (gen-test-main)
@@ -51,6 +53,62 @@
        (unless (regexp-match? expected-reason reason)
          (with-check-info (('reason reason))
            (fail-check "Reason didn't match expected.")))))))
+
+;; construct a namespace for use in typed-untyped interaction tests
+(define (ctc-namespace)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (namespace-require 'racket/contract)
+    (namespace-require 'unstable/contract)
+    (namespace-require 'typed-racket/utils/any-wrap)
+    (namespace-require '(submod typed-racket/private/type-contract predicates))
+    (current-namespace)))
+
+;; (t-int type (-> any any) any)
+;; Use #:typed (default) to simulate typed export,
+;; #:untyped for untyped export.
+(define-syntax-rule (t-int arg ...)
+  (t-int/check arg ... check-not-exn))
+
+(define (check-re re)
+  (λ (thunk)
+    (check-exn
+     (λ (e)
+       (and (exn:fail? e)
+            (regexp-match? re (exn-message e))))
+     thunk)))
+
+;; (t-int/fail type (-> any any) any #:msg regexp)
+;; Like t-int, but checks failing cases. Takes a regexp for checking
+;; the exception message.
+(define-syntax-rule (t-int/fail arg ... #:msg re)
+  (t-int/check arg ... (check-re re)))
+
+;; tests typed-untyped interaction
+(define-syntax (t-int/check stx)
+  (syntax-parse stx
+    [(_ type-expr fun-expr val-expr
+        (~or (~and (~or (~seq) (~seq #:typed))
+                   (~bind [typed-side #'#t]))
+             (~and (~seq #:untyped)
+                   (~bind [typed-side #'#f])))
+        check)
+     (define pos (if (syntax-e #'typed-side) 'typed 'untyped))
+     (define neg (if (syntax-e #'typed-side) 'untyped 'typed))
+     #`(test-case (format "~a for ~a in ~a" 'type-expr 'val-expr 'fun-expr)
+         (let ([type-val type-expr] [fun-val fun-expr] [val val-expr])
+           (with-check-info (['type type-val] ['test-value val])
+             (define ctc-stx
+               (type->contract type-val
+                               #:typed-side typed-side
+                               (λ (#:reason [reason #f])
+                                 (fail-check (or reason "Type could not be converted to contract")))))
+             (define ctced-val
+               (eval #`(contract #,(syntax-shift-phase-level ctc-stx 1)
+                                 #,val
+                                 #,(quote (quote #,pos))
+                                 #,(quote (quote #,neg)))
+                     (ctc-namespace)))
+             (check (λ () (fun-val ctced-val))))))]))
 
 (define tests
   (test-suite "Contract Tests"
@@ -145,4 +203,19 @@
                                     (member-spec 'field 'y integer/sc)
                                     (member-spec 'inherit-field 'y integer/sc))
                               #f null null))
+
+              (t-int (-poly (a) (-> a a))
+                     (λ (f) (f 1))
+                     (λ (x) 1)
+                     #:typed)
+              (t-int/fail (-poly (a) (-> a a))
+                          (λ (f) (f 1))
+                          (λ (x) 1)
+                          #:untyped
+                          #:msg #rx"produced: 1.*blaming: untyped")
+              (t-int (cl->* (->* '() -String -String)
+                            (->* (list -Symbol) -Symbol -Symbol))
+                     (λ (f) (f "a" "b"))
+                     (case-lambda [xs (car xs)]
+                                  [(sym . xs) sym]))
               ))

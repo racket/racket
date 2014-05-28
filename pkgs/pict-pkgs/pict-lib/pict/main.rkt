@@ -5,11 +5,49 @@
          racket/draw)
 (provide 
  (except-out (all-from-out "private/main.rkt")
-                     pict->bitmap)
- (contract-out 
+             pict->bitmap
+             pict->argb-pixels
+             argb-pixels->pict
+             colorize
+             pin-under pin-over disk)
+ (contract-out
+  [colorize (-> pict? 
+                (or/c string? 
+                      (is-a?/c color%)
+                      (list/c byte? byte? byte?))
+                pict?)]
+                
   [pict->bitmap (->* (pict?)
                      ((or/c 'unsmoothed 'smoothed 'aligned))
-                     (is-a?/c bitmap%))]))
+                     (is-a?/c bitmap%))]
+  [pict->argb-pixels (->* (pict?) 
+                          ((or/c 'unsmoothed 'smoothed 'aligned))
+                          (and/c bytes? multiple-of-four-bytes?))]
+  [argb-pixels->pict (-> (and/c bytes? multiple-of-four-bytes?) 
+                         exact-nonnegative-integer?
+                         pict?)]
+  [pin-under
+   (->i ([base pict?]
+         [dx/fp (or/c real? pict?)]
+         [dy/f (dx/fp)
+               (if (real? dx/fp)
+                   real?
+                   (-> pict? pict? (values real? real?)))]
+         [pict pict?])
+        [result pict?])]
+  [pin-over
+   (->i ([base pict?]
+         [dx/fp (or/c real? pict?)]
+         [dy/f (dx/fp)
+               (if (real? dx/fp)
+                   real?
+                   (-> pict? pict? (values real? real?)))]
+         [pict pict?])
+        [result pict?])]
+  [disk (->* ((and/c rational? (not/c negative?))) (#:draw-border? any/c) pict?)]))
+
+(define (multiple-of-four-bytes? b)
+  (zero? (modulo (bytes-length b) 4)))
   
 (require "private/play-pict.rkt")
 (provide

@@ -569,8 +569,23 @@
                         (add-minuses 11 count)))))
      '()))
   (test (< cpu 1000) #t))
-                  
-    
+
+(let ()
+  ;; _ as a non-binding match
+  (define-language L)
+
+  (test (pair? (redex-match L _ '(1 2 3)))
+        #t)
+  (test (redex-match L (_ _) '(1 2 3))
+        #f)
+  (test (pair? (redex-match L (_ _ ...)'(1 2)))
+        #t)
+  (test (redex-match L (_ _ ...)'())
+        #f)
+  (test (pair? (redex-match L (_ (_ _ ...) ...) '((1 2) (3 4) (5 6))))
+        '#t)
+  (test (redex-match L (_ (_ _ ...) ...) '((1 2) (3 4) () (5 6)))
+        #f))
 
 
 ;                                                                                             
@@ -1217,17 +1232,31 @@
                      (term (q))
                      (define-language L)
                      (define-metafunction L [(q) ()])))
-            (with-handlers ([exn:fail:redex? exn-message])
+            (with-handlers ([exn:fail:contract:variable? exn-message])
               (eval '(require 'm))
               #f)))
-        "reference to metafunction q before its definition")
-  (test (with-handlers ([exn:fail:redex? exn-message])
+        #rx"^q: undefined;\n[^\n]*use[^\n]*before")
+  (test (with-handlers ([exn:fail:contract:variable? exn-message])
           (let ()
             (term (q))
             (define-language L)
             (define-metafunction L [(q) ()])
             #f))
-        "reference to metafunction q before its definition")
+        #rx"^q: undefined;\n[^\n]*use[^\n]*before")
+
+(let ()
+  ;; named ellipses in where clauses
+  (define-language L)
+  
+  (define-metafunction L
+  [(f (any ..._n))
+   3
+   (where (any_2 ..._n) (1 2 3))]
+  [(f any)
+   #f])
+
+  (test (term (f (a b c))) 3)
+  (test (term (f (a b))) #f))
   
 ;                                                                                                 
 ;                                                                                                 
@@ -2908,6 +2937,13 @@
                (x_one x_!_one)))
          (term (a a b c)))
         (list (term (a x_!_one))))
+
+(test (apply-reduction-relation
+       (reduction-relation
+        x-language
+        (--> (x_!_one ... x_!_one) odd-length-different))
+       (term (a b c d)))
+      (list (term odd-length-different)))
   
   ;; tests `where' clauses in reduction relation
   (test (apply-reduction-relation

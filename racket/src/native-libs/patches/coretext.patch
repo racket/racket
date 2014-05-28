@@ -64,7 +64,7 @@ diff -r -u old/pango-1.36.3/modules/basic/basic-coretext.c new/pango-1.36.3/modu
 +  gunichar c;
 +
 +  c = CFStringGetCharacterAtIndex (iter->cstr, iter->current_indices[iter->ct_i]);
-+  if (c & 0xD800) {
++  if ((c >= 0xD800) && (c <= 0xDFFF)) {
 +    /* surrogate pair */
 +    gunichar c2;
 +    c2 = CFStringGetCharacterAtIndex (iter->cstr, iter->current_indices[iter->ct_i]+1);

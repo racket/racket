@@ -1,0 +1,52 @@
+1312399420
+Racket v5.1.2
+
+* The download page includes 64-bit installers for Mac OS X,
+  Windows, and two Debian flavors.  Racket now supports OS X Lion.
+
+* Racket now includes a new `racket/place' library to support
+  parallelism, complementing `racket/future'.  Racket's parallel
+  build process is now based on places instead of multiple OS
+  processes.
+
+  Places support share-nothing parallelism and message-passing
+  communication.  Compared to futures, places are heavyweight, but
+  they have a simpler performance model.
+
+* The syntax-certificate system has been replaced by a syntax-taint
+  system.  Both certificates and taints were designed to protect
+  otherwise inaccessible bindings from abuse when they appear in
+  macro expansions.  Taints are simpler and lighter, and the switch
+  closes known holes in the certificate system.  Macros that are not
+  implemented with `syntax-rules' or `define-syntax-rule', however,
+  must explicitly use `syntax-protect' to protect their expansions
+  from abuse.
+
+* The `net/url' library supports HTTPS connections, but beware that
+  by default all sites are accepted (equivalent to ignoring a
+  browser's warnings about untrusted certificates).
+
+* Error messages in the student languages use a simplified
+  vocabulary and consistent phrasings.  If you maintain curriculum
+  material or teachpacks then please consider updating.  See the
+  "Error Message Composition Guidelines" section in the
+  documentation for details.
+
+* Typed Racket: almost all core Racket data structures and
+  operations are now accessible in Typed Racket (most of this work
+  is due to prolific contributor Eric Dobson).  The performance of
+  the typechecker has been significantly improved.
+
+* The `scriblib/bibtex' library supports BibTeX-formatted citation
+  databases in Scribble documents.  BibTeX can be tricky to parse,
+  so please report failed entries as bug reports.
+
+* The `for' forms now support an `#:unless' clause, and a
+  nonnegative integer can be used as a sequence.  The new `compose1'
+  function creates single-valued composition functions.  The
+  `racket/function' library now provides `identity', `thunk', and
+  `thunk*'.
+
+* The license has been clarified: we now use LGPLv2.1 uniformly.
+  (The license file used to specify LGPLv2, contrary to the download
+  pages.)

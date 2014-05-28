@@ -71,6 +71,7 @@ Closes the output side of @racket[hc], if it is live.
 @defproc[(http-conn-send! [hc http-conn-live?] [uri (or/c bytes? string?)]
                           [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
+                          [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:content-decode decodes (listof symbol?) '(gzip)]
                           [#:data data (or/c false/c bytes? string?) #f])
@@ -84,6 +85,10 @@ additional headers given in @racket[headers] and the additional data
 If @racket[headers] does not contain an @litchar{Accept-Encoding}
 header, then a header indicating that encodings from @racket[decodes]
 are accepted is automatically added.
+
+If @racket[close?] is @racket[#t] and @racket[headers] does not
+contain a @litchar{Connection} header, then a @litchar{Connection:
+close} header will be added.
 
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
@@ -141,3 +146,23 @@ response, which is why there is no @racket[#:closed?] argument like
 
 }
 
+@section[#:tag "faq"]{Troubleshooting and Tips}
+
+@subsection{How do I send properly formatted POST form requests?}
+
+You should send a @litchar{Content-Type} header with the value
+@litchar{application/x-www-form-urlencoded} and send the data
+formatted by @racketmodname[net/uri-codec]'s
+@racket[form-urlencoded-encode] function. For example,
+
+@(require (for-label net/uri-codec))
+@racketblock[
+(http-send!
+   hc "/login"
+   #:method "POST"
+   #:data
+   (alist->form-urlencoded
+    (list (cons 'username "Ryu")
+          (cons 'password "Sheng Long")))
+   #:headers (list "Content-Type: application/x-www-form-urlencoded"))             
+]

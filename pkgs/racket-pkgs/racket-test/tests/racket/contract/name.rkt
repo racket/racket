@@ -5,12 +5,13 @@
 (define-syntax (test-name stx)
   (syntax-case stx ()
     [(_ name contract)
-     #'(do-name-test 'name 'contract)]))
+     (with-syntax ([line (syntax-line stx)])
+       #'(do-name-test line 'name 'contract))]))
 
-(define (do-name-test name contract-exp)
-  (contract-eval #:test-case-name "test a name"
+(define (do-name-test line name contract-exp)
+  (contract-eval #:test-case-name (format "name test on line ~a" line)
                  `(,test ,name contract-name ,contract-exp))
-  (contract-eval #:test-case-name "test a name opt/c"
+  (contract-eval #:test-case-name (format "opt/c name test on line ~a" line)
                  `(,test ,name contract-name (opt/c ,contract-exp))))
 
 (parameterize ([current-contract-namespace (make-basic-contract-namespace
@@ -83,29 +84,47 @@
 
   (test-name '(->i () any) (->i () () any))
   (test-name '(->i () any) (->i () any))
-  (test-name '(->i () [x () ...])
+  (test-name '(->i () [x () number?])
               (->i () () [x () number?]))
   (test-name '(->i () [q number?])
               (->i () () [q number?]))
   (test-name '(->i () (values [x number?] [y number?]))
               (->i () (values [x number?] [y number?])))
-  (test-name '(->i () (values [x (y) ...] [y number?]))
+  (test-name '(->i () (values [x (y) number?] [y number?]))
               (->i () (values [x (y) number?] [y number?])))
   (test-name '(->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any)
               (->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any))
-  (test-name '(->i () #:pre () ... [q number?])
-              (->i () #:pre () #t  [q number?]))
-  (test-name '(->i () #:pre () ... [q () ...] #:post () ...)
-              (->i () #:pre () #t  [q () number?] #:post () #t))
-  (test-name '(->i ([x integer?]) #:pre (x) ... [q (x) ...]     #:post (x) ...)
-              (->i ([x integer?]) #:pre (x) #t  [q (x) number?] #:post (x) #t))
-  (test-name '(->i ([x real?]) [_ (x) ...])
+  (test-name '(->i () #:pre () #t [q number?])
+              (->i () #:pre () #t [q number?]))
+  (test-name '(->i () #:pre () #t [q () number?] #:post () #t)
+              (->i () #:pre () #t [q () number?] #:post () #t))
+  (test-name '(->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t)
+              (->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t))
+  (test-name '(->i ([x real?]) [_ (x) (>/c x)])
               (->i ([x real?]) [_ (x) (>/c x)]))
-  (test-name '(->i ([x any/c]) #:pre/name (x) "pair" ... #:pre/name (x) "car" ... any)
+  (test-name '(->i ([x any/c]) #:pre/name (x) "pair" (pair? x) #:pre/name (x) "car" (car x) any)
               (->i ([x any/c]) #:pre/name (x) "pair" (pair? x) #:pre/name (x) "car" (car x) any))
-  (test-name '(->i ([x any/c]) [y () ...] #:post/name (y) "pair" ... #:post/name (y) "car" ...)
+  (test-name '(->i ([x any/c]) [y () any/c] #:post/name (y) "pair" (pair? y)
+                   #:post/name (y) "car" (car y))
               (->i ([x any/c]) [y () any/c] #:post/name (y) "pair" (pair? y)
                    #:post/name (y) "car" (car y)))
+  (test-name '(->i ([p any/c]
+                    [q (p) (if (equal? p 10) 'aha any/c)])
+                   #:rest [rest (p) (if (equal? p 11) 'aha any/c)]
+                   #:pre (q) (if (equal? q 12) 'aha any/c)
+                   [res (p) (if (equal? p 13) 'aha any/c)]
+                   #:post (q) (if (equal? q 14) 'aha any/c))
+             (->i ([p any/c]
+                   [q (p) (if (equal? p 10) 'aha any/c)])
+                  #:rest [rest (p) (if (equal? p 11) 'aha any/c)]
+                  #:pre (q) (if (equal? q 12) 'aha any/c)
+                  [res (p) (if (equal? p 13) 'aha any/c)]
+                  #:post (q) (if (equal? q 14) 'aha any/c)))
+  (test-name '(->i ((p any/c) (q (p) (void (((((...))))) 2 3 ...))) any)
+             (->i ([p any/c]
+                   [q (p) (void (((((1))))) 2 3 4 5 6 7 8 9 10)])
+                  any))
+  
 
   (test-name '(case->) (case->))
   (test-name '(case-> (-> integer? any) (-> boolean? boolean? any) (-> char? char? char? any))
@@ -120,7 +139,7 @@
   (test-name '(unconstrained-domain-> number?) (unconstrained-domain-> number?))
 
   (test-name '(or/c) (or/c))
-  (test-name '(or/c '()) (or/c '()))
+  (test-name 'integer? (or/c integer?))
   (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
   (test-name '(or/c integer? boolean?)
              (or/c (flat-contract integer?)
@@ -174,9 +193,9 @@
   (test-name 'printable/c printable/c)
   (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
   (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
-  (test-name '(or/c '() 'x 1 #f #\a void? undefined?)
-             (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
-
+  (test-name '(or/c '() 'x 1 #f #\a void?)
+             (one-of/c '() 'x 1 #f #\a (void)))
+  
   (test-name '(or/c #f #t #\a "x") (or/c #f #t #\a "x"))
   (test-name '(or/c #f #t #\a "x" #rx"x" #rx#"x") (or/c #f #t #\a "x" #rx"x" #rx#"x"))
 
@@ -325,6 +344,12 @@
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
 
+  (test-name 'α (let ([α (new-∀/c)]) α))
+  (test-name 'α (let ([α (new-∀/c #f)]) α))
+  (test-name 'β (let ([α (new-∀/c 'β)]) α))
+  (test-name '∀∃-unknown ((values new-∀/c)))
+  (test-name '∀∃-unknown ((values new-∀/c) #f))
+  
   (test-name '(class/c [m (->m integer? integer?)]) (class/c [m (->m integer? integer?)]))
   (test-name '(class/c [m (->*m (integer?) (integer?) integer?)])
               (class/c [m (->*m (integer?) (integer?) integer?)]))
@@ -379,6 +404,21 @@
                           [b #:lazy symbol?]
                           [c (a) boolean?]
                           [d (a c) integer?])))
+  
+  (test-name '(struct/dc s
+                         [a integer?]
+                         [b #:lazy symbol?]
+                         [c (a) ...]
+                         [d (a c) ...]
+                         #:inv (a c) ...)
+             (let ()
+               (struct s (a b c d))
+               (struct/dc s
+                          [a integer?]
+                          [b #:lazy symbol?]
+                          [c (a) boolean?]
+                          [d (a c) integer?]
+                          #:inv (a c) (if c (even? a) (odd? a)))))
 
   ;; NOT YET RELEASED
   #;

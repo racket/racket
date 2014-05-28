@@ -7,6 +7,7 @@
          "misc.rkt"
          "arrow.rkt"
          "arrow-val-first.rkt"
+         "orc.rkt"
          (for-syntax racket/base
                      syntax/stx
                      "opt-guts.rkt"))
@@ -141,7 +142,10 @@
        #:stronger-ribs stronger-ribs
        #:chaperone chaperone?
        #:no-negative-blame? no-negative-blame
-       #:name (or name-from-hos #`(list 'or/c #,@names)))))
+       #:name (or name-from-hos 
+                  (if (= (length names) 1)
+                      (car names)
+                      #`(list 'or/c #,@names))))))
   
   (syntax-case stx (or/c)
     [(or/c p ...)

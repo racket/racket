@@ -771,7 +771,7 @@ static int vector_equal(Scheme_Object *vec1, Scheme_Object *orig_vec1,
       v1 = SCHEME_VEC_ELS(vec1)[i];
     else
       v1 = scheme_chaperone_vector_ref(orig_vec1, i);
-    if (SAME_OBJ(vec2, orig_vec1))
+    if (SAME_OBJ(vec2, orig_vec2))
       v2 = SCHEME_VEC_ELS(vec2)[i];
     else
       v2 = scheme_chaperone_vector_ref(orig_vec2, i);

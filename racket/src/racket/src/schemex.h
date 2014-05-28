@@ -118,6 +118,9 @@ void (*scheme_remove_managed)(Scheme_Custodian_Reference *m, Scheme_Object *o);
 void (*scheme_close_managed)(Scheme_Custodian *m);
 void (*scheme_schedule_custodian_close)(Scheme_Custodian *c);
 void (*scheme_add_custodian_extractor)(Scheme_Type t, Scheme_Custodian_Extractor e);
+int (*scheme_flush_managed)(Scheme_Plumber *p, int catch_errors);
+Scheme_Object *(*scheme_add_flush)(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush);
+void (*scheme_remove_flush)(Scheme_Object *h);
 void (*scheme_add_atexit_closer)(Scheme_Exit_Closer_Func f);
 void (*scheme_add_evt)(Scheme_Type type,
 				   Scheme_Ready_Fun ready,
@@ -161,7 +164,11 @@ void (*scheme_log_w_data)(Scheme_Logger *logger, int level, int flags,
                                  Scheme_Object *data,
                                  const char *msg, ...);
 void (*scheme_log_message)(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data);
-void (*scheme_log_name_message)(Scheme_Logger *logger, int level, Scheme_Object *name, char *buffer, intptr_t len, Scheme_Object *data);
+void (*scheme_log_name_message)(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                       char *buffer, intptr_t len, Scheme_Object *data);
+void (*scheme_log_name_pfx_message)(Scheme_Logger *logger, int level, Scheme_Object *name,
+                                           char *buffer, intptr_t len, Scheme_Object *data,
+                                           int prefix_message);
 void (*scheme_log_abort)(char *buffer);
 void (*scheme_log_warning)(char *buffer);
 void (*scheme_glib_log_message)(const char *log_domain, int log_level, const char *message, void *user_data);
@@ -991,6 +998,8 @@ Scheme_Hash_Table *(*scheme_get_place_table)(void);
 void *(*scheme_register_process_global)(const char *key, void *val);
 Scheme_Object *(*scheme_malloc_key)(void);
 void (*scheme_free_key)(Scheme_Object *k);
+ (*scheme_jit_find_code_end)(void *p);
+void (*scheme_jit_now)(Scheme_Object *f);
 #ifndef SCHEME_EX_INLINE
 } Scheme_Extension_Table;
 #endif

@@ -36,8 +36,12 @@
          skip-projection-wrapper?
          
          prop:opt-chaperone-contract
-         prop:opt-chaperone-contract? 
-         prop:opt-chaperone-contract-get-test)
+         prop:opt-chaperone-contract?
+         prop:opt-chaperone-contract-get-test
+         
+         prop:orc-contract
+         prop:orc-contract?
+         prop:orc-contract-get-subcontracts)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,24 +96,30 @@
        (get-projection c)))
 
 (define (contract-struct-stronger? a b)
-  (let* ([prop (contract-struct-property a)]
-         [stronger (contract-property-stronger prop)])
-    (stronger a b)))
+  (define prop (contract-struct-property a))
+  (define stronger? (contract-property-stronger prop))
+  (let loop ([b b])
+    (cond
+      [(stronger? a b) #t]
+      [(prop:orc-contract? b)
+       (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+       (for/or ([sub-contract (in-list sub-contracts)])
+         (loop sub-contract))]
+      [else #f])))
 
 (define (contract-struct-generate c)
-  (let* ([prop (contract-struct-property c)]
-         [generate (contract-property-generate prop)])
-    (if (procedure? generate)
-      ; FIXME: Call needs to take multiple arguments
-        (generate c)
-        (make-generate-ctc-fail))))
+  (define prop (contract-struct-property c))
+  (define generate (contract-property-generate prop))
+  (if (procedure? generate)
+      (generate c)
+      #f))
 
 (define (contract-struct-exercise c)
-  (let* ([prop (contract-struct-property c)]
-         [exercise (contract-property-exercise prop)])
-    (if (procedure? exercise)
-        (exercise c)
-        (make-generate-ctc-fail))))
+  (define prop (contract-struct-property c))
+  (define exercise (contract-property-exercise prop))
+  (if (procedure? exercise)
+      (exercise c)
+      (λ (fuel) (values void '()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,8 +214,8 @@
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
          #:stronger [stronger #f]
-         #:generate [generate (make-generate-ctc-fail)]
-         #:exercise [exercise (make-generate-ctc-fail)])
+         #:generate [generate (λ (ctc) (λ (fuel) #f))]
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
   
   ;; this code is here to help me find the combinators that
   ;; are still using only #:projection and not #:val-first-projection
@@ -313,8 +323,8 @@
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
-   #:generate (lambda (c) ((make-contract-generate c)))
-   #:exercise (lambda (c) ((make-contract-exercise c)))))
+   #:generate (lambda (c) (make-contract-generate c))
+   #:exercise (lambda (c) (make-contract-exercise c))))
 
 (define-struct make-chaperone-contract [ name first-order projection val-first-projection
                                               stronger generate exercise ]
@@ -358,8 +368,8 @@
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
          #:stronger [stronger #f]
-         #:generate [generate (make-generate-ctc-fail)]
-         #:exercise [exercise (make-generate-ctc-fail)] )
+         #:generate [generate (λ (ctc) (λ (fuel) #f))]
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
 
   (let* ([name (or name default-name)]
          [first-order (or first-order any?)]
@@ -398,5 +408,9 @@
 (define make-chaperone-contract
   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract))
 
-(define make-flat-contract
-  (build-contract make-make-flat-contract 'anonymous-flat-contract))
+(define make-flat-contract (build-contract make-make-flat-contract 'anonymous-flat-contract))
+
+;; property should be bound to a function that accepts the contract and
+;; returns a list of contracts that were the original arguments to the or/c
+(define-values (prop:orc-contract prop:orc-contract? prop:orc-contract-get-subcontracts)
+  (make-struct-type-property 'prop:orc-contract))

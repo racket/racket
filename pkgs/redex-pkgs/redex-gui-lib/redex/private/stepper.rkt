@@ -80,10 +80,26 @@ todo:
     (define dp (new vertical-panel% [parent f]))
     (define upper-hp (new horizontal-panel% [parent dp]))
     (define lower-hp (new horizontal-panel% [alignment '(center center)] [parent f] [stretchable-height #f]))
-    (define pb (new columnar-pasteboard% 
-                    [moved (λ (a b c d) 
-                             (when (procedure? moved)
-                               (moved a b c d)))]))
+    
+    (define (moved left top right bottom)
+      (let ([bx (box 0)])
+        (let loop ([path path])
+          (cond
+            [(null? path) (void)]
+            [else
+             (let* ([path-ele (car path)]
+                    [snip (send (car path-ele) get-big-snip)]
+                    [visible?
+                     (or (begin (send pb get-snip-location snip bx #f #f)
+                                (<= left (unbox bx) right))
+                         (begin (send pb get-snip-location snip bx #f #t)
+                                (<= left (unbox bx) right)))])
+               (for-each (λ (node) (send node set-visible? visible?))
+                         path-ele))
+             (loop (cdr path))]))))
+    
+    (define pb (new columnar-pasteboard% [moved moved]))
+    
     (define ec (new forward-size-editor-canvas% [parent upper-hp] [editor pb] [style '(#;no-vscroll)]))
     (define bp-outer (new vertical-panel% [parent upper-hp] [stretchable-width #f]))
     (define bp (new vertical-panel% [parent bp-outer] [stretchable-width #f]))
@@ -267,23 +283,6 @@ todo:
                    (cons (car path) (loop (cdr path)))])))
         (update-everything)
         (update-highlight-to-end)))
-    
-    (define (moved left top right bottom)
-      (let ([bx (box 0)])
-        (let loop ([path path])
-          (cond
-            [(null? path) (void)]
-            [else
-             (let* ([path-ele (car path)]
-                    [snip (send (car path-ele) get-big-snip)]
-                    [visible?
-                     (or (begin (send pb get-snip-location snip bx #f #f)
-                                (<= left (unbox bx) right))
-                         (begin (send pb get-snip-location snip bx #f #t)
-                                (<= left (unbox bx) right)))])
-               (for-each (λ (node) (send node set-visible? visible?))
-                         path-ele))
-             (loop (cdr path))]))))
     
     (define (get-path-to-root node)
       (let loop ([node node]

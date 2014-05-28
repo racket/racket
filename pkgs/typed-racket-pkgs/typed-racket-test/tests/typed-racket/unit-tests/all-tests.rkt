@@ -28,7 +28,6 @@
   "parse-type-tests.rkt"
   "subst-tests.rkt"
   "infer-tests.rkt"
-  "type-annotation-test.rkt"
   "keyword-expansion-test.rkt"
   "special-env-typecheck-tests.rkt"
   "contract-tests.rkt"

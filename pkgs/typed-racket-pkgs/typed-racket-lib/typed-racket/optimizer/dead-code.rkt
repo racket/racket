@@ -49,9 +49,13 @@
         (begin0
           (case-lambda
             #,@(for/list ((formals (in-syntax #'(formals ...)))
-                          (bodies  (in-syntax #'(bodies ...)))
-                          #:unless (dead-lambda-branch? formals))
-                  (cons formals (stx-map (optimize) bodies))))
+                          (bodies  (in-syntax #'(bodies ...))))
+                 (if (dead-lambda-branch? formals)
+                     ;; keep the clause (to have a case-lambda with the right arity)
+                     ;; but not the body (to make the function smaller for inlining)
+                     ;; TODO could do better, and keep a single clause per arity
+                     (list formals #'(void)) ; return type doesn't matter, should never run
+                     (cons formals (stx-map (optimize) bodies)))))
           ;; We need to keep the syntax objects around in the generated code with the correct bindings
           ;; so that CheckSyntax displays the arrows correctly
           #,@(for/list ((formals (in-syntax #'(formals ...)))

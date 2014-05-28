@@ -752,7 +752,7 @@ category of the error code: @racket['posix] indicates a C/Posix
 code (under Windows, only), and @racket['gai] indicates a
 @tt{getaddrinfo} error code (which shows up only in
 @racket[exn:fail:network:errno] exceptions for operations that resolve
-hostnames, but it allowed in @racket[exn:fail:filesystem:errno]
+hostnames, but is allowed in @racket[exn:fail:filesystem:errno]
 instances for consistency).}
 
 @defstruct[(exn:fail:filesystem:missing-module exn:fail:filesystem) ([path module-path?])

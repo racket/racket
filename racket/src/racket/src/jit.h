@@ -367,7 +367,7 @@ struct scheme_jit_common_record {
 # endif
 #endif
   void *make_rest_list_code, *make_rest_list_clear_code;
-  void *call_check_not_defined_code;
+  void *call_check_not_defined_code, *call_check_assign_not_defined_code;
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
 #ifdef MZ_USE_LWC

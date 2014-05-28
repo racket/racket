@@ -100,6 +100,13 @@
     (test-form #rx"^$"
       (struct foo ()))
 
+    ;; PR 14487
+    (test-form-not-exn
+      (require/typed racket/base
+                     [#:opaque Evt evt?]
+                     [alarm-evt (Real -> Evt)]
+                     [sync (Evt -> Any)]))
+
     ;; PR 14380
     (test-form-not-exn (begin - (void)))
 

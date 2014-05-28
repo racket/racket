@@ -713,45 +713,88 @@
                   (base->-min-arity ctc))
           (not (base->-rest ctc)))
      ;; only handle the case with no optional args and no rest args
-     (define doms-l (length (base->-doms ctc)))
+     (define dom-ctcs (base->-doms ctc))
+     (define doms-l (length dom-ctcs))
      (λ (fuel)
-       (define rngs-gens (map (λ (c) (generate/choose c (/ fuel 2)))
-                              (base->-rngs ctc)))
+       (define dom-exers '())
+       (define addl-available dom-ctcs)
+       (for ([c (in-list (base->-doms ctc))])
+         (define-values (exer ctcs) ((contract-struct-exercise c) fuel))
+         (set! dom-exers (cons exer dom-exers))
+         (set! addl-available (append ctcs addl-available)))
+       (define rngs-gens 
+         (with-definitely-available-contracts
+          addl-available
+          (λ ()
+            (for/list ([c (in-list (base->-rngs ctc))])
+              (generate/choose c fuel)))))
        (cond
-         [(for/or ([rng-gen (in-list rngs-gens)])
-            (generate-ctc-fail? rng-gen))
-          (make-generate-ctc-fail)]
-         [else
-          (procedure-reduce-arity
-           (λ args
-             ; Make sure that the args match the contract
-             (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
-                      (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
-                    ; Stash the valid value
-                    ;(env-stash (generate-env) ctc args)
-                    (apply values rngs-gens)))
-           doms-l)]))]
-    [else (λ (fuel) (make-generate-ctc-fail))]))
+         [(for/and ([rng-gen (in-list rngs-gens)])
+            rng-gen)
+          (define env (generate-env))
+          (λ ()
+            (procedure-reduce-arity
+             (λ args
+               ; stash the arguments for use by other generators
+               (for ([ctc (in-list dom-ctcs)]
+                     [arg (in-list args)])
+                 (env-stash env ctc arg))
+               ; exercise the arguments
+               (for ([arg (in-list args)]
+                     [dom-exer (in-list dom-exers)])
+                 (dom-exer arg))
+               ; compute the results 
+               (define results
+                 (for/list ([rng-gen (in-list rngs-gens)])
+                   (rng-gen)))
+               ; return the results
+               (apply values results))
+             doms-l))]
+         [else #f]))]
+    [else (λ (fuel) #f)]))
 
-(define (->-exercise ctc) 
-  (λ (args fuel)
-    (let* ([new-fuel (/ fuel 2)]
-           [gen-if-fun (λ (c v)
-                         ; If v is a function we need to gen the domain and call
-                         (if (procedure? v)
-                             (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
-                                                 (base->-doms c))])
-                               (let* ([result (call-with-values 
-                                               (λ () (apply v newargs))
-                                               list)]
-                                      [rngs (base->-rngs c)])
-                                 (andmap (λ (c v) 
-                                           ((contract-struct-exercise c) v new-fuel))
-                                         rngs 
-                                         result)))
-                             ; Delegate to check-ctc-val
-                             ((contract-struct-exercise c) v new-fuel)))])
-      (andmap gen-if-fun (base->-doms ctc) args))))
+(define (->-exercise ctc)
+  (define rng-ctcs (base->-rngs ctc))
+  (define dom-ctcs (for/list ([doms (in-list (base->-doms ctc))]
+                              [i (in-range (base->-min-arity ctc))])
+                     doms))
+  (define dom-kwd-infos (for/list ([dom-kwd (in-list (base->-kwd-infos ctc))]
+                                   #:when (kwd-info-mandatory? dom-kwd))
+                          dom-kwd))
+  (define dom-kwds (map kwd-info-kwd dom-kwd-infos))
+  (cond
+    [(not (base->-rest ctc))
+     (λ (fuel)
+       (define gens 
+         (for/list ([dom-ctc (in-list dom-ctcs)])
+           (generate/choose dom-ctc fuel)))
+       (define kwd-gens
+         (for/list ([kwd-info (in-list dom-kwd-infos)])
+           (generate/choose (kwd-info-ctc kwd-info) fuel)))
+       (define env (generate-env))
+       (cond
+         [(and (andmap values gens)
+               (andmap values kwd-gens))
+          (values 
+           (λ (f)
+             (call-with-values
+              (λ ()
+                (keyword-apply 
+                 f
+                 dom-kwds
+                 (for/list ([kwd-gen (in-list kwd-gens)])
+                   (kwd-gen))
+                 (for/list ([gen (in-list gens)])
+                   (gen))))
+              (λ results 
+                (for ([res-ctc (in-list rng-ctcs)]
+                      [result (in-list results)])
+                  (env-stash env res-ctc result)))))
+           (base->-rngs ctc))]
+         [else
+          (values void '())]))]
+    [else
+     (λ (fuel) (values void '()))]))
 
 (define (base->-name ctc)
   (define rngs (base->-rngs ctc))

@@ -1903,6 +1903,14 @@ static void cons_onto_list(void *p)
 }
 #endif
 
+#if MZ_PRECISE_GC
+static int found_counter = 0;
+static void increment_found_counter(void *p)
+{
+  found_counter++;
+}
+#endif
+
 #if MZ_PRECISE_GC_TRACE
 static void count_struct_instance(void *p) {
   Scheme_Structure *s = (Scheme_Structure *)p;
@@ -2155,18 +2163,23 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   void *initial_trace_root = NULL;
   int (*inital_root_skip)(void *, size_t) = NULL;
 #endif
-#if MZ_PRECISE_GC_TRACE
+#ifdef MZ_PRECISE_GC
+  int skip_summary = 0;
   int trace_for_tag = 0;
   int flags = 0;
-  int path_length_limit = 10000;
   GC_for_each_found_proc for_each_found = NULL;
+# else
+#  define skip_summary 0
+#  define flags 0
+#  define trace_for_tag 0
+#  define for_each_found NULL
+#endif
+#if MZ_PRECISE_GC_TRACE
+  int path_length_limit = 10000;
   GC_for_each_struct_proc for_each_struct = NULL;
 #else
 # ifndef USE_TAGGED_ALLOCATION
-#  define flags 0
-#  define trace_for_tag 0
 #  define path_length_limit 10000
-#  define for_each_found NULL
 #  define for_each_struct NULL
 #  define print_tagged_value NULL
 # endif
@@ -2431,6 +2444,29 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
 #else
 
+# ifdef MZ_PRECISE_GC
+  if (c && SCHEME_SYMBOLP(p[0])) {
+    if (!strcmp("count", SCHEME_SYM_VAL(p[0]))
+        && (c == 2)
+        && SCHEME_SYMBOLP(p[1])) {
+      int i, maxpos;
+      maxpos = scheme_num_types();
+      for (i = 0; i < maxpos; i++) {
+        void *tn;
+        tn = scheme_get_type_name_or_null(i);
+        if (tn && !strcmp(tn, SCHEME_SYM_VAL(p[1]))) {
+          found_counter = 0;
+          for_each_found = increment_found_counter;
+          trace_for_tag = i;
+          flags |= GC_DUMP_SUPPRESS_SUMMARY;
+          skip_summary = 1;
+          break;
+        }
+      }
+    }
+  }
+# endif
+
 # if MZ_PRECISE_GC_TRACE
   cons_accum_result = scheme_void;
   if (c && SCHEME_SYMBOLP(p[0])) {
@@ -2530,10 +2566,10 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
     cons_accum_result = scheme_null;
     flags -= (flags & GC_DUMP_SHOW_TRACE);
   }
-  scheme_console_printf("Begin Dump\n");
-#else
-  scheme_console_printf("Begin Dump\n");
 #endif
+
+  if (!skip_summary)
+    scheme_console_printf("Begin Dump\n");
 
 # ifdef MZ_PRECISE_GC
   GC_dump_with_traces(flags, 
@@ -2623,27 +2659,40 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   }
 #endif
 
+  if (!skip_summary) {
+#ifdef MZ_PRECISE_GC
+    scheme_console_printf("Begin Help\n");
+    scheme_console_printf(" (dump-memory-stats 'count sym) - return number of instances of type named by sym.\n");
+    scheme_console_printf("   Example: (dump-memory-stats 'count '<pair>)\n");
 # if MZ_PRECISE_GC_TRACE
-  scheme_console_printf("Begin Help\n");
-  scheme_console_printf(" (dump-memory-stats sym) - prints paths to instances of type named by sym.\n");
-  scheme_console_printf("   Example: (dump-memory-stats '<pair>)\n");
-  scheme_console_printf(" (dump-memory-stats 'struct) - show counts for specific structure types.\n");
-  scheme_console_printf(" (dump-memory-stats 'fnl) - prints not-yet-finalized objects.\n");
-  scheme_console_printf(" (dump-memory-stats num) - prints paths to objects with tag num.\n");
-  scheme_console_printf(" (dump-memory-stats -num) - prints paths to objects of size num.\n");
-  scheme_console_printf(" (dump-memory-stats sym/num len) - limits path to size len.\n");
-  scheme_console_printf(" (dump-memory-stats sym/num 'cons) - builds list instead of showing paths.\n");
-  scheme_console_printf(" (dump-memory-stats 'peek num v) - returns value if num is address of object, v otherwise.\n");
-  scheme_console_printf(" (dump-memory-stats 'next v) - next tagged object after v, #f if none; start with #f.\n");
-  scheme_console_printf(" (dump-memory-stats 'addr v) - returns the address of v.\n");
-  scheme_console_printf(" (dump-memory-stats thread) - shows information about the thread.\n");
-  scheme_console_printf("End Help\n");
+    scheme_console_printf(" (dump-memory-stats sym) - prints paths to instances of type named by sym.\n");
+    scheme_console_printf("   Example: (dump-memory-stats '<pair>)\n");
+    scheme_console_printf(" (dump-memory-stats 'struct) - show counts for specific structure types.\n");
+    scheme_console_printf(" (dump-memory-stats 'fnl) - prints not-yet-finalized objects.\n");
+    scheme_console_printf(" (dump-memory-stats num) - prints paths to objects with tag num.\n");
+    scheme_console_printf(" (dump-memory-stats -num) - prints paths to objects of size num.\n");
+    scheme_console_printf(" (dump-memory-stats sym/num len) - limits path to size len.\n");
+    scheme_console_printf(" (dump-memory-stats sym/num 'cons) - builds list instead of showing paths.\n");
+    scheme_console_printf(" (dump-memory-stats 'peek num v) - returns value if num is address of object, v otherwise.\n");
+    scheme_console_printf(" (dump-memory-stats 'next v) - next tagged object after v, #f if none; start with #f.\n");
+    scheme_console_printf(" (dump-memory-stats 'addr v) - returns the address of v.\n");
+    scheme_console_printf(" (dump-memory-stats thread) - shows information about the thread.\n");
+# endif
+    scheme_console_printf("End Help\n");
+#endif
 
-  result = cons_accum_result;
+    scheme_console_printf("End Dump\n");
+  }
+
+#ifdef MZ_PRECISE_GC
+  if (for_each_found == increment_found_counter)
+    result = scheme_make_integer(found_counter);
+# if MZ_PRECISE_GC_TRACE
+  else
+    result = cons_accum_result;
   cons_accum_result = scheme_void;
 # endif
-
-  scheme_console_printf("End Dump\n");
+#endif
 
   scheme_end_atomic();
 

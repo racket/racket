@@ -345,3 +345,9 @@
 (tc (template ((?? n) ...)) '(1 2 3 4))
 (tc (template (?? (i ...) no)) 'no)
 (tc (template (?? (n ...) no)) 'no)
+
+;; test from ianj, 5/14/2014
+(tc (syntax-parse #'(A)
+      [(x:id (~optional (~seq #:a [a b] ...)))
+       (template (?? (hash (?@ a b) ...) x))])
+    'A)

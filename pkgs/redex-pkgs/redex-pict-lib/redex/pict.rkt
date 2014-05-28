@@ -64,6 +64,7 @@
  [current-text (parameter/c (-> string? text-style/c number? pict?))])
 
 (provide/contract
+ [non-terminal-gap-space (parameter/c real?)]
  [label-style (parameter/c text-style/c)]
  [literal-style (parameter/c text-style/c)]
  [grammar-style (parameter/c text-style/c)]

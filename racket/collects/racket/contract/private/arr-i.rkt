@@ -125,6 +125,7 @@
              pre/post-procs
              mandatory-args opt-args mandatory-kwds opt-kwds rest
              mtd? here mk-wrapper mk-val-first-wrapper name-info)
+        #:property prop:custom-write custom-write-property-proc
         #:property prop:contract
         (build-contract-property
          #:val-first-projection
@@ -161,12 +162,13 @@
                                     .
                                     ,(loop (cdr infos) (cdr ctcs) dep-ctcs)))]
                              [(dep)
+                              (define body-src (list-ref info 5))
                               (if (skip? info)
                                   (loop (cdr infos) ctcs (cdr dep-ctcs))
                                   `(,@(if kwd
                                           (list kwd)
                                           (list))
-                                    [,var ,vars ...]
+                                    [,var ,vars ,body-src]
                                     .
                                     ,(loop (cdr infos) ctcs (cdr dep-ctcs))))]))])))
                   (let* ([name-info (->i-name-info ctc)]
@@ -193,14 +195,18 @@
                                               ,(contract-name
                                                 (car (reverse (map cdr (->i-arg-ctcs ctc)))))])]
                                   [(dep) `(#:rest [,(list-ref rest-info 1)
-                                                   ,(list-ref rest-info 2) ...])])
+                                                   ,(list-ref rest-info 2)
+                                                   ,(list-ref rest-info 3)])])
                                 '())
                           ,@(apply
                              append
                              (for/list ([pre-info pre-infos])
-                               (if (cadr pre-info)
-                                 `(#:pre/name ,@pre-info ...)
-                                 `(#:pre ,(car pre-info) ...))))
+                               (define ids (list-ref pre-info 0))
+                               (define name (list-ref pre-info 1))
+                               (define code (list-ref pre-info 2))
+                               (if name
+                                   `(#:pre/name ,ids ,name ,code)
+                                   `(#:pre ,ids ,code))))
                           ,(cond
                              [(not rng-info)
                               'any]
@@ -217,9 +223,12 @@
                           ,@(apply
                              append
                              (for/list ([post-info post-infos])
-                               (if (cadr post-info)
-                                 `(#:post/name ,@post-info ...)
-                                 `(#:post ,(car post-info) ...)))))))
+                               (define ids (list-ref post-info 0))
+                               (define name (list-ref post-info 1))
+                               (define code (list-ref post-info 2))
+                               (if name
+                                   `(#:post/name ,ids ,name ,code)
+                                   `(#:post ,ids ,code)))))))
          #:first-order
          (λ (ctc)
              (let ([has-rest (->i-rest ctc)]
@@ -1164,16 +1173,19 @@
                             '())
                        ,(and (arg-kwd an-arg)
                              (syntax-e (arg-kwd an-arg)))
-                       ,(arg-optional? an-arg)))
+                       ,(arg-optional? an-arg)
+                       ,(arg/res-quoted-dep-src-code an-arg)))
                  #,(if (istx-rst an-istx)
                        (if (arg/res-vars (istx-rst an-istx))
                            `(dep ,(syntax-e (arg/res-var (istx-rst an-istx)))
-                                 ,(map syntax-e (arg/res-vars (istx-rst an-istx))))
+                                 ,(map syntax-e (arg/res-vars (istx-rst an-istx)))
+                                 ,(arg/res-quoted-dep-src-code (istx-rst an-istx)))
                            `(nodep ,(syntax-e (arg/res-var (istx-rst an-istx)))))
                        #f)
                  #,(for/list ([pre (in-list (istx-pre an-istx))])
                      (list (map syntax-e (pre/post-vars pre))
-                           (pre/post-str pre)))
+                           (pre/post-str pre)
+                           (pre/post-quoted-dep-src-code pre)))
                  #,(and (istx-ress an-istx)
                         (for/list ([a-res (in-list (istx-ress an-istx))])
                           `(,(if (arg/res-vars a-res) 'dep 'nodep)
@@ -1184,10 +1196,12 @@
                                  (map syntax-e (arg/res-vars a-res))
                                  '())
                             #f
-                            #f)))
+                            #f
+                            ,(arg/res-quoted-dep-src-code a-res))))
                  #,(for/list ([post (in-list (istx-post an-istx))])
                      (list (map syntax-e (pre/post-vars post))
-                           (pre/post-str post)))))
+                           (pre/post-str post)
+                           (pre/post-quoted-dep-src-code post)))))
            'racket/contract:contract 
            (let ()
              (define (find-kwd kwd)

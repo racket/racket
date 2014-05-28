@@ -233,6 +233,7 @@
 
 # ifdef __ANDROID__
 #  define USE_FCNTL_O_NONBLOCK
+#  define PROTOENT_IS_INT IPPROTO_TCP
 # endif
 
 # define FLAGS_ALREADY_SET
@@ -240,6 +241,7 @@
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
+# define MZ_USE_DWARF_LIBUNWIND
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
@@ -850,76 +852,6 @@
 
 # endif
 
-  /************ Macintosh with CodeWarrior (not OS X) *************/
-
-#if ((defined(__MWERKS__) && !defined(__BEOS__) && !defined(__palmos__) && !defined(OS_X))  \
-     || defined(MPW_C) || defined(MPW_CPLUS))
-
-# if defined(__POWERPC__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-mac"
-# else
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "68k-mac"
-# endif
-
-# define SYSTEM_TYPE_NAME "macos"
-# define MAC_FILE_SYSTEM
-
-# define NO_READDIR
-# define NO_READLINK
-# define USE_MAC_FILE_TOOLBOX
-
-# define MACINTOSH_EVENTS
-# define MAC_MZ_GUI_ENABLED
-# define MAC_CLASSIC_PROCESS_CONTROL
-//# define NEVER_EVER_SLEEP
-# define MACINTOSH_GIVE_TIME
-# define MACINTOSH_SIOUX
-
-# if !defined(__POWERPC__)
-#  define MACINTOSH_SET_STACK
-#  define COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
-#  define NAN_LT_COMPARISON_WRONG
-#  define SQRT_NAN_IS_WRONG
-#  define ATAN2_DOESNT_WORK_WITH_INFINITIES
-# else
-#  define CODEFRAGMENT_DYNAMIC_LOAD
-# endif
-
-# ifndef MZSCHEME_IS_CODEFRAGMENT
-#  define LINK_EXTENSIONS_BY_TABLE
-# endif
-
-# define DO_STACK_CHECK
-# define MACOS_FIND_STACK_BOUNDS
-# define STACK_SAFETY_MARGIN 10000
-
-# define TIME_SYNTAX
-# define USE_MACTIME
-# define DIR_FUNCTION
-# define TIME_TYPE_IS_UNSIGNED
-
-# define NO_SYS_INCLUDE_SUBDIR
-# define NO_SLEEP
-# define NO_USLEEP
-# define NO_STAT_PROC
-# define DONT_IGNORE_PIPE_SIGNAL
-
-# define TRIG_ZERO_NEEDS_SIGN_CHECK
-
-# define MACOS_UNICODE_SUPPORT
-
-# define USE_MAC_TCP
-
-# define SIGSET_IS_SIGNAL
-
-# ifdef MPW_C
-#  define NO_INLINE_KEYWORD
-# endif
-
-# define FLAGS_ALREADY_SET
-
-#endif
-
   /************** DOS with Borland C++ ****************/
   /*          (Never successfully supported)          */
 
@@ -960,41 +892,6 @@
 
 #endif
 
-  /************ PalmOS *************/
-
-#if defined(__palmos__)
-
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "68k-palm"
-
-# define SYSTEM_TYPE_NAME "palm"
-
-# define NO_FILE_SYSTEM_UTILS
-# define NO_TCP_SUPPORT
-# define MZSCHEME_SOMETHING_OMITTED
-
-# define PALMOS_STUFF
-# define NO_STAT_PROC
-# define NO_USER_BREAK_HANDLER
-# define NO_USLEEP
-
-# define DO_STACK_CHECK
-# define PALM_FIND_STACK_BOUNDS
-# define STACK_SAFETY_MARGIN 1000
-
-# define TIME_SYNTAX
-# define USE_PALMTIME
-# define USER_TIME_IS_CLOCK
-# define TIME_TYPE_IS_UNSIGNED
-
-# define DONT_IGNORE_PIPE_SIGNAL
-# define DONT_IGNORE_FPE_SIGNAL
-
-# define USE_PALM_INF_TESTS
-
-# define FLAGS_ALREADY_SET
-
-#endif
-
   /************ QNX *************/
 
 #if defined(__QNX__)
@@ -1021,6 +918,7 @@
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
+# define MZ_USE_DWARF_LIBUNWIND
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
@@ -1352,6 +1250,9 @@
   /**********************/
  /* Inexact Arithmetic */
 /**********************/
+
+ /* FLOATING_POINT_IS_NOT_IEEE disables inexact->exact conversion via
+    parsing of IEEE-format bits. */
 
  /* USE_SINGLE_FLOATS turns on support for single-precision
     floating point numbers. Otherwise, floating point numbers

@@ -421,8 +421,8 @@
              (parameterize ([current-pkg-catalogs (and catalog
                                                        (list (catalog->url catalog)))]
                             [current-pkg-error (pkg-error 'catalog-show)]
-                            [current-pkg-scope-version (or version
-                                                           (current-pkg-scope-version))])
+                            [current-pkg-lookup-version (or version
+                                                            (current-pkg-lookup-version))])
                (pkg-catalog-show pkg-name 
                                  #:all? all
                                  #:only-names? only-names
@@ -437,19 +437,38 @@
              [#:bool merge () "Merge to existing database"]
              #:once-each
              [#:bool override () "While merging, override existing with new"]
+             [#:bool relative () "Make source paths relative when possible"]
              [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
              #:args catalog
              (parameterize ([current-pkg-error (pkg-error 'catalog-copy)])
                (when (null? catalog)
                  ((current-pkg-error) "need a destination catalog"))
-               (parameterize ([current-pkg-scope-version (or version
-                                                             (current-pkg-scope-version))])
+               (parameterize ([current-pkg-lookup-version (or version
+                                                              (current-pkg-lookup-version))])
                  (pkg-catalog-copy (drop-right catalog 1)
                                    (last catalog)
                                    #:from-config? from-config
                                    #:force? force
                                    #:merge? merge
-                                   #:override? override)))]))]))
+                                   #:override? override
+                                   #:relative-sources? relative)))]
+            ;; ----------------------------------------
+            [catalog-archive
+             "Copy catalog plus packages"
+             #:once-each
+             [#:bool from-config () "Include currently configured catalogs last"]
+             [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
+             [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
+             [#:bool relative () "Make source paths relative when possible"]
+             #:args (dest-dir . src-catalog)
+             (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
+                            [current-pkg-lookup-version (or version
+                                                            (current-pkg-lookup-version))])
+                 (pkg-catalog-archive dest-dir
+                                      src-catalog
+                                      #:from-config? from-config
+                                      #:state-catalog state
+                                      #:relative-sources? relative))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()

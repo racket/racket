@@ -1558,6 +1558,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       {
         intptr_t fd;
         if (scheme_get_port_socket(so, &fd)) {
+#ifdef USE_TCP
           if (mode == mzPDC_COPY) {
             Scheme_Object *tmp;
             Scheme_Object *portname;
@@ -1585,6 +1586,9 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             ssfd->name = tmp;
             return (Scheme_Object *)ssfd;
           }
+#else
+          scheme_signal_error("sockets aren't supported");
+#endif
         }
         else if (SCHEME_TRUEP(scheme_file_stream_port_p(1, &so))) {
           if (scheme_get_port_file_descriptor(so, &fd)) {
@@ -2599,11 +2603,17 @@ static void terminate_current_place(Scheme_Object *result)
   Scheme_Place_Object *place_obj;
 
   place_obj = place_object;
-  place_object = NULL;
 
   mzrt_mutex_lock(place_obj->lock);
   place_obj_die = place_obj->die;
   mzrt_mutex_unlock(place_obj->lock);
+  
+  if (!place_obj_die) {
+    if (scheme_flush_managed(NULL, 1))
+      result = scheme_make_integer(1);
+  }
+
+  place_object = NULL;
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
 
@@ -3012,11 +3022,12 @@ Scheme_Place_Async_Channel *place_async_channel_create() {
 #endif
 
   ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Async_Channel));
+  ch->so.type = scheme_place_async_channel_type;
+
   msgs = GC_master_malloc(sizeof(Scheme_Object*) * 8);
   msg_memory = GC_master_malloc(sizeof(void*) * 8);
   msg_chains = GC_master_malloc(sizeof(Scheme_Object*) * 8);
 
-  ch->so.type = scheme_place_async_channel_type;
   ch->in = 0;
   ch->out = 0;
   ch->count = 0;
@@ -3186,6 +3197,8 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   int cnt;
 
   o = places_serialize(uo, &msg_memory, &master_chain, &invalid_object);
+  /* uo needs to stay live until `master_chain` is registered in `ch` */
+
   if (!o) {
     if (invalid_object) {
       scheme_contract_error("place-channel-put",
@@ -3244,6 +3257,9 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
 
     maybe_report_message_size(ch);
   }
+
+  /* make sure `uo` is treated as live until here: */
+  if (!uo) scheme_signal_error("?");
 
   {
     intptr_t msg_size;
@@ -3547,7 +3563,14 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
 
     return 1;
   }
-  
+
+  if (no_writers) {
+    /* block on a semaphore that is not accessible, which may allow the thread
+       to be GCed */
+    scheme_set_sync_target(sinfo, scheme_make_sema(0), scheme_void, NULL, 0, 0, NULL);
+    return 0;
+  }
+
   return 0;
 }
 

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "test-utils.rkt" (for-syntax scheme/base)
+(require "test-utils.rkt" (for-syntax racket/base)
          (rep type-rep)
          (types abbrev numeric-tower union)
          rackunit)

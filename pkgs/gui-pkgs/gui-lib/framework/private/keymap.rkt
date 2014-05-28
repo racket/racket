@@ -1429,11 +1429,22 @@
               #t)]
            [load-file
             (λ (edit event)
-              (let ([fn (send edit get-filename)])
-                (handler:open-file
-                 (and fn
-                      (let-values ([(base name dir) (split-path fn)])
-                        base))))
+              (define (fallback)
+                (let ([fn (send edit get-filename)])
+                  (handler:open-file
+                   (and fn
+                        (let-values ([(base name dir) (split-path fn)])
+                          base)))))
+              (cond
+                [(is-a? edit editor:basic<%>)
+                 (define fr (send edit get-top-level-window))
+                 (cond
+                   [(is-a? fr frame:standard-menus<%>)
+                    (send fr file-menu:open-callback 
+                          (send fr file-menu:get-open-item)
+                          event)]
+                   [else (fallback)])]
+                [else (fallback)])
               #t)])
       (λ (kmap #:alt-as-meta-keymap [alt-as-meta-keymap #f])
         (let* ([map (λ (key func) 

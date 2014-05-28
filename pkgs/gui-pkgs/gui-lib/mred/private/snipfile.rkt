@@ -263,7 +263,7 @@
       (raise-argument-error 'text-editor-load-handler 
                             "(or/c #f symbol? (cons/c (or/c #f symbol?) (non-empty-listof symbol?)))"
                             expected-module))
-    (let-values ([(in-port src wxme?) (build-input-port filename)])
+    (let-values ([(in-port src wxme?) (build-input-port filename expected-module)])
       (if wxme?
           (dynamic-wind
               (lambda () (void))
@@ -321,8 +321,8 @@
   ;; build-input-port : string -> (values input any)
   ;; constructs an input port for the load handler. Also
   ;; returns a value representing the source of code read from the file.
-  (define (build-input-port filename)
-    (let ([p (open-input-file filename)])
+  (define (build-input-port filename expected-module)
+    (let ([p (open-input-file filename #:for-module? expected-module)])
       (port-count-lines! p)
       (define-values (new-p changed?)
         (cond
@@ -337,7 +337,7 @@
       (values new-p filename changed?)))
 
   (define (open-input-graphical-file filename)
-    (let-values ([(p name wxme?) (build-input-port filename)])
+    (let-values ([(p name wxme?) (build-input-port filename #f)])
       p))
 
   (define open-output-text-editor 

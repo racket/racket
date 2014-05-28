@@ -242,55 +242,18 @@
             ;; None, so just use R5RS quote:
             #'(r5rs:quote form))]))
 
-  ;; Copied from R5rS, but with an added `let' around body,
-  ;; and with optimization for precedure letrecs
-  (define-for-syntax (immediate-value? stx)
-    (let ([v (syntax-e stx)])
-      (or (number? v)
-          (boolean? v)
-          (string? v)
-          (syntax-case stx (r5rs:lambda quote r5rs:quote #%datum)
-            [(r5rs:lambda . _rest) #t]
-            [(quote . _) #t]
-            [(r5rs:quote . _) #t]
-            [(#%datum . _) #t]
-            [_ #f]))))
+  ;; The difference between R5RS `letrec` and Racket `letrec` (or
+  ;; R6RS `letrec*`) is that all right-hand sides are evaluated
+  ;; before any binding is initialized. We can get this effect
+  ;; by using `letrec-values` and a single clause:
   (define-syntax (r5rs:letrec stx)
     (syntax-case stx (r5rs:lambda)
-      ((r5rs:letrec ((var1 rhs) ...) body ...)
-       (andmap immediate-value? (syntax->list #'(rhs ...)))
-       (syntax/loc stx (letrec ((var1 rhs) ...) (r5rs:body body ...))))
       ((r5rs:letrec ((var1 init1) ...) body ...)
        (syntax/loc stx
-         (r5rs:letrec "generate_temp_names"
-                      (var1 ...)
-                      ()
-                      ((var1 init1) ...)
-                      body ...)))
-      ((r5rs:letrec "generate_temp_names"
-                    ()
-                    (temp1 ...)
-                    ((var1 init1) ...)
-                    body ...)
-       (syntax/loc stx
-         (let ((var1 undefined) ...)
-           (let ((temp1 init1) ...)
-             (set! var1 temp1)
-             ...
-             (let ()
-               (r5rs:body
-                body ...))))))
-      ((r5rs:letrec "generate_temp_names"
-                    (x y ...)
-                    (temp ...)
-                    ((var1 init1) ...)
-                    body ...)
-       (syntax/loc stx
-         (r5rs:letrec "generate_temp_names"
-                      (y ...)
-                      (newtemp temp ...)
-                      ((var1 init1) ...)
-                      body ...)))))
+         (letrec-values ([(var1 ...)
+                          (values init1 ...)])
+           (r5rs:body
+            body ...))))))
 
   (define-syntax (r5rs:lambda stx)
     ;; Convert rest-arg list to mlist, and use r5rs:body:

@@ -1,0 +1,132 @@
+1320893942
+Racket v5.2
+
+Release Highlights:
+
+* DrRacket comes with an experimental, on-line check syntax tool,
+  although this new tool is disabled default.  See below for more
+  information.
+
+* The new `db' library offers a high-level, functional interface to
+  popular relational database systems, including PostgreSQL, MySQL,
+  and SQLite, as well as other systems via ODBC.
+
+* A new XREPL collection provides convenient commands for a plain
+  racket REPL.  It is particularly convenient for people who prefer
+  console-based work and alternative editors.  See also the new
+  chapter on command-line tools and other editors at the end of the
+  Racket Guide.
+
+* The `plot' collection has been reimplemented in Racket.  It now
+  offers PDF output, log axes, histograms, and more.  Some code that
+  uses `plot' will still work, and some will need light porting.
+  The `plot/compat' module offers expedient backward compatibility.
+
+* DrRacket uses more conventional key bindings: `C-t' creates a new
+  tab, `C-w' closes the current one, and `C-r' runs the definitions.
+  On Mac OS X, the Command key is used.  See "Defining Custom
+  Shortcuts" in the DrRacket manual for an example that uses the old
+  key bindings.
+
+* The new `raco link' command registers a directory as a collection,
+  which allows the collection directory to reside outside the
+  "collects" tree and without changing the PLTCOLLECTS environment
+  variable.
+
+* Typed Racket:
+  - Typed Racket provides static performance debugging support to
+    show which code gets optimized and point out code that does not.
+    Use the "Performance Report" button in DrRacket.
+  - More intuitive types in printouts in the REPL and in error
+    messages.  Use `:query-result-type' to explore types, or
+    `:print-type' for a full printout.
+  - Typed Racket now supports defining function with optional
+    arguments using the same syntax as Racket.
+
+* Redex now supports specifying (and testing and automatically
+  typesetting) judgment forms including type systems and SOS-style
+  operational semantics.
+
+* Fixed several GUI problems, including problems on Ubuntu 11.10
+  (GTK+ 3) and 64-bit Mac OS X.
+
+* Internal-definition expansion has changed to use `let*' semantics
+  for sequences that contain no back references.  This change
+  removes a performance penalty for using internal definitions
+  instead of `let' in common cases, and it only changes the meaning
+  of programs that capture continuations in internal definitions.
+  Internal definitions are now considered preferable in style to
+  `let'.
+
+* Support for `begin-for-syntax' has been generalized; modules may
+  now define and export both value bindings and syntax bindings
+  (macros) at phase 1 and higher.
+
+  Due to a bug, phase 1 syntax (or higher) is not available in
+  DrRacket's `#lang'-based REPL.  A simple workaround is to disable
+  debugging in DrRacket (see "no debugging" radio button in detailed
+  language dialog).
+
+Additional Items:
+
+* The `racket/gui' library (and Slideshow) provides more support for
+  multiple-screen displays.
+
+* DrRacket remembers whether an opened file used LF or CRLF line
+  endings, and will continue using the same.  When creating a new
+  file, a preference determines how it is saved.
+
+* `net/url' can now follow HTTP redirections.
+
+* The LNCS and JFP class files are no longer distributed with
+  Racket.  Instead, they are downloaded on demand.
+
+* The Algol language implementation is now available as a plain
+  language using `#lang algol60'.
+
+* The Racket-to-C compiler (as accessed via `raco ctool' or `mzc')
+  has been removed; Racket's JIT has long provided better
+  performance, and the FFI provides better access to C libraries.
+
+* Contracts can be applied to exports with the new `contract-out'
+  form within `provide', instead of a separate `provide/contract'
+  form.  (The new `contract-out' form is implemented as a new kind
+  of "provide pre-transformer".)
+
+* The `date*' structure type is an extension of `date' with
+  `nanosecond' and `time-zone-name' fields.
+
+* New looping constructs: `for/sum' and `for/product'.
+
+* Direct calls to keyword-accepting functions are now optimized to
+  eliminate the overhead of keywords.  In addition, the compiler
+  detects and logs warnings for keyword-argument mismatches.
+
+* The libfit interface is available from `plot/deprecated/fit', and
+  will be removed in the near future.
+
+* The Unix installer has been re-done, and it is now more robust.
+
+* The built-in reader and printer support for Honu is removed.
+  (This functionality is re-implemented in Racket.)
+
+On-line Check Syntax:
+
+DrRacket now provides an on-line version of the syntax check tool,
+which means that syntax checking runs automatically while you
+continue to edit a program.  With this tool enabled, its annotations
+(e.g., binding arrows) and actions (e.g., the renaming refactoring
+and direct documentation links) are almost always available.
+
+We have noticed that on-line syntax checking renders DrRacket
+unstable on occasion, perhaps because it relies on relatively new
+support for parallelism.  Occurrences of the problem are rare, but
+they are not rare enough, which is why we have disabled the tool by
+default.  At the same time, current users of the tool find it so
+valuable that we felt it should be included in the release.  We
+expect to track down the remaining problems and enable the tool by
+default in near-future release.
+
+To enable on-line syntax checking (for `#lang'-based programs only),
+click on the red dot in the bottom right of DrRacket's window.  To
+turn it off, click there again.

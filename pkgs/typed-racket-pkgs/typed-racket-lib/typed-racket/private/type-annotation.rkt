@@ -15,8 +15,6 @@
          get-type
          get-types
          get-type/infer
-         type-ascription
-         remove-ascription
          check-type
          dotted?)
 
@@ -39,7 +37,7 @@
   ;(unless let-binding (error 'ohno))
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
   (syntax-parse stx
-    [(~or v:type-label^ v:type-ascription^) (pt (attribute v.value))]
+    [(~or v:type-label^) (pt (attribute v.value))]
     [i:typed-id^
      (maybe-finish-register-type stx)
      (attribute i.type)]
@@ -49,36 +47,6 @@
   [pattern i:id
            #:attr type (type-annotation #'i)
            #:when (attribute type)])
-
-;(trace type-annotation)
-
-(define (type-ascription stx)
-  (define (pt prop)
-    (add-scoped-tvars stx (parse-literal-alls prop))
-    (if (syntax? prop)
-        (parse-tc-results prop)
-        (parse-tc-results/id stx prop)))
-  (syntax-parse stx
-    [s:type-ascription^
-     (let loop ((prop (attribute s.value)))
-       (if (pair? prop)
-           (loop (cdr prop))
-           (pt prop)))]
-    [_ #f]))
-
-(define (remove-ascription stx)
-  (type-ascription-property
-    stx 
-    (syntax-parse stx
-      [s:type-ascription^
-       (define prop (attribute s.value))
-       (if (pair? prop)
-           (let loop ((prop (cdr prop)) (last (car prop)))
-             (if (pair? prop)
-                 (cons last (loop (cdr prop) (car prop)))
-                 last))
-             #f)]
-      [_ #f])))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
@@ -113,7 +81,7 @@
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
-               [(tc-any-results:)
+               [(tc-any-results: _)
                 (tc-error/expr
                   "Expression should produce ~a values, but produces an unknown number of values"
                   (length stxs))]

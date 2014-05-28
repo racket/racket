@@ -227,7 +227,7 @@
                                  find-or-create-pen
                                  border-color
                                  border-width
-                                 'solid))
+                                 (send old-pen get-style)))
           (send dc draw-path dc-path (- dx x) (- dy y))
           (send dc set-brush old-brush)
           (send dc set-pen   old-pen))
@@ -381,6 +381,7 @@
         #:color (or/c #f string? (is-a?/c color%))
         #:style pen-style/c
         #:alpha (real-in 0 1)
+        #:solid? any/c
         #:under? any/c #:hide-arrowhead? any/c
         #:x-adjust real? #:y-adjust real?]
        pict?))

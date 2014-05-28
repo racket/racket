@@ -277,7 +277,9 @@ please adhere to these guidelines:
  (not-running "not running")
   
   (install-package-button "Install ~a") ;; button label: ~a is filled with the name of a pkg
-
+  (update-catalog "Update Catalog") ;; button label; shown when there is a missing module, but no matching package
+  (updating-catalog-from "Updating from ~a...") ;; message label; used as a status message when updating the pkg catalog
+  
  ;;; misc
  (welcome-to-something "Welcome to ~a")
  

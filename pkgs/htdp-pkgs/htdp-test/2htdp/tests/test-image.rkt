@@ -996,6 +996,11 @@
       =>
       (rectangle 100 10 'solid (color 0 255 0)))
 
+;; make sure that rotation with a very small negative number doesn't crash
+(test (image? (rotate -0.0000000000000001 (rectangle 10 10 'solid 'blue)))
+      =>
+      #t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  regular polygon
