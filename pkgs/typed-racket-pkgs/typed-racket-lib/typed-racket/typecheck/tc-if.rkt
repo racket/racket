@@ -1,11 +1,10 @@
 #lang racket/unit
 (require "../utils/utils.rkt"
-         "signatures.rkt"
          (rep type-rep filter-rep object-rep)
          (types abbrev union utils filter-ops)
          (env lexical-env type-env-structs)
          (utils tc-utils)
-         "tc-envops.rkt"
+         (typecheck signatures tc-envops tc-metafunctions)
          (types type-table)
          racket/match)
 
@@ -35,10 +34,12 @@
      (define flag- (box #t))
      (define results-t
        (with-lexical-env/extend-props (list fs+) #:flag flag+
-         (tc thn (unbox flag+))))
+         (add-unconditional-prop
+           (tc thn (unbox flag+)) fs+)))
      (define results-u
        (with-lexical-env/extend-props (list fs-) #:flag flag-
-         (tc els (unbox flag-))))
+         (add-unconditional-prop
+           (tc els (unbox flag-)) fs-)))
 
      ;; record reachability
      ;; since we may typecheck a given piece of code multiple times in different
@@ -57,35 +58,4 @@
             (add-tautology tst)]
            [else
             (add-neither tst)])
-     (match* (results-t results-u)
-       [((tc-any-results: f1) (tc-any-results: f2))
-        (tc-any-results (-or (-and fs+ f1) (-and fs- f2)))]
-       ;; Not do awful things here
-       [((tc-results: ts (list (FilterSet: f+ f-) ...) os) (tc-any-results: f2))
-        (tc-any-results (-or (apply -and (map -or f+ f-)) f2))]
-       [((tc-any-results: f2) (tc-results: ts (list (FilterSet: f+ f-) ...) os))
-        (tc-any-results (-or (apply -and (map -or f+ f-)) f2))]
-       [((tc-results: ts fs2 os2)
-         (tc-results: us fs3 os3))
-        ;; if we have the same number of values in both cases
-        (cond [(= (length ts) (length us))
-               (combine-results
-                (for/list ([f2 (in-list fs2)] [f3 (in-list fs3)]
-                           [t2 (in-list ts)] [t3 (in-list us)]
-                           [o2 (in-list os2)] [o3 (in-list os3)])
-                  (let ([filter
-                         (match* (f2 f3)
-                           [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
-                            (-FS (-or f2+ f3+) (-or f2- f3-))])]
-                        [type (Un t2 t3)]
-                        [object (if (object-equal? o2 o3) o2 -empty-obj)])
-                    (ret type filter object))))]
-              ;; special case if one of the branches is unreachable
-              [(and (= 1 (length us)) (type-equal? (car us) (Un)))
-               (ret ts fs2 os2)]
-              [(and (= 1 (length ts)) (type-equal? (car ts) (Un)))
-               (ret us fs3 os3)]
-              ;; otherwise, error
-           [else
-            (tc-error/expr "Expected the same number of values from both branches of `if' expression, but got ~a and ~a"
-                           (length ts) (length us))])])]))
+     (merge-tc-results (list results-t results-u))]))
