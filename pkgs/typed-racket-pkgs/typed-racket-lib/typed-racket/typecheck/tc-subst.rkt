@@ -18,7 +18,7 @@
 (define (open-Values v os ts)
   (match v
     [(AnyValues: f)
-     (tc-any-results f)]
+     (tc-any-results (open-Filter f os ts))]
     [(Values: results)
      (define-values (t-r f-r o-r)
        (for/lists (t-r f-r o-r)
@@ -31,6 +31,15 @@
          ([r (in-list results)])
          (open-Result r os ts)))
      (ret t-r f-r o-r dty dbound)]))
+
+
+(define/cond-contract (open-Filter f objs ts)
+  (-> (Filter/c (listof Object?) (listof Type/c) Filter/c))
+  (for/fold ([f f])
+            ([(o arg) (in-indexed (in-list objs))]
+             [arg-ty (in-list ts)])
+    (define key (list 0 arg))
+    (subst-filter f key o #t)))
 
 
 ;; Substitutes the given objects into the type, filters, and object
