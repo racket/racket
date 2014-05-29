@@ -45,24 +45,11 @@
        ;; objects yet.
        (let-values
            ([(o-a t-a) (for/lists (os ts)
-                         ([nm (in-range dom-count)]
+                         ([_ (in-range dom-count)]
                           [oa (in-sequence-forever (in-list o-a) -empty-obj)]
-                          [ta (in-sequence-forever (in-list t-a) #f)])
+                          [ta (in-sequence-forever (in-list t-a) Univ)])
                          (values oa ta))])
-           (match rng
-            [(AnyValues: f) (tc-any-results f)]
-            [(Values: results)
-             (define-values (t-r f-r o-r)
-               (for/lists (t-r f-r o-r)
-                 ([r (in-list results)])
-                 (open-Result r o-a t-a)))
-             (ret t-r f-r o-r)]
-            [(ValuesDots: results dty dbound)
-             (define-values (t-r f-r o-r)
-               (for/lists (t-r f-r o-r)
-                 ([r (in-list results)])
-                 (open-Result r o-a t-a)))
-             (ret t-r f-r o-r dty dbound)])))]
+           (open-Values rng o-a t-a)))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _
