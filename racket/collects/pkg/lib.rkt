@@ -2720,6 +2720,24 @@
                            #:quiet? quiet?
                            #:from-command-line? from-command-line?)]))
 
+(define (src->url-or-path src)
+  (cond
+   [(path? src) (path->complete-path src)]
+   [(regexp-match? #rx"^https?://" src)
+    (string->url src)]
+   [(regexp-match? #rx"^file://" src)
+    (url->path (string->url src))]
+   [(regexp-match? #rx"^[a-zA-Z]*://" src)
+    (pkg-error (~a "unrecognized URL scheme for a catalog\n"
+                   "  URL: ~a")
+               src)]
+   [else (path->complete-path src)]))
+
+(define (url-or-path->url-string p)
+  (url->string (if (url? p)
+                   p
+                   (path->url p))))
+
 (define (pkg-catalog-copy srcs dest
                           #:from-config? [from-config? #f]
                           #:merge? [merge? #f]
@@ -2731,18 +2749,7 @@
                                      (if from-config?
                                          (pkg-config-catalogs)
                                          null)))])
-      (define src-path
-        (cond
-         [(path? src) (path->complete-path src)]
-         [(regexp-match? #rx"^https?://" src)
-          (string->url src)]
-         [(regexp-match? #rx"^file://" src)
-          (url->path (string->url src))]
-         [(regexp-match? #rx"^[a-zA-Z]*://" src)
-          (pkg-error (~a "unrecognized URL scheme for a catalog\n"
-                         "  URL: ~a")
-                     src)]
-         [else (path->complete-path src)]))
+      (define src-path (src->url-or-path src))
       (when (path? src-path)
         (cond
          [(db-path? src-path)
@@ -3205,7 +3212,8 @@
                state-catalog))
   ;; Take a snapshot of the source catalog:
   (define temp-catalog-file (make-temporary-file "pkg~a.sqlite"))
-  (pkg-catalog-update-local #:catalogs (append src-catalogs
+  (pkg-catalog-update-local #:catalogs (append (map url-or-path->url-string
+                                                    (map src->url-or-path src-catalogs))
                                                (if from-config?
                                                    (pkg-config-catalogs)
                                                    null))
