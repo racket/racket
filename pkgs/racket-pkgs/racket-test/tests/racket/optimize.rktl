@@ -1138,6 +1138,77 @@
               (values (values 1 2))
               #t))
 
+(test-comp '(lambda (w z)
+              (let ([l '(1 2)]
+                    [l2 (list w z)]
+                    [m (mcons 1 2)]
+                    [v (vector w w w)]
+                    [v2 (vector-immutable w w w)])
+                (list (car l)
+                      (cdr l)
+                      (mpair? l)
+                      (pair? l)
+                      (pair? l2)
+                      (mpair? m)
+                      (vector? v)
+                      (vector? v2)
+                      (null? v)
+                      v v v2 v2)))
+           '(lambda (w z)
+              (let ([l '(1 2)]
+                    [l2 (list w z)]
+                    [m (mcons 1 2)]
+                    [v (vector w w w)]
+                    [v2 (vector-immutable w w w)])
+                (list (unsafe-car l)
+                      (unsafe-cdr l)
+                      #f
+                      #t
+                      #t
+                      #t
+                      #t
+                      #t
+                      #f
+                      v v v2 v2))))
+
+(test-comp '(lambda (w z)
+              (if (list w z (random 7))
+                  (let ([l (list (random))])
+                    (if l
+                        (list (car l) (cdr l))
+                        'oops))
+                  "bad"))
+           '(lambda (w z)
+              (begin
+                (list w z (random 7))
+                (let ([l (list (random))])
+                  (list (unsafe-car l) (unsafe-cdr l))))))
+
+(test-comp '(lambda (w z)
+              (let ([l (if w
+                           (lambda () w)
+                           (lambda () z))])
+                (if (procedure? l)
+                    (list l l)
+                    2)))
+           '(lambda (w z)
+              (let ([l (if w
+                           (lambda () w)
+                           (lambda () z))])
+                (list l l))))
+
+(test-comp '(lambda (w z)
+              (list (if (pair? w)
+                        (car z)
+                        (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if (pair? w)
+                        (car z)
+                        (car w))
+                    (unsafe-cdr w)))
+           #f)
+
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])

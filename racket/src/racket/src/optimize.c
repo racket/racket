@@ -129,6 +129,8 @@ static Scheme_Object *no_potential_size(Scheme_Object *value);
 static Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 static Scheme_Object *optimize_shift(Scheme_Object *obj, int delta, int after_depth);
 
+static int relevant_predicate(Scheme_Object *pred);
+
 #define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
                                      || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
 
@@ -2026,7 +2028,7 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
     case scheme_sequence_type:
       {
         Scheme_Sequence *seq = (Scheme_Sequence *)expr;
-        
+
         expr = seq->array[seq->count-1];
         break;
       }
@@ -2059,6 +2061,120 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
 int scheme_expr_produces_local_type(Scheme_Object *expr)
 {
   return expr_produces_local_type(expr, 10);
+}
+
+static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info, int delta, int fuel)
+{
+  Scheme_Object *rator = NULL;
+  int argc = 0;
+
+  /* Any returned predicate must match only non-#f values, since
+     that's assumed by optimize_branch(). */
+
+  if (fuel <= 0)
+    return NULL;
+
+  switch (SCHEME_TYPE(expr)) {
+  case scheme_local_type:
+    {
+      int pos = SCHEME_LOCAL_POS(expr);
+      pos -= delta;
+      if (pos < 0)
+        return NULL;
+      if (!optimize_is_mutated(info, pos))
+        return optimize_get_predicate(pos, info);
+    }
+    break;
+  case scheme_application2_type:
+    rator = ((Scheme_App2_Rec *)expr)->rator;
+    argc = 1;
+    break;
+  case scheme_application3_type:
+    rator = ((Scheme_App3_Rec *)expr)->rator;
+    argc = 2;
+    break;
+  case scheme_application_type:
+    argc = ((Scheme_App_Rec *)expr)->num_args;
+    rator = ((Scheme_App_Rec *)expr)->args[0];
+    break;
+  case scheme_compiled_unclosed_procedure_type:
+    return scheme_procedure_p_proc;
+    break;
+  case scheme_case_lambda_sequence_type:
+    return scheme_procedure_p_proc;
+    break;
+  case scheme_compiled_quote_syntax_type:
+    return scheme_syntax_p_proc;
+    break;
+  case scheme_branch_type:
+    {
+      Scheme_Object *l, *r;
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
+      l = expr_implies_predicate(b->tbranch, info, delta, fuel-1);
+      if (l) {
+        r = expr_implies_predicate(b->fbranch, info, delta, fuel-1);
+        if (SAME_OBJ(l, r))
+          return l;
+      }
+    }
+    break;
+  case scheme_sequence_type:
+    {
+      Scheme_Sequence *seq = (Scheme_Sequence *)expr;
+
+      return expr_implies_predicate(seq->array[seq->count-1], info, delta, fuel-1);
+    }
+  case scheme_compiled_let_void_type:
+    {
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;
+      int i;
+      delta += lh->count;
+      expr = lh->body;
+      for (i = 0; i < lh->num_clauses; i++) {
+        expr = ((Scheme_Compiled_Let_Value *)expr)->body;
+      }
+      return expr_implies_predicate(expr, info, delta, fuel-1);
+    }
+    break;
+  case scheme_pair_type:
+    return scheme_pair_p_proc;
+    break;
+  case scheme_mutable_pair_type:
+    return scheme_mpair_p_proc;
+    break;
+  case scheme_vector_type:
+    return scheme_vector_p_proc;
+    break;
+  case scheme_box_type:
+    return scheme_box_p_proc;
+    break;
+  }
+
+  if (rator) {
+    if ((argc == 2)
+        && (SAME_OBJ(rator, scheme_cons_proc)
+            || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
+      return scheme_pair_p_proc;
+    else if ((argc == 2) && SAME_OBJ(rator, scheme_mcons_proc))
+      return scheme_mpair_p_proc;
+    else if (SAME_OBJ(rator, scheme_list_proc)) {
+      if (argc >= 1)
+        return scheme_pair_p_proc;
+      else
+        return scheme_null_p_proc;
+    } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
+      if (argc > 2)
+        return scheme_pair_p_proc;
+    } else if (SAME_OBJ(rator, scheme_vector_proc)
+               || SAME_OBJ(rator, scheme_vector_immutable_proc))
+      return scheme_vector_p_proc;
+    else if ((argc == 1)
+             && (SAME_OBJ(rator, scheme_box_proc)
+                 || SAME_OBJ(rator, scheme_box_immutable_proc)))
+      return scheme_box_p_proc;
+  }
+
+  return NULL;
 }
 
 static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context, int rator_flags)
@@ -2332,6 +2448,32 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   return NULL;
 }
 
+static Scheme_Object *check_known2_pred(Optimize_Info *info, Scheme_App2_Rec *app)
+/* Simplify `(pred x)' where `x' is known to match a predicate */
+{
+  if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+    if (relevant_predicate(app->rator)) {
+      Scheme_Object *pred;
+      int pos = SCHEME_LOCAL_POS(app->rand);
+
+      if (optimize_is_mutated(info, pos))
+        return NULL;
+
+      pred = optimize_get_predicate(pos, info);
+      if (pred) {
+        if (SAME_OBJ(pred, app->rator))
+          return scheme_true;
+        else {
+          /* Relies on relevant predicates being disjoint */
+          return scheme_false;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, const char *who, 
                          Scheme_Object *expect_pred, Scheme_Object *unsafe)
 /* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
@@ -2365,46 +2507,27 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
    known predicates against the results of some known constructors, because
    it's especially nice to avoid the constructions. */
 {
-  Scheme_Type get_type, want_type;
-  int i, count;
-  Scheme_Object *arg;
+  int i, count, matches;
+  Scheme_Object *arg, *pred;
   Scheme_Sequence *s;
 
   if (!SCHEME_PRIMP(arg_rator))
     return NULL;
-  else if ((SAME_OBJ(scheme_cons_proc, arg_rator)
-            || SAME_OBJ(scheme_unsafe_cons_list_proc, arg_rator))
-           && (argc == 2))
-    get_type = scheme_pair_type;
-  else if (SAME_OBJ(scheme_mcons_proc, arg_rator) && (argc == 2))
-    get_type = scheme_mutable_pair_type;
-  else if (SAME_OBJ(scheme_list_proc, arg_rator) && (argc > 0))
-    get_type = scheme_pair_type;
-  else if (SAME_OBJ(scheme_list_star_proc, arg_rator) && (argc > 1))
-    get_type = scheme_pair_type;
-  else if (SAME_OBJ(scheme_vector_proc, arg_rator))
-    get_type = scheme_vector_type;
-  else if (SAME_OBJ(scheme_vector_immutable_proc, arg_rator))
-    get_type = scheme_vector_type;
-  else if (SAME_OBJ(scheme_box_proc, arg_rator) && (argc == 1))
-    get_type = scheme_box_type;
-  else if (SAME_OBJ(scheme_box_immutable_proc, arg_rator) && (argc == 1))
-    get_type = scheme_box_type;
-  else
+
+  if (!relevant_predicate(rator))
     return NULL;
 
-  if (IS_NAMED_PRIM(rator, "pair?"))
-    want_type = scheme_pair_type;
-  else if (IS_NAMED_PRIM(rator, "null?"))
-    want_type = scheme_null_type;
-  else if (IS_NAMED_PRIM(rator, "mpair?"))
-    want_type = scheme_mutable_pair_type;
-  else if (IS_NAMED_PRIM(rator, "vector?"))
-    want_type = scheme_vector_type;
-  else if (IS_NAMED_PRIM(rator, "box?"))
-    want_type = scheme_box_type;
+  if (arg_app2)
+    pred = expr_implies_predicate((Scheme_Object *)arg_app2, info, 0, 1);
+  else if (arg_app3)
+    pred = expr_implies_predicate((Scheme_Object *)arg_app3, info, 0, 1);
   else
+    pred = expr_implies_predicate((Scheme_Object *)arg_app, info, 0, 1);
+
+  if (!pred)
     return NULL;
+
+  matches = SAME_OBJ(rator, pred);
 
   count = 0;
 
@@ -2421,7 +2544,7 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
   }
 
   if (!count)
-    return ((want_type == get_type) ? scheme_true : scheme_false);
+    return (matches ? scheme_true : scheme_false);
 
   s = scheme_malloc_sequence(count+1);
   s->so.type = scheme_sequence_type;
@@ -2448,7 +2571,7 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
     }
   }
 
-  s->array[count++] = ((want_type == get_type) ? scheme_true : scheme_false);
+  s->array[count++] = (matches ? scheme_true : scheme_false);
 
   return (Scheme_Object *)s;
 }
@@ -2694,13 +2817,16 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       } else
         alt = try_reduce_predicate(app->rator, appr->args[0], appr->num_args, NULL, NULL, appr, info);
     } else {
-      check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
-      check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
-      check_known2(info, app, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
-      check_known2(info, app, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
-      /* It's not clear that these are useful, since a chaperone check is needed anyway: */
-      check_known2(info, app, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
-      check_known2(info, app, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+      alt = check_known2_pred(info, app);
+      if (!alt) {
+        check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+        check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+        check_known2(info, app, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+        check_known2(info, app, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+        /* It's not clear that these are useful, since a chaperone check is needed anyway: */
+        check_known2(info, app, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+        check_known2(info, app, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+      }
     }
 
     if (alt) {
@@ -3214,10 +3340,17 @@ static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
 
 static int relevant_predicate(Scheme_Object *pred)
 {
+  /* Relevant predicates need to be disjoint for check_known2_pred()
+     and try_reduce_predicate(), and they need to recognize non-#f
+     values for optimize_branch(). */
+
   return (SAME_OBJ(pred, scheme_pair_p_proc)
+          || SAME_OBJ(pred, scheme_null_p_proc)
           || SAME_OBJ(pred, scheme_mpair_p_proc)
           || SAME_OBJ(pred, scheme_box_p_proc)
-          || SAME_OBJ(pred, scheme_vector_p_proc));
+          || SAME_OBJ(pred, scheme_vector_p_proc)
+          || SAME_OBJ(pred, scheme_procedure_p_proc)
+          || SAME_OBJ(pred, scheme_syntax_p_proc));
 }
 
 static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
@@ -3298,10 +3431,21 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       return scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
     else
       return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
-  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_quote_syntax_type)
-             || SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_unclosed_procedure_type)) {
-    info->size -= 1; /* could be more precise for better for procedure size */
-    return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
+  } else if (expr_implies_predicate(t, info, 0, 5)) {
+    /* all predicates recognize non-#f things */
+    tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
+    if (scheme_omittable_expr(t, 1, -1, 0, info, info, -1, 0)) {
+      info->size -= 1; /* could be more precise for better for procedure size */
+      return tb;
+    } else {
+      Scheme_Sequence *s2;
+      s2 = scheme_malloc_sequence(2);
+      s2->so.type = scheme_sequence_type;
+      s2->count = 2;
+      s2->array[0] = t;
+      s2->array[1] = tb;
+      return (Scheme_Object *)s2;
+    }
   }
 
   old_types = info->types;
@@ -3335,6 +3479,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   if (then_kclock > info->kclock)
     info->kclock = then_kclock;
+
+  info->types = old_types; /* could try to take an intersection here ... */
 
   info->vclock += 1;  /* model join as clock increment */
   info->preserves_marks = preserves_marks;
@@ -4736,10 +4882,21 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         checked_once = 1;
       } else if (value && !is_rec) {
         int cnt, ct;
+        Scheme_Object *pred;
 
         ct = scheme_expr_produces_local_type(value);
         if (ct)
           optimize_produces_local_type(body_info, pos, ct);
+
+        if (SAME_TYPE(SCHEME_TYPE(value), scheme_local_type)) {
+          /* shouldn't get here, since scheme_compiled_propagate_ok()
+             should have returned true, but just in case...
+             local is in unoptimized coordinates */
+          pred = NULL;
+        } else
+          pred = expr_implies_predicate(value, rhs_info, 0, 5);
+        if (pred)
+          add_type(body_info, pos, pred);
 
         if (!indirect) {
           checked_once = 1;

@@ -45,6 +45,8 @@ ROSYM static Scheme_Object *lexical_symbol;
 ROSYM static Scheme_Object *protected_symbol;
 ROSYM static Scheme_Object *nominal_id_symbol;
 
+READ_ONLY Scheme_Object *scheme_syntax_p_proc;
+
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 READ_ONLY static Scheme_Object *empty_simplified;
 
@@ -407,11 +409,17 @@ XFORM_NONGCING static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 
 void scheme_init_stx(Scheme_Env *env)
 {
+  Scheme_Object *o;
+
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
 
-  GLOBAL_FOLDING_PRIM_UNARY_INLINED("syntax?", syntax_p, 1, 1, 1, env);
+  REGISTER_SO(scheme_syntax_p_proc);
+  o = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
+  scheme_syntax_p_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_add_global_constant("syntax?", o, env);
 
   GLOBAL_FOLDING_PRIM("syntax->datum", syntax_to_datum, 1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("datum->syntax", datum_to_syntax, 2, 5, 1, env);

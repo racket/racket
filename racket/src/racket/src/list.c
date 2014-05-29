@@ -28,6 +28,7 @@
 
 /* read only globals */
 READ_ONLY Scheme_Object scheme_null[1];
+READ_ONLY Scheme_Object *scheme_null_p_proc;
 READ_ONLY Scheme_Object *scheme_pair_p_proc;
 READ_ONLY Scheme_Object *scheme_mpair_p_proc;
 READ_ONLY Scheme_Object *scheme_cons_proc;
@@ -241,7 +242,9 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant ("set-mcdr!", p, env);
 
+  REGISTER_SO(scheme_null_p_proc);
   p = scheme_make_folding_prim(null_p_prim, "null?", 1, 1, 1);
+  scheme_null_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("null?", p, env);
