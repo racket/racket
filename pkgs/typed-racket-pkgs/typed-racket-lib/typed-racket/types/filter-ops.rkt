@@ -62,6 +62,10 @@
       (NotTypeFilter: t1 p1 i1))
      (and (name-ref=? i1 i2)
           (subtype t2 t1))]
+    [((NotTypeFilter: t1 p1 i1)
+      (TypeFilter: t2 p1 i2))
+     (and (name-ref=? i1 i2)
+          (not (overlap t1 t2)))]
     [(_ _) #f]))
 
 (define (hash-name-ref i)
@@ -173,7 +177,16 @@
     (case-lambda [() -top]
                  [(f) f]
                  [fs (make-AndFilter fs)]))
-  (let loop ([fs (remove-duplicates args eq? #:key Rep-seq)] [result null])
+  (define (flatten-ands fs)
+    (let loop ([fs fs] [results null])
+      (match fs
+        [(list) results]
+        [(cons (AndFilter: fs*) fs) (loop fs (append fs* results))]
+        [(cons f fs) (loop fs (cons f results))])))
+  ;; Move all the type filters up front as they are the stronger props
+  (define-values (f-args other-args)
+    (partition TypeFilter? (flatten-ands (remove-duplicates args eq? #:key Rep-seq))))
+  (let loop ([fs (append f-args other-args)] [result null])
     (if (null? fs)
         (match result
           [(list) -top]
@@ -197,7 +210,6 @@
              (apply mk (compact (append not-atomic* atomic) #f)))])
         (match (car fs)
           [(and t (Bot:)) t]
-          [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
           [(Top:) (loop (cdr fs) result)]
           [t (cond [(for/or ([f (in-list (append (cdr fs) result))])
                       (contradictory? f t))
