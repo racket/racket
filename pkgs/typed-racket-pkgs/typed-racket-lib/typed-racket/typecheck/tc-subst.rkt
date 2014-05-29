@@ -9,10 +9,29 @@
          (except-in (types abbrev utils filter-ops) -> ->* one-of/c)
          (rep type-rep object-rep filter-rep rep-utils))
 
-(provide open-Result add-scope values->tc-results)
+(provide add-scope values->tc-results)
 
 (provide/cond-contract
+  [open-Values (-> SomeValues/c (listof Object?) (listof Type/c) -> full-tc-results/c)]
   [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
+
+(define (open-Values v os ts)
+  (match v
+    [(AnyValues: f)
+     (tc-any-results f)]
+    [(Values: results)
+     (define-values (t-r f-r o-r)
+       (for/lists (t-r f-r o-r)
+         ([r (in-list results)])
+         (open-Result r os ts)))
+     (ret t-r f-r o-r)]
+    [(ValuesDots: results dty dbound)
+     (define-values (t-r f-r o-r)
+       (for/lists (t-r f-r o-r)
+         ([r (in-list results)])
+         (open-Result r os ts)))
+     (ret t-r f-r o-r dty dbound)]))
+
 
 ;; Substitutes the given objects into the type, filters, and object
 ;; of a Result for function application. This matches up to the substitutions
