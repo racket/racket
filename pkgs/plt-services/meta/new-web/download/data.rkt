@@ -78,8 +78,8 @@
      "crestani@informatik.uni-tuebingen.de"]
     ["Belgium (Infogroep, Vrije Universiteit Brussel)"
      "http://racket.infogroep.be/"
-     "Infogroep"
-     "research@infogroep.be"]
+     "Infogroep" ; fallback: Sam Vervaeck <svervaec@infogroep.be>
+     "server@infogroep.be"]
     #;
     ["Turkey, Istanbul (Bilgi University)"
      "http://russell.cs.bilgi.edu.tr/racket-installers/"
