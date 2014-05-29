@@ -16,7 +16,7 @@
 (parallel-compile-files 
  (list tmp1 tmp2)
  #:worker-count 2
- #:handler (lambda (type work msg out err)
+ #:handler (lambda (id type work msg out err)
              (match type
                ['done (printf " Made ~a\n" work)]
                ['output (printf " Output from: ~a\n~a~a" work out err)]
