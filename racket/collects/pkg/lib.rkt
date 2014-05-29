@@ -2894,12 +2894,14 @@
     (define all-details (and all?
                              (get-all-pkg-details-from-catalogs)))
     (for ([name (in-list (if all?
-                             (hash-keys all-details)
-                             names))])
+                             (sort (hash-keys all-details) string<?)
+                             names))]
+          [position (in-naturals)])
       (define details (select-info-version
                        (if all?
                            (hash-ref all-details name)
                            (get-pkg-details-from-catalogs name))))
+      (unless (zero? position) (newline))
       (printf "Package name: ~a\n" name)
       (for ([key '(author source checksum tags description)])
         (define v (hash-ref details key #f))
@@ -2925,13 +2927,13 @@
                         (format " on platform ~v" plat)
                         "")))))
       (when modules?
-        (printf "Modules:")
+        (printf " Modules:")
         (for/fold ([col 72]) ([mod (in-list (hash-ref details 'modules null))])
           (define pretty-mod (pretty-module-path mod))
-          (define mod-str (~a " " pretty-mod))
+          (define mod-str (~a " " (~s pretty-mod)))
           (define new-col (if ((+ col (string-length mod-str)) . > . 72)
                               (begin
-                                (newline)
+                                (printf "\n ")
                                 0)
                               col))
           (display mod-str)
