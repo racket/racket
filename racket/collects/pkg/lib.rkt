@@ -3282,11 +3282,19 @@
     (define new-checksum
       (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
     (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
+      (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) current-checksum))
+      (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) current-checksum))
       (db:set-pkg! name (db:pkg-catalog pkg)
                    (db:pkg-author pkg)
-                   (path->string pkg-file)
+                   (path->string (path->complete-path pkg-file))
                    new-checksum
-                   (db:pkg-desc pkg))))
+                   (db:pkg-desc pkg))
+      (db:set-pkg-modules! name (db:pkg-catalog pkg)
+                           new-checksum
+                           modules)
+      (db:set-pkg-dependencies! name (db:pkg-catalog pkg)
+                                new-checksum
+                                dependencies)))
   (define dest-catalog (build-path dest-dir "catalog"))
   (unless quiet?
     (printf/flush "Creating catalog ~a\n" dest-catalog))
