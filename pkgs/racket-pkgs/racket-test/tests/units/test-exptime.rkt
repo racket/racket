@@ -37,7 +37,7 @@
 (test '(#f (one-a one-b) () ()) (sig-info one^ quote))
 (test '(#f (two-a) (two-v1 two-v2) (m)) (sig-info two^ quote))
 (test '(#f () () ()) (sig-info three^ quote))
-(test '(two^ (two-a four-z) (two-v1 two-v2) (m)) (sig-info four^ quote))
+(test '(two^ (two-a four-z) (two-v1 two-v2) (two-a two-v1 two-v2 m m)) (sig-info four^ quote))
 
 (test '(((#f . one^) (#f . three^)) ((#f . two^))) (unit-info one@ quote))
 (test '(((Four . four^)) ((One . one^))) (unit-info two@ quote))
