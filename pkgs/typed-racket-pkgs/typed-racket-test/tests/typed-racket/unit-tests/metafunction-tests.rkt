@@ -73,5 +73,12 @@
                      (list (make-Path null #'x)) (list Univ))
         (ret (-opt (-> Univ -Boolean : (-FS (-filter -Symbol #'x) -top)))))
 
+      ;; Substitute into filter of any values
+      (check-equal?
+        (open-Values (make-AnyValues (-filter -String '(0 0)))
+                     (list (make-Path null #'x)) (list Univ))
+        (tc-any-results (-filter -String #'x)))
+
+
     )
   ))
