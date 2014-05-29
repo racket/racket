@@ -5,6 +5,7 @@
          racket/path
          racket/file
          version/utils
+         setup/dirs
          db/private/pre)
 
 (provide 
@@ -120,7 +121,7 @@
 (define current-pkg-catalog-file
   (make-parameter (build-path
                    (find-system-path 'addon-dir)
-                   (version)
+                   (get-installation-name)
                    "pkgs"
                    "catalog.sqlite")))
 

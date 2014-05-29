@@ -2,7 +2,8 @@
 @(require (for-label racket/base
                      racket/contract/base
                      pkg/db
-                     syntax/modcollapse))
+                     syntax/modcollapse
+                     setup/dirs))
 
 @title[#:tag "db"]{Package Catalog Database}
 
@@ -40,8 +41,9 @@ strings. Otherwise, unknown fields are represented by empty strings.}
 @defparam[current-pkg-catalog-file file path-string?]{
 
 A parameter that determines the file path used to hold the SQLite
-database. The default value is in the user's add-on directory and in
-a version-specific subdirectory.}
+database. The default value is in the user's add-on directory as
+determined by @racket[(find-system-path 'addon-dir)] and within a
+subdirectory determined by @racket[get-installation-name].}
 
 
 @deftogether[(
