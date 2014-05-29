@@ -130,8 +130,9 @@
       (lambda ()
         (define file (current-pkg-catalog-file))
         (define dir (path-only file))
-        (unless (directory-exists? dir)
-          (make-directory* dir))
+        (when dir
+          (unless (directory-exists? dir)
+            (make-directory* dir)))
         (set! db (sqlite3-connect #:database file
                                   #:mode 'create
                                   #:busy-retry-limit +inf.0)))

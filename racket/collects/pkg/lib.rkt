@@ -460,7 +460,7 @@
                               (let-values ([(base name dir?) (split-path path)])
                                 base)
                               path))
-              (path->string (simplify-path (path->complete-path s dir)))]
+              (path->string (simplify-path (path->complete-path s (path->complete-path dir))))]
              [else
               (url->string (combine-url/relative i s))]))
           (hash-set ht 'source full-path)]
@@ -2579,7 +2579,8 @@
              (newline))))]
       [else
        (define pkg (format "~a.~a" pkg-name create:format))
-       (define actual-dest-dir (or dest-dir 
+       (define actual-dest-dir (if dest-dir
+                                   (path->complete-path dest-dir)
                                    (let-values ([(base name dir?) (split-path dir)])
                                      (cond
                                       [(path? base) (path->complete-path base)]
@@ -3147,7 +3148,8 @@
       (unless quiet?
         (printf/flush "Updating from ~a\n" catalog))
       (parameterize ([current-pkg-catalogs (list (string->url catalog))])
-        (define details (get-all-pkg-details-from-catalogs))
+        (define details (for/hash ([(name ht) (get-all-pkg-details-from-catalogs)])
+                          (values name (select-info-version ht))))
         ;; set packages:
         (db:set-pkgs! catalog (for/list ([(name ht) (in-hash details)])
                                 (db:pkg name
