@@ -162,6 +162,14 @@ static int check_long_mode(uintptr_t low, uintptr_t size)
 
   return 0;
 }
+
+int scheme_check_long_mode(int jitter_long_jumps_default)
+{
+  /* Relying on TSO: if another place provides a shared code pointer, then
+     seeing that pointer means that this place also sees any change
+     to `default-long_jumps` that applies to the pointer. */
+  return (jitter_long_jumps_default != default_long_jumps);
+}
 #endif
 
 

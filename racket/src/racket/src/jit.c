@@ -3320,6 +3320,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       shared_arity_code = jit_adjust_ip(shared_arity_code);
       sjc.shared_arity_check[num_params][has_rest][is_method] = shared_arity_code;
     }
+    CHECK_NESTED_GENERATE();
 
     arity_code = jit_get_ip();
   
@@ -3334,6 +3335,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     ((void **)retain_code)[1] = arity_code;
 #endif
     arity_code = jit_adjust_ip(arity_code);
+    CHECK_NESTED_GENERATE();
   }
 
   /* A tail call starts here. Caller must ensure that the stack is big

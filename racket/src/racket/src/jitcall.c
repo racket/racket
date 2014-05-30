@@ -1824,6 +1824,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             if (nc->code->start_code == scheme_on_demand_jit_code) {
               if (nc->code->arity_code != sjc.in_progress_on_demand_jit_arity_code) {
                 scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
+                CHECK_NESTED_GENERATE();
               }
             }
             if (nc->code->start_code != scheme_on_demand_jit_code) {
@@ -2166,6 +2167,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	sjc.shared_tail_code[dp][num_rands] = code;
       }
       code = sjc.shared_tail_code[dp][num_rands];
+      CHECK_NESTED_GENERATE();
       if (direct_self) {
         LOG_IT(("<-self\n"));
 	generate_self_tail_call(rator, jitter, num_rands, code, args_already_in_place, direct_flostack_offset, 
@@ -2231,6 +2233,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           sjc.shared_non_tail_code[4][num_rands][mo] = code;
         }
         unboxed_code = sjc.shared_non_tail_code[4][num_rands][mo];
+        CHECK_NESTED_GENERATE();
       } else
         unboxed_code = NULL;
 #endif
@@ -2243,6 +2246,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       }
       LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));
       code = sjc.shared_non_tail_code[dp][num_rands][mo];
+      CHECK_NESTED_GENERATE();
 
       if (nontail_self) {
         generate_nontail_self_setup(jitter);
