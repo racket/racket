@@ -83,11 +83,7 @@
               #:Object (lambda (f) (subst-object f k o polarity)))
               t
               [#:arr dom rng rest drest kws
-                     (let* ([st* (if (pair? k)
-                                     ;; Add a scope if we are substituting an index and
-                                     ;; not a free variable by name
-                                     (λ (t) (subst-type t (add-scope k) o polarity))
-                                     st)])
+                     (let* ([st* (λ (t) (subst-type t (add-scope k) (add-scope/object o) polarity))])
                        (make-arr (map st dom)
                                  (st* rng)
                                  (and rest (st rest))
@@ -95,9 +91,18 @@
                                  (map st kws)))]))
 
 ;; add-scope : name-ref/c -> name-ref/c
-;; Add a scope from an index object
+;; Add a scope to an index name-ref
 (define (add-scope key)
-  (list (+ (car key) 1) (cadr key)))
+  (match key
+    [(list fun arg) (list (add1 fun) arg)]
+    [(? identifier?) key]))
+
+;; add-scope/object : Object? -> Object?
+;; Add a scope to an index object
+(define (add-scope/object obj)
+  (match obj
+    [(Empty:) -empty-obj]
+    [(Path: p nm) (make-Path p (add-scope nm))]))
 
 ;; Substitution of objects into objects
 ;; This is o [o'/x] from the paper

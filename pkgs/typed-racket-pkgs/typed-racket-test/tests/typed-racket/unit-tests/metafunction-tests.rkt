@@ -144,6 +144,16 @@
                             (list (make-Path null #'x)) (list Univ))
         (ret null null null (-> Univ -Boolean : (-FS (-filter -String #'x) -top)) 'b))
 
+    )
 
+    (test-suite "replace-names"
+      (check-equal?
+        (replace-names (list (list #'x (make-Path null (list 0 0))))
+                       (ret Univ -top-filter (make-Path null #'x)))
+        (ret Univ -top-filter (make-Path null (list 0 0))))
+      (check-equal?
+        (replace-names (list (list #'x (make-Path null (list 0 0))))
+                       (ret (-> Univ Univ : -top-filter : (make-Path null #'x))))
+        (ret (-> Univ Univ : -top-filter : (make-Path null (list 1 0)))))
     )
   ))
