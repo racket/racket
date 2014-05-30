@@ -1427,6 +1427,22 @@
                          (list x x y)))])
               (g values)))
 
+(test-comp '(letrec-values ([(g f) (values
+                                    ;; The `let`s provide names:
+                                    (let ([g (lambda () (f))]) g)
+                                    (let ([f (lambda () (g))]) f))])
+              (g))
+           '(letrec ([g (lambda () (f))]
+                     [f (lambda () (g))])
+              (g)))
+
+;; Since `list` is effect-free, `f` should not be checked for
+;; undefined. I don't see a way to test that, though.
+#;
+(letrec ([f (list
+             (let ([f (lambda () f)]) f))])
+  (car f))
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)

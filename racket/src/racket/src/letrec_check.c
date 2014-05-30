@@ -599,6 +599,15 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
   return o;
 }
 
+static int is_effect_free_prim(Scheme_Object *rator)
+{
+  if (SCHEME_PRIMP(rator)
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE))
+    return 1;
+
+  return 0;
+}
+
 static Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Frame *frame, 
                                                Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
@@ -611,11 +620,17 @@ static Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Fr
   /* we'll have to check the rator and all the arguments */
   n = 1 + app->num_args;
 
-  /* by entering the sub-expressions of an application, all
-     protectable variables are moved to the unprotected state. */
-  new_uvars = merge_vars(uvars, pvars);
-  new_pvars = rem_vars(pvars);
-  pos = scheme_false;
+  if (is_effect_free_prim(app->args[0])) {
+    /* an immediate prim cannot call anything among its arguments */
+    new_uvars = uvars;
+    new_pvars = pvars;
+  } else {
+    /* by entering the sub-expressions of an application, all
+       protectable variables are moved to the unprotected state. */
+    new_uvars = merge_vars(uvars, pvars);
+    new_pvars = rem_vars(pvars);
+    pos = scheme_false;
+  }
 
   for (i = 0; i < n; i++) { 
     val = letrec_check_expr(app->args[i], frame, new_uvars, new_pvars, pos);
@@ -633,11 +648,17 @@ static Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App2_Rec *)o;
     
-  /* by entering the sub-expressions of an application, all
-     protectable variables are moved to the unprotected state. */
-  new_uvars = merge_vars(uvars, pvars);
-  new_pvars = rem_vars(pvars);
-  pos = scheme_false;
+  if (is_effect_free_prim(app->rator)) {
+    /* an immediate prim cannot call anything among its arguments */
+    new_uvars = uvars;
+    new_pvars = pvars;
+  } else {
+    /* by entering the sub-expressions of an application, all
+       protectable variables are moved to the unprotected state. */
+    new_uvars = merge_vars(uvars, pvars);
+    new_pvars = rem_vars(pvars);
+    pos = scheme_false;
+  }
 
   val = letrec_check_expr(app->rator, frame, new_uvars, new_pvars, pos);
   app->rator = val;
@@ -655,11 +676,17 @@ static Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App3_Rec *)o;
 
-  /* by entering the sub-expressions of an application, all
-     protectable variables are moved to the unprotected state. */
-  new_uvars = merge_vars(uvars, pvars);
-  new_pvars = rem_vars(pvars);
-  pos = scheme_false;
+  if (is_effect_free_prim(app->rator)) {
+    /* an immediate prim cannot call anything among its arguments */
+    new_uvars = uvars;
+    new_pvars = pvars;
+  } else {
+    /* by entering the sub-expressions of an application, all
+       protectable variables are moved to the unprotected state. */
+    new_uvars = merge_vars(uvars, pvars);
+    new_pvars = rem_vars(pvars);
+    pos = scheme_false;
+  }
 
   val = letrec_check_expr(app->rator, frame, new_uvars, new_pvars, pos);
   app->rator = val;
@@ -760,18 +787,32 @@ static Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_
        application! hurray! */
 
     Scheme_Deferred_Expr *clos;
-    Letrec_Check_Frame *outer_frame;
-    
-    /* create a deferred expression that closes over the frame it
-       appeared in, the variable to which it is being deferred,
-       and the current uvars and pvars */
-    int position = SCHEME_INT_VAL(pos);
-    clos = make_deferred_expr_closure(data, frame, position, uvars, pvars);
+    Letrec_Check_Frame *outer_frame = NULL;
 
-    /* get the correct frame and stick the deferred_expr_closure up there */
-    outer_frame = get_nearest_rhs(frame);
-    update_frame(outer_frame, frame, position, clos);
+    /* pos is either a single integer or a list of integers */
 
+    while (SCHEME_INTP(pos) || SCHEME_PAIRP(pos)) {
+      /* create a deferred expression that closes over the frame it
+         appeared in, the variable to which it is being deferred,
+         and the current uvars and pvars */
+      int position;
+
+      if (SCHEME_INTP(pos)) {
+        position = SCHEME_INT_VAL(pos);
+        pos = scheme_null;
+      } else {
+        position = SCHEME_INT_VAL(SCHEME_CAR(pos));
+        pos = SCHEME_CDR(pos);
+      }
+      clos = make_deferred_expr_closure(data, frame, position, uvars, pvars);
+
+      /* get the correct frame: */
+      if (!outer_frame)
+        outer_frame = get_nearest_rhs(frame);
+
+      /* attach the deferred_expr_closure to the right position in the correct frame */
+      update_frame(outer_frame, frame, position, clos);
+    }
   }
 
   return o;
@@ -1174,18 +1215,34 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
 
     k -= clv->count;
 
-    /* TODO: is there something more sane for the treatment of
-       bindings with no variables?  every lambda in the rhs will
-       be treated as if there is an unsafe application where in
-       fact it is just the opposite, no unsafe application can
-       possibly happen */
     if (clv->count == 0) {
       val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
-                              scheme_false);
+                              /* deferred closures get attached to no variables,
+                                 which is sensible because the closure will not
+                                 be reachable: */
+                              scheme_null);
     }
     else if (frame_type == FRAME_TYPE_LETREC) {
+      Scheme_Object *new_pos;
+
+      if (clv->count == 1) {
+        /* any deferred closure on the right-hand side gets attached to the
+           variable on the left-hand side: */
+        new_pos = scheme_make_integer(k);
+      } else {
+        /* attach any deferred closures on the right-hand side to all
+           variables on the left-hand side; we could do better by
+           recognizing an immediate `values` to avoid conflating all
+           variables in that case */
+        int sub;
+        new_pos = scheme_null;
+        for (sub = clv->count; sub--; ) {
+          new_pos = scheme_make_pair(scheme_make_integer(k+sub), new_pos);
+        }
+      }
+
       val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
-                              scheme_make_integer(k));
+                              new_pos);
     }
     else {
       val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
