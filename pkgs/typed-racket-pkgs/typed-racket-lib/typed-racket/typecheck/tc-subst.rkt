@@ -9,13 +9,13 @@
          (except-in (types abbrev utils filter-ops) -> ->* one-of/c)
          (rep type-rep object-rep filter-rep rep-utils))
 
-(provide add-scope values->tc-results)
+(provide add-scope)
 
 (provide/cond-contract
-  [open-Values (-> SomeValues/c (listof Object?) (listof Type/c) -> full-tc-results/c)]
+  [values->tc-results (->* (SomeValues/c (listof Object?)) ((listof Type/c)) full-tc-results/c)]
   [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
 
-(define (open-Values v os ts)
+(define (values->tc-results v os [ts (map (λ (o) Univ) os)])
   (match v
     [(AnyValues: f)
      (tc-any-results (open-Filter f os))]
@@ -217,26 +217,3 @@
                          (make-arr* null Univ))]))
    (for-type type)
     #f))
-
-;; Convert a Values to a corresponding tc-results
-(define/cond-contract (values->tc-results tc formals)
-  (SomeValues/c (listof identifier?) . -> . tc-results/c)
-  (match tc
-    [(AnyValues: f) (tc-any-results f)]
-    [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
-     (let-values ([(ts fs os)
-                   (for/lists (ts fs os) ([r (in-list rs)])
-                     (open-Result r (map (lambda (i) (make-Path null i))
-                                         formals)))])
-       (ret ts fs os
-            (for/fold ([dty dty]) ([(o idx) (in-indexed (in-list formals))])
-              (define key (list 0 idx))
-              (subst-type dty key (make-Path null o) #t))
-            dbound))]
-    [(Values: (list (and rs (Result: ts fs os)) ...))
-     (let-values ([(ts fs os)
-                   (for/lists (ts fs os) ([r (in-list rs)])
-                     (open-Result r (map (lambda (i) (make-Path null i))
-                                         formals)))])
-       (ret ts fs os))]))
-
