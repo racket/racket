@@ -1202,7 +1202,8 @@ static void emit_indentation(mz_jit_state *jitter)
 #define JIT_FPU_FPR_1(r) JIT_FPU_FPR1
 #endif
 
-#if defined(MZ_USE_JIT_I386)
+#if defined(MZ_USE_JIT_I386) && (!defined(JIT_X86_64) || !defined(JIT_X86_SSE))
+/* This is better than lightning's x87 or 32-bit SSE jit_movi_d[_fppush](): */
 # define mz_movi_d_fppush(rd,immd,tmp)    { GC_CAN_IGNORE void *addr; \
                                             addr = scheme_mz_retain_double(jitter, immd); \
                                             (void)jit_patchable_movi_p(tmp, addr);        \
