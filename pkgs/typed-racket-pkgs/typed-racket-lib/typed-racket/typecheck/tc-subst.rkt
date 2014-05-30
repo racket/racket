@@ -220,27 +220,23 @@
 
 ;; Convert a Values to a corresponding tc-results
 (define/cond-contract (values->tc-results tc formals)
-  (SomeValues/c (or/c #f (listof identifier?)) . -> . tc-results/c)
+  (SomeValues/c (listof identifier?) . -> . tc-results/c)
   (match tc
     [(AnyValues: f) (tc-any-results f)]
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
-     (if formals
-         (let-values ([(ts fs os)
-                       (for/lists (ts fs os) ([r (in-list rs)])
-                         (open-Result r (map (lambda (i) (make-Path null i))
-                                             formals)))])
-           (ret ts fs os
-                (for/fold ([dty dty]) ([(o idx) (in-indexed (in-list formals))])
-                  (define key (list 0 idx))
-                  (subst-type dty key (make-Path null o) #t))
-                dbound))
-         (ret ts fs os dty dbound))]
+     (let-values ([(ts fs os)
+                   (for/lists (ts fs os) ([r (in-list rs)])
+                     (open-Result r (map (lambda (i) (make-Path null i))
+                                         formals)))])
+       (ret ts fs os
+            (for/fold ([dty dty]) ([(o idx) (in-indexed (in-list formals))])
+              (define key (list 0 idx))
+              (subst-type dty key (make-Path null o) #t))
+            dbound))]
     [(Values: (list (and rs (Result: ts fs os)) ...))
-     (if formals
-         (let-values ([(ts fs os)
-                       (for/lists (ts fs os) ([r (in-list rs)])
-                         (open-Result r (map (lambda (i) (make-Path null i))
-                                             formals)))])
-           (ret ts fs os))
-         (ret ts fs os))]))
+     (let-values ([(ts fs os)
+                   (for/lists (ts fs os) ([r (in-list rs)])
+                     (open-Result r (map (lambda (i) (make-Path null i))
+                                         formals)))])
+       (ret ts fs os))]))
 
