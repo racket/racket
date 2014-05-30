@@ -2991,6 +2991,18 @@
         ((letrec ([lp (lambda (x) lp)]) lp) 'y)
         #:ret (ret (t:-> -Symbol Univ))
         #:expected (ret (t:-> -Symbol Univ) -no-filter -no-obj)]
+
+       [tc-e/t
+         (lambda (x)
+           (define (g y)
+               (unless (string? y)
+                 (error 'bad-input))
+               (eval y))
+           (g x)
+           x)
+         (t:-> Univ -String
+               : (-FS (-and (-filter -String '(0 0)) (-not-filter (-val #f) '(0 0))) -bot)
+               : (make-Path null '(0 0)))]
         )
 
   (test-suite
