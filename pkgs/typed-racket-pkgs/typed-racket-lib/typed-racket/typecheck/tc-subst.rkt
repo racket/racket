@@ -18,7 +18,7 @@
 (define (open-Values v os ts)
   (match v
     [(AnyValues: f)
-     (tc-any-results (open-Filter f os ts))]
+     (tc-any-results (open-Filter f os))]
     [(Values: results)
      (define-values (t-r f-r o-r)
        (for/lists (t-r f-r o-r)
@@ -30,14 +30,21 @@
        (for/lists (t-r f-r o-r)
          ([r (in-list results)])
          (open-Result r os ts)))
-     (ret t-r f-r o-r dty dbound)]))
+     (ret t-r f-r o-r (open-Type dty os) dbound)]))
 
 
-(define/cond-contract (open-Filter f objs ts)
+(define/cond-contract (open-Type t objs)
+  (-> (Type/c (listof Object?) (listof Type/c) Filter/c))
+  (for/fold ([t t])
+            ([(o arg) (in-indexed (in-list objs))])
+    (define key (list 0 arg))
+    (subst-type t key o #t)))
+
+
+(define/cond-contract (open-Filter f objs)
   (-> (Filter/c (listof Object?) (listof Type/c) Filter/c))
   (for/fold ([f f])
-            ([(o arg) (in-indexed (in-list objs))]
-             [arg-ty (in-list ts)])
+            ([(o arg) (in-indexed (in-list objs))])
     (define key (list 0 arg))
     (subst-filter f key o #t)))
 

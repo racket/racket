@@ -139,5 +139,11 @@
         (tc-any-results (-filter -String #'x)))
 
 
+      (check-equal?
+        (open-Values (-values-dots null (-> Univ -Boolean : (-FS (-filter -String '(1 0)) -top)) 'b)
+                     (list (make-Path null #'x)) (list Univ))
+        (ret null null null (-> Univ -Boolean : (-FS (-filter -String #'x) -top)) 'b))
+
+
     )
   ))
