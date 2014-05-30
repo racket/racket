@@ -3712,5 +3712,15 @@
 (test 'c dynamic-require ''check-jit-registers-shortcut 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Check (non-)inference of flonums with `if` branches:
+
+(let ()
+  (define f (lambda (x)
+              (let ([v (if x 1 2.0)])
+                (fl+ v v))))
+  (set! f f)
+  (err/rt-test (f #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

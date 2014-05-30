@@ -2021,8 +2021,14 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
     case scheme_branch_type:
       {
         Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
-        return (expr_produces_local_type(b->tbranch, fuel / 2)
-                && expr_produces_local_type(b->fbranch, fuel / 2));
+        int t1, t2;
+
+        t1 = expr_produces_local_type(b->tbranch, fuel / 2);
+        if (t1) {
+          t2 = expr_produces_local_type(b->fbranch, fuel / 2);
+          return ((t1 == t2) ? t1 : 0);
+        } else
+          return 0;
       }
       break;
     case scheme_sequence_type:
