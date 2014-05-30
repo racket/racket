@@ -5,7 +5,7 @@
          (except-in (types abbrev union utils filter-ops tc-result)
                     -> ->* one-of/c)
          (rep type-rep filter-rep object-rep rep-utils)
-         (typecheck tc-subst)
+         (typecheck tc-subst check-below)
          (contract-req))
 
 (provide abstract-results
@@ -164,10 +164,13 @@
            i)])))
 
 (define (tc-results->values tc)
-  (match tc
-    [(tc-any-results: _) ManyUniv]
-    [(tc-results: ts) (-values ts)]
-    [(tc-results: ts _ _ dty dbound) (-values-dots ts dty dbound)]))
+  (match (fix-results tc)
+    [(tc-any-results: f)
+     (-AnyValues f)]
+    [(tc-results: ts fs os)
+     (make-Values (map -result ts fs os))]
+    [(tc-results: ts fs os dty dbound)
+     (make-ValuesDots (map -result ts fs os) dty dbound)]))
 
 (define/cond-contract (resolve atoms prop)
   ((listof Filter/c)
