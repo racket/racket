@@ -423,7 +423,6 @@
     (match expected
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _) (PolyRow: _ _ _)))
        (tc/plambda form (remove-poly-layer tvarss-list) formals bodies expected)]
-      [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
       [_
         (define remaining-layers (remove-poly-layer tvarss-list))
         (if (null? remaining-layers)
