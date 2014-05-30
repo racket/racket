@@ -4,7 +4,7 @@
          racket/dict racket/list syntax/parse racket/syntax syntax/stx
          racket/match syntax/id-table racket/set
          (contract-req)
-         (rep type-rep)
+         (rep type-rep object-rep)
          (rename-in (types abbrev utils union)
                     [-> t:->]
                     [->* t:->*]
@@ -256,12 +256,12 @@
       [(null? (syntax-e s)) (formals (reverse acc) #f stx)]
       [else (formals (reverse acc) s stx)])))
 
-(define (formals->list formals)
-  (append
-    (formals-positional formals)
-    (if (formals-rest formals)
-        (list (formals-rest formals))
-        empty)))
+(define (formals->objects formals)
+  (for/list ([i (in-list (append (formals-positional formals)
+                                 (if (formals-rest formals)
+                                     (list (formals-rest formals))
+                                     empty)))])
+    (make-Path null i)))
 
 
 ;; An arity is a list (List Natural Boolean), with the number of positional
@@ -370,7 +370,7 @@
                  [(list (arr: argss rets rests drests '()) ...)
                   (for/list ([args (in-list argss)] [ret (in-list rets)] [rest (in-list rests)] [drest (in-list drests)])
                     (tc/lambda-clause/check
-                     f* b* args (values->tc-results ret (formals->list f*)) rest drest))])))))
+                     f* b* args (values->tc-results ret (formals->objects f*)) rest drest))])))))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type

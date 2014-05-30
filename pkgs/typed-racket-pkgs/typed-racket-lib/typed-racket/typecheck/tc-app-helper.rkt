@@ -49,7 +49,7 @@
                           [oa (in-sequence-forever (in-list o-a) -empty-obj)]
                           [ta (in-sequence-forever (in-list t-a) Univ)])
                          (values oa ta))])
-           (open-Values rng o-a t-a)))]
+           (values->tc-results rng o-a t-a)))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _
