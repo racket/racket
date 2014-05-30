@@ -15,83 +15,54 @@
   [values->tc-results (->* (SomeValues/c (listof Object?)) ((listof Type/c)) full-tc-results/c)]
   [replace-names (-> (listof (list/c identifier? Object?)) tc-results/c tc-results/c)])
 
+;; Substitutes the given objects into the values and turns it into a tc-result.
+;; This matches up to the substitutions in the T-App rule from the ICFP paper.
 (define (values->tc-results v os [ts (map (λ (o) Univ) os)])
-  (match v
-    [(AnyValues: f)
-     (tc-any-results (open-Filter f os))]
-    [(Values: results)
-     (define-values (t-r f-r o-r)
-       (for/lists (t-r f-r o-r)
-         ([r (in-list results)])
-         (open-Result r os ts)))
-     (ret t-r f-r o-r)]
-    [(ValuesDots: results dty dbound)
-     (define-values (t-r f-r o-r)
-       (for/lists (t-r f-r o-r)
-         ([r (in-list results)])
-         (open-Result r os ts)))
-     (ret t-r f-r o-r (open-Type dty os) dbound)]))
+  (define res
+    (match v
+      [(AnyValues: f)
+       (tc-any-results f)]
+      [(Results: t f o)
+       (ret t f o)]
+      [(Results: t f o dty dbound)
+       (ret t f o dty dbound)]))
+  (for/fold ([res res]) ([(o arg) (in-indexed (in-list os))]
+                         [t (in-list ts)])
+    (subst-tc-results res (list 0 arg) o #t t)))
 
-
-(define/cond-contract (open-Type t objs)
-  (-> (Type/c (listof Object?) (listof Type/c) Filter/c))
-  (for/fold ([t t])
-            ([(o arg) (in-indexed (in-list objs))])
-    (define key (list 0 arg))
-    (subst-type t key o #t)))
-
-
-(define/cond-contract (open-Filter f objs)
-  (-> (Filter/c (listof Object?) (listof Type/c) Filter/c))
-  (for/fold ([f f])
-            ([(o arg) (in-indexed (in-list objs))])
-    (define key (list 0 arg))
-    (subst-filter f key o #t)))
-
-
-;; Substitutes the given objects into the type, filters, and object
-;; of a Result for function application. This matches up to the substitutions
-;; in the T-App rule from the ICFP paper.
-(define/cond-contract (open-Result r objs [ts #f])
-  (->* (Result? (listof Object?)) ((listof (or/c #f Type/c))) (values Type/c FilterSet? Object?))
-  (match-define (Result: t fs old-obj) r)
-  (for/fold ([t t] [fs fs] [old-obj old-obj])
-            ([(o arg) (in-indexed (in-list objs))]
-             [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
-    (define key (list 0 arg))
-    (values (subst-type t key o #t)
-            (subst-filter-set fs key o #t arg-ty)
-            (subst-object old-obj key o #t))))
 
 ;; replace-names: (listof (list/c identifier? Object?) tc-results? -> tc-results?
 ;; For each name replaces all uses of it in res with the corresponding object.
 ;; This is used so that names do not escape the scope of their definitions
 (define (replace-names names+objects res)
   (for/fold ([res res]) ([name/object (in-list names+objects)])
-    (subst-tc-results res (first name/object) (second name/object) #t)))
+    (subst-tc-results res (first name/object) (second name/object) #t Univ)))
 
 ;; Substitution of objects into a tc-results
-(define/cond-contract (subst-tc-results res k o polarity)
-  (-> full-tc-results/c name-ref/c Object? boolean? full-tc-results/c)
+;; This is a combination of all of thes substitions from the paper over the different parts of the
+;; results.
+;; t is the type of the object that we are substituting in. This allows for simplification of some
+;; filters if they conflict with the argument type.
+(define/cond-contract (subst-tc-results res k o polarity t)
+  (-> full-tc-results/c name-ref/c Object? boolean? Type? full-tc-results/c)
   (define (st t) (subst-type t k o polarity))
   (define (sf f) (subst-filter f k o polarity))
-  (define (sfs fs) (subst-filter-set fs k o polarity))
+  (define (sfs fs) (subst-filter-set fs k o polarity t))
   (define (so ob) (subst-object ob k o polarity))
   (match res
     [(tc-any-results: f) (tc-any-results (sf f))]
     [(tc-results: ts fs os)
      (ret (map st ts) (map sfs fs) (map so os))]
     [(tc-results: ts fs os dt db)
-     (ret (map st ts) (map sfs fs) (map so os) dt db)]))
+     (ret (map st ts) (map sfs fs) (map so os) (st dt) db)]))
 
 
 ;; Substitution of objects into a filter set
 ;; This is essentially ψ+|ψ- [o/x] from the paper
-(define/cond-contract (subst-filter-set fs k o polarity [t #f])
-  (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
-  (define extra-filter (if t (-filter t k) -top))
+(define/cond-contract (subst-filter-set fs k o polarity [t Univ])
+  (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) (Type/c) FilterSet?)
   (define (add-extra-filter f)
-    (define f* (-and extra-filter f))
+    (define f* (-and (-filter t k) f))
     (match f*
       [(Bot:) f*]
       [_ f]))
