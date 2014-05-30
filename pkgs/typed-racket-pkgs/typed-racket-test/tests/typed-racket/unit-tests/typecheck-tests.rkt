@@ -3025,6 +3025,18 @@
              #:ret (ret Univ)]
        [tc-e (stx->list #'(a . b))
              #:ret (ret (t:Un (-lst (-Syntax Univ)) (-val #f)))]
+
+       [tc-e/t
+         (lambda (x)
+           (define (g y)
+               (unless (string? y)
+                 (error 'bad-input))
+               (eval y))
+           (g x)
+           x)
+         (t:-> Univ -String
+               : (-FS (-and (-filter -String '(0 0)) (-not-filter (-val #f) '(0 0))) -bot)
+               : (make-Path null '(0 0)))]
         )
 
   (test-suite
