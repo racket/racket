@@ -1045,15 +1045,6 @@ static jit_insn *fp_tmpr;
 # define __END_TINY_JUMPS_IF_COMPACT__(cond) __END_TINY_JUMPS__(cond)
 #endif
 
-/* mz_b..i_p supports 64-bit constants on x86_64: */
-#ifdef MZ_USE_JIT_X86_64
-# define mz_beqi_p(a, v, i) ((void)jit_patchable_movi_p(JIT_REXTMP, i), jit_beqr_p(a, v, JIT_REXTMP))
-# define mz_bnei_p(a, v, i) ((void)jit_patchable_movi_p(JIT_REXTMP, i), jit_bner_p(a, v, JIT_REXTMP))
-#else
-# define mz_beqi_p(a, v, i) jit_beqi_p(a, v, i)
-# define mz_bnei_p(a, v, i) jit_bnei_p(a, v, i)
-#endif
-
 #ifdef jit_leai_l
 # define jit_fixnum_l(JIT_Rdest, JIT_Rsrc) jit_leai_l(JIT_Rdest, JIT_Rsrc, 1, 1)
 #else

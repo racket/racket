@@ -3360,7 +3360,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     /* check whether argv == runstack: */
     ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     /* check whether we have at least one rest arg: */
-    ref3 = jit_bgti_p(jit_forward(), JIT_R1, cnt);
+    ref3 = jit_bgti_i(jit_forward(), JIT_R1, cnt);
     /* yes and no: make room for the scheme_null */
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
