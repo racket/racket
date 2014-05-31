@@ -3,7 +3,7 @@
 (provide contract
          (rename-out [-recursive-contract recursive-contract])
          current-contract-region
-         invariant-contract)
+         invariant-assertion)
 
 (require (for-syntax racket/base syntax/name syntax/srcloc)
          racket/stxparam
@@ -89,7 +89,7 @@
           (procedure-rename new-val vs-name)])]
       [else new-val])))
 
-(define-syntax (invariant-contract stx)
+(define-syntax (invariant-assertion stx)
   (syntax-case stx ()
     [(_ ctc e)
      (quasisyntax/loc stx

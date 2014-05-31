@@ -1509,24 +1509,24 @@ The @racket[define-struct/contract] form only allows a subset of the
 (make-salmon #f 'pacific)
 ]}
 
-@defform[(invariant-contract contract-expr expr)]{
-  Establishes an invariant of @racket[expr], determined by @racket[contract-expr].
+@defform[(invariant-assertion invariant-expr expr)]{
+  Establishes an invariant of @racket[expr], determined by @racket[invariant-expr].
                    
-  Unlike other ways to attach contracts to values, an
-  @racket[invariant-contract] does not establish a boundary
-  between two parties. Instead, it simply puts the contract
-  on the value, treating the module containing the 
-  @racket[invariant-contract] expression as the party to be blamed
-  for any violations of the contract.
+  Unlike the specification of a contract, an
+  @racket[invariant-assertion] does not establish a boundary
+  between two parties. Instead, it simply attaches a logical assertion 
+  to the value. Because the form uses contract machinery to check the
+  assertion, the surround module is treated as the party to be blamed
+  for any violations of the assertion. 
   
-  This means, for example, that the contract is checked on
+  This means, for example, that the assertion is checked on
   recursive calls, when an invariant is used on the right-hand
-  side of a definition.
+  side of a definition:
                               
   @examples[#:eval 
             furlongs->feet-eval
             (define furlongss->feets
-              (invariant-contract
+              (invariant-assertion
                (-> (listof real?) (listof real?))
                (λ (l)
                  (cond
