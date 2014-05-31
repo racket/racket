@@ -71,9 +71,9 @@
                                                         (Empty:))))
                             #f #f '())))
      `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub n) ,(sub pth))]
-    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False) pth 0)
-                                                                      (TypeFilter: (== -False) pth 0))
-                                                        (Path: pth 0))))
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False) pth (list 0 0))
+                                                                      (TypeFilter: (== -False) pth (list 0 0)))
+                                                        (Path: pth (list 0 0)))))
                             #f #f '())))
      `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
     [(Union: elems) (split-union elems)]
