@@ -1328,6 +1328,18 @@
                              (a1)
                              (a2))))
 
+(test-comp '(if (let ([z (random)]) null) 1 2)
+           '(if (let ([z (random)]) #t) 1 2))
+
+(test-comp '(if (if (list? (cons 1 null)) null (void)) 1 2)
+           '1)
+
+(test-comp '(if (if (list? (cons 1 null)) 7 8) 1 2)
+           '1)
+
+(test-comp '(if (if (list? (cons 1 null)) #t #t) 1 2)
+           '1)
+
 (test-comp '(lambda (y)
               (let ([f (lambda (x) x)])
                 (if f
