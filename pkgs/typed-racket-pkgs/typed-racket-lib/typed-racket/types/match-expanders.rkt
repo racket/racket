@@ -3,7 +3,7 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep)
+(require (rep type-rep rep-utils)
          racket/match
          (types resolve)
          (contract-req)
@@ -28,9 +28,9 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
-       #'(app untuple (? values elem-pats) (Value: '()))]
+       #'(? Type? (app untuple (? values elem-pats) (Value: '())))]
       [(_ elem-pats #:tail tail-pat)
-       #'(app untuple (? values elem-pats) tail-pat)])))
+       #'(? Type? (app untuple (? values elem-pats) tail-pat))])))
 
 ;; Type/c -> (or/c (values/c #f #f) (values/c (listof Type/c) Type/c)))
 ;; Returns the prefix of types that are consed on to the last type (a non finite-pair type).

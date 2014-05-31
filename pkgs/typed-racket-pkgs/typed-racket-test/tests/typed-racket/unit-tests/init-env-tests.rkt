@@ -30,5 +30,8 @@
       (check-equal?
         (convert (->acc (list (-lst -String)) -String (list -car)))
         '(->acc (list (-lst -String)) -String `(,-car)))
+      (check-equal?
+        (convert (-mu x (-lst* Univ (-box x))))
+        '(make-Mu 'x (-lst* Univ (make-Box (make-F 'x)))))
     )
   ))

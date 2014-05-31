@@ -60,9 +60,7 @@
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
     [(? Rep? (app (lambda (v) (hash-ref predefined-type-table (Rep-seq v) #f)) (? values id))) id]
-    [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
-     `(-lst ,(sub elem-ty))]
-    [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
+    [(Listof: elem-ty)
      `(-lst ,(sub elem-ty))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
      `(simple-> (list ,@(map sub dom)) ,(sub t))]
@@ -76,6 +74,7 @@
                                                         (Path: pth (list 0 0)))))
                             #f #f '())))
      `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
+    [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) `(-result ,(sub t))]
     [(Union: elems) (split-union elems)]
     [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
     [(Name: stx deps args struct?)
