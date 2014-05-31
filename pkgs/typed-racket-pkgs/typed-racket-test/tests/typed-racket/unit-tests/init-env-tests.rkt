@@ -26,7 +26,7 @@
         '(simple-> (list -String) -Symbol))
       (check-equal?
         (convert (make-pred-ty -String))
-        '(make-pred-ty (list Univ) -Boolean -String `(0 0) `()))
+        '(make-pred-ty (list Univ) -Boolean -String (make-Path `() (list 0 0))))
       (check-equal?
         (convert (->acc (list (-lst -String)) -String (list -car)))
         '(->acc (list (-lst -String)) -String `(,-car)))

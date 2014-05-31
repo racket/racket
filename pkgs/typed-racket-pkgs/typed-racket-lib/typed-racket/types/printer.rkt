@@ -115,9 +115,9 @@
   (match filt
     [(FilterSet: thn els) `(,(filter->sexp thn) \| ,(filter->sexp els))]
     [(NoFilter:) '-]
-    [(NotTypeFilter: type path nm)
+    [(NotTypeFilter: type (Path: path nm))
      `(! ,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
-    [(TypeFilter: type path nm)
+    [(TypeFilter: type (Path: path nm))
      `(,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
     [(Bot:) 'Bot]
     [(Top:) 'Top]
@@ -240,8 +240,8 @@
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
          (list (type->sexp t))]
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft pth (list 0 0))
-                                             (NotTypeFilter: ft pth (list 0 0)))
+                                 (FilterSet: (TypeFilter: ft (Path: pth (list 0 0)))
+                                             (NotTypeFilter: ft (Path: pth (list 0 0))))
                                  (Empty:))))
          ;; Only print a simple filter for single argument functions,
          ;; since parse-type only accepts simple latent filters on single
@@ -255,7 +255,7 @@
         ;; special case (even when complex printing is off) because it's
         ;; useful to users who use functions like `filter`.
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft '() (list 0 0)) (Top:))
+                                 (FilterSet: (TypeFilter: ft (Path: '() (list 0 0))) (Top:))
                                  (Empty:))))
          #:when (= 1 (length dom))
          `(,(type->sexp t) : #:+ ,(type->sexp ft))]

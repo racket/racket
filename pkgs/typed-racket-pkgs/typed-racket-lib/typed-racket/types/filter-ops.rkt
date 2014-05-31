@@ -19,10 +19,10 @@
 ;; Returns true if the AND of the two filters is equivalent to Bot
 (define (contradictory? f1 f2)
   (match* (f1 f2)
-    [((TypeFilter: t1 p1 i1) (NotTypeFilter: t2 p1 i2))
-     (and (name-ref=? i1 i2) (subtype t1 t2))]
-    [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
-     (and (name-ref=? i1 i2) (subtype t1 t2))]
+    [((TypeFilter: t1 p) (NotTypeFilter: t2 p))
+     (subtype t1 t2)]
+    [((NotTypeFilter: t2 p) (TypeFilter: t1 p))
+     (subtype t1 t2)]
     [((Bot:) _) #t]
     [(_ (Bot:)) #t]
     [(_ _) #f]))
@@ -31,10 +31,10 @@
 ;; Returns true if the OR of the two filters is equivalent to Top
 (define (complementary? f1 f2)
   (match* (f1 f2)
-    [((TypeFilter: t1 p1 i1) (NotTypeFilter: t2 p1 i2))
-     (and (name-ref=? i1 i2) (subtype t2 t1))]
-    [((NotTypeFilter: t2 p1 i2) (TypeFilter: t1 p1 i1))
-     (and (name-ref=? i1 i2) (subtype t2 t1))]
+    [((TypeFilter: t1 p) (NotTypeFilter: t2 p))
+     (subtype t2 t1)]
+    [((NotTypeFilter: t2 p) (TypeFilter: t1 p))
+     (subtype t2 t1)]
     [((Top:) (Top:)) #t]
     [(_ _) #f]))
 
@@ -54,18 +54,12 @@
      (memf (lambda (f) (filter-equal? f f2)) fs)]
     [(f1 (AndFilter: fs))
      (memf (lambda (f) (filter-equal? f f1)) fs)]
-    [((TypeFilter: t1 p1 i1)
-      (TypeFilter: t2 p1 i2))
-     (and (name-ref=? i1 i2)
-          (subtype t2 t1))]
-    [((NotTypeFilter: t2 p1 i2)
-      (NotTypeFilter: t1 p1 i1))
-     (and (name-ref=? i1 i2)
-          (subtype t2 t1))]
-    [((NotTypeFilter: t1 p1 i1)
-      (TypeFilter: t2 p1 i2))
-     (and (name-ref=? i1 i2)
-          (not (overlap t1 t2)))]
+    [((TypeFilter: t1 p) (TypeFilter: t2 p))
+     (subtype t2 t1)]
+    [((NotTypeFilter: t2 p) (NotTypeFilter: t1 p))
+     (subtype t2 t1)]
+    [((NotTypeFilter: t1 p) (TypeFilter: t2 p))
+     (not (overlap t1 t2))]
     [(_ _) #f]))
 
 (define (hash-name-ref i)
@@ -86,33 +80,32 @@
                 (for/list ([v (in-dict-values tf-map)]) v)
                 (for/list ([v (in-dict-values ntf-map)]) v))
         (match (car props)
-          [(and p (TypeFilter: t1 f1 x) (? (lambda _ or?)))
+          [(and f (TypeFilter: t1 p) (? (lambda _ or?)))
            (hash-update! tf-map
-                         (list f1 (hash-name-ref x))
-                         (match-lambda [(TypeFilter: t2 _ _) (-filter (Un t1 t2) x f1)]
+                         p
+                         (match-lambda [(TypeFilter: t2 _) (-filter (Un t1 t2) p)]
                                        [p (int-err "got something that isn't a typefilter ~a" p)])
-                         p)
+                         f)
            (loop (cdr props) others)]
-          [(and p (TypeFilter: t1 f1 x) (? (lambda _ (not or?))))
-           (match (hash-ref tf-map (list f1 (hash-name-ref x)) #f)
-             [(TypeFilter: (? (lambda (t2) (not (overlap t1 t2)))) _ _)
+          [(and f (TypeFilter: t1 p) (? (lambda _ (not or?))))
+           (match (hash-ref tf-map p #f)
+             [(TypeFilter: (? (lambda (t2) (not (overlap t1 t2)))) _)
               ;; we're in an And, and we got two types for the same path that do not overlap
               (list -bot)]
-             [(TypeFilter: t2 _ _)
-              (hash-set! tf-map (list f1 (hash-name-ref x))
-                         (-filter (restrict t1 t2) x f1))
+             [(TypeFilter: t2 _)
+              (hash-set! tf-map p
+                         (-filter (restrict t1 t2) p))
               (loop (cdr props) others)]
              [#f
-              (hash-set! tf-map (list f1 (hash-name-ref x))
-                         (-filter t1 x f1))
+              (hash-set! tf-map  p
+                         (-filter t1 p))
               (loop (cdr props) others)])]
-          [(and p (NotTypeFilter: t1 f1 x) (? (lambda _ (not or?))))
-           (hash-update! ntf-map
-                         (list f1 (hash-name-ref x))
-                         (match-lambda [(NotTypeFilter: t2 _ _)
-                                        (-not-filter (Un t1 t2) x f1)]
+          [(and f (NotTypeFilter: t1 p) (? (lambda _ (not or?))))
+           (hash-update! ntf-map p
+                         (match-lambda [(NotTypeFilter: t2 _)
+                                        (-not-filter (Un t1 t2) p)]
                                        [p (int-err "got something that isn't a nottypefilter ~a" p)])
-                         p)
+                         f)
            (loop (cdr props) others)]
           [p (loop (cdr props) (cons p others))]))))
 
@@ -122,8 +115,8 @@
   (match p
     [(Bot:) -top]
     [(Top:) -bot]
-    [(TypeFilter: t p o) (-not-filter t o p)]
-    [(NotTypeFilter: t p o) (-filter t o p)]
+    [(TypeFilter: t p) (-not-filter t p)]
+    [(NotTypeFilter: t p) (-filter t p)]
     [(AndFilter: fs) (apply -or (map invert-filter fs))]
     [(OrFilter: fs) (apply -and (map invert-filter fs))]
     [(ImpFilter: f1 f2) (-and f1 (invert-filter f2))]))

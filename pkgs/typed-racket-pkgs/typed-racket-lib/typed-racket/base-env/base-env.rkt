@@ -513,8 +513,9 @@
 
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #f))))]
 [andmap (-polydots (a c d b) (cl->*
-                              ;; 1 means predicate on second argument
-                              (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
+                              (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d)
+                                            ;; predicate on second argument
+                                            (-arg-path 1))
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #t)))))]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
@@ -942,14 +943,14 @@
 [identity (-poly (a) (->acc (list a) a null))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
 [negate (-polydots (a b c d)
-          (cl->* (-> (-> c Univ : (-FS (-filter a 0 null) (-not-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-filter a 0 null) (-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-filter b 0 null) (-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-filter b 0 null) (-not-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-not-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-not-filter a 0 null))))
+          (cl->* (-> (-> c Univ : (-FS (-filter a 0) (-not-filter b 0)))
+                     (-> c -Boolean : (-FS (-not-filter b 0) (-filter a 0))))
+                 (-> (-> c Univ : (-FS (-filter a 0) (-filter b 0)))
+                     (-> c -Boolean : (-FS (-filter b 0) (-filter a 0))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0) (-filter b 0)))
+                     (-> c -Boolean : (-FS (-filter b 0) (-not-filter a 0))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0) (-not-filter b 0)))
+                     (-> c -Boolean : (-FS (-not-filter b 0) (-not-filter a 0))))
                  (-> ((list) [d d] . ->... . Univ)
                      ((list) [d d] . ->... . -Boolean))))]
 ;; probably the most useful cases

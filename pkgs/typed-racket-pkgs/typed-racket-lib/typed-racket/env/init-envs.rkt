@@ -64,13 +64,15 @@
      `(-lst ,(sub elem-ty))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
      `(simple-> (list ,@(map sub dom)) ,(sub t))]
-    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft pth n)
-                                                                      (NotTypeFilter: ft pth n))
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft pth)
+                                                                      (NotTypeFilter: ft pth))
                                                         (Empty:))))
                             #f #f '())))
-     `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub n) ,(sub pth))]
-    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False) pth (list 0 0))
-                                                                      (TypeFilter: (== -False) pth (list 0 0)))
+     `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub pth))]
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False)
+                                                                                      (Path: pth (list 0 0)))
+                                                                      (TypeFilter: (== -False)
+                                                                                   (Path: pth (list 0 0))))
                                                         (Path: pth (list 0 0)))))
                             #f #f '())))
      `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
@@ -122,15 +124,10 @@
             (if cache-box name class-type)])]
     [(arr: dom rng rest drest kws)
      `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]
-    [(TypeFilter: t p i)
-     `(make-TypeFilter ,(sub t) ,(sub p) ,(if (identifier? i)
-                                              `(quote-syntax ,i)
-                                              `(list ,(car i) ,(cadr i))))]
-    [(NotTypeFilter: t p i)
-     `(make-NotTypeFilter ,(sub t) ,(sub p)
-                          ,(if (identifier? i)
-                               `(quote-syntax ,i)
-                               `(list ,(car i) ,(cadr i))))]
+    [(TypeFilter: t p)
+     `(make-TypeFilter ,(sub t) ,(sub p))]
+    [(NotTypeFilter: t p)
+     `(make-NotTypeFilter ,(sub t) ,(sub p))]
     [(Path: p i)
      `(make-Path ,(sub p) ,(if (identifier? i)
                                `(quote-syntax ,i)
