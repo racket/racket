@@ -181,6 +181,16 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 			  int gcable,
 			  void *save_ptr,
 			  Scheme_Native_Closure_Data *ndata)
+/* The given generate() function is called at least twice: once to gather
+   the size of the generated code (at a temporary location), and again
+   to generate the final code at its final location. The size of the
+   generated code must not depend on the deistation address. The
+   `retain_start' field of hte jitter record passed to generate() will
+   be NULL for a sizing run and non-NULL for a generation run.
+
+   In the unlikely event that a 64-bit build switches from 32-bit
+   branches to 64-bit branches, generate() might be called an extra
+   time in either mode. */
 {
   mz_jit_state _jitter;
   mz_jit_state *jitter = &_jitter;
@@ -289,9 +299,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
          then switch over to long-jump mode. */
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
-        known_size = 0;
-        use_long_jumps = 1;
-        continue;
+        return scheme_generate_one(old_jitter, generate, data, gcable,
+                                   save_ptr, ndata);
       }
     }
 #endif
@@ -342,9 +351,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     if (!use_long_jumps) {
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
-        known_size = 0;
-        use_long_jumps = 1;
-        continue;
+        return scheme_generate_one(old_jitter, generate, data, gcable,
+                                   save_ptr, ndata);
       }
     }
 #endif
