@@ -140,9 +140,9 @@
    [(-> Any Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
     (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
-    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
    [(-> Any Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
-    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
    [(All (a b) (-> (-> a Any : #:+ b) (Listof a) (Listof b)))
     (-poly (a b) (t:-> (asym-pred a Univ (-FS (-filter b 0) -top)) (-lst a) (-lst b)))]
    [(All (a b) (-> (-> a Any : #:+ (! b)) (Listof a) (Listof b)))

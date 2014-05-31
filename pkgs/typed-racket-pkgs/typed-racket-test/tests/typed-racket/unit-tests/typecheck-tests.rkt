@@ -312,11 +312,11 @@
         #:with id #'p.x
         e]))
 
-  (define (-path t var [p null])
+  (define (-path t var)
     (ret t
-         (-FS (make-NotTypeFilter (-val #f) p var)
-              (make-TypeFilter (-val #f) p var))
-         (make-Path p var))))
+         (-FS (-not-filter (-val #f) var)
+              (-filter (-val #f) var))
+         (make-Path null var))))
 
 
 (define tests

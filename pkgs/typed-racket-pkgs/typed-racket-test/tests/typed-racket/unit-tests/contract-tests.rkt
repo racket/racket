@@ -119,7 +119,7 @@
               (t (->key -Symbol #:key -Boolean #t Univ))
               (t (make-Function
                    (list (make-arr* (list Univ) -Boolean #:kws (list (make-Keyword '#:key Univ #t))
-                                    #:filters (-FS (-filter -Symbol 0 null) (-not-filter -Symbol 0 null))))))
+                                    #:filters (-FS (-filter -Symbol 0) (-not-filter -Symbol 0))))))
               (t (-struct #'struct-name #f (list (make-fld -Symbol #'acc #f))))
               ;; Adapted from PR 13815
               (t (-poly (a) (-> a a)))
