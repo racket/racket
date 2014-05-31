@@ -87,11 +87,18 @@
    tracks variable usage (including whether a variable is mutated or
    not). See "compile.c" along with "compenv.c".
 
-   The second pass, called "optimize", performs constant propagation,
-   constant folding, and function inlining; this pass mutates records
-   produced by the first pass. See "optimize.c".
+   The second pass, called "letrec_rec", determines which references
+   to `letrec'-bound variables need to be guarded with a run-time
+   check to prevent use before definition. The analysis result is
+   reflected by the insertion of `check-notunsafe-undefined`
+   calls. This this pass mutates records produced by the "compile"
+   pass.
 
-   The third pass, called "resolve", finishes compilation by computing
+   The third pass, called "optimize", performs constant propagation,
+   constant folding, and function inlining; this pass mutates records
+   produced by the "letrec_check" pass. See "optimize.c".
+
+   The fourth pass, called "resolve", finishes compilation by computing
    variable offsets and indirections (often mutating the records
    produced by the first pass). It is also responsible for closure
    conversion (i.e., converting closure content to arguments) and
@@ -100,7 +107,7 @@
    due to sharing (potentially cyclic) of closures that are "empty"
    but actually refer to other "empty" closures. See "resolve.c".
 
-   The fourth pass, "sfs", performs another liveness analysis on stack
+   The fifth pass, "sfs", performs another liveness analysis on stack
    slots and inserts operations to clear stack slots as necessary to
    make execution safe for space. In particular, dead slots need to be
    cleared before a non-tail call into arbitrary Racket code. This pass
@@ -118,8 +125,10 @@
 
    Just-in-time compilation:
 
-   If the JIT is enabled, then `eval' processes (perhaps unmarshaled
-   and validated) bytecode one more time: `lambda' and `case-lambda'
+   If the JIT is enabled, then an extra "jitprep" pass processes
+   bytecode one more time --- but only bytecode that is not going to
+   be marshaled, and possibly bytecode that was just  unmarshaled.
+   In this "jitprep" pass, the `lambda' and `case-lambda'
    forms are converted to native-code generators, instead of bytecode
    variants.  The code is not actually JITted until it is called; this
    preparation step merely sets up a JIT hook for each function. The
