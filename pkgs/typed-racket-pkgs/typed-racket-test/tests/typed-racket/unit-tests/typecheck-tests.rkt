@@ -2991,6 +2991,12 @@
         ((letrec ([lp (lambda (x) lp)]) lp) 'y)
         #:ret (ret (t:-> -Symbol Univ))
         #:expected (ret (t:-> -Symbol Univ) -no-filter -no-obj)]
+
+       [tc-e
+         (list (vector 1 2 3))
+        #:ret (ret (-seq (-vec Univ)))
+        #:expected (ret (-seq (-vec Univ)))]
+
         )
 
   (test-suite

@@ -9,6 +9,7 @@
          (types abbrev utils union substitute)
          (rep type-rep)
          (env tvar-env)
+         (prefix-in i: (infer infer))
 
          (for-label
           racket/base
@@ -81,19 +82,20 @@
         [_ (tc/app-regular #'form expected)])))
   ;; special case for `list'
   (pattern (list . args)
-    (match expected
-      [(tc-result1: (Listof: elem-ty))
-       (for ([i (in-syntax #'args)])
-         (tc-expr/check i (ret elem-ty)))
-       (ret (-lst elem-ty))]
-      [(tc-result1: (List: (? (lambda (ts) (= (syntax-length #'args)
-                                              (length ts)))
-                              ts)))
-       (ret (-Tuple
-              (for/list ([ac (in-syntax #'args)]
-                         [exp (in-list ts)])
-                (tc-expr/check/t ac (ret exp)))))]
-      [_ (ret (-Tuple (stx-map tc-expr/t #'args)))]))
+    (let ()
+      (define vs (stx-map (λ (x) (gensym)) #'args))
+      (define l-type (-Tuple (map make-F vs)))
+      (define subst
+        (match expected
+          [(tc-result1: t)
+           ;; We want to infer the largest vs that are still under the element types
+           (i:infer vs null (list l-type) (list t) (-values (list (-> l-type Univ))))]
+          [_ #f]))
+      (ret (-Tuple
+             (for/list ([i (in-syntax #'args)] [v (in-list vs)])
+                (if subst
+                    (tc-expr/check/t i (ret (subst-all subst (make-F v))))
+                    (tc-expr/t i)))))))
   ;; special case for `list*'
   (pattern (list* . args)
     (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
