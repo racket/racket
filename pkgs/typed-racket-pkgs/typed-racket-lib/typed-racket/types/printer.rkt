@@ -104,25 +104,21 @@
 ;; filter->sexp : Filter -> S-expression
 ;; Print a Filter (see filter-rep.rkt) to the given port
 (define (filter->sexp filt)
+  (define (name-ref->sexp name-ref)
+    (if (syntax? name-ref)
+        (syntax-e name-ref)
+        name-ref))
+  (define (path->sexps path)
+    (if (null? path)
+        '()
+        (list (map pathelem->sexp path))))
   (match filt
     [(FilterSet: thn els) `(,(filter->sexp thn) \| ,(filter->sexp els))]
     [(NoFilter:) '-]
-    [(NotTypeFilter: type (list) (? syntax? id))
-     `(! ,(type->sexp type) @ ,(syntax-e id))]
-    [(NotTypeFilter: type (list) id)
-     `(! ,(type->sexp type) @ ,id)]
-    [(NotTypeFilter: type path (? syntax? id))
-     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
-    [(NotTypeFilter: type path id)
-     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
-    [(TypeFilter: type (list) (? syntax? id))
-     `(,(type->sexp type) @ ,(syntax-e id))]
-    [(TypeFilter: type (list) id)
-     `(,(type->sexp type) @ ,id)]
-    [(TypeFilter: type path (? syntax? id))
-     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
-    [(TypeFilter: type path id)
-     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
+    [(NotTypeFilter: type path nm)
+     `(! ,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
+    [(TypeFilter: type path nm)
+     `(,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
     [(Bot:) 'Bot]
     [(Top:) 'Top]
     [(ImpFilter: a c)
