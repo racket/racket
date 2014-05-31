@@ -495,8 +495,9 @@
              (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
                  (get-cmdline p #f))
-             (begin (check-info p)
-                    (not (omit-path? p))))
+             (or explicit-arguments?
+                 (begin (check-info p)
+                        (not (omit-path? p)))))
         ;; The above `omit-path?` loads "info.rkt" files
         (define norm-p (normalize-info-path p))
         (define args (get-cmdline norm-p))
@@ -607,6 +608,7 @@
 (require (submod "." paths))
 
 (define collections? #f)
+(define explicit-arguments? #f)
 (define packages? #f)
 (define libraries? #f)
 (define check-top-suffix? #f)
@@ -885,7 +887,9 @@
   "Print a summary table"
   (set! table? #t)]
  #:args file-or-directory
- (begin (unless (= 1 (length file-or-directory))
+ (begin (set! explicit-arguments?
+              (not (or collections? libraries? packages? check-top-suffix?)))
+        (unless (= 1 (length file-or-directory))
           (set! single-file? #f))
         (define sum
           ;; The #:sema argument everywhre makes tests start
