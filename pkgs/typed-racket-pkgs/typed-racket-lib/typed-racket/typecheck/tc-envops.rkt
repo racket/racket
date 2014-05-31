@@ -69,7 +69,7 @@
   (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
     (match f
       [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
-      [(or (TypeFilter: ft lo x) (NotTypeFilter: ft lo x))
+      [(or (TypeFilter: ft (Path: lo x)) (NotTypeFilter: ft (Path: lo x)))
        (update-type/lexical
          (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
                          (when (type-equal? new-t -Bottom)

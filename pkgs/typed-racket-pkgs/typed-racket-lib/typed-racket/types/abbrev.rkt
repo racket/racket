@@ -241,23 +241,14 @@
 (define/cond-contract make-pred-ty
   (c:case-> (c:-> Type/c Type/c)
             (c:-> (c:listof Type/c) Type/c Type/c Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c
-                  (c:or/c integer? name-ref/c) Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c
-                  (c:or/c integer? name-ref/c) (c:listof PathElem?) Type/c))
+            (c:-> (c:listof Type/c) Type/c Type/c Object? Type/c))
   (case-lambda
-    [(in out t n p)
-     (make-Function
-      (list
-       (make-arr*
-	in out
-	#:filters (-FS (-filter t n p) (-not-filter t n p)))))]
-    [(in out t n)
-     (make-pred-ty in out t n null)]
+    [(in out t p)
+     (->* in out : (-FS (-filter t p) (-not-filter t p)))]
     [(in out t)
-     (make-pred-ty in out t 0 null)]
+     (make-pred-ty in out t (make-Path null (list 0 0)))]
     [(t)
-     (make-pred-ty (list Univ) -Boolean t 0 null)]))
+     (make-pred-ty (list Univ) -Boolean t (make-Path null (list 0 0)))]))
 
 (define/decl -true-filter (-FS -top -bot))
 (define/decl -false-filter (-FS -bot -top))

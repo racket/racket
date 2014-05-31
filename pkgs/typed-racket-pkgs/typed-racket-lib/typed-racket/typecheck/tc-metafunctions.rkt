@@ -89,8 +89,7 @@
                (if (OrFilter? new-or)
                    (loop (cons new-or derived-formulas) derived-atoms (cdr worklist))
                    (loop derived-formulas derived-atoms (cons new-or (cdr worklist)))))]
-            [(TypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
-            [(NotTypeFilter: _ _ _) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
+            [(or (? TypeFilter?) (? NotTypeFilter?)) (loop derived-formulas (cons p derived-atoms) (cdr worklist))]
 
             [(AndFilter: ps) (loop derived-formulas derived-atoms (append ps (cdr worklist)))]
             [(Top:) (loop derived-formulas derived-atoms (cdr worklist))]

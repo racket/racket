@@ -3,7 +3,7 @@
 ;; This module provides functions for parsing types written by the user
 
 (require "../utils/utils.rkt"
-         (except-in (rep type-rep object-rep filter-rep) make-arr)
+         (except-in (rep type-rep object-rep) make-arr)
          (rename-in (types abbrev union utils filter-ops resolve
                            classes subtype)
                     [make-arr* make-arr])
@@ -212,16 +212,15 @@
 
 (define-splicing-syntax-class idx-obj
   #:description "index object"
-  #:attributes (arg depth pair)
+  #:attributes (arg depth path)
   (pattern (~seq idx:nat)
            #:attr arg (syntax-e #'idx)
            #:attr depth 0
-           #:attr pair (list 0 (syntax-e #'idx)))
+           #:attr path (-arg-path (attribute arg) (attribute depth)))
   (pattern (~seq depth-idx:nat idx:nat)
            #:attr arg (syntax-e #'idx)
            #:attr depth (syntax-e #'depth-idx)
-           #:attr pair (list (syntax-e #'depth-idx)
-                             (syntax-e #'idx))))
+           #:attr path (-arg-path (attribute arg) (attribute depth))))
 
 (define-syntax-class @
   #:description "@"
@@ -246,19 +245,21 @@
   (pattern :Top^ #:attr prop -top)
   (pattern :Bot^ #:attr prop -bot)
   (pattern (t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
+           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (-id-path #'i))))
+  ;; Here is wrong check
   (pattern (t:expr :@ ~! pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
-           #:attr prop (-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
+           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute i.path))))
   (pattern (:! t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
+           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (-id-path #'i))))
+  ;; Here is wrong check
   (pattern (:! t:expr :@ ~! pe:path-elem ... i:idx-obj)
            #:fail-unless (< (attribute i.arg) (length doms))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    (attribute i.arg) (length doms))
-           #:attr prop (-not-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
+           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute i.path))))
   (pattern (:! t:expr)
            #:attr prop (-not-filter (parse-type #'t) 0))
   (pattern (and (~var p (prop doms)) ...)
@@ -411,7 +412,8 @@
       [(~or (:->^ dom rng :colon^ latent:simple-latent-filter)
             (dom :->^ rng :colon^ latent:simple-latent-filter))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
+       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type)
+                     (-acc-path (attribute latent.path) (-arg-path 0)))]
       [(~or (:->^ dom ... rng
              :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
             (dom ... :->^ rng

@@ -118,43 +118,54 @@
 (define/decl -bot-filter (make-FilterSet -bot -bot))
 (define/decl -no-obj (make-NoObject))
 (define/decl -empty-obj (make-Empty))
+(define (-id-path id)
+  (make-Path null id))
+(define (-arg-path arg [depth 0])
+  (make-Path null (list depth arg)))
+(define (-acc-path path-elems o)
+  (match o
+    [(Empty:) -empty-obj]
+    [(Path: p o) (make-Path (append path-elems p) o)]))
 
 (define/cond-contract (-FS + -)
   (c:-> Filter/c Filter/c FilterSet?)
   (make-FilterSet + -))
 
 ;; Abbreviation for filters
-;; `i` can be an integer for backwards compatibility
-(define/cond-contract (-filter t i [p null])
-  (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
-  (define i* (if (integer? i) (list 0 i) i))
+;; `i` can be an integer or name-ref/c for backwards compatibility
+;; FIXME: Make all callers pass in an object and remove backwards compatibility
+(define/cond-contract (-filter t i)
+  (c:-> Type/c (c:or/c integer? name-ref/c Object?) Filter/c)
+  (define o
+    (cond
+      [(Object? i) i]
+      [(integer? i) (make-Path null (list 0 i))]
+      [else (make-Path null i)]))
   (cond
     [(and (identifier? i) (is-var-mutated? i)) -top]
+    [(Empty? o) -top]
     [(equal? Univ t) -top]
     [(equal? -Bottom t) -bot]
-    [else (make-TypeFilter t p i*)]))
+    [else (make-TypeFilter t o)]))
 
 
 ;; Abbreviation for not filters
-;; `i` can be an integer for backwards compatibility
-(define/cond-contract (-not-filter t i [p null])
-  (c:->* (Type/c (c:or/c integer? name-ref/c)) ((c:listof PathElem?)) Filter/c)
-  (define i* (if (integer? i) (list 0 i) i))
+;; `i` can be an integer or name-ref/c for backwards compatibility
+;; FIXME: Make all callers pass in an object and remove backwards compatibility
+(define/cond-contract (-not-filter t i)
+  (c:-> Type/c (c:or/c integer? name-ref/c Object?) Filter/c)
+  (define o
+    (cond
+      [(Object? i) i]
+      [(integer? i) (make-Path null (list 0 i))]
+      [else (make-Path null i)]))
   (cond
     [(and (identifier? i) (is-var-mutated? i)) -top]
+    [(Empty? o) -top]
     [(equal? -Bottom t) -top]
     [(equal? Univ t) -bot]
-    [else (make-NotTypeFilter t p i*)]))
+    [else (make-NotTypeFilter t o)]))
 
-
-(define (-filter-at t o)
-  (match o
-    [(Path: p i) (-filter t i p)]
-    [_ -top]))
-(define (-not-filter-at t o)
-  (match o
-    [(Path: p i) (-not-filter t i p)]
-    [_ -top]))
 
 ;; A Type that corresponds to the any contract for the
 ;; return type of functions
@@ -221,8 +232,8 @@
 
 (define (->acc dom rng path)
   (make-Function (list (make-arr* dom rng
-                                  #:filters (-FS (-not-filter (-val #f) (list 0 0) path)
-                                                 (-filter (-val #f) (list 0 0) path))
+                                  #:filters (-FS (-not-filter (-val #f) (make-Path path (list 0 0)))
+                                                 (-filter (-val #f) (make-Path path (list 0 0))))
                                   #:object (make-Path path (list 0 0))))))
 
 (define (cl->* . args)

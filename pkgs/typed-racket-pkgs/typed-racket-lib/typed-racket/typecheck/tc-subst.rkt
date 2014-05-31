@@ -125,21 +125,19 @@
 (define/cond-contract (subst-filter f k o polarity)
   (-> Filter/c name-ref/c Object? boolean? Filter/c)
   (define (ap f) (subst-filter f k o polarity))
-  (define (tf-matcher t p i k o polarity maker)
-    (match o
-      [(or (Empty:) (NoObject:))
-       (cond [(name-ref=? i k)
-              (if polarity -top -bot)]
-             [(index-free-in? k t) (if polarity -top -bot)]
-             [else f])]
-      [(Path: p* i*)
-       (cond [(name-ref=? i k)
-              (maker
-               (subst-type t k o polarity)
-               i*
-               (append p p*))]
-             [(index-free-in? k t) (if polarity -top -bot)]
-             [else f])]))
+  (define (tf-matcher t p i maker)
+    (cond
+      [(name-ref=? i k)
+       (match o
+         [(Empty:)
+          (if polarity -top -bot)]
+         [_
+          (maker
+            (subst-type t k o polarity)
+            (-acc-path p o))])]
+      [(index-free-in? k t) (if polarity -top -bot)]
+      [else f]))
+
   (match f
     [(ImpFilter: ant consq)
      (-imp (subst-filter ant k o (not polarity)) (ap consq))]
@@ -147,10 +145,10 @@
     [(OrFilter: fs) (apply -or (map ap fs))]
     [(Bot:) -bot]
     [(Top:) -top]
-    [(TypeFilter: t p i)
-     (tf-matcher t p i k o polarity -filter)]
-    [(NotTypeFilter: t p i)
-     (tf-matcher t p i k o polarity -not-filter)]))
+    [(TypeFilter: t (Path: p i))
+     (tf-matcher t p i -filter)]
+    [(NotTypeFilter: t (Path: p i))
+     (tf-matcher t p i -not-filter)]))
 
 ;; Determine if the object k occurs free in the given type
 (define (index-free-in? k type)
@@ -163,21 +161,8 @@
                           (if (name-ref=? i k)
                               (return #t)
                               o)]))
-   (define (for-filter o)
-     (filter-case (#:Type for-type
-                   #:Filter for-filter)
-                  o
-                  [#:NotTypeFilter t p i
-                                   (if (name-ref=? i k)
-                                       (return #t)
-                                       o)]
-                  [#:TypeFilter t p i
-                                (if (name-ref=? i k)
-                                    (return #t)
-                                    o)]))
    (define (for-type t)
      (type-case (#:Type for-type
-                 #:Filter for-filter
                  #:Object for-object)
                 t
                 [#:arr dom rng rest drest kws
