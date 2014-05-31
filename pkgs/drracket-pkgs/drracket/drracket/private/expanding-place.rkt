@@ -340,9 +340,7 @@
                                   (exn-continuation-marks an-exn)))
                    (define info
                      (for/or ([mark-pr (in-list marks)])
-                       (printf "considering ~s\n" mark-pr)
                        (srcloc->srcinfo (cdr mark-pr))))
-                   (printf "info ~s\n" info)
                    (cond
                      [info (list info)]
                      [else '()])]
