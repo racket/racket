@@ -310,6 +310,16 @@
                  [else ""]))
              (format "~a~a" (srcloc-source srcloc) pos))
              
+           (define (srcloc->srcinfo a-srcloc)
+             (cond
+               [(and (srcloc? a-srcloc)
+                     (equal? the-source (srcloc-source a-srcloc))
+                     (srcloc-position a-srcloc)
+                     (srcloc-span a-srcloc))
+                (vector (srcloc-position a-srcloc)
+                        (srcloc-span a-srcloc))]
+               [else #f]))
+           
            (define exn-infos
              (for/list ([an-exn (in-list (cons main-exn extra-exns))])
                (exn-info 
@@ -317,18 +327,26 @@
                  (if (exn? an-exn) 
                      (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message an-exn) " ") 
                      (format "uncaught exn: ~s" an-exn)))
-                (if (exn:srclocs? an-exn)
-                    (sort
-                     (for/list ([srcloc ((exn:srclocs-accessor an-exn) an-exn)]
-                                #:when (and (srcloc? srcloc)
-                                            (equal? the-source (srcloc-source srcloc))
-                                            (srcloc-position srcloc)
-                                            (srcloc-span srcloc)))
-                       (vector (srcloc-position srcloc)
-                               (srcloc-span srcloc)))
-                     <
-                     #:key (λ (x) (vector-ref x 0)))
-                    '())
+                (cond
+                  [(exn:srclocs? an-exn)
+                   (sort
+                    (for/list ([srcloc ((exn:srclocs-accessor an-exn) an-exn)]
+                               #:when (srcloc->srcinfo srcloc))
+                      (srcloc->srcinfo srcloc))
+                    <
+                    #:key (λ (x) (vector-ref x 0)))]
+                  [(exn? an-exn)
+                   (define marks (continuation-mark-set->context
+                                  (exn-continuation-marks an-exn)))
+                   (define info
+                     (for/or ([mark-pr (in-list marks)])
+                       (printf "considering ~s\n" mark-pr)
+                       (srcloc->srcinfo (cdr mark-pr))))
+                   (printf "info ~s\n" info)
+                   (cond
+                     [info (list info)]
+                     [else '()])]
+                  [else '()])
                 (if (exn? an-exn)
                     (let ([ctxt 
                            (continuation-mark-set->context
