@@ -259,8 +259,9 @@
         ;; special case (even when complex printing is off) because it's
         ;; useful to users who use functions like `filter`.
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft '() id) (Top:))
+                                 (FilterSet: (TypeFilter: ft '() (list 0 0)) (Top:))
                                  (Empty:))))
+         #:when (= 1 (length dom))
          `(,(type->sexp t) : #:+ ,(type->sexp ft))]
         [(Values: (list (Result: t fs (Empty:))))
          (if (print-complex-filters?)
