@@ -3,7 +3,8 @@
 (provide define-struct/contract
          define/contract
          with-contract
-         current-contract-region)
+         current-contract-region
+         invariant-contract)
 
 (require (for-syntax racket/base
                      racket/struct-info

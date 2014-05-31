@@ -2,9 +2,10 @@
 
 (provide contract
          (rename-out [-recursive-contract recursive-contract])
-         current-contract-region)
+         current-contract-region
+         invariant-contract)
 
-(require (for-syntax racket/base syntax/name)
+(require (for-syntax racket/base syntax/name syntax/srcloc)
          racket/stxparam
          syntax/srcloc
          syntax/location
@@ -87,6 +88,16 @@
          [else
           (procedure-rename new-val vs-name)])]
       [else new-val])))
+
+(define-syntax (invariant-contract stx)
+  (syntax-case stx ()
+    [(_ ctc e)
+     (quasisyntax/loc stx
+       (let ([me (quote-module-name)])
+         (contract ctc e
+                   me me
+                   '#,(syntax-local-infer-name stx)
+                   '#,(build-source-location-vector #'ctc))))]))
 
 (define-syntax (-recursive-contract stx)
   (define (do-recursive-contract arg type name)

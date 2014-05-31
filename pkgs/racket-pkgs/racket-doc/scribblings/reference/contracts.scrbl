@@ -6,7 +6,7 @@
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/contract/parametric))
+       (the-eval '(require racket/contract racket/contract/parametric racket/list))
        the-eval)))
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
@@ -1430,6 +1430,7 @@ inside the @racket[body] will be protected with contracts that
 blame the context of the @racket[with-contract] form for the positive
 positions and the @racket[with-contract] form for the negative ones.}
 
+@(define furlongs->feet-eval (contract-eval))
 @defform*[[(define/contract id contract-expr free-var-list init-value-expr)
  (define/contract (head args) contract-expr free-var-list body ...+)]]{
 Works like @racket[define], except that the contract
@@ -1437,7 +1438,7 @@ Works like @racket[define], except that the contract
 definition of @racket[head] and @racket[args], see @racket[define].
 For the definition of @racket[free-var-list], see @racket[with-contract].
 
-@examples[#:eval (contract-eval)
+@examples[#:eval furlongs->feet-eval
   (define/contract distance (>=/c 0) 43.52)
   (define/contract (furlongs->feet fr)
     (-> real? real?)
@@ -1507,6 +1508,39 @@ The @racket[define-struct/contract] form only allows a subset of the
 (make-salmon 5 #f)
 (make-salmon #f 'pacific)
 ]}
+
+@defform[(invariant-contract contract-expr expr)]{
+  Establishes an invariant of @racket[expr], determined by @racket[contract-expr].
+                   
+  Unlike other ways to attach contracts to values, an
+  @racket[invariant-contract] does not establish a boundary
+  between two parties. Instead, it simply puts the contract
+  on the value, treating the module containing the 
+  @racket[invariant-contract] expression as the party to be blamed
+  for any violations of the contract.
+  
+  This means, for example, that the contract is checked on
+  recursive calls, when an invariant is used on the right-hand
+  side of a definition.
+                              
+  @examples[#:eval 
+            furlongs->feet-eval
+            (define furlongss->feets
+              (invariant-contract
+               (-> (listof real?) (listof real?))
+               (λ (l)
+                 (cond
+                   [(empty? l) empty]
+                   [else
+                    (if (= 327 (car l))
+                        (furlongss->feets (list "wha?"))
+                        (cons (furlongs->feet (first l))
+                              (furlongss->feets (rest l))))]))))
+            
+            (furlongss->feets (list 1 2 3))
+            
+            (furlongss->feets (list 1 327 3))]
+}
 
 @defidform[current-contract-region]{
   Bound by @racket[define-syntax-parameter], this contains
