@@ -319,7 +319,7 @@ In a placer function's arguments:
   (case align
     ((lt ct rt) 't)
     ((lc cc rc) 'c)
-    ((lb cb rb) 'r)))
+    ((lb cb rb) 'b)))
 
 (define (halign->vcompose halign)
   (case halign
