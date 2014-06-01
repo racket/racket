@@ -32,6 +32,6 @@
         '(->acc (list (-lst -String)) -String `(,-car)))
       (check-equal?
         (convert (-mu x (-lst* Univ (-box x))))
-        '(make-Mu 'x (-lst* Univ (make-Box (make-F 'x)))))
+        '(make-Mu 'x (make-Pair Univ (make-Pair (make-Box (make-F 'x)) -Null))))
     )
   ))

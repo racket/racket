@@ -12,6 +12,7 @@
                      "redex-lib"
                      "htdp-lib"
                      "sandbox-lib"
+                     "pconvert-lib"
                      "unstable-flonum-lib"
                      "unstable"
                      "scribble-lib"))
