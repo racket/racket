@@ -1,6 +1,7 @@
 #lang plt-web
 
 (require plt-web/style
+         racket/dict
          "resources.rkt"
          "utils.rkt"
          "../identity.rkt"
@@ -16,6 +17,21 @@
   "http://doubletree.hilton.com/en/dt/groups/personalized/S/STLUSDT-RAC-20140919/index.jhtml?WT.mc_id=POG")
 
 (define hotel @a[href: "http://www.stlunionstationhotel.com/"]{Union Station DoubleTree})
+
+(define speakers+web-pages
+  '(("Claire Alvis" . "https://github.com/calvis")
+    ("Matthew Butterick" . "http://practicaltypography.com/")
+    ("Stephen Chang" . "http://www.ccs.neu.edu/home/stchang/")
+    ("John Clements" . "http://www.brinckerhoff.org/JBCsite/index.html")
+    ("Matthew Flatt" . "https://www.cs.utah.edu/~mflatt/")
+    ("Tony Garnock-Jones" . "http://homepages.kcbbs.gen.nz/tonyg/")
+    ("Greg Hendershott" . "http://www.greghendershott.com/")
+    ("Jay McCarthy" . "http://faculty.cs.byu.edu/~jay/home/")
+    ("Brian Mastenbrook" . "http://brian.mastenbrook.net/")
+    ("Daniel Prager" . "https://www.youpatch.com/")
+    ("Neil Toronto" . "http://students.cs.byu.edu/~ntoronto/")
+    ("David Vanderson" . "https://github.com/david-vanderson/")))
+
 
 (define index
   @page[#:site con-site
@@ -34,19 +50,13 @@
 
        @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
           A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
-       @p{Confirmed speakers:}
-       @ul{@li{Claire Alvis}
-           @li{Matthew Butterick}
-           @li{Stephen Chang}
-           @li{John Clements}
-           @li{Matthew Flatt}
-           @li{Tony Garnock-Jones}
-           @li{Greg Hendershott}
-           @li{Jay McCarthy}
-           @li{Brian Mastenbrook}
-           @li{Daniel Prager}
-           @li{Neil Toronto}
-           @li{David Vanderson}}}
+
+       @p{@nbsp}
+
+       @p{@b{Confirmed speakers:}}
+       @(apply ul
+               (for/list ([(speaker web-page) (in-dict speakers+web-pages)])
+                 @li{@a[href: web-page]{@speaker}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
 
@@ -61,7 +71,7 @@
 
       @p{@nbsp}
 
-      @p{Previous years:}
+      @p{@b{Previous years:}}
       @ul{@li{@2013:index}
           @li{@2012:index}
           @li{@2011:index}}}}})
