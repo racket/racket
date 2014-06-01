@@ -33,8 +33,21 @@
        @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} will be giving the keynote.}
 
        @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
-          A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}}
-    
+          A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
+       @p{Confirmed speakers:}
+       @ul{@li{Claire Alvis}
+           @li{Matthew Butterick}
+           @li{Stephen Chang}
+           @li{John Clements}
+           @li{Matthew Flatt}
+           @li{Tony Garnock-Jones}
+           @li{Greg Hendershott}
+           @li{Jay McCarthy}
+           @li{Brian Mastenbrook}
+           @li{Daniel Prager}
+           @li{Neil Toronto}
+           @li{David Vanderson}}}
+
     @columns[1 #:center? #f #:row? #f]{ }
 
     @columns[5 #:center? #f #:row? #f]{
