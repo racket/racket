@@ -18,6 +18,7 @@
 (define installers-dir (build-path "installers"))
 (define pkgs-dir (build-path "pkgs"))
 (define catalog-dir (build-path "catalog"))
+(define from-catalog-dir-to-pkgs-dir (build-path 'up))
 (define doc-dir (build-path "doc"))
 (define pdf-doc-dir (build-path "pdf-doc"))
 (define log-dir (build-path "log"))
@@ -70,17 +71,14 @@
   (let ([c-dir (build-path built-dir catalog-dir "pkg")]
         [d-dir (build-path dest-dir catalog-dir "pkg")])
     (make-directory* d-dir)
-    (define base-url (string->url (hash-ref config '#:dist-base-url)))
     (for ([f (in-list (directory-list c-dir))])
       (define ht (call-with-input-file* (build-path c-dir f) read))
       (define new-ht
-        (hash-set ht 'source (url->string
-                              (combine-url/relative
-                               base-url
-                               (path->string 
-                                (build-path
-                                 pkgs-dir
-                                 (path-add-suffix f #".zip")))))))
+        (hash-set ht 'source (relative-path->relative-url-string
+                              (build-path
+                               from-catalog-dir-to-pkgs-dir
+                               pkgs-dir
+                               (path-add-suffix f #".zip")))))
       (call-with-output-file* 
        (build-path d-dir f)
        (lambda (o)
