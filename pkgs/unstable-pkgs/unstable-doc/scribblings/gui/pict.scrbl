@@ -614,3 +614,12 @@ Adds a background highlighted with @racket[color] to
 @defproc[(valign->hcompose [va valign/c]) procedure?]{Returns the @racket[v*-append] function for vertical alignment.}
 
 @defproc[(pin-over/align [scene pict?] [x real?] [y real?] [halign halign/c] [valign valign/c] [pict pict?]) pict?]{Pins @racket[pict] over @racket[scene] centered at @racket[x]x@racket[y] aligned as specified in @racket[halign] and @racket[valign].}
+
+@section{PLT Logos}
+
+@(require (for-label unstable/gui/pict/plt-logo))
+@defmodule[unstable/gui/pict/plt-logo]
+
+@addition{Jay McCarthy}
+
+@defproc[(make-plt-title-background [w real?] [h real?]) pict?]{Draws the PLT logo inside a @racket[w]x@racket[h] rectangle.}

@@ -541,3 +541,4 @@
   [draw-pict-centered 
    (-> pict? (is-a?/c dc<%>) real? real?
        void?)]))
+
