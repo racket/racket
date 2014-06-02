@@ -3418,7 +3418,7 @@ static Scheme_Object *wrap_module_in_top(Scheme_Object *m, Scheme_Object *t)
 static void reset_submodule_paths(Scheme_Module *m)
 {
   Scheme_Module *m2;
-  Scheme_Object *stack, *l, *l2, *v, *name, *submodule_path;
+  Scheme_Object *stack, *l, *l2, *v, *v2, *name, *submodule_path;
   int k;
 
   stack = scheme_make_pair((Scheme_Object *)m, scheme_null);
@@ -3426,12 +3426,10 @@ static void reset_submodule_paths(Scheme_Module *m)
     m = (Scheme_Module *)SCHEME_CAR(stack);
     stack = SCHEME_CDR(stack);
 
-    if (!m->submodule_path || SCHEME_NULLP(m->submodule_path))
-      submodule_path = scheme_make_pair(scheme_resolved_module_path_value(m->modname), scheme_null);
-    else {
-      submodule_path = m->submodule_path;
-      submodule_path = scheme_reverse(submodule_path);
-    }
+    submodule_path = scheme_resolved_module_path_value(m->modname);
+    if (SCHEME_SYMBOLP(submodule_path))
+      submodule_path = scheme_make_pair(submodule_path, scheme_null);
+    submodule_path = scheme_reverse(submodule_path);
 
     for (k = 0; k < 2; k++) {
       l = (k ? m->post_submodules : m->pre_submodules);
@@ -3449,9 +3447,9 @@ static void reset_submodule_paths(Scheme_Module *m)
             name = SCHEME_CAR(name);
           }
           v = scheme_reverse(scheme_make_pair(name, submodule_path));
-          m2->submodule_path = v;
-          v = scheme_intern_resolved_module_path(v);
-          m2->modname = v;
+          v2 = scheme_intern_resolved_module_path(v);
+          m2->modname = v2;
+          m2->submodule_path = SCHEME_CDR(v);
           
           l2 = scheme_make_pair((Scheme_Object *)m2, l2);
           stack = scheme_make_pair((Scheme_Object *)m2, stack);

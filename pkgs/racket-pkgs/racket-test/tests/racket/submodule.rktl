@@ -138,7 +138,17 @@
   (test '(reset i) values (module-compiled-name (car (module-compiled-submodules a #f))))
   (define aa (module-compiled-submodules a #f (list (module-compiled-name a 'again))))
   (test '(reset again) values (module-compiled-name (car (module-compiled-submodules aa #f))))
-  (test '(reset again i) values (module-compiled-name (car (module-compiled-submodules (car (module-compiled-submodules aa #f)) #f)))))
+  (test '(reset again i) values (module-compiled-name (car (module-compiled-submodules (car (module-compiled-submodules aa #f)) #f))))
+
+  (define also-c (module-compiled-submodules c #f (module-compiled-submodules c #f)))
+  (test '(subm-example-0 a) values (module-compiled-name (car (module-compiled-submodules also-c #f))))
+  (define re-c
+    (let ([s (open-output-bytes)])
+      (write also-c s)
+      (parameterize ([read-accept-compiled #t])
+        (read (open-input-bytes (get-output-bytes s))))))
+  ;; Marshaling flips the order, which is ok:
+  (test '(subm-example-0 b) values (module-compiled-name (car (module-compiled-submodules re-c #f)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
