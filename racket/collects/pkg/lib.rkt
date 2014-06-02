@@ -3015,6 +3015,10 @@
              (values (path-element->string i)
                      (call-with-input-file* (build-path pkg-path i)
                                             read)))]))))
+    (unless one-ht
+      (pkg-error (~a "could not read package catalog\n"
+                     "  catalog: ~a")
+                 (url->string i)))
     (for/fold ([ht ht]) ([(k v) (in-hash one-ht)])
       (if (hash-ref ht k #f)
           ht
