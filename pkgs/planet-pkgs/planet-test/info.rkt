@@ -7,11 +7,11 @@
 (define pkg-desc "tests for \"planet-lib\"")
 
 (define pkg-authors '(mflatt robby))
-(define build-deps '("eli-tester"
+(define build-deps '("racket-index"
+                     "eli-tester"
                      "planet-lib"
                      "rackunit-lib"
-                     "scheme-lib"
-                     "scribble-lib"))
+                     "scheme-lib"))
 
 (define test-omit-paths
   '("tests/planet/examples"))

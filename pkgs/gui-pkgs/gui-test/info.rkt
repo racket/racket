@@ -3,7 +3,8 @@
 (define collection 'multi)
 
 (define deps '("base"))
-(define build-deps '("scheme-lib"
+(define build-deps '("racket-index"
+                     "scheme-lib"
                      "draw-lib"
                      "racket-test"
                      "sgl"
@@ -11,7 +12,6 @@
                      "wxme-lib"
                      "gui-lib"
                      "rackunit-lib"
-                     "scribble-lib"
                      "pconvert-lib"
                      "compatibility-lib"
                      "sandbox-lib"))

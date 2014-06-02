@@ -6,7 +6,8 @@
                "base"
                "parser-tools-lib"
                "rackunit-lib"))
-(define build-deps '("scribble-lib"
+(define build-deps '("racket-index"
+                     "scribble-lib"
                      "at-exp-lib"
                      "sandbox-lib"
                      "racket-doc"))

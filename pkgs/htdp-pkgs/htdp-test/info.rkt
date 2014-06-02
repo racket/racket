@@ -10,8 +10,7 @@
                      "racket-test"
                      "rackunit-lib"
                      "profile-lib"
-                     "wxme-lib"
-                     "scribble-lib"))
+                     "wxme-lib"))
 
 (define pkg-desc "tests for \"htdp\"")
 

@@ -3,7 +3,8 @@
 (define collection 'multi)
 
 (define deps '("base"))
-(define build-deps '("scheme-lib"
+(define build-deps '("racket-index"
+                     "scheme-lib"
                      "at-exp-lib"
                      "compatibility-lib"
                      "eli-tester"
@@ -11,7 +12,6 @@
                      "planet-lib"
                      "racket-test"
                      "rackunit-lib"
-                     "scribble-lib"
                      "srfi-lib"
                      "syntax-color-lib"
                      "typed-racket-lib"

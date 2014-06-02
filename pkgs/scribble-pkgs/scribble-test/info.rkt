@@ -14,3 +14,4 @@
 (define pkg-desc "tests for \"scribble\"")
 
 (define pkg-authors '(mflatt eli))
+(define build-deps '("racket-index"))

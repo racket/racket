@@ -15,7 +15,8 @@
                "htdp"))
 
 (define build-deps
-  '("at-exp-lib"
+  '("racket-index"
+    "at-exp-lib"
     "racket-doc"
     "rackunit-lib"
     "scribble-lib"))

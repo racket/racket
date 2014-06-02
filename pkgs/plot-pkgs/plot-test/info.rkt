@@ -10,7 +10,6 @@
                "draw-lib"
                "pict-lib"
                "rackunit-lib"
-               "scribble-lib"
                "slideshow-lib"
                "typed-racket-lib"
                "typed-racket-more"

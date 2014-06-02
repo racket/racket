@@ -3,7 +3,8 @@
 (define collection 'multi)
 (define deps '("typed-racket" "typed-racket-more" "typed-racket-compatibility"
                "unstable" "unstable-2d"))
-(define build-deps '("scheme-lib"
+(define build-deps '("racket-index"
+                     "scheme-lib"
                      "base"
                      "racket-benchmarks"
                      "compatibility-lib"
@@ -14,8 +15,7 @@
                      "sandbox-lib"
                      "pconvert-lib"
                      "unstable-flonum-lib"
-                     "unstable"
-                     "scribble-lib"))
+                     "unstable"))
 
 (define pkg-desc "tests for \"typed-racket\"")
 

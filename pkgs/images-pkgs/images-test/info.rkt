@@ -5,7 +5,6 @@
 (define deps '("base"
                "images-lib"))
 (define build-deps '("pict-lib"
-                     "scribble-lib"
                      "slideshow-lib"
                      "racket-doc"
                      "unstable-latent-contract-lib"
