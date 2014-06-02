@@ -157,6 +157,7 @@
                               (not (file-exists? p)))
                          ;; Try ".ss":
                          (define p2 (apply collection-file-path
+                                           #:check-compiled? #f
                                            (path-replace-suffix file #".ss")
                                            coll))
                          (if (file-exists? p2)

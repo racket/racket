@@ -1180,7 +1180,8 @@
                                                                                   file
                                                                                   (if (null? (cddr p))
                                                                                       (list "mzlib")
-                                                                                      (cddr p))))))]
+                                                                                      (cddr p))
+                                                                                  #:check-compiled? #f))))]
                                                                      [(and (list? p)
                                                                            (eq? 'module (car p)))
                                                                       sym]

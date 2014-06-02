@@ -13,6 +13,9 @@
 
 (define copy-man-pages '("drracket.1"))
 
+(define binary-keep-files '("private/launcher-mred-bootstrap.rkt"
+                            "private/launcher-mz-bootstrap.rkt"))
+
 ;; color-blind friendly palette from Paul Tol:
 ;; http://www.sron.nl/~pault/
 ;; using his Scheme for Marking Text colors

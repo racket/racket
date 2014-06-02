@@ -1282,9 +1282,7 @@
     (define inp
       (case (object-name (current-input-port))
         [(readline-input)
-         (parameterize ([(dynamic-require
-                          (collection-file-path "pread.rkt" "readline")
-                          'readline-prompt)
+         (parameterize ([(dynamic-require 'readline/pread 'readline-prompt)
                          qtext])
            (read-line))]
         [else (write-bytes qtext) (flush-output) (read-line)]))
