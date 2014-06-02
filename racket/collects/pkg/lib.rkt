@@ -448,10 +448,15 @@
     (define new-ht
       (cond
        [s
+        ;; If `i' is a "file:" URL, then it makes sense to parse
+        ;; `s' as a path and make it absolute relative to `i'.
+        ;; If `i' is a URL, then `s' might be treated as a relative
+        ;; URL, and we rely on the pun that a relative URL looks
+        ;; like a relative path.
         (define-values (name type) (package-source->name+type s #f))
         (cond
          [(and (or (eq? type 'dir) (eq? type 'file))
-               (not (complete-path? s)))
+               (not (complete-path? (package-source->path s type))))
           (define full-path
             (cond
              [(equal? "file" (url-scheme i))
@@ -460,9 +465,16 @@
                               (let-values ([(base name dir?) (split-path path)])
                                 base)
                               path))
-              (path->string (simplify-path (path->complete-path s (path->complete-path dir))))]
+              (path->string (simplify-path (path->complete-path (package-source->path s type)
+                                                                (path->complete-path dir))))]
              [else
-              (url->string (combine-url/relative i s))]))
+              (define rel-url (string-join (for/list ([e (explode-path (package-source->path s type))])
+                                             (cond
+                                              [(eq? e 'same) "."]
+                                              [(eq? e 'up) ".."]
+                                              [else (path-element->string e)]))
+                                           "/"))
+              (url->string (combine-url/relative i rel-url))]))
           (hash-set ht 'source full-path)]
          [else ht])]
        [else ht]))
@@ -492,7 +504,9 @@
                                         [(up) ".."]
                                         [(same) "."]
                                         [else (path-element->string s)]))
-                                    (explode-path (find-relative-path dir s)))
+                                    (explode-path (find-relative-path 
+                                                   dir
+                                                   (package-source->path s type))))
                                "/"))]
        [else ht])]
      [else ht]))
@@ -1243,23 +1257,26 @@
      info
      checksum)]
    [(eq? type 'file)
-    (unless (file-exists? pkg)
-      (pkg-error "no such file\n  path: ~a" pkg))
-    (define checksum-pth (format "~a.CHECKSUM" pkg))
+    (define pkg-path (if (path? pkg)
+                         pkg
+                         (package-source->path pkg type)))
+    (unless (file-exists? pkg-path)
+      (pkg-error "no such file\n  path: ~a" pkg-path))
+    (define checksum-pth (format "~a.CHECKSUM" pkg-path))
     (define expected-checksum
       (and (file-exists? checksum-pth)
            check-sums?
            (file->string checksum-pth)))
-    (check-checksum given-checksum expected-checksum "unexpected" pkg #f)
+    (check-checksum given-checksum expected-checksum "unexpected" pkg-path #f)
     (define actual-checksum
-      (with-input-from-file pkg
+      (with-input-from-file pkg-path
         (λ ()
            (sha1 (current-input-port)))))
-    (check-checksum expected-checksum actual-checksum "mismatched" pkg
+    (check-checksum expected-checksum actual-checksum "mismatched" pkg-path
                     (and use-cache? cached-url))
     (define checksum
       actual-checksum)
-    (define pkg-format (filename-extension pkg))
+    (define pkg-format (filename-extension pkg-path))
     (define pkg-dir
       (make-temporary-file (string-append "~a-" pkg-name)
                            'directory))
@@ -1271,17 +1288,17 @@
 
            (match pkg-format
              [#"tgz"
-              (untar pkg pkg-dir)]
+              (untar pkg-path pkg-dir)]
              [#"tar"
-              (untar pkg pkg-dir)]
+              (untar pkg-path pkg-dir)]
              [#"gz" ; assuming .tar.gz
-              (untar pkg pkg-dir)]
+              (untar pkg-path pkg-dir)]
              [#"zip"
-              (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir)
+              (unzip pkg-path (make-filesystem-entry-reader #:dest pkg-dir)
                      #:preserve-timestamps? #t)]
              [#"plt"
               (make-directory* pkg-dir)
-              (unpack pkg pkg-dir
+              (unpack pkg-path pkg-dir
                       (lambda (x) (log-pkg-debug "~a" x))
                       (lambda () pkg-dir)
                       #f
@@ -1314,7 +1331,7 @@
                                   #:strip strip-mode
                                   #:in-place? (not strip-mode)
                                   #:in-place-clean? #t)
-              `(file ,(simple-form-path* pkg)))
+              `(file ,(simple-form-path* pkg-path)))
              checksum)
             (unless strip-mode
               (set! staged? #t))))
@@ -1324,18 +1341,21 @@
    [(or (eq? type 'dir)
         (eq? type 'link)
         (eq? type 'static-link))
-    (unless (directory-exists? pkg)
-      (pkg-error "no such directory\n  path: ~a" pkg))
-    (let ([pkg (directory-path-no-slash pkg)])
+    (define pkg-path (if (path? pkg)
+                         pkg
+                         (package-source->path pkg type)))
+    (unless (directory-exists? pkg-path)
+      (pkg-error "no such directory\n  path: ~a" pkg-path))
+    (let ([pkg-path (directory-path-no-slash pkg-path)])
       (cond
        [(or (eq? type 'link)
             (eq? type 'static-link))
         (install-info pkg-name
                       `(,type ,(path->string
                                 (find-relative-path (pkg-installed-dir)
-                                                    (simple-form-path pkg)
+                                                    (simple-form-path pkg-path)
                                                     #:more-than-root? #t)))
-                      pkg
+                      pkg-path
                       #f
                       given-checksum ; if a checksum is provided, just use it
                       (directory->module-paths pkg pkg-name metadata-ns))]
@@ -1344,7 +1364,7 @@
           (if in-place?
               (if strip-mode
                   (pkg-error "cannot strip directory in place")
-                  pkg)
+                  pkg-path)
               (let ([pkg-dir (make-temporary-file "pkg~a" 'directory)])
                 (delete-directory pkg-dir)
                 (if strip-mode
@@ -1353,13 +1373,13 @@
                       (generate-stripped-directory strip-mode pkg pkg-dir))
                     (begin
                       (make-parent-directory* pkg-dir)
-                      (copy-directory/files pkg pkg-dir #:keep-modify-seconds? #t)))
+                      (copy-directory/files pkg-path pkg-dir #:keep-modify-seconds? #t)))
                 pkg-dir)))
         (when (or (not in-place?)
                   in-place-clean?)
           (drop-redundant-files pkg-dir))
         (install-info pkg-name
-                      `(dir ,(simple-form-path* pkg))
+                      `(dir ,(simple-form-path* pkg-path))
                       pkg-dir
                       (or (not in-place?) in-place-clean?) 
                       given-checksum ; if a checksum is provided, just use it

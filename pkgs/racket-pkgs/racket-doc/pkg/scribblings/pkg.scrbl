@@ -117,7 +117,8 @@ The @tech{package source} types are:
 
 @itemlist[
 
-@item{a local file path naming an archive -- The name of the package
+@item{a local file path naming an archive (as a plain path or @litchar{file://} URL)
+--- The name of the package
 is the basename of the archive file. The @tech{checksum} for archive
 @filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}.
 The valid archive formats
@@ -138,11 +139,12 @@ and when it starts with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
 package name is the filename without its suffix.}
 
-@item{a local directory -- The name of the package is the name of the
+@item{a local directory (as a plain path or @litchar{file://} URL)
+--- The name of the package is the name of the
 directory. The @tech{checksum} is not present.
 
 For example,
-@filepath{~/tic-tac-toe/} is directory package source.
+@filepath{~/tic-tac-toe/} is a directory package source.
 
 A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
@@ -151,7 +153,7 @@ with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
 package name is the directory name.}
 
-@item{a remote URL naming an archive -- This type follows the same
+@item{a remote URL naming an archive --- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are
 accessed via HTTP(S).
 
@@ -167,7 +169,7 @@ that could be inferred as a file archive.
 The inferred package name is from the URL's file name in the same
 way as for a file package source.}
 
-@item{a remote URL naming a directory -- The remote directory must
+@item{a remote URL naming a directory --- The remote directory must
 contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
 for local directory paths are followed. However, if the remote
@@ -184,7 +186,7 @@ file, and it is treated as a directory URL when it does not end with a
 path element that has an archive file suffix. The inferred package name
 is the directory name.}
 
-@item{a remote URL naming a GitHub repository -- The format for such
+@item{a remote URL naming a GitHub repository --- The format for such
 URLs is:
 
 @inset{@exec{git://github.com/}@nonterm{user}@exec{/}@nonterm{repo}@;
@@ -217,7 +219,7 @@ specified as a GitHub reference is automatically prefixed with
 is the last element of @nonterm{path} if it is
 non-empty, otherwise the inferred name is @nonterm{repo}.}
 
-@item{a @tech{package name} -- A @tech{package catalog} is
+@item{a @tech{package name} --- A @tech{package catalog} is
 consulted to determine the source and @tech{checksum} for the package.
 
 For

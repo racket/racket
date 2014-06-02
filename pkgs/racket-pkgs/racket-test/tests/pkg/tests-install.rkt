@@ -8,6 +8,7 @@
          racket/runtime-path
          racket/path
          racket/list
+         net/url
          pkg/util
          "shelly.rkt"
          "util.rkt")
@@ -22,11 +23,18 @@
    "raco pkg install tests"
    (shelly-install "local package (tgz)" "test-pkgs/pkg-test1.tgz")
    (shelly-install "local package (zip)" "test-pkgs/pkg-test1.zip")
+   (shelly-install "local package (file://zip)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1.zip"))))
    (shelly-install "local package (plt)" "test-pkgs/pkg-test1.plt")
    (shelly-install* "local package (zip, compiled)" "test-pkgs/pkg-test1b.zip" "pkg-test1b")
    (shelly-install* "local package (zip, single-collection)" 
                     "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
                     "pkg-test1 pkg-test3")
+   (shelly-install "local package (dir)" (string-append
+                                          "--copy "
+                                          (url->string (path->url (path->complete-path "test-pkgs/pkg-test1")))))
+   (shelly-install "local package (file://dir)" (string-append
+                                                 "--copy "
+                                                 (url->string (path->url (path->complete-path "test-pkgs/pkg-test1")))))
 
    (with-fake-root
     (shelly-case
