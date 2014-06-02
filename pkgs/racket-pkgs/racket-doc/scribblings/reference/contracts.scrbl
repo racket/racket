@@ -1516,7 +1516,7 @@ The @racket[define-struct/contract] form only allows a subset of the
   @racket[invariant-assertion] does not establish a boundary
   between two parties. Instead, it simply attaches a logical assertion 
   to the value. Because the form uses contract machinery to check the
-  assertion, the surround module is treated as the party to be blamed
+  assertion, the surrounding module is treated as the party to be blamed
   for any violations of the assertion. 
   
   This means, for example, that the assertion is checked on
