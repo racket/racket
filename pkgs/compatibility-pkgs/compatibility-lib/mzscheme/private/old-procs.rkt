@@ -21,24 +21,25 @@
 
   (define new:collection-path
     (let ([collection-path (lambda (collection . collections)
-                             (apply collection-path
-                                    (lambda (s)
-                                      (raise
-                                       (exn:fail:filesystem
-                                        (string-append "collection-path: " s)
-                                        (current-continuation-marks))))
-                                    collection collections))])
+                             (collection-path
+                              (lambda (s)
+                                (raise
+                                 (exn:fail:filesystem
+                                  (string-append "collection-path: " s)
+                                  (current-continuation-marks))))
+                              collection collections))])
       collection-path))
 
   (define new:collection-file-path
     (let ([collection-file-path (lambda (file-name collection . collections)
-                                  (apply collection-file-path
-                                         (lambda (s)
-                                           (raise
-                                            (exn:fail:filesystem
-                                             (string-append "collection-file-path: " s)
-                                             (current-continuation-marks))))
-                                         file-name collection collections))])
+                                  (collection-file-path
+                                   (lambda (s)
+                                     (raise
+                                      (exn:fail:filesystem
+                                       (string-append "collection-file-path: " s)
+                                       (current-continuation-marks))))
+                                   #f
+                                   file-name collection collections))])
       collection-file-path))
 
   

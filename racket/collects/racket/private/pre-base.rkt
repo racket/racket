@@ -106,19 +106,20 @@
                                                          (string-append "collection-path: " s)
                                                          (current-continuation-marks))))]
                                         . collections)
-                             (apply collection-path fail collection collections))])
+                             (collection-path fail collection collections))])
       collection-path))
 
   (define-values (new:collection-file-path)
     (let ([collection-file-path (new-lambda (file-name 
                                              collection
+                                             #:check-compiled? [check-compiled? #f]
                                              #:fail [fail (lambda (s)
                                                             (raise
                                                              (exn:fail:filesystem
                                                               (string-append "collection-file-path: " s)
                                                               (current-continuation-marks))))]
                                              . collections)
-                                  (apply collection-file-path fail file-name collection collections))])
+                                  (collection-file-path fail check-compiled? file-name collection collections))])
       collection-file-path))
 
   (define-syntaxes (module-begin)

@@ -417,21 +417,23 @@
         (raise-argument-error who "(any/c . -> . any)" fail))))
 
   (define-values (collection-path)
-    (lambda (fail collection . collection-path) 
+    (lambda (fail collection collection-path) 
       (-check-collection 'collection-path collection collection-path)
       (-check-fail 'collection-path fail)
       (find-col-file fail
                      collection collection-path
+                     #f
                      #f)))
 
   (define-values (collection-file-path)
-    (lambda (fail file-name collection . collection-path) 
+    (lambda (fail check-compiled? file-name collection collection-path) 
       (-check-relpath 'collection-file-path file-name)
       (-check-collection 'collection-file-path collection collection-path)
       (-check-fail 'collection-file-path fail)
       (find-col-file fail
                      collection collection-path
-                     file-name)))
+                     file-name
+                     check-compiled?)))
 
   (define-values (find-main-collects)
     (lambda ()
@@ -736,7 +738,7 @@
               (normalize-collection-reference base (cons name collection-path))))])))
 
   (define-values (find-col-file)
-    (lambda (fail collection collection-path file-name)
+    (lambda (fail collection collection-path file-name check-compiled?)
       (let-values ([(collection collection-path)
                     (normalize-collection-reference collection collection-path)])
         (let ([all-paths (let ([sym (string->symbol 
@@ -839,7 +841,8 @@
                                 #t
                                 (directory-exists? cpath))
                             (if file-name
-                                (if (or (file-exists? (build-path cpath file-name))
+                                (if (or (file-exists?/maybe-compiled cpath file-name
+                                                                     check-compiled?)
                                         (let ([alt-file-name
                                                (let* ([file-name (if (path? file-name)
                                                                      (path->string file-name)
@@ -849,7 +852,8 @@
                                                       (string=? ".rkt" (substring file-name (- len 4)))
                                                       (string-append (substring file-name 0 (- len 4)) ".ss")))])
                                           (and alt-file-name
-                                               (file-exists? (build-path cpath alt-file-name)))))
+                                               (file-exists?/maybe-compiled cpath alt-file-name
+                                                                            check-compiled?))))
                                     (done cpath)
                                     ;; Look further for specific file, but remember
                                     ;; first found directory
@@ -860,6 +864,24 @@
                             ;; of the top-level collection
                             (cloop (cdr paths) found-col)))
                       (cloop (cdr paths) found-col)))))))))
+
+  (define-values (file-exists?/maybe-compiled)
+    (lambda (dir path check-compiled?)
+      (or (file-exists? (build-path dir path))
+          (and check-compiled?
+               (let ([try-path (path-add-suffix path #".zo")]
+                     [modes (use-compiled-file-paths)]
+                     [roots (current-compiled-file-roots)])
+                 (ormap (lambda (d)
+                          (ormap (lambda (mode)
+                                   (file-exists?
+                                    (let ([p (build-path dir mode try-path)])
+                                      (cond
+                                       [(eq? d 'same) p]
+                                       [(relative-path? d) (build-path p d)]
+                                       [else (reroot-path p d)]))))
+                                 modes))
+                        roots))))))
 
   (define-values (check-suffix-call)
     (lambda (s sfx who)
@@ -1434,7 +1456,8 @@
                                (find-col-file show-collection-err
                                               (if (null? cols) file (car cols))
                                               (if (null? cols) null (cdr cols))
-                                              f-file))))]
+                                              f-file
+                                              #t))))]
                       [(string? s)
                        (let* ([dir (get-dir)])
                          (or (path-cache-get (cons s dir))
@@ -1485,7 +1508,8 @@
                                  (find-col-file show-collection-err
                                                 (car cols)
                                                 (cdr cols)
-                                                f-file)))))]
+                                                f-file
+                                                #t)))))]
                       [(eq? (car s) 'file)
                        ;; Use filesystem-sensitive `simplify-path' here:
                        (path-ss->rkt 

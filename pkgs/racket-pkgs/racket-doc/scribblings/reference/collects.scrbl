@@ -248,10 +248,12 @@ initialized @racket[current-library-collection-links], as follows:
 ]}
 
 
-@defproc*[([(collection-file-path [file path-string?] [collection path-string?] ...+)
+@defproc*[([(collection-file-path [file path-string?] [collection path-string?] ...+
+                                  [#:check-compiled? check-compiled? any/c #f])
             path?]
            [(collection-file-path [file path-string?] [collection path-string?] ...+
-                                  [#:fail fail-proc (string? . -> . any)])
+                                  [#:fail fail-proc (string? . -> . any)]
+                                  [#:check-compiled? check-compiled? any/c #f])
             any])]{
 
 Returns the path to the file indicated by @racket[file] in the
@@ -268,13 +270,24 @@ apply, but a directory corresponding to the @racket[collection]s is
 found, then a path using the first such directory is
 returned.
 
+If @racket[check-compiled?] is true, then the search also depends on
+@racket[use-compiled-file-paths] and
+@racket[current-compiled-file-roots]; if @racket[file] is not found,
+then a compiled form of @racket[file] with the suffix @filepath{.zo}
+is checked in the same way as the default @tech{compiled-load
+handler}.  If a compiled file is found, the result from
+@racket[collection-file-path] reports the location that @racket[file]
+itself would occupy (if it existed) for the found compiled file.
+
 Finally, if the collection is not found, and if @racket[fail-proc] is
 provided, then @racket[fail-proc] is applied to an error message (that
 does not start @scheme["collection-file-path:"] or otherwise claim a
 source), and its result is the result of
 @racket[collection-file-path].  If @racket[fail-proc] is not provided
 and the collection is not found, then the
-@exnraise[exn:fail:filesystem].}
+@exnraise[exn:fail:filesystem].
+
+@history[#:changed "6.0.1.12" @elem{Added the @racket[check-compiled?] argument.}]}
 
 
 @defproc*[([(collection-path [collection path-string?] ...+)
