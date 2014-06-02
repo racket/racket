@@ -554,6 +554,13 @@ Creates an arch.
 ]
 }
 
+@section{Drawing}
+@addition{Jay McCarthy}
+
+@defproc[(draw-pict-centered [p pict?] [dc (is-a?/c dc<%>)] [w real?] [h real?]) void?]{
+ Draws the pict @racket[p] on @racket[dc] centered in a @racket[w]x@racket[h] rectangle.
+}
+
 @section{Additional combinators}
 
 @addition{Asumu Takikawa}

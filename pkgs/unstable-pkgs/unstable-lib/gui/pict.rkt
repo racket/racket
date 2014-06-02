@@ -527,3 +527,17 @@
   (-> real? real? real? real?
       pict?)])
 
+;; draw
+
+(define (draw-pict-centered p dc aw ah)
+  (define pw (pict-width p))
+  (define ph (pict-height p))
+  (define (inset x y)
+    (/ (- x y) 2))
+  (draw-pict p dc (inset aw pw) (inset ah ph)))
+
+(provide
+ (contract-out
+  [draw-pict-centered 
+   (-> pict? (is-a?/c dc<%>) real? real?
+       void?)]))
