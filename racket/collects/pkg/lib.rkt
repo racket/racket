@@ -28,6 +28,7 @@
          version/utils
          syntax/modcollapse
          syntax/modread
+         compiler/compilation-path
          "name.rkt"
          "util.rkt"
          "strip.rkt"
@@ -1565,11 +1566,8 @@
            [(and f
                  (or (file-exists? f)
                      (file-exists? (path-replace-suffix f #".ss"))
-                     (let-values ([(base name dir?) (split-path f)])
-                       (or (file-exists? (build-path base "compiled" (path-add-suffix name #".zo")))
-                           (file-exists? (build-path base "compiled" (path-add-suffix
-                                                                      (path-replace-suffix name #".ss")
-                                                                      #".zo"))))))
+                     (file-exists? (get-compilation-bytecode-file f))
+                     (file-exists? (get-compilation-bytecode-file (path-replace-suffix f #".ss"))))
                  (or (not updating?)
                      (not (equal? pkg-name (path->pkg f #:cache path-pkg-cache)))))
             ;; This module is already installed
