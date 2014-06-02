@@ -41,7 +41,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-..\..\..\racket -G ..\%BUILD_CONFIG -cu xform.rkt
+..\..\..\racket -G ..\%BUILD_CONFIG% -cu xform.rkt
 if errorlevel 1 exit /B 1
 cd ..
 
