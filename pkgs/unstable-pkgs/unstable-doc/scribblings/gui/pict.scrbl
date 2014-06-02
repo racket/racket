@@ -589,3 +589,21 @@ Adds a background highlighted with @racket[color] to
 
 @(close-eval the-eval)
 
+@section{Alignment}
+
+@(require (for-label unstable/gui/pict/align))
+@defmodule[unstable/gui/pict/align]
+
+@defthing[align/c contract?]{A contract for the values @racket['(lt ct rt lc cc rc lb cb rb)].}
+@defthing[halign/c contract?]{A contract for the values @racket['(l c r)].}
+@defthing[valign/c contract?]{A contract for the values @racket['(t c b)].}
+
+@defproc[(align->h [a align/c]) halign/c]{Extracts the @racket[halign/c] part from @racket[a].}
+@defproc[(align->v [a align/c]) valign/c]{Extracts the @racket[valign/c] part from @racket[a].}
+
+@defproc[(align->frac [a (or/c halign/c valign/c)]) real?]{Computes the fraction corresponding to an alignment where the top-left is @racket[0].}
+
+@defproc[(halign->vcompose [ha halign/c]) procedure?]{Returns the @racket[h*-append] function for horizontal alignment.}
+@defproc[(valign->hcompose [va valign/c]) procedure?]{Returns the @racket[v*-append] function for vertical alignment.}
+
+@defproc[(pin-over/align [scene pict?] [x real?] [y real?] [halign halign/c] [valign valign/c] [pict pict?]) pict?]{Pins @racket[pict] over @racket[scene] centered at @racket[x]x@racket[y] aligned as specified in @racket[halign] and @racket[valign].}
