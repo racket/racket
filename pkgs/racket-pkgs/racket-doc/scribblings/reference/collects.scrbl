@@ -249,11 +249,13 @@ initialized @racket[current-library-collection-links], as follows:
 
 
 @defproc*[([(collection-file-path [file path-string?] [collection path-string?] ...+
-                                  [#:check-compiled? check-compiled? any/c #f])
+                                  [#:check-compiled? check-compiled? any/c
+                                                     (regexp-match? #rx"[.]rkt$" file)])
             path?]
            [(collection-file-path [file path-string?] [collection path-string?] ...+
                                   [#:fail fail-proc (string? . -> . any)]
-                                  [#:check-compiled? check-compiled? any/c #f])
+                                  [#:check-compiled? check-compiled? any/c
+                                                     (regexp-match? #rx"[.]rkt$" file)])
             any])]{
 
 Returns the path to the file indicated by @racket[file] in the

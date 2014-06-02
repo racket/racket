@@ -112,7 +112,9 @@
   (define-values (new:collection-file-path)
     (let ([collection-file-path (new-lambda (file-name 
                                              collection
-                                             #:check-compiled? [check-compiled? #f]
+                                             #:check-compiled? [check-compiled?
+                                                                (and (path-string? file-name)
+                                                                     (regexp-match? #rx"[.]rkt$" file-name))]
                                              #:fail [fail (lambda (s)
                                                             (raise
                                                              (exn:fail:filesystem
