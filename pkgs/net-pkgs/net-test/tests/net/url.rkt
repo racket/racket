@@ -377,6 +377,21 @@
 
      ))
 
+  (test (relative-path->relative-url-string "a")
+        => "a")
+  (test (relative-path->relative-url-string "a/")
+        => "a/")
+  (test (relative-path->relative-url-string "a/b")
+        => "a/b")
+  (test (relative-path->relative-url-string (build-path "a" 'up "b"))
+        => "a/../b")
+  (test (relative-path->relative-url-string (build-path "a" 'same "b" 'up))
+        => "a/./b/../")
+  (test (relative-path->relative-url-string (build-path "a&c;" 'same "b"))
+        => "a%26c%3B/./b")
+  (test (relative-path->relative-url-string (bytes->path '#"\\\\?\\REL\\a\\b/c\\d" 'windows))
+        => "a/b%2Fc/d")
+
   )
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr
