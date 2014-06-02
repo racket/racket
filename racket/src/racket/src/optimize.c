@@ -2866,7 +2866,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   if (SAME_OBJ(app->rator, scheme_check_not_undefined_proc)
       && SCHEME_SYMBOLP(app->rand2)) {
     scheme_log(info->logger,
-               SCHEME_LOG_WARNING,
+               SCHEME_LOG_DEBUG,
                0,
                "warning%s: use-before-definition check inserted on variable: %S",
                scheme_optimize_context_to_string(info->context),
