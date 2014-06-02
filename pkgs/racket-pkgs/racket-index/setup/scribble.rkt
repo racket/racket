@@ -28,6 +28,7 @@
          pkg/lib
          pkg/strip
          openssl/sha1
+         compiler/compilation-path
          (prefix-in u: net/url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
@@ -1001,13 +1002,10 @@
          [db-file (find-db-file doc latex-dest main-doc-exists?)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
-         [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                   (define path (build-path base "compiled" (path-add-suffix name ".zo")))
-                   (or (for/or ([root (in-list (current-compiled-file-roots))])
-                         (define p (reroot-path* path root))
-                         (and (file-exists? p) p))
-                       (if (and (not (file-exists? path))
-                                (file-exists? out-file))
+         [src-zo (let ([path (get-compilation-bytecode-file (doc-src-file doc))])
+                   (or (and (file-exists? path)
+                            path)
+                       (if (file-exists? out-file)
                            ;; assume installed as pre-rendered:
                            #f
                            ;; need to render, so complain if no source is available:
@@ -1022,13 +1020,13 @@
                                   (andmap string? v))
                              v
                              (list "" "" ""))))]
-         [renderer-path (let ([p (collection-file-path 
+         [renderer-path (let ([p (collection-file-path
+                                  #:check-compiled? #t
                                   (cond
                                    [(path? latex-dest) "latex-render.rkt"]
                                    [(not latex-dest) "html-render.rkt"])
                                   "scribble")])
-                          (let-values ([(base name dir?) (split-path p)])
-                            (build-path base "compiled" (path-add-suffix name ".zo"))))]
+                          (get-compilation-bytecode-file p))]
          [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-sha1s (list (get-compiled-file-sha1 renderer-path)
                           (get-file-sha1 css-path))]
