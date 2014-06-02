@@ -107,7 +107,7 @@ and directories:
        immediately within a directory named @filepath{doc};}
 
  @item{directories/files named in an @filepath{info.rkt} file's
-       @racket[source-omit-files] definition.}
+       @racket[binary-omit-files] definition.}
 
 ]
 
