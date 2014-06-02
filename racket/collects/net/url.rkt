@@ -593,6 +593,19 @@
               (if (null? url-tail) url-path (append url-path url-tail))
               '() #f)))
 
+(define (relative-path->relative-url-string path)
+  (define s (string-join (for/list ([e (in-list (explode-path path))])
+                           (cond
+                            [(eq? e 'same) "."]
+                            [(eq? e 'up) ".."]
+                            [else
+                             (uri-encode* (path-element->string e))]))
+                         "/"))
+  ;; Add "/" to reflect directory-ness:
+  (let-values ([(base name dir?) (split-path path)])
+    (if dir?
+        (string-append s "/")
+        s)))
 
 (define (url->path url [kind (system-path-convention-type)])
   (file://->path url kind))
@@ -688,6 +701,9 @@
                                (not/c #rx"^[^:/?#]*:")))
                   url?))
  (path->url ((or/c path-string? path-for-some-system?) . -> . url?))
+ (relative-path->relative-url-string ((and/c (or/c path-string? path-for-some-system?)
+                                             relative-path?)
+                                      . -> . string?))
  (url->string (url? . -> . string?))
  (url->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
 

@@ -194,6 +194,17 @@ Converts @racket[URL], which is assumed to be a @racket["file"] URL,
 to a path.}
 
 
+@defproc[(relative-path->relative-url-string [path (and/c (or/c path-string? path-for-some-system?)
+                                                          relative-path?)])
+         string?]{
+
+Converts @racket[path] to a string that parses as a relative URL (with
+forward slashes). Each element of @racket[path] is an element of the
+resulting URL path, and the string form of each element is encoded as
+needed. If @racket[path] is syntactically a directory, then the resulting
+URL ends with @litchar{/}.}
+
+
 @defparam[file-url-path-convention-type kind (or/c 'unix 'windows)]{
 
 Determines the default conversion to and from strings for
