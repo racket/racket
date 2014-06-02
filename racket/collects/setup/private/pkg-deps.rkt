@@ -366,6 +366,22 @@
                      (module-compiled-submodules mod-code #f)))))))
 
   ;; ----------------------------------------
+  (define (find-compiled-directories path)
+    ;; Find all directories that can hold compiled bytecode for `path`
+    (filter
+     values
+     (for*/list ([root (in-list (current-compiled-file-roots))]
+                 [mode (in-list (use-compiled-file-paths))])
+       (define dir (build-path path mode))
+       (define compiled-dir
+         (cond
+          [(eq? root 'same) dir]
+          [(relative-path? root) (build-path root dir)]
+          [else (reroot-path dir root)]))
+       (and (directory-exists? compiled-dir)
+            compiled-dir))))
+
+  ;; ----------------------------------------
   (define main-db-file (build-path (find-doc-dir) "docindex.sqlite"))
   (define user-db-file (build-path (find-user-doc-dir) "docindex.sqlite"))
   (define (register-or-check-docs check? pkg path main?)
@@ -411,9 +427,9 @@
         [coll-main? (in-list coll-main?s)])
     (when verbose?
       (setup-printf #f " checking ~a" path))
-    (define dir (build-path path "compiled"))
-    (when (directory-exists? dir)
-      (define pkg (path->pkg dir #:cache path-cache))
+    (define dirs (find-compiled-directories path))
+    (for ([dir (in-list dirs)])
+      (define pkg (path->pkg path #:cache path-cache))
       (when (and pkg
                  (not (hash-ref skip-pkgs pkg #f)))
         (for ([f (directory-list dir)])
