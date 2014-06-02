@@ -107,16 +107,17 @@
   $ (~a "raco pkg catalog-archive " archive-d " http://localhost:9990")
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
 
-  (define rx:pkg-test1 (regexp
-                        (~a (regexp-quote (~a "Source: " archive-d "/pkgs/pkg-test1.zip"))
-                            ".*"
-                            (regexp-quote (~a "Checksum: " (file->string 
-                                                            (build-path archive-d
-                                                                        "pkgs"
-                                                                        "pkg-test1.zip.CHECKSUM")))))))
+  (define (rx:pkg-test1 as-url?)
+    (regexp
+     (~a (regexp-quote (~a "Source: " (if as-url? "file://" "") archive-d "/pkgs/pkg-test1.zip"))
+         ".*"
+         (regexp-quote (~a "Checksum: " (file->string 
+                                         (build-path archive-d
+                                                     "pkgs"
+                                                     "pkg-test1.zip.CHECKSUM")))))))
   
   $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
-  =stdout> rx:pkg-test1
+  =stdout> (rx:pkg-test1 #f)
 
   (delete-directory/files archive-d)
 
@@ -127,7 +128,7 @@
         " " archive-d)
   =stdout> #rx"== Archiving pkg-test1 =="
   $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
-  =stdout> rx:pkg-test1
+  =stdout> (rx:pkg-test1 #t)
   $ (~a "grep archive " archive-d "/catalog/pkg/pkg-test1") ; relative path => no "archive"
   =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")

@@ -448,34 +448,27 @@
     (define new-ht
       (cond
        [s
-        ;; If `i' is a "file:" URL, then it makes sense to parse
-        ;; `s' as a path and make it absolute relative to `i'.
-        ;; If `i' is a URL, then `s' might be treated as a relative
-        ;; URL, and we rely on the pun that a relative URL looks
-        ;; like a relative path.
+        ;; If `s' is a relative URL, then we rely on the pun
+        ;; that it will parse as a relative path.
         (define-values (name type) (package-source->name+type s #f))
         (cond
          [(and (or (eq? type 'dir) (eq? type 'file))
-               (not (complete-path? (package-source->path s type))))
-          (define full-path
+               (not (regexp-match? #rx"^file://" s))
+               (relative-path? s))
+          (define i-for-combine
             (cond
              [(equal? "file" (url-scheme i))
-              (define path (url->path i))
-              (define dir (if (db-path? path)
-                              (let-values ([(base name dir?) (split-path path)])
-                                base)
-                              path))
-              (path->string (simplify-path (path->complete-path (package-source->path s type)
-                                                                (path->complete-path dir))))]
-             [else
-              (define rel-url (string-join (for/list ([e (explode-path (package-source->path s type))])
-                                             (cond
-                                              [(eq? e 'same) "."]
-                                              [(eq? e 'up) ".."]
-                                              [else (path-element->string e)]))
-                                           "/"))
-              (url->string (combine-url/relative i rel-url))]))
-          (hash-set ht 'source full-path)]
+              (define i-path (url->path i))
+              (if (db-path? i-path)
+                  i
+                  ;; Make sure we interpret `i' as a directory when
+                  ;; adding a relative path:
+                  (path->url (path->directory-path (url->path i))))]
+             [else i]))
+          (define full-url
+            (url->string
+             (combine-url/relative i-for-combine s)))
+          (hash-set ht 'source full-url)]
          [else ht])]
        [else ht]))
     (let ([v (hash-ref new-ht 'versions #f)])
@@ -499,15 +492,10 @@
        [(or (eq? type 'dir) (eq? type 'file))
         (hash-set ht
                   'source
-                  (string-join (map (lambda (s)
-                                      (case s
-                                        [(up) ".."]
-                                        [(same) "."]
-                                        [else (path-element->string s)]))
-                                    (explode-path (find-relative-path 
-                                                   dir
-                                                   (package-source->path s type))))
-                               "/"))]
+                  (relative-path->relative-url-string
+                   (find-relative-path
+                    dir
+                    (package-source->path s type))))]
        [else ht])]
      [else ht]))
   (let ([v (hash-ref new-ht 'versions #f)])
