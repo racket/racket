@@ -5,7 +5,7 @@
 (require 2htdp/image)
 
 ;; Distinct from other tests:
-(define PORT-NO 9002)
+(define PORT-NO 19202)
 
 ;; Nat Nat ->* World1 World2 [Listof IWorld]
 ;; launch a sending world, a receiving world, and a connecting universe

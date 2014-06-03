@@ -4,7 +4,7 @@
   (require 2htdp/universe 2htdp/image)
   
   ;; Distinct from other tests:
-  (define PORT-NO 9003)
+  (define PORT-NO 19203)
 
   (struct s (t) #:prefab)
 

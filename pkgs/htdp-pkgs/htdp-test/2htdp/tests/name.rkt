@@ -12,7 +12,7 @@
 (define c (make-custodian))
 
 ;; Distinct from other tests:
-(define PORT-NO 9006)
+(define PORT-NO 19206)
 
 (define-values (_ n)
   (parameterize ((current-custodian c))

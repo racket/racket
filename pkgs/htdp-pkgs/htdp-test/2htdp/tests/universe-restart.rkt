@@ -4,7 +4,7 @@
   (require 2htdp/universe 2htdp/image)
 
   ;; Distinct from other tests:
-  (define PORT-NO 9001)
+  (define PORT-NO 19201)
 
   (define (u)
     (universe 0
@@ -30,7 +30,7 @@
   (require 2htdp/universe 2htdp/image)
   
   ;; Distinct from other tests:
-  (define PORT-NO 9005)
+  (define PORT-NO 19205)
 
   (define *world* #false)
 
