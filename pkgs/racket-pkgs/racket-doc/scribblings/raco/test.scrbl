@@ -54,9 +54,14 @@ The @exec{raco test} command accepts several flags:
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
-       system: ignore non-modules, use as many jobs as available processors, set the
-       default timeout to 90 seconds, count stderr output as a test failure,
-       quiet program output, and print a table of results.}
+       system: ignore non-modules, run tests in separate processes,
+       use as many jobs as available processors,
+       set the default timeout to 90 seconds, 
+       create a fresh @envvar{PLTUSERHOME} and @envvar{TMPDIR} for each test,
+       count stderr output as a test failure,
+       quiet program output, 
+       provide program empty input,
+       and print a table of results.}
 
  @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
        --- Requires the submodule @nonterm{name} rather than @racket[test].
@@ -101,11 +106,21 @@ The @exec{raco test} command accepts several flags:
       If any test fails due to a timeout, the exit status of @exec{raco test}
       is 2 (as opposed to 1 for only non-timeout failures or 0 for success).}
 
+ @item{@DFlag{fresh-user}
+      --- When running tests in a separate process, creates a fresh
+      directory and sets @envvar{PLTUSERHOME} and @envvar{TMPDIR}. The
+      @envvar{PLTADDONDIR} environment variable is also set so that
+      the add-on directory (which is where packages are installed, for
+      example), does @emph{not} change for each test process.}
+
  @item{@Flag{Q} or @DFlag{quiet-program}
        --- suppresses output from each test program.}
 
  @item{@Flag{e} or @DFlag{check-stderr}
        --- count any stderr output as a test failure.}
+
+ @item{@DFlag{empty-stdin}
+       --- provide an empty stdin to each test program.}
 
  @item{@Flag{q} or @DFlag{quiet}
        --- suppresses output of progress information, responsible
