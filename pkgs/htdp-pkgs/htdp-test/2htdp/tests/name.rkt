@@ -11,6 +11,9 @@
 
 (define c (make-custodian))
 
+;; Distinct from other tests:
+(define PORT-NO 9006)
+
 (define-values (_ n)
   (parameterize ((current-custodian c))
     (launch-many-worlds
@@ -19,12 +22,14 @@
                (on-tick sub1)
                (to-draw (lambda (w) (empty-scene 200 200)))
                (name NAME)
-               (register LOCALHOST))
+               (register LOCALHOST)
+               (port PORT-NO))
      ;; --- universe: 
      (universe #f
                (on-new (lambda (u w) (make-bundle (iworld-name w) '() '())))
                (on-msg (lambda (u w m) (make-bundle u '() '())))
-               (on-tick (lambda (u) (make-bundle u '() '())) 1 1)))))
+               (on-tick (lambda (u) (make-bundle u '() '())) 1 1)
+               (port PORT-NO)))))
 
 (check-equal? n NAME)
 
