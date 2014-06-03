@@ -17,11 +17,14 @@ directly, in separate processes (the default), or in separate places.
 The current directory is set to a test file's directory before running
 the file.
 
-When an argument path refers to a directory, the tool recursively
-discovers and runs all files within the directory that end in
-@filepath{.rkt}, end in @filepath{.scrbl}, or have a
-(possibly empty) list of arguments-line provided by
+When an argument path refers to a directory, @exec{raco test}
+recursively discovers and runs all files within the directory that end
+in @filepath{.rkt}, end in @filepath{.scrbl}, or have a (possibly
+empty) list of command-line arguments provided by
 @racket[test-command-line-arguments] in an @filepath{info.rkt} file.
+At the same time, @exec{raco test} omits files and directories within
+a directory as directed by @racket[test-omit-paths] in an
+@filepath{info.rkt} file.
 
 A test is counted as failing if it logs a failing test code via
 @racket[test-log!], causes Racket to exit with a non-zero exit code, or
@@ -33,24 +36,27 @@ The @exec{raco test} command accepts several flags:
 @itemize[
 
  @item{@Flag{c} or @DFlag{collection}
-       --- Interprets the arguments as collections where whose files should be tested.}
+       --- Interprets the arguments as collections whose content
+       should be tested (in the same way as directory content).}
 
  @item{@Flag{p} or @DFlag{package}
-       --- Interprets the arguments as packages whose files should
-       be tested. (All package scopes are searched for the first, most
-       specific package.)}
+       --- Interprets the arguments as packages whose contents should
+       be tested (in the same way as directory content). All package
+       scopes are searched for the first, most specific @tech[#:doc
+       '(lib "pkg/scribblings/pkg.scrbl")]{package scope}.}
  
  @item{@Flag{l} or @DFlag{lib}
-       --- Interprets the arguments as packages whose libraries to be tested.}
+       --- Interprets the arguments as libraries that should be tested.}
 
  @item{@Flag{m} or @DFlag{modules}
        --- Not only interprets the arguments as paths (which is the
-       default mode), but treats them the same as a path found in a
+       default mode), but treats them the same as paths found in a
        directory, which means ignoring a file argument that does not
-       have the extension @filepath{.rkt}, have the extension
-       @filepath{.scrbl}, or is enabled explicitly via
+       have the extension @filepath{.rkt}, does not have the extension
+       @filepath{.scrbl}, or is not enabled explicitly via
        @racket[test-command-line-arguments] in an @filepath{info.rkt}
-       file.}
+       file; meanwhile, paths that are otherwise enabled can be disabled
+       via @racket[test-omit-paths] in an @filepath{info.rkt} file.}
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
@@ -60,7 +66,7 @@ The @exec{raco test} command accepts several flags:
        create a fresh @envvar{PLTUSERHOME} and @envvar{TMPDIR} for each test,
        count stderr output as a test failure,
        quiet program output, 
-       provide program empty input,
+       provide empty program input,
        and print a table of results.}
 
  @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
@@ -111,7 +117,7 @@ The @exec{raco test} command accepts several flags:
       directory and sets @envvar{PLTUSERHOME} and @envvar{TMPDIR}. The
       @envvar{PLTADDONDIR} environment variable is also set so that
       the add-on directory (which is where packages are installed, for
-      example), does @emph{not} change for each test process.}
+      example) does @emph{not} change for each test process.}
 
  @item{@DFlag{empty-stdin}
        --- provide an empty stdin to each test program.}

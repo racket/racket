@@ -533,11 +533,12 @@
        [(and (file-exists? p)
              (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
-                 (get-cmdline p #f))
-             (or explicit-arguments?
-                 (begin (check-info p)
-                        (not (omit-path? p)))))
-        ;; The above `omit-path?` loads "info.rkt" files
+                 (get-cmdline p #f #:check-info? #t))
+             (or (not check-suffix?)
+                 (not (omit-path? p  #:check-info? #t))))
+        (unless check-suffix?
+          ;; make sure "info.rkt" information is loaded:
+          (check-info p))
         (define norm-p (normalize-info-path p))
         (define args (get-cmdline norm-p))
         (define timeout (get-timeout norm-p))
@@ -657,7 +658,6 @@
 (require (submod "." paths))
 
 (define collections? #f)
-(define explicit-arguments? #f)
 (define packages? #f)
 (define libraries? #f)
 (define check-top-suffix? #f)
@@ -806,21 +806,30 @@
 (define (normalize-info-path p)
   (simplify-path (path->complete-path p) #f))
 
-(define (omit-path? p)
+(define (omit-path? p #:check-info? [check-info? #f])
+  (when check-info? (check-info p))
   (let ([p (normalize-info-path p)])
     (or (hash-ref omit-paths p #f)
         (let-values ([(base name dir?) (split-path p)])
           (and (path? base)
                (omit-path? base))))))
 
-(define (get-cmdline p [default null])
-  (hash-ref command-line-arguments p default))
+(define (get-cmdline p [default null] #:check-info? [check-info? #f])
+  (when check-info? (check-info p))
+  (hash-ref command-line-arguments
+            (if check-info? (normalize-info-path p) p)
+            default))
 
-(define (get-timeout p) (hash-ref timeouts p +inf.0))
+(define (get-timeout p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref timeouts p +inf.0))
 
-(define (get-lock-name p) (hash-ref lock-names p #f))
+(define (get-lock-name p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref lock-names p #f))
 
 (define (get-responsible p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
   (or (let loop ([p p])
         (or (hash-ref responsibles p #f)
             (let-values ([(base name dir?) (split-path p)])
@@ -840,7 +849,9 @@
                       (and (ok-responsible? v)
                            v))))))))
 
-(define (get-random p) (hash-ref randoms p #f))
+(define (get-random p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref randoms p #f))
 
 (define (ok-responsible? v)
   (or (string? v)
@@ -950,9 +961,7 @@
   "Print a summary table"
   (set! table? #t)]
  #:args file-or-directory
- (begin (set! explicit-arguments?
-              (not (or collections? libraries? packages? check-top-suffix?)))
-        (unless (= 1 (length file-or-directory))
+ (begin (unless (= 1 (length file-or-directory))
           (set! single-file? #f))
         (define sum
           ;; The #:sema argument everywhre makes tests start
