@@ -39,4 +39,5 @@
   "check-below-tests.rkt"
   "init-env-tests.rkt"
   "filter-tests.rkt"
+  "metafunction-tests.rkt"
   "rep-tests.rkt")

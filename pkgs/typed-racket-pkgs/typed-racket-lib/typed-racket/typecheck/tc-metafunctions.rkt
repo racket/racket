@@ -218,10 +218,10 @@
                       (cond
                         [(null? ps) (apply -or result)]
                         [(for/or ([other-p (in-list (append derived-formulas derived-atoms))])
-                             (complementary? (car ps) other-p))
+                           (contradictory? (car ps) other-p))
                          (or-loop (cdr ps) result)]
                         [(for/or ([other-p (in-list derived-atoms)])
-                             (implied-atomic? (car ps) other-p))
+                           (implied-atomic? (car ps) other-p))
                          -top]
                         [else (or-loop (cdr ps) (cons (car ps) result))]))])
                (if (OrFilter? new-or)
