@@ -29,6 +29,8 @@
 (define quiet-program? #f)
 (define check-stderr? #f)
 (define table? #f)
+(define fresh-user? #f)
+(define empty-input? #f)
 
 (define jobs 0) ; 0 mean "default"
 (define task-sema (make-semaphore 1))
@@ -47,7 +49,8 @@
 
 ;; Stub for running a test in a process:
 (module process racket/base
-  (require rackunit/log)
+  (require rackunit/log
+           racket/file)
   ;; Arguments are a temp file to hold test results, the module
   ;; path to run, and the `dynamic-require` second argument:
   (define argv (current-command-line-arguments))
@@ -55,6 +58,12 @@
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define d (read (open-input-string (vector-ref argv 2))))
   (define args (list-tail (vector->list argv) 3))
+
+  ;; In case PLTUSERHOME is set, make sure relevant
+  ;; directories exist:
+  (define (ready-dir d)
+    (make-directory* d))
+  (ready-dir (find-system-path 'doc-dir))
 
   (parameterize ([current-command-line-arguments (list->vector args)])
     (dynamic-require test-module d)
@@ -125,6 +134,9 @@
                          (if check-stderr?
                              (tee-output-port (current-error-port) e)
                              (current-error-port))))
+      (define stdin (if empty-input?
+                        (open-input-bytes #"")
+                        (current-input-port)))
 
       (unless quiet?
         (when responsible
@@ -133,7 +145,11 @@
                    responsible))
         (when random?
           (fprintf stdout "raco test:~a @(test-random #t)\n"
-                   id)))
+                   id))
+        (when lock-name
+          (fprintf stdout "raco test:~a @(lock-name ~s)\n"
+                   id
+                   lock-name)))
       
       (define-values (result-code test-results)
         (case mode
@@ -143,6 +159,7 @@
            (define t
              (parameterize ([current-output-port stdout]
                             [current-error-port stderr]
+                            [current-input-port stdin]
                             [current-command-line-arguments (list->vector args)])
                (thread
                 (lambda ()
@@ -164,7 +181,7 @@
              (parameterize ([current-custodian c])
                (dynamic-place* '(submod compiler/commands/test place)
                                'go
-                               #:in (current-input-port)
+                               #:in stdin
                                #:out stdout
                                #:err stderr)))
            
@@ -181,14 +198,27 @@
                    (sync/timeout 0 pl))]
           [(process)
            (define tmp-file (make-temporary-file))
+           (define tmp-dir (and fresh-user?
+                                (make-temporary-file "home~a" 'directory)))
            (define ps
              (parameterize ([current-output-port stdout]
                             [current-error-port stderr]
                             [current-subprocess-custodian-mode 'kill]
-                            [current-custodian c])
+                            [current-custodian c]
+                            [current-environment-variables (environment-variables-copy
+                                                            (current-environment-variables))])
+               (environment-variables-set! (current-environment-variables)
+                                           #"PLTUSERHOME"
+                                           (path->bytes tmp-dir))
+               (environment-variables-set! (current-environment-variables)
+                                           #"TMPDIR"
+                                           (path->bytes tmp-dir))
+               (environment-variables-set! (current-environment-variables)
+                                           #"PLTADDONDIR"
+                                           (path->bytes (find-system-path 'addon-dir)))
                (apply process*/ports
                       stdout
-                      (current-input-port)
+                      stdin
                       stderr
                       (find-exe)
                       "-l"
@@ -208,6 +238,10 @@
            (define results
              (with-handlers ([exn:fail:read? (lambda () #f)])
                (call-with-input-file* tmp-file read)))
+
+           (delete-file tmp-file)
+           (when tmp-dir
+             (delete-directory/files tmp-dir))
            
            (values (proc 'exit-code)
                    (and (pair? results)
@@ -832,12 +866,14 @@
   "Configure defaults to imitate DrDr"
   (set! check-top-suffix? #t)
   (set! first-avail? #t)
+  (set! empty-input? #t)
   (when (zero? jobs)
     (set-jobs! (processor-count)))
   (unless default-timeout
     (set! default-timeout 90))
   (set! check-stderr? #t)
   (set! quiet-program? #t)
+  (set! fresh-user? #t)
   (set! table? #t)
   (unless default-mode
     (set! default-mode 'process))]
@@ -874,12 +910,18 @@
  [("--timeout") seconds
   "Set default timeout to <seconds>"
   (set! default-timeout (string->number* "timeout" seconds real?))]
+ [("--fresh-user")
+  "Fresh PLTUSERHOME, etc., for each test"
+  (set! fresh-user? #t)]
  [("--quiet-program" "-Q")
   "Quiet the program"
   (set! quiet-program? #t)]
  [("--check-stderr" "-e")
   "Treat stderr output as a test failure"
   (set! check-stderr? #t)]
+ [("--empty-stdin")
+  "Call program with an empty stdin"
+  (set! empty-input? #t)]
  [("--quiet" "-q")
   "Suppress `raco test: ...' message"
   (set! quiet? #t)]
