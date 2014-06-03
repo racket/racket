@@ -572,9 +572,19 @@
                  (cond
                   [(and did-one? first-avail?)
                    #f]
-                  [(module-declared? mod #t)
-                   (set! did-one? #t)
-                   (test-this-module mod #t)]
+                  [(with-handlers ([exn:fail?
+                                    (lambda (exn)
+                                      ;; If there's an error, then try running
+                                      ;; this submodule to let the error show.
+                                      ;; Log a warning, just in case.
+                                      (log-warning "submodule load failed: ~s"
+                                                   (exn-message exn))
+                                      'error)])
+                     (and (module-declared? mod #t)
+                          'ok))
+                   => (lambda (mode)
+                        (set! did-one? #t)
+                        (test-this-module mod (eq? mode 'ok)))]
                   [else
                    (set! something-wasnt-declared? #t)
                    #f]))
