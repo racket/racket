@@ -113,14 +113,20 @@ The @exec{raco test} command accepts several flags:
       the add-on directory (which is where packages are installed, for
       example), does @emph{not} change for each test process.}
 
+ @item{@DFlag{empty-stdin}
+       --- provide an empty stdin to each test program.}
+
  @item{@Flag{Q} or @DFlag{quiet-program}
        --- suppresses output from each test program.}
 
  @item{@Flag{e} or @DFlag{check-stderr}
        --- count any stderr output as a test failure.}
 
- @item{@DFlag{empty-stdin}
-       --- provide an empty stdin to each test program.}
+ @item{@DPFlag{ignore-stderr} @nonterm{pattern}
+       --- don't count stderr output as a test failure if it matches
+       @nonterm{pattern}.  This flag can be used multiple times, and
+       stderr output is treated as success as long as it matches any
+       one @nonterm{pattern}.}
 
  @item{@Flag{q} or @DFlag{quiet}
        --- suppresses output of progress information, responsible
