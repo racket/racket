@@ -10,3 +10,6 @@ others don't accidentally conflict.
 9000 - DrDr Web server
 9001 - tests/net
 9999 - tests/web-server
+19200 - 2htdp/tests
+...
+19209 - 2htdp/tests
