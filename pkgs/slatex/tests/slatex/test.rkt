@@ -6,13 +6,13 @@
 (define-runtime-path slatex-file-pth '(lib "slatex"))
 (define slatex-pth (path-only slatex-file-pth))
 
-(define tmp-file (build-path (current-directory) "test.tex")
-  #;(make-temporary-file "slatex~a.tex" #f (current-directory)))
+(parameterize ([current-directory (find-system-path 'temp-dir)])
+  (define tmp-file (build-path (current-directory) "test.tex"))
 
 (test
  (putenv "TEXINPUTS" (format "~a:" (path->string slatex-pth)))
  tmp-file
- 
+
  (with-output-to-file tmp-file #:exists 'truncate/replace
    (lambda ()
      (display #<<END
@@ -59,4 +59,4 @@ END
  (with-handlers ([exn:fail:filesystem? void])
    (delete-file (path-replace-suffix tmp-file #".dvi")))
  
- (delete-file tmp-file))
+ (delete-file tmp-file)))
