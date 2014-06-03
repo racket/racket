@@ -208,15 +208,16 @@
                             [current-custodian c]
                             [current-environment-variables (environment-variables-copy
                                                             (current-environment-variables))])
-               (environment-variables-set! (current-environment-variables)
-                                           #"PLTUSERHOME"
-                                           (path->bytes tmp-dir))
-               (environment-variables-set! (current-environment-variables)
-                                           #"TMPDIR"
-                                           (path->bytes tmp-dir))
-               (environment-variables-set! (current-environment-variables)
-                                           #"PLTADDONDIR"
-                                           (path->bytes (find-system-path 'addon-dir)))
+               (when fresh-user?
+                 (environment-variables-set! (current-environment-variables)
+                                             #"PLTUSERHOME"
+                                             (path->bytes tmp-dir))
+                 (environment-variables-set! (current-environment-variables)
+                                             #"TMPDIR"
+                                             (path->bytes tmp-dir))
+                 (environment-variables-set! (current-environment-variables)
+                                             #"PLTADDONDIR"
+                                             (path->bytes (find-system-path 'addon-dir))))
                (apply process*/ports
                       stdout
                       stdin
