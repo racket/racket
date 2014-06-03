@@ -1,8 +1,11 @@
 #lang racket
 
-;; Works for Linux.
+;; Works for Linux when the build is configured `--enable-libs`.
 ;; Almost works for Mac OS X.
 ;; Assumes 3m.
+
+;; Since `--enable-libs` is not the default, disable test for now:
+(module test racket/base)
 
 (require racket/system
          setup/dirs)
