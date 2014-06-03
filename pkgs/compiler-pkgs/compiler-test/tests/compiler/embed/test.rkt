@@ -219,7 +219,7 @@
          (list 
           tmp
           (build-path (collection-path "tests" "compiler" "embed") "embed-me4.rktl"))
-         `(with-output-to-file "stdout"
+         `(with-output-to-file (build-path (find-system-path 'temp-dir) "stdout")
             (lambda () (display "... and more!\n"))
             'append)
          `(,(flags "l") ,(string-append "tests/compiler/embed/" filename)))
@@ -256,7 +256,7 @@
     '(begin 
        (require scheme/base)
        (eval '(define (out s)
-                (with-output-to-file "stdout"
+                (with-output-to-file (build-path (find-system-path 'temp-dir) "stdout")
                   (lambda () (printf s))
                   #:exists 'append)))
        (out "\uA9, \u7238, and \U1D670\n")))
