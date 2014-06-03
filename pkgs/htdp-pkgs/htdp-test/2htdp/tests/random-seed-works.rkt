@@ -18,3 +18,5 @@
 (define *color 'blue)
 
 (check-equal? (main) (begin (set! *color 'red) (main)))
+
+(module test racket/base)

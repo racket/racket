@@ -274,7 +274,3 @@
   (test-built-in-teachpacks))
 
 (fire-up-drracket-and-run-tests run-test)
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

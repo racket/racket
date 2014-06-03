@@ -13,7 +13,3 @@
 (see-full-rectangle 3 2:rectangle)
 
 (see-full-rectangle 3 1:rectangle)
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

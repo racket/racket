@@ -72,7 +72,3 @@
       (λ ()
         (send (send drs-frame get-definitions-text) syncheck:arrows-visible?)))
      (wait-and-print))))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

@@ -6,7 +6,3 @@
           (on-tick (lambda (w) (make-bundle (add1 w) '() '())) 1/28 3)
           (on-msg (lambda (w sender msg) (make-bundle w '() '())))
           (on-new cons))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

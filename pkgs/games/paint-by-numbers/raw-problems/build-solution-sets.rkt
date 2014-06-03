@@ -288,7 +288,3 @@ The col and row type specs are in sig.rkt and the solution type is:
                                    ',(solve name rows cols))))
                              problems)))))))))))
  sets)
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

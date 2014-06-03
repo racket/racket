@@ -126,7 +126,3 @@
   (send frame show #f))
 
 ;; (printf "tests done\n")
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

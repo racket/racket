@@ -21,7 +21,3 @@
      (define labels (map (λ (x) (send x get-label)) windows))
      (member "Hangman" labels))
    (poll-until user-hangman-frame?)))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

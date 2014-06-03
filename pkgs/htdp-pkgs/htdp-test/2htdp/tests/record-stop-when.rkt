@@ -32,7 +32,3 @@
 
 (unless (image=? (crop 0 0 100 100 i) j)
   (eprintf "this test needs to be revised -- the way 'world' writes images adds an extra pixel -- think! \n"))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

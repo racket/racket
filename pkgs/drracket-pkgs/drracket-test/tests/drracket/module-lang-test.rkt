@@ -428,5 +428,4 @@
   (eval-jit-enabled #f)
   (dynamic-require (quote-module-path "..") #f)
   (module config info
-    (define lock-name "gui")
     (define timeout 800)))

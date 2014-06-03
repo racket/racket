@@ -24,7 +24,3 @@
          (error 'snips.rkt "lost drracket frame while saving ~s" rfile))))
    
    (delete-directory/files tmpdir)))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

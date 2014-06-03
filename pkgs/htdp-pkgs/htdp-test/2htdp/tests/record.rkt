@@ -39,7 +39,3 @@
 
 (create-n-images 3 3 "images3/")
 (create-n-images 0 0 "images0/")
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

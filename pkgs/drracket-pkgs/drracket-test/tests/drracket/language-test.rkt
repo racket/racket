@@ -1580,5 +1580,4 @@ the settings above should match r5rs
 
 (module+ test
   (module config info
-    (define lock-name "gui")
     (define timeout 1500)))

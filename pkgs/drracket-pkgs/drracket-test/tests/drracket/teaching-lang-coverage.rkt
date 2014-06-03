@@ -117,7 +117,3 @@
                       (test-line t)
                       got
                       (test-uncovered t)))))))))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))
