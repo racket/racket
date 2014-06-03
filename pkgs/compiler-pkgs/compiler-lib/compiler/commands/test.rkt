@@ -31,6 +31,7 @@
 (define table? #f)
 (define fresh-user? #f)
 (define empty-input? #f)
+(define ignore-stderr-patterns null)
 
 (define jobs 0) ; 0 mean "default"
 (define task-sema (make-semaphore 1))
@@ -254,7 +255,10 @@
 
       ;; Check results:
       (when check-stderr?
-        (unless (equal? #"" (get-output-bytes e))
+        (unless (let ([s (get-output-bytes e)])
+                  (or (equal? #"" s)
+                      (ormap (lambda (p) (regexp-match? p s))
+                             ignore-stderr-patterns)))
           (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
       (unless (zero? result-code)
         (error 'test "non-zero exit: ~e" result-code))
@@ -913,15 +917,21 @@
  [("--fresh-user")
   "Fresh PLTUSERHOME, etc., for each test"
   (set! fresh-user? #t)]
+ [("--empty-stdin")
+  "Call program with an empty stdin"
+  (set! empty-input? #t)]
  [("--quiet-program" "-Q")
   "Quiet the program"
   (set! quiet-program? #t)]
  [("--check-stderr" "-e")
   "Treat stderr output as a test failure"
   (set! check-stderr? #t)]
- [("--empty-stdin")
-  "Call program with an empty stdin"
-  (set! empty-input? #t)]
+ #:multi
+ [("++ignore-stderr") pattern
+  "Ignore standard error output if it matches #px\"<pattern>\""
+  (set! ignore-stderr-patterns
+        (cons (pregexp pattern) ignore-stderr-patterns))]
+ #:once-each
  [("--quiet" "-q")
   "Suppress `raco test: ...' message"
   (set! quiet? #t)]
