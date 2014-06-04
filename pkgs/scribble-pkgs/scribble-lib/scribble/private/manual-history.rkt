@@ -48,8 +48,9 @@
                  [i (in-naturals)])
         (define vers (history-entry-vers e))
         (list (if (zero? i)
-                  ""
-                  " ")
+                  null
+                  (list null ; needed to avoid " " dropped as whitespace
+                        " "))
               (history-entry-what e)
               " in version "
               vers
