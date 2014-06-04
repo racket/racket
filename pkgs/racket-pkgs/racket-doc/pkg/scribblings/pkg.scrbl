@@ -124,20 +124,28 @@ is the basename of the archive file. The @tech{checksum} for archive
 The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
-@filepath{.plt}, each of which represents package content analogous
-to a directory,
-but the @filepath{.plt} format does not accommodate a 
+@filepath{.plt}.
+
+For example, @filepath{~/tic-tac-toe.zip} is an archive package
+source, and its @tech{checksum} would be inside
+@filepath{~/tic-tac-toe.zip.CHECKSUM}.
+
+An archive represents package content analogous to a directory, but if
+the archive's content is contained within a single top-level
+directory, then the directory's content (as opposed to the overall
+archive content) is used as the package content. The @filepath{.plt}
+format does not accommodate either an extra directory layer or a
 @tech{single-collection package} representation.
 
-For
-example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
-@filepath{~/tic-tac-toe.zip.CHECKSUM}. 
-
-A package source is inferred to refer to a file
+A package source is inferred to refer to an archive file
 only when it has a suffix matching a valid archive format
 and when it starts with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
-package name is the filename without its suffix.}
+package name is the filename without its suffix.
+
+@history[#:changed "6.0.1.12"
+         @elem{Changed treatment of an archive that contains all
+               content within a top-level directory.}]}
 
 @item{a local directory (as a plain path or @litchar{file://} URL)
 --- The name of the package is the name of the

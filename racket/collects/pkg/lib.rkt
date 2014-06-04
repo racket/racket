@@ -1284,14 +1284,18 @@
 
            (match pkg-format
              [#"tgz"
-              (untar pkg-path pkg-dir)]
+              (untar pkg-path pkg-dir)
+              (remove-extra-directory-layer pkg-dir)]
              [#"tar"
-              (untar pkg-path pkg-dir)]
+              (untar pkg-path pkg-dir)
+              (remove-extra-directory-layer pkg-dir)]
              [#"gz" ; assuming .tar.gz
-              (untar pkg-path pkg-dir)]
+              (untar pkg-path pkg-dir)
+              (remove-extra-directory-layer pkg-dir)]
              [#"zip"
               (unzip pkg-path (make-filesystem-entry-reader #:dest pkg-dir)
-                     #:preserve-timestamps? #t)]
+                     #:preserve-timestamps? #t)
+              (remove-extra-directory-layer pkg-dir)]
              [#"plt"
               (make-directory* pkg-dir)
               (unpack pkg-path pkg-dir
@@ -2621,6 +2625,15 @@
                        (if dest-dir
                            pkg/complete
                            pkg)))
+       (define (add-directory-layer? content)
+         ;; We need to add a layer for zip/tgz if the package content
+         ;; is a single directory, which is an unlikely case.
+         ;; That mode is not compatble with Racket v60.0.1.12 and earlier.
+         ;; When only Racket v6.0.1.12 is later is relevant,
+         ;; we might prefer to always add a layer for consistency and
+         ;; because it's nicer for manual unpacking.
+         (and (= 1 (length content))
+              (directory-exists? (car content))))
        (match create:format
          ['tgz
           (when (file-exists? pkg/complete)
@@ -2630,7 +2643,10 @@
                                     (when (file-exists? pkg/complete)
                                       (delete-file pkg/complete))
                                     (raise exn))])
-              (apply tar-gzip pkg/complete (directory-list)
+              (define content (directory-list))
+              (apply tar-gzip pkg/complete content
+                     #:path-prefix (and (add-directory-layer? content)
+                                        pkg-name)
                      #:get-timestamp file-or-directory-timestamp)))]
          ['zip
           (when (file-exists? pkg/complete)
@@ -2640,7 +2656,10 @@
                                     (when (file-exists? pkg/complete)
                                       (delete-file pkg/complete))
                                     (raise exn))])
-              (apply zip pkg/complete (directory-list)
+              (define content (directory-list))
+              (apply zip pkg/complete content
+                     #:path-prefix (and (add-directory-layer? content)
+                                        pkg-name)
                      #:get-timestamp file-or-directory-timestamp)))]
          ['plt
           (define dest pkg/complete)

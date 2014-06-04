@@ -195,4 +195,14 @@
   ;; Remove directory that we moved files out of:
   (delete-directory/files (build-path pkg-dir sub)))
 
+(define (remove-extra-directory-layer pkg-dir)
+  ;; Treat a single directory produced in `pkg-dir`
+  ;; as having the content of the package, instead of
+  ;; being included itself in the package content.
+  (define l (directory-list pkg-dir))
+  (when (= 1 (length l))
+    (define orig-sub (car l))
+    (when (directory-exists? (build-path pkg-dir orig-sub))
+      (lift-directory-content pkg-dir (list orig-sub)))))
+
 (provide (all-defined-out))

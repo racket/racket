@@ -8,6 +8,8 @@
          racket/runtime-path
          racket/path
          racket/list
+         file/zip
+         file/unzip
          net/url
          pkg/util
          "shelly.rkt"
@@ -35,6 +37,18 @@
    (shelly-install "local package (file://dir)" (string-append
                                                  "--copy "
                                                  (url->string (path->url (path->complete-path "test-pkgs/pkg-test1")))))
+
+   ;; Check ".zip" file with extra directory layer:
+   (let ([dir (make-temporary-file "zip~a" 'directory)]
+         [orig-dir (current-directory)])
+     (define-values (base name dir?) (split-path dir))
+     (parameterize ([current-directory base])
+       (parameterize ([current-directory name])
+         (unzip (build-path orig-dir "test-pkgs/pkg-test1.zip")))
+       (zip (build-path dir "pkg-test1.zip") name))
+     (shelly-install "local package (zip, extra layer)"
+                     (build-path dir "pkg-test1.zip"))
+     (delete-directory/files dir))
 
    (with-fake-root
     (shelly-case
