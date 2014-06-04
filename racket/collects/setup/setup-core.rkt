@@ -1654,10 +1654,11 @@
                      [else
                       ;; remove the lib
                       (define lib-path (build-dest-path target-dir (bytes->path-element k)))
-                      (when (file-exists? lib-path)
+                      (when (or (file-exists? lib-path)
+                                (directory-exists? lib-path))
                         (setup-printf "deleting" (string-append what " ~a")
                                       (path->relative-string/* lib-path))
-                        (delete-file lib-path))
+                        (delete-directory/files lib-path))
                       ht])))
       (unless (equal? ht ht2)
         (setup-printf "updating" (format "~a list" what))
