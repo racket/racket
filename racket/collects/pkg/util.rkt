@@ -7,6 +7,7 @@
          racket/match
          racket/format
          racket/string
+         racket/set
          net/url
          json)
 
@@ -162,5 +163,36 @@
            v
            (failure bytes))))
      (lambda () (failure #f)))))
+
+(define (lift-directory-content pkg-dir path)
+  (define orig-sub (let ([s (car path)])
+                     (if (string? s)
+                         (string->path s)
+                         s)))
+  ;; Delete everything except `orig-sub`:
+  (for ([f (in-list (directory-list pkg-dir))])
+    (unless (equal? f orig-sub)
+      (delete-directory/files (build-path pkg-dir f))))
+  ;; Get list of files and directories to move:
+  (define sub-l (directory-list (apply build-path pkg-dir path)))
+  ;; Make sure `sub` doesn't match a name we want to move here:
+  (define sub
+    (let loop ([sub orig-sub] [i 0])
+      (cond
+       [(member sub sub-l)
+        ;; pick a new name:
+        (loop (string->path (format "sub~a" i)) (add1 i))]
+       [(not (equal? sub orig-sub))
+        (rename-file-or-directory (build-path pkg-dir orig-sub)
+                                  (build-path pkg-dir sub))
+        sub]
+       [else sub])))
+  ;; Move content of `sub` out:
+  (define sub-path (apply build-path (cons sub (cdr path))))
+  (for ([f (in-list sub-l)])
+    (rename-file-or-directory (build-path pkg-dir sub-path f)
+                              (build-path pkg-dir f)))
+  ;; Remove directory that we moved files out of:
+  (delete-directory/files (build-path pkg-dir sub)))
 
 (provide (all-defined-out))

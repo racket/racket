@@ -1079,12 +1079,12 @@
          ['github
           (unless checksum
             (pkg-error 
-             (~a "could not find checksum for github package source, which implies it doesn't exist\n"
+             (~a "could not find checksum for GitHub package source, which implies it doesn't exist\n"
                  "  source: ~a")
              pkg))
           (when (equal? checksum "")
             (pkg-error 
-             (~a "cannot use empty checksum for github package source\n"
+             (~a "cannot use empty checksum for GitHub package source\n"
                  "  source: ~a")
              pkg))
           (match-define (list* user repo branch path)
@@ -1108,8 +1108,6 @@
               "~a-"
               (format "~a.~a" repo branch))
              'directory))
-          (define package-path
-            (apply build-path tmp-dir path))
 
           (dynamic-wind
               void
@@ -1122,8 +1120,17 @@
                      void
                      (λ ()
                         (untar tmp.tgz tmp-dir #:strip-components 1)
+
+                        (unless (null? path)
+                          (unless (directory-exists? (apply build-path tmp-dir path))
+                            (pkg-error
+                             (~a "specified directory is not in GitHub respository archive\n"
+                                 "  path: ~a"
+                                 (apply build-path path))))
+                          (lift-directory-content tmp-dir path))
+
                         (begin0
-                         (stage-package/info (path->string package-path)
+                         (stage-package/info tmp-dir
                                              'dir
                                              pkg-name
                                              #:given-checksum checksum
@@ -1133,13 +1140,13 @@
                                              download-printf
                                              metadata-ns
                                              #:strip strip-mode
-                                             #:in-place? (not strip-mode)
+                                             #:in-place? #t
                                              #:in-place-clean? #t)
                          (set! staged? #t)))
                      (λ ()
                        (when (and use-cache? (not staged?))
                          (clean-cache new-url checksum))
-                       (unless (and staged? (not strip-mode))
+                       (unless staged?
                          (delete-directory/files tmp-dir)))))
               (λ ()
                  (delete-directory/files tmp.tgz)))]
@@ -1269,7 +1276,7 @@
     (define pkg-dir
       (make-temporary-file (string-append "~a-" pkg-name)
                            'directory))
-    (define staged? #t)
+    (define staged? #f)
     (dynamic-wind
         void
         (λ ()
