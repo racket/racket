@@ -11,6 +11,7 @@
          racket/list
          racket/string
          compiler/cm
+         compiler/compilation-path
          planet/planet-archives
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)
@@ -180,8 +181,10 @@
   
   (define make-docs?
     (and (make-docs)
-         ;; Double-check that "setup/scribble" is present.
-         (file-exists? (collection-file-path "scribble.rkt" "setup"))))
+         ;; Double-check that `setup/scribble' is present:
+         (let ([p (collection-file-path "scribble.rkt" "setup")])
+           (or (file-exists? p)
+               (file-exists? (get-compilation-bytecode-file p))))))
     
   (define x-specific-collections
     (append* (specific-collections)
