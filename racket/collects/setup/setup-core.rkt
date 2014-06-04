@@ -817,8 +817,8 @@
               (installer dir)]))))))
 
   (define (bytecode-file-exists? p)
-    (let-values ([(base name dir?) (split-path p)])
-      (define zo (build-path base mode-dir (path-add-suffix name #".zo")))
+    (parameterize ([use-compiled-file-paths (list mode-dir)])
+      (define zo (get-compilation-bytecode-file	p))
       (file-exists? zo)))
 
   (define (this-platform? info)
@@ -858,19 +858,51 @@
   (define (clean-cc cc dir info)
     ;; Clean up bad .zos:
     (unless (assume-virtual-sources? cc)
-      (define c (build-path dir "compiled"))
-      (when (directory-exists? c)
-        (define ok-zo-files
-          (make-immutable-hash
-           (map (lambda (p)
-                  (cons (path-add-suffix p #".zo") #t))
-                (append (directory-list dir)
-                        (info 'virtual-sources (lambda () null))))))
-        (for ([p (directory-list c)])
-          (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
-                     (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
-            (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
-            (delete-file (build-path c p)))))))
+      (define roots
+        ;; If there's more than one relative root, then there will
+        ;; be multiple ways to get to a ".zo" file, and our strategy
+        ;; below will fail. Give up on checking relative roots in
+        ;; that case.
+        (let ([roots (current-compiled-file-roots)])
+          (if (1 . < . (for/sum ([r (in-list roots)])
+                         (if (or (eq? r 'same)
+                                 (relative-path? r))
+                             1
+                             0)))
+              ;; give up on relative:
+              (filter (lambda (p) (and (path? p) (absolute-path? p)))
+                      roots)
+              ;; all roots ok:
+              roots)))
+      ;; Try each compile-file root, but preserve the list of allowed
+      ;; bytecode files after it's computed the first time.
+      (for/fold ([ok-zo-files #f]) ([root (in-list roots)])
+        (define c (cond
+                   [(eq? root 'same) (build-path dir mode-dir)]
+                   [(relative-path? root)
+                    (build-path dir root mode-dir)]
+                   [else
+                    (reroot-path (build-path dir mode-dir) root)]))
+        (cond
+         [(directory-exists? c)
+          ;; Directory for compiled files exist...
+          (let ([ok-zo-files
+                 (or ok-zo-files
+                     ;; Build table of allowed ".zo" file names that can
+                     ;; appear in a "compiled" directory:
+                     (make-immutable-hash
+                      (map (lambda (p)
+                             (cons (path-add-suffix p #".zo") #t))
+                           (append (directory-list dir)
+                                   (info 'virtual-sources (lambda () null))))))])
+            ;; Check each file in `c` to see whether it can stay:
+            (for ([p (directory-list c)])
+              (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
+                         (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
+                (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
+                (delete-file (build-path c p))))
+            ok-zo-files)]
+         [else ok-zo-files]))))
 
   (define (with-specified-mode thunk)
     (if (not (compile-mode))
