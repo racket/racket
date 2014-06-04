@@ -207,15 +207,17 @@
   ;; (define *unix:other-read*  #o00004)
   ;; (define *unix:other-write* #o00002)
   ;; (define *unix:other-exe*   #o00001)
-  (define (path-attributes path dir?)
+  (define (path-attributes path dir? permissions)
     (let ([dos  (if dir? #x10 0)]
           [unix (apply bitwise-ior (if dir? #o40000 0)
-                       (map (lambda (p)
-                              (case p
-                                [(read)    #o444]
-                                [(write)   #o200] ; mask out write bits
-                                [(execute) #o111]))
-                            (file-or-directory-permissions path)))])
+                       (or (and permissions
+                                (list permissions))
+                           (map (lambda (p)
+                                  (case p
+                                    [(read)    #o444]
+                                    [(write)   #o200] ; mask out write bits
+                                    [(execute) #o111]))
+                                (file-or-directory-permissions path))))])
       (bitwise-ior dos (arithmetic-shift unix 16))))
 
   ;; with-trailing-slash : bytes -> bytes
@@ -226,19 +228,24 @@
   (define (with-slash-separator bytes)
     (regexp-replace* *os-specific-separator-regexp* bytes #"/"))
 
-  ;; build-metadata : relative-path (relative-path . -> . exact-integer?) -> metadata
-  (define (build-metadata path get-timestamp)
+  ;; build-metadata : relative-path (relative-path . -> . exact-integer?)
+  ;;                     boolean (or/c #f integer?) -> metadata
+  (define (build-metadata path-prefix path get-timestamp
+                          force-dir? permissions)
     (let* ([mod  (seconds->date (get-timestamp path))]
-           [dir? (directory-exists? path)]
+           [dir? (or force-dir? (directory-exists? path))]
+           [attr (path-attributes path dir? permissions)]
            [path (cond [(path? path)   path]
                        [(string? path) (string->path path)]
                        [(bytes? path)  (bytes->path path)])]
-           [name (with-slash-separator (path->bytes path))]
+           [name-path (if path-prefix
+                          (build-path path-prefix path)
+                          path)]
+           [name (with-slash-separator (path->bytes name-path))]
            [name (if dir? (with-trailing-slash name) name)]
            [time (date->msdos-time mod)]
            [date (date->msdos-date mod)]
-           [comp (if dir? 0 *compression-level*)]
-           [attr (path-attributes path dir?)])
+           [comp (if dir? 0 *compression-level*)])
       (make-metadata path name dir? time date comp attr)))
 
   ;; ===========================================================================
@@ -253,13 +260,29 @@
                        #:get-timestamp [get-timestamp (if timestamp
                                                           (lambda (p) timestamp)
                                                           file-or-directory-modify-seconds)]
+                       #:path-prefix [path-prefix #f]
                        #:system-type [sys-type (system-type)])
     (parameterize ([current-output-port out])
       (let* ([seekable? (seekable-port? (current-output-port))]
              [headers ; note: Racket's `map' is always left-to-right
-              (map (lambda (file)
-                     (zip-one-entry (build-metadata file get-timestamp) seekable?))
-                   files)])
+              (append
+               ;; synthesize directories for `path-prefix` as needed:
+               (reverse
+                (let loop ([path-prefix path-prefix])
+                  (cond
+                   [(not path-prefix) null]
+                   [else
+                    (define-values (base name dir?) (split-path path-prefix))
+                    (define r (loop (and (path? base) base)))
+                    (cons
+                     (zip-one-entry (build-metadata #f path-prefix (lambda (x) (current-seconds)) #t #o755)
+                                    seekable?)
+                     r)])))
+               ;; add normal files:
+               (map (lambda (file)
+                      (zip-one-entry (build-metadata path-prefix file get-timestamp #f #f)
+                                     seekable?))
+                    files))])
         (when (zip-verbose)
           (eprintf "zip: writing headers...\n"))
         (write-central-directory headers get-timestamp))
@@ -273,12 +296,14 @@
                #:get-timestamp [get-timestamp (if timestamp
                                                   (lambda (p) timestamp)
                                                   file-or-directory-modify-seconds)]
+               #:path-prefix [path-prefix #f]
                #:system-type [sys-type (system-type)]
                . paths)
     ;; (when (null? paths) (error 'zip "no paths specified"))
     (with-output-to-file zip-file
       (lambda () (zip->output (pathlist-closure paths)
                               #:get-timestamp get-timestamp
+                              #:path-prefix path-prefix
                               #:system-type sys-type))))
   
   )

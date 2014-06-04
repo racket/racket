@@ -15,6 +15,7 @@ compression is implemented by @racket[deflate].}
                                (if timestamp
                                    (lambda (p) timestamp)
                                    file-or-directory-modify-seconds)]
+              [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:system-type sys-type symbol? (system-type)])
          void?]{
 
@@ -39,8 +40,15 @@ The @racket[get-timestamp] function is used to obtain the modification
 date to record in the archive for a file or directory, while
 @racket[sys-type] determines the system type recorded in the archive.
 
+If @racket[path-prefix] is not @racket[#f], then it prefixes the name
+of each path as it is written in the @exec{zip} file, and directory
+entries are added for each element of @racket[path-prefix].
+
 @history[#:changed "6.0.0.3"
-         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}
+         #:changed "6.0.1.12"
+         @elem{Added the @racket[#:path-prefix] argument.}]}
+         
 
 
 @defproc[(zip->output [paths (listof path-string?)]
@@ -51,17 +59,21 @@ date to record in the archive for a file or directory, while
                                        (if timestamp
                                            (lambda (p) timestamp)
                                            file-or-directory-modify-seconds)]
+                      [#:path-prefix path-prefix (or/c #f path-string?) #f]
                       [#:system-type sys-type symbol? (system-type)])
          void?]{
 
 Zips each of the given @racket[paths], and packages it as a zip
 ``file'' that is written directly to @racket[out].  Unlike
-@racket[zip], the specified @racket[paths] are included as-is; if a
+@racket[zip], the specified @racket[paths] are included without
+closing over directories: if a
 directory is specified, its content is not automatically added, and
 nested directories are added without parent directories.
 
 @history[#:changed "6.0.0.3"
-         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}
+         #:changed "6.0.1.12"
+         @elem{Added the @racket[#:path-prefix] argument.}]}
 
 
 @defboolparam[zip-verbose on?]{
