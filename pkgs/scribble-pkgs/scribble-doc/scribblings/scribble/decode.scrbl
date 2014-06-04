@@ -142,8 +142,15 @@ Decodes a paragraph using @racket[decode-content] to decode
 
 @defproc[(decode-content [lst (listof pre-content?)]) list?]{
 
-Decodes @tech{content}. Lists and splices in @racket[lst] are
-flattened into the list. Plain strings are @elemref['(decode
+Decodes @tech{content}. Elements at the start of the list that are
+whitespace (according to @racket[whitespace?]) are dropped.
+@margin-note*{Dropping whitespace in nested lists and splices was a poor
+implementation choice that is left in place for compatibility. To protect
+against it, you can exploit the similarly unfortunate fact that an empty
+list does not count as whitespace.}
+Lists and splices in @racket[lst] are
+flattened into the list, similarly dropping leading whitespace.
+Plain strings are @elemref['(decode
 "rules")]{decoded}; non-string, non-list @tech{content} is included in
 the result as-is.}
 
@@ -159,9 +166,9 @@ An alias for @racket[decode-content].}
 @tech{content}.}
 
 
-@defproc[(whitespace? [s string?]) boolean?]{
+@defproc[(whitespace? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[s] contains only whitespace, @racket[#f]
+Returns @racket[#t] if @racket[v] is a string that contains only whitespace, @racket[#f]
 otherwise.}
 
 
