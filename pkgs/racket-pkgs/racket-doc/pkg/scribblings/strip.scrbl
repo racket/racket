@@ -89,7 +89,8 @@ and directories:
 ]
 
 Any of the above removals can be suppressed through
-@racketidfont{source-keep-files}.
+@racketidfont{source-keep-files}---even for files and directories
+within an otherwise removed directory.
 
 Creating a @tech{binary package} prunes the following additional files
 and directories:
@@ -106,15 +107,22 @@ and directories:
  @item{directories/files ending with @filepath{.css} or @filepath{.js}
        immediately within a directory named @filepath{doc};}
 
+ @item{directories/files named @filepath{tests} or
+       @filepath{scribblings} (but see the exception below for
+       @filepath{doc} and @filepath{info.rkt};}
+
  @item{directories/files named in an @filepath{info.rkt} file's
        @racket[binary-omit-files] definition.}
 
 ]
 
 Any of the above removals can be suppressed through
-@racketidfont{binary-keep-files}.
-
-Creating a @tech{binary package} further adjusts the following files:
+@racketidfont{binary-keep-files}---even files and directories within
+an otherwise removed directory. Furthermore, a @filepath{doc} or
+@filepath{info.rkt} directory/file is kept when it is within a
+@filepath{scribblings} directory and not within a @filepath{tests}
+directory. Creating a @tech{binary package} further adjusts the
+following files (when they are not pruned):
 
 @itemlist[
 

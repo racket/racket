@@ -5,6 +5,7 @@
          syntax/modread
          racket/match
          racket/file
+         racket/path
          racket/list
          racket/set)
 
@@ -86,6 +87,26 @@
                (equal? #"info_rkt.dep" bstr))]
           [(built)
            (immediate-doc/css-or-doc/js?)])))
+
+  (define (keep-override-by-default? path dir)
+    (case mode
+      [(binary)
+       (define bstr (path->bytes path))
+       (define (path-elements)
+         (if (eq? dir 'base)
+             null
+             (map path-element->bytes (explode-path dir))))
+       (cond
+        [(or (equal? bstr #"doc")
+             (equal? bstr #"info.rkt"))
+         ;; Keep "doc" and "info.rkt" (that might be for
+         ;; documentation) when under "scribblings" and not under
+         ;; "tests":
+         (define l (path-elements))
+         (and (member #"scribblings" l)
+              (not (member #"tests" l)))]
+        [else #f])]
+      [else #f]))
   
   (define (fixup new-p path src-base level)
     (unless (eq? mode 'source)
@@ -104,6 +125,7 @@
                    paths  ; paths in `base'
                    drops  ; hash table of paths (relative to start) to drop
                    keeps  ; hash table of paths (relative to start) to keep
+                   drop-all-by-default? ; in dropped directory?
                    level) ; 'package, 'collection, or 'subcollection
     (define next-level (case level
                          [(package) 'collection]
@@ -112,30 +134,42 @@
       (define p (if (eq? base 'same)
                     path
                     (build-path base path)))
-      (when (and (not (hash-ref drops p #f))
-                 (or (hash-ref keeps p #f)
-                     (not (drop-by-default? 
-                           path
-                           (lambda () (build-path dir p))))))
-        (define old-p (build-path dir p))
-        (define new-p (build-path dest-dir p))
-        (cond
-         [(file-exists? old-p)
-          (copy-file old-p new-p)
-          (file-or-directory-modify-seconds
-           new-p
-           (file-or-directory-modify-seconds old-p))
-          (fixup new-p path base level)]
-         [(directory-exists? old-p)
-          (define-values (new-drops new-keeps)
-            (add-drop+keeps old-p p drops keeps))
-          (make-directory new-p)
-          (explore p
-                   (directory-list old-p)
-                   new-drops
-                   new-keeps
-                   next-level)]
-         [else (error 'strip "file or directory disappeared?")]))))
+      (define keep? (and (not (hash-ref drops p #f))
+                         (or (hash-ref keeps p #f)
+                             (and drop-all-by-default?
+                                  (keep-override-by-default?
+                                   path
+                                   base))
+                             (not (or drop-all-by-default?
+                                      (drop-by-default?
+                                       path
+                                       (lambda () (build-path dir p))))))))
+      (define old-p (build-path dir p))
+      (define new-p (build-path dest-dir p))
+      (cond
+       [(and keep? (file-exists? old-p))
+        (when drop-all-by-default?
+          (make-directory* (path-only new-p)))
+        (copy-file old-p new-p)
+        (file-or-directory-modify-seconds
+         new-p
+         (file-or-directory-modify-seconds old-p))
+        (fixup new-p path base level)]
+       [(directory-exists? old-p)
+        (define-values (new-drops new-keeps)
+          (add-drop+keeps old-p p drops keeps))
+        (when keep?
+          (if drop-all-by-default?
+              (make-directory* new-p)
+              (make-directory new-p)))
+        (explore p
+                 (directory-list old-p)
+                 new-drops
+                 new-keeps
+                 (not keep?)
+                 next-level)]
+       [keep? (error 'strip "file or directory disappeared?")]
+       [else (void)])))
 
   (define-values (drops keeps)
     (add-drop+keeps dir 'same #hash() #hash()))
@@ -148,7 +182,7 @@
         'collection] ; single-collection package
        [else 'package])))
   
-  (explore 'same (directory-list dir) drops keeps level)
+  (explore 'same (directory-list dir) drops keeps #f level)
   (case mode
     [(binary built) (unmove-files dir dest-dir drop-keep-ns)]
     [else (void)])
