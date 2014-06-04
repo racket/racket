@@ -185,9 +185,9 @@
           (module-compiled-submodules
            (module-compiled-submodules mod
                                        #f
-                                       mod-subs)
+                                       new-mod-subs)
            #t
-           mod*-subs))))
+           new-mod*-subs))))
   (unless (eq? mod new-mod)
     (call-with-output-file*
      new-p
