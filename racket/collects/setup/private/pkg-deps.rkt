@@ -372,12 +372,11 @@
      values
      (for*/list ([root (in-list (current-compiled-file-roots))]
                  [mode (in-list (use-compiled-file-paths))])
-       (define dir (build-path path mode))
        (define compiled-dir
          (cond
-          [(eq? root 'same) dir]
-          [(relative-path? root) (build-path root dir)]
-          [else (reroot-path dir root)]))
+          [(eq? root 'same) (build-path path mode)]
+          [(relative-path? root) (build-path path root mode)]
+          [else (reroot-path (build-path path mode) root)]))
        (and (directory-exists? compiled-dir)
             compiled-dir))))
 
