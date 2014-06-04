@@ -6409,7 +6409,12 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     return module_optimize(expr, info, context);
   default:
     info->size += 1;
-    return expr;
+    if ((context & OPT_CONTEXT_BOOLEAN)
+        && (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
+        && SCHEME_TRUEP(expr))
+      return scheme_true;
+    else
+      return expr;
   }
 }
 
