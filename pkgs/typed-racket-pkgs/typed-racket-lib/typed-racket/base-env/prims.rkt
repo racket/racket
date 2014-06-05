@@ -1222,11 +1222,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (-define nm : arrty
            (-lambda formals body ...))))]
     [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
-     #'(-define nm : ty body)]
+     (syntax/loc stx (-define nm : ty body))]
     [(define: tvars:type-variables nm:id : ty body)
-     #'(-define #:forall tvars nm : ty body)]
+     (syntax/loc stx (-define #:forall tvars nm : ty body))]
     [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
-     #'(-define #:forall tvars (nm . formals) : ret-ty body ...)]))
+     (syntax/loc stx (-define #:forall tvars (nm . formals) : ret-ty body ...))]))
 
 (define-syntax (-define stx)
   (syntax-parse stx #:literals (:)
@@ -1266,7 +1266,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          [(-lambda formals . others)
           (template (-lambda (?@ . vars) formals . others))]
          [_ rhs]))
-     #`(define #,defined-id #,rhs*)]))
+     (quasisyntax/loc stx (define #,defined-id #,rhs*))]))
 
 (define-syntax (with-asserts stx)
   (define-syntax-class with-asserts-clause
