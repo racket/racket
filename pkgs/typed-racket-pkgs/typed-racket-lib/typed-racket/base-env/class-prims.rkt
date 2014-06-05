@@ -45,7 +45,7 @@
          define/private)
 
 ;; overriden forms
-(define-syntax-rule (define-define/foo (?id ...) (?class-kw ...))
+(define-syntax-rule (define-define/class-kw ((?id ?class-kw) ...))
   (begin (define-syntax (?id stx)
            (syntax-parse stx
              [(_ ??header:curried-formals . ??body)
@@ -54,9 +54,12 @@
                        (?class-kw ??header.fun-name)))]))
          ...))
 
-(define-define/foo
-  (define/public define/override define/pubment define/augment define/private)
-  (public override pubment augment private))
+(define-define/class-kw
+  ([define/public public]
+   [define/override override]
+   [define/pubment pubment]
+   [define/augment augment]
+   [define/private private]))
 
 (begin-for-syntax
  ;; forms that are not allowed by Typed Racket yet

@@ -2,6 +2,7 @@
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
          "../utils/tc-utils.rkt"
+         "tc-error.rkt"
          "tc-result.rkt"
          racket/list racket/set racket/dict racket/match
          racket/format racket/string
@@ -235,39 +236,33 @@
            [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
 
-;; check-kw-arity : LambdaKeywords Type -> Any
+;; check-kw-arity : LambdaKeywords Type -> Boolean
 ;;
 ;; Check if the TR lambda property listing the keywords matches up with
 ;; the type that we've given. Allows for better error messages than just
-;; relying on tc-expr.
+;; relying on tc-expr. Return #f if any keywords were missing, otherwise #t.
 (define (check-kw-arity kw-prop f-type)
-  (define (get-arrs f-ty)
-    (match f-ty
-      [(Function: arrs) arrs]
-      [(Poly-names: names ty) (get-arrs ty)]
-      [(PolyDots-names: names ty) (get-arrs ty)]))
-  (match-define (lambda-kws *actual-mands *actual-opts) kw-prop)
-  (define arrs (get-arrs f-type))
+  (match-define (lambda-kws actual-mands actual-opts) kw-prop)
+  (define arrs
+    (match f-type
+      [(AnyPoly-names: _ _ (Function: arrs)) arrs]))
   (for/and ([arr (in-list arrs)])
     (match-define (arr: _ _ _ _ kws) arr)
     (define-values (mand-kw-types opt-kw-types) (partition-kws kws))
-    (define *mand-kws (map (match-lambda [(Keyword: kw _ _) kw]) mand-kw-types))
-    (define *opt-kws (map (match-lambda [(Keyword: kw _ _) kw]) opt-kw-types))
-    (define-values (actual-mands actual-opts mand-kws opt-kws)
-      (values (list->set *actual-mands)
-              (list->set *actual-opts)
-              (list->set *mand-kws)
-              (list->set *opt-kws)))
+    (define mand-kws (map Keyword-kw mand-kw-types))
+    (define opt-kws (map Keyword-kw opt-kw-types))
     (define missing-kws (set-union (set-subtract mand-kws actual-mands)
                                    (set-subtract opt-kws actual-opts)))
+    ;; empty     => don't error, return #t
+    ;; non-empty => error, return #f
     (or (set-empty? missing-kws)
-        (not (tc-error/fields
-              "type mismatch"
-              #:more "function is missing keyword arguments"
-              #:delayed? #t
-              "missing keywords"
-              (string-join (map ~a (set->list missing-kws)))
-              "expected type" f-type)))))
+        (tc-error/expr/fields
+         "type mismatch"
+         #:more "function is missing keyword arguments"
+         #:return #f
+         "missing keywords"
+         (string-join (map ~a (set->list missing-kws)))
+         "expected type" f-type))))
 
 ;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
 ;;               -> (Listof make-Keyword)
