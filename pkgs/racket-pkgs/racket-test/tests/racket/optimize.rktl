@@ -1340,6 +1340,11 @@
 (test-comp '(if (if (list? (cons 1 null)) #t #t) 1 2)
            '1)
 
+(test-comp '(let ([x '(7)])
+              (list x x (if (if (list? (cons 1 null)) x 3) 0 1)))
+           '(let ([x '(7)])
+              (list x x 0)))
+
 (test-comp '(lambda (y)
               (let ([f (lambda (x) x)])
                 (if f
