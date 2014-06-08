@@ -66,7 +66,9 @@
   [make-http-connection (-> HTTP-Connection)]
   [http-connection-close (HTTP-Connection -> Void)]
 
-  [call/input-url (case-lambda [url url (Input-Port -> Any) -> Any])] ;;FIXME - need polymorphism
+  [call/input-url (All (T) (case-lambda
+                             [url (url -> Input-Port) (Input-Port -> T) -> T]
+                             [url (url (Listof String) -> Input-Port) (Input-Port -> T) (Listof String) -> T]))]
 
   [current-proxy-servers (Parameter (Listof (List String String Integer)))]
 
