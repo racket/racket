@@ -3007,6 +3007,20 @@
         #:ret (ret (-seq (-vec Univ)))
         #:expected (ret (-seq (-vec Univ)))]
 
+       ;; PR 14557 - apply union of functions with different return values
+       [tc-err
+        (let ()
+          (: f (U (-> Void) (-> (values Void Void))))
+          (define (f) (void))
+          (f))
+        #:msg #rx"Expected the same number of values.*1 and 2"]
+       [tc-e
+        (let ()
+          (: f (U (-> (values String Symbol)) (-> (values Void Void))))
+          (define (f) (values "foo" 'bar))
+          (f))
+        #:ret (ret (list (t:Un -String -Void) (t:Un -Symbol -Void)))]
+
         )
 
   (test-suite
