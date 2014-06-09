@@ -48,10 +48,10 @@
 (define-match-expander MListof:
   (lambda (stx)
     (syntax-parse stx
-      [(_ elem-pat)
+      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
        ;; see note above
-       #'(or (Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))
-             (Mu: var (Union: (list (MPair: elem-pat (F: var)) (Value: '())))))])))
+       #'(or (Mu: var-pat (Union: (list (Value: '()) (MPair: elem-pat (F: var-pat)))))
+             (Mu: var-pat (Union: (list (MPair: elem-pat (F: var-pat)) (Value: '())))))])))
 
 (define (unpoly t)
   (match t

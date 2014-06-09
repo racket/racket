@@ -47,6 +47,12 @@
     (check-prints-as? (make-Mu 'x (Un -Null (-pair -Nat (make-F 'x))))
                       "(Listof Nonnegative-Integer)")
     (check-prints-as? (-lst* -String -Symbol) "(List String Symbol)")
+
+    ;; next three cases for PR 14552
+    (check-prints-as? (-mu x (Un (-pair x x) -Null)) "(Rec x (U Null (Pairof x x)))")
+    (check-prints-as? (-mu x (Un (-pair (-box x) x) -Null)) "(Rec x (U Null (Pairof (Boxof x) x)))")
+    (check-prints-as? (-mu x (Un (-mpair x x) -Null)) "(Rec x (U Null (MPairof x x)))")
+
     (check-prints-as? -Custodian "Custodian")
     (check-prints-as? (make-Opaque #'integer?) "(Opaque integer?)")
     (check-prints-as? (make-Vector -Nat) "(Vectorof Nonnegative-Integer)")

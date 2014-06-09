@@ -432,10 +432,14 @@
     [(Continuation-Mark-KeyTop:) 'Continuation-Mark-KeyTop]
     [(App: rator rands stx)
      (list* (type->sexp rator) (map type->sexp rands))]
-    ;; special cases for lists
-    [(Listof: elem-ty)
+    ;; Special cases for lists. Avoid printing with these cases if the
+    ;; element type refers to the Mu variable (otherwise it prints the
+    ;; type variable with no binding).
+    [(Listof: elem-ty var)
+     #:when (not (memq var (fv elem-ty)))
      `(Listof ,(t->s elem-ty))]
-    [(MListof: elem-ty)
+    [(MListof: elem-ty var)
+     #:when (not (memq var (fv elem-ty)))
      `(MListof ,(t->s elem-ty))]
     ;; format as a string to preserve reader abbreviations and primitive
     ;; values like characters (when `display`ed)
