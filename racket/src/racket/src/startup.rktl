@@ -1288,6 +1288,9 @@
                     (when use-path/src
                       (hash-set! (cdr hts) root-name use-path/src)))))))]
          [(s relto stx) ; for backward-compatibility
+          (log-message (current-logger) 'error
+                       "default module name resolver called with three arguments (deprecated)"
+                       #f)
           (standard-module-name-resolver s relto stx #t)]          
          [(s relto stx load?)
           ;; If stx is not #f, raise syntax error for ill-formed paths

@@ -165,7 +165,17 @@ argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a
 @tech{syntax object} is manipulated, the current namespace might not
 match the original namespace for the syntax object, and the module
-should not necessarily be loaded in the current namespace.}
+should not necessarily be loaded in the current namespace.
+
+For historical reasons, the default module name resolver currently
+accepts three arguments, in addition to two and four. Three arguments
+are treated the same as four arguments with the fourth argument as
+@racket[#t], except that an error is also logged. Support for three
+arguments will be removed in a future version.
+
+@history[#:changed "6.0.1.12" 
+         @elem{Added error logging to the default module name resolver
+               when called with three arguments.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
