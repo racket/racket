@@ -16,6 +16,9 @@
   (gzip (format "~a/pkgs-all.json" static-path)
         (format "~a/pkgs-all.json.gz" static-path))
 
+  (delete-file (format "~a/pkgs-all.json" static-path))
+  (delete-file (format "~a/pkgs-all" static-path))
+
   (system* s3cmd-path
            "-c" s3-config
            "sync"
@@ -34,8 +37,6 @@
            "--delete-removed"
            (format "~a/" static-path)
            (format "s3://~a/" s3-bucket))
-
-  
 
   (void))
 
