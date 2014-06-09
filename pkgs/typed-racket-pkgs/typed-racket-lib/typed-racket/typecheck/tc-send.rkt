@@ -3,7 +3,9 @@
 ;; This module provides typechecking for `send` method calls
 
 (require "../utils/utils.rkt"
+         racket/format
          racket/match syntax/stx
+         unstable/match
          (typecheck signatures tc-funapp)
          (types base-abbrev resolve utils type-table)
          (rep type-rep)
@@ -36,5 +38,11 @@
       [(tc-result1: t) (tc-error/expr/fields
                         "send: type mismatch"
                         "expected" "an object"
-                        "given" t)]))
+                        "given" t)]
+      [(or (tc-results: ts)
+           (as ([ts #f]) (tc-any-results: _)))
+       (tc-error/expr/fields
+        "send: mismatch in number of values"
+        "expected" "1 value of object type"
+        "given" (~a (if ts (length ts) "unknown number of") " values"))]))
   (do-check (tc-expr rcvr)))

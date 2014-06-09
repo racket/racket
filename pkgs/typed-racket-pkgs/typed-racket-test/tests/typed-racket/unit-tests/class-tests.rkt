@@ -109,6 +109,11 @@
    [tc-err (send 4 m 3)
       #:ret (ret (-val 5) -bot-filter)
       #:expected (ret (-val 5) -no-filter -no-obj)]
+   ;; Fails, sending to multiple/unknown values
+   [tc-err (send (values 'a 'b) m 'c)
+           #:msg #rx"expected: 1 value of object type.*given: 2 values"]
+   [tc-err (send (eval "3") m 'c)
+           #:msg #rx"expected: 1 value of object type.*given: unknown number of values"]
    ;; Field access via get-field
    [tc-e (let ()
            (: j% (Class (field [n Integer])
