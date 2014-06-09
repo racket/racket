@@ -2615,9 +2615,9 @@
        [tc-err (let () (define-type-alias A (Class #:implements A)) "dummy")
                #:msg "Recursive #:implements clause not allowed"]
        [tc-err (let () (define-type-alias X (U X #f)) "dummy")
-               #:msg "Recursive types are not allowed directly inside"]
+               #:msg "recursive types are not allowed directly inside"]
        [tc-err (let () (define-type-alias X (All (A #:row) X)) "dummy")
-               #:msg "Recursive types are not allowed directly inside"]
+               #:msg "recursive types are not allowed directly inside"]
 
        ;; Check the more precise Tarjan's algorithm-based letrec-values type checking
        [tc-e ;; An example from Eric Dobson (see gh372) that shows that precisely
