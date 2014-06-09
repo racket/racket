@@ -397,7 +397,7 @@
        #`(let ([expr test-expr])
            (if (not (#,type? expr))
              #,(syntax/loc #'test-expr
-                 (error 'type-case "expected a value from type ~a, got: ~a"
+                 (error 'type-case "expected a value from type ~a, got: ~e"
                         'type-id
                         expr))
              (cond
