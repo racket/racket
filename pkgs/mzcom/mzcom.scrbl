@@ -17,13 +17,13 @@
 wrapper for Racket.
 
 During normal installation of MzCOM, the executable is registered as a
-COM object automatically.  If you move the Racket installation
-folder, re-register @exec{MzCOM.exe} with
+COM object automatically.  If that registration fails or if you move
+the Racket installation, re-register @exec{MzCOM.exe} with
 
-@commandline{mzcom.exe /RegServer}
+@commandline{@nonterm{installation}\lib\MzCOM.exe /RegServer /v}
 
-The @exec{MzCOM.exe} executable will find DLLs and Racket library
-collections relative to its own path.
+The @exec{MzCOM.exe} executable will find DLLs and library collections
+relative to its own path.
 
 @; ----------------------------------------------------------------------
 
@@ -112,14 +112,14 @@ MzCOM support three COM methods:
 
 @itemize[
 
- @item{@com-index["About" "method"]{void About(void)}
+ @item{@com-index["About" "method"]{void About()}
 
       Takes no arguments and displays an informational 
       dialog.}
 
  @item{@com-index["Eval" "method"]{BSTR Eval(BSTR input)}
 
-      Takes and returns @tt{BSTR}s (BASIC strings).  The returned
+      Takes and returns strings (specifically, @tt{BSTR}s).  The returned
        value is the result of evaluating the input expression,
        formatted as a string.  The input string may contain several
        S-expressions.  The embedded Racket updates its environment
@@ -127,7 +127,7 @@ MzCOM support three COM methods:
        procedures in a call to @tt{Eval}, and use the procedures in
        subsequent calls.}
 
- @item{@com-index["Reset" "method"]{Reset :: void Reset(void)}
+ @item{@com-index["Reset" "method"]{void Reset()}
 
        Resets the Racket environment to the initial environment.
        Also, the custodian for the primary Racket thread is invoked,
@@ -142,7 +142,7 @@ MzCOM supports a single event.
 
  @item{@com-index["SchemeError" "event"]{SchemeError()}
 
-        Passed a BSTR (BASIC string) that explains the error.}
+        Passed a string (specifically, a @tt{BSTR}) that explains the error.}
 
 ]
 
