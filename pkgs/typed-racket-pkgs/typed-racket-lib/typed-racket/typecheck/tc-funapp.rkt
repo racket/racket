@@ -14,7 +14,9 @@
   [tc/funapp
    (syntax? stx-list? tc-results/c (c:listof tc-results/c)
     (c:or/c #f tc-results/c)
-    . c:-> . full-tc-results/c)])
+    . c:-> . full-tc-results/c)]
+  [union-results
+   ((c:listof tc-results/c) . c:-> . tc-results/c)])
 
 (define-syntax (handle-clauses stx)
   (syntax-parse stx
@@ -173,9 +175,9 @@
      (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
     ;; a union of functions can be applied if we can apply all of the elements
     [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
-     (ret (for/fold ([result (Un)]) ([fty (in-list ts)])
-            (match (tc/funapp f-stx args-stx (ret fty) argtys expected)
-              [(tc-result1: t) (Un result t)])))]
+     (union-results
+      (for/list ([fty ts])
+        (tc/funapp f-stx args-stx (ret fty) argtys expected)))]
     ;; error type is a perfectly good fcn type
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
@@ -188,3 +190,30 @@
      (tc-error/expr
       "Cannot apply expression of type ~a, since it is not a function type"
       f-ty)]))
+
+;; Union the types of the given results, lifting the union to multiple
+;; values as necessary. Lift to AnyValues if the number of values is not
+;; consistent.
+(define (union-results results)
+  (let/ec escape
+    ;; Special case for no results, since `(ret null)` does not work
+    ;; as a base case in the fold below.
+    (when (null? results) (escape (ret (Un))))
+    (ret (for/fold ([unioned #f])
+                   ([result results])
+           (match result
+             [(tc-result1: t)
+              (cond [(not unioned) (list t)]
+                    [(= (length unioned) 1)
+                     (list (Un (car unioned) t))]
+                    [else
+                     (escape (tc-any-results -top))])]
+             [(tc-results: ts)
+              (cond [(not unioned) ts]
+                    [(= (length unioned) (length ts))
+                     (map (λ (t1 t2) (Un t1 t2)) unioned ts)]
+                    [else
+                     (escape (tc-any-results -top))])]
+             ;; AnyValues just propagates and we lose all information
+             [(tc-any-results: _)
+              (escape (tc-any-results -top))])))))
