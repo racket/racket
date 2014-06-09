@@ -78,7 +78,7 @@
                                  stx
                                  except)))
                             exceptions)
-                           (let ([mod ((current-module-name-resolver) path #f #f)])
+                           (let ([mod ((current-module-name-resolver) path #f #f #t)])
                              ;; Execute syntax part at top-level:
                              (dynamic-require mod (void))
                              ;; Extract documentation via top-level:
@@ -252,7 +252,7 @@
 
 
 (define (lookup-documentation path label)
-  (let ([mod ((current-module-name-resolver) path #f #f)])
+  (let ([mod ((current-module-name-resolver) path #f #f #t)])
     (dynamic-require mod (void))
     ((dynamic-require-for-syntax 
       'syntax/private/doctable
