@@ -175,9 +175,9 @@
      (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
     ;; a union of functions can be applied if we can apply all of the elements
     [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
-     (ret (for/fold ([result (Un)]) ([fty (in-list ts)])
-            (match (tc/funapp f-stx args-stx (ret fty) argtys expected)
-              [(tc-result1: t) (Un result t)])))]
+     (union-results
+      (for/list ([fty ts])
+        (tc/funapp f-stx args-stx (ret fty) argtys expected)))]
     ;; error type is a perfectly good fcn type
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
