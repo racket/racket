@@ -87,7 +87,7 @@
           (define/public (marshall-settings x) x)
           (define/public (on-execute settings run-in-user-thread)
             (dynamic-require 'algol60/base #f)
-            (let ([path ((current-module-name-resolver) 'algol60/base #f #f)]
+            (let ([path ((current-module-name-resolver) 'algol60/base #f #f #t)]
                   [n (current-namespace)])
               (run-in-user-thread
                (lambda ()

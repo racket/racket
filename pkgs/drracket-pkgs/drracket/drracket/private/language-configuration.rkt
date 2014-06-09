@@ -2035,7 +2035,7 @@
         ;; since check syntax no longer shares the gui libraries, 
         ;; we always share it explicitly here
         (define/override (on-execute setting run-in-user-thread)
-          (let ([mred-name ((current-module-name-resolver) 'mred/mred #f #f)])
+          (let ([mred-name ((current-module-name-resolver) 'mred/mred #f #f #t)])
             (run-in-user-thread
              (λ ()
                (namespace-attach-module drracket:init:system-namespace mred-name))))

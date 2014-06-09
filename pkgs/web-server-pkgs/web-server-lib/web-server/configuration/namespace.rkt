@@ -17,7 +17,7 @@
     (if (symbol? spec)
         spec
         (with-handlers ([exn:fail? (lambda _ #f)])
-          ((current-module-name-resolver) spec #f #f))))
+          ((current-module-name-resolver) spec #f #f #t))))
   (define to-be-copied-module-names
     (map get-name 
          (append default-to-be-copied-module-specs

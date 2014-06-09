@@ -455,7 +455,7 @@
         (define (*post)
           (current-module-declare-name #f)
           (current-module-declare-source #f)
-          (when path ((current-module-name-resolver) resolved-modpath #f))
+          (when path ((current-module-name-resolver) resolved-modpath #f #t))
           (thread-cell-set! repl-init-thunk *init))
         (define (*error)
           (current-module-declare-name #f)

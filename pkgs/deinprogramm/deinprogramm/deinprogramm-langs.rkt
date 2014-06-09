@@ -174,9 +174,9 @@
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.rkt") #f #f)]
+                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.rkt") #f #f #t)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-german.rkt") #f #f)]
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-german.rkt") #f #f #t)]
                   [tests-on? (preferences:get 'test-engine:enable?)])
               (run-in-user-thread
                (lambda ()

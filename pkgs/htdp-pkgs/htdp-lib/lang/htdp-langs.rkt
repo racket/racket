@@ -130,12 +130,12 @@
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
                   [set-result-module-name 
-                   ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)]
+                   ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f #t)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/racket-tests.ss") #f #f)]
+                   ((current-module-name-resolver) '(lib "test-engine/racket-tests.ss") #f #f #t)]
                   [scheme-signature-module-name
                    ((current-module-name-resolver) 
-                    '(lib "deinprogramm/signature/signature-english.rkt") #f #f)]
+                    '(lib "deinprogramm/signature/signature-english.rkt") #f #f #t)]
                   [tests-on? (preferences:get 'test-engine:enable?)])
               (run-in-user-thread
                (lambda ()

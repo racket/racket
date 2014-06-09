@@ -69,7 +69,7 @@
     (cond
       [(path? p) p]
       [else
-       (let* ([mod-name ((current-module-name-resolver) p #f #f)]
+       (let* ([mod-name ((current-module-name-resolver) p #f #f #t)]
               [str (symbol->string mod-name)]
               [pth (substring str 1 (string-length str))])
          (let-values ([(base name _) (split-path pth)])

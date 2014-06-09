@@ -953,7 +953,7 @@
               [(module-path-index? datum)
                (module-path-index-resolve datum)]
               [else
-               ((current-module-name-resolver) datum #f #f)])))
+               ((current-module-name-resolver) datum #f #f #t)])))
         (define rkt-path/mod-path (and mpi (resolved-module-path-name mpi)))
         (define rkt-path/f (cond
                              [(path? rkt-path/mod-path) rkt-path/mod-path]
