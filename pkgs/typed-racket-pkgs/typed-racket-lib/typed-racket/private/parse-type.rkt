@@ -376,6 +376,7 @@
                   [(Mu: _ body) (loop body)]
                   [(Poly: names body) (loop body)]
                   [(PolyDots: names body) (loop body)]
+                  [(PolyRow: _ _ body) (loop body)]
                   [else #t])))
              (unless productive
                (parse-error

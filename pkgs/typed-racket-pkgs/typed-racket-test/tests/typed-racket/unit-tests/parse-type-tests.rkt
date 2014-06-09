@@ -117,6 +117,10 @@
     (-polydots (a) ((list) [a a] . ->... . N))]
    [(All (a ...) (-> (values a ...)))
     (-polydots (a) (t:-> (make-ValuesDots (list) a 'a)))]
+
+   ;; PR 14554, non-productive recursive type
+   [FAIL (Rec x (All (A #:row) x))]
+
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [(case-> (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]

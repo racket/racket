@@ -68,6 +68,7 @@
     [((Mu: _ body)) (check body)]
     [((Poly: names body)) (check body)]
     [((PolyDots: names body)) (check body)]
+    [((PolyRow: _ _ body)) (check body)]
     [(_) #t])
   (unless (check type)
     (tc-error/stx
