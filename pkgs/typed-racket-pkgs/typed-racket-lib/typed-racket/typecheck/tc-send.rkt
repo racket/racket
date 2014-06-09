@@ -4,7 +4,7 @@
 
 (require "../utils/utils.rkt"
          racket/match syntax/stx
-         (typecheck signatures tc-funapp)
+         (typecheck signatures tc-funapp tc-metafunctions)
          (types base-abbrev resolve utils type-table)
          (rep type-rep)
          (utils tc-utils))
@@ -13,13 +13,14 @@
 (export tc-send^)
 
 (define (tc/send form rcvr method args [expected #f])
+  ;; do-check : Type/c -> tc-results/c
   (define (do-check rcvr-type)
     (match rcvr-type
-      [(tc-result1: (Instance: (? needs-resolving? type)))
-       (do-check (ret (make-Instance (resolve type))))]
-      [(tc-result1: (and obj (Instance: (Class: _ _ _ methods _ _))))
-       (match (tc-expr method)
-         [(tc-result1: (Value: (? symbol? s)))
+      [(Instance: (? needs-resolving? type))
+       (do-check (make-Instance (resolve type)))]
+      [(and obj (Instance: (Class: _ _ _ methods _ _)))
+       (match (tc-expr/t method)
+         [(Value: (? symbol? s))
           (define ftype
             (cond [(assq s methods) => cadr]
                   [else (tc-error/expr/fields
@@ -27,14 +28,18 @@
                          "method name" s
                          "object type" obj
                          #:return -Bottom)]))
-          (define retval
-            (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected))
-          (add-typeof-expr form retval)
-          retval]
-         [(tc-result1: t)
-          (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]
-      [(tc-result1: t) (tc-error/expr/fields
-                        "send: type mismatch"
-                        "expected" "an object"
-                        "given" t)]))
-  (do-check (tc-expr rcvr)))
+          (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected)]
+         [_ (int-err "non-symbol methods not supported by Typed Racket: ~a"
+                     rcvr-type)])]
+      ;; union of objects, check pointwise and union the results
+      [(Union: (list (and objs (Instance: _)) ...))
+       (merge-tc-results
+        (for/list ([obj (in-list objs)])
+          (do-check obj)))]
+      [_ (tc-error/expr/fields
+          "send: type mismatch"
+          "expected" "an object"
+          "given" rcvr-type)]))
+  (define final-ret (do-check (tc-expr/t rcvr)))
+  (add-typeof-expr form final-ret)
+  final-ret)

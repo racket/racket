@@ -109,6 +109,39 @@
    [tc-err (send 4 m 3)
       #:ret (ret (-val 5) -bot-filter)
       #:expected (ret (-val 5) -no-filter -no-obj)]
+   ;; Fails, sending to multiple/unknown values
+   [tc-err (send (values 'a 'b) m 'c)
+           #:msg #rx"expected single value"]
+   [tc-err (send (eval "3") m 'c)
+           #:msg #rx"expected single value"]
+   ;; Send to a union of objects in various ways
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> String)])
+                       (Object [m (-> Symbol)]
+                               [n (-> Void)]))
+                    (U Symbol String)))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new) (define/public (m) "foo")))))
+         (t:Un -String -Symbol)]
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> (values String Symbol))])
+                       (Object [m (-> (values Symbol String))]
+                               [n (-> Void)]))
+                    (values (U Symbol String) (U Symbol String))))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new)
+                     (define/public (m) (values "foo" 'bar))))))
+         #:ret (ret (list (t:Un -String -Symbol) (t:Un -String -Symbol)))]
+   [tc-err
+    (let ()
+      (define obj
+        (if (> (random) 0.5)
+            (new (class object% (super-new)
+                   (define/public (m) "foo")))
+            (new (class object% (super-new)
+                   (define/public (m) (values "foo" "bar"))))))
+      (send obj m))
+    #:msg #rx"Expected the same number of values.*got 1 and 2"]
    ;; Field access via get-field
    [tc-e (let ()
            (: j% (Class (field [n Integer])
