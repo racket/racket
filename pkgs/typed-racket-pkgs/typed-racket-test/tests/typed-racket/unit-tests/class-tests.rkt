@@ -114,6 +114,33 @@
            #:msg #rx"expected: 1 value of object type.*given: 2 values"]
    [tc-err (send (eval "3") m 'c)
            #:msg #rx"expected: 1 value of object type.*given: unknown number of values"]
+   ;; Send to a union of objects in various ways
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> String)])
+                       (Object [m (-> Symbol)]
+                               [n (-> Void)]))
+                    (U Symbol String)))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new) (define/public (m) "foo")))))
+         (t:Un -String -Symbol)]
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> (values String Symbol))])
+                       (Object [m (-> (values Symbol String))]
+                               [n (-> Void)]))
+                    (values (U Symbol String) (U Symbol String))))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new)
+                     (define/public (m) (values "foo" 'bar))))))
+         #:ret (ret (list (t:Un -String -Symbol) (t:Un -String -Symbol)))]
+   [tc-e (let ()
+           (define obj
+             (if (> (random) 0.5)
+                 (new (class object% (super-new)
+                        (define/public (m) "foo")))
+                 (new (class object% (super-new)
+                        (define/public (m) (values "foo" "bar"))))))
+           (send obj m))
+         #:ret (tc-any-results -top)]
    ;; Field access via get-field
    [tc-e (let ()
            (: j% (Class (field [n Integer])
