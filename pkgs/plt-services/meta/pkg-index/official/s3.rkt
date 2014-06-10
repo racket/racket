@@ -17,7 +17,6 @@
         (format "~a/pkgs-all.json.gz" static-path))
 
   (delete-file (format "~a/pkgs-all.json" static-path))
-  (delete-file (format "~a/pkgs-all" static-path))
 
   (system* s3cmd-path
            "-c" s3-config
