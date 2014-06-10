@@ -152,7 +152,7 @@
 (provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
          tc-results)
 (provide/cond-contract
- [tc-result (Type/c Filter/c Object? -> tc-results?)]
+ [tc-result (Type/c FilterSet/c Object? . c:-> . tc-result?)]
  [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
  [tc-any-results ((c:or/c Filter/c NoFilter?) . c:-> . tc-any-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
