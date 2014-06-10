@@ -13,7 +13,8 @@ a function to extract items from a @exec{zip} archive.}
                                    . -> . any)
                                   (bytes? boolean? input-port? . -> . any))
                               (make-filesystem-entry-reader)]
-                [#:preserve-timestamps? preserve-timestamps? any/c #f])
+                [#:preserve-timestamps? preserve-timestamps? any/c #f]
+                [#:utc-timestamps? utc-timestamps? any/c #f])
          void?]{
 
 Unzips an entire @exec{zip} archive from @racket[in].
@@ -27,7 +28,12 @@ for a file. The default @racket[entry-reader] unpacks entries to the
 filesystem; call @racket[make-filesystem-entry-reader] to configure
 aspects of the unpacking, such as  the destination directory.
 
-@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
+Normally, @exec{zip} archives record modification dates in local time,
+but if @racket[utc-timestamps?] is true, then the time in the archive
+is interpreted as UTC.
+
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}
+         #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}]}
 
 
 @defproc[(call-with-unzip [in (or/c path-string? input-port?)]
@@ -127,7 +133,8 @@ itself or as the containing directory of other entries. If
                                          . -> . any)
                                         (bytes? boolean? input-port? . -> . any))
                                     (make-filesystem-entry-reader)]
-                      [#:preserve-timestamps? preserve-timestamps? any/c #f])
+                      [#:preserve-timestamps? preserve-timestamps? any/c #f]
+                      [#:utc-timestamps? utc-timestamps? any/c #f])
          void?]{
 
 Unzips a single entry from a @exec{zip} archive based on a previously
@@ -145,7 +152,8 @@ in the same way as for @racket[unzip].
 If @racket[entry] is not in @racket[zipdir], an
 @racket[exn:fail:unzip:no-such-entry] exception is raised.
 
-@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}]}
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}
+         #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}]}
 
 
 @defproc[(call-with-unzip-entry [in path-string? input-port]

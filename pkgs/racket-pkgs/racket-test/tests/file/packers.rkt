@@ -19,10 +19,23 @@
 (define (diff src dest check-attributes?)
   (define (compare-attributes p1 p2)
     (or (not check-attributes?)
-        (and (= (file-or-directory-modify-seconds p1)
-                (file-or-directory-modify-seconds p2))
+        (and (or (and (eq? check-attributes? 'file)
+                      (directory-exists? p1))
+                 (= (round-date (file-or-directory-modify-seconds p1))
+                    (round-date (file-or-directory-modify-seconds p2)))
+                 (begin
+                   (printf "~s ~s ~s\n"
+                           p1 
+                           (file-or-directory-modify-seconds p1)
+                           (file-or-directory-modify-seconds p2))
+                   #f))
              (equal? (file-or-directory-permissions p1)
                      (file-or-directory-permissions p2)))))
+  (define (round-date s)
+    (if (eq? check-attributes? 'file)
+        ;; granularity of ".zip" file dates is 2 seconds(!)
+        (if (even? s) s (add1 s)) ; round to future is the default
+        s))
   (cond
     [(link-exists? src)
      (and (link-exists? dest)
@@ -48,7 +61,7 @@
                  (begin (file-or-directory-permissions* dest "rwx") #t))))]
     [else #t]))
 
-(define (zip-tests zip unzip)
+(define (zip-tests zip unzip timestamps?)
   (make-directory* "ex1")
   (make-file (build-path "ex1" "f1"))
   (make-file (build-path "ex1" "f2"))
@@ -58,13 +71,14 @@
   (make-file (build-path more-dir "f4"))
 
   (zip "a.zip" "ex1")
+  (when timestamps? (sleep 3)) ; at least 2 seconds, plus 1 to likely change parity
 
   (make-directory* "sub")
   (parameterize ([current-directory "sub"])
     (unzip "../a.zip"))
   
-  (unless (diff "ex1" (build-path "sub" "ex1") #t)
-    (eprintf "changed! ~s" zip))
+  (unless (diff "ex1" (build-path "sub" "ex1") timestamps?)
+    (eprintf "changed! ~s\n" zip))
 
   (delete-directory/files "sub")
   (delete-file "a.zip")
@@ -74,8 +88,8 @@
   (parameterize ([current-directory "sub"])
     (unzip "../a.zip"))
 
-  (unless (diff "ex1" (build-path "sub" "inside" "ex1") #t)
-    (eprintf "changed! ~s" zip))
+  (unless (diff "ex1" (build-path "sub" "inside" "ex1") timestamps?)
+    (eprintf "changed! ~s\n" zip))
   
   (delete-file "a.zip")
   (delete-directory/files "sub")
@@ -83,9 +97,19 @@
 
 (define work-dir (make-temporary-file "packer~a" 'directory))
 
+(define (make-zip utc?)
+  (lambda (#:path-prefix [prefix #f] . args)
+    (apply zip #:path-prefix prefix args #:utc-timestamps? utc?)))
+
+(define (make-unzip utc?)
+  (lambda args
+    (apply unzip #:preserve-timestamps? #t #:utc-timestamps? utc? args)))
+
 (parameterize ([current-directory work-dir])
-  (zip-tests zip unzip)
-  (zip-tests tar untar))
+  (zip-tests zip unzip #f)
+  (zip-tests (make-zip #f) (make-unzip #f) 'file)
+  (zip-tests (make-zip #t) (make-unzip #t) 'file)
+  (zip-tests tar untar #t))
 
 (delete-directory/files work-dir)
 

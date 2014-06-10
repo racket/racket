@@ -59,8 +59,8 @@
   ;; ===========================================================================
 
   ;; date->msdos-time : date -> msdos-time
-  (define (date->msdos-time date)
-    (bitwise-ior (ceiling (/ (date-second date) 2))
+  (define (date->msdos-time date round-down?)
+    (bitwise-ior (arithmetic-shift (+ (if round-down? 0 1) (date-second date)) -1)
                  (arithmetic-shift (date-minute date) 5)
                  (arithmetic-shift (date-hour date) 11)))
 
@@ -230,9 +230,9 @@
 
   ;; build-metadata : relative-path (relative-path . -> . exact-integer?)
   ;;                     boolean (or/c #f integer?) -> metadata
-  (define (build-metadata path-prefix path get-timestamp
+  (define (build-metadata path-prefix path get-timestamp utc? round-down?
                           force-dir? permissions)
-    (let* ([mod  (seconds->date (get-timestamp path))]
+    (let* ([mod  (seconds->date (get-timestamp path) (not utc?))]
            [dir? (or force-dir? (directory-exists? path))]
            [attr (path-attributes path dir? permissions)]
            [path (cond [(path? path)   path]
@@ -243,7 +243,7 @@
                           path)]
            [name (with-slash-separator (path->bytes name-path))]
            [name (if dir? (with-trailing-slash name) name)]
-           [time (date->msdos-time mod)]
+           [time (date->msdos-time mod round-down?)]
            [date (date->msdos-date mod)]
            [comp (if dir? 0 *compression-level*)])
       (make-metadata path name dir? time date comp attr)))
@@ -260,6 +260,8 @@
                        #:get-timestamp [get-timestamp (if timestamp
                                                           (lambda (p) timestamp)
                                                           file-or-directory-modify-seconds)]
+                       #:utc-timestamps? [utc? #f]
+                       #:round-timestamps-down? [round-down? #f]
                        #:path-prefix [path-prefix #f]
                        #:system-type [sys-type (system-type)])
     (parameterize ([current-output-port out])
@@ -275,12 +277,14 @@
                     (define-values (base name dir?) (split-path path-prefix))
                     (define r (loop (and (path? base) base)))
                     (cons
-                     (zip-one-entry (build-metadata #f path-prefix (lambda (x) (current-seconds)) #t #o755)
+                     (zip-one-entry (build-metadata #f path-prefix (lambda (x) (current-seconds))
+                                                    utc? round-down? #t #o755)
                                     seekable?)
                      r)])))
                ;; add normal files:
                (map (lambda (file)
-                      (zip-one-entry (build-metadata path-prefix file get-timestamp #f #f)
+                      (zip-one-entry (build-metadata path-prefix file get-timestamp
+                                                     utc? round-down? #f #f)
                                      seekable?))
                     files))])
         (when (zip-verbose)
@@ -296,6 +300,8 @@
                #:get-timestamp [get-timestamp (if timestamp
                                                   (lambda (p) timestamp)
                                                   file-or-directory-modify-seconds)]
+               #:utc-timestamps? [utc? #f]
+               #:round-timestamps-down? [round-down? #f]
                #:path-prefix [path-prefix #f]
                #:system-type [sys-type (system-type)]
                . paths)
@@ -303,6 +309,8 @@
     (with-output-to-file zip-file
       (lambda () (zip->output (pathlist-closure paths)
                               #:get-timestamp get-timestamp
+                              #:utc-timestamps? utc?
+                              #:round-timestamps-down? round-down?
                               #:path-prefix path-prefix
                               #:system-type sys-type))))
   
